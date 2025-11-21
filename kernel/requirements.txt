@@ -1,0 +1,16 @@
+# Djinn Kernel - Requirements
+# Python version requirement
+python>=3.8
+
+# Core dependencies (required for full functionality)
+numpy>=1.20.0          # Used in trait_validation_system.py
+cryptography>=3.0.0   # Used in security_compliance.py
+
+# Optional dependencies for future extensions
+# rich>=10.0.0  # For CLI interfaces
+
+# Standard library modules (built-in, no installation needed):
+# - asyncio (Python 3.7+)
+# - dataclasses (Python 3.7+)
+# - typing (Python 3.5+)
+# - uuid, hashlib, json, datetime, threading, enum (standard library)

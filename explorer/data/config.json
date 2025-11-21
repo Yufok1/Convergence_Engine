@@ -1,0 +1,5 @@
+{
+  "vp_threshold": 1.0,
+  "critical_mass_sample_size": 5,
+  "namespace_sovereign": "explorer"
+}
