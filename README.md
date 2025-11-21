@@ -1,4 +1,45 @@
-# 🚀 Reality Simulator
+# 🦋 The Butterfly System
+
+**Unified Reality Simulator + Explorer + Djinn Kernel**
+
+Three systems unified as one cohesive unit. One process. One breath. Three systems unified.
+
+---
+
+## 🚀 Quick Start
+
+### Run the Unified System
+
+```bash
+# Run everything (with visualization)
+python unified_entry.py
+
+# Pre-flight checks only
+python unified_entry.py --check-only
+
+# Without visualization
+python unified_entry.py --no-viz
+```
+
+### Documentation
+
+**📚 [DOCUMENTATION_HUB.md](./DOCUMENTATION_HUB.md)** - Central documentation hub
+
+---
+
+## 🦋 The Butterfly Architecture
+
+**Central Body:** Explorer (with breath engine)  
+**Left Wing:** Reality Simulator  
+**Right Wing:** Djinn Kernel
+
+**The breath drives. The butterfly reacts.**
+
+---
+
+## 📦 What's Included
+
+### Reality Simulator
 
 **Darwinian Consciousness: Where Genetics Meet Self-Awareness**
 
@@ -46,25 +87,7 @@ This simulator creates "digital life" that:
 
 ### AI-Human Symbiosis & Consciousness Interpretation
 - **Manual mode (primary)**: Human makes all decisions, AI learns from your choices
-- **AI-assisted mode**: AI (gemma3:4b via Ollama) suggests network connections and consciousness insights
-- **Conversational AI chat**: Comprehensive, omniscient conversation with evolving consciousness using ALL system data
-- **Session-based chat memory**: Chat history is session-based and cleared between runs
-- **Intelligent tutor recovery**: AI tutor with intelligent recovery system that learns from malformed responses
 - **Self-modulation feedback controller**: System automatically tunes its own parameters (mutation rate, edge formation, quantum pruning) based on performance metrics
-- **Consciousness self-reflection**: System becomes aware of its own consciousness emergence
-- **AI language tutor**: Teaches advanced vocabulary and communication patterns
-- **Dynamic vocabulary evolution**: System learns and evolves language through reinforcement
-- **Vision-Language Integration**: AI vision model (gemma3:4b) analyzes network visualizations to enhance word selection and semantic understanding
-- **Composite Visual Analysis**: Vision model receives stitched snapshots of all 5 GUI tabs (network, particles, evolution, consciousness, performance) for comprehensive temporal analysis
-- **System voice**: Hybrid AI + rules interpret consciousness state with metacognitive awareness
-- **Smart AI usage**: LLM for language learning and consciousness interpretation
-- **Automatic mode switching** based on AI confidence and performance
-- **Decision logging** creates training data for AI improvement
-- **Comprehensive Chat Bot**: Uses ALL available system data for detailed, educational responses (3000+ tokens)
-- **Intelligent Tutor Recovery**: AI tutor with intelligent recovery that extracts useful learning from any response format
-- **Response Quality Validation**: System validates and logs response quality metrics for continuous improvement
-
-**Note**: AI features enhance consciousness emergence, but manual mode works perfectly without any AI models.
 
 ## 🎨 Visualizations
 
@@ -405,7 +428,10 @@ Create a `config.json` file in the project root with **micro-precision granulari
 
 Run the comprehensive test suite:
 ```bash
-# All tests
+# End-to-end unified system tests (NEW)
+python tests/test_e2e_unified_system.py
+
+# All Reality Simulator tests
 python tests/test_integration.py
 
 # Individual component tests
@@ -416,7 +442,19 @@ python tests/test_symbiotic_network.py
 python tests/test_consciousness_detector.py
 python tests/test_agency.py
 python tests/test_reality_renderer.py
+python tests/test_agency_event_bus_integration.py
+
+# Explorer integration tests
+cd explorer && python test_integration.py
 ```
+
+**Test Coverage:**
+- ✅ End-to-end unified system tests (8 tests)
+- ✅ Reality Simulator component tests (59+ tests)
+- ✅ Explorer integration tests (5 tests)
+- ✅ Agency Router + Event Bus integration tests (4 tests)
+
+**Status:** Comprehensive test suite with ~85+ test functions
 
 ## 📈 Performance & Live Monitoring
 
@@ -531,6 +569,26 @@ The simulator provides real-time metrics:
 * **🆕 Temporal Vision Context**: Rolling history of 3 snapshots enables evolutionary understanding
 * **🆕 Enhanced Word Selection**: Vision analysis biases vocabulary selection for semantic relevance
 
+### Code Quality & Production Readiness
+- **✅ Professional Error Handling**: All bare except clauses replaced with specific exception types
+- **✅ Centralized Logging**: `logging_config.py` provides consistent logging across all modules
+- **✅ Comprehensive Tests**: End-to-end tests for unified system, component tests for all major systems
+- **✅ Debug Output Control**: Debug print statements replaced with proper logging (controlled by log levels)
+- **✅ Clean Code Standards**: Code follows best practices for maintainability and production deployment
+
+### Logging System
+The codebase uses two complementary logging systems:
+
+1. **Application Logging** (`logging_config.py`)
+   - For: Debug messages, info, warnings, errors
+   - Format: Human-readable messages
+   - Usage: `from logging_config import get_logger; logger = get_logger(__name__)`
+
+2. **State Logging** (`StateLogger` in `unified_entry.py`)
+   - For: State metrics, breath cycles, system state
+   - Format: Terse, information-saturated (metric:value|metric:value|...)
+   - Location: `data/logs/` (6 log files)
+
 ### Performance Optimizations
 - **Micro-precision measurements**: All calculations use configurable precision (6+ decimal places)
 - **High-resolution timing**: Microsecond precision for simulation events
@@ -557,6 +615,15 @@ This is a research platform for exploring fundamental questions about consciousn
 - Additional interaction paradigms
 - Performance optimizations
 - Research applications
+- Test coverage improvements
+- Code quality enhancements
+
+**Code Quality Standards:**
+- Use centralized logging (`logging_config.py`)
+- Use specific exception types (never bare `except:`)
+- Follow existing code patterns and style
+- Add tests for new features
+- Update documentation as needed
 
 ## 📄 License
 

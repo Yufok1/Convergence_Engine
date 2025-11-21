@@ -38,11 +38,37 @@ ENV/
 Thumbs.db
 desktop.ini
 
-# Project specific
+# Project specific - Runtime data (personal runs)
 data/.shared_simulation_state.json
 data/.simulation_paused
 *.log
 *.pyc
+
+# Logs - All log files from personal runs
+data/logs/*
+!data/logs/.gitkeep
+explorer/data/logs/*
+!explorer/data/logs/.gitkeep
+
+# Checkpoints - Runtime checkpoints from personal runs
+data/checkpoints/*
+!data/checkpoints/.gitkeep
+explorer/data/checkpoints/*
+!explorer/data/checkpoints/.gitkeep
+
+# Kernel versions - Runtime kernel state snapshots
+data/kernel/versions/*
+!data/kernel/versions/.gitkeep
+
+# Decision logs - Runtime decision tracking
+data/decision_logs/*
+!data/decision_logs/.gitkeep
+
+# Runtime state files
+data/*.json
+!data/config.json
+data/.shared_simulation_state.json
+data/.simulation_paused
 
 # Config (optional - you might want to commit config.json, or keep it private)
 # config.json

@@ -115,8 +115,14 @@ class EcosystemMetrics:
         try:
             communities = list(nx.community.greedy_modularity_communities(network_graph))
             self.modularity = len(communities) / len(network_graph)  # Rough approximation
-        except:
+        except (ValueError, ZeroDivisionError, AttributeError) as e:
+            # NetworkX may raise ValueError for empty graphs or graphs without communities
+            # ZeroDivisionError if network_graph is empty
+            # AttributeError if networkx.community is not available
             self.modularity = 0.0
+            # Log the error for debugging (if logging is available)
+            if hasattr(self, '_logger') and self._logger:
+                self._logger.warning(f"Failed to calculate modularity: {e}")
 
         # Resource flow balance (sum of all connection flows)
         total_flow = 0.0
@@ -785,9 +791,45 @@ class SymbioticNetwork:
             if org_b_id is None:
                 org_b_id = np.random.choice(remaining_ids)
 
-            # Try to form connection (will check limits and compatibility)
-            if not self.network_graph.has_edge(org_a_id, org_b_id):
-                self.add_connection(org_a_id, org_b_id)
+            # NEW: Use agency router for connection decision (if available)
+            if hasattr(self, 'agency_router') and self.agency_router:
+                org_a = self.organisms[org_a_id]
+                org_b = self.organisms[org_b_id]
+                
+                # Build context for agency decision
+                context = {
+                    'org_a_id': org_a_id,
+                    'org_b_id': org_b_id,
+                    'org_a_fitness': org_a.fitness,
+                    'org_b_fitness': org_b.fitness,
+                    'org_a_connections': len([(a, b) for (a, b), _ in self.connections.items() if a == org_a_id or b == org_a_id]),
+                    'org_b_connections': len([(a, b) for (a, b), _ in self.connections.items() if a == org_b_id or b == org_b_id]),
+                    'compatibility_score': 1.0 - abs(org_a.fitness - org_b.fitness),
+                    'distance': len(nx.shortest_path(self.network_graph, org_a_id, org_b_id)) - 1 if org_a_id in self.network_graph and org_b_id in self.network_graph and nx.has_path(self.network_graph, org_a_id, org_b_id) else float('inf'),
+                    'organism_count': len(self.organisms),
+                    'connection_count': len(self.network_graph.edges()),
+                    'modularity': self.metrics.modularity if hasattr(self.metrics, 'modularity') else 1.0,
+                    'clustering_coefficient': self.metrics.clustering_coefficient if hasattr(self.metrics, 'clustering_coefficient') else 0.0,
+                    'average_path_length': self.metrics.average_path_length if hasattr(self.metrics, 'average_path_length') else 0.0,
+                    'network_stability': self.metrics.ecosystem_stability if hasattr(self.metrics, 'ecosystem_stability') else 0.0
+                }
+                
+                # Agency decides: connect or not
+                options = ["connect_immediate", "connect_delayed", "reject"]
+                decision = self.agency_router.make_decision("network_connection", context, options)
+                
+                # Execute decision
+                if decision == "connect_immediate" or decision == "connect":
+                    if not self.network_graph.has_edge(org_a_id, org_b_id):
+                        self.add_connection(org_a_id, org_b_id)
+                elif decision == "connect_delayed":
+                    # Queue for next cycle (simplified: just skip for now)
+                    pass
+                # else: "reject" - don't connect
+            else:
+                # Fallback: Original behavior (try to form connection)
+                if not self.network_graph.has_edge(org_a_id, org_b_id):
+                    self.add_connection(org_a_id, org_b_id)
 
     def update_network(self):
         """Update network state for one generation"""

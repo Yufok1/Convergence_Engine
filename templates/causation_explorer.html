@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>🔬 Causation Explorer - Curiosity Trail System</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #000;
+            color: #0f0;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #0ff;
+            border-bottom: 2px solid #0ff;
+            padding-bottom: 10px;
+        }
+        .main-content {
+            display: flex;
+            gap: 20px;
+        }
+        .filter-panel {
+            width: 250px;
+            background: #111;
+            border: 1px solid #0ff;
+            padding: 15px;
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        .filter-section {
+            margin-bottom: 20px;
+            border-bottom: 1px solid #0aa;
+            padding-bottom: 15px;
+        }
+        .filter-section h4 {
+            color: #0ff;
+            margin: 0 0 10px 0;
+            font-size: 1em;
+        }
+        .filter-item {
+            margin: 5px 0;
+        }
+        .filter-item label {
+            color: #0f0;
+            cursor: pointer;
+            display: block;
+            padding: 3px 0;
+        }
+        .filter-item input[type="checkbox"] {
+            margin-right: 8px;
+            cursor: pointer;
+        }
+        .filter-item input[type="checkbox"]:checked + span {
+            color: #0ff;
+            font-weight: bold;
+        }
+        .search-box {
+            margin: 20px 0;
+            padding: 10px;
+            background: #111;
+            border: 1px solid #0ff;
+        }
+        input[type="text"] {
+            width: 70%;
+            padding: 8px;
+            background: #000;
+            color: #0f0;
+            border: 1px solid #0ff;
+            font-family: 'Courier New', monospace;
+        }
+        button {
+            padding: 8px 15px;
+            background: #0ff;
+            color: #000;
+            border: none;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #0aa;
+        }
+        .nav-button {
+            padding: 5px 10px;
+            margin: 2px;
+            background: #111;
+            color: #0ff;
+            border: 1px solid #0ff;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+        .nav-button:hover {
+            background: #0ff;
+            color: #000;
+        }
+        .graph-container {
+            flex: 1;
+            position: relative;
+        }
+        .graph-controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #111;
+            border: 1px solid #0ff;
+            padding: 10px;
+            z-index: 10;
+        }
+        .graph-controls-row {
+            display: flex;
+            gap: 5px;
+            margin: 5px 0;
+            justify-content: center;
+        }
+        #graph {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #0ff;
+            background: #000;
+            margin: 20px 0;
+            position: relative;
+            overflow: hidden;
+        }
+        #graph svg {
+            width: 100%;
+            height: 100%;
+        }
+        .node {
+            cursor: pointer;
+        }
+        .node circle {
+            fill: #0ff;
+            stroke: #0f0;
+            stroke-width: 2px;
+        }
+        .node text {
+            fill: #0f0;
+            font-size: 10px;
+        }
+        .link {
+            stroke: #0aa;
+            stroke-opacity: 0.6;
+            stroke-width: 2px;
+        }
+        .link:hover {
+            stroke: #0ff;
+            stroke-width: 3px;
+        }
+        .info-panel {
+            background: #1a1a1a;
+            border: 4px solid #FFFF00;
+            padding: 20px;
+            margin: 25px 0;
+            box-shadow: 0 0 25px rgba(255, 255, 0, 0.5), inset 0 0 15px rgba(0, 0, 0, 0.6);
+            border-radius: 8px;
+        }
+        .info-panel:nth-child(3) {
+            border-color: #FF6600;
+            box-shadow: 0 0 25px rgba(255, 102, 0, 0.5), inset 0 0 15px rgba(0, 0, 0, 0.6);
+        }
+        .info-panel:nth-child(4) {
+            border-color: #00FF00;
+            box-shadow: 0 0 25px rgba(0, 255, 0, 0.5), inset 0 0 15px rgba(0, 0, 0, 0.6);
+        }
+        .info-panel:nth-child(5) {
+            border-color: #0066FF;
+            box-shadow: 0 0 25px rgba(0, 102, 255, 0.5), inset 0 0 15px rgba(0, 0, 0, 0.6);
+        }
+        .info-panel h3 {
+            color: #FFFFFF;
+            margin-top: 0;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid currentColor;
+            font-size: 1.4em;
+            text-shadow: 0 0 10px currentColor;
+        }
+        .info-panel:nth-child(3) h3 {
+            color: #FF6600;
+        }
+        .info-panel:nth-child(4) h3 {
+            color: #00FF00;
+        }
+        .info-panel:nth-child(5) h3 {
+            color: #0066FF;
+        }
+        .event-item {
+            background: #000;
+            border: 1px solid #0aa;
+            padding: 10px;
+            margin: 10px 0;
+            cursor: pointer;
+        }
+        .event-item:hover {
+            border-color: #0ff;
+            background: #111;
+        }
+        .causation-trail {
+            margin-left: 20px;
+            border-left: 2px solid #0aa;
+            padding-left: 15px;
+        }
+        /* HIGH CONTRAST INFORMATION DISPLAY - Different elements use different colors */
+        .metric {
+            color: #ff0;  /* Bright yellow for metrics/labels */
+            font-weight: bold;
+        }
+        .component {
+            color: #0ff;  /* Cyan for component names */
+            font-weight: bold;
+        }
+        .event-type {
+            color: #f0f;  /* Magenta for event types */
+            font-weight: bold;
+        }
+        .timestamp {
+            color: #0f0;  /* Green for timestamps */
+        }
+        .data-value {
+            color: #ffa500;  /* Orange for data values */
+        }
+        .data-key {
+            color: #0ff;  /* Cyan for data keys */
+        }
+        .depth-indicator {
+            color: #ff6600;  /* Orange-red for depth markers */
+            font-weight: bold;
+        }
+        .count-value {
+            color: #00ff00;  /* Bright green for numeric counts */
+            font-weight: bold;
+        }
+        .causation-type {
+            color: #ff00ff;  /* Magenta for causation types */
+            font-style: italic;
+        }
+        strong {
+            color: #fff;  /* White for general emphasis */
+        }
+        pre {
+            background: #0a0a0a;
+            border: 1px solid #0aa;
+            padding: 8px;
+            margin: 5px 0;
+            color: #0ff;
+            overflow-x: auto;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔬 Causation Explorer - Follow Your Curiosity</h1>
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div class="search-box" style="flex: 1; margin-right: 10px;">
+                <input type="text" id="searchInput" placeholder="Search events (e.g., 'collapse', 'modularity', 'VP')">
+                <button onclick="searchEvents()">Search</button>
+                <button onclick="loadGraph()">Load Full Graph</button>
+            </div>
+            <div style="background: #111; border: 1px solid #0ff; padding: 10px; text-align: center;">
+                <div id="liveStatus" style="color: #0aa;">● Historical Mode</div>
+                <label style="color: #0f0; cursor: pointer; font-size: 0.9em;">
+                    <input type="checkbox" id="liveModeToggle" onchange="toggleLiveMode()" style="margin-right: 5px;">
+                    Live Mode
+                </label>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <!-- Filter Panel -->
+            <div class="filter-panel">
+                <h3 style="color: #0ff; margin-top: 0;">Filters</h3>
+                
+                <div class="filter-section">
+                    <h4>Components</h4>
+                    <div class="filter-item">
+                        <label><input type="checkbox" id="filter-reality_sim" checked onchange="applyFilters()">
+                            <span>Reality Simulator</span></label>
+                    </div>
+                    <div class="filter-item">
+                        <label><input type="checkbox" id="filter-explorer" checked onchange="applyFilters()">
+                            <span>Explorer</span></label>
+                    </div>
+                    <div class="filter-item">
+                        <label><input type="checkbox" id="filter-djinn_kernel" checked onchange="applyFilters()">
+                            <span>Djinn Kernel</span></label>
+                    </div>
+                    <div class="filter-item">
+                        <label><input type="checkbox" id="filter-breath" checked onchange="applyFilters()">
+                            <span>Breath</span></label>
+                    </div>
+                    <div class="filter-item">
+                        <label><input type="checkbox" id="filter-system" checked onchange="applyFilters()">
+                            <span>System</span></label>
+                    </div>
+                </div>
+                
+                <div class="filter-section">
+                    <h4>Causation Types</h4>
+                    <div class="filter-item">
+                        <label><input type="checkbox" id="filter-threshold" checked onchange="applyFilters()">
+                            <span>Threshold</span></label>
+                    </div>
+                    <div class="filter-item">
+                        <label><input type="checkbox" id="filter-correlation" checked onchange="applyFilters()">
+                            <span>Correlation</span></label>
+                    </div>
+                    <div class="filter-item">
+                        <label><input type="checkbox" id="filter-direct" checked onchange="applyFilters()">
+                            <span>Direct</span></label>
+                    </div>
+                    <div class="filter-item">
+                        <label><input type="checkbox" id="filter-temporal" checked onchange="applyFilters()">
+                            <span>Temporal</span></label>
+                    </div>
+                </div>
+                
+                <div class="filter-section">
+                    <h4>Show Controls</h4>
+                    <div class="filter-item">
+                        <label><input type="checkbox" id="show-labels" checked onchange="toggleLabels()">
+                            <span>Node Labels</span></label>
+                    </div>
+                    <div class="filter-item">
+                        <label><input type="checkbox" id="show-links" checked onchange="toggleLinks()">
+                            <span>Causation Links</span></label>
+                    </div>
+                </div>
+                
+                <button onclick="resetFilters()" style="width: 100%; margin-top: 10px;">Reset All Filters</button>
+                
+                <div class="filter-section" style="border-bottom: none; margin-top: 20px;">
+                    <h4>Navigation Help</h4>
+                    <div style="font-size: 0.85em; color: #0aa;">
+                        <div style="margin: 5px 0;"><strong>Click:</strong> Navigate buttons</div>
+                        <div style="margin: 5px 0;"><strong>Arrows:</strong> Pan view</div>
+                        <div style="margin: 5px 0;"><strong>+/-:</strong> Smooth zoom</div>
+                        <div style="margin: 5px 0;"><strong>Shift +/-:</strong> Fine zoom</div>
+                        <div style="margin: 5px 0;"><strong>R/Q:</strong> Rotate</div>
+                        <div style="margin: 5px 0;"><strong>Home:</strong> Reset view</div>
+                        <div style="margin: 5px 0;"><strong>F:</strong> Fit all nodes</div>
+                        <div style="margin: 5px 0; color: #0aa; font-size: 0.85em;">
+                            Gradual layer-by-layer navigation
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Graph Container -->
+            <div class="graph-container">
+                <div class="graph-controls">
+                    <div class="graph-controls-row">
+                        <button class="nav-button" onclick="panGraph('up')">↑</button>
+                    </div>
+                    <div class="graph-controls-row">
+                        <button class="nav-button" onclick="panGraph('left')">←</button>
+                        <button class="nav-button" onclick="resetView()">⌂</button>
+                        <button class="nav-button" onclick="panGraph('right')">→</button>
+                    </div>
+                    <div class="graph-controls-row">
+                        <button class="nav-button" onclick="panGraph('down')">↓</button>
+                    </div>
+                    <div class="graph-controls-row">
+                        <button class="nav-button" onclick="zoomGraph('in')" title="Zoom in (smooth)">+</button>
+                        <button class="nav-button" onclick="zoomGraph('out')" title="Zoom out (smooth)">−</button>
+                    </div>
+                    <div class="graph-controls-row">
+                        <button class="nav-button" onclick="zoomFine('in')" title="Fine zoom in">++</button>
+                        <button class="nav-button" onclick="zoomFine('out')" title="Fine zoom out">−−</button>
+                    </div>
+                    <div class="graph-controls-row" style="font-size: 0.7em; color: #0aa; padding-top: 5px;">
+                        <span id="zoomLevel">100%</span>
+                    </div>
+                    <div class="graph-controls-row">
+                        <button class="nav-button" onclick="zoomToFit()" title="Zoom to fit all nodes">⛶</button>
+                    </div>
+                    <div class="graph-controls-row">
+                        <button class="nav-button" onclick="rotateGraph('cw')">↻</button>
+                        <button class="nav-button" onclick="rotateGraph('ccw')">↺</button>
+                    </div>
+                </div>
+                <div id="graph"></div>
+            </div>
+        </div>
+        
+        <div class="info-panel">
+            <h3>Selected Event</h3>
+            <div id="eventInfo">Click an event to explore</div>
+        </div>
+        
+        <div class="info-panel">
+            <h3>Causation Trail (What Caused This?)</h3>
+            <div id="backwardsTrail">Explore backwards to see causes</div>
+        </div>
+        
+        <div class="info-panel">
+            <h3>Effects (What Did This Cause?)</h3>
+            <div id="forwardsTrail">Explore forwards to see effects</div>
+        </div>
+    </div>
+    
+    <script>
+        let svg, simulation, graphGroup;
+        let selectedNode = null;
+        let allNodes = [], allLinks = [];
+        let filteredNodes = [], filteredLinks = [];
+        
+        // Navigation state
+        let panX = 0, panY = 0;
+        let zoomLevel = 1;
+        let rotation = 0;
+        
+        // Live mode state
+        let liveMode = false;
+        let liveModeInterval = null;
+        let lastEventTimestamp = 0;
+        let lastGraphUpdate = 0;
+        
+        // Filter state
+        let filters = {
+            components: {
+                'reality_sim': true,
+                'reality_simulator': true,
+                'explorer': true,
+                'djinn_kernel': true,
+                'utm_kernel': true,
+                'breath': true,
+                'system': true
+            },
+            causationTypes: {
+                'threshold': true,
+                'correlation': true,
+                'direct': true,
+                'temporal': true,
+                'unknown': true
+            },
+            showLabels: true,
+            showLinks: true
+        };
+        
+        function loadGraph() {
+            d3.json('/api/graph').then(data => {
+                allNodes = data.nodes || [];
+                allLinks = data.links || [];
+                applyFilters();
+            });
+        }
+        
+        function applyFilters() {
+            // Update filter state from checkboxes
+            filters.components.reality_sim = document.getElementById('filter-reality_sim').checked;
+            filters.components.reality_simulator = document.getElementById('filter-reality_sim').checked;
+            filters.components.explorer = document.getElementById('filter-explorer').checked;
+            filters.components.djinn_kernel = document.getElementById('filter-djinn_kernel').checked;
+            filters.components.utm_kernel = document.getElementById('filter-djinn_kernel').checked;
+            filters.components.breath = document.getElementById('filter-breath').checked;
+            filters.components.system = document.getElementById('filter-system').checked;
+            
+            filters.causationTypes.threshold = document.getElementById('filter-threshold').checked;
+            filters.causationTypes.correlation = document.getElementById('filter-correlation').checked;
+            filters.causationTypes.direct = document.getElementById('filter-direct').checked;
+            filters.causationTypes.temporal = document.getElementById('filter-temporal').checked;
+            
+            // Filter nodes by component
+            filteredNodes = allNodes.filter(node => {
+                const comp = node.component || 'unknown';
+                return filters.components[comp] || filters.components['system'];
+            });
+            
+            // Filter links by causation type and ensure both nodes are visible
+            const visibleNodeIds = new Set(filteredNodes.map(n => n.id));
+            filteredLinks = allLinks.filter(link => {
+                const linkType = link.type || 'unknown';
+                const hasSource = visibleNodeIds.has(link.source);
+                const hasTarget = visibleNodeIds.has(link.target);
+                return filters.causationTypes[linkType] && hasSource && hasTarget;
+            });
+            
+            // Rebuild link source/target references - keep as IDs for simulation
+            const nodeMap = new Map(filteredNodes.map(n => [n.id, n]));
+            filteredLinks = filteredLinks.map(link => {
+                const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+                const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+                return {
+                    ...link,
+                    source: sourceId,
+                    target: targetId
+                };
+            }).filter(link => nodeMap.has(link.source) && nodeMap.has(link.target));
+            
+            renderGraph();
+        }
+        
+        function resetFilters() {
+            document.querySelectorAll('.filter-panel input[type="checkbox"]').forEach(cb => cb.checked = true);
+            applyFilters();
+        }
+        
+        function toggleLabels() {
+            filters.showLabels = document.getElementById('show-labels').checked;
+            if (svg) {
+                svg.selectAll('.node text').style('display', filters.showLabels ? 'block' : 'none');
+            }
+        }
+        
+        function toggleLinks() {
+            filters.showLinks = document.getElementById('show-links').checked;
+            if (svg) {
+                svg.selectAll('.link').style('display', filters.showLinks ? 'block' : 'none');
+            }
+        }
+        
+        function renderGraph() {
+            d3.select('#graph').selectAll('*').remove();
+            
+            const width = document.getElementById('graph').clientWidth;
+            const height = 600;
+            
+            svg = d3.select('#graph')
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height);
+            
+            // Create transform group for pan/zoom/rotate
+            graphGroup = svg.append('g')
+                .attr('class', 'graph-group');
+            
+            updateTransform();
+            
+            const links = filteredLinks.map(d => ({...d}));
+            const nodes = filteredNodes.map(d => ({...d}));
+            
+            // Create link elements
+            const link = graphGroup.append('g')
+                .attr('class', 'links')
+                .selectAll('line')
+                .data(links)
+                .enter().append('line')
+                .attr('class', 'link')
+                .attr('stroke', d => getLinkColor(d.type || d.causation_type || 'unknown'))
+                .attr('stroke-width', d => Math.max(2, (d.strength || 0.5) * 5))
+                .attr('stroke-opacity', d => Math.min(0.8, 0.4 + (d.strength || 0.5)))
+                .style('display', filters.showLinks ? 'block' : 'none');
+            
+            // Create node elements
+            const node = graphGroup.append('g')
+                .attr('class', 'nodes')
+                .selectAll('g')
+                .data(nodes)
+                .enter().append('g')
+                .attr('class', 'node')
+                .on('click', (event, d) => selectNode(d));
+            
+            node.append('circle')
+                .attr('r', d => 10 + (d.type ? 2 : 0))  // Larger nodes
+                .attr('fill', d => getComponentColor(d.component))
+                .attr('stroke', '#FFFFFF')
+                .attr('stroke-width', 3);
+            
+            node.append('text')
+                .text(d => {
+                    const comp = d.component || 'unknown';
+                    return comp.substring(0, 12).toUpperCase();
+                })
+                .attr('dx', 15)
+                .attr('dy', 5)
+                .attr('font-size', '11px')
+                .attr('font-weight', 'bold')
+                .attr('fill', '#FFFFFF')
+                .attr('stroke', '#000000')
+                .attr('stroke-width', '0.5px')
+                .style('display', filters.showLabels ? 'block' : 'none');
+            
+            // Simulation - D3 force simulation will convert IDs to node references
+            simulation = d3.forceSimulation(nodes)
+                .force('link', d3.forceLink(links).id(d => d.id).distance(100))
+                .force('charge', d3.forceManyBody().strength(-300))
+                .force('center', d3.forceCenter(width / 2, height / 2));
+            
+            simulation.on('tick', () => {
+                link
+                    .attr('x1', d => d.source.x || 0)
+                    .attr('y1', d => d.source.y || 0)
+                    .attr('x2', d => d.target.x || 0)
+                    .attr('y2', d => d.target.y || 0);
+                
+                node
+                    .attr('transform', d => `translate(${d.x || 0},${d.y || 0})`);
+            });
+        }
+        
+        // Navigation functions
+        function updateTransform() {
+            if (!graphGroup) return;
+            const centerX = document.getElementById('graph').clientWidth / 2;
+            const centerY = 300;
+            
+            graphGroup.attr('transform', `
+                translate(${centerX + panX}, ${centerY + panY})
+                scale(${zoomLevel})
+                rotate(${rotation})
+                translate(${-centerX}, ${-centerY})
+            `);
+            
+            // Update zoom level display
+            const zoomDisplay = document.getElementById('zoomLevel');
+            if (zoomDisplay) {
+                const percent = Math.round(zoomLevel * 100);
+                zoomDisplay.textContent = `${percent}%`;
+            }
+        }
+        
+        function panGraph(direction) {
+            const increment = 30;
+            switch(direction) {
+                case 'up': panY += increment; break;
+                case 'down': panY -= increment; break;
+                case 'left': panX += increment; break;
+                case 'right': panX -= increment; break;
+            }
+            updateTransform();
+        }
+        
+        function zoomGraph(direction) {
+            // Logarithmic zoom for smooth transitions through layers
+            // Each step feels like moving through a layer, not jumping
+            const currentZoom = zoomLevel;
+            let newZoom;
+            
+            if (direction === 'in') {
+                // Zooming in: exponential growth that slows near max
+                // Base increment scales with current zoom level
+                const baseIncrement = 0.05; // Small base increment
+                const scaleFactor = Math.max(0.5, 1 - (currentZoom / 5)); // Slows as we approach max
+                const increment = baseIncrement * scaleFactor;
+                newZoom = Math.min(5, currentZoom * (1 + increment));
+            } else {
+                // Zooming out: logarithmic decrease that slows near min
+                // Makes it feel like you're peeling back layers gradually
+                const baseDecrement = 0.08; // Small base decrement
+                const scaleFactor = Math.max(0.3, currentZoom / 0.5); // Slows as we approach min
+                const decrement = baseDecrement / scaleFactor;
+                newZoom = Math.max(0.01, currentZoom / (1 + decrement));
+                
+                // Additional soft cap: if already very zoomed out, slow even more
+                if (currentZoom < 0.1) {
+                    newZoom = Math.max(0.01, currentZoom * 0.9); // 10% reduction when very far out
+                }
+            }
+            
+            zoomLevel = newZoom;
+            updateTransform();
+        }
+        
+        // Fine-grained zoom for precise control
+        function zoomFine(direction) {
+            const fineIncrement = direction === 'in' ? 1.05 : 0.95; // 5% per step
+            zoomLevel = Math.max(0.01, Math.min(5, zoomLevel * fineIncrement));
+            updateTransform();
+        }
+        
+        function zoomToFit() {
+            if (!simulation || filteredNodes.length === 0) return;
+            
+            // Get bounding box of all nodes
+            const xs = filteredNodes.map(n => n.x || 0);
+            const ys = filteredNodes.map(n => n.y || 0);
+            const minX = Math.min(...xs);
+            const maxX = Math.max(...xs);
+            const minY = Math.min(...ys);
+            const maxY = Math.max(...ys);
+            
+            const width = maxX - minX || 1;
+            const height = maxY - minY || 1;
+            const graphWidth = document.getElementById('graph').clientWidth;
+            const graphHeight = 600;
+            
+            // Calculate zoom to fit with padding
+            const padding = 50;
+            const scaleX = (graphWidth - padding * 2) / width;
+            const scaleY = (graphHeight - padding * 2) / height;
+            zoomLevel = Math.min(scaleX, scaleY, 5); // Don't zoom in more than 5x
+            
+            // Center the view
+            const centerX = (minX + maxX) / 2;
+            const centerY = (minY + maxY) / 2;
+            panX = (graphWidth / 2) - (centerX * zoomLevel);
+            panY = (graphHeight / 2) - (centerY * zoomLevel);
+            
+            updateTransform();
+        }
+        
+        function rotateGraph(direction) {
+            const increment = 15;
+            if (direction === 'cw') {
+                rotation = (rotation + increment) % 360;
+            } else {
+                rotation = (rotation - increment + 360) % 360;
+            }
+            updateTransform();
+        }
+        
+        function resetView() {
+            panX = 0;
+            panY = 0;
+            zoomLevel = 1;
+            rotation = 0;
+            updateTransform();
+        }
+        
+        function getComponentColor(component) {
+            const colors = {
+                'reality_sim': '#00FFFF',      // Bright Cyan
+                'explorer': '#FFFF00',         // Bright Yellow
+                'djinn_kernel': '#FF00FF',     // Bright Magenta
+                'breath': '#00FF00',           // Bright Green
+                'system': '#FFFFFF',           // White
+                'reality_simulator': '#00FFFF',
+                'utm_kernel': '#FF00FF'
+            };
+            return colors[component] || '#FF6600'; // Bright Orange for unknown
+        }
+        
+        function getLinkColor(linkType) {
+            if (!linkType) return '#0aa';
+            const linkColors = {
+                'threshold': '#ff00ff',        // Magenta for thresholds
+                'correlation': '#00ffff',      // Cyan for correlations
+                'direct': '#00ff00',           // Green for direct
+                'temporal': '#ffff00',         // Yellow for temporal
+                'unknown': '#ff6600'           // Orange for unknown
+            };
+            return linkColors[linkType.toLowerCase()] || linkColors['unknown'];
+        }
+        
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT') return; // Don't interfere with typing
+            
+            switch(e.key) {
+                case 'ArrowUp': e.preventDefault(); panGraph('up'); break;
+                case 'ArrowDown': e.preventDefault(); panGraph('down'); break;
+                case 'ArrowLeft': e.preventDefault(); panGraph('left'); break;
+                case 'ArrowRight': e.preventDefault(); panGraph('right'); break;
+                case '+':
+                case '=': 
+                    if (e.shiftKey) {
+                        e.preventDefault(); zoomFine('in'); 
+                    } else {
+                        e.preventDefault(); zoomGraph('in'); 
+                    }
+                    break;
+                case '-':
+                case '_': 
+                    if (e.shiftKey) {
+                        e.preventDefault(); zoomFine('out'); 
+                    } else {
+                        e.preventDefault(); zoomGraph('out'); 
+                    }
+                    break;
+                case 'r':
+                case 'R': e.preventDefault(); rotateGraph('cw'); break;
+                case 'q':
+                case 'Q': e.preventDefault(); rotateGraph('ccw'); break;
+                case 'Home':
+                case '0': e.preventDefault(); resetView(); break;
+                case 'f':
+                case 'F': e.preventDefault(); zoomToFit(); break;
+            }
+        });
+        
+        
+        function selectNode(node) {
+            selectedNode = node;
+            updateEventInfo(node);
+            exploreBackwards(node.id);
+            exploreForwards(node.id);
+        }
+        
+        function updateEventInfo(node) {
+            d3.json(`/api/events/${node.id}`).then(data => {
+                const info = document.getElementById('eventInfo');
+                const component = data.event.component || 'unknown';
+                const eventType = data.event.event_type || 'unknown';
+                const timestamp = new Date(data.event.timestamp * 1000).toLocaleString();
+                info.innerHTML = `
+                    <div class="event-item">
+                        <div style="margin-bottom: 10px;">
+                            <span class="component">${component.toUpperCase()}</span> 
+                            <span style="color: #0f0;"> → </span> 
+                            <span class="event-type">${eventType}</span>
+                        </div>
+                        <div style="margin: 8px 0;">
+                            <span class="metric">Timestamp:</span> 
+                            <span class="timestamp">${timestamp}</span>
+                        </div>
+                        <div style="margin: 8px 0;">
+                            <span class="metric">Data:</span><br>
+                            <pre>${JSON.stringify(data.event.data, null, 2)}</pre>
+                        </div>
+                        <div style="margin: 8px 0;">
+                            <span class="metric">Caused by:</span> <span class="count-value">${data.caused_by}</span> events
+                            <span style="margin-left: 20px;" class="metric">Caused:</span> <span class="count-value">${data.caused}</span> events
+                        </div>
+                    </div>
+                `;
+            }).catch(err => {
+                console.error('Error fetching event info:', err);
+                document.getElementById('eventInfo').innerHTML = `<div style="color: #f00; padding: 10px; border: 1px solid #f00;">Error loading event: ${err.message}</div>`;
+            });
+        }
+        
+        function exploreBackwards(eventId) {
+            d3.json(`/api/events/${eventId}/backwards?depth=5`).then(trail => {
+                const trailDiv = document.getElementById('backwardsTrail');
+                if (!trail || trail.length === 0) {
+                    trailDiv.innerHTML = '<div style="color: #888; padding: 10px;">No causation trail found (root cause)</div>';
+                    return;
+                }
+                trailDiv.innerHTML = trail.map((item, idx) => {
+                    const component = item.event.component || 'unknown';
+                    return `
+                        <div class="event-item causation-trail" style="margin-left: ${item.depth * 20}px;">
+                            <div style="margin-bottom: 8px;">
+                                <span class="depth-indicator">[Depth ${item.depth}]</span>
+                                <span class="component">${component.toUpperCase()}</span>
+                                <span style="color: #0f0;"> → </span>
+                                <span class="event-type">${item.event.event_type}</span>
+                            </div>
+                            <pre>${JSON.stringify(item.event.data, null, 2)}</pre>
+                        </div>
+                    `;
+                }).join('');
+            }).catch(err => {
+                console.error('Error exploring backwards:', err);
+                document.getElementById('backwardsTrail').innerHTML = `<div style="color: #f00; padding: 10px; border: 1px solid #f00;">Error: ${err.message}</div>`;
+            });
+        }
+        
+        function exploreForwards(eventId) {
+            d3.json(`/api/events/${eventId}/forwards?depth=5`).then(trail => {
+                const trailDiv = document.getElementById('forwardsTrail');
+                if (!trail || trail.length === 0) {
+                    trailDiv.innerHTML = '<div style="color: #888; padding: 10px;">No effects found (leaf event)</div>';
+                    return;
+                }
+                trailDiv.innerHTML = trail.map((item, idx) => {
+                    const component = item.event.component || 'unknown';
+                    return `
+                        <div class="event-item causation-trail" style="margin-left: ${item.depth * 20}px;">
+                            <div style="margin-bottom: 8px;">
+                                <span class="depth-indicator">[Effect ${item.depth}]</span>
+                                <span class="component">${component.toUpperCase()}</span>
+                                <span style="color: #0f0;"> → </span>
+                                <span class="event-type">${item.event.event_type}</span>
+                            </div>
+                            <pre>${JSON.stringify(item.event.data, null, 2)}</pre>
+                        </div>
+                    `;
+                }).join('');
+            }).catch(err => {
+                console.error('Error exploring forwards:', err);
+                document.getElementById('forwardsTrail').innerHTML = `<div style="color: #f00; padding: 10px; border: 1px solid #f00;">Error: ${err.message}</div>`;
+            });
+        }
+        
+        function searchEvents() {
+            const query = document.getElementById('searchInput').value;
+            if (!query || query.trim() === '') {
+                alert('Please enter a search query');
+                return;
+            }
+            d3.json(`/api/events/search?q=${query}`).then(results => {
+                const info = document.getElementById('eventInfo');
+                if (!results || results.length === 0) {
+                    info.innerHTML = `<div style="color: #FF6600; padding: 15px; border: 3px solid #FF6600; text-align: center; font-size: 1.2em;">No events found matching "${query}"</div>`;
+                    return;
+                }
+                    info.innerHTML = `
+                        <div style="margin-bottom: 15px; padding: 10px; background: #111; border: 1px solid #0ff;">
+                            <strong>Search Results:</strong> <span class="count-value">${results.length}</span> events found
+                        </div>
+                        ${results.slice(0, 10).map(event => {
+                            const component = event.component || 'unknown';
+                            return `
+                                <div class="event-item" onclick="selectEvent('${event.event_id}')" style="cursor: pointer;">
+                                    <div style="margin-bottom: 8px;">
+                                        <span class="component">${component.toUpperCase()}</span>
+                                        <span style="color: #0f0;"> → </span>
+                                        <span class="event-type">${event.event_type}</span>
+                                    </div>
+                                    <pre>${JSON.stringify(event.data, null, 2)}</pre>
+                                </div>
+                            `;
+                        }).join('')}
+                        ${results.length > 10 ? `<div style="color: #888; padding: 10px; text-align: center;">... and ${results.length - 10} more results</div>` : ''}
+                    `;
+            }).catch(err => {
+                console.error('Error searching events:', err);
+                document.getElementById('eventInfo').innerHTML = `<div style="color: #FF0000; padding: 10px; border: 3px solid #FF0000;">Search error: ${err.message}</div>`;
+            });
+        }
+        
+        function selectEvent(eventId) {
+            d3.json(`/api/events/${eventId}`).then(data => {
+                selectNode({id: eventId, component: data.event.component, event_type: data.event.event_type});
+            });
+        }
+        
+        // Live mode functions
+        function toggleLiveMode() {
+            liveMode = document.getElementById('liveModeToggle').checked;
+            const statusDiv = document.getElementById('liveStatus');
+            
+            if (liveMode) {
+                statusDiv.innerHTML = '<span style="color: #0f0;">● LIVE</span> <span style="color: #0aa; font-size: 0.85em;">(Updating...)</span>';
+                statusDiv.style.color = '#0f0';
+                startLiveMode();
+            } else {
+                statusDiv.innerHTML = '● Historical Mode';
+                statusDiv.style.color = '#0aa';
+                stopLiveMode();
+            }
+        }
+        
+        function startLiveMode() {
+            // Check live status every 2 seconds
+            if (liveModeInterval) clearInterval(liveModeInterval);
+            liveModeInterval = setInterval(checkLiveStatus, 2000);
+            
+            // Initial check
+            checkLiveStatus();
+        }
+        
+        function stopLiveMode() {
+            if (liveModeInterval) {
+                clearInterval(liveModeInterval);
+                liveModeInterval = null;
+            }
+        }
+        
+        function checkLiveStatus() {
+            return fetch('/api/live/status')
+                .then(response => response.json())
+                .then(data => {
+                    const statusDiv = document.getElementById('liveStatus');
+                    
+                    if (data.live) {
+                        statusDiv.innerHTML = `<span style="color: #0f0;">● LIVE</span> <span style="color: #0aa; font-size: 0.85em;">(${data.event_count} events)</span>`;
+                        
+                        // Check for new events if live mode is enabled
+                        if (liveMode) {
+                            fetchNewEvents();
+                        }
+                    } else {
+                        statusDiv.innerHTML = '● Historical Mode';
+                        statusDiv.style.color = '#0aa';
+                    }
+                    
+                    return data; // Return data for promise chaining
+                })
+                .catch(err => {
+                    console.error('Error checking live status:', err);
+                    return {live: false}; // Return default on error
+                });
+        }
+        
+        function fetchNewEvents() {
+            fetch(`/api/live/events?since=${lastEventTimestamp}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.events && data.events.length > 0) {
+                        // New events available - reload graph
+                        lastEventTimestamp = data.latest_timestamp || lastEventTimestamp;
+                        
+                        // Reload graph with new events
+                        loadGraph();
+                        
+                        // Also update stats
+                        updateStats();
+                    }
+                })
+                .catch(err => {
+                    console.error('Error fetching new events:', err);
+                });
+        }
+        
+        function updateStats() {
+            fetch('/api/stats')
+                .then(response => response.json())
+                .then(stats => {
+                    // Could update a stats display here
+                    console.log(`Live: ${stats.total_events} events, ${stats.total_links} links`);
+                })
+                .catch(err => console.error('Error updating stats:', err));
+        }
+        
+        // Load graph on page load
+        loadGraph();
+        
+        // Check initial live status and auto-enable live mode if system is running
+        checkLiveStatus().then(data => {
+            if (data && data.live) {
+                // System is live - automatically enable live mode
+                document.getElementById('liveModeToggle').checked = true;
+                toggleLiveMode();
+            }
+        });
+    </script>
+</body>
+</html>
+

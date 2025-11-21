@@ -13,6 +13,12 @@ psutil>=5.8.0
 # Visualization (RECOMMENDED)
 matplotlib>=3.5.0   # For visualization plots and composite image generation
 
+# Web UI (RECOMMENDED)
+flask>=2.0.0        # For Causation Explorer web interface
+
+# Explorer (Windows only)
+pywin32>=306; sys_platform == 'win32'  # For Explorer process isolation (Windows only)
+
 # Optional: Enhanced Features
 # torch>=2.0.0        # For advanced neural computations
 # qutip>=4.7.0        # For quantum mechanics simulation

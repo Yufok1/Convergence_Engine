@@ -14,9 +14,30 @@ import time
 import signal
 import argparse
 import json
+import logging
 from pathlib import Path
 from typing import Dict, Any, Optional, List, Tuple
 import numpy as np
+
+# Setup logging - try to use centralized config, fallback to basic setup
+try:
+    # Try importing centralized logging config
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from logging_config import setup_logging, get_logger
+    
+    # Setup logging if not already configured
+    if not logging.getLogger().handlers:
+        setup_logging(level=logging.INFO, debug=False, console=False)
+    
+    logger = get_logger(__name__)
+except ImportError:
+    # Fallback: basic logging setup if centralized config not available
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s | %(levelname)-8s | %(name)s | %(message)s',
+        datefmt='%H:%M:%S'
+    )
+    logger = logging.getLogger(__name__)
 
 # Handle imports for both module and script execution
 try:
@@ -669,25 +690,25 @@ class RealitySimulator:
             # Resolve to absolute path
             if not os.path.isabs(config_path):
                 config_path = os.path.abspath(config_path)
-            print(f"[DEBUG] Attempting to load config from: {config_path}")
-            print(f"[DEBUG] Config file exists: {os.path.exists(config_path)}")
+            logger.debug(f"Attempting to load config from: {config_path}")
+            logger.debug(f"Config file exists: {os.path.exists(config_path)}")
             try:
                 if not os.path.exists(config_path):
-                    print(f"Config file {config_path} not found, using defaults")
+                    logger.warning(f"Config file {config_path} not found, using defaults")
                 else:
                     with open(config_path, 'r') as f:
                         user_config = json.load(f)
-                    print(f"[DEBUG] Loaded config with keys: {list(user_config.keys())}")
+                    logger.debug(f"Loaded config with keys: {list(user_config.keys())}")
                     if 'lattice' in user_config:
-                        print(f"[DEBUG] Lattice config: {user_config['lattice']}")
+                        logger.debug(f"Lattice config: {user_config['lattice']}")
                     # Merge with defaults
                     self._merge_configs(default_config, user_config)
-                    print(f"[SUCCESS] Loaded configuration from {config_path}")
-                    print(f"[DEBUG] Final lattice particles: {default_config.get('lattice', {}).get('particles', 'NOT SET')}")
+                    logger.info(f"Loaded configuration from {config_path}")
+                    logger.debug(f"Final lattice particles: {default_config.get('lattice', {}).get('particles', 'NOT SET')}")
             except FileNotFoundError:
-                print(f"Config file {config_path} not found, using defaults")
+                logger.warning(f"Config file {config_path} not found, using defaults")
             except json.JSONDecodeError as e:
-                print(f"Invalid JSON in {config_path}: {e}, using defaults")
+                logger.error(f"Invalid JSON in {config_path}: {e}, using defaults", exc_info=True)
 
         return default_config
 
@@ -762,13 +783,45 @@ class RealitySimulator:
                 network.set_new_edge_rate(2.0)  # Increased for faster connection growth
             self.components['network'] = network
 
-            # 6. Agency Router
+            # 6. Agency Router (now system-driven with Event Bus integration)
             print(ColorScheme.log_component("agency", "Setting up agency system..."))
+            # Get system references for agency router
+            explorer_ref = None  # Will be set if Explorer is integrated
+            utm_kernel_ref = None  # Will be set if Djinn Kernel is integrated
+            vp_monitor_ref = None  # Will be set if Djinn Kernel is integrated
+            network_ref = self.components.get('network')
+            breath_engine_ref = None  # Will be set if Explorer is integrated
+            
+            # Get Event Bus (from UTM Kernel if available, or create new)
+            event_bus_ref = None
+            if utm_kernel_ref and hasattr(utm_kernel_ref, 'event_bus'):
+                event_bus_ref = utm_kernel_ref.event_bus
+            elif utm_kernel_ref and hasattr(utm_kernel_ref, 'akashic_ledger'):
+                # UTM Kernel might have event bus in its initialization
+                try:
+                    from kernel.event_driven_coordination import DjinnEventBus
+                    event_bus_ref = DjinnEventBus()
+                    # Start async processing
+                    if hasattr(event_bus_ref.event_processor, 'start_processing'):
+                        event_bus_ref.event_processor.start_processing()
+                except ImportError:
+                    event_bus_ref = None
+            
             agency_router = create_agency_router(
                 initial_mode=AgencyMode[self.config['agency']['initial_mode'].upper()],
-                ai_model="none"
+                ai_model="none",
+                explorer_controller=explorer_ref,
+                utm_kernel=utm_kernel_ref,
+                vp_monitor=vp_monitor_ref,
+                network=network_ref,
+                breath_engine=breath_engine_ref,
+                event_bus=event_bus_ref  # NEW: Wire Event Bus
             )
             self.components['agency'] = agency_router
+            
+            # Wire agency router into network (for connection decisions)
+            if network_ref:
+                network_ref.agency_router = agency_router
 
             # 7. Reality Renderer
             print(ColorScheme.log_component("renderer", "Initializing reality renderer..."))
@@ -858,7 +911,7 @@ class RealitySimulator:
 
                 # Consciousness analysis (periodic)
                 if frame_count % self.config['consciousness']['analysis_interval'] == 0:
-                    print(f"[DEBUG] Consciousness analysis triggered at frame {frame_count} (every {self.config['consciousness']['analysis_interval']} frames)")
+                    logger.debug(f"Consciousness analysis triggered at frame {frame_count} (every {self.config['consciousness']['analysis_interval']} frames)")
                     self._perform_consciousness_analysis()
                     consciousness_checks += 1
 
@@ -939,9 +992,6 @@ class RealitySimulator:
                     else:  # Unix
                         os.replace(temp_file, shared_state_file)
                     
-                    # Process conversation messages periodically (every 10 frames to avoid overhead)
-                    if frame_count % 10 == 0:
-                        
                 except Exception as e:
                     # Don't crash if file write fails
                     if frame_count % 100 == 0:  # Only log occasionally
@@ -1051,13 +1101,13 @@ class RealitySimulator:
         if 'evolution' in self.components:
             evolution = self.components['evolution']
             gen_before = evolution.generation
-            print(f"[DEBUG] About to call evolve_generation() on generation {gen_before}")
+            logger.debug(f"About to call evolve_generation() on generation {gen_before}")
             evolution.evolve_generation()
             gen_after = evolution.generation
-            print(f"[DEBUG] After evolve_generation(): {gen_before} -> {gen_after}")
+            logger.debug(f"After evolve_generation(): {gen_before} -> {gen_after}")
             # Debug: Log generation progression
             if gen_after != gen_before + 1:
-                print(f"[DEBUG] Generation jump: {gen_before} -> {gen_after} (expected {gen_before + 1})")
+                logger.debug(f"Generation jump: {gen_before} -> {gen_after} (expected {gen_before + 1})")
 
         # Update network
         if 'network' in self.components:
@@ -1190,7 +1240,7 @@ class RealitySimulator:
                 self._gen_debug_count = 0
             self._gen_debug_count += 1
             if self._gen_debug_count == 1 or self._gen_debug_count % 100 == 0:
-                print(f"[DEBUG] Reading evolution generation: {gen} (type: {type(gen)}, hasattr: {hasattr(evolution, 'generation')})")
+                logger.debug(f"Reading evolution generation: {gen} (type: {type(gen)}, hasattr: {hasattr(evolution, 'generation')})")
             
             data['evolution'] = {
                 'generation': int(gen),  # Ensure it's an integer, read dynamically from component
@@ -1242,11 +1292,11 @@ class RealitySimulator:
         # Consciousness
         consciousness = self.components.get('consciousness')
         if consciousness:
-            print(f"[DEBUG] Consciousness metrics_history length: {len(consciousness.metrics_history)}")
+            logger.debug(f"Consciousness metrics_history length: {len(consciousness.metrics_history)}")
             last_analysis = consciousness.metrics_history[-1] if consciousness.metrics_history else {}
-            print(f"[DEBUG] Last analysis keys: {list(last_analysis.keys()) if last_analysis else 'None'}")
+            logger.debug(f"Last analysis keys: {list(last_analysis.keys()) if last_analysis else 'None'}")
             if last_analysis and 'overall_score' in last_analysis:
-                print(f"[DEBUG] Last consciousness score: {last_analysis['overall_score']:.3f}")
+                logger.debug(f"Last consciousness score: {last_analysis['overall_score']:.3f}")
             # Convert ConsciousnessMetrics object to dict if present
             if 'metrics' in last_analysis and hasattr(last_analysis['metrics'], '__dict__'):
                 metrics_obj = last_analysis['metrics']
@@ -1410,22 +1460,20 @@ def _read_shared_simulation_state() -> Optional[Dict[str, Any]]:
 
                     return data
                 else:
-                    print(f"[DEBUG] Shared state is stale (age: {age:.1f}s, threshold: 60.0s)")
+                    logger.debug(f"Shared state is stale (age: {age:.1f}s, threshold: 60.0s)")
                     return None
         else:
-            print(f"[DEBUG] Shared state file not found at: {shared_state_file}")
+            logger.debug(f"Shared state file not found at: {shared_state_file}")
             # List what's in the data directory for debugging
             data_dir = os.path.join(project_root, "data")
             if os.path.exists(data_dir):
                 files = os.listdir(data_dir)
-                print(f"[DEBUG] Files in data directory: {files}")
+                logger.debug(f"Files in data directory: {files}")
             else:
-                print(f"[DEBUG] Data directory does not exist: {data_dir}")
+                logger.debug(f"Data directory does not exist: {data_dir}")
         return None
     except Exception as e:
-        print(f"[DEBUG] Error reading shared state: {e}")
-        import traceback
-        traceback.print_exc()
+        logger.debug(f"Error reading shared state: {e}", exc_info=True)
         return None
 
 
@@ -1452,11 +1500,11 @@ def _read_full_shared_state() -> Optional[Dict[str, Any]]:
                         time.sleep(0.1)  # Brief delay before retry
                         continue
                     else:
-                        print(f"[DEBUG] Error reading shared state after {max_retries} attempts: {e}")
+                        logger.debug(f"Error reading shared state after {max_retries} attempts: {e}", exc_info=True)
                         return None
         return None
     except Exception as e:
-        print(f"[DEBUG] Error reading full shared state: {e}")
+        logger.debug(f"Error reading full shared state: {e}", exc_info=True)
         return None
 
 
@@ -1554,8 +1602,9 @@ def run_consciousness_test(simulator: RealitySimulator, generations: int = 15, n
 
     Returns final values for statistical analysis across multiple independent runs.
     """
-    # Disable language learning if requested
+    # Disable language learning if requested (language learning removed)
     if not language_enabled:
+        pass  # Language learning feature removed
 
     try:
         # Reset simulator
@@ -1574,8 +1623,12 @@ def run_consciousness_test(simulator: RealitySimulator, generations: int = 15, n
 
             # Agency interpretation removed (consciousness feature eliminated)
             network_obj = simulator.components.get('network')
-
-
+            
+            # Extract metrics from simulation data
+            consciousness = sim_data.get('consciousness', {})
+            phi_score = consciousness.get('phi', 0.0)
+            connections = len(network_obj.graph.edges()) if hasattr(network_obj, 'graph') else 0
+            metrics = sim_data.get('network_metrics', {})
 
             phi_scores.append(phi_score)
             connections_list.append(connections)
@@ -1597,159 +1650,18 @@ def run_consciousness_test(simulator: RealitySimulator, generations: int = 15, n
             'linguistic_integration': final_metrics.get('linguistic_integration', 0.0)
         }
 
-    finally:
-
-    print("[SUCCESS] [TEST 2/2] Completed without language learning")
-    print()
-
-    # Analysis and comparison
-    print("[ANALYSIS] Comparing consciousness with vs without language learning:")
-    print()
-
-    # Show detailed generation-by-generation comparison for first 15 generations
-    print("[DETAILED COMPARISON] First 15 Generations:")
-    print("   Gen | Phi (+Lang/-NoLang) | Connections | Growth Rate | Clustering | Path Length | Linguistic %")
-    print("   ----|---------------------|-------------|-------------|------------|-------------|-------------")
-
-    for i in range(min(15, len(phi_with_language), len(phi_without_language))):
-        phi_diff = phi_with_language[i] - phi_without_language[i]
-        phi_marker = "+" if phi_diff > 0.01 else "~" if abs(phi_diff) < 0.01 else "-"
-
-        conn_diff = connections_with_language[i] - connections_without_language[i]
-        conn_marker = "+" if conn_diff > 0 else "~" if conn_diff == 0 else "-"
-
-        growth_diff = language_metrics_with[i].get('connection_growth', 0) - language_metrics_without[i].get('connection_growth', 0)
-        growth_marker = "+" if growth_diff > 0.01 else "~" if abs(growth_diff) < 0.01 else "-"
-
-        cluster_diff = language_metrics_with[i].get('clustering_coeff', 0) - language_metrics_without[i].get('clustering_coeff', 0)
-        cluster_marker = "+" if cluster_diff > 0.01 else "~" if abs(cluster_diff) < 0.01 else "-"
-
-        path_diff = language_metrics_without[i].get('avg_path_length', float('inf')) - language_metrics_with[i].get('avg_path_length', float('inf'))
-        path_marker = "+" if path_diff > 0.1 else "~" if abs(path_diff) < 0.1 else "-"
-
-        ling_int = language_metrics_with[i].get('linguistic_integration', 0) * 100
-
-        print(f"   {i:2d}  | {phi_marker}{abs(phi_diff):.3f}           | {conn_marker}{abs(conn_diff):2d}         | {growth_marker}{abs(growth_diff):.2f}       | {cluster_marker}{abs(cluster_diff):.2f}     | {path_marker}{path_diff:.1f}       | {ling_int:5.1f}%")
-
-    print()
-
-    # Show final averages for all metrics
-    print("[FINAL METRICS AVERAGES] Across all generations:")
-    print("   Metric                | With Language | Without Language | Advantage | Significance")
-    print("   ----------------------|---------------|------------------|-----------|-------------")
-
-    # Phi comparison
-    avg_phi_with = sum(phi_with_language) / len(phi_with_language)
-    avg_phi_without = sum(phi_without_language) / len(phi_without_language)
-    phi_adv = avg_phi_with - avg_phi_without
-    print(f"   Phi (consciousness)   | {avg_phi_with:.4f}       | {avg_phi_without:.4f}        | {phi_adv:+.4f}  | Ceiling effect")
-
-    # Connection comparison
-    avg_conn_with = sum(connections_with_language) / len(connections_with_language)
-    avg_conn_without = sum(connections_without_language) / len(connections_without_language)
-    conn_adv = avg_conn_with - avg_conn_without
-    print(f"   Total connections     | {avg_conn_with:.1f}         | {avg_conn_without:.1f}          | {conn_adv:+.1f}     | WORKING")
-
-    # Growth rate comparison
-    growth_with = [m.get('connection_growth', 0) for m in language_metrics_with]
-    growth_without = [m.get('connection_growth', 0) for m in language_metrics_without]
-    avg_growth_with = sum(growth_with) / len(growth_with)
-    avg_growth_without = sum(growth_without) / len(growth_without)
-    growth_adv = avg_growth_with - avg_growth_without
-    print(f"   Growth rate (conn/gen)| {avg_growth_with:.2f}         | {avg_growth_without:.2f}          | {growth_adv:+.2f}     | WORKING")
-
-    # Clustering comparison
-    cluster_with = [m.get('clustering_coeff', 0) for m in language_metrics_with]
-    cluster_without = [m.get('clustering_coeff', 0) for m in language_metrics_without]
-    avg_cluster_with = sum(cluster_with) / len(cluster_with)
-    avg_cluster_without = sum(cluster_without) / len(cluster_without)
-    cluster_adv = avg_cluster_with - avg_cluster_without
-    print(f"   Clustering coeff      | {avg_cluster_with:.3f}       | {avg_cluster_without:.3f}        | {cluster_adv:+.3f}  | WORKING")
-
-    # Path length comparison (lower is better, so negative advantage means better)
-    path_with = [m.get('avg_path_length', float('inf')) for m in language_metrics_with if m.get('avg_path_length', float('inf')) != float('inf')]
-    path_without = [m.get('avg_path_length', float('inf')) for m in language_metrics_without if m.get('avg_path_length', float('inf')) != float('inf')]
-    if path_with and path_without:
-        avg_path_with = sum(path_with) / len(path_with)
-        avg_path_without = sum(path_without) / len(path_without)
-        path_adv = avg_path_without - avg_path_with  # Positive means language improves efficiency
-        print(f"   Avg path length      | {avg_path_with:.2f}         | {avg_path_without:.2f}          | {path_adv:+.2f}     | WORKING")
-    else:
-        print(f"   Avg path length      | N/A           | N/A            | N/A       | Disconnected")
-
-    # Linguistic integration
-    ling_with = [m.get('linguistic_integration', 0) * 100 for m in language_metrics_with]
-    avg_ling_with = sum(ling_with) / len(ling_with)
-    print(f"   Linguistic integration| {avg_ling_with:.1f}%         | 0.0%            | {avg_ling_with:.1f}%     | WORKING")
-
-    print()
-
-    # Calculate averages
-    avg_phi_with = sum(phi_with_language) / len(phi_with_language)
-    avg_phi_without = sum(phi_without_language) / len(phi_without_language)
-    phi_difference = avg_phi_with - avg_phi_without
-
-    avg_conn_with = sum(connections_with_language) / len(connections_with_language)
-    avg_conn_without = sum(connections_without_language) / len(connections_without_language)
-    conn_difference = avg_conn_with - avg_conn_without
-
-    print(f"   Average Phi with language:    {avg_phi_with:.4f}")
-    print(f"   Average Phi without language: {avg_phi_without:.4f}")
-    print(f"   Difference:                  {phi_difference:.4f}")
-    print()
-    print(f"   Average connections with language:    {avg_conn_with:.1f}")
-    print(f"   Average connections without language: {avg_conn_without:.1f}")
-    print(f"   Difference:                           {conn_difference:.1f}")
-    print()
-
-    # Statistical significance (simple t-test approximation)
-    phi_variance = sum((x - avg_phi_with)**2 for x in phi_with_language) / len(phi_with_language)
-    phi_std_diff = (phi_variance / len(phi_with_language))**0.5
-    phi_sigma_diff = phi_difference / phi_std_diff if phi_std_diff > 0 else 0
-
-    print("[STATISTICAL ANALYSIS]:")
-    print(f"   Statistical significance: {phi_sigma_diff:.2f} sigma")
-    print("   (Higher values = more significant difference)")
-    print()
-
-    # Create simple ASCII visualization
-    print("[VISUALIZATION] Consciousness Over Time:")
-    print("   Gen | With Language | Without Language | Difference")
-    print("   ----|---------------|------------------|------------")
-
-    for i in range(0, min(generations, 20), 5):  # Show every 5th generation, max 20
-        diff = phi_with_language[i] - phi_without_language[i]
-        marker = "+" if diff > 0.01 else "~" if abs(diff) < 0.01 else "-"
-        print(f"   {i:3d} | {phi_with_language[i]:.3f}         | {phi_without_language[i]:.3f}            | {marker}{abs(diff):.3f}")
-
-    print()
-    print("[CONCLUSION]:")
-
-    if phi_difference > 0.02 and phi_sigma_diff > 2:
-        print("   SUCCESS: LANGUAGE LEARNING SIGNIFICANTLY INCREASES CONSCIOUSNESS!")
-        print(f"   Average increase: {phi_difference:.4f}")
-        print("   The isomorphism between language and consciousness is REAL!")
-        print("   Proceed to Phase 2: Self-recognition validation")
-    elif phi_difference > 0.01:
-        print("   WARNING: Language learning shows consciousness increase but needs more data")
-        print(f"   Small increase: {phi_difference:.4f}")
-        print("   Run longer tests or check measurement accuracy")
-    else:
-        print("   FAILURE: LANGUAGE LEARNING DOES NOT INCREASE CONSCIOUSNESS")
-        print("   Phi scores are equivalent with and without language learning")
-        print("   Language processing appears to be decorative, not consciousness-enhancing")
-        print("   Check: Are word mappings creating meaningful network connections?")
-
-    print()
-    print("[NEXT STEPS]:")
-    if phi_difference > 0.02:
-        print("   1. Language learning WORKS - proceed to Phase 2 (self-recognition)")
-        print("   2. Make Phi calculation depend on language structure")
-        print("   3. Test if system can describe its own network structure")
-    else:
-        print("   1. Investigate why language doesn't affect consciousness")
-        print("   2. Debug word-to-organism mapping effectiveness")
-        print("   3. Consider different approaches to linguistic consciousness")
+    except Exception as e:
+        print(f"[ERROR] Consciousness test failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return {
+            'phi': 0.0,
+            'connections': 0,
+            'clustering_coeff': 0.0,
+            'avg_path_length': float('inf'),
+            'connection_growth': 0.0,
+            'linguistic_integration': 0.0
+        }
 
 
 def run_consciousness_test_continuous(simulator: RealitySimulator, max_generations: int = 100):
@@ -1802,7 +1714,7 @@ def run_consciousness_test_continuous(simulator: RealitySimulator, max_generatio
             # Debug: Show language connections
             language_connections = len(getattr(network_obj, 'language_connections', set()))
             if gen % 5 == 0 or gen == 0:  # Every 5 generations
-                print(f"[DEBUG] Gen {gen}: Total connections = {connections}, Language connections = {language_connections}")
+                logger.debug(f"Gen {gen}: Total connections = {connections}, Language connections = {language_connections}")
 
             # Write to shared state for visualizations
             _write_simulation_data_to_shared_state(sim_data, gen)

@@ -1,0 +1,105 @@
+{
+  "simulation": {
+    "max_runtime": 3600.0,
+    "target_fps": 8.0,
+    "save_interval": 60.0,
+    "log_level": "INFO",
+    "measurement_precision": 6,
+    "time_resolution_ms": 1.0,
+    "performance_sampling_rate": 100
+  },
+  "quantum": {
+    "initial_states": 40,
+    "probability_precision": 1e-06,
+    "superposition_tolerance": 0.0001,
+    "entanglement_sensitivity": 1e-05,
+    "prune_check_interval": 50,
+    "fitness_weights": {
+      "entanglement": 0.3,
+      "superposition": 0.25,
+      "measurements": 0.25,
+      "entropy": 0.2
+    },
+    "performance_thresholds": {
+      "memory_percentage": 5.0,
+      "iteration_time_ms": 10.0,
+      "fitness_std_threshold": 0.3,
+      "min_fitness_to_keep": 0.1
+    }
+  },
+  "lattice": {
+    "particles": 2400,
+    "prune_threshold": 0.001,
+    "interaction_precision": 0.0001,
+    "stability_tolerance": 1e-05,
+    "entropy_sensitivity": 1e-06
+  },
+  "evolution": {
+    "population_size": 400,
+    "genotype_length": 32,
+    "max_generations": 1000,
+    "fitness_precision": 1e-06,
+    "mutation_rate_precision": 1e-06,
+    "adaptation_sensitivity": 0.0001
+  },
+  "network": {
+    "max_connections": 8000,
+    "max_organisms": 2000,
+    "resource_pool": 100.0,
+    "stability_precision": 1e-06,
+    "connection_strength_resolution": 1e-05,
+    "resource_flow_precision": 0.0001,
+    "emergence_sensitivity": 1e-06
+  },
+  "agency": {
+    "initial_mode": "manual_only",
+    "confidence_threshold": 0.0001,
+    "decision_precision": 1e-05,
+    "learning_rate_resolution": 1e-06,
+    "performance_tracking_precision": 0.0001
+  },
+  "rendering": {
+    "mode": "observer",
+    "resolution": [
+      1920,
+      1080
+    ],
+    "frame_rate": 30.0,
+    "text_interface": true,
+    "performance_monitoring": true,
+    "enable_visualizations": true,
+    "visualization_update_precision": 0.001,
+    "metric_display_precision": 6
+  },
+  "logging": {
+    "shared_state_dump_interval": 0
+  },
+  "feedback": {
+    "enabled": true,
+    "interval_frames": 10,
+    "hysteresis_checks": 3,
+    "rate_limit_frames": 30,
+    "knobs": {
+      "mutation_rate": {
+        "min": 0.001,
+        "max": 0.05,
+        "step": 0.001
+      },
+      "new_edge_rate": {
+        "min": 0.0,
+        "max": 1.5,
+        "step": 0.05
+      },
+      "clustering_bias": {
+        "min": 0.0,
+        "max": 1.2,
+        "step": 0.05
+      },
+      "quantum_pruning": {
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.05
+      }
+    }
+  }
+}
