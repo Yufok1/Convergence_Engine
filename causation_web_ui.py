@@ -186,16 +186,26 @@ class OllamaBridge:
             else:
                 logger.warning(f"Unexpected vision response format: {data}")
                 return str(data)
-        except Exception as e:
+        except requests.exceptions.HTTPError as e:
             logger.error(f"Error in Ollama vision: {e}", exc_info=True)
-            # Log response details for debugging
+            # Extract detailed error message from response
+            error_message = str(e)
             if hasattr(e, 'response') and e.response is not None:
                 try:
-                    error_detail = e.response.text[:500]
-                    logger.error(f"API response: {error_detail}")
+                    error_data = e.response.json()
+                    if isinstance(error_data, dict) and 'error' in error_data:
+                        error_message = f"Ollama API error: {error_data['error']}"
+                    else:
+                        error_detail = e.response.text[:500]
+                        error_message = f"Ollama API error ({e.response.status_code}): {error_detail}"
+                    logger.error(f"API response: {error_message}")
                 except:
-                    pass
-            return None
+                    error_message = f"HTTP {e.response.status_code} error from Ollama Cloud"
+            # Return error string instead of None for better error display
+            raise Exception(error_message)
+        except Exception as e:
+            logger.error(f"Error in Ollama vision: {e}", exc_info=True)
+            raise
     
     def _build_system_prompt(self, context: Dict[str, Any]) -> str:
         """Build system prompt from context"""
@@ -1732,46 +1742,64 @@ def ollama_chat():
         
         # If graph image provided, analyze it with vision model using full context + evolutionary snapshots
         visual_description = None
+        vision_error = None
         if graph_image and data.get('vision_model'):
             vision_model = data.get('vision_model')
             
-            # Build comprehensive vision prompt with full context
-            vision_prompt_parts = []
-            vision_prompt_parts.append("You are analyzing a causation graph visualization from the Butterfly System.")
-            vision_prompt_parts.append("This graph shows cause-effect relationships between events in the system.")
-            vision_prompt_parts.append("\n# System Context:")
-            vision_prompt_parts.append(context.get('current_state', 'No state data available'))
-            vision_prompt_parts.append("\n# Graph Statistics:")
-            vision_prompt_parts.append(context.get('graph_context', 'No graph context available'))
-            vision_prompt_parts.append("\n# Recent Activity:")
-            vision_prompt_parts.append(context.get('recent_logs', 'No log data available'))
-            
-            # Add evolutionary context if snapshots available
-            if evolutionary_snapshots and len(evolutionary_snapshots) > 1:
-                vision_prompt_parts.append(f"\n# Evolutionary Context:")
-                vision_prompt_parts.append(f"You are receiving {len(evolutionary_snapshots)} snapshots showing the graph evolution over time.")
-                vision_prompt_parts.append("The snapshots are ordered from oldest to newest.")
-                vision_prompt_parts.append("Compare how the graph structure, node positions, and connections have evolved.")
-                vision_prompt_parts.append("Identify trends, growth patterns, and structural changes over time.")
-            
-            vision_prompt_parts.append("\n# Analysis Task:")
-            vision_prompt_parts.append("Describe what you see in this causation graph visualization.")
-            vision_prompt_parts.append("Identify visible nodes, clusters, connections, and patterns.")
-            vision_prompt_parts.append("Correlate what you see with the system context above.")
-            if evolutionary_snapshots and len(evolutionary_snapshots) > 1:
-                vision_prompt_parts.append("Compare the current snapshot with previous snapshots to identify evolutionary trends.")
-            vision_prompt_parts.append("What patterns or anomalies do you notice?")
-            vision_prompt_parts.append("How does the visual structure relate to the system state?")
-            
-            vision_prompt = "\n".join(vision_prompt_parts)
-            
-            # Analyze with current image (batch analysis requires multi-image support)
-            visual_description = ollama_bridge.vision(vision_model, graph_image, vision_prompt)
-            if visual_description and evolutionary_snapshots and len(evolutionary_snapshots) > 1:
-                visual_description = f"[Evolutionary Analysis - {len(evolutionary_snapshots)} snapshots]\n{visual_description}"
-            
-            if visual_description:
-                context['visual_description'] = visual_description
+            # Check image size (Ollama Cloud has strict limits on base64 image size)
+            image_size = len(graph_image) if graph_image else 0
+            # Ollama Cloud seems to limit base64 images to around 1MB
+            # Base64 is ~33% larger than binary, so 1MB base64 ≈ 750KB binary
+            max_image_size = 1024 * 1024  # 1MB base64 string
+            if image_size > max_image_size:
+                vision_error = f"Image too large ({image_size / 1024:.1f}KB, max: {max_image_size / 1024:.1f}KB). Graph is too complex - try zooming in or filtering nodes."
+                logger.warning(f"Vision image too large: {image_size / 1024:.1f}KB (max: {max_image_size / 1024:.1f}KB)")
+            else:
+                logger.info(f"Vision image size: {image_size / 1024:.1f}KB (within limit)")
+                # Build comprehensive vision prompt with full context
+                vision_prompt_parts = []
+                vision_prompt_parts.append("You are analyzing a causation graph visualization from the Butterfly System.")
+                vision_prompt_parts.append("This graph shows cause-effect relationships between events in the system.")
+                vision_prompt_parts.append("\n# System Context:")
+                vision_prompt_parts.append(context.get('current_state', 'No state data available'))
+                vision_prompt_parts.append("\n# Graph Statistics:")
+                vision_prompt_parts.append(context.get('graph_context', 'No graph context available'))
+                vision_prompt_parts.append("\n# Recent Activity:")
+                vision_prompt_parts.append(context.get('recent_logs', 'No log data available'))
+                
+                # Add evolutionary context if snapshots available
+                if evolutionary_snapshots and len(evolutionary_snapshots) > 1:
+                    vision_prompt_parts.append(f"\n# Evolutionary Context:")
+                    vision_prompt_parts.append(f"You are receiving {len(evolutionary_snapshots)} snapshots showing the graph evolution over time.")
+                    vision_prompt_parts.append("The snapshots are ordered from oldest to newest.")
+                    vision_prompt_parts.append("Compare how the graph structure, node positions, and connections have evolved.")
+                    vision_prompt_parts.append("Identify trends, growth patterns, and structural changes over time.")
+                
+                vision_prompt_parts.append("\n# Analysis Task:")
+                vision_prompt_parts.append("Describe what you see in this causation graph visualization.")
+                vision_prompt_parts.append("Identify visible nodes, clusters, connections, and patterns.")
+                vision_prompt_parts.append("Correlate what you see with the system context above.")
+                if evolutionary_snapshots and len(evolutionary_snapshots) > 1:
+                    vision_prompt_parts.append("Compare the current snapshot with previous snapshots to identify evolutionary trends.")
+                vision_prompt_parts.append("What patterns or anomalies do you notice?")
+                vision_prompt_parts.append("How does the visual structure relate to the system state?")
+                
+                vision_prompt = "\n".join(vision_prompt_parts)
+                
+                # Analyze with current image (batch analysis requires multi-image support)
+                try:
+                    visual_description = ollama_bridge.vision(vision_model, graph_image, vision_prompt)
+                    if visual_description and evolutionary_snapshots and len(evolutionary_snapshots) > 1:
+                        visual_description = f"[Evolutionary Analysis - {len(evolutionary_snapshots)} snapshots]\n{visual_description}"
+                    
+                    if visual_description:
+                        context['visual_description'] = visual_description
+                except Exception as e:
+                    vision_error = f"Vision model error: {str(e)}"
+                    logger.error(f"Vision model call failed: {e}", exc_info=True)
+                    visual_description = None
+        elif data.get('vision_model') and not graph_image:
+            vision_error = "Vision model selected but no graph image captured. Try adjusting graph view or filters."
         
         # Build messages for chat
         messages = [{"role": "user", "content": message}]
@@ -1809,6 +1837,7 @@ def ollama_chat():
         return jsonify({
             'response': response,
             'visual_description': visual_description,
+            'vision_error': vision_error,  # Include vision errors for frontend display
             'context_sources': {
                 'shared_state': shared_state_path.exists(),
                 'log_files': len(list(log_dir.glob('*.log'))) if log_dir.exists() else 0,
@@ -1836,14 +1865,17 @@ def ollama_vision():
         if not image_base64:
             return jsonify({'error': 'Image is required'}), 400
         
-        response = ollama_bridge.vision(model, image_base64, prompt)
-        
-        if response is None:
-            return jsonify({'error': 'Failed to get response from vision model'}), 500
-        
-        return jsonify({'description': response})
+        try:
+            response = ollama_bridge.vision(model, image_base64, prompt)
+            if response is None:
+                return jsonify({'error': 'Failed to get response from vision model'}), 500
+            return jsonify({'description': response})
+        except Exception as e:
+            error_msg = str(e)
+            logger.error(f"Error in Ollama vision: {error_msg}", exc_info=True)
+            return jsonify({'error': error_msg}), 500
     except Exception as e:
-        logger.error(f"Error in Ollama vision: {e}", exc_info=True)
+        logger.error(f"Error in Ollama vision endpoint: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 

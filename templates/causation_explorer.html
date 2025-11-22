@@ -1897,10 +1897,11 @@
                     // Create image from SVG
                     const img = new Image();
                     img.onload = function() {
-                        // Resize to a reasonable size for API (max 1200x800, but prefer smaller)
-                        const maxWidth = 1200;
-                        const maxHeight = 800;
-                        let canvasWidth = svgElement.clientWidth || 1200;
+                        // Aggressively resize for Ollama Cloud (smaller max size)
+                        // Start with smaller dimensions to ensure we stay under limits
+                        const maxWidth = 800;  // Reduced from 1200
+                        const maxHeight = 600; // Reduced from 800
+                        let canvasWidth = svgElement.clientWidth || 800;
                         let canvasHeight = svgElement.clientHeight || 600;
                         
                         // Scale down if too large
@@ -1918,41 +1919,61 @@
                         
                         // Use image smoothing for better quality at smaller size
                         ctx.imageSmoothingEnabled = true;
-                        ctx.imageSmoothingQuality = 'high';
+                        ctx.imageSmoothingQuality = 'medium'; // Lower quality for smaller size
                         
                         // Draw image to canvas
                         ctx.fillStyle = '#000000';
                         ctx.fillRect(0, 0, canvas.width, canvas.height);
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                         
-                        // Convert to JPEG with quality compression (smaller than PNG)
-                        // Use quality 0.85 (85%) for good balance between quality and size
-                        let base64 = canvas.toDataURL('image/jpeg', 0.85);
+                        // Aggressively compress: start with lower quality (75%)
+                        // Target max size: 800KB base64 (≈600KB binary)
+                        // Ollama Cloud seems to have strict limits on base64 size
+                        const TARGET_SIZE = 800000; // 800KB base64 string
+                        let base64 = canvas.toDataURL('image/jpeg', 0.75);
                         
-                        // If still too large (>2MB base64 = ~1.5MB binary), compress more
-                        // Base64 is ~33% larger than binary, so 2MB base64 ≈ 1.5MB binary
-                        // Ollama Cloud limit seems to be around 1-2MB
-                        if (base64.length > 2000000) {
-                            // Try higher compression (70% quality)
-                            base64 = canvas.toDataURL('image/jpeg', 0.70);
-                        }
-                        
-                        // If still too large, resize more aggressively
-                        if (base64.length > 2000000) {
-                            const smallerScale = Math.sqrt(1500000 / base64.length); // Target ~1.5MB
-                            const newWidth = Math.floor(canvasWidth * smallerScale);
-                            const newHeight = Math.floor(canvasHeight * smallerScale);
+                        // Progressive compression loop until we're under target
+                        let quality = 0.75;
+                        while (base64.length > TARGET_SIZE && quality > 0.3) {
+                            quality -= 0.1; // Reduce quality by 10%
+                            base64 = canvas.toDataURL('image/jpeg', quality);
                             
-                            const smallCanvas = document.createElement('canvas');
-                            smallCanvas.width = newWidth;
-                            smallCanvas.height = newHeight;
-                            const smallCtx = smallCanvas.getContext('2d');
-                            smallCtx.imageSmoothingEnabled = true;
-                            smallCtx.imageSmoothingQuality = 'high';
-                            smallCtx.drawImage(canvas, 0, 0, newWidth, newHeight);
-                            base64 = smallCanvas.toDataURL('image/jpeg', 0.75);
+                            // If still too large, resize the canvas itself
+                            if (base64.length > TARGET_SIZE && canvasWidth > 400) {
+                                const resizeFactor = Math.sqrt(TARGET_SIZE / base64.length) * 0.95; // 95% to be safe
+                                const newWidth = Math.max(400, Math.floor(canvasWidth * resizeFactor));
+                                const newHeight = Math.max(300, Math.floor(canvasHeight * resizeFactor));
+                                
+                                const resizedCanvas = document.createElement('canvas');
+                                resizedCanvas.width = newWidth;
+                                resizedCanvas.height = newHeight;
+                                const resizedCtx = resizedCanvas.getContext('2d');
+                                resizedCtx.imageSmoothingEnabled = true;
+                                resizedCtx.imageSmoothingQuality = 'medium';
+                                resizedCtx.fillStyle = '#000000';
+                                resizedCtx.fillRect(0, 0, resizedCanvas.width, resizedCanvas.height);
+                                resizedCtx.drawImage(canvas, 0, 0, newWidth, newHeight);
+                                
+                                canvasWidth = newWidth;
+                                canvasHeight = newHeight;
+                                canvas.width = newWidth;
+                                canvas.height = newHeight;
+                                const newCtx = canvas.getContext('2d');
+                                newCtx.drawImage(resizedCanvas, 0, 0);
+                                
+                                base64 = canvas.toDataURL('image/jpeg', quality);
+                            }
                         }
                         
+                        // Final check: if still too large, reject it
+                        if (base64.length > TARGET_SIZE * 1.2) { // Allow 20% over target
+                            console.warn(`Image still too large after compression: ${(base64.length / 1024).toFixed(1)}KB (target: ${(TARGET_SIZE / 1024).toFixed(1)}KB)`);
+                            // Return smaller placeholder or null - backend will handle the error
+                            resolve(null);
+                            return;
+                        }
+                        
+                        console.log(`Image compressed: ${(base64.length / 1024).toFixed(1)}KB (${canvasWidth}x${canvasHeight}, quality: ${quality.toFixed(2)})`);
                         URL.revokeObjectURL(url);
                         resolve(base64);
                     };
@@ -2175,6 +2196,9 @@
                 // Show vision description if available
                 if (data.visual_description) {
                     addChatMessage('vision', `[Vision Analysis] ${data.visual_description}`);
+                } else if (data.vision_error) {
+                    // Show vision error if vision model was selected but failed
+                    addChatMessage('vision', `⚠️ Vision Model Error: ${data.vision_error}`, true);
                 }
                 
                 // Show assistant response

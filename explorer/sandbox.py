@@ -4,10 +4,18 @@ import tempfile
 import threading
 import time
 import psutil
-import win32job
-import win32process
-import win32con
 import subprocess
+
+# Platform-specific imports (Windows only)
+WINDOWS_JOB_AVAILABLE = False
+if sys.platform == 'win32':
+    try:
+        import win32job
+        import win32process
+        import win32con
+        WINDOWS_JOB_AVAILABLE = True
+    except ImportError:
+        pass  # pywin32 not installed, will use fallback mode
 
 class IsolatedChamber:
     def __init__(self, timeout_sec=2, mem_limit_mb=64, cpu_time_sec=2):
@@ -17,24 +25,38 @@ class IsolatedChamber:
         self.chamber_dir = tempfile.mkdtemp(prefix="chamber_")
 
     def _run_in_job(self, command):
-        # Create a job object for resource limits
-        job = win32job.CreateJobObject(None, "ChamberJob")
-        limits = win32job.QueryInformationJobObject(job, win32job.JobObjectExtendedLimitInformation)
-        limits['ProcessMemoryLimit'] = self.mem_limit_mb * 1024 * 1024
-        limits['BasicLimitInformation']['PerProcessUserTimeLimit'] = self.cpu_time_sec * 10000000  # 100ns units
-        limits['BasicLimitInformation']['LimitFlags'] |= win32job.JOB_OBJECT_LIMIT_PROCESS_MEMORY | win32job.JOB_OBJECT_LIMIT_PROCESS_TIME
-        win32job.SetInformationJobObject(job, win32job.JobObjectExtendedLimitInformation, limits)
+        # On Windows with pywin32, use job objects for resource limits
+        # On Mac/Linux, use psutil for basic monitoring (less strict)
+        if WINDOWS_JOB_AVAILABLE:
+            # Create a job object for resource limits (Windows only)
+            job = win32job.CreateJobObject(None, "ChamberJob")
+            limits = win32job.QueryInformationJobObject(job, win32job.JobObjectExtendedLimitInformation)
+            limits['ProcessMemoryLimit'] = self.mem_limit_mb * 1024 * 1024
+            limits['BasicLimitInformation']['PerProcessUserTimeLimit'] = self.cpu_time_sec * 10000000  # 100ns units
+            limits['BasicLimitInformation']['LimitFlags'] |= win32job.JOB_OBJECT_LIMIT_PROCESS_MEMORY | win32job.JOB_OBJECT_LIMIT_PROCESS_TIME
+            win32job.SetInformationJobObject(job, win32job.JobObjectExtendedLimitInformation, limits)
 
-        # Start the process in the chamber directory
-        proc = subprocess.Popen(
-            command,
-            cwd=self.chamber_dir,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            shell=True
-        )
-        win32job.AssignProcessToJobObject(job, proc._handle)
-        return proc, job
+            # Start the process in the chamber directory
+            proc = subprocess.Popen(
+                command,
+                cwd=self.chamber_dir,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                shell=True
+            )
+            win32job.AssignProcessToJobObject(job, proc._handle)
+            return proc, job
+        else:
+            # Fallback for Mac/Linux: no job object, just subprocess
+            # Resource limits will be monitored via psutil in run() method
+            proc = subprocess.Popen(
+                command,
+                cwd=self.chamber_dir,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                shell=True
+            )
+            return proc, None  # No job object on non-Windows
 
     def run(self, command):
         """
