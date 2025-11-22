@@ -1581,14 +1581,36 @@ def get_graph():
         
         # Process snapshots outside lock
         if events_snapshot:
+            component_counts = {}  # Debug: track component distribution
             for event_id, event in events_snapshot.items():
+                # Normalize component names to match color mapping in HTML
+                component = (event.component or 'unknown').lower().strip()
+                # Map variations to standard names
+                if 'reality' in component or 'sim' in component:
+                    component = 'reality_sim'
+                elif 'explorer' in component:
+                    component = 'explorer'
+                elif 'djinn' in component or 'kernel' in component or 'utm' in component:
+                    component = 'djinn_kernel'
+                elif 'breath' in component:
+                    component = 'breath'
+                elif 'system' in component:
+                    component = 'system'
+                else:
+                    component = component  # Keep as-is (will default to orange)
+                
+                component_counts[component] = component_counts.get(component, 0) + 1
                 nodes.append({
                     'id': event_id,
-                    'component': event.component,
+                    'component': component,  # Normalized component name
                     'type': event.event_type,
                     'data': event.data,
                     'timestamp': event.timestamp
                 })
+            # Log component distribution for debugging
+            if component_counts:
+                logger.info(f"Graph nodes by component: {component_counts}")
+                logger.info(f"Total nodes: {len(nodes)}, Total links: {len(links)}")
         
         # DATA ACCESS: Read all causation links from explorer.causation_graph (snapshot)
         # This is a NetworkX DiGraph built when events are added
@@ -1890,14 +1912,15 @@ def ollama_chat():
                 vision_error = "No images available for vision analysis."
             else:
                 # Log what we're sending
-                logger.info(f"Vision model: Analyzing {len(all_images)} snapshot(s) - {'current + ' + str(len(all_images)-1) + ' evolutionary' if len(all_images) > 1 else 'current state'}")
+                logger.info(f"Vision model: Analyzing {len(all_images)} snapshot(s) - {'current + ' + str(len(all_images)-1) + ' evolutionary' if len(all_images) > 1 else 'current state only (no history yet)'}")
                 
                 # Minimal prompt for vision model - ONLY asks it to describe what it sees
                 # NO system context - that goes to CRA instead
                 if len(all_images) > 1:
-                    vision_prompt = f"These {len(all_images)} images show the evolution of a causation graph over time (oldest to newest). Compare them and describe: What changes do you see? How does the graph structure, node positions, connections, and patterns evolve? Describe the evolution timeline."
+                    vision_prompt = f"These {len(all_images)} images show the evolution of a causation graph over time (oldest to newest). Compare them and describe: What changes do you see? How does the graph structure, node positions, connections, and patterns evolve? Describe the evolution timeline from oldest to newest."
                 else:
-                    vision_prompt = "Describe this causation graph visualization: What do you see? Nodes, clusters, connections, patterns, structure."
+                    # Single image - describe current state, note that this is the first snapshot
+                    vision_prompt = "This is a single snapshot of a causation graph visualization (no previous snapshots available for comparison yet). Describe what you see: What are the node colors and what do they represent? What is the graph structure? Are there clusters, isolated nodes, or branching patterns? What do the connections show? Note: This is the first snapshot, so no evolutionary analysis is possible yet."
                 
                 # Vision model ONLY gets images + minimal prompt
                 # All context will go to CRA after vision analysis
@@ -1908,6 +1931,8 @@ def ollama_chat():
                         # Add metadata about snapshots for CRA context
                         if len(all_images) > 1:
                             visual_description = f"[Visual Evolution Analysis - {len(all_images)} snapshots]\n{visual_description}"
+                        else:
+                            visual_description = f"[Visual Analysis - Single Snapshot (no evolution data available yet)]\n{visual_description}"
                         
                         # Pass vision analysis to CRA context (CRA has all the data points)
                         context['visual_description'] = visual_description
