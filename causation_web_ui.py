@@ -439,11 +439,30 @@ class OllamaBridge:
                         headers=self.headers,
                         timeout=timeout_seconds
                     )
+                    
+                    # Log response details for debugging 401 errors
+                    if response.status_code == 401:
+                        logger.error(f"401 Response Headers: {dict(response.headers)}")
+                        try:
+                            error_body = response.json()
+                            logger.error(f"401 Response Body: {error_body}")
+                        except:
+                            logger.error(f"401 Response Text: {response.text[:500]}")
+                    
                     response.raise_for_status()
                     break  # Success, exit retry loop
                 except requests.exceptions.HTTPError as e:
                     # HTTP errors (like 401) shouldn't be retried - handle immediately
                     if e.response and e.response.status_code == 401:
+                        # Log detailed error information
+                        try:
+                            error_body = e.response.json()
+                            logger.error(f"401 Response Body: {error_body}")
+                            error_detail = error_body.get('error', str(error_body))
+                        except:
+                            error_detail = e.response.text[:500]
+                            logger.error(f"401 Response Text: {error_detail}")
+                        
                         # Check if API key is actually set
                         if not self.api_key:
                             error_msg = (
@@ -463,12 +482,15 @@ class OllamaBridge:
                             error_msg = (
                                 f"Ollama Cloud authentication failed (401 Unauthorized). "
                                 f"Your API key appears to be invalid or expired. "
+                                f"Server response: {error_detail}. "
                                 f"Please verify your API key at: https://ollama.com/settings/keys "
-                                f"and update it in the web UI settings."
+                                f"and update it in the web UI settings. "
+                                f"Note: API keys may expire or be revoked. Generate a new key if needed."
                             )
                         logger.error(f"401 Unauthorized - API key present: {bool(self.api_key)}, "
                                    f"Authorization header present: {bool(self.headers.get('Authorization'))}, "
-                                   f"API key length: {len(self.api_key) if self.api_key else 0}")
+                                   f"API key length: {len(self.api_key) if self.api_key else 0}, "
+                                   f"Authorization header value: {self.headers.get('Authorization')[:20]}...")
                         raise Exception(error_msg)
                     # Other HTTP errors - don't retry
                     raise
@@ -2415,6 +2437,70 @@ def get_system_context():
     except Exception as e:
         logger.error(f"Error getting system context: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/simulation/status', methods=['GET'])
+def get_simulation_status():
+    """Get simulation running status"""
+    try:
+        control_file = project_root / 'data' / '.simulation_control.json'
+        control_file.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Create control file with default STOPPED state if it doesn't exist
+        if not control_file.exists():
+            with open(control_file, 'w') as f:
+                json.dump({'running': False, 'paused': True, 'timestamp': time.time()}, f, indent=2)
+            return jsonify({'running': False, 'paused': True})
+        
+        with open(control_file, 'r') as f:
+            control = json.load(f)
+            return jsonify({
+                'running': control.get('running', False),
+                'paused': control.get('paused', True)
+            })
+    except Exception as e:
+        logger.error(f"Error getting simulation status: {e}", exc_info=True)
+        return jsonify({'running': False, 'paused': True, 'error': str(e)}), 500
+
+
+@app.route('/api/simulation/start', methods=['POST'])
+def start_simulation():
+    """Start the simulation"""
+    try:
+        control_file = project_root / 'data' / '.simulation_control.json'
+        control_file.parent.mkdir(parents=True, exist_ok=True)
+        control = {
+            'running': True,
+            'paused': False,
+            'timestamp': time.time()
+        }
+        with open(control_file, 'w') as f:
+            json.dump(control, f, indent=2)
+        logger.info("Simulation start signal sent")
+        return jsonify({'success': True, 'message': 'Simulation start signal sent'})
+    except Exception as e:
+        logger.error(f"Error starting simulation: {e}", exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/simulation/stop', methods=['POST'])
+def stop_simulation():
+    """Stop/pause the simulation"""
+    try:
+        control_file = project_root / 'data' / '.simulation_control.json'
+        control_file.parent.mkdir(parents=True, exist_ok=True)
+        control = {
+            'running': False,
+            'paused': True,
+            'timestamp': time.time()
+        }
+        with open(control_file, 'w') as f:
+            json.dump(control, f, indent=2)
+        logger.info("Simulation stop signal sent")
+        return jsonify({'success': True, 'message': 'Simulation stop signal sent'})
+    except Exception as e:
+        logger.error(f"Error stopping simulation: {e}", exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @app.route('/api/export/create_video', methods=['POST'])

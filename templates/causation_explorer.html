@@ -330,14 +330,19 @@
             <div class="search-box" style="flex: 1; margin-right: 10px;">
             <input type="text" id="searchInput" placeholder="Search events (e.g., 'collapse', 'modularity', 'VP')">
             <button onclick="searchEvents()">Search</button>
-            <button onclick="loadGraph()">Load Full Graph</button>
+            <button onclick="loadGraph(true)">Load Full Graph</button>
             </div>
-            <div style="background: #111; border: 1px solid #0ff; padding: 10px; text-align: center;">
+            <div style="background: #111; border: 1px solid #0ff; padding: 10px; text-align: center; margin-right: 10px;">
                 <div id="liveStatus" style="color: #0aa;">● Historical Mode</div>
                 <label style="color: #0f0; cursor: pointer; font-size: 0.9em;">
                     <input type="checkbox" id="liveModeToggle" onchange="toggleLiveMode()" style="margin-right: 5px;">
                     Live Mode
                 </label>
+            </div>
+            <div style="background: #111; border: 1px solid #0ff; padding: 10px; text-align: center;">
+                <div id="simulationStatus" style="color: #f00; margin-bottom: 5px;">⏸️ Simulation: Stopped</div>
+                <button id="startSimulationButton" onclick="startSimulation()" style="padding: 5px 10px; margin-right: 5px; background: #0f0; border: 1px solid #0ff; color: #000; cursor: pointer;">▶️ Start</button>
+                <button id="stopSimulationButton" onclick="stopSimulation()" style="padding: 5px 10px; background: #f00; border: 1px solid #0ff; color: #fff; cursor: pointer; opacity: 0.5;" disabled>⏸️ Stop</button>
             </div>
         </div>
         
@@ -644,11 +649,25 @@
         let dragEnd = { x: 0, y: 0 };
         let selectionRect = null;
         
-        function loadGraph() {
-            d3.json('/api/graph').then(data => {
+        function loadGraph(forceLoad = false) {
+            // Don't load graph if simulation is stopped (unless explicitly forced)
+            if (!simulationRunning && !forceLoad) {
+                console.log('Graph load skipped: simulation is stopped');
+                return Promise.resolve(); // Return resolved promise to prevent errors
+            }
+            
+            return d3.json('/api/graph').then(data => {
+                // Double-check simulation status before applying updates
+                if (!simulationRunning && !forceLoad) {
+                    console.log('Graph update skipped: simulation is stopped');
+                    return;
+                }
+                
                 allNodes = data.nodes || [];
                 allLinks = data.links || [];
                 applyFilters();
+            }).catch(err => {
+                console.error('Error loading graph:', err);
             });
         }
         
@@ -1597,29 +1616,16 @@
         function exportCinematicMP4(duration, fps, totalFrames, statusDiv) {
             isExporting = true;
             exportFrames = [];
-            exportCameraMovements = [];
             exportStartTime = Date.now();
             
-            // Convert SVG to Canvas for better video quality
-            const svgElement = svg.node();
-            const svgData = new XMLSerializer().serializeToString(svgElement);
-            const svgBlob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
-            const svgUrl = URL.createObjectURL(svgBlob);
-            
+            // Simple capture: no fancy movements, just capture current view
             const canvas = document.createElement('canvas');
             canvas.width = document.getElementById('graph').clientWidth;
             canvas.height = 792; // Match increased graph container height
             const ctx = canvas.getContext('2d');
             
-            const img = new Image();
-            img.onload = function() {
-                // Plan cinematic camera movements (use actual FPS)
-                planCinematicMovements(duration, fps);
-                
-                // Record frames
-                recordFrames(ctx, canvas, img, 0, totalFrames, fps, duration, statusDiv, true);
-            };
-            img.src = svgUrl;
+            // Start recording frames immediately - no setup delay
+            recordFrames(ctx, canvas, 0, totalFrames, fps, duration, statusDiv);
         }
         
         function exportInteractiveHTML(duration, fps, totalFrames, statusDiv) {
@@ -1670,71 +1676,141 @@
             }
         }
         
-        function recordFrames(ctx, canvas, img, frameNum, totalFrames, fps, duration, statusDiv, isMP4) {
+        function recordFrames(ctx, canvas, frameNum, totalFrames, fps, duration, statusDiv) {
             if (frameNum >= totalFrames || !isExporting) {
-                finishExport(isMP4, ctx, canvas, duration, fps, statusDiv);
+                finishExport(true, ctx, canvas, duration, fps, statusDiv);
                 return;
             }
             
-            const t = frameNum / totalFrames; // Normalized time 0.0 to 1.0
-            // Use normalized time to index into camera movements
-            const movementIndex = Math.min(Math.floor(t * exportCameraMovements.length), exportCameraMovements.length - 1);
-            const cam = exportCameraMovements[movementIndex] || {zoom: zoomLevel, panX: panX, panY: panY, rotation: rotation};
-            
-            // Apply camera transform
-            const savedZoom = zoomLevel;
-            const savedPanX = panX;
-            const savedPanY = panY;
-            const savedRotation = rotation;
-            
-            zoomLevel = cam.zoom;
-            panX = cam.panX;
-            panY = cam.panY;
-            rotation = cam.rotation;
-            updateTransform();
-            
-            // Wait for simulation tick
-            setTimeout(() => {
-                // Capture frame
-                if (isMP4) {
-                    // For MP4: render SVG to canvas
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    ctx.drawImage(img, 0, 0);
-                    exportFrames.push(canvas.toDataURL('image/png'));
-                } else {
-                    // For HTML: save state
-                    const frameData = {
-                        t: t,
-                        nodes: simulation.nodes().map(n => ({
-                            id: n.id,
-                            x: n.x,
-                            y: n.y,
-                            fx: n.fx,
-                            fy: n.fy
-                        })),
-                        camera: {zoom: zoomLevel, panX: panX, panY: panY, rotation: rotation}
-                    };
-                    exportFrames.push(frameData);
+            // Reload graph data to capture evolution - THIS IS THE POINT
+            d3.json('/api/graph').then(data => {
+                // Update nodes and links with new data
+                allNodes = data.nodes || [];
+                allLinks = data.links || [];
+                
+                // Use CURRENT filter state (from filters object, NOT reading checkboxes)
+                // This preserves whatever filters you have set - export doesn't touch your settings
+                const visibleNodeIds = new Set();
+                filteredNodes = allNodes.filter(node => {
+                    const comp = node.component || 'unknown';
+                    const shouldShow = filters.components[comp] || filters.components['system'];
+                    if (shouldShow) {
+                        visibleNodeIds.add(node.id);
+                    }
+                    return shouldShow;
+                });
+                
+                filteredLinks = allLinks.filter(link => {
+                    const linkType = (link.type || link.causation_type || 'unknown').toLowerCase();
+                    const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+                    const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+                    const hasSource = visibleNodeIds.has(sourceId);
+                    const hasTarget = visibleNodeIds.has(targetId);
+                    return filters.causationTypes[linkType] !== false && hasSource && hasTarget;
+                });
+                
+                // Update graph visualization with new data (preserve existing positions)
+                // This just updates the data, doesn't reset anything
+                if (svg && simulation) {
+                    // Update nodes in simulation (preserve positions)
+                    const nodeMap = new Map(simulation.nodes().map(n => [n.id, n]));
+                    const updatedNodes = filteredNodes.map(node => {
+                        const existing = nodeMap.get(node.id);
+                        if (existing) {
+                            // Preserve position from simulation
+                            return existing;
+                        }
+                        return node;
+                    });
+                    
+                    // Update links (convert IDs to node references for D3)
+                    const updatedLinks = filteredLinks.map(link => {
+                        const sourceNode = updatedNodes.find(n => n.id === (typeof link.source === 'object' ? link.source.id : link.source));
+                        const targetNode = updatedNodes.find(n => n.id === (typeof link.target === 'object' ? link.target.id : link.target));
+                        if (sourceNode && targetNode) {
+                            return {
+                                ...link,
+                                source: sourceNode,
+                                target: targetNode
+                            };
+                        }
+                        return null;
+                    }).filter(l => l !== null);
+                    
+                    // Update simulation with new data
+                    simulation.nodes(updatedNodes);
+                    simulation.force('link').links(updatedLinks);
+                    simulation.alpha(0.1).restart();
+                    
+                    // Update D3 elements (preserve existing styling/visibility)
+                    const linkSelection = svg.selectAll('.link').data(updatedLinks, d => `${d.source.id}-${d.target.id}`);
+                    linkSelection.enter().append('line').attr('class', 'link')
+                        .attr('stroke', d => getLinkColor(d.type || d.causation_type || 'unknown'))
+                        .attr('stroke-width', d => Math.max(2, (d.strength || 0.5) * 5))
+                        .attr('stroke-opacity', d => Math.min(0.8, 0.4 + (d.strength || 0.5)))
+                        .style('display', filters.showLinks ? 'block' : 'none')
+                        .merge(linkSelection);
+                    linkSelection.exit().remove();
+                    
+                    const nodeSelection = svg.selectAll('.node').data(updatedNodes, d => d.id);
+                    nodeSelection.enter().append('g').attr('class', 'node')
+                        .append('circle')
+                        .attr('r', d => 10 + (d.type ? 2 : 0))
+                        .attr('fill', d => getComponentColor(d.component))
+                        .attr('stroke', '#FFFFFF')
+                        .attr('stroke-width', 3)
+                        .merge(nodeSelection);
+                    nodeSelection.exit().remove();
                 }
                 
-                // Restore camera
-                zoomLevel = savedZoom;
-                panX = savedPanX;
-                panY = savedPanY;
-                rotation = savedRotation;
-                updateTransform();
-                
-                // Update status
-                const progress = Math.round((frameNum / totalFrames) * 100);
-                statusDiv.innerHTML = isMP4 
-                    ? `🎬 Recording MP4... ${progress}% (${frameNum}/${totalFrames} frames)`
-                    : `📹 Recording timeline... ${progress}% (${frameNum}/${totalFrames} frames)`;
-                
-                // Next frame
-                requestAnimationFrame(() => {
-                    recordFrames(ctx, canvas, img, frameNum + 1, totalFrames, fps, duration, statusDiv, isMP4);
-                });
-            }, 1000 / fps);
+                // Wait briefly for graph to render, then capture
+                setTimeout(() => {
+                    const svgElement = svg.node();
+                    if (!svgElement) {
+                        // Skip if not ready
+                        setTimeout(() => {
+                            recordFrames(ctx, canvas, frameNum + 1, totalFrames, fps, duration, statusDiv);
+                        }, 1000 / fps);
+                        return;
+                    }
+                    
+                    // Convert current SVG to image
+                    const svgData = new XMLSerializer().serializeToString(svgElement);
+                    const svgBlob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
+                    const svgUrl = URL.createObjectURL(svgBlob);
+                    
+                    const img = new Image();
+                    img.onload = function() {
+                        // Render SVG to canvas
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        ctx.drawImage(img, 0, 0);
+                        exportFrames.push(canvas.toDataURL('image/png'));
+                        URL.revokeObjectURL(svgUrl);
+                        
+                        // Update status
+                        const progress = Math.round((frameNum / totalFrames) * 100);
+                        statusDiv.innerHTML = `🎬 Recording... ${progress}% (${frameNum}/${totalFrames} frames)`;
+                        
+                        // Next frame - fast, no delays
+                        setTimeout(() => {
+                            recordFrames(ctx, canvas, frameNum + 1, totalFrames, fps, duration, statusDiv);
+                        }, 1000 / fps);
+                    };
+                    img.onerror = function() {
+                        URL.revokeObjectURL(svgUrl);
+                        setTimeout(() => {
+                            recordFrames(ctx, canvas, frameNum + 1, totalFrames, fps, duration, statusDiv);
+                        }, 1000 / fps);
+                    };
+                    img.src = svgUrl;
+                }, 50); // Minimal wait for render
+            }).catch(err => {
+                console.error('Error loading graph:', err);
+                // Continue anyway
+                setTimeout(() => {
+                    recordFrames(ctx, canvas, frameNum + 1, totalFrames, fps, duration, statusDiv);
+                }, 1000 / fps);
+            });
         }
         
         function recordTimeline(frameNum, totalFrames, fps, duration, statusDiv) {
@@ -2040,6 +2116,13 @@
         }
         
         function startLiveMode() {
+            // Don't start if simulation is stopped
+            if (!simulationRunning) {
+                console.log('Cannot start live mode: simulation is stopped');
+                document.getElementById('liveModeToggle').checked = false;
+                return;
+            }
+            
             // Check live status every 2 seconds
             if (liveModeInterval) clearInterval(liveModeInterval);
             liveModeInterval = setInterval(checkLiveStatus, 2000);
@@ -2056,16 +2139,21 @@
         }
         
         function checkLiveStatus() {
+            // Don't check if simulation is stopped
+            if (!simulationRunning) {
+                return Promise.resolve({live: false});
+            }
+            
             return fetch('/api/live/status')
                 .then(response => response.json())
                 .then(data => {
                     const statusDiv = document.getElementById('liveStatus');
                     
-                    if (data.live) {
+                    if (data.live && simulationRunning) {
                         statusDiv.innerHTML = `<span style="color: #0f0;">● LIVE</span> <span style="color: #0aa; font-size: 0.85em;">(${data.event_count} events)</span>`;
                         
-                        // Check for new events if live mode is enabled
-                        if (liveMode) {
+                        // Check for new events if live mode is enabled and simulation is running
+                        if (liveMode && simulationRunning) {
                             fetchNewEvents();
                         }
                     } else {
@@ -2082,18 +2170,30 @@
         }
         
         function fetchNewEvents() {
+            // Don't fetch if simulation is stopped
+            if (!simulationRunning) {
+                console.log('fetchNewEvents skipped: simulation is stopped');
+                return;
+            }
+            
             fetch(`/api/live/events?since=${lastEventTimestamp}`)
                 .then(response => response.json())
                 .then(data => {
+                    // Double-check simulation status before updating
+                    if (!simulationRunning) {
+                        console.log('fetchNewEvents update skipped: simulation is stopped');
+                        return;
+                    }
+                    
                     if (data.events && data.events.length > 0) {
-                        // New events available - reload graph
+                        // New events available - reload graph only if simulation is running
                         lastEventTimestamp = data.latest_timestamp || lastEventTimestamp;
                         
-                        // Reload graph with new events
-                        loadGraph();
-                        
-                        // Also update stats
-                        updateStats();
+                        // Reload graph with new events (only if simulation is running)
+                        if (simulationRunning) {
+                            loadGraph();
+                            updateStats();
+                        }
                     }
                 })
                 .catch(err => {
@@ -2893,26 +2993,93 @@
             return div.innerHTML;
         }
         
+        // Simulation control functions - MUST BE DECLARED FIRST
+        let simulationRunning = false; // Default to stopped
+        
         // Load models on page load
         loadOllamaModels();
         
         // Call updateViewState periodically to track changes
         setInterval(updateViewState, 500); // Update every 500ms
         
-        // Load graph on page load
-        loadGraph();
-        
         // Load Ollama configuration on page load
         loadOllamaConfig();
         
-        // Check initial live status and auto-enable live mode if system is running
-        checkLiveStatus().then(data => {
-            if (data && data.live) {
-                // System is live - automatically enable live mode
-                document.getElementById('liveModeToggle').checked = true;
-                toggleLiveMode();
+        function startSimulation() {
+            fetch('/api/simulation/start', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Set simulation running FIRST
+                        simulationRunning = true;
+                        updateSimulationStatus(true);
+                        // Load graph when simulation starts (now that simulationRunning is true)
+                        loadGraph();
+                        // Re-enable live mode if it was enabled
+                        if (document.getElementById('liveModeToggle').checked) {
+                            toggleLiveMode(); // This will restart polling
+                        }
+                    } else {
+                        console.error('Failed to start simulation:', data.error);
+                        alert('Failed to start simulation: ' + (data.error || 'Unknown error'));
+                    }
+                })
+                .catch(err => {
+                    console.error('Error starting simulation:', err);
+                    alert('Error starting simulation. Make sure the backend is running.');
+                });
+        }
+        
+        function stopSimulation() {
+            fetch('/api/simulation/stop', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        updateSimulationStatus(false);
+                        // Stop all graph updates when simulation is stopped
+                        if (liveModeInterval) {
+                            clearInterval(liveModeInterval);
+                            liveModeInterval = null;
+                        }
+                    } else {
+                        console.error('Failed to stop simulation:', data.error);
+                        alert('Failed to stop simulation: ' + (data.error || 'Unknown error'));
+                    }
+                })
+                .catch(err => {
+                    console.error('Error stopping simulation:', err);
+                    alert('Error stopping simulation. Make sure the backend is running.');
+                });
+        }
+        
+        function updateSimulationStatus(running) {
+            simulationRunning = running;
+            const statusDiv = document.getElementById('simulationStatus');
+            const startBtn = document.getElementById('startSimulationButton');
+            const stopBtn = document.getElementById('stopSimulationButton');
+            
+            if (running) {
+                statusDiv.textContent = '▶️ Simulation: Running';
+                statusDiv.style.color = '#0f0';
+                startBtn.disabled = true;
+                startBtn.style.opacity = '0.5';
+                stopBtn.disabled = false;
+                stopBtn.style.opacity = '1';
+            } else {
+                statusDiv.textContent = '⏸️ Simulation: Stopped';
+                statusDiv.style.color = '#f00';
+                startBtn.disabled = false;
+                startBtn.style.opacity = '1';
+                stopBtn.disabled = true;
+                stopBtn.style.opacity = '0.5';
             }
-        });
+        }
+        
+        // ALWAYS default to stopped - don't check API, just set it to stopped
+        updateSimulationStatus(false); // ALWAYS start stopped, no exceptions
+        // DON'T load graph automatically - user must click "Load Full Graph" or start simulation
+        
+        // DON'T auto-enable live mode - user must manually enable it
     </script>
 </body>
 </html>

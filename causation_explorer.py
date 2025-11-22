@@ -234,11 +234,23 @@ class CausationExplorer:
             timestamp = shared_state.get('simulation_time', shared_state.get('timestamp', time.time()))
             frame_count = shared_state.get('frame_count', 0)
             
+            # Ensure frame_count is an integer (JSON might load it as string)
+            try:
+                frame_count = int(frame_count) if frame_count is not None else 0
+            except (ValueError, TypeError):
+                frame_count = 0
+            
+            # Ensure _last_loaded_frame is also an integer (defensive)
+            try:
+                self._last_loaded_frame = int(self._last_loaded_frame) if self._last_loaded_frame is not None else -1
+            except (ValueError, TypeError):
+                self._last_loaded_frame = -1
+            
             # Incremental loading: only process if frame_count is newer
             if not force_reload and frame_count <= self._last_loaded_frame:
                 return  # Already loaded this frame or older
             
-            self._last_loaded_frame = frame_count
+            self._last_loaded_frame = int(frame_count)  # Ensure it stays an int
             
             # Extract Reality Simulator events
             if 'network' in data:
