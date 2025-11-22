@@ -33,6 +33,27 @@
             position: sticky;
             top: 20px;
         }
+        .chat-panel-wrapper {
+            width: 1200px; /* Triple the width (400px * 3) to match graph right edge */
+            max-width: calc(100% - 300px); /* Don't exceed available space */
+            margin-left: 30px; /* Offset to align properly with graph area */
+            margin-top: -550px; /* Move up by approximately its height */
+            position: relative;
+            z-index: 100; /* Ensure dropdowns appear above other elements */
+        }
+        #craChatPanel {
+            overflow: visible !important; /* Ensure dropdowns can extend beyond panel */
+        }
+        #craChatPanel select {
+            position: relative;
+            z-index: 101; /* Dropdowns should appear above panel */
+            cursor: pointer;
+        }
+        #craChatPanel select option {
+            background: #111;
+            color: #0f0;
+            padding: 5px;
+        }
         .filter-section {
             margin-bottom: 20px;
             border-bottom: 1px solid #0aa;
@@ -159,6 +180,7 @@
             margin: 25px 0;
             box-shadow: 0 0 25px rgba(255, 255, 0, 0.5), inset 0 0 15px rgba(0, 0, 0, 0.6);
             border-radius: 8px;
+            overflow: visible; /* Allow dropdowns to extend beyond panel */
         }
         .info-panel:nth-child(3) {
             border-color: #FF6600;
@@ -205,6 +227,47 @@
             margin-left: 20px;
             border-left: 2px solid #0aa;
             padding-left: 15px;
+        }
+        /* Convergence Research Assistant Chat Interface Styles */
+        #craChatPanel {
+            border-color: #FF00FF;
+            box-shadow: 0 0 25px rgba(255, 0, 255, 0.5), inset 0 0 15px rgba(0, 0, 0, 0.6);
+        }
+        #craChatPanel h3 {
+            color: #FF00FF;
+        }
+        #chatMessages {
+            scrollbar-width: thin;
+            scrollbar-color: #0ff #000;
+        }
+        #chatMessages::-webkit-scrollbar {
+            width: 8px;
+        }
+        #chatMessages::-webkit-scrollbar-track {
+            background: #000;
+        }
+        #chatMessages::-webkit-scrollbar-thumb {
+            background: #0ff;
+            border-radius: 4px;
+        }
+        .chat-message {
+            margin-bottom: 15px;
+            padding: 8px;
+            border-left: 3px solid #0ff;
+            background: #111;
+        }
+        .chat-message.user {
+            border-left-color: #0f0;
+        }
+        .chat-message.assistant {
+            border-left-color: #0ff;
+        }
+        .chat-message.vision {
+            border-left-color: #ff0;
+            font-style: italic;
+        }
+        .chat-message strong {
+            color: #0ff;
         }
         /* HIGH CONTRAST INFORMATION DISPLAY - Different elements use different colors */
         .metric {
@@ -417,6 +480,49 @@
             </div>
         </div>
         
+        <!-- Convergence Research Assistant (CRA) Chat Interface - Below graph, aligned to right of settings panel -->
+        <div class="main-content" style="align-items: flex-start;">
+            <!-- Spacer to align with settings panel width -->
+            <div style="width: 250px; flex-shrink: 0;"></div>
+            
+            <!-- Chat panel positioned where graph is -->
+            <div class="chat-panel-wrapper">
+                <div class="info-panel" id="craChatPanel">
+                    <h3>🧠 Convergence Research Assistant (CRA)</h3>
+                    <div style="margin-bottom: 10px;">
+                        <div style="margin-bottom: 8px;">
+                            <label style="color: #0ff; display: block; margin-bottom: 5px; font-size: 0.9em;">Research Model:</label>
+                            <select id="researchModelSelect" style="width: 100%; background: #111; color: #0f0; border: 1px solid #0ff; padding: 5px; font-family: 'Courier New', monospace; font-size: 0.9em;">
+                                <option value="">Loading models...</option>
+                            </select>
+                            <div style="font-size: 0.75em; color: #888; margin-top: 3px;">
+                                Text model for answering questions about the system
+                            </div>
+                        </div>
+                        <div style="margin-bottom: 8px;">
+                            <label style="color: #0ff; display: block; margin-bottom: 5px; font-size: 0.9em;">Vision Model:</label>
+                            <select id="visionModelSelect" style="width: 100%; background: #111; color: #0f0; border: 1px solid #0ff; padding: 5px; font-family: 'Courier New', monospace; font-size: 0.9em;">
+                                <option value="">Loading models...</option>
+                            </select>
+                            <div style="font-size: 0.75em; color: #888; margin-top: 3px;">
+                                Vision model (like llava) for analyzing graph screenshots
+                            </div>
+                        </div>
+                    </div>
+                    <div id="chatMessages" style="height: 300px; overflow-y: auto; background: #000; border: 1px solid #0ff; padding: 10px; margin-bottom: 10px; font-size: 0.9em;">
+                        <div style="color: #0aa; margin-bottom: 10px;">CRA: Hello! I'm your Convergence Research Assistant. I have access to all system logs, shared state, and the causation graph. Ask me anything about the Butterfly System!</div>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="chatInput" placeholder="Ask about the system..." style="flex: 1; padding: 8px; background: #111; color: #0f0; border: 1px solid #0ff; font-family: 'Courier New', monospace;" onkeypress="if(event.key === 'Enter') sendChatMessage()">
+                        <button onclick="sendChatMessage()" style="padding: 8px 15px;">Send</button>
+                    </div>
+                    <div id="chatStatus" style="color: #0aa; font-size: 0.8em; margin-top: 5px;"></div>
+                </div>
+            </div>
+        </div>
+        
+        
+        <!-- Info panels below main content -->
         <div class="info-panel">
             <h3>Selected Event</h3>
             <div id="eventInfo">Click an event to explore</div>
@@ -1490,6 +1596,300 @@
                 })
                 .catch(err => console.error('Error updating stats:', err));
         }
+        
+        // ============================================================================
+        // CONVERGENCE RESEARCH ASSISTANT (CRA) - CHAT INTERFACE
+        // ============================================================================
+        
+        // View state tracker
+        let viewState = {
+            zoom: zoomLevel,
+            panX: panX,
+            panY: panY,
+            rotation: rotation,
+            selectedNode: null,
+            visibleNodes: []
+        };
+        
+        // Chat state
+        let chatHistory = [];
+        let availableModels = { text: [], vision: [] };
+        
+        // Update view state when graph changes
+        function updateViewState() {
+            if (!viewState) viewState = {};
+            
+            viewState.zoom = zoomLevel;
+            viewState.panX = panX;
+            viewState.panY = panY;
+            viewState.rotation = rotation;
+            viewState.selectedNode = selectedNode ? selectedNode.id : null;
+            
+            // Get visible nodes in viewport (all nodes for now, can be filtered by viewport bounds)
+            if (allNodes && allNodes.length > 0) {
+                viewState.visibleNodes = allNodes.slice(0, 50).map(node => node.id); // Limit to first 50 for performance
+                viewState.totalNodes = allNodes.length;
+                viewState.totalLinks = allLinks ? allLinks.length : 0;
+            } else {
+                viewState.visibleNodes = [];
+                viewState.totalNodes = 0;
+                viewState.totalLinks = 0;
+            }
+        }
+        
+        // Capture graph as image (SVG to canvas to base64)
+        function captureGraphImage() {
+            return new Promise((resolve) => {
+                if (!svg || !svg.node()) {
+                    resolve(null);
+                    return;
+                }
+                
+                try {
+                    // Get SVG element
+                    const svgElement = svg.node();
+                    const svgData = new XMLSerializer().serializeToString(svgElement);
+                    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+                    const url = URL.createObjectURL(svgBlob);
+                    
+                    // Create image from SVG
+                    const img = new Image();
+                    img.onload = function() {
+                        // Create canvas
+                        const canvas = document.createElement('canvas');
+                        canvas.width = svgElement.clientWidth || 1200;
+                        canvas.height = svgElement.clientHeight || 600;
+                        const ctx = canvas.getContext('2d');
+                        
+                        // Draw image to canvas
+                        ctx.fillStyle = '#000000';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        
+                        // Convert to base64
+                        const base64 = canvas.toDataURL('image/png');
+                        URL.revokeObjectURL(url);
+                        resolve(base64);
+                    };
+                    img.onerror = () => resolve(null);
+                    img.src = url;
+                } catch (error) {
+                    console.error('Error capturing graph image:', error);
+                    resolve(null);
+                }
+            });
+        }
+        
+        // Load available Ollama models
+        function loadOllamaModels() {
+            fetch('/api/ollama/models')
+                .then(response => response.json())
+                .then(data => {
+                    availableModels = {
+                        text: data.text_models || [],
+                        vision: data.vision_models || []
+                    };
+                    
+                    // Populate model selectors
+                    const researchSelect = document.getElementById('researchModelSelect');
+                    const visionSelect = document.getElementById('visionModelSelect');
+                    
+                    // Clear existing options
+                    researchSelect.innerHTML = '';
+                    visionSelect.innerHTML = '';
+                    
+                    // Add text models
+                    if (availableModels.text && availableModels.text.length > 0) {
+                        availableModels.text.forEach(model => {
+                            const modelName = typeof model === 'string' ? model : (model.name || model.model || '');
+                            if (modelName) {
+                                const option = document.createElement('option');
+                                option.value = modelName;
+                                option.textContent = modelName;
+                                researchSelect.appendChild(option);
+                            }
+                        });
+                        // Set first model as default if available
+                        if (researchSelect.options.length > 0) {
+                            researchSelect.selectedIndex = 0;
+                        }
+                    } else {
+                        // No text models found
+                        const option = document.createElement('option');
+                        option.value = '';
+                        option.textContent = 'No models available';
+                        researchSelect.appendChild(option);
+                    }
+                    
+                    // Add vision models
+                    if (availableModels.vision && availableModels.vision.length > 0) {
+                        availableModels.vision.forEach(model => {
+                            const modelName = typeof model === 'string' ? model : (model.name || model.model || '');
+                            if (modelName) {
+                                const option = document.createElement('option');
+                                option.value = modelName;
+                                option.textContent = modelName;
+                                visionSelect.appendChild(option);
+                            }
+                        });
+                        // Set first model as default if available
+                        if (visionSelect.options.length > 0) {
+                            visionSelect.selectedIndex = 0;
+                        }
+                    } else {
+                        // No vision models found - add all models as fallback
+                        if (data.models && data.models.length > 0) {
+                            data.models.forEach(model => {
+                                const modelName = typeof model === 'string' ? model : (model.name || model.model || '');
+                                if (modelName) {
+                                    const option = document.createElement('option');
+                                    option.value = modelName;
+                                    option.textContent = modelName;
+                                    visionSelect.appendChild(option);
+                                }
+                            });
+                            if (visionSelect.options.length > 0) {
+                                visionSelect.selectedIndex = 0;
+                            }
+                        } else {
+                            const option = document.createElement('option');
+                            option.value = '';
+                            option.textContent = 'No vision models available';
+                            visionSelect.appendChild(option);
+                        }
+                    }
+                    
+                    // Update status
+                    const totalModels = (availableModels.text?.length || 0) + (availableModels.vision?.length || 0);
+                    if (totalModels > 0) {
+                        updateChatStatus(`Loaded ${totalModels} model(s)`);
+                    } else {
+                        updateChatStatus('No models found. Make sure Ollama is running and models are downloaded.');
+                    }
+                })
+                .catch(err => {
+                    console.error('Error loading Ollama models:', err);
+                    const researchSelect = document.getElementById('researchModelSelect');
+                    const visionSelect = document.getElementById('visionModelSelect');
+                    researchSelect.innerHTML = '<option value="">Error loading models</option>';
+                    visionSelect.innerHTML = '<option value="">Error loading models</option>';
+                    updateChatStatus('Error loading models. Make sure Ollama is running.');
+                });
+        }
+        
+        // Send chat message
+        async function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Clear input
+            input.value = '';
+            
+            // Add user message to chat
+            addChatMessage('user', message);
+            
+            // Update status
+            updateChatStatus('Thinking...');
+            
+            // Update view state
+            updateViewState();
+            
+            // Capture graph image
+            const graphImage = await captureGraphImage();
+            
+            // Get selected model
+            const researchModel = document.getElementById('researchModelSelect').value;
+            const visionModel = document.getElementById('visionModelSelect').value;
+            
+            // Get selected event if any
+            const selectedEvent = selectedNode ? selectedNode.id : null;
+            
+            // Build request
+            const requestData = {
+                message: message,
+                model: researchModel,
+                vision_model: visionModel,
+                view_state: viewState,
+                selected_event: selectedEvent,
+                graph_image: graphImage
+            };
+            
+            // Send to backend
+            fetch('/api/ollama/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                updateChatStatus('');
+                
+                if (data.error) {
+                    addChatMessage('assistant', `Error: ${data.error}`, true);
+                    return;
+                }
+                
+                // Show vision description if available
+                if (data.visual_description) {
+                    addChatMessage('vision', `[Vision Analysis] ${data.visual_description}`);
+                }
+                
+                // Show assistant response
+                if (data.response) {
+                    addChatMessage('assistant', data.response);
+                } else {
+                    addChatMessage('assistant', 'No response received.');
+                }
+                
+                // Show context sources
+                if (data.context_sources) {
+                    const sources = data.context_sources;
+                    const sourceInfo = `[Context: ${sources.graph_events} events, ${sources.log_files} log files]`;
+                    updateChatStatus(sourceInfo);
+                }
+            })
+            .catch(err => {
+                console.error('Error sending chat message:', err);
+                updateChatStatus('Error sending message.');
+                addChatMessage('assistant', `Error: ${err.message}`, true);
+            });
+        }
+        
+        // Add message to chat
+        function addChatMessage(role, message, isError = false) {
+            const messagesDiv = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${role}`;
+            
+            const roleLabel = role === 'user' ? 'You' : role === 'assistant' ? 'CRA' : 'Vision';
+            const color = isError ? '#f00' : role === 'user' ? '#0f0' : role === 'assistant' ? '#0ff' : '#ff0';
+            
+            messageDiv.innerHTML = `<strong style="color: ${color};">${roleLabel}:</strong> ${escapeHtml(message)}`;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+        
+        // Update chat status
+        function updateChatStatus(status) {
+            document.getElementById('chatStatus').textContent = status;
+        }
+        
+        // Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Load models on page load
+        loadOllamaModels();
+        
+        // Call updateViewState periodically to track changes
+        setInterval(updateViewState, 500); // Update every 500ms
         
         // Load graph on page load
         loadGraph();

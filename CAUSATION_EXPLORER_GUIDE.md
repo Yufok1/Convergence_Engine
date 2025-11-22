@@ -115,6 +115,13 @@ Then open http://localhost:5000 in your browser.
 - **Filters:** Component and causation type filters (non-resetting, preserves graph positions)
 - **Navigation:** 3D rotation, pan, zoom (default 5% view, max 2000%)
 - **Live Mode:** Real-time updates from running backend
+- **🤖 Convergence Research Assistant (CRA):** AI-powered research assistant integrated with local Ollama
+  - **Vision Model:** Analyzes the current graph viewport to understand what you're seeing
+  - **Research Model:** Answers questions about the system using full context from shared state, logs, and graph data
+  - **Context-Aware:** Automatically includes system state, view state (zoom/pan/rotation), and graph visualization
+  - **System Knowledge:** Has complete understanding of all Butterfly System components, settings, and their functions
+  - **Real-time Updates:** Context refreshes as you navigate the graph and system state changes
+  - **Log Access:** Can access all system logs (application.log, breath.log, djinn_kernel.log, explorer.log, reality_sim.log, state.log, system.log)
 
 ---
 

@@ -202,9 +202,30 @@ class CausationExplorer:
         if not shared_state_file.exists():
             return
         
+        # Check if file is empty or too small to be valid JSON
+        if shared_state_file.stat().st_size < 10:
+            return  # File is empty or corrupted
+        
         try:
-            with open(shared_state_file, 'r') as f:
-                shared_state = json.load(f)
+            # Retry logic for file locking/race conditions
+            max_retries = 5
+            shared_state = None
+            for attempt in range(max_retries):
+                try:
+                    with open(shared_state_file, 'r', encoding='utf-8') as f:
+                        content = f.read().strip()
+                        # Skip empty or null-byte-filled files
+                        if not content or content.startswith('\x00'):
+                            return
+                        shared_state = json.loads(content)
+                        break  # Success
+                except (json.JSONDecodeError, ValueError) as e:
+                    if attempt < max_retries - 1:
+                        time.sleep(0.1)  # Brief delay before retry
+                        continue
+                    else:
+                        # Last attempt failed, re-raise
+                        raise
             
             if not shared_state or 'data' not in shared_state:
                 return

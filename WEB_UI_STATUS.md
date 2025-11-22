@@ -17,6 +17,10 @@
   - `/api/path/<from_id>/<to_id>` - Find path
   - `/api/stats` - Get statistics
   - `/api/graph` - Get full graph
+  - `/api/ollama/models` - List available Ollama models (text + vision)
+  - `/api/ollama/chat` - Chat with research assistant (includes full system context)
+  - `/api/ollama/vision` - Analyze graph viewport with vision model
+  - `/api/system/context` - Get full system context for debugging
 
 ### 2. HTML Template (`templates/causation_explorer.html`)
 - ✅ Complete D3.js visualization
@@ -25,6 +29,12 @@
 - ✅ Event exploration (backwards/forwards)
 - ✅ Node clicking functionality
 - ✅ Dark theme styling
+- ✅ **Convergence Research Assistant (CRA) Chat Panel**
+  - ✅ Model selectors (research model + vision model)
+  - ✅ Chat interface with message history
+  - ✅ View state tracking (zoom, pan, rotation, selected nodes)
+  - ✅ Graph image capture (SVG to base64 for vision model)
+  - ✅ Real-time context updates
 
 ### 3. Integration
 - ✅ Creates CausationExplorer instance on startup
@@ -48,7 +58,21 @@ pip install flask
 flask>=2.0.0
 ```
 
-### 2. Testing
+### 2. Ollama Dependency (for CRA Agent)
+**Requirement:** Local Ollama installation needed for the Convergence Research Assistant
+
+**Install Ollama:**
+- Download from https://ollama.ai
+- Install and run: `ollama serve`
+- The CRA agent connects to `http://localhost:11434` by default
+
+**Recommended Models:**
+- **Research Model:** `llama3`, `mistral`, `codellama`, or any language model
+- **Vision Model:** `llava`, `bakllava`, or any vision-capable model
+
+**Note:** The agent will dynamically detect available models from your Ollama installation.
+
+### 3. Testing
 **Status:** Not yet tested in this environment
 
 **What to Test:**
@@ -58,6 +82,9 @@ flask>=2.0.0
 - Does the HTML render?
 - Does D3.js visualization work?
 - Do API endpoints return data?
+- Does the CRA agent chat work?
+- Does vision model analysis work?
+- Are models dynamically loaded from Ollama?
 
 ---
 
@@ -158,7 +185,12 @@ http://localhost:5000/api/stats
 | **Event Search** | ✅ Complete | Search by keyword |
 | **Causation Trails** | ✅ Complete | Backwards/forwards exploration |
 | **Path Finding** | ✅ Complete | Shortest path between events |
+| **CRA Agent** | ✅ Complete | AI research assistant with vision |
+| **Model Selection** | ✅ Complete | Dynamic Ollama model detection |
+| **Context Building** | ✅ Complete | Full system context integration |
+| **Vision Analysis** | ✅ Complete | Graph viewport analysis |
 | **Flask Dependency** | ⚠️ Missing | Needs `pip install flask` |
+| **Ollama Dependency** | ⚠️ Required | Needs local Ollama installation |
 | **Testing** | ❌ Not Done | Needs verification |
 
 ---

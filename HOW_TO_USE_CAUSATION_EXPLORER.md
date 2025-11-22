@@ -254,6 +254,104 @@ The web UI includes powerful export functionality to create shareable visualizat
 
 ---
 
+## 🤖 Convergence Research Assistant (CRA)
+
+The Causation Explorer includes an AI-powered research assistant that helps you understand the system and explore the graph visualization.
+
+### Features
+
+**Vision Model:**
+- Analyzes the current graph viewport to understand what you're seeing
+- Describes visible nodes, clusters, connections, and patterns
+- Responds to questions like "What am I looking at?" or "Describe this view"
+
+**Research Model:**
+- Answers complex questions about the Butterfly System
+- Uses full context from shared state, logs, and graph data
+- Knows everything about system components, settings, and their functions
+- Provides meaningful insights and discovery-oriented guidance
+
+**Context-Aware:**
+- Automatically includes system state from `.shared_simulation_state.json`
+- Includes view state (zoom, pan, rotation, selected nodes)
+- Includes recent log entries from all system logs
+- Updates context in real-time as you navigate
+
+### Using the CRA Agent
+
+**1. Start the Web UI:**
+```bash
+python causation_web_ui.py
+```
+
+**2. Open the Chat Panel:**
+- The CRA chat panel is located below the graph visualization
+- It's positioned to the right of the settings panel
+
+**3. Select Models:**
+- **Research Model:** Choose your preferred language model (e.g., `llama3`, `mistral`)
+- **Vision Model:** Choose a vision-capable model (e.g., `llava`, `bakllava`)
+- Models are dynamically loaded from your local Ollama installation
+
+**4. Ask Questions:**
+- **About the System:** "What does the breath engine do?" or "Explain violation pressure"
+- **About the Graph:** "What am I looking at?" or "Describe this cluster"
+- **About Settings:** "What does this setting do?" or "How do I adjust the zoom?"
+- **Discovery Questions:** "What patterns do you see?" or "What should I investigate?"
+
+**5. Get Visual Analysis:**
+- The agent automatically captures the current graph viewport
+- It uses the vision model to analyze what you're seeing
+- Ask questions about the visualization to get detailed descriptions
+
+### Example Interactions
+
+**System Understanding:**
+```
+You: "What is the Butterfly System?"
+
+CRA: "The Butterfly System is a unified architecture with three components:
+- Left Wing: Reality Simulator (network evolution)
+- Central Body: Explorer (breath engine, phase transitions)
+- Right Wing: Djinn Kernel (violation pressure calculations)
+
+The breath engine drives all three systems synchronously..."
+```
+
+**Graph Analysis:**
+```
+You: "What am I seeing in this graph?"
+
+CRA: "You're viewing a causation graph with 342 nodes and 1,156 links.
+The largest cluster (center-left) represents network events from the Reality
+Simulator. The yellow nodes are Explorer phase transitions. The magenta
+connections show VP calculations from the Djinn Kernel..."
+```
+
+**Discovery Guidance:**
+```
+You: "What should I investigate next?"
+
+CRA: "Based on the graph structure, I notice strong connections between
+modularity changes and network collapses. Consider exploring the backwards
+trail from any collapse event to understand the contributing factors..."
+```
+
+### Requirements
+
+**Ollama Installation:**
+- Download and install from https://ollama.ai
+- Run: `ollama serve` (default port: 11434)
+- Install models: `ollama pull llama3` or `ollama pull llava`
+
+**Model Recommendations:**
+- **Research:** `llama3`, `mistral`, `codellama`
+- **Vision:** `llava`, `bakllava`
+
+**Note:** The agent dynamically detects available models from your Ollama installation, so you can use any models you have downloaded.
+
+---
+
 ## 📊 Get Statistics
 
 ```python

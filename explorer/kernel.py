@@ -17,13 +17,36 @@ class Kernel:
 
     def _load_state(self):
         if os.path.exists(self.latest_link):
-            with open(self.latest_link, 'r') as f:
-                version_filename = f.read().strip()
-            version_path = os.path.join(self.versions_dir, version_filename)
-            self.version_file = version_path
-            if os.path.exists(version_path):
-                with open(version_path, 'r') as f:
-                    self.sovereign_ids = json.load(f)
+            try:
+                with open(self.latest_link, 'r') as f:
+                    version_filename = f.read().strip()
+                if not version_filename:
+                    self.sovereign_ids = []
+                    self.version_file = None
+                    return
+                version_path = os.path.join(self.versions_dir, version_filename)
+                self.version_file = version_path
+                if os.path.exists(version_path):
+                    try:
+                        with open(version_path, 'r') as f:
+                            content = f.read().strip()
+                            # Skip files that are empty or contain only null bytes
+                            if not content or content.startswith('\x00'):
+                                self.sovereign_ids = []
+                                self.version_file = None
+                                return
+                            self.sovereign_ids = json.loads(content)
+                    except (json.JSONDecodeError, ValueError, UnicodeDecodeError) as e:
+                        # File is corrupted or invalid JSON, treat as empty
+                        self.sovereign_ids = []
+                        self.version_file = None
+                else:
+                    self.sovereign_ids = []
+                    self.version_file = None
+            except Exception as e:
+                # Any error reading latest.link, treat as empty
+                self.sovereign_ids = []
+                self.version_file = None
         else:
             self.sovereign_ids = []
             self.version_file = None
@@ -58,21 +81,34 @@ class Kernel:
         """
         Atomically switch latest.link back to the previous kernel version file.
         """
-        # Find previous version file
-        versions = sorted(os.listdir(self.versions_dir))
-        if len(versions) < 2:
-            return False  # No previous version to roll back to
-        prev_version = versions[-2]
-        prev_path = os.path.join(self.versions_dir, prev_version)
-        # Atomically update latest.link as a text file
-        tmp_link = self.latest_link + '.tmp'
-        with open(tmp_link, 'w') as f:
-            f.write(prev_version)
-        os.replace(tmp_link, self.latest_link)
-        self.version_file = prev_path
-        with open(prev_path, 'r') as f:
-            self.sovereign_ids = json.load(f)
-        return True
+        try:
+            # Find previous version file
+            versions = sorted(os.listdir(self.versions_dir))
+            if len(versions) < 2:
+                return False  # No previous version to roll back to
+            prev_version = versions[-2]
+            prev_path = os.path.join(self.versions_dir, prev_version)
+            # Atomically update latest.link as a text file
+            tmp_link = self.latest_link + '.tmp'
+            with open(tmp_link, 'w') as f:
+                f.write(prev_version)
+            os.replace(tmp_link, self.latest_link)
+            self.version_file = prev_path
+            try:
+                with open(prev_path, 'r') as f:
+                    content = f.read().strip()
+                    # Skip files that are empty or contain only null bytes
+                    if not content or content.startswith('\x00'):
+                        self.sovereign_ids = []
+                        return False
+                    self.sovereign_ids = json.loads(content)
+                return True
+            except (json.JSONDecodeError, ValueError, UnicodeDecodeError):
+                # Previous version is corrupted, treat as failed rollback
+                self.sovereign_ids = []
+                return False
+        except Exception:
+            return False
 
     def get_sovereign_ids(self):
         return list(self.sovereign_ids)

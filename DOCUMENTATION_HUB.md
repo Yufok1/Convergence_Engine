@@ -31,203 +31,153 @@ pip install pywin32
 
 ---
 
-## 📚 Documentation Index
+## 📚 Core Documentation
 
-### 🎯 Core System Documentation
+### Essential Reading
 
-1. **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Complete system architecture (includes unified system guide)
-   - Pre-flight checks
-   - State logging
-   - Visualization
-   - System operation
+- **[README.md](./README.md)** - Main project overview and quick start guide
+- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Complete system architecture and integration approaches
+- **[QUICK_REFERENCE.md](./QUICK_REFERENCE.md)** - One-page quick reference
+- **[CHANGELOG.md](./CHANGELOG.md)** - Version history and changes
+- **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** - Common issues and solutions
 
-2. **[BUTTERFLY_SYSTEM.md](./BUTTERFLY_SYSTEM.md)** - The butterfly architecture
-   - Breath as driver
-   - Wings as reactors
-   - Unified state
+### System Architecture
 
-3. **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Integration approaches (includes Occam's Razor)
-   - Occam's Razor approach
-   - Implementation details
-
-### 🔍 Verification & Analysis
-
-4. **[VERIFICATION_REPORT.md](./VERIFICATION_REPORT.md)** - What's actually implemented
-   - Code verification
-   - Feature checklist
-   - Reality vs aspirational
-
-5. **[FINAL_VERIFICATION.md](./FINAL_VERIFICATION.md)** - Complete verification
-   - All claims verified
-   - Code statistics
-   - Import tests
-
-### 🏗️ Integration Documentation
-
-6. **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Three-system architecture (consolidated)
-   - Reality Simulator
-   - Explorer
-   - Djinn Kernel
-
-7. **[CHAOS_TO_PRECISION_ARCHITECTURE.md](./CHAOS_TO_PRECISION_ARCHITECTURE.md)** - Universal transition
-   - Chaos → Precision pattern
-   - 10:1 exploration ratio
-   - Unified transition
-
-8. **[CHANGELOG.md](./CHANGELOG.md)** - Integration history (includes integration plan)
-   - Implementation priorities
-   - Transition synchronization
-
-### 🧠 System-Specific Documentation
-
-#### Reality Simulator
-
-9. **[README.md](./README.md)** - Reality Simulator overview
-   - Features
-   - Architecture
-   - Usage
-
-10. **[CONVERGENCE_TEST_GUIDE.md](./CONVERGENCE_TEST_GUIDE.md)** - Network collapse testing
-    - Collapse detection
-    - Test configurations
-    - Metrics
-
-#### Explorer
-
-11. **[explorer/README.md](./explorer/README.md)** - Explorer system overview
-    - Biphasic architecture
-    - Genesis/Sovereign phases
-    - Mathematical capability
-
-12. **[explorer/COMPLETE_INTEGRATION_GUIDE.md](./explorer/COMPLETE_INTEGRATION_GUIDE.md)** - Explorer integration
-    - Trait Hub
-    - Integration modules
-    - Usage examples
-
-13. **[explorer/INTEGRATION_FACILITIES_SUMMARY.md](./explorer/INTEGRATION_FACILITIES_SUMMARY.md)** - Integration facilities
-    - All facilities mapped
-    - How Explorer uses them
-
-#### Djinn Kernel
-
-14. **[kernel/README.md](./kernel/README.md)** - Djinn Kernel overview
-    - Mathematical foundation
-    - VP system
-    - Trait framework
-
-15. **[kernel/Djinn_Kernel_Master_Guide.md](./kernel/Djinn_Kernel_Master_Guide.md)** - Complete theory
-    - Mathematical foundation
-    - System architecture
-    - Implementation guide
-
-### 🔬 Technical Analysis
-
-16. **[VP_THRESHOLD_CLARIFICATION.md](./VP_THRESHOLD_CLARIFICATION.md)** - VP threshold analysis
-    - 0.3 vs 0.25 clarification
-    - Mathematical relationships
-
-17. **[VP_THRESHOLD_ANCHOR_ANALYSIS.md](./VP_THRESHOLD_ANCHOR_ANALYSIS.md)** - Anchor state analysis
-    - What makes it an anchor
-    - How it anchors
-    - What uses it
-
-18. **[DJINN_KERNEL_INTEGRATION_REPORT.md](./DJINN_KERNEL_INTEGRATION_REPORT.md)** - Integration analysis
-    - Mathematical identity
-    - Unidirectional integration
-    - Architecture
-
-### 🤝 Collaboration
-
-19. **[GROUNDED_COLLABORATION.md](./GROUNDED_COLLABORATION.md)** - Collaboration framework
-    - Antigravity + Cursor partnership
-    - Cultured skepticism protocol
-    - Verification process
-
-### 🚦 Agency Router & Event Bus
-
-20. **[AGENCY_AS_SYSTEM_ROUTER.md](./AGENCY_AS_SYSTEM_ROUTER.md)** - System-driven decision routing
-    - Repurposed agency router
-    - System decision makers
-    - Granular decision types
-
-21. **[EVENT_BUS_VS_AGENCY_ROUTER.md](./EVENT_BUS_VS_AGENCY_ROUTER.md)** - Architecture comparison
-    - Event Bus vs Agency Router
-    - Integration pattern
-    - How they work together
-
-### 📊 Analysis Reports
-
-22. **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Mutual benefits (consolidated)
-    - Mutual benefits analysis
-    - Integration advantages
-
-23. **[INTEGRATION_DIALOGUE_ANALYSIS_REPORT.md](./INTEGRATION_DIALOGUE_ANALYSIS_REPORT.md)** - Integration dialogue
-    - Discussion analysis
-    - Key insights
-
-### 🔧 Code Quality & Refactoring
-
-24. **[CODE_REVIEW_REPORT.md](./CODE_REVIEW_REPORT.md)** - Comprehensive code review
-    - Code quality assessment
-    - Error handling analysis
-    - Logging strategy review
-    - Best practices recommendations
-
-25. **[REFACTORING_PROGRESS.md](./REFACTORING_PROGRESS.md)** - Refactoring status
-    - Completed tasks
-    - In-progress work
-    - Quality improvements
-
-26. **[REFACTORING_COMPLETE_SUMMARY.md](./REFACTORING_COMPLETE_SUMMARY.md)** - Refactoring completion report
-    - All completed refactoring tasks
-    - Quality metrics
-    - Production readiness
-
-27. **[LOGGING_REFACTORING_SUMMARY.md](./LOGGING_REFACTORING_SUMMARY.md)** - Logging standardization
-    - Centralized logging configuration
-    - Debug print replacement
-    - Logging best practices
-
-28. **[COMPREHENSIVE_MULTI_STEP_ANALYSIS.md](./COMPREHENSIVE_MULTI_STEP_ANALYSIS.md)** - Complete project analysis
-    - Documentation review
-    - Codebase structure
-    - Integration verification
-    - Recommendations
+- **[BUTTERFLY_SYSTEM.md](./BUTTERFLY_SYSTEM.md)** - The butterfly architecture metaphor
+- **[CHAOS_TO_PRECISION_ARCHITECTURE.md](./CHAOS_TO_PRECISION_ARCHITECTURE.md)** - Universal transition pattern (10:1 ratio)
+- **[UNIFIED_SYSTEM_GUIDE.md](./UNIFIED_SYSTEM_GUIDE.md)** - Unified system operation guide
 
 ---
 
-## 🗂️ Documentation by Category
+## 🧠 System-Specific Documentation
 
-### Getting Started
-- [QUICK_REFERENCE.md](./QUICK_REFERENCE.md) - One-page reference
-- [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) - Common issues
-- [ARCHITECTURE.md](./ARCHITECTURE.md) - Complete architecture (includes integration approaches)
+### Reality Simulator (Left Wing)
 
-### Architecture
-- [ARCHITECTURE.md](./ARCHITECTURE.md) - Complete system architecture (includes integration approaches)
-- [BUTTERFLY_SYSTEM.md](./BUTTERFLY_SYSTEM.md) - Butterfly metaphor and design
-- [CHAOS_TO_PRECISION_ARCHITECTURE.md](./CHAOS_TO_PRECISION_ARCHITECTURE.md) - Universal transition pattern
+- **[README.md](./README.md)** - Main overview (includes Reality Simulator)
+- **[CONVERGENCE_TEST_GUIDE.md](./CONVERGENCE_TEST_GUIDE.md)** - Network collapse testing
+- **[CAUSATION_EXPLORER_GUIDE.md](./CAUSATION_EXPLORER_GUIDE.md)** - Causation Explorer system
+- **[CAUSATION_EXPLORER_INTEGRATION_GUIDE.md](./CAUSATION_EXPLORER_INTEGRATION_GUIDE.md)** - Integration guide
+- **[HOW_TO_USE_CAUSATION_EXPLORER.md](./HOW_TO_USE_CAUSATION_EXPLORER.md)** - Usage instructions
+- **[SCIENTIFIC_DATA_INTERFACE.md](./SCIENTIFIC_DATA_INTERFACE.md)** - Data interface documentation
+- **[LIVE_MODE_DATA_SOURCES.md](./LIVE_MODE_DATA_SOURCES.md)** - Live mode documentation
 
-### Integration
-- [explorer/COMPLETE_INTEGRATION_GUIDE.md](./explorer/COMPLETE_INTEGRATION_GUIDE.md) - Complete Explorer integration guide
-- [explorer/INTEGRATION_FACILITIES_SUMMARY.md](./explorer/INTEGRATION_FACILITIES_SUMMARY.md) - Integration facilities
-- [ARCHITECTURE.md](./ARCHITECTURE.md) - Integration approaches (Occam's Razor, Three-System)
-- [AGENCY_AS_SYSTEM_ROUTER.md](./AGENCY_AS_SYSTEM_ROUTER.md) - Agency Router system integration
-- [EVENT_BUS_VS_AGENCY_ROUTER.md](./EVENT_BUS_VS_AGENCY_ROUTER.md) - Event Bus integration
+### Explorer (Central Body / Breath Engine)
 
-### Verification
-- [FINAL_VERIFICATION.md](./FINAL_VERIFICATION.md) - Complete verification
-- [VERIFICATION_REPORT.md](./VERIFICATION_REPORT.md) - Initial verification
+- **[explorer/README.md](./explorer/README.md)** - Explorer system overview
+- **[explorer/COMPLETE_INTEGRATION_GUIDE.md](./explorer/COMPLETE_INTEGRATION_GUIDE.md)** - Complete integration guide
+- **[explorer/INTEGRATION_FACILITIES_SUMMARY.md](./explorer/INTEGRATION_FACILITIES_SUMMARY.md)** - Integration facilities
+- **[explorer/INTEGRATION_FILE_INDEX.md](./explorer/INTEGRATION_FILE_INDEX.md)** - Integration file index
+- **[explorer/PROJECT_STRUCTURE.md](./explorer/PROJECT_STRUCTURE.md)** - Project structure
 
-### Technical Deep Dives
-- [VP_THRESHOLD_CLARIFICATION.md](./VP_THRESHOLD_CLARIFICATION.md)
-- [VP_THRESHOLD_ANCHOR_ANALYSIS.md](./VP_THRESHOLD_ANCHOR_ANALYSIS.md)
-- [kernel/Djinn_Kernel_Master_Guide.md](./kernel/Djinn_Kernel_Master_Guide.md)
+### Djinn Kernel (Right Wing)
 
-### System-Specific
-- [README.md](./README.md) - Reality Simulator
-- [explorer/README.md](./explorer/README.md) - Explorer
-- [kernel/README.md](./kernel/README.md) - Djinn Kernel
+- **[kernel/README.md](./kernel/README.md)** - Djinn Kernel overview
+- **[kernel/Djinn_Kernel_Master_Guide.md](./kernel/Djinn_Kernel_Master_Guide.md)** - Complete theory and implementation
+- **[kernel/PROJECT_STRUCTURE.md](./kernel/PROJECT_STRUCTURE.md)** - Detailed project structure
+- **[kernel/uuid_anchor_mathematical_specification.md](./kernel/uuid_anchor_mathematical_specification.md)** - Mathematical specification
+- **[kernel/The_Djinn_Kernel_Complete_Theory_and_Implementation_Guide.md](./kernel/The_Djinn_Kernel_Complete_Theory_and_Implementation_Guide.md)** - Theory guide
+
+---
+
+## 🔬 Technical Deep Dives
+
+### Violation Pressure (VP) System
+
+- **[VP_THRESHOLD_CLARIFICATION.md](./VP_THRESHOLD_CLARIFICATION.md)** - VP threshold analysis (0.3 vs 0.25)
+- **[VP_THRESHOLD_ANCHOR_ANALYSIS.md](./VP_THRESHOLD_ANCHOR_ANALYSIS.md)** - Anchor state analysis
+
+### Integration & Architecture
+
+- **[DJINN_KERNEL_INTEGRATION_REPORT.md](./DJINN_KERNEL_INTEGRATION_REPORT.md)** - Integration analysis
+- **[THREE_SYSTEM_INTEGRATION.md](./THREE_SYSTEM_INTEGRATION.md)** - Three-system integration
+- **[OCCAM_INTEGRATION.md](./OCCAM_INTEGRATION.md)** - Occam's Razor integration approach
+
+### Agency & Event Systems
+
+- **[AGENCY_AS_SYSTEM_ROUTER.md](./AGENCY_AS_SYSTEM_ROUTER.md)** - System-driven decision routing
+- **[EVENT_BUS_VS_AGENCY_ROUTER.md](./EVENT_BUS_VS_AGENCY_ROUTER.md)** - Architecture comparison
+- **[AGENCY_SYSTEM_ANALYSIS.md](./AGENCY_SYSTEM_ANALYSIS.md)** - Agency system analysis
+
+### Visualization & UI
+
+- **[VISUALIZATION_ANALYSIS.md](./VISUALIZATION_ANALYSIS.md)** - Visualization system analysis
+- **[WEB_UI_STATUS.md](./WEB_UI_STATUS.md)** - Web UI status (includes CRA agent integration)
+- **🤖 Convergence Research Assistant (CRA):** AI-powered research assistant in the Causation Explorer
+  - Vision model analyzes graph viewport
+  - Research model answers questions with full system context
+  - Real-time context updates as you navigate
+  - Access to all system logs and shared state
+
+---
+
+## 📊 Analysis & Verification Reports
+
+### Comprehensive Analysis (Most Recent)
+
+- **[COMPREHENSIVE_PROJECT_ANALYSIS_REPORT.md](./COMPREHENSIVE_PROJECT_ANALYSIS_REPORT.md)** - Complete architectural and codebase analysis ⭐ **NEW**
+- **[ANALYSIS_SUMMARY.md](./ANALYSIS_SUMMARY.md)** - Quick analysis summary ⭐ **NEW**
+
+### Previous Analysis Reports
+
+- **[COMPREHENSIVE_MULTI_STEP_ANALYSIS.md](./COMPREHENSIVE_MULTI_STEP_ANALYSIS.md)** - Previous comprehensive analysis
+- **[COMPREHENSIVE_PROJECT_ANALYSIS.md](./COMPREHENSIVE_PROJECT_ANALYSIS.md)** - Early analysis report
+- **[COMPREHENSIVE_ANALYSIS_REPORT.md](./COMPREHENSIVE_ANALYSIS_REPORT.md)** - Analysis report
+
+### Verification Reports
+
+- **[FINAL_VERIFICATION.md](./FINAL_VERIFICATION.md)** - Complete verification of all claims
+- **[CURSOR_DOCUMENTATION_VERIFICATION_REPORT.md](./CURSOR_DOCUMENTATION_VERIFICATION_REPORT.md)** - Documentation verification
+- **[DJINN_KERNEL_INTEGRATION_ASSESSMENT.md](./DJINN_KERNEL_INTEGRATION_ASSESSMENT.md)** - Integration assessment
+
+### Integration Status
+
+- **[ALL_SYSTEMS_WIRED.md](./ALL_SYSTEMS_WIRED.md)** - Integration status (11/11 systems)
+- **[FULL_INTEGRATION_COMPLETE.md](./FULL_INTEGRATION_COMPLETE.md)** - Integration completion
+- **[INTEGRATION_STATUS_FINAL.md](./INTEGRATION_STATUS_FINAL.md)** - Final integration status
+- **[INTEGRATION_STATUS_REPORT.md](./INTEGRATION_STATUS_REPORT.md)** - Integration status report
+- **[COMPLETE_INTEGRATION_TRACE.md](./COMPLETE_INTEGRATION_TRACE.md)** - Integration trace
+
+---
+
+## 🔧 Code Quality & Refactoring
+
+- **[CODE_REVIEW_REPORT.md](./CODE_REVIEW_REPORT.md)** - Comprehensive code review
+- **[REFACTORING_COMPLETE_SUMMARY.md](./REFACTORING_COMPLETE_SUMMARY.md)** - Refactoring completion summary
+- **[REFACTORING_PROGRESS.md](./REFACTORING_PROGRESS.md)** - Refactoring progress tracking
+- **[LOGGING_REFACTORING_SUMMARY.md](./LOGGING_REFACTORING_SUMMARY.md)** - Logging standardization
+- **[REDUNDANT_FILES_ANALYSIS.md](./REDUNDANT_FILES_ANALYSIS.md)** - File cleanup analysis
+- **[CLEANUP_EXECUTED.md](./CLEANUP_EXECUTED.md)** - Cleanup execution report
+- **[CLEANUP_PLAN.md](./CLEANUP_PLAN.md)** - Cleanup plan
+
+---
+
+## 📈 Testing & Status Reports
+
+- **[TEST_SUITE_OVERVIEW.md](./TEST_SUITE_OVERVIEW.md)** - Test suite overview (85+ tests)
+- **[SYSTEM_READINESS_REPORT.md](./SYSTEM_READINESS_REPORT.md)** - System readiness assessment
+- **[SYSTEM_TRACE_REPORT.md](./SYSTEM_TRACE_REPORT.md)** - System trace report
+- **[SYSTEM_UTILIZATION_ANALYSIS.md](./SYSTEM_UTILIZATION_ANALYSIS.md)** - Utilization analysis
+- **[CAUSATION_EXPLORER_VERIFICATION.md](./CAUSATION_EXPLORER_VERIFICATION.md)** - Causation Explorer verification
+- **[explorer/INTEGRATION_TEST_RESULTS.md](./explorer/INTEGRATION_TEST_RESULTS.md)** - Integration test results
+
+---
+
+## 🤝 Collaboration & Processes
+
+- **[GROUNDED_COLLABORATION.md](./GROUNDED_COLLABORATION.md)** - Collaboration framework
+- **[explorer/CONTRIBUTING.md](./explorer/CONTRIBUTING.md)** - Contribution guidelines
+- **[explorer/CODE_OF_CONDUCT.md](./explorer/CODE_OF_CONDUCT.md)** - Code of conduct
+- **[explorer/SECURITY.md](./explorer/SECURITY.md)** - Security policy
+- **[kernel/CONTRIBUTING.md](./kernel/CONTRIBUTING.md)** - Kernel contribution guidelines
+
+---
+
+## 🗂️ Archived Documentation
+
+Historical documentation is archived in `docs/archive/`:
+
+- `docs/archive/INTEGRATION_DIALOGUE_ANALYSIS_REPORT.md` - Integration dialogue analysis
+- `docs/archive/COLLABORATIVE_REPORT_CRITIQUE.md` - Collaborative report critique
 
 ---
 
@@ -358,7 +308,7 @@ Quick fixes:
 - ✅ Debug print statements replaced with proper logging
 - ✅ Centralized logging configuration created
 - ✅ Consistent error handling patterns
-- ✅ Comprehensive test coverage
+- ✅ Comprehensive test coverage (85+ tests)
 
 ---
 
@@ -381,40 +331,7 @@ Quick fixes:
 
 ---
 
-## 📖 Documentation Structure
-
-```
-DOCUMENTATION_HUB.md (this file) - Central index
-├── Quick Start
-├── Documentation Index (21+ files)
-├── Documentation by Category
-├── Key Concepts
-├── System Components
-├── Log Files
-├── Visualization
-└── Troubleshooting
-
-Core Documentation:
-├── README.md - Main entry point
-├── QUICK_REFERENCE.md - One-page reference
-├── TROUBLESHOOTING.md - Common issues
-├── CHANGELOG.md - Version history
-├── ARCHITECTURE.md - System architecture
-└── REDUNDANT_FILES_ANALYSIS.md - File cleanup analysis
-```
-
----
-
-## 🎯 Next Steps
-
-1. **Read:** [ARCHITECTURE.md](./ARCHITECTURE.md) (includes unified system guide)
-2. **Run:** `python unified_entry.py --check-only`
-3. **Test:** `python unified_entry.py`
-4. **Explore:** Individual system documentation
-
----
-
-### 📝 Logging System
+## 📝 Logging System
 
 **Two Complementary Logging Systems:**
 
@@ -443,8 +360,17 @@ logger.info("Info message")
 
 ---
 
-**Last Updated:** 2025-01-XX (Refactoring Complete)  
+## 🎯 Next Steps
+
+1. **Read:** [ARCHITECTURE.md](./ARCHITECTURE.md) - Complete system architecture
+2. **Review:** [COMPREHENSIVE_PROJECT_ANALYSIS_REPORT.md](./COMPREHENSIVE_PROJECT_ANALYSIS_REPORT.md) - Latest analysis
+3. **Run:** `python unified_entry.py --check-only` - Pre-flight checks
+4. **Test:** `python unified_entry.py` - Full system test
+5. **Explore:** Individual system documentation
+
+---
+
+**Last Updated:** 2025-01-XX  
 **Status:** ✅ All systems verified, tested, and documented
 
 **The butterfly is soaring with clean code!** 🦋✨
-
