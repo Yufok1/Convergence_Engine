@@ -65,13 +65,14 @@ class OllamaBridge:
         
         # Build headers (include auth for cloud)
         self.headers = {}
-        if self.is_cloud and self.api_key:
-            self.headers['Authorization'] = f'Bearer {self.api_key}'
-            self.headers['Content-Type'] = 'application/json'  # Explicit content type for cloud
-        
         if self.is_cloud:
             if self.api_key:
+                self.headers['Authorization'] = f'Bearer {self.api_key}'
+                self.headers['Content-Type'] = 'application/json'  # Explicit content type for cloud
                 logger.info(f"✅ OllamaBridge configured for cloud: {self.base_url}")
+                logger.debug(f"Headers initialized: Authorization={bool(self.headers.get('Authorization'))}, "
+                           f"Content-Type={bool(self.headers.get('Content-Type'))}, "
+                           f"API key length={len(self.api_key)}")
             else:
                 logger.warning("⚠️ Ollama Cloud URL detected but OLLAMA_API_KEY not set. Cloud API calls will fail.")
                 logger.info("   Set OLLAMA_API_KEY environment variable or get key from: https://ollama.com/settings/keys")
@@ -90,11 +91,17 @@ class OllamaBridge:
         if timeout is not None:
             self.timeout = timeout
         
-        # Rebuild headers
+        # Rebuild headers - CRITICAL: Always rebuild headers when config changes
         self.headers = {}
-        if self.is_cloud and self.api_key:
-            self.headers['Authorization'] = f'Bearer {self.api_key}'
-            self.headers['Content-Type'] = 'application/json'  # Required for cloud API
+        if self.is_cloud:
+            if self.api_key:
+                self.headers['Authorization'] = f'Bearer {self.api_key}'
+                self.headers['Content-Type'] = 'application/json'  # Required for cloud API
+                logger.debug(f"Headers set: Authorization={bool(self.headers.get('Authorization'))}, "
+                           f"Content-Type={bool(self.headers.get('Content-Type'))}, "
+                           f"API key length={len(self.api_key) if self.api_key else 0}")
+            else:
+                logger.warning("Ollama Cloud configured but API key is missing!")
         
         logger.info(f"OllamaBridge configuration updated: {self.base_url} (cloud: {self.is_cloud}, has_api_key: {bool(self.api_key)})")
     
@@ -152,6 +159,17 @@ class OllamaBridge:
                 "messages": full_messages,
                 "stream": False
             }
+            
+            # Ensure headers are set for cloud requests
+            if self.is_cloud:
+                if not self.api_key:
+                    raise Exception(
+                        "Ollama Cloud API key is missing. Please configure it in the web UI or set OLLAMA_API_KEY environment variable."
+                    )
+                if not self.headers.get('Authorization'):
+                    self.headers['Authorization'] = f'Bearer {self.api_key}'
+                    self.headers['Content-Type'] = 'application/json'
+                    logger.warning("Headers were missing in chat(), rebuilt them before request")
             
             response = requests.post(
                 f"{self.base_url}/api/chat",
@@ -383,6 +401,20 @@ class OllamaBridge:
             # Use /api/chat endpoint (works for both local and cloud)
             # Debug logging for cloud requests
             if self.is_cloud:
+                # Validate API key is set before making request
+                if not self.api_key:
+                    raise Exception(
+                        "Ollama Cloud API key is missing. Please configure it in the web UI or set OLLAMA_API_KEY environment variable. "
+                        "Get your API key from: https://ollama.com/settings/keys"
+                    )
+                
+                # Ensure headers are properly set
+                if not self.headers.get('Authorization'):
+                    # Rebuild headers if they're missing
+                    self.headers['Authorization'] = f'Bearer {self.api_key}'
+                    self.headers['Content-Type'] = 'application/json'
+                    logger.warning("Headers were missing, rebuilt them before request")
+                
                 logger.debug(f"Vision request to cloud: {self.base_url}/api/chat")
                 logger.debug(f"Headers present: Authorization={bool(self.headers.get('Authorization'))}, Content-Type={bool(self.headers.get('Content-Type'))}")
                 logger.debug(f"API key length: {len(self.api_key) if self.api_key else 0}")
@@ -429,6 +461,30 @@ class OllamaBridge:
                         raise Exception(error_msg)
                 except requests.exceptions.HTTPError as e:
                     # HTTP errors (like 401) shouldn't be retried
+                    # But provide better error message for 401
+                    if e.response and e.response.status_code == 401:
+                        # Check if API key is actually set
+                        if not self.api_key:
+                            error_msg = (
+                                "Ollama Cloud authentication failed (401 Unauthorized). "
+                                "API key is missing. Please set OLLAMA_API_KEY environment variable "
+                                "or configure it in the web UI. Get your API key from: https://ollama.com/settings/keys"
+                            )
+                        elif not self.headers.get('Authorization'):
+                            error_msg = (
+                                "Ollama Cloud authentication failed (401 Unauthorized). "
+                                "API key is set but Authorization header is missing. "
+                                "This may be a configuration issue. Please reconfigure your API key."
+                            )
+                        else:
+                            error_msg = (
+                                f"Ollama Cloud authentication failed (401 Unauthorized). "
+                                f"Your API key may be invalid or expired. "
+                                f"Please verify your API key at: https://ollama.com/settings/keys"
+                            )
+                        logger.error(f"401 Unauthorized - API key present: {bool(self.api_key)}, "
+                                   f"Authorization header present: {bool(self.headers.get('Authorization'))}")
+                        raise Exception(error_msg)
                     raise
                 except Exception as e:
                     # Other errors shouldn't be retried
@@ -462,12 +518,28 @@ class OllamaBridge:
                     logger.error(f"API response: {error_message}")
                 except:
                     if status_code == 401:
-                        error_message = (
-                            "Ollama Cloud authentication failed (401 Unauthorized). "
-                            "Your API key may be missing, invalid, or expired. "
-                            "Please check your OLLAMA_API_KEY environment variable or configure it in the web UI. "
-                            "Get a new API key from: https://ollama.com/settings/keys"
-                        )
+                        # Provide detailed 401 error message
+                        if not self.api_key:
+                            error_message = (
+                                "Ollama Cloud authentication failed (401 Unauthorized). "
+                                "API key is missing. Please set OLLAMA_API_KEY environment variable "
+                                "or configure it in the web UI. Get your API key from: https://ollama.com/settings/keys"
+                            )
+                        elif not self.headers.get('Authorization'):
+                            error_message = (
+                                "Ollama Cloud authentication failed (401 Unauthorized). "
+                                "API key is set but Authorization header is missing. "
+                                "This may be a configuration issue. Please reconfigure your API key."
+                            )
+                        else:
+                            error_message = (
+                                f"Ollama Cloud authentication failed (401 Unauthorized). "
+                                f"Your API key may be invalid or expired. "
+                                f"Please verify your API key at: https://ollama.com/settings/keys"
+                            )
+                        logger.error(f"401 Unauthorized - API key present: {bool(self.api_key)}, "
+                                   f"Authorization header present: {bool(self.headers.get('Authorization'))}, "
+                                   f"Headers: {list(self.headers.keys())}")
                     else:
                         error_message = f"HTTP {status_code} error from Ollama Cloud"
             # Return error string instead of None for better error display
