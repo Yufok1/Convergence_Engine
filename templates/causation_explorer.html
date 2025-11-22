@@ -516,6 +516,9 @@
                     <div class="graph-controls-row">
                         <button class="nav-button" onclick="zoomToFit()" title="Zoom to fit all nodes">⛶</button>
                     </div>
+                    <div class="graph-controls-row" style="margin-top: 5px;">
+                        <button id="dragZoomToggle" class="nav-button" onclick="toggleDragZoom()" title="Click and drag on graph to zoom into selection (Shift+Drag also works)">📐 Drag Zoom</button>
+                    </div>
                     <div class="graph-controls-row">
                         <button class="nav-button" onclick="rotateGraph('cw')">↻</button>
                         <button class="nav-button" onclick="rotateGraph('ccw')">↺</button>
@@ -549,7 +552,7 @@
                             <select id="visionModelSelect" style="width: 100%; background: #111; color: #0f0; border: 1px solid #0ff; padding: 5px; font-family: 'Courier New', monospace; font-size: 0.9em;">
                                 <option value="">Loading models...</option>
                             </select>
-                            <div style="font-size: 0.75em; color: #888; margin-top: 3px;">
+                            <div style="font-size: 0.75em; color: #888; margin-top: 3px;" id="visionModelHint">
                                 Vision model (like llava) for analyzing graph screenshots
                             </div>
                         </div>
@@ -633,6 +636,13 @@
             showLabels: true,
             showLinks: true
         };
+        
+        // Drag-to-zoom state
+        let dragZoomEnabled = false;
+        let isDragging = false;
+        let dragStart = { x: 0, y: 0 };
+        let dragEnd = { x: 0, y: 0 };
+        let selectionRect = null;
         
         function loadGraph() {
             d3.json('/api/graph').then(data => {
@@ -884,11 +894,27 @@
             svg = d3.select('#graph')
                 .append('svg')
                 .attr('width', width)
-                .attr('height', height);
+                .attr('height', height)
+                .style('cursor', 'default');
             
-            // Create transform group for pan/zoom/rotate
+            // Create transform group for pan/zoom/rotate (rendered first)
             graphGroup = svg.append('g')
                 .attr('class', 'graph-group');
+            
+            // Create overlay layer for selection rectangle (rendered last, on top of everything)
+            const overlay = svg.append('g')
+                .attr('class', 'overlay')
+                .style('pointer-events', dragZoomEnabled ? 'all' : 'none');
+            
+            // Create selection rectangle (initially hidden)
+            selectionRect = overlay.append('rect')
+                .attr('class', 'selection-rect')
+                .style('fill', 'rgba(0, 255, 255, 0.1)')
+                .style('stroke', '#0ff')
+                .style('stroke-width', 2)
+                .style('stroke-dasharray', '5,5')
+                .style('display', 'none')
+                .attr('rx', 3);
             
             updateTransform();
             
@@ -940,6 +966,20 @@
                 .attr('stroke-linejoin', 'round')
                 .attr('paint-order', 'stroke fill')
                 .style('display', filters.showLabels ? 'block' : 'none');
+            
+            // Prevent node clicks from interfering with drag-to-zoom when enabled
+            node.on('mousedown', function(event) {
+                if (dragZoomEnabled || event.shiftKey) {
+                    event.stopPropagation();
+                }
+            });
+            
+            // Setup drag-to-zoom after graph is rendered
+            setTimeout(() => {
+                if (svg && svg.select('.overlay').node()) {
+                    setupDragZoom();
+                }
+            }, 100);
             
             // Simulation - D3 force simulation will convert IDs to node references
             // Initialize nodes with random positions (not predetermined template)
@@ -1137,6 +1177,190 @@
                 zoomInput.focus();
                 zoomInput.select();
             }
+        }
+        
+        // Toggle drag-to-zoom mode
+        function toggleDragZoom() {
+            dragZoomEnabled = !dragZoomEnabled;
+            const button = document.getElementById('dragZoomToggle');
+            if (button) {
+                if (dragZoomEnabled) {
+                    button.style.background = '#0aa';
+                    button.style.borderColor = '#0ff';
+                    button.title = 'Drag-to-zoom enabled (click and drag on graph, or click again to disable)';
+                } else {
+                    button.style.background = '';
+                    button.style.borderColor = '';
+                    button.title = 'Click and drag on graph to zoom into selection (Shift+Drag also works)';
+                }
+            }
+            
+            // Update overlay pointer events and cursor
+            if (svg && svg.select('.overlay').node()) {
+                svg.select('.overlay').style('pointer-events', dragZoomEnabled ? 'all' : 'none');
+                svg.style('cursor', dragZoomEnabled ? 'crosshair' : 'default');
+            }
+        }
+        
+        // Setup drag-to-zoom functionality
+        function setupDragZoom() {
+            if (!svg) return;
+            
+            const overlay = svg.select('.overlay');
+            if (!overlay.node()) return;
+            
+            // Mouse down - start selection
+            overlay.on('mousedown', function(event) {
+                // Only if drag zoom is enabled OR Shift key is held
+                if (!dragZoomEnabled && !event.shiftKey) return;
+                
+                event.preventDefault();
+                event.stopPropagation();
+                
+                isDragging = true;
+                const coords = d3.pointer(event, svg.node());
+                dragStart.x = coords[0];
+                dragStart.y = coords[1];
+                dragEnd.x = coords[0];
+                dragEnd.y = coords[1];
+                
+                // Show selection rectangle
+                if (selectionRect) {
+                    selectionRect
+                        .style('display', 'block')
+                        .attr('x', dragStart.x)
+                        .attr('y', dragStart.y)
+                        .attr('width', 0)
+                        .attr('height', 0);
+                }
+                
+                svg.style('cursor', 'crosshair');
+            });
+            
+            // Mouse move - update selection rectangle
+            overlay.on('mousemove', function(event) {
+                if (!isDragging) return;
+                
+                event.preventDefault();
+                event.stopPropagation();
+                
+                const coords = d3.pointer(event, svg.node());
+                dragEnd.x = coords[0];
+                dragEnd.y = coords[1];
+                
+                // Update selection rectangle
+                if (selectionRect) {
+                    const x = Math.min(dragStart.x, dragEnd.x);
+                    const y = Math.min(dragStart.y, dragEnd.y);
+                    const width = Math.abs(dragEnd.x - dragStart.x);
+                    const height = Math.abs(dragEnd.y - dragStart.y);
+                    
+                    selectionRect
+                        .attr('x', x)
+                        .attr('y', y)
+                        .attr('width', width)
+                        .attr('height', height);
+                }
+            });
+            
+            // Mouse up - complete selection and zoom
+            overlay.on('mouseup', function(event) {
+                if (!isDragging) return;
+                
+                event.preventDefault();
+                event.stopPropagation();
+                
+                isDragging = false;
+                
+                // Hide selection rectangle
+                if (selectionRect) {
+                    selectionRect.style('display', 'none');
+                }
+                
+                svg.style('cursor', dragZoomEnabled ? 'crosshair' : 'default');
+                
+                // Calculate selection bounds
+                const x1 = Math.min(dragStart.x, dragEnd.x);
+                const y1 = Math.min(dragStart.y, dragEnd.y);
+                const x2 = Math.max(dragStart.x, dragEnd.x);
+                const y2 = Math.max(dragStart.y, dragEnd.y);
+                
+                const selectionWidth = x2 - x1;
+                const selectionHeight = y2 - y1;
+                
+                // Only zoom if selection is large enough (at least 20x20 pixels)
+                if (selectionWidth < 20 || selectionHeight < 20) {
+                    return;
+                }
+                
+                // Calculate zoom and pan to fit selection into viewport
+                const graphWidth = document.getElementById('graph').clientWidth;
+                const graphHeight = 792; // Match graph container height
+                const centerX = graphWidth / 2;
+                const centerY = graphHeight / 2;
+                
+                // Calculate the center of the selection in screen coordinates
+                const selectionCenterX = (x1 + x2) / 2;
+                const selectionCenterY = (y1 + y2) / 2;
+                
+                // Calculate zoom to fit selection (with padding)
+                const padding = 20;
+                const zoomX = (graphWidth - padding * 2) / selectionWidth;
+                const zoomY = (graphHeight - padding * 2) / selectionHeight;
+                const newZoom = Math.min(zoomX, zoomY, 5); // Don't zoom in more than 5x
+                
+                // Transform selection center from screen coords to graph coords
+                // Current transform: translate(centerX + panX, centerY + panY) scale(zoomLevel) rotate(rotation) translate(-centerX, -centerY)
+                // To get graph coords: invert the transform chain
+                const screenX = selectionCenterX - centerX - panX;
+                const screenY = selectionCenterY - centerY - panY;
+                
+                // Apply inverse rotation (rotate around origin)
+                const angleRad = -rotation * Math.PI / 180;
+                const cos = Math.cos(angleRad);
+                const sin = Math.sin(angleRad);
+                const rotatedX = screenX * cos - screenY * sin;
+                const rotatedY = screenX * sin + screenY * cos;
+                
+                // Apply inverse scale and translate
+                const graphX = rotatedX / zoomLevel + centerX;
+                const graphY = rotatedY / zoomLevel + centerY;
+                
+                // Calculate new pan to center the selection
+                // We want selection center to end up at viewport center
+                // With new zoom: translate(centerX + newPanX, centerY + newPanY) scale(newZoom) rotate(rotation) translate(-centerX, -centerY)
+                // Setting selection center to viewport center after transform:
+                // (graphX - centerX) * newZoom * cos(angle) - (graphY - centerY) * newZoom * sin(angle) + centerX + newPanX = centerX
+                // Solving for newPanX and newPanY:
+                const graphDx = graphX - centerX;
+                const graphDy = graphY - centerY;
+                
+                // Transform graph coordinates through rotation and scale
+                const transformedX = graphDx * newZoom * cos - graphDy * newZoom * sin;
+                const transformedY = graphDx * newZoom * sin + graphDy * newZoom * cos;
+                
+                // Calculate pan to center selection
+                const newPanX = centerX - transformedX - centerX;
+                const newPanY = centerY - transformedY - centerY;
+                
+                // Apply zoom and pan
+                zoomLevel = newZoom;
+                panX = newPanX;
+                panY = newPanY;
+                
+                updateTransform();
+            });
+            
+            // Handle mouse leave to cancel drag
+            overlay.on('mouseleave', function(event) {
+                if (isDragging) {
+                    isDragging = false;
+                    if (selectionRect) {
+                        selectionRect.style('display', 'none');
+                    }
+                    svg.style('cursor', dragZoomEnabled ? 'crosshair' : 'default');
+                }
+            });
         }
         
         function getComponentColor(component) {
@@ -1897,10 +2121,10 @@
                     // Create image from SVG
                     const img = new Image();
                     img.onload = function() {
-                        // Aggressively resize for Ollama Cloud (smaller max size)
-                        // Start with smaller dimensions to ensure we stay under limits
-                        const maxWidth = 800;  // Reduced from 1200
-                        const maxHeight = 600; // Reduced from 800
+                        // Optimistic resize: allow larger images for better analysis
+                        // Target ~200KB images max with good quality
+                        const maxWidth = 1200;  // Larger dimensions for detail
+                        const maxHeight = 900; // Better resolution for vision analysis
                         let canvasWidth = svgElement.clientWidth || 800;
                         let canvasHeight = svgElement.clientHeight || 600;
                         
@@ -1926,23 +2150,23 @@
                         ctx.fillRect(0, 0, canvas.width, canvas.height);
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                         
-                        // Aggressively compress: start with lower quality (75%)
-                        // Target max size: 800KB base64 (≈600KB binary)
-                        // Ollama Cloud seems to have strict limits on base64 size
-                        const TARGET_SIZE = 800000; // 800KB base64 string
-                        let base64 = canvas.toDataURL('image/jpeg', 0.75);
+                        // Optimistic compression: target 200KB max (more generous for better quality)
+                        // Allow larger images for better vision model analysis
+                        const TARGET_SIZE = 200000; // 200KB base64 string (optimistic)
+                        // Optimistic compression: start with good quality (85%) for better analysis
+                        let base64 = canvas.toDataURL('image/jpeg', 0.85);
                         
                         // Progressive compression loop until we're under target
-                        let quality = 0.75;
-                        while (base64.length > TARGET_SIZE && quality > 0.3) {
-                            quality -= 0.1; // Reduce quality by 10%
+                        let quality = 0.85;
+                        while (base64.length > TARGET_SIZE && quality > 0.50) {
+                            quality -= 0.10; // Reduce quality by 10% each step
                             base64 = canvas.toDataURL('image/jpeg', quality);
                             
-                            // If still too large, resize the canvas itself
-                            if (base64.length > TARGET_SIZE && canvasWidth > 400) {
-                                const resizeFactor = Math.sqrt(TARGET_SIZE / base64.length) * 0.95; // 95% to be safe
-                                const newWidth = Math.max(400, Math.floor(canvasWidth * resizeFactor));
-                                const newHeight = Math.max(300, Math.floor(canvasHeight * resizeFactor));
+                            // If still too large, resize the canvas itself (less aggressively)
+                            if (base64.length > TARGET_SIZE && canvasWidth > 800) {
+                                const resizeFactor = Math.sqrt(TARGET_SIZE / base64.length) * 0.95; // 95% to preserve quality
+                                const newWidth = Math.max(800, Math.floor(canvasWidth * resizeFactor));
+                                const newHeight = Math.max(600, Math.floor(canvasHeight * resizeFactor));
                                 
                                 const resizedCanvas = document.createElement('canvas');
                                 resizedCanvas.width = newWidth;
@@ -2071,10 +2295,19 @@
                         }
                     }
                     
-                    // Update status
+                    // Update status and show cloud vision hint
                     const totalModels = (availableModels.text?.length || 0) + (availableModels.vision?.length || 0);
                     if (totalModels > 0) {
                         updateChatStatus(`Loaded ${totalModels} model(s)`);
+                        
+                        // Show hint for Ollama Cloud users about vision models
+                        if (data.is_cloud && data.cloud_vision_hint) {
+                            const hintDiv = document.getElementById('visionModelHint');
+                            if (hintDiv) {
+                                hintDiv.innerHTML = `Vision model for cloud: <span style="color: #0ff; font-weight: bold;">${data.cloud_vision_hint}</span> is recommended`;
+                                hintDiv.style.color = '#0aa';
+                            }
+                        }
                     } else {
                         updateChatStatus('No models found. Make sure Ollama is running and models are downloaded.');
                     }

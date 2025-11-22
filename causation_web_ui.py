@@ -57,6 +57,7 @@ class OllamaBridge:
         self.headers = {}
         if self.is_cloud and self.api_key:
             self.headers['Authorization'] = f'Bearer {self.api_key}'
+            self.headers['Content-Type'] = 'application/json'  # Explicit content type for cloud
         
         if self.is_cloud:
             if self.api_key:
@@ -145,12 +146,81 @@ class OllamaBridge:
             logger.error(f"Error in Ollama chat: {e}", exc_info=True)
             return None
     
-    def vision(self, model: str, image_base64: str, prompt: str) -> Optional[str]:
-        """Send image and prompt to vision model"""
+    def vision(self, model: str, images: List[str], prompt: str) -> Optional[str]:
+        """Send one or more images with prompt to vision model
+        
+        Args:
+            model: Vision model name
+            images: List of base64-encoded images (or single image as string for backwards compat)
+            prompt: Minimal prompt for vision model
+        """
         try:
-            # Remove data URL prefix if present
-            if image_base64.startswith('data:image'):
-                image_base64 = image_base64.split(',')[1]
+            # Handle both single image (backwards compat) and list of images
+            if isinstance(images, str):
+                images = [images]
+            
+            # Clean images (remove data URL prefix if present)
+            cleaned_images = []
+            total_image_size = 0
+            for img in images:
+                if img.startswith('data:image'):
+                    img = img.split(',')[1]
+                cleaned_images.append(img)
+                total_image_size += len(img.encode('utf-8'))
+            
+            # Check total payload size (all images + prompt + JSON overhead)
+            prompt_bytes = len(prompt.encode('utf-8'))
+            estimated_json_overhead = 1000  # Model name, structure, array overhead
+            total_payload_estimate = total_image_size + prompt_bytes + estimated_json_overhead
+            
+            # Log payload size for debugging
+            logger.debug(f"Vision payload: {len(cleaned_images)} image(s)={total_image_size/1024:.1f}KB, Prompt={prompt_bytes/1024:.1f}KB, Total≈{total_payload_estimate/1024:.1f}KB")
+            
+            # Optimistic payload limits: allow larger batches for better analysis
+            # Target: 200KB max total payload (allows multiple images + prompt)
+            # More generous limits for comprehensive vision analysis
+            max_total_payload = 200 * 1024  # 200KB - optimistic limit for batch processing
+            if total_payload_estimate > max_total_payload:
+                # Calculate how many images we can fit
+                avg_image_size = total_image_size / len(cleaned_images) if cleaned_images else 0
+                if avg_image_size > 0:
+                    # Leave room for prompt + overhead (estimate ~1KB)
+                    max_images = max(1, int((max_total_payload - prompt_bytes - estimated_json_overhead) / avg_image_size))
+                    
+                    if len(cleaned_images) > max_images:
+                        # Keep most recent images (they're most informative for evolution)
+                        original_count = len(cleaned_images)
+                        cleaned_images = cleaned_images[-max_images:]
+                        total_image_size = sum(len(img.encode('utf-8')) for img in cleaned_images)
+                        total_payload_estimate = total_image_size + prompt_bytes + estimated_json_overhead
+                        logger.warning(f"Reduced images from {original_count} to {len(cleaned_images)} (avg {avg_image_size/1024:.1f}KB/image, total payload {total_payload_estimate/1024:.1f}KB)")
+                
+                # If still too large even with reduced images, truncate prompt
+                if total_payload_estimate > max_total_payload:
+                    max_prompt_size = max_total_payload - total_image_size - estimated_json_overhead
+                    if max_prompt_size > 50:  # Need at least 50 bytes for prompt
+                        prompt = prompt[:max_prompt_size] + "...[truncated]"
+                        logger.warning(f"Truncated prompt to {max_prompt_size} bytes")
+                    else:
+                        # Images alone are too large - try to reduce to just 1 (current state)
+                        if len(cleaned_images) > 1:
+                            logger.warning(f"Images too large ({total_image_size/1024:.1f}KB), keeping only most recent image")
+                            cleaned_images = cleaned_images[-1:]
+                            total_image_size = len(cleaned_images[0].encode('utf-8'))
+                            total_payload_estimate = total_image_size + prompt_bytes + estimated_json_overhead
+                            
+                            if total_payload_estimate > max_total_payload:
+                                # If even single image is too large, skip vision analysis gracefully
+                                logger.warning(f"Image too large for Ollama Cloud ({total_image_size/1024:.1f}KB, max ~{max_total_payload/1024:.0f}KB). Skipping vision analysis.")
+                                if self.is_cloud:
+                                    raise Exception(f"Image too large for Ollama Cloud preview ({total_image_size/1024:.1f}KB). Vision models may have limited support in cloud. Try reducing graph complexity or use local Ollama.")
+                                else:
+                                    raise Exception(f"Image too large ({total_image_size/1024:.1f}KB) for vision API")
+                        else:
+                            if self.is_cloud:
+                                raise Exception(f"Image too large for Ollama Cloud preview ({total_image_size/1024:.1f}KB). Vision models may have limited support. Try reducing graph complexity or use local Ollama.")
+                            else:
+                                raise Exception(f"Image too large ({total_image_size/1024:.1f}KB) for vision API")
             
             # Ollama Cloud and newer local versions use /api/chat for vision models
             # Use chat endpoint format for both local and cloud
@@ -158,7 +228,7 @@ class OllamaBridge:
                 {
                     "role": "user",
                     "content": prompt,
-                    "images": [image_base64]
+                    "images": cleaned_images  # Send all images
                 }
             ]
             
@@ -1675,7 +1745,9 @@ def list_ollama_models():
             name_lower = model_name.lower()
             
             # Common vision model patterns
-            if any(keyword in name_lower for keyword in ['vision', 'llava', 'clip', 'minicpm-v', 'bakllava', 'moondream']):
+            # Ollama Cloud only supports Qwen3-VL for vision (in preview)
+            # Local Ollama supports: llava, bakllava, moondream, minicpm-v, etc.
+            if any(keyword in name_lower for keyword in ['vision', 'llava', 'clip', 'minicpm-v', 'bakllava', 'moondream', 'qwen3-vl', 'qwen-vl', 'qwen3vl']):
                 vision_models.append({'name': model_name, 'model': model_name})
             else:
                 text_models.append({'name': model_name, 'model': model_name})
@@ -1686,10 +1758,22 @@ def list_ollama_models():
         if not vision_models and all_models:
             vision_models = all_models.copy()
         
+        # For Ollama Cloud, prioritize Qwen3-VL for vision (it's the only supported vision model)
+        if ollama_bridge.is_cloud:
+            # Find Qwen3-VL models and move them to front
+            qwen_models = [m for m in vision_models if 'qwen3-vl' in m.get('name', '').lower() or 'qwen-vl' in m.get('name', '').lower()]
+            if qwen_models:
+                # Remove Qwen models from their current position
+                vision_models = [m for m in vision_models if 'qwen3-vl' not in m.get('name', '').lower() and 'qwen-vl' not in m.get('name', '').lower()]
+                # Add Qwen models to front
+                vision_models = qwen_models + vision_models
+        
         return jsonify({
             'models': all_models,
             'text_models': text_models,
-            'vision_models': vision_models
+            'vision_models': vision_models,
+            'is_cloud': ollama_bridge.is_cloud,
+            'cloud_vision_hint': 'Qwen3-VL' if ollama_bridge.is_cloud else None
         })
     except Exception as e:
         logger.error(f"Error listing Ollama models: {e}", exc_info=True)
@@ -1740,59 +1824,72 @@ def ollama_chat():
         if anomalies:
             context['anomalies'] = anomalies
         
-        # If graph image provided, analyze it with vision model using full context + evolutionary snapshots
+        # If graph image provided, analyze it with vision model (images only, no context)
+        # Vision model gets ONLY images. CRA gets vision analysis + all context.
         visual_description = None
         vision_error = None
         if graph_image and data.get('vision_model'):
             vision_model = data.get('vision_model')
             
-            # Check image size (Ollama Cloud has strict limits on base64 image size)
-            image_size = len(graph_image) if graph_image else 0
-            # Ollama Cloud seems to limit base64 images to around 1MB
-            # Base64 is ~33% larger than binary, so 1MB base64 ≈ 750KB binary
-            max_image_size = 1024 * 1024  # 1MB base64 string
-            if image_size > max_image_size:
-                vision_error = f"Image too large ({image_size / 1024:.1f}KB, max: {max_image_size / 1024:.1f}KB). Graph is too complex - try zooming in or filtering nodes."
-                logger.warning(f"Vision image too large: {image_size / 1024:.1f}KB (max: {max_image_size / 1024:.1f}KB)")
+            # Collect all images: current + evolutionary snapshots
+            # Strategy: Send 2-3 most recent snapshots for evolution analysis
+            # Reason: Multiple images = better evolution tracking, but payload limits constrain us
+            MAX_VISION_IMAGES = 5  # Max snapshots to send (current + 4 previous) - more optimistic
+            
+            all_images = []
+            
+            # Add evolutionary snapshots first (they're older)
+            if evolutionary_snapshots:
+                # Extract images from snapshots (already sorted oldest to newest)
+                snapshot_images = []
+                for snapshot in evolutionary_snapshots:
+                    if isinstance(snapshot, dict) and 'image' in snapshot:
+                        img = snapshot['image']
+                        if img:  # Only add non-empty images
+                            snapshot_images.append(img)
+                    elif isinstance(snapshot, str):
+                        snapshot_images.append(snapshot)
+                
+                # Keep only the most recent evolutionary snapshots (keep last N-1, since we'll add current)
+                if len(snapshot_images) > (MAX_VISION_IMAGES - 1):
+                    snapshot_images = snapshot_images[-(MAX_VISION_IMAGES - 1):]
+                    logger.debug(f"Limited evolutionary snapshots from {len(evolutionary_snapshots)} to {len(snapshot_images)}")
+                
+                all_images.extend(snapshot_images)
+            
+            # Add current image last (it's the newest)
+            if graph_image:
+                all_images.append(graph_image)
+            
+            # Final limit check - never send more than MAX
+            if len(all_images) > MAX_VISION_IMAGES:
+                all_images = all_images[-MAX_VISION_IMAGES:]
+                logger.debug(f"Final limit: keeping {MAX_VISION_IMAGES} most recent images")
+            
+            if not all_images:
+                vision_error = "No images available for vision analysis."
             else:
-                logger.info(f"Vision image size: {image_size / 1024:.1f}KB (within limit)")
-                # Build comprehensive vision prompt with full context
-                vision_prompt_parts = []
-                vision_prompt_parts.append("You are analyzing a causation graph visualization from the Butterfly System.")
-                vision_prompt_parts.append("This graph shows cause-effect relationships between events in the system.")
-                vision_prompt_parts.append("\n# System Context:")
-                vision_prompt_parts.append(context.get('current_state', 'No state data available'))
-                vision_prompt_parts.append("\n# Graph Statistics:")
-                vision_prompt_parts.append(context.get('graph_context', 'No graph context available'))
-                vision_prompt_parts.append("\n# Recent Activity:")
-                vision_prompt_parts.append(context.get('recent_logs', 'No log data available'))
+                # Log what we're sending
+                logger.info(f"Vision model: Analyzing {len(all_images)} snapshot(s) - {'current + ' + str(len(all_images)-1) + ' evolutionary' if len(all_images) > 1 else 'current state'}")
                 
-                # Add evolutionary context if snapshots available
-                if evolutionary_snapshots and len(evolutionary_snapshots) > 1:
-                    vision_prompt_parts.append(f"\n# Evolutionary Context:")
-                    vision_prompt_parts.append(f"You are receiving {len(evolutionary_snapshots)} snapshots showing the graph evolution over time.")
-                    vision_prompt_parts.append("The snapshots are ordered from oldest to newest.")
-                    vision_prompt_parts.append("Compare how the graph structure, node positions, and connections have evolved.")
-                    vision_prompt_parts.append("Identify trends, growth patterns, and structural changes over time.")
+                # Minimal prompt for vision model - ONLY asks it to describe what it sees
+                # NO system context - that goes to CRA instead
+                if len(all_images) > 1:
+                    vision_prompt = f"These {len(all_images)} images show the evolution of a causation graph over time (oldest to newest). Compare them and describe: What changes do you see? How does the graph structure, node positions, connections, and patterns evolve? Describe the evolution timeline."
+                else:
+                    vision_prompt = "Describe this causation graph visualization: What do you see? Nodes, clusters, connections, patterns, structure."
                 
-                vision_prompt_parts.append("\n# Analysis Task:")
-                vision_prompt_parts.append("Describe what you see in this causation graph visualization.")
-                vision_prompt_parts.append("Identify visible nodes, clusters, connections, and patterns.")
-                vision_prompt_parts.append("Correlate what you see with the system context above.")
-                if evolutionary_snapshots and len(evolutionary_snapshots) > 1:
-                    vision_prompt_parts.append("Compare the current snapshot with previous snapshots to identify evolutionary trends.")
-                vision_prompt_parts.append("What patterns or anomalies do you notice?")
-                vision_prompt_parts.append("How does the visual structure relate to the system state?")
-                
-                vision_prompt = "\n".join(vision_prompt_parts)
-                
-                # Analyze with current image (batch analysis requires multi-image support)
+                # Vision model ONLY gets images + minimal prompt
+                # All context will go to CRA after vision analysis
                 try:
-                    visual_description = ollama_bridge.vision(vision_model, graph_image, vision_prompt)
-                    if visual_description and evolutionary_snapshots and len(evolutionary_snapshots) > 1:
-                        visual_description = f"[Evolutionary Analysis - {len(evolutionary_snapshots)} snapshots]\n{visual_description}"
+                    visual_description = ollama_bridge.vision(vision_model, all_images, vision_prompt)
                     
                     if visual_description:
+                        # Add metadata about snapshots for CRA context
+                        if len(all_images) > 1:
+                            visual_description = f"[Visual Evolution Analysis - {len(all_images)} snapshots]\n{visual_description}"
+                        
+                        # Pass vision analysis to CRA context (CRA has all the data points)
                         context['visual_description'] = visual_description
                 except Exception as e:
                     vision_error = f"Vision model error: {str(e)}"
