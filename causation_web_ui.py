@@ -1896,27 +1896,43 @@ def get_graph():
     if explorer is None:
         return jsonify({'nodes': [], 'links': [], 'error': 'Causation Explorer not initialized'}), 200
     try:
-        # Phase 2: Load latest state from shared state file (force reload on each request to get latest data)
-        # This ensures that even if the simulation started before the web UI, we still load the latest data
+        # Phase 2: Load latest state from shared state file ONLY if simulation is running
+        # Check simulation control file to see if simulation is actually running
+        # IMPORTANT: unified_entry.py runs autonomously, so we must check the control file
+        # to know if the user has started the simulation via the web UI
         try:
-            shared_state_path = Path('data/.shared_simulation_state.json')
-            if shared_state_path.exists():
-                # Check file modification time to see if it's been updated recently
-                import os
-                file_mtime = os.path.getmtime(shared_state_path)
-                current_time = time.time()
-                
-                # If file was modified in the last 10 seconds, definitely reload
-                if (current_time - file_mtime) < 10:
-                    logger.info(f"Shared state file recently updated ({current_time - file_mtime:.1f}s ago), loading...")
-                    explorer._load_from_shared_state(force_reload=True)  # Force reload recent data
+            control_file = project_root / 'data' / '.simulation_control.json'
+            simulation_running = False
+            if control_file.exists():
+                with open(control_file, 'r') as f:
+                    control = json.load(f)
+                    simulation_running = bool(control.get('running', False))
+
+            # CRITICAL: Only load from shared state if simulation is actually running
+            # If stopped, return existing graph data only (no new events from shared state)
+            if simulation_running:
+                shared_state_path = Path('data/.shared_simulation_state.json')
+                if shared_state_path.exists():
+                    # Check file modification time to see if it's been updated recently
+                    import os
+                    file_mtime = os.path.getmtime(shared_state_path)
+                    current_time = time.time()
+
+                    # If file was modified in the last 10 seconds, definitely reload
+                    if (current_time - file_mtime) < 10:
+                        logger.info(f"Shared state file recently updated ({current_time - file_mtime:.1f}s ago), loading...")
+                        explorer._load_from_shared_state(force_reload=True)  # Force reload recent data
+                    else:
+                        # File exists but might be old, still try incremental load
+                        explorer._load_from_shared_state(force_reload=False)
                 else:
-                    # File exists but might be old, still try incremental load
-                    explorer._load_from_shared_state(force_reload=False)
+                    logger.debug("Shared state file does not exist yet")
             else:
-                logger.debug("Shared state file does not exist yet")
+                logger.info("Simulation is stopped - returning existing graph data only (not loading from shared state)")
         except Exception as e:
-            logger.warning(f"Could not load from shared state: {e}", exc_info=True)
+            logger.warning(f"Could not check simulation status: {e}", exc_info=True)
+            # On error, default to NOT loading from shared state (safer)
+            logger.debug("Error checking simulation status - not loading from shared state")
         
         nodes = []
         links = []
