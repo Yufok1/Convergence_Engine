@@ -37,7 +37,7 @@
             width: 1200px; /* Triple the width (400px * 3) to match graph right edge */
             max-width: calc(100% - 300px); /* Don't exceed available space */
             margin-left: 30px; /* Offset to align properly with graph area */
-            margin-top: -550px; /* Move up by approximately its height */
+            margin-top: -750px; /* Move up to align with bottom of graph */
             position: relative;
             z-index: 100; /* Ensure dropdowns appear above other elements */
         }
@@ -141,7 +141,7 @@
         }
         #graph {
             width: 100%;
-            height: 600px;
+            height: 792px; /* Increased from 600px to 792px (added ~192px / 2 inches) */
             border: 1px solid #0ff;
             background: #000;
             margin: 20px 0;
@@ -161,8 +161,13 @@
             stroke-width: 2px;
         }
         .node text {
-            fill: #0f0;
+            fill: #000000;
+            stroke: #FFFFFF;
+            stroke-width: 2px;
+            stroke-linejoin: round;
+            paint-order: stroke fill;
             font-size: 10px;
+            font-weight: bold;
         }
         .link {
             stroke: #0aa;
@@ -323,9 +328,9 @@
         
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
             <div class="search-box" style="flex: 1; margin-right: 10px;">
-                <input type="text" id="searchInput" placeholder="Search events (e.g., 'collapse', 'modularity', 'VP')">
-                <button onclick="searchEvents()">Search</button>
-                <button onclick="loadGraph()">Load Full Graph</button>
+            <input type="text" id="searchInput" placeholder="Search events (e.g., 'collapse', 'modularity', 'VP')">
+            <button onclick="searchEvents()">Search</button>
+            <button onclick="loadGraph()">Load Full Graph</button>
             </div>
             <div style="background: #111; border: 1px solid #0ff; padding: 10px; text-align: center;">
                 <div id="liveStatus" style="color: #0aa;">● Historical Mode</div>
@@ -394,6 +399,35 @@
                     <div class="filter-item">
                         <label><input type="checkbox" id="show-links" checked onchange="toggleLinks()">
                             <span>Causation Links</span></label>
+                    </div>
+                    <div class="filter-item">
+                        <label><input type="checkbox" id="show-temporal-paths" onchange="toggleTemporalPaths()">
+                            <span>Temporal Paths</span></label>
+                    </div>
+                </div>
+                
+                <div class="filter-section" style="border-top: 2px solid #0ff; margin-top: 20px; padding-top: 15px;">
+                    <h4 style="color: #ff0;">⚙️ Ollama Settings</h4>
+                    <div class="filter-item" style="margin-bottom: 10px;">
+                        <label style="display: block; margin-bottom: 5px; color: #0ff;">
+                            <input type="checkbox" id="ollamaCloudMode" onchange="toggleCloudMode()" style="margin-right: 5px;">
+                            <span>Use Ollama Cloud</span>
+                        </label>
+                        <div id="cloudSettings" style="display: none; margin-top: 10px; padding: 10px; background: #000; border: 1px solid #0aa;">
+                            <label style="display: block; margin-bottom: 5px; color: #0ff; font-size: 0.9em;">API Key:</label>
+                            <input type="password" id="ollamaApiKey" placeholder="Enter your API key" 
+                                   style="width: 100%; padding: 5px; background: #111; border: 1px solid #0aa; color: #0ff; font-size: 0.85em; margin-bottom: 10px;">
+                            <button onclick="saveOllamaConfig()" style="width: 100%; padding: 5px; background: #0aa; border: 1px solid #0ff; color: #0ff; cursor: pointer; font-size: 0.85em;">
+                                💾 Save & Apply
+                            </button>
+                            <div id="configStatus" style="margin-top: 5px; font-size: 0.8em; color: #0aa;"></div>
+                        </div>
+                        <div style="margin-top: 10px; font-size: 0.75em; color: #0aa;">
+                            <a href="https://ollama.com/settings/keys" target="_blank" style="color: #0ff;">Get API Key →</a>
+                        </div>
+                    </div>
+                    <div id="ollamaConnectionStatus" style="margin-top: 10px; padding: 5px; background: #000; border: 1px solid #0aa; font-size: 0.85em; color: #0aa;">
+                        Loading...
                     </div>
                 </div>
                 
@@ -466,7 +500,18 @@
                         <button class="nav-button" onclick="zoomFine('out')" title="Fine zoom out">−−</button>
                     </div>
                     <div class="graph-controls-row" style="font-size: 0.7em; color: #0aa; padding-top: 5px;">
-                        <span id="zoomLevel">5%</span>
+                        <input type="number" id="zoomInput" value="5" min="1" max="500" step="1" 
+                               style="width: 60px; background: #000; border: 1px solid #0aa; color: #0ff; text-align: center; font-size: 0.9em; padding: 2px;"
+                               onchange="setZoomFromInput()" 
+                               onkeypress="if(event.key === 'Enter') setZoomFromInput()">
+                        <span style="color: #0aa; margin-left: 3px;">%</span>
+                        <button class="nav-button" onclick="document.getElementById('zoomInput').focus()" title="Click to edit zoom" style="margin-left: 5px; font-size: 0.8em; padding: 2px 5px;">✎</button>
+                    </div>
+                    <div class="graph-controls-row" style="gap: 3px; flex-wrap: wrap; justify-content: center; margin-top: 5px;">
+                        <button class="nav-button" onclick="setZoomPreset(0.01)" title="1% - Maximum overview" style="font-size: 0.75em; padding: 2px 5px;">1%</button>
+                        <button class="nav-button" onclick="setZoomPreset(0.05)" title="5% - Standard overview" style="font-size: 0.75em; padding: 2px 5px;">5%</button>
+                        <button class="nav-button" onclick="setZoomPreset(0.5)" title="50% - Detailed view" style="font-size: 0.75em; padding: 2px 5px;">50%</button>
+                        <button class="nav-button" onclick="setZoomPreset(5.0)" title="500% - Maximum detail" style="font-size: 0.75em; padding: 2px 5px;">500%</button>
                     </div>
                     <div class="graph-controls-row">
                         <button class="nav-button" onclick="zoomToFit()" title="Zoom to fit all nodes">⛶</button>
@@ -476,12 +521,12 @@
                         <button class="nav-button" onclick="rotateGraph('ccw')">↺</button>
                     </div>
                 </div>
-                <div id="graph"></div>
+        <div id="graph"></div>
             </div>
         </div>
         
         <!-- Convergence Research Assistant (CRA) Chat Interface - Below graph, aligned to right of settings panel -->
-        <div class="main-content" style="align-items: flex-start;">
+        <div class="main-content" style="align-items: flex-start; margin-top: -50px;">
             <!-- Spacer to align with settings panel width -->
             <div style="width: 250px; flex-shrink: 0;"></div>
             
@@ -509,7 +554,12 @@
                             </div>
                         </div>
                     </div>
-                    <div id="chatMessages" style="height: 300px; overflow-y: auto; background: #000; border: 1px solid #0ff; padding: 10px; margin-bottom: 10px; font-size: 0.9em;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; gap: 5px;">
+                        <label style="color: #0ff; font-size: 0.9em; font-weight: bold;">Chat Log</label>
+                        <button onclick="copyAllChat()" style="padding: 4px 10px; background: #0aa; border: 1px solid #0ff; color: #0ff; cursor: pointer; font-size: 0.8em; font-family: 'Courier New', monospace;" title="Copy all chat messages to clipboard">📋 Copy All</button>
+                        <button onclick="exportAnalysis()" style="padding: 4px 10px; background: #0aa; border: 1px solid #0ff; color: #0ff; cursor: pointer; font-size: 0.8em; font-family: 'Courier New', monospace;" title="Export analysis report to file">💾 Export</button>
+                    </div>
+                    <div id="chatMessages" style="height: 550px; overflow-y: auto; background: #000; border: 1px solid #0ff; padding: 10px; margin-bottom: 10px; font-size: 0.9em;">
                         <div style="color: #0aa; margin-bottom: 10px;">CRA: Hello! I'm your Convergence Research Assistant. I have access to all system logs, shared state, and the causation graph. Ask me anything about the Butterfly System!</div>
                     </div>
                     <div style="display: flex; gap: 10px;">
@@ -521,8 +571,8 @@
             </div>
         </div>
         
-        
         <!-- Info panels below main content -->
+        <div style="margin-top: -50px;">
         <div class="info-panel">
             <h3>Selected Event</h3>
             <div id="eventInfo">Click an event to explore</div>
@@ -536,6 +586,7 @@
         <div class="info-panel">
             <h3>Effects (What Did This Cause?)</h3>
             <div id="forwardsTrail">Explore forwards to see effects</div>
+        </div>
         </div>
     </div>
     
@@ -555,6 +606,11 @@
         let liveModeInterval = null;
         let lastEventTimestamp = 0;
         let lastGraphUpdate = 0;
+        
+        // Evolutionary snapshot history for vision model
+        let snapshotHistory = [];
+        const MAX_SNAPSHOTS = 10; // Keep last 10 snapshots (with compression, can send more)
+        const MAX_PAYLOAD_SIZE = 8000000; // Max 8MB total payload (safety limit for APIs)
         
         // Filter state
         let filters = {
@@ -728,11 +784,102 @@
             }
         }
         
+        function toggleTemporalPaths() {
+            filters.showTemporalPaths = document.getElementById('show-temporal-paths').checked;
+            if (svg) {
+                // Remove existing temporal paths
+                svg.selectAll('.temporal-path').remove();
+                
+                if (filters.showTemporalPaths && filteredNodes.length > 0) {
+                    // Add temporal path visualization
+                    addTemporalPaths(filteredNodes, filteredLinks);
+                }
+            }
+        }
+        
+        // Add temporal trajectory paths
+        function addTemporalPaths(nodes) {
+            if (!graphGroup || !nodes || nodes.length === 0) return;
+            
+            // Remove existing paths
+            graphGroup.selectAll('.temporal-path').remove();
+            
+            // Sort nodes by timestamp
+            const sortedNodes = [...nodes].filter(n => n.timestamp).sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+            
+            if (sortedNodes.length < 2) return;
+            
+            // Group nodes by component and create trajectories
+            const componentPaths = {};
+            sortedNodes.forEach(node => {
+                const comp = node.component || 'unknown';
+                if (!componentPaths[comp]) {
+                    componentPaths[comp] = [];
+                }
+                componentPaths[comp].push(node);
+            });
+            
+            // Draw temporal paths for each component
+            Object.entries(componentPaths).forEach(([component, pathNodes]) => {
+                if (pathNodes.length < 2) return;
+                
+                // Create path line following temporal sequence
+                const line = d3.line()
+                    .x(d => d.x || 0)
+                    .y(d => d.y || 0)
+                    .curve(d3.curveCardinal);
+                
+                const pathData = pathNodes.map(n => ({
+                    x: n.x || 0,
+                    y: n.y || 0
+                }));
+                
+                graphGroup.append('path')
+                    .datum(pathData)
+                    .attr('class', 'temporal-path')
+                    .attr('d', line)
+                    .attr('fill', 'none')
+                    .attr('stroke', getComponentColor(component))
+                    .attr('stroke-width', 2)
+                    .attr('stroke-opacity', 0.3)
+                    .attr('stroke-dasharray', '5,5')
+                    .lower(); // Send to back
+            });
+        }
+        
+        // Update temporal paths on simulation tick
+        function updateTemporalPaths() {
+            if (!graphGroup || !simulation) return;
+            
+            graphGroup.selectAll('.temporal-path').each(function() {
+                const path = d3.select(this);
+                const pathData = path.datum();
+                
+                // Update path data with current node positions
+                const updatedData = pathData.map(p => {
+                    const node = simulation.nodes().find(n => 
+                        Math.abs((n.x || 0) - p.x) < 1 && Math.abs((n.y || 0) - p.y) < 1
+                    );
+                    if (node) {
+                        return { x: node.x || 0, y: node.y || 0 };
+                    }
+                    return p;
+                });
+                
+                const line = d3.line()
+                    .x(d => d.x || 0)
+                    .y(d => d.y || 0)
+                    .curve(d3.curveCardinal);
+                
+                path.attr('d', line(updatedData));
+            });
+        }
+        
         function renderGraph() {
             d3.select('#graph').selectAll('*').remove();
             
             const width = document.getElementById('graph').clientWidth;
-            const height = 600;
+            const height = 792; // Match increased graph container height
             
             svg = d3.select('#graph')
                 .append('svg')
@@ -752,9 +899,10 @@
             const link = graphGroup.append('g')
                 .attr('class', 'links')
                 .selectAll('line')
-                .data(links)
+                .data(links, d => d.source.id + '-' + d.target.id)
                 .enter().append('line')
                 .attr('class', 'link')
+                .attr('data-link-id', (d, i) => 'link-' + i)
                 .attr('stroke', d => getLinkColor(d.type || d.causation_type || 'unknown'))
                 .attr('stroke-width', d => Math.max(2, (d.strength || 0.5) * 5))
                 .attr('stroke-opacity', d => Math.min(0.8, 0.4 + (d.strength || 0.5)))
@@ -764,9 +912,10 @@
             const node = graphGroup.append('g')
                 .attr('class', 'nodes')
                 .selectAll('g')
-                .data(nodes)
+                .data(nodes, d => d.id)
                 .enter().append('g')
                 .attr('class', 'node')
+                .attr('data-node-id', d => d.id)
                 .on('click', (event, d) => selectNode(d));
             
             node.append('circle')
@@ -780,13 +929,16 @@
                     const comp = d.component || 'unknown';
                     return comp.substring(0, 12).toUpperCase();
                 })
+                .attr('data-node-id', d => d.id)
                 .attr('dx', 15)
                 .attr('dy', 5)
                 .attr('font-size', '11px')
                 .attr('font-weight', 'bold')
-                .attr('fill', '#FFFFFF')
-                .attr('stroke', '#000000')
-                .attr('stroke-width', '0.5px')
+                .attr('fill', '#000000')
+                .attr('stroke', '#FFFFFF')
+                .attr('stroke-width', '2px')
+                .attr('stroke-linejoin', 'round')
+                .attr('paint-order', 'stroke fill')
                 .style('display', filters.showLabels ? 'block' : 'none');
             
             // Simulation - D3 force simulation will convert IDs to node references
@@ -808,6 +960,11 @@
                 .force('center', d3.forceCenter(width / 2, height / 2))
                 .velocityDecay(0.6); // Higher decay = more stable, less jittery
             
+            // Add temporal trajectories overlay (shows paths through time)
+            if (filters.showTemporalPaths) {
+                addTemporalPaths(nodes, links);
+            }
+            
             simulation.on('tick', () => {
                 link
                     .attr('x1', d => d.source.x || 0)
@@ -817,7 +974,19 @@
                 
                 node
                     .attr('transform', d => `translate(${d.x || 0},${d.y || 0})`);
+                
+                // Update temporal paths if enabled
+                if (filters.showTemporalPaths) {
+                    updateTemporalPaths();
+                }
             });
+            
+            // Initial temporal paths if enabled
+            if (filters.showTemporalPaths) {
+                simulation.on('end', () => {
+                    addTemporalPaths(nodes);
+                });
+            }
         }
         
         // Navigation functions
@@ -834,10 +1003,10 @@
             `);
             
             // Update zoom level display
-            const zoomDisplay = document.getElementById('zoomLevel');
-            if (zoomDisplay) {
+            const zoomInput = document.getElementById('zoomInput');
+            if (zoomInput) {
                 const percent = Math.round(zoomLevel * 100);
-                zoomDisplay.textContent = `${percent}%`;
+                zoomInput.value = percent;
             }
         }
         
@@ -904,7 +1073,7 @@
             const width = maxX - minX || 1;
             const height = maxY - minY || 1;
             const graphWidth = document.getElementById('graph').clientWidth;
-            const graphHeight = 600;
+            const graphHeight = 792; // Match increased graph container height
             
             // Calculate zoom to fit with padding
             const padding = 50;
@@ -937,6 +1106,37 @@
             zoomLevel = 0.05; // Reset to 5% zoom for overview
             rotation = 0;
             updateTransform();
+        }
+        
+        // Set zoom from input field
+        function setZoomFromInput() {
+            const zoomInput = document.getElementById('zoomInput');
+            if (!zoomInput) return;
+            
+            const percent = parseFloat(zoomInput.value);
+            if (isNaN(percent) || percent < 1 || percent > 500) {
+                // Invalid input, restore current value
+                zoomInput.value = Math.round(zoomLevel * 100);
+                return;
+            }
+            
+            zoomLevel = percent / 100; // Convert percentage to scale
+            updateTransform();
+        }
+        
+        // Set zoom to preset value
+        function setZoomPreset(scale) {
+            zoomLevel = scale;
+            updateTransform();
+        }
+        
+        // Allow clicking on zoom display to edit
+        function editZoom() {
+            const zoomInput = document.getElementById('zoomInput');
+            if (zoomInput) {
+                zoomInput.focus();
+                zoomInput.select();
+            }
         }
         
         function getComponentColor(component) {
@@ -1057,7 +1257,7 @@
                                 <span class="component">${component.toUpperCase()}</span>
                                 <span style="color: #0f0;"> → </span>
                                 <span class="event-type">${item.event.event_type}</span>
-                            </div>
+                    </div>
                             <pre>${JSON.stringify(item.event.data, null, 2)}</pre>
                         </div>
                     `;
@@ -1084,7 +1284,7 @@
                                 <span class="component">${component.toUpperCase()}</span>
                                 <span style="color: #0f0;"> → </span>
                                 <span class="event-type">${item.event.event_type}</span>
-                            </div>
+                    </div>
                             <pre>${JSON.stringify(item.event.data, null, 2)}</pre>
                         </div>
                     `;
@@ -1107,7 +1307,7 @@
                     info.innerHTML = `<div style="color: #FF6600; padding: 15px; border: 3px solid #FF6600; text-align: center; font-size: 1.2em;">No events found matching "${query}"</div>`;
                     return;
                 }
-                    info.innerHTML = `
+                info.innerHTML = `
                         <div style="margin-bottom: 15px; padding: 10px; background: #111; border: 1px solid #0ff;">
                             <strong>Search Results:</strong> <span class="count-value">${results.length}</span> events found
                         </div>
@@ -1184,7 +1384,7 @@
             
             const canvas = document.createElement('canvas');
             canvas.width = document.getElementById('graph').clientWidth;
-            canvas.height = 600;
+            canvas.height = 792; // Match increased graph container height
             const ctx = canvas.getContext('2d');
             
             const img = new Image();
@@ -1646,28 +1846,113 @@
                 }
                 
                 try {
-                    // Get SVG element
+                    // Create a clone of the SVG that respects visibility filters
                     const svgElement = svg.node();
-                    const svgData = new XMLSerializer().serializeToString(svgElement);
+                    const clone = svgElement.cloneNode(true);
+                    
+                    // Get computed styles for visibility checking
+                    const style = window.getComputedStyle(svgElement);
+                    
+                    // Remove hidden links from clone
+                    const originalLinks = svgElement.querySelectorAll('.link');
+                    const cloneLinks = clone.querySelectorAll('.link');
+                    originalLinks.forEach((origLink, idx) => {
+                        const origStyle = window.getComputedStyle(origLink);
+                        if (origStyle.display === 'none' || origStyle.visibility === 'hidden' || origStyle.opacity === '0') {
+                            if (cloneLinks[idx]) {
+                                cloneLinks[idx].remove();
+                            }
+                        }
+                    });
+                    
+                    // Remove hidden text labels from clone
+                    const originalTexts = svgElement.querySelectorAll('.node text');
+                    const cloneTexts = clone.querySelectorAll('.node text');
+                    originalTexts.forEach((origText, idx) => {
+                        const origStyle = window.getComputedStyle(origText);
+                        if (origStyle.display === 'none' || origStyle.visibility === 'hidden' || origStyle.opacity === '0') {
+                            if (cloneTexts[idx]) {
+                                cloneTexts[idx].remove();
+                            }
+                        }
+                    });
+                    
+                    // Remove hidden nodes from clone (entire node groups)
+                    const originalNodes = svgElement.querySelectorAll('.node');
+                    const cloneNodes = clone.querySelectorAll('.node');
+                    originalNodes.forEach((origNode, idx) => {
+                        const origStyle = window.getComputedStyle(origNode);
+                        if (origStyle.display === 'none' || origStyle.visibility === 'hidden' || origStyle.opacity === '0') {
+                            if (cloneNodes[idx]) {
+                                cloneNodes[idx].remove();
+                            }
+                        }
+                    });
+                    
+                    // Serialize the filtered clone
+                    const svgData = new XMLSerializer().serializeToString(clone);
                     const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
                     const url = URL.createObjectURL(svgBlob);
                     
                     // Create image from SVG
                     const img = new Image();
                     img.onload = function() {
-                        // Create canvas
+                        // Resize to a reasonable size for API (max 1200x800, but prefer smaller)
+                        const maxWidth = 1200;
+                        const maxHeight = 800;
+                        let canvasWidth = svgElement.clientWidth || 1200;
+                        let canvasHeight = svgElement.clientHeight || 600;
+                        
+                        // Scale down if too large
+                        const scale = Math.min(1, maxWidth / canvasWidth, maxHeight / canvasHeight);
+                        if (scale < 1) {
+                            canvasWidth = Math.floor(canvasWidth * scale);
+                            canvasHeight = Math.floor(canvasHeight * scale);
+                        }
+                        
+                        // Create canvas with compressed size
                         const canvas = document.createElement('canvas');
-                        canvas.width = svgElement.clientWidth || 1200;
-                        canvas.height = svgElement.clientHeight || 600;
+                        canvas.width = canvasWidth;
+                        canvas.height = canvasHeight;
                         const ctx = canvas.getContext('2d');
+                        
+                        // Use image smoothing for better quality at smaller size
+                        ctx.imageSmoothingEnabled = true;
+                        ctx.imageSmoothingQuality = 'high';
                         
                         // Draw image to canvas
                         ctx.fillStyle = '#000000';
                         ctx.fillRect(0, 0, canvas.width, canvas.height);
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                         
-                        // Convert to base64
-                        const base64 = canvas.toDataURL('image/png');
+                        // Convert to JPEG with quality compression (smaller than PNG)
+                        // Use quality 0.85 (85%) for good balance between quality and size
+                        let base64 = canvas.toDataURL('image/jpeg', 0.85);
+                        
+                        // If still too large (>2MB base64 = ~1.5MB binary), compress more
+                        // Base64 is ~33% larger than binary, so 2MB base64 ≈ 1.5MB binary
+                        // Ollama Cloud limit seems to be around 1-2MB
+                        if (base64.length > 2000000) {
+                            // Try higher compression (70% quality)
+                            base64 = canvas.toDataURL('image/jpeg', 0.70);
+                        }
+                        
+                        // If still too large, resize more aggressively
+                        if (base64.length > 2000000) {
+                            const smallerScale = Math.sqrt(1500000 / base64.length); // Target ~1.5MB
+                            const newWidth = Math.floor(canvasWidth * smallerScale);
+                            const newHeight = Math.floor(canvasHeight * smallerScale);
+                            
+                            const smallCanvas = document.createElement('canvas');
+                            smallCanvas.width = newWidth;
+                            smallCanvas.height = newHeight;
+                            const smallCtx = smallCanvas.getContext('2d');
+                            smallCtx.imageSmoothingEnabled = true;
+                            smallCtx.imageSmoothingQuality = 'high';
+                            smallCtx.drawImage(canvas, 0, 0, newWidth, newHeight);
+                            base64 = smallCanvas.toDataURL('image/jpeg', 0.75);
+                        }
+                        
                         URL.revokeObjectURL(url);
                         resolve(base64);
                     };
@@ -1705,7 +1990,9 @@
                             if (modelName) {
                                 const option = document.createElement('option');
                                 option.value = modelName;
-                                option.textContent = modelName;
+                                // Mark cloud models with 🌐 indicator
+                                const isCloud = modelName.toLowerCase().includes('-cloud') || modelName.toLowerCase().endsWith(':cloud');
+                                option.textContent = isCloud ? `🌐 ${modelName}` : modelName;
                                 researchSelect.appendChild(option);
                             }
                         });
@@ -1728,7 +2015,9 @@
                             if (modelName) {
                                 const option = document.createElement('option');
                                 option.value = modelName;
-                                option.textContent = modelName;
+                                // Mark cloud models with 🌐 indicator
+                                const isCloud = modelName.toLowerCase().includes('-cloud') || modelName.toLowerCase().endsWith(':cloud');
+                                option.textContent = isCloud ? `🌐 ${modelName}` : modelName;
                                 visionSelect.appendChild(option);
                             }
                         });
@@ -1744,7 +2033,9 @@
                                 if (modelName) {
                                     const option = document.createElement('option');
                                     option.value = modelName;
-                                    option.textContent = modelName;
+                                    // Mark cloud models with 🌐 indicator
+                                    const isCloud = modelName.toLowerCase().includes('-cloud') || modelName.toLowerCase().endsWith(':cloud');
+                                    option.textContent = isCloud ? `🌐 ${modelName}` : modelName;
                                     visionSelect.appendChild(option);
                                 }
                             });
@@ -1796,8 +2087,22 @@
             // Update view state
             updateViewState();
             
-            // Capture graph image
+            // Capture current graph image
             const graphImage = await captureGraphImage();
+            
+            // Add to snapshot history for evolutionary analysis
+            if (graphImage) {
+                snapshotHistory.push({
+                    timestamp: Date.now(),
+                    image: graphImage,
+                    viewState: JSON.parse(JSON.stringify(viewState))
+                });
+                
+                // Keep only last MAX_SNAPSHOTS snapshots
+                if (snapshotHistory.length > MAX_SNAPSHOTS) {
+                    snapshotHistory.shift(); // Remove oldest
+                }
+            }
             
             // Get selected model
             const researchModel = document.getElementById('researchModelSelect').value;
@@ -1806,14 +2111,48 @@
             // Get selected event if any
             const selectedEvent = selectedNode ? selectedNode.id : null;
             
-            // Build request
+            // Build request with evolutionary snapshots (limit by size)
+            let evolutionarySnapshots = snapshotHistory.map(s => ({
+                timestamp: s.timestamp,
+                image: s.image,
+                age_seconds: (Date.now() - s.timestamp) / 1000
+            }));
+            
+            // Calculate total payload size and trim if needed
+            let totalSize = JSON.stringify({
+                message: message,
+                evolutionary_snapshots: evolutionarySnapshots,
+                graph_image: graphImage || ''
+            }).length;
+            
+            // If payload too large, reduce snapshots (keep most recent)
+            if (totalSize > MAX_PAYLOAD_SIZE && evolutionarySnapshots.length > 1) {
+                // Start with most recent and work backwards
+                const trimmed = [];
+                let currentSize = JSON.stringify({message: message, graph_image: graphImage || ''}).length;
+                
+                for (let i = evolutionarySnapshots.length - 1; i >= 0; i--) {
+                    const testSize = currentSize + JSON.stringify(evolutionarySnapshots[i]).length;
+                    if (testSize < MAX_PAYLOAD_SIZE * 0.9) { // Use 90% of limit for safety
+                        trimmed.unshift(evolutionarySnapshots[i]);
+                        currentSize = testSize;
+                    } else {
+                        break; // Stop adding if would exceed limit
+                    }
+                }
+                
+                evolutionarySnapshots = trimmed;
+                console.log(`Trimmed snapshots from ${snapshotHistory.length} to ${trimmed.length} to fit payload size`);
+            }
+            
             const requestData = {
                 message: message,
                 model: researchModel,
                 vision_model: visionModel,
                 view_state: viewState,
                 selected_event: selectedEvent,
-                graph_image: graphImage
+                graph_image: graphImage,
+                evolutionary_snapshots: evolutionarySnapshots
             };
             
             // Send to backend
@@ -1859,6 +2198,62 @@
             });
         }
         
+        // Simple markdown renderer for chat messages
+        function renderMarkdown(text) {
+            if (!text) return '';
+            
+            // Escape HTML first to prevent XSS, then apply markdown
+            let html = escapeHtml(text);
+            
+            // Headers
+            html = html.replace(/^### (.*$)/gim, '<h3 style="color: #0ff; margin: 10px 0 5px 0; font-size: 1.1em;">$1</h3>');
+            html = html.replace(/^## (.*$)/gim, '<h2 style="color: #0ff; margin: 12px 0 8px 0; font-size: 1.2em; border-bottom: 1px solid #0aa;">$1</h2>');
+            html = html.replace(/^# (.*$)/gim, '<h1 style="color: #0ff; margin: 15px 0 10px 0; font-size: 1.4em; border-bottom: 2px solid #0ff;">$1</h1>');
+            
+            // Bold (**text** or __text__)
+            html = html.replace(/\*\*([^*]+)\*\*/g, '<strong style="color: #fff; font-weight: bold;">$1</strong>');
+            html = html.replace(/__([^_]+)__/g, '<strong style="color: #fff; font-weight: bold;">$1</strong>');
+            
+            // Italic (*text* or _text_)
+            html = html.replace(/\*([^*]+)\*/g, '<em style="color: #0aa;">$1</em>');
+            html = html.replace(/_([^_]+)_/g, '<em style="color: #0aa;">$1</em>');
+            
+            // Code blocks (```code```)
+            html = html.replace(/```([^`]+)```/g, '<pre style="background: #0a0a0a; border: 1px solid #0aa; padding: 8px; margin: 8px 0; color: #0ff; overflow-x: auto; font-size: 0.9em; border-radius: 4px;"><code>$1</code></pre>');
+            
+            // Inline code (`code`)
+            html = html.replace(/`([^`]+)`/g, '<code style="background: #0a0a0a; border: 1px solid #0aa; padding: 2px 4px; color: #0ff; font-family: monospace; border-radius: 3px;">$1</code>');
+            
+            // Lists (- item or * item)
+            html = html.replace(/^[-*] (.*$)/gim, '<li style="margin: 4px 0; margin-left: 20px; color: #0f0;">$1</li>');
+            html = html.replace(/^(\d+)\. (.*$)/gim, '<li style="margin: 4px 0; margin-left: 20px; color: #0f0;">$2</li>');
+            // Wrap consecutive list items in <ul>
+            html = html.replace(/(<li[^>]*>.*?<\/li>\n?)+/g, function(match) {
+                return '<ul style="margin: 8px 0; padding-left: 20px;">' + match + '</ul>';
+            });
+            
+            // Horizontal rules
+            html = html.replace(/^---$/gim, '<hr style="border: none; border-top: 1px solid #0aa; margin: 10px 0;">');
+            
+            // Process line breaks - split into paragraphs by double newlines
+            const paragraphs = html.split(/\n\n+/);
+            const processedParagraphs = paragraphs.map(p => {
+                if (!p.trim()) return '<br>';
+                
+                // Convert single newlines within paragraphs to <br>
+                p = p.replace(/\n/g, '<br>');
+                
+                // If already has HTML tags (headers, lists, etc.), don't wrap in <p>
+                if (p.trim().match(/^<(h[1-6]|ul|li|pre|hr|p)/)) {
+                    return p;
+                }
+                
+                return `<p style="margin: 8px 0; line-height: 1.6;">${p}</p>`;
+            });
+            
+            return processedParagraphs.join('');
+        }
+        
         // Add message to chat
         function addChatMessage(role, message, isError = false) {
             const messagesDiv = document.getElementById('chatMessages');
@@ -1868,7 +2263,10 @@
             const roleLabel = role === 'user' ? 'You' : role === 'assistant' ? 'CRA' : 'Vision';
             const color = isError ? '#f00' : role === 'user' ? '#0f0' : role === 'assistant' ? '#0ff' : '#ff0';
             
-            messageDiv.innerHTML = `<strong style="color: ${color};">${roleLabel}:</strong> ${escapeHtml(message)}`;
+            // Render markdown for assistant and vision messages, plain text for user
+            const messageContent = (role === 'assistant' || role === 'vision') ? renderMarkdown(message) : escapeHtml(message);
+            
+            messageDiv.innerHTML = `<strong style="color: ${color}; display: block; margin-bottom: 8px; font-size: 1.05em;">${roleLabel}:</strong><div style="line-height: 1.6; word-wrap: break-word;">${messageContent}</div>`;
             messagesDiv.appendChild(messageDiv);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
@@ -1876,6 +2274,269 @@
         // Update chat status
         function updateChatStatus(status) {
             document.getElementById('chatStatus').textContent = status;
+        }
+        
+        // Load Ollama configuration on page load
+        function loadOllamaConfig() {
+            fetch('/api/ollama/config')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Set cloud mode checkbox
+                    const cloudModeCheckbox = document.getElementById('ollamaCloudMode');
+                    const cloudSettings = document.getElementById('cloudSettings');
+                    
+                    if (data.is_cloud) {
+                        cloudModeCheckbox.checked = true;
+                        cloudSettings.style.display = 'block';
+                        // Don't show API key for security (but show if it's set)
+                        if (data.has_api_key) {
+                            document.getElementById('ollamaApiKey').value = '••••••••'; // Masked
+                        }
+                    } else {
+                        cloudModeCheckbox.checked = false;
+                        cloudSettings.style.display = 'none';
+                    }
+                    
+                    updateOllamaConnectionStatus();
+                })
+                .catch(err => {
+                    console.error('Error loading Ollama config:', err);
+                    updateOllamaConnectionStatus('Error loading config');
+                });
+        }
+        
+        // Toggle cloud mode
+        function toggleCloudMode() {
+            const cloudModeCheckbox = document.getElementById('ollamaCloudMode');
+            const cloudSettings = document.getElementById('cloudSettings');
+            
+            if (cloudModeCheckbox.checked) {
+                cloudSettings.style.display = 'block';
+            } else {
+                cloudSettings.style.display = 'none';
+                // Switch back to local
+                saveOllamaConfig(false);
+            }
+        }
+        
+        // Save Ollama configuration
+        function saveOllamaConfig(useCloud = null) {
+            const cloudModeCheckbox = document.getElementById('ollamaCloudMode');
+            const apiKeyInput = document.getElementById('ollamaApiKey');
+            const statusDiv = document.getElementById('configStatus');
+            
+            // Determine if we should use cloud
+            if (useCloud === null) {
+                useCloud = cloudModeCheckbox.checked;
+            }
+            
+            const config = {
+                base_url: useCloud ? 'https://ollama.com' : 'http://localhost:11434',
+                timeout: 60
+            };
+            
+            // Only include API key if using cloud mode
+            if (useCloud) {
+                const apiKey = apiKeyInput.value;
+                if (!apiKey || apiKey === '••••••••') {
+                    // If masked, don't send (keep existing)
+                    statusDiv.innerHTML = '<span style="color: #f00;">Please enter your API key!</span>';
+                    return;
+                }
+                config.api_key = apiKey;
+            }
+            
+            statusDiv.innerHTML = '<span style="color: #0aa;">Saving...</span>';
+            
+            fetch('/api/ollama/config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(config)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        try {
+                            const json = JSON.parse(text);
+                            throw new Error(json.error || `HTTP ${response.status}`);
+                        } catch (e) {
+                            if (e instanceof Error && e.message.includes('HTTP')) {
+                                throw e;
+                            }
+                            throw new Error(`HTTP ${response.status}: ${text.substring(0, 100)}`);
+                        }
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    statusDiv.innerHTML = '<span style="color: #0f0;">✅ Saved! Reloading models...</span>';
+                    // Reload models after config change (cloud models will be different)
+                    loadOllamaModels();
+                    // Test connection
+                    testOllamaConnection();
+                    // Mask the API key in the input
+                    if (useCloud && apiKeyInput.value) {
+                        apiKeyInput.type = 'password';
+                        apiKeyInput.value = '••••••••';
+                    }
+                } else {
+                    statusDiv.innerHTML = `<span style="color: #f00;">❌ Error: ${data.error || 'Unknown error'}</span>`;
+                }
+            })
+            .catch(err => {
+                console.error('Error saving Ollama config:', err);
+                statusDiv.innerHTML = `<span style="color: #f00;">❌ Error: ${err.message || 'Failed to save configuration'}</span>`;
+            });
+        }
+        
+        // Test Ollama connection
+        function testOllamaConnection() {
+            const statusDiv = document.getElementById('ollamaConnectionStatus');
+            statusDiv.innerHTML = '<span style="color: #0aa;">Testing connection...</span>';
+            
+            fetch('/api/ollama/test', {
+                method: 'POST'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        try {
+                            const json = JSON.parse(text);
+                            throw new Error(json.error || `HTTP ${response.status}`);
+                        } catch (e) {
+                            if (e instanceof Error && e.message.includes('HTTP')) {
+                                throw e;
+                            }
+                            throw new Error(`HTTP ${response.status}`);
+                        }
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success && data.connected) {
+                    statusDiv.innerHTML = `<span style="color: #0f0;">✅ Connected (${data.mode} mode, ${data.model_count} models)</span>`;
+                } else {
+                    statusDiv.innerHTML = `<span style="color: #f00;">❌ Connection failed: ${data.error || 'Unknown error'}</span>`;
+                }
+            })
+            .catch(err => {
+                console.error('Error testing Ollama connection:', err);
+                statusDiv.innerHTML = `<span style="color: #f00;">❌ Connection error: ${err.message || 'Failed to connect'}</span>`;
+            });
+        }
+        
+        // Update connection status
+        function updateOllamaConnectionStatus(message = null) {
+            if (message) {
+                document.getElementById('ollamaConnectionStatus').innerHTML = `<span style="color: #f00;">${message}</span>`;
+                return;
+            }
+            testOllamaConnection();
+        }
+        
+        // Copy all chat messages to clipboard
+        function copyAllChat() {
+            const messagesDiv = document.getElementById('chatMessages');
+            if (!messagesDiv) return;
+            
+            const messages = messagesDiv.querySelectorAll('.chat-message, div');
+            let chatText = '';
+            
+            messages.forEach(msg => {
+                const text = msg.textContent || msg.innerText;
+                if (text.trim()) {
+                    chatText += text.trim() + '\n\n';
+                }
+            });
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText(chatText).then(() => {
+                // Show feedback
+                const buttons = document.querySelectorAll('button[onclick="copyAllChat()"]');
+                buttons.forEach(button => {
+                    const originalText = button.textContent;
+                    button.textContent = '✓ Copied!';
+                    button.style.background = '#0f0';
+                    setTimeout(() => {
+                        button.textContent = originalText;
+                        button.style.background = '#0aa';
+                    }, 2000);
+                });
+            }).catch(err => {
+                console.error('Failed to copy chat:', err);
+                alert('Failed to copy chat. Please select and copy manually.');
+            });
+        }
+        
+        // Export analysis report
+        function exportAnalysis() {
+            const messagesDiv = document.getElementById('chatMessages');
+            if (!messagesDiv) return;
+            
+            // Collect all chat messages
+            const messages = messagesDiv.querySelectorAll('.chat-message, div');
+            let report = '# Butterfly System - CRA Analysis Report\n';
+            report += `Generated: ${new Date().toISOString()}\n`;
+            report += '='.repeat(60) + '\n\n';
+            
+            // Add system context header
+            report += '## Chat History\n\n';
+            
+            // Add messages
+            messages.forEach(msg => {
+                const text = msg.textContent || msg.innerText;
+                if (text.trim()) {
+                    // Format messages nicely
+                    const roleMatch = text.match(/^(You|CRA|Vision):\s*(.*)$/);
+                    if (roleMatch) {
+                        const role = roleMatch[1];
+                        const content = roleMatch[2];
+                        report += `### ${role}\n\n${content}\n\n`;
+                    } else {
+                        report += `${text.trim()}\n\n`;
+                    }
+                }
+            });
+            
+            // Add metadata
+            report += '\n---\n\n';
+            report += '## Metadata\n\n';
+            report += `- Total Messages: ${messages.length}\n`;
+            report += `- Graph Nodes: ${allNodes.length}\n`;
+            report += `- Graph Links: ${allLinks.length}\n`;
+            report += `- Zoom Level: ${Math.round(zoomLevel * 100)}%\n`;
+            
+            // Create download
+            const blob = new Blob([report], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            a.href = url;
+            a.download = `causation_analysis_${timestamp}.md`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            // Show feedback
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = '✓ Saved!';
+            button.style.background = '#0f0';
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.style.background = '#0aa';
+            }, 2000);
         }
         
         // Escape HTML
@@ -1893,6 +2554,9 @@
         
         // Load graph on page load
         loadGraph();
+        
+        // Load Ollama configuration on page load
+        loadOllamaConfig();
         
         // Check initial live status and auto-enable live mode if system is running
         checkLiveStatus().then(data => {
