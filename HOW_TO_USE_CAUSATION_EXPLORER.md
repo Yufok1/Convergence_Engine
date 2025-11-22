@@ -228,10 +228,13 @@ The web UI includes powerful export functionality to create shareable visualizat
 
 ### Cinematic MP4 Export
 - Records video of the graph visualization with smooth camera movements
-- **Camera Movement:** Automatically zooms out from 5% to 2% as graph expands (matches expansion)
-- **Duration:** Configurable (5-600 seconds, default: 60 seconds)
-- **FPS:** Configurable (15-60 FPS, default: 30 FPS)
-- **Output:** Downloads as `.mp4` file
+- **Camera Movement:** Automatically zooms out from 3% to 2% as graph expands with smooth cinematic motion
+- **Duration:** Configurable (1-600 seconds, default: 10 seconds) - dynamically updates frame count display
+- **FPS:** Configurable (15-60 FPS, default: 30 FPS) - dynamically updates frame count display
+- **Output:** 
+  - **Server-side:** Creates MP4 video using FFmpeg (requires FFmpeg installed)
+  - **Fallback:** Downloads individual PNG frames if FFmpeg unavailable
+- **Frame Count:** Automatically calculated and displayed (Duration × FPS)
 - **Use Case:** Create shareable videos showing graph evolution
 
 ### Interactive HTML Export
@@ -243,15 +246,30 @@ The web UI includes powerful export functionality to create shareable visualizat
 ### How to Export
 1. Open web UI at http://localhost:5000
 2. Wait for graph to load
-3. In the "Export Art" panel:
+3. In the "🎬 Export Art" panel:
    - Choose format: "Cinematic MP4" or "Zoomable HTML"
-   - Set Duration (seconds): Default 60, range 5-600
-   - Set FPS: Default 30, range 15-60
-   - Click "Export Video" button
-4. Wait for export to complete (shows progress)
-5. File will download automatically
+   - Set **Duration** (seconds): Default 10, range 1-600 (frame count updates automatically)
+   - Set **FPS** (frames per second): Default 30, range 15-60 (frame count updates automatically)
+   - Watch the frame count update: "At X sec / Y FPS = Z frames"
+   - Click "🎬 Export Video" button
+4. Wait for export to complete (shows progress percentage)
+5. **For MP4:**
+   - If FFmpeg is installed: Video file downloads automatically as `.mp4`
+   - If FFmpeg not available: Individual PNG frames download (use `create_video_from_frames.py` to combine)
+6. **For HTML:** Interactive HTML file downloads automatically
 
-**Example:** Export 60 seconds at 30 FPS = 1,800 frames of graph evolution
+**Example:** Export 10 seconds at 30 FPS = 300 frames of graph evolution
+
+### Combining Frames into Video (If FFmpeg Not Available)
+If you get individual PNG frames instead of a video:
+```bash
+# Install FFmpeg first (Windows):
+winget install ffmpeg
+# Or download from: https://ffmpeg.org/download.html
+
+# Then combine frames:
+python create_video_from_frames.py "C:\Users\YourName\Downloads" output.mp4 --fps 30
+```
 
 ---
 

@@ -21,6 +21,7 @@
   - `/api/ollama/chat` - Chat with research assistant (includes full system context)
   - `/api/ollama/vision` - Analyze graph viewport with vision model
   - `/api/system/context` - Get full system context for debugging
+  - `/api/export/create_video` - Create MP4 video from PNG frames (requires FFmpeg)
 
 ### 2. HTML Template (`templates/causation_explorer.html`)
 - ✅ Complete D3.js visualization
@@ -35,6 +36,13 @@
   - ✅ View state tracking (zoom, pan, rotation, selected nodes)
   - ✅ Graph image capture (SVG to base64 for vision model)
   - ✅ Real-time context updates
+  - ✅ **Video Export Functionality**
+    - ✅ Dynamic FPS and duration controls (1-600 seconds, 15-60 FPS)
+    - ✅ Real-time frame count calculation display
+    - ✅ Server-side MP4 video creation (via FFmpeg)
+    - ✅ Fallback to individual PNG frame downloads
+    - ✅ Cinematic camera movements (zoom, pan, rotation)
+    - ✅ Progress tracking during export
 
 ### 3. Integration
 - ✅ Creates CausationExplorer instance on startup

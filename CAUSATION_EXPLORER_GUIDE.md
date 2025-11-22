@@ -244,10 +244,20 @@ The system knows that certain threshold crossings cause specific events:
 - Includes D3.js and all necessary code embedded
 
 ### Export Controls
-- **Duration:** Length of video in seconds (default: 60)
-- **FPS:** Frames per second (default: 30)
-- **Format:** Choose between MP4 or HTML export
-- Click "Export Video" to start recording
+- **Duration:** Length of video in seconds (default: 10, range: 1-600)
+  - Frame count updates automatically as you change duration
+- **FPS:** Frames per second (default: 30, range: 15-60)
+  - Frame count updates automatically as you change FPS
+- **Format:** Choose between "Cinematic MP4" or "Zoomable HTML"
+- **Frame Count Display:** Shows calculated total frames (Duration × FPS)
+- Click "🎬 Export Video" to start recording
+
+### Video Export Features
+- **Server-side MP4 creation:** Uses FFmpeg to create video directly (if installed)
+- **Fallback mode:** Downloads individual PNG frames if FFmpeg unavailable
+- **Frame combining script:** `create_video_from_frames.py` can combine frames into video
+- **Dynamic settings:** FPS and duration can be adjusted before export
+- **Progress tracking:** Shows percentage and frame count during export
 
 ## Future Enhancements
 

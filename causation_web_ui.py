@@ -415,10 +415,13 @@ class OllamaBridge:
                     self.headers['Content-Type'] = 'application/json'
                     logger.warning("Headers were missing, rebuilt them before request")
                 
-                logger.debug(f"Vision request to cloud: {self.base_url}/api/chat")
-                logger.debug(f"Headers present: Authorization={bool(self.headers.get('Authorization'))}, Content-Type={bool(self.headers.get('Content-Type'))}")
-                logger.debug(f"API key length: {len(self.api_key) if self.api_key else 0}")
-                logger.debug(f"Sending {len(cleaned_images)} image(s), total size: {total_image_size/1024:.1f}KB")
+                logger.info(f"Vision request to cloud: {self.base_url}/api/chat")
+                logger.info(f"Headers: Authorization={bool(self.headers.get('Authorization'))}, Content-Type={bool(self.headers.get('Content-Type'))}")
+                logger.info(f"API key present: {bool(self.api_key)}, length: {len(self.api_key) if self.api_key else 0}")
+                if self.api_key:
+                    # Log first and last 4 chars for debugging (don't log full key for security)
+                    logger.info(f"API key preview: {self.api_key[:4]}...{self.api_key[-4:] if len(self.api_key) > 8 else '****'}")
+                logger.info(f"Sending {len(cleaned_images)} image(s), total size: {total_image_size/1024:.1f}KB")
             
             # Retry logic for connection issues (especially for large payloads)
             max_retries = 3
@@ -438,8 +441,40 @@ class OllamaBridge:
                     )
                     response.raise_for_status()
                     break  # Success, exit retry loop
+                except requests.exceptions.HTTPError as e:
+                    # HTTP errors (like 401) shouldn't be retried - handle immediately
+                    if e.response and e.response.status_code == 401:
+                        # Check if API key is actually set
+                        if not self.api_key:
+                            error_msg = (
+                                "Ollama Cloud authentication failed (401 Unauthorized). "
+                                "API key is missing. Please set OLLAMA_API_KEY environment variable "
+                                "or configure it in the web UI. Get your API key from: https://ollama.com/settings/keys"
+                            )
+                        elif not self.headers.get('Authorization'):
+                            error_msg = (
+                                "Ollama Cloud authentication failed (401 Unauthorized). "
+                                "API key is set but Authorization header is missing. "
+                                "This may be a configuration issue. Please reconfigure your API key."
+                            )
+                        else:
+                            # API key and header are present, but still getting 401
+                            # This means the API key is invalid or expired
+                            error_msg = (
+                                f"Ollama Cloud authentication failed (401 Unauthorized). "
+                                f"Your API key appears to be invalid or expired. "
+                                f"Please verify your API key at: https://ollama.com/settings/keys "
+                                f"and update it in the web UI settings."
+                            )
+                        logger.error(f"401 Unauthorized - API key present: {bool(self.api_key)}, "
+                                   f"Authorization header present: {bool(self.headers.get('Authorization'))}, "
+                                   f"API key length: {len(self.api_key) if self.api_key else 0}")
+                        raise Exception(error_msg)
+                    # Other HTTP errors - don't retry
+                    raise
                 except (requests.exceptions.ConnectionError, requests.exceptions.Timeout, OSError) as e:
                     # OSError catches ConnectionAbortedError (Windows error 10053)
+                    # These are retryable errors
                     last_exception = e
                     if attempt < max_retries - 1:
                         error_type = type(e).__name__
@@ -459,33 +494,6 @@ class OllamaBridge:
                             error_msg = f"Failed to send vision request after {max_retries} attempts: {e}"
                         logger.error(error_msg)
                         raise Exception(error_msg)
-                except requests.exceptions.HTTPError as e:
-                    # HTTP errors (like 401) shouldn't be retried
-                    # But provide better error message for 401
-                    if e.response and e.response.status_code == 401:
-                        # Check if API key is actually set
-                        if not self.api_key:
-                            error_msg = (
-                                "Ollama Cloud authentication failed (401 Unauthorized). "
-                                "API key is missing. Please set OLLAMA_API_KEY environment variable "
-                                "or configure it in the web UI. Get your API key from: https://ollama.com/settings/keys"
-                            )
-                        elif not self.headers.get('Authorization'):
-                            error_msg = (
-                                "Ollama Cloud authentication failed (401 Unauthorized). "
-                                "API key is set but Authorization header is missing. "
-                                "This may be a configuration issue. Please reconfigure your API key."
-                            )
-                        else:
-                            error_msg = (
-                                f"Ollama Cloud authentication failed (401 Unauthorized). "
-                                f"Your API key may be invalid or expired. "
-                                f"Please verify your API key at: https://ollama.com/settings/keys"
-                            )
-                        logger.error(f"401 Unauthorized - API key present: {bool(self.api_key)}, "
-                                   f"Authorization header present: {bool(self.headers.get('Authorization'))}")
-                        raise Exception(error_msg)
-                    raise
                 except Exception as e:
                     # Other errors shouldn't be retried
                     raise
@@ -2406,6 +2414,99 @@ def get_system_context():
         return jsonify(context)
     except Exception as e:
         logger.error(f"Error getting system context: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/export/create_video', methods=['POST'])
+def create_video_from_frames():
+    """Create MP4 video from uploaded PNG frames"""
+    try:
+        import subprocess
+        import tempfile
+        import shutil
+        
+        # Check if FFmpeg is available
+        try:
+            subprocess.run(['ffmpeg', '-version'], 
+                          capture_output=True, 
+                          check=True)
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            return jsonify({
+                'error': 'FFmpeg not found. Please install FFmpeg to create videos.',
+                'install_help': {
+                    'windows': 'Download from https://ffmpeg.org/download.html or use: winget install ffmpeg',
+                    'mac': 'brew install ffmpeg',
+                    'linux': 'sudo apt-get install ffmpeg'
+                }
+            }), 400
+        
+        # Get frames from request (base64 encoded PNGs)
+        data = request.json
+        frames = data.get('frames', [])  # Array of base64 PNG strings
+        fps = data.get('fps', 30)
+        output_name = data.get('output_name', f'causation_video_{int(time.time())}.mp4')
+        
+        if not frames:
+            return jsonify({'error': 'No frames provided'}), 400
+        
+        # Create temporary directory for frames
+        with tempfile.TemporaryDirectory() as temp_dir:
+            frame_files = []
+            
+            # Save each frame as PNG file
+            for i, frame_data in enumerate(frames):
+                # Remove data URL prefix if present
+                if ',' in frame_data:
+                    frame_data = frame_data.split(',')[1]
+                
+                # Decode base64
+                frame_bytes = base64.b64decode(frame_data)
+                frame_path = os.path.join(temp_dir, f'frame_{i:04d}.png')
+                
+                with open(frame_path, 'wb') as f:
+                    f.write(frame_bytes)
+                frame_files.append(frame_path)
+            
+            # Create video using FFmpeg
+            output_path = os.path.join(temp_dir, output_name)
+            
+            cmd = [
+                'ffmpeg',
+                '-y',  # Overwrite output
+                '-framerate', str(fps),
+                '-i', os.path.join(temp_dir, 'frame_%04d.png'),
+                '-c:v', 'libx264',
+                '-pix_fmt', 'yuv420p',
+                '-r', str(fps),
+                output_path
+            ]
+            
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            
+            if result.returncode != 0:
+                return jsonify({
+                    'error': 'FFmpeg encoding failed',
+                    'details': result.stderr
+                }), 500
+            
+            # Read video file and return as base64
+            with open(output_path, 'rb') as f:
+                video_data = base64.b64encode(f.read()).decode('utf-8')
+            
+            file_size = os.path.getsize(output_path) / (1024 * 1024)  # MB
+            
+            return jsonify({
+                'success': True,
+                'video_data': video_data,
+                'filename': output_name,
+                'size_mb': round(file_size, 2),
+                'frames': len(frames),
+                'fps': fps,
+                'duration': round(len(frames) / fps, 2)
+            })
+            
+    except Exception as e:
+        logger.error(f"Error creating video: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 

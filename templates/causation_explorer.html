@@ -447,11 +447,11 @@
                     </div>
                     <div style="margin: 10px 0;">
                         <label style="display: block; color: #0aa; font-size: 0.85em; margin-bottom: 3px;">Duration (seconds):</label>
-                        <input type="number" id="exportDuration" value="60" min="5" max="600" style="width: 100%; padding: 5px; background: #000; border: 1px solid #0aa; color: #0ff; margin-bottom: 8px;">
+                        <input type="number" id="exportDuration" value="10" min="1" max="600" style="width: 100%; padding: 5px; background: #000; border: 1px solid #0aa; color: #0ff; margin-bottom: 8px;" oninput="updateFrameCount()">
                         <label style="display: block; color: #0aa; font-size: 0.85em; margin-bottom: 3px;">FPS (frames per second):</label>
-                        <input type="number" id="exportFPS" value="30" min="15" max="60" style="width: 100%; padding: 5px; background: #000; border: 1px solid #0aa; color: #0ff; margin-bottom: 10px;">
-                        <div style="font-size: 0.75em; color: #888; margin-bottom: 5px;">
-                            At 60 sec / 30 FPS = 1,800 frames
+                        <input type="number" id="exportFPS" value="30" min="15" max="60" style="width: 100%; padding: 5px; background: #000; border: 1px solid #0aa; color: #0ff; margin-bottom: 10px;" oninput="updateFrameCount()">
+                        <div id="frameCountInfo" style="font-size: 0.75em; color: #888; margin-bottom: 5px;">
+                            At 10 sec / 30 FPS = 300 frames
                         </div>
                         <button onclick="startExport()" style="width: 100%; padding: 10px; background: #0aa; border: 1px solid #0ff; color: #0ff; cursor: pointer; font-weight: bold;">
                             🎬 Export Video
@@ -1613,8 +1613,8 @@
             
             const img = new Image();
             img.onload = function() {
-                // Plan cinematic camera movements
-                planCinematicMovements(duration);
+                // Plan cinematic camera movements (use actual FPS)
+                planCinematicMovements(duration, fps);
                 
                 // Record frames
                 recordFrames(ctx, canvas, img, 0, totalFrames, fps, duration, statusDiv, true);
@@ -1634,10 +1634,10 @@
             recordTimeline(0, totalFrames, fps, duration, statusDiv);
         }
         
-        function planCinematicMovements(duration) {
+        function planCinematicMovements(duration, fps) {
             // Plan smooth camera movements for cinematic effect
             // Zoom out gradually from 3% to 2% as graph expands
-            const totalFrames = duration * 30; // 30 fps planning
+            const totalFrames = duration * fps; // Use actual FPS
             
             exportCameraMovements = [];
             
@@ -1676,8 +1676,9 @@
                 return;
             }
             
-            const t = frameNum / fps;
-            const movementIndex = Math.floor(t * 30); // 30 fps movements
+            const t = frameNum / totalFrames; // Normalized time 0.0 to 1.0
+            // Use normalized time to index into camera movements
+            const movementIndex = Math.min(Math.floor(t * exportCameraMovements.length), exportCameraMovements.length - 1);
             const cam = exportCameraMovements[movementIndex] || {zoom: zoomLevel, panX: panX, panY: panY, rotation: rotation};
             
             // Apply camera transform
@@ -1777,14 +1778,103 @@
         function finishExport(isMP4, ctx, canvas, duration, fps, statusDiv) {
             if (!isMP4) return; // HTML export handled separately
             
-            statusDiv.innerHTML = '🎬 Encoding MP4 video...';
+            if (exportFrames.length === 0) {
+                statusDiv.innerHTML = '⚠️ No frames to export.';
+                isExporting = false;
+                return;
+            }
             
-            // Note: Full MP4 encoding requires a library or server-side processing
-            // For now, we'll create a download of the frames as a ZIP
-            // Full MP4 encoding can be added later with a library like FFmpeg.wasm
+            statusDiv.innerHTML = '🎬 Creating MP4 video on server...';
             
-            statusDiv.innerHTML = '✅ Export complete! (MP4 encoding requires FFmpeg - frames saved for now)';
-            isExporting = false;
+            // Send frames to server to create MP4 video
+            fetch('/api/export/create_video', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    frames: exportFrames,
+                    fps: fps,
+                    output_name: `causation_video_${Date.now()}.mp4`
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Download the video
+                    const videoBlob = base64ToBlob(data.video_data, 'video/mp4');
+                    const url = URL.createObjectURL(videoBlob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = data.filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    statusDiv.innerHTML = `✅ Video created! ${data.frames} frames, ${data.duration}s @ ${data.fps} FPS, ${data.size_mb} MB. Downloaded as ${data.filename}`;
+                } else {
+                    // Fallback: download frames individually if server video creation fails
+                    statusDiv.innerHTML = `⚠️ Server video creation failed: ${data.error}. Downloading frames individually...`;
+                    downloadFramesIndividually(exportFrames, duration, fps, statusDiv);
+                }
+            })
+            .catch(error => {
+                console.error('Video creation error:', error);
+                statusDiv.innerHTML = `⚠️ Server error: ${error.message}. Downloading frames individually...`;
+                downloadFramesIndividually(exportFrames, duration, fps, statusDiv);
+            })
+            .finally(() => {
+                isExporting = false;
+                exportFrames = []; // Clear frames from memory
+            });
+        }
+        
+        function downloadFramesIndividually(frames, duration, fps, statusDiv) {
+            // Fallback: download frames as individual PNG files
+            const timestamp = Date.now();
+            let downloaded = 0;
+            
+            frames.forEach((frameData, index) => {
+                // Convert base64 to blob
+                const byteString = atob(frameData.split(',')[1]);
+                const mimeString = frameData.split(',')[0].split(':')[1].split(';')[0];
+                const ab = new ArrayBuffer(byteString.length);
+                const ia = new Uint8Array(ab);
+                for (let i = 0; i < byteString.length; i++) {
+                    ia[i] = byteString.charCodeAt(i);
+                }
+                const blob = new Blob([ab], {type: mimeString});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `causation-frame-${timestamp}-${String(index).padStart(4, '0')}.png`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                downloaded++;
+            });
+            
+            statusDiv.innerHTML = `✅ ${downloaded} frames saved as PNG files. Use create_video_from_frames.py to combine them into a video.`;
+        }
+        
+        function base64ToBlob(base64, mimeType) {
+            const byteString = atob(base64);
+            const ab = new ArrayBuffer(byteString.length);
+            const ia = new Uint8Array(ab);
+            for (let i = 0; i < byteString.length; i++) {
+                ia[i] = byteString.charCodeAt(i);
+            }
+            return new Blob([ab], {type: mimeType});
+        }
+        
+        function updateFrameCount() {
+            const duration = parseInt(document.getElementById('exportDuration').value) || 10;
+            const fps = parseInt(document.getElementById('exportFPS').value) || 30;
+            const totalFrames = duration * fps;
+            const infoDiv = document.getElementById('frameCountInfo');
+            infoDiv.innerHTML = `At ${duration} sec / ${fps} FPS = ${totalFrames.toLocaleString()} frames`;
         }
         
         function finishInteractiveHTML(duration, fps, statusDiv) {
