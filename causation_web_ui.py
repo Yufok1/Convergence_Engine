@@ -146,23 +146,45 @@ def get_stats():
 
 @app.route('/api/live/status')
 def get_live_status():
-    """Check if system is in live mode (receiving events from unified_entry.py)"""
+    """
+    Check if system is in live mode (receiving events from unified_entry.py)
+    
+    ⚠️ CURRENT BEHAVIOR (NOT ACTUALLY LIVE):
+    - Accesses: explorer.events{} (loaded from log files on startup)
+    - Checks: If any events have recent timestamps (within 10 seconds)
+    - Returns: {"live": true/false} based on timestamp check
+    - Problem: Only checks already-loaded events, doesn't connect to running backend
+    
+    🔍 DATA SOURCES ACCESSED:
+    - explorer.events{} - Dictionary of all events loaded from:
+      1. Akashic Ledger (if available) - data/kernel/akashic_ledger/
+      2. Log files (fallback) - data/logs/*.log
+      ❌ NOT: Shared state file (data/.shared_simulation_state.json)
+      ❌ NOT: Real-time events from unified_entry.py
+    
+    💡 TO MAKE IT ACTUALLY LIVE:
+    - Add event feeding from unified_entry.py (Phase 2)
+    - Add shared state file loading
+    - Poll for updates from running backend
+    """
     # Check if CausationExplorer has recent events (within last 5 seconds)
     if explorer is None or not explorer.events:
         return jsonify({'live': False, 'last_event_time': None, 'event_count': 0})
     
     try:
-        # Get most recent event timestamp
+        # DATA ACCESS: Get most recent event timestamp from explorer.events{}
+        # This is loaded from log files on startup, NOT from running backend
         recent_events = sorted(explorer.events.values(), key=lambda e: e.timestamp, reverse=True)
         if recent_events:
             last_event_time = recent_events[0].timestamp
             current_time = time.time()
             # Consider live if last event was within last 10 seconds
+            # ⚠️ This just checks timestamps of already-loaded events, not actual backend connection
             is_live = (current_time - last_event_time) < 10
             return jsonify({
                 'live': is_live,
                 'last_event_time': last_event_time,
-                'event_count': len(explorer.events),
+                'event_count': len(explorer.events),  # Total events loaded from logs/Akashic
                 'events_since_start': len(recent_events)
             })
         return jsonify({'live': False, 'last_event_time': None, 'event_count': 0})
@@ -173,13 +195,34 @@ def get_live_status():
 
 @app.route('/api/live/events')
 def get_new_events():
-    """Get events since a given timestamp (for live updates)"""
+    """
+    Get events since a given timestamp (for live updates)
+    
+    ⚠️ CURRENT BEHAVIOR (NOT ACTUALLY LIVE):
+    - Accesses: explorer.events{} (loaded from log files on startup)
+    - Filters: Events where event.timestamp > since_timestamp
+    - Returns: Filtered subset of already-loaded events
+    - Problem: Only returns events that were loaded on startup, not new events from backend
+    
+    🔍 DATA SOURCES ACCESSED:
+    - explorer.events{} - Dictionary of all events loaded from:
+      1. Akashic Ledger (if available) - data/kernel/akashic_ledger/
+      2. Log files (fallback) - data/logs/*.log
+      ❌ NOT: Shared state file (data/.shared_simulation_state.json)
+      ❌ NOT: Real-time events from unified_entry.py
+    
+    💡 TO MAKE IT ACTUALLY LIVE:
+    - Add event feeding from unified_entry.py (Phase 2)
+    - Add shared state file polling
+    - Stream new events from running backend
+    """
     if explorer is None:
         return jsonify({'events': [], 'event_count': 0})
     
     try:
         since_timestamp = float(request.args.get('since', 0))
-        # Get events after the timestamp
+        # DATA ACCESS: Filter explorer.events{} for events after timestamp
+        # ⚠️ This only filters already-loaded events from log files, not new events from backend
         new_events = [
             e.to_dict() for e in explorer.events.values()
             if e.timestamp > since_timestamp
@@ -199,16 +242,58 @@ def get_new_events():
 
 @app.route('/api/graph')
 def get_graph():
-    """Get full causation graph for visualization"""
+    """
+    Get full causation graph for visualization
+    
+    🔍 DATA SOURCES ACCESSED:
+    - explorer.events{} - Dictionary of all events loaded from:
+      1. Akashic Ledger (if available) - data/kernel/akashic_ledger/
+      2. Log files (fallback) - data/logs/*.log
+      ❌ NOT: Shared state file (data/.shared_simulation_state.json)
+      ❌ NOT: Real-time events from unified_entry.py
+    
+    - explorer.causation_graph - NetworkX DiGraph containing:
+      - Nodes: Event IDs (from explorer.events{})
+      - Edges: Causation links (threshold, correlation, direct, temporal)
+      - Created when events are added via add_event()
+      - Causations detected automatically when events are loaded
+    
+    📊 WHAT GETS VISUALIZED:
+    - Nodes: All events from explorer.events{}
+      - id, component, type, data, timestamp
+    - Links: All causation links from explorer.causation_graph
+      - source, target, type, strength, explanation
+    
+    ✅ Phase 2: REAL-TIME UPDATES (IMPLEMENTED):
+    - Loads latest state from shared state file on each graph request (incremental)
+    - Shows new events from running unified_entry.py in real-time
+    - Thread-safe access to event graph (snapshots prevent iteration errors)
+    """
     if explorer is None:
         return jsonify({'nodes': [], 'links': [], 'error': 'Causation Explorer not initialized'}), 200
     try:
+        # Phase 2: Load latest state from shared state file (incremental, for live updates)
+        try:
+            explorer._load_from_shared_state(force_reload=False)
+        except Exception as e:
+            logger.debug(f"Could not load from shared state: {e}")
+        
         nodes = []
         links = []
         
-        # Add nodes
-        if hasattr(explorer, 'events') and explorer.events:
-            for event_id, event in explorer.events.items():
+        # DATA ACCESS: Read all events from explorer.events{}
+        # This includes:
+        # - Log files loaded on startup
+        # - Akashic Ledger loaded on startup
+        # - Shared state file (just loaded above for live updates)
+        # Add nodes (use lock for thread safety)
+        with explorer.graph_lock:
+            events_snapshot = dict(explorer.events)  # Create snapshot inside lock
+            edges_snapshot = list(explorer.causation_graph.edges(data=True))  # Create snapshot inside lock
+        
+        # Process snapshots outside lock
+        if events_snapshot:
+            for event_id, event in events_snapshot.items():
                 nodes.append({
                     'id': event_id,
                     'component': event.component,
@@ -217,9 +302,12 @@ def get_graph():
                     'timestamp': event.timestamp
                 })
         
+        # DATA ACCESS: Read all causation links from explorer.causation_graph (snapshot)
+        # This is a NetworkX DiGraph built when events are added
+        # Causation links are detected automatically (threshold, correlation, direct, temporal)
         # Add links
-        if hasattr(explorer, 'causation_graph') and explorer.causation_graph:
-            for u, v, data in explorer.causation_graph.edges(data=True):
+        if edges_snapshot:
+            for u, v, data in edges_snapshot:
                 links.append({
                     'source': u,
                     'target': v,

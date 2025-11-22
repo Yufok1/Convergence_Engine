@@ -337,7 +337,7 @@ class StateLogger:
         # State tracking
         self.state_history = []
         self.max_history = 10000
-        self.last_event_time = 0  # Track last event for live mode
+        self.last_event_time = 0  # Track last event timestamp
     
     def _create_logger(self, name: str, filename: str) -> logging.Logger:
         """Create a logger with terse, information-saturated format"""
@@ -384,10 +384,11 @@ class StateLogger:
         if len(self.state_history) > self.max_history:
             self.state_history = self.state_history[-self.max_history:]
         
-        # Update last event time for live mode
+        # Update last event timestamp
         self.last_event_time = timestamp
         
         # Feed to Causation Explorer in real-time if available
+        # These are TRULY new real-time events (not historical)
         if self.causation_explorer:
             try:
                 from causation_explorer import Event
@@ -397,7 +398,8 @@ class StateLogger:
                     event_type=state.get('event', 'state_change'),
                     data=state
                 )
-                self.causation_explorer.add_event(event)
+                # is_historical=False because these are new real-time events from the backend
+                self.causation_explorer.add_event(event, is_historical=False)
             except Exception as e:
                 # Don't let causation tracking break logging
                 pass
@@ -846,7 +848,7 @@ class UnifiedSystem:
         self.vp_monitor = getattr(self.controller, 'vp_monitor', None) if self.controller else None
         self.utm_kernel = getattr(self.controller, 'utm_kernel', None) if self.controller else None
         
-        # Initialize Causation Explorer (Phase 2: Live Mode Integration)
+        # Initialize Causation Explorer
         try:
             from causation_explorer import CausationExplorer
             self.causation_explorer = CausationExplorer(
@@ -854,9 +856,9 @@ class UnifiedSystem:
                 log_dir=self.logger.log_dir,
                 utm_kernel=self.utm_kernel
             )
-            # Connect StateLogger to CausationExplorer for live event tracking
+            # Connect StateLogger to CausationExplorer
             self.logger.causation_explorer = self.causation_explorer
-            print("[UNIFIED] [PASS] Causation Explorer initialized (Live Mode Enabled)")
+            print("[UNIFIED] [PASS] Causation Explorer initialized")
             self.logger.log_state('system', {'event': 'causation_explorer_initialized'})
         except ImportError as e:
             print(f"[UNIFIED] [WARN] Causation Explorer not available: {e}")
@@ -898,6 +900,18 @@ class UnifiedSystem:
                 self.logger.log_reality_sim(reality_sim_state)
                 self.logger.log_explorer(explorer_state)
                 self.logger.log_djinn_kernel(djinn_kernel_state)
+                
+                # Write unified shared state file (includes all three systems)
+                # This is the primary source of truth for the Causation Explorer
+                self._write_unified_shared_state(reality_sim_state, explorer_state, djinn_kernel_state)
+                
+                # Phase 2: Feed events to Causation Explorer in real-time
+                if self.causation_explorer:
+                    try:
+                        # Load latest state from shared state file (incremental)
+                        self.causation_explorer._load_from_shared_state(force_reload=False)
+                    except Exception as e:
+                        pass  # Don't break if event feeding fails
                 
                 # Update visualization
                 if self.visualization and self.visualization.running:
@@ -1000,6 +1014,106 @@ class UnifiedSystem:
                 }
         
         return {'violation_pressure': 0, 'vp_classification': 'VP0', 'vp_calculations': 0}
+    
+    def _write_unified_shared_state(self, reality_sim_state: Dict[str, Any], explorer_state: Dict[str, Any], djinn_kernel_state: Dict[str, Any]):
+        """
+        Write unified shared state file that includes all three systems.
+        This is the primary source of truth for the Causation Explorer and other viewers.
+        
+        Uses snapshot-based approach: writes discrete state snapshots that the HTML can handle efficiently.
+        Throttled to write at most once per second to reduce I/O overhead.
+        """
+        try:
+            # Throttle writes to at most once per second (snapshots, not constant stream)
+            current_time = time.time()
+            if not hasattr(self, '_last_shared_state_write'):
+                self._last_shared_state_write = 0
+            
+            # Only write if at least 1 second has passed since last write
+            if current_time - self._last_shared_state_write < 1.0:
+                return  # Skip this write, too soon
+            
+            self._last_shared_state_write = current_time
+            
+            shared_state_file = Path('data/.shared_simulation_state.json')
+            shared_state_file.parent.mkdir(parents=True, exist_ok=True)
+            
+            # Get frame count from Reality Simulator if available
+            frame_count = 0
+            if self.reality_sim and hasattr(self.reality_sim, 'frame_count'):
+                frame_count = self.reality_sim.frame_count
+            
+            # Collect Reality Simulator data (if available from the actual simulator)
+            reality_sim_data = {}
+            if self.reality_sim and hasattr(self.reality_sim, '_collect_simulation_data'):
+                try:
+                    reality_sim_data = self.reality_sim._collect_simulation_data()
+                except Exception as e:
+                    # Fallback to state we collected
+                    reality_sim_data = {
+                        'network': reality_sim_state,
+                        'evolution': {},
+                        'quantum': {},
+                        'lattice': {},
+                        'consciousness': {}
+                    }
+            else:
+                # Use state we collected
+                reality_sim_data = {
+                    'network': reality_sim_state,
+                    'evolution': {},
+                    'quantum': {},
+                    'lattice': {},
+                    'consciousness': {}
+                }
+            
+            # Create unified shared state with ALL three systems
+            unified_data = {
+                **reality_sim_data,  # Reality Simulator data (quantum, lattice, evolution, network, consciousness)
+                'explorer': explorer_state,  # Explorer data (phase, vp_calculations, breath_state, etc.)
+                'djinn_kernel': djinn_kernel_state  # Djinn Kernel data (VP, tape cells, etc.)
+            }
+            
+            # Make JSON serializable
+            def make_json_serializable(obj):
+                """Recursively make object JSON serializable"""
+                if isinstance(obj, dict):
+                    return {k: make_json_serializable(v) for k, v in obj.items()}
+                elif isinstance(obj, (list, tuple)):
+                    return [make_json_serializable(item) for item in obj]
+                elif isinstance(obj, (int, float, str, bool, type(None))):
+                    return obj
+                else:
+                    return str(obj)  # Convert everything else to string
+            
+            shared_state = {
+                "frame_count": frame_count,
+                "simulation_fps": 0.0,  # Could calculate if needed
+                "simulation_time": round(time.time(), 6),
+                "data": make_json_serializable(unified_data),
+                "visualization_data": make_json_serializable(unified_data),
+                "timestamp": round(time.time(), 6),
+                "measurement_precision": 6
+            }
+            
+            # Atomic write
+            temp_file = shared_state_file.with_suffix('.tmp')
+            with open(temp_file, 'w') as f:
+                json.dump(shared_state, f, indent=2)
+            
+            # Atomic replace
+            if os.name == 'nt':  # Windows
+                if shared_state_file.exists():
+                    shared_state_file.unlink()
+                temp_file.rename(shared_state_file)
+            else:  # Unix
+                temp_file.replace(shared_state_file)
+                
+        except Exception as e:
+            # Don't break the main loop if shared state write fails
+            if not hasattr(self, '_shared_state_error_logged') or not self._shared_state_error_logged:
+                print(f"[UNIFIED] [WARN] Could not write unified shared state: {e}")
+                self._shared_state_error_logged = True
 
 
 # ============================================================================

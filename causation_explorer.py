@@ -85,19 +85,66 @@ class CausationExplorer:
             'vp_calculations': {'transition': 50, 'direction': 'above'},
         }
         
+        # Phase 2: Real-time event tracking state
+        self._last_explorer_phase = None
+        self._last_vp = None
+        self._last_loaded_frame = -1  # Track last frame loaded from shared state
+        
+        # Thread safety for concurrent access (Phase 2: Real-time event feeding)
+        import threading
+        self.graph_lock = threading.Lock()
+        
         # Load existing state history if available
         self._load_state_history()
     
     def _load_state_history(self):
-        """Load state history from log files AND Akashic Ledger"""
+        """
+        Load state history from log files AND Akashic Ledger
+        
+        🔍 DATA SOURCES ACCESSED (in priority order):
+        
+        1. Akashic Ledger (Primary - if available)
+           - Location: data/kernel/akashic_ledger/ (via UTM Kernel)
+           - Format: Tape cells (immutable history)
+           - What: Agent actions, tape states, symbol writes/reads
+           - Component: djinn_kernel
+           - Event type: tape_cell
+           - Method: _load_from_akashic_ledger()
+        
+        2. Log Files (Secondary - always loaded)
+           - Location: data/logs/*.log
+           - Files: state.log, reality_sim.log, explorer.log, breath.log, djinn_kernel.log, system.log, application.log
+           - Format: Pipe-delimited (timestamp|level|component|metric:value|...)
+           - Example: "23:37:11.608|DEBUG|reality_sim|orgs:10|conns:0|mod:0.000|..."
+           - Component: Log file name (e.g., reality_sim, explorer)
+           - Event type: state_change
+           - Method: _parse_log_line()
+        
+        ✅ Phase 2: REAL-TIME DATA SOURCES (IMPLEMENTED):
+        - Shared State File: data/.shared_simulation_state.json (NOW LOADED - incremental updates)
+        - Real-time Events: Feeds from unified_entry.py every loop iteration (Phase 2 COMPLETE)
+        
+        📊 RESULT:
+        - Stores events in self.events{}
+        - Builds causation graph in self.causation_graph
+        - Detects causations automatically (threshold, correlation, direct, temporal)
+        """
         # First, try to load from Akashic Ledger (tape-based)
+        # DATA SOURCE 1: Akashic Ledger - data/kernel/akashic_ledger/
         if hasattr(self, 'utm_kernel') and self.utm_kernel:
             try:
                 self._load_from_akashic_ledger()
             except Exception as e:
                 print(f"[CausationExplorer] Warning: Could not load from Akashic Ledger: {e}")
         
-        # Also load from log files (fallback/complementary)
+        # DATA SOURCE 2: Shared State File - data/.shared_simulation_state.json (Phase 2)
+        # Load current state from shared state file (contains all three systems)
+        try:
+            self._load_from_shared_state()
+        except Exception as e:
+            print(f"[CausationExplorer] Warning: Could not load from shared state: {e}")
+        
+        # DATA SOURCE 3: Log Files - data/logs/*.log (fallback/complementary)
         if not self.log_dir.exists():
             return
         
@@ -106,6 +153,8 @@ class CausationExplorer:
             try:
                 with open(log_file, 'r') as f:
                     for line in f:
+                        # Parse each log line and create Event
+                        # Format: timestamp|level|component|metric:value|metric:value|...
                         self._parse_log_line(line, log_file.stem)
             except Exception as e:
                 print(f"[CausationExplorer] Warning: Could not parse {log_file}: {e}")
@@ -136,6 +185,138 @@ class CausationExplorer:
                     }
                 )
                 self.add_event(event)
+    
+    def _load_from_shared_state(self, force_reload: bool = False):
+        """
+        Load events from shared state file (data/.shared_simulation_state.json)
+        
+        Phase 2: Real-time data source - contains current state of all three systems
+        - Reality Simulator: network, evolution, quantum, lattice, consciousness
+        - Explorer: phase, vp_calculations, breath_state
+        - Djinn Kernel: violation_pressure, vp_classification, tape_cells
+        
+        Args:
+            force_reload: If True, reload all data. If False, only load new frames (incremental)
+        """
+        shared_state_file = Path('data/.shared_simulation_state.json')
+        if not shared_state_file.exists():
+            return
+        
+        try:
+            with open(shared_state_file, 'r') as f:
+                shared_state = json.load(f)
+            
+            if not shared_state or 'data' not in shared_state:
+                return
+            
+            data = shared_state['data']
+            timestamp = shared_state.get('simulation_time', shared_state.get('timestamp', time.time()))
+            frame_count = shared_state.get('frame_count', 0)
+            
+            # Incremental loading: only process if frame_count is newer
+            if not force_reload and frame_count <= self._last_loaded_frame:
+                return  # Already loaded this frame or older
+            
+            self._last_loaded_frame = frame_count
+            
+            # Extract Reality Simulator events
+            if 'network' in data:
+                network_data = data['network']
+                if network_data:
+                    event = Event(
+                        timestamp=timestamp,
+                        component='reality_sim',
+                        event_type='state_change',
+                        data={
+                            'organism_count': network_data.get('organism_count', 0),
+                            'connection_count': network_data.get('connection_count', 0),
+                            'modularity': network_data.get('modularity', 0),
+                            'clustering_coefficient': network_data.get('clustering_coefficient', 0),
+                            'frame_count': frame_count,
+                            **network_data  # Include all network data
+                        }
+                    )
+                    self.add_event(event)
+            
+            # Extract Explorer events
+            if 'explorer' in data:
+                explorer_data = data['explorer']
+                if explorer_data:
+                    event = Event(
+                        timestamp=timestamp,
+                        component='explorer',
+                        event_type='state_change',
+                        data={
+                            'phase': explorer_data.get('phase', 'unknown'),
+                            'vp_calculations': explorer_data.get('vp_calculations', 0),
+                            'breath_cycle': explorer_data.get('breath_cycle', 0),
+                            'breath_depth': explorer_data.get('breath_depth', 0),
+                            'frame_count': frame_count,
+                            **explorer_data  # Include all explorer data
+                        }
+                    )
+                    self.add_event(event)
+                    
+                    # Detect phase transitions
+                    if self._last_explorer_phase is not None:
+                        if self._last_explorer_phase != explorer_data.get('phase'):
+                            phase_event = Event(
+                                timestamp=timestamp,
+                                component='explorer',
+                                event_type='phase_transition',
+                                data={
+                                    'from_phase': self._last_explorer_phase,
+                                    'to_phase': explorer_data.get('phase'),
+                                    'frame_count': frame_count
+                                }
+                            )
+                            self.add_event(phase_event)
+                    self._last_explorer_phase = explorer_data.get('phase')
+            
+            # Extract Djinn Kernel events
+            if 'djinn_kernel' in data:
+                djinn_data = data['djinn_kernel']
+                if djinn_data:
+                    event = Event(
+                        timestamp=timestamp,
+                        component='djinn_kernel',
+                        event_type='state_change',
+                        data={
+                            'violation_pressure': djinn_data.get('violation_pressure', 0),
+                            'vp_classification': djinn_data.get('vp_classification', 'VP0'),
+                            'vp_calculations': djinn_data.get('vp_calculations', 0),
+                            'tape_cells': djinn_data.get('tape_cells', 0),
+                            'frame_count': frame_count,
+                            **djinn_data  # Include all djinn_kernel data
+                        }
+                    )
+                    self.add_event(event)
+                    
+                    # Detect VP threshold crossings
+                    vp = djinn_data.get('violation_pressure', 0)
+                    if self._last_vp is not None:
+                        # Check each VP threshold (vp0, vp1, vp2, vp3 in thresholds dict)
+                        for vp_key in ['vp0', 'vp1', 'vp2', 'vp3']:
+                            vp_level = vp_key.upper()  # Convert to VP0, VP1, etc.
+                            threshold = self.thresholds['violation_pressure'].get(vp_key, 0)
+                            # Check if we crossed the threshold (going up or down)
+                            if self._last_vp < threshold <= vp or self._last_vp > threshold >= vp:
+                                vp_event = Event(
+                                    timestamp=timestamp,
+                                    component='djinn_kernel',
+                                    event_type='threshold_crossed',
+                                    data={
+                                        'metric': 'violation_pressure',
+                                        'threshold': vp_level,
+                                        'value': vp,
+                                        'frame_count': frame_count
+                                    }
+                                )
+                                self.add_event(vp_event)
+                    self._last_vp = vp
+            
+        except Exception as e:
+            print(f"[CausationExplorer] Warning: Could not load from shared state: {e}")
     
     def _parse_log_line(self, line: str, component: str):
         """Parse a log line and extract events"""
@@ -182,28 +363,39 @@ class CausationExplorer:
             pass  # Skip malformed lines
     
     def add_event(self, event: Event):
-        """Add an event and detect causations"""
-        self.events[event.event_id] = event
-        self.events_by_component[event.component].append(event.event_id)
-        self.events_by_type[event.event_type].append(event.event_id)
+        """
+        Add an event and detect causations
         
-        # Update metric history
-        for metric, value in event.data.items():
-            if isinstance(value, (int, float)):
-                self.metric_history[metric].append({
-                    'timestamp': event.timestamp,
-                    'value': value,
-                    'event_id': event.event_id
-                })
-        
-        # Detect causations with recent events
-        self._detect_causations(event)
+        Phase 2: Thread-safe for real-time event feeding from unified_entry.py
+        """
+        with self.graph_lock:
+            self.events[event.event_id] = event
+            self.events_by_component[event.component].append(event.event_id)
+            self.events_by_type[event.event_type].append(event.event_id)
+            
+            # Update metric history
+            for metric, value in event.data.items():
+                if isinstance(value, (int, float)):
+                    self.metric_history[metric].append({
+                        'timestamp': event.timestamp,
+                        'value': value,
+                        'event_id': event.event_id
+                    })
+            
+            # Detect causations with recent events (inside lock)
+            self._detect_causations(event)
     
     def _detect_causations(self, new_event: Event):
-        """Detect causation relationships for a new event"""
+        """
+        Detect causation relationships for a new event
+        
+        Phase 2: Thread-safe - assumes called from within graph_lock
+        """
         # Look at recent events (last 100)
+        # Create snapshot to avoid iteration issues if events are modified concurrently
+        events_snapshot = list(self.events.values())
         recent_events = sorted(
-            self.events.values(),
+            events_snapshot,
             key=lambda e: e.timestamp,
             reverse=True
         )[:100]
