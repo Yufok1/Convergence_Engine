@@ -376,7 +376,7 @@
                         <button class="nav-button" onclick="zoomFine('out')" title="Fine zoom out">−−</button>
                     </div>
                     <div class="graph-controls-row" style="font-size: 0.7em; color: #0aa; padding-top: 5px;">
-                        <span id="zoomLevel">100%</span>
+                        <span id="zoomLevel">5%</span>
                     </div>
                     <div class="graph-controls-row">
                         <button class="nav-button" onclick="zoomToFit()" title="Zoom to fit all nodes">⛶</button>
@@ -414,7 +414,7 @@
         
         // Navigation state
         let panX = 0, panY = 0;
-        let zoomLevel = 1;
+        let zoomLevel = 0.05; // Default 5% zoom for overview
         let rotation = 0;
         
         // Live mode state
@@ -710,7 +710,7 @@
         function resetView() {
             panX = 0;
             panY = 0;
-            zoomLevel = 1;
+            zoomLevel = 0.05; // Reset to 5% zoom for overview
             rotation = 0;
             updateTransform();
         }
