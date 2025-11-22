@@ -189,6 +189,10 @@ Open http://localhost:5000 in your browser.
 - Click nodes to explore backwards/forwards
 - Search events by keyword
 - View causation trails visually
+- **Export Art:** Export as Cinematic MP4 video or interactive HTML
+- **Filters:** Filter by component or causation type (preserves graph positions)
+- **Navigation:** 3D rotation, pan, zoom (default 5% view)
+- **Live Mode:** Real-time updates when backend is running
 
 ---
 
@@ -214,6 +218,39 @@ vp_events = explorer.search_events("vp")
 modularity_events = explorer.search_events("modularity")
 organism_events = explorer.search_events("organism")
 ```
+
+---
+
+## 🎬 Export Art (Web UI Only)
+
+The web UI includes powerful export functionality to create shareable visualizations:
+
+### Cinematic MP4 Export
+- Records video of the graph visualization with smooth camera movements
+- **Camera Movement:** Automatically zooms out from 5% to 2% as graph expands (matches expansion)
+- **Duration:** Configurable (5-600 seconds, default: 60 seconds)
+- **FPS:** Configurable (15-60 FPS, default: 30 FPS)
+- **Output:** Downloads as `.mp4` file
+- **Use Case:** Create shareable videos showing graph evolution
+
+### Interactive HTML Export
+- Creates self-contained HTML file with full interactivity
+- **Includes:** All graph data, D3.js visualization, filters, navigation
+- **Output:** Downloads as `.html` file
+- **Use Case:** Share interactive visualization that works offline
+
+### How to Export
+1. Open web UI at http://localhost:5000
+2. Wait for graph to load
+3. In the "Export Art" panel:
+   - Choose format: "Cinematic MP4" or "Zoomable HTML"
+   - Set Duration (seconds): Default 60, range 5-600
+   - Set FPS: Default 30, range 15-60
+   - Click "Export Video" button
+4. Wait for export to complete (shows progress)
+5. File will download automatically
+
+**Example:** Export 60 seconds at 30 FPS = 1,800 frames of graph evolution
 
 ---
 

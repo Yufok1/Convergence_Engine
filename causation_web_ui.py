@@ -41,6 +41,12 @@ def health():
     })
 
 
+@app.route('/favicon.ico')
+def favicon():
+    """Serve favicon (blank to prevent 404)"""
+    return '', 204  # No content
+
+
 @app.route('/')
 def index():
     """Main interface"""

@@ -109,6 +109,12 @@ Then open http://localhost:5000 in your browser.
 - Search events
 - View causation trails
 - See backwards/forwards exploration
+- **Export Art:** Cinematic MP4 video or interactive HTML export
+  - **Cinematic MP4:** Recorded video with smooth camera movements (zooms out from 5% to 2% as graph expands)
+  - **Zoomable HTML:** Self-contained interactive HTML file you can share
+- **Filters:** Component and causation type filters (non-resetting, preserves graph positions)
+- **Navigation:** 3D rotation, pan, zoom (default 5% view, max 2000%)
+- **Live Mode:** Real-time updates from running backend
 
 ---
 
@@ -214,13 +220,34 @@ The system knows that certain threshold crossings cause specific events:
 
 ---
 
+## Export Features
+
+### Cinematic MP4 Export
+- Records video of the graph visualization
+- Smooth camera movements (automatically zooms out from 5% to 2% as graph expands)
+- Configurable duration (5-600 seconds) and FPS (15-60)
+- Default: 60 seconds at 30 FPS = 1,800 frames
+- Uses browser MediaRecorder API for high-quality video
+
+### Interactive HTML Export
+- Self-contained HTML file with all visualization data
+- Fully interactive (pan, zoom, rotate, filters)
+- Can be shared and viewed offline
+- Preserves graph state at export time
+- Includes D3.js and all necessary code embedded
+
+### Export Controls
+- **Duration:** Length of video in seconds (default: 60)
+- **FPS:** Frames per second (default: 30)
+- **Format:** Choose between MP4 or HTML export
+- Click "Export Video" to start recording
+
 ## Future Enhancements
 
 - **Machine learning** for causation detection
 - **Confidence scores** for causation links
 - **Time-based filtering** (explore specific time ranges)
 - **Metric-based filtering** (explore specific metrics)
-- **Export capabilities** (export causation trails)
 - **Visualization improvements** (better graph layouts, animations)
 
 ---

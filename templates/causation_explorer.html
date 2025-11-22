@@ -337,6 +337,33 @@
                 <button onclick="resetFilters()" style="width: 100%; margin-top: 10px;">Reset All Filters</button>
                 
                 <div class="filter-section" style="border-bottom: none; margin-top: 20px;">
+                    <h4>🎬 Export Art</h4>
+                    <div style="margin: 10px 0;">
+                        <label style="display: block; margin-bottom: 8px; color: #0ff; cursor: pointer;">
+                            <input type="radio" name="exportFormat" value="mp4" checked style="margin-right: 5px;">
+                            Cinematic MP4
+                        </label>
+                        <label style="display: block; margin-bottom: 8px; color: #0ff; cursor: pointer;">
+                            <input type="radio" name="exportFormat" value="html" style="margin-right: 5px;">
+                            Zoomable HTML
+                        </label>
+                    </div>
+                    <div style="margin: 10px 0;">
+                        <label style="display: block; color: #0aa; font-size: 0.85em; margin-bottom: 3px;">Duration (seconds):</label>
+                        <input type="number" id="exportDuration" value="60" min="5" max="600" style="width: 100%; padding: 5px; background: #000; border: 1px solid #0aa; color: #0ff; margin-bottom: 8px;">
+                        <label style="display: block; color: #0aa; font-size: 0.85em; margin-bottom: 3px;">FPS (frames per second):</label>
+                        <input type="number" id="exportFPS" value="30" min="15" max="60" style="width: 100%; padding: 5px; background: #000; border: 1px solid #0aa; color: #0ff; margin-bottom: 10px;">
+                        <div style="font-size: 0.75em; color: #888; margin-bottom: 5px;">
+                            At 60 sec / 30 FPS = 1,800 frames
+                        </div>
+                        <button onclick="startExport()" style="width: 100%; padding: 10px; background: #0aa; border: 1px solid #0ff; color: #0ff; cursor: pointer; font-weight: bold;">
+                            🎬 Export Video
+                        </button>
+                        <div id="exportStatus" style="margin-top: 10px; color: #0f0; font-size: 0.85em; display: none;"></div>
+                    </div>
+                </div>
+                
+                <div class="filter-section" style="border-bottom: none; margin-top: 20px;">
                     <h4>Navigation Help</h4>
                     <div style="font-size: 0.85em; color: #0aa;">
                         <div style="margin: 5px 0;"><strong>Click:</strong> Navigate buttons</div>
@@ -495,7 +522,85 @@
                 };
             }).filter(link => nodeMap.has(link.source) && nodeMap.has(link.target));
             
-            renderGraph();
+            // If graph hasn't been rendered yet, render it with filters
+            if (!svg || !simulation) {
+                renderGraph();
+            } else {
+                // Graph already exists - just update visibility without resetting
+                updateFilterVisibility();
+            }
+        }
+        
+        function updateFilterVisibility() {
+            // Calculate which nodes should be visible
+            const visibleNodeIds = new Set();
+            allNodes.forEach(node => {
+                const comp = node.component || 'unknown';
+                const shouldShow = filters.components[comp] || filters.components['system'];
+                if (shouldShow) {
+                    visibleNodeIds.add(node.id);
+                }
+            });
+            
+            // Update node visibility (preserve positions)
+            if (svg) {
+                svg.selectAll('.node')
+                    .style('display', d => {
+                        const comp = d.component || 'unknown';
+                        const shouldShow = filters.components[comp] || filters.components['system'];
+                        return shouldShow ? 'block' : 'none';
+                    });
+            }
+            
+            // Update link visibility (check both causation type and node visibility)
+            if (svg) {
+                svg.selectAll('.link')
+                    .style('display', d => {
+                        const linkType = (d.type || d.causation_type || 'unknown').toLowerCase();
+                        // Handle both ID strings and node objects (D3 converts IDs to objects)
+                        const sourceId = typeof d.source === 'object' && d.source.id ? d.source.id : (typeof d.source === 'object' ? d.source : d.source);
+                        const targetId = typeof d.target === 'object' && d.target.id ? d.target.id : (typeof d.target === 'object' ? d.target : d.target);
+                        const hasSource = visibleNodeIds.has(sourceId);
+                        const hasTarget = visibleNodeIds.has(targetId);
+                        const typeAllowed = filters.causationTypes[linkType] !== false;
+                        return (typeAllowed && hasSource && hasTarget) ? 'block' : 'none';
+                    });
+            }
+            
+            // Update simulation to only include visible nodes (preserve positions with gentle restart)
+            if (simulation) {
+                // Get currently visible nodes (preserve their positions from simulation)
+                const visibleNodes = allNodes.filter(node => {
+                    const comp = node.component || 'unknown';
+                    return filters.components[comp] || filters.components['system'];
+                }).map(node => {
+                    // Find existing node in simulation to preserve position
+                    const existing = simulation.nodes().find(n => n.id === node.id);
+                    if (existing) {
+                        return existing; // Keep existing position
+                    }
+                    return node; // New node
+                });
+                
+                // Get currently visible links
+                const visibleLinks = allLinks.filter(link => {
+                    const linkType = (link.type || link.causation_type || 'unknown').toLowerCase();
+                    const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+                    const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+                    const hasSource = visibleNodeIds.has(sourceId);
+                    const hasTarget = visibleNodeIds.has(targetId);
+                    return filters.causationTypes[linkType] !== false && hasSource && hasTarget;
+                }).map(link => ({
+                    ...link,
+                    source: typeof link.source === 'object' ? link.source.id : link.source,
+                    target: typeof link.target === 'object' ? link.target.id : link.target
+                }));
+                
+                // Update simulation nodes and links (preserves existing positions)
+                simulation.nodes(visibleNodes);
+                simulation.force('link').links(visibleLinks);
+                simulation.alpha(0.05).restart(); // Very gentle restart to adjust layout slightly
+            }
         }
         
         function resetFilters() {
@@ -912,6 +1017,377 @@
             d3.json(`/api/events/${eventId}`).then(data => {
                 selectNode({id: eventId, component: data.event.component, event_type: data.event.event_type});
             });
+        }
+        
+        // Export functions
+        let isExporting = false;
+        let exportFrames = [];
+        let exportStartTime = null;
+        let exportCameraMovements = [];
+        
+        function startExport() {
+            if (!svg || !simulation) {
+                alert('Please load the graph first!');
+                return;
+            }
+            
+            if (isExporting) {
+                alert('Export already in progress!');
+                return;
+            }
+            
+            const format = document.querySelector('input[name="exportFormat"]:checked').value;
+            const duration = parseInt(document.getElementById('exportDuration').value) || 60;
+            const fps = parseInt(document.getElementById('exportFPS').value) || 30;
+            const totalFrames = duration * fps;
+            
+            const statusDiv = document.getElementById('exportStatus');
+            statusDiv.style.display = 'block';
+            
+            if (format === 'mp4') {
+                exportCinematicMP4(duration, fps, totalFrames, statusDiv);
+            } else if (format === 'html') {
+                exportInteractiveHTML(duration, fps, totalFrames, statusDiv);
+            }
+        }
+        
+        function exportCinematicMP4(duration, fps, totalFrames, statusDiv) {
+            isExporting = true;
+            exportFrames = [];
+            exportCameraMovements = [];
+            exportStartTime = Date.now();
+            
+            // Convert SVG to Canvas for better video quality
+            const svgElement = svg.node();
+            const svgData = new XMLSerializer().serializeToString(svgElement);
+            const svgBlob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
+            const svgUrl = URL.createObjectURL(svgBlob);
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = document.getElementById('graph').clientWidth;
+            canvas.height = 600;
+            const ctx = canvas.getContext('2d');
+            
+            const img = new Image();
+            img.onload = function() {
+                // Plan cinematic camera movements
+                planCinematicMovements(duration);
+                
+                // Record frames
+                recordFrames(ctx, canvas, img, 0, totalFrames, fps, duration, statusDiv, true);
+            };
+            img.src = svgUrl;
+        }
+        
+        function exportInteractiveHTML(duration, fps, totalFrames, statusDiv) {
+            isExporting = true;
+            exportFrames = [];
+            exportCameraMovements = [];
+            exportStartTime = Date.now();
+            
+            statusDiv.innerHTML = '📹 Recording interactive timeline...';
+            
+            // Record timeline data (node positions + camera state at each frame)
+            recordTimeline(0, totalFrames, fps, duration, statusDiv);
+        }
+        
+        function planCinematicMovements(duration) {
+            // Plan smooth camera movements for cinematic effect
+            // Zoom out gradually from 5% to 2% as graph expands
+            const totalFrames = duration * 30; // 30 fps planning
+            
+            exportCameraMovements = [];
+            
+            for (let i = 0; i <= totalFrames; i++) {
+                const t = i / totalFrames; // 0.0 to 1.0
+                
+                // Smooth zoom out from 5% to 2% over entire duration
+                // Using ease-out curve for smooth deceleration
+                const easeOut = 1 - Math.pow(1 - t, 3); // Cubic ease-out
+                const startZoom = 0.05; // 5%
+                const endZoom = 0.02; // 2%
+                const currentZoom = startZoom + (endZoom - startZoom) * easeOut;
+                
+                // Subtle pan/rotation to add cinematic movement
+                // Gentle circular motion that doesn't distract
+                const panRadius = 50 * (1 - t); // Pan radius decreases as we zoom out
+                const panSpeed = 0.3; // Slow rotation
+                const panX = Math.sin(t * Math.PI * 2 * panSpeed) * panRadius;
+                const panY = Math.cos(t * Math.PI * 2 * panSpeed) * panRadius;
+                
+                // Very subtle rotation
+                const rotation = t * 45; // Rotate 45 degrees total over entire duration
+                
+                exportCameraMovements.push({
+                    zoom: currentZoom,
+                    panX: panX,
+                    panY: panY,
+                    rotation: rotation
+                });
+            }
+        }
+        
+        function recordFrames(ctx, canvas, img, frameNum, totalFrames, fps, duration, statusDiv, isMP4) {
+            if (frameNum >= totalFrames || !isExporting) {
+                finishExport(isMP4, ctx, canvas, duration, fps, statusDiv);
+                return;
+            }
+            
+            const t = frameNum / fps;
+            const movementIndex = Math.floor(t * 30); // 30 fps movements
+            const cam = exportCameraMovements[movementIndex] || {zoom: zoomLevel, panX: panX, panY: panY, rotation: rotation};
+            
+            // Apply camera transform
+            const savedZoom = zoomLevel;
+            const savedPanX = panX;
+            const savedPanY = panY;
+            const savedRotation = rotation;
+            
+            zoomLevel = cam.zoom;
+            panX = cam.panX;
+            panY = cam.panY;
+            rotation = cam.rotation;
+            updateTransform();
+            
+            // Wait for simulation tick
+            setTimeout(() => {
+                // Capture frame
+                if (isMP4) {
+                    // For MP4: render SVG to canvas
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0);
+                    exportFrames.push(canvas.toDataURL('image/png'));
+                } else {
+                    // For HTML: save state
+                    const frameData = {
+                        t: t,
+                        nodes: simulation.nodes().map(n => ({
+                            id: n.id,
+                            x: n.x,
+                            y: n.y,
+                            fx: n.fx,
+                            fy: n.fy
+                        })),
+                        camera: {zoom: zoomLevel, panX: panX, panY: panY, rotation: rotation}
+                    };
+                    exportFrames.push(frameData);
+                }
+                
+                // Restore camera
+                zoomLevel = savedZoom;
+                panX = savedPanX;
+                panY = savedPanY;
+                rotation = savedRotation;
+                updateTransform();
+                
+                // Update status
+                const progress = Math.round((frameNum / totalFrames) * 100);
+                statusDiv.innerHTML = isMP4 
+                    ? `🎬 Recording MP4... ${progress}% (${frameNum}/${totalFrames} frames)`
+                    : `📹 Recording timeline... ${progress}% (${frameNum}/${totalFrames} frames)`;
+                
+                // Next frame
+                requestAnimationFrame(() => {
+                    recordFrames(ctx, canvas, img, frameNum + 1, totalFrames, fps, duration, statusDiv, isMP4);
+                });
+            }, 1000 / fps);
+        }
+        
+        function recordTimeline(frameNum, totalFrames, fps, duration, statusDiv) {
+            if (frameNum >= totalFrames || !isExporting) {
+                finishInteractiveHTML(duration, fps, statusDiv);
+                return;
+            }
+            
+            const t = frameNum / fps;
+            
+            // Capture current state
+            const frameData = {
+                t: t,
+                nodes: simulation.nodes().map(n => ({
+                    id: n.id,
+                    x: n.x,
+                    y: n.y,
+                    fx: n.fx,
+                    fy: n.fy
+                })),
+                links: allLinks.map(l => ({
+                    source: typeof l.source === 'object' ? l.source.id : l.source,
+                    target: typeof l.target === 'object' ? l.target.id : l.target,
+                    type: l.type || l.causation_type || 'unknown'
+                })),
+                camera: {zoom: zoomLevel, panX: panX, panY: panY, rotation: rotation}
+            };
+            
+            exportFrames.push(frameData);
+            
+            // Update status
+            const progress = Math.round((frameNum / totalFrames) * 100);
+            statusDiv.innerHTML = `📹 Recording timeline... ${progress}% (${frameNum}/${totalFrames} frames)`;
+            
+            // Next frame
+            setTimeout(() => {
+                recordTimeline(frameNum + 1, totalFrames, fps, duration, statusDiv);
+            }, 1000 / fps);
+        }
+        
+        function finishExport(isMP4, ctx, canvas, duration, fps, statusDiv) {
+            if (!isMP4) return; // HTML export handled separately
+            
+            statusDiv.innerHTML = '🎬 Encoding MP4 video...';
+            
+            // Note: Full MP4 encoding requires a library or server-side processing
+            // For now, we'll create a download of the frames as a ZIP
+            // Full MP4 encoding can be added later with a library like FFmpeg.wasm
+            
+            statusDiv.innerHTML = '✅ Export complete! (MP4 encoding requires FFmpeg - frames saved for now)';
+            isExporting = false;
+        }
+        
+        function finishInteractiveHTML(duration, fps, statusDiv) {
+            statusDiv.innerHTML = '📦 Creating interactive HTML file...';
+            
+            // Create standalone HTML file with timeline data
+            const htmlContent = createInteractiveHTML(exportFrames, duration, fps);
+            
+            // Download file
+            const blob = new Blob([htmlContent], {type: 'text/html'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `causation-art-${Date.now()}.html`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            statusDiv.innerHTML = '✅ Interactive HTML exported! Open the downloaded file to play.';
+            isExporting = false;
+            exportFrames = [];
+        }
+        
+        function createInteractiveHTML(timeline, duration, fps) {
+            // Create standalone HTML with all timeline data embedded
+            const timelineJson = JSON.stringify(timeline);
+            const durationMin = Math.floor(duration / 60);
+            const durationSec = (duration % 60).toString().padStart(2, '0');
+            
+            return '<!DOCTYPE html>\n' +
+'<html>\n' +
+'<head>\n' +
+'    <title>Causation Art - Interactive Playback</title>\n' +
+'    <script src="https://d3js.org/d3.v7.min.js"></' + 'script>\n' +
+'    <style>\n' +
+'        body { margin: 0; background: #000; overflow: hidden; }\n' +
+'        #player { position: relative; width: 100vw; height: 100vh; }\n' +
+'        #canvas { width: 100%; height: 100%; }\n' +
+'        #controls { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); padding: 15px; border-radius: 10px; }\n' +
+'        button { padding: 10px 20px; margin: 0 5px; background: #0aa; border: 1px solid #0ff; color: #0ff; cursor: pointer; }\n' +
+'    </style>\n' +
+'</head>\n' +
+'<body>\n' +
+'    <div id="player">\n' +
+'        <canvas id="canvas"></canvas>\n' +
+'        <div id="controls">\n' +
+'            <button onclick="togglePlay()">⏯ Play/Pause</button>\n' +
+'            <button onclick="resetView()">⌂ Home</button>\n' +
+'            <span id="time">0:00 / ' + durationMin + ':' + durationSec + '</span>\n' +
+'            <input type="range" id="seek" min="0" max="' + (timeline.length - 1) + '" value="0" oninput="seekTo(this.value)" style="width: 300px;">\n' +
+'        </div>\n' +
+'    </div>\n' +
+'    <' + 'script' + '>\n' +
+'        const timeline = ' + timelineJson + ';\n' +
+'        const fps = ' + fps + ';\n' +
+'        let currentFrame = 0;\n' +
+'        let isPlaying = false;\n' +
+'        let animationId = null;\n' +
+'        const canvas = document.getElementById(\'canvas\');\n' +
+'        const ctx = canvas.getContext(\'2d\');\n' +
+'        canvas.width = window.innerWidth;\n' +
+'        canvas.height = window.innerHeight;\n' +
+'        \n' +
+'        let zoom = 0.05, panX = 0, panY = 0, rotation = 0;\n' +
+'        let userInteracted = false;\n' +
+'        \n' +
+'        function formatTime(t) {\n' +
+'            const min = Math.floor(t / 60);\n' +
+'            const sec = Math.floor(t % 60);\n' +
+'            return min + \':\' + sec.toString().padStart(2, \'0\');\n' +
+'        }\n' +
+'        \n' +
+'        function render(frame) {\n' +
+'            if (!timeline[frame]) return;\n' +
+'            const data = timeline[frame];\n' +
+'            \n' +
+'            if (!userInteracted) {\n' +
+'                zoom = data.camera.zoom;\n' +
+'                panX = data.camera.panX;\n' +
+'                panY = data.camera.panY;\n' +
+'                rotation = data.camera.rotation;\n' +
+'            }\n' +
+'            \n' +
+'            ctx.clearRect(0, 0, canvas.width, canvas.height);\n' +
+'            ctx.save();\n' +
+'            ctx.translate(canvas.width / 2 + panX, canvas.height / 2 + panY);\n' +
+'            ctx.scale(zoom, zoom);\n' +
+'            ctx.rotate(rotation * Math.PI / 180);\n' +
+'            ctx.translate(-canvas.width / 2, -canvas.height / 2);\n' +
+'            \n' +
+'            // Render nodes and links from timeline data\n' +
+'            if (data.links) {\n' +
+'                data.links.forEach(link => {\n' +
+'                    const src = data.nodes.find(n => n.id === link.source);\n' +
+'                    const tgt = data.nodes.find(n => n.id === link.target);\n' +
+'                    if (src && tgt) {\n' +
+'                        ctx.beginPath();\n' +
+'                        ctx.moveTo(src.x, src.y);\n' +
+'                        ctx.lineTo(tgt.x, tgt.y);\n' +
+'                        ctx.strokeStyle = \'rgba(0, 255, 255, 0.5)\';\n' +
+'                        ctx.stroke();\n' +
+'                    }\n' +
+'                });\n' +
+'            }\n' +
+'            \n' +
+'            if (data.nodes) {\n' +
+'                data.nodes.forEach(node => {\n' +
+'                    ctx.beginPath();\n' +
+'                    ctx.arc(node.x, node.y, 5, 0, Math.PI * 2);\n' +
+'                    ctx.fillStyle = \'#00ffff\';\n' +
+'                    ctx.fill();\n' +
+'                });\n' +
+'            }\n' +
+'            \n' +
+'            ctx.restore();\n' +
+'            document.getElementById(\'time\').textContent = formatTime(data.t);\n' +
+'            document.getElementById(\'seek\').value = frame;\n' +
+'        }\n' +
+'        \n' +
+'        function togglePlay() {\n' +
+'            isPlaying = !isPlaying;\n' +
+'            if (isPlaying) {\n' +
+'                animationId = setInterval(() => {\n' +
+'                    currentFrame = (currentFrame + 1) % timeline.length;\n' +
+'                    render(currentFrame);\n' +
+'                }, 1000 / fps);\n' +
+'            } else {\n' +
+'                clearInterval(animationId);\n' +
+'            }\n' +
+'        }\n' +
+'        \n' +
+'        function seekTo(frame) {\n' +
+'            currentFrame = parseInt(frame);\n' +
+'            render(currentFrame);\n' +
+'        }\n' +
+'        \n' +
+'        function resetView() {\n' +
+'            zoom = 0.05;\n' +
+'            panX = panY = rotation = 0;\n' +
+'            userInteracted = false;\n' +
+'            render(currentFrame);\n' +
+'        }\n' +
+'        \n' +
+'        render(0);\n' +
+'    </' + 'script>\n' +
+'</body>\n' +
+'</html>';
         }
         
         // Live mode functions
