@@ -17,6 +17,16 @@ from typing import Dict, List, Optional, Any, Tuple
 from collections import defaultdict
 import os
 from datetime import datetime
+import base64
+import io
+
+# Try to import PIL for image compression
+try:
+    from PIL import Image
+    PIL_AVAILABLE = True
+except ImportError:
+    PIL_AVAILABLE = False
+    logger.warning("PIL/Pillow not available - image compression disabled. Install with: pip install Pillow")
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -84,8 +94,9 @@ class OllamaBridge:
         self.headers = {}
         if self.is_cloud and self.api_key:
             self.headers['Authorization'] = f'Bearer {self.api_key}'
+            self.headers['Content-Type'] = 'application/json'  # Required for cloud API
         
-        logger.info(f"OllamaBridge configuration updated: {self.base_url} (cloud: {self.is_cloud})")
+        logger.info(f"OllamaBridge configuration updated: {self.base_url} (cloud: {self.is_cloud}, has_api_key: {bool(self.api_key)})")
     
     def list_models(self) -> List[Dict[str, Any]]:
         """List available Ollama models"""
@@ -117,6 +128,15 @@ class OllamaBridge:
     
     def chat(self, model: str, messages: List[Dict[str, str]], context: Dict[str, Any] = None) -> Optional[str]:
         """Send chat message with context to Ollama"""
+        # Check API key for cloud before making request
+        if self.is_cloud and not self.api_key:
+            logger.error(
+                "Ollama Cloud API key is required but not set. "
+                "Please set OLLAMA_API_KEY environment variable or configure it in the web UI. "
+                "Get your API key from: https://ollama.com/settings/keys"
+            )
+            return None
+        
         try:
             # Build system prompt with context
             system_prompt = self._build_system_prompt(context)
@@ -154,17 +174,51 @@ class OllamaBridge:
             images: List of base64-encoded images (or single image as string for backwards compat)
             prompt: Minimal prompt for vision model
         """
+        # Check API key for cloud before making request
+        if self.is_cloud and not self.api_key:
+            error_msg = (
+                "Ollama Cloud API key is required but not set. "
+                "Please set OLLAMA_API_KEY environment variable or configure it in the web UI. "
+                "Get your API key from: https://ollama.com/settings/keys"
+            )
+            logger.error(error_msg)
+            raise Exception(error_msg)
+        
         try:
             # Handle both single image (backwards compat) and list of images
             if isinstance(images, str):
                 images = [images]
             
-            # Clean images (remove data URL prefix if present)
+            # Clean images (remove data URL prefix if present) and compress if needed
             cleaned_images = []
             total_image_size = 0
+            
+            # Determine target size per image based on payload limit
+            # Goal: Fit 3 images for better evolution analysis
+            if self.is_cloud:
+                # For cloud: 150KB total, try to fit 3 images = ~50KB per image
+                # Leave room for prompt + overhead (~10KB), so ~47KB per image for 3 images
+                if len(images) >= 3:
+                    target_size_per_image_kb = 47  # 3 images × 47KB = 141KB + 10KB overhead = 151KB
+                elif len(images) == 2:
+                    target_size_per_image_kb = 70  # 2 images × 70KB = 140KB + 10KB = 150KB
+                else:
+                    target_size_per_image_kb = 140  # Single image, more room
+            else:
+                # For local: more generous, but still compress if very large
+                target_size_per_image_kb = 200
+            
             for img in images:
                 if img.startswith('data:image'):
                     img = img.split(',')[1]
+                
+                # Compress image if it's too large (especially for cloud)
+                original_size_kb = len(img.encode('utf-8')) / 1024
+                if original_size_kb > target_size_per_image_kb:
+                    img = self._compress_image(img, max_size_kb=target_size_per_image_kb, quality=75)
+                    compressed_size_kb = len(img.encode('utf-8')) / 1024
+                    logger.debug(f"Compressed image: {original_size_kb:.1f}KB → {compressed_size_kb:.1f}KB")
+                
                 cleaned_images.append(img)
                 total_image_size += len(img.encode('utf-8'))
             
@@ -176,10 +230,15 @@ class OllamaBridge:
             # Log payload size for debugging
             logger.debug(f"Vision payload: {len(cleaned_images)} image(s)={total_image_size/1024:.1f}KB, Prompt={prompt_bytes/1024:.1f}KB, Total≈{total_payload_estimate/1024:.1f}KB")
             
-            # Optimistic payload limits: allow larger batches for better analysis
-            # Target: 200KB max total payload (allows multiple images + prompt)
-            # More generous limits for comprehensive vision analysis
-            max_total_payload = 200 * 1024  # 200KB - optimistic limit for batch processing
+            # Payload limits: Cloud has stricter limits than local
+            # Ollama Cloud max payload: ~150KB (based on API limitations)
+            # Local Ollama: Much more flexible, can handle larger payloads
+            if self.is_cloud:
+                max_total_payload = 150 * 1024  # 150KB for cloud (API limit)
+            else:
+                max_total_payload = 1000 * 1024  # 1MB for local (very generous)
+            
+            logger.debug(f"Vision payload limit: {max_total_payload/1024:.0f}KB ({'cloud' if self.is_cloud else 'local'})")
             if total_payload_estimate > max_total_payload:
                 # Calculate how many images we can fit
                 avg_image_size = total_image_size / len(cleaned_images) if cleaned_images else 0
@@ -188,12 +247,75 @@ class OllamaBridge:
                     max_images = max(1, int((max_total_payload - prompt_bytes - estimated_json_overhead) / avg_image_size))
                     
                     if len(cleaned_images) > max_images:
-                        # Keep most recent images (they're most informative for evolution)
+                        # For evolution analysis, prioritize keeping 3 images (best for temporal comparison)
+                        # Fallback to 2, then 1 if needed
                         original_count = len(cleaned_images)
-                        cleaned_images = cleaned_images[-max_images:]
-                        total_image_size = sum(len(img.encode('utf-8')) for img in cleaned_images)
-                        total_payload_estimate = total_image_size + prompt_bytes + estimated_json_overhead
-                        logger.warning(f"Reduced images from {original_count} to {len(cleaned_images)} (avg {avg_image_size/1024:.1f}KB/image, total payload {total_payload_estimate/1024:.1f}KB)")
+                        
+                        # Try to keep 3 images first (ideal for evolution analysis)
+                        if max_images >= 3 and len(cleaned_images) >= 3:
+                            cleaned_images = cleaned_images[-3:]
+                            total_image_size = sum(len(img.encode('utf-8')) for img in cleaned_images)
+                            total_payload_estimate = total_image_size + prompt_bytes + estimated_json_overhead
+                            
+                            # If 3 images exceed limit, try truncating prompt
+                            if total_payload_estimate > max_total_payload:
+                                min_prompt = "Compare these 3 images showing evolution over time (oldest to newest). Describe changes."
+                                prompt_bytes = len(min_prompt.encode('utf-8'))
+                                total_payload_estimate = total_image_size + prompt_bytes + estimated_json_overhead
+                                
+                                if total_payload_estimate <= max_total_payload:
+                                    prompt = min_prompt
+                                    logger.info(f"Reduced prompt to fit 3 images for evolution analysis (total {total_payload_estimate/1024:.1f}KB)")
+                                else:
+                                    # Fall back to 2 images
+                                    cleaned_images = cleaned_images[-2:]
+                                    total_image_size = sum(len(img.encode('utf-8')) for img in cleaned_images)
+                                    total_payload_estimate = total_image_size + prompt_bytes + estimated_json_overhead
+                                    logger.info(f"Fell back to 2 images (total {total_payload_estimate/1024:.1f}KB)")
+                            else:
+                                logger.info(f"Kept 3 images for evolution analysis (total {total_payload_estimate/1024:.1f}KB)")
+                        
+                        # Try to keep 2 images if 3 didn't work
+                        elif max_images >= 2 and len(cleaned_images) >= 2:
+                            cleaned_images = cleaned_images[-2:]
+                            total_image_size = sum(len(img.encode('utf-8')) for img in cleaned_images)
+                            total_payload_estimate = total_image_size + prompt_bytes + estimated_json_overhead
+                            
+                            # If 2 images still exceed limit, try truncating prompt
+                            if total_payload_estimate > max_total_payload:
+                                min_prompt = "Compare these 2 images showing evolution over time. Describe changes."
+                                prompt_bytes = len(min_prompt.encode('utf-8'))
+                                total_payload_estimate = total_image_size + prompt_bytes + estimated_json_overhead
+                                
+                                if total_payload_estimate <= max_total_payload:
+                                    prompt = min_prompt
+                                    logger.info(f"Reduced prompt to fit 2 images (total {total_payload_estimate/1024:.1f}KB)")
+                                else:
+                                    # Check if even 1 image fits
+                                    single_image_size = len(cleaned_images[-1].encode('utf-8'))
+                                    if single_image_size <= max_total_payload * 0.9:  # Leave 10% headroom
+                                        cleaned_images = cleaned_images[-1:]
+                                        total_image_size = single_image_size
+                                        total_payload_estimate = total_image_size + prompt_bytes + estimated_json_overhead
+                                        logger.warning(f"Could not fit 2 images, keeping only most recent (total {total_payload_estimate/1024:.1f}KB)")
+                                    else:
+                                        # Even single image is too large
+                                        if self.is_cloud:
+                                            raise Exception(
+                                                f"Images too large for Ollama Cloud (single image: {single_image_size/1024:.1f}KB, max: {max_total_payload/1024:.0f}KB). "
+                                                f"Try reducing graph complexity, zooming in, or using local Ollama for larger images."
+                                            )
+                                        else:
+                                            raise Exception(f"Image too large ({single_image_size/1024:.1f}KB) for vision API")
+                            else:
+                                logger.info(f"Kept 2 images for evolution analysis (total {total_payload_estimate/1024:.1f}KB)")
+                        else:
+                            # Fallback: keep most recent images
+                            original_count = len(cleaned_images)
+                            cleaned_images = cleaned_images[-max_images:]
+                            total_image_size = sum(len(img.encode('utf-8')) for img in cleaned_images)
+                            total_payload_estimate = total_image_size + prompt_bytes + estimated_json_overhead
+                            logger.warning(f"Reduced images from {original_count} to {len(cleaned_images)} (avg {avg_image_size/1024:.1f}KB/image, total payload {total_payload_estimate/1024:.1f}KB)")
                 
                 # If still too large even with reduced images, truncate prompt
                 if total_payload_estimate > max_total_payload:
@@ -259,13 +381,61 @@ class OllamaBridge:
             }
             
             # Use /api/chat endpoint (works for both local and cloud)
-            response = requests.post(
-                f"{self.base_url}/api/chat",
-                json=payload,
-                headers=self.headers,
-                timeout=self.timeout * 2  # Vision takes longer
-            )
-            response.raise_for_status()
+            # Debug logging for cloud requests
+            if self.is_cloud:
+                logger.debug(f"Vision request to cloud: {self.base_url}/api/chat")
+                logger.debug(f"Headers present: Authorization={bool(self.headers.get('Authorization'))}, Content-Type={bool(self.headers.get('Content-Type'))}")
+                logger.debug(f"API key length: {len(self.api_key) if self.api_key else 0}")
+                logger.debug(f"Sending {len(cleaned_images)} image(s), total size: {total_image_size/1024:.1f}KB")
+            
+            # Retry logic for connection issues (especially for large payloads)
+            max_retries = 3
+            retry_delay = 2  # seconds
+            last_exception = None
+            response = None
+            
+            for attempt in range(max_retries):
+                try:
+                    # Longer timeout for large payloads (4x normal for 341KB+ payloads)
+                    timeout_seconds = self.timeout * 4 if total_image_size > 300 * 1024 else self.timeout * 2
+                    response = requests.post(
+                        f"{self.base_url}/api/chat",
+                        json=payload,
+                        headers=self.headers,
+                        timeout=timeout_seconds
+                    )
+                    response.raise_for_status()
+                    break  # Success, exit retry loop
+                except (requests.exceptions.ConnectionError, requests.exceptions.Timeout, OSError) as e:
+                    # OSError catches ConnectionAbortedError (Windows error 10053)
+                    last_exception = e
+                    if attempt < max_retries - 1:
+                        error_type = type(e).__name__
+                        logger.warning(f"Vision request attempt {attempt + 1}/{max_retries} failed ({error_type}). Retrying in {retry_delay}s...")
+                        time.sleep(retry_delay)
+                        retry_delay *= 2  # Exponential backoff
+                    else:
+                        # Last attempt failed
+                        if self.is_cloud:
+                            error_msg = (
+                                f"Failed to send vision request to Ollama Cloud after {max_retries} attempts. "
+                                f"Payload size: {total_image_size/1024:.1f}KB ({len(cleaned_images)} images). "
+                                f"Connection was aborted - this may be due to network issues, timeout, or payload size limits. "
+                                f"Suggestions: Try again (may be temporary), reduce graph complexity, or use local Ollama for larger payloads."
+                            )
+                        else:
+                            error_msg = f"Failed to send vision request after {max_retries} attempts: {e}"
+                        logger.error(error_msg)
+                        raise Exception(error_msg)
+                except requests.exceptions.HTTPError as e:
+                    # HTTP errors (like 401) shouldn't be retried
+                    raise
+                except Exception as e:
+                    # Other errors shouldn't be retried
+                    raise
+            
+            if not response:
+                raise Exception(f"Failed to get response after {max_retries} attempts: {last_exception}")
             data = response.json()
             
             # Extract response from chat format
@@ -281,21 +451,101 @@ class OllamaBridge:
             # Extract detailed error message from response
             error_message = str(e)
             if hasattr(e, 'response') and e.response is not None:
+                status_code = e.response.status_code
                 try:
                     error_data = e.response.json()
                     if isinstance(error_data, dict) and 'error' in error_data:
                         error_message = f"Ollama API error: {error_data['error']}"
                     else:
                         error_detail = e.response.text[:500]
-                        error_message = f"Ollama API error ({e.response.status_code}): {error_detail}"
+                        error_message = f"Ollama API error ({status_code}): {error_detail}"
                     logger.error(f"API response: {error_message}")
                 except:
-                    error_message = f"HTTP {e.response.status_code} error from Ollama Cloud"
+                    if status_code == 401:
+                        error_message = (
+                            "Ollama Cloud authentication failed (401 Unauthorized). "
+                            "Your API key may be missing, invalid, or expired. "
+                            "Please check your OLLAMA_API_KEY environment variable or configure it in the web UI. "
+                            "Get a new API key from: https://ollama.com/settings/keys"
+                        )
+                    else:
+                        error_message = f"HTTP {status_code} error from Ollama Cloud"
             # Return error string instead of None for better error display
             raise Exception(error_message)
         except Exception as e:
             logger.error(f"Error in Ollama vision: {e}", exc_info=True)
             raise
+    
+    def _compress_image(self, base64_image: str, max_size_kb: int = 75, quality: int = 75) -> str:
+        """
+        Compress a base64-encoded image to reduce size
+        
+        Args:
+            base64_image: Base64-encoded image string (without data URL prefix)
+            max_size_kb: Target maximum size in KB
+            quality: JPEG quality (1-100, lower = smaller file)
+        
+        Returns:
+            Compressed base64-encoded image string
+        """
+        if not PIL_AVAILABLE:
+            return base64_image  # Can't compress without PIL
+        
+        try:
+            # Decode base64 image
+            image_data = base64.b64decode(base64_image)
+            img = Image.open(io.BytesIO(image_data))
+            
+            # Convert RGBA to RGB if needed (JPEG doesn't support transparency)
+            if img.mode in ('RGBA', 'LA', 'P'):
+                background = Image.new('RGB', img.size, (0, 0, 0))
+                if img.mode == 'P':
+                    img = img.convert('RGBA')
+                background.paste(img, mask=img.split()[-1] if img.mode in ('RGBA', 'LA') else None)
+                img = background
+            elif img.mode != 'RGB':
+                img = img.convert('RGB')
+            
+            # Get current size
+            current_size_kb = len(base64_image.encode('utf-8')) / 1024
+            
+            # If already small enough, return as-is
+            if current_size_kb <= max_size_kb:
+                return base64_image
+            
+            # Compress with quality reduction
+            output = io.BytesIO()
+            img.save(output, format='JPEG', quality=quality, optimize=True)
+            compressed_data = output.getvalue()
+            
+            # If still too large, reduce quality further
+            attempts = 0
+            while len(compressed_data) / 1024 > max_size_kb and quality > 20 and attempts < 5:
+                quality = max(20, quality - 15)
+                output = io.BytesIO()
+                img.save(output, format='JPEG', quality=quality, optimize=True)
+                compressed_data = output.getvalue()
+                attempts += 1
+            
+            # If still too large, resize the image
+            if len(compressed_data) / 1024 > max_size_kb:
+                scale_factor = 0.8
+                new_size = (int(img.width * scale_factor), int(img.height * scale_factor))
+                img_resized = img.resize(new_size, Image.Resampling.LANCZOS)
+                output = io.BytesIO()
+                img_resized.save(output, format='JPEG', quality=quality, optimize=True)
+                compressed_data = output.getvalue()
+            
+            # Encode back to base64
+            compressed_base64 = base64.b64encode(compressed_data).decode('utf-8')
+            compressed_size_kb = len(compressed_base64.encode('utf-8')) / 1024
+            
+            logger.info(f"Compressed image: {current_size_kb:.1f}KB → {compressed_size_kb:.1f}KB (quality={quality})")
+            return compressed_base64
+            
+        except Exception as e:
+            logger.warning(f"Image compression failed: {e}. Using original image.")
+            return base64_image
     
     def _build_system_prompt(self, context: Dict[str, Any]) -> str:
         """Build system prompt from context"""
@@ -1874,9 +2124,10 @@ def ollama_chat():
             vision_model = data.get('vision_model')
             
             # Collect all images: current + evolutionary snapshots
-            # Strategy: Send 2-3 most recent snapshots for evolution analysis
-            # Reason: Multiple images = better evolution tracking, but payload limits constrain us
-            MAX_VISION_IMAGES = 5  # Max snapshots to send (current + 4 previous) - more optimistic
+            # Strategy: Send 3 snapshots for evolution analysis (oldest, middle, newest)
+            # Reason: 3 images = best temporal comparison for evolution tracking
+            # Cloud limit: 150KB total, so ~50KB per image for 3 images
+            MAX_VISION_IMAGES = 3  # Target: 3 images for optimal evolution analysis
             
             all_images = []
             
@@ -1893,9 +2144,11 @@ def ollama_chat():
                         snapshot_images.append(snapshot)
                 
                 # Keep only the most recent evolutionary snapshots (keep last N-1, since we'll add current)
-                if len(snapshot_images) > (MAX_VISION_IMAGES - 1):
-                    snapshot_images = snapshot_images[-(MAX_VISION_IMAGES - 1):]
-                    logger.debug(f"Limited evolutionary snapshots from {len(evolutionary_snapshots)} to {len(snapshot_images)}")
+                # Target: 3 total images (2 historical + 1 current)
+                target_historical = MAX_VISION_IMAGES - 1  # 2 historical snapshots
+                if len(snapshot_images) > target_historical:
+                    snapshot_images = snapshot_images[-target_historical:]
+                    logger.debug(f"Limited evolutionary snapshots from {len(evolutionary_snapshots)} to {len(snapshot_images)} (target: {target_historical} for {MAX_VISION_IMAGES} total)")
                 
                 all_images.extend(snapshot_images)
             
@@ -1903,21 +2156,27 @@ def ollama_chat():
             if graph_image:
                 all_images.append(graph_image)
             
-            # Final limit check - never send more than MAX
+            # Final limit check - never send more than MAX (should be 3)
             if len(all_images) > MAX_VISION_IMAGES:
                 all_images = all_images[-MAX_VISION_IMAGES:]
-                logger.debug(f"Final limit: keeping {MAX_VISION_IMAGES} most recent images")
+                logger.debug(f"Final limit: keeping {MAX_VISION_IMAGES} most recent images (oldest, middle, newest)")
             
             if not all_images:
                 vision_error = "No images available for vision analysis."
             else:
-                # Log what we're sending
-                logger.info(f"Vision model: Analyzing {len(all_images)} snapshot(s) - {'current + ' + str(len(all_images)-1) + ' evolutionary' if len(all_images) > 1 else 'current state only (no history yet)'}")
+                # Log what we're sending with size info
+                total_size_kb = sum(len(img.encode('utf-8')) for img in all_images) / 1024
+                if len(all_images) > 1:
+                    logger.info(f"Vision model: Analyzing {len(all_images)} snapshots for evolution (current + {len(all_images)-1} historical, total {total_size_kb:.1f}KB)")
+                else:
+                    logger.info(f"Vision model: Analyzing 1 snapshot (current state only, {total_size_kb:.1f}KB) - no history available yet")
                 
                 # Minimal prompt for vision model - ONLY asks it to describe what it sees
                 # NO system context - that goes to CRA instead
-                if len(all_images) > 1:
-                    vision_prompt = f"These {len(all_images)} images show the evolution of a causation graph over time (oldest to newest). Compare them and describe: What changes do you see? How does the graph structure, node positions, connections, and patterns evolve? Describe the evolution timeline from oldest to newest."
+                if len(all_images) >= 3:
+                    vision_prompt = f"These {len(all_images)} images show the evolution of a causation graph over time (oldest to newest). Compare all {len(all_images)} images and describe: What changes do you see? How does the graph structure, node positions, connections, and patterns evolve? Describe the evolution timeline from oldest to newest. Pay attention to: node movement, cluster formation/dissolution, connection changes, and overall structural evolution."
+                elif len(all_images) == 2:
+                    vision_prompt = f"These 2 images show the evolution of a causation graph over time (oldest to newest). Compare them and describe: What changes do you see? How does the graph structure, node positions, connections, and patterns evolve? Describe the evolution timeline from oldest to newest."
                 else:
                     # Single image - describe current state, note that this is the first snapshot
                     vision_prompt = "This is a single snapshot of a causation graph visualization (no previous snapshots available for comparison yet). Describe what you see: What are the node colors and what do they represent? What is the graph structure? Are there clusters, isolated nodes, or branching patterns? What do the connections show? Note: This is the first snapshot, so no evolutionary analysis is possible yet."
