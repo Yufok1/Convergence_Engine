@@ -54,11 +54,20 @@ Cloud models are models with the `-cloud` suffix. To use them:
 1. **Pull a cloud model** (if using local Ollama with cloud models):
    ```bash
    ollama pull gpt-oss:120b-cloud
+   ollama pull qwen3-vl:235b-cloud  # Vision model for cloud
    ```
 
 2. **Or use directly via cloud API** (if configured for cloud):
    - The model will automatically run on Ollama's cloud infrastructure
    - No need to download or run locally
+
+## Vision Models on Cloud
+
+**Important:** Ollama Cloud currently only supports **Qwen3-VL** for vision/image analysis.
+
+- The Causation Explorer will automatically detect and recommend `qwen3-vl` when using cloud mode
+- Vision models are marked with 🌐 in the model dropdown
+- If you don't see Qwen3-VL, make sure you're using cloud mode and have pulled the model
 
 ## Switching Between Local and Cloud
 

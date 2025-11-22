@@ -192,6 +192,7 @@ Open http://localhost:5000 in your browser.
 - **Export Art:** Export as Cinematic MP4 video or interactive HTML
 - **Filters:** Filter by component or causation type (preserves graph positions)
 - **Navigation:** 3D rotation, pan, zoom (default 5% view)
+- **Drag-to-Zoom:** Click and drag a rectangle on the graph to zoom into that area (or hold Shift and drag)
 - **Live Mode:** Real-time updates when backend is running
 
 ---
@@ -264,6 +265,8 @@ The Causation Explorer includes an AI-powered research assistant that helps you 
 - Analyzes the current graph viewport to understand what you're seeing
 - Describes visible nodes, clusters, connections, and patterns
 - Responds to questions like "What am I looking at?" or "Describe this view"
+- **For Ollama Cloud:** Automatically uses `qwen3-vl` (the only supported cloud vision model)
+- **For Local Ollama:** Supports `llava`, `bakllava`, and other vision-capable models
 
 **Research Model:**
 - Answers complex questions about the Butterfly System
@@ -290,8 +293,11 @@ python causation_web_ui.py
 
 **3. Select Models:**
 - **Research Model:** Choose your preferred language model (e.g., `llama3`, `mistral`)
-- **Vision Model:** Choose a vision-capable model (e.g., `llava`, `bakllava`)
-- Models are dynamically loaded from your local Ollama installation
+- **Vision Model:** 
+  - **Ollama Cloud:** `qwen3-vl` is automatically detected and recommended (only cloud vision model)
+  - **Local Ollama:** Choose a vision-capable model (e.g., `llava`, `bakllava`)
+- Models are dynamically loaded from your Ollama installation (local or cloud)
+- Cloud models are marked with 🌐 icon in the dropdown
 
 **4. Ask Questions:**
 - **About the System:** "What does the breath engine do?" or "Explain violation pressure"
