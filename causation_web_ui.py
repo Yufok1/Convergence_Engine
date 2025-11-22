@@ -278,11 +278,27 @@ def get_graph():
     if explorer is None:
         return jsonify({'nodes': [], 'links': [], 'error': 'Causation Explorer not initialized'}), 200
     try:
-        # Phase 2: Load latest state from shared state file (incremental, for live updates)
+        # Phase 2: Load latest state from shared state file (force reload on each request to get latest data)
+        # This ensures that even if the simulation started before the web UI, we still load the latest data
         try:
-            explorer._load_from_shared_state(force_reload=False)
+            shared_state_path = Path('data/.shared_simulation_state.json')
+            if shared_state_path.exists():
+                # Check file modification time to see if it's been updated recently
+                import os
+                file_mtime = os.path.getmtime(shared_state_path)
+                current_time = time.time()
+                
+                # If file was modified in the last 10 seconds, definitely reload
+                if (current_time - file_mtime) < 10:
+                    logger.info(f"Shared state file recently updated ({current_time - file_mtime:.1f}s ago), loading...")
+                    explorer._load_from_shared_state(force_reload=True)  # Force reload recent data
+                else:
+                    # File exists but might be old, still try incremental load
+                    explorer._load_from_shared_state(force_reload=False)
+            else:
+                logger.debug("Shared state file does not exist yet")
         except Exception as e:
-            logger.debug(f"Could not load from shared state: {e}")
+            logger.warning(f"Could not load from shared state: {e}", exc_info=True)
         
         nodes = []
         links = []
@@ -322,7 +338,32 @@ def get_graph():
                     'explanation': data.get('explanation', '')
                 })
         
-        return jsonify({'nodes': nodes, 'links': links})
+        # Add diagnostic info if no data
+        diagnostic_info = {}
+        if len(nodes) == 0:
+            shared_state_path = Path('data/.shared_simulation_state.json')
+            diagnostic_info['no_data'] = True
+            diagnostic_info['data_sources_checked'] = {
+                'shared_state_exists': shared_state_path.exists(),
+                'log_dir_exists': explorer.log_dir.exists() if explorer else False,
+                'log_files_count': len(list(explorer.log_dir.glob('*.log'))) if explorer and explorer.log_dir.exists() else 0,
+                'events_in_memory': len(explorer.events) if explorer else 0,
+            }
+            if shared_state_path.exists():
+                import os
+                file_mtime = os.path.getmtime(shared_state_path)
+                file_age = time.time() - file_mtime
+                diagnostic_info['data_sources_checked']['shared_state_age_seconds'] = file_age
+            diagnostic_info['message'] = 'No events found. Make sure the simulation is running and generating data.'
+            logger.warning(f"Graph request returned 0 nodes. Diagnostics: {diagnostic_info}")
+        else:
+            logger.info(f"Graph request returned {len(nodes)} nodes and {len(links)} links")
+        
+        return jsonify({
+            'nodes': nodes,
+            'links': links,
+            'diagnostic': diagnostic_info if diagnostic_info else None
+        })
     except Exception as e:
         logger.error(f"Error getting graph: {e}", exc_info=True)
         return jsonify({'nodes': [], 'links': [], 'error': str(e)}), 200

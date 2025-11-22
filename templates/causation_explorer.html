@@ -684,10 +684,23 @@
                 .style('display', filters.showLabels ? 'block' : 'none');
             
             // Simulation - D3 force simulation will convert IDs to node references
+            // Initialize nodes with random positions (not predetermined template)
+            // This makes each load look unique and organic, not template-like
+            nodes.forEach(node => {
+                if (!node.x && !node.y) {
+                    // Random position in a circle around center (distributes nodes organically)
+                    const angle = Math.random() * Math.PI * 2;
+                    const radius = Math.random() * Math.min(width, height) * 0.3; // 30% of viewport
+                    node.x = width / 2 + Math.cos(angle) * radius;
+                    node.y = height / 2 + Math.sin(angle) * radius;
+                }
+            });
+            
             simulation = d3.forceSimulation(nodes)
                 .force('link', d3.forceLink(links).id(d => d.id).distance(100))
                 .force('charge', d3.forceManyBody().strength(-300))
-                .force('center', d3.forceCenter(width / 2, height / 2));
+                .force('center', d3.forceCenter(width / 2, height / 2))
+                .velocityDecay(0.6); // Higher decay = more stable, less jittery
             
             simulation.on('tick', () => {
                 link
@@ -1093,7 +1106,7 @@
         
         function planCinematicMovements(duration) {
             // Plan smooth camera movements for cinematic effect
-            // Zoom out gradually from 5% to 2% as graph expands
+            // Zoom out gradually from 3% to 2% as graph expands
             const totalFrames = duration * 30; // 30 fps planning
             
             exportCameraMovements = [];
@@ -1101,10 +1114,10 @@
             for (let i = 0; i <= totalFrames; i++) {
                 const t = i / totalFrames; // 0.0 to 1.0
                 
-                // Smooth zoom out from 5% to 2% over entire duration
+                // Smooth zoom out from 3% to 2% over entire duration
                 // Using ease-out curve for smooth deceleration
                 const easeOut = 1 - Math.pow(1 - t, 3); // Cubic ease-out
-                const startZoom = 0.05; // 5%
+                const startZoom = 0.03; // 3%
                 const endZoom = 0.02; // 2%
                 const currentZoom = startZoom + (endZoom - startZoom) * easeOut;
                 
