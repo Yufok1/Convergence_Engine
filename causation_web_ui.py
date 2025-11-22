@@ -210,17 +210,37 @@ class OllamaBridge:
                             total_payload_estimate = total_image_size + prompt_bytes + estimated_json_overhead
                             
                             if total_payload_estimate > max_total_payload:
-                                # If even single image is too large, skip vision analysis gracefully
-                                logger.warning(f"Image too large for Ollama Cloud ({total_image_size/1024:.1f}KB, max ~{max_total_payload/1024:.0f}KB). Skipping vision analysis.")
+                                # Try aggressive prompt truncation first (leave 5KB headroom for safety)
+                                max_prompt_size = max_total_payload - total_image_size - estimated_json_overhead - 5000
+                                if max_prompt_size > 50:
+                                    prompt = prompt[:max_prompt_size] + "...[truncated]"
+                                    prompt_bytes = len(prompt.encode('utf-8'))
+                                    total_payload_estimate = total_image_size + prompt_bytes + estimated_json_overhead
+                                    logger.warning(f"Aggressively truncated prompt to fit image ({max_prompt_size} bytes, new total: {total_payload_estimate/1024:.1f}KB)")
+                                
+                                # Only fail if still too large after aggressive truncation
+                                if total_payload_estimate > max_total_payload:
+                                    # If even single image is too large, skip vision analysis gracefully
+                                    logger.warning(f"Image too large for Ollama Cloud ({total_image_size/1024:.1f}KB, max ~{max_total_payload/1024:.0f}KB). Skipping vision analysis.")
+                                    if self.is_cloud:
+                                        raise Exception(f"Image too large for Ollama Cloud preview ({total_image_size/1024:.1f}KB). Vision models may have limited support in cloud. Try reducing graph complexity or use local Ollama.")
+                                    else:
+                                        raise Exception(f"Image too large ({total_image_size/1024:.1f}KB) for vision API")
+                        else:
+                            # Single image but still too large - try aggressive prompt truncation
+                            max_prompt_size = max_total_payload - total_image_size - estimated_json_overhead - 5000
+                            if max_prompt_size > 50:
+                                prompt = prompt[:max_prompt_size] + "...[truncated]"
+                                prompt_bytes = len(prompt.encode('utf-8'))
+                                total_payload_estimate = total_image_size + prompt_bytes + estimated_json_overhead
+                                logger.warning(f"Aggressively truncated prompt to fit image ({max_prompt_size} bytes, new total: {total_payload_estimate/1024:.1f}KB)")
+                            
+                            # Only fail if still too large after truncation
+                            if total_payload_estimate > max_total_payload:
                                 if self.is_cloud:
-                                    raise Exception(f"Image too large for Ollama Cloud preview ({total_image_size/1024:.1f}KB). Vision models may have limited support in cloud. Try reducing graph complexity or use local Ollama.")
+                                    raise Exception(f"Image too large for Ollama Cloud preview ({total_image_size/1024:.1f}KB). Vision models may have limited support. Try reducing graph complexity or use local Ollama.")
                                 else:
                                     raise Exception(f"Image too large ({total_image_size/1024:.1f}KB) for vision API")
-                        else:
-                            if self.is_cloud:
-                                raise Exception(f"Image too large for Ollama Cloud preview ({total_image_size/1024:.1f}KB). Vision models may have limited support. Try reducing graph complexity or use local Ollama.")
-                            else:
-                                raise Exception(f"Image too large ({total_image_size/1024:.1f}KB) for vision API")
             
             # Ollama Cloud and newer local versions use /api/chat for vision models
             # Use chat endpoint format for both local and cloud
