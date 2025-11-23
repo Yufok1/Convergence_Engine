@@ -217,7 +217,7 @@ class OllamaBridge:
                 # For cloud: 150KB total, try to fit 3 images = ~50KB per image
                 # Leave room for prompt + overhead (~10KB), so ~47KB per image for 3 images
                 if len(images) >= 3:
-                    target_size_per_image_kb = 47  # 3 images × 47KB = 141KB + 10KB overhead = 151KB
+                    target_size_per_image_kb = 45  # 3 images × 45KB = 135KB + 10KB overhead = 145KB (under 150KB limit)
                 elif len(images) == 2:
                     target_size_per_image_kb = 70  # 2 images × 70KB = 140KB + 10KB = 150KB
                 else:
