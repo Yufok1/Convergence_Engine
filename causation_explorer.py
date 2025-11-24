@@ -149,7 +149,7 @@ class CausationExplorer:
             return
         
         # Load from all log files (optimized for large files)
-        MAX_LINES_PER_FILE = 10000  # Limit to prevent timeouts on large files
+        MAX_LINES_PER_FILE = 5000  # Limit to prevent timeouts on large files
         for log_file in self.log_dir.glob('*.log'):
             try:
                 file_size = log_file.stat().st_size
