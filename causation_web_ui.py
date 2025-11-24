@@ -56,9 +56,15 @@ if SOCKETIO_AVAILABLE:
     socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Initialize Causation Explorer with error handling
+# Set log_dir explicitly to ensure it finds logs on Render
+project_root = Path(__file__).parent
+log_dir = project_root / 'data' / 'logs'
 try:
-    explorer = CausationExplorer()
-    logger.info("Causation Explorer initialized successfully")
+    explorer = CausationExplorer(log_dir=log_dir)
+    logger.info(f"Causation Explorer initialized successfully (log_dir: {log_dir}, exists: {log_dir.exists()})")
+    if log_dir.exists():
+        log_files = list(log_dir.glob('*.log'))
+        logger.info(f"Found {len(log_files)} log files: {[f.name for f in log_files]}")
 except Exception as e:
     logger.error(f"Failed to initialize Causation Explorer: {e}", exc_info=True)
     explorer = None
