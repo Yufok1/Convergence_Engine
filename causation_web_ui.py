@@ -59,12 +59,6 @@ if SOCKETIO_AVAILABLE:
 # Set log_dir explicitly to ensure it finds logs on Render
 project_root = Path(__file__).parent
 log_dir = project_root / 'data' / 'logs'
-
-# Cache for graph data to avoid reloading on every request
-_graph_cache = None
-_graph_cache_time = 0
-CACHE_DURATION = 300  # Cache for 5 minutes
-
 try:
     explorer = CausationExplorer(log_dir=log_dir)
     logger.info(f"Causation Explorer initialized successfully (log_dir: {log_dir}, exists: {log_dir.exists()})")
@@ -2937,7 +2931,7 @@ def get_graph():
             # Log component distribution for debugging
             if component_counts:
                 logger.info(f"Graph nodes by component: {component_counts}")
-                logger.info(f"Total nodes: {len(nodes)}, Total links: {len(links)}")
+                logger.info(f"Total nodes: {len(nodes)} (from {len(events_snapshot)} total), Total links: {len(links)}")
         
         # DATA ACCESS: Read all causation links from explorer.causation_graph (snapshot)
         # This is a NetworkX DiGraph built when events are added
@@ -2974,17 +2968,11 @@ def get_graph():
         else:
             logger.info(f"Graph request returned {len(nodes)} nodes and {len(links)} links")
         
-        result = {
+        return jsonify({
             'nodes': nodes,
             'links': links,
             'diagnostic': diagnostic_info if diagnostic_info else None
-        }
-        
-        # Cache the result
-        _graph_cache = result
-        _graph_cache_time = current_time
-        
-        return jsonify(result)
+        })
     except Exception as e:
         logger.error(f"Error getting graph: {e}", exc_info=True)
         return jsonify({'nodes': [], 'links': [], 'error': str(e)}), 200

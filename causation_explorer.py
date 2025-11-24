@@ -148,36 +148,14 @@ class CausationExplorer:
         if not self.log_dir.exists():
             return
         
-        # Load from all log files (optimized for large files)
-        MAX_LINES_PER_FILE = 5000  # Limit to prevent timeouts on large files
+        # Load from all log files
         for log_file in self.log_dir.glob('*.log'):
             try:
-                file_size = log_file.stat().st_size
-                # Skip empty files
-                if file_size == 0:
-                    continue
-                
-                # For very large files (>5MB), only read last portion
-                lines_read = 0
                 with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
-                    # If file is >5MB, seek to end and read backwards
-                    if file_size > 5 * 1024 * 1024:  # 5MB
-                        # Read last MAX_LINES_PER_FILE lines
-                        f.seek(0, 2)  # Seek to end
-                        end_pos = f.tell()
-                        # Estimate: ~100 bytes per line, read last portion
-                        read_size = min(MAX_LINES_PER_FILE * 100, end_pos)
-                        f.seek(max(0, end_pos - read_size))
-                        # Skip first partial line
-                        f.readline()
-                    
                     for line in f:
-                        if lines_read >= MAX_LINES_PER_FILE:
-                            break
                         # Parse each log line and create Event
                         # Format: timestamp|level|component|metric:value|metric:value|...
                         self._parse_log_line(line, log_file.stem)
-                        lines_read += 1
             except Exception as e:
                 print(f"[CausationExplorer] Warning: Could not parse {log_file}: {e}")
     
