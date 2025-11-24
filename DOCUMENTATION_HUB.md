@@ -35,7 +35,7 @@ pip install pywin32
 
 ### Essential Reading
 
-- **[README.md](./README.md)** - Main project overview and quick start guide
+- **[README.md](./README.md)** - Main project overview, quick start, and comprehensive system guide ⭐ **UPDATED**
 - **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Complete system architecture and integration approaches
 - **[QUICK_REFERENCE.md](./QUICK_REFERENCE.md)** - One-page quick reference
 - **[CHANGELOG.md](./CHANGELOG.md)** - Version history and changes
