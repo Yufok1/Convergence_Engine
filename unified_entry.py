@@ -896,10 +896,24 @@ class UnifiedSystem:
                 explorer_state = self._get_explorer_state()
                 djinn_kernel_state = self._get_djinn_kernel_state()
                 
+                # Get breath state for logging
+                if self.controller and hasattr(self.controller, 'breath_engine'):
+                    breath_state = self.controller.breath_engine.get_breath_state()
+                    self.logger.log_breath(breath_state)
+                
                 # Log all states
                 self.logger.log_reality_sim(reality_sim_state)
                 self.logger.log_explorer(explorer_state)
                 self.logger.log_djinn_kernel(djinn_kernel_state)
+                
+                # Log unified state snapshot
+                unified_state = {
+                    'reality_sim': reality_sim_state,
+                    'explorer': explorer_state,
+                    'djinn_kernel': djinn_kernel_state,
+                    'timestamp': time.time()
+                }
+                self.logger.log_state('state', unified_state)
                 
                 # Write unified shared state file (includes all three systems)
                 # This is the primary source of truth for the Causation Explorer
