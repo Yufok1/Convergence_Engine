@@ -59,6 +59,12 @@ if SOCKETIO_AVAILABLE:
 # Set log_dir explicitly to ensure it finds logs on Render
 project_root = Path(__file__).parent
 log_dir = project_root / 'data' / 'logs'
+
+# Cache for graph data to avoid reloading on every request
+_graph_cache = None
+_graph_cache_time = 0
+CACHE_DURATION = 300  # Cache for 5 minutes
+
 try:
     explorer = CausationExplorer(log_dir=log_dir)
     logger.info(f"Causation Explorer initialized successfully (log_dir: {log_dir}, exists: {log_dir.exists()})")
@@ -2837,8 +2843,17 @@ def get_graph():
     - Shows new events from running unified_entry.py in real-time
     - Thread-safe access to event graph (snapshots prevent iteration errors)
     """
+    global _graph_cache, _graph_cache_time
+    
     if explorer is None:
         return jsonify({'nodes': [], 'links': [], 'error': 'Causation Explorer not initialized'}), 200
+    
+    # Return cached graph if available and fresh
+    current_time = time.time()
+    if _graph_cache and (current_time - _graph_cache_time) < CACHE_DURATION:
+        logger.info("Returning cached graph data")
+        return jsonify(_graph_cache)
+    
     try:
         # Phase 2: Load latest state from shared state file ONLY if simulation is running
         # Check simulation control file to see if simulation is actually running
