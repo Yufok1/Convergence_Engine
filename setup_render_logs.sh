@@ -2,10 +2,14 @@
 # Clone logs repo and copy to data/logs for Render deployment
 # This runs during build to ensure logs are available at runtime
 
-set -e  # Exit on error
+# Don't exit on error - log and continue
+set +e
 
+echo "=========================================="
 echo "=== Setting up logs for Render ==="
+echo "=========================================="
 echo "Working directory: $(pwd)"
+echo "Script location: $0"
 
 # Determine project root (where this script is)
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
