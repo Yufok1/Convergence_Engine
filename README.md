@@ -321,8 +321,14 @@ The breath engine provides unified timing:
 - **Interactive Graph**: D3.js visualization of event causation
 - **CRA Agent**: AI-powered research assistant with full system access
 - **Autonomous Control**: 40+ visualization settings, graph filters
-- **Snapshot System**: Evolutionary history capture and analysis
-- **Video Export**: MP4 creation with AI narration
+- **Snapshot System**: 
+  - Activity-based automatic capture (~1-second intervals)
+  - Snapshot gallery with thumbnail grid and full-screen viewer
+  - Thumbnail selection for vision analysis (single or multiple)
+  - Create MP4 videos directly from selected snapshots
+  - Single source of truth shared across viewer, vision analysis, and video export
+- **Causation Tree Graph**: Interactive nested tree visualization for event causation trails
+- **Video Export**: MP4 creation from timeline playback or selected snapshots
 
 ---
 

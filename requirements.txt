@@ -15,6 +15,7 @@ matplotlib>=3.5.0   # For visualization plots and composite image generation
 
 # Web UI (RECOMMENDED)
 flask>=2.0.0        # For Causation Explorer web interface
+flask-socketio>=5.3.0  # For CRA real-time streaming support
 gunicorn>=21.0.0    # For production WSGI server (Render deployment)
 requests>=2.28.0    # For Ollama API communication (cloud and local)
 Pillow>=9.0.0       # For image compression in vision model analysis

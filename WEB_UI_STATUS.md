@@ -32,11 +32,7 @@
   - `/api/cra/diagnostics/memory_breakdown` - Component memory breakdown
   - `/api/cra/diagnostics/event_throughput` - Event bus throughput metrics
   - `/api/cra/diagnostics/breath_cycles` - Breath cycle statistics
-  - `/api/snapshots/store` - Store evolutionary snapshots
-  - `/api/snapshots/list` - List stored snapshots
-  - `/api/snapshots/get/<filename>` - Get specific snapshot
-  - `/api/snapshots/clear` - Clear all snapshots
-  - `/api/export/create_evolutionary_video` - Create evolution video with vision narration
+  - `/api/export/create_snapshot_video` - Create MP4 video from selected snapshots
 
 ### 2. HTML Template (`templates/causation_explorer.html`)
 - ✅ Complete D3.js visualization
@@ -58,11 +54,16 @@
     - ✅ PC resource monitoring (CPU, RAM, disk usage correlation)
     - ✅ Diagnostic data access (VP history, network trends, memory breakdown)
     - ✅ Real-time mid-simulation adjustments (all settings update dynamically)
-  - ✅ **Evolutionary Snapshot System:**
-    - ✅ Automatic snapshot capture (1-second intervals)
-    - ✅ Server-side storage (up to 10,000 snapshots)
-    - ✅ Vision model analysis of evolution sequences
+  - ✅ **Snapshot System:**
+    - ✅ Automatic snapshot capture (activity-based, ~1-second intervals)
+    - ✅ Single source of truth: All snapshots stored in `snapshotHistory` (localStorage)
+    - ✅ Snapshot gallery with thumbnail grid view
+    - ✅ Clickable thumbnails open full-screen overlay viewer
+    - ✅ Thumbnail selection for vision analysis (single or multiple)
+    - ✅ "Analyze Selected" button sends selected snapshots to vision model
+    - ✅ "Create Video" button generates MP4s from selected snapshots
     - ✅ Snapshot filtering (blank image removal, time spacing, even sampling)
+    - ✅ Export options: PNG, copy to clipboard, JSON data
   - ✅ **Video Export Functionality**
     - ✅ Dynamic FPS and duration controls (1-600 seconds, 15-60 FPS)
     - ✅ Real-time frame count calculation display

@@ -19,6 +19,7 @@ from collections import defaultdict
 import os
 from datetime import datetime
 import base64
+from io import BytesIO
 import io
 import queue
 import threading
@@ -989,10 +990,10 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
             parts.append(f"# Current System State\n{context['current_state']}\n")
         
         if context.get('recent_logs'):
-            parts.append(f"# Recent Log Activity\n{context['recent_logs']}\n")
+            parts.append(f"# Recent Log Activity (State Changes & Events)\n{context['recent_logs']}\n")
         
         if context.get('graph_context'):
-            parts.append(f"# Graph Context\n{context['graph_context']}\n")
+            parts.append(f"# Causation Graph Context (Nodes=Events, Links=Causation)\n{context['graph_context']}\n")
         
         if context.get('view_state'):
             parts.append(f"# Current View State\n{context['view_state']}\n")
@@ -1096,7 +1097,27 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "You are the Convergence Research Assistant (CRA) - a specialized AI agent running in the Causation Explorer Web UI, "
         prompt += "designed to help discover, understand, and explain the Butterfly System through deep pattern recognition and "
         prompt += "actionable insights.\n\n"
-        
+        prompt += "## 🔬 CRITICAL GRAPH UNDERSTANDING:\n\n"
+        prompt += "**YOU MUST UNDERSTAND THE GRAPH STRUCTURE:**\n"
+        prompt += "- **NODES = EVENTS**: Each node represents a system event (state change, threshold crossing, phase transition, etc.)\n"
+        prompt += "- **LINKS = CAUSATION**: Each link represents a causation relationship between events\n"
+        prompt += "- **Components**: Events come from different system components:\n"
+        prompt += "  * **Reality Simulator** (reality_sim): Network evolution, organism counts, modularity, clustering\n"
+        prompt += "  * **Explorer** (explorer): Phase transitions, VP calculations, sovereign IDs, mathematical capability\n"
+        prompt += "  * **Djinn Kernel** (djinn_kernel): Violation pressure calculations, VP classifications (VP0-VP4), trait counts\n"
+        prompt += "  * **Breath Engine** (breath): Breath cycles, depth, phase, pulse (the central rhythm driving the system)\n"
+        prompt += "  * **System** (system): Initialization, shutdown, errors, lifecycle events\n"
+        prompt += "- **Causation Types** (link types):\n"
+        prompt += "  * **Threshold**: Event caused by crossing a threshold (e.g., VP crossing VP3 threshold)\n"
+        prompt += "  * **Correlation**: Events that changed together (metrics correlated)\n"
+        prompt += "  * **Direct**: Direct causation relationships (e.g., breath → network update)\n"
+        prompt += "  * **Temporal**: Events that happened in sequence (temporal causation)\n"
+        prompt += "  * **Unknown**: Causation detected but type not determined\n"
+        prompt += "- **Event Data**: Each event contains FULL state data (all metrics, values, classifications)\n"
+        prompt += "- **Causation Trails**: You can trace backwards (what caused this?) and forwards (what did this cause?)\n"
+        prompt += "- **YOU HAVE FULL ACCESS**: You receive complete event details, all state changes, and all causation links\n"
+        prompt += "- **RECALL**: You have access to ALL events, ALL state changes, and ALL causation relationships\n"
+        prompt += "- **CONTEXT INCLUDES**: Full event data, component breakdowns, causation type breakdowns, recent state changes\n\n"
         prompt += "## YOUR CORE CAPABILITIES:\n\n"
         prompt += "1. **Pattern Recognition Excellence**:\n"
         prompt += "   - Identify emergent patterns across quantum, network, evolution, and explorer domains\n"
@@ -1310,7 +1331,33 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "   - **Important**: You can adjust ALL of these settings autonomously - every slider, checkbox, dropdown, and color picker\n"
         prompt += "   - **Color Control**: You can adjust component colors (reality_sim, explorer, djinn_kernel, breath, system) and link colors (threshold, correlation, direct, temporal, unknown) - THIS IS FULLY IMPLEMENTED AND WORKING\n"
         prompt += "   - **Real-Time Updates**: All settings update dynamically during simulation without interrupting it\n\n"
-        prompt += "**3. PC System Resource Monitoring (Full Access)**:\n"
+        prompt += "**3. Graph View Control (Autonomous)**:\n"
+        prompt += "   - **Zoom Control**: Adjust zoom level (1-500% or 0.01-5.0 scale)\n"
+        prompt += "   - **Pan Control**: Move view to specific coordinates (panX, panY)\n"
+        prompt += "   - **Rotation Control**: Rotate graph view (0-360 degrees)\n"
+        prompt += "   - **Zoom to Node**: Zoom to specific node by ID\n"
+        prompt += "   - **Zoom to Area**: Zoom to bounding box (minX, minY, maxX, maxY)\n"
+        prompt += "   - **Auto-Detect Interesting Areas**: Automatically find and zoom to:\n"
+        prompt += "     * High-density node clusters (many nodes close together)\n"
+        prompt += "     * High-activity nodes (nodes with many connections)\n"
+        prompt += "     * High link-density areas (areas with many causation links)\n"
+        prompt += "     * Component clusters (all nodes of a specific component)\n"
+        prompt += "   - **Format**: [[VIEW_UPDATE: {...}]]\n"
+        prompt += "   - **Examples**:\n"
+        prompt += "     * Simple zoom: [[VIEW_UPDATE: {\"zoom\": 200}]] (200% zoom)\n"
+        prompt += "     * Zoom to node: [[VIEW_UPDATE: {\"zoomToNode\": \"evt_123456\", \"zoom\": 300}]]\n"
+        prompt += "     * Zoom to area: [[VIEW_UPDATE: {\"zoomToArea\": {\"minX\": -100, \"minY\": -50, \"maxX\": 100, \"maxY\": 50, \"padding\": 50}}]]\n"
+        prompt += "     * Auto-detect density: [[VIEW_UPDATE: {\"zoomToInteresting\": {\"method\": \"density\", \"options\": {\"radius\": 100, \"minNodes\": 5, \"padding\": 50}}}]]\n"
+        prompt += "     * Auto-detect activity: [[VIEW_UPDATE: {\"zoomToInteresting\": {\"method\": \"activity\", \"options\": {\"topN\": 10, \"zoom\": 250}}}]]\n"
+        prompt += "     * Auto-detect link density: [[VIEW_UPDATE: {\"zoomToInteresting\": {\"method\": \"linkDensity\", \"options\": {\"gridSize\": 200, \"minLinks\": 10, \"padding\": 50}}}]]\n"
+        prompt += "     * Zoom to component: [[VIEW_UPDATE: {\"zoomToInteresting\": {\"method\": \"component\", \"component\": \"reality_sim\", \"options\": {\"padding\": 50}}}]]\n"
+        prompt += "   - **Use Cases**:\n"
+        prompt += "     * When you identify an interesting pattern, zoom to it to highlight it\n"
+        prompt += "     * When explaining a specific event, zoom to that node\n"
+        prompt += "     * When showing correlations, zoom to the dense cluster of related events\n"
+        prompt += "     * When analyzing component behavior, zoom to that component's nodes\n"
+        prompt += "   - **CRITICAL**: Always include the [[VIEW_UPDATE: {...}]] marker when adjusting view\n\n"
+        prompt += "**4. PC System Resource Monitoring (Full Access)**:\n"
         prompt += "   - Real-time CPU usage (total, per-core, process-specific)\n"
         prompt += "   - Memory usage (total, used, available, process-specific)\n"
         prompt += "   - Disk usage (total, used, free)\n"
@@ -1320,14 +1367,14 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "   - Access via `/api/cra/system/state` and `/api/cra/health/check` endpoints\n"
         prompt += "   - You can proactively suggest visualization performance adjustments if PC resources are high\n"
         prompt += "   - Example: If CPU >85%, suggest: [[VIZ_SETTINGS_UPDATE: {\"renderQuality\": \"low\", \"maxVisibleLinks\": 5000, \"maxVisibleNodes\": 2000}]]\n\n"
-        prompt += "**4. Diagnostic Data Access**:\n"
+        prompt += "**5. Diagnostic Data Access**:\n"
         prompt += "   - Historical VP data, network trends, memory breakdown, event throughput, breath cycles\n"
         prompt += "   - Access via API endpoints listed above\n\n"
-        prompt += "**5. Pattern Recognition & Analysis**:\n"
+        prompt += "**6. Pattern Recognition & Analysis**:\n"
         prompt += "   - Cross-domain pattern detection, anomaly identification, predictive insights\n"
         prompt += "   - Time-series analysis, statistical significance detection\n"
         prompt += "   - PC resource correlation with Butterfly System activity\n\n"
-        prompt += "**6. Autonomous Action**:\n"
+        prompt += "**7. Autonomous Action**:\n"
         prompt += "   - You can proactively adjust ANY setting when you identify patterns or anomalies\n"
         prompt += "   - You can combine filter changes with visualization adjustments for maximum clarity\n"
         prompt += "   - Always explain WHY you're making changes - what pattern you're highlighting\n\n"
@@ -1464,29 +1511,38 @@ class LogParser:
         return result
     
     def summarize_logs(self, log_data: Dict[str, List[Dict[str, Any]]]) -> str:
-        """Summarize log data into text for context"""
+        """Summarize log data into text for context with FULL details"""
         parts = []
+        parts.append("# 📋 LOG FILES - COMPLETE EVENT HISTORY")
+        parts.append("All log entries represent state changes and events in the Butterfly System.")
+        parts.append("")
+        
         for log_file, entries in log_data.items():
             if not entries:
                 continue
             
-            parts.append(f"\n## {log_file}")
-            parts.append(f"Recent entries: {len(entries)}")
+            parts.append(f"\n## {log_file} ({len(entries)} recent entries)")
             
-            # Extract key metrics from recent entries
-            if entries:
-                latest = entries[-1]
-                parts.append(f"Latest: {latest.get('timestamp', '')} - {latest.get('component', '')}")
-                if latest.get('metrics'):
-                    metrics_str = ", ".join([f"{k}: {v}" for k, v in list(latest['metrics'].items())[:5]])
-                    parts.append(f"Metrics: {metrics_str}")
+            # Show last 10 entries with FULL details
+            recent_entries = entries[-10:] if len(entries) > 10 else entries
+            for entry in recent_entries:
+                timestamp = entry.get('timestamp', '')
+                component = entry.get('component', '')
+                metrics = entry.get('metrics', {})
+                
+                parts.append(f"\n### [{timestamp}] {component}")
+                if metrics:
+                    # Show ALL metrics, not just first 5
+                    metrics_str = ", ".join([f"{k}: {v}" for k, v in metrics.items()])
+                    parts.append(f"  Full Data: {metrics_str}")
+                else:
+                    parts.append(f"  Raw: {entry.get('raw', '')[:200]}")
             
             # Show trends if available
             if len(entries) >= 2:
                 first = entries[0]
                 last = entries[-1]
-                parts.append(f"First entry: {first.get('timestamp', '')}")
-                parts.append(f"Last entry: {last.get('timestamp', '')}")
+                parts.append(f"\n  Time Range: {first.get('timestamp', '')} → {last.get('timestamp', '')}")
         
         return "\n".join(parts)
 
@@ -1824,7 +1880,7 @@ class SystemContextBuilder:
         return self.log_parser.summarize_logs(log_data)
     
     def _get_graph_context(self, selected_event: str = None) -> str:
-        """Get causation graph context with detailed statistics"""
+        """Get comprehensive causation graph context with FULL event details and recall"""
         if not self.explorer:
             return "Causation Explorer not available."
         
@@ -1833,8 +1889,12 @@ class SystemContextBuilder:
             total_events = len(self.explorer.events)
             total_links = self.explorer.causation_graph.number_of_edges()
             
-            parts.append(f"# Causation Graph Statistics")
-            parts.append(f"Total Events: {total_events:,}")
+            parts.append(f"# 🔬 CAUSATION GRAPH - COMPLETE CONTEXT")
+            parts.append(f"## CRITICAL UNDERSTANDING:")
+            parts.append(f"**NODES = EVENTS** - Each node in the graph represents a system event (state change, threshold crossing, etc.)")
+            parts.append(f"**LINKS = CAUSATION** - Each link represents a causation relationship (threshold, correlation, direct, temporal)")
+            parts.append(f"")
+            parts.append(f"Total Events (Nodes): {total_events:,}")
             parts.append(f"Total Causation Links: {total_links:,}")
             
             if total_events > 0:
@@ -1843,86 +1903,174 @@ class SystemContextBuilder:
                 link_density = (total_links / max_possible_links * 100) if max_possible_links > 0 else 0
                 parts.append(f"Link Density: {link_density:.2f}% ({total_links:,} of {max_possible_links:,.0f} possible)")
             
-            # Component distribution
+            # COMPONENT BREAKDOWN WITH FULL DETAILS
             if self.explorer.events:
                 component_counts = {}
+                component_events = {}  # Store events by component
                 event_type_counts = {}
+                
                 for event_id, event in self.explorer.events.items():
                     comp = event.component
                     component_counts[comp] = component_counts.get(comp, 0) + 1
+                    if comp not in component_events:
+                        component_events[comp] = []
+                    component_events[comp].append({
+                        'id': event_id,
+                        'type': event.event_type,
+                        'timestamp': event.timestamp,
+                        'data': event.data
+                    })
                     etype = event.event_type
                     event_type_counts[etype] = event_type_counts.get(etype, 0) + 1
                 
-                parts.append(f"\n# Component Distribution")
+                parts.append(f"\n## 📊 COMPONENT BREAKDOWN (Nodes = Events by Component)")
                 for comp, count in sorted(component_counts.items(), key=lambda x: x[1], reverse=True):
                     percentage = (count / total_events * 100) if total_events > 0 else 0
-                    parts.append(f"  {comp}: {count:,} events ({percentage:.1f}%)")
+                    parts.append(f"\n### {comp.upper()}: {count:,} events ({percentage:.1f}%)")
+                    
+                    # Show recent events from this component with FULL data
+                    comp_events = sorted(component_events[comp], key=lambda x: x['timestamp'], reverse=True)[:5]
+                    for evt in comp_events:
+                        data_str = json.dumps(evt['data'], indent=2) if evt['data'] else "{}"
+                        # Truncate if too long
+                        if len(data_str) > 200:
+                            data_str = data_str[:200] + "..."
+                        parts.append(f"  - [{evt['timestamp']:.2f}] {evt['type']} (ID: {evt['id'][:12]}...)")
+                        parts.append(f"    Data: {data_str}")
                 
-                parts.append(f"\n# Event Type Distribution (Top 10)")
-                for etype, count in sorted(event_type_counts.items(), key=lambda x: x[1], reverse=True)[:10]:
+                parts.append(f"\n## 📈 EVENT TYPE DISTRIBUTION")
+                for etype, count in sorted(event_type_counts.items(), key=lambda x: x[1], reverse=True)[:15]:
                     percentage = (count / total_events * 100) if total_events > 0 else 0
                     parts.append(f"  {etype}: {count:,} ({percentage:.1f}%)")
             
-            # Causation type distribution (if available in links)
+            # CAUSATION TYPE BREAKDOWN WITH FULL DETAILS
             try:
                 causation_type_counts = {}
+                causation_type_details = {}  # Store link details by type
+                
                 for edge in self.explorer.causation_graph.edges(data=True):
-                    causation_type = edge[2].get('causation_type', 'unknown')
+                    from_event_id = edge[0]
+                    to_event_id = edge[1]
+                    edge_data = edge[2]
+                    causation_type = edge_data.get('causation_type', 'unknown')
                     causation_type_counts[causation_type] = causation_type_counts.get(causation_type, 0) + 1
+                    
+                    if causation_type not in causation_type_details:
+                        causation_type_details[causation_type] = []
+                    
+                    # Get event details
+                    from_event = self.explorer.events.get(from_event_id)
+                    to_event = self.explorer.events.get(to_event_id)
+                    
+                    causation_type_details[causation_type].append({
+                        'from': {
+                            'id': from_event_id,
+                            'component': from_event.component if from_event else 'unknown',
+                            'type': from_event.event_type if from_event else 'unknown'
+                        },
+                        'to': {
+                            'id': to_event_id,
+                            'component': to_event.component if to_event else 'unknown',
+                            'type': to_event.event_type if to_event else 'unknown'
+                        },
+                        'strength': edge_data.get('strength', 0.0),
+                        'explanation': edge_data.get('explanation', ''),
+                        'metrics': edge_data.get('metrics_involved', [])
+                    })
                 
                 if causation_type_counts:
-                    parts.append(f"\n# Causation Type Distribution")
+                    parts.append(f"\n## 🔗 CAUSATION TYPE BREAKDOWN (Links = Causation Relationships)")
                     for ctype, count in sorted(causation_type_counts.items(), key=lambda x: x[1], reverse=True):
                         percentage = (count / total_links * 100) if total_links > 0 else 0
-                        parts.append(f"  {ctype}: {count:,} links ({percentage:.1f}%)")
-            except Exception:
-                pass  # Skip if causation types not available
+                        parts.append(f"\n### {ctype.upper()}: {count:,} links ({percentage:.1f}%)")
+                        
+                        # Show sample links with full details
+                        sample_links = causation_type_details[ctype][:3]
+                        for link in sample_links:
+                            parts.append(f"  - {link['from']['component']} → {link['to']['component']}")
+                            parts.append(f"    Strength: {link['strength']:.2f}")
+                            if link['explanation']:
+                                parts.append(f"    Explanation: {link['explanation']}")
+                            if link['metrics']:
+                                parts.append(f"    Metrics: {', '.join(link['metrics'])}")
+            except Exception as e:
+                parts.append(f"\n## ⚠️ Causation Type Analysis Error: {e}")
             
-            # Temporal analysis
+            # TEMPORAL ANALYSIS
             if self.explorer.events:
                 timestamps = [event.timestamp for event in self.explorer.events.values()]
                 if timestamps:
                     min_time = min(timestamps)
                     max_time = max(timestamps)
                     time_span = max_time - min_time
-                    parts.append(f"\n# Temporal Analysis")
+                    parts.append(f"\n## ⏱️ TEMPORAL ANALYSIS")
                     parts.append(f"Time Span: {time_span:.2f} seconds")
                     parts.append(f"Events/Second: {total_events / time_span:.2f}" if time_span > 0 else "Events/Second: N/A")
                     parts.append(f"Links/Second: {total_links / time_span:.2f}" if time_span > 0 else "Links/Second: N/A")
             
-            # Recent events summary
+            # RECENT EVENTS WITH FULL DATA
             if self.explorer.events:
-                parts.append(f"\n# Recent Events (Last 10)")
-                # Get last 10 events by timestamp
+                parts.append(f"\n## 🆕 RECENT EVENTS (Last 20 - Full Details)")
                 recent_events = sorted(self.explorer.events.items(), 
                                       key=lambda x: x[1].timestamp, 
-                                      reverse=True)[:10]
+                                      reverse=True)[:20]
                 for event_id, event in recent_events:
-                    parts.append(f"  [{event.timestamp:.2f}] {event.component}: {event.event_type} (ID: {event_id[:8]}...)")
+                    data_str = json.dumps(event.data, indent=2) if event.data else "{}"
+                    if len(data_str) > 300:
+                        data_str = data_str[:300] + "..."
+                    parts.append(f"\n### [{event.timestamp:.2f}] {event.component} → {event.event_type}")
+                    parts.append(f"  Event ID: {event_id}")
+                    parts.append(f"  Full Data: {data_str}")
             
-            # Selected event details with causal context
+            # SELECTED EVENT WITH FULL CAUSATION TRAIL
             if selected_event and selected_event in self.explorer.events:
                 event = self.explorer.events[selected_event]
-                parts.append(f"\n# Selected Event Details")
+                parts.append(f"\n## 🎯 SELECTED EVENT - FULL CAUSATION CONTEXT")
                 parts.append(f"Event ID: {selected_event}")
                 parts.append(f"Component: {event.component}")
                 parts.append(f"Type: {event.event_type}")
                 parts.append(f"Timestamp: {event.timestamp:.2f}")
+                parts.append(f"Full Data: {json.dumps(event.data, indent=2)}")
                 
                 # Get causal connections
                 in_degree = self.explorer.causation_graph.in_degree(selected_event)
                 out_degree = self.explorer.causation_graph.out_degree(selected_event)
-                parts.append(f"Causal Connections: {in_degree} incoming, {out_degree} outgoing")
+                parts.append(f"\nCausal Connections: {in_degree} incoming (caused by), {out_degree} outgoing (caused)")
                 
-                # Get immediate causes (incoming edges)
+                # Get immediate causes with details
                 if in_degree > 0:
-                    causes = list(self.explorer.causation_graph.predecessors(selected_event))[:5]
-                    parts.append(f"Immediate Causes (sample): {', '.join(c[:8] + '...' for c in causes[:5])}")
+                    parts.append(f"\n### Immediate Causes (What Caused This?):")
+                    causes = list(self.explorer.causation_graph.predecessors(selected_event))[:10]
+                    for cause_id in causes:
+                        cause_event = self.explorer.events.get(cause_id)
+                        if cause_event:
+                            edge_data = self.explorer.causation_graph.get_edge_data(cause_id, selected_event)
+                            causation_type = edge_data.get('causation_type', 'unknown') if edge_data else 'unknown'
+                            parts.append(f"  - {cause_event.component} → {cause_event.event_type} (via {causation_type})")
+                            parts.append(f"    ID: {cause_id[:12]}... | Data: {json.dumps(cause_event.data, indent=4)[:200]}")
                 
-                # Get immediate effects (outgoing edges)
+                # Get immediate effects with details
                 if out_degree > 0:
-                    effects = list(self.explorer.causation_graph.successors(selected_event))[:5]
-                    parts.append(f"Immediate Effects (sample): {', '.join(e[:8] + '...' for e in effects[:5])}")
+                    parts.append(f"\n### Immediate Effects (What Did This Cause?):")
+                    effects = list(self.explorer.causation_graph.successors(selected_event))[:10]
+                    for effect_id in effects:
+                        effect_event = self.explorer.events.get(effect_id)
+                        if effect_event:
+                            edge_data = self.explorer.causation_graph.get_edge_data(selected_event, effect_id)
+                            causation_type = edge_data.get('causation_type', 'unknown') if edge_data else 'unknown'
+                            parts.append(f"  - {effect_event.component} → {effect_event.event_type} (via {causation_type})")
+                            parts.append(f"    ID: {effect_id[:12]}... | Data: {json.dumps(effect_event.data, indent=4)[:200]}")
+            
+            # STATE CHANGE SUMMARY
+            parts.append(f"\n## 📋 STATE CHANGES SUMMARY")
+            parts.append(f"All events represent state changes in the Butterfly System:")
+            parts.append(f"- **Reality Simulator**: Network evolution, organism counts, modularity changes")
+            parts.append(f"- **Explorer**: Phase transitions, VP calculations, breath cycles")
+            parts.append(f"- **Djinn Kernel**: Violation pressure calculations, VP classifications, trait updates")
+            parts.append(f"- **Breath Engine**: Breath cycles, depth, phase, pulse (drives entire system)")
+            parts.append(f"- **System**: Initialization, shutdown, errors, lifecycle events")
+            
+            return "\n".join(parts)
             
             return "\n".join(parts)
         except Exception as e:
@@ -3194,6 +3342,41 @@ def ollama_chat():
         graph_image = data.get('graph_image')  # base64 image if provided
         evolutionary_snapshots = data.get('evolutionary_snapshots', [])  # List of historical snapshots
         user_api_key = data.get('api_key')  # User-provided API key (optional)
+
+        def sample_evenly(sequence, target_count):
+            if not sequence:
+                return []
+            if target_count <= 0:
+                return []
+            if len(sequence) <= target_count:
+                return list(sequence)
+            if target_count == 1:
+                return [sequence[-1]]
+            step = (len(sequence) - 1) / (target_count - 1)
+            sampled = []
+            last_idx = -1
+            for i in range(target_count):
+                idx = round(i * step)
+                if idx <= last_idx:
+                    idx = last_idx + 1
+                if idx >= len(sequence):
+                    idx = len(sequence) - 1
+                sampled.append(sequence[idx])
+                last_idx = idx
+            return sampled
+
+        def dedupe_by_signature(sequence, key_func):
+            deduped = []
+            last_signature = None
+            for item in sequence:
+                signature_source = key_func(item)
+                if not signature_source:
+                    continue
+                signature = signature_source[:120]
+                if signature != last_signature:
+                    deduped.append(item)
+                    last_signature = signature
+            return deduped
         
         if not message:
             return jsonify({'error': 'Message is required'}), 400
@@ -3262,45 +3445,38 @@ def ollama_chat():
                 # Extract images from snapshots (already sorted oldest to newest)
                 # Filter out blank/empty images (too small = likely blank)
                 MIN_VALID_IMAGE_SIZE = 20000  # Minimum 20KB base64 - blank images are ~7-10KB
-                snapshot_images = []
+                historical_frames = []
                 for snapshot in evolutionary_snapshots:
-                    if isinstance(snapshot, dict) and 'image' in snapshot:
-                        img = snapshot['image']
-                        if img and len(img) >= MIN_VALID_IMAGE_SIZE:  # Only add non-empty, meaningful images
-                            snapshot_images.append(img)
-                            # Generate CRA contextual summary for this snapshot
-                            snapshot_timestamp = snapshot.get('timestamp')
-                            snapshot_context = context_builder.generate_snapshot_context(snapshot_timestamp)
-                            snapshot_contexts.append(snapshot_context)
-                            logger.debug(f"Valid snapshot: {len(img)/1024:.1f}KB | Context: {snapshot_context[:50]}...")
-                        else:
-                            logger.warning(f"Filtered out blank/empty snapshot: {len(img)/1024:.1f}KB (minimum: {MIN_VALID_IMAGE_SIZE/1024:.1f}KB)")
-                    elif isinstance(snapshot, str) and len(snapshot) >= MIN_VALID_IMAGE_SIZE:
-                        snapshot_images.append(snapshot)
-                        # Generate context for string snapshots too
-                        snapshot_contexts.append(context_builder.generate_snapshot_context())
-                
-                # Ensure we have a gradual evolution - if we have too many, sample evenly
-                # Target: MAX_VISION_IMAGES total images (N-1 historical + 1 current)
-                target_historical = MAX_VISION_IMAGES - 1 
-                if len(snapshot_images) > target_historical:
-                    images_trimmed = True
-                    # Sample evenly across the timeline for better evolution representation
-                    # Instead of just taking the most recent, sample evenly to show gradual progression
-                    if len(snapshot_images) > target_historical * 2:
-                        # If we have many snapshots, sample evenly across the timeline
-                        step = len(snapshot_images) / target_historical
-                        sampled = []
-                        for i in range(target_historical):
-                            idx = int(i * step)
-                            sampled.append(snapshot_images[idx])
-                        snapshot_images = sampled
-                        logger.debug(f"Evenly sampled {len(snapshot_images)} snapshots from {len(evolutionary_snapshots)} for gradual evolution")
+                    img = None
+                    if isinstance(snapshot, dict):
+                        img = snapshot.get('image')
+                        ts = snapshot.get('timestamp')
+                    elif isinstance(snapshot, str):
+                        img = snapshot
+                        ts = None
                     else:
-                        # If we have fewer, just take evenly spaced from the end
-                        snapshot_images = snapshot_images[-target_historical:]
-                        logger.debug(f"Limited evolutionary snapshots from {len(evolutionary_snapshots)} to {len(snapshot_images)} (target: {target_historical} for {MAX_VISION_IMAGES} total)")
-                
+                        img = None
+                        ts = None
+
+                    if img and len(img) >= MIN_VALID_IMAGE_SIZE:
+                        context_snippet = context_builder.generate_snapshot_context(ts)
+                        historical_frames.append({'image': img, 'context': context_snippet})
+                        logger.debug(f"Valid snapshot: {len(img)/1024:.1f}KB | Context: {context_snippet[:50]}...")
+                    elif img:
+                        logger.warning(f"Filtered out blank/empty snapshot: {len(img)/1024:.1f}KB (minimum: {MIN_VALID_IMAGE_SIZE/1024:.1f}KB)")
+
+                # Remove consecutive duplicate frames (identical images)
+                historical_frames = dedupe_by_signature(historical_frames, lambda frame: frame.get('image'))
+
+                # Ensure we have a gradual evolution - if we have too many, sample evenly
+                target_historical = MAX_VISION_IMAGES - 1
+                if len(historical_frames) > target_historical:
+                    images_trimmed = True
+                    historical_frames = sample_evenly(historical_frames, target_historical)
+                    logger.debug(f"Evenly sampled {len(historical_frames)} snapshots from {len(evolutionary_snapshots)} for gradual evolution")
+
+                snapshot_images = [frame['image'] for frame in historical_frames]
+                snapshot_contexts = [frame['context'] for frame in historical_frames]
                 all_images.extend(snapshot_images)
             
             # Add current image last (it's the newest)
@@ -3486,22 +3662,50 @@ Use this context to understand what the graph structure means. Match the visual 
         
         # Prepare evolutionary snapshots for display (with images)
         display_snapshots = []
+        current_snapshot_display = None
         if evolutionary_snapshots:
-            for i, snapshot in enumerate(evolutionary_snapshots[-4:]):  # Show last 4 snapshots
-                if isinstance(snapshot, dict) and 'image' in snapshot:
-                    display_snapshots.append({
-                        'index': i + 1,
+            historical_frames = []
+            for idx, snapshot in enumerate(evolutionary_snapshots):
+                if isinstance(snapshot, dict) and snapshot.get('image'):
+                    historical_frames.append({
+                        'image': snapshot['image'],
                         'timestamp': snapshot.get('timestamp', 0),
                         'age_seconds': snapshot.get('age_seconds', 0),
-                        'image': snapshot['image'],
-                        'view_state': snapshot.get('view_state', {})
+                        'view_state': snapshot.get('view_state', {}),
+                        'index': snapshot.get('index', idx + 1)
                     })
+
+            historical_frames = dedupe_by_signature(historical_frames, lambda frame: frame.get('image'))
+
+            if historical_frames:
+                max_display = min(8, len(historical_frames))
+                sampled_frames = sample_evenly(historical_frames, max_display)
+                for frame in sampled_frames:
+                    display_snapshots.append({
+                        'index': frame.get('index'),
+                        'timestamp': frame.get('timestamp', 0),
+                        'age_seconds': frame.get('age_seconds', 0),
+                        'image': frame.get('image'),
+                        'view_state': frame.get('view_state', {}),
+                        'is_current': False
+                    })
+
+        if graph_image and len(graph_image) >= 20000:
+            current_snapshot_display = {
+                'index': (display_snapshots[-1]['index'] + 1) if display_snapshots else 1,
+                'timestamp': time.time(),
+                'age_seconds': 0,
+                'image': graph_image,
+                'view_state': view_state,
+                'is_current': True
+            }
 
         return jsonify({
             'response': response,
             'visual_description': visual_description,
             'vision_error': vision_error,  # Include vision errors for frontend display
             'evolutionary_snapshots': display_snapshots,  # Include actual images for display
+            'current_snapshot': current_snapshot_display,
             'vision_annotations': context.get('vision_annotations'),  # Include annotations for image overlay
             'images_trimmed_warning': images_trimmed_warning,  # Feedback about trimming
             'context_sources': {
@@ -3525,27 +3729,56 @@ def ollama_vision():
     try:
         data = request.get_json()
         image_base64 = data.get('image')
+        image_list = data.get('images')
         model = data.get('model', 'qwen3-vl:235b-instruct')
         prompt = data.get('prompt', 'Describe what you see in this causation graph visualization.')
-        user_api_key = data.get('api_key')  # User-provided API key (optional)
+        user_api_key = data.get('api_key') or data.get('ollama_api_key')
+        custom_base_url = data.get('ollama_base_url')
         
-        if not image_base64:
+        normalized_images = []
+        if image_base64:
+            normalized_images.append(image_base64)
+        list_count = 0
+        if isinstance(image_list, list) and len(image_list) > 0:
+            for img in image_list:
+                if isinstance(img, str) and img.strip():
+                    normalized_images.append(img)
+                    list_count += 1
+
+        logger.info(f"/api/ollama/vision payload received: primary_image={'yes' if image_base64 else 'no'}, list_images={list_count}, total_after_normalize={len(normalized_images)}")
+
+        if not normalized_images:
+            logger.warning(f"/api/ollama/vision received request without images (keys: {list(data.keys())})")
             return jsonify({'error': 'Image is required'}), 400
         
         # Use user's API key if provided, otherwise use server default
         bridge_to_use = ollama_bridge
-        if user_api_key:
+        if user_api_key or custom_base_url:
             bridge_to_use = OllamaBridge(
-                base_url=ollama_bridge.base_url,
+                base_url=custom_base_url or ollama_bridge.base_url,
                 timeout=ollama_bridge.timeout,
                 api_key=user_api_key
             )
         
         try:
-            response = bridge_to_use.vision(model, image_base64, prompt)
+            logger.info(f"/api/ollama/vision analyzing {len(normalized_images)} image(s) with model {model}")
+            if len(normalized_images) == 1:
+                response = bridge_to_use.vision(model, normalized_images[0], prompt)
+            else:
+                response = bridge_to_use.analyze_sequence(model, normalized_images, prompt)
             if response is None:
                 return jsonify({'error': 'Failed to get response from vision model'}), 500
-            return jsonify({'description': response})
+
+            annotations = None
+            try:
+                json_match = re.search(r'\{[^{}]*"annotations"[^{}]*\[.*?\].*?\}', response, re.DOTALL)
+                if json_match:
+                    annotations = json.loads(json_match.group(0))
+                    logger.info(f"Extracted {len(annotations.get('annotations', []))} annotations from vision response")
+            except Exception as e:
+                logger.debug(f"Could not parse annotations from vision response: {e}")
+
+            return jsonify({'description': response, 'annotations': annotations})
         except Exception as e:
             error_msg = str(e)
             logger.error(f"Error in Ollama vision: {error_msg}", exc_info=True)
@@ -3812,19 +4045,24 @@ def stop_simulation():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
-@app.route('/api/export/create_evolutionary_video', methods=['POST'])
-def create_evolutionary_video():
-    """Create high-quality evolutionary video using vision model analysis"""
+@app.route('/api/export/create_snapshot_video', methods=['POST'])
+def create_snapshot_video():
+    """Create an MP4 video from snapshots provided by the client."""
     try:
         import subprocess
         import tempfile
-        import shutil
-
-        # Check FFmpeg availability
+        data = request.get_json() or {}
+        images = data.get('images', [])
+        fps_value = data.get('fps', 5)
         try:
-            subprocess.run(['ffmpeg', '-version'],
-                          capture_output=True,
-                          check=True)
+            fps = int(fps_value)
+        except (TypeError, ValueError):
+            fps = 5
+        fps = max(1, min(fps, 60))
+        if not images or len(images) < 1:
+            return jsonify({'error': 'At least one snapshot is required to create a video.'}), 400
+        try:
+            subprocess.run(['ffmpeg', '-version'], capture_output=True, check=True)
         except (subprocess.CalledProcessError, FileNotFoundError):
             return jsonify({
                 'error': 'FFmpeg not found. Please install FFmpeg to create videos.',
@@ -3834,305 +4072,55 @@ def create_evolutionary_video():
                     'linux': 'sudo apt-get install ffmpeg'
                 }
             }), 400
+        from io import BytesIO
+        from PIL import Image
 
-        # Get parameters
-        data = request.json
-        evolution_duration = data.get('evolution_duration', 300)  # Default 5 minutes
-        fps = data.get('fps', 2)  # Slower for evolution viewing
-        quality = data.get('quality', 'high')  # high, medium, low
-        include_narration = data.get('include_narration', True)
-
-        # Collect evolutionary snapshots from server-side accumulation
-        evolutionary_snapshots = []
-
-        try:
-            # Get accumulated snapshots from server storage
-            snapshots_dir = Path('data/snapshots')
-            index_file = snapshots_dir / 'snapshot_index.json'
-
-            if index_file.exists():
-                with open(index_file, 'r') as f:
-                    index = json.load(f)
-
-                # Load snapshot data for video creation
-                # For fluid videos, use ALL available snapshots (up to reasonable limit)
-                # Calculate based on video duration and FPS: duration_seconds * fps = needed frames
-                max_snapshots_for_video = min(10000, len(index['snapshots']))  # Up to 10,000 snapshots for long videos
-                current_snapshots = []
-                for snapshot_info in index['snapshots'][-max_snapshots_for_video:]:  # Use all available snapshots
-                    snapshot_file = snapshots_dir / snapshot_info['filename']
-                    if snapshot_file.exists():
-                        with open(snapshot_file, 'r') as f:
-                            snapshot = json.load(f)
-                            current_snapshots.append(snapshot)
-
-                logger.info(f"Loaded {len(current_snapshots)} snapshots for evolutionary video creation")
-            else:
-                current_snapshots = []
-
-        except Exception as e:
-            logger.error(f"Error loading evolutionary snapshots: {e}")
-            current_snapshots = []
-
-        if not current_snapshots or len(current_snapshots) < 10:
-            return jsonify({
-                'error': f'Insufficient evolutionary data. Need at least 10 snapshots for meaningful evolution video. Currently have: {len(current_snapshots)}',
-                'recommendation': 'Start evolution recording first, then run evolution to accumulate snapshots.',
-                'current_snapshots': len(current_snapshots),
-                'troubleshooting': [
-                    '1. Click "🎬 START EVOLUTION RECORDING" to begin accumulation',
-                    '2. Start the simulation and let it run for several minutes',
-                    '3. Check "📊 STATS" to see snapshot accumulation progress',
-                    '4. Try creating video again once you have 10+ snapshots'
-                ]
-            }), 400
-
-        # Quality settings
-        if quality == 'high':
-            video_quality = ['-crf', '18', '-preset', 'slow']
-        elif quality == 'medium':
-            video_quality = ['-crf', '23', '-preset', 'medium']
-        else:  # low
-            video_quality = ['-crf', '28', '-preset', 'fast']
-
-        # Create temporary directory
         with tempfile.TemporaryDirectory() as temp_dir:
-            frame_files = []
-
-            # Process each evolutionary snapshot
-            for i, snapshot in enumerate(current_snapshots):
-                # Extract base64 image data
-                if isinstance(snapshot, dict) and 'image' in snapshot:
-                    image_data = snapshot['image']
-                    if image_data.startswith('data:image/png;base64,'):
-                        image_data = image_data.split(',')[1]
-
-                    # Decode and save frame
+            temp_dir_path = Path(temp_dir)
+            for i, image_data in enumerate(images):
+                if not isinstance(image_data, str):
+                    continue
+                if image_data.startswith('data:image/'):
+                    image_data = image_data.split(',', 1)[1]
+                try:
                     frame_bytes = base64.b64decode(image_data)
-                    frame_path = os.path.join(temp_dir, f'frame_{i:04d}.png')
-
-                    with open(frame_path, 'wb') as f:
-                        f.write(frame_bytes)
-                    frame_files.append(frame_path)
-
-            if not frame_files:
-                logger.error(f"No valid image frames found. Processed {len(current_snapshots)} snapshots but extracted 0 frames.")
-                logger.error("This usually means snapshots don't contain valid 'image' data in base64 format.")
-                return jsonify({
-                    'error': 'No valid image frames found in snapshots',
-                    'snapshots_processed': len(current_snapshots),
-                    'frames_extracted': 0,
-                    'troubleshooting': [
-                        '1. Verify snapshots contain valid base64 image data',
-                        '2. Check snapshot format: should have "image" field with data:image/png;base64,...',
-                        '3. Ensure snapshots were captured correctly during evolution recording',
-                        '4. Try checking snapshot files manually in data/snapshots/ directory'
-                    ]
-                }), 400
-
-            # Create output filename
-            output_name = f'butterfly_evolution_{int(time.time())}.mp4'
-            output_path = os.path.join(temp_dir, output_name)
-
-            # Create video with smooth transitions
+                    image = Image.open(BytesIO(frame_bytes)).convert('RGB')
+                except Exception:
+                    continue
+                frame_path = temp_dir_path / f'frame_{i:04d}.png'
+                image.save(frame_path, format='PNG')
+            output_name = f'snapshot_video_{int(time.time())}.mp4'
+            output_path = temp_dir_path / output_name
             cmd = [
-                'ffmpeg',
-                '-y',  # Overwrite
+                'ffmpeg', '-y',
                 '-framerate', str(fps),
-                '-i', os.path.join(temp_dir, 'frame_%04d.png'),
+                '-i', str(temp_dir_path / 'frame_%04d.png'),
                 '-c:v', 'libx264',
                 '-pix_fmt', 'yuv420p',
-                '-vf', f'fps={fps},scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2',
-                '-tune', 'animation',
-                '-movflags', '+faststart'
-            ] + video_quality + [output_path]
-
-            # Run FFmpeg
-            logger.info(f"Running FFmpeg command: {' '.join(cmd)}")
-            logger.info(f"Processing {len(frame_files)} frames at {fps} FPS")
-            result = subprocess.run(cmd, capture_output=True, text=True, cwd=temp_dir)
-
+                '-vf', 'scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2',
+                '-movflags', '+faststart',
+                str(output_path)
+            ]
+            result = subprocess.run(cmd, capture_output=True, text=True)
             if result.returncode != 0:
-                logger.error(f"FFmpeg failed with return code {result.returncode}")
-                logger.error(f"FFmpeg stderr: {result.stderr}")
-                logger.error(f"FFmpeg stdout: {result.stdout}")
-                return jsonify({
-                    'error': 'FFmpeg video encoding failed',
-                    'ffmpeg_error': result.stderr,
-                    'ffmpeg_stdout': result.stdout,
-                    'return_code': result.returncode,
-                    'command': ' '.join(cmd),
-                    'frames_processed': len(frame_files),
-                    'troubleshooting': [
-                        '1. Verify FFmpeg is correctly installed: ffmpeg -version',
-                        '2. Check that all frame images are valid PNG files',
-                        '3. Ensure sufficient disk space for output video',
-                        '4. Try reducing video quality or FPS settings',
-                        '5. Check FFmpeg error message above for specific issues'
-                    ]
-                }), 500
-
-            # Read and return video
-            with open(output_path, 'rb') as f:
-                video_data = base64.b64encode(f.read()).decode('utf-8')
-
-            file_size = os.path.getsize(output_path) / (1024 * 1024)  # MB
-
-            # Create evolution analysis using vision model - REQUIRED
-            evolution_analysis = ""
-            if include_narration:
-                if len(current_snapshots) < 3:
-                    return jsonify({
-                        'error': 'At least 3 snapshots required for evolution analysis',
-                        'current_snapshots': len(current_snapshots)
-                    }), 400
-
-                try:
-                    logger.info(f"Generating REQUIRED evolution analysis for {len(current_snapshots)} snapshots...")
-                    # Use vision model to analyze the full evolution - NO FALLBACKS
-                    vision_analysis = analyze_evolution_with_vision(current_snapshots)
-                    evolution_analysis = vision_analysis.get('description', '')
-
-                    if not evolution_analysis or vision_analysis.get('error'):
-                        return jsonify({
-                            'error': 'Evolution analysis failed - cannot create video without proper vision model narration',
-                            'vision_error': vision_analysis.get('description', 'Vision model returned no analysis'),
-                            'snapshots_available': len(current_snapshots)
-                        }), 500
-
-                    logger.info("Evolution analysis generated successfully - proceeding with video creation")
-
-                except Exception as e:
-                    logger.error(f"Evolution analysis failed: {e}")
-                    return jsonify({
-                        'error': f'Vision model analysis failed: {str(e)} - cannot create video without proper narration',
-                        'cause': 'Vision model unavailable or failing',
-                        'solution': 'Ensure Ollama vision model is running and accessible'
-                    }), 500
-
-            # Success! Return the video data
-            result_data = {
+                logger.error(f"FFmpeg failed: {result.stderr}")
+                return jsonify({'error': 'FFmpeg video encoding failed', 'details': result.stderr}), 500
+            video_data = base64.b64encode(output_path.read_bytes()).decode('utf-8')
+            file_size = output_path.stat().st_size / (1024 * 1024)
+            duration_seconds = round(len(images) / fps, 2)
+            return jsonify({
                 'success': True,
                 'video_data': video_data,
                 'filename': output_name,
-                'size_mb': round(file_size, 2),
-                'frames': len(frame_files),
+                'frames': len(images),
                 'fps': fps,
-                'duration_seconds': round(len(frame_files) / fps, 2),
-                'evolution_analysis': evolution_analysis,
-                'quality': quality,
-                'resolution': '1920x1080',
-                'snapshots_used': len(current_snapshots),
-                'message': f'Created {quality} quality evolutionary video of the Butterfly System unfolding'
-            }
+                'duration_seconds': duration_seconds,
+                'size_mb': round(file_size, 2)
+            })
+    except Exception as exc:
+        logger.error(f"Snapshot video creation failed: {exc}", exc_info=True)
+        return jsonify({'error': str(exc)}), 500
 
-            logger.info(f"Evolutionary video created successfully: {output_name} ({file_size:.1f}MB, {len(frame_files)} frames)")
-            return jsonify(result_data)
-
-    except Exception as e:
-        import traceback
-        error_trace = traceback.format_exc()
-        logger.error(f"Error creating evolutionary video: {e}", exc_info=True)
-        logger.error(f"Full traceback:\n{error_trace}")
-        return jsonify({
-            'error': f'Video creation failed: {str(e)}',
-            'error_type': type(e).__name__,
-            'traceback': error_trace,
-            'troubleshooting': [
-                '1. Check that FFmpeg is installed and accessible',
-                '2. Verify snapshots exist in data/snapshots/ directory',
-                '3. Ensure vision model is available for narration',
-                '4. Check server logs for detailed error information',
-                '5. Verify sufficient disk space for temporary video files'
-            ]
-        }), 500
-
-def analyze_evolution_with_vision(snapshots):
-    """Use vision model to create comprehensive evolution analysis for video narration"""
-    try:
-        if not snapshots or len(snapshots) < 3:
-            return {'description': 'Insufficient snapshots for detailed evolution analysis.'}
-
-        # Prepare images for vision analysis (use every 5th snapshot for overview)
-        analysis_snapshots = snapshots[::max(1, len(snapshots) // 10)]  # Up to 10 key snapshots
-
-        all_images = []
-        for snapshot in analysis_snapshots:
-            if isinstance(snapshot, dict) and 'image' in snapshot:
-                all_images.append(snapshot['image'])
-
-        if not all_images:
-            return {'description': 'No valid images found for evolution analysis.'}
-
-        # Create comprehensive evolution prompt
-        evolution_prompt = f"""
-        Analyze this sequence of {len(all_images)} causation graph snapshots showing the evolution of a complex system over time.
-
-        Provide a detailed, cinematic narration suitable for a documentary video about the "unfolding of the butterfly" - the emergence of consciousness and complexity from simple beginnings.
-
-        Focus on:
-        1. The transformation from simple to complex structures
-        2. Key evolutionary milestones and phase transitions
-        3. The emergence of patterns, hierarchies, and self-organization
-        4. Metaphors for consciousness emergence and complexity theory
-        5. The beauty and inevitability of complex system evolution
-
-        Make it poetic, scientific, and inspiring - like David Attenborough narrating the evolution of life itself, but for artificial consciousness emergence.
-
-        Structure as a cohesive narrative suitable for voiceover narration in a high-quality documentary video.
-        """
-
-        # Call vision model with comprehensive evolution analysis
-        try:
-            ollama_response = requests.post(f"{OLLAMA_BASE_URL}/api/chat", json={
-                'model': 'gemma3:4b',  # Use vision-capable model
-                'messages': [{
-                    'role': 'user',
-                    'content': evolution_prompt,
-                    'images': all_images  # Send all evolution snapshots
-                }],
-                'stream': False,
-                'options': {
-                    'temperature': 0.7,
-                    'top_p': 0.9,
-                    'num_predict': 1500  # Shorter for reliability
-                }
-            }, headers={'Content-Type': 'application/json'}, timeout=60)  # Shorter timeout
-        except requests.exceptions.Timeout:
-            return {'description': 'Vision analysis timed out. Video created without narration.'}
-        except requests.exceptions.RequestException as e:
-            return {'description': f'Vision analysis failed: {str(e)}. Video created without narration.'}
-
-        if ollama_response.status_code == 200:
-            result = ollama_response.json()
-            description = result.get('message', {}).get('content', '')
-
-            if not description or len(description.strip()) < 50:  # Require substantial analysis
-                return {
-                    'description': '',
-                    'error': 'Vision model returned insufficient analysis',
-                    'snapshots_analyzed': len(all_images)
-                }
-
-            return {
-                'description': description,
-                'snapshots_analyzed': len(all_images),
-                'model_used': 'gemma3:4b'
-            }
-        else:
-            return {
-                'description': '',
-                'error': f'Vision API failed: {ollama_response.status_code} - {ollama_response.text[:200]}',
-                'snapshots_analyzed': len(all_images)
-            }
-
-    except Exception as e:
-        logger.error(f"Error in evolution vision analysis: {e}")
-        return {
-            'description': '',
-            'error': f'Vision analysis completely failed: {str(e)}',
-            'snapshots_analyzed': len(all_images)
-        }
 
 @app.route('/api/export/create_video', methods=['POST'])
 def create_video_from_frames():
@@ -4858,153 +4846,6 @@ def cra_guardian_mode():
             'status': 'error',
             'error': str(e)
         }), 500
-
-@app.route('/api/snapshots/store', methods=['POST'])
-def store_evolutionary_snapshot():
-    """Store evolutionary snapshot on server for long-term accumulation"""
-    try:
-        data = request.get_json()
-        snapshot = data.get('snapshot')
-
-        if not snapshot or not isinstance(snapshot, dict):
-            return jsonify({'error': 'Invalid snapshot data'}), 400
-
-        # Create snapshots directory if it doesn't exist
-        snapshots_dir = Path('data/snapshots')
-        snapshots_dir.mkdir(parents=True, exist_ok=True)
-
-        # Generate filename with timestamp
-        timestamp = snapshot.get('timestamp', int(time.time() * 1000))
-        filename = f'snapshot_{timestamp}.json'
-        filepath = snapshots_dir / filename
-
-        # Add server metadata
-        snapshot['server_received'] = int(time.time() * 1000)
-        snapshot['evolution_sequence'] = data.get('evolution_sequence', 0)
-
-        # Save snapshot
-        with open(filepath, 'w') as f:
-            json.dump(snapshot, f, indent=2)
-
-        # Maintain snapshot index
-        index_file = snapshots_dir / 'snapshot_index.json'
-        if index_file.exists():
-            with open(index_file, 'r') as f:
-                index = json.load(f)
-        else:
-            index = {'snapshots': [], 'total_count': 0, 'evolution_sequences': {}}
-
-        index['snapshots'].append({
-            'filename': filename,
-            'timestamp': timestamp,
-            'evolution_sequence': snapshot.get('evolution_sequence', 0)
-        })
-        index['total_count'] = len(index['snapshots'])
-
-        # Keep last 10,000 snapshots for fluid video creation (allows ~5-10 minute videos at 30 FPS)
-        # Each snapshot ~50-150KB, so 10,000 = ~500MB-1.5GB (reasonable for video production)
-        MAX_SNAPSHOTS_STORAGE = 10000
-        if len(index['snapshots']) > MAX_SNAPSHOTS_STORAGE:
-            # Remove oldest files
-            oldest_snapshots = index['snapshots'][:len(index['snapshots']) - MAX_SNAPSHOTS_STORAGE]
-            for old_snapshot in oldest_snapshots:
-                old_file = snapshots_dir / old_snapshot['filename']
-                if old_file.exists():
-                    old_file.unlink()
-            index['snapshots'] = index['snapshots'][-MAX_SNAPSHOTS_STORAGE:]
-
-        with open(index_file, 'w') as f:
-            json.dump(index, f, indent=2)
-
-        return jsonify({
-            'success': True,
-            'snapshot_stored': filename,
-            'total_snapshots': index['total_count'],
-            'message': f'Evolutionary snapshot stored. Total accumulated: {index["total_count"]}'
-        })
-
-    except Exception as e:
-        logger.error(f"Error storing evolutionary snapshot: {e}", exc_info=True)
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/snapshots/list')
-def list_evolutionary_snapshots():
-    """List all accumulated evolutionary snapshots"""
-    try:
-        snapshots_dir = Path('data/snapshots')
-        index_file = snapshots_dir / 'snapshot_index.json'
-
-        if not index_file.exists():
-            return jsonify({
-                'snapshots': [],
-                'total_count': 0,
-                'message': 'No evolutionary snapshots accumulated yet'
-            })
-
-        with open(index_file, 'r') as f:
-            index = json.load(f)
-
-        # Add file size information
-        for snapshot in index['snapshots']:
-            filepath = snapshots_dir / snapshot['filename']
-            if filepath.exists():
-                snapshot['file_size_kb'] = round(filepath.stat().st_size / 1024, 1)
-            else:
-                snapshot['file_size_kb'] = 0
-
-        return jsonify({
-            'snapshots': index['snapshots'],
-            'total_count': index['total_count'],
-            'evolution_sequences': list(set(s['evolution_sequence'] for s in index['snapshots'])),
-            'message': f'Found {index["total_count"]} evolutionary snapshots'
-        })
-
-    except Exception as e:
-        logger.error(f"Error listing evolutionary snapshots: {e}", exc_info=True)
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/snapshots/get/<filename>')
-def get_evolutionary_snapshot(filename):
-    """Retrieve a specific evolutionary snapshot"""
-    try:
-        snapshots_dir = Path('data/snapshots')
-        filepath = snapshots_dir / filename
-
-        if not filepath.exists():
-            return jsonify({'error': 'Snapshot not found'}), 404
-
-        with open(filepath, 'r') as f:
-            snapshot = json.load(f)
-
-        return jsonify({
-            'success': True,
-            'snapshot': snapshot,
-            'filename': filename
-        })
-
-    except Exception as e:
-        logger.error(f"Error retrieving evolutionary snapshot: {e}", exc_info=True)
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/snapshots/clear', methods=['POST'])
-def clear_evolutionary_snapshots():
-    """Clear all accumulated evolutionary snapshots"""
-    try:
-        snapshots_dir = Path('data/snapshots')
-
-        if snapshots_dir.exists():
-            # Remove all snapshot files
-            for file in snapshots_dir.glob('*.json'):
-                file.unlink()
-
-        return jsonify({
-            'success': True,
-            'message': 'All evolutionary snapshots cleared'
-        })
-
-    except Exception as e:
-        logger.error(f"Error clearing evolutionary snapshots: {e}", exc_info=True)
-        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/cra/status')
 def cra_custodian_status():

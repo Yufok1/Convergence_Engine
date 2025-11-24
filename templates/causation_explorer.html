@@ -40,6 +40,7 @@
             background: #111;
             border: 1px solid #0ff;
             padding: 15px;
+            padding-top: 50px; /* Space for sticky button */
             max-height: calc(100vh - 40px);
             overflow-y: auto;
             overflow-x: hidden;
@@ -64,16 +65,19 @@
         }
 
         .filter-panel-toggle {
-            position: absolute;
+            position: sticky;
             top: 10px;
-            right: 10px;
+            right: 0;
             background: #0aa;
             border: 1px solid #0ff;
             color: #fff;
             padding: 4px 8px;
             cursor: pointer;
             font-size: 0.8em;
-            z-index: 10;
+            float: right;
+            z-index: 100;
+            margin-bottom: 10px;
+            margin-left: 10px;
         }
 
         .chat-panel-wrapper {
@@ -204,6 +208,11 @@
             border: 1px solid #0ff;
             padding: 10px;
             z-index: 10;
+            max-width: 220px;
+        }
+
+        .graph-controls.collapsed .graph-controls-content {
+            display: none;
         }
 
         .graph-controls-row {
@@ -211,6 +220,18 @@
             gap: 5px;
             margin: 5px 0;
             justify-content: center;
+        }
+
+        .graph-controls-toggle {
+            width: 100%;
+            padding: 4px 6px;
+            margin-bottom: 6px;
+            background: #222;
+            border: 1px solid #0ff;
+            color: #0ff;
+            cursor: pointer;
+            font-size: 0.8em;
+            font-family: 'Courier New', monospace;
         }
 
         #graph {
@@ -328,6 +349,109 @@
             padding-left: 15px;
         }
 
+        /* Causation Tree Styles */
+        .causation-tree {
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .tree-node {
+            margin: 5px 0;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.5);
+            border-left: 3px solid #0aa;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tree-node:hover {
+            background: rgba(0, 170, 170, 0.2);
+            border-left-color: #0ff;
+        }
+
+        .tree-node.expanded {
+            border-left-color: #0f0;
+        }
+
+        .tree-node-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            user-select: none;
+        }
+
+        .tree-toggle {
+            color: #0ff;
+            font-weight: bold;
+            width: 20px;
+            text-align: center;
+            display: inline-block;
+        }
+
+        .tree-toggle::before {
+            content: '▶';
+            display: inline-block;
+            transition: transform 0.2s;
+        }
+
+        .tree-node.expanded .tree-toggle::before {
+            transform: rotate(90deg);
+        }
+
+        .tree-node.collapsed .tree-toggle::before {
+            transform: rotate(0deg);
+        }
+
+        .tree-component {
+            color: #0ff;
+            font-weight: bold;
+        }
+
+        .tree-event-type {
+            color: #0f0;
+        }
+
+        .tree-children {
+            margin-left: 25px;
+            margin-top: 5px;
+            border-left: 1px dashed #0aa;
+            padding-left: 15px;
+            display: none;
+        }
+
+        .tree-node.expanded .tree-children {
+            display: block;
+        }
+
+        .tree-node-data {
+            margin-top: 5px;
+            padding: 5px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 2px;
+            font-size: 0.85em;
+            color: #888;
+            max-height: 100px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .tree-node.expanded .tree-node-data {
+            display: block;
+        }
+
+        .tree-depth-indicator {
+            color: #666;
+            font-size: 0.8em;
+            margin-right: 5px;
+        }
+
+        .tree-causation-type {
+            color: #ff0;
+            font-size: 0.8em;
+            margin-left: 5px;
+        }
+
         /* Convergence Research Assistant Chat Interface Styles */
         #craChatPanel {
             border-color: #FF00FF;
@@ -336,6 +460,241 @@
 
         #craChatPanel h3 {
             color: #FF00FF;
+        }
+
+        /* Snapshot Gallery Modal Styles */
+        #snapshotGalleryModal {
+            display: none;
+            position: fixed;
+            z-index: 10000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            overflow-y: auto;
+        }
+
+        #snapshotGalleryModal.active {
+            display: block;
+        }
+
+        .snapshot-gallery-content {
+            background: #111;
+            margin: 20px auto;
+            padding: 20px;
+            border: 2px solid #0ff;
+            border-radius: 5px;
+            max-width: 95%;
+            max-height: 95vh;
+            overflow-y: auto;
+        }
+
+        .snapshot-gallery-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #0ff;
+        }
+
+        .snapshot-gallery-header h2 {
+            color: #0ff;
+            margin: 0;
+        }
+
+        .snapshot-gallery-close {
+            background: #f00;
+            color: #fff;
+            border: 1px solid #fff;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 1em;
+            border-radius: 3px;
+        }
+
+        .snapshot-gallery-close:hover {
+            background: #ff4444;
+        }
+
+        .snapshot-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .snapshot-item {
+            background: #1a1a1a;
+            border: 1px solid #0aa;
+            border-radius: 5px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .snapshot-item:hover {
+            border-color: #0ff;
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+        }
+
+        .snapshot-item.selected {
+            border-color: #0f0;
+            border-width: 3px;
+            background: rgba(0, 255, 0, 0.1);
+        }
+
+        .snapshot-item input[type="checkbox"] {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 20px;
+            height: 20px;
+            z-index: 10;
+            cursor: pointer;
+        }
+
+        .snapshot-item img {
+            width: 100%;
+            height: auto;
+            border-radius: 3px;
+            display: block;
+        }
+
+        .snapshot-item-info {
+            color: #888;
+            font-size: 0.8em;
+            margin-top: 8px;
+            text-align: center;
+        }
+
+        .snapshot-viewer {
+            display: none !important;
+            position: fixed !important;
+            z-index: 100000 !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            background-color: rgba(0, 0, 0, 0.98) !important;
+            overflow: auto;
+            text-align: center;
+            pointer-events: auto;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        .snapshot-viewer.active {
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .snapshot-viewer-content {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            max-width: 95vw;
+            max-height: 95vh;
+            padding: 80px 20px 20px 20px;
+            box-sizing: border-box;
+        }
+
+        .snapshot-viewer-content img {
+            max-width: 100%;
+            max-height: 90vh;
+            border: 2px solid #0ff;
+            border-radius: 5px;
+        }
+
+        .snapshot-viewer-close {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #f00;
+            color: #fff;
+            border: 2px solid #fff;
+            padding: 12px 24px;
+            cursor: pointer;
+            font-size: 1.2em;
+            font-weight: bold;
+            border-radius: 5px;
+            z-index: 10003;
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+        }
+
+        .snapshot-viewer-close:hover {
+            background: #ff4444;
+        }
+
+        .snapshot-viewer-info {
+            color: #0ff;
+            margin-top: 10px;
+            font-size: 1.1em;
+        }
+
+        .snapshot-viewer-controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .snapshot-viewer-btn {
+            background: #0aa;
+            color: #fff;
+            border: 1px solid #0ff;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 1em;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .snapshot-viewer-btn:hover {
+            background: #0ff;
+            color: #000;
+        }
+
+        .snapshot-viewer-btn.export {
+            background: #0a0;
+            border-color: #0f0;
+        }
+
+        .snapshot-viewer-btn.export:hover {
+            background: #0f0;
+            color: #000;
+        }
+
+        .snapshot-viewer-nav {
+            background: rgba(0, 170, 170, 0.9);
+            color: #fff;
+            border: 2px solid #0ff;
+            padding: 15px 20px;
+            cursor: pointer;
+            font-size: 1.5em;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: all 0.2s;
+            z-index: 10003;
+            user-select: none;
+        }
+
+        .snapshot-viewer-nav:hover {
+            background: rgba(0, 255, 255, 0.9);
+            color: #000;
+        }
+
+
+        .snapshot-viewer-nav:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
         }
 
         /* Fullscreen Chat Panel Styles */
@@ -508,7 +867,7 @@
                 <button class="filter-panel-toggle" id="filterPanelToggle" onclick="toggleFilterPanel()" title="Minimize/Maximize Settings">
                     <span id="filterPanelToggleText">−</span>
                 </button>
-                <h3 style="color: #0ff; margin-top: 0;">Filters</h3>
+                <h3 style="color: #0ff; margin-top: 0; margin-right: 50px;">Filters</h3>
 
                 <div class="filter-section">
                     <h4>Components</h4>
@@ -1003,7 +1362,9 @@
 
             <!-- Graph Container -->
             <div class="graph-container">
-                <div class="graph-controls">
+                <div class="graph-controls" id="graphControls">
+                    <button class="graph-controls-toggle" id="graphControlsToggle" onclick="toggleGraphControls()">⎯ Minimize Navigation</button>
+                    <div class="graph-controls-content">
                     <div class="graph-controls-row">
                         <button class="nav-button" onclick="panGraph('up')">↑</button>
                     </div>
@@ -1027,7 +1388,7 @@
                         <input type="number" id="zoomInput" value="5" min="1" max="500" step="1"
                             style="width: 60px; background: #000; border: 1px solid #0aa; color: #0ff; text-align: center; font-size: 0.9em; padding: 2px;"
                             onchange="setZoomFromInput()" onkeypress="if(event.key === 'Enter') setZoomFromInput()">
-                        <span style="color: #0aa; margin-left: 3px;">%</span>
+                        <span id="zoomInputLabel" style="color: #0aa; margin-left: 3px;">%</span>
                         <button class="nav-button" onclick="document.getElementById('zoomInput').focus()"
                             title="Click to edit zoom"
                             style="margin-left: 5px; font-size: 0.8em; padding: 2px 5px;">✎</button>
@@ -1054,6 +1415,7 @@
                     <div class="graph-controls-row">
                         <button class="nav-button" onclick="rotateGraph('cw')">↻</button>
                         <button class="nav-button" onclick="rotateGraph('ccw')">↺</button>
+                        </div>
                     </div>
                 </div>
                 <div id="graph"></div>
@@ -1109,40 +1471,9 @@
                         <button onclick="exportAnalysis()"
                             style="padding: 4px 10px; background: #0aa; border: 1px solid #0ff; color: #fff; cursor: pointer; font-size: 0.8em; font-family: 'Courier New', monospace; font-weight: bold;"
                             title="Export analysis report to file">💾 Export</button>
-                        <button id="evolutionaryVideoBtn" onclick="toggleEvolutionaryVideoMode()"
-                            style="padding: 4px 10px; background: #0aa; border: 1px solid #0ff; color: #fff; cursor: pointer; font-size: 0.8em; font-family: 'Courier New', monospace; font-weight: bold;"
-                            title="Start/stop recording evolution for video creation">🎬 START EVOLUTION
-                            RECORDING</button>
-                        <button onclick="showEvolutionStats()"
-                            style="padding: 4px 10px; background: #0aa; border: 1px solid #0ff; color: #fff; cursor: pointer; font-size: 0.8em; font-family: 'Courier New', monospace; font-weight: bold;"
-                            title="Show evolution recording statistics">📊 STATS</button>
                         <span id="snapshotCountDisplay"
-                            style="padding: 4px 10px; background: #1a1a1a; border: 1px solid #0ff; color: #0ff; font-size: 0.8em; font-family: 'Courier New', monospace; font-weight: bold; border-radius: 3px;"
-                            title="Current snapshot count for vision model analysis">📸 Snapshots: <span id="snapshotCountValue">0</span></span>
-                    </div>
-                    <div style="margin-top: 8px; display: none;" id="evolutionVideoControls">
-                        <label style="color: #0ff; font-size: 0.8em;">Video Quality:</label>
-                        <select id="evolutionVideoQuality"
-                            style="margin-left: 5px; background: #111; color: #0f0; border: 1px solid #0ff; padding: 2px; font-size: 0.8em;">
-                            <option value="high">High (1920x1080)</option>
-                            <option value="medium" selected>Medium</option>
-                            <option value="low">Low</option>
-                        </select>
-                        <label style="color: #0ff; font-size: 0.8em; margin-left: 10px;">FPS:</label>
-                        <select id="evolutionVideoFps"
-                            style="margin-left: 5px; background: #111; color: #0f0; border: 1px solid #0ff; padding: 2px; font-size: 0.8em;">
-                            <option value="1">1 (Slow motion)</option>
-                            <option value="2">2 (Evolution viewing)</option>
-                            <option value="12">12 (Smooth)</option>
-                            <option value="24" selected>24 (Cinematic)</option>
-                            <option value="30">30 (Fluid)</option>
-                            <option value="60">60 (Ultra smooth)</option>
-                            <option value="5">5 (Fast)</option>
-                        </select>
-                        <button id="createEvolutionVideoBtn" onclick="createEvolutionaryVideo()"
-                            style="margin-left: 10px; padding: 4px 8px; background: #a00; border: 1px solid #f00; color: #fff; cursor: pointer; font-size: 0.8em; font-family: 'Courier New', monospace;"
-                            title="Create evolutionary video with vision model narration - requires working Ollama">🎬
-                            CREATE EVOLUTION VIDEO</button>
+                            style="padding: 4px 10px; background: #1a1a1a; border: 1px solid #0ff; color: #0ff; font-size: 0.8em; font-family: 'Courier New', monospace; font-weight: bold; border-radius: 3px; cursor: pointer;"
+                            title="Click to view all snapshots">📸 Snapshots: <span id="snapshotCountValue">0</span></span>
                     </div>
                     <div id="chatMessages"
                         style="height: 1100px; overflow-y: auto; background: #000; border: 1px solid #0ff; padding: 10px; margin-bottom: 10px; font-size: 0.9em; will-change: scroll-position; contain: layout style paint;">
@@ -1152,30 +1483,24 @@
                     </div>
                     <div style="display: flex; gap: 10px;">
                         <input type="text" id="chatInput" placeholder="Ask about the system..."
-                            style="flex: 1; padding: 8px; background: #111; color: #0f0; border: 1px solid #0ff; font-family: 'Courier New', monospace;"
-                            onkeypress="if(event.key === 'Enter') sendChatMessage()">
-                        <button onclick="sendChatMessage()" style="padding: 8px 15px;">Send</button>
+                            style="flex: 1; padding: 8px; background: #111; color: #0f0; border: 1px solid #0ff; font-family: 'Courier New', monospace;">
+                        <button id="chatSendButton" style="padding: 8px 15px;">Send</button>
                     </div>
                     <div id="chatStatus" style="color: #0aa; font-size: 0.8em; margin-top: 5px;"></div>
                 </div>
             </div>
         </div>
 
-        <!-- Info panels below main content -->
-        <div style="margin-top: -50px;">
-            <div class="info-panel">
-                <h3>Selected Event</h3>
-                <div id="eventInfo">Click an event to explore</div>
+        <!-- Causation Tree Panels (replaces old flat lists) - Hidden by default, shown when event selected -->
+        <div style="margin-top: 20px; display: none;" id="causationTreePanels">
+            <div class="info-panel" style="border-color: #0ff;">
+                <h3>🌳 Causation Tree (What Caused This?)</h3>
+                <div id="backwardsTrail" style="max-height: 400px; overflow-y: auto;">Click an event to see causation tree</div>
             </div>
 
-            <div class="info-panel">
-                <h3>Causation Trail (What Caused This?)</h3>
-                <div id="backwardsTrail">Explore backwards to see causes</div>
-            </div>
-
-            <div class="info-panel">
-                <h3>Effects (What Did This Cause?)</h3>
-                <div id="forwardsTrail">Explore forwards to see effects</div>
+            <div class="info-panel" style="border-color: #0f0;">
+                <h3>🌳 Effects Tree (What Did This Cause?)</h3>
+                <div id="forwardsTrail" style="max-height: 400px; overflow-y: auto;">Click an event to see effects tree</div>
             </div>
         </div>
     </div>
@@ -1226,11 +1551,81 @@
         console.log(`[SNAPSHOT] Loaded ${snapshotHistory.length} snapshots from localStorage`);
         const MAX_SNAPSHOTS = 50; // Keep last 50 snapshots for frequent evolution tracking (every ~1 second)
 
-        // Evolutionary video accumulation settings
-        let evolutionaryVideoMode = false;
-        let evolutionSequenceId = Date.now(); // Unique ID for this evolution run
-        let lastSnapshotSent = 0;
-        const SNAPSHOT_SEND_INTERVAL = 1000; // Send snapshot every 1 second for fluid video capture
+        function snapshotSignature(imageData) {
+            if (!imageData || typeof imageData !== 'string') return '';
+            return imageData.slice(0, 120);
+        }
+
+        function dedupeSnapshotsByImage(snapshots) {
+            if (!Array.isArray(snapshots)) return [];
+            const deduped = [];
+            let lastSignature = null;
+            snapshots.forEach(snapshot => {
+                if (!snapshot || !snapshot.image) return;
+                const sig = snapshotSignature(snapshot.image);
+                if (sig && sig !== lastSignature) {
+                    deduped.push(snapshot);
+                    lastSignature = sig;
+                }
+            });
+            return deduped;
+        }
+
+        function enforceSnapshotSpacing(snapshots, minSpacingMs) {
+            if (!Array.isArray(snapshots) || snapshots.length === 0) return [];
+            const result = [];
+            let lastTimestamp = 0;
+            snapshots.forEach(snapshot => {
+                const timestamp = snapshot.timestamp || 0;
+                if (result.length === 0 || (timestamp - lastTimestamp) >= minSpacingMs) {
+                    result.push(snapshot);
+                    lastTimestamp = timestamp;
+                }
+            });
+            return result;
+        }
+
+        function sampleSnapshotsEvenlyChronologically(snapshots, targetCount) {
+            if (!Array.isArray(snapshots) || snapshots.length === 0) return [];
+            if (snapshots.length <= targetCount) return snapshots.slice();
+            if (targetCount <= 1) return [snapshots[snapshots.length - 1]];
+
+            const sampled = [];
+            const step = (snapshots.length - 1) / (targetCount - 1);
+            let lastIdx = -1;
+            for (let i = 0; i < targetCount; i++) {
+                let idx = Math.round(i * step);
+                if (idx <= lastIdx) idx = lastIdx + 1;
+                if (idx >= snapshots.length) idx = snapshots.length - 1;
+                sampled.push(snapshots[idx]);
+                lastIdx = idx;
+            }
+            return sampled;
+        }
+
+        function enforceSnapshotPayloadBudget(originalSnapshots, graphImage, message) {
+            if (!Array.isArray(originalSnapshots) || originalSnapshots.length <= 1) return originalSnapshots || [];
+            let target = originalSnapshots.length;
+            let best = originalSnapshots.slice();
+
+            while (target >= 1) {
+                const candidate = sampleSnapshotsEvenlyChronologically(originalSnapshots, target);
+                const payloadSize = JSON.stringify({
+                    message: message,
+                    graph_image: graphImage || '',
+                    evolutionary_snapshots: candidate
+                }).length;
+
+                if (payloadSize <= MAX_PAYLOAD_SIZE * 0.9 || target === 1) {
+                    best = candidate;
+                    break;
+                }
+
+                target -= 1;
+            }
+
+            return best;
+        }
 
         // ============================================================================
         // ACTIVITY-BASED ADAPTIVE SNAPSHOT SYSTEM
@@ -1248,6 +1643,9 @@
         let activitySnapshotInterval = null;
         let lastActivitySnapshot = 0;
         let lastActivityScore = 0; // Track last calculated activity for display
+        
+        // Graph controls collapse state
+        let graphControlsCollapsed = false;
         
         // Calculate activity score (0.0 = static, 1.0 = maximum change)
         function calculateActivityScore() {
@@ -1396,9 +1794,19 @@
             
             // CRITICAL: Only save if image is meaningful (not black space)
             if (imageSize >= MIN_SNAPSHOT_SIZE) {
+                // Extract base64 data from data URL if needed (remove data:image/...;base64, prefix)
+                let imageData = graphImage;
+                if (graphImage && graphImage.startsWith('data:image/')) {
+                    // Extract just the base64 part after the comma
+                    const commaIndex = graphImage.indexOf(',');
+                    if (commaIndex !== -1) {
+                        imageData = graphImage.substring(commaIndex + 1);
+                    }
+                }
+                
                 const snapshot = {
                     timestamp: now,
-                    image: graphImage,
+                    image: imageData, // Store just the base64 data, not the full data URL
                     viewState: JSON.parse(JSON.stringify(viewState)),
                     activityScore: activityScore.toFixed(3) // Store activity for analysis
                 };
@@ -1415,12 +1823,6 @@
                 
                 // Update display
                 updateSnapshotCount();
-                
-                // Send to server if evolution recording is enabled
-                if (evolutionaryVideoMode && (now - lastSnapshotSent) > SNAPSHOT_SEND_INTERVAL) {
-                    sendSnapshotToServer(snapshot);
-                    lastSnapshotSent = now;
-                }
                 
                 console.log(`[ACTIVITY-SNAPSHOT] Captured (activity: ${(activityScore*100).toFixed(1)}%, interval: ${interval}ms, size: ${(imageSize/1024).toFixed(1)}KB)`);
             }
@@ -1513,6 +1915,8 @@
         setInterval(() => {
             updateSnapshotCount();
         }, 1000);
+
+        // Snapshot gallery functions are defined later in the script
         const MAX_PAYLOAD_SIZE = 8000000; // Max 8MB total payload (safety limit for APIs)
 
         // Component colors (configurable)
@@ -2436,10 +2840,10 @@
                 .attr('rx', 3);
 
             // ENHANCEMENT: Add visible legend/key to the graph display
-            // Position legend in bottom-left with enough space for all content
+            // Position legend in top-left corner
             const legendGroup = overlay.append('g')
                 .attr('class', 'graph-legend')
-                .attr('transform', `translate(20, ${height - 140})`);
+                .attr('transform', 'translate(20, 20)');
             
             // Component colors (using configurable colors)
             const components = [
@@ -2470,16 +2874,7 @@
             const legendWidth = 300; // Wider to fit longer names
             const legendHeight = titleHeight + componentsHeight + sectionSpacing + linksHeight + infoHeight + (padding * 2);
             
-            // Legend background
-            legendGroup.append('rect')
-                .attr('x', -padding)
-                .attr('y', -padding)
-                .attr('width', legendWidth)
-                .attr('height', legendHeight)
-                .attr('fill', 'rgba(0, 0, 0, 0.8)')
-                .attr('stroke', '#0ff')
-                .attr('stroke-width', 2)
-                .attr('rx', 5);
+            // Legend background - REMOVED (no box around legend)
             
             // Title
             legendGroup.append('text')
@@ -2516,15 +2911,7 @@
                     .text(comp.name);
             });
             
-            // Section separator
-            const separatorY = titleHeight + componentsHeight + 5;
-            legendGroup.append('line')
-                .attr('x1', 0)
-                .attr('y1', separatorY)
-                .attr('x2', legendWidth - (padding * 2))
-                .attr('y2', separatorY)
-                .attr('stroke', '#666')
-                .attr('stroke-width', 1);
+            // Section separator - REMOVED (no horizontal line)
             
             // Link/edge colors with labels (store link type for easy updates)
             linkTypes.forEach((link, i) => {
@@ -2876,8 +3263,25 @@
         }
 
         // Navigation functions
+        function updateZoomDisplay() {
+            const zoomInput = document.getElementById('zoomInput');
+            if (zoomInput) {
+                const percent = Math.round(zoomLevel * 100);
+                zoomInput.value = percent;
+                zoomInput.setAttribute('value', percent);
+                const zoomLabel = document.getElementById('zoomInputLabel');
+                if (zoomLabel) {
+                    zoomLabel.textContent = `${percent}%`;
+                }
+                const zoomStatus = document.getElementById('craZoomStatus');
+                if (zoomStatus) {
+                    zoomStatus.textContent = `Current: ${percent}%`;
+                }
+            }
+        }
+
         function updateTransform() {
-            if (!graphGroup) return;
+            if (graphGroup) {
             const graphElement = document.getElementById('graph');
             const centerX = graphElement.clientWidth / 2;
             const centerY = graphElement.clientHeight / 2; // Use actual graph height, not hardcoded 300
@@ -2888,13 +3292,10 @@
                 rotate(${rotation})
                 translate(${-centerX}, ${-centerY})
             `);
-
-            // Update zoom level display
-            const zoomInput = document.getElementById('zoomInput');
-            if (zoomInput) {
-                const percent = Math.round(zoomLevel * 100);
-                zoomInput.value = percent;
             }
+
+            // Update zoom level display even if graphGroup not ready yet
+            updateZoomDisplay();
         }
 
         function panGraph(direction) {
@@ -2971,17 +3372,23 @@
             const graphWidth = graphElement.clientWidth;
             const graphHeight = graphElement.clientHeight || 792; // Use actual height
 
-            // Calculate zoom to fit with padding
-            const padding = 50;
-            const scaleX = (graphWidth - padding * 2) / width;
-            const scaleY = (graphHeight - padding * 2) / height;
+            // Account for legend at top-left (legend is positioned at top, needs ~180px space)
+            const legendSpace = 180; // Space needed for legend at top
+            const sidePadding = 50;
+            const topPadding = legendSpace + 50; // Extra padding at top for legend
+            const bottomPadding = 50;
+
+            // Calculate zoom to fit with padding (accounting for legend)
+            const scaleX = (graphWidth - sidePadding * 2) / width;
+            const scaleY = (graphHeight - topPadding - bottomPadding) / height;
             zoomLevel = Math.min(scaleX, scaleY, 5); // Don't zoom in more than 5x
 
-            // Center the view
+            // Center the view (shift down to account for legend space at top)
             const centerX = (minX + maxX) / 2;
             const centerY = (minY + maxY) / 2;
             panX = (graphWidth / 2) - (centerX * zoomLevel);
-            panY = (graphHeight / 2) - (centerY * zoomLevel);
+            // Shift view down so legend is visible at top
+            panY = (graphHeight / 2) - (centerY * zoomLevel) + (legendSpace / 2);
 
             updateTransform();
         }
@@ -3003,12 +3410,12 @@
                 // Calculate center based on actual graph size
                 const centerX = graphElement.clientWidth / 2;
                 const centerY = graphElement.clientHeight / 2;
-                // Reset pan to center the view
+                // Reset pan to center the view, but shift down to account for legend at top
             panX = 0;
-            panY = 0;
+                panY = 90; // Shift down so legend is visible at top
             } else {
                 panX = 0;
-                panY = 0;
+                panY = 90; // Shift down so legend is visible at top
             }
             zoomLevel = 0.05; // Reset to 5% zoom for overview
             rotation = 0;
@@ -3046,6 +3453,182 @@
             }
         }
 
+        // ============================================================================
+        // CRA VIEW CONTROL FUNCTIONS
+        // ============================================================================
+
+        // Zoom to specific node by ID
+        function zoomToNode(nodeId, zoomPercent = 200) {
+            if (!allNodes) return;
+            const node = allNodes.find(n => n.id === nodeId);
+            if (!node || node.x === undefined || node.y === undefined) return;
+
+            const graphElement = document.getElementById('graph');
+            const graphWidth = graphElement.clientWidth;
+            const graphHeight = graphElement.clientHeight || 792;
+
+            // Set zoom level
+            zoomLevel = Math.max(0.01, Math.min(5, zoomPercent / 100));
+
+            // Center on node
+            const centerX = graphWidth / 2;
+            const centerY = graphHeight / 2;
+            panX = centerX - (node.x * zoomLevel);
+            panY = centerY - (node.y * zoomLevel);
+
+            updateTransform();
+            updateViewState();
+        }
+
+        // Zoom to area defined by bounding box
+        function zoomToArea(minX, minY, maxX, maxY, padding = 50) {
+            if (!allNodes || minX === undefined) return;
+
+            const graphElement = document.getElementById('graph');
+            const graphWidth = graphElement.clientWidth;
+            const graphHeight = graphElement.clientHeight || 792;
+
+            const width = maxX - minX || 1;
+            const height = maxY - minY || 1;
+
+            // Calculate zoom to fit with padding
+            const scaleX = (graphWidth - padding * 2) / width;
+            const scaleY = (graphHeight - padding * 2) / height;
+            zoomLevel = Math.min(scaleX, scaleY, 5);
+
+            // Center the view
+            const centerX = (minX + maxX) / 2;
+            const centerY = (minY + maxY) / 2;
+            panX = (graphWidth / 2) - (centerX * zoomLevel);
+            panY = (graphHeight / 2) - (centerY * zoomLevel);
+
+            updateTransform();
+            updateViewState();
+        }
+
+        // Find high-density node clusters
+        function findHighDensityClusters(radius = 100, minNodes = 5) {
+            if (!allNodes || allNodes.length === 0) return [];
+
+            const clusters = [];
+            const processed = new Set();
+
+            allNodes.forEach(node => {
+                if (processed.has(node.id) || node.x === undefined || node.y === undefined) return;
+
+                // Find all nodes within radius
+                const nearby = allNodes.filter(n => {
+                    if (n.id === node.id || n.x === undefined || n.y === undefined) return false;
+                    const dx = n.x - node.x;
+                    const dy = n.y - node.y;
+                    return Math.sqrt(dx * dx + dy * dy) <= radius;
+                });
+
+                if (nearby.length >= minNodes) {
+                    // Calculate cluster bounds
+                    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+                    nearby.forEach(n => {
+                        if (n.x < minX) minX = n.x;
+                        if (n.x > maxX) maxX = n.x;
+                        if (n.y < minY) minY = n.y;
+                        if (n.y > maxY) maxY = n.y;
+                    });
+
+                    clusters.push({
+                        center: { x: node.x, y: node.y },
+                        bounds: { minX, minY, maxX, maxY },
+                        nodeCount: nearby.length,
+                        nodes: nearby.map(n => n.id),
+                        density: nearby.length / (Math.PI * radius * radius)
+                    });
+
+                    // Mark nodes as processed
+                    nearby.forEach(n => processed.add(n.id));
+                }
+            });
+
+            return clusters.sort((a, b) => b.density - a.density);
+        }
+
+        // Find high-activity nodes (many connections)
+        function findHighActivityNodes(topN = 10) {
+            if (!allNodes || !allLinks) return [];
+
+            // Count connections per node
+            const nodeActivity = new Map();
+            allNodes.forEach(node => nodeActivity.set(node.id, 0));
+
+            allLinks.forEach(link => {
+                const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+                const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+                nodeActivity.set(sourceId, (nodeActivity.get(sourceId) || 0) + 1);
+                nodeActivity.set(targetId, (nodeActivity.get(targetId) || 0) + 1);
+            });
+
+            // Get top N most active nodes
+            const sorted = Array.from(nodeActivity.entries())
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, topN);
+
+            return sorted.map(([nodeId, activity]) => {
+                const node = allNodes.find(n => n.id === nodeId);
+                return {
+                    nodeId,
+                    activity,
+                    x: node?.x,
+                    y: node?.y,
+                    component: node?.component
+                };
+            });
+        }
+
+        // Find high link-density areas
+        function findHighLinkDensityAreas(gridSize = 200, minLinks = 10) {
+            if (!allLinks || allLinks.length === 0) return [];
+
+            // Create grid and count links per cell
+            const grid = new Map();
+
+            allLinks.forEach(link => {
+                const source = typeof link.source === 'object' ? link.source : allNodes.find(n => n.id === link.source);
+                const target = typeof link.target === 'object' ? link.target : allNodes.find(n => n.id === link.target);
+
+                if (!source || !target || source.x === undefined || target.x === undefined) return;
+
+                // Get midpoint of link
+                const midX = (source.x + target.x) / 2;
+                const midY = (source.y + target.y) / 2;
+
+                // Get grid cell
+                const cellX = Math.floor(midX / gridSize);
+                const cellY = Math.floor(midY / gridSize);
+                const key = `${cellX},${cellY}`;
+
+                grid.set(key, (grid.get(key) || 0) + 1);
+            });
+
+            // Find high-density cells
+            const areas = [];
+            grid.forEach((linkCount, key) => {
+                if (linkCount >= minLinks) {
+                    const [cellX, cellY] = key.split(',').map(Number);
+                    areas.push({
+                        x: cellX * gridSize + gridSize / 2,
+                        y: cellY * gridSize + gridSize / 2,
+                        linkCount,
+                        bounds: {
+                            minX: cellX * gridSize,
+                            minY: cellY * gridSize,
+                            maxX: (cellX + 1) * gridSize,
+                            maxY: (cellY + 1) * gridSize
+                        }
+                    });
+                }
+            });
+
+            return areas.sort((a, b) => b.linkCount - a.linkCount);
+        }
+
         // Toggle drag-to-zoom mode
         function toggleDragZoom() {
             dragZoomEnabled = !dragZoomEnabled;
@@ -3067,6 +3650,15 @@
                 svg.select('.overlay').style('pointer-events', dragZoomEnabled ? 'all' : 'none');
                 svg.style('cursor', dragZoomEnabled ? 'crosshair' : 'default');
             }
+        }
+
+        function toggleGraphControls() {
+            const controls = document.getElementById('graphControls');
+            const toggleBtn = document.getElementById('graphControlsToggle');
+            if (!controls || !toggleBtn) return;
+            graphControlsCollapsed = !graphControlsCollapsed;
+            controls.classList.toggle('collapsed', graphControlsCollapsed);
+            toggleBtn.textContent = graphControlsCollapsed ? '＋ Show Navigation' : '⎯ Minimize Navigation';
         }
 
         // Setup drag-to-zoom functionality
@@ -3385,42 +3977,158 @@
 
         function selectNode(node) {
             selectedNode = node;
-            updateEventInfo(node);
+            // Show causation tree panels (replaces old flat lists)
+            const treePanels = document.getElementById('causationTreePanels');
+            if (treePanels) {
+                treePanels.style.display = 'block';
+                // Scroll to tree panels
+                treePanels.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
             exploreBackwards(node.id);
             exploreForwards(node.id);
         }
 
-        function updateEventInfo(node) {
-            d3.json(`/api/events/${node.id}`).then(data => {
-                const info = document.getElementById('eventInfo');
-                const component = data.event.component || 'unknown';
-                const eventType = data.event.event_type || 'unknown';
-                const timestamp = new Date(data.event.timestamp * 1000).toLocaleString();
-                info.innerHTML = `
-                    <div class="event-item">
-                        <div style="margin-bottom: 10px;">
-                            <span class="component">${component.toUpperCase()}</span> 
-                            <span style="color: #0f0;"> → </span> 
-                            <span class="event-type">${eventType}</span>
-                        </div>
-                        <div style="margin: 8px 0;">
-                            <span class="metric">Timestamp:</span> 
-                            <span class="timestamp">${timestamp}</span>
-                        </div>
-                        <div style="margin: 8px 0;">
-                            <span class="metric">Data:</span><br>
-                            <pre>${JSON.stringify(data.event.data, null, 2)}</pre>
-                        </div>
-                        <div style="margin: 8px 0;">
-                            <span class="metric">Caused by:</span> <span class="count-value">${data.caused_by}</span> events
-                            <span style="margin-left: 20px;" class="metric">Caused:</span> <span class="count-value">${data.caused}</span> events
-                        </div>
-                    </div>
-                `;
-            }).catch(err => {
-                console.error('Error fetching event info:', err);
-                document.getElementById('eventInfo').innerHTML = `<div style="color: #f00; padding: 10px; border: 1px solid #f00;">Error loading event: ${err.message}</div>`;
+        // Removed updateEventInfo - replaced by tree graph visualization
+        // Event details are now shown in the causation tree panels
+
+        // Build tree structure from trail data (handles both backwards and forwards)
+        function buildCausationTree(trail, rootEventId, isForwards = false) {
+            if (!trail || trail.length === 0) return null;
+            
+            // Create a map of event_id -> node data
+            const nodeMap = new Map();
+            trail.forEach(item => {
+                const eventId = item.event.event_id;
+                nodeMap.set(eventId, {
+                    event: item.event,
+                    depth: item.depth,
+                    causation_type: item.causation_type || 'unknown',
+                    children: [],
+                    caused: item.caused || [], // For forwards: events this caused
+                    caused_by: item.caused_by || [] // For backwards: events that caused this
+                });
             });
+            
+            // Find root node (the selected event)
+            let rootNode = null;
+            if (rootEventId && nodeMap.has(rootEventId)) {
+                rootNode = nodeMap.get(rootEventId);
+            } else {
+                // Find minimum depth node (root cause for backwards, selected event for forwards)
+                const minDepth = Math.min(...trail.map(item => item.depth));
+                const rootItems = trail.filter(item => item.depth === minDepth);
+                if (rootItems.length > 0) {
+                    rootNode = nodeMap.get(rootItems[0].event.event_id);
+                }
+            }
+            
+            if (!rootNode) return null;
+            
+            // Build tree structure using actual parent-child relationships
+            if (isForwards) {
+                // Forwards: build from 'caused' relationships
+                buildChildrenFromCaused(rootNode, nodeMap);
+            } else {
+                // Backwards: build from 'caused_by' relationships (inverse)
+                // In backwards, we want to show causes as children going deeper
+                buildChildrenFromCausedBy(rootNode, nodeMap, trail);
+            }
+            
+            return rootNode;
+        }
+        
+        function buildChildrenFromCaused(node, nodeMap) {
+            if (!node.caused || node.caused.length === 0) return;
+            
+            node.caused.forEach(causedEvent => {
+                const childNode = nodeMap.get(causedEvent.event_id);
+                if (childNode && !node.children.find(c => c.event.event_id === childNode.event.event_id)) {
+                    node.children.push(childNode);
+                    buildChildrenFromCaused(childNode, nodeMap);
+                }
+            });
+        }
+        
+        function buildChildrenFromCausedBy(rootNode, nodeMap, trail) {
+            // For backwards: we want to show causes as children
+            // The API gives us 'caused_by' array for each event
+            // We build tree by following 'caused_by' relationships
+            
+            function addCausesAsChildren(node) {
+                // Find the trail item for this node
+                const trailItem = trail.find(item => item.event.event_id === node.event.event_id);
+                if (!trailItem || !trailItem.caused_by || trailItem.caused_by.length === 0) {
+                    return; // No causes, this is a root cause
+                }
+                
+                // Add each cause as a child
+                trailItem.caused_by.forEach(causeEvent => {
+                    const causeNode = nodeMap.get(causeEvent.event_id);
+                    if (causeNode && !node.children.find(c => c.event.event_id === causeNode.event.event_id)) {
+                        node.children.push(causeNode);
+                        addCausesAsChildren(causeNode); // Recurse to build deeper
+                    }
+                });
+            }
+            
+            addCausesAsChildren(rootNode);
+        }
+
+        // Render tree node recursively
+        function renderTreeNode(node, container, onClickCallback) {
+            if (!node) return;
+            
+            const nodeDiv = document.createElement('div');
+            nodeDiv.className = 'tree-node collapsed';
+            nodeDiv.dataset.eventId = node.event.event_id;
+            
+            const component = node.event.component || 'unknown';
+            const hasChildren = node.children && node.children.length > 0;
+            const dataStr = JSON.stringify(node.event.data, null, 2);
+            const dataPreview = dataStr.length > 200 ? dataStr.substring(0, 200) + '...' : dataStr;
+            
+            nodeDiv.innerHTML = `
+                <div class="tree-node-header">
+                    ${hasChildren ? '<span class="tree-toggle"></span>' : '<span class="tree-toggle" style="opacity: 0.3;">•</span>'}
+                    <span class="tree-depth-indicator">[D${node.depth}]</span>
+                    <span class="tree-component">${component.toUpperCase()}</span>
+                    <span style="color: #0f0;">→</span>
+                    <span class="tree-event-type">${node.event.event_type}</span>
+                    <span class="tree-causation-type">(${node.causation_type})</span>
+                        </div>
+                <div class="tree-node-data">
+                    <pre>${dataPreview}</pre>
+                        </div>
+                ${hasChildren ? '<div class="tree-children"></div>' : ''}
+            `;
+            
+            // Toggle expand/collapse
+            if (hasChildren) {
+                const toggle = nodeDiv.querySelector('.tree-toggle');
+                toggle.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    nodeDiv.classList.toggle('expanded');
+                    nodeDiv.classList.toggle('collapsed');
+                });
+            }
+            
+            // Click to select event
+            nodeDiv.addEventListener('click', (e) => {
+                if (e.target.classList.contains('tree-toggle')) return;
+                if (onClickCallback) {
+                    onClickCallback(node.event.event_id);
+                }
+            });
+            
+            // Render children
+            if (hasChildren) {
+                const childrenContainer = nodeDiv.querySelector('.tree-children');
+                node.children.forEach(child => {
+                    renderTreeNode(child, childrenContainer, onClickCallback);
+                });
+            }
+            
+            container.appendChild(nodeDiv);
         }
 
         function exploreBackwards(eventId) {
@@ -3430,6 +4138,20 @@
                     trailDiv.innerHTML = '<div style="color: #888; padding: 10px;">No causation trail found (root cause)</div>';
                     return;
                 }
+                
+                // Build tree structure
+                const treeRoot = buildCausationTree(trail, eventId);
+                
+                trailDiv.innerHTML = '<div class="causation-tree"></div>';
+                const treeContainer = trailDiv.querySelector('.causation-tree');
+                
+                if (treeRoot) {
+                    // Render tree starting from root
+                    renderTreeNode(treeRoot, treeContainer, (clickedEventId) => {
+                        selectEvent(clickedEventId);
+                    });
+                } else {
+                    // Fallback to flat list if tree building fails
                 trailDiv.innerHTML = trail.map((item, idx) => {
                     const component = item.event.component || 'unknown';
                     return `
@@ -3444,6 +4166,7 @@
                         </div>
                     `;
                 }).join('');
+                }
             }).catch(err => {
                 console.error('Error exploring backwards:', err);
                 document.getElementById('backwardsTrail').innerHTML = `<div style="color: #f00; padding: 10px; border: 1px solid #f00;">Error: ${err.message}</div>`;
@@ -3457,6 +4180,20 @@
                     trailDiv.innerHTML = '<div style="color: #888; padding: 10px;">No effects found (leaf event)</div>';
                     return;
                 }
+                
+                // Build tree structure (forwards = effects, isForwards = true)
+                const treeRoot = buildCausationTree(trail, eventId, true);
+                
+                trailDiv.innerHTML = '<div class="causation-tree"></div>';
+                const treeContainer = trailDiv.querySelector('.causation-tree');
+                
+                if (treeRoot) {
+                    // Render tree starting from root
+                    renderTreeNode(treeRoot, treeContainer, (clickedEventId) => {
+                        selectEvent(clickedEventId);
+                    });
+                } else {
+                    // Fallback to flat list if tree building fails
                 trailDiv.innerHTML = trail.map((item, idx) => {
                     const component = item.event.component || 'unknown';
                     return `
@@ -3471,6 +4208,7 @@
                         </div>
                     `;
                 }).join('');
+                }
             }).catch(err => {
                 console.error('Error exploring forwards:', err);
                 document.getElementById('forwardsTrail').innerHTML = `<div style="color: #f00; padding: 10px; border: 1px solid #f00;">Error: ${err.message}</div>`;
@@ -3484,33 +4222,21 @@
                 return;
             }
             d3.json(`/api/events/search?q=${query}`).then(results => {
-                const info = document.getElementById('eventInfo');
                 if (!results || results.length === 0) {
-                    info.innerHTML = `<div style="color: #FF6600; padding: 15px; border: 3px solid #FF6600; text-align: center; font-size: 1.2em;">No events found matching "${query}"</div>`;
+                    alert(`No events found matching "${query}"`);
                     return;
                 }
-                info.innerHTML = `
-                        <div style="margin-bottom: 15px; padding: 10px; background: #111; border: 1px solid #0ff;">
-                            <strong>Search Results:</strong> <span class="count-value">${results.length}</span> events found
-                        </div>
-                        ${results.slice(0, 10).map(event => {
-                    const component = event.component || 'unknown';
-                    return `
-                                <div class="event-item" onclick="selectEvent('${event.event_id}')" style="cursor: pointer;">
-                                    <div style="margin-bottom: 8px;">
-                                        <span class="component">${component.toUpperCase()}</span>
-                                        <span style="color: #0f0;"> → </span>
-                                        <span class="event-type">${event.event_type}</span>
-                                    </div>
-                                    <pre>${JSON.stringify(event.data, null, 2)}</pre>
-                                </div>
-                            `;
-                }).join('')}
-                        ${results.length > 10 ? `<div style="color: #888; padding: 10px; text-align: center;">... and ${results.length - 10} more results</div>` : ''}
-                    `;
+                // Select the first result and show it in the tree graph
+                if (results.length > 0) {
+                    selectEvent(results[0].event_id);
+                    if (results.length > 1) {
+                        console.log(`Found ${results.length} events, showing first result. Use the graph to explore others.`);
+                    }
+                }
             }).catch(err => {
                 console.error('Error searching events:', err);
-                document.getElementById('eventInfo').innerHTML = `<div style="color: #FF0000; padding: 10px; border: 3px solid #FF0000;">Search error: ${err.message}</div>`;
+                console.error('Search error:', err.message);
+                alert(`Search error: ${err.message}`);
             });
         }
 
@@ -4296,32 +5022,10 @@
                         ctx.fillRect(0, 0, canvas.width, canvas.height);
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                         
-                        // ENHANCEMENT: Add title and legend to make it clear this is a network graph
-                        ctx.fillStyle = '#00ffff'; // Cyan for title
-                        ctx.font = 'bold 24px Arial, sans-serif';
-                        ctx.textAlign = 'center';
-                        ctx.fillText('CAUSATION GRAPH - NETWORK VISUALIZATION', canvas.width / 2, 30);
+                        // REMOVED: Title, subtitle, and bottom-left legend from snapshots
+                        // (Legend is now only in top-left of main graph, no box)
                         
-                        // Add subtitle
-                        ctx.fillStyle = '#00ff00'; // Green for subtitle
-                        ctx.font = '16px Arial, sans-serif';
-                        ctx.fillText('Butterfly System: Event Causation Network', canvas.width / 2, 55);
-                        
-                        // Add legend explaining what the visualization shows - HIGH CONTRAST COLORS
-                        ctx.fillStyle = '#ffffff'; // White for legend text
-                        ctx.font = '12px Arial, sans-serif';
-                        ctx.textAlign = 'left';
-                        const legendY = canvas.height - 120;
-                        ctx.fillText('GRAPH LEGEND:', 20, legendY);
-                        ctx.fillStyle = '#FF0000'; ctx.fillText('• Reality Simulator (Red)', 20, legendY + 20);
-                        ctx.fillStyle = '#0000FF'; ctx.fillText('• Explorer (Blue)', 20, legendY + 40);
-                        ctx.fillStyle = '#FF8800'; ctx.fillText('• Djinn Kernel (Orange)', 20, legendY + 60);
-                        ctx.fillStyle = '#FF00FF'; ctx.fillText('• Breath Engine (Magenta)', 20, legendY + 80);
-                        ctx.fillStyle = '#FFFF00'; ctx.fillText('• System (Yellow)', 20, legendY + 100);
-                        ctx.fillStyle = '#ffffff';
-                        ctx.fillText('Nodes = Events | Links = Causation', 20, legendY + 120);
-                        
-                        // Add metadata
+                        // Add metadata only (top-right corner)
                         ctx.fillStyle = '#888888';
                         ctx.font = '10px Arial, sans-serif';
                         ctx.textAlign = 'right';
@@ -4551,43 +5255,9 @@
                 console.log(`[SNAPSHOT] Skipping graph capture - no graph data available (${allNodes ? allNodes.length : 0} nodes)`);
             }
 
-            // Add to snapshot history for evolutionary analysis (only if we have data)
-            // Validate that the image is meaningful (not blank/empty)
-            const MIN_SNAPSHOT_SIZE = 20000; // Minimum 20KB base64 - blank images are ~7-10KB
-            const imageSize = graphImage ? graphImage.length : 0;
-            
-            if (graphImage && hasGraphData && imageSize >= MIN_SNAPSHOT_SIZE) {
-                // Create snapshot object
-                const snapshot = {
-                    timestamp: Date.now(),
-                    image: graphImage,
-                    viewState: JSON.parse(JSON.stringify(viewState))
-                };
-                
-                snapshotHistory.push(snapshot);
-
-                console.log(`[SNAPSHOT] Added snapshot (${(imageSize/1024).toFixed(1)}KB), now have ${snapshotHistory.length} snapshots`);
-
-                // Keep only last MAX_SNAPSHOTS snapshots
-                if (snapshotHistory.length > MAX_SNAPSHOTS) {
-                    snapshotHistory.shift(); // Remove oldest
-                    console.log(`[SNAPSHOT] Trimmed to ${snapshotHistory.length} snapshots (removed oldest)`);
-                }
-
-                // Save to localStorage after any modification
-                localStorage.setItem('causationExplorer_snapshotHistory', JSON.stringify(snapshotHistory));
-                console.log(`[SNAPSHOT] Saved ${snapshotHistory.length} snapshots to localStorage`);
-
-                // Update snapshot count display
-                updateSnapshotCount();
-
-                // Send to server for evolutionary video accumulation (if enabled)
-                if (evolutionaryVideoMode && (Date.now() - lastSnapshotSent) > SNAPSHOT_SEND_INTERVAL) {
-                    sendSnapshotToServer(snapshot);
-                }
-            } else if (graphImage && imageSize < MIN_SNAPSHOT_SIZE) {
-                console.warn(`[SNAPSHOT] Skipping snapshot - too small (${(imageSize/1024).toFixed(1)}KB), likely blank/empty. Minimum: ${(MIN_SNAPSHOT_SIZE/1024).toFixed(1)}KB`);
-            }
+            // REMOVED: Duplicate snapshot creation - snapshots are already created by activity-based system
+            // All snapshot features share the same snapshotHistory from the activity-based system
+            // This ensures a single source of truth for all snapshots (viewer, vision analysis, video export)
 
             // Get selected model
             const researchModel = document.getElementById('researchModelSelect').value;
@@ -4611,6 +5281,7 @@
                 // Only include recent snapshots (within 2 hours) that have meaningful content
                 const MIN_VALID_SNAPSHOT_SIZE = 20000; // Minimum 20KB - filter out blank/empty images
                 const MIN_SNAPSHOT_SPACING = 1000; // Minimum 1 second between snapshots (allows frequent captures)
+                const MAX_SNAPSHOTS_FOR_EVOLUTION = 10; // Keep up to 10 historical frames
                 
                 let validSnapshots = snapshotHistory
                     .filter(s => {
@@ -4628,33 +5299,29 @@
                 // Sort by timestamp (oldest first) to ensure proper evolution sequence
                 validSnapshots.sort((a, b) => a.timestamp - b.timestamp);
                 
-                // Filter to ensure gradual evolution - remove snapshots that are too close together
-                // Keep snapshots that are spaced out over time to show gradual progression
-                evolutionarySnapshots = [];
-                let lastKeptTimestamp = 0;
+                // Remove consecutive duplicate images (same visual state)
+                validSnapshots = dedupeSnapshotsByImage(validSnapshots);
                 
-                for (const snapshot of validSnapshots) {
-                    const timeSinceLast = snapshot.timestamp - lastKeptTimestamp;
-                    if (evolutionarySnapshots.length === 0 || timeSinceLast >= MIN_SNAPSHOT_SPACING) {
-                        evolutionarySnapshots.push(snapshot);
-                        lastKeptTimestamp = snapshot.timestamp;
-                    }
+                // Enforce spacing to avoid overly dense captures
+                let spacedSnapshots = enforceSnapshotSpacing(validSnapshots, MIN_SNAPSHOT_SPACING);
+                if (spacedSnapshots.length === 0 && validSnapshots.length > 0) {
+                    spacedSnapshots = [validSnapshots[0]];
                 }
                 
-                // If we still have too many, sample evenly across the timeline
-                // Allow up to 10 snapshots for detailed evolution (backend limit is 10)
-                const MAX_SNAPSHOTS_FOR_EVOLUTION = 10; // Keep up to 10 historical + 1 current = 11 total (backend will trim to 10)
-                if (evolutionarySnapshots.length > MAX_SNAPSHOTS_FOR_EVOLUTION) {
-                    // Sample evenly across the timeline for gradual evolution
-                    const step = evolutionarySnapshots.length / MAX_SNAPSHOTS_FOR_EVOLUTION;
-                    const sampled = [];
-                    for (let i = 0; i < MAX_SNAPSHOTS_FOR_EVOLUTION; i++) {
-                        const idx = Math.floor(i * step);
-                        sampled.push(evolutionarySnapshots[idx]);
-                    }
-                    evolutionarySnapshots = sampled;
-                    console.log(`[VISION] Evenly sampled ${evolutionarySnapshots.length} snapshots from ${validSnapshots.length} for gradual evolution`);
+                // Evenly sample across entire timeline if we still have more than allowed
+                if (spacedSnapshots.length > MAX_SNAPSHOTS_FOR_EVOLUTION) {
+                    spacedSnapshots = sampleSnapshotsEvenlyChronologically(spacedSnapshots, MAX_SNAPSHOTS_FOR_EVOLUTION);
                 }
+
+                // Recompute ages after sampling
+                evolutionarySnapshots = spacedSnapshots.map(s => ({
+                    timestamp: s.timestamp,
+                    image: s.image,
+                    age_seconds: (now - s.timestamp) / 1000
+                }));
+
+                // Ensure payload budget keeps chronological coverage
+                evolutionarySnapshots = enforceSnapshotPayloadBudget(evolutionarySnapshots, graphImage, message);
                 
                 console.log(`[VISION] Building request with ${evolutionarySnapshots.length} valid snapshots (from ${snapshotHistory.length} total, filtered to recent + meaningful content + spaced)`);
                 
@@ -4682,22 +5349,13 @@
 
             // If payload too large, reduce snapshots (keep most recent)
             if (totalSize > MAX_PAYLOAD_SIZE && evolutionarySnapshots.length > 1) {
-                // Start with most recent and work backwards
-                const trimmed = [];
-                let currentSize = JSON.stringify({ message: message, graph_image: graphImage || '' }).length;
-
-                for (let i = evolutionarySnapshots.length - 1; i >= 0; i--) {
-                    const testSize = currentSize + JSON.stringify(evolutionarySnapshots[i]).length;
-                    if (testSize < MAX_PAYLOAD_SIZE * 0.9) { // Use 90% of limit for safety
-                        trimmed.unshift(evolutionarySnapshots[i]);
-                        currentSize = testSize;
-                    } else {
-                        break; // Stop adding if would exceed limit
-                    }
-                }
-
-                evolutionarySnapshots = trimmed;
-                console.log(`[VISION] Trimmed snapshots from ${snapshotHistory.length} to ${trimmed.length} to fit payload size`);
+                evolutionarySnapshots = enforceSnapshotPayloadBudget(evolutionarySnapshots, graphImage, message);
+                totalSize = JSON.stringify({
+                    message: message,
+                    evolutionary_snapshots: evolutionarySnapshots,
+                    graph_image: graphImage || ''
+                }).length;
+                console.log(`[VISION] Payload still large, reduced snapshots to ${evolutionarySnapshots.length} to stay within limits`);
             }
 
             // Log what we're sending for debugging
@@ -4741,20 +5399,37 @@
                         return;
                     }
 
-                    // Show vision description if available
+                    // Parse visual description to extract per-image descriptions
+                    function parseImageDescriptions(visualDescription) {
+                        if (!visualDescription) return {};
+                        
+                        const descriptions = {};
+                        // Look for patterns like "Image 1/10", "▶️ Image 1/10", "Image 1:", etc.
+                        const imagePattern = /(?:▶️\s*)?Image\s+(\d+)(?:\/(\d+))?[:\-]?\s*([^▶]*?)(?=(?:▶️\s*)?Image\s+\d+|$)/gis;
+                        let match;
+                        
+                        while ((match = imagePattern.exec(visualDescription)) !== null) {
+                            const imageNum = parseInt(match[1]);
+                            const description = match[3].trim();
+                            if (description) {
+                                descriptions[imageNum] = description;
+                            }
+                        }
+                        
+                        return descriptions;
+                    }
+                    
+                    // Show vision description summary (everything before first image)
                     if (data.visual_description) {
-                        addChatMessage('vision', `[Vision Analysis] ${data.visual_description}`);
+                        const summaryMatch = data.visual_description.match(/^([^▶]*?)(?=(?:▶️\s*)?Image\s+1)/s);
+                        const summary = summaryMatch ? summaryMatch[1].trim() : data.visual_description.split(/(?:▶️\s*)?Image\s+1/)[0].trim();
+                        
+                        if (summary) {
+                            addChatMessage('vision', `[Vision Analysis] ${summary}`);
+                        }
+                    }
 
-                        // Display evolutionary snapshots if available
-                        if (data.evolutionary_snapshots && data.evolutionary_snapshots.length > 0) {
-                            const messagesDiv = document.getElementById('chatMessages');
-                            const snapshotsDiv = document.createElement('div');
-                            snapshotsDiv.className = 'evolutionary-snapshots';
-                            snapshotsDiv.style.cssText = 'margin: 15px 0; padding: 10px; border: 1px solid #0ff; background: rgba(0, 0, 255, 0.1); border-radius: 5px;';
-
-                            snapshotsDiv.innerHTML = '<div style="color: #0ff; font-weight: bold; margin-bottom: 10px;">📸 Evolutionary Snapshots (Vision Model Analysis):</div>';
-
-                            // Function to draw annotations on an image
+                    // Function to draw annotations on an image (from vision agent)
                             function drawAnnotationsOnImage(imgElement, annotations) {
                                 if (!annotations || !annotations.annotations || annotations.annotations.length === 0) {
                                     return; // No annotations to draw
@@ -4762,16 +5437,36 @@
                                 
                                 const canvas = document.createElement('canvas');
                                 const ctx = canvas.getContext('2d');
+                        canvas.className = 'annotation-layer';
                                 
-                                // Wait for image to load
-                                imgElement.onload = function() {
+                        const drawAnnotations = function() {
                                     canvas.width = imgElement.naturalWidth || imgElement.width;
                                     canvas.height = imgElement.naturalHeight || imgElement.height;
+
+                            const meta = annotations.meta || {};
+                            const referenceWidth = meta.image_width || meta.width || 1024;
+                            const referenceHeight = meta.image_height || meta.height || 1024;
+
+                            const normalizeCoord = (value, dimension, reference) => {
+                                if (value === null || value === undefined || isNaN(value)) return 0;
+                                if (value >= 0 && value <= 1) {
+                                    return value * dimension;
+                                }
+                                return (value / reference) * dimension;
+                            };
+
+                            const clampRadius = (radius, dimension) => {
+                                if (!radius || Number.isNaN(radius)) return 10;
+                                if (radius >= 0 && radius <= 1) {
+                                    return Math.max(3, radius * dimension);
+                                }
+                                return Math.max(3, (radius / referenceWidth) * dimension);
+                            };
                                     
                                     // Draw original image
                                     ctx.drawImage(imgElement, 0, 0);
                                     
-                                    // Draw annotations
+                            // Draw annotations from vision agent
                                     annotations.annotations.forEach(ann => {
                                         const type = ann.type;
                                         const color = ann.color || '#FF0000';
@@ -4779,12 +5474,12 @@
                                         ctx.strokeStyle = color;
                                         ctx.fillStyle = color;
                                         ctx.lineWidth = 3;
-                                        ctx.font = '16px Arial';
+                                ctx.font = 'bold 16px Arial';
                                         
                                         if (type === 'circle') {
-                                            const x = ann.x || 0;
-                                            const y = ann.y || 0;
-                                            const radius = ann.radius || 20;
+                                    const x = normalizeCoord(ann.x || 0, canvas.width, referenceWidth);
+                                    const y = normalizeCoord(ann.y || 0, canvas.height, referenceHeight);
+                                    const radius = clampRadius(ann.radius || 20, Math.min(canvas.width, canvas.height));
                                             const label = ann.label || '';
                                             
                                             // Draw circle
@@ -4792,16 +5487,19 @@
                                             ctx.arc(x, y, radius, 0, 2 * Math.PI);
                                             ctx.stroke();
                                             
-                                            // Draw label
+                                    // Draw label with background
                                             if (label) {
+                                        const textMetrics = ctx.measureText(label);
+                                        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                                        ctx.fillRect(x + radius + 5, y - 30, textMetrics.width + 10, 25);
                                                 ctx.fillStyle = color;
-                                                ctx.fillText(label, x + radius + 5, y - 10);
+                                        ctx.fillText(label, x + radius + 10, y - 10);
                                             }
                                         } else if (type === 'arrow') {
-                                            const x1 = ann.x1 || 0;
-                                            const y1 = ann.y1 || 0;
-                                            const x2 = ann.x2 || 0;
-                                            const y2 = ann.y2 || 0;
+                                    const x1 = normalizeCoord(ann.x1 || 0, canvas.width, referenceWidth);
+                                    const y1 = normalizeCoord(ann.y1 || 0, canvas.height, referenceHeight);
+                                    const x2 = normalizeCoord(ann.x2 || 0, canvas.width, referenceWidth);
+                                    const y2 = normalizeCoord(ann.y2 || 0, canvas.height, referenceHeight);
                                             const label = ann.label || '';
                                             
                                             // Draw arrow line
@@ -4825,16 +5523,19 @@
                                             ctx.closePath();
                                             ctx.fill();
                                             
-                                            // Draw label at midpoint
+                                    // Draw label at midpoint with background
                                             if (label) {
                                                 const midX = (x1 + x2) / 2;
                                                 const midY = (y1 + y2) / 2;
+                                        const textMetrics = ctx.measureText(label);
+                                        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                                        ctx.fillRect(midX - 5, midY - 30, textMetrics.width + 10, 25);
                                                 ctx.fillStyle = color;
-                                                ctx.fillText(label, midX, midY - 15);
+                                        ctx.fillText(label, midX, midY - 10);
                                             }
                                         } else if (type === 'text') {
-                                            const x = ann.x || 0;
-                                            const y = ann.y || 0;
+                                    const x = normalizeCoord(ann.x || 0, canvas.width, referenceWidth);
+                                    const y = normalizeCoord(ann.y || 0, canvas.height, referenceHeight);
                                             const text = ann.text || '';
                                             
                                             // Draw text with background for visibility
@@ -4852,63 +5553,91 @@
                                         }
                                     });
                                     
-                                    // Replace img with canvas
-                                    imgElement.style.display = 'none';
-                                    canvas.style.cssText = 'max-width: 100%; height: auto; border: 1px solid #666; border-radius: 3px;';
+                            // Remove any previous annotation canvas next to this image
+                            const nextSibling = imgElement.nextSibling;
+                            if (nextSibling && nextSibling.classList && nextSibling.classList.contains('annotation-layer')) {
+                                nextSibling.remove();
+                            }
+
+                            // Show annotations overlay beneath the original image to preserve hover tooltips
+                            canvas.style.cssText = 'max-width: 100%; height: auto; border: 2px solid #0ff; border-radius: 3px; margin-top: 8px; display: block;';
                                     imgElement.parentNode.insertBefore(canvas, imgElement.nextSibling);
                                 };
                                 
-                                // Trigger load if image already loaded
-                                if (imgElement.complete) {
-                                    imgElement.onload();
+                        // Wait for image to load or draw immediately if already loaded
+                        if (imgElement.complete && imgElement.naturalWidth > 0) {
+                            drawAnnotations();
+                        } else {
+                            imgElement.addEventListener('load', drawAnnotations, { once: true });
                                 }
                             }
                             
-                            data.evolutionary_snapshots.forEach(snapshot => {
+                    // Display evolutionary snapshots with per-image descriptions
+                    const timelineSnapshots = [];
+                    if (Array.isArray(data.evolutionary_snapshots)) {
+                        timelineSnapshots.push(...data.evolutionary_snapshots);
+                    }
+                    if (data.current_snapshot) {
+                        timelineSnapshots.push(data.current_snapshot);
+                    }
+
+                    if (timelineSnapshots.length > 0) {
+                        const messagesDiv = document.getElementById('chatMessages');
+                        const imageDescriptions = parseImageDescriptions(data.visual_description);
+                        
+                        timelineSnapshots.forEach((snapshot, idx) => {
+                            if (!snapshot || !snapshot.image) return;
+                            const snapshotIndex = snapshot.index || (idx + 1);
+                            const age = snapshot.is_current ? 0 : Math.round(snapshot.age_seconds || 0);
+                            const rawTimestamp = snapshot.timestamp || 0;
+                            const timestampMillis = rawTimestamp > 1e12 ? rawTimestamp : rawTimestamp * 1000;
+                            const timestampValue = rawTimestamp ? new Date(timestampMillis).toLocaleTimeString() : 'unknown';
+                            const description = imageDescriptions[snapshotIndex] || '';
+                            const isCurrent = Boolean(snapshot.is_current);
+                            
                                 const snapshotDiv = document.createElement('div');
-                                snapshotDiv.style.cssText = 'margin: 10px 0; padding: 8px; border: 1px solid #666; background: rgba(0, 0, 0, 0.8); border-radius: 3px;';
-
-                                const age = Math.round(snapshot.age_seconds || 0);
-                                const timestamp = new Date(snapshot.timestamp * 1000).toLocaleTimeString();
-
-                                snapshotDiv.innerHTML = `
-                                    <div style="color: #888; font-size: 0.8em; margin-bottom: 5px;">
-                                        Snapshot ${snapshot.index} - ${age}s ago (${timestamp})
-                                    </div>
-                                    <img data-src="${snapshot.image}"
-                                         loading="lazy"
-                                         style="max-width: 100%; height: auto; border: 1px solid #666; border-radius: 3px;"
-                                         alt="Evolutionary snapshot ${snapshot.index}"
-                                         title="Causation graph snapshot from ${age} seconds ago">
-                                `;
+                            snapshotDiv.style.cssText = 'margin: 15px 0; padding: 15px; border: 2px solid #0ff; background: rgba(0, 0, 0, 0.9); border-radius: 5px; display: flex; flex-direction: column; gap: 10px;';
+                            
+                            // Header with snapshot info
+                            const headerDiv = document.createElement('div');
+                            headerDiv.style.cssText = 'color: #0ff; font-weight: bold; font-size: 1.1em; border-bottom: 1px solid #0ff; padding-bottom: 5px;';
+                            if (isCurrent) {
+                                headerDiv.textContent = `🟢 Current Snapshot - just captured`;
+                            } else {
+                                headerDiv.textContent = `📸 Snapshot ${snapshotIndex} - ${age}s ago (${timestampValue})`;
+                            }
+                            snapshotDiv.appendChild(headerDiv);
+                            
+                            // Description if available
+                            if (description) {
+                                const descDiv = document.createElement('div');
+                                descDiv.style.cssText = 'color: #0f0; font-size: 0.95em; line-height: 1.4; padding: 8px; background: rgba(0, 255, 0, 0.1); border-left: 3px solid #0f0; border-radius: 3px;';
+                                descDiv.textContent = description;
+                                snapshotDiv.appendChild(descDiv);
+                            }
+                            
+                            // Image container
+                            const imgContainer = document.createElement('div');
+                            imgContainer.style.cssText = 'position: relative;';
+                            
+                            const imgElement = document.createElement('img');
+                            const imgPrefix = snapshot.image.startsWith('data:image') ? '' : 'data:image/png;base64,';
+                            imgElement.src = `${imgPrefix}${snapshot.image}`;
+                            imgElement.style.cssText = 'max-width: 100%; height: auto; border: 2px solid #666; border-radius: 3px; display: block;';
+                            imgElement.alt = `Evolutionary snapshot ${snapshotIndex}`;
+                            imgElement.title = isCurrent ? 'Latest causation graph snapshot (used for annotations)' : `Causation graph snapshot from ${age} seconds ago`;
+                            imgElement.loading = 'lazy';
+                            
+                            imgContainer.appendChild(imgElement);
+                            snapshotDiv.appendChild(imgContainer);
                                 
-                                const imgElement = snapshotDiv.querySelector('img');
-                                
-                                // Apply annotations if available
-                                if (data.vision_annotations && data.vision_annotations.annotations) {
-                                    // Wait for image to load, then draw annotations
-                                    imgElement.addEventListener('load', function() {
-                                        drawAnnotationsOnImage(imgElement, data.vision_annotations);
-                                    });
-                                    
-                                    // If image already loaded, draw immediately
-                                    if (imgElement.complete) {
+                            // Apply annotations only to the current snapshot to avoid overlay stacking
+                            if (isCurrent && data.vision_annotations && data.vision_annotations.annotations) {
                                         drawAnnotationsOnImage(imgElement, data.vision_annotations);
                                     }
-                                }
-                                
-                                snapshotsDiv.appendChild(snapshotDiv);
+                            
+                            messagesDiv.appendChild(snapshotDiv);
                             });
-
-                            // Use batched append for performance
-                            if (chatMessagesDiv && chatUpdateQueue.length === 0) {
-                                // If no queue, append directly but use requestAnimationFrame
-                                requestAnimationFrame(() => {
-                                    messagesDiv.appendChild(snapshotsDiv);
-                                });
-                            } else {
-                                messagesDiv.appendChild(snapshotsDiv);
-                            }
                             
                             // Only auto-scroll if user is already near the bottom and not scrolling
                             if (!userIsScrolling) {
@@ -4924,7 +5653,8 @@
                                 }
                             }
                         }
-                    } else if (data.vision_error) {
+                    
+                    if (data.vision_error) {
                         // Show vision error if vision model was selected but failed
                         addChatMessage('vision', `⚠️ Vision Model Error: ${data.vision_error}`, true);
                     }
@@ -5152,9 +5882,10 @@
                             if (data.response.includes('renderQuality') || data.response.includes('componentColor') || data.response.includes('linkColor') || 
                                 data.response.includes('maxVisibleLinks') || data.response.includes('enableShadows')) {
                                 console.warn('[CRA] CRA mentioned settings but did not include [[VIZ_SETTINGS_UPDATE: {...}]] marker');
-                                addChatMessage('system', '⚠️ CRA mentioned settings but did not format them correctly. Settings were not applied.', true);
                             }
                         }
+
+                        // View updates disabled
                     } else {
                         addChatMessage('assistant', 'ERROR: No response from assistant - system failure.', true);
                     }
@@ -5820,183 +6551,6 @@
         // EVOLUTIONARY VIDEO ACCUMULATION SYSTEM
         // ============================================================================
 
-        function toggleEvolutionaryVideoMode() {
-            evolutionaryVideoMode = !evolutionaryVideoMode;
-            evolutionSequenceId = Date.now(); // New sequence ID
-
-            const button = document.getElementById('evolutionaryVideoBtn');
-            if (evolutionaryVideoMode) {
-                button.textContent = '🎬 EVOLUTION RECORDING';
-                button.style.background = '#a00';
-                document.getElementById('evolutionVideoControls').style.display = 'block';
-                console.log(`[EVOLUTION] Started recording evolution sequence ${evolutionSequenceId}`);
-                showNotification('🎬 Evolutionary video recording started! Snapshots will be accumulated for high-quality evolution videos.');
-            } else {
-                button.textContent = '🎬 START EVOLUTION RECORDING';
-                button.style.background = '#0aa';
-                document.getElementById('evolutionVideoControls').style.display = 'none';
-                console.log(`[EVOLUTION] Stopped recording evolution sequence ${evolutionSequenceId}`);
-                showNotification('🎬 Evolutionary video recording stopped. Use "Create Evolution Video" to generate your documentary!');
-            }
-        }
-
-        function sendSnapshotToServer(snapshot) {
-            fetch('/api/snapshots/store', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    snapshot: snapshot,
-                    evolution_sequence: evolutionSequenceId
-                })
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        console.log(`[EVOLUTION] Snapshot stored on server. Total: ${data.total_snapshots}`);
-                        lastSnapshotSent = Date.now();
-                    } else {
-                        console.error('[EVOLUTION] Failed to store snapshot:', data.error);
-                    }
-                })
-                .catch(error => {
-                    console.error('[EVOLUTION] Error sending snapshot to server:', error);
-                });
-        }
-
-        function createEvolutionaryVideo() {
-            if (!evolutionaryVideoMode) {
-                showNotification('⚠️ Please start evolution recording first!', 'error');
-                return;
-            }
-
-            const button = document.getElementById('createEvolutionVideoBtn');
-            const originalText = button.textContent;
-            button.textContent = '🎬 CREATING VIDEO...';
-            button.disabled = true;
-
-            // Get video creation parameters
-            const fps = parseInt(document.getElementById('evolutionVideoFps').value) || 2;
-            const quality = document.getElementById('evolutionVideoQuality').value || 'high';
-
-            fetch('/api/snapshots/list')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.total_count < 10) {
-                        showNotification(`⚠️ Need at least 10 snapshots. Currently have: ${data.total_count}`, 'error');
-                        button.textContent = originalText;
-                        button.disabled = false;
-                        return;
-                    }
-
-                    // Create the evolutionary video
-                    return fetch('/api/export/create_evolutionary_video', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            fps: fps,
-                            quality: quality,
-                            include_narration: true,
-                            evolution_sequence: evolutionSequenceId
-                        })
-                    });
-                })
-                .then(response => {
-                    // Check if response is ok before parsing JSON
-                    if (!response.ok) {
-                        return response.json().then(errData => {
-                            throw new Error(errData.error || `HTTP ${response.status}: ${response.statusText}`);
-                        }).catch(() => {
-                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                        });
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.success) {
-                        showNotification(`🎬 Evolutionary video created! ${data.frames} frames, ${data.size_mb}MB`, 'success');
-                        addChatMessage('system', `✅ Evolutionary video created successfully!\n• Frames: ${data.frames}\n• Size: ${data.size_mb}MB\n• Duration: ${data.duration_seconds}s\n• Quality: ${data.quality}\n• Resolution: ${data.resolution}`, false);
-
-                        // Download the video
-                        const blob = base64ToBlob(data.video_data, 'video/mp4');
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = data.filename;
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        URL.revokeObjectURL(url);
-
-                    } else {
-                        // Detailed error handling
-                        const errorMsg = data.error || 'Unknown error';
-                        const errorDetails = [];
-                        
-                        if (data.ffmpeg_error) {
-                            errorDetails.push(`FFmpeg Error: ${data.ffmpeg_error.substring(0, 200)}`);
-                        }
-                        if (data.vision_error) {
-                            errorDetails.push(`Vision Model Error: ${data.vision_error}`);
-                        }
-                        if (data.current_snapshots !== undefined) {
-                            errorDetails.push(`Snapshots Available: ${data.current_snapshots}`);
-                        }
-                        if (data.troubleshooting) {
-                            errorDetails.push(`Troubleshooting:\n${data.troubleshooting.join('\n')}`);
-                        }
-                        if (data.recommendation) {
-                            errorDetails.push(`Recommendation: ${data.recommendation}`);
-                        }
-                        if (data.install_help) {
-                            errorDetails.push(`Install Help: ${JSON.stringify(data.install_help, null, 2)}`);
-                        }
-                        
-                        const fullErrorMsg = `❌ VIDEO CREATION FAILED\n\n${errorMsg}\n\n${errorDetails.join('\n\n')}`;
-                        
-                        console.error('[EVOLUTION VIDEO] Creation failed:', {
-                            error: errorMsg,
-                            details: data,
-                            fullResponse: data
-                        });
-                        
-                        showNotification(`❌ Video creation failed: ${errorMsg}`, 'error');
-                        addChatMessage('system', fullErrorMsg, true);
-                    }
-                })
-                .catch(error => {
-                    console.error('[EVOLUTION VIDEO] Error creating evolutionary video:', error);
-                    const errorMsg = `❌ VIDEO CREATION ERROR\n\n${error.message || error.toString()}\n\nCheck browser console for full details.`;
-                    showNotification('❌ Error creating evolutionary video - see chat for details', 'error');
-                    addChatMessage('system', errorMsg, true);
-                })
-                .finally(() => {
-                    button.textContent = originalText;
-                    button.disabled = false;
-                });
-        }
-
-        function showEvolutionStats() {
-            fetch('/api/snapshots/list')
-                .then(response => response.json())
-                .then(data => {
-                    const stats = `
-                        📊 Evolution Recording Stats:
-                        • Total Snapshots: ${data.total_count}
-                        • Evolution Sequences: ${data.evolution_sequences.length}
-                        • Ready for Video: ${data.total_count >= 10 ? '✅ YES' : '❌ NO (need 10+)'}
-                        • Estimated Video Length: ${Math.round(data.total_count / 2)}s at 2 FPS
-                    `;
-                    alert(stats);
-                })
-                .catch(error => {
-                    console.error('Error getting evolution stats:', error);
-                    alert('❌ Error retrieving evolution statistics');
-                });
-        }
 
         function showNotification(message, type = 'info') {
             // Simple notification system
@@ -6228,8 +6782,762 @@
                 toggleCraFullscreen();
             }
         });
+        
+        // Set up chat input event listeners
+        function setupChatListeners() {
+            const chatInput = document.getElementById('chatInput');
+            const chatSendButton = document.getElementById('chatSendButton');
+            
+            if (chatInput && !chatInput._listenerAttached) {
+                chatInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        sendChatMessage();
+                    }
+                });
+                chatInput._listenerAttached = true;
+            }
+            
+            if (chatSendButton && !chatSendButton._listenerAttached) {
+                chatSendButton.addEventListener('click', function() {
+                    sendChatMessage();
+                });
+                chatSendButton._listenerAttached = true;
+            }
+        }
+        
+        // Try immediately, then on DOMContentLoaded
+        setupChatListeners();
+        document.addEventListener('DOMContentLoaded', setupChatListeners);
+
+        // Snapshot Gallery Modal
+        function openSnapshotGallery() {
+            const modal = document.getElementById('snapshotGalleryModal');
+            const grid = document.getElementById('snapshotGrid');
+            
+            if (!modal || !grid) return;
+            
+            // Clear existing content
+            grid.innerHTML = '';
+            
+            // Sort snapshots by timestamp (newest first)
+            const sortedSnapshots = [...snapshotHistory].sort((a, b) => b.timestamp - a.timestamp);
+            
+            if (sortedSnapshots.length === 0) {
+                grid.innerHTML = '<div style="color: #888; text-align: center; padding: 40px;">No snapshots available yet. Snapshots are captured automatically during simulation.</div>';
+            } else {
+                sortedSnapshots.forEach((snapshot, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'snapshot-item';
+                    
+                    const timestamp = new Date(snapshot.timestamp);
+                    const timeStr = timestamp.toLocaleString();
+                    const age = Math.floor((Date.now() - snapshot.timestamp) / 1000);
+                    const ageStr = age < 60 ? `${age}s ago` : age < 3600 ? `${Math.floor(age/60)}m ago` : `${Math.floor(age/3600)}h ago`;
+                    
+                    // Handle both old format (full data URL) and new format (base64 only)
+                    let imageSrc = snapshot.image;
+                    if (!imageSrc.startsWith('data:image/')) {
+                        imageSrc = `data:image/jpeg;base64,${imageSrc}`;
+                    }
+                    
+                    // Add checkbox for selection
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.className = 'snapshot-checkbox';
+                    checkbox.dataset.snapshotIndex = index;
+                    checkbox.onclick = function(e) {
+                        e.stopPropagation();
+                        updateAnalyzeButton();
+                    };
+                    
+                    item.innerHTML = `
+                        <img src="${imageSrc}" alt="Snapshot ${index + 1}" loading="lazy">
+                        <div class="snapshot-item-info">
+                            #${sortedSnapshots.length - index} - ${ageStr}<br>
+                            <small>${timeStr}</small>
+                        </div>
+                    `;
+                    
+                    item.appendChild(checkbox);
+                    
+                    // Click to view (but not when clicking checkbox)
+                    item.addEventListener('click', (e) => {
+                        if (e.target.type !== 'checkbox') {
+                            openSnapshotViewer(snapshot, sortedSnapshots.length - index);
+                        }
+                    });
+                    
+                    // Toggle selection on checkbox change
+                    checkbox.addEventListener('change', function() {
+                        if (this.checked) {
+                            item.classList.add('selected');
+                        } else {
+                            item.classList.remove('selected');
+                        }
+                        updateAnalyzeButton();
+                    });
+                    
+                    grid.appendChild(item);
+                });
+            }
+            
+            modal.classList.add('active');
+            updateAnalyzeButton();
+        }
+
+        function closeSnapshotGallery() {
+            const modal = document.getElementById('snapshotGalleryModal');
+            if (modal) {
+                modal.classList.remove('active');
+                // Clear selections
+                const checkboxes = modal.querySelectorAll('.snapshot-checkbox');
+                checkboxes.forEach(cb => {
+                    cb.checked = false;
+                    const item = cb.closest('.snapshot-item');
+                    if (item) item.classList.remove('selected');
+                });
+                updateAnalyzeButton();
+                updateSelectAllButtonState();
+            }
+        }
+
+        function updateAnalyzeButton() {
+            const modal = document.getElementById('snapshotGalleryModal');
+            const analyzeBtn = document.getElementById('analyzeSingleSnapshotBtn');
+            const videoBtn = document.getElementById('createVideoFromSnapshotsBtn');
+            if (!modal) return;
+            
+            const selected = modal.querySelectorAll('.snapshot-checkbox:checked');
+            const hasSelection = selected.length > 0;
+            
+            if (analyzeBtn) {
+                if (selected.length === 1) {
+                    analyzeBtn.style.display = 'block';
+                    analyzeBtn.disabled = false;
+                    analyzeBtn.textContent = '🔍 Analyze Snapshot';
+                } else {
+                    analyzeBtn.style.display = 'none';
+                }
+            }
+            
+            if (videoBtn) {
+                videoBtn.style.display = hasSelection ? 'block' : 'none';
+                if (hasSelection) {
+                    videoBtn.textContent = `🎬 Create Video (${selected.length})`;
+                }
+            }
+
+            updateSelectAllButtonState();
+        }
+
+        function updateSelectAllButtonState() {
+            const modal = document.getElementById('snapshotGalleryModal');
+            const selectBtn = document.getElementById('selectAllSnapshotsBtn');
+            if (!modal || !selectBtn) return;
+
+            const checkboxes = modal.querySelectorAll('.snapshot-checkbox');
+            if (checkboxes.length === 0) {
+                selectBtn.style.display = 'none';
+                return;
+            }
+
+            selectBtn.style.display = 'block';
+            const selectedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+            const allSelected = selectedCount > 0 && selectedCount === checkboxes.length;
+
+            selectBtn.textContent = allSelected ? '☑️ Deselect All' : '✅ Select All';
+            selectBtn.title = allSelected ? 'Clear all snapshot selections' : 'Select every snapshot in the grid';
+        }
+
+        function toggleSelectAllSnapshots() {
+            const modal = document.getElementById('snapshotGalleryModal');
+            if (!modal) return;
+
+            const checkboxes = modal.querySelectorAll('.snapshot-checkbox');
+            if (checkboxes.length === 0) return;
+
+            const allSelected = Array.from(checkboxes).every(cb => cb.checked);
+            const targetState = !allSelected;
+
+            checkboxes.forEach(cb => {
+                cb.checked = targetState;
+                const item = cb.closest('.snapshot-item');
+                if (item) {
+                    if (targetState) {
+                        item.classList.add('selected');
+                    } else {
+                        item.classList.remove('selected');
+                    }
+                }
+            });
+
+            updateAnalyzeButton();
+            updateSelectAllButtonState();
+        }
+
+        function analyzeSelectedSnapshots() {
+            const modal = document.getElementById('snapshotGalleryModal');
+            const analyzeBtn = document.getElementById('analyzeSingleSnapshotBtn');
+            if (!modal || !analyzeBtn) return;
+            
+            const selectedCheckboxes = modal.querySelectorAll('.snapshot-checkbox:checked');
+            if (selectedCheckboxes.length === 0) {
+                showNotification('Please select a snapshot to analyze', 'error');
+                return;
+            }
+            if (selectedCheckboxes.length > 1) {
+                showNotification('Manual analysis supports one snapshot at a time', 'error');
+                return;
+            }
+            
+            const index = parseInt(selectedCheckboxes[0].dataset.snapshotIndex, 10);
+            const sortedSnapshots = [...snapshotHistory].sort((a, b) => b.timestamp - a.timestamp);
+            if (isNaN(index) || index < 0 || index >= sortedSnapshots.length) {
+                showNotification('Selected snapshot could not be found', 'error');
+                return;
+            }
+            
+            const snapshot = sortedSnapshots[index];
+            if (!snapshot || !snapshot.image) {
+                showNotification('Selected snapshot is missing image data', 'error');
+                return;
+            }
+            
+            const visionSelect = document.getElementById('visionModelSelect');
+            if (!visionSelect || !visionSelect.value) {
+                showNotification('Please select a vision model first', 'error');
+                return;
+            }
+            
+            const imageData = snapshot.image.startsWith('data:image/')
+                ? snapshot.image
+                : `data:image/jpeg;base64,${snapshot.image}`;
+            
+            const prompt = 'Analyze this snapshot of the causation graph. Describe the visible structure, component distribution, and any notable anomalies.';
+            const baseUrlInput = document.getElementById('ollamaBaseUrlInput');
+            const apiKeyInput = document.getElementById('ollamaApiKey');
+            const baseUrlValue = baseUrlInput && baseUrlInput.value ? baseUrlInput.value : undefined;
+            const apiKeyValue = apiKeyInput && apiKeyInput.value ? apiKeyInput.value : undefined;
+            
+            analyzeBtn.disabled = true;
+            const originalText = analyzeBtn.textContent;
+            analyzeBtn.textContent = '🔍 Analyzing...';
+            
+            fetch('/api/ollama/vision', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model: visionSelect.value,
+                    image: imageData,
+                    images: [imageData],
+                    prompt,
+                    ollama_base_url: baseUrlValue,
+                    ollama_api_key: apiKeyValue
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        showNotification(`Vision analysis error: ${data.error}`, 'error');
+                        return;
+                    }
+                    
+                    const description = data.description || data.response;
+                    if (!description) {
+                        showNotification('Vision model returned no description', 'error');
+                        return;
+                    }
+                    
+                    const timestampLabel = new Date(snapshot.timestamp).toLocaleString();
+                    addChatMessage('vision', `📸 Manual Snapshot (${timestampLabel})\n\n${description}`, false);
+
+                    const messagesDiv = document.getElementById('chatMessages');
+                    if (messagesDiv) {
+                        const snapshotDiv = document.createElement('div');
+                        snapshotDiv.style.cssText = 'margin: 10px 0 20px 0; padding: 12px; border: 2px solid #0ff; background: rgba(0,0,0,0.85); border-radius: 5px;';
+
+                        const headerDiv = document.createElement('div');
+                        headerDiv.style.cssText = 'color: #0ff; font-weight: bold; margin-bottom: 8px;';
+                        headerDiv.textContent = `📸 Snapshot Preview (${timestampLabel})`;
+                        snapshotDiv.appendChild(headerDiv);
+
+                        const imgElement = document.createElement('img');
+                        imgElement.src = imageData;
+                        imgElement.style.cssText = 'max-width: 100%; height: auto; border: 2px solid #666; border-radius: 3px; display: block;';
+                        imgElement.alt = `Snapshot ${timestampLabel}`;
+                        snapshotDiv.appendChild(imgElement);
+
+                        if (data.annotations && data.annotations.annotations) {
+                            drawAnnotationsOnImage(imgElement, data.annotations);
+                        }
+
+                        messagesDiv.appendChild(snapshotDiv);
+                        messagesDiv.scrollTo({ top: messagesDiv.scrollHeight, behavior: 'smooth' });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error analyzing snapshot:', error);
+                    showNotification(`Vision error: ${error.message}`, 'error');
+                })
+                .finally(() => {
+                    analyzeBtn.disabled = false;
+                    analyzeBtn.textContent = originalText;
+                });
+        }
+
+        function createVideoFromSelectedSnapshots() {
+            const modal = document.getElementById('snapshotGalleryModal');
+            const videoBtn = document.getElementById('createVideoFromSnapshotsBtn');
+            if (!modal || !videoBtn) return;
+            
+            const selectedCheckboxes = modal.querySelectorAll('.snapshot-checkbox:checked');
+            if (selectedCheckboxes.length === 0) {
+                showNotification('Please select at least one snapshot to create a video', 'error');
+                return;
+            }
+            
+            const fpsInput = prompt('Frames per second for the video (1-60)', '5');
+            let fps = parseInt(fpsInput || '5', 10);
+            if (isNaN(fps) || fps < 1) fps = 1;
+            if (fps > 60) fps = 60;
+            
+            const selectedSnapshots = [];
+            const sortedSnapshots = [...snapshotHistory].sort((a, b) => b.timestamp - a.timestamp);
+            selectedCheckboxes.forEach(checkbox => {
+                const index = parseInt(checkbox.dataset.snapshotIndex, 10);
+                if (!isNaN(index) && index >= 0 && index < sortedSnapshots.length) {
+                    selectedSnapshots.push(sortedSnapshots[index]);
+                }
+            });
+            selectedSnapshots.sort((a, b) => a.timestamp - b.timestamp);
+            
+            if (selectedSnapshots.length === 0) {
+                showNotification('No valid snapshots selected for video creation', 'error');
+                return;
+            }
+            
+            videoBtn.textContent = '🎬 Creating...';
+            videoBtn.disabled = true;
+            
+            const images = selectedSnapshots.map(s => {
+                if (s.image.startsWith('data:image/')) {
+                    return s.image;
+                }
+                return `data:image/jpeg;base64,${s.image}`;
+            });
+            
+            fetch('/api/export/create_snapshot_video', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    images,
+                    fps
+                })
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(err => {
+                            throw new Error(err.error || `HTTP ${response.status}: ${response.statusText}`);
+                        }).catch(() => {
+                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (!data.success) {
+                        throw new Error(data.error || 'Unknown error creating video');
+                    }
+                    const blob = base64ToBlob(data.video_data, 'video/mp4');
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = data.filename || 'evolution_video.mp4';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    showNotification(`🎬 Video created (${selectedSnapshots.length} frames @ ${fps} FPS)`, 'success');
+                })
+                .catch(error => {
+                    console.error('Error creating snapshot video:', error);
+                    showNotification(`❌ Video creation failed: ${error.message}`, 'error');
+                })
+                .finally(() => {
+                    videoBtn.textContent = '🎬 Create Video';
+                    videoBtn.disabled = false;
+                });
+        }
+
+        // Store current viewer state
+        let currentViewerSnapshot = null;
+        let currentViewerIndex = 0;
+        let sortedViewerSnapshots = [];
+
+        function openSnapshotViewer(snapshot, index) {
+            // Remove any existing viewer elements to prevent duplicates
+            const existingViewers = document.querySelectorAll('#snapshotViewer');
+            existingViewers.forEach(v => v.remove());
+            
+            // Create fresh viewer element
+            const viewer = document.createElement('div');
+            viewer.id = 'snapshotViewer';
+            viewer.className = 'snapshot-viewer';
+            
+            const viewerContent = document.createElement('div');
+            viewerContent.className = 'snapshot-viewer-content';
+            viewer.appendChild(viewerContent);
+            
+            // Append to body (at the very end)
+            document.body.appendChild(viewer);
+            
+            // Get sorted snapshots for navigation
+            sortedViewerSnapshots = [...snapshotHistory].sort((a, b) => b.timestamp - a.timestamp);
+            currentViewerSnapshot = snapshot;
+            currentViewerIndex = sortedViewerSnapshots.findIndex(s => s.timestamp === snapshot.timestamp);
+            
+            if (currentViewerIndex < 0) {
+                // Try to use the provided index
+                if (index && index > 0 && index <= sortedViewerSnapshots.length) {
+                    currentViewerIndex = sortedViewerSnapshots.length - index;
+                } else {
+                    console.error('Snapshot not found in history');
+                    viewer.remove();
+                    return;
+                }
+            }
+            
+            // Show viewer first (this makes it visible as overlay)
+            viewer.classList.add('active');
+            
+            // Then render content
+            renderSnapshotViewer();
+            
+            // Add keyboard listener
+            document.addEventListener('keydown', handleViewerKeyboard);
+        }
+
+        function renderSnapshotViewer() {
+            const viewer = document.getElementById('snapshotViewer');
+            const viewerContent = viewer ? viewer.querySelector('.snapshot-viewer-content') : null;
+            
+            if (!viewer || !viewerContent) {
+                console.error('Snapshot viewer elements not found');
+                return;
+            }
+            
+            if (currentViewerIndex < 0 || currentViewerIndex >= sortedViewerSnapshots.length) {
+                console.error('Invalid viewer index:', currentViewerIndex, 'of', sortedViewerSnapshots.length);
+                return;
+            }
+            
+            const snapshot = sortedViewerSnapshots[currentViewerIndex];
+            const index = sortedViewerSnapshots.length - currentViewerIndex;
+            
+            const timestamp = new Date(snapshot.timestamp);
+            const timeStr = timestamp.toLocaleString();
+            const age = Math.floor((Date.now() - snapshot.timestamp) / 1000);
+            const ageStr = age < 60 ? `${age} seconds ago` : age < 3600 ? `${Math.floor(age/60)} minutes ago` : `${Math.floor(age/3600)} hours ago`;
+            
+            // Clear existing content
+            viewerContent.innerHTML = '';
+            
+            // Remove any existing buttons from viewer (not content)
+            const existingClose = viewer.querySelector('.snapshot-viewer-close');
+            const existingPrev = viewer.querySelector('.snapshot-viewer-nav.prev');
+            const existingNext = viewer.querySelector('.snapshot-viewer-nav.next');
+            if (existingClose) existingClose.remove();
+            if (existingPrev) existingPrev.remove();
+            if (existingNext) existingNext.remove();
+            
+            // Create and add close button (to viewer, not content)
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'snapshot-viewer-close';
+            closeBtn.textContent = '✕ Close';
+            closeBtn.onclick = function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                closeSnapshotViewer();
+            };
+            viewer.appendChild(closeBtn);
+            
+            // Create and add navigation buttons (to viewer, not content)
+            if (currentViewerIndex > 0) {
+                const prevBtn = document.createElement('button');
+                prevBtn.className = 'snapshot-viewer-nav prev';
+                prevBtn.textContent = '◀';
+                prevBtn.title = 'Previous snapshot';
+                prevBtn.style.cssText = 'position: fixed; left: 20px; top: 50%; transform: translateY(-50%); z-index: 100001;';
+                prevBtn.onclick = function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    currentViewerIndex--;
+                    renderSnapshotViewer();
+                };
+                viewer.appendChild(prevBtn);
+            }
+            
+            if (currentViewerIndex < sortedViewerSnapshots.length - 1) {
+                const nextBtn = document.createElement('button');
+                nextBtn.className = 'snapshot-viewer-nav next';
+                nextBtn.textContent = '▶';
+                nextBtn.title = 'Next snapshot';
+                nextBtn.style.cssText = 'position: fixed; right: 20px; top: 50%; transform: translateY(-50%); z-index: 100001;';
+                nextBtn.onclick = function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    currentViewerIndex++;
+                    renderSnapshotViewer();
+                };
+                viewer.appendChild(nextBtn);
+            }
+            
+            // Create image element
+            let imageSrc = snapshot.image;
+            if (!imageSrc || imageSrc.trim() === '') {
+                console.error('Snapshot image data is empty');
+                imageSrc = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzMzMyIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
+            } else if (!imageSrc.startsWith('data:image/')) {
+                imageSrc = `data:image/jpeg;base64,${imageSrc}`;
+            }
+            
+            const viewerImg = document.createElement('img');
+            viewerImg.id = 'snapshotViewerImg';
+            viewerImg.src = imageSrc;
+            viewerImg.alt = `Snapshot ${index}`;
+            viewerImg.style.cssText = 'max-width: 90vw; max-height: 75vh; border: 2px solid #0ff; border-radius: 5px; display: block; margin: 0 auto;';
+            viewerImg.onload = function() {
+                console.log('Snapshot image loaded successfully');
+            };
+            viewerImg.onerror = function() {
+                console.error('Failed to load snapshot image');
+                this.style.border = '2px solid #f00';
+                this.alt = 'Failed to load image';
+            };
+            
+            // Create info div
+            const viewerInfo = document.createElement('div');
+            viewerInfo.className = 'snapshot-viewer-info';
+            viewerInfo.textContent = `Snapshot ${index} of ${sortedViewerSnapshots.length} - ${ageStr} (${timeStr})`;
+            
+            // Create controls div
+            const controlsDiv = document.createElement('div');
+            controlsDiv.className = 'snapshot-viewer-controls';
+            
+            // Export as PNG button
+            const exportPngBtn = document.createElement('button');
+            exportPngBtn.className = 'snapshot-viewer-btn export';
+            exportPngBtn.textContent = '📥 Export as PNG';
+            exportPngBtn.onclick = function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                exportSnapshotAsPNG(snapshot, index);
+            };
+            
+            // Copy to clipboard button
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'snapshot-viewer-btn';
+            copyBtn.textContent = '📋 Copy Image';
+            copyBtn.onclick = function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                copySnapshotToClipboard(snapshot);
+            };
+            
+            // Download JSON data button
+            const exportJsonBtn = document.createElement('button');
+            exportJsonBtn.className = 'snapshot-viewer-btn';
+            exportJsonBtn.textContent = '💾 Export Data (JSON)';
+            exportJsonBtn.onclick = function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                exportSnapshotAsJSON(snapshot, index);
+            };
+            
+            controlsDiv.appendChild(exportPngBtn);
+            controlsDiv.appendChild(copyBtn);
+            controlsDiv.appendChild(exportJsonBtn);
+            
+            // Append all elements to content
+            viewerContent.appendChild(viewerImg);
+            viewerContent.appendChild(viewerInfo);
+            viewerContent.appendChild(controlsDiv);
+            
+            console.log('Snapshot viewer rendered:', { index, total: sortedViewerSnapshots.length, imageSrcLength: imageSrc.length });
+        }
+
+        function handleViewerKeyboard(e) {
+            const viewer = document.getElementById('snapshotViewer');
+            if (!viewer || !viewer.classList.contains('active')) return;
+            
+            if (e.key === 'ArrowLeft' && currentViewerIndex > 0) {
+                currentViewerIndex--;
+                renderSnapshotViewer();
+            } else if (e.key === 'ArrowRight' && currentViewerIndex < sortedViewerSnapshots.length - 1) {
+                currentViewerIndex++;
+                renderSnapshotViewer();
+            } else if (e.key === 'Escape') {
+                closeSnapshotViewer();
+            }
+        }
+
+        function closeSnapshotViewer() {
+            // Remove ALL viewer elements completely
+            const viewers = document.querySelectorAll('#snapshotViewer');
+            viewers.forEach(viewer => {
+                viewer.remove();
+            });
+            document.removeEventListener('keydown', handleViewerKeyboard);
+        }
+
+        function exportSnapshotAsPNG(snapshot, index) {
+            try {
+                // Convert base64 to blob
+                const byteCharacters = atob(snapshot.image);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                const blob = new Blob([byteArray], { type: 'image/png' });
+                
+                // Create download link
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                const timestamp = new Date(snapshot.timestamp);
+                const filename = `snapshot_${index}_${timestamp.toISOString().replace(/[:.]/g, '-')}.png`;
+                link.href = url;
+                link.download = filename;
+                link.click();
+                
+                // Clean up
+                setTimeout(() => URL.revokeObjectURL(url), 100);
+                
+                console.log(`Exported snapshot ${index} as ${filename}`);
+            } catch (e) {
+                console.error('Error exporting snapshot:', e);
+                alert('Failed to export snapshot. Please try again.');
+            }
+        }
+
+        function copySnapshotToClipboard(snapshot) {
+            try {
+                // Convert base64 to blob
+                const byteCharacters = atob(snapshot.image);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                const blob = new Blob([byteArray], { type: 'image/png' });
+                
+                // Copy to clipboard
+                navigator.clipboard.write([
+                    new ClipboardItem({ 'image/png': blob })
+                ]).then(() => {
+                    console.log('Snapshot copied to clipboard');
+                    alert('Snapshot copied to clipboard!');
+                }).catch(err => {
+                    console.error('Failed to copy:', err);
+                    alert('Failed to copy to clipboard. Your browser may not support this feature.');
+                });
+            } catch (e) {
+                console.error('Error copying snapshot:', e);
+                alert('Failed to copy snapshot. Please try exporting instead.');
+            }
+        }
+
+        function exportSnapshotAsJSON(snapshot, index) {
+            try {
+                const exportData = {
+                    snapshot_index: index,
+                    timestamp: snapshot.timestamp,
+                    timestamp_readable: new Date(snapshot.timestamp).toISOString(),
+                    view_state: snapshot.viewState || {},
+                    image_size_bytes: snapshot.image.length,
+                    image_size_kb: (snapshot.image.length / 1024).toFixed(2),
+                    // Note: We don't include the base64 image in JSON to keep file size reasonable
+                    // The image can be exported separately as PNG
+                };
+                
+                const jsonStr = JSON.stringify(exportData, null, 2);
+                const blob = new Blob([jsonStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                const timestamp = new Date(snapshot.timestamp);
+                const filename = `snapshot_${index}_data_${timestamp.toISOString().replace(/[:.]/g, '-')}.json`;
+                link.href = url;
+                link.download = filename;
+                link.click();
+                
+                setTimeout(() => URL.revokeObjectURL(url), 100);
+                
+                console.log(`Exported snapshot ${index} data as ${filename}`);
+            } catch (e) {
+                console.error('Error exporting snapshot data:', e);
+                alert('Failed to export snapshot data. Please try again.');
+            }
+        }
+
+        // Add click handler to snapshot count display
+        document.addEventListener('DOMContentLoaded', function() {
+            const snapshotCountDisplay = document.getElementById('snapshotCountDisplay');
+            if (snapshotCountDisplay) {
+                snapshotCountDisplay.addEventListener('click', openSnapshotGallery);
+            }
+            
+            // Close modal when clicking outside
+            const modal = document.getElementById('snapshotGalleryModal');
+            if (modal) {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === modal) {
+                        closeSnapshotGallery();
+                    }
+                });
+            }
+            
+            // Close viewer when clicking outside
+            const viewer = document.getElementById('snapshotViewer');
+            if (viewer) {
+                viewer.addEventListener('click', function(e) {
+                    if (e.target === viewer) {
+                        closeSnapshotViewer();
+                    }
+                });
+            }
+        });
 
     </script>
+
+    <!-- Snapshot Gallery Modal -->
+    <div id="snapshotGalleryModal">
+        <div class="snapshot-gallery-content">
+            <div class="snapshot-gallery-header">
+                <h2>📸 Snapshot Gallery</h2>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button id="selectAllSnapshotsBtn" onclick="toggleSelectAllSnapshots()"
+                        style="background: #024; color: #0ff; border: 2px solid #08f; padding: 8px 14px; cursor: pointer; border-radius: 3px; font-weight: bold; font-family: 'Courier New', monospace; display: none;"
+                        title="Select every snapshot in the grid">✅ Select All</button>
+                    <button id="analyzeSingleSnapshotBtn" onclick="analyzeSelectedSnapshots()"
+                        style="background: #0a0; color: #fff; border: 2px solid #0f0; padding: 8px 16px; cursor: pointer; border-radius: 3px; font-weight: bold; font-family: 'Courier New', monospace; display: none;"
+                        title="Send the selected snapshot to the vision model">🔍 Analyze Snapshot</button>
+                    <button id="createVideoFromSnapshotsBtn" onclick="createVideoFromSelectedSnapshots()"
+                        style="background: #a00; color: #fff; border: 2px solid #f00; padding: 8px 16px; cursor: pointer; border-radius: 3px; font-weight: bold; font-family: 'Courier New', monospace; display: none;"
+                        title="Create MP4 video from selected snapshots">🎬 Create Video</button>
+                    <button class="snapshot-gallery-close" onclick="closeSnapshotGallery()">✕ Close</button>
+                </div>
+            </div>
+            <div id="snapshotGrid" class="snapshot-grid"></div>
+        </div>
+    </div>
+
+    <!-- Snapshot Viewer (Full Size Modal) -->
+    <div id="snapshotViewer">
+        <div class="snapshot-viewer-content">
+            <!-- Content will be dynamically populated -->
+        </div>
+    </div>
+
 </body>
 
 </html>

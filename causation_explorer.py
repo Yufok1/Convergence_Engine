@@ -242,31 +242,60 @@ class CausationExplorer:
             
             # Ensure _last_loaded_frame is also an integer (defensive)
             try:
-                self._last_loaded_frame = int(self._last_loaded_frame) if self._last_loaded_frame is not None else -1
+                if isinstance(self._last_loaded_frame, str):
+                    self._last_loaded_frame = int(self._last_loaded_frame)
+                elif self._last_loaded_frame is None:
+                    self._last_loaded_frame = -1
+                else:
+                    self._last_loaded_frame = int(self._last_loaded_frame)
             except (ValueError, TypeError):
                 self._last_loaded_frame = -1
             
             # Incremental loading: only process if frame_count is newer
-            if not force_reload and frame_count <= self._last_loaded_frame:
-                return  # Already loaded this frame or older
+            # Ensure both are ints before comparison
+            try:
+                frame_count_int = int(frame_count)
+                last_frame_int = int(self._last_loaded_frame)
+                if not force_reload and frame_count_int <= last_frame_int:
+                    return  # Already loaded this frame or older
+            except (ValueError, TypeError) as e:
+                # If comparison fails, force reload to be safe
+                pass
             
             self._last_loaded_frame = int(frame_count)  # Ensure it stays an int
+            
+            # Helper to normalize numeric values
+            def normalize_value(v):
+                """Convert string numbers to actual numbers, keep other types"""
+                if isinstance(v, (int, float)):
+                    return v
+                if isinstance(v, str):
+                    try:
+                        # Try int first, then float
+                        if '.' in v:
+                            return float(v)
+                        return int(v)
+                    except ValueError:
+                        return v
+                return v
             
             # Extract Reality Simulator events
             if 'network' in data:
                 network_data = data['network']
                 if network_data:
+                    # Normalize all values in network_data
+                    normalized_network = {k: normalize_value(v) for k, v in network_data.items()}
                     event = Event(
                         timestamp=timestamp,
                         component='reality_sim',
                         event_type='state_change',
                         data={
-                            'organism_count': network_data.get('organism_count', 0),
-                            'connection_count': network_data.get('connection_count', 0),
-                            'modularity': network_data.get('modularity', 0),
-                            'clustering_coefficient': network_data.get('clustering_coefficient', 0),
+                            'organism_count': normalized_network.get('organism_count', 0),
+                            'connection_count': normalized_network.get('connection_count', 0),
+                            'modularity': normalized_network.get('modularity', 0),
+                            'clustering_coefficient': normalized_network.get('clustering_coefficient', 0),
                             'frame_count': frame_count,
-                            **network_data  # Include all network data
+                            **normalized_network  # Include all network data (normalized)
                         }
                     )
                     self.add_event(event)
@@ -275,17 +304,19 @@ class CausationExplorer:
             if 'explorer' in data:
                 explorer_data = data['explorer']
                 if explorer_data:
+                    # Normalize all values in explorer_data
+                    normalized_explorer = {k: normalize_value(v) for k, v in explorer_data.items()}
                     event = Event(
                         timestamp=timestamp,
                         component='explorer',
                         event_type='state_change',
                         data={
-                            'phase': explorer_data.get('phase', 'unknown'),
-                            'vp_calculations': explorer_data.get('vp_calculations', 0),
-                            'breath_cycle': explorer_data.get('breath_cycle', 0),
-                            'breath_depth': explorer_data.get('breath_depth', 0),
+                            'phase': normalized_explorer.get('phase', 'unknown'),
+                            'vp_calculations': normalized_explorer.get('vp_calculations', 0),
+                            'breath_cycle': normalized_explorer.get('breath_cycle', 0),
+                            'breath_depth': normalized_explorer.get('breath_depth', 0),
                             'frame_count': frame_count,
-                            **explorer_data  # Include all explorer data
+                            **normalized_explorer  # Include all explorer data (normalized)
                         }
                     )
                     self.add_event(event)
@@ -310,23 +341,25 @@ class CausationExplorer:
             if 'djinn_kernel' in data:
                 djinn_data = data['djinn_kernel']
                 if djinn_data:
+                    # Normalize all values in djinn_data
+                    normalized_djinn = {k: normalize_value(v) for k, v in djinn_data.items()}
                     event = Event(
                         timestamp=timestamp,
                         component='djinn_kernel',
                         event_type='state_change',
                         data={
-                            'violation_pressure': djinn_data.get('violation_pressure', 0),
-                            'vp_classification': djinn_data.get('vp_classification', 'VP0'),
-                            'vp_calculations': djinn_data.get('vp_calculations', 0),
-                            'tape_cells': djinn_data.get('tape_cells', 0),
+                            'violation_pressure': normalized_djinn.get('violation_pressure', 0),
+                            'vp_classification': normalized_djinn.get('vp_classification', 'VP0'),
+                            'vp_calculations': normalized_djinn.get('vp_calculations', 0),
+                            'tape_cells': normalized_djinn.get('tape_cells', 0),
                             'frame_count': frame_count,
-                            **djinn_data  # Include all djinn_kernel data
+                            **normalized_djinn  # Include all djinn_kernel data (normalized)
                         }
                     )
                     self.add_event(event)
                     
                     # Detect VP threshold crossings
-                    vp = djinn_data.get('violation_pressure', 0)
+                    vp = normalized_djinn.get('violation_pressure', 0)
                     if self._last_vp is not None:
                         # Check each VP threshold (vp0, vp1, vp2, vp3 in thresholds dict)
                         for vp_key in ['vp0', 'vp1', 'vp2', 'vp3']:
@@ -467,6 +500,13 @@ class CausationExplorer:
             if prev_value is None or new_value is None:
                 continue
             
+            # Convert to numbers for comparison (handle string numbers from JSON)
+            try:
+                prev_value = float(prev_value) if not isinstance(prev_value, (int, float)) else prev_value
+                new_value = float(new_value) if not isinstance(new_value, (int, float)) else new_value
+            except (ValueError, TypeError):
+                continue  # Skip if can't convert to number
+            
             # Check each threshold
             for threshold_name, threshold_config in thresholds.items():
                 if isinstance(threshold_config, dict):
@@ -479,12 +519,21 @@ class CausationExplorer:
                 if threshold_value is None:
                     continue
                 
+                # Ensure threshold is numeric
+                try:
+                    threshold_value = float(threshold_value) if not isinstance(threshold_value, (int, float)) else threshold_value
+                except (ValueError, TypeError):
+                    continue
+                
                 # Check if threshold was crossed
                 crossed = False
-                if direction == 'above':
-                    crossed = prev_value < threshold_value <= new_value
-                elif direction == 'below':
-                    crossed = prev_value > threshold_value >= new_value
+                try:
+                    if direction == 'above':
+                        crossed = prev_value < threshold_value <= new_value
+                    elif direction == 'below':
+                        crossed = prev_value > threshold_value >= new_value
+                except TypeError:
+                    continue  # Skip if types still don't match
                 
                 if crossed:
                     # This threshold crossing might have caused the new event

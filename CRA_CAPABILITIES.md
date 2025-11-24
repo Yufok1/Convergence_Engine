@@ -147,6 +147,19 @@ The CRA has **COMPLETE AUTONOMOUS control** over ALL visualization settings:
 
 ---
 
+## 🎯 Graph View Assistance (Manual Execution)
+
+The CRA no longer sends `[[VIEW_UPDATE]]` commands. All camera movement is under your control through the navigation pad (zoom box, pan arrows, drag-to-zoom, rotation buttons).  
+When the CRA needs to highlight something visually, it will:
+
+- Describe exactly where to move (e.g., “zoom to 150% and center on `evt_firefly_842`”).
+- Provide context about why a particular region or component needs attention.
+- Suggest values for zoom/pan/rotation that you can dial in yourself.
+
+This keeps the screen stable and prevents unexpected jumps while you are mid-inspection, while still giving you precise guidance from the assistant.
+
+---
+
 ## 💻 PC System Resource Monitoring
 
 The CRA monitors your PC resources and correlates them with Butterfly System activity:
@@ -350,9 +363,9 @@ timestamp|level|component|metric:value|metric:value|...
 
 ### Snapshot System
 - Automatic capture (1-second intervals)
-- Server-side storage (up to 10,000 snapshots)
+- Local single-source storage (shared by viewer, vision analysis, video export)
 - Filtering: Removes blank images, ensures time spacing, even sampling
-- Used for evolutionary video creation with vision narration
+- Used for vision analysis and snapshot-based video creation
 
 ---
 
@@ -497,6 +510,33 @@ The CRA receives rich context including:
 
 **Last Updated:** 2025-01-XX  
 **Status:** ✅ Complete and fully functional
+
+---
+
+## 📸 Snapshot System Features
+
+### Snapshot Gallery
+- **Thumbnail Grid View**: Browse all captured snapshots in a grid layout
+- **Click to View**: Click any thumbnail to open full-screen overlay viewer
+- **Selection System**: Checkboxes on each thumbnail for multi-select
+- **Analyze Selected**: Send selected snapshots to vision model for analysis
+- **Create Video**: Generate MP4 videos directly from selected snapshots (FFmpeg backend)
+- **Single Source**: All snapshots stored in `snapshotHistory` (localStorage)
+  - Used by snapshot viewer, vision analysis, and video export
+  - No duplicate snapshot creation
+
+### Snapshot Viewer
+- **Full-Screen Overlay**: Dark modal overlay covering entire screen
+- **Navigation**: Previous/Next buttons (◀ ▶) and keyboard arrows
+- **Export Options**: PNG download, copy to clipboard, JSON data export
+- **Image Display**: Centered image with info and controls
+- **Close Options**: Close button, Escape key, or click outside
+
+### Vision Analysis Integration
+- **Select & Analyze**: Choose one or multiple snapshots from gallery
+- **Evolutionary Analysis**: Multiple snapshots analyzed as temporal sequence
+- **Single Snapshot Analysis**: Individual snapshot detailed analysis
+- **Results in Chat**: Analysis appears in CRA chat with images displayed
 
 ---
 
