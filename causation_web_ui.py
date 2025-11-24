@@ -1250,6 +1250,37 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "7. **General Data Access**: `/api/cra/data` - Comprehensive system data (all metrics, state, logs)\n"
         prompt += "8. **Configuration Access**: `/api/cra/config` - Read system configuration, `/api/cra/config/validate` - Validate config\n"
         prompt += "9. **Log Access**: `/api/cra/logs` - Access to all system log files\n"
+        prompt += "   - **CRITICAL**: You have access to 7 log files that track different aspects of the Butterfly System:\n"
+        prompt += "     * `breath.log` - **CRITICAL**: Breath engine cycles (the living pulse of the system)\n"
+        prompt += "       - Format: timestamp|level|breath|cycle:N|depth:0.XXX|phase:0.XXX|pulse:0.XXX\n"
+        prompt += "       - Contains: cycle count, breath depth (0.0-1.0), phase (0.0-2π), pulse/intensity\n"
+        prompt += "       - **IMPORTANCE**: This is the central rhythm that drives the entire Butterfly System\n"
+        prompt += "       - **WATCH FOR**: Missing or empty breath.log = system not breathing = critical failure\n"
+        prompt += "     * `state.log` - **CRITICAL**: Unified state snapshots (all systems combined)\n"
+        prompt += "       - Format: timestamp|level|state|metric:value|metric:value|...\n"
+        prompt += "       - Contains: Flattened unified state with prefixes (reality_sim_*, explorer_*, djinn_*)\n"
+        prompt += "       - **IMPORTANCE**: Complete system state at each moment - all metrics in one place\n"
+        prompt += "       - **WATCH FOR**: Missing or empty state.log = no unified state tracking = data loss\n"
+        prompt += "     * `reality_sim.log` - Reality Simulator network evolution\n"
+        prompt += "       - Format: timestamp|level|reality_sim|orgs:N|conns:N|mod:0.XXX|clust:0.XXX|path:0.XX|gen:N\n"
+        prompt += "       - Contains: organism count, connection count, modularity, clustering coefficient, path length, generation\n"
+        prompt += "     * `explorer.log` - Explorer (central body) state\n"
+        prompt += "       - Format: timestamp|level|explorer|phase:str|vp_calcs:N|sovereign_ids:N|math_cap:bool\n"
+        prompt += "       - Contains: phase (genesis/sovereign), VP calculations count, sovereign IDs count, mathematical capability\n"
+        prompt += "     * `djinn_kernel.log` - Djinn Kernel (right wing) violation pressure calculations\n"
+        prompt += "       - Format: timestamp|level|djinn_kernel|vp:0.XXX|vp_class:str|vp_calcs:N|traits:N\n"
+        prompt += "       - Contains: violation pressure value, VP classification (VP0-VP4), VP calculations count, trait count\n"
+        prompt += "     * `system.log` - System-level events (initialization, shutdown, errors)\n"
+        prompt += "       - Format: timestamp|level|system|event:str|...\n"
+        prompt += "       - Contains: System lifecycle events, initialization status, shutdown events, errors\n"
+        prompt += "     * `application.log` - Application-level logging (web UI, Flask, general)\n"
+        prompt += "       - Format: Standard application logging\n"
+        prompt += "       - Contains: Web UI events, API calls, general application activity\n"
+        prompt += "   - **LOG FORMAT**: All logs (except application.log) use pipe-delimited format: `timestamp|level|component|metric:value|metric:value|...`\n"
+        prompt += "   - **YOUR RESPONSIBILITY**: You MUST monitor these logs, especially breath.log and state.log\n"
+        prompt += "   - **ALERT CONDITIONS**: If breath.log or state.log are empty or missing, this is a CRITICAL issue - the system is not logging properly\n"
+        prompt += "   - **ANALYSIS**: Use these logs to understand system behavior, detect patterns, and diagnose issues\n"
+        prompt += "   - **CORRELATION**: Cross-reference log data with graph events and shared state for complete picture\n"
         prompt += "10. **Real-Time Events**: `/api/cra/events/stream` - Server-Sent Events stream, `/api/cra/events/recent` - Recent events\n"
         prompt += "11. **Custodian Status**: `/api/cra/status` - Your own status and capabilities, `/api/cra/guardian/mode` - Enable protective monitoring\n\n"
         prompt += "**Note**: These endpoints provide raw data streams that complement the context you receive. "
@@ -4588,7 +4619,7 @@ def cra_get_logs():
         log_data = {}
 
         if logs_dir.exists():
-            for log_file in ['system.log', 'reality_sim.log', 'explorer.log', 'djinn_kernel.log', 'application.log']:
+            for log_file in ['breath.log', 'state.log', 'system.log', 'reality_sim.log', 'explorer.log', 'djinn_kernel.log', 'application.log']:
                 log_path = logs_dir / log_file
                 if log_path.exists():
                     try:

@@ -216,6 +216,124 @@ The CRA has access to specialized diagnostic endpoints:
 
 ---
 
+## 📋 System Log Files (CRITICAL DATA SOURCES)
+
+The CRA has access to **7 log files** that track different aspects of the Butterfly System. These logs are **CRITICAL** for understanding system behavior and diagnosing issues.
+
+### Log File Details
+
+#### 1. `breath.log` - **CRITICAL: Breath Engine Cycles**
+- **Purpose**: The living pulse of the Butterfly System - the central rhythm that drives everything
+- **Format**: `timestamp|level|breath|cycle:N|depth:0.XXX|phase:0.XXX|pulse:0.XXX`
+- **Contains**:
+  - `cycle`: Breath cycle count (increments with each complete cycle)
+  - `depth`: Breath depth (0.0-1.0, sine wave from inhale to exhale)
+  - `phase`: Breath phase (0.0-2π, position in the breath cycle)
+  - `pulse`: Breath intensity/pulse (0.0-1.0, intensity of the breath)
+- **IMPORTANCE**: This is the **central rhythm** that drives the entire Butterfly System
+- **WATCH FOR**: 
+  - Missing or empty `breath.log` = system not breathing = **CRITICAL FAILURE**
+  - Stagnant cycle count = breath engine stopped
+  - Abnormal depth/phase patterns = system stress or malfunction
+
+#### 2. `state.log` - **CRITICAL: Unified State Snapshots**
+- **Purpose**: Complete unified state snapshots combining all systems at each moment
+- **Format**: `timestamp|level|state|metric:value|metric:value|...`
+- **Contains**: Flattened unified state with prefixes:
+  - `reality_sim_*`: Reality Simulator metrics (organism_count, connection_count, modularity, etc.)
+  - `explorer_*`: Explorer metrics (phase, vp_calculations, sovereign_ids_count, etc.)
+  - `djinn_*`: Djinn Kernel metrics (violation_pressure, vp_classification, vp_calculations, trait_count, etc.)
+  - `timestamp`: System timestamp
+- **IMPORTANCE**: Complete system state at each moment - **all metrics in one place**
+- **WATCH FOR**:
+  - Missing or empty `state.log` = no unified state tracking = **DATA LOSS**
+  - Missing prefixes = incomplete state capture
+  - Stale timestamps = system not updating
+
+#### 3. `reality_sim.log` - Reality Simulator Network Evolution
+- **Purpose**: Tracks network topology and evolution metrics
+- **Format**: `timestamp|level|reality_sim|orgs:N|conns:N|mod:0.XXX|clust:0.XXX|path:0.XX|gen:N`
+- **Contains**:
+  - `orgs`: Organism count
+  - `conns`: Connection count
+  - `mod`: Modularity (0.0-1.0, network structure measure)
+  - `clust`: Clustering coefficient (0.0-1.0, local connectivity)
+  - `path`: Average path length (network diameter measure)
+  - `gen`: Generation number (evolution progress)
+
+#### 4. `explorer.log` - Explorer (Central Body) State
+- **Purpose**: Tracks Explorer phase, VP calculations, and capabilities
+- **Format**: `timestamp|level|explorer|phase:str|vp_calcs:N|sovereign_ids:N|math_cap:bool`
+- **Contains**:
+  - `phase`: Current phase (genesis/sovereign)
+  - `vp_calcs`: VP calculations count
+  - `sovereign_ids`: Sovereign IDs count
+  - `math_cap`: Mathematical capability (boolean)
+
+#### 5. `djinn_kernel.log` - Djinn Kernel Violation Pressure
+- **Purpose**: Tracks violation pressure calculations and classifications
+- **Format**: `timestamp|level|djinn_kernel|vp:0.XXX|vp_class:str|vp_calcs:N|traits:N`
+- **Contains**:
+  - `vp`: Violation pressure value (0.0-1.0)
+  - `vp_class`: VP classification (VP0, VP1, VP2, VP3, VP4)
+  - `vp_calcs`: VP calculations count
+  - `traits`: Trait count
+
+#### 6. `system.log` - System-Level Events
+- **Purpose**: System lifecycle events, initialization, shutdown, errors
+- **Format**: `timestamp|level|system|event:str|...`
+- **Contains**:
+  - System initialization events
+  - Shutdown events
+  - Error events
+  - Component initialization status
+
+#### 7. `application.log` - Application-Level Logging
+- **Purpose**: Web UI, Flask, and general application activity
+- **Format**: Standard application logging (not pipe-delimited)
+- **Contains**:
+  - Web UI events
+  - API calls
+  - General application activity
+
+### Log Format Standard
+
+**All logs (except `application.log`) use pipe-delimited format:**
+```
+timestamp|level|component|metric:value|metric:value|...
+```
+
+**Example:**
+```
+23:37:11.608|DEBUG|breath|cycle:42|depth:0.750|phase:1.234|pulse:0.850
+23:37:11.609|DEBUG|state|timestamp:1703456231.609|reality_sim_organism_count:150|explorer_phase:genesis|djinn_vp:0.450
+```
+
+### CRA Responsibilities
+
+1. **Monitor Logs**: The CRA MUST monitor these logs, especially `breath.log` and `state.log`
+2. **Alert Conditions**: 
+   - If `breath.log` or `state.log` are empty or missing = **CRITICAL ISSUE**
+   - System is not logging properly = data loss
+3. **Analysis**: Use logs to:
+   - Understand system behavior
+   - Detect patterns and anomalies
+   - Diagnose issues
+   - Correlate events across components
+4. **Correlation**: Cross-reference log data with:
+   - Graph events
+   - Shared state (`data/.shared_simulation_state.json`)
+   - Time-series trends
+   - Anomaly detection results
+
+### Access Method
+
+- **Endpoint**: `/api/cra/logs`
+- **Returns**: Last 50 lines from each log file
+- **Format**: JSON with log file names as keys, content as arrays of log lines
+
+---
+
 ## 🎬 Vision Model Integration
 
 ### Graph Analysis

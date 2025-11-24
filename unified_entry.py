@@ -906,13 +906,17 @@ class UnifiedSystem:
                 self.logger.log_explorer(explorer_state)
                 self.logger.log_djinn_kernel(djinn_kernel_state)
                 
-                # Log unified state snapshot
+                # Log unified state snapshot (flatten nested dicts)
                 unified_state = {
-                    'reality_sim': reality_sim_state,
-                    'explorer': explorer_state,
-                    'djinn_kernel': djinn_kernel_state,
                     'timestamp': time.time()
                 }
+                # Flatten nested states with prefixes
+                for key, value in reality_sim_state.items():
+                    unified_state[f'reality_sim_{key}'] = value
+                for key, value in explorer_state.items():
+                    unified_state[f'explorer_{key}'] = value
+                for key, value in djinn_kernel_state.items():
+                    unified_state[f'djinn_{key}'] = value
                 self.logger.log_state('state', unified_state)
                 
                 # Write unified shared state file (includes all three systems)
