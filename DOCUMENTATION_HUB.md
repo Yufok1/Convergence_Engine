@@ -102,11 +102,18 @@ pip install pywin32
 
 - **[VISUALIZATION_ANALYSIS.md](./VISUALIZATION_ANALYSIS.md)** - Visualization system analysis
 - **[WEB_UI_STATUS.md](./WEB_UI_STATUS.md)** - Web UI status (includes CRA agent integration)
-- **🤖 Convergence Research Assistant (CRA):** AI-powered research assistant in the Causation Explorer
-  - Vision model analyzes graph viewport
-  - Research model answers questions with full system context
-  - Real-time context updates as you navigate
-  - Access to all system logs and shared state
+- **[CRA_CAPABILITIES.md](./CRA_CAPABILITIES.md)** - Complete CRA capabilities guide ⭐ **NEW**
+  - **🤖 Convergence Research Assistant (CRA):** AI-powered autonomous research assistant in the Causation Explorer
+    - **Full System Context:** Access to all system logs, shared state, and causation graph
+    - **Vision Model Integration:** Analyzes graph viewport and evolutionary snapshots
+    - **Autonomous Graph Control:** Can adjust graph filters and visualization settings autonomously
+    - **Color Customization:** Dynamic control over component colors (5) and link colors (5 types)
+    - **Visualization Settings:** Complete control over 40+ settings (link/node appearance, depth effects, visual effects, performance)
+    - **PC Resource Monitoring:** Real-time CPU/RAM/disk monitoring with correlation analysis
+    - **Diagnostic Endpoints:** Access to VP history, network trends, memory breakdown, event throughput, breath cycles
+    - **Real-Time Adjustments:** All settings update dynamically during simulation without interruption
+    - **System Custodian:** Continuous health monitoring and protective guardian mode
+    - **Historical + Live Analysis:** Works with both stopped (historical) and running (live) systems
 
 ---
 
@@ -370,7 +377,7 @@ logger.info("Info message")
 
 ---
 
-**Last Updated:** 2025-01-XX  
+**Last Updated:** 2025-11-23  
 **Status:** ✅ All systems verified, tested, and documented
 
 **The butterfly is soaring with clean code!** 🦋✨

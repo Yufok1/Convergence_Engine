@@ -6,6 +6,66 @@
 
 ## [Unreleased] - 2025-01-XX
 
+### 🎨 Causation Explorer Web UI - Major Enhancements (2025-01-XX)
+
+#### Added
+- **CRA Autonomous Visualization Control**
+  - Complete autonomous control over 40+ visualization settings
+  - Real-time mid-simulation adjustments (no re-render required)
+  - Dynamic color customization (component colors + link colors)
+  - Visual feedback system (controls highlight when updated)
+  - Settings panel auto-scroll and highlighting
+  
+- **Robust JSON Parsing for CRA Settings**
+  - Automatic comment stripping (// and /* */ comments)
+  - Property name normalization (fixes common CRA formatting mistakes)
+  - Brace-counting JSON extraction (handles deeply nested objects)
+  - Enhanced error logging with full JSON context
+  
+- **Snapshot Management System**
+  - Automatic snapshot cleanup when simulation stops/starts
+  - Page load detection of stale snapshots
+  - Clear separation between current run and historical data
+  - Prevents vision model from receiving old/cached snapshots
+  
+- **Enhanced Visual Feedback**
+  - Color pickers flash cyan when updated
+  - Sliders/checkboxes highlight when changed
+  - Settings panel border highlighting
+  - Detailed console logging of all updates
+  - System notifications showing update counts
+
+#### Changed
+- **CRA System Prompt**
+  - Explicit JSON formatting requirements (no comments, correct property names)
+  - Clear examples of correct format
+  - Emphasis on marker requirement: `[[VIZ_SETTINGS_UPDATE: {...}]]`
+  - Comprehensive list of all tunable settings
+  
+- **Image Capture Timing**
+  - Double `requestAnimationFrame` for render completion
+  - 50ms delay to ensure DOM updates are flushed
+  - Force layout recalculation before SVG cloning
+  - Ensures vision model receives current, not cached, images
+
+#### Fixed
+- **JSON Parsing Errors**
+  - Fixed "Expected property name or '}'" errors from CRA responses
+  - Handles malformed JSON with comments
+  - Normalizes property names automatically
+  
+- **Settings Not Updating**
+  - Fixed UI element finding and updating
+  - Added event dispatching for sliders/dropdowns
+  - Improved element ID matching
+  - Better error detection and logging
+
+- **Stale Snapshot Issues**
+  - Snapshots now cleared when simulation stops
+  - Snapshots cleared when new simulation starts
+  - Page load detection of stale snapshots
+  - Vision model only receives current run snapshots
+
 ### 🔧 Code Quality & Refactoring (2025-01-XX)
 
 #### Added

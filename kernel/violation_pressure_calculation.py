@@ -97,6 +97,30 @@ class ViolationMonitor:
         self.stability_envelopes["lineagepreference"] = StabilityEnvelope(
             center=0.55, radius=0.35, compression_factor=0.7
         )
+        
+        # FIX: Reality Simulator network traits (normalized to [0.0, 1.0])
+        # These traits come from the Reality Simulator network component
+        # Normalization: organism_count / 1000, average_path_length / 10
+        self.stability_envelopes["organism_count"] = StabilityEnvelope(
+            center=0.4,  # Target 400 organisms (normalized: 400/1000 = 0.4)
+            radius=0.2,  # Allow 200-600 organisms (0.2-0.6 normalized range)
+            compression_factor=1.0
+        )
+        self.stability_envelopes["modularity"] = StabilityEnvelope(
+            center=0.3,  # Target moderate modularity (0.3)
+            radius=0.2,  # Allow 0.1-0.5 range (low to moderate modularity)
+            compression_factor=1.0
+        )
+        self.stability_envelopes["clustering_coefficient"] = StabilityEnvelope(
+            center=0.2,  # Target moderate clustering (0.2)
+            radius=0.15,  # Allow 0.05-0.35 range
+            compression_factor=1.0
+        )
+        self.stability_envelopes["average_path_length"] = StabilityEnvelope(
+            center=0.5,  # Target path length of 5 (normalized: 5/10 = 0.5)
+            radius=0.3,  # Allow 2-8 path length (0.2-0.8 normalized range)
+            compression_factor=1.0
+        )
     
     def compute_violation_pressure(self, trait_payload: Dict[str, float], 
                                  source_identity: Optional[str] = None) -> Tuple[float, Dict[str, float]]:

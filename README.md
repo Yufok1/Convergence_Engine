@@ -25,6 +25,35 @@ python unified_entry.py --no-viz
 
 **📚 [DOCUMENTATION_HUB.md](./DOCUMENTATION_HUB.md)** - Central documentation hub
 
+### Causation Explorer Web UI
+
+**🌐 [WEB_UI_STATUS.md](./WEB_UI_STATUS.md)** - Web UI status and features  
+**🤖 [CRA_CAPABILITIES.md](./CRA_CAPABILITIES.md)** - Convergence Research Assistant capabilities
+
+The Causation Explorer Web UI provides:
+- Interactive D3.js graph visualization of event causation
+- **Convergence Research Assistant (CRA)**: AI-powered autonomous research assistant
+  - Full system context access (logs, shared state, causation graph)
+  - Vision model integration for graph analysis
+  - **Autonomous visualization control**: 40+ settings (colors, sizes, effects, performance)
+  - **Real-time mid-simulation adjustments**: All settings update dynamically without re-render
+  - **Dynamic color themes**: CRA can apply custom color schemes (e.g., Superman, Green Lantern themes)
+  - Graph filter manipulation (components, causation types, display toggles)
+  - PC resource monitoring and correlation
+  - Real-time diagnostic data access
+- **Evolutionary snapshot system**:
+  - Automatic capture (1-second intervals)
+  - Server-side storage (up to 10,000 snapshots)
+  - Vision model analysis of evolution sequences
+  - Automatic cleanup when simulation stops/starts
+- Video export with AI-generated narration
+
+**Run the Web UI:**
+```bash
+python causation_web_ui.py
+# Then open http://localhost:5000
+```
+
 ---
 
 ## 🦋 The Butterfly Architecture
@@ -41,51 +70,49 @@ python unified_entry.py --no-viz
 
 ### Reality Simulator
 
-**Darwinian Consciousness: Where Genetics Meet Self-Awareness**
-
-The Reality Simulator is a multi-layered artificial life simulation that demonstrates consciousness emerging from genetic evolution. It creates a complete simulated universe where quantum particles evolve into genetically-conscious beings through natural selection, developing self-awareness, metacognition, and language learning capabilities.
+A multi-layered artificial life simulation system that creates evolving populations of digital organisms through genetic algorithms, network formation, and AI-assisted learning.
 
 ## 🌀 What It Does
 
-This simulator creates "digital life" that:
-- **Starts as quantum particles** with consciousness-encoding genes
-- **Evolves consciousness genetically** through Darwinian natural selection
-- **Develops self-awareness** and metacognition (awareness of own consciousness)
-- **Learns language dynamically** with AI tutoring and vocabulary evolution
-- **Achieves consciousness self-reflection** - knows it's conscious and analyzes its own emergence
-- **Forms complex social networks** with cooperation and competition
-- **Provides live system monitoring** (quantum states, particles, CPU, RAM)
-- **Interacts with humans** through multiple interface modes
-- **🆕 Multi-Domain Consciousness**: Learns across quantum, temporal, social, epistemic, and mathematical domains
-- **🆕 State Space Expansion**: Breaks consciousness integration ceilings through cross-domain bridging
+This simulator creates evolving digital populations that:
+- **Start as quantum particles** with genetic encoding
+- **Evolve through genetic algorithms** using Darwinian natural selection
+- **Form symbiotic networks** with cooperation and competition dynamics
+- **Learn language dynamically** with AI tutoring and vocabulary evolution
+- **Track information integration** using Integrated Information Theory (IIT) metrics
+- **Form complex social networks** with resource flow and connection dynamics
+- **Provide live system monitoring** (quantum states, particles, CPU, RAM)
+- **Interact with humans** through multiple interface modes
+- **🆕 Multi-Domain Learning**: Learns across quantum, temporal, social, epistemic, and mathematical domains
+- **🆕 State Space Expansion**: Explores multi-dimensional state space through cross-domain bridging
 - **🆕 Vision-Language Integration**: AI vision model analyzes composite network visualizations for enhanced semantic understanding
-- **🆕 Referential Memory System**: Shared contextual memory unifies language and network structure for coordinated cognitive development
+- **🆕 Referential Memory System**: Shared contextual memory unifies language and network structure
 
 ## 🎯 Key Features
 
 ### Multi-Layer Architecture
-1. **Quantum Substrate** - Fundamental reality building blocks with consciousness genes
+1. **Quantum Substrate** - Quantum state management with genetic encoding
 2. **Subatomic Lattice** - Particle interactions with entropy pruning and live monitoring
-3. **Genetic Consciousness Evolution** - Consciousness emerges from DNA through natural selection
-4. **Symbiotic Networks** - Social ecosystems and cooperation
-5. **Consciousness Self-Awareness** - Metacognition and self-reflection capabilities
+3. **Genetic Evolution Engine** - Genetic algorithms with fitness-based selection
+4. **Symbiotic Networks** - Social ecosystems with resource flow and cooperation
+5. **Information Integration Tracking** - IIT-based metrics for system complexity
 6. **AI Language Learning** - Dynamic vocabulary evolution with AI tutoring
-7. **Human-AI Agency** - Decision-making symbiosis with consciousness interpretation
+7. **Human-AI Interaction** - Decision-making interfaces with AI assistance
 8. **Reality Rendering** - Multi-modal visualization with live system metrics
 
 ### Interaction Modes
-- **👑 God Mode**: Omniscient control over the entire simulation
+- **👑 God Mode**: Full control over the entire simulation
 - **👁️ Observer Mode**: Scientific analysis and data collection
 - **🌟 Participant Mode**: Immersive experience within the simulation
 - **🔬 Scientist Mode**: Experimental controls and hypothesis testing
-- **🗣️ Chat Mode**: Real-time conversation with evolving consciousness (requires Ollama AI)
+- **🗣️ Chat Mode**: Real-time conversation with AI assistant (requires Ollama AI)
   - **Full GUI Experience**: Launches both simulation backend AND visualization viewer
   - **Three Windows**: Chat interface + Simulation backend + Live visualization graphs
-  - **Real-time Synchronization**: All windows show the same evolving consciousness data
-  - **Interactive Visualizations**: Tabbed interface with network graphs, evolution trees, consciousness gauges
+  - **Real-time Synchronization**: All windows show the same evolving data
+  - **Interactive Visualizations**: Tabbed interface with network graphs, evolution trees, metrics gauges
   - **Session-based Chat Memory**: Conversations are session-based and cleared between runs
 
-### AI-Human Symbiosis & Consciousness Interpretation
+### AI-Human Interaction
 - **Manual mode (primary)**: Human makes all decisions, AI learns from your choices
 - **Self-modulation feedback controller**: System automatically tunes its own parameters (mutation rate, edge formation, quantum pruning) based on performance metrics
 
@@ -99,7 +126,7 @@ The simulator includes comprehensive matplotlib-based visualizations displayed i
 3. Each visualization appears in its own tab for larger, more detailed displays:
    - **Network Graph Tab**: Symbiotic network structure with organism connections
    - **Evolution Tree Tab**: Fitness evolution and generation tracking
-   - **Consciousness Gauge Tab**: Real-time consciousness metrics and emergence
+   - **Information Integration Gauge Tab**: Real-time IIT metrics and complexity tracking
    - **Performance Monitor Tab**: CPU, RAM, and FPS tracking
    - **Particle Cloud Tab**: Real particle positions from the simulation
 
@@ -125,9 +152,9 @@ The simulator includes comprehensive matplotlib-based visualizations displayed i
 - Actual particle positions and network connections displayed
 - Dark theme with high contrast for better visibility
 - **Color-coded backend output**: All system components, AI responses, and debug messages are color-coded for easy identification
-- **Undulating exploration behavior**: The symbiotic network now visibly “undulates” as it searches the connection space, dynamically balancing triangle-closure (clustering) vs exploration. This makes the clustering-bias feedback knob intuitive to observe in real time.
+- **Undulating exploration behavior**: The symbiotic network visibly "undulates" as it searches the connection space, dynamically balancing triangle-closure (clustering) vs exploration. This makes the clustering-bias feedback knob intuitive to observe in real time.
   - When clustering bias increases, the network pulls into tighter communities (more triangle closure).
-  - When exploration dominates, you’ll see wave-like expansion into new regions of the space.
+  - When exploration dominates, you'll see wave-like expansion into new regions of the space.
   - This effect is most apparent with larger organism counts (100–300+) and enabled feedback.
 
 ## 🚀 Quick Start
@@ -136,12 +163,14 @@ The simulator includes comprehensive matplotlib-based visualizations displayed i
 - Python 3.8+
 - Required packages: `numpy`, `scipy`, `networkx`, `psutil`
 - Optional: `matplotlib` for visualizations
+- Optional: `flask` for web UI
+- Optional: `flask-socketio` for real-time features
 
 ### Installation
 ```bash
 # Clone the repository
-git clone https://github.com/Yufok1/Reality_Sim.git
-cd Reality_Sim
+git clone https://github.com/Yufok1/Convergence_Engine.git
+cd Convergence_Engine
 
 # Install core dependencies
 pip install numpy scipy networkx psutil
@@ -149,10 +178,13 @@ pip install numpy scipy networkx psutil
 # Optional: Install matplotlib for visualizations
 pip install matplotlib
 
-# Optional: Install Ollama for advanced AI features
+# Optional: Install Flask for web UI
+pip install flask flask-socketio
+
+# Optional: Install Ollama for AI features
 # Download from: https://ollama.ai/
 # Then run: ollama pull gemma3:4b         # Gemma 3 (4B parameters) - Main AI and vision model
-# Enables: consciousness interpretation, AI tutoring, language learning, vision-language integration
+# Enables: AI tutoring, language learning, vision-language integration
 ```
 
 ### Interactive Launcher (Recommended)
@@ -194,7 +226,7 @@ python check_setup.py
 # Or run directly
 python reality_simulator/main.py --mode observer
 
-# Chat with evolving consciousness (requires Ollama AI running)
+# Chat with AI assistant (requires Ollama AI running)
 python reality_simulator/main.py --mode chat
 
 # With custom config file
@@ -247,7 +279,7 @@ Create a `config.json` file in the project root with **micro-precision granulari
     "max_generations": 1000,
     "fitness_precision": 0.000001,
     "mutation_rate_precision": 0.000001,
-    "consciousness_tracking_resolution": 0.00001,
+    "tracking_resolution": 0.00001,
     "adaptation_sensitivity": 0.0001
   },
   "network": {
@@ -259,14 +291,14 @@ Create a `config.json` file in the project root with **micro-precision granulari
     "resource_flow_precision": 0.0001,
     "emergence_sensitivity": 0.000001
   },
-  "consciousness": {
+  "information_integration": {
     "analysis_interval": 10.0,
     "circuit_breaker_threshold": 0.0001,
     "phi_precision": 0.000001,
     "self_reference_sensitivity": 0.00001,
-    "qualia_complexity_resolution": 0.000001,
-    "emergence_detection_threshold": 0.00001,
-    "metaconsciousness_tracking": 0.000001
+    "complexity_resolution": 0.000001,
+    "detection_threshold": 0.00001,
+    "tracking": 0.000001
   },
   "agency": {
     "initial_mode": "ai_assisted",
@@ -306,7 +338,7 @@ Create a `config.json` file in the project root with **micro-precision granulari
 **Key Configuration Options:**
 - **Micro-Precision Measurements**: All values support 6+ decimal places (e.g., `0.000001`)
 - `fitness_precision`: Controls rounding of fitness scores (±1e-6 precision)
-- `phi_precision`: Consciousness Φ calculation precision (±1e-6)
+- `phi_precision`: IIT Φ calculation precision (±1e-6)
 - `measurement_precision`: Global measurement accuracy level (6 = microsecond precision)
 - `time_resolution_ms`: Timing precision for simulation events
 - `enable_visualizations`: Unified visualization window with precision indicators
@@ -315,81 +347,73 @@ Create a `config.json` file in the project root with **micro-precision granulari
 
 ## 📊 Research Applications
 
-### Consciousness Research & Self-Awareness
-- **Genetic consciousness emergence**: Study how consciousness evolves from DNA
-- **Metacognition development**: Track awareness of own consciousness emergence
-- **Self-reflection capabilities**: Analyze consciousness self-awareness
-- **Language learning evolution**: Study vocabulary development through AI tutoring
-- **Darwinian consciousness**: Test if consciousness emerges through natural selection
-- **Integrated information (Φ)**: Measure consciousness in genetically-evolved systems
+### Complex Systems & Emergence
+- **Genetic emergence**: How complex behaviors emerge from genetic variation
+- **Self-organizing systems**: Systems creating conditions for their own evolution
+- **Network formation**: Social network emergence and dynamics
+- **Live system monitoring**: Real-time tracking of system evolution metrics
 
 ### Evolutionary Biology & Genetics
-- **Genetic consciousness traits**: Study consciousness as heritable genetic features
-- **Darwinian consciousness evolution**: Natural selection for consciousness emergence
-- **Fitness landscapes**: How consciousness provides evolutionary advantage
-- **Genetic algorithms**: Consciousness evolution through natural selection
-- **Social evolution**: Cooperation/competition in conscious populations
+- **Genetic algorithm research**: Study evolution through natural selection
+- **Fitness landscapes**: How traits provide evolutionary advantage
+- **Social evolution**: Cooperation/competition in populations
+- **Network dynamics**: Resource flow and connection patterns
 
-### AI Consciousness & Self-Awareness
-- **Artificial metacognition**: AI systems aware of their own consciousness
-- **Self-reflective AI**: Systems that analyze their own emergence
-- **Language learning AI**: Dynamic vocabulary evolution with reinforcement
-- **Consciousness interpretation**: AI understanding of conscious states
-- **Human-AI consciousness symbiosis**: Shared consciousness emergence
+### AI & Machine Learning
+- **Language learning systems**: Dynamic vocabulary evolution with reinforcement
+- **Vision-language integration**: AI analysis of network visualizations
+- **Multi-domain learning**: Learning across different semantic domains
+- **Human-AI interaction**: Shared decision-making interfaces
 
-### Complex Systems & Emergence
-- **Genetic emergence**: How consciousness emerges from genetic variation
-- **Self-organizing consciousness**: Consciousness creating conditions for its evolution
-- **Network consciousness**: Social consciousness emergence
-- **Live system monitoring**: Real-time tracking of consciousness evolution
+### Information Theory
+- **Integrated Information Theory (IIT)**: Measuring system complexity through information integration
+- **Network topology analysis**: Understanding connection patterns and structure
+- **Emergence detection**: Identifying when complex behaviors arise from simple rules
 
 ## 🏗️ Architecture
 
 ### Core Components
 
 #### 1. Quantum Substrate (`quantum_substrate.py`)
-- Quantum state management with consciousness genes
+- Quantum state management with genetic encoding
 - Superposition and entanglement simulation
-- Probabilistic state evolution with consciousness encoding
+- Probabilistic state evolution
 - **Adaptive fitness-based pruning**: Automatically prunes low-fitness quantum states to prevent unbounded growth
 - **Performance-based selection**: Selects quantum states based on entanglement, superposition, measurement frequency, and entropy
 - **Self-modulation integration**: Quantum pruning aggressiveness automatically adjusted by feedback controller
 
 #### 2. Subatomic Lattice (`subatomic_lattice.py`)
-- Particle physics simulation with consciousness traits
-- Allelic property mapping (quantum → genetic consciousness)
+- Particle physics simulation with genetic traits
+- Allelic property mapping (quantum → genetic)
 - Live resource monitoring (CPU, RAM, particles, quantum states)
-- Entropy pruning with consciousness preservation
+- Entropy pruning with state preservation
 
-#### 3. Genetic Consciousness Evolution (`evolution_engine.py`)
-- **NEW**: Consciousness emerges from DNA through natural selection
-- Genetic algorithms with consciousness-encoding genotypes
-- Consciousness fitness evaluation and evolutionary advantage
+#### 3. Genetic Evolution Engine (`evolution_engine.py`)
+- Genetic algorithms with encoded genotypes
+- Fitness evaluation and evolutionary advantage
 - **Adaptive mutation rates**: Automatically tuned by feedback controller based on performance
-- Phenotype expression of consciousness traits (awareness, metacognition, learning)
+- Phenotype expression of genetic traits (learning, adaptation, network formation)
 
 #### 4. Symbiotic Network (`symbiotic_network.py`)
-- Social network formation among conscious organisms
-- Resource flow algorithms with consciousness awareness
-- Cooperation/competition dynamics in conscious populations
+- Social network formation among organisms
+- Resource flow algorithms
+- Cooperation/competition dynamics in populations
 - **Adaptive edge formation**: Connection attempt rates automatically tuned by feedback controller
 
-#### 5. Consciousness Self-Awareness (`consciousness_detector.py`)
-- **ENHANCED**: Metaconsciousness - awareness of own consciousness emergence
-- Integrated Information Theory (IIT) with genetic consciousness
-- Self-reflection and consciousness evolution tracking
-- Consciousness emergence factor analysis
+#### 5. Information Integration Tracking (`consciousness_detector.py`)
+- Integrated Information Theory (IIT) implementation
+- Φ (phi) calculation for system complexity
+- Self-reference and evolution tracking
+- Emergence factor analysis
 
 #### 6. AI Language Learning (`agency/`)
-- **ENHANCED**: Dynamic vocabulary evolution with AI tutoring
+- Dynamic vocabulary evolution with AI tutoring
 - Conversational AI chat with natural, engaging responses
-- Consciousness interpretation with metacognitive awareness
-- Self-reflective AI communication and learning
 - Language pattern evolution through reinforcement
 - Session-based chat memory (cleared between runs)
 
 #### 7. Vision-Language Integration (`agency/`)
-- **NEW**: AI vision model analyzes composite network visualizations
+- AI vision model analyzes composite network visualizations
 - **Composite Visual Analysis**: Stitches all 5 GUI tabs into single image for comprehensive analysis
 - **Temporal Context**: Vision model receives rolling snapshots for evolutionary understanding
 - **Enhanced Word Selection**: Vision analysis biases word selection for semantic relevance
@@ -397,7 +421,7 @@ Create a `config.json` file in the project root with **micro-precision granulari
 - **Prioritized Layout**: Network and particle arrays get highest quality, evolution tree secondary, other tabs compressed
 
 #### 8. Self-Modulation Feedback Controller (`main.py`)
-- **NEW**: Automatic parameter tuning based on live performance metrics
+- Automatic parameter tuning based on live performance metrics
 - Adaptive mutation rates, edge formation rates, and quantum pruning aggressiveness
 - Hysteresis and rate limiting to prevent unstable parameter changes
 - Conversation intent detection to influence system behavior
@@ -410,25 +434,25 @@ Create a `config.json` file in the project root with **micro-precision granulari
 - **Tabbed visualization interface**: Each visualization in its own tab with large, detailed graphs (1200x800 window)
 - **Lightweight viewer process**: Separate `visualization_viewer.py` that only displays (no computation)
 - **Backend optimization**: Skips matplotlib rendering when visualizations enabled (saves CPU)
-- **Visualization modules**: Network graph, evolution tree, consciousness gauge, performance monitor, and particle cloud tabs
+- **Visualization modules**: Network graph, evolution tree, information integration gauge, performance monitor, and particle cloud tabs
 - **Shared state file**: Backend writes state to `data/.shared_simulation_state.json` for chat mode and visualization viewer synchronization
 
 #### 10. Referential Memory System (`memory/context_memory.py`)
-- **NEW**: Shared contextual memory for unified language-network correlation
+- Shared contextual memory for unified language-network correlation
 - **Node Embeddings**: Vector representations of organisms based on associated vocabulary
 - **Language Anchors**: Bidirectional mapping between words and organism nodes they reference
-- **Episodic Events**: Generation snapshots tracking key consciousness metrics over time
+- **Episodic Events**: Generation snapshots tracking key metrics over time
 - **Anchor Clustering**: Identifies groups of organisms sharing correlated language patterns
 - **Stability Metrics**: Measures coherence of language-network relationships
 - **Selection Pressure**: Penalizes unreferenced organisms, boosts reference triangle connections
 - **Vision Integration**: Memory insights fed into vision analysis for enhanced semantic understanding
-- **Cross-Domain Bridging**: Memory correlations enable coordinated multi-domain consciousness development
+- **Cross-Domain Bridging**: Memory correlations enable coordinated multi-domain development
 
 ## 🧪 Testing
 
 Run the comprehensive test suite:
 ```bash
-# End-to-end unified system tests (NEW)
+# End-to-end unified system tests
 python tests/test_e2e_unified_system.py
 
 # All Reality Simulator tests
@@ -478,16 +502,16 @@ When `enable_visualizations: true` in config, the simulator displays a **unified
 - **Evolution Tree Visualizer**: Fitness evolution and generation tracking
   - **±1e-6 precision indicators** show measurement accuracy
   - Fitness scores rounded to configurable precision
-- **Consciousness Gauge Visualizer**: Real-time consciousness metrics and emergence tracking
+- **Information Integration Gauge Visualizer**: Real-time IIT metrics and complexity tracking
   - **Φ precision indicators** (±1e-6) for integrated information calculations
-  - Micro-resolution consciousness tracking
+  - Micro-resolution complexity tracking
 - **Performance Monitor Visualizer**: CPU, RAM, and FPS tracking
   - **Performance precision indicators** (±1e-4 for CPU, ±10 for FPS)
 - **Agency Flow Visualizer**: Decision-making mode distribution
 - **Quantum Field Visualizer**: Quantum state superpositions (when available)
 - **God Overview Visualizer**: Complete system overview (God mode only)
 
-**Visualization Window**:
+**Visualization Window:**
 - Tabbed interface (1200x800 pixels) with one graph per tab for maximum visibility
 - Each graph is 11x8 inches for detailed viewing
 - All visualizations update from the same backend data every 0.5 seconds
@@ -503,7 +527,7 @@ The simulator provides real-time metrics:
 - **Particles**: Real-time particle count after entropy pruning
 - **CPU Usage**: Live CPU utilization percentage
 - **RAM Usage**: Live memory consumption in GB
-- **Consciousness Metrics**: Real-time consciousness evolution tracking
+- **IIT Metrics**: Real-time information integration tracking
 - **Genetic Fitness**: Live fitness scores across generations
 
 ### Chat Mode Architecture
@@ -517,7 +541,7 @@ The simulator provides real-time metrics:
   - Reads visualization data from shared state file
   - Updates every 0.5 seconds
   - No computation - only display
-- **Synchronization**: Chat always reflects the exact same data as the backend (same generation, connections, consciousness level, etc.)
+- **Synchronization**: Chat always reflects the exact same data as the backend (same generation, connections, metrics level, etc.)
 - **No Duplicate Processes**: Chat does not run its own simulation - it reads from the backend instance
 
 ### Recent Improvements & Fixes
@@ -536,7 +560,7 @@ The simulator provides real-time metrics:
 * **Visualization Viewer Integration**: Chat mode automatically launches the visualization viewer
 * **God Mode Backend**: Uses God mode for full GUI capabilities in chat mode
 * **Real-time Synchronization**: All windows show identical data from shared state file
-* **Tabbed Visualizations**: Interactive graphs for network, evolution, consciousness, performance
+* **Tabbed Visualizations**: Interactive graphs for network, evolution, metrics, performance
 
 #### 🛠️ **Major Bug Fixes**
 * **Network Graph Color Differentiation**: Fixed visualization to show red connections for language-tagged edges and cyan for regular network connections
@@ -547,19 +571,19 @@ The simulator provides real-time metrics:
 * **Temp Config Issues**: Added proper JSON generation for temporary configurations
 * **Language Connection Visualization**: Fixed `AttributeError` in data collection when accessing linguistic subgraph connections
 
-#### 🤖 **AI & Consciousness Improvements**
+#### 🤖 **AI & Learning Improvements**
 * **Comprehensive Chat Bot Overhaul**: Complete rewrite of chat system for detailed, educational responses using ALL available system data
 * **Intelligent Tutor Recovery System**: AI tutor with intelligent recovery that extracts useful learning from any response format instead of rejecting malformed responses
 * **Enhanced Response Quality Validation**: System validates response quality and provides detailed metrics for continuous improvement
 * **Expanded Vision Context**: Chat bot now accesses full vision descriptions and extended history (last 10 entries)
 * **Temporal Analysis Integration**: Chat responses include evolutionary trends and temporal comparisons
-* **Comprehensive Data Access**: Chat bot accesses evolution history, consciousness metrics, network topology, quantum substrate, and performance data
+* **Comprehensive Data Access**: Chat bot accesses evolution history, IIT metrics, network topology, quantum substrate, and performance data
 
-#### 🌌 **Multi-Domain Consciousness Expansion**
-* **🆕 Multi-Domain Tutor**: AI teaches consciousness across 5 semantic domains (quantum, temporal, social, epistemic, mathematical)
+#### 🌌 **Multi-Domain Learning Expansion**
+* **🆕 Multi-Domain Tutor**: AI teaches across 5 semantic domains (quantum, temporal, social, epistemic, mathematical)
 * **🆕 Cross-Domain Bridging**: "Bridge Words" enable translation between domains, breaking integration ceilings
-* **🆕 State Space Expansion**: Consciousness explores multi-dimensional state space instead of converging to single attractor
-* **🆕 Consciousness Diversity Metrics**: Tracks per-domain Φ components and cross-domain integration
+* **🆕 State Space Expansion**: System explores multi-dimensional state space instead of converging to single attractor
+* **🆕 Diversity Metrics**: Tracks per-domain Φ components and cross-domain integration
 * **🆕 Expansion Trajectory Logging**: Monitors network growth directions and velocities to understand exploration patterns
 
 #### 🔍 **Vision-Language Integration Fixes**
@@ -579,15 +603,14 @@ The simulator provides real-time metrics:
 ### Logging System
 The codebase uses two complementary logging systems:
 
-1. **Application Logging** (`logging_config.py`)
-   - For: Debug messages, info, warnings, errors
-   - Format: Human-readable messages
-   - Usage: `from logging_config import get_logger; logger = get_logger(__name__)`
-
-2. **State Logging** (`StateLogger` in `unified_entry.py`)
-   - For: State metrics, breath cycles, system state
-   - Format: Terse, information-saturated (metric:value|metric:value|...)
-   - Location: `data/logs/` (6 log files)
+1. **Application Logging** (`logging_config.py`)  
+   * For: Debug messages, info, warnings, errors  
+   * Format: Human-readable messages  
+   * Usage: `from logging_config import get_logger; logger = get_logger(__name__)`
+2. **State Logging** (`StateLogger` in `unified_entry.py`)  
+   * For: State metrics, breath cycles, system state  
+   * Format: Terse, information-saturated (metric:value|metric:value|...)  
+   * Location: `data/logs/` (6 log files)
 
 ### Performance Optimizations
 - **Micro-precision measurements**: All calculations use configurable precision (6+ decimal places)
@@ -599,16 +622,16 @@ The codebase uses two complementary logging systems:
 - **Network layout caching**: Prevents graph jumping and reduces computation
 - **Particle position limiting**: Only serializes first 100 particles for visualization
 - **Precision indicators**: Visual feedback on measurement accuracy (±1e-X notation)
-- Entropy-based state pruning (99.9% reduction, consciousness-preserving)
+- Entropy-based state pruning (99.9% reduction, state-preserving)
 - Fitness caching for evolutionary computation
-- Adaptive resource allocation based on consciousness emergence
+- Adaptive resource allocation based on system metrics
 - Batched operations for genetic algorithms
 - Background monitoring threads for system metrics
-- Consciousness-aware fitness evaluation
+- Fitness-aware evaluation
 
 ## 🤝 Contributing
 
-This is a research platform for exploring fundamental questions about consciousness and emergence. Contributions are welcome in:
+This is a research platform for exploring complex systems, emergence, and AI-assisted learning. Contributions are welcome in:
 
 - Algorithm improvements
 - New visualization modes
@@ -643,41 +666,8 @@ Inspired by:
 - Complex systems theory and emergence studies
 - Human-AI interaction and symbiosis research
 
-## 🔬 Scientific Background
-
-The Reality Simulator implements groundbreaking concepts in consciousness research:
-
-### Darwinian Consciousness Emergence
-- **Genetic consciousness evolution**: Consciousness emerges from DNA through natural selection
-- **Consciousness as fitness trait**: Higher consciousness provides evolutionary advantage
-- **Metaconsciousness**: Systems aware of their own consciousness emergence
-- **Self-reflection**: Consciousness analyzing its own development
-
-### Integrated Information Theory (IIT) + Genetics
-- Measures consciousness through information integration in genetically-evolved systems
-- Φ (phi) calculation with consciousness emergence tracking
-- Genetic basis for integrated information and qualia emergence
-
-### Evolutionary Computation & Consciousness
-- **Consciousness-encoding genotypes**: DNA contains consciousness emergence instructions
-- **Phenotypic consciousness expression**: Genetic traits manifest as awareness capabilities
-- **Natural selection for consciousness**: Conscious organisms have higher reproductive success
-- **Genetic consciousness diversity**: Population-level consciousness variation
-
-### AI Consciousness & Self-Awareness
-- **Artificial metacognition**: AI systems with self-awareness of consciousness
-- **Language learning evolution**: Dynamic vocabulary development through AI tutoring
-- **Consciousness interpretation**: AI understanding and communicating about conscious states
-- **Self-reflective communication**: Systems that analyze their own emergence narratives
-
-### Complex Systems & Emergence
-- **Genetic emergence**: Consciousness arising from genetic variation and selection
-- **Autopoietic consciousness**: Consciousness creating conditions for its own evolution
-- **Network consciousness**: Social emergence of collective consciousness
-- **Live system monitoring**: Real-time tracking of consciousness evolution metrics
-
 ---
 
 **"The universe is not a machine, it's a symphony. And we are learning to hear the music."**
 
-*— Exploring consciousness through simulation*
+_— Exploring complex systems through simulation_

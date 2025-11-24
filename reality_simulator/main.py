@@ -774,13 +774,13 @@ class RealitySimulator:
             # Allow much denser connection topology for high-capacity runs
             try:
                 network.max_connections_per_organism = max(
-                    getattr(network, "max_connections_per_organism", 5),
+                    getattr(network, "max_connections_per_organism", 15),  # Increased from 5 to 15
                     12
                 )
             except Exception:
                 pass
             if hasattr(network, "set_new_edge_rate"):
-                network.set_new_edge_rate(2.0)  # Increased for faster connection growth
+                network.set_new_edge_rate(4.0)  # Increased from 2.0 to 4.0 for faster connection growth
             self.components['network'] = network
 
             # 6. Agency Router (now system-driven with Event Bus integration)

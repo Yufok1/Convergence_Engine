@@ -988,11 +988,26 @@ class UnifiedSystem:
                                 latest_vp_class = cell.content.get('vp_classification', 'VP0')
                                 break
                 
+                # FIX: Count actual traits from latest VP calculation in ledger
+                trait_count = 0
+                if ledger_summary.get('total_cells', 0) > 0:
+                    for pos in range(ledger_summary.get('next_position', 1) - 1, max(0, ledger_summary.get('next_position', 1) - 10), -1):
+                        cell = ledger.read_cell(pos)
+                        if cell and cell.content:
+                            if 'trait_payload' in cell.content:
+                                trait_payload = cell.content.get('trait_payload', {})
+                                trait_count = len(trait_payload) if isinstance(trait_payload, dict) else 0
+                                break
+                            elif 'traits' in cell.content:
+                                traits = cell.content.get('traits', {})
+                                trait_count = len(traits) if isinstance(traits, dict) else 0
+                                break
+                
                 return {
                     'violation_pressure': latest_vp,
                     'vp_classification': latest_vp_class,
                     'vp_calculations': ledger_summary.get('total_cells', 0),
-                    'trait_count': 0,
+                    'trait_count': trait_count,  # FIX: Use actual count, not hardcoded 0
                     'tape_cells': ledger_summary.get('total_cells', 0),
                     'tape_position': ledger_summary.get('next_position', 0)
                 }
@@ -1006,14 +1021,25 @@ class UnifiedSystem:
             if vp_history:
                 recent = vp_history[-1]
                 total_vp = recent.get('total_vp', 0) if isinstance(recent, dict) else (recent.vp if hasattr(recent, 'vp') else 0)
+                
+                # FIX: Count traits from VP history entry
+                trait_count = 0
+                if isinstance(recent, dict):
+                    breakdown = recent.get('breakdown', {})
+                    trait_count = len(breakdown) if isinstance(breakdown, dict) else 0
+                
                 vp_class = self.vp_monitor._classify_violation_pressure(total_vp)
                 return {
                     'violation_pressure': total_vp,
                     'vp_classification': vp_class.value if hasattr(vp_class, 'value') else str(vp_class),
                     'vp_calculations': len(vp_history),
+                    'trait_count': trait_count,  # FIX: Include trait count
+                    'tape_cells': len(vp_history),
+                    'tape_position': len(vp_history)
                 }
         
-        return {'violation_pressure': 0, 'vp_classification': 'VP0', 'vp_calculations': 0}
+        # FIX: Return default with trait_count=0 explicitly (no traits = no VP calculation)
+        return {'violation_pressure': 0, 'vp_classification': 'VP0', 'vp_calculations': 0, 'trait_count': 0, 'tape_cells': 0, 'tape_position': 0}
     
     def _write_unified_shared_state(self, reality_sim_state: Dict[str, Any], explorer_state: Dict[str, Any], djinn_kernel_state: Dict[str, Any]):
         """

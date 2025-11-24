@@ -22,6 +22,21 @@
   - `/api/ollama/vision` - Analyze graph viewport with vision model
   - `/api/system/context` - Get full system context for debugging
   - `/api/export/create_video` - Create MP4 video from PNG frames (requires FFmpeg)
+  - `/api/cra/data` - Comprehensive system data for CRA
+  - `/api/cra/system/state` - Current system state with PC resource monitoring
+  - `/api/cra/health/check` - Comprehensive system health check
+  - `/api/cra/graph/filters` - Get/set graph filter settings (CRA autonomous control)
+  - `/api/cra/graph/viz-settings` - Get/set visualization settings (CRA autonomous control)
+  - `/api/cra/diagnostics/vp_history` - Historical VP data
+  - `/api/cra/diagnostics/network_trends` - Network metrics trends
+  - `/api/cra/diagnostics/memory_breakdown` - Component memory breakdown
+  - `/api/cra/diagnostics/event_throughput` - Event bus throughput metrics
+  - `/api/cra/diagnostics/breath_cycles` - Breath cycle statistics
+  - `/api/snapshots/store` - Store evolutionary snapshots
+  - `/api/snapshots/list` - List stored snapshots
+  - `/api/snapshots/get/<filename>` - Get specific snapshot
+  - `/api/snapshots/clear` - Clear all snapshots
+  - `/api/export/create_evolutionary_video` - Create evolution video with vision narration
 
 ### 2. HTML Template (`templates/causation_explorer.html`)
 - ✅ Complete D3.js visualization
@@ -30,12 +45,24 @@
 - ✅ Event exploration (backwards/forwards)
 - ✅ Node clicking functionality
 - ✅ Dark theme styling
-- ✅ **Convergence Research Assistant (CRA) Chat Panel**
+  - ✅ **Convergence Research Assistant (CRA) Chat Panel**
   - ✅ Model selectors (research model + vision model)
   - ✅ Chat interface with message history
   - ✅ View state tracking (zoom, pan, rotation, selected nodes)
   - ✅ Graph image capture (SVG to base64 for vision model)
   - ✅ Real-time context updates
+  - ✅ **CRA Autonomous Capabilities:**
+    - ✅ Graph filter control (components, causation types, display toggles)
+    - ✅ Visualization settings control (40+ settings: link/node appearance, depth effects, colors, performance)
+    - ✅ Color customization (component colors: 5, link colors: 5 types)
+    - ✅ PC resource monitoring (CPU, RAM, disk usage correlation)
+    - ✅ Diagnostic data access (VP history, network trends, memory breakdown)
+    - ✅ Real-time mid-simulation adjustments (all settings update dynamically)
+  - ✅ **Evolutionary Snapshot System:**
+    - ✅ Automatic snapshot capture (1-second intervals)
+    - ✅ Server-side storage (up to 10,000 snapshots)
+    - ✅ Vision model analysis of evolution sequences
+    - ✅ Snapshot filtering (blank image removal, time spacing, even sampling)
   - ✅ **Video Export Functionality**
     - ✅ Dynamic FPS and duration controls (1-600 seconds, 15-60 FPS)
     - ✅ Real-time frame count calculation display
@@ -48,6 +75,28 @@
 - ✅ Creates CausationExplorer instance on startup
 - ✅ Loads historical data automatically
 - ✅ Connects to log files and Akashic Ledger
+
+---
+
+## 🎨 Recent Enhancements (2025-01-XX)
+
+### CRA Autonomous Visualization Control
+- **Complete Settings Control**: CRA can autonomously adjust all 40+ visualization settings
+- **Real-time Updates**: Settings update dynamically during simulation (no re-render required)
+- **Visual Feedback**: Controls highlight when updated, settings panel flashes cyan
+- **Color Customization**: Full control over component colors (5) and link colors (5 types)
+- **Theme Support**: CRA can apply custom themes (e.g., "Superman theme", "Green Lantern theme")
+- **Robust JSON Parsing**: Handles malformed JSON with comments, normalizes property names
+
+### Snapshot Management
+- **Automatic Cleanup**: Snapshots cleared when simulation stops or starts
+- **Stale Detection**: Page load detection of old snapshots from previous sessions
+- **Fresh Data Only**: Vision model only receives snapshots from current active run
+
+### Enhanced Image Capture
+- **Render Completion**: Double `requestAnimationFrame` + delay ensures current state capture
+- **No Cached Images**: Force layout recalculation before SVG cloning
+- **Vision Model Accuracy**: Always receives up-to-date graph images
 
 ---
 
@@ -193,10 +242,15 @@ http://localhost:5000/api/stats
 | **Event Search** | ✅ Complete | Search by keyword |
 | **Causation Trails** | ✅ Complete | Backwards/forwards exploration |
 | **Path Finding** | ✅ Complete | Shortest path between events |
-| **CRA Agent** | ✅ Complete | AI research assistant with vision |
-| **Model Selection** | ✅ Complete | Dynamic Ollama model detection |
-| **Context Building** | ✅ Complete | Full system context integration |
-| **Vision Analysis** | ✅ Complete | Graph viewport analysis |
+| **CRA Agent** | ✅ Complete | AI research assistant with full autonomous control |
+| **CRA Graph Control** | ✅ Complete | Autonomous filter and visualization settings control |
+| **CRA Color Control** | ✅ Complete | Dynamic component and link color customization |
+| **CRA PC Monitoring** | ✅ Complete | Real-time PC resource correlation with system activity |
+| **Model Selection** | ✅ Complete | Dynamic Ollama model detection (cloud + local) |
+| **Context Building** | ✅ Complete | Full system context integration (live + historical) |
+| **Vision Analysis** | ✅ Complete | Graph viewport analysis with evolution sequences |
+| **Evolutionary Videos** | ✅ Complete | Video creation with vision model narration |
+| **Snapshot System** | ✅ Complete | Server-side storage and management (10,000 limit) |
 | **Flask Dependency** | ⚠️ Missing | Needs `pip install flask` |
 | **Ollama Dependency** | ⚠️ Required | Needs local Ollama installation |
 | **Testing** | ❌ Not Done | Needs verification |

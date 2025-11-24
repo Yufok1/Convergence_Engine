@@ -407,16 +407,51 @@ class BiphasicController:
         # Breath drives Djinn Kernel (right wing) - FULLY INTEGRATED WITH UTM KERNEL
         if self.utm_kernel:
             try:
-                # Get traits from Reality Simulator if available
+                # Get traits from Reality Simulator if available (live data)
                 traits = {}
                 if self.reality_sim and self.reality_sim.components:
                     network = self.reality_sim.components.get('network')
                     if network:
                         org_count = len(network.organisms)
-                        traits['organism_count'] = float(org_count)
-                        traits['modularity'] = network.metrics.modularity if hasattr(network.metrics, 'modularity') else 1.0
+                        # FIX: Normalize traits to [0.0, 1.0] range for VP calculation
+                        # organism_count: normalize by max expected (1000 organisms)
+                        traits['organism_count'] = min(1.0, float(org_count) / 1000.0)
+                        # modularity: already 0.0-1.0, no normalization needed
+                        traits['modularity'] = network.metrics.modularity if hasattr(network.metrics, 'modularity') else 0.0
+                        # clustering_coefficient: already 0.0-1.0, no normalization needed
                         traits['clustering_coefficient'] = network.metrics.clustering_coefficient if hasattr(network.metrics, 'clustering_coefficient') else 0.0
-                        traits['average_path_length'] = network.metrics.average_path_length if hasattr(network.metrics, 'average_path_length') else 0.0
+                        # average_path_length: normalize by max expected (10 path length)
+                        avg_path = network.metrics.average_path_length if hasattr(network.metrics, 'average_path_length') else 0.0
+                        traits['average_path_length'] = min(1.0, float(avg_path) / 10.0)
+                
+                # FIX: If system is stopped, try to load traits from shared state file (historical data)
+                if not traits:
+                    try:
+                        import json
+                        from pathlib import Path
+                        shared_state_file = Path('data/.shared_simulation_state.json')
+                        if shared_state_file.exists():
+                            with open(shared_state_file, 'r') as f:
+                                shared_state = json.load(f)
+                            
+                            # Extract network traits from shared state
+                            data = shared_state.get('data', {})
+                            network_data = data.get('network', {})
+                            if network_data:
+                                # FIX: Normalize traits to [0.0, 1.0] range for VP calculation
+                                if 'organism_count' in network_data:
+                                    org_count = float(network_data['organism_count'])
+                                    traits['organism_count'] = min(1.0, org_count / 1000.0)  # Normalize by 1000
+                                if 'modularity' in network_data:
+                                    traits['modularity'] = float(network_data['modularity'])  # Already 0.0-1.0
+                                if 'clustering_coefficient' in network_data:
+                                    traits['clustering_coefficient'] = float(network_data['clustering_coefficient'])  # Already 0.0-1.0
+                                if 'average_path_length' in network_data:
+                                    avg_path = float(network_data['average_path_length'])
+                                    traits['average_path_length'] = min(1.0, avg_path / 10.0)  # Normalize by 10
+                    except Exception as e:
+                        # Silently fail - historical data loading is optional
+                        pass
                 
                 if traits:
                     # Use Trait Hub to translate traits (if available)

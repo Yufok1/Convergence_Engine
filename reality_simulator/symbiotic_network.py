@@ -632,7 +632,7 @@ class SymbioticNetwork:
         self.max_connections_per_organism = max_connections_per_organism
         self.new_edge_rate = new_edge_rate  # Multiplier for connection attempts (0.0 to 2.0)
         # Bias toward triangle closure vs exploration (0.0=random/explore, 1.0=prefer clustering)
-        self.clustering_bias: float = 0.5
+        self.clustering_bias: float = 0.8  # Increased from 0.5 to 0.8
 
         # Metrics tracking
         self.metrics = EcosystemMetrics()
