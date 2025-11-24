@@ -2968,14 +2968,23 @@ def get_graph():
         else:
             logger.info(f"Graph request returned {len(nodes)} nodes and {len(links)} links")
         
-        return jsonify({
-            'nodes': nodes,
-            'links': links,
-            'diagnostic': diagnostic_info if diagnostic_info else None
-        })
+        logger.info(f"Serializing graph response: {len(nodes)} nodes, {len(links)} links")
+        try:
+            response_data = {
+                'nodes': nodes,
+                'links': links,
+                'diagnostic': diagnostic_info if diagnostic_info else None
+            }
+            logger.info("Graph data serialized, returning response")
+            return jsonify(response_data)
+        except Exception as serialize_error:
+            logger.error(f"Error serializing graph response: {serialize_error}", exc_info=True)
+            return jsonify({'nodes': [], 'links': [], 'error': f'Serialization error: {str(serialize_error)}'}), 500
     except Exception as e:
         logger.error(f"Error getting graph: {e}", exc_info=True)
-        return jsonify({'nodes': [], 'links': [], 'error': str(e)}), 200
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        return jsonify({'nodes': [], 'links': [], 'error': str(e)}), 500
 
 
 # ============================================================================
