@@ -2921,13 +2921,23 @@ def get_graph():
                     component = component  # Keep as-is (will default to orange)
                 
                 component_counts[component] = component_counts.get(component, 0) + 1
-                nodes.append({
+                # Filter out large nested data to reduce memory usage
+                node_data = {
                     'id': event_id,
                     'component': component,  # Normalized component name
                     'type': event.event_type,
-                    'data': event.data,
                     'timestamp': event.timestamp
-                })
+                }
+                # Only include simple data (no nested dicts/lists >200 chars)
+                if event.data and isinstance(event.data, dict):
+                    simple_data = {k: v for k, v in event.data.items() 
+                                 if not isinstance(v, (dict, list)) and len(str(v)) < 200}
+                    if simple_data:
+                        node_data['data'] = simple_data
+                elif event.data and not isinstance(event.data, (dict, list)) and len(str(event.data)) < 200:
+                    node_data['data'] = event.data
+                
+                nodes.append(node_data)
             # Log component distribution for debugging
             if component_counts:
                 logger.info(f"Graph nodes by component: {component_counts}")
