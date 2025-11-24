@@ -2974,11 +2974,17 @@ def get_graph():
         else:
             logger.info(f"Graph request returned {len(nodes)} nodes and {len(links)} links")
         
-        return jsonify({
+        result = {
             'nodes': nodes,
             'links': links,
             'diagnostic': diagnostic_info if diagnostic_info else None
-        })
+        }
+        
+        # Cache the result
+        _graph_cache = result
+        _graph_cache_time = current_time
+        
+        return jsonify(result)
     except Exception as e:
         logger.error(f"Error getting graph: {e}", exc_info=True)
         return jsonify({'nodes': [], 'links': [], 'error': str(e)}), 200
