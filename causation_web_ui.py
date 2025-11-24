@@ -3137,9 +3137,19 @@ def ollama_chat():
         selected_event = data.get('selected_event')
         graph_image = data.get('graph_image')  # base64 image if provided
         evolutionary_snapshots = data.get('evolutionary_snapshots', [])  # List of historical snapshots
+        user_api_key = data.get('api_key')  # User-provided API key (optional)
         
         if not message:
             return jsonify({'error': 'Message is required'}), 400
+        
+        # Use user's API key if provided, otherwise use server default
+        bridge_to_use = ollama_bridge
+        if user_api_key:
+            bridge_to_use = OllamaBridge(
+                base_url=ollama_bridge.base_url,
+                timeout=ollama_bridge.timeout,
+                api_key=user_api_key
+            )
         
         # Update time-series tracker with current state
         try:
@@ -3337,7 +3347,7 @@ This is a single snapshot of a causation graph network visualization (no previou
                     if len(all_images) > 1:
                         logger.info(f"Using sequential analysis for {len(all_images)} images with CRA contextual summaries")
                         # Pass snapshot contexts to analyze_sequence for CRA → Vision feedback loop
-                        visual_description = ollama_bridge.analyze_sequence(vision_model, all_images, vision_prompt, snapshot_contexts)
+                        visual_description = bridge_to_use.analyze_sequence(vision_model, all_images, vision_prompt, snapshot_contexts)
                     else:
                         # Single image - include CRA context in prompt
                         if snapshot_contexts and len(snapshot_contexts) > 0:
@@ -3349,7 +3359,7 @@ This is a single snapshot of a causation graph network visualization (no previou
 
 Use this context to understand what the graph structure means. Match the visual patterns you see with the system state described above."""
                             vision_prompt = vision_prompt + context_section
-                        visual_description = ollama_bridge.vision(vision_model, all_images, vision_prompt)
+                        visual_description = bridge_to_use.vision(vision_model, all_images, vision_prompt)
                     
                     if visual_description:
                         # Parse annotations from vision response
@@ -3389,7 +3399,7 @@ Use this context to understand what the graph structure means. Match the visual 
         messages = [{"role": "user", "content": message}]
         
         # Send to research assistant
-        response = ollama_bridge.chat(model, messages, context)
+        response = bridge_to_use.chat(model, messages, context)
         
         if response is None:
             return jsonify({'error': 'Failed to get response from Ollama'}), 500
@@ -3461,12 +3471,22 @@ def ollama_vision():
         image_base64 = data.get('image')
         model = data.get('model', 'qwen3-vl:235b-instruct')
         prompt = data.get('prompt', 'Describe what you see in this causation graph visualization.')
+        user_api_key = data.get('api_key')  # User-provided API key (optional)
         
         if not image_base64:
             return jsonify({'error': 'Image is required'}), 400
         
+        # Use user's API key if provided, otherwise use server default
+        bridge_to_use = ollama_bridge
+        if user_api_key:
+            bridge_to_use = OllamaBridge(
+                base_url=ollama_bridge.base_url,
+                timeout=ollama_bridge.timeout,
+                api_key=user_api_key
+            )
+        
         try:
-            response = ollama_bridge.vision(model, image_base64, prompt)
+            response = bridge_to_use.vision(model, image_base64, prompt)
             if response is None:
                 return jsonify({'error': 'Failed to get response from vision model'}), 500
             return jsonify({'description': response})
