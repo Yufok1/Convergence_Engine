@@ -27,7 +27,8 @@
         .main-content {
             display: flex;
             gap: 20px;
-            align-items: stretch; /* Make children (filter-panel and graph-container) same height */
+            align-items: stretch;
+            /* Make children (filter-panel and graph-container) same height */
         }
 
         .graph-container {
@@ -40,7 +41,8 @@
             background: #111;
             border: 1px solid #0ff;
             padding: 15px;
-            padding-top: 50px; /* Space for sticky button */
+            padding-top: 50px;
+            /* Space for sticky button */
             max-height: calc(100vh - 40px);
             overflow-y: auto;
             overflow-x: hidden;
@@ -81,12 +83,17 @@
         }
 
         .chat-panel-wrapper {
-            width: 100%; /* Extend to fill full width, flush with both edges */
-            max-width: none; /* Remove max-width restriction */
-            margin-left: 0; /* Start from left edge, flush with settings panel */
-            margin-right: 0; /* Extend to right edge */
+            width: 100%;
+            /* Extend to fill full width, flush with both edges */
+            max-width: none;
+            /* Remove max-width restriction */
+            margin-left: 0;
+            /* Start from left edge, flush with settings panel */
+            margin-right: 0;
+            /* Extend to right edge */
             display: flex;
-            justify-content: flex-start; /* Align chat content to left */
+            justify-content: flex-start;
+            /* Align chat content to left */
             /* Position below graph with proper spacing */
             margin-top: 0;
             position: relative;
@@ -197,7 +204,8 @@
             padding-bottom: 0;
             display: flex;
             flex-direction: column;
-            min-height: 100%; /* Match filter panel height */
+            min-height: 100%;
+            /* Match filter panel height */
         }
 
         .graph-controls {
@@ -236,8 +244,10 @@
 
         #graph {
             width: 100%;
-            flex: 1; /* Fill available space in graph-container */
-            min-height: 792px; /* Minimum height, but can grow */
+            flex: 1;
+            /* Fill available space in graph-container */
+            min-height: 792px;
+            /* Minimum height, but can grow */
             border: 1px solid #0ff;
             background: #000;
             margin: 20px 0 0 0;
@@ -273,13 +283,16 @@
 
         .link {
             /* Colors are set dynamically by JavaScript - no default color here */
-            stroke-opacity: 1.0; /* Full opacity for maximum visibility and contrast */
+            stroke-opacity: 1.0;
+            /* Full opacity for maximum visibility and contrast */
             stroke-width: 2px;
         }
 
         .link:hover {
-            stroke-opacity: 1.0; /* Full opacity on hover */
-            stroke-width: 4px; /* Thicker on hover for better visibility */
+            stroke-opacity: 1.0;
+            /* Full opacity on hover */
+            stroke-width: 4px;
+            /* Thicker on hover for better visibility */
         }
 
         .info-panel {
@@ -743,7 +756,8 @@
             /* Performance optimizations */
             content-visibility: auto;
             contain-intrinsic-size: auto 100px;
-            transform: translateZ(0); /* Force GPU acceleration */
+            transform: translateZ(0);
+            /* Force GPU acceleration */
         }
 
         .chat-message.user {
@@ -864,7 +878,8 @@
         <div class="main-content">
             <!-- Filter Panel -->
             <div class="filter-panel" id="filterPanel">
-                <button class="filter-panel-toggle" id="filterPanelToggle" onclick="toggleFilterPanel()" title="Minimize/Maximize Settings">
+                <button class="filter-panel-toggle" id="filterPanelToggle" onclick="toggleFilterPanel()"
+                    title="Minimize/Maximize Settings">
                     <span id="filterPanelToggleText">−</span>
                 </button>
                 <h3 style="color: #0ff; margin-top: 0; margin-right: 50px;">Filters</h3>
@@ -931,53 +946,59 @@
 
                 <div class="filter-section" style="border-top: 2px solid #ff0; margin-top: 20px; padding-top: 15px;">
                     <h4 style="color: #ff0;">🎨 Visualization Settings</h4>
-                    <div style="font-size: 0.75em; color: #0aa; margin-bottom: 10px;">CRA can adjust these dynamically</div>
-                    
+                    <div style="font-size: 0.75em; color: #0aa; margin-bottom: 10px;">CRA can adjust these dynamically
+                    </div>
+
                     <!-- Color Customization -->
                     <div style="border-top: 1px solid #0aa; margin-top: 10px; padding-top: 10px;">
                         <h5 style="color: #0ff; font-size: 0.95em; margin: 0 0 8px 0;">🎨 Component Colors</h5>
-                        
+
                         <div class="filter-item" style="margin-bottom: 8px;">
-                            <label style="display: flex; align-items: center; gap: 8px; color: #0ff; font-size: 0.85em;">
+                            <label
+                                style="display: flex; align-items: center; gap: 8px; color: #0ff; font-size: 0.85em;">
                                 <span style="min-width: 120px;">Reality Simulator:</span>
-                                <input type="color" id="color-reality_sim" value="#FF0000" 
-                                    onchange="updateComponentColor('reality_sim', this.value)" 
+                                <input type="color" id="color-reality_sim" value="#FF0000"
+                                    onchange="updateComponentColor('reality_sim', this.value)"
                                     style="width: 60px; height: 25px; cursor: pointer;">
                             </label>
                         </div>
 
                         <div class="filter-item" style="margin-bottom: 8px;">
-                            <label style="display: flex; align-items: center; gap: 8px; color: #0ff; font-size: 0.85em;">
+                            <label
+                                style="display: flex; align-items: center; gap: 8px; color: #0ff; font-size: 0.85em;">
                                 <span style="min-width: 120px;">Explorer:</span>
-                                <input type="color" id="color-explorer" value="#0000FF" 
-                                    onchange="updateComponentColor('explorer', this.value)" 
+                                <input type="color" id="color-explorer" value="#0000FF"
+                                    onchange="updateComponentColor('explorer', this.value)"
                                     style="width: 60px; height: 25px; cursor: pointer;">
                             </label>
                         </div>
 
                         <div class="filter-item" style="margin-bottom: 8px;">
-                            <label style="display: flex; align-items: center; gap: 8px; color: #0ff; font-size: 0.85em;">
+                            <label
+                                style="display: flex; align-items: center; gap: 8px; color: #0ff; font-size: 0.85em;">
                                 <span style="min-width: 120px;">Djinn Kernel:</span>
-                                <input type="color" id="color-djinn_kernel" value="#FF8800" 
-                                    onchange="updateComponentColor('djinn_kernel', this.value)" 
+                                <input type="color" id="color-djinn_kernel" value="#FF8800"
+                                    onchange="updateComponentColor('djinn_kernel', this.value)"
                                     style="width: 60px; height: 25px; cursor: pointer;">
                             </label>
                         </div>
 
                         <div class="filter-item" style="margin-bottom: 8px;">
-                            <label style="display: flex; align-items: center; gap: 8px; color: #0ff; font-size: 0.85em;">
+                            <label
+                                style="display: flex; align-items: center; gap: 8px; color: #0ff; font-size: 0.85em;">
                                 <span style="min-width: 120px;">Breath Engine:</span>
-                                <input type="color" id="color-breath" value="#FF00FF" 
-                                    onchange="updateComponentColor('breath', this.value)" 
+                                <input type="color" id="color-breath" value="#FF00FF"
+                                    onchange="updateComponentColor('breath', this.value)"
                                     style="width: 60px; height: 25px; cursor: pointer;">
                             </label>
                         </div>
 
                         <div class="filter-item" style="margin-bottom: 8px;">
-                            <label style="display: flex; align-items: center; gap: 8px; color: #0ff; font-size: 0.85em;">
+                            <label
+                                style="display: flex; align-items: center; gap: 8px; color: #0ff; font-size: 0.85em;">
                                 <span style="min-width: 120px;">System:</span>
-                                <input type="color" id="color-system" value="#FFFF00" 
-                                    onchange="updateComponentColor('system', this.value)" 
+                                <input type="color" id="color-system" value="#FFFF00"
+                                    onchange="updateComponentColor('system', this.value)"
                                     style="width: 60px; height: 25px; cursor: pointer;">
                             </label>
                         </div>
@@ -985,72 +1006,74 @@
 
                     <div style="border-top: 1px solid #0aa; margin-top: 10px; padding-top: 10px;">
                         <h5 style="color: #0ff; font-size: 0.95em; margin: 0 0 8px 0;">🔗 Link Colors</h5>
-                        
+
                         <div class="filter-item" style="margin-bottom: 8px;">
-                            <label style="display: flex; align-items: center; gap: 8px; color: #0ff; font-size: 0.85em;">
+                            <label
+                                style="display: flex; align-items: center; gap: 8px; color: #0ff; font-size: 0.85em;">
                                 <span style="min-width: 120px;">Threshold:</span>
-                                <input type="color" id="color-link-threshold" value="#FF00FF" 
-                                    onchange="updateLinkColor('threshold', this.value)" 
+                                <input type="color" id="color-link-threshold" value="#FF00FF"
+                                    onchange="updateLinkColor('threshold', this.value)"
                                     style="width: 60px; height: 25px; cursor: pointer;">
                             </label>
                         </div>
 
                         <div class="filter-item" style="margin-bottom: 8px;">
-                            <label style="display: flex; align-items: center; gap: 8px; color: #0ff; font-size: 0.85em;">
+                            <label
+                                style="display: flex; align-items: center; gap: 8px; color: #0ff; font-size: 0.85em;">
                                 <span style="min-width: 120px;">Correlation:</span>
-                                <input type="color" id="color-link-correlation" value="#0000FF" 
-                                    onchange="updateLinkColor('correlation', this.value)" 
+                                <input type="color" id="color-link-correlation" value="#0000FF"
+                                    onchange="updateLinkColor('correlation', this.value)"
                                     style="width: 60px; height: 25px; cursor: pointer;">
                             </label>
                         </div>
 
                         <div class="filter-item" style="margin-bottom: 8px;">
-                            <label style="display: flex; align-items: center; gap: 8px; color: #0ff; font-size: 0.85em;">
+                            <label
+                                style="display: flex; align-items: center; gap: 8px; color: #0ff; font-size: 0.85em;">
                                 <span style="min-width: 120px;">Direct:</span>
-                                <input type="color" id="color-link-direct" value="#00FF00" 
-                                    onchange="updateLinkColor('direct', this.value)" 
+                                <input type="color" id="color-link-direct" value="#00FF00"
+                                    onchange="updateLinkColor('direct', this.value)"
                                     style="width: 60px; height: 25px; cursor: pointer;">
                             </label>
                         </div>
 
                         <div class="filter-item" style="margin-bottom: 8px;">
-                            <label style="display: flex; align-items: center; gap: 8px; color: #0ff; font-size: 0.85em;">
+                            <label
+                                style="display: flex; align-items: center; gap: 8px; color: #0ff; font-size: 0.85em;">
                                 <span style="min-width: 120px;">Temporal:</span>
-                                <input type="color" id="color-link-temporal" value="#FFFF00" 
-                                    onchange="updateLinkColor('temporal', this.value)" 
+                                <input type="color" id="color-link-temporal" value="#FFFF00"
+                                    onchange="updateLinkColor('temporal', this.value)"
                                     style="width: 60px; height: 25px; cursor: pointer;">
                             </label>
                         </div>
                     </div>
-                    
+
                     <!-- Link Appearance -->
                     <div style="border-top: 1px solid #0aa; margin-top: 10px; padding-top: 10px;">
                         <h5 style="color: #0ff; font-size: 0.95em; margin: 0 0 8px 0;">🔗 Link Appearance</h5>
-                        
+
                         <div class="filter-item" style="margin-bottom: 8px;">
                             <label style="display: block; margin-bottom: 3px; color: #0ff; font-size: 0.85em;">
                                 Base Width: <span id="linkBaseWidthValue">2.5</span>px
                             </label>
-                            <input type="range" id="linkBaseWidth" min="1" max="5" step="0.5" value="2.5" 
-                                oninput="updateVizSetting('linkBaseWidth', parseFloat(this.value))" 
-                                style="width: 80%;">
+                            <input type="range" id="linkBaseWidth" min="1" max="5" step="0.5" value="2.5"
+                                oninput="updateVizSetting('linkBaseWidth', parseFloat(this.value))" style="width: 80%;">
                         </div>
 
                         <div class="filter-item" style="margin-bottom: 8px;">
                             <label style="display: block; margin-bottom: 3px; color: #0ff; font-size: 0.85em;">
                                 Max Width: <span id="linkMaxWidthValue">16</span>px
                             </label>
-                            <input type="range" id="linkMaxWidth" min="8" max="30" step="1" value="16" 
-                                oninput="updateVizSetting('linkMaxWidth', parseFloat(this.value))" 
-                                style="width: 80%;">
+                            <input type="range" id="linkMaxWidth" min="8" max="30" step="1" value="16"
+                                oninput="updateVizSetting('linkMaxWidth', parseFloat(this.value))" style="width: 80%;">
                         </div>
 
                         <div class="filter-item" style="margin-bottom: 8px;">
                             <label style="display: block; margin-bottom: 3px; color: #0ff; font-size: 0.85em;">
                                 Min Opacity: <span id="linkMinOpacityValue">0.35</span>
                             </label>
-                            <input type="range" id="linkMinOpacity" min="0.1" max="0.8" step="0.05" value="0.35" 
-                                oninput="updateVizSetting('linkMinOpacity', parseFloat(this.value))" 
+                            <input type="range" id="linkMinOpacity" min="0.1" max="0.8" step="0.05" value="0.35"
+                                oninput="updateVizSetting('linkMinOpacity', parseFloat(this.value))"
                                 style="width: 80%;">
                         </div>
 
@@ -1058,8 +1081,8 @@
                             <label style="display: block; margin-bottom: 3px; color: #0ff; font-size: 0.85em;">
                                 Max Opacity: <span id="linkMaxOpacityValue">1.0</span>
                             </label>
-                            <input type="range" id="linkMaxOpacity" min="0.5" max="1.0" step="0.05" value="1.0" 
-                                oninput="updateVizSetting('linkMaxOpacity', parseFloat(this.value))" 
+                            <input type="range" id="linkMaxOpacity" min="0.5" max="1.0" step="0.05" value="1.0"
+                                oninput="updateVizSetting('linkMaxOpacity', parseFloat(this.value))"
                                 style="width: 80%;">
                         </div>
 
@@ -1067,8 +1090,8 @@
                             <label style="display: block; margin-bottom: 3px; color: #0ff; font-size: 0.85em;">
                                 Density Multiplier: <span id="linkDensityMultiplierValue">6.0</span>
                             </label>
-                            <input type="range" id="linkDensityMultiplier" min="0" max="10" step="0.5" value="6.0" 
-                                oninput="updateVizSetting('linkDensityMultiplier', parseFloat(this.value))" 
+                            <input type="range" id="linkDensityMultiplier" min="0" max="10" step="0.5" value="6.0"
+                                oninput="updateVizSetting('linkDensityMultiplier', parseFloat(this.value))"
                                 style="width: 80%;">
                         </div>
 
@@ -1076,8 +1099,8 @@
                             <label style="display: block; margin-bottom: 3px; color: #0ff; font-size: 0.85em;">
                                 Depth Multiplier: <span id="linkDepthMultiplierValue">3.0</span>
                             </label>
-                            <input type="range" id="linkDepthMultiplier" min="0" max="5" step="0.5" value="3.0" 
-                                oninput="updateVizSetting('linkDepthMultiplier', parseFloat(this.value))" 
+                            <input type="range" id="linkDepthMultiplier" min="0" max="5" step="0.5" value="3.0"
+                                oninput="updateVizSetting('linkDepthMultiplier', parseFloat(this.value))"
                                 style="width: 80%;">
                         </div>
 
@@ -1085,8 +1108,8 @@
                             <label style="display: block; margin-bottom: 3px; color: #0ff; font-size: 0.85em;">
                                 Node Conn Multiplier: <span id="linkNodeConnMultiplierValue">2.0</span>
                             </label>
-                            <input type="range" id="linkNodeConnMultiplier" min="0" max="3" step="0.5" value="2.0" 
-                                oninput="updateVizSetting('linkNodeConnMultiplier', parseFloat(this.value))" 
+                            <input type="range" id="linkNodeConnMultiplier" min="0" max="3" step="0.5" value="2.0"
+                                oninput="updateVizSetting('linkNodeConnMultiplier', parseFloat(this.value))"
                                 style="width: 80%;">
                         </div>
                     </div>
@@ -1094,31 +1117,29 @@
                     <!-- Node Appearance -->
                     <div style="border-top: 1px solid #0aa; margin-top: 10px; padding-top: 10px;">
                         <h5 style="color: #0ff; font-size: 0.95em; margin: 0 0 8px 0;">⚫ Node Appearance</h5>
-                        
+
                         <div class="filter-item" style="margin-bottom: 8px;">
                             <label style="display: block; margin-bottom: 3px; color: #0ff; font-size: 0.85em;">
                                 Base Size: <span id="nodeBaseSizeValue">8</span>px
                             </label>
-                            <input type="range" id="nodeBaseSize" min="5" max="15" step="1" value="8" 
-                                oninput="updateVizSetting('nodeBaseSize', parseFloat(this.value))" 
-                                style="width: 80%;">
+                            <input type="range" id="nodeBaseSize" min="5" max="15" step="1" value="8"
+                                oninput="updateVizSetting('nodeBaseSize', parseFloat(this.value))" style="width: 80%;">
                         </div>
 
                         <div class="filter-item" style="margin-bottom: 8px;">
                             <label style="display: block; margin-bottom: 3px; color: #0ff; font-size: 0.85em;">
                                 Max Size: <span id="nodeMaxSizeValue">12</span>px
                             </label>
-                            <input type="range" id="nodeMaxSize" min="10" max="20" step="1" value="12" 
-                                oninput="updateVizSetting('nodeMaxSize', parseFloat(this.value))" 
-                                style="width: 80%;">
+                            <input type="range" id="nodeMaxSize" min="10" max="20" step="1" value="12"
+                                oninput="updateVizSetting('nodeMaxSize', parseFloat(this.value))" style="width: 80%;">
                         </div>
 
                         <div class="filter-item" style="margin-bottom: 8px;">
                             <label style="display: block; margin-bottom: 3px; color: #0ff; font-size: 0.85em;">
                                 Min Opacity: <span id="nodeMinOpacityValue">0.6</span>
                             </label>
-                            <input type="range" id="nodeMinOpacity" min="0.3" max="0.9" step="0.05" value="0.6" 
-                                oninput="updateVizSetting('nodeMinOpacity', parseFloat(this.value))" 
+                            <input type="range" id="nodeMinOpacity" min="0.3" max="0.9" step="0.05" value="0.6"
+                                oninput="updateVizSetting('nodeMinOpacity', parseFloat(this.value))"
                                 style="width: 80%;">
                         </div>
 
@@ -1126,8 +1147,8 @@
                             <label style="display: block; margin-bottom: 3px; color: #0ff; font-size: 0.85em;">
                                 Max Opacity: <span id="nodeMaxOpacityValue">1.0</span>
                             </label>
-                            <input type="range" id="nodeMaxOpacity" min="0.7" max="1.0" step="0.05" value="1.0" 
-                                oninput="updateVizSetting('nodeMaxOpacity', parseFloat(this.value))" 
+                            <input type="range" id="nodeMaxOpacity" min="0.7" max="1.0" step="0.05" value="1.0"
+                                oninput="updateVizSetting('nodeMaxOpacity', parseFloat(this.value))"
                                 style="width: 80%;">
                         </div>
 
@@ -1135,8 +1156,8 @@
                             <label style="display: block; margin-bottom: 3px; color: #0ff; font-size: 0.85em;">
                                 Depth Size Multiplier: <span id="nodeDepthSizeMultiplierValue">4.0</span>
                             </label>
-                            <input type="range" id="nodeDepthSizeMultiplier" min="0" max="6" step="0.5" value="4.0" 
-                                oninput="updateVizSetting('nodeDepthSizeMultiplier', parseFloat(this.value))" 
+                            <input type="range" id="nodeDepthSizeMultiplier" min="0" max="6" step="0.5" value="4.0"
+                                oninput="updateVizSetting('nodeDepthSizeMultiplier', parseFloat(this.value))"
                                 style="width: 80%;">
                         </div>
 
@@ -1144,8 +1165,8 @@
                             <label style="display: block; margin-bottom: 3px; color: #0ff; font-size: 0.85em;">
                                 Stroke Width: <span id="nodeStrokeWidthValue">3</span>px
                             </label>
-                            <input type="range" id="nodeStrokeWidth" min="1" max="6" step="0.5" value="3" 
-                                oninput="updateVizSetting('nodeStrokeWidth', parseFloat(this.value))" 
+                            <input type="range" id="nodeStrokeWidth" min="1" max="6" step="0.5" value="3"
+                                oninput="updateVizSetting('nodeStrokeWidth', parseFloat(this.value))"
                                 style="width: 80%;">
                         </div>
                     </div>
@@ -1153,22 +1174,21 @@
                     <!-- Depth Effects -->
                     <div style="border-top: 1px solid #0aa; margin-top: 10px; padding-top: 10px;">
                         <h5 style="color: #0ff; font-size: 0.95em; margin: 0 0 8px 0;">🌊 Depth Effects</h5>
-                        
+
                         <div class="filter-item" style="margin-bottom: 8px;">
                             <label style="display: block; margin-bottom: 3px; color: #0ff; font-size: 0.85em;">
                                 Depth Strength: <span id="depthStrengthValue">1.0</span>
                             </label>
-                            <input type="range" id="depthStrength" min="0" max="2" step="0.1" value="1.0" 
-                                oninput="updateVizSetting('depthStrength', parseFloat(this.value))" 
-                                style="width: 80%;">
+                            <input type="range" id="depthStrength" min="0" max="2" step="0.1" value="1.0"
+                                oninput="updateVizSetting('depthStrength', parseFloat(this.value))" style="width: 80%;">
                         </div>
 
                         <div class="filter-item" style="margin-bottom: 8px;">
                             <label style="display: block; margin-bottom: 3px; color: #0ff; font-size: 0.85em;">
                                 Opacity Range: <span id="depthOpacityRangeValue">0.5</span>
                             </label>
-                            <input type="range" id="depthOpacityRange" min="0" max="1" step="0.05" value="0.5" 
-                                oninput="updateVizSetting('depthOpacityRange', parseFloat(this.value))" 
+                            <input type="range" id="depthOpacityRange" min="0" max="1" step="0.05" value="0.5"
+                                oninput="updateVizSetting('depthOpacityRange', parseFloat(this.value))"
                                 style="width: 80%;">
                         </div>
 
@@ -1176,8 +1196,8 @@
                             <label style="display: block; margin-bottom: 3px; color: #0ff; font-size: 0.85em;">
                                 Size Range: <span id="depthSizeRangeValue">0.4</span>
                             </label>
-                            <input type="range" id="depthSizeRange" min="0" max="1" step="0.05" value="0.4" 
-                                oninput="updateVizSetting('depthSizeRange', parseFloat(this.value))" 
+                            <input type="range" id="depthSizeRange" min="0" max="1" step="0.05" value="0.4"
+                                oninput="updateVizSetting('depthSizeRange', parseFloat(this.value))"
                                 style="width: 80%;">
                         </div>
 
@@ -1185,8 +1205,8 @@
                             <label style="display: block; margin-bottom: 3px; color: #0ff; font-size: 0.85em;">
                                 Parallax Amount: <span id="depthParallaxAmountValue">0.5</span>
                             </label>
-                            <input type="range" id="depthParallaxAmount" min="0" max="2" step="0.1" value="0.5" 
-                                oninput="updateVizSetting('depthParallaxAmount', parseFloat(this.value))" 
+                            <input type="range" id="depthParallaxAmount" min="0" max="2" step="0.1" value="0.5"
+                                oninput="updateVizSetting('depthParallaxAmount', parseFloat(this.value))"
                                 style="width: 80%;">
                         </div>
                     </div>
@@ -1194,10 +1214,11 @@
                     <!-- Visual Effects -->
                     <div style="border-top: 1px solid #0aa; margin-top: 10px; padding-top: 10px;">
                         <h5 style="color: #0ff; font-size: 0.95em; margin: 0 0 8px 0;">✨ Visual Effects</h5>
-                        
+
                         <div class="filter-item" style="margin-bottom: 8px;">
                             <label style="display: block; margin-bottom: 3px; color: #0ff; font-size: 0.85em;">
-                                <input type="checkbox" id="enableShadows" checked onchange="updateVizSetting('enableShadows', this.checked)">
+                                <input type="checkbox" id="enableShadows" checked
+                                    onchange="updateVizSetting('enableShadows', this.checked)">
                                 <span>Enable Shadows</span>
                             </label>
                         </div>
@@ -1206,23 +1227,22 @@
                             <label style="display: block; margin-bottom: 3px; color: #0ff; font-size: 0.85em;">
                                 Shadow Offset: <span id="shadowOffsetValue">2</span>px
                             </label>
-                            <input type="range" id="shadowOffset" min="0" max="5" step="0.5" value="2" 
-                                oninput="updateVizSetting('shadowOffset', parseFloat(this.value))" 
-                                style="width: 80%;">
+                            <input type="range" id="shadowOffset" min="0" max="5" step="0.5" value="2"
+                                oninput="updateVizSetting('shadowOffset', parseFloat(this.value))" style="width: 80%;">
                         </div>
 
                         <div class="filter-item" style="margin-bottom: 8px;">
                             <label style="display: block; margin-bottom: 3px; color: #0ff; font-size: 0.85em;">
                                 Shadow Blur: <span id="shadowBlurValue">3</span>
                             </label>
-                            <input type="range" id="shadowBlur" min="0" max="10" step="0.5" value="3" 
-                                oninput="updateVizSetting('shadowBlur', parseFloat(this.value))" 
-                                style="width: 80%;">
+                            <input type="range" id="shadowBlur" min="0" max="10" step="0.5" value="3"
+                                oninput="updateVizSetting('shadowBlur', parseFloat(this.value))" style="width: 80%;">
                         </div>
 
                         <div class="filter-item" style="margin-bottom: 8px;">
                             <label style="display: block; margin-bottom: 3px; color: #0ff; font-size: 0.85em;">
-                                <input type="checkbox" id="enableGlow" checked onchange="updateVizSetting('enableGlow', this.checked)">
+                                <input type="checkbox" id="enableGlow" checked
+                                    onchange="updateVizSetting('enableGlow', this.checked)">
                                 <span>Enable Glow (Front Nodes)</span>
                             </label>
                         </div>
@@ -1231,22 +1251,21 @@
                             <label style="display: block; margin-bottom: 3px; color: #0ff; font-size: 0.85em;">
                                 Glow Intensity: <span id="glowIntensityValue">2</span>
                             </label>
-                            <input type="range" id="glowIntensity" min="0" max="5" step="0.5" value="2" 
-                                oninput="updateVizSetting('glowIntensity', parseFloat(this.value))" 
-                                style="width: 80%;">
+                            <input type="range" id="glowIntensity" min="0" max="5" step="0.5" value="2"
+                                oninput="updateVizSetting('glowIntensity', parseFloat(this.value))" style="width: 80%;">
                         </div>
                     </div>
 
                     <!-- Color Settings -->
                     <div style="border-top: 1px solid #0aa; margin-top: 10px; padding-top: 10px;">
                         <h5 style="color: #0ff; font-size: 0.95em; margin: 0 0 8px 0;">🎨 Color Settings</h5>
-                        
+
                         <div class="filter-item" style="margin-bottom: 8px;">
                             <label style="display: block; margin-bottom: 3px; color: #0ff; font-size: 0.85em;">
                                 Front Brightness: <span id="frontColorBrightnessValue">1.0</span>
                             </label>
-                            <input type="range" id="frontColorBrightness" min="0.5" max="1.5" step="0.1" value="1.0" 
-                                oninput="updateVizSetting('frontColorBrightness', parseFloat(this.value))" 
+                            <input type="range" id="frontColorBrightness" min="0.5" max="1.5" step="0.1" value="1.0"
+                                oninput="updateVizSetting('frontColorBrightness', parseFloat(this.value))"
                                 style="width: 80%;">
                         </div>
 
@@ -1254,8 +1273,8 @@
                             <label style="display: block; margin-bottom: 3px; color: #0ff; font-size: 0.85em;">
                                 Back Brightness: <span id="backColorBrightnessValue">0.7</span>
                             </label>
-                            <input type="range" id="backColorBrightness" min="0.3" max="1.0" step="0.05" value="0.7" 
-                                oninput="updateVizSetting('backColorBrightness', parseFloat(this.value))" 
+                            <input type="range" id="backColorBrightness" min="0.3" max="1.0" step="0.05" value="0.7"
+                                oninput="updateVizSetting('backColorBrightness', parseFloat(this.value))"
                                 style="width: 80%;">
                         </div>
 
@@ -1263,8 +1282,8 @@
                             <label style="display: block; margin-bottom: 3px; color: #0ff; font-size: 0.85em;">
                                 Color Saturation: <span id="colorSaturationValue">1.0</span>
                             </label>
-                            <input type="range" id="colorSaturation" min="0" max="2" step="0.1" value="1.0" 
-                                oninput="updateVizSetting('colorSaturation', parseFloat(this.value))" 
+                            <input type="range" id="colorSaturation" min="0" max="2" step="0.1" value="1.0"
+                                oninput="updateVizSetting('colorSaturation', parseFloat(this.value))"
                                 style="width: 80%;">
                         </div>
                     </div>
@@ -1272,30 +1291,28 @@
                     <!-- Performance -->
                     <div style="border-top: 1px solid #0aa; margin-top: 10px; padding-top: 10px;">
                         <h5 style="color: #0ff; font-size: 0.95em; margin: 0 0 8px 0;">⚡ Performance</h5>
-                        
+
                         <div class="filter-item" style="margin-bottom: 8px;">
                             <label style="display: block; margin-bottom: 3px; color: #0ff; font-size: 0.85em;">
                                 Max Visible Links: <span id="maxVisibleLinksValue">10000</span>
                             </label>
-                            <input type="range" id="maxVisibleLinks" min="1000" max="50000" step="1000" value="10000" 
-                                oninput="updateVizSetting('maxVisibleLinks', parseInt(this.value))" 
-                                style="width: 80%;">
+                            <input type="range" id="maxVisibleLinks" min="1000" max="50000" step="1000" value="10000"
+                                oninput="updateVizSetting('maxVisibleLinks', parseInt(this.value))" style="width: 80%;">
                         </div>
 
                         <div class="filter-item" style="margin-bottom: 8px;">
                             <label style="display: block; margin-bottom: 3px; color: #0ff; font-size: 0.85em;">
                                 Max Visible Nodes: <span id="maxVisibleNodesValue">5000</span>
                             </label>
-                            <input type="range" id="maxVisibleNodes" min="500" max="20000" step="500" value="5000" 
-                                oninput="updateVizSetting('maxVisibleNodes', parseInt(this.value))" 
-                                style="width: 80%;">
+                            <input type="range" id="maxVisibleNodes" min="500" max="20000" step="500" value="5000"
+                                oninput="updateVizSetting('maxVisibleNodes', parseInt(this.value))" style="width: 80%;">
                         </div>
 
                         <div class="filter-item" style="margin-bottom: 8px;">
                             <label style="display: block; margin-bottom: 3px; color: #0ff; font-size: 0.85em;">
                                 Render Quality:
                             </label>
-                            <select id="renderQuality" onchange="updateVizSetting('renderQuality', this.value)" 
+                            <select id="renderQuality" onchange="updateVizSetting('renderQuality', this.value)"
                                 style="width: 100%; padding: 3px; background: #111; color: #0ff; border: 1px solid #0aa;">
                                 <option value="low">Low (Fast)</option>
                                 <option value="medium">Medium</option>
@@ -1304,7 +1321,8 @@
                         </div>
                     </div>
 
-                    <button onclick="resetVizSettings()" style="width: 80%; margin-top: 10px; padding: 8px; background: #0aa; border: 2px solid #0ff; color: #fff; cursor: pointer; font-weight: bold; font-size: 0.9em;">
+                    <button onclick="resetVizSettings()"
+                        style="width: 80%; margin-top: 10px; padding: 8px; background: #0aa; border: 2px solid #0ff; color: #fff; cursor: pointer; font-weight: bold; font-size: 0.9em;">
                         Reset to Defaults
                     </button>
                 </div>
@@ -1363,58 +1381,59 @@
             <!-- Graph Container -->
             <div class="graph-container">
                 <div class="graph-controls" id="graphControls">
-                    <button class="graph-controls-toggle" id="graphControlsToggle" onclick="toggleGraphControls()">⎯ Minimize Navigation</button>
+                    <button class="graph-controls-toggle" id="graphControlsToggle" onclick="toggleGraphControls()">⎯
+                        Minimize Navigation</button>
                     <div class="graph-controls-content">
-                    <div class="graph-controls-row">
-                        <button class="nav-button" onclick="panGraph('up')">↑</button>
-                    </div>
-                    <div class="graph-controls-row">
-                        <button class="nav-button" onclick="panGraph('left')">←</button>
-                        <button class="nav-button" onclick="resetView()">⌂</button>
-                        <button class="nav-button" onclick="panGraph('right')">→</button>
-                    </div>
-                    <div class="graph-controls-row">
-                        <button class="nav-button" onclick="panGraph('down')">↓</button>
-                    </div>
-                    <div class="graph-controls-row">
-                        <button class="nav-button" onclick="zoomGraph('in')" title="Zoom in (smooth)">+</button>
-                        <button class="nav-button" onclick="zoomGraph('out')" title="Zoom out (smooth)">−</button>
-                    </div>
-                    <div class="graph-controls-row">
-                        <button class="nav-button" onclick="zoomFine('in')" title="Fine zoom in">++</button>
-                        <button class="nav-button" onclick="zoomFine('out')" title="Fine zoom out">−−</button>
-                    </div>
-                    <div class="graph-controls-row" style="font-size: 0.7em; color: #0aa; padding-top: 5px;">
-                        <input type="number" id="zoomInput" value="5" min="1" max="500" step="1"
-                            style="width: 60px; background: #000; border: 1px solid #0aa; color: #0ff; text-align: center; font-size: 0.9em; padding: 2px;"
-                            onchange="setZoomFromInput()" onkeypress="if(event.key === 'Enter') setZoomFromInput()">
-                        <span id="zoomInputLabel" style="color: #0aa; margin-left: 3px;">%</span>
-                        <button class="nav-button" onclick="document.getElementById('zoomInput').focus()"
-                            title="Click to edit zoom"
-                            style="margin-left: 5px; font-size: 0.8em; padding: 2px 5px;">✎</button>
-                    </div>
-                    <div class="graph-controls-row"
-                        style="gap: 3px; flex-wrap: wrap; justify-content: center; margin-top: 5px;">
-                        <button class="nav-button" onclick="setZoomPreset(0.01)" title="1% - Maximum overview"
-                            style="font-size: 0.75em; padding: 2px 5px;">1%</button>
-                        <button class="nav-button" onclick="setZoomPreset(0.05)" title="5% - Standard overview"
-                            style="font-size: 0.75em; padding: 2px 5px;">5%</button>
-                        <button class="nav-button" onclick="setZoomPreset(0.5)" title="50% - Detailed view"
-                            style="font-size: 0.75em; padding: 2px 5px;">50%</button>
-                        <button class="nav-button" onclick="setZoomPreset(5.0)" title="500% - Maximum detail"
-                            style="font-size: 0.75em; padding: 2px 5px;">500%</button>
-                    </div>
-                    <div class="graph-controls-row">
-                        <button class="nav-button" onclick="zoomToFit()" title="Zoom to fit all nodes">⛶</button>
-                    </div>
-                    <div class="graph-controls-row" style="margin-top: 5px;">
-                        <button id="dragZoomToggle" class="nav-button" onclick="toggleDragZoom()"
-                            title="Click and drag on graph to zoom into selection (Shift+Drag also works)">📐 Drag
-                            Zoom</button>
-                    </div>
-                    <div class="graph-controls-row">
-                        <button class="nav-button" onclick="rotateGraph('cw')">↻</button>
-                        <button class="nav-button" onclick="rotateGraph('ccw')">↺</button>
+                        <div class="graph-controls-row">
+                            <button class="nav-button" onclick="panGraph('up')">↑</button>
+                        </div>
+                        <div class="graph-controls-row">
+                            <button class="nav-button" onclick="panGraph('left')">←</button>
+                            <button class="nav-button" onclick="resetView()">⌂</button>
+                            <button class="nav-button" onclick="panGraph('right')">→</button>
+                        </div>
+                        <div class="graph-controls-row">
+                            <button class="nav-button" onclick="panGraph('down')">↓</button>
+                        </div>
+                        <div class="graph-controls-row">
+                            <button class="nav-button" onclick="zoomGraph('in')" title="Zoom in (smooth)">+</button>
+                            <button class="nav-button" onclick="zoomGraph('out')" title="Zoom out (smooth)">−</button>
+                        </div>
+                        <div class="graph-controls-row">
+                            <button class="nav-button" onclick="zoomFine('in')" title="Fine zoom in">++</button>
+                            <button class="nav-button" onclick="zoomFine('out')" title="Fine zoom out">−−</button>
+                        </div>
+                        <div class="graph-controls-row" style="font-size: 0.7em; color: #0aa; padding-top: 5px;">
+                            <input type="number" id="zoomInput" value="5" min="1" max="500" step="1"
+                                style="width: 60px; background: #000; border: 1px solid #0aa; color: #0ff; text-align: center; font-size: 0.9em; padding: 2px;"
+                                onchange="setZoomFromInput()" onkeypress="if(event.key === 'Enter') setZoomFromInput()">
+                            <span id="zoomInputLabel" style="color: #0aa; margin-left: 3px;">%</span>
+                            <button class="nav-button" onclick="document.getElementById('zoomInput').focus()"
+                                title="Click to edit zoom"
+                                style="margin-left: 5px; font-size: 0.8em; padding: 2px 5px;">✎</button>
+                        </div>
+                        <div class="graph-controls-row"
+                            style="gap: 3px; flex-wrap: wrap; justify-content: center; margin-top: 5px;">
+                            <button class="nav-button" onclick="setZoomPreset(0.01)" title="1% - Maximum overview"
+                                style="font-size: 0.75em; padding: 2px 5px;">1%</button>
+                            <button class="nav-button" onclick="setZoomPreset(0.05)" title="5% - Standard overview"
+                                style="font-size: 0.75em; padding: 2px 5px;">5%</button>
+                            <button class="nav-button" onclick="setZoomPreset(0.5)" title="50% - Detailed view"
+                                style="font-size: 0.75em; padding: 2px 5px;">50%</button>
+                            <button class="nav-button" onclick="setZoomPreset(5.0)" title="500% - Maximum detail"
+                                style="font-size: 0.75em; padding: 2px 5px;">500%</button>
+                        </div>
+                        <div class="graph-controls-row">
+                            <button class="nav-button" onclick="zoomToFit()" title="Zoom to fit all nodes">⛶</button>
+                        </div>
+                        <div class="graph-controls-row" style="margin-top: 5px;">
+                            <button id="dragZoomToggle" class="nav-button" onclick="toggleDragZoom()"
+                                title="Click and drag on graph to zoom into selection (Shift+Drag also works)">📐 Drag
+                                Zoom</button>
+                        </div>
+                        <div class="graph-controls-row">
+                            <button class="nav-button" onclick="rotateGraph('cw')">↻</button>
+                            <button class="nav-button" onclick="rotateGraph('ccw')">↺</button>
                         </div>
                     </div>
                 </div>
@@ -1473,7 +1492,8 @@
                             title="Export analysis report to file">💾 Export</button>
                         <span id="snapshotCountDisplay"
                             style="padding: 4px 10px; background: #1a1a1a; border: 1px solid #0ff; color: #0ff; font-size: 0.8em; font-family: 'Courier New', monospace; font-weight: bold; border-radius: 3px; cursor: pointer;"
-                            title="Click to view all snapshots">📸 Snapshots: <span id="snapshotCountValue">0</span></span>
+                            title="Click to view all snapshots">📸 Snapshots: <span
+                                id="snapshotCountValue">0</span></span>
                     </div>
                     <div id="chatMessages"
                         style="height: 1100px; overflow-y: auto; background: #000; border: 1px solid #0ff; padding: 10px; margin-bottom: 10px; font-size: 0.9em; will-change: scroll-position; contain: layout style paint;">
@@ -1495,12 +1515,14 @@
         <div style="margin-top: 20px; display: none;" id="causationTreePanels">
             <div class="info-panel" style="border-color: #0ff;">
                 <h3>🌳 Causation Tree (What Caused This?)</h3>
-                <div id="backwardsTrail" style="max-height: 400px; overflow-y: auto;">Click an event to see causation tree</div>
+                <div id="backwardsTrail" style="max-height: 400px; overflow-y: auto;">Click an event to see causation
+                    tree</div>
             </div>
 
             <div class="info-panel" style="border-color: #0f0;">
                 <h3>🌳 Effects Tree (What Did This Cause?)</h3>
-                <div id="forwardsTrail" style="max-height: 400px; overflow-y: auto;">Click an event to see effects tree</div>
+                <div id="forwardsTrail" style="max-height: 400px; overflow-y: auto;">Click an event to see effects tree
+                </div>
             </div>
         </div>
     </div>
@@ -1521,7 +1543,7 @@
         let liveModeInterval = null;
         let lastEventTimestamp = 0;
         let lastGraphUpdate = 0;
-        
+
         // Simulation control state (declared early to avoid initialization errors)
         let simulationRunning = false; // Default to stopped
 
@@ -1549,7 +1571,10 @@
             }
         }
         console.log(`[SNAPSHOT] Loaded ${snapshotHistory.length} snapshots from localStorage`);
-        const MAX_SNAPSHOTS = 50; // Keep last 50 snapshots for frequent evolution tracking (every ~1 second)
+        const MAX_SNAPSHOTS = 200; // Keep last 200 snapshots for frequent evolution tracking
+        
+        // Prune black images on load (will be defined later, but called here)
+        // This will be called after pruneBlackImages function is defined
 
         function snapshotSignature(imageData) {
             if (!imageData || typeof imageData !== 'string') return '';
@@ -1631,7 +1656,7 @@
         // ACTIVITY-BASED ADAPTIVE SNAPSHOT SYSTEM
         // ============================================================================
         // Like a boiling pot: high activity = frequent snapshots, low activity = sparse snapshots
-        
+
         let previousGraphState = {
             nodeCount: 0,
             linkCount: 0,
@@ -1639,32 +1664,31 @@
             averageNodeVelocity: 0,
             timestamp: Date.now()
         };
-        
+
         let activitySnapshotInterval = null;
-        let lastActivitySnapshot = 0;
-        let lastActivityScore = 0; // Track last calculated activity for display
-        
+        let totalSnapshotsCaptured = 0; // Track total captures for debugging
+
         // Graph controls collapse state
         let graphControlsCollapsed = false;
-        
+
         // Calculate activity score (0.0 = static, 1.0 = maximum change)
         function calculateActivityScore() {
             if (!allNodes || allNodes.length === 0) return 0;
-            
+
             const currentState = {
                 nodeCount: allNodes.length,
                 linkCount: allLinks.length,
                 nodePositions: new Map(),
                 timestamp: Date.now()
             };
-            
+
             // Store current node positions
             allNodes.forEach(node => {
                 if (node.x !== undefined && node.y !== undefined) {
                     currentState.nodePositions.set(node.id, { x: node.x, y: node.y });
                 }
             });
-            
+
             // If no previous state, assume high activity (startup = lots of change)
             if (previousGraphState.nodePositions.size === 0 || previousGraphState.timestamp === 0) {
                 // Initialize previous state and assume high activity for first calculation
@@ -1672,11 +1696,11 @@
                 previousGraphState.averageNodeVelocity = 50; // Assume high velocity initially
                 return 0.8; // Return high activity score to trigger aggressive capture
             }
-            
+
             // Calculate change metrics
             let totalPositionChange = 0;
             let nodesWithChange = 0;
-            
+
             // Compare node positions (movement)
             currentState.nodePositions.forEach((pos, nodeId) => {
                 const prevPos = previousGraphState.nodePositions.get(nodeId);
@@ -1691,213 +1715,343 @@
                     nodesWithChange++;
                 }
             });
-            
+
             // Calculate average velocity (pixels per second)
             const timeDelta = (currentState.timestamp - previousGraphState.timestamp) / 1000; // seconds
             const averageVelocity = timeDelta > 0 ? (totalPositionChange / timeDelta) / currentState.nodeCount : 0;
-            
+
             // Count changes
             const nodeCountChange = Math.abs(currentState.nodeCount - previousGraphState.nodeCount);
             const linkCountChange = Math.abs(currentState.linkCount - previousGraphState.linkCount);
-            
+
             // Normalize activity components (0-1 range)
             const positionActivity = Math.min(1, averageVelocity / 50); // 50 px/s = max activity
             const structureActivity = Math.min(1, (nodeCountChange + linkCountChange) / 100); // 100 changes = max
             const movementActivity = Math.min(1, nodesWithChange / currentState.nodeCount); // % of nodes moving
-            
+
             // Weighted activity score (movement is most important for "boiling" effect)
             let activityScore = (
                 positionActivity * 0.5 +      // 50% weight on node movement
                 movementActivity * 0.3 +      // 30% weight on % of nodes moving
                 structureActivity * 0.2       // 20% weight on structural changes
             );
-            
+
             // Boost activity during burst mode (first 30 seconds)
             const timeSinceStart = Date.now() - snapshotStartTime;
             if (timeSinceStart < 30000) {
                 // Boost activity score by 0.3 during burst mode to ensure aggressive capture
                 activityScore = Math.min(1, activityScore + 0.3);
             }
-            
+
             // Update previous state
             previousGraphState = currentState;
             previousGraphState.averageNodeVelocity = averageVelocity;
-            
+
             return Math.min(1, Math.max(0, activityScore)); // Clamp 0-1
         }
-        
+
         // Determine snapshot interval based on activity (inverse relationship)
-        // BURST MODE: First 30 seconds = aggressive capture (every 500ms max)
-        // High activity (0.8-1.0) = 500ms (2 snapshots/sec) - "boiling"
-        // Medium activity (0.4-0.8) = 1000ms (1 snapshot/sec) - "simmering"
-        // Low activity (0.0-0.4) = 2000ms (0.5 snapshots/sec) - "stable"
+        // BURST MODE: First 30 seconds = aggressive capture (every 200ms max)
+        // After burst: Maximum 1 second interval even for lowest activity
         function getSnapshotInterval(activityScore) {
             const timeSinceStart = Date.now() - snapshotStartTime;
             const isBurstMode = timeSinceStart < 30000; // First 30 seconds = burst mode
-            
+
             // BURST MODE: Capture aggressively during initial high-activity period
             if (isBurstMode) {
-                if (activityScore >= 0.6) return 500;   // Very active: every 0.5 seconds
-                if (activityScore >= 0.3) return 1000;  // Moderate: every 1 second
-                return 2000;  // Even low activity gets captured every 2 seconds in burst mode
+                if (activityScore >= 0.6) return 200;   // Very active: every 0.2 seconds
+                if (activityScore >= 0.3) return 300;   // Moderate: every 0.3 second
+                return 500;  // Even low activity gets captured every 0.5 second in burst mode
             }
-            
-            // Normal mode after 30 seconds
-            if (activityScore >= 0.8) return 500;   // Very active: every 0.5 seconds
-            if (activityScore >= 0.6) return 1000;   // Active: every 1 second
-            if (activityScore >= 0.4) return 2000;  // Moderate: every 2 seconds
-            if (activityScore >= 0.2) return 5000;  // Low: every 5 seconds
-            return 10000;                            // Static: every 10 seconds
+
+            // Normal mode after 30 seconds - CAP MAX INTERVAL AT 1 SECOND
+            if (activityScore >= 0.8) return 250;   // Very active: every 0.25 seconds
+            if (activityScore >= 0.6) return 400;   // Active: every 0.4 second
+            if (activityScore >= 0.4) return 600;  // Moderate: every 0.6 second
+            if (activityScore >= 0.2) return 800;  // Low: every 0.8 second
+            return 1000;                            // Static: every 1 second MAX (was 5 seconds - TOO LONG)
         }
-        
-        // Capture snapshot based on activity
+
+        // Intelligent capture function - keeps trying until graph is ready with smart logging
         async function captureActivitySnapshot() {
-            // CRITICAL: Only capture if simulation is running AND graph is actually rendered with visible content
+            // Only capture if simulation is running
             if (!simulationRunning) return;
-            if (!allNodes || allNodes.length === 0) return;
-            if (!svg || !svg.node()) return; // Graph must be rendered
-            
-            // Check if graph has visible nodes (not just in memory, but actually rendered)
-            const visibleNodes = svg.selectAll('.node-circle').size();
-            if (visibleNodes === 0) {
-                console.log('[ACTIVITY-SNAPSHOT] Skipping - no visible nodes rendered yet');
-                return; // Graph not rendered yet, wait
-            }
             
             const now = Date.now();
-            const activityScore = calculateActivityScore();
-            const interval = getSnapshotInterval(activityScore);
+            const elapsedSeconds = (now - snapshotStartTime) / 1000;
             
-            // Update last activity score for display
-            lastActivityScore = activityScore;
+            // Check graph readiness
+            const hasNodes = allNodes && allNodes.length > 0;
+            const hasSvg = svg && svg.node();
+            const graphReady = hasNodes && hasSvg;
             
-            // Only capture if enough time has passed based on current activity
-            if (now - lastActivitySnapshot < interval) return;
+            // AGGRESSIVE PHASE (0-10s): Attempt capture even if graph not fully ready
+            // This ensures we catch the moment graph first appears
+            if (elapsedSeconds < 10) {
+                if (!graphReady) {
+                    // Log waiting status every 2 seconds to avoid spam
+                    const logInterval = 2.0;
+                    if (Math.floor(elapsedSeconds / logInterval) !== Math.floor((elapsedSeconds - 0.2) / logInterval)) {
+                        console.log(`[SNAPSHOT] Waiting for graph... (nodes: ${hasNodes}, svg: ${hasSvg}, elapsed: ${elapsedSeconds.toFixed(1)}s)`);
+                    }
+                    // DON'T RETURN - attempt capture anyway, even if graph not ready
+                    // captureGraphImage() will handle it gracefully
+                } else if (totalSnapshotsCaptured === 0) {
+                    // First successful capture - celebrate!
+                    console.log(`[SNAPSHOT] ✅ Graph ready! First capture at ${elapsedSeconds.toFixed(1)}s (nodes: ${allNodes.length}, svg: ready)`);
+                }
+            } else {
+                // After 10 seconds: require graph to be ready (normal operation)
+                if (!graphReady) return;
+            }
+
+            // REMOVED ALL DELAYS - capture immediately
+            // No requestAnimationFrame waits, no setTimeout delays
             
-            lastActivitySnapshot = now;
+            // Log capture attempt
+            if (totalSnapshotsCaptured < 3 || totalSnapshotsCaptured % 20 === 0) {
+                console.log(`[SNAPSHOT] Attempting capture #${totalSnapshotsCaptured + 1} (nodes: ${hasNodes}, svg: ${hasSvg}, elapsed: ${elapsedSeconds.toFixed(1)}s)`);
+            }
             
-            // Capture graph image
-            await new Promise(resolve => {
-                requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                        resolve();
-                    });
-                });
-            });
-            await new Promise(resolve => setTimeout(resolve, 50));
+            let graphImage;
+            try {
+                graphImage = await captureGraphImage();
+            } catch (err) {
+                console.error(`[SNAPSHOT] captureGraphImage() error:`, err);
+                graphImage = null;
+            }
             
-            const graphImage = await captureGraphImage();
-            if (!graphImage) return;
+            // Log result
+            if (!graphImage && (totalSnapshotsCaptured < 3 || totalSnapshotsCaptured % 20 === 0)) {
+                console.warn(`[SNAPSHOT] captureGraphImage() returned null (nodes: ${hasNodes}, svg: ${hasSvg})`);
+            }
             
-            const imageSize = graphImage.length;
-            const MIN_SNAPSHOT_SIZE = 20000; // 20KB minimum - ensures not black/empty
+            const imageSize = graphImage ? graphImage.length : 0;
             
-            // CRITICAL: Only save if image is meaningful (not black space)
-            if (imageSize >= MIN_SNAPSHOT_SIZE) {
+            // REMOVED ALL SIZE/BLACK IMAGE CHECKS - capture everything
+            // During AGGRESSIVE phase: save even null/empty images as placeholders
+            // After AGGRESSIVE: only save if we have an image
+            const isAggressivePhase = elapsedSeconds < 10;
+            if (graphImage || (isAggressivePhase && totalSnapshotsCaptured < 20)) {
                 // Extract base64 data from data URL if needed (remove data:image/...;base64, prefix)
-                let imageData = graphImage;
-                if (graphImage && graphImage.startsWith('data:image/')) {
+                // For early captures, handle null/empty images gracefully
+                let imageData = graphImage || '';
+                if (graphImage && typeof graphImage === 'string' && graphImage.startsWith('data:image/')) {
                     // Extract just the base64 part after the comma
                     const commaIndex = graphImage.indexOf(',');
                     if (commaIndex !== -1) {
                         imageData = graphImage.substring(commaIndex + 1);
                     }
+                } else if (!graphImage && isAggressivePhase) {
+                    // During aggressive phase, save placeholder for null images
+                    imageData = 'PLACEHOLDER_NULL_IMAGE';
                 }
-                
+
                 const snapshot = {
                     timestamp: now,
                     image: imageData, // Store just the base64 data, not the full data URL
                     viewState: JSON.parse(JSON.stringify(viewState)),
-                    activityScore: activityScore.toFixed(3) // Store activity for analysis
+                    activityScore: '0.000' // Not calculated - using simple 5s interval
                 };
-                
+
                 snapshotHistory.push(snapshot);
-                
+                totalSnapshotsCaptured++;
+
                 // Keep only last MAX_SNAPSHOTS
                 if (snapshotHistory.length > MAX_SNAPSHOTS) {
                     snapshotHistory.shift();
                 }
-                
+
                 // Save to localStorage
-                localStorage.setItem('causationExplorer_snapshotHistory', JSON.stringify(snapshotHistory));
+                try {
+                    localStorage.setItem('causationExplorer_snapshotHistory', JSON.stringify(snapshotHistory));
+                } catch (e) {
+                    console.error('[SNAPSHOT] Failed to save to localStorage:', e);
+                }
+
+                // Update display IMMEDIATELY - use requestAnimationFrame to ensure DOM is ready
+                requestAnimationFrame(() => {
+                    updateSnapshotCount();
+                    // Also force update the count element directly as backup
+                    const countElement = document.getElementById('snapshotCountValue');
+                    if (countElement) {
+                        countElement.textContent = snapshotHistory.length.toString();
+                    }
+                });
+
+                const runtimeMinutes = ((now - snapshotStartTime) / 60000).toFixed(1);
+                const captureRate = runtimeMinutes > 0 ? (totalSnapshotsCaptured / runtimeMinutes).toFixed(1) : 0;
                 
-                // Update display
-                updateSnapshotCount();
+                // Determine current phase for logging
+                let phase;
+                if (elapsedSeconds < 10) {
+                    phase = 'AGGRESSIVE (200ms)';
+                } else if (elapsedSeconds < 1800) {
+                    phase = 'RAMP (1s→5s)';
+                } else {
+                    phase = 'STEADY (5s)';
+                }
                 
-                console.log(`[ACTIVITY-SNAPSHOT] Captured (activity: ${(activityScore*100).toFixed(1)}%, interval: ${interval}ms, size: ${(imageSize/1024).toFixed(1)}KB)`);
+                console.log(`[SNAPSHOT] #${totalSnapshotsCaptured} captured [${phase}] (size: ${(imageSize / 1024).toFixed(1)}KB, rate: ${captureRate}/min, elapsed: ${elapsedSeconds.toFixed(1)}s)`);
+            } else {
+                // Log when capture failed (null image)
+                console.warn(`[SNAPSHOT] Capture attempt failed - no image data (elapsed: ${elapsedSeconds.toFixed(1)}s)`);
             }
         }
-        
-        // Start/stop activity-based snapshot capture
-        let snapshotStartTime = 0; // Track when snapshots started for burst mode
+
+        // Start/stop interval-based snapshot capture - THREE PHASE SYSTEM
+        // Phase 1 (0-10s): AGGRESSIVE - 200ms (catch initial explosion)
+        // Phase 2 (10s-30min): RAMP - 1s → 5s LINEAR GRADUAL DEGRADATION
+        //   - Smoothly increases interval from 1 second to 5 seconds over 30 minutes
+        //   - Matches system slowdown as it transitions from rapid growth to micro-adjustments
+        //   - Granular: Every capture uses a slightly longer interval than the previous
+        // Phase 3 (30min+): STEADY - 5s constant (efficient long-term)
         function startActivitySnapshots() {
-            if (activitySnapshotInterval) return; // Already running
-            
+            if (activitySnapshotInterval) {
+                console.log('[SNAPSHOT] Already running, skipping start');
+                return; // Already running
+            }
+
             snapshotStartTime = Date.now();
-            
-            // Wait for graph to actually render before starting captures
-            // Poll every 100ms until graph is visible, then start capturing
-            const checkGraphReady = setInterval(() => {
-                if (svg && svg.node() && svg.selectAll('.node-circle').size() > 0) {
-                    // Graph is rendered with visible nodes - start capturing!
-                    clearInterval(checkGraphReady);
-                    
-                    // Capture initial state
-                    if (allNodes && allNodes.length > 0) {
-                        allNodes.forEach(node => {
-                            if (node.x !== undefined && node.y !== undefined) {
-                                previousGraphState.nodePositions.set(node.id, { x: node.x, y: node.y });
-                            }
-                        });
-                        previousGraphState.nodeCount = allNodes.length;
-                        previousGraphState.linkCount = allLinks.length;
-                        previousGraphState.timestamp = Date.now();
-                    }
-                    
-                    // IMMEDIATELY capture first snapshot once graph is ready!
-                    captureActivitySnapshot();
-                    
-                    // Check activity and capture snapshots every 250ms (faster polling for responsiveness)
-                    activitySnapshotInterval = setInterval(() => {
-                        captureActivitySnapshot();
-                    }, 250);
-                    
-                    console.log('[ACTIVITY-SNAPSHOT] Graph ready - started activity-based adaptive snapshot capture - IMMEDIATE first capture');
-                } else if (Date.now() - snapshotStartTime > 10000) {
-                    // Timeout after 10 seconds - graph might not be loading
-                    clearInterval(checkGraphReady);
-                    console.warn('[ACTIVITY-SNAPSHOT] Graph not ready after 10 seconds - snapshot capture not started');
+            totalSnapshotsCaptured = 0;
+            console.log('[SNAPSHOT] Starting AGGRESSIVE capture - 200ms → 1s → 5s over 30 minutes');
+
+            // Capture FIRST snapshot immediately
+            captureActivitySnapshot();
+
+            // Three-phase dynamic interval system
+            function scheduleNextCapture() {
+                const now = Date.now();
+                const elapsedSeconds = (now - snapshotStartTime) / 1000;
+                
+                let interval;
+                let phase;
+                
+                if (elapsedSeconds < 10) {
+                    // PHASE 1: AGGRESSIVE (0-10 seconds) - 200ms interval
+                    // Purpose: Catch the moment graph first renders and initial explosion
+                    interval = 200;
+                    phase = 'AGGRESSIVE (200ms)';
+                } else if (elapsedSeconds < 1800) {
+                    // PHASE 2: RAMP (10s-30min) - Linear 1s → 5s
+                    // Purpose: Match evolution speed as it gradually slows
+                    // Gradual degradation: smoothly increases from 1s to 5s over 30 minutes
+                    const rampStart = 10;
+                    const rampDuration = 1800 - rampStart; // 1790 seconds (30 minutes)
+                    const progress = (elapsedSeconds - rampStart) / rampDuration; // 0.0 to 1.0
+                    interval = 1000 + (5000 - 1000) * progress; // Linear: 1000ms → 5000ms
+                    // Round to nearest 100ms for cleaner intervals
+                    interval = Math.round(interval / 100) * 100;
+                    phase = `RAMP (${(interval/1000).toFixed(1)}s)`;
+                } else {
+                    // PHASE 3: STEADY (30min+) - 5s constant
+                    // Purpose: Efficient long-term capture
+                    interval = 5000;
+                    phase = 'STEADY (5s)';
                 }
-            }, 100); // Check every 100ms for graph readiness
+                
+                // Schedule next capture - DON'T wait for capture to complete
+                activitySnapshotInterval = setTimeout(() => {
+                    // Fire and forget - don't await, let it run in background
+                    captureActivitySnapshot().catch(err => {
+                        console.error('[SNAPSHOT] Capture error:', err);
+                    });
+                    scheduleNextCapture(); // Schedule next immediately, don't wait
+                }, interval);
+                
+                // Log interval changes to show gradual degradation
+                // Show progression every 2 minutes during RAMP phase, or every 10 captures
+                const shouldLog = totalSnapshotsCaptured < 5 || 
+                                 (elapsedSeconds >= 10 && elapsedSeconds < 1800 && Math.floor(elapsedSeconds / 120) !== Math.floor((elapsedSeconds - 0.2) / 120)) ||
+                                 (totalSnapshotsCaptured > 0 && totalSnapshotsCaptured % 10 === 0);
+                
+                if (shouldLog) {
+                    const intervalSeconds = (interval / 1000).toFixed(2);
+                    console.log(`[SNAPSHOT] Next capture in ${intervalSeconds}s (${phase}, elapsed: ${elapsedSeconds.toFixed(1)}s, progress: ${elapsedSeconds < 1800 ? ((elapsedSeconds - 10) / 1790 * 100).toFixed(1) : '100'}%)`);
+                }
+            }
+            
+            // Start the dynamic scheduling
+            scheduleNextCapture();
         }
-        
+
         function stopActivitySnapshots() {
             if (activitySnapshotInterval) {
-                clearInterval(activitySnapshotInterval);
+                clearTimeout(activitySnapshotInterval); // Changed from clearInterval since we use setTimeout
                 activitySnapshotInterval = null;
-                console.log('[ACTIVITY-SNAPSHOT] Stopped activity-based snapshot capture');
+                console.log('[SNAPSHOT] Stopped snapshot capture');
             }
+        }
+
+        // Prune black images from snapshot history - CONSERVATIVE: only prune if VERY confident
+        function pruneBlackImages() {
+            if (!snapshotHistory || snapshotHistory.length === 0) return;
+            
+            const originalCount = snapshotHistory.length;
+            
+            function isBlackImage(imageData) {
+                if (!imageData || typeof imageData !== 'string') return true;
+                
+                // Must be very small to be considered black (under 3KB is suspicious)
+                if (imageData.length < 3000) return true;
+                
+                // Black images have extremely repetitive base64 patterns
+                // Check multiple samples across the image data
+                const sampleSize = Math.min(500, imageData.length);
+                const sample1 = imageData.substring(0, sampleSize);
+                const sample2 = imageData.substring(Math.floor(imageData.length / 2), Math.floor(imageData.length / 2) + sampleSize);
+                
+                // Count unique characters in samples
+                const uniqueChars1 = new Set(sample1).size;
+                const uniqueChars2 = new Set(sample2).size;
+                
+                // VERY CONSERVATIVE: Only consider black if BOTH samples have < 3 unique chars
+                // This means the image is almost entirely one color (black)
+                if (uniqueChars1 < 3 && uniqueChars2 < 3) return true;
+                
+                // If we're not sure, keep it (conservative approach)
+                return false;
+            }
+            
+            // Filter out black images
+            snapshotHistory = snapshotHistory.filter(snapshot => {
+                if (!snapshot || !snapshot.image) return false;
+                return !isBlackImage(snapshot.image);
+            });
+            
+            const removedCount = originalCount - snapshotHistory.length;
+            if (removedCount > 0) {
+                // Save cleaned history
+                localStorage.setItem('causationExplorer_snapshotHistory', JSON.stringify(snapshotHistory));
+                console.log(`[ACTIVITY-SNAPSHOT] Pruned ${removedCount} black images from history`);
+                updateSnapshotCount();
+            }
+            
+            return removedCount;
         }
 
         // Update snapshot count display
         function updateSnapshotCount() {
             const countElement = document.getElementById('snapshotCountValue');
+            const currentCount = snapshotHistory ? snapshotHistory.length : 0;
+            
             if (countElement) {
-                // Show count and activity level if available
-                let displayText = snapshotHistory.length.toString();
-                if (simulationRunning && lastActivityScore > 0) {
-                    const activityPercent = (lastActivityScore * 100).toFixed(0);
-                    displayText += ` (${activityPercent}% active)`;
-                }
-                countElement.textContent = displayText;
+                // Show count only - simple display
+                const oldCount = countElement.textContent;
+                countElement.textContent = currentCount.toString();
                 
+                // Log if count changed (for debugging)
+                if (oldCount !== currentCount.toString() && currentCount > 0) {
+                    console.log(`[SNAPSHOT] Counter updated: ${oldCount} → ${currentCount}`);
+                }
+
                 // Color code based on count: green for good (>=10), yellow for moderate (5-9), red for low (<5)
                 const countDisplay = document.getElementById('snapshotCountDisplay');
                 if (countDisplay) {
-                    if (snapshotHistory.length >= 10) {
+                    if (currentCount >= 10) {
                         countDisplay.style.borderColor = '#0f0';
                         countDisplay.style.color = '#0f0';
-                    } else if (snapshotHistory.length >= 5) {
+                    } else if (currentCount >= 5) {
                         countDisplay.style.borderColor = '#ff0';
                         countDisplay.style.color = '#ff0';
                     } else {
@@ -1905,16 +2059,35 @@
                         countDisplay.style.color = '#f00';
                     }
                 }
+            } else {
+                // Element not found - log for debugging
+                if (currentCount > 0 && totalSnapshotsCaptured < 5) {
+                    console.warn(`[SNAPSHOT] Count element not found! Count should be ${currentCount}`);
+                }
             }
         }
 
         // Initialize snapshot count display
         updateSnapshotCount();
+        
+        // Prune black images on startup (after function is defined)
+        setTimeout(() => {
+            if (typeof pruneBlackImages === 'function') {
+                pruneBlackImages();
+            }
+        }, 2000); // Wait 2 seconds for function to be defined
 
         // Update snapshot count every second to keep it current
         setInterval(() => {
             updateSnapshotCount();
         }, 1000);
+        
+        // Prune black images periodically (every 5 minutes)
+        setInterval(() => {
+            if (typeof pruneBlackImages === 'function') {
+                pruneBlackImages();
+            }
+        }, 300000); // 5 minutes = 300000ms
 
         // Snapshot gallery functions are defined later in the script
         const MAX_PAYLOAD_SIZE = 8000000; // Max 8MB total payload (safety limit for APIs)
@@ -1949,7 +2122,7 @@
             linkDensityMultiplier: 6.0,      // How much density affects width (0-10)
             linkDepthMultiplier: 3.0,         // How much depth affects width (0-5)
             linkNodeConnMultiplier: 2.0,      // How much node connections affect width (0-3)
-            
+
             // Node appearance
             nodeBaseSize: 8,
             nodeMaxSize: 12,
@@ -1958,30 +2131,30 @@
             nodeDepthSizeMultiplier: 4.0,     // How much depth affects size (0-6)
             nodeStrokeWidth: 3,
             nodeStrokeOpacity: 1.0,
-            
+
             // Depth effects
             depthStrength: 1.0,                // Overall depth effect multiplier (0-2)
             depthOpacityRange: 0.5,            // Opacity difference between front/back (0-1)
             depthSizeRange: 0.4,                // Size difference between front/back (0-1)
             depthParallaxAmount: 0.5,          // Parallax offset amount (0-2)
-            
+
             // Visual effects
             enableShadows: true,
             enableGlow: true,
             shadowOffset: 2,                   // Shadow offset in pixels (0-5)
             shadowBlur: 3,                     // Shadow blur radius (0-10)
             glowIntensity: 2,                   // Glow blur radius (0-5)
-            
+
             // Color intensity
             frontColorBrightness: 1.0,         // Front element brightness multiplier (0.5-1.5)
             backColorBrightness: 0.7,          // Back element brightness multiplier (0.3-1.0)
             colorSaturation: 1.0,              // Overall color saturation (0-2)
-            
+
             // Rendering performance
             maxVisibleLinks: 10000,            // Maximum links to render (performance)
             maxVisibleNodes: 5000,             // Maximum nodes to render (performance)
             renderQuality: 'high',             // 'low', 'medium', 'high'
-            
+
             // Animation/transitions
             enableTransitions: true,
             transitionDuration: 300,           // ms
@@ -2033,7 +2206,7 @@
 
                 allNodes = data.nodes || [];
                 allLinks = data.links || [];
-                
+
                 // Update activity tracking baseline when graph loads
                 if (allNodes && allNodes.length > 0) {
                     previousGraphState.nodePositions.clear();
@@ -2046,7 +2219,7 @@
                     previousGraphState.linkCount = allLinks.length;
                     previousGraphState.timestamp = Date.now();
                 }
-                
+
                 applyFilters();
             }).catch(err => {
                 console.error('Error loading graph:', err);
@@ -2193,7 +2366,7 @@
             if (displayElement) {
                 displayElement.textContent = typeof value === 'boolean' ? (value ? 'On' : 'Off') : value;
             }
-            
+
             // REAL-TIME UPDATE: Apply settings immediately without recreating simulation
             // This allows mid-simulation adjustments without interrupting the running simulation
             if (svg && allNodes.length > 0 && simulation) {
@@ -2203,11 +2376,11 @@
                 renderGraph();
             }
         }
-        
+
         // Real-time visualization update (preserves simulation state)
         function updateVisualizationInRealTime(key, value) {
             if (!svg || !simulation) return;
-            
+
             // Update SVG filters if shadow/glow settings changed
             if (key === 'shadowBlur' || key === 'shadowOffset' || key === 'enableShadows') {
                 const shadowFilter = svg.select('#nodeShadow');
@@ -2219,26 +2392,26 @@
                     }
                 }
             }
-            
+
             if (key === 'glowIntensity' || key === 'enableGlow') {
                 const glowFilter = svg.select('#nodeGlow');
                 if (glowFilter.size() > 0 && key === 'glowIntensity') {
                     glowFilter.select('feGaussianBlur').attr('stdDeviation', value);
                 }
             }
-            
+
             // Update link styles in real-time
-            if (key.startsWith('link') || key === 'linkBaseWidth' || key === 'linkMaxWidth' || 
-                key === 'linkMinOpacity' || key === 'linkMaxOpacity' || 
-                key === 'linkDensityMultiplier' || key === 'linkDepthMultiplier' || 
+            if (key.startsWith('link') || key === 'linkBaseWidth' || key === 'linkMaxWidth' ||
+                key === 'linkMinOpacity' || key === 'linkMaxOpacity' ||
+                key === 'linkDensityMultiplier' || key === 'linkDepthMultiplier' ||
                 key === 'linkNodeConnMultiplier') {
-                svg.selectAll('.link').each(function(d) {
+                svg.selectAll('.link').each(function (d) {
                     const link = d3.select(this);
                     const linkType = (d.type || d.causation_type || 'unknown').toLowerCase();
-                    
+
                     // Update stroke width
-                    if (key === 'linkBaseWidth' || key === 'linkMaxWidth' || 
-                        key === 'linkDensityMultiplier' || key === 'linkDepthMultiplier' || 
+                    if (key === 'linkBaseWidth' || key === 'linkMaxWidth' ||
+                        key === 'linkDensityMultiplier' || key === 'linkDepthMultiplier' ||
                         key === 'linkNodeConnMultiplier') {
                         const density = d._normalizedDensity || 0.5;
                         const nodeLinks = d._normalizedNodeLinks || 0.5;
@@ -2250,9 +2423,9 @@
                         const width = Math.min(maxWidth, baseWidth + (density * densityMult) + (nodeLinks * nodeConnMult * depthMult));
                         link.attr('stroke-width', width);
                     }
-                    
+
                     // Update opacity
-                    if (key === 'linkMinOpacity' || key === 'linkMaxOpacity' || 
+                    if (key === 'linkMinOpacity' || key === 'linkMaxOpacity' ||
                         key === 'linkDepthMultiplier') {
                         const depthScore = d._depthScore || 0.5;
                         const minOpacity = vizSettings.linkMinOpacity;
@@ -2261,7 +2434,7 @@
                         const opacity = minOpacity + (depthScore * (maxOpacity - minOpacity) * depthMult);
                         link.attr('stroke-opacity', opacity);
                     }
-                    
+
                     // Update color if link color changed
                     if (key.startsWith('linkColor_')) {
                         const colorType = key.replace('linkColor_', '');
@@ -2271,21 +2444,21 @@
                     }
                 });
             }
-            
+
             // Update node styles in real-time
-            if (key.startsWith('node') || key.startsWith('componentColor_') || 
-                key === 'depthStrength' || key === 'depthOpacityRange' || 
+            if (key.startsWith('node') || key.startsWith('componentColor_') ||
+                key === 'depthStrength' || key === 'depthOpacityRange' ||
                 key === 'depthSizeRange' || key === 'depthParallaxAmount' ||
-                key === 'frontColorBrightness' || key === 'backColorBrightness' || 
-                key === 'colorSaturation' || key === 'enableShadows' || 
+                key === 'frontColorBrightness' || key === 'backColorBrightness' ||
+                key === 'colorSaturation' || key === 'enableShadows' ||
                 key === 'enableGlow' || key === 'nodeStrokeWidth' || key === 'nodeStrokeOpacity') {
-                svg.selectAll('.node-circle').each(function(d) {
+                svg.selectAll('.node-circle').each(function (d) {
                     const node = d3.select(this);
                     const depthScore = d._depthScore || 0.5;
-                    
+
                     // Update size
-                    if (key === 'nodeBaseSize' || key === 'nodeMaxSize' || 
-                        key === 'nodeDepthSizeMultiplier' || key === 'depthStrength' || 
+                    if (key === 'nodeBaseSize' || key === 'nodeMaxSize' ||
+                        key === 'nodeDepthSizeMultiplier' || key === 'depthStrength' ||
                         key === 'depthSizeRange') {
                         const baseSize = vizSettings.nodeBaseSize;
                         const maxSize = vizSettings.nodeMaxSize;
@@ -2296,9 +2469,9 @@
                         const radius = Math.min(maxSize, baseSize + sizeIncrease);
                         node.attr('r', radius);
                     }
-                    
+
                     // Update opacity
-                    if (key === 'nodeMinOpacity' || key === 'nodeMaxOpacity' || 
+                    if (key === 'nodeMinOpacity' || key === 'nodeMaxOpacity' ||
                         key === 'depthOpacityRange' || key === 'depthStrength') {
                         const minOpacity = vizSettings.nodeMinOpacity;
                         const maxOpacity = vizSettings.nodeMaxOpacity;
@@ -2308,7 +2481,7 @@
                         const opacity = minOpacity + (depthScore * opacityRange * depthOpacityRange * depthStrength);
                         node.attr('fill-opacity', opacity);
                     }
-                    
+
                     // Update color
                     if (key.startsWith('componentColor_')) {
                         const component = key.replace('componentColor_', '');
@@ -2316,7 +2489,7 @@
                             node.attr('fill', value);
                         }
                     }
-                    
+
                     // Update stroke
                     if (key === 'nodeStrokeWidth') {
                         node.attr('stroke-width', value);
@@ -2324,7 +2497,7 @@
                     if (key === 'nodeStrokeOpacity') {
                         node.attr('stroke-opacity', value);
                     }
-                    
+
                     // Update filters
                     if (key === 'enableShadows' || key === 'enableGlow') {
                         if (!vizSettings.enableShadows && !vizSettings.enableGlow) {
@@ -2338,7 +2511,7 @@
                         }
                     }
                 });
-                
+
                 // Update legend for component colors (outside node loop, only once per color change)
                 if (key.startsWith('componentColor_')) {
                     const component = key.replace('componentColor_', '');
@@ -2352,7 +2525,7 @@
                     }
                 }
             }
-            
+
             // Update performance settings (may require re-render, but try to avoid it)
             if (key === 'maxVisibleLinks' || key === 'maxVisibleNodes' || key === 'renderQuality') {
                 // These require filtering, so we need to re-apply filters
@@ -2397,7 +2570,7 @@
                 transitionDuration: 300,
                 animationSpeed: 1.0,
             };
-            
+
             // Update all UI controls
             Object.keys(vizSettings).forEach(key => {
                 const element = document.getElementById(key);
@@ -2417,13 +2590,13 @@
         function applyVizSettingsFromCRA(settings) {
             // Apply ALL settings received from CRA
             console.log('[CRA] Applying visualization settings:', settings);
-            
+
             Object.keys(settings).forEach(key => {
                 // Handle component colors
                 if (key.startsWith('componentColor_')) {
                     const component = key.replace('componentColor_', '').toLowerCase();
                     const color = settings[key];
-                    
+
                     // Normalize component names (CRA might use different variations)
                     let normalizedComponent = component;
                     if (component === 'realitysim' || component === 'reality_simulator') {
@@ -2431,9 +2604,9 @@
                     } else if (component === 'djinnkernel' || component === 'utm_kernel') {
                         normalizedComponent = 'djinn_kernel';
                     }
-                    
+
                     updateComponentColor(normalizedComponent, color);
-                    
+
                     // Also update the color picker if it exists
                     const colorPicker = document.getElementById(`color-${normalizedComponent}`);
                     if (colorPicker) {
@@ -2445,7 +2618,7 @@
                             colorPicker.style.border = '';
                         }, 1000);
                     }
-                    
+
                     // Force legend update by directly selecting and updating
                     if (svg) {
                         const legendGroup = svg.select('.graph-legend');
@@ -2461,17 +2634,17 @@
                     }
                     return;
                 }
-                
+
                 // Handle link colors
                 if (key.startsWith('linkColor_')) {
                     const linkType = key.replace('linkColor_', '').toLowerCase();
                     const color = settings[key];
-                    
+
                     // Normalize link type names
                     let normalizedLinkType = linkType;
-                    
+
                     updateLinkColor(normalizedLinkType, color);
-                    
+
                     // Also update the color picker if it exists (check actual ID format: color-link-{type})
                     const colorPicker = document.getElementById(`color-link-${normalizedLinkType}`);
                     if (colorPicker) {
@@ -2485,7 +2658,7 @@
                     } else {
                         console.warn(`[CRA] Color picker not found for link type: ${normalizedLinkType} (tried id="color-link-${normalizedLinkType}")`);
                     }
-                    
+
                     // Force legend update by directly selecting and updating
                     if (svg) {
                         const legendGroup = svg.select('.graph-legend');
@@ -2501,17 +2674,17 @@
                     }
                     return;
                 }
-                
+
                 // Handle ALL other visualization settings (sliders, checkboxes, dropdowns)
                 // Update the vizSettings object
                 if (vizSettings.hasOwnProperty(key) || key.includes('Color') || key.includes('color')) {
                     vizSettings[key] = settings[key];
-                    
+
                     // Update the UI element if it exists
                     const element = document.getElementById(key);
                     if (element) {
                         const oldValue = element.type === 'checkbox' ? element.checked : element.value;
-                        
+
                         if (element.type === 'checkbox') {
                             element.checked = Boolean(settings[key]);
                         } else if (element.type === 'range') {
@@ -2521,7 +2694,7 @@
                         } else if (element.tagName === 'SELECT') {
                             element.value = String(settings[key]);
                         }
-                        
+
                         // Visual feedback: briefly highlight the control that changed
                         if (oldValue !== (element.type === 'checkbox' ? element.checked : element.value)) {
                             element.style.backgroundColor = '#0ff';
@@ -2530,7 +2703,7 @@
                                 element.style.backgroundColor = '';
                             }, 1000);
                         }
-                        
+
                         // Update the display value if it exists
                         const displayElement = document.getElementById(key + 'Value');
                         if (displayElement) {
@@ -2550,7 +2723,7 @@
                     vizSettings[key] = settings[key];
                 }
             });
-            
+
             // Apply all settings in real-time (preserves simulation state)
             if (svg && allNodes.length > 0 && simulation) {
                 // Apply each setting update in real-time
@@ -2608,7 +2781,7 @@
                         'breath': 'filter-breath',
                         'system': 'filter-system'
                     };
-                    
+
                     for (const [key, checkboxId] of Object.entries(componentMap)) {
                         const checkbox = document.getElementById(checkboxId);
                         if (checkbox && filterData.components[key] !== undefined) {
@@ -2625,7 +2798,7 @@
                         'direct': 'filter-direct',
                         'temporal': 'filter-temporal'
                     };
-                    
+
                     for (const [key, checkboxId] of Object.entries(causationMap)) {
                         const checkbox = document.getElementById(checkboxId);
                         if (checkbox && filterData.causation_types[key] !== undefined) {
@@ -2670,9 +2843,9 @@
                 toggleLabels();
                 toggleLinks();
                 toggleTemporalPaths();
-                
+
                 console.log('[CRA] All filter functions called');
-                
+
                 console.log('[CRA] Graph filters applied:', filterData);
             } catch (e) {
                 console.error('[CRA] Error applying graph filters:', e);
@@ -2772,7 +2945,7 @@
 
             // Create SVG filters for depth effects (shadows, blur, glow)
             const defs = svg.append('defs');
-            
+
             // Shadow filter for depth
             const shadowFilter = defs.append('filter')
                 .attr('id', 'nodeShadow')
@@ -2800,9 +2973,9 @@
             shadowFilter.append('feMerge')
                 .append('feMergeNode')
                 .attr('in', 'SourceGraphic');
-            
+
             // No blur filter - keeping lines crisp and distinct
-            
+
             // Glow filter for foreground elements
             const glowFilter = defs.append('filter')
                 .attr('id', 'nodeGlow')
@@ -2844,7 +3017,7 @@
             const legendGroup = overlay.append('g')
                 .attr('class', 'graph-legend')
                 .attr('transform', 'translate(20, 20)');
-            
+
             // Component colors (using configurable colors)
             const components = [
                 { name: 'Reality Simulator', color: componentColors['reality_sim'] },
@@ -2853,7 +3026,7 @@
                 { name: 'Breath Engine', color: componentColors['breath'] },
                 { name: 'System', color: componentColors['system'] }
             ];
-            
+
             // Link/edge colors (using configurable colors)
             const linkTypes = [
                 { name: 'Threshold', color: linkColors['threshold'] || '#FF00FF' },
@@ -2862,7 +3035,7 @@
                 { name: 'Temporal', color: linkColors['temporal'] || '#FFFF00' },
                 { name: 'Unknown', color: linkColors['unknown'] || '#FF8800' }
             ];
-            
+
             // Calculate legend dimensions based on content (components + links + info)
             const titleHeight = 20;
             const itemHeight = 18;
@@ -2873,9 +3046,9 @@
             const padding = 10;
             const legendWidth = 300; // Wider to fit longer names
             const legendHeight = titleHeight + componentsHeight + sectionSpacing + linksHeight + infoHeight + (padding * 2);
-            
+
             // Legend background - REMOVED (no box around legend)
-            
+
             // Title
             legendGroup.append('text')
                 .attr('x', 0)
@@ -2884,15 +3057,15 @@
                 .attr('font-size', '14px')
                 .attr('font-weight', 'bold')
                 .text('GRAPH LEGEND');
-            
+
             // Component colors with labels (store component key for easy updates)
             components.forEach((comp, i) => {
                 const yPos = titleHeight + (i * itemHeight);
                 // Color dot with data attribute for easy selection
                 const compKey = comp.name === 'Reality Simulator' ? 'reality_sim' :
-                               comp.name === 'Explorer' ? 'explorer' :
-                               comp.name === 'Djinn Kernel' ? 'djinn_kernel' :
-                               comp.name === 'Breath Engine' ? 'breath' : 'system';
+                    comp.name === 'Explorer' ? 'explorer' :
+                        comp.name === 'Djinn Kernel' ? 'djinn_kernel' :
+                            comp.name === 'Breath Engine' ? 'breath' : 'system';
                 legendGroup.append('circle')
                     .attr('cx', 0)
                     .attr('cy', yPos)
@@ -2910,9 +3083,9 @@
                     .attr('font-size', '11px')
                     .text(comp.name);
             });
-            
+
             // Section separator - REMOVED (no horizontal line)
-            
+
             // Link/edge colors with labels (store link type for easy updates)
             linkTypes.forEach((link, i) => {
                 const yPos = titleHeight + componentsHeight + sectionSpacing + (i * itemHeight);
@@ -2935,7 +3108,7 @@
                     .attr('font-size', '11px')
                     .text(link.name);
             });
-            
+
             // Graph info (on separate line for clarity)
             const infoY = titleHeight + componentsHeight + sectionSpacing + linksHeight + 5;
             legendGroup.append('text')
@@ -2969,7 +3142,7 @@
             // Calculate link density for visual depth (safely, without circular refs)
             const linkDensity = new Map();
             const nodeLinkCount = new Map();
-            
+
             links.forEach(link => {
                 const key = `${link.source}-${link.target}`;
                 linkDensity.set(key, (linkDensity.get(key) || 0) + 1);
@@ -3072,7 +3245,7 @@
 
             // Create shadow circle first (behind main circle for depth)
             if (vizSettings.enableShadows) {
-            node.append('circle')
+                node.append('circle')
                     .attr('class', 'node-shadow')
                     .attr('r', d => {
                         const baseRadius = vizSettings.nodeBaseSize + (d.type ? 2 : 0);
@@ -3108,8 +3281,8 @@
                     const depthScore = d._depthScore || 0.5;
                     const depthStrength = vizSettings.depthStrength;
                     // Apply brightness based on depth
-                    const brightness = depthScore > 0.5 
-                        ? vizSettings.frontColorBrightness 
+                    const brightness = depthScore > 0.5
+                        ? vizSettings.frontColorBrightness
                         : vizSettings.backColorBrightness;
                     // Apply saturation
                     const sat = vizSettings.colorSaturation;
@@ -3282,11 +3455,11 @@
 
         function updateTransform() {
             if (graphGroup) {
-            const graphElement = document.getElementById('graph');
-            const centerX = graphElement.clientWidth / 2;
-            const centerY = graphElement.clientHeight / 2; // Use actual graph height, not hardcoded 300
+                const graphElement = document.getElementById('graph');
+                const centerX = graphElement.clientWidth / 2;
+                const centerY = graphElement.clientHeight / 2; // Use actual graph height, not hardcoded 300
 
-            graphGroup.attr('transform', `
+                graphGroup.attr('transform', `
                 translate(${centerX + panX}, ${centerY + panY})
                 scale(${zoomLevel})
                 rotate(${rotation})
@@ -3411,7 +3584,7 @@
                 const centerX = graphElement.clientWidth / 2;
                 const centerY = graphElement.clientHeight / 2;
                 // Reset pan to center the view, but shift down to account for legend at top
-            panX = 0;
+                panX = 0;
                 panY = 90; // Shift down so legend is visible at top
             } else {
                 panX = 0;
@@ -3844,9 +4017,9 @@
             // REAL-TIME UPDATE: Use real-time update if simulation is running, otherwise full re-render
             if (svg && allNodes.length > 0 && simulation) {
                 // Update colors in real-time without recreating simulation
-                svg.selectAll('.node-circle').each(function(d) {
+                svg.selectAll('.node-circle').each(function (d) {
                     const node = d3.select(this);
-                    if (d.component === component || (component === 'reality_sim' && d.component === 'reality_simulator') || 
+                    if (d.component === component || (component === 'reality_sim' && d.component === 'reality_simulator') ||
                         (component === 'djinn_kernel' && d.component === 'utm_kernel')) {
                         node.attr('fill', color);
                     }
@@ -3881,14 +4054,14 @@
             // REAL-TIME UPDATE: Use real-time update if simulation is running, otherwise full re-render
             if (svg && allNodes.length > 0 && simulation) {
                 // Update link colors in real-time without recreating simulation
-                svg.selectAll('.link').each(function(d) {
+                svg.selectAll('.link').each(function (d) {
                     const link = d3.select(this);
                     const dType = (d.type || d.causation_type || 'unknown').toLowerCase().trim();
                     if (dType === normalizedType) {
                         link.attr('stroke', color);
                     }
                 });
-                
+
                 // Update legend if it exists - use data attribute for reliable selection
                 const legendGroup = svg.select('.graph-legend');
                 if (legendGroup.size() > 0) {
@@ -3918,7 +4091,7 @@
             const toggle = document.getElementById('filterPanelToggle');
             const toggleText = document.getElementById('filterPanelToggleText');
             const graphContainer = document.querySelector('.graph-container');
-            
+
             if (panel.classList.contains('minimized')) {
                 panel.classList.remove('minimized');
                 toggleText.textContent = '−';
@@ -3994,7 +4167,7 @@
         // Build tree structure from trail data (handles both backwards and forwards)
         function buildCausationTree(trail, rootEventId, isForwards = false) {
             if (!trail || trail.length === 0) return null;
-            
+
             // Create a map of event_id -> node data
             const nodeMap = new Map();
             trail.forEach(item => {
@@ -4008,7 +4181,7 @@
                     caused_by: item.caused_by || [] // For backwards: events that caused this
                 });
             });
-            
+
             // Find root node (the selected event)
             let rootNode = null;
             if (rootEventId && nodeMap.has(rootEventId)) {
@@ -4021,9 +4194,9 @@
                     rootNode = nodeMap.get(rootItems[0].event.event_id);
                 }
             }
-            
+
             if (!rootNode) return null;
-            
+
             // Build tree structure using actual parent-child relationships
             if (isForwards) {
                 // Forwards: build from 'caused' relationships
@@ -4033,13 +4206,13 @@
                 // In backwards, we want to show causes as children going deeper
                 buildChildrenFromCausedBy(rootNode, nodeMap, trail);
             }
-            
+
             return rootNode;
         }
-        
+
         function buildChildrenFromCaused(node, nodeMap) {
             if (!node.caused || node.caused.length === 0) return;
-            
+
             node.caused.forEach(causedEvent => {
                 const childNode = nodeMap.get(causedEvent.event_id);
                 if (childNode && !node.children.find(c => c.event.event_id === childNode.event.event_id)) {
@@ -4048,19 +4221,19 @@
                 }
             });
         }
-        
+
         function buildChildrenFromCausedBy(rootNode, nodeMap, trail) {
             // For backwards: we want to show causes as children
             // The API gives us 'caused_by' array for each event
             // We build tree by following 'caused_by' relationships
-            
+
             function addCausesAsChildren(node) {
                 // Find the trail item for this node
                 const trailItem = trail.find(item => item.event.event_id === node.event.event_id);
                 if (!trailItem || !trailItem.caused_by || trailItem.caused_by.length === 0) {
                     return; // No causes, this is a root cause
                 }
-                
+
                 // Add each cause as a child
                 trailItem.caused_by.forEach(causeEvent => {
                     const causeNode = nodeMap.get(causeEvent.event_id);
@@ -4070,23 +4243,23 @@
                     }
                 });
             }
-            
+
             addCausesAsChildren(rootNode);
         }
 
         // Render tree node recursively
         function renderTreeNode(node, container, onClickCallback) {
             if (!node) return;
-            
+
             const nodeDiv = document.createElement('div');
             nodeDiv.className = 'tree-node collapsed';
             nodeDiv.dataset.eventId = node.event.event_id;
-            
+
             const component = node.event.component || 'unknown';
             const hasChildren = node.children && node.children.length > 0;
             const dataStr = JSON.stringify(node.event.data, null, 2);
             const dataPreview = dataStr.length > 200 ? dataStr.substring(0, 200) + '...' : dataStr;
-            
+
             nodeDiv.innerHTML = `
                 <div class="tree-node-header">
                     ${hasChildren ? '<span class="tree-toggle"></span>' : '<span class="tree-toggle" style="opacity: 0.3;">•</span>'}
@@ -4101,7 +4274,7 @@
                         </div>
                 ${hasChildren ? '<div class="tree-children"></div>' : ''}
             `;
-            
+
             // Toggle expand/collapse
             if (hasChildren) {
                 const toggle = nodeDiv.querySelector('.tree-toggle');
@@ -4111,7 +4284,7 @@
                     nodeDiv.classList.toggle('collapsed');
                 });
             }
-            
+
             // Click to select event
             nodeDiv.addEventListener('click', (e) => {
                 if (e.target.classList.contains('tree-toggle')) return;
@@ -4119,7 +4292,7 @@
                     onClickCallback(node.event.event_id);
                 }
             });
-            
+
             // Render children
             if (hasChildren) {
                 const childrenContainer = nodeDiv.querySelector('.tree-children');
@@ -4127,7 +4300,7 @@
                     renderTreeNode(child, childrenContainer, onClickCallback);
                 });
             }
-            
+
             container.appendChild(nodeDiv);
         }
 
@@ -4138,13 +4311,13 @@
                     trailDiv.innerHTML = '<div style="color: #888; padding: 10px;">No causation trail found (root cause)</div>';
                     return;
                 }
-                
+
                 // Build tree structure
                 const treeRoot = buildCausationTree(trail, eventId);
-                
+
                 trailDiv.innerHTML = '<div class="causation-tree"></div>';
                 const treeContainer = trailDiv.querySelector('.causation-tree');
-                
+
                 if (treeRoot) {
                     // Render tree starting from root
                     renderTreeNode(treeRoot, treeContainer, (clickedEventId) => {
@@ -4152,9 +4325,9 @@
                     });
                 } else {
                     // Fallback to flat list if tree building fails
-                trailDiv.innerHTML = trail.map((item, idx) => {
-                    const component = item.event.component || 'unknown';
-                    return `
+                    trailDiv.innerHTML = trail.map((item, idx) => {
+                        const component = item.event.component || 'unknown';
+                        return `
                         <div class="event-item causation-trail" style="margin-left: ${item.depth * 20}px;">
                             <div style="margin-bottom: 8px;">
                                 <span class="depth-indicator">[Depth ${item.depth}]</span>
@@ -4165,7 +4338,7 @@
                             <pre>${JSON.stringify(item.event.data, null, 2)}</pre>
                         </div>
                     `;
-                }).join('');
+                    }).join('');
                 }
             }).catch(err => {
                 console.error('Error exploring backwards:', err);
@@ -4180,13 +4353,13 @@
                     trailDiv.innerHTML = '<div style="color: #888; padding: 10px;">No effects found (leaf event)</div>';
                     return;
                 }
-                
+
                 // Build tree structure (forwards = effects, isForwards = true)
                 const treeRoot = buildCausationTree(trail, eventId, true);
-                
+
                 trailDiv.innerHTML = '<div class="causation-tree"></div>';
                 const treeContainer = trailDiv.querySelector('.causation-tree');
-                
+
                 if (treeRoot) {
                     // Render tree starting from root
                     renderTreeNode(treeRoot, treeContainer, (clickedEventId) => {
@@ -4194,9 +4367,9 @@
                     });
                 } else {
                     // Fallback to flat list if tree building fails
-                trailDiv.innerHTML = trail.map((item, idx) => {
-                    const component = item.event.component || 'unknown';
-                    return `
+                    trailDiv.innerHTML = trail.map((item, idx) => {
+                        const component = item.event.component || 'unknown';
+                        return `
                         <div class="event-item causation-trail" style="margin-left: ${item.depth * 20}px;">
                             <div style="margin-bottom: 8px;">
                                 <span class="depth-indicator">[Effect ${item.depth}]</span>
@@ -4207,7 +4380,7 @@
                             <pre>${JSON.stringify(item.event.data, null, 2)}</pre>
                         </div>
                     `;
-                }).join('');
+                    }).join('');
                 }
             }).catch(err => {
                 console.error('Error exploring forwards:', err);
@@ -4929,8 +5102,24 @@
         // Capture graph as image (SVG to canvas to base64)
         function captureGraphImage() {
             return new Promise((resolve) => {
+                // REMOVED: Early return when svg doesn't exist - this was blocking captures
+                // Instead, try to capture container or return placeholder
                 if (!svg || !svg.node()) {
-                    resolve(null);
+                    // Try to capture the graph container as fallback
+                    const graphContainer = document.querySelector('.graph-container');
+                    if (graphContainer) {
+                        // Use html2canvas if available, otherwise return placeholder
+                        if (typeof html2canvas !== 'undefined') {
+                            html2canvas(graphContainer).then(canvas => {
+                                resolve(canvas.toDataURL('image/jpeg', 0.85));
+                            }).catch(() => resolve(null));
+                        } else {
+                            // No html2canvas - return null but don't block
+                            resolve(null);
+                        }
+                    } else {
+                        resolve(null);
+                    }
                     return;
                 }
 
@@ -4938,10 +5127,10 @@
                     // CRITICAL: Force a synchronous layout recalculation to ensure SVG is up-to-date
                     // This ensures we capture the CURRENT visual state, not a cached state
                     const svgElement = svg.node();
-                    
+
                     // Force browser to recalculate layout and styles
                     svgElement.offsetHeight; // Trigger reflow
-                    
+
                     // Create a clone of the SVG that respects visibility filters
                     // Clone AFTER ensuring layout is current
                     const clone = svgElement.cloneNode(true);
@@ -5021,10 +5210,10 @@
                         ctx.fillStyle = '#000000';
                         ctx.fillRect(0, 0, canvas.width, canvas.height);
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        
+
                         // REMOVED: Title, subtitle, and bottom-left legend from snapshots
                         // (Legend is now only in top-left of main graph, no box)
-                        
+
                         // Add metadata only (top-right corner)
                         ctx.fillStyle = '#888888';
                         ctx.font = '10px Arial, sans-serif';
@@ -5227,7 +5416,7 @@
             // Capture current graph image only if there's actual graph data
             const hasGraphData = allNodes && allNodes.length > 0;
             let graphImage = null;
-            
+
             if (hasGraphData) {
                 // CRITICAL: Wait for browser to finish rendering before capturing
                 // This ensures we capture the CURRENT state, not a cached/old state
@@ -5239,13 +5428,13 @@
                         });
                     });
                 });
-                
+
                 // Small additional delay to ensure all DOM updates are flushed
                 await new Promise(resolve => setTimeout(resolve, 50));
-                
+
                 console.log('[VISION] Capturing current graph state (ensured render completion)');
                 graphImage = await captureGraphImage();
-                
+
                 if (graphImage) {
                     console.log(`[VISION] Captured fresh graph image: ${(graphImage.length / 1024).toFixed(1)}KB`);
                 } else {
@@ -5274,15 +5463,15 @@
             // Note: hasGraphData already declared above, reuse it
             const maxSnapshotAge = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
             const now = Date.now();
-            
+
             let evolutionarySnapshots = [];
-            
+
             if (visionModel && hasGraphData) {
                 // Only include recent snapshots (within 2 hours) that have meaningful content
                 const MIN_VALID_SNAPSHOT_SIZE = 20000; // Minimum 20KB - filter out blank/empty images
                 const MIN_SNAPSHOT_SPACING = 1000; // Minimum 1 second between snapshots (allows frequent captures)
                 const MAX_SNAPSHOTS_FOR_EVOLUTION = 10; // Keep up to 10 historical frames
-                
+
                 let validSnapshots = snapshotHistory
                     .filter(s => {
                         const age = now - s.timestamp;
@@ -5291,23 +5480,23 @@
                         return isRecent && hasContent;
                     })
                     .map(s => ({
-                timestamp: s.timestamp,
-                image: s.image,
+                        timestamp: s.timestamp,
+                        image: s.image,
                         age_seconds: (now - s.timestamp) / 1000
                     }));
-                
+
                 // Sort by timestamp (oldest first) to ensure proper evolution sequence
                 validSnapshots.sort((a, b) => a.timestamp - b.timestamp);
-                
+
                 // Remove consecutive duplicate images (same visual state)
                 validSnapshots = dedupeSnapshotsByImage(validSnapshots);
-                
+
                 // Enforce spacing to avoid overly dense captures
                 let spacedSnapshots = enforceSnapshotSpacing(validSnapshots, MIN_SNAPSHOT_SPACING);
                 if (spacedSnapshots.length === 0 && validSnapshots.length > 0) {
                     spacedSnapshots = [validSnapshots[0]];
                 }
-                
+
                 // Evenly sample across entire timeline if we still have more than allowed
                 if (spacedSnapshots.length > MAX_SNAPSHOTS_FOR_EVOLUTION) {
                     spacedSnapshots = sampleSnapshotsEvenlyChronologically(spacedSnapshots, MAX_SNAPSHOTS_FOR_EVOLUTION);
@@ -5322,15 +5511,15 @@
 
                 // Ensure payload budget keeps chronological coverage
                 evolutionarySnapshots = enforceSnapshotPayloadBudget(evolutionarySnapshots, graphImage, message);
-                
+
                 console.log(`[VISION] Building request with ${evolutionarySnapshots.length} valid snapshots (from ${snapshotHistory.length} total, filtered to recent + meaningful content + spaced)`);
-                
+
                 // Log snapshot sizes and spacing for debugging
                 evolutionarySnapshots.forEach((s, i) => {
                     const sizeKB = (s.image.length / 1024).toFixed(1);
                     const ageMin = (s.age_seconds / 60).toFixed(1);
-                    const spacing = i > 0 ? ((s.timestamp - evolutionarySnapshots[i-1].timestamp) / 1000).toFixed(0) : 'N/A';
-                    console.log(`[VISION] Snapshot ${i+1}: ${sizeKB}KB, ${ageMin}min ago, ${spacing}s since previous`);
+                    const spacing = i > 0 ? ((s.timestamp - evolutionarySnapshots[i - 1].timestamp) / 1000).toFixed(0) : 'N/A';
+                    console.log(`[VISION] Snapshot ${i + 1}: ${sizeKB}KB, ${ageMin}min ago, ${spacing}s since previous`);
                 });
             } else {
                 if (visionModel && !hasGraphData) {
@@ -5368,10 +5557,10 @@
                 evolutionarySnapshots.forEach((s, i) => {
                     const sizeKB = (s.image.length / 1024).toFixed(1);
                     const ageMin = (s.age_seconds / 60).toFixed(1);
-                    console.log(`    Snapshot ${i+1}: ${sizeKB}KB, ${ageMin}min ago`);
+                    console.log(`    Snapshot ${i + 1}: ${sizeKB}KB, ${ageMin}min ago`);
                 });
             }
-            
+
             const requestData = {
                 message: message,
                 model: researchModel,
@@ -5402,12 +5591,12 @@
                     // Parse visual description to extract per-image descriptions
                     function parseImageDescriptions(visualDescription) {
                         if (!visualDescription) return {};
-                        
+
                         const descriptions = {};
                         // Look for patterns like "Image 1/10", "▶️ Image 1/10", "Image 1:", etc.
                         const imagePattern = /(?:▶️\s*)?Image\s+(\d+)(?:\/(\d+))?[:\-]?\s*([^▶]*?)(?=(?:▶️\s*)?Image\s+\d+|$)/gis;
                         let match;
-                        
+
                         while ((match = imagePattern.exec(visualDescription)) !== null) {
                             const imageNum = parseInt(match[1]);
                             const description = match[3].trim();
@@ -5415,33 +5604,33 @@
                                 descriptions[imageNum] = description;
                             }
                         }
-                        
+
                         return descriptions;
                     }
-                    
+
                     // Show vision description summary (everything before first image)
                     if (data.visual_description) {
                         const summaryMatch = data.visual_description.match(/^([^▶]*?)(?=(?:▶️\s*)?Image\s+1)/s);
                         const summary = summaryMatch ? summaryMatch[1].trim() : data.visual_description.split(/(?:▶️\s*)?Image\s+1/)[0].trim();
-                        
+
                         if (summary) {
                             addChatMessage('vision', `[Vision Analysis] ${summary}`);
                         }
                     }
 
                     // Function to draw annotations on an image (from vision agent)
-                            function drawAnnotationsOnImage(imgElement, annotations) {
-                                if (!annotations || !annotations.annotations || annotations.annotations.length === 0) {
-                                    return; // No annotations to draw
-                                }
-                                
-                                const canvas = document.createElement('canvas');
-                                const ctx = canvas.getContext('2d');
+                    function drawAnnotationsOnImage(imgElement, annotations) {
+                        if (!annotations || !annotations.annotations || annotations.annotations.length === 0) {
+                            return; // No annotations to draw
+                        }
+
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
                         canvas.className = 'annotation-layer';
-                                
-                        const drawAnnotations = function() {
-                                    canvas.width = imgElement.naturalWidth || imgElement.width;
-                                    canvas.height = imgElement.naturalHeight || imgElement.height;
+
+                        const drawAnnotations = function () {
+                            canvas.width = imgElement.naturalWidth || imgElement.width;
+                            canvas.height = imgElement.naturalHeight || imgElement.height;
 
                             const meta = annotations.meta || {};
                             const referenceWidth = meta.image_width || meta.width || 1024;
@@ -5462,97 +5651,97 @@
                                 }
                                 return Math.max(3, (radius / referenceWidth) * dimension);
                             };
-                                    
-                                    // Draw original image
-                                    ctx.drawImage(imgElement, 0, 0);
-                                    
+
+                            // Draw original image
+                            ctx.drawImage(imgElement, 0, 0);
+
                             // Draw annotations from vision agent
-                                    annotations.annotations.forEach(ann => {
-                                        const type = ann.type;
-                                        const color = ann.color || '#FF0000';
-                                        
-                                        ctx.strokeStyle = color;
-                                        ctx.fillStyle = color;
-                                        ctx.lineWidth = 3;
+                            annotations.annotations.forEach(ann => {
+                                const type = ann.type;
+                                const color = ann.color || '#FF0000';
+
+                                ctx.strokeStyle = color;
+                                ctx.fillStyle = color;
+                                ctx.lineWidth = 3;
                                 ctx.font = 'bold 16px Arial';
-                                        
-                                        if (type === 'circle') {
+
+                                if (type === 'circle') {
                                     const x = normalizeCoord(ann.x || 0, canvas.width, referenceWidth);
                                     const y = normalizeCoord(ann.y || 0, canvas.height, referenceHeight);
                                     const radius = clampRadius(ann.radius || 20, Math.min(canvas.width, canvas.height));
-                                            const label = ann.label || '';
-                                            
-                                            // Draw circle
-                                            ctx.beginPath();
-                                            ctx.arc(x, y, radius, 0, 2 * Math.PI);
-                                            ctx.stroke();
-                                            
+                                    const label = ann.label || '';
+
+                                    // Draw circle
+                                    ctx.beginPath();
+                                    ctx.arc(x, y, radius, 0, 2 * Math.PI);
+                                    ctx.stroke();
+
                                     // Draw label with background
-                                            if (label) {
+                                    if (label) {
                                         const textMetrics = ctx.measureText(label);
                                         ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
                                         ctx.fillRect(x + radius + 5, y - 30, textMetrics.width + 10, 25);
-                                                ctx.fillStyle = color;
+                                        ctx.fillStyle = color;
                                         ctx.fillText(label, x + radius + 10, y - 10);
-                                            }
-                                        } else if (type === 'arrow') {
+                                    }
+                                } else if (type === 'arrow') {
                                     const x1 = normalizeCoord(ann.x1 || 0, canvas.width, referenceWidth);
                                     const y1 = normalizeCoord(ann.y1 || 0, canvas.height, referenceHeight);
                                     const x2 = normalizeCoord(ann.x2 || 0, canvas.width, referenceWidth);
                                     const y2 = normalizeCoord(ann.y2 || 0, canvas.height, referenceHeight);
-                                            const label = ann.label || '';
-                                            
-                                            // Draw arrow line
-                                            ctx.beginPath();
-                                            ctx.moveTo(x1, y1);
-                                            ctx.lineTo(x2, y2);
-                                            ctx.stroke();
-                                            
-                                            // Draw arrowhead
-                                            const angle = Math.atan2(y2 - y1, x2 - x1);
-                                            const arrowSize = 10;
-                                            const arrowX1 = x2 - arrowSize * Math.cos(angle - Math.PI / 6);
-                                            const arrowY1 = y2 - arrowSize * Math.sin(angle - Math.PI / 6);
-                                            const arrowX2 = x2 - arrowSize * Math.cos(angle + Math.PI / 6);
-                                            const arrowY2 = y2 - arrowSize * Math.sin(angle + Math.PI / 6);
-                                            
-                                            ctx.beginPath();
-                                            ctx.moveTo(x2, y2);
-                                            ctx.lineTo(arrowX1, arrowY1);
-                                            ctx.lineTo(arrowX2, arrowY2);
-                                            ctx.closePath();
-                                            ctx.fill();
-                                            
+                                    const label = ann.label || '';
+
+                                    // Draw arrow line
+                                    ctx.beginPath();
+                                    ctx.moveTo(x1, y1);
+                                    ctx.lineTo(x2, y2);
+                                    ctx.stroke();
+
+                                    // Draw arrowhead
+                                    const angle = Math.atan2(y2 - y1, x2 - x1);
+                                    const arrowSize = 10;
+                                    const arrowX1 = x2 - arrowSize * Math.cos(angle - Math.PI / 6);
+                                    const arrowY1 = y2 - arrowSize * Math.sin(angle - Math.PI / 6);
+                                    const arrowX2 = x2 - arrowSize * Math.cos(angle + Math.PI / 6);
+                                    const arrowY2 = y2 - arrowSize * Math.sin(angle + Math.PI / 6);
+
+                                    ctx.beginPath();
+                                    ctx.moveTo(x2, y2);
+                                    ctx.lineTo(arrowX1, arrowY1);
+                                    ctx.lineTo(arrowX2, arrowY2);
+                                    ctx.closePath();
+                                    ctx.fill();
+
                                     // Draw label at midpoint with background
-                                            if (label) {
-                                                const midX = (x1 + x2) / 2;
-                                                const midY = (y1 + y2) / 2;
+                                    if (label) {
+                                        const midX = (x1 + x2) / 2;
+                                        const midY = (y1 + y2) / 2;
                                         const textMetrics = ctx.measureText(label);
                                         ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
                                         ctx.fillRect(midX - 5, midY - 30, textMetrics.width + 10, 25);
-                                                ctx.fillStyle = color;
+                                        ctx.fillStyle = color;
                                         ctx.fillText(label, midX, midY - 10);
-                                            }
-                                        } else if (type === 'text') {
+                                    }
+                                } else if (type === 'text') {
                                     const x = normalizeCoord(ann.x || 0, canvas.width, referenceWidth);
                                     const y = normalizeCoord(ann.y || 0, canvas.height, referenceHeight);
-                                            const text = ann.text || '';
-                                            
-                                            // Draw text with background for visibility
-                                            const metrics = ctx.measureText(text);
-                                            const padding = 4;
-                                            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-                                            ctx.fillRect(
-                                                x - padding,
-                                                y - 16 - padding,
-                                                metrics.width + padding * 2,
-                                                20 + padding * 2
-                                            );
-                                            ctx.fillStyle = color;
-                                            ctx.fillText(text, x, y);
-                                        }
-                                    });
-                                    
+                                    const text = ann.text || '';
+
+                                    // Draw text with background for visibility
+                                    const metrics = ctx.measureText(text);
+                                    const padding = 4;
+                                    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                                    ctx.fillRect(
+                                        x - padding,
+                                        y - 16 - padding,
+                                        metrics.width + padding * 2,
+                                        20 + padding * 2
+                                    );
+                                    ctx.fillStyle = color;
+                                    ctx.fillText(text, x, y);
+                                }
+                            });
+
                             // Remove any previous annotation canvas next to this image
                             const nextSibling = imgElement.nextSibling;
                             if (nextSibling && nextSibling.classList && nextSibling.classList.contains('annotation-layer')) {
@@ -5561,17 +5750,17 @@
 
                             // Show annotations overlay beneath the original image to preserve hover tooltips
                             canvas.style.cssText = 'max-width: 100%; height: auto; border: 2px solid #0ff; border-radius: 3px; margin-top: 8px; display: block;';
-                                    imgElement.parentNode.insertBefore(canvas, imgElement.nextSibling);
-                                };
-                                
+                            imgElement.parentNode.insertBefore(canvas, imgElement.nextSibling);
+                        };
+
                         // Wait for image to load or draw immediately if already loaded
                         if (imgElement.complete && imgElement.naturalWidth > 0) {
                             drawAnnotations();
                         } else {
                             imgElement.addEventListener('load', drawAnnotations, { once: true });
-                                }
-                            }
-                            
+                        }
+                    }
+
                     // Display evolutionary snapshots with per-image descriptions
                     const timelineSnapshots = [];
                     if (Array.isArray(data.evolutionary_snapshots)) {
@@ -5584,7 +5773,7 @@
                     if (timelineSnapshots.length > 0) {
                         const messagesDiv = document.getElementById('chatMessages');
                         const imageDescriptions = parseImageDescriptions(data.visual_description);
-                        
+
                         timelineSnapshots.forEach((snapshot, idx) => {
                             if (!snapshot || !snapshot.image) return;
                             const snapshotIndex = snapshot.index || (idx + 1);
@@ -5594,10 +5783,10 @@
                             const timestampValue = rawTimestamp ? new Date(timestampMillis).toLocaleTimeString() : 'unknown';
                             const description = imageDescriptions[snapshotIndex] || '';
                             const isCurrent = Boolean(snapshot.is_current);
-                            
-                                const snapshotDiv = document.createElement('div');
+
+                            const snapshotDiv = document.createElement('div');
                             snapshotDiv.style.cssText = 'margin: 15px 0; padding: 15px; border: 2px solid #0ff; background: rgba(0, 0, 0, 0.9); border-radius: 5px; display: flex; flex-direction: column; gap: 10px;';
-                            
+
                             // Header with snapshot info
                             const headerDiv = document.createElement('div');
                             headerDiv.style.cssText = 'color: #0ff; font-weight: bold; font-size: 1.1em; border-bottom: 1px solid #0ff; padding-bottom: 5px;';
@@ -5607,7 +5796,7 @@
                                 headerDiv.textContent = `📸 Snapshot ${snapshotIndex} - ${age}s ago (${timestampValue})`;
                             }
                             snapshotDiv.appendChild(headerDiv);
-                            
+
                             // Description if available
                             if (description) {
                                 const descDiv = document.createElement('div');
@@ -5615,11 +5804,11 @@
                                 descDiv.textContent = description;
                                 snapshotDiv.appendChild(descDiv);
                             }
-                            
+
                             // Image container
                             const imgContainer = document.createElement('div');
                             imgContainer.style.cssText = 'position: relative;';
-                            
+
                             const imgElement = document.createElement('img');
                             const imgPrefix = snapshot.image.startsWith('data:image') ? '' : 'data:image/png;base64,';
                             imgElement.src = `${imgPrefix}${snapshot.image}`;
@@ -5627,33 +5816,33 @@
                             imgElement.alt = `Evolutionary snapshot ${snapshotIndex}`;
                             imgElement.title = isCurrent ? 'Latest causation graph snapshot (used for annotations)' : `Causation graph snapshot from ${age} seconds ago`;
                             imgElement.loading = 'lazy';
-                            
+
                             imgContainer.appendChild(imgElement);
                             snapshotDiv.appendChild(imgContainer);
-                                
+
                             // Apply annotations only to the current snapshot to avoid overlay stacking
                             if (isCurrent && data.vision_annotations && data.vision_annotations.annotations) {
-                                        drawAnnotationsOnImage(imgElement, data.vision_annotations);
-                                    }
-                            
+                                drawAnnotationsOnImage(imgElement, data.vision_annotations);
+                            }
+
                             messagesDiv.appendChild(snapshotDiv);
-                            });
-                            
-                            // Only auto-scroll if user is already near the bottom and not scrolling
-                            if (!userIsScrolling) {
-                                const scrollThreshold = 100;
-                                const isNearBottom = (messagesDiv.scrollHeight - messagesDiv.scrollTop - messagesDiv.clientHeight) < scrollThreshold;
-                                if (isNearBottom) {
-                                    requestAnimationFrame(() => {
-                                        messagesDiv.scrollTo({
-                                            top: messagesDiv.scrollHeight,
-                                            behavior: 'smooth'
-                                        });
+                        });
+
+                        // Only auto-scroll if user is already near the bottom and not scrolling
+                        if (!userIsScrolling) {
+                            const scrollThreshold = 100;
+                            const isNearBottom = (messagesDiv.scrollHeight - messagesDiv.scrollTop - messagesDiv.clientHeight) < scrollThreshold;
+                            if (isNearBottom) {
+                                requestAnimationFrame(() => {
+                                    messagesDiv.scrollTo({
+                                        top: messagesDiv.scrollHeight,
+                                        behavior: 'smooth'
                                     });
-                                }
+                                });
                             }
                         }
-                    
+                    }
+
                     if (data.vision_error) {
                         // Show vision error if vision model was selected but failed
                         addChatMessage('vision', `⚠️ Vision Model Error: ${data.vision_error}`, true);
@@ -5667,7 +5856,7 @@
                     // Show assistant response
                     if (data.response) {
                         addChatMessage('assistant', data.response);
-                        
+
                         // Check if CRA response contains filter update instructions
                         // CRA can include: "[[GRAPH_FILTER_UPDATE: {...}]]" or "[[GRAPHFILTERUPDATE: {...}]]" in its response
                         // Use a more robust regex that handles nested JSON and both naming formats
@@ -5675,7 +5864,7 @@
                         if (filterUpdateMatch) {
                             try {
                                 let filterData = JSON.parse(filterUpdateMatch[1]);
-                                
+
                                 // Normalize field names (handle both formats)
                                 if (filterData.display) {
                                     // Map alternative field names to expected names
@@ -5692,7 +5881,7 @@
                                         delete filterData.display.temporal_paths;
                                     }
                                 }
-                                
+
                                 console.log('[CRA] Parsed filter update:', filterData);
                                 applyGraphFiltersFromCRA(filterData);
                                 addChatMessage('system', '✅ Graph filters updated by CRA', false);
@@ -5708,7 +5897,7 @@
                         let vizUpdateMatch = null;
                         const markerPattern = /\[\[VIZ[_\-]?SETTINGS[_\-]?UPDATE:\s*\{/i;
                         const markerIndex = data.response.search(markerPattern);
-                        
+
                         if (markerIndex !== -1) {
                             // Find the opening brace after the marker
                             const braceStart = data.response.indexOf('{', markerIndex);
@@ -5718,25 +5907,25 @@
                                 let braceEnd = -1;
                                 let inString = false;
                                 let escapeNext = false;
-                                
+
                                 for (let i = braceStart; i < data.response.length; i++) {
                                     const char = data.response[i];
-                                    
+
                                     if (escapeNext) {
                                         escapeNext = false;
                                         continue;
                                     }
-                                    
+
                                     if (char === '\\') {
                                         escapeNext = true;
                                         continue;
                                     }
-                                    
+
                                     if (char === '"') {
                                         inString = !inString;
                                         continue;
                                     }
-                                    
+
                                     if (!inString) {
                                         if (char === '{') braceCount++;
                                         if (char === '}') {
@@ -5748,7 +5937,7 @@
                                         }
                                     }
                                 }
-                                
+
                                 // Check if there's a closing ]] after the brace
                                 if (braceEnd !== -1) {
                                     const afterBrace = data.response.substring(braceEnd + 1).trim();
@@ -5763,10 +5952,10 @@
                         if (vizUpdateMatch) {
                             try {
                                 let jsonStr = vizUpdateMatch[1];
-                                
+
                                 // Log the raw JSON string for debugging
                                 console.log('[CRA] Raw JSON string captured:', jsonStr.substring(0, 500) + (jsonStr.length > 500 ? '...' : ''));
-                                
+
                                 // Clean up common JSON issues:
                                 // 1. Remove single-line comments (// comment)
                                 jsonStr = jsonStr.replace(/\/\/.*$/gm, '');
@@ -5786,9 +5975,9 @@
                                 jsonStr = jsonStr.replace(/"linkColordirect"/g, '"linkColor_direct"');
                                 jsonStr = jsonStr.replace(/"linkColortemporal"/g, '"linkColor_temporal"');
                                 jsonStr = jsonStr.replace(/"linkColorunknown"/g, '"linkColor_unknown"');
-                                
+
                                 console.log('[CRA] Cleaned JSON string:', jsonStr.substring(0, 500) + (jsonStr.length > 500 ? '...' : ''));
-                                
+
                                 // Try to parse the JSON
                                 let vizData;
                                 try {
@@ -5800,7 +5989,7 @@
                                     if (firstBrace === -1) {
                                         throw new Error('No opening brace found in JSON string');
                                     }
-                                    
+
                                     // Count braces to find the matching closing brace
                                     let braceCount = 0;
                                     let lastBrace = -1;
@@ -5814,23 +6003,23 @@
                                             }
                                         }
                                     }
-                                    
+
                                     if (lastBrace === -1) {
                                         throw new Error('No matching closing brace found');
                                     }
-                                    
+
                                     const cleanedJson = jsonStr.substring(firstBrace, lastBrace + 1);
                                     console.log('[CRA] Attempting to parse cleaned JSON:', cleanedJson.substring(0, 200) + (cleanedJson.length > 200 ? '...' : ''));
                                     vizData = JSON.parse(cleanedJson);
                                 }
-                                
+
                                 console.log('[CRA] Visualization settings update received:', vizData);
                                 const settingsCount = Object.keys(vizData).length;
-                                
+
                                 // Apply settings and track what was updated
                                 const updatedSettings = [];
                                 applyVizSettingsFromCRA(vizData);
-                                
+
                                 // Log what was actually updated
                                 Object.keys(vizData).forEach(key => {
                                     const element = document.getElementById(key);
@@ -5840,12 +6029,12 @@
                                         updatedSettings.push(key); // Colors are handled separately
                                     }
                                 });
-                                
+
                                 console.log(`[CRA] Successfully updated ${updatedSettings.length} settings:`, updatedSettings);
-                                
+
                                 // Visual feedback: show notification and highlight settings panel
                                 addChatMessage('system', `✅ ${settingsCount} visualization settings updated by CRA (${updatedSettings.length} UI elements changed) - check the settings panel!`, false);
-                                
+
                                 // Briefly highlight the settings panel with a more visible effect
                                 const settingsPanel = document.querySelector('.filter-section');
                                 if (settingsPanel) {
@@ -5859,7 +6048,7 @@
                                         settingsPanel.style.backgroundColor = originalBg;
                                     }, 3000);
                                 }
-                                
+
                                 // Also scroll to settings panel if it's minimized
                                 const filterPanel = document.getElementById('filterPanel');
                                 if (filterPanel) {
@@ -5879,7 +6068,7 @@
                             }
                         } else {
                             // Check if CRA mentioned settings but didn't use the marker
-                            if (data.response.includes('renderQuality') || data.response.includes('componentColor') || data.response.includes('linkColor') || 
+                            if (data.response.includes('renderQuality') || data.response.includes('componentColor') || data.response.includes('linkColor') ||
                                 data.response.includes('maxVisibleLinks') || data.response.includes('enableShadows')) {
                                 console.warn('[CRA] CRA mentioned settings but did not include [[VIZ_SETTINGS_UPDATE: {...}]] marker');
                             }
@@ -5977,12 +6166,12 @@
             chatMessagesDiv.addEventListener('scroll', () => {
                 userIsScrolling = true;
                 scrollStartTime = Date.now();
-                
+
                 // Clear existing timeout
                 if (scrollTimeout) {
                     clearTimeout(scrollTimeout);
                 }
-                
+
                 // Resume updates after user stops scrolling for 300ms
                 scrollTimeout = setTimeout(() => {
                     userIsScrolling = false;
@@ -6051,7 +6240,7 @@
             // Use DocumentFragment for batch DOM updates
             const fragment = document.createDocumentFragment();
             const updates = chatUpdateQueue.splice(0, 10); // Process up to 10 at a time
-            
+
             updates.forEach(({ role, message, isError }) => {
                 const messageDiv = document.createElement('div');
                 messageDiv.className = `chat-message ${role}`;
@@ -6068,7 +6257,7 @@
 
             // Single DOM operation for all updates
             chatMessagesDiv.appendChild(fragment);
-            
+
             // Smooth scroll only if user is near bottom and not actively scrolling
             if (!userIsScrolling) {
                 const scrollThreshold = 100;
@@ -6422,7 +6611,7 @@
 
         // Load Ollama configuration on page load
         loadOllamaConfig();
-        
+
         // Check simulation status on page load and clear snapshots if stopped
         // This prevents old snapshots from previous sessions from being used
         setTimeout(() => {
@@ -6449,7 +6638,7 @@
         function startSimulation() {
             // Clear old snapshots when starting a new simulation run
             clearSnapshotHistory();
-            
+
             fetch('/api/simulation/start', { method: 'POST' })
                 .then(response => response.json())
                 .then(data => {
@@ -6459,11 +6648,8 @@
                         updateSimulationStatus(true);
                         // Load graph when simulation starts (now that simulationRunning is true)
                         loadGraph();
-                        // Start activity-based adaptive snapshots IMMEDIATELY (no delay!)
-                        // Use a small delay just to ensure graph is loaded, but capture immediately
-                        setTimeout(() => {
-                            startActivitySnapshots();
-                        }, 500); // Minimal delay (500ms) just to ensure graph data is available
+                        // Start activity-based adaptive snapshots IMMEDIATELY - NO DELAY!
+                        startActivitySnapshots();
                         // Start live mode if it was enabled (checkbox checked)
                         if (document.getElementById('liveModeToggle').checked) {
                             // Live mode checkbox is already checked, just start the polling
@@ -6782,29 +6968,29 @@
                 toggleCraFullscreen();
             }
         });
-        
+
         // Set up chat input event listeners
         function setupChatListeners() {
             const chatInput = document.getElementById('chatInput');
             const chatSendButton = document.getElementById('chatSendButton');
-            
+
             if (chatInput && !chatInput._listenerAttached) {
-                chatInput.addEventListener('keypress', function(e) {
+                chatInput.addEventListener('keypress', function (e) {
                     if (e.key === 'Enter') {
                         sendChatMessage();
                     }
                 });
                 chatInput._listenerAttached = true;
             }
-            
+
             if (chatSendButton && !chatSendButton._listenerAttached) {
-                chatSendButton.addEventListener('click', function() {
+                chatSendButton.addEventListener('click', function () {
                     sendChatMessage();
                 });
                 chatSendButton._listenerAttached = true;
             }
         }
-        
+
         // Try immediately, then on DOMContentLoaded
         setupChatListeners();
         document.addEventListener('DOMContentLoaded', setupChatListeners);
@@ -6813,43 +6999,43 @@
         function openSnapshotGallery() {
             const modal = document.getElementById('snapshotGalleryModal');
             const grid = document.getElementById('snapshotGrid');
-            
+
             if (!modal || !grid) return;
-            
+
             // Clear existing content
             grid.innerHTML = '';
-            
+
             // Sort snapshots by timestamp (newest first)
             const sortedSnapshots = [...snapshotHistory].sort((a, b) => b.timestamp - a.timestamp);
-            
+
             if (sortedSnapshots.length === 0) {
                 grid.innerHTML = '<div style="color: #888; text-align: center; padding: 40px;">No snapshots available yet. Snapshots are captured automatically during simulation.</div>';
             } else {
                 sortedSnapshots.forEach((snapshot, index) => {
                     const item = document.createElement('div');
                     item.className = 'snapshot-item';
-                    
+
                     const timestamp = new Date(snapshot.timestamp);
                     const timeStr = timestamp.toLocaleString();
                     const age = Math.floor((Date.now() - snapshot.timestamp) / 1000);
-                    const ageStr = age < 60 ? `${age}s ago` : age < 3600 ? `${Math.floor(age/60)}m ago` : `${Math.floor(age/3600)}h ago`;
-                    
+                    const ageStr = age < 60 ? `${age}s ago` : age < 3600 ? `${Math.floor(age / 60)}m ago` : `${Math.floor(age / 3600)}h ago`;
+
                     // Handle both old format (full data URL) and new format (base64 only)
                     let imageSrc = snapshot.image;
                     if (!imageSrc.startsWith('data:image/')) {
                         imageSrc = `data:image/jpeg;base64,${imageSrc}`;
                     }
-                    
+
                     // Add checkbox for selection
                     const checkbox = document.createElement('input');
                     checkbox.type = 'checkbox';
                     checkbox.className = 'snapshot-checkbox';
                     checkbox.dataset.snapshotIndex = index;
-                    checkbox.onclick = function(e) {
+                    checkbox.onclick = function (e) {
                         e.stopPropagation();
                         updateAnalyzeButton();
                     };
-                    
+
                     item.innerHTML = `
                         <img src="${imageSrc}" alt="Snapshot ${index + 1}" loading="lazy">
                         <div class="snapshot-item-info">
@@ -6857,18 +7043,18 @@
                             <small>${timeStr}</small>
                         </div>
                     `;
-                    
+
                     item.appendChild(checkbox);
-                    
+
                     // Click to view (but not when clicking checkbox)
                     item.addEventListener('click', (e) => {
                         if (e.target.type !== 'checkbox') {
                             openSnapshotViewer(snapshot, sortedSnapshots.length - index);
                         }
                     });
-                    
+
                     // Toggle selection on checkbox change
-                    checkbox.addEventListener('change', function() {
+                    checkbox.addEventListener('change', function () {
                         if (this.checked) {
                             item.classList.add('selected');
                         } else {
@@ -6876,11 +7062,11 @@
                         }
                         updateAnalyzeButton();
                     });
-                    
+
                     grid.appendChild(item);
                 });
             }
-            
+
             modal.classList.add('active');
             updateAnalyzeButton();
         }
@@ -6906,10 +7092,10 @@
             const analyzeBtn = document.getElementById('analyzeSingleSnapshotBtn');
             const videoBtn = document.getElementById('createVideoFromSnapshotsBtn');
             if (!modal) return;
-            
+
             const selected = modal.querySelectorAll('.snapshot-checkbox:checked');
             const hasSelection = selected.length > 0;
-            
+
             if (analyzeBtn) {
                 if (selected.length === 1) {
                     analyzeBtn.style.display = 'block';
@@ -6919,7 +7105,7 @@
                     analyzeBtn.style.display = 'none';
                 }
             }
-            
+
             if (videoBtn) {
                 videoBtn.style.display = hasSelection ? 'block' : 'none';
                 if (hasSelection) {
@@ -6979,7 +7165,7 @@
             const modal = document.getElementById('snapshotGalleryModal');
             const analyzeBtn = document.getElementById('analyzeSingleSnapshotBtn');
             if (!modal || !analyzeBtn) return;
-            
+
             const selectedCheckboxes = modal.querySelectorAll('.snapshot-checkbox:checked');
             if (selectedCheckboxes.length === 0) {
                 showNotification('Please select a snapshot to analyze', 'error');
@@ -6989,40 +7175,40 @@
                 showNotification('Manual analysis supports one snapshot at a time', 'error');
                 return;
             }
-            
+
             const index = parseInt(selectedCheckboxes[0].dataset.snapshotIndex, 10);
             const sortedSnapshots = [...snapshotHistory].sort((a, b) => b.timestamp - a.timestamp);
             if (isNaN(index) || index < 0 || index >= sortedSnapshots.length) {
                 showNotification('Selected snapshot could not be found', 'error');
                 return;
             }
-            
+
             const snapshot = sortedSnapshots[index];
             if (!snapshot || !snapshot.image) {
                 showNotification('Selected snapshot is missing image data', 'error');
                 return;
             }
-            
+
             const visionSelect = document.getElementById('visionModelSelect');
             if (!visionSelect || !visionSelect.value) {
                 showNotification('Please select a vision model first', 'error');
                 return;
             }
-            
+
             const imageData = snapshot.image.startsWith('data:image/')
                 ? snapshot.image
                 : `data:image/jpeg;base64,${snapshot.image}`;
-            
+
             const prompt = 'Analyze this snapshot of the causation graph. Describe the visible structure, component distribution, and any notable anomalies.';
             const baseUrlInput = document.getElementById('ollamaBaseUrlInput');
             const apiKeyInput = document.getElementById('ollamaApiKey');
             const baseUrlValue = baseUrlInput && baseUrlInput.value ? baseUrlInput.value : undefined;
             const apiKeyValue = apiKeyInput && apiKeyInput.value ? apiKeyInput.value : undefined;
-            
+
             analyzeBtn.disabled = true;
             const originalText = analyzeBtn.textContent;
             analyzeBtn.textContent = '🔍 Analyzing...';
-            
+
             fetch('/api/ollama/vision', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -7041,13 +7227,13 @@
                         showNotification(`Vision analysis error: ${data.error}`, 'error');
                         return;
                     }
-                    
+
                     const description = data.description || data.response;
                     if (!description) {
                         showNotification('Vision model returned no description', 'error');
                         return;
                     }
-                    
+
                     const timestampLabel = new Date(snapshot.timestamp).toLocaleString();
                     addChatMessage('vision', `📸 Manual Snapshot (${timestampLabel})\n\n${description}`, false);
 
@@ -7089,18 +7275,18 @@
             const modal = document.getElementById('snapshotGalleryModal');
             const videoBtn = document.getElementById('createVideoFromSnapshotsBtn');
             if (!modal || !videoBtn) return;
-            
+
             const selectedCheckboxes = modal.querySelectorAll('.snapshot-checkbox:checked');
             if (selectedCheckboxes.length === 0) {
                 showNotification('Please select at least one snapshot to create a video', 'error');
                 return;
             }
-            
+
             const fpsInput = prompt('Frames per second for the video (1-60)', '5');
             let fps = parseInt(fpsInput || '5', 10);
             if (isNaN(fps) || fps < 1) fps = 1;
             if (fps > 60) fps = 60;
-            
+
             const selectedSnapshots = [];
             const sortedSnapshots = [...snapshotHistory].sort((a, b) => b.timestamp - a.timestamp);
             selectedCheckboxes.forEach(checkbox => {
@@ -7110,22 +7296,22 @@
                 }
             });
             selectedSnapshots.sort((a, b) => a.timestamp - b.timestamp);
-            
+
             if (selectedSnapshots.length === 0) {
                 showNotification('No valid snapshots selected for video creation', 'error');
                 return;
             }
-            
+
             videoBtn.textContent = '🎬 Creating...';
             videoBtn.disabled = true;
-            
+
             const images = selectedSnapshots.map(s => {
                 if (s.image.startsWith('data:image/')) {
                     return s.image;
                 }
                 return `data:image/jpeg;base64,${s.image}`;
             });
-            
+
             fetch('/api/export/create_snapshot_video', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -7178,24 +7364,24 @@
             // Remove any existing viewer elements to prevent duplicates
             const existingViewers = document.querySelectorAll('#snapshotViewer');
             existingViewers.forEach(v => v.remove());
-            
+
             // Create fresh viewer element
             const viewer = document.createElement('div');
             viewer.id = 'snapshotViewer';
             viewer.className = 'snapshot-viewer';
-            
+
             const viewerContent = document.createElement('div');
             viewerContent.className = 'snapshot-viewer-content';
             viewer.appendChild(viewerContent);
-            
+
             // Append to body (at the very end)
             document.body.appendChild(viewer);
-            
+
             // Get sorted snapshots for navigation
             sortedViewerSnapshots = [...snapshotHistory].sort((a, b) => b.timestamp - a.timestamp);
             currentViewerSnapshot = snapshot;
             currentViewerIndex = sortedViewerSnapshots.findIndex(s => s.timestamp === snapshot.timestamp);
-            
+
             if (currentViewerIndex < 0) {
                 // Try to use the provided index
                 if (index && index > 0 && index <= sortedViewerSnapshots.length) {
@@ -7206,13 +7392,13 @@
                     return;
                 }
             }
-            
+
             // Show viewer first (this makes it visible as overlay)
             viewer.classList.add('active');
-            
+
             // Then render content
             renderSnapshotViewer();
-            
+
             // Add keyboard listener
             document.addEventListener('keydown', handleViewerKeyboard);
         }
@@ -7220,28 +7406,28 @@
         function renderSnapshotViewer() {
             const viewer = document.getElementById('snapshotViewer');
             const viewerContent = viewer ? viewer.querySelector('.snapshot-viewer-content') : null;
-            
+
             if (!viewer || !viewerContent) {
                 console.error('Snapshot viewer elements not found');
                 return;
             }
-            
+
             if (currentViewerIndex < 0 || currentViewerIndex >= sortedViewerSnapshots.length) {
                 console.error('Invalid viewer index:', currentViewerIndex, 'of', sortedViewerSnapshots.length);
                 return;
             }
-            
+
             const snapshot = sortedViewerSnapshots[currentViewerIndex];
             const index = sortedViewerSnapshots.length - currentViewerIndex;
-            
+
             const timestamp = new Date(snapshot.timestamp);
             const timeStr = timestamp.toLocaleString();
             const age = Math.floor((Date.now() - snapshot.timestamp) / 1000);
-            const ageStr = age < 60 ? `${age} seconds ago` : age < 3600 ? `${Math.floor(age/60)} minutes ago` : `${Math.floor(age/3600)} hours ago`;
-            
+            const ageStr = age < 60 ? `${age} seconds ago` : age < 3600 ? `${Math.floor(age / 60)} minutes ago` : `${Math.floor(age / 3600)} hours ago`;
+
             // Clear existing content
             viewerContent.innerHTML = '';
-            
+
             // Remove any existing buttons from viewer (not content)
             const existingClose = viewer.querySelector('.snapshot-viewer-close');
             const existingPrev = viewer.querySelector('.snapshot-viewer-nav.prev');
@@ -7249,18 +7435,18 @@
             if (existingClose) existingClose.remove();
             if (existingPrev) existingPrev.remove();
             if (existingNext) existingNext.remove();
-            
+
             // Create and add close button (to viewer, not content)
             const closeBtn = document.createElement('button');
             closeBtn.className = 'snapshot-viewer-close';
             closeBtn.textContent = '✕ Close';
-            closeBtn.onclick = function(e) {
+            closeBtn.onclick = function (e) {
                 e.preventDefault();
                 e.stopPropagation();
                 closeSnapshotViewer();
             };
             viewer.appendChild(closeBtn);
-            
+
             // Create and add navigation buttons (to viewer, not content)
             if (currentViewerIndex > 0) {
                 const prevBtn = document.createElement('button');
@@ -7268,7 +7454,7 @@
                 prevBtn.textContent = '◀';
                 prevBtn.title = 'Previous snapshot';
                 prevBtn.style.cssText = 'position: fixed; left: 20px; top: 50%; transform: translateY(-50%); z-index: 100001;';
-                prevBtn.onclick = function(e) {
+                prevBtn.onclick = function (e) {
                     e.preventDefault();
                     e.stopPropagation();
                     currentViewerIndex--;
@@ -7276,14 +7462,14 @@
                 };
                 viewer.appendChild(prevBtn);
             }
-            
+
             if (currentViewerIndex < sortedViewerSnapshots.length - 1) {
                 const nextBtn = document.createElement('button');
                 nextBtn.className = 'snapshot-viewer-nav next';
                 nextBtn.textContent = '▶';
                 nextBtn.title = 'Next snapshot';
                 nextBtn.style.cssText = 'position: fixed; right: 20px; top: 50%; transform: translateY(-50%); z-index: 100001;';
-                nextBtn.onclick = function(e) {
+                nextBtn.onclick = function (e) {
                     e.preventDefault();
                     e.stopPropagation();
                     currentViewerIndex++;
@@ -7291,7 +7477,7 @@
                 };
                 viewer.appendChild(nextBtn);
             }
-            
+
             // Create image element
             let imageSrc = snapshot.image;
             if (!imageSrc || imageSrc.trim() === '') {
@@ -7300,76 +7486,76 @@
             } else if (!imageSrc.startsWith('data:image/')) {
                 imageSrc = `data:image/jpeg;base64,${imageSrc}`;
             }
-            
+
             const viewerImg = document.createElement('img');
             viewerImg.id = 'snapshotViewerImg';
             viewerImg.src = imageSrc;
             viewerImg.alt = `Snapshot ${index}`;
             viewerImg.style.cssText = 'max-width: 90vw; max-height: 75vh; border: 2px solid #0ff; border-radius: 5px; display: block; margin: 0 auto;';
-            viewerImg.onload = function() {
+            viewerImg.onload = function () {
                 console.log('Snapshot image loaded successfully');
             };
-            viewerImg.onerror = function() {
+            viewerImg.onerror = function () {
                 console.error('Failed to load snapshot image');
                 this.style.border = '2px solid #f00';
                 this.alt = 'Failed to load image';
             };
-            
+
             // Create info div
             const viewerInfo = document.createElement('div');
             viewerInfo.className = 'snapshot-viewer-info';
             viewerInfo.textContent = `Snapshot ${index} of ${sortedViewerSnapshots.length} - ${ageStr} (${timeStr})`;
-            
+
             // Create controls div
             const controlsDiv = document.createElement('div');
             controlsDiv.className = 'snapshot-viewer-controls';
-            
+
             // Export as PNG button
             const exportPngBtn = document.createElement('button');
             exportPngBtn.className = 'snapshot-viewer-btn export';
             exportPngBtn.textContent = '📥 Export as PNG';
-            exportPngBtn.onclick = function(e) {
+            exportPngBtn.onclick = function (e) {
                 e.preventDefault();
                 e.stopPropagation();
                 exportSnapshotAsPNG(snapshot, index);
             };
-            
+
             // Copy to clipboard button
             const copyBtn = document.createElement('button');
             copyBtn.className = 'snapshot-viewer-btn';
             copyBtn.textContent = '📋 Copy Image';
-            copyBtn.onclick = function(e) {
+            copyBtn.onclick = function (e) {
                 e.preventDefault();
                 e.stopPropagation();
                 copySnapshotToClipboard(snapshot);
             };
-            
+
             // Download JSON data button
             const exportJsonBtn = document.createElement('button');
             exportJsonBtn.className = 'snapshot-viewer-btn';
             exportJsonBtn.textContent = '💾 Export Data (JSON)';
-            exportJsonBtn.onclick = function(e) {
+            exportJsonBtn.onclick = function (e) {
                 e.preventDefault();
                 e.stopPropagation();
                 exportSnapshotAsJSON(snapshot, index);
             };
-            
+
             controlsDiv.appendChild(exportPngBtn);
             controlsDiv.appendChild(copyBtn);
             controlsDiv.appendChild(exportJsonBtn);
-            
+
             // Append all elements to content
             viewerContent.appendChild(viewerImg);
             viewerContent.appendChild(viewerInfo);
             viewerContent.appendChild(controlsDiv);
-            
+
             console.log('Snapshot viewer rendered:', { index, total: sortedViewerSnapshots.length, imageSrcLength: imageSrc.length });
         }
 
         function handleViewerKeyboard(e) {
             const viewer = document.getElementById('snapshotViewer');
             if (!viewer || !viewer.classList.contains('active')) return;
-            
+
             if (e.key === 'ArrowLeft' && currentViewerIndex > 0) {
                 currentViewerIndex--;
                 renderSnapshotViewer();
@@ -7400,7 +7586,7 @@
                 }
                 const byteArray = new Uint8Array(byteNumbers);
                 const blob = new Blob([byteArray], { type: 'image/png' });
-                
+
                 // Create download link
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
@@ -7409,10 +7595,10 @@
                 link.href = url;
                 link.download = filename;
                 link.click();
-                
+
                 // Clean up
                 setTimeout(() => URL.revokeObjectURL(url), 100);
-                
+
                 console.log(`Exported snapshot ${index} as ${filename}`);
             } catch (e) {
                 console.error('Error exporting snapshot:', e);
@@ -7430,7 +7616,7 @@
                 }
                 const byteArray = new Uint8Array(byteNumbers);
                 const blob = new Blob([byteArray], { type: 'image/png' });
-                
+
                 // Copy to clipboard
                 navigator.clipboard.write([
                     new ClipboardItem({ 'image/png': blob })
@@ -7459,7 +7645,7 @@
                     // Note: We don't include the base64 image in JSON to keep file size reasonable
                     // The image can be exported separately as PNG
                 };
-                
+
                 const jsonStr = JSON.stringify(exportData, null, 2);
                 const blob = new Blob([jsonStr], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
@@ -7469,9 +7655,9 @@
                 link.href = url;
                 link.download = filename;
                 link.click();
-                
+
                 setTimeout(() => URL.revokeObjectURL(url), 100);
-                
+
                 console.log(`Exported snapshot ${index} data as ${filename}`);
             } catch (e) {
                 console.error('Error exporting snapshot data:', e);
@@ -7480,26 +7666,26 @@
         }
 
         // Add click handler to snapshot count display
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const snapshotCountDisplay = document.getElementById('snapshotCountDisplay');
             if (snapshotCountDisplay) {
                 snapshotCountDisplay.addEventListener('click', openSnapshotGallery);
             }
-            
+
             // Close modal when clicking outside
             const modal = document.getElementById('snapshotGalleryModal');
             if (modal) {
-                modal.addEventListener('click', function(e) {
+                modal.addEventListener('click', function (e) {
                     if (e.target === modal) {
                         closeSnapshotGallery();
                     }
                 });
             }
-            
+
             // Close viewer when clicking outside
             const viewer = document.getElementById('snapshotViewer');
             if (viewer) {
-                viewer.addEventListener('click', function(e) {
+                viewer.addEventListener('click', function (e) {
                     if (e.target === viewer) {
                         closeSnapshotViewer();
                     }
