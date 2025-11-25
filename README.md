@@ -232,13 +232,27 @@ Edit `config.json` to customize simulation parameters:
     "measurement_precision": 6
   },
   "quantum": {
-    "initial_states": 40
+    "initial_states": 80,
+    "superposition_tolerance": 0.002,
+    "prune_check_interval": 50
   },
   "evolution": {
-    "population_size": 400
+    "population_size": 600,
+    "adaptation_sensitivity": 0.002
   },
   "network": {
-    "max_organisms": 2000
+    "max_connections": 16000,
+    "max_organisms": 3000,
+    "resource_pool": 200.0,
+    "emergence_sensitivity": 2e-06
+  },
+  "feedback": {
+    "knobs": {
+      "mutation_rate": {"initial": 0.02},
+      "new_edge_rate": {"initial": 1.8},
+      "clustering_bias": {"initial": 0.65},
+      "quantum_pruning": {"initial": 0.7}
+    }
   },
   "rendering": {
     "mode": "observer",
@@ -247,7 +261,7 @@ Edit `config.json` to customize simulation parameters:
 }
 ```
 
-See `config.json` in the repository for all available options.
+**Note:** Configuration has been optimized based on CRA analysis to address VP4 during Genesis, network fragmentation, and convergence stagnation. See `config.json` in the repository for all available options and current optimized values.
 
 ---
 

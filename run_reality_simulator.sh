@@ -142,8 +142,8 @@ generate_temp_config() {
     "population_size": ${POPULATION_SIZE:-500}
   },
   "network": {
-    "max_organisms": ${MAX_ORGANISMS:-2000},
-    "max_connections": ${MAX_CONNECTIONS:-10000}
+    "max_organisms": ${MAX_ORGANISMS:-3000},
+    "max_connections": ${MAX_CONNECTIONS:-16000}
   },
   "agency": {
     "ai_model": "${AI_MODEL:-gemma3:4b}"
@@ -157,10 +157,10 @@ generate_temp_config() {
     "hysteresis_checks": 3,
     "rate_limit_frames": 30,
     "knobs": {
-      "mutation_rate": {"min": 0.001, "max": 0.05, "step": 0.001},
-      "new_edge_rate": {"min": 0.0, "max": 1.5, "step": 0.05},
-      "clustering_bias": {"min": 0.0, "max": 1.2, "step": 0.05},
-      "quantum_pruning": {"min": 0.0, "max": 1.0, "step": 0.05}
+      "mutation_rate": {"min": 0.001, "max": 0.05, "step": 0.001, "initial": 0.02},
+      "new_edge_rate": {"min": 0.2, "max": 2.0, "step": 0.1, "initial": 1.8},
+      "clustering_bias": {"min": 0.3, "max": 1.5, "step": 0.05, "initial": 0.65},
+      "quantum_pruning": {"min": 0.0, "max": 1.0, "step": 0.05, "initial": 0.7}
     }
   }
 }

@@ -184,18 +184,21 @@ class FeedbackController:
     def _initialize_knob_values(self):
         """Initialize current knob values to reasonable defaults"""
         defaults = {
-            'mutation_rate': 0.01,
-            'new_edge_rate': 0.5,
-            'clustering_bias': 0.5,
-            'quantum_pruning': 0.5
+            'mutation_rate': 0.02,  # Updated: CRA recommendation for faster convergence
+            'new_edge_rate': 1.8,   # Updated: CRA recommendation for network density
+            'clustering_bias': 0.65, # Updated: CRA recommendation to prevent fragmentation
+            'quantum_pruning': 0.7   # Updated: CRA recommendation for VP stabilization
         }
 
         for knob_name, config in self.knob_configs.items():
             if knob_name in defaults:
-                # Start at middle of range
-                min_val = config.get('min', defaults[knob_name])
-                max_val = config.get('max', defaults[knob_name])
-                self.current_values[knob_name] = (min_val + max_val) / 2.0
+                # Use initial value if specified, otherwise start at middle of range
+                if 'initial' in config:
+                    self.current_values[knob_name] = config['initial']
+                else:
+                    min_val = config.get('min', defaults[knob_name])
+                    max_val = config.get('max', defaults[knob_name])
+                    self.current_values[knob_name] = (min_val + max_val) / 2.0
             else:
                 self.current_values[knob_name] = 0.0
 

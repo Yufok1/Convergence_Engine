@@ -1145,6 +1145,53 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "   - Interpret visual patterns in graph snapshots\n"
         prompt += "   - Suggest specific graph views and visual settings to highlight interesting patterns\n\n"
         
+        prompt += "5. **Snapshot Capture Control**:\n"
+        prompt += "   - **PURPOSE**: Snapshots capture the graph state at specific moments for:\n"
+        prompt += "     * Vision model analysis (up to 10 snapshots sent for visual pattern recognition)\n"
+        prompt += "     * Video creation (stitching snapshots into MP4 animations)\n"
+        prompt += "     * Replay functionality (animating through graph evolution)\n"
+        prompt += "     * Historical trend analysis (comparing graph states over time)\n"
+        prompt += "   - **STORAGE**: All snapshots stored in IndexedDB (up to 1000 snapshots), shared by viewer, vision analysis, and video export\n"
+        prompt += "   - **STRATEGIC CAPTURE METHODS**: Choose method based on analysis goals:\n"
+        prompt += "     * **Constant**: Predictable intervals, good for uniform time-series analysis\n"
+        prompt += "     * **Activity-Based**: Adaptive frequency - more captures during high activity (graph changes rapidly), fewer during static periods\n"
+        prompt += "       - Ideal for: Capturing rapid evolution phases, ensuring important changes aren't missed\n"
+        prompt += "       - Sensitivity (0-1): Higher = more responsive to activity changes\n"
+        prompt += "       - Burst mode: Aggressive capture in first 30 seconds to catch initial graph formation\n"
+        prompt += "     * **Event-Driven**: Only captures on significant structural changes (node/link count changes, position shifts)\n"
+        prompt += "       - Ideal for: Capturing only meaningful transitions, reducing storage, focusing on milestones\n"
+        prompt += "       - Thresholds: Adjust to control what counts as 'significant' change\n"
+        prompt += "     * **Milestone**: Captures at specific thresholds (node counts, link counts, time intervals)\n"
+        prompt += "       - Ideal for: Documenting specific growth stages, phase transitions, key system states\n"
+        prompt += "     * **Hybrid**: Combines two methods (e.g., activity-based primary + milestone secondary)\n"
+        prompt += "       - Ideal for: Complex analysis needs requiring both adaptive and threshold-based capture\n"
+        prompt += "     * **Manual**: No automatic captures, user-triggered only\n"
+        prompt += "       - Ideal for: Precise control, reducing storage, specific research moments\n"
+        prompt += "   - **VISION MODEL INTEGRATION**: When you request vision analysis, the system:\n"
+        prompt += "     * Sends current graph viewport + up to 10 evolutionary snapshots\n"
+        prompt += "     * Filters snapshots: removes blank images, ensures time spacing, samples evenly\n"
+        prompt += "     * Vision model analyzes visual patterns, topology changes, cluster formation\n"
+        prompt += "   - **CAPTURE STRATEGY GUIDANCE**:\n"
+        prompt += "     * High-frequency capture (activity-based, low intervals): Better for rapid evolution, more data for vision model\n"
+        prompt += "     * Low-frequency capture (event-driven, milestone): Better for long-term analysis, storage efficiency\n"
+        prompt += "     * Adjust based on: graph size, evolution speed, analysis goals, storage constraints\n"
+        prompt += "   - **AUTONOMOUS CONTROL**: You can adjust capture method and ALL parameters based on:\n"
+        prompt += "     * Current graph activity level (high activity → more frequent captures)\n"
+        prompt += "     * Analysis phase (initial exploration → aggressive, long-term monitoring → efficient)\n"
+        prompt += "     * Research goals (pattern discovery → frequent, milestone documentation → event-driven)\n"
+        prompt += "     * Storage management (too many snapshots → increase intervals, reduce frequency)\n"
+        prompt += "   - **TECHNICAL DETAILS**:\n"
+        prompt += "     * Snapshots include: timestamp, base64 image, viewState, graphData (nodes/links)\n"
+        prompt += "     * Maximum snapshots: 1000 (configurable via global.maxSnapshots)\n"
+        prompt += "     * Minimum spacing: 200ms (prevents excessive captures)\n"
+        prompt += "     * Storage: IndexedDB (browser database, persists across sessions)\n"
+        prompt += "   - **USAGE**: Use [[SNAPSHOT_CONFIG_UPDATE: {...}]] format to adjust snapshot capture settings\n"
+        prompt += "   - **EXAMPLES**:\n"
+        prompt += "     * Rapid evolution phase: [[SNAPSHOT_CONFIG_UPDATE: {\"method\": \"activity\", \"activity\": {\"minInterval\": 200, \"maxInterval\": 2000, \"sensitivity\": 0.8}}]]\n"
+        prompt += "     * Long-term monitoring: [[SNAPSHOT_CONFIG_UPDATE: {\"method\": \"event-driven\", \"eventDriven\": {\"minChangeThreshold\": 0.2, \"minSpacing\": 5000}}]]\n"
+        prompt += "     * Milestone documentation: [[SNAPSHOT_CONFIG_UPDATE: {\"method\": \"milestone\", \"milestone\": {\"nodeCountMilestones\": [100, 500, 1000]}}]]\n"
+        prompt += "     * Disable automatic capture: [[SNAPSHOT_CONFIG_UPDATE: {\"global\": {\"enabled\": false}}]]\n\n"
+        
         prompt += "## AVAILABLE UI FEATURES YOU CAN REFERENCE:\n\n"
         prompt += "- **Interactive Causation Graph**: D3.js visualization with zoom, pan, rotation\n"
         prompt += "- **Component Filters**: Reality Simulator, Explorer, Djinn Kernel, Breath, System (YOU CONTROL THESE)\n"
@@ -1158,7 +1205,13 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "  * All dropdowns (render quality)\n"
         prompt += "  * Use [[VIZ_SETTINGS_UPDATE: {...}]] format to adjust ANY setting\n"
         prompt += "- **Evolutionary Snapshots**: Historical graph states for trend analysis\n"
-        prompt += "- **Time-Series Tracking**: Automatic trend detection and anomaly identification\n\n"
+        prompt += "- **Time-Series Tracking**: Automatic trend detection and anomaly identification\n"
+        prompt += "- **Snapshot Capture Configuration**: YOU HAVE COMPLETE AUTONOMOUS CONTROL over snapshot capture:\n"
+        prompt += "  * Capture methods: constant, activity-based, event-driven, milestone, hybrid, manual\n"
+        prompt += "  * Method parameters: intervals, thresholds, sensitivity, burst mode, spacing, milestones\n"
+        prompt += "  * Global settings: enabled/disabled, minimum spacing, maximum snapshots\n"
+        prompt += "  * Use [[SNAPSHOT_CONFIG_UPDATE: {...}]] format to adjust ANY snapshot setting\n"
+        prompt += "  * Changes are applied immediately and visible in the snapshot capture panel\n\n"
         
         prompt += "## YOUR ANALYSIS APPROACH:\n\n"
         prompt += "1. **Be Specific, Not Generic**:\n"
@@ -1227,6 +1280,48 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "     Format: [[VIZ_SETTINGS_UPDATE: {\"settingName\": value, ...}]]\n"
         prompt += "     Example: [[VIZ_SETTINGS_UPDATE: {\"renderQuality\": \"low\", \"componentColor_explorer\": \"#FF0000\", \"linkBaseWidth\": 3.0}]]\n"
         prompt += "     **IF YOU DON'T INCLUDE THIS MARKER, YOUR SETTINGS WILL NOT BE APPLIED!**\n"
+        prompt += "   - **SNAPSHOT CONFIGURATION CONTROL (Full Autonomy)**:\n"
+        prompt += "     - **SYSTEM PURPOSE**: Snapshots are used for vision model analysis (visual pattern recognition), video creation (MP4 animations), replay (graph evolution animation), and historical trend analysis\n"
+        prompt += "     - **STORAGE**: All snapshots stored in IndexedDB (up to 1000), shared by viewer, vision analysis, and video export - single source of truth\n"
+        prompt += "     - **STRATEGIC METHOD SELECTION**: Choose method based on research goals:\n"
+        prompt += "       * **Constant**: Uniform intervals - good for time-series analysis, predictable data collection\n"
+        prompt += "       * **Activity-Based**: Adaptive frequency - more captures during rapid graph changes, fewer during static periods\n"
+        prompt += "         - Best for: Capturing evolution phases, ensuring important changes aren't missed\n"
+        prompt += "         - Sensitivity (0-1): Higher = more responsive to activity (0.5 = balanced, 0.8 = very sensitive)\n"
+        prompt += "         - Burst mode: Aggressive capture in first 30s to catch initial graph formation\n"
+        prompt += "       * **Event-Driven**: Only captures on significant structural changes (node/link additions, position shifts)\n"
+        prompt += "         - Best for: Capturing only meaningful transitions, storage efficiency, milestone-focused analysis\n"
+        prompt += "         - Thresholds control what counts as 'significant' (higher = more selective)\n"
+        prompt += "       * **Milestone**: Captures at specific thresholds (node counts, link counts, time intervals)\n"
+        prompt += "         - Best for: Documenting growth stages, phase transitions, key system states\n"
+        prompt += "       * **Hybrid**: Combines two methods (e.g., activity primary + milestone secondary)\n"
+        prompt += "         - Best for: Complex analysis needs requiring both adaptive and threshold-based capture\n"
+        prompt += "       * **Manual**: No automatic captures - user-triggered only\n"
+        prompt += "         - Best for: Precise control, reducing storage, specific research moments\n"
+        prompt += "     - **VISION MODEL INTEGRATION**: When vision analysis is requested:\n"
+        prompt += "       * System sends current graph viewport + up to 10 evolutionary snapshots\n"
+        prompt += "       * Snapshots are filtered: blank images removed, time spacing ensured, even sampling\n"
+        prompt += "       * Vision model analyzes visual patterns, topology changes, cluster formation\n"
+        prompt += "       * More frequent captures = more data for vision model = better pattern recognition\n"
+        prompt += "     - **CAPTURE STRATEGY**: Adjust based on:\n"
+        prompt += "       * Graph activity level: High activity → more frequent (activity-based, low intervals)\n"
+        prompt += "       * Analysis phase: Initial exploration → aggressive capture, long-term monitoring → efficient capture\n"
+        prompt += "       * Research goals: Pattern discovery → frequent, milestone documentation → event-driven\n"
+        prompt += "       * Storage management: Too many snapshots → increase intervals, reduce frequency\n"
+        prompt += "     - **TECHNICAL PARAMETERS**:\n"
+        prompt += "       * **Constant**: interval (ms) - fixed time between captures\n"
+        prompt += "       * **Activity-Based**: baseInterval, minInterval, maxInterval (ms), sensitivity (0-1), burstMode (true/false), burstInterval (ms)\n"
+        prompt += "       * **Event-Driven**: minChangeThreshold (0-1), nodeChangeThreshold, linkChangeThreshold, positionChangeThreshold (px), minSpacing, maxSpacing (ms)\n"
+        prompt += "       * **Milestone**: nodeCountMilestones (array), linkCountMilestones (array), timeMilestones (array, seconds), phaseTransitions (true/false)\n"
+        prompt += "       * **Hybrid**: primaryMethod, secondaryMethod, weight (0-1)\n"
+        prompt += "       * **Global**: enabled (true/false), minSpacing (ms, absolute minimum), maxSnapshots (default: 1000)\n"
+        prompt += "     - **USAGE FORMAT**: [[SNAPSHOT_CONFIG_UPDATE: {\"method\": \"methodName\", \"methodName\": {...params}, \"global\": {...}}]]\n"
+        prompt += "     - **EXAMPLES**:\n"
+        prompt += "       * Rapid evolution: [[SNAPSHOT_CONFIG_UPDATE: {\"method\": \"activity\", \"activity\": {\"minInterval\": 200, \"maxInterval\": 2000, \"sensitivity\": 0.8}}]]\n"
+        prompt += "       * Long-term monitoring: [[SNAPSHOT_CONFIG_UPDATE: {\"method\": \"event-driven\", \"eventDriven\": {\"minChangeThreshold\": 0.2, \"minSpacing\": 5000}}]]\n"
+        prompt += "       * Milestone documentation: [[SNAPSHOT_CONFIG_UPDATE: {\"method\": \"milestone\", \"milestone\": {\"nodeCountMilestones\": [100, 500, 1000]}}]]\n"
+        prompt += "       * Disable automatic: [[SNAPSHOT_CONFIG_UPDATE: {\"global\": {\"enabled\": false}}]]\n"
+        prompt += "     **IF YOU DON'T INCLUDE THIS MARKER, YOUR SNAPSHOT SETTINGS WILL NOT BE APPLIED!**\n"
         prompt += "   - **JSON FORMATTING RULES (CRITICAL)**:\n"
         prompt += "     * NO COMMENTS in JSON - JSON does not support // or /* */ comments\n"
         prompt += "     * Property names MUST use underscores: componentColor_reality_sim (NOT componentColorrealitysim)\n"
@@ -4045,6 +4140,64 @@ def stop_simulation():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+def find_ffmpeg():
+    """Find ffmpeg executable, checking PATH, environment variable, and common Windows locations."""
+    import shutil
+    import platform
+    
+    # First check environment variable
+    ffmpeg_path = os.environ.get('FFMPEG_PATH')
+    if ffmpeg_path and os.path.exists(ffmpeg_path):
+        logger.info(f"Using FFmpeg from environment variable: {ffmpeg_path}")
+        return ffmpeg_path
+    
+    # Check PATH
+    ffmpeg_path = shutil.which('ffmpeg')
+    if ffmpeg_path:
+        logger.info(f"Found FFmpeg in PATH: {ffmpeg_path}")
+        return ffmpeg_path
+    
+    # If not in PATH, check common Windows installation locations
+    if platform.system() == 'Windows':
+        common_paths = [
+            r'C:\ffmpeg\bin\ffmpeg.exe',
+            r'C:\Program Files\ffmpeg\bin\ffmpeg.exe',
+            r'C:\Program Files (x86)\ffmpeg\bin\ffmpeg.exe',
+            r'C:\tools\ffmpeg\bin\ffmpeg.exe',
+            r'C:\bin\ffmpeg.exe',
+        ]
+        
+        # Check winget installation path
+        winget_base = os.path.expanduser(r'~\AppData\Local\Microsoft\WinGet\Packages')
+        if os.path.exists(winget_base):
+            try:
+                for item in os.listdir(winget_base):
+                    if 'ffmpeg' in item.lower():
+                        ffmpeg_dir = os.path.join(winget_base, item)
+                        for root, dirs, files in os.walk(ffmpeg_dir):
+                            if 'ffmpeg.exe' in files:
+                                candidate = os.path.join(root, 'ffmpeg.exe')
+                                if os.path.exists(candidate):
+                                    logger.info(f"Found FFmpeg in winget: {candidate}")
+                                    return candidate
+            except Exception as e:
+                logger.warning(f"Error searching winget path: {e}")
+        
+        # Check common paths
+        for path in common_paths:
+            if os.path.exists(path):
+                logger.info(f"Found FFmpeg in common location: {path}")
+                return path
+        
+        # Check ProgramData (chocolatey sometimes installs here)
+        programdata = os.environ.get('ProgramData', r'C:\ProgramData')
+        choco_ffmpeg = os.path.join(programdata, r'chocolatey\bin\ffmpeg.exe')
+        if os.path.exists(choco_ffmpeg):
+            logger.info(f"Found FFmpeg via Chocolatey: {choco_ffmpeg}")
+            return choco_ffmpeg
+    
+    return None
+
 @app.route('/api/export/create_snapshot_video', methods=['POST'])
 def create_snapshot_video():
     """Create an MP4 video from snapshots provided by the client."""
@@ -4061,16 +4214,46 @@ def create_snapshot_video():
         fps = max(1, min(fps, 60))
         if not images or len(images) < 1:
             return jsonify({'error': 'At least one snapshot is required to create a video.'}), 400
-        try:
-            subprocess.run(['ffmpeg', '-version'], capture_output=True, check=True)
-        except (subprocess.CalledProcessError, FileNotFoundError):
+        
+        # Find ffmpeg executable
+        import platform
+        ffmpeg_path = find_ffmpeg()
+        
+        # Verify ffmpeg works
+        if ffmpeg_path:
+            try:
+                result = subprocess.run([ffmpeg_path, '-version'], capture_output=True, check=True, timeout=5)
+                logger.info(f"FFmpeg verified successfully: {ffmpeg_path}")
+            except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired) as e:
+                logger.warning(f"FFmpeg found at {ffmpeg_path} but verification failed: {e}")
+                ffmpeg_path = None
+        
+        if not ffmpeg_path:
+            # Provide detailed error with search locations
+            searched_locations = []
+            if platform.system() == 'Windows':
+                searched_locations = [
+                    'System PATH',
+                    'FFMPEG_PATH environment variable',
+                    r'C:\ffmpeg\bin\ffmpeg.exe',
+                    r'C:\Program Files\ffmpeg\bin\ffmpeg.exe',
+                    r'C:\Program Files (x86)\ffmpeg\bin\ffmpeg.exe',
+                    'Winget installation directory',
+                    'Chocolatey installation directory',
+                ]
             return jsonify({
                 'error': 'FFmpeg not found. Please install FFmpeg to create videos.',
                 'install_help': {
-                    'windows': 'Download from https://ffmpeg.org/download.html or use: winget install ffmpeg',
+                    'windows': 'Download from https://ffmpeg.org/download.html or use: winget install ffmpeg (then restart terminal)',
                     'mac': 'brew install ffmpeg',
                     'linux': 'sudo apt-get install ffmpeg'
-                }
+                },
+                'troubleshooting': [
+                    'If FFmpeg is installed, ensure it is in your system PATH or restart your terminal/IDE after installation.',
+                    'You can also set FFMPEG_PATH environment variable to point to your ffmpeg.exe location.',
+                    f'Searched locations: {", ".join(searched_locations)}'
+                ],
+                'manual_path': 'Set environment variable: FFMPEG_PATH=C:\\path\\to\\ffmpeg.exe'
             }), 400
         from io import BytesIO
         from PIL import Image
@@ -4092,7 +4275,7 @@ def create_snapshot_video():
             output_name = f'snapshot_video_{int(time.time())}.mp4'
             output_path = temp_dir_path / output_name
             cmd = [
-                'ffmpeg', '-y',
+                ffmpeg_path, '-y',
                 '-framerate', str(fps),
                 '-i', str(temp_dir_path / 'frame_%04d.png'),
                 '-c:v', 'libx264',
@@ -4128,21 +4311,27 @@ def create_video_from_frames():
     try:
         import subprocess
         import tempfile
-        import shutil
         
-        # Check if FFmpeg is available
-        try:
-            subprocess.run(['ffmpeg', '-version'], 
-                          capture_output=True, 
-                          check=True)
-        except (subprocess.CalledProcessError, FileNotFoundError):
+        # Find ffmpeg executable
+        import platform
+        ffmpeg_path = find_ffmpeg()
+        
+        # Verify ffmpeg works
+        if ffmpeg_path:
+            try:
+                result = subprocess.run([ffmpeg_path, '-version'], capture_output=True, check=True, timeout=5)
+            except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
+                ffmpeg_path = None
+        
+        if not ffmpeg_path:
             return jsonify({
                 'error': 'FFmpeg not found. Please install FFmpeg to create videos.',
                 'install_help': {
-                    'windows': 'Download from https://ffmpeg.org/download.html or use: winget install ffmpeg',
+                    'windows': 'Download from https://ffmpeg.org/download.html or use: winget install ffmpeg (then restart terminal)',
                     'mac': 'brew install ffmpeg',
                     'linux': 'sudo apt-get install ffmpeg'
-                }
+                },
+                'troubleshooting': 'If FFmpeg is installed, ensure it is in your system PATH or restart your terminal/IDE after installation.'
             }), 400
         
         # Get frames from request (base64 encoded PNGs)
@@ -4176,7 +4365,7 @@ def create_video_from_frames():
             output_path = os.path.join(temp_dir, output_name)
             
             cmd = [
-                'ffmpeg',
+                ffmpeg_path,
                 '-y',  # Overwrite output
                 '-framerate', str(fps),
                 '-i', os.path.join(temp_dir, 'frame_%04d.png'),

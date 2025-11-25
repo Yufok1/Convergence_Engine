@@ -9,9 +9,9 @@
     "performance_sampling_rate": 100
   },
   "quantum": {
-    "initial_states": 40,
+    "initial_states": 80,
     "probability_precision": 1e-06,
-    "superposition_tolerance": 0.0001,
+    "superposition_tolerance": 0.002,
     "entanglement_sensitivity": 1e-05,
     "prune_check_interval": 50,
     "fitness_weights": {
@@ -31,25 +31,25 @@
     "particles": 2400,
     "prune_threshold": 0.001,
     "interaction_precision": 0.0001,
-    "stability_tolerance": 1e-05,
-    "entropy_sensitivity": 1e-06
+    "stability_tolerance": 0.0005,
+    "entropy_sensitivity": 0.0001
   },
   "evolution": {
-    "population_size": 400,
-    "genotype_length": 32,
+    "population_size": 600,
+    "genotype_length": 48,
     "max_generations": 1000,
     "fitness_precision": 1e-06,
-    "mutation_rate_precision": 1e-06,
-    "adaptation_sensitivity": 0.0001
+    "mutation_rate_precision": 1e-08,
+    "adaptation_sensitivity": 0.002
   },
   "network": {
-    "max_connections": 8000,
-    "max_organisms": 2000,
-    "resource_pool": 100.0,
-    "stability_precision": 1e-06,
-    "connection_strength_resolution": 1e-05,
+    "max_connections": 16000,
+    "max_organisms": 3000,
+    "resource_pool": 200.0,
+    "stability_precision": 1e-07,
+    "connection_strength_resolution": 5e-06,
     "resource_flow_precision": 0.0001,
-    "emergence_sensitivity": 1e-06
+    "emergence_sensitivity": 2e-06
   },
   "agency": {
     "initial_mode": "manual_only",
@@ -77,28 +77,32 @@
   "feedback": {
     "enabled": true,
     "interval_frames": 10,
-    "hysteresis_checks": 3,
-    "rate_limit_frames": 30,
+    "hysteresis_checks": 12,
+    "rate_limit_frames": 60,
     "knobs": {
       "mutation_rate": {
         "min": 0.001,
         "max": 0.05,
-        "step": 0.001
+        "step": 0.001,
+        "initial": 0.02
       },
       "new_edge_rate": {
-        "min": 0.0,
-        "max": 1.5,
-        "step": 0.05
+        "min": 0.2,
+        "max": 2.0,
+        "step": 0.1,
+        "initial": 1.8
       },
       "clustering_bias": {
-        "min": 0.0,
-        "max": 1.2,
-        "step": 0.05
+        "min": 0.3,
+        "max": 1.5,
+        "step": 0.05,
+        "initial": 0.65
       },
       "quantum_pruning": {
         "min": 0.0,
         "max": 1.0,
-        "step": 0.05
+        "step": 0.05,
+        "initial": 0.7
       }
     }
   }

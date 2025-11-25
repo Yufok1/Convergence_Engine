@@ -526,22 +526,26 @@ echo     "knobs": {
 echo       "mutation_rate": {
 echo         "min": 0.001,
 echo         "max": 0.05,
-echo         "step": 0.001
+echo         "step": 0.001,
+echo         "initial": 0.02
 echo       },
 echo       "new_edge_rate": {
-echo         "min": 0.0,
-echo         "max": 1.5,
-echo         "step": 0.05
+echo         "min": 0.2,
+echo         "max": 2.0,
+echo         "step": 0.1,
+echo         "initial": 1.8
 echo       },
 echo       "clustering_bias": {
-echo         "min": 0.0,
-echo         "max": 1.2,
-echo         "step": 0.05
+echo         "min": 0.3,
+echo         "max": 1.5,
+echo         "step": 0.05,
+echo         "initial": 0.65
 echo       },
 echo       "quantum_pruning": {
 echo         "min": 0.0,
 echo         "max": 1.0,
-echo         "step": 0.05
+echo         "step": 0.05,
+echo         "initial": 0.7
 echo       }
 echo     }
 echo   }
