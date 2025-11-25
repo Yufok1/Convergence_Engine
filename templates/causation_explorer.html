@@ -1666,29 +1666,13 @@
                 const transaction = db.transaction([STORE_NAME], 'readwrite');
                 const store = transaction.objectStore(STORE_NAME);
                 
+                // Just save - NO automatic deletion
+                // User has full control over snapshot management
                 await new Promise((resolve, reject) => {
                     const request = store.put(snapshot);
                     request.onsuccess = () => resolve();
                     request.onerror = () => reject(request.error);
                 });
-
-                // Keep only last MAX_SNAPSHOTS
-                const countRequest = store.count();
-                countRequest.onsuccess = async () => {
-                    const count = countRequest.result;
-                    if (count > MAX_SNAPSHOTS) {
-                        // Get all snapshots, sort by timestamp, delete oldest
-                        const getAllRequest = store.getAll();
-                        getAllRequest.onsuccess = () => {
-                            const allSnapshots = getAllRequest.result;
-                            allSnapshots.sort((a, b) => a.timestamp - b.timestamp);
-                            const toDelete = allSnapshots.slice(0, count - MAX_SNAPSHOTS);
-                            toDelete.forEach(snapshot => {
-                                store.delete(snapshot.timestamp);
-                            });
-                        };
-                    }
-                };
             } catch (e) {
                 console.error('[INDEXEDDB] Failed to save snapshot:', e);
                 throw e;
@@ -1775,18 +1759,18 @@
         }).catch(err => {
             console.warn('[INDEXEDDB] IndexedDB not available, falling back to localStorage:', err);
             // Fallback to localStorage
-            try {
-                const stored = localStorage.getItem('causationExplorer_snapshotHistory');
-                if (stored) {
-                    snapshotHistory = JSON.parse(stored);
-                    if (!Array.isArray(snapshotHistory)) {
-                        snapshotHistory = [];
-                    }
-                    console.log(`[LOCALSTORAGE] Loaded ${snapshotHistory.length} snapshots from localStorage`);
+        try {
+            const stored = localStorage.getItem('causationExplorer_snapshotHistory');
+            if (stored) {
+                snapshotHistory = JSON.parse(stored);
+                if (!Array.isArray(snapshotHistory)) {
+                    snapshotHistory = [];
                 }
-            } catch (e) {
+                    console.log(`[LOCALSTORAGE] Loaded ${snapshotHistory.length} snapshots from localStorage`);
+            }
+        } catch (e) {
                 console.error('[SNAPSHOT] Error loading from localStorage fallback:', e);
-                snapshotHistory = [];
+            snapshotHistory = [];
             }
         });
 
@@ -1800,35 +1784,35 @@
         };
 
         function dedupeSnapshotsByImage(snapshots) {
-            if (!Array.isArray(snapshots)) return [];
-            const deduped = [];
-            let lastSignature = null;
-            snapshots.forEach(snapshot => {
-                if (!snapshot || !snapshot.image) return;
-                const sig = snapshotSignature(snapshot.image);
-                if (sig && sig !== lastSignature) {
-                    deduped.push(snapshot);
-                    lastSignature = sig;
-                }
-            });
-            return deduped;
-        }
+                if (!Array.isArray(snapshots)) return [];
+                const deduped = [];
+                let lastSignature = null;
+                snapshots.forEach(snapshot => {
+                    if (!snapshot || !snapshot.image) return;
+                    const sig = snapshotSignature(snapshot.image);
+                    if (sig && sig !== lastSignature) {
+                        deduped.push(snapshot);
+                        lastSignature = sig;
+                    }
+                });
+                return deduped;
+            }
 
-        function enforceSnapshotSpacing(snapshots, minSpacingMs) {
-            if (!Array.isArray(snapshots) || snapshots.length === 0) return [];
-            const result = [];
-            let lastTimestamp = 0;
-            snapshots.forEach(snapshot => {
-                const timestamp = snapshot.timestamp || 0;
-                if (result.length === 0 || (timestamp - lastTimestamp) >= minSpacingMs) {
-                    result.push(snapshot);
-                    lastTimestamp = timestamp;
-                }
-            });
-            return result;
-        }
+            function enforceSnapshotSpacing(snapshots, minSpacingMs) {
+                if (!Array.isArray(snapshots) || snapshots.length === 0) return [];
+                const result = [];
+                let lastTimestamp = 0;
+                snapshots.forEach(snapshot => {
+                    const timestamp = snapshot.timestamp || 0;
+                    if (result.length === 0 || (timestamp - lastTimestamp) >= minSpacingMs) {
+                        result.push(snapshot);
+                        lastTimestamp = timestamp;
+                    }
+                });
+                return result;
+            }
 
-        function sampleSnapshotsEvenlyChronologically(snapshots, targetCount) {
+            function sampleSnapshotsEvenlyChronologically(snapshots, targetCount) {
                 if (!Array.isArray(snapshots) || snapshots.length === 0) return [];
                 if (snapshots.length <= targetCount) return snapshots.slice();
                 if (targetCount <= 1) return [snapshots[snapshots.length - 1]];
@@ -1846,29 +1830,29 @@
                 return sampled;
             }
 
-        function enforceSnapshotPayloadBudget(originalSnapshots, graphImage, message) {
-            if (!Array.isArray(originalSnapshots) || originalSnapshots.length <= 1) return originalSnapshots || [];
-            let target = originalSnapshots.length;
-            let best = originalSnapshots.slice();
+            function enforceSnapshotPayloadBudget(originalSnapshots, graphImage, message) {
+                if (!Array.isArray(originalSnapshots) || originalSnapshots.length <= 1) return originalSnapshots || [];
+                let target = originalSnapshots.length;
+                let best = originalSnapshots.slice();
 
-            while (target >= 1) {
-                const candidate = sampleSnapshotsEvenlyChronologically(originalSnapshots, target);
-                const payloadSize = JSON.stringify({
-                    message: message,
-                    graph_image: graphImage || '',
-                    evolutionary_snapshots: candidate
-                }).length;
+                while (target >= 1) {
+                    const candidate = sampleSnapshotsEvenlyChronologically(originalSnapshots, target);
+                    const payloadSize = JSON.stringify({
+                        message: message,
+                        graph_image: graphImage || '',
+                        evolutionary_snapshots: candidate
+                    }).length;
 
-                if (payloadSize <= MAX_PAYLOAD_SIZE * 0.9 || target === 1) {
-                    best = candidate;
-                    break;
+                    if (payloadSize <= MAX_PAYLOAD_SIZE * 0.9 || target === 1) {
+                        best = candidate;
+                        break;
+                    }
+
+                    target -= 1;
                 }
 
-                target -= 1;
+                return best;
             }
-
-            return best;
-        }
 
             // ============================================================================
             // ============================================================================
@@ -2269,37 +2253,50 @@
                         imageData = 'PLACEHOLDER_NULL_IMAGE';
                     }
 
+                    // CRITICAL: Don't store full graphData - it's too large and causes memory issues
+                    // Only store minimal metadata for snapshots
                     const snapshot = {
                         timestamp: now,
                         sessionStartTime: snapshotStartTime || now, // Track which session this belongs to
                         image: imageData, // Store just the base64 data, not the full data URL
-                        viewState: JSON.parse(JSON.stringify(viewState)),
+                        viewState: {
+                            zoom: viewState.zoom,
+                            panX: viewState.panX,
+                            panY: viewState.panY,
+                            rotation: viewState.rotation
+                            // Don't store selectedNode or visibleNodes - too large
+                        },
                         activityScore: '0.000', // Not calculated - using simple 5s interval
-                        graphData: {
-                            nodes: JSON.parse(JSON.stringify(allNodes)),
-                            links: JSON.parse(JSON.stringify(allLinks))
-                        }
+                        // REMOVED: graphData - causes massive memory usage with large graphs
+                        // If needed, can be reconstructed from current graph state
+                        nodeCount: allNodes ? allNodes.length : 0,
+                        linkCount: allLinks ? allLinks.length : 0
                     };
 
                     snapshotHistory.push(snapshot);
                     totalSnapshotsCaptured++;
                     lastSnapshotTime = Date.now(); // Update last capture time
 
-                    // Keep only last MAX_SNAPSHOTS
+                    // Keep only last MAX_SNAPSHOTS in memory to prevent unresponsiveness
+                    // IndexedDB keeps ALL snapshots - no automatic deletion
+                    // User has full control via clearSnapshotHistory() if needed
                     if (snapshotHistory.length > MAX_SNAPSHOTS) {
-                        snapshotHistory.shift();
+                        snapshotHistory.shift(); // Remove oldest from memory only (IndexedDB untouched)
                     }
 
-                    // Save to IndexedDB (with localStorage fallback)
-                    saveSnapshotToDB(snapshot).catch(err => {
-                        console.warn('[SNAPSHOT] IndexedDB save failed, using localStorage fallback:', err);
-                        // Fallback to localStorage
-                        try {
-                            localStorage.setItem('causationExplorer_snapshotHistory', JSON.stringify(snapshotHistory));
-                        } catch (e) {
-                            console.error('[SNAPSHOT] Both IndexedDB and localStorage failed:', e);
-                        }
-                    });
+                    // Save to IndexedDB asynchronously (non-blocking)
+                    // Use setTimeout to prevent blocking the main thread
+                    setTimeout(() => {
+                        saveSnapshotToDB(snapshot).catch(err => {
+                            console.warn('[SNAPSHOT] IndexedDB save failed, using localStorage fallback:', err);
+                            // Fallback to localStorage (also async)
+                            try {
+                                localStorage.setItem('causationExplorer_snapshotHistory', JSON.stringify(snapshotHistory));
+                            } catch (e) {
+                                console.error('[SNAPSHOT] Both IndexedDB and localStorage failed:', e);
+                            }
+                        });
+                    }, 0);
 
                     // Update display IMMEDIATELY - use requestAnimationFrame to ensure DOM is ready
                     requestAnimationFrame(() => {
@@ -2383,13 +2380,28 @@
                         interval = snapshotConfig.global.minSpacing - timeSinceLastCapture;
                     }
 
-                    // Schedule next capture
+                    // Schedule next capture with minimum interval to prevent overwhelming the browser
+                    // Add small delay to prevent rapid-fire captures that cause unresponsiveness
+                    const minInterval = Math.max(interval, 100); // Minimum 100ms between captures
                     activitySnapshotInterval = setTimeout(() => {
-                        captureActivitySnapshot().catch(err => {
-                            console.error('[SNAPSHOT] Capture error:', err);
-                        });
-                        scheduleNextCapture(); // Schedule next
-                    }, interval);
+                        // Use requestIdleCallback if available to capture during idle time
+                        if (window.requestIdleCallback) {
+                            requestIdleCallback(() => {
+                                captureActivitySnapshot().catch(err => {
+                                    console.error('[SNAPSHOT] Capture error:', err);
+                                });
+                                scheduleNextCapture(); // Schedule next
+                            }, { timeout: 1000 });
+                        } else {
+                            // Fallback: use setTimeout with small delay to prevent blocking
+                            setTimeout(() => {
+                                captureActivitySnapshot().catch(err => {
+                                    console.error('[SNAPSHOT] Capture error:', err);
+                                });
+                                scheduleNextCapture(); // Schedule next
+                            }, 50); // Small delay to prevent blocking
+                        }
+                    }, minInterval);
 
                     // Log capture schedule (less verbose)
                     if (totalSnapshotsCaptured < 3 || totalSnapshotsCaptured % 20 === 0) {
@@ -3232,7 +3244,7 @@
                     simulation.force('link').links(visibleLinks);
                     // Only restart if simulation has stopped, otherwise just update
                     if (simulation.alpha() < 0.001) {
-                        simulation.alpha(0.05).restart(); // Very gentle restart to adjust layout slightly
+                    simulation.alpha(0.05).restart(); // Very gentle restart to adjust layout slightly
                     }
                 }
             }
@@ -4292,7 +4304,7 @@
 
                 // Create persistent node map for tick function
                 const tickNodeMap = new Map(nodes.map(n => [n.id, n]));
-                
+
                 // Optimized tick handler with requestAnimationFrame throttling
                 // This prevents excessive DOM updates and improves performance
                 let pendingTick = false;
@@ -4304,34 +4316,34 @@
                             pendingTick = false;
                             
                             // Batch DOM updates
-                            link
-                                .attr('x1', d => {
-                                    const sourceId = typeof d.source === 'object' ? d.source.id : d.source;
-                                    const sourceNode = tickNodeMap.get(sourceId);
-                                    return sourceNode?.x || 0;
-                                })
-                                .attr('y1', d => {
-                                    const sourceId = typeof d.source === 'object' ? d.source.id : d.source;
-                                    const sourceNode = tickNodeMap.get(sourceId);
-                                    return sourceNode?.y || 0;
-                                })
-                                .attr('x2', d => {
-                                    const targetId = typeof d.target === 'object' ? d.target.id : d.target;
-                                    const targetNode = tickNodeMap.get(targetId);
-                                    return targetNode?.x || 0;
-                                })
-                                .attr('y2', d => {
-                                    const targetId = typeof d.target === 'object' ? d.target.id : d.target;
-                                    const targetNode = tickNodeMap.get(targetId);
-                                    return targetNode?.y || 0;
-                                });
+                    link
+                        .attr('x1', d => {
+                            const sourceId = typeof d.source === 'object' ? d.source.id : d.source;
+                            const sourceNode = tickNodeMap.get(sourceId);
+                            return sourceNode?.x || 0;
+                        })
+                        .attr('y1', d => {
+                            const sourceId = typeof d.source === 'object' ? d.source.id : d.source;
+                            const sourceNode = tickNodeMap.get(sourceId);
+                            return sourceNode?.y || 0;
+                        })
+                        .attr('x2', d => {
+                            const targetId = typeof d.target === 'object' ? d.target.id : d.target;
+                            const targetNode = tickNodeMap.get(targetId);
+                            return targetNode?.x || 0;
+                        })
+                        .attr('y2', d => {
+                            const targetId = typeof d.target === 'object' ? d.target.id : d.target;
+                            const targetNode = tickNodeMap.get(targetId);
+                            return targetNode?.y || 0;
+                        });
 
-                            node
-                                .attr('transform', d => `translate(${d.x || 0},${d.y || 0})`);
+                    node
+                        .attr('transform', d => `translate(${d.x || 0},${d.y || 0})`);
 
                             // Update temporal paths if enabled (throttled)
-                            if (filters.showTemporalPaths) {
-                                updateTemporalPaths();
+                    if (filters.showTemporalPaths) {
+                        updateTemporalPaths();
                             }
                         });
                     }
@@ -7608,12 +7620,12 @@
                     console.log(`[SNAPSHOT] Cleared ${count} snapshots from IndexedDB and memory`);
                 } catch (e) {
                     console.warn('[SNAPSHOT] Failed to clear IndexedDB, trying localStorage:', e);
-                    try {
-                        localStorage.removeItem('causationExplorer_snapshotHistory');
-                        console.log(`[SNAPSHOT] Cleared ${count} snapshots from localStorage and memory`);
+                try {
+                    localStorage.removeItem('causationExplorer_snapshotHistory');
+                    console.log(`[SNAPSHOT] Cleared ${count} snapshots from localStorage and memory`);
                     } catch (e2) {
                         console.error('[SNAPSHOT] Error clearing localStorage:', e2);
-                    }
+                }
                 }
                 updateSnapshotCount(); // Update display after clearing
             }
@@ -7621,26 +7633,21 @@
             // Load Ollama configuration on page load
             loadOllamaConfig();
 
-            // Check simulation status on page load and clear snapshots if stopped
-            // This prevents old snapshots from previous sessions from being used
+            // Check simulation status on page load - but DON'T clear snapshots
+            // Snapshots are preserved across sessions so user can review them
             setTimeout(() => {
                 fetch('/api/simulation/status')
                     .then(response => response.json())
                     .then(data => {
-                        if (data.status === 'stopped' && snapshotHistory.length > 0) {
-                            // Simulation is stopped, clear any old snapshots from previous runs
-                            clearSnapshotHistory();
-                            console.log('[SNAPSHOT] Simulation is stopped on page load - cleared old snapshots from previous session');
+                        if (data.status === 'stopped') {
+                            console.log(`[SNAPSHOT] Simulation is stopped on page load - keeping ${snapshotHistory.length} snapshots for review`);
                         } else if (data.status === 'running') {
                             console.log(`[SNAPSHOT] Simulation is running - keeping ${snapshotHistory.length} snapshots`);
                         }
                     })
                     .catch(err => {
-                        console.warn('[SNAPSHOT] Could not check simulation status, clearing snapshots to be safe:', err);
-                        // If we can't check, assume stopped and clear snapshots to be safe
-                        if (snapshotHistory.length > 0) {
-                            clearSnapshotHistory();
-                        }
+                        console.warn('[SNAPSHOT] Could not check simulation status:', err);
+                        // Don't clear snapshots - keep them for user to review
                     });
             }, 500); // Small delay to ensure backend is ready
 
@@ -7709,8 +7716,9 @@
                                 loadGraphThrottle = null;
                             }
                             
-                            // Clear snapshots when simulation stops - they're from the previous run
-                            clearSnapshotHistory();
+                            // REMOVED: clearSnapshotHistory() - keep snapshots so user can review them!
+                            // Snapshots are preserved when stopping simulation
+                            console.log(`[SNAPSHOT] Simulation stopped - keeping ${snapshotHistory.length} snapshots for review`);
                         } else {
                             console.error('Failed to stop simulation:', data.error);
                             alert('Failed to stop simulation: ' + (data.error || 'Unknown error'));
@@ -8726,8 +8734,8 @@
                         }
                     } else {
                         // Fallback to index
-                        const index = parseInt(checkbox.dataset.snapshotIndex, 10);
-                        if (!isNaN(index) && index >= 0 && index < sortedSnapshots.length) {
+                    const index = parseInt(checkbox.dataset.snapshotIndex, 10);
+                    if (!isNaN(index) && index >= 0 && index < sortedSnapshots.length) {
                             const snapshot = sortedSnapshots[index];
                             if (snapshot && snapshot.image) {
                                 selectedSnapshots.push(snapshot);
@@ -8791,7 +8799,7 @@
                     videoBtn.disabled = false;
                     return;
                 }
-                
+
                 fetch('/api/export/create_snapshot_video', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
