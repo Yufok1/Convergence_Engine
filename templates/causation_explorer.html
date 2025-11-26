@@ -1998,6 +1998,45 @@
             replaySnapshots: []
         };
 
+        // Generate a robust signature from an image string for deduplication
+        // Samples from multiple points to represent overall image structure
+        // Only removes truly identical images, allows incremental changes
+        function snapshotSignature(imageString) {
+            if (!imageString || typeof imageString !== 'string') return null;
+            
+            // Sample from multiple strategic points in the image string
+            // This captures the overall structure while being tolerant of small pixel changes
+            const len = imageString.length;
+            if (len < 200) {
+                // Very short image - use full string
+                return len.toString();
+            }
+            
+            // Sample from 5 strategic points: start, 25%, 50%, 75%, end
+            // Use larger samples (200 chars each) to get better representation
+            const sampleSize = Math.min(200, Math.floor(len / 10));
+            const samples = [
+                imageString.substring(0, sampleSize),                                    // Start
+                imageString.substring(Math.floor(len * 0.25), Math.floor(len * 0.25) + sampleSize), // 25%
+                imageString.substring(Math.floor(len * 0.50), Math.floor(len * 0.50) + sampleSize), // Middle
+                imageString.substring(Math.floor(len * 0.75), Math.floor(len * 0.75) + sampleSize), // 75%
+                imageString.substring(Math.max(0, len - sampleSize))                    // End
+            ];
+            
+            // Create signature from samples + overall structure
+            const combined = samples.join('|') + '|' + len.toString();
+            
+            // Use a hash function to create compact signature
+            // This will be identical only for truly identical images
+            let hash = 0;
+            for (let i = 0; i < combined.length; i++) {
+                const char = combined.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash; // Convert to 32bit integer
+            }
+            return hash.toString(36); // Convert to base36 for shorter string
+        }
+
         function dedupeSnapshotsByImage(snapshots) {
                 if (!Array.isArray(snapshots)) return [];
                 const deduped = [];

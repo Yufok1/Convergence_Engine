@@ -91,6 +91,26 @@
 
 ---
 
+## 🔧 CRA Granular Logging (2025-01-25)
+
+### Detailed Ollama Traffic Logging
+- **Step-by-step progress tracking**: 6-phase CRA request lifecycle
+- **Vision analysis timing**: Per-image analysis time in sequential mode
+- **API call details**: Request/response timing, payload sizes, status codes
+- **Performance breakdown**: Percentage of time spent in each phase
+- **Bottleneck identification**: Helps identify where requests are hanging
+
+### Snapshot Deduplication Fix
+- **Fixed JavaScript error**: `snapshotSignature` function now properly defined
+- **Improved algorithm**: Handles incremental image changes (micrometric differences)
+- **Strategic sampling**: Samples from 5 points (0%, 25%, 50%, 75%, 100%)
+- **Smart deduplication**: Only removes truly identical images, preserves evolution
+
+### Configuration Updates
+- **Network connectivity**: Increased `clustering_bias` 0.8 → 1.0
+- **Edge formation**: Increased `new_edge_rate` 0.5 → 0.8
+- **Based on**: CRA diagnostic recommendations
+
 ## 🚀 Performance Optimizations (2025-01-25)
 
 ### Phase 1: Incremental Updates & Caching

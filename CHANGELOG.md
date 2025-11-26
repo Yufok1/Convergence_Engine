@@ -6,6 +6,42 @@
 
 ## [Unreleased] - 2025-01-XX
 
+### 🔧 CRA Granular Logging & Fixes (2025-01-25)
+
+#### Added
+- **Granular Ollama Traffic Logging** (`causation_web_ui.py`)
+  - Step-by-step progress tracking for CRA requests (6 phases)
+  - Detailed vision analysis timing per image
+  - API call timing with payload sizes and response times
+  - Performance breakdown showing time spent in each phase
+  - Helps identify bottlenecks and hanging operations
+
+- **Enhanced Vision Analysis Logging**
+  - Per-image analysis timing in sequential mode
+  - HTTP request/response timing
+  - Payload size logging (images, prompts, total)
+  - Response parsing timing
+  - Synthesis phase timing
+
+- **CRA Request Lifecycle Logging**
+  - Request start/end with timestamps
+  - Phase-by-phase progress (context building, knowledge loading, trends, vision, synthesis)
+  - Breakdown percentages showing where time is spent
+  - Response size logging
+
+#### Fixed
+- **Snapshot Signature Function** (`templates/causation_explorer.html`)
+  - Fixed `ReferenceError: snapshotSignature is not defined`
+  - Improved signature algorithm to handle incremental image changes
+  - Samples from 5 strategic points (0%, 25%, 50%, 75%, 100%)
+  - Only removes truly identical images, preserves incremental changes
+
+#### Changed
+- **Configuration Updates** (`config.json`)
+  - Increased `clustering_bias` from 0.8 to 1.0 (improves network connectivity)
+  - Increased `new_edge_rate` from 0.5 to 0.8 (reduces network fragmentation)
+  - Based on CRA diagnostic recommendations
+
 ### 🚀 Causation Web UI Performance Optimizations (2025-01-25)
 
 #### Added

@@ -211,6 +211,9 @@ class OllamaBridge:
     
     def chat(self, model: str, messages: List[Dict[str, str]], context: Dict[str, Any] = None) -> Optional[str]:
         """Send chat message with context to Ollama"""
+        api_start = time.time()
+        logger.info(f"[Ollama] [Chat] Starting chat API call to {self.base_url} (model: {model})")
+        
         # Check API key for cloud before making request
         if self.is_cloud and not self.api_key:
             logger.error(
@@ -250,12 +253,21 @@ class OllamaBridge:
             # For cloud, try /v1/chat/completions endpoint first (OpenAI-compatible), fallback to /api/chat
             endpoint = "/v1/chat/completions" if self.is_cloud else "/api/chat"
             
+            # Log request details
+            prompt_size = sum(len(str(m.get('content', ''))) for m in full_messages)
+            logger.info(f"[Ollama] [Chat] Request: endpoint={endpoint}, payload_size≈{prompt_size/1024:.1f}KB, timeout={self.timeout}s")
+            logger.info(f"[Ollama] [Chat] Sending HTTP POST request...")
+            request_send_time = time.time()
+            
             response = requests.post(
                 f"{self.base_url}{endpoint}",
                 json=payload,
                 headers=self.headers,
                 timeout=self.timeout
             )
+            
+            request_response_time = time.time() - request_send_time
+            logger.info(f"[Ollama] [Chat] HTTP response received in {request_response_time:.2f}s (status: {response.status_code})")
             
             # If 404 on /v1/chat/completions, try /api/chat for cloud
             if response.status_code == 404 and self.is_cloud and endpoint == "/v1/chat/completions":
@@ -269,15 +281,27 @@ class OllamaBridge:
                 )
             
             response.raise_for_status()
+            parse_start = time.time()
+            logger.info(f"[Ollama] [Chat] Parsing response JSON...")
             data = response.json()
+            parse_time = time.time() - parse_start
             
             # Handle different response formats
+            total_chat_time = time.time() - api_start
             if endpoint == "/v1/chat/completions":  # OpenAI-compatible format
                 if 'choices' in data and len(data['choices']) > 0:
-                    return data['choices'][0].get('message', {}).get('content', '')
+                    content = data['choices'][0].get('message', {}).get('content', '')
+                    logger.info(f"[Ollama] [Chat] ✓ Success! Response: {len(content)} chars, parse: {parse_time:.2f}s, total: {total_chat_time:.2f}s")
+                    return content
             else:  # Ollama format
-                return data.get('message', {}).get('content', '')
+                content = data.get('message', {}).get('content', '')
+                if content:
+                    logger.info(f"[Ollama] [Chat] ✓ Success! Response: {len(content)} chars, parse: {parse_time:.2f}s, total: {total_chat_time:.2f}s")
+                else:
+                    logger.warning(f"[Ollama] [Chat] ✗ Empty response after {total_chat_time:.2f}s")
+                return content
             
+            logger.warning(f"[Ollama] [Chat] ✗ Unexpected response format after {total_chat_time:.2f}s")
             return None
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 404:
@@ -307,6 +331,9 @@ class OllamaBridge:
             images: List of base64-encoded images (or single image as string for backwards compat)
             prompt: Minimal prompt for vision model
         """
+        vision_start = time.time()
+        logger.info(f"[Ollama] [Vision] Starting vision API call (model: {model}, {len(images) if isinstance(images, list) else 1} image(s))")
+        
         # Check API key for cloud before making request
         if self.is_cloud and not self.api_key:
             error_msg = (
@@ -589,12 +616,18 @@ class OllamaBridge:
                 try:
                     # Longer timeout for large payloads (4x normal for 341KB+ payloads)
                     timeout_seconds = self.timeout * 4 if total_image_size > 300 * 1024 else self.timeout * 2
+                    logger.info(f"[Ollama] [Vision] Attempt {attempt+1}/{max_retries}: Sending POST to {endpoint} (timeout: {timeout_seconds}s)")
+                    logger.info(f"[Ollama] [Vision] Payload: {len(cleaned_images)} image(s) = {total_image_size/1024:.1f}KB, prompt = {len(prompt)/1024:.1f}KB, total ≈ {total_payload_estimate/1024:.1f}KB")
+                    
+                    request_start = time.time()
                     response = requests.post(
                         f"{self.base_url}{endpoint}",
                         json=payload,
                         headers=self.headers,
                         timeout=timeout_seconds
                     )
+                    request_time = time.time() - request_start
+                    logger.info(f"[Ollama] [Vision] HTTP response received in {request_time:.2f}s (status: {response.status_code})")
                     
                     # If 404 on /v1/chat/completions, try /api/chat for cloud
                     if response.status_code == 404 and self.is_cloud and endpoint == "/v1/chat/completions":
@@ -694,25 +727,35 @@ class OllamaBridge:
             
             if not response:
                 raise Exception(f"Failed to get response after {max_retries} attempts: {last_exception}")
+            
+            parse_start = time.time()
+            logger.info(f"[Ollama] [Vision] Parsing response JSON...")
             data = response.json()
+            parse_time = time.time() - parse_start
+            logger.info(f"[Ollama] [Vision] Response parsed in {parse_time:.2f}s")
             
             # Log response structure for debugging (without full content)
-            logger.debug(f"Vision API response structure: keys={list(data.keys())}")
+            logger.info(f"[Ollama] [Vision] Response structure: keys={list(data.keys())}")
             if 'message' in data:
                 content_preview = data['message'].get('content', '')[:200] if isinstance(data['message'].get('content', ''), str) else str(data['message'].get('content', ''))[:200]
-                logger.debug(f"Response content preview: {content_preview}...")
+                logger.info(f"[Ollama] [Vision] Response content preview: {content_preview}...")
             
             # Handle different response formats
+            total_vision_time = time.time() - vision_start
             if endpoint == "/v1/chat/completions":  # OpenAI-compatible format
                 if 'choices' in data and len(data['choices']) > 0:
                     content = data['choices'][0].get('message', {}).get('content', '')
                     if not content or len(content.strip()) < 10:
-                        logger.warning(f"Vision model returned empty or very short response: {content[:100]}")
+                        logger.warning(f"[Ollama] [Vision] ✗ Empty/short response: {len(content)} chars")
+                    else:
+                        logger.info(f"[Ollama] [Vision] ✓ Success! Response: {len(content)} chars, total time: {total_vision_time:.2f}s")
                     return content
             elif 'message' in data:  # Ollama format
                 content = data['message'].get('content', '')
                 if not content or len(content.strip()) < 10:
-                    logger.warning(f"Vision model returned empty or very short response: {content[:100]}")
+                    logger.warning(f"[Ollama] [Vision] ✗ Empty/short response: {len(content)} chars")
+                else:
+                    logger.info(f"[Ollama] [Vision] ✓ Success! Response: {len(content)} chars, total time: {total_vision_time:.2f}s")
                 # Check if model says it can't see images
                 if content and ('cannot view' in content.lower() or 'no access' in content.lower() or 'cannot see' in content.lower()):
                     logger.error(f"Vision model indicates it cannot see images! Response: {content[:500]}")
@@ -792,6 +835,9 @@ class OllamaBridge:
             prompt: Base prompt for the sequence
             snapshot_contexts: Optional list of CRA-generated contextual summaries (one per image)
         """
+        sequence_start = time.time()
+        logger.info(f"[Ollama] [Vision Sequence] Starting sequential analysis of {len(images)} images (model: {model})")
+        
         if not images:
             return None
         
@@ -807,7 +853,9 @@ class OllamaBridge:
             total_images = len(images)
             
             for i, img in enumerate(images):
-                logger.info(f"Analyzing image {i+1}/{total_images} in sequence...")
+                image_start = time.time()
+                img_size_kb = len(img.encode('utf-8')) / 1024
+                logger.info(f"[Ollama] [Vision Sequence] [Image {i+1}/{total_images}] Starting analysis ({img_size_kb:.1f}KB) - {time.time() - sequence_start:.2f}s elapsed")
                 
                 # Get CRA contextual summary for this image (if available)
                 cra_context = snapshot_contexts[i] if i < len(snapshot_contexts) else None
@@ -877,16 +925,25 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
                 # 1. Compress image if needed
                 # 2. Check TOTAL payload (image + prompt + overhead) against 150KB limit
                 # 3. Trim/compress further if total payload exceeds limit
+                logger.info(f"[Ollama] [Vision Sequence] [Image {i+1}/{total_images}] Calling vision() API...")
                 desc = self.vision(model, [img], seq_prompt)
+                image_time = time.time() - image_start
                 if desc:
+                    logger.info(f"[Ollama] [Vision Sequence] [Image {i+1}/{total_images}] ✓ Completed in {image_time:.2f}s ({len(desc)} chars response)")
                     descriptions.append(f"Image {i+1}/{total_images}: {desc}")
                 else:
+                    logger.warning(f"[Ollama] [Vision Sequence] [Image {i+1}/{total_images}] ✗ Failed after {image_time:.2f}s")
                     descriptions.append(f"Image {i+1}/{total_images}: [Analysis failed]")
             
             # Synthesize results using the chat model (text only)
             if not descriptions:
+                logger.warning("[Ollama] [Vision Sequence] No descriptions to synthesize")
                 return None
+            
+            sequence_analysis_time = time.time() - sequence_start
+            logger.info(f"[Ollama] [Vision Sequence] All {total_images} images analyzed in {sequence_analysis_time:.2f}s (avg: {sequence_analysis_time/total_images:.2f}s per image)")
                 
+            synthesis_start = time.time()
             synthesis_prompt = (
                 f"Here are descriptions of {len(descriptions)} images showing an evolutionary sequence:\n\n" + 
                 "\n\n".join(descriptions) + 
@@ -896,8 +953,14 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
             # Use the same model for synthesis if it supports text, or fallback to a text model
             # For simplicity, we'll try to use the same model (assuming it's a multimodal model that handles text well)
             # or we could use the default text model. Let's use the vision model as it likely has the context.
-            logger.info("Synthesizing sequential analysis results...")
-            return self.chat(model, [{"role": "user", "content": synthesis_prompt}])
+            logger.info(f"[Ollama] [Vision Sequence] Synthesizing {len(descriptions)} image descriptions into final report...")
+            logger.info(f"[Ollama] [Vision Sequence] Synthesis prompt size: {len(synthesis_prompt)/1024:.1f}KB")
+            result = self.chat(model, [{"role": "user", "content": synthesis_prompt}])
+            synthesis_time = time.time() - synthesis_start
+            total_sequence_time = time.time() - sequence_start
+            logger.info(f"[Ollama] [Vision Sequence] ✓ Synthesis completed in {synthesis_time:.2f}s")
+            logger.info(f"[Ollama] [Vision Sequence] ===== Total sequence time: {total_sequence_time:.2f}s (analysis: {sequence_analysis_time:.2f}s, synthesis: {synthesis_time:.2f}s) =====")
+            return result
             
         except Exception as e:
             logger.error(f"Error in sequential analysis: {e}", exc_info=True)
@@ -3906,10 +3969,15 @@ def list_ollama_models():
 @app.route('/api/ollama/chat', methods=['POST'])
 def ollama_chat():
     """Send message to research assistant with complete context"""
+    request_start_time = time.time()
+    logger.info(f"[CRA] ===== Starting CRA chat request at {time.strftime('%H:%M:%S', time.localtime(request_start_time))} =====")
+    
     try:
         data = request.get_json()
         message = data.get('message', '')
         model = data.get('model', 'llama2')
+        logger.info(f"[CRA] User message: {message[:100]}..." if len(message) > 100 else f"[CRA] User message: {message}")
+        logger.info(f"[CRA] Using model: {model}")
         view_state = data.get('view_state', {})
         selected_event = data.get('selected_event')
         graph_image = data.get('graph_image')  # base64 image if provided
@@ -3973,12 +4041,20 @@ def ollama_chat():
             logger.debug(f"Could not update time-series tracker: {e}")
         
         # Build context
+        step_start = time.time()
+        logger.info(f"[CRA] [Step 1/6] Building context... ({time.time() - request_start_time:.2f}s elapsed)")
         context = context_builder.build_context(view_state=view_state, selected_event=selected_event)
+        logger.info(f"[CRA] [Step 1/6] ✓ Context built in {time.time() - step_start:.2f}s")
         
         # Add system knowledge
+        step_start = time.time()
+        logger.info(f"[CRA] [Step 2/6] Loading system knowledge... ({time.time() - request_start_time:.2f}s elapsed)")
         context['system_knowledge'] = knowledge_base.load_knowledge()
+        logger.info(f"[CRA] [Step 2/6] ✓ System knowledge loaded in {time.time() - step_start:.2f}s")
         
         # Add time-series trends and anomaly detection
+        step_start = time.time()
+        logger.info(f"[CRA] [Step 3/6] Analyzing time-series trends... ({time.time() - request_start_time:.2f}s elapsed)")
         context['time_series_trends'] = time_series_tracker.get_all_trends(window_size=20)
         
         # Detect anomalies/spikes in key metrics
@@ -3999,6 +4075,9 @@ def ollama_chat():
         images_trimmed_warning = None  # Initialize for trimming feedback
         if graph_image and data.get('vision_model'):
             vision_model = data.get('vision_model')
+            step_start = time.time()
+            logger.info(f"[CRA] [Step 4/6] ===== Starting Vision Analysis ===== ({time.time() - request_start_time:.2f}s elapsed)")
+            logger.info(f"[CRA] [Vision] Using vision model: {vision_model}")
             
             # Collect all images: current + evolutionary snapshots
             # Strategy: Send up to 10 snapshots for evolution analysis
@@ -4078,24 +4157,27 @@ def ollama_chat():
                     all_images = all_images[-MAX_VISION_IMAGES:]
                     logger.debug(f"Final limit: keeping {MAX_VISION_IMAGES} most recent images (no current image)")
             
-            if not all_images:
-                vision_error = "No images available for vision analysis."
-            else:
-                # Log what we're sending with size info and freshness
-                total_size_kb = sum(len(img.encode('utf-8')) for img in all_images) / 1024
-                if len(all_images) > 1:
-                    logger.info(f"Vision model: Analyzing {len(all_images)} snapshots for evolution (current + {len(all_images)-1} historical, total {total_size_kb:.1f}KB)")
-                    # Log image order and sizes for debugging
-                    for i, img in enumerate(all_images):
-                        size_kb = len(img.encode('utf-8')) / 1024
-                        if i == len(all_images) - 1:
-                            logger.info(f"  Image {i+1}/{len(all_images)}: {size_kb:.1f}KB [CURRENT - FRESH CAPTURE]")
-                        else:
-                            logger.info(f"  Image {i+1}/{len(all_images)}: {size_kb:.1f}KB [Historical snapshot]")
+                if not all_images:
+                    vision_error = "No images available for vision analysis."
+                    logger.warning(f"[CRA] [Vision] No images available for analysis")
                 else:
-                    logger.info(f"Vision model: Analyzing 1 snapshot (current state only, {total_size_kb:.1f}KB) - no history available yet")
-                    if graph_image:
-                        logger.info(f"  [CURRENT - FRESH CAPTURE: {len(graph_image.encode('utf-8'))/1024:.1f}KB]")
+                    # Log what we're sending with size info and freshness
+                    total_size_kb = sum(len(img.encode('utf-8')) for img in all_images) / 1024
+                    vision_prep_time = time.time() - step_start
+                    logger.info(f"[CRA] [Vision] Prepared {len(all_images)} image(s) in {vision_prep_time:.2f}s (total size: {total_size_kb:.1f}KB)")
+                    if len(all_images) > 1:
+                        logger.info(f"[CRA] [Vision] Analyzing {len(all_images)} snapshots for evolution (current + {len(all_images)-1} historical)")
+                        # Log image order and sizes for debugging
+                        for i, img in enumerate(all_images):
+                            size_kb = len(img.encode('utf-8')) / 1024
+                            if i == len(all_images) - 1:
+                                logger.info(f"[CRA] [Vision]   Image {i+1}/{len(all_images)}: {size_kb:.1f}KB [CURRENT - FRESH CAPTURE]")
+                            else:
+                                logger.info(f"[CRA] [Vision]   Image {i+1}/{len(all_images)}: {size_kb:.1f}KB [Historical snapshot]")
+                    else:
+                        logger.info(f"[CRA] [Vision] Analyzing 1 snapshot (current state only, {total_size_kb:.1f}KB) - no history available yet")
+                        if graph_image:
+                            logger.info(f"[CRA] [Vision]   [CURRENT - FRESH CAPTURE: {len(graph_image.encode('utf-8'))/1024:.1f}KB]")
                 
                 # Minimal prompt for vision model - ONLY asks it to describe what it sees
                 # NO system context - that goes to CRA instead
@@ -4147,12 +4229,16 @@ This is a single snapshot of a causation graph network visualization (no previou
                 # CRA → Vision Model: CRA provides context about what each snapshot means
                 # Vision Model → CRA: Vision model provides enhanced analysis with context
                 try:
+                    vision_call_start = time.time()
                     # Use sequential analysis for multiple images to bypass payload limits
                     # and ensure high quality for each image
                     if len(all_images) > 1:
-                        logger.info(f"Using sequential analysis for {len(all_images)} images with CRA contextual summaries")
+                        logger.info(f"[CRA] [Vision] Starting sequential analysis for {len(all_images)} images with CRA contextual summaries")
+                        logger.info(f"[CRA] [Vision] This may take a while - analyzing each image sequentially...")
                         # Pass snapshot contexts to analyze_sequence for CRA → Vision feedback loop
                         visual_description = bridge_to_use.analyze_sequence(vision_model, all_images, vision_prompt, snapshot_contexts)
+                        vision_call_time = time.time() - vision_call_start
+                        logger.info(f"[CRA] [Vision] ✓ Sequential analysis completed in {vision_call_time:.2f}s ({vision_call_time/len(all_images):.2f}s per image)")
                     else:
                         # Single image - include CRA context in prompt
                         if snapshot_contexts and len(snapshot_contexts) > 0:
@@ -4164,7 +4250,11 @@ This is a single snapshot of a causation graph network visualization (no previou
 
 Use this context to understand what the graph structure means. Match the visual patterns you see with the system state described above."""
                             vision_prompt = vision_prompt + context_section
+                        logger.info(f"[CRA] [Vision] Calling vision model API (single image)...")
+                        vision_call_start = time.time()
                         visual_description = bridge_to_use.vision(vision_model, all_images, vision_prompt)
+                        vision_call_time = time.time() - vision_call_start
+                        logger.info(f"[CRA] [Vision] ✓ Vision API call completed in {vision_call_time:.2f}s")
                     
                     if visual_description:
                         # Parse annotations from vision response
@@ -4191,23 +4281,54 @@ Use this context to understand what the graph structure means. Match the visual 
                             context['vision_annotations'] = annotations
                 except Exception as e:
                     vision_error = f"Vision model error: {str(e)}"
-                    logger.error(f"Vision model call failed: {e}", exc_info=True)
+                    logger.error(f"[CRA] [Vision] ✗ Vision model call failed: {e}", exc_info=True)
                     visual_description = None
                 
                 # Check if images were trimmed and set warning
                 if original_snapshot_count > MAX_VISION_IMAGES - 1:
                     images_trimmed_warning = f"⚠️ Note: {original_snapshot_count} snapshots available, but only {len(all_images)} were sent for analysis (limit: {MAX_VISION_IMAGES} images)."
+                
+                vision_phase_time = time.time() - step_start
+                if visual_description:
+                    logger.info(f"[CRA] [Step 4/6] ✓ Vision analysis completed in {vision_phase_time:.2f}s ({len(visual_description)} chars)")
+                else:
+                    logger.warning(f"[CRA] [Step 4/6] ✗ Vision analysis failed after {vision_phase_time:.2f}s: {vision_error}")
         elif data.get('vision_model') and not graph_image:
             vision_error = "Vision model selected but no graph image captured. Try adjusting graph view or filters."
+            logger.warning(f"[CRA] [Step 4/6] ✗ Vision model selected but no graph image provided")
+        else:
+            logger.info(f"[CRA] [Step 4/6] Skipped (no vision model or no graph image)")
         
         # Build messages for chat
         messages = [{"role": "user", "content": message}]
         
         # Send to research assistant
+        logger.info(f"[CRA] [Step 6/6] ===== Sending to CRA model for synthesis ===== ({time.time() - request_start_time:.2f}s elapsed)")
+        logger.info(f"[CRA] [CRA] Model: {model}, Message length: {len(message)} chars, Context size: {len(str(context))} chars")
+        cra_synthesis_start = time.time()
+        logger.info(f"[CRA] [CRA] Calling Ollama chat API...")
         response = bridge_to_use.chat(model, messages, context)
+        cra_synthesis_time = time.time() - cra_synthesis_start
+        logger.info(f"[CRA] [CRA] ✓ CRA synthesis completed in {cra_synthesis_time:.2f}s")
+        logger.info(f"[CRA] [Step 6/6] ✓ Response received ({len(response) if response else 0} chars)")
         
         if response is None:
+            logger.error(f"[CRA] [CRA] ✗ Failed to get response from Ollama after {cra_synthesis_time:.2f}s")
             return jsonify({'error': 'Failed to get response from Ollama'}), 500
+        
+        total_time = time.time() - request_start_time
+        logger.info(f"[CRA] ===== CRA request completed in {total_time:.2f}s total =====")
+        
+        # Log breakdown
+        breakdown_parts = []
+        if 'vision_call_time' in locals():
+            breakdown_parts.append(f"Vision={vision_call_time:.2f}s ({vision_call_time/total_time*100:.1f}%)")
+        breakdown_parts.append(f"CRA={cra_synthesis_time:.2f}s ({cra_synthesis_time/total_time*100:.1f}%)")
+        if breakdown_parts:
+            logger.info(f"[CRA] Breakdown: {', '.join(breakdown_parts)}")
+        
+        logger.info(f"[CRA] Response size: {len(response) if response else 0} chars")
+        logger.info(f"[CRA] ===== END CRA REQUEST =====")
         
         # Save chat messages to persistent context
         try:

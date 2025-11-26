@@ -21,6 +21,11 @@ This directory contains implementation guides and status documents from complete
 
 All features described in these documents have been **fully implemented** and integrated into the main codebase. These documents are archived for historical reference and implementation context.
 
+## Related Archives
+
+- **Performance Optimization Planning** (`../performance_optimization/`) - Pre-implementation planning docs
+- **Completed Work** (`../completed_work/`) - Historical analysis and integration reports
+
 ## Current Documentation
 
 For current system documentation, see:
