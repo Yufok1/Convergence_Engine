@@ -599,8 +599,15 @@ class OllamaBridge:
                 logger.warning("OLLAMA_API_KEY not set - required for cloud access")
         return []
     
-    def chat(self, model: str, messages: List[Dict[str, str]], context: Dict[str, Any] = None) -> Optional[str]:
-        """Send chat message with context to Ollama"""
+    def chat(self, model: str, messages: List[Dict[str, str]], context: Dict[str, Any] = None, max_tokens: int = None) -> Optional[str]:
+        """Send chat message with context to Ollama
+        
+        Args:
+            model: Model name
+            messages: List of message dicts
+            context: Optional context dict for system prompt
+            max_tokens: Maximum tokens in response (None = no limit, uses model default)
+        """
         api_start = time.time()
         logger.info(f"[Ollama] [Chat] Starting chat API call to {self.base_url} (model: {model})")
         
@@ -628,6 +635,16 @@ class OllamaBridge:
                 "messages": full_messages,
                 "stream": False
             }
+            
+            # Add max_tokens parameter if specified (for longer responses)
+            if max_tokens is not None:
+                if self.is_cloud:
+                    # OpenAI-compatible API uses max_tokens
+                    payload["max_tokens"] = max_tokens
+                else:
+                    # Ollama native API uses num_predict
+                    payload["num_predict"] = max_tokens
+                logger.info(f"[Ollama] [Chat] Setting response limit: {max_tokens} tokens")
             
             # Ensure headers are set for cloud requests
             if self.is_cloud:
@@ -1373,7 +1390,8 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
             # or we could use the default text model. Let's use the vision model as it likely has the context.
             logger.info(f"[Ollama] [Vision Sequence] Synthesizing {len(descriptions)} image descriptions into final report...")
             logger.info(f"[Ollama] [Vision Sequence] Synthesis prompt size: {len(synthesis_prompt)/1024:.1f}KB")
-            result = self.chat(model, [{"role": "user", "content": synthesis_prompt}])
+            # Use high token limit (8192) to allow full conclusive analysis without truncation
+            result = self.chat(model, [{"role": "user", "content": synthesis_prompt}], max_tokens=8192)
             synthesis_time = time.time() - synthesis_start
             total_sequence_time = time.time() - sequence_start
             logger.info(f"[Ollama] [Vision Sequence] ✓ Synthesis completed in {synthesis_time:.2f}s")
@@ -1600,6 +1618,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "  * **Explorer** (explorer): Phase transitions, VP calculations, sovereign IDs, mathematical capability\n"
         prompt += "  * **Djinn Kernel** (djinn_kernel): Violation pressure calculations, VP classifications (VP0-VP4), trait counts\n"
         prompt += "  * **Breath Engine** (breath): Breath cycles, depth, phase, pulse (the central rhythm driving the system)\n"
+        prompt += "  * **Lawfold Field Architecture** (lawfold): Civilization-wide governance metrics, meta-sovereign reflection, reflection index, collapse risk, prosocial factors\n"
         prompt += "  * **System** (system): Initialization, shutdown, errors, lifecycle events\n"
         prompt += "- **Causation Types** (link types):\n"
         prompt += "  * **Threshold**: Event caused by crossing a threshold (e.g., VP crossing VP3 threshold)\n"
@@ -2007,6 +2026,20 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "  * Genesis (adaptive): More sensitive (lower thresholds)\n"
         prompt += "  * Sovereign (adaptive): Less sensitive (higher thresholds)\n\n"
         prompt += "    - **PREDICTIVE CAPABILITY**: You can see network collapse coming 10-20 generations early!\n\n"
+        
+        prompt += "**LAWFOLD FIELD ARCHITECTURE DIAGNOSTICS**:\n"
+        prompt += "- **Meta-Sovereign Reflection**: Executes during each breath cycle in Genesis phase\n"
+        prompt += "- **Reflection Metrics**: Available in shared state under `lawfold` or `meta_sovereign_reflection` keys\n"
+        prompt += "- **Key Metrics to Monitor**:\n"
+        prompt += "  * `reflection_index`: Overall civilization health (0.0-1.0, higher = healthier)\n"
+        prompt += "  * `collapse_risk`: System collapse probability (0.0-1.0, lower = safer)\n"
+        prompt += "  * `prosocial_factor`: Social health indicator (0.0-1.0, higher = more prosocial)\n"
+        prompt += "  * `curvature_index`: Network topology curvature (0.0-1.0)\n"
+        prompt += "  * `health_insights.status`: Status classification (stable/watch/critical)\n"
+        prompt += "- **Event Type**: `META_SOVEREIGN_REFLECTION` events published to DjinnEventBus\n"
+        prompt += "- **Integration**: LawfoldFieldOrchestrator initialized in both UnifiedSystem and BiphasicController\n"
+        prompt += "- **Access**: Check shared state for `lawfold` section or look for reflection events in logs\n\n"
+        
         prompt += "**Note**: These endpoints provide raw data streams that complement the context you receive. "
         prompt += "When you request specific diagnostic data in your recommendations, mention these endpoints "
         prompt += "so users can access the detailed data you need for deeper analysis.\n\n"
@@ -3049,6 +3082,7 @@ class SystemKnowledgeBase:
 - Causation graph exploration
 - Phase tracking (Genesis/Sovereign)
 - VP (Violation Pressure) calculations
+- **Lawfold Field Architecture Integration**: Orchestrates civilization-wide governance through Lawfold fields
 
 ## Djinn Kernel (Right Wing)
 - UTM (Universal Turing Machine) kernel
@@ -3056,6 +3090,44 @@ class SystemKnowledgeBase:
 - VP classification and calculations
 - Trait convergence tracking
 - Tape cell management
+- **Lawfold Field Architecture**: Advanced mathematical governance system
+
+## Lawfold Field Architecture (Civilization Governance)
+The Lawfold Field Architecture provides advanced mathematical governance capabilities through specialized fields:
+
+### LawfoldFieldOrchestrator
+- Central orchestrator managing all Lawfold fields
+- Activated during system initialization in both UnifiedSystem and BiphasicController
+- Coordinates field operations and maintains field state
+- Available via `lawfold_orchestrator` attribute in both systems
+
+### Meta-Sovereign Reflection Field (Lawfold VII)
+- **Purpose**: Provides civilization-wide governance metrics by blending violation pressure, curvature analysis, and prosocial health indicators
+- **Integration**: Executes during each breath cycle in Genesis phase
+- **Key Metrics**:
+  - **Reflection Index** (0.0-1.0): Overall civilization health metric combining VP, curvature, and prosocial factors
+  - **Collapse Risk** (0.0-1.0): Estimated risk of system collapse based on multiple indicators
+  - **Prosocial Factor** (0.0-1.0): Measures love/caregiving scores from organism interactions
+  - **Curvature Index** (0.0-1.0): Network topology curvature estimation
+  - **Health Insights**: Status classification (stable/watch/critical) with trend analysis
+
+- **Data Sources**:
+  - Real-time civilization state (organism count, VP, modularity, clustering)
+  - Interaction data from Reality Simulator organisms (love/caregiving scores)
+  - VP history from violation monitor
+  - Breath cycle and phase information
+
+- **Event Publishing**: Reflection results published to DjinnEventBus as `META_SOVEREIGN_REFLECTION` events for system-wide coordination
+
+- **Access**: Available via `lawfold_orchestrator.reflect_meta_sovereign(civilization_state, interactions)` method
+
+### Other Lawfold Fields (Available via Orchestrator)
+- Existence Resolution Field (Lawfold I)
+- Identity Injection Field (Lawfold II)
+- Inheritance Projection Field (Lawfold III)
+- Stability Arbitration Field (Lawfold IV)
+- Synchrony Phase Lock Field (Lawfold V)
+- Recursive Lattice Composition Field (Lawfold VI)
 
 ## Settings and Parameters
 - Modularity: Network clustering metric (0.0-1.0)
@@ -3064,6 +3136,9 @@ class SystemKnowledgeBase:
 - VP Classifications: VP0 (<0.25), VP1 (0.25-0.50), VP2 (0.50-0.75), VP3 (0.75-0.99), VP4 (>=0.99)
 - Breath Cycle: Explorer execution cycle
 - Breath Depth: Depth of exploration phase
+- Reflection Index: Civilization health metric (0.0-1.0, higher = healthier)
+- Collapse Risk: System collapse probability (0.0-1.0, lower = safer)
+- Prosocial Factor: Social health indicator (0.0-1.0, higher = more prosocial)
 """
 
 
@@ -4837,7 +4912,8 @@ Use this context to understand what the graph structure means. Match the visual 
         logger.info(f"[CRA] [CRA] Model: {model}, Message length: {len(message)} chars, Context size: {len(str(context))} chars")
         cra_synthesis_start = time.time()
         logger.info(f"[CRA] [CRA] Calling Ollama chat API...")
-        response = bridge_to_use.chat(model, messages, context)
+        # Use high token limit (8192) to allow full comprehensive analysis without truncation
+        response = bridge_to_use.chat(model, messages, context, max_tokens=8192)
         cra_synthesis_time = time.time() - cra_synthesis_start
         logger.info(f"[CRA] [CRA] ✓ CRA synthesis completed in {cra_synthesis_time:.2f}s")
         logger.info(f"[CRA] [Step 6/6] ✓ Response received ({len(response) if response else 0} chars)")

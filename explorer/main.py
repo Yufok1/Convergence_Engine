@@ -214,7 +214,20 @@ class BiphasicController:
         else:
             self.utm_kernel = None
             self.vp_monitor = None
-        
+
+        # Initialize Lawfold Field Architecture (if available)
+        if DJINN_KERNEL_AVAILABLE and self.utm_kernel:
+            try:
+                from lawfold_field_architecture import LawfoldFieldOrchestrator
+                self.lawfold_orchestrator = LawfoldFieldOrchestrator(self.utm_kernel)
+                self.lawfold_orchestrator.activate_all_fields()
+                print("[Explorer] ✅ Lawfold Field Architecture initialized")
+            except Exception as e:
+                print(f"[Explorer] ⚠️  Lawfold Field Architecture error: {e}")
+                self.lawfold_orchestrator = None
+        else:
+            self.lawfold_orchestrator = None
+
         # Connect systems for mathematical capability assessment
         self.sentinel.mirror_of_insight = self.mirror_of_insight
         self.sentinel.breath_engine = self.breath_engine
@@ -842,6 +855,66 @@ class BiphasicController:
                         # VP calculation may fail if monitor is not properly initialized
                         # or if traits format is invalid
                         color_print(f"[Djinn Kernel] ⚠️  Fallback VP calculation failed: {e}", Colors.YELLOW)
+
+        # Meta-Sovereign Reflection (Lawfold VII) - Civilization-wide governance
+        if self.lawfold_orchestrator and vp_value is not None and traits:
+            try:
+                # Build civilization state from current data
+                civilization_state = {
+                    "organism_count": int(traits.get('organism_count', 0) * 1000),  # Denormalize
+                    "avg_violation_pressure": vp_value,
+                    "modularity": traits.get('modularity', 0.0),
+                    "clustering_coefficient": traits.get('clustering_coefficient', 0.0),
+                    "curvature_index": 0.0,  # Will be estimated by reflection field
+                    "breath_cycle": breath_data.get('cycle_count', 0),
+                    "phase": self.phase,
+                    "notes": f"Genesis phase breath cycle {breath_data.get('cycle_count', 0)}"
+                }
+
+                # Extract interaction data if available (prosocial metrics)
+                interactions = {}
+                if self.reality_sim and self.reality_sim.components:
+                    network = self.reality_sim.components.get('network')
+                    if network and hasattr(network, 'organisms'):
+                        for i, organism in enumerate(network.organisms[:10]):  # Sample first 10
+                            # Generate mock interaction data based on organism properties
+                            love_score = getattr(organism, 'fitness', 0.5) * 0.8 + 0.2
+                            caregiving_score = getattr(organism, 'age', 0.5) * 0.6 + 0.4
+                            interactions[f"org_{i}"] = {
+                                "love_score": min(1.0, max(0.0, love_score)),
+                                "caregiving_score": min(1.0, max(0.0, caregiving_score))
+                            }
+
+                # Perform meta-sovereign reflection
+                reflection = self.lawfold_orchestrator.reflect_meta_sovereign(
+                    civilization_state, interactions
+                )
+
+                if reflection:
+                    color_print(f"[Lawfold VII] 🜂 Meta-Sovereign Reflection - Index: {reflection.reflection_index:.3f}, "
+                              f"Collapse Risk: {reflection.collapse_risk:.3f}, "
+                              f"Status: {reflection.health_insights.get('status', 'unknown')}", Colors.MAGENTA)
+
+                    # Publish reflection results to event bus for system coordination
+                    if hasattr(self.lawfold_orchestrator, 'utm_kernel') and self.lawfold_orchestrator.utm_kernel:
+                        try:
+                            from event_driven_coordination import DjinnEvent, EventType
+                            reflection_event = DjinnEvent(
+                                event_type=EventType.META_SOVEREIGN_REFLECTION,
+                                data={
+                                    "reflection": reflection.to_dict(),
+                                    "civilization_state": civilization_state,
+                                    "breath_cycle": breath_data.get('cycle_count', 0)
+                                },
+                                source="lawfold_field_orchestrator",
+                                timestamp=time.time()
+                            )
+                            self.lawfold_orchestrator.utm_kernel.event_bus.publish(reflection_event)
+                        except Exception as event_err:
+                            color_print(f"[Lawfold VII] ⚠️  Event publishing failed: {event_err}", Colors.YELLOW)
+
+            except Exception as e:
+                color_print(f"[Lawfold VII] ⚠️  Meta-Sovereign Reflection error: {e}", Colors.YELLOW)
 
         # Adaptive VP controls and breath actions
         if vp_value is not None:

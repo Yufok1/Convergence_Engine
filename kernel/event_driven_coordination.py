@@ -32,6 +32,9 @@ class EventType(Enum):
     AGENT_COMMUNICATION = "agent_communication"
     TRAIT_CONVERGENCE = "trait_convergence"
     ARBITRATION_TRIGGER = "arbitration_trigger"
+    BREATH_CYCLE = "breath_cycle"
+    NETWORK_STATE = "network_state"
+    NETWORK_CONSOLIDATION = "network_consolidation"
     
     # Decision events (Agency Router integration)
     DECISION_MADE = "decision_made"
@@ -193,6 +196,93 @@ class AgencyDecisionEvent(DjinnEvent):
         return base_dict
 
 
+@dataclass
+class BreathCycleEvent(DjinnEvent):
+    """Event published on every Explorer breath cycle"""
+    cycle_count: int = 0
+    depth: float = 0.0
+    phase_angle: float = 0.0
+    pulse: float = 0.0
+    breath_stage: str = "inhale"
+    system_phase: str = "genesis"
+    
+    def __post_init__(self):
+        self.event_type = EventType.BREATH_CYCLE
+        self.priority = 1
+    
+    def to_dict(self) -> Dict[str, Any]:
+        base_dict = super().to_dict()
+        base_dict.update({
+            "cycle_count": self.cycle_count,
+            "depth": self.depth,
+            "phase_angle": self.phase_angle,
+            "pulse": self.pulse,
+            "breath_stage": self.breath_stage,
+            "system_phase": self.system_phase
+        })
+        return base_dict
+
+
+@dataclass
+class NetworkStateEvent(DjinnEvent):
+    """Event describing unified network metrics per generation"""
+    organism_count: int = 0
+    connection_count: int = 0
+    modularity: float = 0.0
+    clustering_coefficient: float = 0.0
+    average_path_length: float = 0.0
+    breath_cycle: int = 0
+    explorer_phase: str = "genesis"
+    traits: Dict[str, float] = field(default_factory=dict)
+    vp_value: float = 0.0
+    
+    def __post_init__(self):
+        self.event_type = EventType.NETWORK_STATE
+        self.priority = 2
+    
+    def to_dict(self) -> Dict[str, Any]:
+        base_dict = super().to_dict()
+        base_dict.update({
+            "organism_count": self.organism_count,
+            "connection_count": self.connection_count,
+            "modularity": self.modularity,
+            "clustering_coefficient": self.clustering_coefficient,
+            "average_path_length": self.average_path_length,
+            "breath_cycle": self.breath_cycle,
+            "explorer_phase": self.explorer_phase,
+            "traits": self.traits,
+            "vp_value": self.vp_value
+        })
+        return base_dict
+
+
+@dataclass
+class NetworkConsolidationEvent(DjinnEvent):
+    """Event emitted when collapse/convergence criteria are met"""
+    organism_count: int = 0
+    vp_value: float = 0.0
+    collapse_threshold: int = 500
+    breath_cycle: int = 0
+    explorer_phase: str = "genesis"
+    reason: str = ""
+    
+    def __post_init__(self):
+        self.event_type = EventType.NETWORK_CONSOLIDATION
+        self.priority = 3
+    
+    def to_dict(self) -> Dict[str, Any]:
+        base_dict = super().to_dict()
+        base_dict.update({
+            "organism_count": self.organism_count,
+            "vp_value": self.vp_value,
+            "collapse_threshold": self.collapse_threshold,
+            "breath_cycle": self.breath_cycle,
+            "explorer_phase": self.explorer_phase,
+            "reason": self.reason
+        })
+        return base_dict
+
+
 class DjinnEventBus:
     """
     Core event bus enabling all system coordination.
@@ -328,8 +418,13 @@ class SystemCoordinator:
             "identity_completions": 0,
             "vp_calculations": 0,
             "isolation_triggers": 0,
-            "convergence_requests": 0
+            "convergence_requests": 0,
+            "breath_cycles": 0,
+            "network_events": 0,
+            "network_consolidations": 0
         }
+        self.last_breath: Dict[str, Any] = {}
+        self.last_network_snapshot: Dict[str, Any] = {}
         
         # Subscribe to core event types
         self._setup_event_handlers()
@@ -340,6 +435,9 @@ class SystemCoordinator:
         self.event_bus.subscribe(EventType.VIOLATION_PRESSURE, self._handle_violation_pressure)
         self.event_bus.subscribe(EventType.TEMPORAL_ISOLATION, self._handle_temporal_isolation)
         self.event_bus.subscribe(EventType.TRAIT_CONVERGENCE, self._handle_trait_convergence)
+        self.event_bus.subscribe(EventType.BREATH_CYCLE, self._handle_breath_cycle)
+        self.event_bus.subscribe(EventType.NETWORK_STATE, self._handle_network_state)
+        self.event_bus.subscribe(EventType.NETWORK_CONSOLIDATION, self._handle_network_consolidation)
     
     def _handle_identity_completion(self, event: IdentityCompletionEvent):
         """Handle identity completion events"""
@@ -393,6 +491,32 @@ class SystemCoordinator:
         
         # Log convergence request
         print(f"Trait convergence requested for {event.source_uuid}")
+
+    def _handle_breath_cycle(self, event: BreathCycleEvent):
+        """Track Explorer breath cycle events"""
+        self.coordination_state["breath_cycles"] += 1
+        self.last_breath = event.to_dict()
+
+    def _handle_network_state(self, event: NetworkStateEvent):
+        """Track network state broadcasts"""
+        self.coordination_state["network_events"] += 1
+        self.last_network_snapshot = event.to_dict()
+
+    def _handle_network_consolidation(self, event: NetworkConsolidationEvent):
+        """Respond to network consolidation announcements"""
+        self.coordination_state["network_consolidations"] += 1
+        # Trigger health update so CRA can see consolidation cadence
+        health_event = SystemHealthEvent(
+            health_metrics={
+                "collapse_cycle": event.breath_cycle,
+                "collapse_reason": event.reason,
+                "organism_count": event.organism_count,
+                "vp_value": event.vp_value
+            },
+            alert_level="critical",
+            source_agent="system_coordinator"
+        )
+        self.event_bus.publish(health_event)
     
     def get_coordination_status(self) -> Dict[str, Any]:
         """Get current coordination status"""

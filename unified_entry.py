@@ -61,6 +61,7 @@ try:
     # Import directly from kernel directory (not as package)
     from utm_kernel_design import UTMKernel
     from violation_pressure_calculation import ViolationMonitor
+    from lawfold_field_architecture import LawfoldFieldOrchestrator
     DJINN_KERNEL_AVAILABLE = True
 except ImportError as e:
     DJINN_KERNEL_AVAILABLE = False
@@ -866,7 +867,21 @@ class UnifiedSystem:
         # Djinn Kernel (right wing) - already initialized in Explorer
         self.vp_monitor = getattr(self.controller, 'vp_monitor', None) if self.controller else None
         self.utm_kernel = getattr(self.controller, 'utm_kernel', None) if self.controller else None
-        
+
+        # Lawfold Field Architecture (civilization governance)
+        if self.utm_kernel and DJINN_KERNEL_AVAILABLE:
+            try:
+                self.lawfold_orchestrator = LawfoldFieldOrchestrator(self.utm_kernel)
+                self.lawfold_orchestrator.activate_all_fields()
+                print("[UNIFIED] [PASS] Lawfold Field Architecture initialized")
+                self.logger.log_state('system', {'event': 'lawfold_fields_initialized'})
+            except Exception as e:
+                print(f"[UNIFIED] [FAIL] Lawfold Field Architecture initialization failed: {e}")
+                traceback.print_exc()
+                self.lawfold_orchestrator = None
+        else:
+            self.lawfold_orchestrator = None
+
         # Initialize Causation Explorer
         try:
             from causation_explorer import CausationExplorer

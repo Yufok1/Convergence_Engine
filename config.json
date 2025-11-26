@@ -12,7 +12,7 @@
     "genotype_length": 48,
     "max_generations": 1000,
     "mutation_rate": {
-      "initial": 0.012
+      "initial": 0.014
     },
     "mutation_rate_precision": 0.001,
     "population_size": 800
@@ -23,7 +23,7 @@
     "interval_frames": 10,
     "knobs": {
       "clustering_bias": {
-        "initial": 0.65,
+        "initial": 0.7,
         "max": 1.6,
         "min": 0.3,
         "step": 0.05
@@ -62,7 +62,7 @@
   "network": {
     "connection_strength_resolution": 5e-06,
     "emergence_sensitivity": 1e-06,
-    "max_connections": 12000,
+    "max_connections": 8000,
     "max_organisms": 2500,
     "resource_flow_precision": 0.0001,
     "resource_pool": 200.0,
@@ -85,7 +85,7 @@
     },
     "probability_precision": 1e-06,
     "prune_check_interval": 50,
-    "superposition_tolerance": 0.001
+    "superposition_tolerance": 0.0005
   },
   "rendering": {
     "enable_visualizations": true,
@@ -110,6 +110,10 @@
     "time_resolution_ms": 1.0
   },
   "vp_monitoring": {
+    "adaptive_response": {
+      "high_vp_threshold": 0.75,
+      "streak_threshold": 3
+    },
     "adaptive_thresholds": {
       "enabled": true
     },
@@ -129,10 +133,6 @@
       "max_jump": 0.1,
       "smoothing_factor": 0.25
     },
-    "stabilization_enabled": true,
-    "adaptive_response": {
-      "high_vp_threshold": 0.75,
-      "streak_threshold": 3
-    }
+    "stabilization_enabled": true
   }
 }

@@ -219,6 +219,31 @@ class RecursiveLatticeComposition:
         }
 
 
+@dataclass
+class MetaSovereignReflection:
+    """Result of meta-sovereign reflection operation"""
+    reflection_id: str
+    reflection_index: float
+    avg_violation_pressure: float
+    curvature_index: float
+    prosocial_factor: float
+    collapse_risk: float
+    health_insights: Dict[str, Any]
+    timestamp: datetime
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "reflection_id": self.reflection_id,
+            "reflection_index": self.reflection_index,
+            "avg_violation_pressure": self.avg_violation_pressure,
+            "curvature_index": self.curvature_index,
+            "prosocial_factor": self.prosocial_factor,
+            "collapse_risk": self.collapse_risk,
+            "health_insights": self.health_insights,
+            "timestamp": self.timestamp.isoformat() + "Z"
+        }
+
+
 class LawfoldField:
     """
     Base class for all Lawfold fields.
@@ -2623,6 +2648,176 @@ class RecursiveLatticeCompositionField(LawfoldField):
         }
 
 
+class MetaSovereignReflectionField(LawfoldField):
+    """
+    Lawfold VII: Meta-Sovereign Reflection Field
+    
+    Provides civilization-wide governance metrics by blending violation pressure,
+    curvature analysis, and prosocial health indicators.
+    """
+    
+    def __init__(self, utm_kernel: UTMKernel, violation_monitor: Optional[ViolationMonitor] = None):
+        self.violation_monitor = violation_monitor or getattr(utm_kernel, "violation_monitor", None)
+        self.reflection_history: List[MetaSovereignReflection] = []
+        self.curvature_history: List[float] = []
+        self.prosocial_history: List[float] = []
+        super().__init__(LawfoldType.META_SOVEREIGN_REFLECTION, utm_kernel)
+    
+    def _initialize_field_parameters(self) -> Dict[str, Any]:
+        base_params = super()._initialize_field_parameters()
+        base_params.update({
+            "reflection_window": 256,
+            "min_prosocial_factor": 0.3,
+            "max_curvature_index": 0.8,
+            "write_to_ledger": True
+        })
+        return base_params
+    
+    def reflect_civilization(self, population_state: Dict[str, Any],
+                             interactions: Optional[Dict[str, Any]] = None) -> MetaSovereignReflection:
+        if self.field_state == FieldState.INACTIVE:
+            raise RuntimeError("Meta-Sovereign Reflection Field is not active")
+        
+        reflection_id = str(uuid.uuid4())
+        avg_vp = self._compute_average_vp(population_state)
+        curvature_index = self._estimate_curvature(population_state)
+        prosocial_factor = self._estimate_prosocial_factor(interactions)
+        
+        reflection_index = self._calculate_reflection_index(avg_vp, curvature_index, prosocial_factor)
+        collapse_risk = self._estimate_collapse_risk(avg_vp, curvature_index, prosocial_factor)
+        health_insights = self._build_health_insights(reflection_index, collapse_risk, population_state)
+        
+        reflection = MetaSovereignReflection(
+            reflection_id=reflection_id,
+            reflection_index=reflection_index,
+            avg_violation_pressure=avg_vp,
+            curvature_index=curvature_index,
+            prosocial_factor=prosocial_factor,
+            collapse_risk=collapse_risk,
+            health_insights=health_insights,
+            timestamp=datetime.utcnow()
+        )
+        
+        self.reflection_history.append(reflection)
+        self.curvature_history.append(curvature_index)
+        self.prosocial_history.append(prosocial_factor)
+        self.field_coherence = max(0.0, min(1.0, reflection_index))
+        self._update_field_state()
+        
+        window = self.field_parameters["reflection_window"]
+        if len(self.reflection_history) > window:
+            self.reflection_history = self.reflection_history[-window:]
+        if len(self.curvature_history) > window:
+            self.curvature_history = self.curvature_history[-window:]
+        if len(self.prosocial_history) > window:
+            self.prosocial_history = self.prosocial_history[-window:]
+        
+        self.update_resonance(
+            frequency=self.field_parameters["base_frequency"],
+            amplitude=reflection_index,
+            phase=1.0 - prosocial_factor
+        )
+        
+        if self.field_parameters.get("write_to_ledger", True):
+            self._write_reflection_to_ledger(reflection, population_state)
+        
+        return reflection
+    
+    def _compute_average_vp(self, population_state: Dict[str, Any]) -> float:
+        if self.violation_monitor and getattr(self.violation_monitor, "vp_history", None):
+            totals = []
+            for entry in self.violation_monitor.vp_history[-128:]:
+                if isinstance(entry, dict):
+                    totals.append(entry.get("total_vp", 0.0))
+                elif hasattr(entry, "vp"):
+                    totals.append(entry.vp)
+            if totals:
+                return max(0.0, min(1.0, sum(totals) / len(totals)))
+        return max(0.0, min(1.0, float(population_state.get("avg_violation_pressure", 0.0))))
+    
+    def _estimate_curvature(self, population_state: Dict[str, Any]) -> float:
+        curvature = population_state.get("curvature_index")
+        if curvature is not None:
+            return max(0.0, min(1.0, float(curvature)))
+        
+        modularity = population_state.get("modularity", 0.3)
+        clustering = population_state.get("clustering_coefficient", 0.5)
+        vp = population_state.get("avg_violation_pressure", 0.3)
+        curvature_estimate = (abs(modularity - 0.3) + abs(clustering - 0.5) + vp) / 3.0
+        curvature_estimate = max(0.0, min(self.field_parameters["max_curvature_index"], curvature_estimate))
+        return curvature_estimate
+    
+    def _estimate_prosocial_factor(self, interactions: Optional[Dict[str, Any]]) -> float:
+        if not interactions:
+            if self.prosocial_history:
+                return sum(self.prosocial_history[-10:]) / min(10, len(self.prosocial_history))
+            return 0.5
+        
+        love_scores = []
+        caregiving_scores = []
+        for interaction in interactions.values():
+            if isinstance(interaction, dict):
+                love_scores.append(float(interaction.get("love_score", 0.5)))
+                caregiving_scores.append(float(interaction.get("caregiving_score", 0.5)))
+        
+        love_avg = sum(love_scores) / len(love_scores) if love_scores else 0.5
+        care_avg = sum(caregiving_scores) / len(caregiving_scores) if caregiving_scores else 0.5
+        prosocial = (love_avg * 0.6) + (care_avg * 0.4)
+        return max(self.field_parameters["min_prosocial_factor"], min(1.0, prosocial))
+    
+    def _calculate_reflection_index(self, avg_vp: float, curvature_index: float,
+                                    prosocial_factor: float) -> float:
+        reflection = (1.0 - avg_vp) * (1.0 - curvature_index) * prosocial_factor
+        return max(0.0, min(1.0, reflection))
+    
+    def _estimate_collapse_risk(self, avg_vp: float, curvature_index: float,
+                                prosocial_factor: float) -> float:
+        risk = (avg_vp * 0.5) + (curvature_index * 0.3) + ((1.0 - prosocial_factor) * 0.2)
+        return max(0.0, min(1.0, risk))
+    
+    def _build_health_insights(self, reflection_index: float, collapse_risk: float,
+                               population_state: Dict[str, Any]) -> Dict[str, Any]:
+        status = "stable"
+        if reflection_index < 0.4 or collapse_risk > 0.6:
+            status = "critical"
+        elif reflection_index < 0.6 or collapse_risk > 0.4:
+            status = "watch"
+        insights = {
+            "status": status,
+            "population_size": population_state.get("organism_count"),
+            "notes": population_state.get("notes", ""),
+            "trend": "improving" if reflection_index > collapse_risk else "declining"
+        }
+        return insights
+    
+    def _write_reflection_to_ledger(self, reflection: MetaSovereignReflection,
+                                    population_state: Dict[str, Any]) -> None:
+        try:
+            instruction = AgentInstruction(
+                instruction_id=str(uuid.uuid4()),
+                operation="WRITE",
+                target_position=self.utm_kernel.akashic_ledger.next_position,
+                parameters={
+                    "content": {
+                        "reflection": reflection.to_dict(),
+                        "population_state": population_state
+                    },
+                    "symbol": TapeSymbol.META_SOVEREIGN_REFLECTION.value
+                }
+            )
+            self.utm_kernel.execute_instruction(instruction)
+        except Exception as err:
+            print(f"Meta-Sovereign Reflection ledger write failed: {err}")
+    
+    def get_reflection_status(self) -> Dict[str, Any]:
+        return {
+            "reflection_count": len(self.reflection_history),
+            "recent_reflection": self.reflection_history[-1].to_dict() if self.reflection_history else None,
+            "field_state": self.field_state.value,
+            "field_coherence": self.field_coherence
+        }
+
+
 class LawfoldFieldOrchestrator:
     """
     Orchestrator for all Lawfold fields.
@@ -2669,8 +2864,12 @@ class LawfoldFieldOrchestrator:
         lattice_field = RecursiveLatticeCompositionField(self.utm_kernel)
         self.fields[LawfoldType.RECURSIVE_LATTICE_COMPOSITION] = lattice_field
         
-        # TODO: Initialize other fields as they are implemented
-        # self.fields[LawfoldType.META_SOVEREIGN_REFLECTION] = MetaSovereignReflectionField(self.utm_kernel)
+        # Initialize Meta-Sovereign Reflection Field
+        meta_field = MetaSovereignReflectionField(
+            self.utm_kernel,
+            violation_monitor=getattr(self.utm_kernel, "violation_monitor", None)
+        )
+        self.fields[LawfoldType.META_SOVEREIGN_REFLECTION] = meta_field
     
     def activate_all_fields(self) -> bool:
         """Activate all Lawfold fields"""
@@ -2784,6 +2983,20 @@ class LawfoldFieldOrchestrator:
                 return None
         except Exception as e:
             print(f"Error in recursive lattice composition: {e}")
+            return None
+    
+    def reflect_meta_sovereign(self, civilization_state: Dict[str, Any],
+                               interactions: Optional[Dict[str, Any]] = None) -> Optional[MetaSovereignReflection]:
+        """Generate civilization-scale meta reflection"""
+        try:
+            meta_field = self.fields.get(LawfoldType.META_SOVEREIGN_REFLECTION)
+            if meta_field and meta_field.field_state != FieldState.INACTIVE:
+                return meta_field.reflect_civilization(civilization_state, interactions)
+            else:
+                print("Meta-Sovereign Reflection Field is not active")
+                return None
+        except Exception as e:
+            print(f"Error in meta-sovereign reflection: {e}")
             return None
     
     def get_orchestrator_status(self) -> Dict[str, Any]:
@@ -2950,6 +3163,26 @@ if __name__ == "__main__":
                 print(f"Composition Confidence: {composition.composition_confidence:.3f}")
                 print(f"Structural Complexity: {composition.structural_complexity:.3f}")
                 print(f"Constituent Count: {composition.composite_identity.get('constituent_count', 0)}")
+    
+    # Test meta-sovereign reflection
+    print("\nTesting meta-sovereign reflection...")
+    civilization_state = {
+        "organism_count": len(resolution.resolved_entities) if resolution else 0,
+        "avg_violation_pressure": 0.32,
+        "modularity": 0.28,
+        "clustering_coefficient": 0.52
+    }
+    interactions = {
+        "entity_a": {"love_score": 0.7, "caregiving_score": 0.6},
+        "entity_b": {"love_score": 0.65, "caregiving_score": 0.7}
+    }
+    reflection = orchestrator.reflect_meta_sovereign(civilization_state, interactions)
+    if reflection:
+        print(f"Reflection ID: {reflection.reflection_id}")
+        print(f"Reflection Index: {reflection.reflection_index:.3f}")
+        print(f"Collapse Risk: {reflection.collapse_risk:.3f}")
+        print(f"Prosocial Factor: {reflection.prosocial_factor:.3f}")
+        print(f"Health Status: {reflection.health_insights.get('status')}")
     
     # Show orchestrator status
     status = orchestrator.get_orchestrator_status()
