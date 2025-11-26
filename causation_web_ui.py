@@ -822,7 +822,7 @@ class OllamaBridge:
             logger.error(f"Error in Ollama vision: {e}", exc_info=True)
             raise
     
-    def analyze_sequence(self, model: str, images: List[str], prompt: str, snapshot_contexts: Optional[List[str]] = None) -> Optional[str]:
+    def analyze_sequence(self, model: str, images: List[str], prompt: str, snapshot_contexts: Optional[List[str]] = None) -> tuple[Optional[str], Optional[List[Optional[dict]]]]:
         """
         Analyze a sequence of images one by one and synthesize the results.
         This bypasses the multi-image payload limit by sending images individually.
@@ -851,6 +851,8 @@ class OllamaBridge:
         try:
             descriptions = []
             total_images = len(images)
+            
+            per_image_annotations = []  # Store annotations for each image
             
             for i, img in enumerate(images):
                 image_start = time.time()
@@ -928,12 +930,38 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
                 logger.info(f"[Ollama] [Vision Sequence] [Image {i+1}/{total_images}] Calling vision() API...")
                 desc = self.vision(model, [img], seq_prompt)
                 image_time = time.time() - image_start
+                
+                # Extract annotations from this image's description
+                img_annotations = None
                 if desc:
+                    try:
+                        # Try to extract JSON annotations from individual image response
+                        json_patterns = [
+                            r'\{\s*"annotations"\s*:\s*\[[\s\S]*?\]\s*\}',
+                            r'\{[^{}]*"annotations"\s*:\s*\[[\s\S]*?\][^{}]*\}',
+                            r'\{(?:[^{}]|(?:\{[^{}]*\}))*\s*"annotations"\s*:\s*\[[\s\S]*?\][\s\S]*?\}',
+                        ]
+                        for pattern in json_patterns:
+                            json_match = re.search(pattern, desc, re.DOTALL)
+                            if json_match:
+                                try:
+                                    parsed = json.loads(json_match.group(0))
+                                    if 'annotations' in parsed and isinstance(parsed['annotations'], list):
+                                        img_annotations = parsed
+                                        logger.info(f"[Ollama] [Vision Sequence] [Image {i+1}/{total_images}] ✓ Extracted {len(img_annotations.get('annotations', []))} annotations")
+                                        break
+                                except json.JSONDecodeError:
+                                    continue
+                    except Exception as e:
+                        logger.debug(f"[Ollama] [Vision Sequence] [Image {i+1}/{total_images}] Could not extract annotations: {e}")
+                    
                     logger.info(f"[Ollama] [Vision Sequence] [Image {i+1}/{total_images}] ✓ Completed in {image_time:.2f}s ({len(desc)} chars response)")
                     descriptions.append(f"Image {i+1}/{total_images}: {desc}")
                 else:
                     logger.warning(f"[Ollama] [Vision Sequence] [Image {i+1}/{total_images}] ✗ Failed after {image_time:.2f}s")
                     descriptions.append(f"Image {i+1}/{total_images}: [Analysis failed]")
+                
+                per_image_annotations.append(img_annotations)
             
             # Synthesize results using the chat model (text only)
             if not descriptions:
@@ -960,7 +988,9 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
             total_sequence_time = time.time() - sequence_start
             logger.info(f"[Ollama] [Vision Sequence] ✓ Synthesis completed in {synthesis_time:.2f}s")
             logger.info(f"[Ollama] [Vision Sequence] ===== Total sequence time: {total_sequence_time:.2f}s (analysis: {sequence_analysis_time:.2f}s, synthesis: {synthesis_time:.2f}s) =====")
-            return result
+            
+            # Return both synthesized description and per-image annotations
+            return result, per_image_annotations if per_image_annotations else None
             
         except Exception as e:
             logger.error(f"Error in sequential analysis: {e}", exc_info=True)
@@ -3982,6 +4012,10 @@ def ollama_chat():
         selected_event = data.get('selected_event')
         graph_image = data.get('graph_image')  # base64 image if provided
         evolutionary_snapshots = data.get('evolutionary_snapshots', [])  # List of historical snapshots
+        logger.info(f"[CRA] [Vision] Received {len(evolutionary_snapshots)} evolutionary snapshots from frontend")
+        if evolutionary_snapshots:
+            logger.debug(f"[CRA] [Vision] First snapshot keys: {list(evolutionary_snapshots[0].keys()) if isinstance(evolutionary_snapshots[0], dict) else type(evolutionary_snapshots[0])}")
+            logger.debug(f"[CRA] [Vision] Last snapshot keys: {list(evolutionary_snapshots[-1].keys()) if isinstance(evolutionary_snapshots[-1], dict) else type(evolutionary_snapshots[-1])}")
         user_api_key = data.get('api_key')  # User-provided API key (optional)
 
         def sample_evenly(sequence, target_count):
@@ -4094,6 +4128,7 @@ def ollama_chat():
             # CRA → Vision Model feedback loop: Generate contextual summaries for each snapshot
             snapshot_contexts = []  # Store CRA-generated context for each snapshot
             if evolutionary_snapshots:
+                logger.info(f"[CRA] [Vision] Processing {len(evolutionary_snapshots)} evolutionary snapshots from frontend")
                 # Extract images from snapshots (already sorted oldest to newest)
                 # Filter out blank/empty images (too small = likely blank)
                 MIN_VALID_IMAGE_SIZE = 20000  # Minimum 20KB base64 - blank images are ~7-10KB
@@ -4119,17 +4154,22 @@ def ollama_chat():
 
                 # Remove consecutive duplicate frames (identical images)
                 historical_frames = dedupe_by_signature(historical_frames, lambda frame: frame.get('image'))
+                logger.info(f"[CRA] [Vision] After filtering, have {len(historical_frames)} valid historical frames")
 
                 # Ensure we have a gradual evolution - if we have too many, sample evenly
                 target_historical = MAX_VISION_IMAGES - 1
                 if len(historical_frames) > target_historical:
                     images_trimmed = True
+                    logger.info(f"[CRA] [Vision] Sampling {target_historical} evenly from {len(historical_frames)} historical frames")
                     historical_frames = sample_evenly(historical_frames, target_historical)
-                    logger.debug(f"Evenly sampled {len(historical_frames)} snapshots from {len(evolutionary_snapshots)} for gradual evolution")
+                    logger.info(f"[CRA] [Vision] ✓ Evenly sampled {len(historical_frames)} snapshots from {len(evolutionary_snapshots)} for gradual evolution")
+                else:
+                    logger.info(f"[CRA] [Vision] Keeping all {len(historical_frames)} historical frames (within limit of {target_historical})")
 
                 snapshot_images = [frame['image'] for frame in historical_frames]
                 snapshot_contexts = [frame['context'] for frame in historical_frames]
                 all_images.extend(snapshot_images)
+                logger.info(f"[CRA] [Vision] Added {len(snapshot_images)} historical images to analysis list")
             
             # Add current image last (it's the newest)
             # CRITICAL: This should be the FRESH, CURRENT graph state
@@ -4145,22 +4185,42 @@ def ollama_chat():
                     logger.warning(f"Current graph image too small ({len(graph_image)/1024:.1f}KB), may be blank/cached. Skipping.")
             
             # Final limit check - never send more than MAX
+            # CRITICAL: Preserve evenly sampled distribution - don't just take last N!
             if len(all_images) > MAX_VISION_IMAGES:
-                # CRITICAL: If we need to trim, keep the CURRENT image (last one) and trim oldest historical
                 if graph_image and len(graph_image) >= 20000:
-                    # Keep current image + most recent historical
-                    all_images = all_images[-(MAX_VISION_IMAGES-1):]  # Keep last N-1 historical
-                    all_images.append(graph_image)  # Always include current (fresh) image
-                    logger.debug(f"Final limit: kept {len(all_images)-1} historical + 1 current (fresh) image")
+                    # Remove current image temporarily to preserve historical distribution
+                    current_img = all_images.pop() if all_images and all_images[-1] == graph_image else None
+                    
+                    # Re-sample evenly if we have too many historical frames
+                    # This preserves evolution across entire timeline, not just recent
+                    target_historical = MAX_VISION_IMAGES - 1
+                    if len(all_images) > target_historical:
+                        # Recreate frames with metadata for proper sampling
+                        frames_for_sampling = [{'image': img, 'context': ctx} 
+                                             for img, ctx in zip(all_images, snapshot_contexts[:len(all_images)])]
+                        sampled_frames = sample_evenly(frames_for_sampling, target_historical)
+                        all_images = [frame['image'] for frame in sampled_frames]
+                        snapshot_contexts = [frame['context'] for frame in sampled_frames]
+                        logger.info(f"Re-sampled {len(all_images)} historical snapshots evenly across timeline (preserving evolution)")
+                    
+                    # Add current image back at the end
+                    if current_img:
+                        all_images.append(current_img)
+                    logger.debug(f"Final limit: kept {len(all_images)-1} evenly-sampled historical + 1 current (fresh) image")
                 else:
-                    # No current image, just trim to most recent
-                    all_images = all_images[-MAX_VISION_IMAGES:]
-                    logger.debug(f"Final limit: keeping {MAX_VISION_IMAGES} most recent images (no current image)")
+                    # No current image, re-sample evenly to preserve distribution
+                    frames_for_sampling = [{'image': img, 'context': ctx} 
+                                         for img, ctx in zip(all_images, snapshot_contexts[:len(all_images)])]
+                    sampled_frames = sample_evenly(frames_for_sampling, MAX_VISION_IMAGES)
+                    all_images = [frame['image'] for frame in sampled_frames]
+                    snapshot_contexts = [frame['context'] for frame in sampled_frames]
+                    logger.info(f"Re-sampled {len(all_images)} snapshots evenly (no current image)")
             
-                if not all_images:
-                    vision_error = "No images available for vision analysis."
-                    logger.warning(f"[CRA] [Vision] No images available for analysis")
-                else:
+            # CRITICAL: Vision analysis should run REGARDLESS of trimming - it's outside the trimming block!
+            if not all_images:
+                vision_error = "No images available for vision analysis."
+                logger.warning(f"[CRA] [Vision] No images available for analysis")
+            else:
                     # Log what we're sending with size info and freshness
                     total_size_kb = sum(len(img.encode('utf-8')) for img in all_images) / 1024
                     vision_prep_time = time.time() - step_start
@@ -4179,10 +4239,10 @@ def ollama_chat():
                         if graph_image:
                             logger.info(f"[CRA] [Vision]   [CURRENT - FRESH CAPTURE: {len(graph_image.encode('utf-8'))/1024:.1f}KB]")
                 
-                # Minimal prompt for vision model - ONLY asks it to describe what it sees
-                # NO system context - that goes to CRA instead
-                # ENHANCED PROMPT: Make it crystal clear this is a network graph, not biological artwork
-                system_context = """IMPORTANT: You are analyzing a NETWORK GRAPH visualization, not biological artwork or organisms. This is a data visualization showing:
+                    # Minimal prompt for vision model - ONLY asks it to describe what it sees
+                    # NO system context - that goes to CRA instead
+                    # ENHANCED PROMPT: Make it crystal clear this is a network graph, not biological artwork
+                    system_context = """IMPORTANT: You are analyzing a NETWORK GRAPH visualization, not biological artwork or organisms. This is a data visualization showing:
 - NODES (colored circles/dots) = Events in a computational system
 - EDGES/LINKS (lines connecting nodes) = Causation relationships between events
 - COLORS = Different system components (realitysim, explorer, djinnkernel, etc.)
@@ -4198,8 +4258,8 @@ This is the Butterfly System's Causation Explorer - a network graph showing how 
 - Changes in graph structure over time
 
 DO NOT interpret this as biological artwork, organisms, organic structures, or butterfly shapes. This is a technical network diagram showing computational event causation."""
-                
-                annotation_instruction = """
+                    
+                    annotation_instruction = """
 
 ANNOTATION REQUEST: After your analysis, provide annotations in JSON format to highlight key features you described. Use annotations like a sports commentator drawing on screen - circles for clusters, arrows for flows, text labels for important nodes/patterns:
 {
@@ -4210,89 +4270,156 @@ ANNOTATION REQUEST: After your analysis, provide annotations in JSON format to h
   ]
 }
 Annotation types: "circle" (highlight areas), "arrow" (show direction/flow), "text" (label features). Coordinates are in pixels (0,0 = top-left). Use annotations to visually emphasize your key observations."""
-                
-                if len(all_images) >= 3:
-                    vision_prompt = f"""{system_context}
+                    
+                    if len(all_images) >= 3:
+                        vision_prompt = f"""{system_context}
 
 These {len(all_images)} images show the evolution of a causation graph network over time (oldest to newest). Compare all {len(all_images)} images and describe: What changes do you see in the NETWORK STRUCTURE? How does the graph topology, node positions, connections, and patterns evolve? Describe the evolution timeline from oldest to newest. Pay attention to: node movement, cluster formation/dissolution, connection changes, network density changes, and overall structural evolution of the graph.{annotation_instruction}"""
-                elif len(all_images) == 2:
-                    vision_prompt = f"""{system_context}
+                    elif len(all_images) == 2:
+                        vision_prompt = f"""{system_context}
 
 These 2 images show the evolution of a causation graph network over time (oldest to newest). Compare them and describe: What changes do you see in the NETWORK STRUCTURE? How does the graph topology, node positions, connections, and patterns evolve? Describe the evolution timeline from oldest to newest.{annotation_instruction}"""
-                else:
-                    # Single image - describe current state, note that this is the first snapshot
-                    vision_prompt = f"""{system_context}
+                    else:
+                        # Single image - describe current state, note that this is the first snapshot
+                        vision_prompt = f"""{system_context}
 
 This is a single snapshot of a causation graph network visualization (no previous snapshots available for comparison yet). Describe what you see in the NETWORK GRAPH: What are the node colors and what system components do they represent? What is the graph structure and topology? Are there clusters, isolated nodes, or branching patterns? What do the connections show about event causation? How dense is the network? Note: This is the first snapshot, so no evolutionary analysis is possible yet.{annotation_instruction}"""
-                
-                # Vision model gets images + CRA contextual summaries (feedback loop)
-                # CRA → Vision Model: CRA provides context about what each snapshot means
-                # Vision Model → CRA: Vision model provides enhanced analysis with context
-                try:
-                    vision_call_start = time.time()
-                    # Use sequential analysis for multiple images to bypass payload limits
-                    # and ensure high quality for each image
-                    if len(all_images) > 1:
-                        logger.info(f"[CRA] [Vision] Starting sequential analysis for {len(all_images)} images with CRA contextual summaries")
-                        logger.info(f"[CRA] [Vision] This may take a while - analyzing each image sequentially...")
-                        # Pass snapshot contexts to analyze_sequence for CRA → Vision feedback loop
-                        visual_description = bridge_to_use.analyze_sequence(vision_model, all_images, vision_prompt, snapshot_contexts)
-                        vision_call_time = time.time() - vision_call_start
-                        logger.info(f"[CRA] [Vision] ✓ Sequential analysis completed in {vision_call_time:.2f}s ({vision_call_time/len(all_images):.2f}s per image)")
-                    else:
-                        # Single image - include CRA context in prompt
-                        if snapshot_contexts and len(snapshot_contexts) > 0:
-                            cra_context = snapshot_contexts[0]
-                            context_section = f"""
+                    
+                    # Vision model gets images + CRA contextual summaries (feedback loop)
+                    # CRA → Vision Model: CRA provides context about what each snapshot means
+                    # Vision Model → CRA: Vision model provides enhanced analysis with context
+                    try:
+                        vision_call_start = time.time()
+                        # Use sequential analysis for multiple images to bypass payload limits
+                        # and ensure high quality for each image
+                        if len(all_images) > 1:
+                            logger.info(f"[CRA] [Vision] Starting sequential analysis for {len(all_images)} images with CRA contextual summaries")
+                            logger.info(f"[CRA] [Vision] This may take a while - analyzing each image sequentially...")
+                            # Pass snapshot contexts to analyze_sequence for CRA → Vision feedback loop
+                            # analyze_sequence now returns (description, per_image_annotations)
+                            vision_result = bridge_to_use.analyze_sequence(vision_model, all_images, vision_prompt, snapshot_contexts)
+                            if isinstance(vision_result, tuple):
+                                visual_description, per_image_annotations = vision_result
+                            else:
+                                # Backwards compatibility: old version returns just string
+                                visual_description = vision_result
+                                per_image_annotations = None
+                            vision_call_time = time.time() - vision_call_start
+                            logger.info(f"[CRA] [Vision] ✓ Sequential analysis completed in {vision_call_time:.2f}s ({vision_call_time/len(all_images):.2f}s per image)")
+                            if per_image_annotations:
+                                total_anns = sum(len(ann.get('annotations', [])) if ann else 0 for ann in per_image_annotations)
+                                logger.info(f"[CRA] [Vision] Extracted {total_anns} total annotations from {len([a for a in per_image_annotations if a])} images")
+                        else:
+                            # Single image - include CRA context in prompt
+                            if snapshot_contexts and len(snapshot_contexts) > 0:
+                                cra_context = snapshot_contexts[0]
+                                context_section = f"""
 
 📊 SYSTEM CONTEXT (from CRA analysis):
 {cra_context}
 
 Use this context to understand what the graph structure means. Match the visual patterns you see with the system state described above."""
-                            vision_prompt = vision_prompt + context_section
-                        logger.info(f"[CRA] [Vision] Calling vision model API (single image)...")
-                        vision_call_start = time.time()
-                        visual_description = bridge_to_use.vision(vision_model, all_images, vision_prompt)
-                        vision_call_time = time.time() - vision_call_start
-                        logger.info(f"[CRA] [Vision] ✓ Vision API call completed in {vision_call_time:.2f}s")
+                                vision_prompt = vision_prompt + context_section
+                            logger.info(f"[CRA] [Vision] Calling vision model API (single image)...")
+                            vision_call_start = time.time()
+                            visual_description = bridge_to_use.vision(vision_model, all_images, vision_prompt)
+                            vision_call_time = time.time() - vision_call_start
+                            logger.info(f"[CRA] [Vision] ✓ Vision API call completed in {vision_call_time:.2f}s")
+                        
+                        if visual_description:
+                            # Parse annotations from vision response
+                            annotations = None
+                        
+                            # Priority 1: Use per-image annotations from analyze_sequence if available
+                            if 'per_image_annotations' in locals() and per_image_annotations:
+                                # Combine all per-image annotations into one set
+                                all_annotation_objects = []
+                                for img_ann in per_image_annotations:
+                                    if img_ann and 'annotations' in img_ann:
+                                        all_annotation_objects.extend(img_ann['annotations'])
+                                
+                                if all_annotation_objects:
+                                    annotations = {'annotations': all_annotation_objects}
+                                    logger.info(f"✓ Using {len(all_annotation_objects)} combined annotations from per-image analysis")
+                            
+                            # Priority 2: If no per-image annotations, try to extract from final synthesized response
+                            if not annotations:
+                                try:
+                                    # Try multiple strategies to extract JSON annotations
+                                    json_patterns = [
+                                        # Pattern 1: Full JSON object with annotations array
+                                        r'\{\s*"annotations"\s*:\s*\[[\s\S]*?\]\s*\}',
+                                        # Pattern 2: JSON object that contains annotations key anywhere
+                                        r'\{[^{}]*"annotations"\s*:\s*\[[\s\S]*?\][^{}]*\}',
+                                        # Pattern 3: Try to find complete JSON block
+                                        r'\{(?:[^{}]|(?:\{[^{}]*\}))*\s*"annotations"\s*:\s*\[[\s\S]*?\][\s\S]*?\}',
+                                    ]
+                                    
+                                    for pattern in json_patterns:
+                                        json_match = re.search(pattern, visual_description, re.DOTALL)
+                                        if json_match:
+                                            try:
+                                                parsed = json.loads(json_match.group(0))
+                                                if 'annotations' in parsed and isinstance(parsed['annotations'], list):
+                                                    annotations = parsed
+                                                    logger.info(f"✓ Extracted {len(annotations.get('annotations', []))} annotations from synthesized response")
+                                                    break
+                                            except json.JSONDecodeError:
+                                                continue
+                                    
+                                    # Strategy 2: If regex fails, try to find JSON block manually
+                                    if not annotations:
+                                        # Look for lines that look like JSON
+                                        lines = visual_description.split('\n')
+                                        json_start = None
+                                        json_end = None
+                                        brace_count = 0
+                                        for i, line in enumerate(lines):
+                                            if '"annotations"' in line or json_start is not None:
+                                                if json_start is None:
+                                                    json_start = i
+                                                brace_count += line.count('{') - line.count('}')
+                                                if brace_count == 0 and json_start is not None:
+                                                    json_end = i + 1
+                                                    try:
+                                                        json_block = '\n'.join(lines[json_start:json_end])
+                                                        parsed = json.loads(json_block)
+                                                        if 'annotations' in parsed:
+                                                            annotations = parsed
+                                                            logger.info(f"✓ Extracted {len(annotations.get('annotations', []))} annotations using line-by-line parsing")
+                                                            break
+                                                    except:
+                                                        json_start = None
+                                                        json_end = None
+                                                        brace_count = 0
+                                except Exception as e:
+                                    logger.debug(f"Could not parse annotations from vision response: {e}")
+                        
+                            # Add metadata about snapshots for CRA context
+                            if len(all_images) > 1:
+                                visual_description = f"[Visual Evolution Analysis - {len(all_images)} snapshots]\n{visual_description}"
+                            else:
+                                visual_description = f"[Visual Analysis - Single Snapshot (no evolution data available yet)]\n{visual_description}"
+                            
+                            # Pass vision analysis to CRA context (CRA has all the data points)
+                            context['visual_description'] = visual_description
+                            if annotations:
+                                context['vision_annotations'] = annotations
+                                logger.info(f"[CRA] [Vision] ✓ Final annotations count: {len(annotations.get('annotations', []))}")
+                    except Exception as e:
+                        vision_error = f"Vision model error: {str(e)}"
+                        logger.error(f"[CRA] [Vision] ✗ Vision model call failed: {e}", exc_info=True)
+                        visual_description = None
                     
+                    # Check if images were trimmed and set warning
+                    if original_snapshot_count > MAX_VISION_IMAGES - 1:
+                        images_trimmed_warning = f"⚠️ Note: {original_snapshot_count} snapshots available, but only {len(all_images)} were sent for analysis (limit: {MAX_VISION_IMAGES} images)."
+                    
+                    vision_phase_time = time.time() - step_start
                     if visual_description:
-                        # Parse annotations from vision response
-                        annotations = None
-                        try:
-                            # Try to extract JSON annotations from the response
-                            # Look for JSON object with "annotations" key
-                            json_match = re.search(r'\{[^{}]*"annotations"[^{}]*\[.*?\].*?\}', visual_description, re.DOTALL)
-                            if json_match:
-                                annotations = json.loads(json_match.group(0))
-                                logger.info(f"Extracted {len(annotations.get('annotations', []))} annotations from vision response")
-                        except Exception as e:
-                            logger.debug(f"Could not parse annotations from vision response: {e}")
-                        
-                        # Add metadata about snapshots for CRA context
-                        if len(all_images) > 1:
-                            visual_description = f"[Visual Evolution Analysis - {len(all_images)} snapshots]\n{visual_description}"
-                        else:
-                            visual_description = f"[Visual Analysis - Single Snapshot (no evolution data available yet)]\n{visual_description}"
-                        
-                        # Pass vision analysis to CRA context (CRA has all the data points)
-                        context['visual_description'] = visual_description
-                        if annotations:
-                            context['vision_annotations'] = annotations
-                except Exception as e:
-                    vision_error = f"Vision model error: {str(e)}"
-                    logger.error(f"[CRA] [Vision] ✗ Vision model call failed: {e}", exc_info=True)
-                    visual_description = None
-                
-                # Check if images were trimmed and set warning
-                if original_snapshot_count > MAX_VISION_IMAGES - 1:
-                    images_trimmed_warning = f"⚠️ Note: {original_snapshot_count} snapshots available, but only {len(all_images)} were sent for analysis (limit: {MAX_VISION_IMAGES} images)."
-                
-                vision_phase_time = time.time() - step_start
-                if visual_description:
-                    logger.info(f"[CRA] [Step 4/6] ✓ Vision analysis completed in {vision_phase_time:.2f}s ({len(visual_description)} chars)")
-                else:
-                    logger.warning(f"[CRA] [Step 4/6] ✗ Vision analysis failed after {vision_phase_time:.2f}s: {vision_error}")
+                        logger.info(f"[CRA] [Step 4/6] ✓ Vision analysis completed in {vision_phase_time:.2f}s ({len(visual_description)} chars)")
+                    else:
+                        logger.warning(f"[CRA] [Step 4/6] ✗ Vision analysis failed after {vision_phase_time:.2f}s: {vision_error}")
         elif data.get('vision_model') and not graph_image:
             vision_error = "Vision model selected but no graph image captured. Try adjusting graph view or filters."
             logger.warning(f"[CRA] [Step 4/6] ✗ Vision model selected but no graph image provided")
@@ -4394,13 +4521,34 @@ Use this context to understand what the graph structure means. Match the visual 
                 'is_current': True
             }
 
+        # Attach per-image annotations to corresponding snapshots if available
+        # Note: per_image_annotations order matches all_images order (historical oldest->newest, then current)
+        # display_snapshots order matches historical_frames order (which matches all_images historical portion)
+        per_image_anns_for_response = None
+        if 'per_image_annotations' in locals() and per_image_annotations and len(per_image_annotations) > 0:
+            per_image_anns_for_response = per_image_annotations
+            # Attach annotations to display snapshots (historical ones)
+            # display_snapshots corresponds to all_images[0:len(display_snapshots)]
+            for i, display_snap in enumerate(display_snapshots):
+                if i < len(per_image_annotations) and per_image_annotations[i]:
+                    display_snap['annotations'] = per_image_annotations[i]
+                    logger.debug(f"Attached {len(per_image_annotations[i].get('annotations', []))} annotations to historical snapshot {i+1}")
+            # Attach to current snapshot if it exists
+            # Current snapshot is at index len(display_snapshots) in all_images/per_image_annotations
+            if current_snapshot_display:
+                current_idx = len(display_snapshots)  # Current is after all historical
+                if current_idx < len(per_image_annotations) and per_image_annotations[current_idx]:
+                    current_snapshot_display['annotations'] = per_image_annotations[current_idx]
+                    logger.debug(f"Attached {len(per_image_annotations[current_idx].get('annotations', []))} annotations to current snapshot")
+
         return jsonify({
             'response': response,
             'visual_description': visual_description,
             'vision_error': vision_error,  # Include vision errors for frontend display
             'evolutionary_snapshots': display_snapshots,  # Include actual images for display
             'current_snapshot': current_snapshot_display,
-            'vision_annotations': context.get('vision_annotations'),  # Include annotations for image overlay
+            'vision_annotations': context.get('vision_annotations'),  # Include combined annotations for image overlay
+            'per_image_annotations': per_image_anns_for_response,  # Include per-image annotations for snapshot-specific overlays
             'images_trimmed_warning': images_trimmed_warning,  # Feedback about trimming
             'context_sources': {
                 'shared_state': shared_state_path.exists(),

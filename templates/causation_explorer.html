@@ -7590,10 +7590,11 @@
                         age_seconds: (now - s.timestamp) / 1000
                     }));
 
-                    // Ensure payload budget keeps chronological coverage
-                    evolutionarySnapshots = enforceSnapshotPayloadBudget(evolutionarySnapshots, graphImage, message);
+                    // NOTE: Do NOT trim by payload size here - backend uses analyze_sequence which sends images
+                    // individually, bypassing payload limits. Frontend should send up to MAX_SNAPSHOTS_FOR_EVOLUTION
+                    // and let backend handle the sequencing and limits.
 
-                    console.log(`[VISION] Building request with ${evolutionarySnapshots.length} valid snapshots (from ${snapshotHistory.length} total, filtered to recent + meaningful content + spaced)`);
+                    console.log(`[VISION] Building request with ${evolutionarySnapshots.length} valid snapshots (from ${snapshotHistory.length} total, filtered to recent + meaningful content + spaced, evenly sampled to ${MAX_SNAPSHOTS_FOR_EVOLUTION})`);
 
                     // Log snapshot sizes and spacing for debugging
                     evolutionarySnapshots.forEach((s, i) => {
@@ -7610,23 +7611,18 @@
                     }
                 }
 
-                // Calculate total payload size and trim if needed
-                let totalSize = JSON.stringify({
+                // NOTE: We don't trim by payload size here anymore because:
+                // 1. Backend uses analyze_sequence which sends images individually (bypasses payload limits)
+                // 2. Frontend already evenly sampled to MAX_SNAPSHOTS_FOR_EVOLUTION (10)
+                // 3. Backend will handle any final trimming if absolutely needed
+                // The payload can be large - backend handles it by sending images one at a time
+                
+                const totalSize = JSON.stringify({
                     message: message,
                     evolutionary_snapshots: evolutionarySnapshots,
                     graph_image: graphImage || ''
                 }).length;
-
-                // If payload too large, reduce snapshots (keep most recent)
-                if (totalSize > MAX_PAYLOAD_SIZE && evolutionarySnapshots.length > 1) {
-                    evolutionarySnapshots = enforceSnapshotPayloadBudget(evolutionarySnapshots, graphImage, message);
-                    totalSize = JSON.stringify({
-                        message: message,
-                        evolutionary_snapshots: evolutionarySnapshots,
-                        graph_image: graphImage || ''
-                    }).length;
-                    console.log(`[VISION] Payload still large, reduced snapshots to ${evolutionarySnapshots.length} to stay within limits`);
-                }
+                console.log(`[VISION] Final payload size: ${(totalSize / 1024 / 1024).toFixed(2)}MB (backend will handle sequencing)`);
 
                 // Log what we're sending for debugging
                 if (visionModel && graphImage) {
@@ -7901,8 +7897,14 @@
                                 imgContainer.appendChild(imgElement);
                                 snapshotDiv.appendChild(imgContainer);
 
-                                // Apply annotations only to the current snapshot to avoid overlay stacking
-                                if (isCurrent && data.vision_annotations && data.vision_annotations.annotations) {
+                                // Apply annotations to this snapshot if available
+                                // Priority: per-image annotations > combined annotations (for current only)
+                                const snapshotAnnotations = snapshot.annotations || null;
+                                if (snapshotAnnotations && snapshotAnnotations.annotations) {
+                                    // Use per-image annotations specific to this snapshot
+                                    drawAnnotationsOnImage(imgElement, snapshotAnnotations);
+                                } else if (isCurrent && data.vision_annotations && data.vision_annotations.annotations) {
+                                    // Fallback: use combined annotations for current snapshot only
                                     drawAnnotationsOnImage(imgElement, data.vision_annotations);
                                 }
 
