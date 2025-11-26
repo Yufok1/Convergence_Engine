@@ -483,7 +483,7 @@ class OllamaBridge:
         # Support environment variables for configuration
         # OLLAMA_BASE_URL defaults to localhost, or use https://ollama.com for cloud
         self.base_url = base_url or os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-        self.timeout = timeout or float(os.getenv("OLLAMA_TIMEOUT", "120.0"))
+        self.timeout = timeout or float(os.getenv("OLLAMA_TIMEOUT", "240.0"))
         # OLLAMA_API_KEY required for cloud API access
         self.api_key = api_key or os.getenv("OLLAMA_API_KEY")
         
@@ -589,10 +589,17 @@ class OllamaBridge:
                 logger.error(f"HTTP error listing Ollama models: {e.response.status_code} - {e.response.text[:200]}")
         except requests.exceptions.ConnectionError as e:
             logger.error(f"Connection error listing Ollama models: {e}")
-            logger.error("This may indicate:")
-            logger.error("  1. Network connectivity issues")
-            logger.error("  2. Ollama Cloud service is down")
-            logger.error("  3. Firewall/proxy blocking connection")
+            if self.is_cloud:
+                logger.error("This may indicate:")
+                logger.error("  1. Network connectivity issues")
+                logger.error("  2. Ollama Cloud service is down")
+                logger.error("  3. Firewall/proxy blocking connection")
+            else:
+                logger.error("This may indicate:")
+                logger.error("  1. Ollama is not running locally")
+                logger.error("  2. Start Ollama: Run 'ollama serve' in a terminal")
+                logger.error("  3. Check if Ollama is running on http://localhost:11434")
+                logger.error("  4. Firewall blocking localhost connections")
         except Exception as e:
             logger.error(f"Error listing Ollama models: {e}", exc_info=True)
             if self.is_cloud and not self.api_key:
@@ -722,10 +729,17 @@ class OllamaBridge:
                 logger.error(f"HTTP error in Ollama chat: {e.response.status_code} - {e.response.text[:200]}")
         except requests.exceptions.ConnectionError as e:
             logger.error(f"Connection error in Ollama chat: {e}")
-            logger.error("This may indicate:")
-            logger.error("  1. Network connectivity issues")
-            logger.error("  2. Ollama Cloud service is down")
-            logger.error("  3. Firewall/proxy blocking connection")
+            if self.is_cloud:
+                logger.error("This may indicate:")
+                logger.error("  1. Network connectivity issues")
+                logger.error("  2. Ollama Cloud service is down")
+                logger.error("  3. Firewall/proxy blocking connection")
+            else:
+                logger.error("This may indicate:")
+                logger.error("  1. Ollama is not running locally")
+                logger.error("  2. Start Ollama: Run 'ollama serve' in a terminal")
+                logger.error("  3. Check if Ollama is running on http://localhost:11434")
+                logger.error("  4. Firewall blocking localhost connections")
         except Exception as e:
             logger.error(f"Error in Ollama chat: {e}", exc_info=True)
         return None
@@ -3743,7 +3757,7 @@ if config_file.exists():
 # Initialize OllamaBridge with config file settings (env vars take precedence)
 ollama_bridge = OllamaBridge(
     base_url=os.getenv("OLLAMA_BASE_URL") or ollama_config.get("base_url"),
-    timeout=float(os.getenv("OLLAMA_TIMEOUT", str(ollama_config.get("timeout", 120.0)))),
+    timeout=float(os.getenv("OLLAMA_TIMEOUT", str(ollama_config.get("timeout", 240.0)))),
     api_key=ollama_config.get("api_key") or os.getenv("OLLAMA_API_KEY")
 )
 
@@ -4357,6 +4371,9 @@ def set_ollama_config():
         update_kwargs = {}
         if base_url is not None:
             update_kwargs['base_url'] = base_url
+            # If switching to local mode, clear API key
+            if not base_url.startswith("https://ollama.com"):
+                update_kwargs['api_key'] = None
         if api_key is not None:
             update_kwargs['api_key'] = api_key
         if timeout is not None:
@@ -4365,12 +4382,14 @@ def set_ollama_config():
         if update_kwargs:
             ollama_bridge.update_config(**update_kwargs)
         
-        # Save to config file
+        # Save to config file (don't save API key for local mode)
         config_data = {
             'base_url': ollama_bridge.base_url,
-            'api_key': ollama_bridge.api_key,
             'timeout': ollama_bridge.timeout
         }
+        # Only include API key if using cloud mode
+        if ollama_bridge.is_cloud and ollama_bridge.api_key:
+            config_data['api_key'] = ollama_bridge.api_key
         
         try:
             with open(config_file, 'w') as f:

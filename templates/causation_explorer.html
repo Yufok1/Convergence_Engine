@@ -8853,6 +8853,11 @@
                         return response.json();
                     })
                     .then(data => {
+                        // Store current timeout value
+                        if (data.timeout) {
+                            currentTimeout = parseFloat(data.timeout);
+                        }
+
                         // Set cloud mode checkbox
                         const cloudModeCheckbox = document.getElementById('ollamaCloudMode');
                         const cloudSettings = document.getElementById('cloudSettings');
@@ -8891,6 +8896,9 @@
                 }
             }
 
+            // Store current timeout value
+            let currentTimeout = 240.0; // Default 240 seconds
+
             // Save Ollama configuration
             function saveOllamaConfig(useCloud = null) {
                 const cloudModeCheckbox = document.getElementById('ollamaCloudMode');
@@ -8904,7 +8912,7 @@
 
                 const config = {
                     base_url: useCloud ? 'https://ollama.com' : 'http://localhost:11434',
-                    timeout: 60
+                    timeout: currentTimeout // Preserve existing timeout (default 240)
                 };
 
                 // Only include API key if using cloud mode
@@ -8916,6 +8924,9 @@
                         return;
                     }
                     config.api_key = apiKey;
+                } else {
+                    // Explicitly clear API key when switching to local mode
+                    config.api_key = null;
                 }
 
                 statusDiv.innerHTML = '<span style="color: #0aa;">Saving...</span>';
