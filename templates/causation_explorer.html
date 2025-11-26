@@ -1793,6 +1793,20 @@
         let lastLoadGraphTime = 0;
         const LOAD_GRAPH_THROTTLE_MS = 1000; // Minimum 1 second between loadGraph calls
         let tickAnimationFrame = null; // RAF ID for tick handler
+        
+        // 🚀 OPTIMIZATION: Incremental update tracking
+        let lastIncrementalTimestamp = 0;
+        let pendingIncrementalUpdate = false;
+        let accumulatedUpdates = { new_nodes: [], new_links: [] };
+        
+        // Initialize lastIncrementalTimestamp on first graph load
+        function initializeIncrementalTracking() {
+            if (allNodes.length > 0) {
+                lastIncrementalTimestamp = Math.max(...allNodes.map(n => n.timestamp || 0), 0);
+                lastEventTimestamp = lastIncrementalTimestamp;
+                console.log(`[Incremental] Initialized tracking at timestamp: ${lastIncrementalTimestamp}`);
+            }
+        }
 
         // Navigation state
         let panX = 0, panY = 0;
@@ -3587,6 +3601,13 @@
 
                     allNodes = data.nodes || [];
                     allLinks = data.links || [];
+
+                    // 🚀 OPTIMIZATION: Initialize incremental tracking timestamp
+                    if (allNodes && allNodes.length > 0) {
+                        lastIncrementalTimestamp = Math.max(...allNodes.map(n => n.timestamp || 0), 0);
+                        lastEventTimestamp = lastIncrementalTimestamp;
+                        console.log(`[Incremental] Initialized tracking at timestamp: ${lastIncrementalTimestamp}`);
+                    }
 
                     // Update activity tracking baseline when graph loads
                     if (allNodes && allNodes.length > 0) {
@@ -6909,35 +6930,165 @@
             }
 
             function fetchNewEvents() {
-                // Don't fetch if simulation is stopped
+                // Don't fetch if simulation is stopped or already pending
                 if (!simulationRunning) {
                     console.log('fetchNewEvents skipped: simulation is stopped');
                     return;
                 }
+                
+                if (pendingIncrementalUpdate) {
+                    console.log('fetchNewEvents skipped: update already pending');
+                    return;
+                }
+                
+                pendingIncrementalUpdate = true;
 
-                fetch(`/api/live/events?since=${lastEventTimestamp}`)
+                // 🚀 OPTIMIZATION: Use incremental endpoint instead of full reload
+                fetch(`/api/graph/incremental?since=${lastIncrementalTimestamp}`)
                     .then(response => response.json())
                     .then(data => {
+                        pendingIncrementalUpdate = false;
+                        
                         // Double-check simulation status before updating
                         if (!simulationRunning) {
                             console.log('fetchNewEvents update skipped: simulation is stopped');
                             return;
                         }
 
-                        if (data.events && data.events.length > 0) {
-                            // New events available - reload graph only if simulation is running
-                            lastEventTimestamp = data.latest_timestamp || lastEventTimestamp;
-
-                            // Reload graph with new events (only if simulation is running)
-                            if (simulationRunning) {
+                        if (data.new_nodes && data.new_nodes.length > 0 || data.new_links && data.new_links.length > 0) {
+                            // Accumulate updates for batch processing
+                            accumulatedUpdates.new_nodes.push(...(data.new_nodes || []));
+                            accumulatedUpdates.new_links.push(...(data.new_links || []));
+                            lastIncrementalTimestamp = data.latest_timestamp || lastIncrementalTimestamp;
+                            
+                            // Update graph incrementally (doesn't restart simulation)
+                            if (simulationRunning && simulation) {
+                                updateGraphIncremental(accumulatedUpdates);
+                                // Clear accumulated updates after processing
+                                accumulatedUpdates = { new_nodes: [], new_links: [] };
+                            } else if (simulationRunning) {
+                                // Simulation doesn't exist yet, do full load
                                 loadGraph();
-                                updateStats();
                             }
+                            updateStats();
                         }
                     })
                     .catch(err => {
-                        console.error('Error fetching new events:', err);
+                        pendingIncrementalUpdate = false;
+                        console.error('Error fetching incremental updates:', err);
                     });
+            }
+            
+            // 🚀 OPTIMIZATION: Update graph incrementally without restarting simulation
+            function updateGraphIncremental(updates) {
+                if (!simulation || !svg) {
+                    console.warn('updateGraphIncremental: simulation or svg not available, skipping');
+                    return;
+                }
+                
+                const newNodes = updates.new_nodes || [];
+                const newLinks = updates.new_links || [];
+                
+                if (newNodes.length === 0 && newLinks.length === 0) {
+                    return; // Nothing to update
+                }
+                
+                console.log(`[Incremental Update] Adding ${newNodes.length} nodes, ${newLinks.length} links`);
+                
+                // Get existing nodes/links
+                const existingNodeIds = new Set(allNodes.map(n => n.id));
+                const existingLinkKeys = new Set(allLinks.map(l => `${l.source.id || l.source}-${l.target.id || l.target}`));
+                
+                // Filter out nodes/links that already exist
+                const nodesToAdd = newNodes.filter(n => !existingNodeIds.has(n.id));
+                const linksToAdd = newLinks.filter(l => {
+                    const sourceId = typeof l.source === 'object' ? l.source.id : l.source;
+                    const targetId = typeof l.target === 'object' ? l.target.id : l.target;
+                    return !existingLinkKeys.has(`${sourceId}-${targetId}`);
+                });
+                
+                if (nodesToAdd.length === 0 && linksToAdd.length === 0) {
+                    console.log('[Incremental Update] All nodes/links already exist, skipping');
+                    return;
+                }
+                
+                // Add new nodes to allNodes
+                allNodes.push(...nodesToAdd);
+                
+                // Initialize positions for new nodes (near center with slight random offset)
+                const graphElement = document.getElementById('graph');
+                const width = graphElement.clientWidth;
+                const height = graphElement.clientHeight || 792;
+                
+                nodesToAdd.forEach(node => {
+                    if (!node.x && !node.y) {
+                        const angle = Math.random() * Math.PI * 2;
+                        const radius = Math.random() * Math.min(width, height) * 0.15; // Smaller radius for new nodes
+                        node.x = width / 2 + Math.cos(angle) * radius;
+                        node.y = height / 2 + Math.sin(angle) * radius;
+                    }
+                });
+                
+                // Add new links to allLinks (convert IDs to node references)
+                const nodeMap = new Map(allNodes.map(n => [n.id, n]));
+                linksToAdd.forEach(link => {
+                    const sourceNode = nodeMap.get(link.source);
+                    const targetNode = nodeMap.get(link.target);
+                    if (sourceNode && targetNode) {
+                        allLinks.push({
+                            source: sourceNode,
+                            target: targetNode,
+                            type: link.type,
+                            strength: link.strength,
+                            explanation: link.explanation
+                        });
+                    }
+                });
+                
+                // Update filtered nodes/links (apply filters)
+                applyFilters(); // This will update filteredNodes and filteredLinks with new data
+                
+                // Update simulation with new nodes (preserve existing positions)
+                const currentSimNodes = simulation.nodes();
+                const nodeMapForSim = new Map(currentSimNodes.map(n => [n.id, n]));
+                
+                // Add new nodes to simulation
+                nodesToAdd.forEach(node => {
+                    const existingSimNode = nodeMapForSim.get(node.id);
+                    if (!existingSimNode) {
+                        currentSimNodes.push(node);
+                    }
+                });
+                
+                // Update simulation nodes
+                simulation.nodes(currentSimNodes);
+                
+                // Update simulation links
+                const filteredLinksForSim = filteredLinks.map(l => {
+                    const sourceId = typeof l.source === 'object' ? l.source.id : l.source;
+                    const targetId = typeof l.target === 'object' ? l.target.id : l.target;
+                    const sourceNode = nodeMapForSim.get(sourceId) || currentSimNodes.find(n => n.id === sourceId);
+                    const targetNode = nodeMapForSim.get(targetId) || currentSimNodes.find(n => n.id === targetId);
+                    if (sourceNode && targetNode) {
+                        return {
+                            source: sourceNode,
+                            target: targetNode,
+                            type: l.type,
+                            strength: l.strength,
+                            explanation: l.explanation
+                        };
+                    }
+                    return null;
+                }).filter(l => l !== null);
+                
+                simulation.force('link').links(filteredLinksForSim);
+                
+                // Gentle restart to position new nodes
+                if (simulation.alpha() < 0.01) {
+                    simulation.alpha(0.1).restart();
+                }
+                
+                console.log(`[Incremental Update] Successfully added ${nodesToAdd.length} nodes, ${linksToAdd.length} links`);
             }
 
             function updateStats() {

@@ -48,6 +48,17 @@ except ImportError:
 # Real-time event queue for CRA
 cra_event_queue = queue.Queue(maxsize=1000)  # Buffer up to 1000 events
 
+# Graph data cache for performance optimization (Phase 1)
+graph_cache = {
+    'nodes': [],
+    'links': [],
+    'last_update': 0,
+    'cache_duration': 1.0,  # Cache for 1 second
+    'event_count': 0,
+    'link_count': 0,
+    'shared_state_mtime': 0  # Track shared state file modification time
+}
+
 # Ensure Flask knows where templates are
 template_dir = Path(__file__).parent / 'templates'
 app = Flask(__name__, template_folder=str(template_dir))
@@ -3390,6 +3401,10 @@ def get_graph():
     """
     Get full causation graph for visualization
     
+    🚀 OPTIMIZED (Phase 1):
+    - Graph data caching (1-second cache to avoid repeated processing)
+    - File modification time tracking (skip unchanged shared state files)
+    
     🔍 DATA SOURCES ACCESSED:
     - explorer.events{} - Dictionary of all events loaded from:
       1. Akashic Ledger (if available) - data/kernel/akashic_ledger/
@@ -3417,6 +3432,18 @@ def get_graph():
     if explorer is None:
         return jsonify({'nodes': [], 'links': [], 'error': 'Causation Explorer not initialized'}), 200
     try:
+        # 🚀 OPTIMIZATION: Check cache first (1-second cache to reduce file I/O)
+        current_time = time.time()
+        if (current_time - graph_cache['last_update']) < graph_cache['cache_duration']:
+            logger.debug(f"Returning cached graph data (cache age: {current_time - graph_cache['last_update']:.2f}s)")
+            return jsonify({
+                'nodes': graph_cache['nodes'],
+                'links': graph_cache['links'],
+                'cached': True,
+                'event_count': graph_cache['event_count'],
+                'link_count': graph_cache['link_count']
+            })
+        
         # Phase 2: Load latest state from shared state file ONLY if simulation is running
         # Check simulation control file to see if simulation is actually running
         # IMPORTANT: unified_entry.py runs autonomously, so we must check the control file
@@ -3434,18 +3461,24 @@ def get_graph():
             if simulation_running:
                 shared_state_path = Path('data/.shared_simulation_state.json')
                 if shared_state_path.exists():
-                    # Check file modification time to see if it's been updated recently
+                    # 🚀 OPTIMIZATION: Check file modification time - skip if unchanged
                     import os
                     file_mtime = os.path.getmtime(shared_state_path)
-                    current_time = time.time()
-
-                    # If file was modified in the last 10 seconds, definitely reload
-                    if (current_time - file_mtime) < 10:
-                        logger.info(f"Shared state file recently updated ({current_time - file_mtime:.1f}s ago), loading...")
-                        explorer._load_from_shared_state(force_reload=True)  # Force reload recent data
+                    
+                    # Only reload if file has actually changed since last check
+                    if file_mtime > graph_cache['shared_state_mtime']:
+                        current_time_check = time.time()
+                        # If file was modified in the last 10 seconds, definitely reload
+                        if (current_time_check - file_mtime) < 10:
+                            logger.info(f"Shared state file updated ({current_time_check - file_mtime:.1f}s ago), loading...")
+                            explorer._load_from_shared_state(force_reload=True)  # Force reload recent data
+                            graph_cache['shared_state_mtime'] = file_mtime  # Update tracked mtime
+                        else:
+                            # File exists but might be old, still try incremental load
+                            explorer._load_from_shared_state(force_reload=False)
+                            graph_cache['shared_state_mtime'] = file_mtime  # Update tracked mtime
                     else:
-                        # File exists but might be old, still try incremental load
-                        explorer._load_from_shared_state(force_reload=False)
+                        logger.debug(f"Shared state file unchanged (mtime: {file_mtime}, last: {graph_cache['shared_state_mtime']}), skipping reload")
                 else:
                     logger.debug("Shared state file does not exist yet")
             else:
@@ -3551,9 +3584,20 @@ def get_graph():
             response_data = {
                 'nodes': nodes,
                 'links': links,
-                'diagnostic': diagnostic_info if diagnostic_info else None
+                'diagnostic': diagnostic_info if diagnostic_info else None,
+                'cached': False,
+                'event_count': len(nodes),
+                'link_count': len(links)
             }
-            logger.info("Graph data serialized, returning response")
+            
+            # 🚀 OPTIMIZATION: Update cache with processed graph data
+            graph_cache['nodes'] = nodes
+            graph_cache['links'] = links
+            graph_cache['last_update'] = time.time()
+            graph_cache['event_count'] = len(nodes)
+            graph_cache['link_count'] = len(links)
+            
+            logger.info("Graph data serialized and cached, returning response")
             return jsonify(response_data)
         except Exception as serialize_error:
             logger.error(f"Error serializing graph response: {serialize_error}", exc_info=True)
@@ -3563,6 +3607,137 @@ def get_graph():
         import traceback
         logger.error(f"Traceback: {traceback.format_exc()}")
         return jsonify({'nodes': [], 'links': [], 'error': str(e)}), 500
+
+
+@app.route('/api/graph/incremental')
+def get_incremental_updates():
+    """
+    Get only new events and links since a given timestamp (for incremental updates)
+    
+    🚀 OPTIMIZATION (Phase 1): Incremental updates to avoid full graph reload
+    
+    Returns only new nodes and links that were added since the specified timestamp.
+    This allows the frontend to update the graph incrementally without reloading everything.
+    
+    Query parameters:
+    - since: Timestamp (float) - only return events/links newer than this
+    
+    Returns:
+    - new_nodes: List of new event nodes
+    - new_links: List of new causation links
+    - latest_timestamp: Latest event timestamp in the system
+    - node_count: Total number of nodes in system (for reference)
+    - link_count: Total number of links in system (for reference)
+    """
+    if explorer is None:
+        return jsonify({
+            'new_nodes': [],
+            'new_links': [],
+            'latest_timestamp': 0,
+            'node_count': 0,
+            'link_count': 0,
+            'error': 'Causation Explorer not initialized'
+        }), 200
+    
+    try:
+        since_timestamp = float(request.args.get('since', 0))
+        
+        new_nodes = []
+        new_links = []
+        
+        # Get events and links with thread safety
+        with explorer.graph_lock:
+            events_snapshot = dict(explorer.events)
+            edges_snapshot = list(explorer.causation_graph.edges(data=True))
+            total_node_count = len(events_snapshot)
+            total_link_count = len(edges_snapshot)
+        
+        # Find new events since timestamp
+        latest_timestamp = since_timestamp
+        for event_id, event in events_snapshot.items():
+            if event.timestamp > since_timestamp:
+                latest_timestamp = max(latest_timestamp, event.timestamp)
+                
+                # Normalize component names (same logic as get_graph)
+                component = (event.component or 'unknown').lower().strip()
+                if 'reality' in component or 'sim' in component:
+                    component = 'reality_sim'
+                elif 'explorer' in component:
+                    component = 'explorer'
+                elif 'djinn' in component or 'kernel' in component or 'utm' in component:
+                    component = 'djinn_kernel'
+                elif 'breath' in component:
+                    component = 'breath'
+                elif 'system' in component:
+                    component = 'system'
+                
+                # Build node data (same format as get_graph)
+                node_data = {
+                    'id': event_id,
+                    'component': component,
+                    'type': event.event_type,
+                    'timestamp': event.timestamp
+                }
+                
+                # Include simple data only (no nested dicts/lists >200 chars)
+                if event.data and isinstance(event.data, dict):
+                    simple_data = {k: v for k, v in event.data.items() 
+                                 if not isinstance(v, (dict, list)) and len(str(v)) < 200}
+                    if simple_data:
+                        node_data['data'] = simple_data
+                elif event.data and not isinstance(event.data, (dict, list)) and len(str(event.data)) < 200:
+                    node_data['data'] = event.data
+                
+                new_nodes.append(node_data)
+        
+        # Find new links - links connect events, so if either source or target event
+        # is new (timestamp > since), we consider it new.
+        existing_node_ids = {event_id for event_id, event in events_snapshot.items() 
+                            if event.timestamp <= since_timestamp}
+        
+        for u, v, data in edges_snapshot:
+            # Link is "new" if either endpoint event is new
+            source_new = u not in existing_node_ids
+            target_new = v not in existing_node_ids
+            
+            if source_new or target_new:
+                # Check if link creation timestamp exists in data
+                link_created_at = data.get('created_at', None)
+                if link_created_at is None or link_created_at > since_timestamp:
+                    new_links.append({
+                        'source': u,
+                        'target': v,
+                        'type': data.get('causation_type', 'unknown'),
+                        'strength': data.get('strength', 0.0),
+                        'explanation': data.get('explanation', '')
+                    })
+        
+        # Get latest timestamp from all events if no new events found
+        if latest_timestamp == since_timestamp and events_snapshot:
+            latest_timestamp = max(event.timestamp for event in events_snapshot.values())
+        
+        logger.info(f"Incremental update: {len(new_nodes)} new nodes, {len(new_links)} new links since {since_timestamp}")
+        
+        return jsonify({
+            'new_nodes': new_nodes,
+            'new_links': new_links,
+            'latest_timestamp': latest_timestamp,
+            'node_count': total_node_count,
+            'link_count': total_link_count
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting incremental updates: {e}", exc_info=True)
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        return jsonify({
+            'new_nodes': [],
+            'new_links': [],
+            'latest_timestamp': 0,
+            'node_count': 0,
+            'link_count': 0,
+            'error': str(e)
+        }), 500
 
 
 # ============================================================================

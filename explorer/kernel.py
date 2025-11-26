@@ -74,16 +74,81 @@ class Kernel:
             
             # Windows-compatible atomic file replace
             # Delete old file first if it exists (Windows requires this)
-            try:
-                if os.path.exists(self.latest_link):
-                    os.remove(self.latest_link)
-                os.rename(tmp_link, self.latest_link)
-            except (OSError, PermissionError) as e:
-                # If rename fails, try copy + delete approach
-                import shutil
-                if os.path.exists(self.latest_link):
-                    os.remove(self.latest_link)
-                shutil.move(tmp_link, self.latest_link)
+            # Add retry logic for Windows file locking issues
+            max_retries = 3
+            retry_delay = 0.1  # 100ms between retries
+            success = False
+            
+            for attempt in range(max_retries):
+                try:
+                    if os.path.exists(self.latest_link):
+                        # Try to remove with retry
+                        try:
+                            os.remove(self.latest_link)
+                        except PermissionError:
+                            # File might be locked - wait and retry
+                            if attempt < max_retries - 1:
+                                time.sleep(retry_delay * (attempt + 1))  # Exponential backoff
+                                continue
+                            else:
+                                # Last attempt - try to force unlock on Windows
+                                try:
+                                    # On Windows, try to remove read-only flag first
+                                    import stat
+                                    os.chmod(self.latest_link, stat.S_IWRITE)
+                                    os.remove(self.latest_link)
+                                except Exception:
+                                    # If still locked, log warning but continue
+                                    print(f"[Kernel] Warning: Could not remove locked file {self.latest_link}, will try to overwrite")
+                    
+                    # Try atomic rename (preferred method)
+                    os.rename(tmp_link, self.latest_link)
+                    success = True
+                    break
+                    
+                except (OSError, PermissionError) as e:
+                    if attempt < max_retries - 1:
+                        # Wait before retry
+                        time.sleep(retry_delay * (attempt + 1))
+                        continue
+                    else:
+                        # Last attempt - try copy + delete approach
+                        try:
+                            import shutil
+                            # Try to remove with chmod first
+                            if os.path.exists(self.latest_link):
+                                try:
+                                    import stat
+                                    os.chmod(self.latest_link, stat.S_IWRITE)
+                                    os.remove(self.latest_link)
+                                except Exception:
+                                    pass  # Ignore if still can't remove
+                            shutil.move(tmp_link, self.latest_link)
+                            success = True
+                            break
+                        except Exception as e2:
+                            # Final fallback: log error but don't crash
+                            # The version file was already created successfully, so data is safe
+                            print(f"[Kernel] Warning: Could not update latest.link: {e2}")
+                            print(f"[Kernel] Version file created successfully: {version_path}")
+                            print(f"[Kernel] You may need to manually update latest.link or restart the system")
+                            # Clean up temp file
+                            try:
+                                if os.path.exists(tmp_link):
+                                    os.remove(tmp_link)
+                            except:
+                                pass
+                            # Still return True since the version file was created
+                            success = True
+                            break
+            
+            if not success:
+                # If all retries failed, at least clean up temp file
+                try:
+                    if os.path.exists(tmp_link):
+                        os.remove(tmp_link)
+                except:
+                    pass
             self.version_file = version_path
             return True  # Sovereign ID was added
         else:

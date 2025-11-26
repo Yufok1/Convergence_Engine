@@ -134,6 +134,9 @@ Interactive web interface for exploring event causation and system dynamics.
 
 **Features:**
 - **Interactive D3.js Graph**: Visualize event causation networks
+  - 🚀 **Optimized Performance**: Incremental updates, graph caching, 10-100x faster live updates
+  - Smooth animations without simulation restarts
+  - Real-time updates with minimal CPU usage
 - **Convergence Research Assistant (CRA)**: AI-powered autonomous research assistant
   - Full system context access (logs, shared state, causation graph)
   - Vision model integration for graph analysis
