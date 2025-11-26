@@ -11,8 +11,11 @@
     "fitness_precision": 1e-06,
     "genotype_length": 48,
     "max_generations": 1000,
+    "mutation_rate": {
+      "initial": 0.012
+    },
     "mutation_rate_precision": 0.001,
-    "population_size": 600
+    "population_size": 800
   },
   "feedback": {
     "enabled": true,
@@ -20,25 +23,25 @@
     "interval_frames": 10,
     "knobs": {
       "clustering_bias": {
-        "initial": 0.4,
+        "initial": 0.65,
         "max": 1.6,
         "min": 0.3,
         "step": 0.05
       },
       "mutation_rate": {
-        "initial": 0.045,
+        "initial": 0.018,
         "max": 0.06,
         "min": 0.002,
         "step": 0.001
       },
       "new_edge_rate": {
-        "initial": 1.9,
+        "initial": 1.5,
         "max": 2.2,
         "min": 0.2,
         "step": 0.1
       },
       "quantum_pruning": {
-        "initial": 0.25,
+        "initial": 0.08,
         "max": 1.0,
         "min": 0.0,
         "step": 0.05
@@ -59,7 +62,7 @@
   "network": {
     "connection_strength_resolution": 5e-06,
     "emergence_sensitivity": 1e-06,
-    "max_connections": 8000,
+    "max_connections": 12000,
     "max_organisms": 2500,
     "resource_flow_precision": 0.0001,
     "resource_pool": 200.0,
@@ -82,7 +85,7 @@
     },
     "probability_precision": 1e-06,
     "prune_check_interval": 50,
-    "superposition_tolerance": 0.0005
+    "superposition_tolerance": 0.001
   },
   "rendering": {
     "enable_visualizations": true,
@@ -107,6 +110,9 @@
     "time_resolution_ms": 1.0
   },
   "vp_monitoring": {
+    "adaptive_thresholds": {
+      "enabled": true
+    },
     "adaptive_thresholds_enabled": true,
     "component_decomposition_enabled": true,
     "component_weights": {
@@ -118,10 +124,15 @@
     },
     "diagnostics_enabled": true,
     "stabilization": {
+      "enabled": true,
       "history_size": 15,
-      "max_jump": 0.15,
+      "max_jump": 0.1,
       "smoothing_factor": 0.25
     },
-    "stabilization_enabled": true
+    "stabilization_enabled": true,
+    "adaptive_response": {
+      "high_vp_threshold": 0.75,
+      "streak_threshold": 3
+    }
   }
 }

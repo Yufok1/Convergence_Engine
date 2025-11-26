@@ -4,8 +4,11 @@ import time
 import sys
 import os
 import json
+import random
+import uuid
+import math
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from sentinel import Sentinel
 from kernel import Kernel
 from diagnostics import Diagnostics
@@ -32,8 +35,8 @@ except ImportError:
     print("[Explorer] Reality Simulator not available")
 
 try:
-    from utm_kernel_design import UTMKernel
-    from violation_pressure_calculation import ViolationMonitor
+    from utm_kernel_design import UTMKernel, AgentInstruction, TapeSymbol
+    from violation_pressure_calculation import ViolationMonitor, StabilityEnvelope
     DJINN_KERNEL_AVAILABLE = True
 except ImportError:
     DJINN_KERNEL_AVAILABLE = False
@@ -283,6 +286,15 @@ class BiphasicController:
         # Load previous state or start fresh
         self.phase = self._load_previous_state()
 
+        # Adaptive VP response configuration
+        adaptive_cfg = self.current_config.get('vp_monitoring', {}).get('adaptive_response', {}) if isinstance(self.current_config, dict) else {}
+        self.high_vp_threshold = float(adaptive_cfg.get('high_vp_threshold', 0.75))
+        self.streak_threshold = int(adaptive_cfg.get('streak_threshold', 3))
+        self.fallback_streak = int(adaptive_cfg.get('fallback_streak', self.streak_threshold + 2))
+        self.envelope_widen_factor = float(adaptive_cfg.get('envelope_widen_factor', 1.2))
+        self.vp_high_streak = 0
+        self.last_adaptive_actions: List[str] = []
+
     def _initialize_stability_center(self):
         """Initialize stability center with realistic baseline values"""
         return {
@@ -390,6 +402,172 @@ class BiphasicController:
             print(f"[Explorer] ⚠️  Failed to configure ViolationMonitor: {err}")
             return False
 
+    def _prepare_trait_diagnostics(self, traits: Dict[str, float], vp_breakdown: Optional[Dict[str, float]]) -> Dict[str, Dict[str, float]]:
+        diagnostics: Dict[str, Dict[str, float]] = {}
+        if not traits:
+            return diagnostics
+        for name, value in traits.items():
+            envelope = self.vp_monitor.get_stability_envelope(name) if self.vp_monitor else None
+            diagnostics[name] = {
+                'value': value,
+                'envelope_center': envelope.center if envelope else 0.5,
+                'envelope_radius': envelope.radius if envelope else 0.25,
+                'vp_contribution': (vp_breakdown or {}).get(name, 0.0)
+            }
+        return diagnostics
+
+    def _log_trait_diagnostics(self, diagnostics: Dict[str, Dict[str, float]]) -> None:
+        if not diagnostics:
+            return
+        color_print("[Adaptive VP] Trait diagnostics:", Colors.YELLOW)
+        for trait, info in diagnostics.items():
+            deviation = abs(info['value'] - info['envelope_center'])
+            color_print(
+                f"  {trait}: value={info['value']:.3f}, center={info['envelope_center']:.3f}, "
+                f"radius={info['envelope_radius']:.3f}, deviation={deviation:.3f}, "
+                f"vp_contribution={info['vp_contribution']:.3f}",
+                Colors.YELLOW
+            )
+
+    def _handle_vp_feedback(self, vp_value: Optional[float], traits: Dict[str, float], vp_breakdown: Optional[Dict[str, float]]) -> None:
+        if vp_value is None:
+            return
+        diagnostics = self._prepare_trait_diagnostics(traits, vp_breakdown)
+        if vp_value > self.high_vp_threshold:
+            self.vp_high_streak += 1
+            if self.vp_high_streak == 1:
+                self._log_trait_diagnostics(diagnostics)
+        else:
+            if self.vp_high_streak > 0:
+                color_print(f"[Adaptive VP] Streak reset (vp={vp_value:.3f})", Colors.CYAN)
+            self.vp_high_streak = 0
+            self.last_adaptive_actions = []
+            return
+
+        if self.vp_high_streak >= self.streak_threshold:
+            actions = self._trigger_adaptive_response(vp_value, diagnostics, traits)
+            self.last_adaptive_actions = actions
+            if self.vp_high_streak >= self.fallback_streak:
+                self._fallback_mutation_reset()
+
+    def _trigger_adaptive_response(self, vp_value: float, diagnostics: Dict[str, Dict[str, float]], traits: Dict[str, float]) -> List[str]:
+        actions: List[str] = []
+        vp_contributions = {name: info.get('vp_contribution', 0.0) for name, info in diagnostics.items()}
+        dominant_trait = None
+        if vp_contributions:
+            dominant_trait = max(vp_contributions.items(), key=lambda item: item[1])[0]
+        target_traits = [dominant_trait] if dominant_trait else list(diagnostics.keys())
+        for trait_name in target_traits:
+            if trait_name and self._widen_trait_envelope(trait_name):
+                actions.append(f"widen_envelope:{trait_name}")
+        for base_trait in ['organism_count', 'modularity', 'clustering_coefficient', 'average_path_length']:
+            if base_trait not in target_traits and self._widen_trait_envelope(base_trait):
+                actions.append(f"widen_envelope:{base_trait}")
+        if self._queue_arbitration_instruction(traits, priority=min(1.0, vp_value)):
+            actions.append("queue_arbitration")
+        self._publish_adaptive_event(vp_value, diagnostics, actions)
+        return actions
+
+    def _widen_trait_envelope(self, trait_name: str) -> bool:
+        if not self.vp_monitor:
+            return False
+        envelope = self.vp_monitor.get_stability_envelope(trait_name)
+        if not envelope:
+            return False
+        new_radius = min(1.0, envelope.radius * self.envelope_widen_factor)
+        widened = StabilityEnvelope(
+            center=envelope.center,
+            radius=new_radius,
+            compression_factor=envelope.compression_factor
+        )
+        self.vp_monitor.set_stability_envelope(trait_name, widened)
+        color_print(f"[Adaptive VP] Widened envelope for {trait_name} → radius {new_radius:.3f}", Colors.ORANGE)
+        return True
+
+    def _fallback_mutation_reset(self) -> None:
+        if not self.reality_sim:
+            return
+        color_print("[Adaptive VP] Fallback reset triggered - nudging mutation parameters", Colors.RED)
+        try:
+            self.reality_sim.config['evolution']['mutation_rate']['initial'] = max(0.002, self.reality_sim.config['evolution']['mutation_rate']['initial'] * 0.9)
+        except Exception:
+            pass
+        self._queue_compute_instruction(
+            {
+                "type": "trait_convergence",
+                "parameters": {"mode": "reset", "breath_cycle": self.breath_engine.get_breath_state().get('cycle_count', 0)}
+            },
+            priority=0.9
+        )
+
+    def _publish_adaptive_event(self, vp_value: float, diagnostics: Dict[str, Dict[str, float]], actions: List[str]) -> None:
+        publisher = getattr(self.utm_kernel, 'event_publisher', None) if self.utm_kernel else None
+        if not publisher or not hasattr(publisher, 'publish'):
+            return
+        payload = {
+            "vp_value": vp_value,
+            "streak_count": self.vp_high_streak,
+            "actions": actions,
+            "dominant_trait": max(diagnostics.keys(), key=lambda name: diagnostics[name].get('vp_contribution', 0.0)) if diagnostics else None
+        }
+        try:
+            publisher.publish("ADAPTIVE_VP_TRIGGER", payload)
+        except Exception as err:
+            color_print(f"[Adaptive VP] Event publish failed: {err}", Colors.YELLOW)
+
+    def _queue_arbitration_instruction(self, traits: Dict[str, float], priority: float = 0.5) -> bool:
+        if not self.utm_kernel:
+            return False
+        parameters = {
+            "type": "stability_arbitration",
+            "parameters": {"traits": traits, "timestamp": time.time()}
+        }
+        return self._queue_utm_instruction("ARBITRATE", parameters, priority)
+
+    def _queue_compute_instruction(self, parameters: Dict[str, Any], priority: float = 0.5) -> bool:
+        if not self.utm_kernel:
+            return False
+        return self._queue_utm_instruction("COMPUTE", parameters, priority)
+
+    def _queue_utm_instruction(self, operation: str, parameters: Dict[str, Any], priority: float) -> bool:
+        if not self.utm_kernel:
+            return False
+        try:
+            instruction = AgentInstruction(
+                instruction_id=str(uuid.uuid4()),
+                operation=operation,
+                target_position=self.utm_kernel.akashic_ledger.next_position,
+                parameters=parameters,
+                priority=max(0, min(10, int(priority * 10)))
+            )
+            return self.utm_kernel.execute_instruction(instruction)
+        except Exception as err:
+            color_print(f"[Adaptive VP] Failed to queue {operation}: {err}", Colors.RED)
+            return False
+
+    def _process_breath_driven_actions(self, breath_data: Dict[str, Any], traits: Dict[str, float]) -> None:
+        if not self.utm_kernel:
+            return
+        depth = breath_data.get('depth', 0.0)
+        phase = breath_data.get('phase', 0.0)
+        action_probability = min(0.8, max(0.0, depth))
+        if random.random() > action_probability:
+            return
+        if phase < math.pi:
+            params = {
+                "type": "exploration_compute",
+                "parameters": {"traits": traits, "mode": "wide", "depth": depth}
+            }
+            if self._queue_compute_instruction(params, priority=depth):
+                color_print("[Breath] Inhale-triggered exploration compute queued", Colors.CYAN)
+        else:
+            params = {
+                "type": "convergence_arbitration",
+                "parameters": {"traits": traits, "mode": "focused", "depth": depth}
+            }
+            if self._queue_utm_instruction("ARBITRATE", params, priority=depth):
+                color_print("[Breath] Exhale-triggered arbitration queued", Colors.CYAN)
+
     def _update_stability_from_performance(self, traits):
         """Update stability center based on actual performance"""
         self.performance_history.append(traits)
@@ -488,6 +666,10 @@ class BiphasicController:
                 traceback.print_exc()
         
         # Breath drives Djinn Kernel (right wing) - FULLY INTEGRATED WITH UTM KERNEL
+        vp_value: Optional[float] = None
+        vp_breakdown: Optional[Dict[str, float]] = None
+        traits: Dict[str, float] = {}
+
         if self.utm_kernel:
             try:
                 # Get traits from Reality Simulator if available (live data)
@@ -550,10 +732,6 @@ class BiphasicController:
                             color_print(f"[Trait Hub] ⚠️  Translation error: {e}", Colors.YELLOW)
                     
                     # FULL INTEGRATION: Use UTM Kernel instead of direct VP monitor
-                    from utm_kernel_design import AgentInstruction, TapeSymbol
-                    import uuid
-                    import time
-                    
                     # Step 1: Write current state to Akashic Ledger
                     current_position = self.utm_kernel.akashic_ledger.next_position
                     write_instruction = AgentInstruction(
@@ -593,31 +771,32 @@ class BiphasicController:
                     if compute_success:
                         result_cell = self.utm_kernel.akashic_ledger.read_cell(current_position + 1)
                         if result_cell and result_cell.content:
-                            vp = result_cell.content.get('violation_pressure', 0.0)
+                            vp_value = result_cell.content.get('violation_pressure', 0.0)
+                            vp_breakdown = result_cell.content.get('vp_breakdown')
                             vp_class_str = result_cell.content.get('vp_classification', 'VP0')
                             
                             # Also get VP class enum for display
                             if self.vp_monitor:
-                                vp_class = self.vp_monitor._classify_violation_pressure(vp)
-                                color_print(f"[Djinn Kernel] 🦋 Right Wing - VP: {vp:.3f} ({vp_class.value}) [Tape Position: {current_position}]", Colors.BLUE)
+                                vp_class = self.vp_monitor._classify_violation_pressure(vp_value)
+                                color_print(f"[Djinn Kernel] 🦋 Right Wing - VP: {vp_value:.3f} ({vp_class.value}) [Tape Position: {current_position}]", Colors.BLUE)
                             else:
-                                color_print(f"[Djinn Kernel] 🦋 Right Wing - VP: {vp:.3f} ({vp_class_str}) [Tape Position: {current_position}]", Colors.BLUE)
+                                color_print(f"[Djinn Kernel] 🦋 Right Wing - VP: {vp_value:.3f} ({vp_class_str}) [Tape Position: {current_position}]", Colors.BLUE)
                         else:
                             # Fallback to direct VP monitor if UTM computation failed
                             if self.vp_monitor:
                                 # Get current phase for phase-aware VP calculation
                                 current_phase = self.phase  # Use controller's phase attribute
-                                vp, vp_breakdown = self.vp_monitor.compute_violation_pressure(traits, system_phase=current_phase)
-                                vp_class = self.vp_monitor._classify_violation_pressure(vp)
-                                color_print(f"[Djinn Kernel] 🦋 Right Wing - VP: {vp:.3f} ({vp_class.value}) [Fallback]", Colors.BLUE)
+                                vp_value, vp_breakdown = self.vp_monitor.compute_violation_pressure(traits, system_phase=current_phase)
+                                vp_class = self.vp_monitor._classify_violation_pressure(vp_value)
+                                color_print(f"[Djinn Kernel] 🦋 Right Wing - VP: {vp_value:.3f} ({vp_class.value}) [Fallback]", Colors.BLUE)
                     else:
                         # Fallback to direct VP monitor
                         if self.vp_monitor:
                             # Get current phase for phase-aware VP calculation
                             current_phase = self.phase  # Use controller's phase attribute
-                            vp, vp_breakdown = self.vp_monitor.compute_violation_pressure(traits, system_phase=current_phase)
-                            vp_class = self.vp_monitor._classify_violation_pressure(vp)
-                            color_print(f"[Djinn Kernel] 🦋 Right Wing - VP: {vp:.3f} ({vp_class.value}) [Fallback]", Colors.BLUE)
+                            vp_value, vp_breakdown = self.vp_monitor.compute_violation_pressure(traits, system_phase=current_phase)
+                            vp_class = self.vp_monitor._classify_violation_pressure(vp_value)
+                            color_print(f"[Djinn Kernel] 🦋 Right Wing - VP: {vp_value:.3f} ({vp_class.value}) [Fallback]", Colors.BLUE)
             except Exception as e:
                 color_print(f"[Djinn Kernel] ⚠️  Error: {e}", Colors.RED)
                 import traceback
@@ -627,13 +806,18 @@ class BiphasicController:
                     try:
                         # Get current phase for phase-aware VP calculation
                         current_phase = self.phase  # Use controller's phase attribute
-                        vp, vp_breakdown = self.vp_monitor.compute_violation_pressure(traits, system_phase=current_phase)
-                        vp_class = self.vp_monitor._classify_violation_pressure(vp)
-                        color_print(f"[Djinn Kernel] 🦋 Right Wing - VP: {vp:.3f} ({vp_class.value}) [Error Fallback]", Colors.BLUE)
+                        vp_value, vp_breakdown = self.vp_monitor.compute_violation_pressure(traits, system_phase=current_phase)
+                        vp_class = self.vp_monitor._classify_violation_pressure(vp_value)
+                        color_print(f"[Djinn Kernel] 🦋 Right Wing - VP: {vp_value:.3f} ({vp_class.value}) [Error Fallback]", Colors.BLUE)
                     except (AttributeError, ValueError, TypeError, KeyError) as e:
                         # VP calculation may fail if monitor is not properly initialized
                         # or if traits format is invalid
                         color_print(f"[Djinn Kernel] ⚠️  Fallback VP calculation failed: {e}", Colors.YELLOW)
+
+        # Adaptive VP controls and breath actions
+        if vp_value is not None:
+            self._handle_vp_feedback(vp_value, traits, vp_breakdown)
+        self._process_breath_driven_actions(breath_data, traits)
         
         # Integration Bridge - sync all systems
         if hasattr(self, 'integration_bridge') and self.integration_bridge:

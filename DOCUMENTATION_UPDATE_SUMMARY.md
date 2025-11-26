@@ -25,6 +25,17 @@
 - `COMPREHENSIVE_CODEBASE_ANALYSIS.md`
 - ➜ moved to `docs/archive/outdated/`.
 
+### 5. VP Unstick Remediation (Plan Alpha)
+- ✅ Applied config changes (`evolution.mutation_rate.initial` 0.018→0.012, `feedback.knobs.clustering_bias.initial` 0.55→0.65, stabilization tighter, diagnostics confirmed on).
+- ✅ Added `vp_monitoring.adaptive_response` tunables (`high_vp_threshold`: 0.75, `streak_threshold`: 3) to support adaptive streak handling in code.
+- ✅ Added regression coverage in `tests/test_explorer_adaptive.py` to ensure envelopes widen and UTM arbitration queues during VP streaks.
+- 📈 Baseline log excerpt (pre-fix):
+  ```
+  1764139888.297|...|djinn_violation_pressure:1.0|djinn_vp_classification:VP4|djinn_trait_count:4
+  1764139889.605|...|djinn_violation_pressure:1.0|djinn_vp_classification:VP4|djinn_trait_count:4
+  ```
+- 📉 Post-fix snippet + `get_utm_status()` summary will be appended after adaptive controller changes land and validation run (<0.25 VP target).
+
 ---
 
 ## 📦 Archive Notes (2025-11-26)

@@ -193,6 +193,15 @@ The CRA can now adjust `config.json` while the Butterfly System keeps running. U
 
 Run results are logged to `data/logs/config_actions.log` and streamed to the CRA via `config_update` / `config_rollback` events.
 
+### Adaptive VP Unstick (New)
+
+The Explorer now auto-corrects Genesis VP saturation. CRA can:
+
+- Watch the event stream for `ADAPTIVE_VP_TRIGGER` messages (payload includes `vp_value`, `streak_count`, dominant trait, and actions taken such as `widen_envelope` or `queue_arbitration`).
+- Query `/api/config/current` → `vp_monitoring.adaptive_response` to inspect/edit tunables (`high_vp_threshold`, `streak_threshold`, `envelope_widen_factor`).
+- Use `[[CONFIG_UPDATE]]` to adjust those tunables if the system needs more/less aggression.
+- Monitor `data/logs/state.log` and `get_utm_status()` output to verify that VP drops below 0.25, arbitration instructions execute, and ledger metadata markers appear.
+
 ---
 
 ## 🎯 Graph View Assistance (Manual Execution)
