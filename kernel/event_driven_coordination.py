@@ -87,6 +87,7 @@ class ViolationPressureEvent(DjinnEvent):
     breakdown: Dict[str, float] = field(default_factory=dict)
     classification: str = "normal"
     source_identity: Optional[str] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
     
     def __post_init__(self):
         self.event_type = EventType.VIOLATION_PRESSURE
@@ -98,7 +99,8 @@ class ViolationPressureEvent(DjinnEvent):
             "total_vp": self.total_vp,
             "breakdown": self.breakdown,
             "classification": self.classification,
-            "source_identity": self.source_identity
+            "source_identity": self.source_identity,
+            "metadata": self.metadata
         })
         return base_dict
 

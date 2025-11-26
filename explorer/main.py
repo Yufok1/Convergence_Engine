@@ -37,6 +37,7 @@ except ImportError:
 try:
     from utm_kernel_design import UTMKernel, AgentInstruction, TapeSymbol
     from violation_pressure_calculation import ViolationMonitor, StabilityEnvelope
+    from event_driven_coordination import ViolationPressureEvent, EventType
     DJINN_KERNEL_AVAILABLE = True
 except ImportError:
     DJINN_KERNEL_AVAILABLE = False
@@ -474,7 +475,8 @@ class BiphasicController:
         envelope = self.vp_monitor.get_stability_envelope(trait_name)
         if not envelope:
             return False
-        new_radius = min(1.0, envelope.radius * self.envelope_widen_factor)
+        # Clamp to max 0.5 to respect StabilityEnvelope constraint
+        new_radius = min(0.5, envelope.radius * self.envelope_widen_factor)
         widened = StabilityEnvelope(
             center=envelope.center,
             radius=new_radius,
@@ -501,17 +503,44 @@ class BiphasicController:
         )
 
     def _publish_adaptive_event(self, vp_value: float, diagnostics: Dict[str, Dict[str, float]], actions: List[str]) -> None:
-        publisher = getattr(self.utm_kernel, 'event_publisher', None) if self.utm_kernel else None
-        if not publisher or not hasattr(publisher, 'publish'):
+        """Publish adaptive VP event to DjinnEventBus for system-wide coordination"""
+        if not self.utm_kernel or not hasattr(self.utm_kernel, 'event_bus'):
             return
-        payload = {
-            "vp_value": vp_value,
-            "streak_count": self.vp_high_streak,
-            "actions": actions,
-            "dominant_trait": max(diagnostics.keys(), key=lambda name: diagnostics[name].get('vp_contribution', 0.0)) if diagnostics else None
-        }
+
         try:
-            publisher.publish("ADAPTIVE_VP_TRIGGER", payload)
+            # Extract VP breakdown from diagnostics
+            breakdown = {
+                trait_name: info.get('vp_contribution', 0.0)
+                for trait_name, info in diagnostics.items()
+            }
+
+            # Determine classification based on VP value
+            if vp_value >= 1.0:
+                classification = "VP4"
+            elif vp_value >= 0.75:
+                classification = "VP3"
+            elif vp_value >= 0.5:
+                classification = "VP2"
+            elif vp_value >= 0.25:
+                classification = "VP1"
+            else:
+                classification = "VP0"
+
+            # Create proper ViolationPressureEvent
+            event = ViolationPressureEvent(
+                total_vp=vp_value,
+                breakdown=breakdown,
+                classification=f"{classification}_adaptive",  # Mark as adaptive response
+                source_agent="explorer_adaptive_vp",
+                metadata={
+                    "adaptive_actions": actions,
+                    "streak_count": self.vp_high_streak
+                }
+            )
+
+            # Publish to DjinnEventBus
+            self.utm_kernel.event_bus.publish(event)
+
         except Exception as err:
             color_print(f"[Adaptive VP] Event publish failed: {err}", Colors.YELLOW)
 
