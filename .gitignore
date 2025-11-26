@@ -85,3 +85,13 @@ htmlcov/
 models/
 *.gguf
 
+# API Keys and Secrets - NEVER COMMIT THESE
+data/causation_explorer/ollama_config.json
+*.env
+.env
+.env.local
+**/secrets.json
+**/*_secret*
+**/*_key*
+**/*api_key*
+
