@@ -194,6 +194,9 @@ Open http://localhost:5000 in your browser.
 - **Navigation:** 3D rotation, pan, zoom (default 5% view)
 - **Drag-to-Zoom:** Click and drag a rectangle on the graph to zoom into that area (or hold Shift and drag)
 - **Live Mode:** Real-time updates when backend is running
+- **🪟 Viewport Culling & LOD:** Performance optimization for large graphs (renders only visible elements)
+- **🗺️ Minimap/Radar System:** Navigation aid showing full graph overview with viewport indicator (when culling enabled)
+- **📸 Snapshot Controls:** Clear all snapshots button and enable/disable toggle for automatic capture
 
 ---
 
@@ -373,6 +376,137 @@ trail from any collapse event to understand the contributing factors..."
 - **Vision:** `llava`, `bakllava`
 
 **Note:** The agent dynamically detects available models from your Ollama installation, so you can use any models you have downloaded.
+
+---
+
+## ⚡ Performance Features
+
+### Viewport Culling & Level-of-Detail (LOD)
+
+For large graphs with thousands of nodes, viewport culling improves performance by rendering only what's visible on screen.
+
+**How it works:**
+- Only renders nodes and links visible within the current viewport
+- Adjusts detail level based on zoom:
+  - **Very Low (< 5% zoom):** Up to 500 nodes, 1,000 links
+  - **Low (< 15% zoom):** Up to 1,000 nodes, 2,000 links
+  - **Medium (< 50% zoom):** Up to 3,000 nodes, 5,000 links
+  - **High (< 100% zoom):** Up to 10,000 nodes, 20,000 links
+  - **Very High (> 100% zoom):** All nodes and links rendered
+
+**Controls:**
+- **Toggle:** Checkbox in "⚡ Performance" section of filter panel
+- **Default:** Disabled (shows full graph)
+- **When enabled:** Graph recalculates visible elements every 5 frames and on zoom/pan/rotate changes
+
+**Use case:** Enable when graph becomes laggy or unresponsive with many elements.
+
+### Minimap/Radar System
+
+When viewport culling is enabled, a minimap provides navigation context by showing the full graph overview.
+
+**Features:**
+- **Full Graph Overview:** Lightweight 300×300px canvas showing entire graph structure
+- **Viewport Indicator:** Cyan dashed rectangle shows current main viewport position
+- **Always Visible:** Overlays both graph and chat panels
+- **Interactive:**
+  - Click on minimap to pan main graph to that location
+  - Draggable position (can move around screen)
+  - Minimizable (collapse to title bar)
+- **Auto-updates:** Refreshes when main graph pan/zoom/rotation changes
+
+**Controls:**
+- **Visibility:** Automatically appears when viewport culling is enabled
+- **Position:** Drag the title bar to reposition
+- **Minimize:** Click the minimize button (top right of minimap)
+
+**Use case:** Essential for navigation when using viewport culling - helps you find your location in large graph structures.
+
+---
+
+## 📸 Snapshot Controls
+
+The snapshot system automatically captures graph images for analysis and video creation.
+
+### Snapshot Gallery
+
+**Location:** "📸 Snapshot Gallery" panel in the web UI
+
+**Features:**
+- **Automatic Capture:** Activity-based snapshots at ~1-second intervals when enabled
+- **Thumbnail Grid:** Visual grid of all captured snapshots
+- **Full-Screen Viewer:** Click thumbnails to view full-size images
+- **Selection:** Click thumbnails to select for video creation or vision analysis
+- **Export Options:** PNG download, copy to clipboard, JSON data export
+
+### Snapshot Controls
+
+**Clear All Snapshots:**
+- **Button:** "Clear All Snapshots" in Snapshot Capture section
+- **Action:** Removes all snapshots from memory and IndexedDB
+- **Use case:** Start fresh for a new simulation run
+
+**Enable/Disable Snapshots:**
+- **Toggle:** "Enable Snapshots" checkbox in Snapshot Capture section
+- **When disabled:** No snapshots will be captured automatically
+- **Status indicator:** Shows "⚠️ DISABLED - No snapshots will be captured"
+- **Use case:** Disable to reduce memory usage or when snapshots aren't needed
+
+**Auto-Clear on Simulation Start:**
+- Snapshots are automatically cleared when a new simulation starts
+- Ensures fresh data for each run
+
+---
+
+## 🗂️ Log Archiving
+
+The system includes a log archiving tool to preserve old logs while starting fresh.
+
+### Archive Script (`archive_logs.py`)
+
+**Purpose:** Archive current logs and shared state, then clear them for a fresh start.
+
+**What it archives:**
+- All log files (`application.log`, `breath.log`, `djinn_kernel.log`, `explorer.log`, `reality_sim.log`, `state.log`, `system.log`)
+- Shared state file (`.shared_simulation_state.json`)
+
+**Usage:**
+
+```bash
+# Interactive mode (asks for confirmation)
+python archive_logs.py
+
+# Skip confirmation prompt
+python archive_logs.py --confirm
+
+# List existing archives
+python archive_logs.py --list
+
+# Custom archive directory
+python archive_logs.py --archive-dir data/my_archives
+
+# Clear logs without archiving (not recommended)
+python archive_logs.py --no-archive
+```
+
+**Archive Structure:**
+- **Location:** `data/logs_archive/logs_YYYYMMDD_HHMMSS/`
+- **Contents:**
+  - All log files (preserved)
+  - Shared state file (preserved)
+  - Archive info file (`_archive_info.txt` with metadata)
+
+**After archiving:**
+- Log files are cleared (0 bytes, but files remain)
+- Shared state is reset to minimal clean structure
+- Ready for fresh start with `python unified_entry.py`
+
+**Viewing archives:**
+```bash
+python archive_logs.py --list
+```
+
+This shows all archived sessions with timestamps and sizes.
 
 ---
 

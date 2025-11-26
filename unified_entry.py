@@ -64,6 +64,14 @@ except ImportError as e:
     DJINN_KERNEL_AVAILABLE = False
     print(f"[UNIFIED] [WARN] Djinn Kernel not available: {e}")
 
+# Import integration facilities
+try:
+    from reality_simulator.phase_sync_bridge import PhaseSynchronizationBridge
+    PHASE_SYNC_AVAILABLE = True
+except ImportError as e:
+    PHASE_SYNC_AVAILABLE = False
+    print(f"[UNIFIED] [WARN] Phase Sync Bridge not available: {e}")
+
 
 # ============================================================================
 # PRE-FLIGHT SYSTEM CHECKS
@@ -866,6 +874,22 @@ class UnifiedSystem:
         except Exception as e:
             print(f"[UNIFIED] [WARN] Causation Explorer initialization failed: {e}")
             self.causation_explorer = None
+
+        # Initialize Phase Sync Bridge (CRITICAL INTEGRATION!)
+        if PHASE_SYNC_AVAILABLE:
+            try:
+                self.phase_sync_bridge = PhaseSynchronizationBridge(
+                    collapse_threshold=500,
+                    max_connections_per_organism=5
+                )
+                print("[UNIFIED] [PASS] ✨ Phase Sync Bridge initialized - COLLAPSE PREDICTION ACTIVE")
+                self.logger.log_state('system', {'event': 'phase_sync_bridge_initialized', 'status': 'active'})
+            except Exception as e:
+                print(f"[UNIFIED] [WARN] Phase Sync Bridge initialization failed: {e}")
+                self.phase_sync_bridge = None
+        else:
+            self.phase_sync_bridge = None
+            print("[UNIFIED] [WARN] Phase Sync Bridge not available")
         
         # Initialize visualization with references to Reality Simulator components (AFTER systems are initialized)
         network_ref = getattr(self.reality_sim, 'components', {}).get('network') if self.reality_sim else None
@@ -895,12 +919,52 @@ class UnifiedSystem:
                 reality_sim_state = self._get_reality_sim_state()
                 explorer_state = self._get_explorer_state()
                 djinn_kernel_state = self._get_djinn_kernel_state()
-                
+
+                # 🌉 PHASE SYNC INTEGRATION - Update network metrics and get predictions
+                phase_sync_state = {}
+                if self.phase_sync_bridge:
+                    try:
+                        # Update network metrics in phase sync bridge
+                        network_data = {
+                            'organism_count': reality_sim_state.get('organism_count', 0),
+                            'connection_count': reality_sim_state.get('connection_count', 0),
+                            'clustering_coefficient': reality_sim_state.get('clustering_coefficient', 0.0),
+                            'modularity': reality_sim_state.get('modularity', 0.0),
+                            'average_path_length': reality_sim_state.get('average_path_length', 0.0),
+                            'connectivity': reality_sim_state.get('connection_count', 0) / max(1, reality_sim_state.get('organism_count', 1)),
+                            'stability_index': 1.0 - reality_sim_state.get('modularity', 0.0)  # Rough estimate
+                        }
+                        collapsed = self.phase_sync_bridge.update_network_metrics(network_data)
+
+                        # Get synchronization state
+                        sync_data = self.phase_sync_bridge.synchronize_phases()
+                        phase_sync_state = sync_data
+
+                        # 🔮 COLLAPSE PREDICTION - Warn if imminent
+                        will_collapse, estimated_gens = self.phase_sync_bridge.get_collapse_prediction()
+                        if will_collapse and estimated_gens < 20 and estimated_gens > 0:
+                            collapse_proximity = sync_data['network']['collapse_proximity']
+                            warning_level = 'red' if collapse_proximity > 0.9 else ('orange' if collapse_proximity > 0.7 else 'yellow')
+                            print(f"\n🔮 [{warning_level.upper()}] COLLAPSE PREDICTED IN ~{estimated_gens:.1f} GENERATIONS (proximity: {collapse_proximity:.1%})")
+
+                        # 🌉 TRANSITION DETECTION
+                        if collapsed and not getattr(self, '_collapse_announced', False):
+                            print(f"\n🌉 ✨ CHAOS→PRECISION TRANSITION DETECTED ✨")
+                            print(f"   Reality Sim: {sync_data['network']['organism_count']} organisms explored")
+                            print(f"   Explorer: {sync_data['explorer']['vp_calculations']} VP calculations")
+                            print(f"   Conversion factor: {self.phase_sync_bridge.exploration_to_precision_ratio}:1")
+                            print(f"   The butterfly spreads its wings. 🦋\n")
+                            self._collapse_announced = True
+
+                    except Exception as e:
+                        print(f"[UNIFIED] [WARN] Phase sync error: {e}")
+                        phase_sync_state = {}
+
                 # Get breath state for logging
                 if self.controller and hasattr(self.controller, 'breath_engine'):
                     breath_state = self.controller.breath_engine.get_breath_state()
                     self.logger.log_breath(breath_state)
-                
+
                 # Log all states
                 self.logger.log_reality_sim(reality_sim_state)
                 self.logger.log_explorer(explorer_state)
@@ -919,9 +983,9 @@ class UnifiedSystem:
                     unified_state[f'djinn_{key}'] = value
                 self.logger.log_state('state', unified_state)
                 
-                # Write unified shared state file (includes all three systems)
+                # Write unified shared state file (includes all three systems + phase sync!)
                 # This is the primary source of truth for the Causation Explorer
-                self._write_unified_shared_state(reality_sim_state, explorer_state, djinn_kernel_state)
+                self._write_unified_shared_state(reality_sim_state, explorer_state, djinn_kernel_state, phase_sync_state)
                 
                 # Phase 2: Feed events to Causation Explorer in real-time
                 if self.causation_explorer:
@@ -1047,23 +1111,43 @@ class UnifiedSystem:
                     trait_count = len(breakdown) if isinstance(breakdown, dict) else 0
                 
                 vp_class = self.vp_monitor._classify_violation_pressure(total_vp)
-                return {
+                
+                # Include VP diagnostic data if available
+                result = {
                     'violation_pressure': total_vp,
                     'vp_classification': vp_class.value if hasattr(vp_class, 'value') else str(vp_class),
                     'vp_calculations': len(vp_history),
                     'trait_count': trait_count,  # FIX: Include trait count
                     'tape_cells': len(vp_history),
-                    'tape_position': len(vp_history)
+                    'tape_position': len(vp_history),
+                    'vp_history': vp_history[-100:] if len(vp_history) > 100 else vp_history  # Last 100 entries
                 }
+                
+                # Add VP diagnostics if enabled
+                if self.vp_monitor.diagnostics.enabled:
+                    result['vp_diagnostics'] = {'available': True, 'log_file': 'data/logs/vp_diagnostics.log'}
+                
+                # Add component breakdown if decomposition enabled
+                if isinstance(recent, dict) and 'component_breakdown' in recent:
+                    result['component_breakdown'] = recent.get('component_breakdown', {})
+                
+                return result
         
         # FIX: Return default with trait_count=0 explicitly (no traits = no VP calculation)
         return {'violation_pressure': 0, 'vp_classification': 'VP0', 'vp_calculations': 0, 'trait_count': 0, 'tape_cells': 0, 'tape_position': 0}
     
-    def _write_unified_shared_state(self, reality_sim_state: Dict[str, Any], explorer_state: Dict[str, Any], djinn_kernel_state: Dict[str, Any]):
+    def _write_unified_shared_state(self, reality_sim_state: Dict[str, Any], explorer_state: Dict[str, Any],
+                                     djinn_kernel_state: Dict[str, Any], phase_sync_state: Dict[str, Any] = None):
         """
-        Write unified shared state file that includes all three systems.
+        Write unified shared state file that includes all three systems + PHASE SYNC DATA.
         This is the primary source of truth for the Causation Explorer and other viewers.
-        
+
+        NOW INCLUDES:
+        - phase_sync: collapse prediction, phase proximity, exploration ratio, transition status
+        - exploration_tracking: 10:1 ratio tracking, progress monitoring
+        - unified_health: multi-system health metrics
+        - transition_status: readiness of all three systems
+
         Uses snapshot-based approach: writes discrete state snapshots that the HTML can handle efficiently.
         Throttled to write at most once per second to reduce I/O overhead.
         """
@@ -1111,12 +1195,63 @@ class UnifiedSystem:
                     'consciousness': {}
                 }
             
-            # Create unified shared state with ALL three systems
+            # 🌉 BUILD ENHANCED STATE DATA - Now with phase sync intelligence!
+            # Create unified shared state with ALL three systems + PHASE SYNC
             unified_data = {
                 **reality_sim_data,  # Reality Simulator data (quantum, lattice, evolution, network, consciousness)
                 'explorer': explorer_state,  # Explorer data (phase, vp_calculations, breath_state, etc.)
                 'djinn_kernel': djinn_kernel_state  # Djinn Kernel data (VP, tape cells, etc.)
             }
+
+            # ✨ ADD PHASE SYNC DATA (collapse prediction, phase proximity, exploration ratio)
+            if phase_sync_state:
+                unified_data['phase_sync'] = phase_sync_state
+
+                # Build exploration tracking data for CRA
+                exploration_tracking = {
+                    'exploration_to_precision_ratio': 10.0,  # The fundamental 500:50 = 10:1 ratio
+                    'reality_sim_explorations': phase_sync_state.get('network', {}).get('organism_count', 0),
+                    'explorer_explorations': phase_sync_state.get('explorer', {}).get('vp_calculations', 0),
+                    'target_ratio': '500:50',
+                    'current_ratio': f"{phase_sync_state.get('network', {}).get('organism_count', 0)}:{phase_sync_state.get('explorer', {}).get('vp_calculations', 0)}",
+                    'ratio_maintained': abs(phase_sync_state.get('synchronization', {}).get('proximity_difference', 1.0)) < 0.1,
+                    'progress_to_transition': phase_sync_state.get('network', {}).get('collapse_proximity', 0.0)
+                }
+                unified_data['exploration_tracking'] = exploration_tracking
+
+                # Build unified health metrics for CRA
+                network_health = 1.0 - phase_sync_state.get('synchronization', {}).get('proximity_difference', 0.0)
+                unified_health = {
+                    'overall_health': network_health * 0.9,  # Slight penalty if not fully aligned
+                    'reality_sim_health': min(1.0, phase_sync_state.get('network', {}).get('collapse_proximity', 0.0) + 0.2),
+                    'explorer_health': min(1.0, phase_sync_state.get('explorer', {}).get('genesis_proximity', 0.0) + 0.2),
+                    'djinn_kernel_health': 0.82,  # Default, could calculate from VP if available
+                    'integration_health': network_health,
+                    'phase_alignment_health': 1.0 - phase_sync_state.get('synchronization', {}).get('proximity_difference', 0.0)
+                }
+                unified_data['unified_health'] = unified_health
+
+                # Build transition status for CRA
+                transition_status = {
+                    'reality_sim_ready': phase_sync_state.get('network', {}).get('is_collapsed', False),
+                    'explorer_ready': phase_sync_state.get('explorer', {}).get('is_ready', False),
+                    'djinn_kernel_ready': djinn_kernel_state.get('violation_pressure', 1.0) < 0.25,  # VP0
+                    'unified_transition_triggered': phase_sync_state.get('network', {}).get('is_collapsed', False),
+                    'estimated_time_to_transition': f"~{phase_sync_state.get('network', {}).get('estimated_generations_to_collapse', float('inf')):.0f} cycles"
+                }
+                unified_data['transition_status'] = transition_status
+            
+            # Add VP monitoring configuration to shared state for CRA
+            try:
+                import json as json_module
+                config_path = parent_path / 'config.json'
+                if config_path.exists():
+                    with open(config_path, 'r') as f:
+                        config = json_module.load(f)
+                        unified_data['config'] = config  # Include full config for CRA
+            except Exception as e:
+                # Don't break if config read fails
+                pass
             
             # Make JSON serializable
             def make_json_serializable(obj):

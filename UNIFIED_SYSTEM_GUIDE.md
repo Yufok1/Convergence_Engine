@@ -134,6 +134,33 @@ All logs are in `data/logs/`:
 - `explorer.log` - Explorer state
 - `djinn_kernel.log` - VP calculations
 - `system.log` - System events
+- `application.log` - General application logging
+
+### Log Archiving
+
+To start fresh with clean logs while preserving history, use the log archiving tool:
+
+```bash
+# Archive current logs and clear them
+python archive_logs.py
+
+# List existing archives
+python archive_logs.py --list
+
+# Archive without confirmation prompt
+python archive_logs.py --confirm
+```
+
+**What it does:**
+- Archives all log files and shared state to `data/logs_archive/logs_YYYYMMDD_HHMMSS/`
+- Clears log files (truncates to 0 bytes)
+- Resets shared state file to clean minimal structure
+- Creates archive metadata file with sizes and timestamps
+
+**After archiving:**
+- Run `python unified_entry.py` to start with fresh, clean logs
+- Old logs are preserved in archive directory
+- View archives anytime with `python archive_logs.py --list`
 
 ---
 

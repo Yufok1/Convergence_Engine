@@ -79,6 +79,10 @@ pip install pywin32
 ### Violation Pressure (VP) System
 
 - **[VP_THRESHOLD_CLARIFICATION.md](./VP_THRESHOLD_CLARIFICATION.md)** - VP threshold analysis (0.3 vs 0.25)
+- **[VP_MONITORING_REDESIGN.md](./VP_MONITORING_REDESIGN.md)** - VP Monitoring System Redesign ⭐ NEW
+  - Diagnostic logging, stabilization, component decomposition, adaptive thresholds
+  - Addresses VP saturation issues during Genesis phase
+  - Full backward compatibility with feature flags
 
 ### Visualization & UI
 
@@ -92,7 +96,9 @@ pip install pywin32
     - **Visualization Settings:** Complete control over 40+ settings (link/node appearance, depth effects, visual effects, performance)
     - **PC Resource Monitoring:** Real-time CPU/RAM/disk monitoring with correlation analysis
     - **Diagnostic Endpoints:** Access to VP history, network trends, memory breakdown, event throughput, breath cycles
+    - **VP Monitoring Diagnostics:** ⭐ NEW - VP diagnostics breakdown, component decomposition, stabilization history, adaptive thresholds
     - **Real-Time Adjustments:** All settings update dynamically during simulation without interruption
+    - **Robust Settings Management** ⭐ NEW: Settings validation, batch updates, error recovery, diagnostic functions
     - **System Custodian:** Continuous health monitoring and protective guardian mode
     - **Historical + Live Analysis:** Works with both stopped (historical) and running (live) systems
 

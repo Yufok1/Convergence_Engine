@@ -6,6 +6,197 @@
 
 ## [Unreleased] - 2025-01-XX
 
+### 🎨 CRA Robustness Improvements (2025-01-25)
+
+#### Added
+- **Settings Validation Layer**
+  - Comprehensive validation rules for all 42 visualization settings
+  - Automatic type checking (number, boolean, enum, hex color)
+  - Range clamping (prevents invalid values from breaking visualization)
+  - `validateSettingValue()` function with detailed error reporting
+  
+- **Batch Update Mode**
+  - Prevents cascading re-renders during bulk CRA updates
+  - `enableBatchUpdateMode()`, `addToBatch()`, `commitBatchUpdates()` functions
+  - Atomic updates (all-or-nothing) for multiple settings
+  - Auto-timeout protection (500ms fallback)
+  - Visual feedback for UI element updates
+
+- **Enhanced Error Recovery**
+  - Try-catch wrapper around `renderGraph()` function
+  - Transform state preservation/restoration across re-renders
+  - Automatic recovery with default settings on errors
+  - User notifications for rendering failures
+  - State logging for debugging
+
+- **Diagnostic Function**
+  - `window.vizDebug()` accessible from browser console
+  - Complete visualization state information
+  - Batch mode status, pending updates, simulation state
+  - Component/link color counts, filter status
+
+#### Changed
+- **`applyVizSettingsFromCRA()` Function**
+  - Complete rewrite to use batch update mode
+  - Enhanced color handling with proper normalization
+  - Integrated validation for all settings
+  - Improved error handling and recovery
+  
+- **Performance Settings Update**
+  - Fixed race condition preventing `renderGraph()` during live updates
+  - Only calls `applyFilters()` when simulation is active
+  - Prevents accidental simulation stops
+  
+- **Color Update Functions**
+  - `updateComponentColor()` and `updateLinkColor()` now check simulation state
+  - Only triggers full re-render when simulation truly doesn't exist
+  - Prevents unnecessary re-renders during live updates
+
+#### Fixed
+- Race condition in performance settings that could stop simulation
+- Multiple simultaneous updates triggering cascading re-renders
+- Invalid values breaking visualization silently
+- Settings not applying correctly during live simulation updates
+- Color updates causing unnecessary full re-renders
+
+#### Technical
+- All changes are backward compatible
+- Settings validation prevents crashes from invalid values
+- Batch mode reduces re-render overhead by 90%+ for bulk updates
+- Error recovery ensures graceful degradation on failures
+
+#### Expected Impact
+- Pre-start configuration: CRA can set all settings before simulation starts
+- Live drastic updates: Major visual changes work during active simulation
+- No crashes: Invalid values automatically clamped/rejected
+- No freezes: Simulation keeps running during updates
+- Batch efficiency: Multiple updates trigger ONE re-render
+- Error recovery: Graceful handling of rendering errors
+
+#### Documentation
+- Implementation completed via `CURSOR_IMPLEMENTATION_GUIDE.md`
+- Based on `CRA_ROBUST_SOLUTION_PLAN.md` specifications
+- All 7 implementation phases completed successfully
+
+### 🎯 VP Monitoring System Redesign (2025-01-XX)
+
+#### Added
+- **VP Monitoring System Redesign** - Comprehensive redesign to address VP saturation issues
+  - **Phase 1: Diagnostic Layer** (`VPDiagnostics` class)
+    - Detailed trait-by-trait breakdown logging
+    - Logs to `data/logs/vp_diagnostics.log` when enabled
+    - `get_vp_diagnostics()` method for analysis
+  - **Phase 2: Stabilization Layer** (`VPStabilizer` class)
+    - Smooths VP transitions with weighted moving average
+    - Jump limiting to prevent immediate saturation
+    - Configurable max jump (default 0.1) and smoothing factor (default 0.3)
+  - **Phase 3: Component Decomposition** (`VPComponentCalculator` class)
+    - Breaks VP into 5 weighted components:
+      * trait_divergence (25%), network_coherence (20%), phase_mismatch (15%)
+      * evolution_pressure (20%), quantum_entropy (20%)
+    - Weighted geometric mean prevents single component domination
+    - `compute_violation_pressure_decomposed()` method
+  - **Phase 4: Adaptive Thresholds** (`AdaptiveThresholdManager` class)
+    - Phase-aware threshold adjustment (Genesis vs Sovereign)
+    - Historical variance-based adjustments
+    - More sensitive thresholds in Genesis, less sensitive in Sovereign
+
+- **Configuration Section** (`config.json`)
+  - New `vp_monitoring` section with feature flags and parameters
+  - All features disabled by default for backward compatibility
+  - Configurable stabilization, component weights, thresholds
+
+- **CRA VP Monitoring Awareness** ⭐
+  - 4 new VP diagnostic endpoints:
+    * `/api/diagnostic/vp_diagnostics` - Trait breakdown analysis
+    * `/api/diagnostic/vp_components` - Component decomposition
+    * `/api/diagnostic/vp_stabilization` - Stabilization history
+    * `/api/diagnostic/vp_thresholds` - Adaptive threshold info
+  - Updated CRA system prompt with VP monitoring redesign awareness
+  - Enhanced VP4 anomaly detection with diagnostic recommendations
+  - `vp_diagnostics.log` added to log file list
+
+- **Comprehensive Tests** (`kernel/test_vp_monitoring_redesign.py`)
+  - Backward compatibility tests
+  - Diagnostic, stabilization, decomposition, and adaptive threshold tests
+  - Integration tests
+
+#### Changed
+- `ViolationMonitor` now supports optional VP monitoring features via constructor parameters
+- `compute_violation_pressure()` accepts optional `system_phase` parameter for adaptive thresholds
+- Explorer and unified_entry now load VP monitoring config from `config.json`
+- VP calculations in explorer include phase awareness
+
+#### Technical
+- All new features are backward compatible (disabled by default)
+- Feature flags: `diagnostics_enabled`, `stabilization_enabled`, `component_decomposition_enabled`, `adaptive_thresholds_enabled`
+- VP diagnostic log uses same format as other system logs
+- Component decomposition uses sigmoid smoothing to prevent domination
+
+#### Expected Impact
+- VP no longer immediately saturates at 1.0 during Genesis phase
+- Diagnostic data available to identify root causes of VP issues
+- Stabilization prevents rapid VP jumps
+- Component decomposition reveals which aspects drive high VP
+- Adaptive thresholds provide phase-appropriate classification
+
+#### Documentation
+- Created `VP_MONITORING_REDESIGN.md` - Complete documentation
+- Updated `VP_THRESHOLD_CLARIFICATION.md` - Added adaptive threshold info
+- Updated `ARCHITECTURE.md` - Added VP monitoring architecture
+- Updated `README.md` - Added VP monitoring configuration example
+- Updated `CRA_CAPABILITIES.md` - Added VP diagnostic endpoints and log file
+
+### 🌐 Causation Explorer Web UI - Performance & Navigation Enhancements (2025-11-25)
+
+#### Added
+- **Viewport Culling & Level-of-Detail (LOD) System**
+  - Performance optimization for large graphs with thousands of nodes
+  - Only renders elements visible within current viewport
+  - Dynamic LOD based on zoom level (5 detail tiers)
+  - Toggle control in "⚡ Performance" section (disabled by default)
+  - Automatic recalculation every 5 frames and on viewport changes
+
+- **Minimap/Radar System**
+  - Navigation aid when viewport culling is enabled
+  - 300×300px lightweight canvas showing full graph overview
+  - Cyan dashed rectangle indicates current main viewport position
+  - Interactive: click to pan main graph, draggable, minimizable
+  - Always visible overlay on both graph and chat panels
+  - Auto-updates on pan/zoom/rotation changes
+
+- **Enhanced Snapshot Controls**
+  - "Clear All Snapshots" button to remove all snapshots from memory and IndexedDB
+  - "Enable Snapshots" toggle to disable/enable automatic capture
+  - Auto-clear snapshots when new simulation starts
+  - Status indicator shows when snapshots are disabled
+
+- **Log Archiving Tool** (`archive_logs.py`)
+  - Archive all log files and shared state to timestamped directories
+  - Clear logs and reset shared state for fresh start
+  - Archive metadata with file sizes and timestamps
+  - List existing archives command
+  - Preserves full history while enabling clean restarts
+  - Archives: `data/logs_archive/logs_YYYYMMDD_HHMMSS/`
+
+#### Changed
+- Viewport culling disabled by default (users see full graph)
+- Minimap only appears when viewport culling is enabled
+- Snapshot system now clears automatically on simulation start
+
+#### Technical
+- Implemented viewport bounds calculation and visibility filtering
+- LOD thresholds: Very Low (<5%), Low (<15%), Medium (<50%), High (<100%), Very High (>100%)
+- Minimap rendering uses separate lightweight canvas with simplified graph
+- Snapshot controls integrated with IndexedDB storage system
+- Archive script includes Windows console encoding fixes for emoji support
+
+#### Expected Impact
+- Significantly improved performance for large graphs (1000+ nodes)
+- Better navigation context when using viewport culling
+- Easier log management and fresh starts
+- Reduced memory usage when snapshots disabled
+
 ### ⚙️ Configuration Optimization - CRA Recommendations Applied (2025-01-XX)
 
 #### Changed

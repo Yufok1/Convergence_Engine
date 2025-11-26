@@ -101,6 +101,160 @@
             /* Ensure dropdowns appear above other elements */
         }
 
+        /* Minimap/Radar System (replaces PiP when viewport culling is enabled) */
+        #graphMinimap {
+            display: none;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 300px;
+            height: 300px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #0ff;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5), inset 0 0 10px rgba(0, 0, 0, 0.8);
+            z-index: 9999;
+            cursor: move;
+            overflow: hidden;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #graphMinimap.active {
+            display: block;
+            opacity: 0.95;
+        }
+
+        #graphMinimap.minimized {
+            width: 50px;
+            height: 50px;
+            overflow: visible;
+        }
+
+        #graphMinimap.minimized #graphMinimapContent {
+            display: none;
+        }
+
+        #graphMinimap:hover {
+            opacity: 1;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.7);
+        }
+
+        #graphMinimapHeader {
+            background: rgba(0, 170, 170, 0.9);
+            padding: 5px 10px;
+            border-bottom: 1px solid #0ff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: move;
+            font-size: 0.75em;
+            color: #fff;
+            font-weight: bold;
+        }
+
+        #graphMinimapHeader.minimized {
+            padding: 2px 5px;
+            border-bottom: none;
+        }
+
+        #graphMinimapTitle {
+            flex: 1;
+        }
+
+        #graphMinimapControls {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+
+        #graphMinimapMinimize,
+        #graphMinimapClose {
+            background: transparent;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            font-size: 1em;
+            padding: 0 3px;
+            line-height: 1;
+        }
+
+        #graphMinimapMinimize:hover,
+        #graphMinimapClose:hover {
+            color: #ff0;
+        }
+
+        #graphMinimapContent {
+            width: 100%;
+            height: calc(100% - 30px);
+            position: relative;
+            background: rgba(0, 0, 0, 0.95);
+        }
+
+        #graphMinimap.minimized #graphMinimapContent {
+            height: 100%;
+        }
+
+        #minimapCanvas {
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+        }
+
+        /* Resize handle for minimap */
+        #graphMinimapResizeHandle {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 20px;
+            height: 20px;
+            cursor: nesw-resize;
+            background: linear-gradient(45deg, transparent 30%, #0ff 30%, #0ff 35%, transparent 35%, transparent 65%, #0ff 65%, #0ff 70%, transparent 70%);
+            z-index: 10000;
+            opacity: 0.5;
+            transition: opacity 0.2s ease;
+        }
+
+        #graphMinimapResizeHandle:hover {
+            opacity: 1;
+        }
+
+        #graphMinimap.minimized #graphMinimapResizeHandle {
+            display: none;
+        }
+
+        /* Viewport indicator overlay on minimap */
+        .minimapViewportIndicator {
+            stroke: #0ff;
+            stroke-width: 2;
+            fill: rgba(0, 255, 255, 0.1);
+            stroke-dasharray: 5, 5;
+            pointer-events: none;
+        }
+
+        .minimapViewportIndicator:hover {
+            fill: rgba(0, 255, 255, 0.2);
+        }
+
+        #minimapInstructions {
+            position: absolute;
+            bottom: 5px;
+            left: 5px;
+            right: 5px;
+            font-size: 10px;
+            color: #888;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 4px 6px;
+            border-radius: 3px;
+            pointer-events: none;
+            line-height: 1.3;
+            z-index: 10;
+        }
+
+        #minimapInstructions div {
+            margin: 1px 0;
+        }
+
         #craChatPanel {
             overflow: visible !important;
             /* Ensure dropdowns can extend beyond panel */
@@ -877,6 +1031,14 @@
                 <div style="color: #0ff; margin-bottom: 8px; font-weight: bold;">📸 Snapshot Capture</div>
                 <div style="display: flex; gap: 5px; justify-content: center; align-items: center; flex-wrap: wrap; margin-bottom: 5px;">
                     <label style="color: #0f0; font-size: 0.85em;">
+                        <input type="checkbox" id="snapshotEnabledToggle" checked
+                            onchange="toggleSnapshotCapture(this.checked)"
+                            style="margin-right: 5px;">
+                        <span>Enabled</span>
+                    </label>
+                </div>
+                <div style="display: flex; gap: 5px; justify-content: center; align-items: center; flex-wrap: wrap; margin-bottom: 5px;">
+                    <label style="color: #0f0; font-size: 0.85em;">
                         Method:
                         <select id="snapshotMethodSelect" onchange="changeSnapshotMethod(this.value)" 
                             style="margin-left: 5px; background: #111; color: #0f0; border: 1px solid #0ff; padding: 2px 5px;">
@@ -895,6 +1057,16 @@
                 </div>
                 <div id="snapshotMethodStatus" style="color: #0aa; font-size: 0.8em; margin-bottom: 5px;">
                     Activity-Based: Adaptive (200ms-10s)
+                </div>
+                <div style="display: flex; gap: 5px; justify-content: center; align-items: center; flex-wrap: wrap; margin-top: 5px;">
+                    <button id="clearSnapshotsBtn" onclick="clearAllSnapshots()" 
+                        style="padding: 3px 8px; background: #400; color: #ff0; border: 1px solid #ff0; cursor: pointer; font-size: 0.85em;">
+                        🗑️ Clear All
+                    </button>
+                    <button id="snapshotGalleryBtn" onclick="openSnapshotGallery()" 
+                        style="padding: 3px 8px; background: #024; color: #0ff; border: 1px solid #0ff; cursor: pointer; font-size: 0.85em;">
+                        📸 Gallery
+                    </button>
                 </div>
             </div>
             <div style="background: #111; border: 1px solid #0ff; padding: 10px; text-align: center; margin-top: 10px;">
@@ -1346,6 +1518,16 @@
 
                         <div class="filter-item" style="margin-bottom: 8px;">
                             <label style="display: block; margin-bottom: 3px; color: #0ff; font-size: 0.85em;">
+                                <input type="checkbox" id="viewportCullingEnabled">
+                                <span>🪟 Viewport Culling (Performance Mode)</span>
+                            </label>
+                            <div style="font-size: 0.75em; color: #0aa; margin-top: 3px; margin-left: 20px;">
+                                OFF = See everything (default). ON = Only show visible nodes/links for better performance with large graphs.
+                            </div>
+                        </div>
+
+                        <div class="filter-item" style="margin-bottom: 8px;">
+                            <label style="display: block; margin-bottom: 3px; color: #0ff; font-size: 0.85em;">
                                 Max Visible Links: <span id="maxVisibleLinksValue">10000</span>
                             </label>
                             <input type="range" id="maxVisibleLinks" min="1000" max="50000" step="1000" value="10000"
@@ -1456,7 +1638,7 @@
                             <button class="nav-button" onclick="zoomFine('out')" title="Fine zoom out">−−</button>
                         </div>
                         <div class="graph-controls-row" style="font-size: 0.7em; color: #0aa; padding-top: 5px;">
-                            <input type="number" id="zoomInput" value="5" min="1" max="500" step="1"
+                            <input type="number" id="zoomInput" value="5" min="0.1" max="500" step="0.1"
                                 style="width: 60px; background: #000; border: 1px solid #0aa; color: #0ff; text-align: center; font-size: 0.9em; padding: 2px;"
                                 onchange="setZoomFromInput()" onkeypress="if(event.key === 'Enter') setZoomFromInput()">
                             <span id="zoomInputLabel" style="color: #0aa; margin-left: 3px;">%</span>
@@ -1492,6 +1674,25 @@
                     </div>
                 </div>
                 <div id="graph"></div>
+            </div>
+        </div>
+
+        <!-- Minimap/Radar System (shows full graph overview when viewport culling is enabled) -->
+        <div id="graphMinimap">
+            <div id="graphMinimapHeader">
+                <span id="graphMinimapTitle">📡 Graph Radar (Full Overview)</span>
+                <div id="graphMinimapControls">
+                    <button id="graphMinimapMinimize" title="Minimize">⎯</button>
+                    <button id="graphMinimapClose" title="Close">✕</button>
+                </div>
+            </div>
+            <div id="graphMinimapContent">
+                <canvas id="minimapCanvas"></canvas>
+                <div id="minimapInstructions" style="position: absolute; bottom: 5px; left: 5px; right: 5px; font-size: 10px; color: #888; background: rgba(0,0,0,0.7); padding: 4px 6px; border-radius: 3px; pointer-events: none; line-height: 1.3;">
+                    <div style="color: #0ff;">Cyan box = your current view</div>
+                    <div>Click anywhere to pan • Drag header to move • Drag corner to resize</div>
+                </div>
+                <div id="graphMinimapResizeHandle" title="Drag to resize"></div>
             </div>
         </div>
 
@@ -2427,6 +2628,93 @@
             // SNAPSHOT CONFIGURATION UI FUNCTIONS
             // ============================================================================
 
+            // Toggle snapshot capture on/off
+            function toggleSnapshotCapture(enabled) {
+                snapshotConfig.global.enabled = enabled;
+                
+                if (enabled) {
+                    console.log('[SNAPSHOT] Snapshot capture ENABLED');
+                    // If simulation is running, start capturing
+                    if (simulationRunning && !activitySnapshotInterval) {
+                        startActivitySnapshots();
+                    }
+                } else {
+                    console.log('[SNAPSHOT] Snapshot capture DISABLED');
+                    // Stop capturing
+                    stopActivitySnapshots();
+                }
+                
+                // Update status display
+                updateSnapshotMethodStatus();
+                
+                // Update checkbox state in config modal if open
+                const configCheckbox = document.getElementById('cfgGlobalEnabled');
+                if (configCheckbox) {
+                    configCheckbox.checked = enabled;
+                }
+                
+                // Update main toggle checkbox
+                const mainToggle = document.getElementById('snapshotEnabledToggle');
+                if (mainToggle) {
+                    mainToggle.checked = enabled;
+                }
+            }
+            
+            // Clear all snapshots (with confirmation)
+            async function clearAllSnapshots() {
+                // Get accurate count from DB
+                let totalCount = snapshotHistory.length;
+                try {
+                    const dbSnapshots = await loadSnapshotsFromDB();
+                    if (dbSnapshots.length > totalCount) {
+                        totalCount = dbSnapshots.length;
+                    }
+                } catch (e) {
+                    // Ignore DB errors, use memory count
+                }
+                
+                if (totalCount === 0) {
+                    alert('No snapshots to clear.');
+                    return;
+                }
+                
+                if (!confirm(`Clear ${totalCount} snapshot(s)? This action cannot be undone.`)) {
+                    return;
+                }
+                
+                // Clear from memory
+                snapshotHistory = [];
+                
+                // Clear from IndexedDB
+                try {
+                    await clearSnapshotsFromDB();
+                    console.log('[SNAPSHOT] Cleared all snapshots from IndexedDB');
+                } catch (e) {
+                    console.warn('[SNAPSHOT] Failed to clear IndexedDB:', e);
+                }
+                
+                // Clear from localStorage (fallback)
+                try {
+                    localStorage.removeItem('causationExplorer_snapshotHistory');
+                    console.log('[SNAPSHOT] Cleared snapshots from localStorage');
+                } catch (e) {
+                    console.warn('[SNAPSHOT] Failed to clear localStorage:', e);
+                }
+                
+                // Update snapshot count display
+                if (typeof updateSnapshotCount === 'function') {
+                    updateSnapshotCount();
+                }
+                
+                // Update gallery if open
+                const modal = document.getElementById('snapshotGalleryModal');
+                if (modal && modal.classList.contains('active')) {
+                    openSnapshotGallery(); // Refresh gallery view
+                }
+                
+                alert(`${totalCount} snapshot(s) cleared successfully.`);
+            }
+            
             function changeSnapshotMethod(method) {
                 snapshotConfig.method = method;
                 updateSnapshotMethodStatus();
@@ -2452,6 +2740,13 @@
             function updateSnapshotMethodStatus() {
                 const statusEl = document.getElementById('snapshotMethodStatus');
                 if (!statusEl) return;
+
+                // Show disabled status first
+                if (!snapshotConfig.global.enabled) {
+                    statusEl.textContent = '⚠️ DISABLED - No snapshots will be captured';
+                    statusEl.style.color = '#f00';
+                    return;
+                }
 
                 const method = snapshotConfig.method;
                 let statusText = '';
@@ -3064,6 +3359,199 @@
             let dragEnd = { x: 0, y: 0 };
             let selectionRect = null;
 
+            // BATCH UPDATE MODE: Prevents multiple re-renders during bulk CRA updates
+            let batchUpdateMode = false;
+            let batchUpdateTimeout = null;
+            let pendingBatchUpdates = [];
+
+            // Settings validation ranges
+            const settingsValidation = {
+                linkBaseWidth: { min: 1, max: 5, type: 'number' },
+                linkMaxWidth: { min: 8, max: 30, type: 'number' },
+                linkMinOpacity: { min: 0.1, max: 0.8, type: 'number' },
+                linkMaxOpacity: { min: 0.5, max: 1.0, type: 'number' },
+                linkDensityMultiplier: { min: 0, max: 10, type: 'number' },
+                linkDepthMultiplier: { min: 0, max: 5, type: 'number' },
+                linkNodeConnMultiplier: { min: 0, max: 3, type: 'number' },
+                nodeBaseSize: { min: 5, max: 15, type: 'number' },
+                nodeMaxSize: { min: 10, max: 20, type: 'number' },
+                nodeMinOpacity: { min: 0.3, max: 0.9, type: 'number' },
+                nodeMaxOpacity: { min: 0.7, max: 1.0, type: 'number' },
+                nodeDepthSizeMultiplier: { min: 0, max: 6, type: 'number' },
+                nodeStrokeWidth: { min: 1, max: 6, type: 'number' },
+                nodeStrokeOpacity: { min: 0, max: 1.0, type: 'number' },
+                depthStrength: { min: 0, max: 2, type: 'number' },
+                depthOpacityRange: { min: 0, max: 1, type: 'number' },
+                depthSizeRange: { min: 0, max: 1, type: 'number' },
+                depthParallaxAmount: { min: 0, max: 2, type: 'number' },
+                shadowOffset: { min: 0, max: 5, type: 'number' },
+                shadowBlur: { min: 0, max: 10, type: 'number' },
+                glowIntensity: { min: 0, max: 5, type: 'number' },
+                frontColorBrightness: { min: 0.5, max: 1.5, type: 'number' },
+                backColorBrightness: { min: 0.3, max: 1.0, type: 'number' },
+                colorSaturation: { min: 0, max: 2, type: 'number' },
+                maxVisibleLinks: { min: 1000, max: 50000, type: 'number' },
+                maxVisibleNodes: { min: 500, max: 20000, type: 'number' },
+                transitionDuration: { min: 100, max: 1000, type: 'number' },
+                animationSpeed: { min: 0.1, max: 3.0, type: 'number' },
+                enableShadows: { type: 'boolean' },
+                enableGlow: { type: 'boolean' },
+                enableTransitions: { type: 'boolean' },
+                renderQuality: { enum: ['low', 'medium', 'high'] }
+            };
+
+            // Validate a single setting value
+            function validateSettingValue(key, value) {
+                const validation = settingsValidation[key];
+                if (!validation) {
+                    // No validation rule - allow any value (for colors, etc.)
+                    return { valid: true, value: value };
+                }
+
+                // Type validation
+                if (validation.type === 'number' && typeof value !== 'number') {
+                    console.warn(`[VizSettings] ${key} must be a number, got ${typeof value}. Using default.`);
+                    return { valid: false, value: vizSettings[key], reason: 'Type mismatch' };
+                }
+
+                if (validation.type === 'boolean' && typeof value !== 'boolean') {
+                    console.warn(`[VizSettings] ${key} must be boolean, got ${typeof value}. Using default.`);
+                    return { valid: false, value: vizSettings[key], reason: 'Type mismatch' };
+                }
+
+                // Range validation
+                if (validation.min !== undefined && value < validation.min) {
+                    console.warn(`[VizSettings] ${key} value ${value} below minimum ${validation.min}. Clamping.`);
+                    return { valid: true, value: validation.min, clamped: true };
+                }
+
+                if (validation.max !== undefined && value > validation.max) {
+                    console.warn(`[VizSettings] ${key} value ${value} above maximum ${validation.max}. Clamping.`);
+                    return { valid: true, value: validation.max, clamped: true };
+                }
+
+                // Enum validation
+                if (validation.enum && !validation.enum.includes(value)) {
+                    console.warn(`[VizSettings] ${key} value ${value} not in allowed values [${validation.enum.join(', ')}]. Using default.`);
+                    return { valid: false, value: vizSettings[key], reason: 'Invalid enum value' };
+                }
+
+                // Hex color validation (for color keys)
+                if (key.startsWith('componentColor_') || key.startsWith('linkColor_')) {
+                    const hexPattern = /^#[0-9A-Fa-f]{6}$/;
+                    if (!hexPattern.test(value)) {
+                        console.warn(`[VizSettings] ${key} invalid hex color ${value}. Using default.`);
+                        return { valid: false, value: null, reason: 'Invalid hex color format' };
+                    }
+                }
+
+                return { valid: true, value: value };
+            }
+
+            // Batch update mode functions
+            function enableBatchUpdateMode() {
+                batchUpdateMode = true;
+                pendingBatchUpdates = [];
+                console.log('[VizSettings] Batch update mode ENABLED');
+
+                // Auto-disable after 500ms if not explicitly committed
+                if (batchUpdateTimeout) clearTimeout(batchUpdateTimeout);
+                batchUpdateTimeout = setTimeout(() => {
+                    if (batchUpdateMode) {
+                        console.warn('[VizSettings] Batch mode timeout - committing automatically');
+                        commitBatchUpdates();
+                    }
+                }, 500);
+            }
+
+            function addToBatch(key, value) {
+                if (!batchUpdateMode) {
+                    console.warn('[VizSettings] Not in batch mode, applying immediately');
+                    updateVizSetting(key, value);
+                    return;
+                }
+
+                // Validate before adding to batch
+                const validated = validateSettingValue(key, value);
+                if (validated.valid) {
+                    pendingBatchUpdates.push({ key, value: validated.value });
+                    console.log(`[VizSettings] Added to batch: ${key} = ${validated.value}${validated.clamped ? ' (clamped)' : ''}`);
+                } else {
+                    console.warn(`[VizSettings] Skipped invalid setting: ${key} = ${value} (${validated.reason})`);
+                }
+            }
+
+            function commitBatchUpdates() {
+                if (!batchUpdateMode) {
+                    console.warn('[VizSettings] Not in batch mode');
+                    return;
+                }
+
+                console.log(`[VizSettings] Committing ${pendingBatchUpdates.length} batched updates`);
+                batchUpdateMode = false;
+                if (batchUpdateTimeout) {
+                    clearTimeout(batchUpdateTimeout);
+                    batchUpdateTimeout = null;
+                }
+
+                if (pendingBatchUpdates.length === 0) {
+                    console.log('[VizSettings] No updates to commit');
+                    return;
+                }
+
+                // Apply all settings to vizSettings object first
+                pendingBatchUpdates.forEach(({ key, value }) => {
+                    vizSettings[key] = value;
+                });
+
+                // Update UI elements
+                pendingBatchUpdates.forEach(({ key, value }) => {
+                    const element = document.getElementById(key);
+                    if (element) {
+                        if (element.type === 'checkbox') {
+                            element.checked = value;
+                        } else if (element.type === 'range' || element.type === 'number') {
+                            element.value = value;
+                        } else if (element.type === 'color') {
+                            element.value = value;
+                        } else if (element.tagName === 'SELECT') {
+                            element.value = value;
+                        }
+
+                        // Visual feedback
+                        element.style.backgroundColor = 'rgba(0, 255, 255, 0.3)';
+                        setTimeout(() => {
+                            element.style.backgroundColor = '';
+                        }, 300);
+
+                        // Update display value
+                        const displayElement = document.getElementById(key + 'Value');
+                        if (displayElement) {
+                            displayElement.textContent = typeof value === 'boolean' ? (value ? 'On' : 'Off') : value;
+                        }
+                    }
+                });
+
+                // THEN trigger ONE visualization update with ALL changes
+                if (svg && allNodes.length > 0 && simulation) {
+                    // Real-time update for all settings at once
+                    console.log('[VizSettings] Applying all updates in real-time');
+                    pendingBatchUpdates.forEach(({ key, value }) => {
+                        updateVisualizationInRealTime(key, value);
+                    });
+                    console.log('[VizSettings] All updates applied in real-time (simulation preserved)');
+                } else if (svg && allNodes.length > 0) {
+                    // Full re-render (but only once for all changes)
+                    console.log('[VizSettings] Full re-render with all updates');
+                    renderGraph();
+                } else {
+                    console.log('[VizSettings] Settings saved for next render');
+                }
+
+                pendingBatchUpdates = [];
+                console.log('[VizSettings] Batch commit complete');
+            }
+
             function loadGraph(forceLoad = false) {
                 // Don't load graph if simulation is stopped (unless explicitly forced)
                 if (!simulationRunning && !forceLoad) {
@@ -3114,6 +3602,14 @@
                     }
 
                     applyFilters();
+                    
+                    // Update minimap after graph loads (if minimap is active)
+                    if (viewportCullingEnabled && typeof updateMinimap === 'function') {
+                        // Delay slightly to let simulation assign positions
+                        setTimeout(() => {
+                            updateMinimap();
+                        }, 100);
+                    }
                 }).catch(err => {
                     console.error('Error loading graph:', err);
                 });
@@ -3254,6 +3750,47 @@
                 applyFilters();
             }
 
+            // Toggle viewport culling on/off
+            function toggleViewportCulling(enabled) {
+                viewportCullingEnabled = enabled;
+                
+                // If enabled, immediately recalculate visibility
+                // If disabled, show all nodes/links
+                if (svg) {
+                    if (enabled) {
+                        // Recalculate visibility
+                        scheduleViewportRecalc();
+                    } else {
+                        // Show all nodes/links (respecting component/causation type filters)
+                        if (node) {
+                            node.style('display', d => {
+                                const baseFilter = filters.components[d.component || 'unknown'] !== false;
+                                return baseFilter ? 'block' : 'none';
+                            });
+                        }
+                        if (link) {
+                            link.style('display', d => {
+                                const linkType = (d.type || 'unknown').toLowerCase();
+                                const baseFilter = filters.causationTypes[linkType] !== false;
+                                const sourceId = typeof d.source === 'object' ? d.source.id : d.source;
+                                const targetId = typeof d.target === 'object' ? d.target.id : d.target;
+                                // Check if both source and target nodes are visible (from component filters)
+                                const sourceVisible = allNodes.find(n => n.id === sourceId && (filters.components[n.component || 'unknown'] !== false));
+                                const targetVisible = allNodes.find(n => n.id === targetId && (filters.components[n.component || 'unknown'] !== false));
+                                return baseFilter && sourceVisible && targetVisible ? 'block' : 'none';
+                            });
+                        }
+                    }
+                }
+                
+                // Show/hide minimap based on culling state
+                if (typeof updateMinimapVisibility === 'function') {
+                    updateMinimapVisibility();
+                }
+                
+                console.log(`[Viewport Culling] ${enabled ? 'ENABLED' : 'DISABLED'}`);
+            }
+
             // Visualization settings management
             function updateVizSetting(key, value) {
                 vizSettings[key] = value;
@@ -3366,24 +3903,29 @@
                             node.attr('r', radius);
                         }
 
-                        // Update opacity
+                        // Update opacity - ensure minimum 0.7 for color visibility
                         if (key === 'nodeMinOpacity' || key === 'nodeMaxOpacity' ||
                             key === 'depthOpacityRange' || key === 'depthStrength') {
-                            const minOpacity = vizSettings.nodeMinOpacity;
+                            const minOpacity = Math.max(0.7, vizSettings.nodeMinOpacity); // Enforce minimum
                             const maxOpacity = vizSettings.nodeMaxOpacity;
                             const depthStrength = vizSettings.depthStrength;
                             const depthOpacityRange = vizSettings.depthOpacityRange;
                             const opacityRange = maxOpacity - minOpacity;
-                            const opacity = minOpacity + (depthScore * opacityRange * depthOpacityRange * depthStrength);
+                            const opacity = Math.max(0.7, minOpacity + (depthScore * opacityRange * depthOpacityRange * depthStrength));
                             node.attr('fill-opacity', opacity);
                         }
 
-                        // Update color
+                        // Update color - ALWAYS refresh component colors for ALL nodes
                         if (key.startsWith('componentColor_')) {
                             const component = key.replace('componentColor_', '');
-                            if (d.component === component || (component === 'reality_sim' && d.component === 'reality_simulator')) {
+                            // Update matching component
+                            if (d.component === component || (component === 'reality_sim' && d.component === 'reality_simulator') ||
+                                (component === 'djinn_kernel' && d.component === 'utm_kernel')) {
                                 node.attr('fill', value);
                             }
+                            // Also refresh ALL nodes to ensure colors are correct
+                            const nodeComp = d.component || 'unknown';
+                            node.attr('fill', getComponentColor(nodeComp));
                         }
 
                         // Update stroke
@@ -3424,9 +3966,17 @@
 
                 // Update performance settings (may require re-render, but try to avoid it)
                 if (key === 'maxVisibleLinks' || key === 'maxVisibleNodes' || key === 'renderQuality') {
-                    // These require filtering, so we need to re-apply filters
-                    // But we can do it gently without full re-render
-                    applyFilters(); // This will gently restart simulation with alpha(0.05)
+                    // CRITICAL FIX: Only call applyFilters if simulation is active
+                    // This prevents race condition where applyFilters() → renderGraph() when simulation is null
+                    if (simulation && svg) {
+                        // Safe: simulation exists, can call applyFilters
+                        console.log('[VizSettings] Applying performance setting with gentle filter update');
+                        applyFilters();
+                    } else {
+                        // Defer to next renderGraph() call
+                        console.log('[VizSettings] Performance setting deferred - will apply on next render');
+                        // Setting already saved to vizSettings, will be used by renderGraph()
+                    }
                 }
             }
 
@@ -3484,155 +4034,109 @@
             }
 
             function applyVizSettingsFromCRA(settings) {
-                // Apply ALL settings received from CRA
-                console.log('[CRA] Applying visualization settings:', settings);
-
-                Object.keys(settings).forEach(key => {
-                    // Handle component colors
-                    if (key.startsWith('componentColor_')) {
-                        const component = key.replace('componentColor_', '').toLowerCase();
-                        const color = settings[key];
-
-                        // Normalize component names (CRA might use different variations)
-                        let normalizedComponent = component;
-                        if (component === 'realitysim' || component === 'reality_simulator') {
-                            normalizedComponent = 'reality_sim';
-                        } else if (component === 'djinnkernel' || component === 'utm_kernel') {
-                            normalizedComponent = 'djinn_kernel';
-                        }
-
-                        updateComponentColor(normalizedComponent, color);
-
-                        // Also update the color picker if it exists
-                        const colorPicker = document.getElementById(`color-${normalizedComponent}`);
-                        if (colorPicker) {
-                            colorPicker.value = color;
-                            // Visual feedback: briefly highlight the color picker
-                            colorPicker.style.border = '3px solid #0ff';
-                            colorPicker.style.transition = 'border 0.3s';
-                            setTimeout(() => {
-                                colorPicker.style.border = '';
-                            }, 1000);
-                        }
-
-                        // Force legend update by directly selecting and updating
-                        if (svg) {
-                            const legendGroup = svg.select('.graph-legend');
-                            if (legendGroup.size() > 0) {
-                                const legendCircle = legendGroup.select(`circle[data-component="${normalizedComponent}"]`);
-                                if (legendCircle.size() > 0) {
-                                    legendCircle.attr('fill', color);
-                                    console.log(`[CRA-LEGEND] Updated ${normalizedComponent} color in legend to ${color}`);
-                                } else {
-                                    console.warn(`[CRA-LEGEND] Legend circle not found for component: ${normalizedComponent} (tried: ${component})`);
-                                }
-                            }
-                        }
-                        return;
-                    }
-
-                    // Handle link colors
-                    if (key.startsWith('linkColor_')) {
-                        const linkType = key.replace('linkColor_', '').toLowerCase();
-                        const color = settings[key];
-
-                        // Normalize link type names
-                        let normalizedLinkType = linkType;
-
-                        updateLinkColor(normalizedLinkType, color);
-
-                        // Also update the color picker if it exists (check actual ID format: color-link-{type})
-                        const colorPicker = document.getElementById(`color-link-${normalizedLinkType}`);
-                        if (colorPicker) {
-                            colorPicker.value = color;
-                            // Visual feedback: briefly highlight the color picker
-                            colorPicker.style.border = '3px solid #0ff';
-                            colorPicker.style.transition = 'border 0.3s';
-                            setTimeout(() => {
-                                colorPicker.style.border = '';
-                            }, 1000);
-                        } else {
-                            console.warn(`[CRA] Color picker not found for link type: ${normalizedLinkType} (tried id="color-link-${normalizedLinkType}")`);
-                        }
-
-                        // Force legend update by directly selecting and updating
-                        if (svg) {
-                            const legendGroup = svg.select('.graph-legend');
-                            if (legendGroup.size() > 0) {
-                                const legendLine = legendGroup.select(`line[data-link-type="${normalizedLinkType}"]`);
-                                if (legendLine.size() > 0) {
-                                    legendLine.attr('stroke', color);
-                                    console.log(`[CRA-LEGEND] Updated ${normalizedLinkType} link color in legend to ${color}`);
-                                } else {
-                                    console.warn(`[CRA-LEGEND] Legend line not found for link type: ${normalizedLinkType} (tried: ${linkType})`);
-                                }
-                            }
-                        }
-                        return;
-                    }
-
-                    // Handle ALL other visualization settings (sliders, checkboxes, dropdowns)
-                    // Update the vizSettings object
-                    if (vizSettings.hasOwnProperty(key) || key.includes('Color') || key.includes('color')) {
-                        vizSettings[key] = settings[key];
-
-                        // Update the UI element if it exists
-                        const element = document.getElementById(key);
-                        if (element) {
-                            const oldValue = element.type === 'checkbox' ? element.checked : element.value;
-
-                            if (element.type === 'checkbox') {
-                                element.checked = Boolean(settings[key]);
-                            } else if (element.type === 'range') {
-                                element.value = parseFloat(settings[key]);
-                            } else if (element.type === 'color') {
-                                element.value = String(settings[key]);
-                            } else if (element.tagName === 'SELECT') {
-                                element.value = String(settings[key]);
-                            }
-
-                            // Visual feedback: briefly highlight the control that changed
-                            if (oldValue !== (element.type === 'checkbox' ? element.checked : element.value)) {
-                                element.style.backgroundColor = '#0ff';
-                                element.style.transition = 'background-color 0.5s';
-                                setTimeout(() => {
-                                    element.style.backgroundColor = '';
-                                }, 1000);
-                            }
-
-                            // Update the display value if it exists
-                            const displayElement = document.getElementById(key + 'Value');
-                            if (displayElement) {
-                                if (typeof settings[key] === 'boolean') {
-                                    displayElement.textContent = settings[key] ? 'On' : 'Off';
-                                } else {
-                                    displayElement.textContent = settings[key];
-                                }
-                            }
-                        } else {
-                            // Setting exists in vizSettings but no UI element - that's okay, just update the value
-                            console.log(`[CRA] Updated setting ${key} = ${settings[key]} (no UI element found, but setting applied)`);
-                        }
-                    } else {
-                        // New setting not in vizSettings - add it
-                        console.log(`[CRA] Adding new setting: ${key} = ${settings[key]}`);
-                        vizSettings[key] = settings[key];
-                    }
+                // Apply ALL settings received from CRA using BATCH MODE
+                console.log('[CRA] Applying visualization settings (BATCH MODE):', settings);
+                console.log('[CRA] Current state:', {
+                    hasSvg: !!svg,
+                    hasSimulation: !!simulation,
+                    nodeCount: allNodes.length,
+                    linkCount: allLinks.length
                 });
 
-                // Apply all settings in real-time (preserves simulation state)
-                if (svg && allNodes.length > 0 && simulation) {
-                    // Apply each setting update in real-time
+                try {
+                    // ENABLE BATCH MODE for bulk CRA updates
+                    enableBatchUpdateMode();
+
                     Object.keys(settings).forEach(key => {
-                        if (!key.startsWith('componentColor_') && !key.startsWith('linkColor_')) {
-                            updateVisualizationInRealTime(key, settings[key]);
+                        // Handle component colors
+                        if (key.startsWith('componentColor_')) {
+                            const component = key.replace('componentColor_', '')
+                                .replace('realitysim', 'reality_sim')
+                                .replace('reality_simulator', 'reality_sim')
+                                .replace('djinnkernel', 'djinn_kernel')
+                                .replace('utm_kernel', 'djinn_kernel')
+                                .toLowerCase();
+
+                            const validated = validateSettingValue(key, settings[key]);
+                            if (validated.valid && validated.value) {
+                                componentColors[component] = validated.value;
+                                addToBatch(key, validated.value);
+
+                                // Update color picker if it exists
+                                const colorPicker = document.getElementById('componentColor_' + component) || document.getElementById(`color-${component}`);
+                                if (colorPicker) {
+                                    colorPicker.value = validated.value;
+                                }
+
+                                // Update legend color immediately
+                                if (svg) {
+                                    svg.select(`circle[data-component="${component}"]`)
+                                        .attr('fill', validated.value);
+                                }
+
+                                // Update node colors if graph exists
+                                if (svg && simulation) {
+                                    svg.selectAll('.node-circle').each(function(d) {
+                                        if (d.component === component || d.component === component.replace('_', '')) {
+                                            d3.select(this).attr('fill', validated.value);
+                                        }
+                                    });
+                                }
+                            }
+                        }
+                        // Handle link colors
+                        else if (key.startsWith('linkColor_')) {
+                            const linkType = key.replace('linkColor_', '').toLowerCase();
+                            const validated = validateSettingValue(key, settings[key]);
+                            if (validated.valid && validated.value) {
+                                linkColors[linkType] = validated.value;
+                                addToBatch(key, validated.value);
+
+                                // Update color picker if it exists
+                                const colorPicker = document.getElementById('linkColor_' + linkType) || document.getElementById(`color-link-${linkType}`);
+                                if (colorPicker) {
+                                    colorPicker.value = validated.value;
+                                }
+
+                                // Update legend color immediately
+                                if (svg) {
+                                    svg.select(`line[data-link-type="${linkType}"]`)
+                                        .attr('stroke', validated.value);
+                                }
+
+                                // Update link colors if graph exists
+                                if (svg && simulation) {
+                                    svg.selectAll('.link').each(function(d) {
+                                        const type = (d.type || 'unknown').toLowerCase();
+                                        if (type === linkType) {
+                                            d3.select(this).attr('stroke', validated.value);
+                                        }
+                                    });
+                                }
+                            }
+                        }
+                        // Handle general settings
+                        else {
+                            addToBatch(key, settings[key]);
                         }
                     });
-                    console.log('[CRA] Visualization settings applied in real-time (simulation preserved)');
-                } else if (svg && allNodes.length > 0) {
-                    // Fallback: full re-render if simulation doesn't exist yet
-                    renderGraph();
-                    console.log('[CRA] Graph re-rendered with updated settings');
+
+                    // COMMIT all updates at once
+                    commitBatchUpdates();
+
+                    console.log('[CRA] All settings applied successfully');
+                } catch (e) {
+                    console.error('[CRA] Error applying settings:', e);
+                    console.error('[CRA] Stack trace:', e.stack);
+                    addChatMessage('system', `⚠️ Error applying settings: ${e.message}`, true);
+
+                    // Disable batch mode on error
+                    batchUpdateMode = false;
+                    pendingBatchUpdates = [];
+                    if (batchUpdateTimeout) {
+                        clearTimeout(batchUpdateTimeout);
+                        batchUpdateTimeout = null;
+                    }
                 }
             }
 
@@ -3826,14 +4330,273 @@
                 });
             }
 
-            function renderGraph() {
-                // CRITICAL: Stop old simulation before creating new one to prevent memory leaks
-                if (simulation) {
-                    simulation.stop();
-                    simulation.on('tick', null); // Remove tick handler
-                    simulation.on('end', null); // Remove end handler
-                    simulation = null;
+            // ============================================================================
+            // VIEWPORT CULLING & LEVEL-OF-DETAIL SYSTEM
+            // ============================================================================
+            
+            // Viewport culling state
+            let viewportCullingEnabled = false; // Disabled by default - show everything, enable manually for performance
+            let lastViewportHash = ''; // Track viewport changes to avoid unnecessary recalculations
+            
+            // Calculate viewport bounds in world space (what's visible on screen)
+            function getViewportBounds() {
+                const graphElement = document.getElementById('graph');
+                if (!graphElement) return null;
+                
+                const width = graphElement.clientWidth;
+                const height = graphElement.clientHeight || 792;
+                const centerX = width / 2;
+                const centerY = height / 2;
+                
+                // Add padding to viewport to preload nodes just outside view (smooth scrolling)
+                const padding = 200; // pixels of padding around viewport
+                
+                // Convert screen bounds to world space
+                // Account for: pan, zoom, rotation, center offset
+                const scale = zoomLevel;
+                
+                // Calculate world bounds (inverse transform of viewport)
+                // Simplified: we'll check visibility in transformed space during filtering
+                return {
+                    minX: -centerX - padding,
+                    maxX: centerX + padding,
+                    minY: -centerY - padding,
+                    maxY: centerY + padding,
+                    centerX: centerX,
+                    centerY: centerY,
+                    width: width + padding * 2,
+                    height: height + padding * 2,
+                    scale: scale,
+                    panX: panX,
+                    panY: panY,
+                    rotation: rotation
+                };
+            }
+            
+            // Check if a point (in world space) is visible in the viewport
+            function isPointInViewport(x, y, bounds) {
+                if (!bounds) return true; // If bounds not available, show everything
+                
+                // Transform world coordinates to screen space
+                // The transform applied is: translate(center+pan) scale(zoom) rotate(rot) translate(-center)
+                // So to check visibility, we need to invert this transformation
+                const centerX = bounds.centerX;
+                const centerY = bounds.centerY;
+                const scale = bounds.scale;
+                const panX = bounds.panX;
+                const panY = bounds.panY;
+                const rotation = bounds.rotation * Math.PI / 180; // Convert to radians
+                
+                // Transform world point to screen space:
+                // 1. Translate point relative to center: (x - centerX, y - centerY)
+                // 2. Apply rotation (negative rotation for inverse)
+                // 3. Apply scale
+                // 4. Translate back to screen space with pan
+                const dx = x - centerX;
+                const dy = y - centerY;
+                
+                // Apply rotation (negative angle for inverse transform)
+                const cosR = Math.cos(-rotation);
+                const sinR = Math.sin(-rotation);
+                const rotatedX = dx * cosR - dy * sinR;
+                const rotatedY = dx * sinR + dy * cosR;
+                
+                // Apply scale and translate to screen space
+                const screenX = (rotatedX * scale) + centerX + panX;
+                const screenY = (rotatedY * scale) + centerY + panY;
+                
+                // Viewport bounds in screen space (accounting for padding)
+                const padding = 200;
+                const viewMinX = -padding;
+                const viewMaxX = bounds.centerX * 2 + padding;
+                const viewMinY = -padding;
+                const viewMaxY = (bounds.centerY || 792) * 2 + padding;
+                
+                // Check if point is in viewport
+                return screenX >= viewMinX && screenX <= viewMaxX &&
+                       screenY >= viewMinY && screenY <= viewMaxY;
+            }
+            
+            // Get level-of-detail threshold based on zoom level
+            function getLODLevel() {
+                if (zoomLevel < 0.05) return 'very_low';    // 5% or less - aggregate heavily
+                if (zoomLevel < 0.15) return 'low';         // 15% or less - aggregate
+                if (zoomLevel < 0.5) return 'medium';       // 50% or less - moderate detail
+                if (zoomLevel < 1.0) return 'high';         // 100% - high detail
+                return 'very_high';                          // >100% - full detail
+            }
+            
+            // Filter nodes based on viewport visibility and LOD
+            function getVisibleNodes(nodes, bounds, lodLevel) {
+                if (!viewportCullingEnabled) return nodes; // Bypass if disabled
+                
+                const visible = [];
+                const nodeVisibilityMap = new Map(); // Track which nodes are visible
+                
+                // Get max nodes to render based on LOD
+                const maxNodes = {
+                    'very_low': 500,   // Only show 500 nodes when very zoomed out
+                    'low': 1000,       // 1000 nodes
+                    'medium': 3000,    // 3000 nodes
+                    'high': 10000,     // 10000 nodes
+                    'very_high': Infinity // All nodes when zoomed in
+                }[lodLevel] || Infinity;
+                
+                // First pass: filter by viewport bounds
+                for (const node of nodes) {
+                    const x = node.x || 0;
+                    const y = node.y || 0;
+                    
+                    if (isPointInViewport(x, y, bounds)) {
+                        visible.push(node);
+                        nodeVisibilityMap.set(node.id, true);
+                        
+                        // Early exit if we've reached max nodes for this LOD level
+                        if (visible.length >= maxNodes) {
+                            break;
+                        }
+                    }
                 }
+                
+                // If we hit the LOD limit, sample nodes by importance/density
+                if (visible.length >= maxNodes) {
+                    // Sort by importance (more connections = more important)
+                    visible.sort((a, b) => {
+                        const aConn = (a._connectionCount || 0) + (a._linkCount || 0);
+                        const bConn = (b._connectionCount || 0) + (b._linkCount || 0);
+                        return bConn - aConn; // Descending order
+                    });
+                    
+                    // Keep only top N nodes
+                    return visible.slice(0, maxNodes);
+                }
+                
+                return visible;
+            }
+            
+            // Filter links based on viewport visibility (both endpoints must be visible)
+            function getVisibleLinks(links, visibleNodeIds, bounds, lodLevel) {
+                if (!viewportCullingEnabled) return links; // Bypass if disabled
+                
+                const visibleNodeIdSet = new Set(visibleNodeIds);
+                const visible = [];
+                
+                // Get max links to render based on LOD
+                const maxLinks = {
+                    'very_low': 1000,    // Only show 1000 links when very zoomed out
+                    'low': 2000,         // 2000 links
+                    'medium': 5000,      // 5000 links
+                    'high': 20000,       // 20000 links
+                    'very_high': Infinity // All links when zoomed in
+                }[lodLevel] || Infinity;
+                
+                // Filter links where both source and target are visible
+                for (const link of links) {
+                    const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+                    const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+                    
+                    if (visibleNodeIdSet.has(sourceId) && visibleNodeIdSet.has(targetId)) {
+                        // Check if link line intersects viewport (simplified: check midpoint)
+                        // For performance, we'll just check endpoints (already done above)
+                        visible.push(link);
+                        
+                        // Early exit if we've reached max links for this LOD level
+                        if (visible.length >= maxLinks) {
+                            break;
+                        }
+                    }
+                }
+                
+                // If we hit the LOD limit, sample links by strength/importance
+                if (visible.length >= maxLinks) {
+                    // Sort by strength/importance
+                    visible.sort((a, b) => {
+                        const aStrength = a.strength || a._normalizedDensity || 0;
+                        const bStrength = b.strength || b._normalizedDensity || 0;
+                        return bStrength - aStrength; // Descending order
+                    });
+                    
+                    // Keep only top N links
+                    return visible.slice(0, maxLinks);
+                }
+                
+                return visible;
+            }
+            
+            // Recalculate visible elements when viewport changes
+            function recalculateViewportVisibility() {
+                if (!viewportCullingEnabled) return; // Skip if disabled
+                
+                const bounds = getViewportBounds();
+                if (!bounds) return;
+                
+                // Create hash of viewport state to detect changes
+                const viewportHash = `${bounds.minX},${bounds.maxX},${bounds.minY},${bounds.maxY},${bounds.scale}`;
+                if (viewportHash === lastViewportHash) {
+                    return; // No change, skip recalculation
+                }
+                lastViewportHash = viewportHash;
+                
+                // Get LOD level
+                const lodLevel = getLODLevel();
+                
+                // Filter nodes and links based on viewport
+                const visibleNodeIds = new Set();
+                
+                // Filter nodes first
+                const visibleNodes = getVisibleNodes(filteredNodes, bounds, lodLevel);
+                visibleNodes.forEach(node => visibleNodeIds.add(node.id));
+                
+                // Filter links based on visible nodes
+                const visibleLinks = getVisibleLinks(filteredLinks, Array.from(visibleNodeIds), bounds, lodLevel);
+                
+                // Update DOM to show/hide elements
+                if (svg) {
+                    // Update node visibility
+                    svg.selectAll('.node')
+                        .style('display', d => visibleNodeIds.has(d.id) ? 'block' : 'none');
+                    
+                    // Update link visibility
+                    svg.selectAll('.link')
+                        .style('display', d => {
+                            const sourceId = typeof d.source === 'object' ? d.source.id : d.source;
+                            const targetId = typeof d.target === 'object' ? d.target.id : d.target;
+                            return (visibleNodeIds.has(sourceId) && visibleNodeIds.has(targetId)) ? 'block' : 'none';
+                        });
+                }
+                
+                // Update simulation to only include visible nodes (optional - can be expensive)
+                // We'll skip this for now to avoid disrupting the simulation
+                // If needed, we can implement a separate "viewport simulation" that only runs on visible nodes
+            }
+
+            function renderGraph() {
+                console.log('[RenderGraph] Starting graph render');
+                console.log('[RenderGraph] State:', {
+                    nodeCount: allNodes.length,
+                    linkCount: allLinks.length,
+                    hasOldSimulation: !!simulation,
+                    vizSettingsCount: Object.keys(vizSettings).length
+                });
+
+                try {
+                    // Save current transform state for restoration
+                    let savedTransform = null;
+                    if (svg && graphGroup) {
+                        const currentTransform = d3.select('.graph-group').attr('transform');
+                        if (currentTransform) {
+                            savedTransform = currentTransform;
+                            console.log('[RenderGraph] Saved transform state');
+                        }
+                    }
+
+                    // CRITICAL: Stop old simulation before creating new one to prevent memory leaks
+                    if (simulation) {
+                        simulation.stop();
+                        simulation.on('tick', null); // Remove tick handler
+                        simulation.on('end', null); // Remove end handler
+                        simulation = null;
+                    }
                 
                 // Cancel any pending tick animation frame
                 if (tickAnimationFrame !== null) {
@@ -3912,6 +4675,21 @@
                     .attr('class', 'overlay')
                     .style('pointer-events', dragZoomEnabled ? 'all' : 'none');
 
+                // Create a transparent background rect that covers the entire graph area to capture mouse events
+                const graphContainer = document.getElementById('graph');
+                const graphWidth = graphContainer ? graphContainer.clientWidth : window.innerWidth;
+                const graphHeight = graphContainer ? graphContainer.clientHeight : window.innerHeight;
+                
+                overlay.append('rect')
+                    .attr('class', 'overlay-background')
+                    .attr('x', 0)
+                    .attr('y', 0)
+                    .attr('width', graphWidth)
+                    .attr('height', graphHeight)
+                    .style('fill', 'transparent')
+                    .style('pointer-events', 'all')
+                    .style('cursor', dragZoomEnabled ? 'crosshair' : 'default');
+
                 // Create selection rectangle (initially hidden)
                 selectionRect = overlay.append('rect')
                     .attr('class', 'selection-rect')
@@ -3920,7 +4698,8 @@
                     .style('stroke-width', 2)
                     .style('stroke-dasharray', '5,5')
                     .style('display', 'none')
-                    .attr('rx', 3);
+                    .attr('rx', 3)
+                    .style('pointer-events', 'none'); // Don't interfere with mouse events
 
                 // ENHANCEMENT: Add visible legend/key to the graph display
                 // Position legend in top-left corner
@@ -4106,6 +4885,7 @@
                 nodes.sort((a, b) => (a._depthScore || 0.5) - (b._depthScore || 0.5));
 
                 // Create link elements with volumetric depth styling
+                // Note: We'll apply viewport culling after simulation positions nodes
                 const link = graphGroup.append('g')
                     .attr('class', 'links')
                     .selectAll('line')
@@ -4144,6 +4924,7 @@
                     .style('display', filters.showLinks ? 'block' : 'none');
 
                 // Create node elements
+                // Note: We'll apply viewport culling after simulation positions nodes
                 const node = graphGroup.append('g')
                     .attr('class', 'nodes')
                     .selectAll('g')
@@ -4187,27 +4968,25 @@
                         return Math.min(maxSize, baseRadius + sizeIncrease);
                     })
                     .attr('fill', d => {
-                        const baseColor = getComponentColor(d.component);
-                        const depthScore = d._depthScore || 0.5;
-                        const depthStrength = vizSettings.depthStrength;
-                        // Apply brightness based on depth
-                        const brightness = depthScore > 0.5
-                            ? vizSettings.frontColorBrightness
-                            : vizSettings.backColorBrightness;
-                        // Apply saturation
-                        const sat = vizSettings.colorSaturation;
-                        // Note: Actual color manipulation would require HSL conversion
-                        // For now, return base color and adjust via opacity
+                        // ALWAYS use component color - this is critical for color differentiation
+                        const comp = d.component || 'unknown';
+                        const baseColor = getComponentColor(comp);
+                        // Return the pure component color - no depth-based color manipulation
+                        // Depth effects should only affect opacity, not the actual color
                         return baseColor;
                     })
                     .attr('fill-opacity', d => {
+                        // Keep opacity high enough to see colors clearly
+                        // Minimum 0.7 opacity to ensure colors are visible
                         const depthScore = d._depthScore || 0.5;
                         const depthStrength = vizSettings.depthStrength;
-                        const minOpacity = vizSettings.nodeMinOpacity;
+                        const minOpacity = Math.max(0.7, vizSettings.nodeMinOpacity); // Ensure minimum 0.7
                         const maxOpacity = vizSettings.nodeMaxOpacity;
                         const opacityRange = maxOpacity - minOpacity;
                         const depthOpacityRange = vizSettings.depthOpacityRange;
-                        return minOpacity + (depthScore * opacityRange * depthOpacityRange * depthStrength);
+                        const calculatedOpacity = minOpacity + (depthScore * opacityRange * depthOpacityRange * depthStrength);
+                        // Ensure we never go below 0.7 for color visibility
+                        return Math.max(0.7, calculatedOpacity);
                     })
                     .attr('stroke', d => {
                         const depthScore = d._depthScore || 0.5;
@@ -4340,6 +5119,60 @@
 
                     node
                         .attr('transform', d => `translate(${d.x || 0},${d.y || 0})`);
+                    
+                    // CRITICAL: Refresh node colors on every tick to ensure component colors are visible
+                    // This ensures colors are always correct, even if they were overridden
+                    node.select('.node-circle').attr('fill', d => {
+                        const comp = d.component || 'unknown';
+                        return getComponentColor(comp);
+                    });
+
+                            // Apply viewport culling every N frames (throttled for performance)
+                            // Check visibility based on current node positions
+                            if (viewportCullingEnabled && svg) {
+                                // Throttle viewport culling to every 5 frames for performance
+                                if (!window._viewportCullFrameCount) window._viewportCullFrameCount = 0;
+                                window._viewportCullFrameCount++;
+                                
+                                if (window._viewportCullFrameCount % 5 === 0) {
+                                    const bounds = getViewportBounds();
+                                    const lodLevel = getLODLevel();
+                                    
+                                    if (bounds) {
+                                        // Create set of visible node IDs
+                                        const visibleNodeIds = new Set();
+                                        let visibleCount = 0;
+                                        const maxNodes = {
+                                            'very_low': 500, 'low': 1000, 'medium': 3000, 
+                                            'high': 10000, 'very_high': Infinity
+                                        }[lodLevel] || Infinity;
+                                        
+                                        // Check each node's visibility (only if node has position)
+                                        nodes.forEach(node => {
+                                            if (visibleCount < maxNodes && node.x !== undefined && node.y !== undefined) {
+                                                if (isPointInViewport(node.x, node.y, bounds)) {
+                                                    visibleNodeIds.add(node.id);
+                                                    visibleCount++;
+                                                }
+                                            }
+                                        });
+                                        
+                                        // Update node visibility (combine with existing component filters)
+                                        node.style('display', d => {
+                                            const baseFilter = filters.components[d.component || 'unknown'] !== false;
+                                            return (baseFilter && visibleNodeIds.has(d.id)) ? 'block' : 'none';
+                                        });
+                                        
+                                        // Update link visibility (combine with existing type filters)
+                                        link.style('display', d => {
+                                            const sourceId = typeof d.source === 'object' ? d.source.id : d.source;
+                                            const targetId = typeof d.target === 'object' ? d.target.id : d.target;
+                                            const baseFilter = filters.causationTypes[(d.type || 'unknown').toLowerCase()] !== false;
+                                            return (baseFilter && visibleNodeIds.has(sourceId) && visibleNodeIds.has(targetId)) ? 'block' : 'none';
+                                        });
+                                    }
+                                }
+                            }
 
                             // Update temporal paths if enabled (throttled)
                     if (filters.showTemporalPaths) {
@@ -4349,11 +5182,96 @@
                     }
                 });
 
+                // Force refresh all node colors after simulation starts
+                // This ensures component colors are visible from the start
+                simulation.on('end', () => {
+                    if (svg) {
+                        svg.selectAll('.node-circle').attr('fill', d => {
+                            const comp = d.component || 'unknown';
+                            return getComponentColor(comp);
+                        }).attr('fill-opacity', d => {
+                            // Ensure minimum 0.7 opacity for color visibility
+                            const depthScore = d._depthScore || 0.5;
+                            const depthStrength = vizSettings.depthStrength;
+                            const minOpacity = Math.max(0.7, vizSettings.nodeMinOpacity);
+                            const maxOpacity = vizSettings.nodeMaxOpacity;
+                            const opacityRange = maxOpacity - minOpacity;
+                            const depthOpacityRange = vizSettings.depthOpacityRange;
+                            const calculatedOpacity = minOpacity + (depthScore * opacityRange * depthOpacityRange * depthStrength);
+                            return Math.max(0.7, calculatedOpacity);
+                        });
+                    }
+                });
+                
                 // Initial temporal paths if enabled
                 if (filters.showTemporalPaths) {
                     simulation.on('end', () => {
                         addTemporalPaths(nodes);
                     });
+                }
+                
+                // Force refresh all node colors when simulation ends
+                // This ensures component colors are visible from the start
+                simulation.on('end', () => {
+                    if (svg) {
+                        svg.selectAll('.node-circle').attr('fill', d => {
+                            const comp = d.component || 'unknown';
+                            return getComponentColor(comp);
+                        }).attr('fill-opacity', d => {
+                            // Ensure minimum 0.7 opacity for color visibility
+                            const depthScore = d._depthScore || 0.5;
+                            const depthStrength = vizSettings.depthStrength;
+                            const minOpacity = Math.max(0.7, vizSettings.nodeMinOpacity);
+                            const maxOpacity = vizSettings.nodeMaxOpacity;
+                            const opacityRange = maxOpacity - minOpacity;
+                            const depthOpacityRange = vizSettings.depthOpacityRange;
+                            const calculatedOpacity = minOpacity + (depthScore * opacityRange * depthOpacityRange * depthStrength);
+                            return Math.max(0.7, calculatedOpacity);
+                        });
+                    }
+                });
+                
+                // Update minimap when simulation starts (nodes have positions now)
+                if (viewportCullingEnabled && typeof updateMinimap === 'function') {
+                    // Wait a bit for simulation to assign initial positions
+                    setTimeout(() => {
+                        updateMinimap();
+                    }, 200);
+                }
+
+                    // Restore transform if it was saved
+                    if (savedTransform && graphGroup) {
+                        graphGroup.attr('transform', savedTransform);
+                        console.log('[RenderGraph] Restored transform state');
+                    }
+
+                    console.log('[RenderGraph] Render complete successfully');
+                } catch (e) {
+                    console.error('[RenderGraph] CRITICAL ERROR during render:', e);
+                    console.error('[RenderGraph] Error details:', {
+                        message: e.message,
+                        stack: e.stack,
+                        nodeCount: allNodes.length,
+                        linkCount: allLinks.length
+                    });
+
+                    // User notification
+                    addChatMessage('system', `🔴 Graph rendering failed: ${e.message}. Attempting recovery...`, true);
+
+                    // Attempt recovery
+                    console.warn('[RenderGraph] Attempting recovery with default settings...');
+                    try {
+                        // Reset to safe defaults
+                        resetVizSettings();
+                        // Try again with defaults after short delay
+                        setTimeout(() => {
+                            console.log('[RenderGraph] Retry render with default settings');
+                            renderGraph();
+                        }, 1000);
+                    } catch (recoveryError) {
+                        console.error('[RenderGraph] Recovery attempt failed:', recoveryError);
+                        addChatMessage('system', `🔴 Recovery failed. Please refresh the page.`, true);
+                    }
                 }
             }
 
@@ -4361,20 +5279,37 @@
             function updateZoomDisplay() {
                 const zoomInput = document.getElementById('zoomInput');
                 if (zoomInput) {
-                    const percent = Math.round(zoomLevel * 100);
-                    zoomInput.value = percent;
-                    zoomInput.setAttribute('value', percent);
+                    const percent = zoomLevel * 100;
+                    // Format to 1 decimal place for fine-grained control
+                    const formattedPercent = percent.toFixed(1);
+                    zoomInput.value = formattedPercent;
+                    zoomInput.setAttribute('value', formattedPercent);
                     const zoomLabel = document.getElementById('zoomInputLabel');
                     if (zoomLabel) {
-                        zoomLabel.textContent = `${percent}%`;
+                        zoomLabel.textContent = `${formattedPercent}%`;
                     }
                     const zoomStatus = document.getElementById('craZoomStatus');
                     if (zoomStatus) {
-                        zoomStatus.textContent = `Current: ${percent}%`;
+                        zoomStatus.textContent = `Current: ${formattedPercent}%`;
                     }
                 }
             }
 
+            // Throttle viewport recalculation to avoid performance issues
+            let viewportRecalcTimeout = null;
+            function scheduleViewportRecalc() {
+                if (viewportRecalcTimeout) {
+                    clearTimeout(viewportRecalcTimeout);
+                }
+                // Debounce: wait 50ms after last transform change before recalculating
+                viewportRecalcTimeout = setTimeout(() => {
+                    if (svg && viewportCullingEnabled) {
+                        recalculateViewportVisibility();
+                    }
+                    viewportRecalcTimeout = null;
+                }, 50);
+            }
+            
             function updateTransform() {
                 if (graphGroup) {
                     const graphElement = document.getElementById('graph');
@@ -4391,6 +5326,14 @@
 
                 // Update zoom level display even if graphGroup not ready yet
                 updateZoomDisplay();
+                
+                // Schedule viewport visibility recalculation (throttled)
+                scheduleViewportRecalc();
+                
+                // Update minimap if it exists and is visible (always update on zoom/pan/rotate changes)
+                if (viewportCullingEnabled && typeof updateMinimap === 'function') {
+                    updateMinimap();
+                }
             }
 
             function panGraph(direction) {
@@ -4523,9 +5466,9 @@
                 if (!zoomInput) return;
 
                 const percent = parseFloat(zoomInput.value);
-                if (isNaN(percent) || percent < 1 || percent > 500) {
+                if (isNaN(percent) || percent < 0.1 || percent > 500) {
                     // Invalid input, restore current value
-                    zoomInput.value = Math.round(zoomLevel * 100);
+                    zoomInput.value = (zoomLevel * 100).toFixed(1);
                     return;
                 }
 
@@ -4743,6 +5686,11 @@
                 // Update overlay pointer events and cursor
                 if (svg && svg.select('.overlay').node()) {
                     svg.select('.overlay').style('pointer-events', dragZoomEnabled ? 'all' : 'none');
+                    const overlayBg = svg.select('.overlay-background');
+                    if (overlayBg.node()) {
+                        overlayBg.style('cursor', dragZoomEnabled ? 'crosshair' : 'default');
+                        overlayBg.style('pointer-events', dragZoomEnabled ? 'all' : 'none');
+                    }
                     svg.style('cursor', dragZoomEnabled ? 'crosshair' : 'default');
                 }
             }
@@ -4762,9 +5710,13 @@
 
                 const overlay = svg.select('.overlay');
                 if (!overlay.node()) return;
+                
+                // Use the overlay-background rect for mouse events (it covers the entire graph)
+                const overlayBg = svg.select('.overlay-background');
+                const eventTarget = overlayBg.node() ? overlayBg : overlay;
 
                 // Mouse down - start selection
-                overlay.on('mousedown', function (event) {
+                eventTarget.on('mousedown', function (event) {
                     // Only if drag zoom is enabled OR Shift key is held
                     if (!dragZoomEnabled && !event.shiftKey) return;
 
@@ -4791,34 +5743,36 @@
                     svg.style('cursor', 'crosshair');
                 });
 
-                // Mouse move - update selection rectangle
-                overlay.on('mousemove', function (event) {
+                // Mouse move - update selection rectangle (use document to track mouse even outside overlay)
+                document.addEventListener('mousemove', function dragZoomMouseMove(event) {
                     if (!isDragging) return;
-
-                    event.preventDefault();
-                    event.stopPropagation();
-
-                    const coords = d3.pointer(event, svg.node());
-                    dragEnd.x = coords[0];
-                    dragEnd.y = coords[1];
+                    
+                    const graphElement = document.getElementById('graph');
+                    if (!graphElement) return;
+                    const rect = graphElement.getBoundingClientRect();
+                    const x = event.clientX - rect.left;
+                    const y = event.clientY - rect.top;
+                    
+                    dragEnd.x = x;
+                    dragEnd.y = y;
 
                     // Update selection rectangle
                     if (selectionRect) {
-                        const x = Math.min(dragStart.x, dragEnd.x);
-                        const y = Math.min(dragStart.y, dragEnd.y);
+                        const selX = Math.min(dragStart.x, dragEnd.x);
+                        const selY = Math.min(dragStart.y, dragEnd.y);
                         const width = Math.abs(dragEnd.x - dragStart.x);
                         const height = Math.abs(dragEnd.y - dragStart.y);
 
                         selectionRect
-                            .attr('x', x)
-                            .attr('y', y)
+                            .attr('x', selX)
+                            .attr('y', selY)
                             .attr('width', width)
                             .attr('height', height);
                     }
                 });
 
                 // Mouse up - complete selection and zoom
-                overlay.on('mouseup', function (event) {
+                document.addEventListener('mouseup', function dragZoomMouseUp(event) {
                     if (!isDragging) return;
 
                     event.preventDefault();
@@ -4906,20 +5860,22 @@
                     updateTransform();
                 });
 
-                // Handle mouse leave to cancel drag
-                overlay.on('mouseleave', function (event) {
-                    if (isDragging) {
-                        isDragging = false;
-                        if (selectionRect) {
-                            selectionRect.style('display', 'none');
-                        }
-                        svg.style('cursor', dragZoomEnabled ? 'crosshair' : 'default');
-                    }
-                });
+                // Handle mouse leave to cancel drag (use document mouseleave as fallback)
+                // Note: We track mouse events on document now, so mouseleave on overlay isn't needed
             }
 
             function getComponentColor(component) {
                 return componentColors[component] || componentColors['reality_sim'] || '#00FF00';
+            }
+            
+            // Helper function to convert hex color to RGB for opacity manipulation
+            function hexToRgb(hex) {
+                const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+                return result ? {
+                    r: parseInt(result[1], 16),
+                    g: parseInt(result[2], 16),
+                    b: parseInt(result[3], 16)
+                } : null;
             }
 
             function getLinkColor(linkType) {
@@ -4939,11 +5895,18 @@
                 // REAL-TIME UPDATE: Use real-time update if simulation is running, otherwise full re-render
                 if (svg && allNodes.length > 0 && simulation) {
                     // Update colors in real-time without recreating simulation
+                    // Update ALL nodes with their component colors (not just matching ones)
                     svg.selectAll('.node-circle').each(function (d) {
                         const node = d3.select(this);
-                        if (d.component === component || (component === 'reality_sim' && d.component === 'reality_simulator') ||
-                            (component === 'djinn_kernel' && d.component === 'utm_kernel')) {
+                        // If this node's component matches the changed one, update it
+                        if (d.component === component || 
+                            (component === 'reality_sim' && (d.component === 'reality_simulator' || d.component === 'reality_sim')) ||
+                            (component === 'djinn_kernel' && (d.component === 'utm_kernel' || d.component === 'djinn_kernel'))) {
                             node.attr('fill', color);
+                        } else {
+                            // Re-apply component color for all nodes to ensure consistency
+                            const nodeComp = d.component || 'unknown';
+                            node.attr('fill', getComponentColor(nodeComp));
                         }
                     });
                     // Update legend if it exists - use data attribute for reliable selection
@@ -4960,14 +5923,15 @@
                     } else {
                         console.warn('[LEGEND] Legend group not found - graph may not be rendered yet');
                     }
-                } else if (svg && allNodes.length > 0) {
-                    // Fallback: full re-render if simulation doesn't exist yet
-                    // This will recreate the legend with new colors
+                } else if (svg && allNodes.length > 0 && !simulation) {
+                    // Only re-render if simulation truly doesn't exist (not just temporarily null)
+                    console.log('[Color] Full re-render needed for component color update');
                     renderGraph();
-                } else {
+                } else if (!svg || allNodes.length === 0) {
                     // No graph yet, but update the color for when it's rendered
                     console.log(`[LEGEND] Color ${component} set to ${color} (will apply when graph renders)`);
                 }
+                // If simulation exists, real-time update already happened above
             }
 
             function updateLinkColor(linkType, color) {
@@ -4998,14 +5962,15 @@
                     } else {
                         console.warn('[LEGEND] Legend group not found - graph may not be rendered yet');
                     }
-                } else if (svg && allNodes.length > 0) {
-                    // Fallback: full re-render if simulation doesn't exist yet
-                    // This will recreate the legend with new colors
+                } else if (svg && allNodes.length > 0 && !simulation) {
+                    // Only re-render if simulation truly doesn't exist (not just temporarily null)
+                    console.log('[Color] Full re-render needed for link color update');
                     renderGraph();
-                } else {
+                } else if (!svg || allNodes.length === 0) {
                     // No graph yet, but update the color for when it's rendered
                     console.log(`[LEGEND] Link color ${normalizedType} set to ${color} (will apply when graph renders)`);
                 }
+                // If simulation exists, real-time update already happened above
             }
 
             function toggleFilterPanel() {
@@ -9201,6 +10166,15 @@
                 if (snapshotCountDisplay) {
                     snapshotCountDisplay.addEventListener('click', openSnapshotGallery);
                 }
+                
+                // Initialize snapshot enabled toggle checkbox
+                const snapshotToggle = document.getElementById('snapshotEnabledToggle');
+                if (snapshotToggle) {
+                    snapshotToggle.checked = snapshotConfig.global.enabled;
+                }
+                
+                // Initial status update
+                updateSnapshotMethodStatus();
 
                 // Close modal when clicking outside
                 const modal = document.getElementById('snapshotGalleryModal');
@@ -9222,6 +10196,902 @@
                     });
                 }
             });
+
+            // ============================================================================
+            // MINIMAP/RADAR SYSTEM (Navigation aid for viewport culling mode)
+            // ============================================================================
+            
+            let minimapUpdateInterval = null;
+            let minimapDragging = false;
+            let minimapDragOffset = { x: 0, y: 0 };
+            let minimapResizing = false;
+            let minimapResizeStart = { x: 0, y: 0, width: 0, height: 0 };
+            let minimapMinimized = false;
+            let minimapVisible = false;
+            let minimapCanvas = null;
+            let minimapCtx = null;
+            let minimapSize = { width: 300, height: 300 }; // Store custom size
+            
+            // Initialize Minimap
+            function initMinimap() {
+                console.log('[MINIMAP] Initializing minimap...');
+                const minimap = document.getElementById('graphMinimap');
+                const minimapHeader = document.getElementById('graphMinimapHeader');
+                const minimapMinimizeBtn = document.getElementById('graphMinimapMinimize');
+                const minimapCloseBtn = document.getElementById('graphMinimapClose');
+                
+                if (!minimap || !minimapHeader) {
+                    console.warn('[MINIMAP] Minimap elements not found!', { minimap: !!minimap, minimapHeader: !!minimapHeader });
+                    return;
+                }
+                
+                console.log('[MINIMAP] Elements found, setting up canvas...');
+                minimapCanvas = document.getElementById('minimapCanvas');
+                if (minimapCanvas) {
+                    minimapCtx = minimapCanvas.getContext('2d');
+                    console.log('[MINIMAP] Canvas initialized', { width: minimapCanvas.clientWidth, height: minimapCanvas.clientHeight });
+                } else {
+                    console.warn('[MINIMAP] Canvas element not found!');
+                }
+                
+                // Make minimap draggable
+                minimapHeader.addEventListener('mousedown', startDragMinimap);
+                document.addEventListener('mousemove', (e) => {
+                    if (minimapResizing) {
+                        resizeMinimap(e);
+                    } else if (minimapDragging) {
+                        dragMinimap(e);
+                    }
+                });
+                document.addEventListener('mouseup', (e) => {
+                    stopDragMinimap(e);
+                    stopResizeMinimap(e);
+                });
+                
+                // Minimize button
+                if (minimapMinimizeBtn) {
+                    // Prevent drag from starting when clicking minimize button
+                    minimapMinimizeBtn.addEventListener('mousedown', (e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                    });
+                    
+                    // Handle click to toggle minimize
+                    minimapMinimizeBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        console.log('[MINIMAP] Minimize button clicked, current state:', minimapMinimized);
+                        toggleMinimapMinimize();
+                    });
+                }
+                
+                // Close button
+                if (minimapCloseBtn) {
+                    // Prevent drag from starting when clicking close button
+                    minimapCloseBtn.addEventListener('mousedown', (e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                    });
+                    
+                    // Handle click to close
+                    minimapCloseBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        hideMinimap();
+                    });
+                }
+                
+                // Resize handle
+                const resizeHandle = document.getElementById('graphMinimapResizeHandle');
+                if (resizeHandle) {
+                    resizeHandle.addEventListener('mousedown', startResizeMinimap);
+                }
+                
+                // Click on minimap to pan main view
+                if (minimapCanvas) {
+                    minimapCanvas.addEventListener('click', (e) => {
+                        handleMinimapClick(e);
+                    });
+                }
+                
+                // Show/hide based on viewport culling state
+                updateMinimapVisibility();
+                
+                // Set up viewport culling toggle event listener
+                const viewportCullingCheckbox = document.getElementById('viewportCullingEnabled');
+                if (viewportCullingCheckbox) {
+                    viewportCullingCheckbox.addEventListener('change', function() {
+                        toggleViewportCulling(this.checked);
+                    });
+                }
+            }
+            
+            // Update minimap visibility based on viewport culling setting
+            function updateMinimapVisibility() {
+                console.log('[MINIMAP] Updating visibility', { viewportCullingEnabled, minimapVisible });
+                if (viewportCullingEnabled && !minimapVisible) {
+                    console.log('[MINIMAP] Showing minimap (viewport culling enabled)');
+                    showMinimap();
+                } else if (!viewportCullingEnabled && minimapVisible) {
+                    console.log('[MINIMAP] Hiding minimap (viewport culling disabled)');
+                    hideMinimap();
+                }
+            }
+            
+            // Show minimap and start updating
+            function showMinimap() {
+                const minimap = document.getElementById('graphMinimap');
+                if (!minimap) {
+                    console.warn('[MINIMAP] Cannot show: minimap element not found');
+                    return;
+                }
+                
+                console.log('[MINIMAP] Showing minimap');
+                minimapVisible = true;
+                minimap.classList.add('active');
+                
+                // Update immediately
+                updateMinimap();
+                
+                // Update more frequently for better responsiveness (100ms = 10 FPS)
+                if (minimapUpdateInterval) clearInterval(minimapUpdateInterval);
+                minimapUpdateInterval = setInterval(updateMinimap, 100);
+                console.log('[MINIMAP] Update interval started (100ms)');
+            }
+            
+            // Hide minimap and stop updating
+            function hideMinimap() {
+                const minimap = document.getElementById('graphMinimap');
+                if (!minimap) return;
+                
+                minimapVisible = false;
+                minimap.classList.remove('active');
+                
+                if (minimapUpdateInterval) {
+                    clearInterval(minimapUpdateInterval);
+                    minimapUpdateInterval = null;
+                }
+            }
+            
+            // Toggle minimize state
+            function toggleMinimapMinimize() {
+                minimapMinimized = !minimapMinimized;
+                console.log('[MINIMAP] Toggling minimize, new state:', minimapMinimized);
+                
+                const minimap = document.getElementById('graphMinimap');
+                const minimapHeader = document.getElementById('graphMinimapHeader');
+                
+                if (!minimap) {
+                    console.warn('[MINIMAP] Cannot toggle minimize: minimap element not found');
+                    return;
+                }
+                
+                if (minimapMinimized) {
+                    // Minimize: store current size before minimizing
+                    if (!minimap.classList.contains('minimized')) {
+                        minimapSize.width = minimap.offsetWidth || minimapSize.width;
+                        minimapSize.height = minimap.offsetHeight || minimapSize.height;
+                    }
+                    minimap.classList.add('minimized');
+                    console.log('[MINIMAP] Minimized, stored size:', minimapSize);
+                } else {
+                    // Restore: remove minimized class and restore size
+                    minimap.classList.remove('minimized');
+                    minimap.style.width = minimapSize.width + 'px';
+                    minimap.style.height = minimapSize.height + 'px';
+                    
+                    // Update canvas after resize
+                    if (minimapCanvas) {
+                        // Wait for next frame to ensure DOM has updated
+                        requestAnimationFrame(() => {
+                            minimapCanvas.width = minimapCanvas.clientWidth;
+                            minimapCanvas.height = minimapCanvas.clientHeight;
+                            updateMinimap();
+                        });
+                    }
+                    console.log('[MINIMAP] Restored, size:', minimapSize);
+                }
+                
+                if (minimapHeader) {
+                    if (minimapMinimized) {
+                        minimapHeader.classList.add('minimized');
+                    } else {
+                        minimapHeader.classList.remove('minimized');
+                    }
+                }
+                
+                // Update button text/title to reflect state
+                const minimizeBtn = document.getElementById('graphMinimapMinimize');
+                if (minimizeBtn) {
+                    minimizeBtn.title = minimapMinimized ? 'Restore' : 'Minimize';
+                }
+                
+                if (!minimapMinimized) {
+                    updateMinimap(); // Redraw when expanded
+                }
+            }
+            
+            // Update minimap content (lightweight overview of entire graph)
+            function updateMinimap() {
+                if (!minimapCanvas || !minimapCtx || minimapMinimized) {
+                    if (minimapMinimized) {
+                        // Silently skip when minimized
+                        return;
+                    }
+                    if (!minimapCanvas || !minimapCtx) {
+                        console.warn('[MINIMAP] Cannot update: canvas not initialized', { canvas: !!minimapCanvas, ctx: !!minimapCtx });
+                        return;
+                    }
+                }
+                
+                // ALWAYS use simulation nodes if available - they have the real, current positions
+                let nodesToUse = [];
+                let nodeSource = 'none';
+                
+                if (simulation) {
+                    try {
+                        const simNodes = simulation.nodes();
+                        if (simNodes && simNodes.length > 0) {
+                            nodesToUse = simNodes;
+                            nodeSource = 'simulation';
+                        }
+                    } catch (e) {
+                        console.warn('[MINIMAP] Error accessing simulation nodes:', e);
+                    }
+                }
+                
+                // Only fall back to allNodes/filteredNodes if simulation isn't ready yet
+                if (nodesToUse.length === 0) {
+                    if (allNodes && allNodes.length > 0) {
+                        nodesToUse = allNodes;
+                        nodeSource = 'allNodes';
+                    } else if (filteredNodes && filteredNodes.length > 0) {
+                        nodesToUse = filteredNodes;
+                        nodeSource = 'filteredNodes';
+                    }
+                }
+                
+                if (!nodesToUse || nodesToUse.length === 0) {
+                    console.log('[MINIMAP] No nodes available yet', { 
+                        allNodes: allNodes?.length || 0, 
+                        simulation: !!simulation,
+                        filteredNodes: filteredNodes?.length || 0,
+                        simulationNodes: simulation ? simulation.nodes()?.length || 0 : 0
+                    });
+                    // Show "No graph data" message
+                    const canvas = minimapCanvas;
+                    const ctx = minimapCtx;
+                    const width = canvas.clientWidth || 300;
+                    const height = canvas.clientHeight || 300;
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.fillStyle = '#000';
+                    ctx.fillRect(0, 0, width, height);
+                    ctx.fillStyle = '#888';
+                    ctx.font = '12px monospace';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('No graph data yet', width / 2, height / 2);
+                    return;
+                }
+                
+                const canvas = minimapCanvas;
+                const ctx = minimapCtx;
+                const width = canvas.clientWidth || 300;
+                const height = canvas.clientHeight || 300;
+                
+                // Set canvas size
+                canvas.width = width;
+                canvas.height = height;
+                
+                // Clear canvas
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, width, height);
+                
+                // Get nodes with REAL positions from simulation (x/y must be defined and finite)
+                // Only use nodes that have actual positions - no fallback fake positions
+                const nodesWithPositions = nodesToUse.filter(node => {
+                    const hasPosition = node.x !== undefined && node.x !== null &&
+                                      node.y !== undefined && node.y !== null &&
+                                      isFinite(node.x) && isFinite(node.y);
+                    return hasPosition;
+                });
+                
+                // If we don't have real positions yet, show waiting message
+                if (nodesWithPositions.length === 0) {
+                    ctx.fillStyle = '#888';
+                    ctx.font = '12px monospace';
+                    ctx.textAlign = 'center';
+                    if (nodesToUse.length > 0) {
+                        ctx.fillText('Waiting for graph layout...', width / 2, height / 2);
+                        ctx.fillText(`${nodesToUse.length} nodes (no positions yet)`, width / 2, height / 2 + 15);
+                    } else {
+                        ctx.fillText('No graph data yet', width / 2, height / 2);
+                    }
+                    return;
+                }
+                
+                // Calculate bounds of all nodes (only use nodes with real positions)
+                let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+                nodesWithPositions.forEach(node => {
+                    // Nodes in nodesWithPositions already have valid x/y
+                    if (node.x < minX) minX = node.x;
+                    if (node.x > maxX) maxX = node.x;
+                    if (node.y < minY) minY = node.y;
+                    if (node.y > maxY) maxY = node.y;
+                });
+                
+                // Handle edge cases - if bounds are invalid, default to a reasonable size
+                if (minX === Infinity || maxX === -Infinity || minY === Infinity || maxY === -Infinity) {
+                    // No valid bounds - show centered message
+                    ctx.fillStyle = '#888';
+                    ctx.font = '12px monospace';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Graph layout in progress...', width / 2, height / 2);
+                    return;
+                }
+                
+                // Ensure bounds are valid (not zero-width or zero-height)
+                if (minX === maxX) {
+                    minX -= 100;
+                    maxX += 100;
+                }
+                if (minY === maxY) {
+                    minY -= 100;
+                    maxY += 100;
+                }
+                
+                // Calculate graph dimensions
+                const graphWidth = maxX - minX;
+                const graphHeight = maxY - minY;
+                
+                // Add padding (10% on each side)
+                const padding = Math.max(20, Math.min(width, height) * 0.1);
+                
+                // Calculate scale to fit in minimap (aspect ratio preserving)
+                const scaleX = (width - padding * 2) / graphWidth;
+                const scaleY = (height - padding * 2) / graphHeight;
+                const scale = Math.min(scaleX, scaleY, 1.0); // Don't scale up beyond 1:1
+                
+                // Canvas center
+                const centerX = width / 2;
+                const centerY = height / 2;
+                
+                // Graph center (world coordinates)
+                const graphCenterX = (minX + maxX) / 2;
+                const graphCenterY = (minY + maxY) / 2;
+                
+                // Transform function: world to minimap screen space
+                // This centers the graph: graphCenter maps to canvas center
+                const toMinimapX = (worldX) => centerX + (worldX - graphCenterX) * scale;
+                const toMinimapY = (worldY) => centerY + (worldY - graphCenterY) * scale;
+                
+                // Debug: Draw center crosshair to verify centering (optional - can remove later)
+                if (nodesWithPositions.length > 0) {
+                    ctx.strokeStyle = 'rgba(128, 128, 128, 0.3)';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([2, 2]);
+                    // Horizontal center line
+                    ctx.beginPath();
+                    ctx.moveTo(0, centerY);
+                    ctx.lineTo(width, centerY);
+                    ctx.stroke();
+                    // Vertical center line
+                    ctx.beginPath();
+                    ctx.moveTo(centerX, 0);
+                    ctx.lineTo(centerX, height);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+                
+                // Draw links (lightweight - just lines, no styling)
+                // Use allLinks if available, otherwise try to get from filteredLinks or simulation
+                let linksToUse = allLinks || [];
+                if ((!linksToUse || linksToUse.length === 0) && filteredLinks && filteredLinks.length > 0) {
+                    linksToUse = filteredLinks;
+                }
+                
+                ctx.strokeStyle = 'rgba(0, 255, 255, 0.3)';
+                ctx.lineWidth = 0.5;
+                if (linksToUse && linksToUse.length > 0 && nodesWithPositions.length > 0) {
+                    linksToUse.forEach(link => {
+                        const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+                        const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+                        // Find nodes by ID - check nodesWithPositions first, then fallback to all nodes
+                        let sourceNode = nodesWithPositions.find(n => n.id === sourceId);
+                        let targetNode = nodesWithPositions.find(n => n.id === targetId);
+                        
+                        // Fallback: search in all nodes if not found in positioned nodes
+                        if (!sourceNode) sourceNode = nodesToUse.find(n => n.id === sourceId);
+                        if (!targetNode) targetNode = nodesToUse.find(n => n.id === targetId);
+                        
+                        if (sourceNode && targetNode && sourceNode.x !== undefined && targetNode.y !== undefined &&
+                            targetNode.x !== undefined && targetNode.y !== undefined) {
+                            ctx.beginPath();
+                            ctx.moveTo(toMinimapX(sourceNode.x), toMinimapY(sourceNode.y));
+                            ctx.lineTo(toMinimapX(targetNode.x), toMinimapY(targetNode.y));
+                            ctx.stroke();
+                        }
+                    });
+                }
+                
+                // Calculate which nodes are visible in main viewport (for highlighting)
+                const visibleNodeIds = new Set();
+                if (viewportCullingEnabled && svg) {
+                    const bounds = getViewportBounds();
+                    if (bounds) {
+                        nodesToUse.forEach(node => {
+                            const x = node.x !== undefined ? node.x : (node.fx !== undefined ? node.fx : 0);
+                            const y = node.y !== undefined ? node.y : (node.fy !== undefined ? node.fy : 0);
+                            if (isPointInViewport(x, y, bounds)) {
+                                visibleNodeIds.add(node.id);
+                            }
+                        });
+                    }
+                }
+                
+                // Draw nodes with component colors (lightweight but colorful!)
+                // Single pass: draw all nodes with their component colors
+                nodesWithPositions.forEach(node => {
+                    const x = node.x !== undefined ? node.x : (node.fx !== undefined ? node.fx : 0);
+                    const y = node.y !== undefined ? node.y : (node.fy !== undefined ? node.fy : 0);
+                    const minimapX = toMinimapX(x);
+                    const minimapY = toMinimapY(y);
+                    
+                    // Only draw if within canvas bounds (with small margin)
+                    if (minimapX >= -10 && minimapX <= width + 10 && minimapY >= -10 && minimapY <= height + 10) {
+                        // Get component color - same system as main graph
+                        const comp = node.component || 'unknown';
+                        const nodeColor = getComponentColor(comp);
+                        
+                        // Check if this node is visible in main viewport
+                        const isVisible = viewportCullingEnabled && visibleNodeIds.has(node.id);
+                        
+                        if (isVisible) {
+                            // Visible nodes: bright, larger (2.5px radius)
+                            ctx.fillStyle = nodeColor; // Full brightness
+                            ctx.beginPath();
+                            ctx.arc(minimapX, minimapY, 2.5, 0, Math.PI * 2);
+                            ctx.fill();
+                        } else {
+                            // Non-visible nodes: dimmed but still colored (1.5px radius)
+                            // Convert color to RGBA with reduced opacity
+                            const rgb = hexToRgb(nodeColor);
+                            if (rgb) {
+                                ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)`;
+                            } else {
+                                ctx.fillStyle = nodeColor;
+                                ctx.globalAlpha = 0.3;
+                            }
+                            ctx.beginPath();
+                            ctx.arc(minimapX, minimapY, 1.5, 0, Math.PI * 2);
+                            ctx.fill();
+                            ctx.globalAlpha = 1.0; // Reset
+                        }
+                    }
+                });
+                
+                // Draw viewport indicator LAST so it's on top (what you're currently seeing in main view)
+                drawViewportIndicator(ctx, width, height, minX, minY, maxX, maxY, scale, graphCenterX, graphCenterY);
+            }
+            
+            // Draw viewport indicator (shows what's visible in main graph)
+            function drawViewportIndicator(ctx, width, height, graphMinX, graphMinY, graphMaxX, graphMaxY, scale, graphCenterX, graphCenterY) {
+                const graphElement = document.getElementById('graph');
+                if (!graphElement || !graphGroup) return;
+                
+                const graphWidth = graphElement.clientWidth;
+                const graphHeight = graphElement.clientHeight || 792;
+                const centerX = graphWidth / 2;
+                const centerY = graphHeight / 2;
+                
+                // The transform applied to the graph is (applied right-to-left in SVG):
+                // translate(centerX + panX, centerY + panY) scale(zoom) rotate(rotation) translate(-centerX, -centerY)
+                // 
+                // To find what world coordinates are visible on screen, we need to invert this transform.
+                // The viewport in screen space is [0, 0] to [graphWidth, graphHeight].
+                // We'll transform the four screen corners back to world space.
+                
+                // Get viewport corners in screen space
+                const screenCorners = [
+                    [0, 0],                    // Top-left
+                    [graphWidth, 0],           // Top-right
+                    [graphWidth, graphHeight], // Bottom-right
+                    [0, graphHeight]           // Bottom-left
+                ];
+                
+                // Calculate inverse transform parameters
+                const rotationRad = (rotation * Math.PI) / 180;
+                const cosRot = Math.cos(-rotationRad); // Negative for inverse rotation
+                const sinRot = Math.sin(-rotationRad);
+                const invZoom = 1 / zoomLevel;
+                
+                // Transform screen point to world point
+                // Steps (inverse of forward transform):
+                // 1. Remove final translate: subtract (centerX + panX, centerY + panY)
+                // 2. Remove scale: divide by zoom
+                // 3. Remove rotation: rotate by -rotation around origin
+                // 4. Remove initial translate: add (centerX, centerY)
+                const screenToWorld = (screenX, screenY) => {
+                    // Step 1: Remove final translate(centerX + panX, centerY + panY)
+                    let x = screenX - (centerX + panX);
+                    let y = screenY - (centerY + panY);
+                    
+                    // Step 2: Remove scale
+                    x = x * invZoom;
+                    y = y * invZoom;
+                    
+                    // Step 3: Remove rotation (rotate around origin by -rotation)
+                    const rotX = x * cosRot - y * sinRot;
+                    const rotY = x * sinRot + y * cosRot;
+                    x = rotX;
+                    y = rotY;
+                    
+                    // Step 4: Remove initial translate(-centerX, -centerY) by adding center back
+                    x = x + centerX;
+                    y = y + centerY;
+                    
+                    return [x, y];
+                };
+                
+                // Transform all four screen corners to world space
+                const worldCorners = screenCorners.map(([sx, sy]) => screenToWorld(sx, sy));
+                
+                // Convert world corners to minimap coordinates
+                const toMinimapX = (worldX) => width / 2 + (worldX - graphCenterX) * scale;
+                const toMinimapY = (worldY) => height / 2 + (worldY - graphCenterY) * scale;
+                
+                const minimapCorners = worldCorners.map(([wx, wy]) => [
+                    toMinimapX(wx),
+                    toMinimapY(wy)
+                ]);
+                
+                // Draw viewport indicator as a polygon (handles rotation properly)
+                ctx.strokeStyle = '#0ff';
+                ctx.fillStyle = 'rgba(0, 255, 255, 0.2)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([8, 4]);
+                
+                ctx.beginPath();
+                ctx.moveTo(minimapCorners[0][0], minimapCorners[0][1]);
+                for (let i = 1; i < minimapCorners.length; i++) {
+                    ctx.lineTo(minimapCorners[i][0], minimapCorners[i][1]);
+                }
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+                
+                // Draw a thicker border for better visibility
+                ctx.setLineDash([]);
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = '#0ff';
+                ctx.stroke();
+                
+                // Reset line dash
+                ctx.setLineDash([]);
+                
+                // Draw center point indicator
+                const worldCenterX = (worldCorners[0][0] + worldCorners[1][0] + worldCorners[2][0] + worldCorners[3][0]) / 4;
+                const worldCenterY = (worldCorners[0][1] + worldCorners[1][1] + worldCorners[2][1] + worldCorners[3][1]) / 4;
+                const centerMinimapX = toMinimapX(worldCenterX);
+                const centerMinimapY = toMinimapY(worldCenterY);
+                
+                ctx.fillStyle = '#0ff';
+                ctx.beginPath();
+                ctx.arc(centerMinimapX, centerMinimapY, 3, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+            
+            // Handle click on minimap to pan main view
+            function handleMinimapClick(e) {
+                if (!viewportCullingEnabled) return;
+                
+                // Prevent default behavior
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Get current nodes from simulation (real positions)
+                let nodesToUse = [];
+                if (simulation) {
+                    try {
+                        const simNodes = simulation.nodes();
+                        nodesToUse = (simNodes || []).filter(node => 
+                            node.x !== undefined && node.y !== undefined &&
+                            isFinite(node.x) && isFinite(node.y)
+                        );
+                    } catch (e) {
+                        console.warn('[MINIMAP] Error accessing simulation nodes for click:', e);
+                        return;
+                    }
+                }
+                
+                if (nodesToUse.length === 0) {
+                    console.log('[MINIMAP] No nodes with positions available for click handling');
+                    return;
+                }
+                
+                const canvas = minimapCanvas;
+                const rect = canvas.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const clickY = e.clientY - rect.top;
+                
+                // Calculate bounds of all nodes (from simulation)
+                let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+                nodesToUse.forEach(node => {
+                    if (node.x < minX) minX = node.x;
+                    if (node.x > maxX) maxX = node.x;
+                    if (node.y < minY) minY = node.y;
+                    if (node.y > maxY) maxY = node.y;
+                });
+                
+                if (minX === Infinity || maxX === -Infinity || minY === Infinity || maxY === -Infinity) {
+                    console.log('[MINIMAP] Invalid bounds, cannot handle click');
+                    return;
+                }
+                
+                const graphBoundsWidth = maxX - minX || 1;
+                const graphBoundsHeight = maxY - minY || 1;
+                const padding = 50;
+                const scaleX = (canvas.width - padding * 2) / graphBoundsWidth;
+                const scaleY = (canvas.height - padding * 2) / graphBoundsHeight;
+                const scale = Math.min(scaleX, scaleY, 1.0);
+                
+                const graphCenterX = (minX + maxX) / 2;
+                const graphCenterY = (minY + maxY) / 2;
+                
+                // Convert minimap click to world coordinates
+                const worldX = graphCenterX + (clickX - canvas.width / 2) / scale;
+                const worldY = graphCenterY + (clickY - canvas.height / 2) / scale;
+                
+                // Center main view on the clicked world position
+                // Get current transform state
+                const graphElement = document.getElementById('graph');
+                if (!graphElement) return;
+                
+                const graphWidth = graphElement.clientWidth;
+                const graphHeight = graphElement.clientHeight;
+                const centerX = graphWidth / 2;
+                const centerY = graphHeight / 2;
+                
+                // Center main view on clicked world position
+                // Transform order (applied right-to-left): 
+                //   translate(centerX + panX, centerY + panY) 
+                //   scale(zoomLevel) 
+                //   rotate(rotation) 
+                //   translate(-centerX, -centerY)
+                //
+                // We want world point (worldX, worldY) to appear at screen center (centerX, centerY)
+                //
+                // Apply transforms in order (left-to-right, as executed):
+                //   1. translate(-centerX, -centerY): (worldX, worldY) -> (worldX - centerX, worldY - centerY)
+                //   2. rotate(rotation): rotate around origin
+                //   3. scale(zoomLevel): scale
+                //   4. translate(centerX + panX, centerY + panY): final position
+                //
+                // Solve: we want final position = (centerX, centerY)
+                
+                // Step 1: Move world point relative to graph center
+                const dx = worldX - centerX;
+                const dy = worldY - centerY;
+                
+                // Step 2: Apply rotation (in radians)
+                const rotationRad = (rotation * Math.PI) / 180;
+                const cosRot = Math.cos(rotationRad);
+                const sinRot = Math.sin(rotationRad);
+                const rotatedX = dx * cosRot - dy * sinRot;
+                const rotatedY = dx * sinRot + dy * cosRot;
+                
+                // Step 3: Apply scale
+                const scaledX = rotatedX * zoomLevel;
+                const scaledY = rotatedY * zoomLevel;
+                
+                // Step 4: Calculate pan to center
+                // Final position = (centerX + panX + scaledX, centerY + panY + scaledY)
+                // We want this = (centerX, centerY)
+                // Therefore: panX = -scaledX, panY = -scaledY
+                panX = -scaledX;
+                panY = -scaledY;
+                
+                // Update the transform to center on clicked location
+                updateTransform();
+            }
+            
+            // Drag functionality
+            function startDragMinimap(e) {
+                // Don't start drag if clicking on minimize/close buttons or their children
+                const target = e.target;
+                const isButton = target.id === 'graphMinimapClose' || 
+                                 target.id === 'graphMinimapMinimize' ||
+                                 target.closest('#graphMinimapClose') ||
+                                 target.closest('#graphMinimapMinimize');
+                
+                if (isButton) {
+                    return;
+                }
+                
+                minimapDragging = true;
+                const minimap = document.getElementById('graphMinimap');
+                const rect = minimap.getBoundingClientRect();
+                
+                minimapDragOffset.x = e.clientX - rect.left;
+                minimapDragOffset.y = e.clientY - rect.top;
+                
+                e.preventDefault();
+            }
+            
+            function dragMinimap(e) {
+                if (!minimapDragging) return;
+                
+                const minimap = document.getElementById('graphMinimap');
+                if (!minimap) return;
+                
+                const newX = e.clientX - minimapDragOffset.x;
+                const newY = e.clientY - minimapDragOffset.y;
+                
+                // Keep within viewport bounds
+                const maxX = window.innerWidth - minimap.offsetWidth;
+                const maxY = window.innerHeight - minimap.offsetHeight;
+                
+                minimap.style.left = Math.max(0, Math.min(newX, maxX)) + 'px';
+                minimap.style.top = Math.max(0, Math.min(newY, maxY)) + 'px';
+                minimap.style.right = 'auto';
+                
+                e.preventDefault();
+            }
+            
+            function stopDragMinimap() {
+                minimapDragging = false;
+            }
+            
+            // Start resizing minimap
+            function startResizeMinimap(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                minimapResizing = true;
+                
+                const minimap = document.getElementById('graphMinimap');
+                if (!minimap) return;
+                
+                const rect = minimap.getBoundingClientRect();
+                // Store the right edge position (in screen coordinates) to keep it fixed
+                minimapResizeStart.rightEdge = rect.right;
+                // Store the top edge position (in screen coordinates) to keep it fixed
+                minimapResizeStart.topEdge = rect.top;
+                minimapResizeStart.width = rect.width;
+                minimapResizeStart.height = rect.height;
+                // Store initial mouse position for delta calculation
+                minimapResizeStart.mouseX = e.clientX;
+                minimapResizeStart.mouseY = e.clientY;
+            }
+            
+            // Resize minimap from bottom-left corner (keeping top-right corner fixed)
+            function resizeMinimap(e) {
+                if (!minimapResizing) return;
+                
+                const minimap = document.getElementById('graphMinimap');
+                if (!minimap) return;
+                
+                // Get current minimap rectangle
+                const rect = minimap.getBoundingClientRect();
+                
+                // For bottom-left resize: mouse position represents new bottom-left corner
+                // Top-right corner stays fixed at minimapResizeStart.rightEdge and minimapResizeStart.topEdge
+                
+                // Calculate new width from mouse X to fixed right edge
+                const newWidth = minimapResizeStart.rightEdge - e.clientX;
+                // Calculate new height from fixed top edge to mouse Y
+                const newHeight = e.clientY - minimapResizeStart.topEdge;
+                
+                // Apply size constraints (minimum 200x200, maximum 800x800)
+                const minSize = 200;
+                const maxSize = 800;
+                const constrainedWidth = Math.max(minSize, Math.min(maxSize, newWidth));
+                const constrainedHeight = Math.max(minSize, Math.min(maxSize, newHeight));
+                
+                // Calculate new position
+                // Left edge = right edge - width (keeps top-right fixed)
+                const newLeft = minimapResizeStart.rightEdge - constrainedWidth;
+                // Top edge stays fixed
+                const newTop = minimapResizeStart.topEdge;
+                
+                // Boundary checks - ensure minimap stays within viewport
+                const windowWidth = window.innerWidth;
+                const windowHeight = window.innerHeight;
+                
+                // Clamp to viewport boundaries
+                const finalLeft = Math.max(0, Math.min(newLeft, windowWidth - constrainedWidth));
+                const finalTop = Math.max(0, Math.min(newTop, windowHeight - constrainedHeight));
+                const finalWidth = Math.min(constrainedWidth, windowWidth - finalLeft);
+                const finalHeight = Math.min(constrainedHeight, windowHeight - finalTop);
+                
+                // Update minimap position and size
+                // Clear right positioning and use left/top to keep top-right fixed
+                minimap.style.right = 'auto';
+                minimap.style.left = finalLeft + 'px';
+                minimap.style.top = finalTop + 'px';
+                minimap.style.width = finalWidth + 'px';
+                minimap.style.height = finalHeight + 'px';
+                
+                // Store size for restoration after minimize
+                minimapSize.width = finalWidth;
+                minimapSize.height = finalHeight;
+                
+                // Update canvas immediately
+                if (minimapCanvas) {
+                    minimapCanvas.width = minimapCanvas.clientWidth;
+                    minimapCanvas.height = minimapCanvas.clientHeight;
+                    updateMinimap();
+                }
+            }
+            
+            // Stop resizing minimap
+            function stopResizeMinimap(e) {
+                if (minimapResizing) {
+                    minimapResizing = false;
+                    // Trigger a final update
+                    if (minimapCanvas) {
+                        minimapCanvas.width = minimapCanvas.clientWidth;
+                        minimapCanvas.height = minimapCanvas.clientHeight;
+                        updateMinimap();
+                    }
+                }
+            }
+            
+            // Initialize minimap on page load
+            document.addEventListener('DOMContentLoaded', function() {
+                initMinimap();
+                
+                // Set up viewport culling toggle event listener
+                const viewportCullingCheckbox = document.getElementById('viewportCullingEnabled');
+                if (viewportCullingCheckbox) {
+                    viewportCullingCheckbox.addEventListener('change', function() {
+                        toggleViewportCulling(this.checked);
+                    });
+                }
+            });
+            
+            // Also try immediately in case DOM is already loaded
+            if (document.readyState === 'loading') {
+                // DOM hasn't finished loading yet, will be handled by DOMContentLoaded
+            } else {
+                // DOM is already loaded
+                initMinimap();
+                const viewportCullingCheckbox = document.getElementById('viewportCullingEnabled');
+                if (viewportCullingCheckbox) {
+                    viewportCullingCheckbox.addEventListener('change', function() {
+                        toggleViewportCulling(this.checked);
+                    });
+                }
+            }
+
+            // Diagnostic function for debugging visualization state
+            window.vizDebug = function() {
+                const state = {
+                    hasSvg: !!svg,
+                    hasSimulation: !!simulation,
+                    simulationRunning: simulation ? !simulation.stopped : false,
+                    simulationAlpha: simulation ? simulation.alpha().toFixed(4) : null,
+                    nodeCount: allNodes.length,
+                    linkCount: allLinks.length,
+                    visibleNodeCount: svg ? d3.selectAll('.node-circle').size() : 0,
+                    visibleLinkCount: svg ? d3.selectAll('.link').size() : 0,
+                    currentSettings: Object.keys(vizSettings).length,
+                    batchMode: batchUpdateMode,
+                    pendingBatchUpdates: pendingBatchUpdates.length,
+                    componentColorsCount: Object.keys(componentColors).length,
+                    linkColorsCount: Object.keys(linkColors).length
+                };
+
+                console.log('=== VISUALIZATION DEBUG STATE ===');
+                console.table(state);
+                console.log('vizSettings:', vizSettings);
+                console.log('componentColors:', componentColors);
+                console.log('linkColors:', linkColors);
+                console.log('filters:', filters);
+                console.log('================================');
+                return state;
+            };
+
+            console.log('[VizDebug] Diagnostic function loaded. Type vizDebug() in console to view state.');
 
     </script>
 

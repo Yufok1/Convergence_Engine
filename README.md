@@ -99,6 +99,27 @@ Governance system with breath engine that coordinates all three systems.
 
 Mathematical foundation for self-sustaining recursive identities.
 
+**VP Monitoring System:**
+- Violation pressure calculation with configurable features
+- Diagnostic logging to identify saturation sources
+- Stabilization to prevent immediate jumps
+- Component decomposition for granular analysis
+- Adaptive thresholds based on system phase
+
+**Configuration Example:**
+```json
+{
+  "vp_monitoring": {
+    "diagnostics_enabled": false,
+    "stabilization_enabled": false,
+    "adaptive_thresholds_enabled": false,
+    "component_decomposition_enabled": false
+  }
+}
+```
+
+See `VP_MONITORING_REDESIGN.md` for complete documentation.
+
 **Core Features:**
 - **Violation Pressure (VP) Monitoring**: Trait divergence classification (VP0-VP4)
 - **UUID Anchoring**: Deterministic identity generation from payloads
@@ -335,11 +356,22 @@ The breath engine provides unified timing:
 - **Interactive Graph**: D3.js visualization of event causation
 - **CRA Agent**: AI-powered research assistant with full system access
 - **Autonomous Control**: 40+ visualization settings, graph filters
+- **Robust Settings Management** ⭐:
+  - Settings validation prevents invalid values from breaking visualization
+  - Batch update mode for efficient bulk changes (prevents cascading re-renders)
+  - Real-time updates during active simulation without interruption
+  - Error recovery with graceful degradation
+  - Diagnostic function (`vizDebug()`) for state inspection
+- **Performance Features**:
+  - Viewport culling & Level-of-Detail (LOD) for large graphs
+  - Minimap/Radar navigation aid with viewport indicator
 - **Snapshot System**: 
   - Activity-based automatic capture (~1-second intervals)
   - Snapshot gallery with thumbnail grid and full-screen viewer
   - Thumbnail selection for vision analysis (single or multiple)
   - Create MP4 videos directly from selected snapshots
+  - Clear all snapshots button and enable/disable toggle
+  - Auto-clear on simulation start
   - Single source of truth shared across viewer, vision analysis, and video export
 - **Causation Tree Graph**: Interactive nested tree visualization for event causation trails
 - **Video Export**: MP4 creation from timeline playback or selected snapshots

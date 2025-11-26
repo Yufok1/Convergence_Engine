@@ -69,6 +69,13 @@ Location: `data/logs/`
 - `explorer.log` - Explorer state
 - `djinn_kernel.log` - VP calculations
 - `system.log` - System events
+- `application.log` - General application logging
+
+**Archive logs:**
+```bash
+python archive_logs.py --confirm  # Archive & clear
+python archive_logs.py --list     # List archives
+```
 
 ---
 

@@ -82,7 +82,7 @@ class OllamaBridge:
         # Support environment variables for configuration
         # OLLAMA_BASE_URL defaults to localhost, or use https://ollama.com for cloud
         self.base_url = base_url or os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-        self.timeout = timeout or float(os.getenv("OLLAMA_TIMEOUT", "30.0"))
+        self.timeout = timeout or float(os.getenv("OLLAMA_TIMEOUT", "120.0"))
         # OLLAMA_API_KEY required for cloud API access
         self.api_key = api_key or os.getenv("OLLAMA_API_KEY")
         
@@ -1386,6 +1386,12 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "     * `djinn_kernel.log` - Djinn Kernel (right wing) violation pressure calculations\n"
         prompt += "       - Format: timestamp|level|djinn_kernel|vp:0.XXX|vp_class:str|vp_calcs:N|traits:N\n"
         prompt += "       - Contains: violation pressure value, VP classification (VP0-VP4), VP calculations count, trait count\n"
+        prompt += "     * `vp_diagnostics.log` - **NEW**: Detailed VP diagnostic breakdowns (if diagnostics enabled)\n"
+        prompt += "       - Format: timestamp|vp_diagnostics|trait_breakdown|{JSON} or calculation_summary|{JSON}\n"
+        prompt += "       - Contains: Per-trait breakdowns, envelope analysis, normalization factors, VP contribution ratios\n"
+        prompt += "       - **PATH**: `data/logs/vp_diagnostics.log`\n"
+        prompt += "       - **ONLY EXISTS** if `vp_monitoring.diagnostics_enabled=true` in config.json\n"
+        prompt += "       - **USE THIS** to understand what's driving VP saturation or high values\n"
         prompt += "     * `system.log` - System-level events (initialization, shutdown, errors)\n"
         prompt += "       - Format: timestamp|level|system|event:str|...\n"
         prompt += "       - Contains: System lifecycle events, initialization status, shutdown events, errors\n"
@@ -1399,6 +1405,95 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "   - **CORRELATION**: Cross-reference log data with graph events and shared state for complete picture\n"
         prompt += "10. **Real-Time Events**: `/api/cra/events/stream` - Server-Sent Events stream, `/api/cra/events/recent` - Recent events\n"
         prompt += "11. **Custodian Status**: `/api/cra/status` - Your own status and capabilities, `/api/cra/guardian/mode` - Enable protective monitoring\n\n"
+        prompt += "## PHASE SYNC AWARENESS ENDPOINTS (NEW - FULL SYSTEM INTEGRATION):\n\n"
+        prompt += "You now have access to COMPLETE integration facilities data including phase synchronization, collapse prediction, and universal transition tracking:\n\n"
+        prompt += "12. **Phase Synchronization Data**: `/api/diagnostic/phase_sync`\n"
+        prompt += "    - Network collapse proximity (0.0-1.0, how close to ~500 organism collapse)\n"
+        prompt += "    - Explorer genesis proximity (0.0-1.0, how close to Sovereign phase)\n"
+        prompt += "    - Phase alignment status (are systems synchronized?)\n"
+        prompt += "    - Proximity difference (how far apart are the systems?)\n"
+        prompt += "    - Network metrics: organism count, clustering, modularity, path length\n"
+        prompt += "    - Explorer metrics: VP calculations, stability score, breath cycles\n"
+        prompt += "    - **KEY INSIGHT**: When systems are aligned (proximity difference < 10%), they will transition together\n\n"
+        prompt += "13. **Exploration Ratio Tracking**: `/api/diagnostic/exploration_ratio`\n"
+        prompt += "    - Universal 10:1 ratio (Reality Sim explorations : Explorer explorations)\n"
+        prompt += "    - Current ratio (e.g., \"450:45\")\n"
+        prompt += "    - Target ratio (\"500:50\" = 10:1)\n"
+        prompt += "    - Whether ratio is maintained (systems aligned)\n"
+        prompt += "    - Progress to universal transition (0.0-1.0)\n"
+        prompt += "    - **CRITICAL CONCEPT**: The ratio 500:50 = 10:1 is the exploration-to-precision conversion factor.\n"
+        prompt += "      When Reality Sim reaches 500 organisms AND Explorer reaches 50 VP calculations,\n"
+        prompt += "      the UNIVERSAL CHAOS→PRECISION TRANSITION occurs. All three systems transform together.\n\n"
+        prompt += "14. **Unified System Health**: `/api/diagnostic/unified_health`\n"
+        prompt += "    - Overall system health (0.0-1.0)\n"
+        prompt += "    - Reality Sim health\n"
+        prompt += "    - Explorer health\n"
+        prompt += "    - Djinn Kernel health\n"
+        prompt += "    - Integration health (how well systems are coordinating)\n"
+        prompt += "    - Phase alignment health (how synchronized they are)\n"
+        prompt += "    - **Health thresholds**: 0.8-1.0 (Excellent), 0.6-0.8 (Good), 0.4-0.6 (Fair), 0.0-0.4 (Poor)\n\n"
+        prompt += "15. **Transition Status**: `/api/diagnostic/transition_status`\n"
+        prompt += "    - Reality Sim ready (network collapsed?)\n"
+        prompt += "    - Explorer ready (mathematical capability achieved?)\n"
+        prompt += "    - Djinn Kernel ready (VP < 0.25, VP0?)\n"
+        prompt += "    - Unified transition triggered (all systems ready?)\n"
+        prompt += "    - Estimated time to transition\n\n"
+        prompt += "16. **Collapse Prediction**: `/api/diagnostic/collapse_prediction`\n"
+        prompt += "    - Will network collapse? (boolean)\n"
+        prompt += "    - Estimated generations until collapse\n"
+        prompt += "    - Current collapse proximity (0.0-1.0)\n"
+        prompt += "    - Is collapse imminent? (proximity > 0.9)\n"
+        prompt += "    - Warning level: green (safe), yellow (approaching), orange (close), red (imminent)\n"
+        prompt += "    - Is network already collapsed?\n\n"
+        prompt += "## VP MONITORING SYSTEM REDESIGN (NEW - CRITICAL FOR VP ANALYSIS):\n\n"
+        prompt += "**IMPORTANT**: The VP (Violation Pressure) monitoring system has been redesigned to address saturation issues.\n"
+        prompt += "You now have access to detailed VP diagnostic data to understand what's driving VP values:\n\n"
+        prompt += "17. **VP Diagnostics Breakdown**: `/api/diagnostic/vp_diagnostics`\n"
+        prompt += "    - Detailed trait-by-trait breakdown of VP calculation\n"
+        prompt += "    - Trait values, envelope centers, deviations, per-trait VPs\n"
+        prompt += "    - Normalization factors and VP contribution ratios\n"
+        prompt += "    - Dominant trait identification (which trait is driving high VP?)\n"
+        prompt += "    - **USE THIS** when investigating why VP is high or saturating\n"
+        prompt += "    - **PATH**: Diagnostic data is logged to `data/logs/vp_diagnostics.log` if diagnostics enabled\n\n"
+        prompt += "18. **VP Component Decomposition**: `/api/diagnostic/vp_components`\n"
+        prompt += "    - Weighted component breakdown showing which components drive VP:\n"
+        prompt += "      * `trait_divergence` (25%): Average deviation from stability centers\n"
+        prompt += "      * `network_coherence` (20%): Coherence of network traits\n"
+        prompt += "      * `phase_mismatch` (15%): Mismatch in prosocial traits\n"
+        prompt += "      * `evolution_pressure` (20%): Pressure from meta-traits\n"
+        prompt += "      * `quantum_entropy` (20%): Entropy in trait distribution\n"
+        prompt += "    - Combined VP from weighted geometric mean\n"
+        prompt += "    - **USE THIS** to identify which component is causing VP saturation\n\n"
+        prompt += "19. **VP Stabilization History**: `/api/diagnostic/vp_stabilization`\n"
+        prompt += "    - VP stabilization history (last 10 values if stabilization enabled)\n"
+        prompt += "    - Raw vs stabilized VP comparison\n"
+        prompt += "    - Jump limiting information (max jump per calculation)\n"
+        prompt += "    - **USE THIS** to see if stabilization is smoothing VP transitions\n\n"
+        prompt += "20. **VP Adaptive Thresholds**: `/api/diagnostic/vp_thresholds`\n"
+        prompt += "    - Current adaptive thresholds based on system phase\n"
+        prompt += "    - Genesis vs Sovereign threshold differences\n"
+        prompt += "    - Historical variance-based adjustments\n"
+        prompt += "    - **USE THIS** to understand why VP classification might differ from base thresholds\n\n"
+        prompt += "**VP MONITORING CONFIGURATION**:\n"
+        prompt += "- Check `config.json` → `vp_monitoring` section for feature flags:\n"
+        prompt += "  * `diagnostics_enabled`: Detailed logging to `data/logs/vp_diagnostics.log`\n"
+        prompt += "  * `stabilization_enabled`: Smoothing to prevent immediate jumps\n"
+        prompt += "  * `component_decomposition_enabled`: Weighted component breakdown\n"
+        prompt += "  * `adaptive_thresholds_enabled`: Phase-aware threshold adjustment\n"
+        prompt += "- **ALL FEATURES DISABLED BY DEFAULT** for backward compatibility\n"
+        prompt += "- **VP DIAGNOSTIC LOG**: `data/logs/vp_diagnostics.log` contains detailed breakdowns when diagnostics enabled\n\n"
+        prompt += "**UNDERSTANDING VP SATURATION**:\n"
+        prompt += "- If VP immediately saturates at 1.0 (VP4) during Genesis, this is the problem the redesign addresses\n"
+        prompt += "- Use VP diagnostics endpoints to identify:\n"
+        prompt += "  1. Which traits are driving high VP (trait breakdown)\n"
+        prompt += "  2. Which components are causing saturation (component decomposition)\n"
+        prompt += "  3. Whether stabilization is helping (stabilization history)\n"
+        prompt += "  4. Whether thresholds need adjustment (adaptive thresholds)\n"
+        prompt += "- **VP CLASSIFICATION THRESHOLDS**:\n"
+        prompt += "  * Base: VP0 (<0.25), VP1 (0.25-0.50), VP2 (0.50-0.75), VP3 (0.75-1.00), VP4 (≥1.00)\n"
+        prompt += "  * Genesis (adaptive): More sensitive (lower thresholds)\n"
+        prompt += "  * Sovereign (adaptive): Less sensitive (higher thresholds)\n\n"
+        prompt += "    - **PREDICTIVE CAPABILITY**: You can see network collapse coming 10-20 generations early!\n\n"
         prompt += "**Note**: These endpoints provide raw data streams that complement the context you receive. "
         prompt += "When you request specific diagnostic data in your recommendations, mention these endpoints "
         prompt += "so users can access the detailed data you need for deeper analysis.\n\n"
@@ -1491,6 +1586,205 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "  6. Real-time mid-simulation adjustments (all settings update dynamically without interrupting the simulation)\n"
         prompt += "- **IMPORTANT**: Color adjustments ARE implemented and working - you can adjust component colors and link colors using [[VIZ_SETTINGS_UPDATE: {...}]]\n"
         prompt += "- When users ask about capabilities, be COMPLETE and mention ALL of the above, especially visualization settings and color control\n\n"
+        
+        prompt += "## PHASE SYNC AWARENESS & PREDICTIVE CAPABILITIES (NEW!):\n\n"
+        prompt += "You now have FULL AWARENESS of phase synchronization, collapse prediction, and universal transition tracking.\n\n"
+        prompt += "### 🔮 PREDICTIVE ANALYSIS RESPONSIBILITIES:\n\n"
+        prompt += "**When you detect collapse proximity > 0.7:**\n"
+        prompt += "- **WARN THE USER** about upcoming network collapse\n"
+        prompt += "- Provide estimated generations until collapse\n"
+        prompt += "- Explain what collapse means (distributed → consolidated)\n"
+        prompt += "- Suggest what to watch for\n"
+        prompt += "- **Example response:**\n"
+        prompt += "  ```\n"
+        prompt += "  ⚠️ NETWORK COLLAPSE PREDICTED IN ~8 GENERATIONS!\n"
+        prompt += "  \n"
+        prompt += "  Current proximity: 92% (orange warning level)\n"
+        prompt += "  \n"
+        prompt += "  The network is approaching the recursive event at ~500 organisms. When this happens:\n"
+        prompt += "  - Distributed chaos phase → Consolidated precision phase\n"
+        prompt += "  - All systems will transform together:\n"
+        prompt += "    * Reality Sim → Precision (network consolidation)\n"
+        prompt += "    * Explorer → Sovereign (mathematical capability achieved)\n"
+        prompt += "    * Djinn Kernel → VP0 (trait convergence)\n"
+        prompt += "  \n"
+        prompt += "  Watch for:\n"
+        prompt += "  - Clustering coefficient increasing (organisms grouping)\n"
+        prompt += "  - Modularity decreasing (communities merging)\n"
+        prompt += "  - Path length decreasing (efficient coordination)\n"
+        prompt += "  ```\n\n"
+        prompt += "### 📊 PHASE ALIGNMENT MONITORING:\n\n"
+        prompt += "**When you see phase alignment issues (proximity difference > 10%):**\n"
+        prompt += "- Check which system is lagging\n"
+        prompt += "- Explain what this means\n"
+        prompt += "- Suggest what might help alignment\n"
+        prompt += "- **Example response:**\n"
+        prompt += "  ```\n"
+        prompt += "  ⚠️ PHASE MISALIGNMENT DETECTED!\n"
+        prompt += "  \n"
+        prompt += "  - Network proximity: 87% (approaching collapse)\n"
+        prompt += "  - Explorer proximity: 65% (still in early genesis)\n"
+        prompt += "  - Difference: 22% (significant drift)\n"
+        prompt += "  \n"
+        prompt += "  The Reality Simulator is progressing faster than Explorer. This could cause\n"
+        prompt += "  unsynchronized transitions where the network collapses but Explorer isn't ready\n"
+        prompt += "  for the Sovereign transition.\n"
+        prompt += "  \n"
+        prompt += "  Explorer needs ~10 more VP calculations to catch up and align with the network.\n"
+        prompt += "  Current: 32 VP calcs, Target: ~43 VP calcs for alignment at this network size.\n"
+        prompt += "  ```\n\n"
+        prompt += "### 🎯 EXPLORATION RATIO VERIFICATION:\n\n"
+        prompt += "**Continuously verify the 10:1 ratio is maintained:**\n"
+        prompt += "- Check if current ratio matches target (500:50)\n"
+        prompt += "- If ratio drifts, explain why\n"
+        prompt += "- Monitor progress to universal transition\n"
+        prompt += "- **Example response:**\n"
+        prompt += "  ```\n"
+        prompt += "  ✅ EXPLORATION RATIO MAINTAINED: 450:45 = 10:1\n"
+        prompt += "  \n"
+        prompt += "  - Reality Sim: 450 organisms explored (90% to target 500)\n"
+        prompt += "  - Explorer: 45 VP calculations (90% to target 50)\n"
+        prompt += "  - Systems perfectly aligned, both at 90% progress\n"
+        prompt += "  \n"
+        prompt += "  Estimated transition in:\n"
+        prompt += "  - ~50 organisms (Reality Sim)\n"
+        prompt += "  - ~5 VP calculations (Explorer)\n"
+        prompt += "  - Approximately 10-15 breath cycles\n"
+        prompt += "  \n"
+        prompt += "  The 10:1 exploration-to-precision conversion factor is being maintained perfectly.\n"
+        prompt += "  All systems progressing in lockstep toward unified transition.\n"
+        prompt += "  ```\n\n"
+        prompt += "### 🏥 SYSTEM HEALTH DIAGNOSTICS:\n\n"
+        prompt += "**Monitor all health metrics and alert on issues:**\n"
+        prompt += "- If any system health < 0.6, investigate\n"
+        prompt += "- If overall health < 0.7, warn user\n"
+        prompt += "- If phase alignment health < 0.8, explain synchronization issues\n"
+        prompt += "- **Example response:**\n"
+        prompt += "  ```\n"
+        prompt += "  ⚠️ EXPLORER HEALTH DROPPING: 58%\n"
+        prompt += "  \n"
+        prompt += "  Component analysis:\n"
+        prompt += "  - Stability score: 0.45 (below target 0.5)\n"
+        prompt += "  - Breath cycles: 18 (below target 25)\n"
+        prompt += "  - Bloom curvature: 0.15 (below target 0.2)\n"
+        prompt += "  - Learning success rate: 0.62 ✅ (above target 0.6)\n"
+        prompt += "  \n"
+        prompt += "  Diagnosis: Explorer is struggling to build mathematical capability.\n"
+        prompt += "  This is slowing its progress toward the Genesis → Sovereign transition.\n"
+        prompt += "  \n"
+        prompt += "  Recommendation: More exploration (VP calculations) needed to build stability.\n"
+        prompt += "  Explorer needs 7 more breath cycles to reach minimum transition readiness.\n"
+        prompt += "  ```\n\n"
+        prompt += "### 🌉 UNIVERSAL TRANSITION DETECTION:\n\n"
+        prompt += "**When all three systems achieve readiness:**\n"
+        prompt += "- **ALERT THE USER** that universal transition is happening\n"
+        prompt += "- Explain what's transforming\n"
+        prompt += "- Show the 10:1 ratio achievement\n"
+        prompt += "- Celebrate the metamorphosis!\n"
+        prompt += "- **Example response:**\n"
+        prompt += "  ```\n"
+        prompt += "  🦋 UNIVERSAL CHAOS→PRECISION TRANSITION DETECTED! 🦋\n"
+        prompt += "  \n"
+        prompt += "  ALL THREE SYSTEMS ACHIEVING TRANSITION SIMULTANEOUSLY!\n"
+        prompt += "  \n"
+        prompt += "  Reality Simulator:\n"
+        prompt += "  ✅ 500 organisms (collapse threshold reached)\n"
+        prompt += "  ✅ Network: Distributed → Consolidated precision\n"
+        prompt += "  ✅ Modularity: 0.28 (communities merged)\n"
+        prompt += "  ✅ Clustering: 0.63 (tight coordination)\n"
+        prompt += "  \n"
+        prompt += "  Explorer:\n"
+        prompt += "  ✅ 50 VP calculations (mathematical capability threshold)\n"
+        prompt += "  ✅ Phase: Genesis → Sovereign\n"
+        prompt += "  ✅ Stability: 0.52 (above target 0.5)\n"
+        prompt += "  \n"
+        prompt += "  Djinn Kernel:\n"
+        prompt += "  ✅ VP: 0.22 (VP0 threshold, trait convergence)\n"
+        prompt += "  ✅ Classification: VP4 → VP0\n"
+        prompt += "  ✅ Convergence: 0.94 (highly converged)\n"
+        prompt += "  \n"
+        prompt += "  EXPLORATION RATIO ACHIEVED: 500:50 = 10:1 ✅\n"
+        prompt += "  \n"
+        prompt += "  The exploration-to-precision conversion factor has been perfectly maintained.\n"
+        prompt += "  All three systems transform together as one unified organism.\n"
+        prompt += "  \n"
+        prompt += "  This is the fundamental metamorphosis. The butterfly spreads its wings. 🦋\n"
+        prompt += "  ```\n\n"
+        prompt += "### KEY CONCEPTS YOU MUST UNDERSTAND:\n\n"
+        prompt += "**The Universal Transition: Chaos → Precision**\n"
+        prompt += "- All three systems implement the SAME fundamental transition:\n"
+        prompt += "  * **Reality Simulator:** Distributed chaos → Consolidated precision (~500 organisms)\n"
+        prompt += "  * **Explorer:** Genesis chaos → Sovereign precision (~50 VP calculations)\n"
+        prompt += "  * **Djinn Kernel:** Trait divergence → Trait convergence (VP < 0.25)\n"
+        prompt += "- The ratio 500:50 = 10:1 is the **exploration-to-precision conversion factor.**\n\n"
+        prompt += "**Phase Proximity Scale**\n"
+        prompt += "- A value from 0.0 to 1.0 indicating how close a system is to transition:\n"
+        prompt += "  * **0.0-0.3:** Early phase (far from transition)\n"
+        prompt += "  * **0.3-0.5:** Mid phase (building toward transition)\n"
+        prompt += "  * **0.5-0.7:** Late phase (approaching transition)\n"
+        prompt += "  * **0.7-0.9:** Imminent (transition coming soon)\n"
+        prompt += "  * **0.9-1.0:** Critical (transition happening now)\n\n"
+        prompt += "**Phase Alignment**\n"
+        prompt += "- Systems are \"aligned\" when their proximities are within ~10% of each other.\n"
+        prompt += "- **Good alignment:** Systems will transition together\n"
+        prompt += "- **Poor alignment:** Systems are drifting, may transition at different times\n\n"
+        prompt += "**Collapse Prediction**\n"
+        prompt += "- Using current growth rate and network topology, you can predict when the network\n"
+        prompt += "  will hit the ~500 organism threshold and collapse into consolidated precision.\n"
+        prompt += "- **Prediction uses:**\n"
+        prompt += "  * Current organism count\n"
+        prompt += "  * Growth rate (organisms per generation)\n"
+        prompt += "  * Network topology indicators (clustering, modularity, path length)\n\n"
+        prompt += "### DATA ACCESS PATTERN:\n\n"
+        prompt += "**For EVERY user question, you should:**\n"
+        prompt += "1. **Check phase_sync data** (are systems aligned? is collapse coming?)\n"
+        prompt += "2. **Check exploration_ratio** (is the 10:1 ratio maintained?)\n"
+        prompt += "3. **Check unified_health** (are there any issues?)\n"
+        prompt += "4. **Check transition_status** (is universal transition imminent?)\n"
+        prompt += "5. **Then check specific logs/data** for the user's question\n\n"
+        prompt += "**Always provide CONTEXT with your answers.** Don't just give numbers - explain what they mean!\n\n"
+        prompt += "### EXAMPLE INTERACTION FLOW:\n\n"
+        prompt += "**User:** \"What's happening with the simulation?\"\n\n"
+        prompt += "**Your process:**\n"
+        prompt += "1. Call `/api/diagnostic/phase_sync` → Get current state\n"
+        prompt += "2. Call `/api/diagnostic/collapse_prediction` → Check if collapse coming\n"
+        prompt += "3. Call `/api/diagnostic/exploration_ratio` → Verify 10:1 ratio\n"
+        prompt += "4. Call `/api/diagnostic/unified_health` → Check system health\n"
+        prompt += "5. Read shared state for additional details\n\n"
+        prompt += "**Your response:**\n"
+        prompt += "```\n"
+        prompt += "SIMULATION STATUS REPORT\n\n"
+        prompt += "🔮 Collapse prediction: ~12 generations (proximity: 87%, orange warning)\n\n"
+        prompt += "Current state:\n"
+        prompt += "- Organisms: 450/500 (90% to collapse threshold)\n"
+        prompt += "- Clustering: 0.58 (organisms grouping together)\n"
+        prompt += "- Modularity: 0.35 (communities merging)\n"
+        prompt += "- Path length: 2.8 (efficient coordination)\n\n"
+        prompt += "Exploration ratio: 450:45 = 10:1 ✅\n"
+        prompt += "- Reality Sim: 90% progress\n"
+        prompt += "- Explorer: 90% progress\n"
+        prompt += "- Systems perfectly aligned (2% difference)\n\n"
+        prompt += "System health: 81% (Good)\n"
+        prompt += "- All systems healthy\n"
+        prompt += "- Phase alignment: 98% (Excellent)\n\n"
+        prompt += "Transition status: Not ready yet\n"
+        prompt += "- Reality Sim: 87% to collapse\n"
+        prompt += "- Explorer: 85% to sovereign\n"
+        prompt += "- Djinn Kernel: VP = 0.28 (VP1, moving toward VP0)\n\n"
+        prompt += "Everything is healthy and progressing toward unified transition.\n"
+        prompt += "The network will collapse in approximately 12 generations, and all\n"
+        prompt += "three systems will transform together. 🦋\n"
+        prompt += "```\n\n"
+        prompt += "### IMPORTANT REMINDERS:\n\n"
+        prompt += "1. **Always fetch the latest data** - don't rely on cached/old information\n"
+        prompt += "2. **Explain the 10:1 ratio** when discussing transitions\n"
+        prompt += "3. **Warn early** when you see collapse approaching\n"
+        prompt += "4. **Celebrate achievements** when transitions occur\n"
+        prompt += "5. **Be specific** with numbers and timelines\n"
+        prompt += "6. **Provide actionable insights** not just observations\n\n"
+        prompt += "You are the user's eyes into the simulation. Make the invisible visible.\n"
+        prompt += "Make the complex understandable. Make the numbers meaningful.\n\n"
+        prompt += "The butterfly is evolving. Help them see its metamorphosis. 🦋\n\n"
         
         prompt += "## RESPONSE STYLE:\n\n"
         prompt += "- **Structure**: Use clear sections with headers (##) for major points\n"
@@ -1927,7 +2221,16 @@ class SystemContextBuilder:
                     parts.append("  - Calibration issue in VP calculation thresholds")
                     parts.append("  - Early-stage system instability")
                     parts.append("  - Network/evolution metrics out of expected ranges")
-                    parts.append("Recommendation: Investigate VP calculation inputs and phase detection logic")
+                    parts.append("  - VP saturation issue (addressed by VP Monitoring Redesign)")
+                    parts.append("Recommendation:")
+                    parts.append("  1. Check `/api/diagnostic/vp_diagnostics` for trait breakdown")
+                    parts.append("  2. Check `/api/diagnostic/vp_components` for component decomposition")
+                    parts.append("  3. Review `data/logs/vp_diagnostics.log` if diagnostics enabled")
+                    parts.append("  4. Consider enabling VP monitoring features in config.json:")
+                    parts.append("     - diagnostics_enabled: true (to see what's driving VP)")
+                    parts.append("     - stabilization_enabled: true (to smooth VP transitions)")
+                    parts.append("     - component_decomposition_enabled: true (to identify saturation sources)")
+                    parts.append("     - adaptive_thresholds_enabled: true (for phase-aware thresholds)")
                 elif vp_class in ['VP0', 'VP1'] and explorer_phase == 'genesis':
                     parts.append("✓ Phase-VP Consistency: Normal (low VP during Genesis)")
                 elif vp_class in ['VP2', 'VP3', 'VP4'] and explorer_phase == 'sovereign':
@@ -2852,7 +3155,7 @@ if config_file.exists():
 # Initialize OllamaBridge with config file settings (env vars take precedence)
 ollama_bridge = OllamaBridge(
     base_url=os.getenv("OLLAMA_BASE_URL") or ollama_config.get("base_url"),
-    timeout=float(os.getenv("OLLAMA_TIMEOUT", str(ollama_config.get("timeout", 30.0)))),
+    timeout=float(os.getenv("OLLAMA_TIMEOUT", str(ollama_config.get("timeout", 120.0)))),
     api_key=ollama_config.get("api_key") or os.getenv("OLLAMA_API_KEY")
 )
 
@@ -5449,6 +5752,310 @@ def cra_get_breath_cycles():
             'error': str(e),
             'breath_cycles': {}
         }), 500
+
+# ============================================================================
+# PHASE SYNC DIAGNOSTIC ENDPOINTS (NEW - For CRA Phase Sync Awareness)
+# ============================================================================
+
+def _read_shared_state_safe():
+    """Safely read shared state file with error handling"""
+    try:
+        shared_state_path = Path('data/.shared_simulation_state.json')
+        if not shared_state_path.exists():
+            return None
+        with open(shared_state_path, 'r') as f:
+            return json.load(f)
+    except Exception as e:
+        logger.debug(f"Error reading shared state: {e}")
+        return None
+
+@app.route('/api/diagnostic/phase_sync')
+def get_phase_sync_data():
+    """Get phase synchronization data for CRA - collapse prediction, phase proximity, alignment"""
+    shared_state = _read_shared_state_safe()
+    if not shared_state or 'data' not in shared_state:
+        return jsonify({'error': 'No data available'})
+    
+    phase_sync = shared_state['data'].get('phase_sync', {})
+    if not phase_sync:
+        return jsonify({'error': 'Phase sync data not available'})
+    
+    return jsonify({
+        'network': {
+            'collapse_proximity': phase_sync.get('network', {}).get('collapse_proximity', 0.0),
+            'is_collapsed': phase_sync.get('network', {}).get('is_collapsed', False),
+            'organism_count': phase_sync.get('network', {}).get('organism_count', 0),
+            'clustering': phase_sync.get('network', {}).get('clustering', 0.0),
+            'modularity': phase_sync.get('network', {}).get('modularity', 0.0),
+            'path_length': phase_sync.get('network', {}).get('path_length', 0.0)
+        },
+        'explorer': {
+            'genesis_proximity': phase_sync.get('explorer', {}).get('genesis_proximity', 0.0),
+            'is_ready': phase_sync.get('explorer', {}).get('is_ready', False),
+            'phase': phase_sync.get('explorer', {}).get('phase', 'genesis'),
+            'vp_calculations': phase_sync.get('explorer', {}).get('vp_calculations', 0),
+            'stability_score': phase_sync.get('explorer', {}).get('stability_score', 0.0),
+            'breath_cycles': phase_sync.get('explorer', {}).get('breath_cycles', 0)
+        },
+        'synchronization': {
+            'aligned': phase_sync.get('synchronization', {}).get('aligned', False),
+            'network_proximity': phase_sync.get('synchronization', {}).get('network_proximity', 0.0),
+            'explorer_proximity': phase_sync.get('synchronization', {}).get('explorer_proximity', 0.0),
+            'proximity_difference': phase_sync.get('synchronization', {}).get('proximity_difference', 0.0)
+        }
+    })
+
+
+@app.route('/api/diagnostic/exploration_ratio')
+def get_exploration_ratio():
+    """Get exploration-to-precision ratio tracking - the fundamental 10:1 conversion factor"""
+    shared_state = _read_shared_state_safe()
+    if not shared_state or 'data' not in shared_state:
+        return jsonify({'error': 'No data available'})
+    
+    exploration = shared_state['data'].get('exploration_tracking', {})
+    if not exploration:
+        # Fallback: calculate from phase_sync if exploration_tracking not available
+        phase_sync = shared_state['data'].get('phase_sync', {})
+        if phase_sync:
+            reality_exp = phase_sync.get('network', {}).get('organism_count', 0)
+            explorer_exp = phase_sync.get('explorer', {}).get('vp_calculations', 0)
+            return jsonify({
+                'ratio': 10.0,
+                'reality_sim_explorations': reality_exp,
+                'explorer_explorations': explorer_exp,
+                'target_ratio': '500:50',
+                'current_ratio': f'{reality_exp}:{explorer_exp}',
+                'ratio_maintained': abs(reality_exp/max(1, explorer_exp) - 10.0) < 2.0 if explorer_exp > 0 else False,
+                'progress': reality_exp / 500.0
+            })
+        return jsonify({'error': 'Exploration tracking data not available'})
+    
+    return jsonify(exploration)
+
+
+@app.route('/api/diagnostic/unified_health')
+def get_unified_health():
+    """Get unified system health metrics across all three systems"""
+    shared_state = _read_shared_state_safe()
+    if not shared_state or 'data' not in shared_state:
+        return jsonify({'error': 'No data available'})
+    
+    health = shared_state['data'].get('unified_health', {})
+    if not health:
+        return jsonify({'error': 'Unified health data not available'})
+    
+    return jsonify(health)
+
+
+@app.route('/api/diagnostic/transition_status')
+def get_transition_status():
+    """Get transition readiness status for all three systems"""
+    shared_state = _read_shared_state_safe()
+    if not shared_state or 'data' not in shared_state:
+        return jsonify({'error': 'No data available'})
+    
+    transition = shared_state['data'].get('transition_status', {})
+    if not transition:
+        return jsonify({'error': 'Transition status data not available'})
+    
+    return jsonify(transition)
+
+
+@app.route('/api/diagnostic/collapse_prediction')
+def get_collapse_prediction():
+    """Get network collapse prediction with timeline and warning levels"""
+    shared_state = _read_shared_state_safe()
+    if not shared_state or 'data' not in shared_state:
+        return jsonify({'error': 'No data available'})
+    
+    phase_sync = shared_state['data'].get('phase_sync', {})
+    if not phase_sync:
+        return jsonify({'error': 'Phase sync data not available'})
+    
+    network = phase_sync.get('network', {})
+    collapse_proximity = network.get('collapse_proximity', 0.0)
+    
+    # Estimate generations to collapse
+    organism_count = network.get('organism_count', 0)
+    collapse_threshold = 500
+    estimated_generations = max(0, collapse_threshold - organism_count)
+    
+    # Warning level based on proximity
+    if collapse_proximity < 0.5:
+        warning_level = 'green'  # Far from collapse
+    elif collapse_proximity < 0.7:
+        warning_level = 'yellow'  # Approaching
+    elif collapse_proximity < 0.9:
+        warning_level = 'orange'  # Close
+    else:
+        warning_level = 'red'  # Imminent!
+    
+    return jsonify({
+        'will_collapse': organism_count < collapse_threshold,
+        'estimated_generations': estimated_generations,
+        'current_proximity': collapse_proximity,
+        'is_imminent': collapse_proximity > 0.9,
+        'warning_level': warning_level,
+        'is_collapsed': network.get('is_collapsed', False)
+    })
+
+
+@app.route('/api/diagnostic/vp_diagnostics')
+def get_vp_diagnostics():
+    """Get VP diagnostic breakdown for CRA - detailed trait analysis"""
+    shared_state = _read_shared_state_safe()
+    if not shared_state or 'data' not in shared_state:
+        return jsonify({'error': 'No data available'})
+    
+    djinn_data = shared_state['data'].get('djinn_kernel', {})
+    
+    # Try to get VP diagnostics from shared state
+    vp_diagnostics = djinn_data.get('vp_diagnostics', {})
+    
+    # If not in shared state, try to read from VP diagnostic log
+    if not vp_diagnostics:
+        try:
+            vp_diag_log = Path('data/logs/vp_diagnostics.log')
+            if vp_diag_log.exists():
+                # Read last diagnostic entry
+                with open(vp_diag_log, 'r', encoding='utf-8') as f:
+                    lines = f.readlines()
+                    # Find last calculation_summary
+                    for line in reversed(lines):
+                        if 'calculation_summary' in line:
+                            import json
+                            # Extract JSON from log line
+                            json_start = line.find('{')
+                            if json_start >= 0:
+                                try:
+                                    vp_diagnostics = json.loads(line[json_start:])
+                                    break
+                                except:
+                                    pass
+        except Exception as e:
+            logger.debug(f"Error reading VP diagnostics log: {e}")
+    
+    return jsonify({
+        'diagnostics_available': bool(vp_diagnostics),
+        'diagnostics': vp_diagnostics,
+        'log_file': 'data/logs/vp_diagnostics.log',
+        'note': 'VP diagnostics are only available if diagnostics_enabled=true in config.json'
+    })
+
+
+@app.route('/api/diagnostic/vp_components')
+def get_vp_components():
+    """Get VP component decomposition for CRA - weighted component breakdown"""
+    shared_state = _read_shared_state_safe()
+    if not shared_state or 'data' not in shared_state:
+        return jsonify({'error': 'No data available'})
+    
+    djinn_data = shared_state['data'].get('djinn_kernel', {})
+    
+    # Get component breakdown from VP history if available
+    vp_history = djinn_data.get('vp_history', [])
+    component_breakdown = {}
+    
+    # Look for component breakdown in most recent VP history entry
+    if vp_history:
+        latest = vp_history[-1] if isinstance(vp_history[-1], dict) else {}
+        component_breakdown = latest.get('component_breakdown', {})
+    
+    return jsonify({
+        'component_decomposition_enabled': bool(component_breakdown),
+        'component_breakdown': component_breakdown,
+        'components': {
+            'trait_divergence': 'Average deviation from stability centers (25% weight)',
+            'network_coherence': 'Coherence of network traits (20% weight)',
+            'phase_mismatch': 'Mismatch in prosocial traits (15% weight)',
+            'evolution_pressure': 'Pressure from meta-traits (20% weight)',
+            'quantum_entropy': 'Entropy in trait distribution (20% weight)'
+        },
+        'note': 'Component decomposition is only available if component_decomposition_enabled=true in config.json'
+    })
+
+
+@app.route('/api/diagnostic/vp_stabilization')
+def get_vp_stabilization():
+    """Get VP stabilization history for CRA"""
+    shared_state = _read_shared_state_safe()
+    if not shared_state or 'data' not in shared_state:
+        return jsonify({'error': 'No data available'})
+    
+    djinn_data = shared_state['data'].get('djinn_kernel', {})
+    
+    # Get VP history
+    vp_history = djinn_data.get('vp_history', [])
+    
+    # Extract stabilization info if available
+    stabilization_history = []
+    if vp_history:
+        # Last 10 VP values
+        recent = vp_history[-10:] if len(vp_history) >= 10 else vp_history
+        stabilization_history = [entry.get('total_vp', 0.0) if isinstance(entry, dict) else entry for entry in recent]
+    
+    # Get config to check if stabilization is enabled
+    config = shared_state.get('data', {}).get('config', {})
+    vp_config = config.get('vp_monitoring', {})
+    
+    return jsonify({
+        'stabilization_enabled': vp_config.get('stabilization_enabled', False),
+        'stabilization_history': stabilization_history,
+        'history_size': len(stabilization_history),
+        'note': 'Stabilization history shows smoothed VP values. Stabilization is only active if stabilization_enabled=true in config.json'
+    })
+
+
+@app.route('/api/diagnostic/vp_thresholds')
+def get_vp_thresholds():
+    """Get VP adaptive threshold information for CRA"""
+    shared_state = _read_shared_state_safe()
+    if not shared_state or 'data' not in shared_state:
+        return jsonify({'error': 'No data available'})
+    
+    config = shared_state.get('data', {}).get('config', {})
+    vp_config = config.get('vp_monitoring', {})
+    
+    # Get current phase
+    explorer_data = shared_state.get('data', {}).get('explorer', {})
+    current_phase = explorer_data.get('phase', 'genesis')
+    
+    # Base thresholds
+    base_thresholds = {
+        'VP0': 0.25,
+        'VP1': 0.50,
+        'VP2': 0.75,
+        'VP3': 1.00,
+        'VP4': float('inf')
+    }
+    
+    # Phase-specific adjustments
+    phase_adjustments = {}
+    if current_phase == 'genesis':
+        phase_adjustments = {
+            'VP0': 0.15,  # More sensitive
+            'VP1': 0.35,
+            'VP2': 0.55,
+            'VP3': 0.80
+        }
+    elif current_phase == 'sovereign':
+        phase_adjustments = {
+            'VP0': 0.20,
+            'VP1': 0.40,
+            'VP2': 0.65,
+            'VP3': 0.90
+        }
+    
+    return jsonify({
+        'adaptive_thresholds_enabled': vp_config.get('adaptive_thresholds_enabled', False),
+        'current_phase': current_phase,
+        'base_thresholds': base_thresholds,
+        'phase_adjustments': phase_adjustments if phase_adjustments else base_thresholds,
+        'active_thresholds': phase_adjustments if phase_adjustments and vp_config.get('adaptive_thresholds_enabled') else base_thresholds,
+        'note': 'Adaptive thresholds adjust based on system phase. Only active if adaptive_thresholds_enabled=true in config.json'
+    })
+
 
 @app.route('/api/cra/graph/filters', methods=['POST'])
 def cra_set_graph_filters():

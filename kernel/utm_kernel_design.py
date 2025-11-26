@@ -344,9 +344,16 @@ class DjinnAgent:
         # Use the violation pressure monitor
         if hasattr(self.utm_kernel, 'violation_monitor'):
             traits = parameters.get('traits', {})
+            system_phase = parameters.get('system_phase', None)  # Get system phase if provided
+            source_identity = parameters.get('source_identity', None)  # Get source identity if provided
+            
             if traits:
-                # Compute VP using the violation monitor
-                vp, vp_breakdown = self.utm_kernel.violation_monitor.compute_violation_pressure(traits)
+                # Compute VP using the violation monitor with phase-aware calculation
+                vp, vp_breakdown = self.utm_kernel.violation_monitor.compute_violation_pressure(
+                    traits, 
+                    source_identity=source_identity,
+                    system_phase=system_phase
+                )
                 vp_class = self.utm_kernel.violation_monitor._classify_violation_pressure(vp)
                 
                 return {

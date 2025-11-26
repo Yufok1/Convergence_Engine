@@ -13,7 +13,10 @@ from dataclasses import dataclass, field
 from typing import Dict, Tuple, List, Optional, Any
 from enum import Enum
 import math
+import logging
+import json
 from datetime import datetime
+from pathlib import Path
 from event_driven_coordination import ViolationPressureEvent
 
 
@@ -46,6 +49,470 @@ class StabilityEnvelope:
 
 
 
+class VPDiagnostics:
+    """
+    Diagnostic logging for violation pressure calculations.
+    Provides detailed breakdown of VP components without changing calculation logic.
+    """
+    
+    def __init__(self, enabled: bool = False, log_file: Optional[str] = None):
+        self.enabled = enabled
+        self.log_file = log_file or (Path(__file__).parent.parent / 'data' / 'logs' / 'vp_diagnostics.log')
+        self.logger = None
+        
+        if self.enabled:
+            self._setup_logger()
+    
+    def _setup_logger(self):
+        """Setup diagnostic logger"""
+        # Ensure log directory exists
+        self.log_file.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Create logger
+        self.logger = logging.getLogger('vp_diagnostics')
+        self.logger.setLevel(logging.DEBUG)
+        
+        # Remove existing handlers to avoid duplicates
+        self.logger.handlers.clear()
+        
+        # File handler
+        file_handler = logging.FileHandler(self.log_file, encoding='utf-8')
+        file_handler.setLevel(logging.DEBUG)
+        
+        # Format: timestamp|component|data
+        formatter = logging.Formatter(
+            '%(asctime)s|%(name)s|%(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S'
+        )
+        file_handler.setFormatter(formatter)
+        self.logger.addHandler(file_handler)
+        self.logger.propagate = False
+    
+    def log_trait_breakdown(self, trait_name: str, trait_value: float, envelope: StabilityEnvelope,
+                           deviation: float, trait_vp: float, normalization_factor: float):
+        """Log detailed breakdown for a single trait"""
+        if not self.enabled:
+            return
+        if not self.logger:
+            # Logger not initialized - this shouldn't happen if enabled=True
+            import logging
+            logging.warning(f"[VPDiagnostics] Logger not initialized but enabled=True for trait {trait_name}")
+            return
+        
+        breakdown = {
+            'trait_name': trait_name,
+            'trait_value': trait_value,
+            'envelope_center': envelope.center,
+            'envelope_radius': envelope.radius,
+            'compression_factor': envelope.compression_factor,
+            'deviation': deviation,
+            'trait_vp': trait_vp,
+            'normalization_factor': normalization_factor,
+            'normalized_radius': envelope.radius * envelope.compression_factor
+        }
+        
+        self.logger.debug(f"trait_breakdown|{json.dumps(breakdown)}")
+    
+    def log_calculation_summary(self, trait_payload: Dict[str, float], total_vp: float,
+                               per_trait_breakdown: Dict[str, float], source_identity: Optional[str] = None):
+        """Log summary of VP calculation"""
+        if not self.enabled:
+            return
+        if not self.logger:
+            # Logger not initialized - this shouldn't happen if enabled=True
+            import logging
+            logging.warning(f"[VPDiagnostics] Logger not initialized but enabled=True for calculation summary")
+            return
+        
+        summary = {
+            'timestamp': datetime.utcnow().isoformat() + 'Z',
+            'source_identity': source_identity,
+            'trait_count': len(trait_payload),
+            'total_vp': total_vp,
+            'per_trait_breakdown': per_trait_breakdown,
+            'average_trait_vp': sum(per_trait_breakdown.values()) / len(per_trait_breakdown) if per_trait_breakdown else 0.0,
+            'max_trait_vp': max(per_trait_breakdown.values()) if per_trait_breakdown else 0.0,
+            'min_trait_vp': min(per_trait_breakdown.values()) if per_trait_breakdown else 0.0
+        }
+        
+        self.logger.info(f"calculation_summary|{json.dumps(summary)}")
+    
+    def get_vp_diagnostics(self, trait_payload: Dict[str, float], 
+                          stability_envelopes: Dict[str, StabilityEnvelope]) -> Dict[str, Any]:
+        """
+        Decompose VP calculation into diagnostic components.
+        Does not change calculation - just analyzes what was computed.
+        """
+        diagnostics = {
+            'trait_analysis': {},
+            'envelope_analysis': {},
+            'summary': {}
+        }
+        
+        for trait_name, trait_value in trait_payload.items():
+            envelope = stability_envelopes.get(trait_name, StabilityEnvelope())
+            deviation = abs(trait_value - envelope.center)
+            normalized_radius = envelope.radius * envelope.compression_factor
+            trait_vp = deviation / normalized_radius if normalized_radius > 0 else (float('inf') if deviation > 0 else 0.0)
+            trait_vp = max(0.0, min(10.0, trait_vp))
+            
+            diagnostics['trait_analysis'][trait_name] = {
+                'trait_value': trait_value,
+                'envelope_center': envelope.center,
+                'deviation': deviation,
+                'normalized_radius': normalized_radius,
+                'trait_vp': trait_vp,
+                'vp_contribution_ratio': trait_vp / len(trait_payload) if trait_payload else 0.0
+            }
+            
+            diagnostics['envelope_analysis'][trait_name] = {
+                'center': envelope.center,
+                'radius': envelope.radius,
+                'compression_factor': envelope.compression_factor,
+                'effective_range': [envelope.center - envelope.radius, envelope.center + envelope.radius]
+            }
+        
+        if trait_payload:
+            total_vp_sum = sum(diagnostics['trait_analysis'][t]['trait_vp'] 
+                             for t in trait_payload.keys())
+            normalized_total = min(1.0, total_vp_sum / len(trait_payload))
+            
+            diagnostics['summary'] = {
+                'trait_count': len(trait_payload),
+                'raw_vp_sum': total_vp_sum,
+                'normalized_vp': normalized_total,
+                'normalization_factor': len(trait_payload),
+                'dominant_trait': max(trait_payload.keys(), 
+                                    key=lambda t: diagnostics['trait_analysis'][t]['trait_vp']) if trait_payload else None
+            }
+        
+        return diagnostics
+
+
+class VPStabilizer:
+    """
+    Stabilizes violation pressure values to prevent immediate jumps to maximum.
+    Uses weighted moving average and jump limiting to smooth VP transitions.
+    """
+    
+    def __init__(self, history_size: int = 10, max_jump: float = 0.1, smoothing_factor: float = 0.3):
+        self.history_size = history_size
+        self.max_jump = max_jump
+        self.smoothing_factor = smoothing_factor
+        self.vp_history = []
+        self.last_vp = None
+    
+    def stabilize(self, raw_vp: float) -> float:
+        """
+        Stabilize a raw VP value using smoothing and jump limiting.
+        
+        Args:
+            raw_vp: Raw violation pressure value [0.0, 1.0]
+            
+        Returns:
+            Stabilized VP value [0.0, 1.0]
+        """
+        # Initialize if this is the first value
+        if self.last_vp is None:
+            self.last_vp = raw_vp
+            self.vp_history.append(raw_vp)
+            return raw_vp
+        
+        # Calculate jump size
+        jump = raw_vp - self.last_vp
+        
+        # Apply jump limiting
+        if abs(jump) > self.max_jump:
+            if jump > 0:
+                stabilized_vp = self.last_vp + self.max_jump
+            else:
+                stabilized_vp = self.last_vp - self.max_jump
+        else:
+            stabilized_vp = raw_vp
+        
+        # Apply weighted moving average smoothing
+        # EMA: new_value = smoothing_factor * current + (1 - smoothing_factor) * previous
+        smoothed_vp = self.smoothing_factor * stabilized_vp + (1 - self.smoothing_factor) * self.last_vp
+        
+        # Clamp to valid range
+        smoothed_vp = max(0.0, min(1.0, smoothed_vp))
+        
+        # Update history
+        self.vp_history.append(smoothed_vp)
+        if len(self.vp_history) > self.history_size:
+            self.vp_history.pop(0)
+        
+        # Update last VP
+        self.last_vp = smoothed_vp
+        
+        return smoothed_vp
+    
+    def reset(self):
+        """Reset stabilizer state"""
+        self.vp_history = []
+        self.last_vp = None
+    
+    def get_history(self) -> List[float]:
+        """Get VP history"""
+        return self.vp_history.copy()
+
+
+class VPComponentCalculator:
+    """
+    Calculates violation pressure as weighted components to identify saturation sources.
+    Breaks VP into trait_divergence, network_coherence, phase_mismatch, evolution_pressure, quantum_entropy.
+    """
+    
+    def __init__(self, component_weights: Optional[Dict[str, float]] = None):
+        """
+        Initialize component calculator with weights.
+        
+        Args:
+            component_weights: Dictionary of component_name -> weight (must sum to 1.0)
+        """
+        default_weights = {
+            'trait_divergence': 0.25,
+            'network_coherence': 0.20,
+            'phase_mismatch': 0.15,
+            'evolution_pressure': 0.20,
+            'quantum_entropy': 0.20
+        }
+        
+        self.component_weights = component_weights or default_weights
+        
+        # Normalize weights to sum to 1.0
+        total_weight = sum(self.component_weights.values())
+        if total_weight > 0:
+            self.component_weights = {k: v / total_weight for k, v in self.component_weights.items()}
+    
+    def sigmoid(self, x: float, k: float = 5.0) -> float:
+        """Sigmoid function for smoothing: prevents single component from dominating"""
+        return 1.0 / (1.0 + math.exp(-k * (x - 0.5)))
+    
+    def calculate_components(self, trait_payload: Dict[str, float],
+                           stability_envelopes: Dict[str, StabilityEnvelope]) -> Dict[str, float]:
+        """
+        Calculate component pressures from trait payload.
+        
+        Returns:
+            Dictionary of component_name -> component_vp [0.0, 1.0]
+        """
+        components = {
+            'trait_divergence': 0.0,
+            'network_coherence': 0.0,
+            'phase_mismatch': 0.0,
+            'evolution_pressure': 0.0,
+            'quantum_entropy': 0.0
+        }
+        
+        if not trait_payload:
+            return components
+        
+        # Group traits by category for component calculation
+        network_traits = ['organism_count', 'modularity', 'clustering_coefficient', 'average_path_length']
+        prosocial_traits = ['intimacy', 'commitment', 'caregiving', 'attunement', 'lineagepreference']
+        meta_traits = ['violationpressure', 'completionpressure', 'convergencestability', 'reflectionindex']
+        
+        # Calculate trait_divergence: average deviation from stability centers
+        divergences = []
+        for trait_name, trait_value in trait_payload.items():
+            envelope = stability_envelopes.get(trait_name, StabilityEnvelope())
+            deviation = abs(trait_value - envelope.center)
+            normalized_radius = envelope.radius * envelope.compression_factor
+            if normalized_radius > 0:
+                divergence = min(1.0, deviation / normalized_radius)
+                divergences.append(divergence)
+        
+        components['trait_divergence'] = sum(divergences) / len(divergences) if divergences else 0.0
+        
+        # Calculate network_coherence: coherence of network traits
+        network_values = [trait_payload.get(t, 0.0) for t in network_traits if t in trait_payload]
+        if network_values:
+            # Measure variance as inverse of coherence
+            mean_network = sum(network_values) / len(network_values)
+            variance = sum((v - mean_network) ** 2 for v in network_values) / len(network_values)
+            components['network_coherence'] = min(1.0, variance * 4.0)  # Scale variance to [0,1]
+        
+        # Calculate phase_mismatch: mismatch in prosocial traits
+        prosocial_values = [trait_payload.get(t, 0.0) for t in prosocial_traits if t in trait_payload]
+        if prosocial_values:
+            # Measure spread as phase mismatch
+            min_prosocial = min(prosocial_values)
+            max_prosocial = max(prosocial_values)
+            components['phase_mismatch'] = max_prosocial - min_prosocial
+        
+        # Calculate evolution_pressure: pressure from meta-traits
+        meta_values = [trait_payload.get(t, 0.0) for t in meta_traits if t in trait_payload]
+        if meta_values:
+            # Average of meta-traits as evolution pressure
+            components['evolution_pressure'] = sum(meta_values) / len(meta_values)
+        
+        # Calculate quantum_entropy: entropy in trait distribution
+        if len(trait_payload) > 1:
+            # Shannon entropy of normalized trait values
+            trait_values = list(trait_payload.values())
+            total = sum(abs(v) for v in trait_values)
+            if total > 0:
+                probabilities = [abs(v) / total for v in trait_values]
+                entropy = -sum(p * math.log(p + 1e-10) for p in probabilities if p > 0)
+                max_entropy = math.log(len(trait_values))
+                components['quantum_entropy'] = entropy / max_entropy if max_entropy > 0 else 0.0
+        
+        # Apply sigmoid smoothing to prevent domination
+        for component_name in components:
+            components[component_name] = self.sigmoid(components[component_name])
+        
+        return components
+    
+    def combine_components(self, component_vps: Dict[str, float]) -> float:
+        """
+        Combine component VPs using weighted geometric mean.
+        
+        Geometric mean prevents single component from dominating:
+        total = (∏(component_i ^ weight_i)) ^ (1 / sum(weights))
+        """
+        if not component_vps:
+            return 0.0
+        
+        # Weighted geometric mean
+        log_sum = 0.0
+        weight_sum = 0.0
+        
+        for component_name, component_vp in component_vps.items():
+            weight = self.component_weights.get(component_name, 0.0)
+            if weight > 0 and component_vp > 0:
+                log_sum += weight * math.log(component_vp + 1e-10)
+                weight_sum += weight
+        
+        if weight_sum > 0:
+            geometric_mean = math.exp(log_sum / weight_sum)
+            return max(0.0, min(1.0, geometric_mean))
+        
+        return 0.0
+
+
+class AdaptiveThresholdManager:
+    """
+    Manages adaptive thresholds based on system phase.
+    Adjusts VP classification thresholds dynamically based on phase and historical VP variance.
+    """
+    
+    def __init__(self):
+        self.base_thresholds = {
+            ViolationClass.VP0_FULLY_LAWFUL: 0.25,
+            ViolationClass.VP1_STABLE_DRIFT: 0.50,
+            ViolationClass.VP2_INSTABILITY: 0.75,
+            ViolationClass.VP3_CRITICAL_DIVERGENCE: 1.00,
+            ViolationClass.VP4_COLLAPSE_THRESHOLD: float('inf')
+        }
+        
+        # Phase-specific threshold adjustments
+        self.phase_adjustments = {
+            'genesis': {
+                'sensitivity_multiplier': 0.6,  # More sensitive (lower thresholds)
+                'base_adjustments': {
+                    ViolationClass.VP0_FULLY_LAWFUL: 0.15,  # 0.0-0.15 instead of 0.0-0.25
+                    ViolationClass.VP1_STABLE_DRIFT: 0.35,  # 0.15-0.35 instead of 0.25-0.50
+                    ViolationClass.VP2_INSTABILITY: 0.55,   # 0.35-0.55 instead of 0.50-0.75
+                    ViolationClass.VP3_CRITICAL_DIVERGENCE: 0.80,  # 0.55-0.80 instead of 0.75-1.00
+                }
+            },
+            'sovereign': {
+                'sensitivity_multiplier': 1.2,  # Less sensitive (higher thresholds)
+                'base_adjustments': {
+                    ViolationClass.VP0_FULLY_LAWFUL: 0.20,  # 0.0-0.20 instead of 0.0-0.25
+                    ViolationClass.VP1_STABLE_DRIFT: 0.40,  # 0.20-0.40 instead of 0.25-0.50
+                    ViolationClass.VP2_INSTABILITY: 0.65,   # 0.40-0.65 instead of 0.50-0.75
+                    ViolationClass.VP3_CRITICAL_DIVERGENCE: 0.90,  # 0.65-0.90 instead of 0.75-1.00
+                }
+            }
+        }
+    
+    def adjust_thresholds_for_phase(self, phase: str, historical_vps: List[float]) -> Dict[ViolationClass, float]:
+        """
+        Adjust thresholds based on phase and historical VP variance.
+        
+        Args:
+            phase: System phase ('genesis' or 'sovereign')
+            historical_vps: List of recent VP values (last 100 recommended)
+            
+        Returns:
+            Dictionary of ViolationClass -> threshold value
+        """
+        # Start with base thresholds
+        adjusted_thresholds = self.base_thresholds.copy()
+        
+        # Get phase-specific adjustments
+        phase_config = self.phase_adjustments.get(phase.lower(), {})
+        base_adjustments = phase_config.get('base_adjustments', {})
+        
+        # Apply base phase adjustments
+        for vp_class, threshold in base_adjustments.items():
+            adjusted_thresholds[vp_class] = threshold
+        
+        # Calculate variance-based adjustments if historical data available
+        if len(historical_vps) >= 10:
+            variance = self._calculate_variance(historical_vps)
+            mean_vp = sum(historical_vps) / len(historical_vps)
+            
+            # Adjust sensitivity based on variance
+            # High variance = more stability needed = lower thresholds
+            # Low variance = can tolerate more = higher thresholds
+            variance_factor = 1.0 - (variance * 0.5)  # Reduce thresholds if high variance
+            variance_factor = max(0.7, min(1.3, variance_factor))  # Clamp to reasonable range
+            
+            # Adjust thresholds by variance factor
+            for vp_class in [ViolationClass.VP0_FULLY_LAWFUL, ViolationClass.VP1_STABLE_DRIFT,
+                            ViolationClass.VP2_INSTABILITY, ViolationClass.VP3_CRITICAL_DIVERGENCE]:
+                if vp_class in adjusted_thresholds and adjusted_thresholds[vp_class] != float('inf'):
+                    adjusted_thresholds[vp_class] *= variance_factor
+            
+            # Additional adjustment based on mean VP
+            # If mean VP is already high, be more sensitive to prevent further increases
+            if mean_vp > 0.5:
+                mean_adjustment = 0.9  # Reduce thresholds by 10%
+                for vp_class in [ViolationClass.VP0_FULLY_LAWFUL, ViolationClass.VP1_STABLE_DRIFT,
+                                ViolationClass.VP2_INSTABILITY, ViolationClass.VP3_CRITICAL_DIVERGENCE]:
+                    if vp_class in adjusted_thresholds and adjusted_thresholds[vp_class] != float('inf'):
+                        adjusted_thresholds[vp_class] *= mean_adjustment
+        
+        return adjusted_thresholds
+    
+    def _calculate_variance(self, values: List[float]) -> float:
+        """Calculate variance of VP values"""
+        if len(values) < 2:
+            return 0.0
+        
+        mean = sum(values) / len(values)
+        variance = sum((x - mean) ** 2 for x in values) / len(values)
+        return variance
+    
+    def classify_with_adaptive_thresholds(self, vp: float, phase: str, historical_vps: List[float]) -> ViolationClass:
+        """
+        Classify VP using phase-adaptive thresholds.
+        
+        Args:
+            vp: Violation pressure value [0.0, 1.0]
+            phase: System phase ('genesis' or 'sovereign')
+            historical_vps: List of recent VP values
+            
+        Returns:
+            ViolationClass classification
+        """
+        thresholds = self.adjust_thresholds_for_phase(phase, historical_vps)
+        
+        if vp < thresholds[ViolationClass.VP0_FULLY_LAWFUL]:
+            return ViolationClass.VP0_FULLY_LAWFUL
+        elif vp < thresholds[ViolationClass.VP1_STABLE_DRIFT]:
+            return ViolationClass.VP1_STABLE_DRIFT
+        elif vp < thresholds[ViolationClass.VP2_INSTABILITY]:
+            return ViolationClass.VP2_INSTABILITY
+        elif vp < thresholds[ViolationClass.VP3_CRITICAL_DIVERGENCE]:
+            return ViolationClass.VP3_CRITICAL_DIVERGENCE
+        else:
+            return ViolationClass.VP4_COLLAPSE_THRESHOLD
+
+
 class ViolationMonitor:
     """
     Calculates violation pressure - the mathematical driving force of recursion.
@@ -57,10 +524,33 @@ class ViolationMonitor:
     - Collapse (entropy compression via pruning)
     """
     
-    def __init__(self, event_publisher=None):
+    def __init__(self, event_publisher=None, diagnostics_enabled: bool = False,
+                 stabilization_enabled: bool = False, max_vp_jump: float = 0.1,
+                 smoothing_factor: float = 0.3, component_decomposition_enabled: bool = False,
+                 component_weights: Optional[Dict[str, float]] = None,
+                 adaptive_thresholds_enabled: bool = False):
         self.event_publisher = event_publisher
         self.vp_history = []
         self.stability_envelopes = {}
+        
+        # Initialize diagnostics (disabled by default for backward compatibility)
+        self.diagnostics = VPDiagnostics(enabled=diagnostics_enabled)
+        
+        # Initialize stabilizer (disabled by default for backward compatibility)
+        self.stabilization_enabled = stabilization_enabled
+        self.stabilizer = VPStabilizer(
+            history_size=10,
+            max_jump=max_vp_jump,
+            smoothing_factor=smoothing_factor
+        ) if stabilization_enabled else None
+        
+        # Initialize component calculator (disabled by default for backward compatibility)
+        self.component_decomposition_enabled = component_decomposition_enabled
+        self.component_calculator = VPComponentCalculator(component_weights=component_weights) if component_decomposition_enabled else None
+        
+        # Initialize adaptive threshold manager (disabled by default for backward compatibility)
+        self.adaptive_thresholds_enabled = adaptive_thresholds_enabled
+        self.adaptive_threshold_manager = AdaptiveThresholdManager() if adaptive_thresholds_enabled else None
         
         # Initialize default stability envelopes for common traits
         self._initialize_default_envelopes()
@@ -123,7 +613,8 @@ class ViolationMonitor:
         )
     
     def compute_violation_pressure(self, trait_payload: Dict[str, float], 
-                                 source_identity: Optional[str] = None) -> Tuple[float, Dict[str, float]]:
+                                 source_identity: Optional[str] = None,
+                                 system_phase: Optional[str] = None) -> Tuple[float, Dict[str, float]]:
         """
         Calculate violation pressure for trait payload.
         
@@ -141,8 +632,19 @@ class ViolationMonitor:
             # Get stability envelope for this trait
             envelope = self.stability_envelopes.get(trait_name, StabilityEnvelope())
             
+            # Calculate deviation for diagnostics
+            deviation = abs(trait_value - envelope.center)
+            normalized_radius = envelope.radius * envelope.compression_factor
+            
             # Calculate individual trait violation pressure
             trait_vp = self._calculate_trait_violation_pressure(trait_value, envelope)
+            
+            # Log diagnostic breakdown if enabled
+            if self.diagnostics.enabled:
+                normalization_factor = len(trait_payload) if trait_payload else 1.0
+                self.diagnostics.log_trait_breakdown(
+                    trait_name, trait_value, envelope, deviation, trait_vp, normalization_factor
+                )
             
             per_trait_breakdown[trait_name] = trait_vp
             total_vp += trait_vp
@@ -151,8 +653,25 @@ class ViolationMonitor:
         if trait_payload:
             total_vp = min(1.0, total_vp / len(trait_payload))
         
-        # Classify violation pressure
-        classification = self._classify_violation_pressure(total_vp)
+        # Apply stabilization if enabled (before logging and classification)
+        if self.stabilization_enabled and self.stabilizer:
+            total_vp = self.stabilizer.stabilize(total_vp)
+        
+        # Log calculation summary if diagnostics enabled
+        if self.diagnostics.enabled:
+            self.diagnostics.log_calculation_summary(
+                trait_payload, total_vp, per_trait_breakdown, source_identity
+            )
+        
+        # Classify violation pressure (use adaptive thresholds if enabled)
+        if self.adaptive_thresholds_enabled and self.adaptive_threshold_manager and system_phase:
+            # Get recent VP history for adaptive threshold calculation
+            recent_vps = [entry["total_vp"] for entry in self.vp_history[-100:]]
+            classification = self.adaptive_threshold_manager.classify_with_adaptive_thresholds(
+                total_vp, system_phase, recent_vps
+            )
+        else:
+            classification = self._classify_violation_pressure(total_vp)
         
         # Create violation pressure event
         vp_event = ViolationPressureEvent(
@@ -176,6 +695,83 @@ class ViolationMonitor:
         })
         
         return total_vp, per_trait_breakdown
+    
+    def get_vp_diagnostics(self, trait_payload: Dict[str, float]) -> Dict[str, Any]:
+        """
+        Get detailed diagnostic breakdown of VP calculation without changing the calculation.
+        Useful for analyzing what's driving VP saturation.
+        
+        Returns:
+            Dictionary with trait_analysis, envelope_analysis, and summary
+        """
+        return self.diagnostics.get_vp_diagnostics(trait_payload, self.stability_envelopes)
+    
+    def compute_violation_pressure_decomposed(self, trait_payload: Dict[str, float],
+                                            source_identity: Optional[str] = None) -> Tuple[float, Dict[str, float], Dict[str, float]]:
+        """
+        Calculate violation pressure with component decomposition.
+        Returns breakdown showing which components are driving high VP.
+        
+        Args:
+            trait_payload: Dictionary of trait_name -> trait_value pairs
+            source_identity: Optional UUID of the identity being evaluated
+            
+        Returns:
+            Tuple of (total_vp, per_trait_breakdown, component_breakdown)
+            - total_vp: Combined VP from weighted components [0.0, 1.0]
+            - per_trait_breakdown: Individual trait VPs
+            - component_breakdown: Component-level VPs (trait_divergence, network_coherence, etc.)
+        """
+        if not self.component_calculator:
+            # Fallback to standard calculation if decomposition not enabled
+            total_vp, per_trait_breakdown = self.compute_violation_pressure(trait_payload, source_identity)
+            return total_vp, per_trait_breakdown, {}
+        
+        # Calculate component pressures
+        component_breakdown = self.component_calculator.calculate_components(
+            trait_payload, self.stability_envelopes
+        )
+        
+        # Combine components using weighted geometric mean
+        total_vp = self.component_calculator.combine_components(component_breakdown)
+        
+        # Calculate per-trait breakdown for compatibility
+        per_trait_breakdown = {}
+        for trait_name, trait_value in trait_payload.items():
+            envelope = self.stability_envelopes.get(trait_name, StabilityEnvelope())
+            trait_vp = self._calculate_trait_violation_pressure(trait_value, envelope)
+            per_trait_breakdown[trait_name] = trait_vp
+        
+        # Apply stabilization if enabled
+        if self.stabilization_enabled and self.stabilizer:
+            total_vp = self.stabilizer.stabilize(total_vp)
+        
+        # Classify violation pressure
+        classification = self._classify_violation_pressure(total_vp)
+        
+        # Create violation pressure event (same as standard calculation)
+        vp_event = ViolationPressureEvent(
+            total_vp=total_vp,
+            breakdown=per_trait_breakdown,
+            classification=classification.value,
+            source_identity=source_identity
+        )
+        
+        # Publish event for system coordination
+        if self.event_publisher:
+            self.event_publisher.publish(vp_event)
+        
+        # Record in history
+        self.vp_history.append({
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "total_vp": total_vp,
+            "classification": classification.value,
+            "source_identity": source_identity,
+            "trait_count": len(trait_payload),
+            "component_breakdown": component_breakdown
+        })
+        
+        return total_vp, per_trait_breakdown, component_breakdown
     
     def _calculate_trait_violation_pressure(self, trait_value: float, 
                                           envelope: StabilityEnvelope) -> float:

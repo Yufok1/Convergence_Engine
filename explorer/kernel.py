@@ -71,7 +71,19 @@ class Kernel:
             tmp_link = self.latest_link + '.tmp'
             with open(tmp_link, 'w') as f:
                 f.write(version_filename)
-            os.replace(tmp_link, self.latest_link)
+            
+            # Windows-compatible atomic file replace
+            # Delete old file first if it exists (Windows requires this)
+            try:
+                if os.path.exists(self.latest_link):
+                    os.remove(self.latest_link)
+                os.rename(tmp_link, self.latest_link)
+            except (OSError, PermissionError) as e:
+                # If rename fails, try copy + delete approach
+                import shutil
+                if os.path.exists(self.latest_link):
+                    os.remove(self.latest_link)
+                shutil.move(tmp_link, self.latest_link)
             self.version_file = version_path
             return True  # Sovereign ID was added
         else:

@@ -56,7 +56,7 @@
     - ✅ Real-time mid-simulation adjustments (all settings update dynamically)
   - ✅ **Snapshot System:**
     - ✅ Automatic snapshot capture (activity-based, ~1-second intervals)
-    - ✅ Single source of truth: All snapshots stored in `snapshotHistory` (localStorage)
+    - ✅ Single source of truth: All snapshots stored in `snapshotHistory` (IndexedDB)
     - ✅ Snapshot gallery with thumbnail grid view
     - ✅ Clickable thumbnails open full-screen overlay viewer
     - ✅ Thumbnail selection for vision analysis (single or multiple)
@@ -64,6 +64,18 @@
     - ✅ "Create Video" button generates MP4s from selected snapshots
     - ✅ Snapshot filtering (blank image removal, time spacing, even sampling)
     - ✅ Export options: PNG, copy to clipboard, JSON data
+    - ✅ "Clear All Snapshots" button to remove all snapshots
+    - ✅ "Enable Snapshots" toggle to disable/enable automatic capture
+    - ✅ Auto-clear snapshots when simulation starts
+  - ✅ **Performance Features:**
+    - ✅ Viewport culling for large graphs (renders only visible elements)
+    - ✅ Level-of-Detail (LOD) system with 5 zoom-based detail tiers
+    - ✅ Performance toggle in filter panel (disabled by default)
+  - ✅ **Navigation Aids:**
+    - ✅ Minimap/Radar system showing full graph overview
+    - ✅ Viewport indicator (cyan rectangle) showing current view
+    - ✅ Interactive minimap (click to pan, draggable, minimizable)
+    - ✅ Auto-appears when viewport culling enabled
   - ✅ **Video Export Functionality**
     - ✅ Dynamic FPS and duration controls (1-600 seconds, 15-60 FPS)
     - ✅ Real-time frame count calculation display
@@ -88,6 +100,10 @@
 - **Color Customization**: Full control over component colors (5) and link colors (5 types)
 - **Theme Support**: CRA can apply custom themes (e.g., "Superman theme", "Green Lantern theme")
 - **Robust JSON Parsing**: Handles malformed JSON with comments, normalizes property names
+- **Settings Validation** ⭐ NEW: Automatic validation and clamping of all setting values
+- **Batch Update Mode** ⭐ NEW: Efficient bulk updates prevent cascading re-renders
+- **Error Recovery** ⭐ NEW: Graceful handling of rendering errors with automatic recovery
+- **Diagnostic Function** ⭐ NEW: `vizDebug()` console command for complete state inspection
 
 ### Snapshot Management
 - **Automatic Cleanup**: Snapshots cleared when simulation stops or starts

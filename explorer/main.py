@@ -180,8 +180,62 @@ class BiphasicController:
         if DJINN_KERNEL_AVAILABLE:
             try:
                 self.utm_kernel = UTMKernel()
-                self.vp_monitor = ViolationMonitor()
-                print("[Explorer] ✅ Djinn Kernel initialized")
+                
+                # Load VP monitoring configuration from config.json
+                vp_config = {}
+                try:
+                    config_path = str(parent_path / 'config.json')
+                    import json
+                    with open(config_path, 'r') as f:
+                        config = json.load(f)
+                        vp_config = config.get('vp_monitoring', {})
+                except Exception as e:
+                    print(f"[Explorer] ⚠️  Could not load VP config: {e}, using defaults")
+                
+                # Initialize ViolationMonitor with configuration
+                self.vp_monitor = ViolationMonitor(
+                    event_publisher=self.utm_kernel.event_publisher,  # Use UTM Kernel's event publisher
+                    diagnostics_enabled=vp_config.get('diagnostics_enabled', False),
+                    stabilization_enabled=vp_config.get('stabilization_enabled', False),
+                    max_vp_jump=vp_config.get('stabilization', {}).get('max_jump', 0.1),
+                    smoothing_factor=vp_config.get('stabilization', {}).get('smoothing_factor', 0.3),
+                    component_decomposition_enabled=vp_config.get('component_decomposition_enabled', False),
+                    component_weights=vp_config.get('component_weights'),
+                    adaptive_thresholds_enabled=vp_config.get('adaptive_thresholds_enabled', False)
+                )
+                
+                # CRITICAL: Replace UTM Kernel's default ViolationMonitor with the configured one
+                # This ensures VP diagnostics are enabled when UTM Kernel computes VP
+                self.utm_kernel.violation_monitor = self.vp_monitor
+                
+                vp_features = []
+                if vp_config.get('diagnostics_enabled'):
+                    vp_features.append("diagnostics")
+                if vp_config.get('stabilization_enabled'):
+                    vp_features.append("stabilization")
+                if vp_config.get('component_decomposition_enabled'):
+                    vp_features.append("component_decomposition")
+                if vp_config.get('adaptive_thresholds_enabled'):
+                    vp_features.append("adaptive_thresholds")
+                
+                feature_str = f" [{', '.join(vp_features)}]" if vp_features else ""
+                print(f"[Explorer] ✅ Djinn Kernel initialized{feature_str}")
+                
+                # Debug: Verify diagnostics are actually enabled
+                if self.vp_monitor and hasattr(self.vp_monitor, 'diagnostics'):
+                    diag_enabled = self.vp_monitor.diagnostics.enabled
+                    diag_file = str(self.vp_monitor.diagnostics.log_file) if hasattr(self.vp_monitor.diagnostics, 'log_file') else 'unknown'
+                    print(f"[Explorer] [VP_MONITORING] Diagnostics enabled: {diag_enabled}, Log file: {diag_file}")
+                    if diag_enabled and hasattr(self.vp_monitor.diagnostics, 'logger') and self.vp_monitor.diagnostics.logger:
+                        print(f"[Explorer] [VP_MONITORING] Logger initialized: {self.vp_monitor.diagnostics.logger.handlers}")
+                    else:
+                        print(f"[Explorer] [VP_MONITORING] ⚠️  Diagnostics enabled in config but logger not initialized!")
+                
+                # Verify UTM Kernel is using the configured monitor
+                if hasattr(self.utm_kernel, 'violation_monitor') and self.utm_kernel.violation_monitor is self.vp_monitor:
+                    print(f"[Explorer] [VP_MONITORING] ✅ UTM Kernel using configured ViolationMonitor with diagnostics")
+                else:
+                    print(f"[Explorer] [VP_MONITORING] ⚠️  UTM Kernel violation_monitor mismatch!")
             except Exception as e:
                 print(f"[Explorer] ⚠️  Djinn Kernel error: {e}")
                 self.utm_kernel = None
@@ -489,6 +543,8 @@ class BiphasicController:
                     self.utm_kernel.execute_instruction(write_instruction)
                     
                     # Step 2: Execute VP calculation via UTM Kernel (agent-based computation)
+                    # Pass system phase for phase-aware VP calculation with diagnostics
+                    current_phase = self.phase  # Use controller's phase attribute
                     compute_instruction = AgentInstruction(
                         instruction_id=str(uuid.uuid4()),
                         operation="COMPUTE",
@@ -496,7 +552,9 @@ class BiphasicController:
                         parameters={
                             "type": "violation_pressure",
                             "parameters": {
-                                "traits": traits
+                                "traits": traits,
+                                "system_phase": current_phase,
+                                "source_identity": None  # Could pass identity if available
                             }
                         }
                     )
@@ -518,13 +576,17 @@ class BiphasicController:
                         else:
                             # Fallback to direct VP monitor if UTM computation failed
                             if self.vp_monitor:
-                                vp, vp_breakdown = self.vp_monitor.compute_violation_pressure(traits)
+                                # Get current phase for phase-aware VP calculation
+                                current_phase = self.phase  # Use controller's phase attribute
+                                vp, vp_breakdown = self.vp_monitor.compute_violation_pressure(traits, system_phase=current_phase)
                                 vp_class = self.vp_monitor._classify_violation_pressure(vp)
                                 color_print(f"[Djinn Kernel] 🦋 Right Wing - VP: {vp:.3f} ({vp_class.value}) [Fallback]", Colors.BLUE)
                     else:
                         # Fallback to direct VP monitor
                         if self.vp_monitor:
-                            vp, vp_breakdown = self.vp_monitor.compute_violation_pressure(traits)
+                            # Get current phase for phase-aware VP calculation
+                            current_phase = self.phase  # Use controller's phase attribute
+                            vp, vp_breakdown = self.vp_monitor.compute_violation_pressure(traits, system_phase=current_phase)
                             vp_class = self.vp_monitor._classify_violation_pressure(vp)
                             color_print(f"[Djinn Kernel] 🦋 Right Wing - VP: {vp:.3f} ({vp_class.value}) [Fallback]", Colors.BLUE)
             except Exception as e:
@@ -534,7 +596,9 @@ class BiphasicController:
                 # Fallback to direct VP monitor on error
                 if self.vp_monitor and traits:
                     try:
-                        vp, vp_breakdown = self.vp_monitor.compute_violation_pressure(traits)
+                        # Get current phase for phase-aware VP calculation
+                        current_phase = self.phase  # Use controller's phase attribute
+                        vp, vp_breakdown = self.vp_monitor.compute_violation_pressure(traits, system_phase=current_phase)
                         vp_class = self.vp_monitor._classify_violation_pressure(vp)
                         color_print(f"[Djinn Kernel] 🦋 Right Wing - VP: {vp:.3f} ({vp_class.value}) [Error Fallback]", Colors.BLUE)
                     except (AttributeError, ValueError, TypeError, KeyError) as e:

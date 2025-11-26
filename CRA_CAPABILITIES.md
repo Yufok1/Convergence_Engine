@@ -40,6 +40,11 @@ The Convergence Research Assistant (CRA) is an AI-powered research assistant tha
 - Adjust ALL visualization settings: link/node appearance, colors, depth effects, visual effects, performance
 - Customize component colors and link type colors dynamically
 - Interpret visual patterns in graph snapshots
+- **Robust Settings Management** ⭐ NEW
+  - Settings validation prevents invalid values from breaking visualization
+  - Batch update mode for efficient bulk changes (prevents cascading re-renders)
+  - Real-time updates during active simulation without interruption
+  - Error recovery with graceful degradation
 
 ---
 
@@ -206,6 +211,38 @@ The CRA has access to specialized diagnostic endpoints:
    - Returns breath cycle duration, total cycles, inhale/exhale ratios
    - Use when investigating timing or synchronization issues
 
+6. **VP Diagnostics Breakdown:** `/api/diagnostic/vp_diagnostics` ⭐ NEW
+   - Detailed trait-by-trait breakdown of VP calculation
+   - Trait values, envelope centers, deviations, per-trait VPs
+   - Normalization factors and VP contribution ratios
+   - Dominant trait identification (which trait is driving high VP?)
+   - **USE THIS** when investigating why VP is high or saturating
+   - Diagnostic data is logged to `data/logs/vp_diagnostics.log` if diagnostics enabled
+
+7. **VP Component Decomposition:** `/api/diagnostic/vp_components` ⭐ NEW
+   - Weighted component breakdown showing which components drive VP:
+     * `trait_divergence` (25%): Average deviation from stability centers
+     * `network_coherence` (20%): Coherence of network traits
+     * `phase_mismatch` (15%): Mismatch in prosocial traits
+     * `evolution_pressure` (20%): Pressure from meta-traits
+     * `quantum_entropy` (20%): Entropy in trait distribution
+   - Combined VP from weighted geometric mean
+   - **USE THIS** to identify which component is causing VP saturation
+
+8. **VP Stabilization History:** `/api/diagnostic/vp_stabilization` ⭐ NEW
+   - VP stabilization history (last 10 values if stabilization enabled)
+   - Raw vs stabilized VP comparison
+   - Jump limiting information (max jump per calculation)
+   - **USE THIS** to see if stabilization is smoothing VP transitions
+
+9. **VP Adaptive Thresholds:** `/api/diagnostic/vp_thresholds` ⭐ NEW
+   - Current adaptive thresholds based on system phase
+   - Genesis vs Sovereign threshold differences
+   - Historical variance-based adjustments
+   - **USE THIS** to understand why VP classification might differ from base thresholds
+
+**VP Monitoring Redesign:** See `VP_MONITORING_REDESIGN.md` for complete documentation on the VP monitoring system redesign that addresses VP saturation issues.
+
 ---
 
 ## 📊 System Context Awareness
@@ -231,7 +268,7 @@ The CRA has access to specialized diagnostic endpoints:
 
 ## 📋 System Log Files (CRITICAL DATA SOURCES)
 
-The CRA has access to **7 log files** that track different aspects of the Butterfly System. These logs are **CRITICAL** for understanding system behavior and diagnosing issues.
+The CRA has access to **8 log files** that track different aspects of the Butterfly System. These logs are **CRITICAL** for understanding system behavior and diagnosing issues.
 
 ### Log File Details
 
@@ -292,7 +329,20 @@ The CRA has access to **7 log files** that track different aspects of the Butter
   - `vp_calcs`: VP calculations count
   - `traits`: Trait count
 
-#### 6. `system.log` - System-Level Events
+#### 6. `vp_diagnostics.log` - **NEW**: VP Diagnostic Breakdowns ⭐
+- **Purpose**: Detailed VP diagnostic breakdowns (only if diagnostics enabled)
+- **Format**: `timestamp|vp_diagnostics|trait_breakdown|{JSON}` or `calculation_summary|{JSON}`
+- **Contains**:
+  - Per-trait breakdowns (trait values, envelope centers, deviations, trait VPs)
+  - Envelope analysis (center, radius, compression factor)
+  - Normalization factors and VP contribution ratios
+  - Calculation summaries (total VP, per-trait breakdown, dominant trait)
+- **PATH**: `data/logs/vp_diagnostics.log`
+- **ONLY EXISTS** if `vp_monitoring.diagnostics_enabled=true` in config.json
+- **USE THIS** to understand what's driving VP saturation or high values
+- **See also**: `VP_MONITORING_REDESIGN.md` for complete VP monitoring documentation
+
+#### 7. `system.log` - System-Level Events
 - **Purpose**: System lifecycle events, initialization, shutdown, errors
 - **Format**: `timestamp|level|system|event:str|...`
 - **Contains**:
@@ -301,7 +351,7 @@ The CRA has access to **7 log files** that track different aspects of the Butter
   - Error events
   - Component initialization status
 
-#### 7. `application.log` - Application-Level Logging
+#### 8. `application.log` - Application-Level Logging
 - **Purpose**: Web UI, Flask, and general application activity
 - **Format**: Standard application logging (not pipe-delimited)
 - **Contains**:
@@ -414,6 +464,19 @@ The CRA acts as a **System Custodian** with:
 - `/api/cra/diagnostics/memory_breakdown` - Memory breakdown
 - `/api/cra/diagnostics/event_throughput` - Event throughput
 - `/api/cra/diagnostics/breath_cycles` - Breath cycle stats
+
+### VP Monitoring Diagnostics ⭐ NEW
+- `/api/diagnostic/vp_diagnostics` - VP diagnostic breakdown (trait-by-trait analysis)
+- `/api/diagnostic/vp_components` - VP component decomposition (weighted components)
+- `/api/diagnostic/vp_stabilization` - VP stabilization history
+- `/api/diagnostic/vp_thresholds` - Adaptive threshold information
+
+### Phase Sync Diagnostics
+- `/api/diagnostic/phase_sync` - Phase synchronization data
+- `/api/diagnostic/exploration_ratio` - Exploration-to-precision ratio tracking
+- `/api/diagnostic/unified_health` - Unified system health metrics
+- `/api/diagnostic/transition_status` - Transition readiness status
+- `/api/diagnostic/collapse_prediction` - Network collapse prediction
 
 ### Health & Status
 - `/api/cra/status` - Custodian status

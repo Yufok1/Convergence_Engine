@@ -200,14 +200,40 @@ Both detect the same thing: **consolidation has occurred**.
 
 ---
 
+## Adaptive Thresholds (VP Monitoring Redesign)
+
+The VP Monitoring System Redesign introduced adaptive thresholds that can adjust based on system phase:
+
+### Base Thresholds (Default)
+- **VP0**: 0.00 - 0.25 (Fully lawful)
+- **VP1**: 0.25 - 0.50 (Stable drift)
+- **VP2**: 0.50 - 0.75 (Instability)
+- **VP3**: 0.75 - 1.00 (Critical divergence)
+- **VP4**: ≥ 1.00 (Collapse threshold)
+
+### Genesis Phase (More Sensitive)
+- **VP0**: 0.00 - 0.15 (More sensitive)
+- **VP1**: 0.15 - 0.35
+- **VP2**: 0.35 - 0.55
+- **VP3**: 0.55 - 0.80
+
+### Sovereign Phase (Less Sensitive)
+- **VP0**: 0.00 - 0.20
+- **VP1**: 0.20 - 0.40
+- **VP2**: 0.40 - 0.65
+- **VP3**: 0.65 - 0.90
+
+Thresholds are further adjusted based on historical VP variance. See `VP_MONITORING_REDESIGN.md` for details.
+
 ## Summary
 
 1. **0.3 is NOT a VP threshold** - it's a modularity boundary
-2. **VP thresholds are**: 0.25, 0.50, 0.75, 1.00
-3. **Collapse detection uses**: `modularity < 0.3` (network metric)
-4. **VP naturally drops to VP0** (< 0.25) when modularity < 0.3
-5. **The integration report conflated** network metric with VP threshold
-6. **The mathematical identity remains**: Network collapse = Trait convergence
+2. **VP base thresholds are**: 0.25, 0.50, 0.75, 1.00
+3. **Adaptive thresholds** adjust based on phase and historical variance
+4. **Collapse detection uses**: `modularity < 0.3` (network metric)
+5. **VP naturally drops to VP0** (< 0.25) when modularity < 0.3
+6. **The integration report conflated** network metric with VP threshold
+7. **The mathematical identity remains**: Network collapse = Trait convergence
 
 ---
 

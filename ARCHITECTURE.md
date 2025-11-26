@@ -130,6 +130,12 @@ Breath Cycle (Explorer)
 - Identity anchoring
 - Mathematical governance
 
+**VP Monitoring Features:**
+- **Diagnostics**: Detailed logging of VP components (optional)
+- **Stabilization**: Smoothing to prevent immediate saturation (optional)
+- **Component Decomposition**: Weighted breakdown of VP sources (optional)
+- **Adaptive Thresholds**: Phase-aware threshold adjustment (optional)
+
 **Dependencies:**
 - None (standalone, imported by Explorer)
 
@@ -137,6 +143,8 @@ Breath Cycle (Explorer)
 - VP values
 - VP classification
 - Trait convergence status
+- VP diagnostic data (if enabled)
+- Component breakdown (if decomposition enabled)
 
 ---
 

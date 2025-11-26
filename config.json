@@ -90,20 +90,38 @@
         "min": 0.2,
         "max": 2.0,
         "step": 0.1,
-        "initial": 1.8
+        "initial": 0.5
       },
       "clustering_bias": {
         "min": 0.3,
         "max": 1.5,
         "step": 0.05,
-        "initial": 0.65
+        "initial": 0.8
       },
       "quantum_pruning": {
         "min": 0.0,
         "max": 1.0,
         "step": 0.05,
-        "initial": 0.7
+        "initial": 0.9
       }
+    }
+  },
+  "vp_monitoring": {
+    "diagnostics_enabled": true,
+    "stabilization_enabled": true,
+    "adaptive_thresholds_enabled": true,
+    "component_decomposition_enabled": true,
+    "stabilization": {
+      "max_jump": 0.15,
+      "smoothing_factor": 0.25,
+      "history_size": 15
+    },
+    "component_weights": {
+      "trait_divergence": 0.25,
+      "network_coherence": 0.20,
+      "phase_mismatch": 0.15,
+      "evolution_pressure": 0.20,
+      "quantum_entropy": 0.20
     }
   }
 }
