@@ -8134,6 +8134,48 @@
                             const messagesDiv = document.getElementById('chatMessages');
                             const imageDescriptions = parseImageDescriptions(data.visual_description);
 
+                            const timelineWrapper = document.createElement('div');
+                            timelineWrapper.style.cssText = 'margin: 15px 0; padding: 15px; border: 2px solid #0ff; background: rgba(0, 0, 0, 0.7); border-radius: 6px;';
+
+                            const timelineTitle = document.createElement('div');
+                            timelineTitle.style.cssText = 'color: #0ff; font-weight: bold; font-size: 1.2em; margin-bottom: 10px;';
+                            timelineTitle.textContent = `Vision Snapshot Timeline (${timelineSnapshots.length} frame${timelineSnapshots.length === 1 ? '' : 's'})`;
+                            timelineWrapper.appendChild(timelineTitle);
+
+                            const navControls = document.createElement('div');
+                            navControls.style.cssText = 'display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 10px;';
+
+                            const prevBtn = document.createElement('button');
+                            prevBtn.textContent = '⟵ Previous';
+                            prevBtn.style.cssText = 'padding: 4px 10px; background: #033; color: #0ff; border: 1px solid #0ff; cursor: pointer; border-radius: 4px;';
+
+                            const nextBtn = document.createElement('button');
+                            nextBtn.textContent = 'Next ⟶';
+                            nextBtn.style.cssText = 'padding: 4px 10px; background: #033; color: #0ff; border: 1px solid #0ff; cursor: pointer; border-radius: 4px;';
+
+                            const timelineStatus = document.createElement('span');
+                            timelineStatus.style.cssText = 'flex: 1; color: #0f0; font-size: 0.95em;';
+
+                            navControls.appendChild(prevBtn);
+                            navControls.appendChild(timelineStatus);
+                            navControls.appendChild(nextBtn);
+
+                            const jumpStrip = document.createElement('div');
+                            jumpStrip.style.cssText = 'display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;';
+
+                            const snapshotContainer = document.createElement('div');
+                            snapshotContainer.style.cssText = 'position: relative;';
+
+                            timelineWrapper.appendChild(navControls);
+                            timelineWrapper.appendChild(jumpStrip);
+                            timelineWrapper.appendChild(snapshotContainer);
+
+                            messagesDiv.appendChild(timelineWrapper);
+
+                            const snapshotEntries = [];
+                            const jumpButtons = [];
+                            let activeTimelineIndex = 0;
+
                             timelineSnapshots.forEach((snapshot, idx) => {
                                 if (!snapshot || !snapshot.image) return;
                                 const snapshotIndex = snapshot.index || (idx + 1);
@@ -8145,7 +8187,8 @@
                                 const isCurrent = Boolean(snapshot.is_current);
 
                                 const snapshotDiv = document.createElement('div');
-                                snapshotDiv.style.cssText = 'margin: 15px 0; padding: 15px; border: 2px solid #0ff; background: rgba(0, 0, 0, 0.9); border-radius: 5px; display: flex; flex-direction: column; gap: 10px;';
+                                snapshotDiv.style.cssText = 'margin: 0; padding: 15px; border: 2px solid #0ff; background: rgba(0, 0, 0, 0.9); border-radius: 5px; display: none; flex-direction: column; gap: 10px;';
+                                snapshotDiv.dataset.timelineIndex = idx;
 
                                 // Header with snapshot info
                                 const headerDiv = document.createElement('div');
@@ -8191,8 +8234,44 @@
                                     drawAnnotationsOnImage(imgElement, data.vision_annotations);
                                 }
 
-                                messagesDiv.appendChild(snapshotDiv);
+                                snapshotContainer.appendChild(snapshotDiv);
+                                snapshotEntries.push({
+                                    element: snapshotDiv,
+                                    label: isCurrent ? 'Live Snapshot' : `Snapshot ${snapshotIndex}`
+                                });
+
+                                const jumpBtn = document.createElement('button');
+                                jumpBtn.textContent = isCurrent ? 'Live' : snapshotIndex;
+                                jumpBtn.dataset.timelineIndex = idx;
+                                jumpBtn.style.cssText = 'padding: 2px 8px; background: #024; color: #0ff; border: 1px solid #0ff; border-radius: 3px; cursor: pointer; font-size: 0.85em;';
+                                jumpBtn.addEventListener('click', () => updateTimelineNav(idx));
+                                jumpStrip.appendChild(jumpBtn);
+                                jumpButtons.push(jumpBtn);
                             });
+
+                            function updateTimelineNav(newIndex) {
+                                if (!snapshotEntries.length) return;
+                                activeTimelineIndex = Math.max(0, Math.min(newIndex, snapshotEntries.length - 1));
+                                snapshotEntries.forEach((entry, idx) => {
+                                    entry.element.style.display = idx === activeTimelineIndex ? 'flex' : 'none';
+                                });
+                                timelineStatus.textContent = `${snapshotEntries[activeTimelineIndex].label} (${activeTimelineIndex + 1}/${snapshotEntries.length})`;
+                                prevBtn.disabled = activeTimelineIndex === 0;
+                                nextBtn.disabled = activeTimelineIndex === snapshotEntries.length - 1;
+                                jumpButtons.forEach(btn => {
+                                    if (parseInt(btn.dataset.timelineIndex, 10) === activeTimelineIndex) {
+                                        btn.style.background = '#0ff';
+                                        btn.style.color = '#000';
+                                    } else {
+                                        btn.style.background = '#024';
+                                        btn.style.color = '#0ff';
+                                    }
+                                });
+                            }
+
+                            prevBtn.addEventListener('click', () => updateTimelineNav(activeTimelineIndex - 1));
+                            nextBtn.addEventListener('click', () => updateTimelineNav(activeTimelineIndex + 1));
+                            updateTimelineNav(0);
 
                             // Only auto-scroll if user is already near the bottom and not scrolling
                             if (!userIsScrolling) {

@@ -4899,10 +4899,8 @@ Use this context to understand what the graph structure means. Match the visual 
                         'index': snapshot.get('index', idx + 1)
                     })
 
-            historical_frames = dedupe_by_signature(historical_frames, lambda frame: frame.get('image'))
-
             if historical_frames:
-                max_display = min(8, len(historical_frames))
+                max_display = min(10, len(historical_frames))
                 sampled_frames = sample_evenly(historical_frames, max_display)
                 for frame in sampled_frames:
                     display_snapshots.append({

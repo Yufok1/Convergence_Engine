@@ -60,7 +60,7 @@
     "connection_strength_resolution": 5e-06,
     "emergence_sensitivity": 1e-06,
     "max_connections": 8000,
-    "max_organisms": 3000,
+    "max_organisms": 2500,
     "resource_flow_precision": 0.0001,
     "resource_pool": 200.0,
     "stability_precision": 1e-07
