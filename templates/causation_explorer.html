@@ -1096,6 +1096,17 @@
                     </div>
                 </div>
             </div>
+            <div style="background: #111; border: 1px solid #0ff; padding: 10px; text-align: left; margin-top: 10px; flex: 1;">
+                <div style="color: #0ff; margin-bottom: 8px; font-weight: bold;">🛠️ Config Actions Log</div>
+                <div id="configActionsList"
+                    style="max-height: 180px; overflow-y: auto; font-size: 0.85em; color: #0aa; line-height: 1.4; border: 1px solid #033; padding: 6px; background: #050505;">
+                    <div style="color: #066;">Loading config actions…</div>
+                </div>
+                <button id="configActionsRefreshBtn" onclick="refreshConfigActionsUI()"
+                    style="margin-top: 6px; padding: 4px 10px; background: #023; color: #0ff; border: 1px solid #0ff; cursor: pointer; font-size: 0.85em;">
+                    ↻ Refresh Log
+                </button>
+            </div>
         </div>
 
         <div class="main-content">
@@ -7474,6 +7485,279 @@
                     });
             }
 
+            // Helper utilities for CRA command parsing (JSON markers, config API access)
+            function cleanJsonForParsing(jsonStr) {
+                if (!jsonStr || typeof jsonStr !== 'string') {
+                    return jsonStr;
+                }
+                return jsonStr
+                    .replace(/\/\/.*$/gm, '')
+                    .replace(/\/\*[\s\S]*?\*\//g, '')
+                    .replace(/,(\s*[}\]])/g, '$1');
+            }
+
+            function findMatchingBraceIndex(text, startIndex) {
+                let braceCount = 0;
+                let inString = false;
+                let escapeNext = false;
+                for (let i = startIndex; i < text.length; i++) {
+                    const char = text[i];
+                    if (escapeNext) {
+                        escapeNext = false;
+                        continue;
+                    }
+                    if (char === '\\') {
+                        escapeNext = true;
+                        continue;
+                    }
+                    if (char === '"') {
+                        inString = !inString;
+                        continue;
+                    }
+                    if (!inString) {
+                        if (char === '{') braceCount++;
+                        if (char === '}') {
+                            braceCount--;
+                            if (braceCount === 0) {
+                                return i;
+                            }
+                        }
+                    }
+                }
+                return -1;
+            }
+
+            function extractJsonPayloadsFromMarker(responseText, markerPattern) {
+                const payloads = [];
+                if (!responseText) return payloads;
+                const regex = new RegExp(markerPattern, 'gi');
+                let match;
+                while ((match = regex.exec(responseText)) !== null) {
+                    const braceStart = responseText.indexOf('{', regex.lastIndex);
+                    if (braceStart === -1) continue;
+                    const braceEnd = findMatchingBraceIndex(responseText, braceStart);
+                    if (braceEnd === -1) break;
+                    const trailing = responseText.substring(braceEnd + 1).trimStart();
+                    if (!trailing.startsWith(']]')) {
+                        continue;
+                    }
+                    const rawJson = responseText.substring(braceStart, braceEnd + 1);
+                    payloads.push({
+                        raw: rawJson,
+                        cleaned: cleanJsonForParsing(rawJson)
+                    });
+                    regex.lastIndex = braceEnd + 2;
+                }
+                return payloads;
+            }
+
+            function sendConfigUpdateRequest(command) {
+                if (!command || !Array.isArray(command.patch) || command.patch.length === 0) {
+                    console.warn('[CRA] CONFIG_UPDATE missing patch array', command);
+                    addChatMessage('system', '⚠️ CONFIG_UPDATE ignored (missing patch array)', true);
+                    return;
+                }
+
+                const payload = {
+                    actor: command.actor || command.source || 'CRA',
+                    reason: command.reason || command.description || 'CRA autonomous config update',
+                    correlation_id: command.correlation_id || command.plan_id || undefined,
+                    patch: command.patch
+                };
+
+                if (!payload.correlation_id) {
+                    delete payload.correlation_id;
+                }
+
+                fetch('/api/config/update', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                })
+                    .then(async response => {
+                        let body = {};
+                        try {
+                            body = await response.json();
+                        } catch (err) {
+                            body = { success: response.ok };
+                        }
+
+                        if (!response.ok || body.success === false) {
+                            const errorMessage = (body && body.error) ? body.error : `HTTP ${response.status}`;
+                            console.error('[CRA] Config update failed:', errorMessage, body);
+                            addChatMessage('system', `❌ Config update failed: ${errorMessage}`, true);
+                            return;
+                        }
+
+                        const result = body.result || body;
+                        const changes = Array.isArray(result?.changes) ? result.changes : [];
+                        const changeSummary = changes.slice(0, 3).map(change => {
+                            const fromVal = typeof change.from === 'object' ? JSON.stringify(change.from) : change.from;
+                            const toVal = typeof change.to === 'object' ? JSON.stringify(change.to) : change.to;
+                            return `${change.path}: ${fromVal} → ${toVal}`;
+                        }).join('; ');
+
+                        const summaryText = changeSummary ? ` Changes: ${changeSummary}${changes.length > 3 ? ' ...' : ''}` : '';
+                        addChatMessage('system', `✅ Config updated (version ${result?.version ?? 'n/a'}, ${changes.length} change(s)).${summaryText}`, false);
+
+                        console.log('[CRA] Config update response:', body);
+                        refreshConfigActionsUI();
+                    })
+                    .catch(err => {
+                        console.error('[CRA] Config update request error:', err);
+                        addChatMessage('system', `❌ Config update request error: ${err.message}`, true);
+                    });
+            }
+
+            function sendConfigRollbackRequest(command) {
+                const steps = Number(command?.steps ?? command?.step ?? 1);
+                if (!Number.isFinite(steps) || steps < 1) {
+                    console.warn('[CRA] CONFIG_ROLLBACK invalid steps value', command);
+                    addChatMessage('system', '⚠️ CONFIG_ROLLBACK ignored (invalid steps value)', true);
+                    return;
+                }
+
+                const payload = {
+                    actor: command.actor || command.source || 'CRA',
+                    reason: command.reason || command.description || 'CRA rollback request',
+                    correlation_id: command.correlation_id || command.plan_id || undefined,
+                    steps
+                };
+
+                if (!payload.correlation_id) {
+                    delete payload.correlation_id;
+                }
+
+                fetch('/api/config/rollback', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                })
+                    .then(async response => {
+                        let body = {};
+                        try {
+                            body = await response.json();
+                        } catch (err) {
+                            body = { success: response.ok };
+                        }
+
+                        if (!response.ok || body.success === false) {
+                            const errorMessage = (body && body.error) ? body.error : `HTTP ${response.status}`;
+                            console.error('[CRA] Config rollback failed:', errorMessage, body);
+                            addChatMessage('system', `❌ Config rollback failed: ${errorMessage}`, true);
+                            return;
+                        }
+
+                        const result = body.result || {};
+                        addChatMessage('system', `↩️ Config rollback complete (restored version ${result.restored_version ?? 'unknown'}, active version ${result.active_version ?? 'unknown'}).`, false);
+                        console.log('[CRA] Config rollback response:', body);
+                        refreshConfigActionsUI();
+                    })
+                    .catch(err => {
+                        console.error('[CRA] Config rollback request error:', err);
+                        addChatMessage('system', `❌ Config rollback request error: ${err.message}`, true);
+                    });
+            }
+
+            function processConfigDirectives(responseText) {
+                if (!responseText) return;
+
+                const updatePayloads = extractJsonPayloadsFromMarker(responseText, '\\[\\[(CONFIG[_\\-]?UPDATE|CONFIGUPDATE)\\s*:?');
+                updatePayloads.forEach(payload => {
+                    try {
+                        const command = JSON.parse(payload.cleaned);
+                        console.log('[CRA] CONFIG_UPDATE command received:', command);
+                        sendConfigUpdateRequest(command);
+                    } catch (err) {
+                        console.error('[CRA] Failed to parse CONFIG_UPDATE payload:', err, payload.raw);
+                        addChatMessage('system', `❌ Error parsing CONFIG_UPDATE JSON: ${err.message}`, true);
+                    }
+                });
+
+                const rollbackPayloads = extractJsonPayloadsFromMarker(responseText, '\\[\\[(CONFIG[_\\-]?ROLLBACK|CONFIGROLLBACK)\\s*:?');
+                rollbackPayloads.forEach(payload => {
+                    try {
+                        const command = JSON.parse(payload.cleaned);
+                        console.log('[CRA] CONFIG_ROLLBACK command received:', command);
+                        sendConfigRollbackRequest(command);
+                    } catch (err) {
+                        console.error('[CRA] Failed to parse CONFIG_ROLLBACK payload:', err, payload.raw);
+                        addChatMessage('system', `❌ Error parsing CONFIG_ROLLBACK JSON: ${err.message}`, true);
+                    }
+                });
+
+                if ((responseText.toLowerCase().includes('configupdate') || responseText.toLowerCase().includes('config rollback')) &&
+                    updatePayloads.length === 0 && rollbackPayloads.length === 0) {
+                    console.warn('[CRA] Config command mentioned but no valid marker found');
+                }
+            }
+
+            let configActionsTimer = null;
+
+            function renderConfigActions(actions) {
+                const container = document.getElementById('configActionsList');
+                if (!container) return;
+                if (!Array.isArray(actions) || actions.length === 0) {
+                    container.innerHTML = '<div style="color:#066;">No config actions recorded yet.</div>';
+                    return;
+                }
+
+                const latest = actions.slice(-12).reverse();
+                const rows = latest.map(entry => {
+                    const time = entry.timestamp || 'unknown';
+                    const actor = entry.actor || 'system';
+                    const action = entry.action || 'CONFIG.UPDATE';
+                    const path = entry.path || '(batch)';
+                    const oldVal = (entry.old_value ?? '').toString().slice(0, 60);
+                    const newVal = (entry.new_value ?? '').toString().slice(0, 60);
+                    const status = entry.status || 'SUCCESS';
+                    const reason = entry.reason ? `<div style="color:#088;">${entry.reason}</div>` : '';
+                    const change = `${oldVal} → ${newVal}`;
+                    return `<div style="margin-bottom:6px; padding-bottom:6px; border-bottom:1px solid #022;">
+                        <div><strong>${time}</strong> · ${actor} · <span style="color:#0f0;">${action}</span> (${status})</div>
+                        <div style="color:#0ff;">${path}</div>
+                        <div style="color:#aaa; font-size:0.8em;">${change}</div>
+                        ${reason}
+                    </div>`;
+                }).join('');
+                container.innerHTML = rows;
+            }
+
+            function loadConfigActions(showToast = false) {
+                return fetch('/api/config/actions?limit=100')
+                    .then(res => res.json())
+                    .then(data => {
+                        if (!data.success) throw new Error(data.error || 'Failed to load config actions');
+                        renderConfigActions(data.actions);
+                        if (showToast) {
+                            console.log('[CONFIG] Config actions refreshed');
+                        }
+                    })
+                    .catch(err => {
+                        console.error('[CONFIG] Error loading config actions:', err);
+                        const container = document.getElementById('configActionsList');
+                        if (container) {
+                            container.innerHTML = `<div style="color:#800;">Failed to load config actions: ${err.message}</div>`;
+                        }
+                    });
+            }
+
+            function refreshConfigActionsUI() {
+                return loadConfigActions(true);
+            }
+
+            function startConfigActionsPolling() {
+                if (configActionsTimer) {
+                    clearInterval(configActionsTimer);
+                }
+                loadConfigActions();
+                configActionsTimer = setInterval(loadConfigActions, 15000);
+            }
+
             // Send chat message
             async function sendChatMessage() {
                 const input = document.getElementById('chatInput');
@@ -8244,6 +8528,9 @@
                                     console.warn('[CRA] CRA mentioned snapshot config but did not include [[SNAPSHOT_CONFIG_UPDATE: {...}]] marker');
                                 }
                             }
+
+                            // Process configuration update/rollback directives if present
+                            processConfigDirectives(data.response);
 
                             // View updates disabled
                         } else {
@@ -10385,6 +10672,14 @@
                             closeSnapshotViewer();
                         }
                     });
+                }
+            });
+
+            document.addEventListener('DOMContentLoaded', function () {
+                startConfigActionsPolling();
+                const refreshBtn = document.getElementById('configActionsRefreshBtn');
+                if (refreshBtn) {
+                    refreshBtn.addEventListener('click', refreshConfigActionsUI);
                 }
             });
 

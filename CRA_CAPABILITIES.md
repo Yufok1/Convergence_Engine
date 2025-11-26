@@ -152,6 +152,49 @@ The CRA has **COMPLETE AUTONOMOUS control** over ALL visualization settings:
 
 ---
 
+## ⚙️ Live Configuration Orchestration (Hot Reload Service)
+
+The CRA can now adjust `config.json` while the Butterfly System keeps running. Use the guarded ConfigManager API to modify parameters and roll back if needed.
+
+### Command Formats
+- **Update:**  
+  `[[CONFIG_UPDATE: {"reason": "VP mitigation", "correlation_id": "plan-alpha", "patch": [{"op": "replace", "path": "/feedback/knobs/mutation_rate/initial", "value": 0.024}]}]]`
+- **Rollback:**  
+  `[[CONFIG_ROLLBACK: {"steps": 1, "reason": "Undo plan-alpha"}]]`
+
+### Workflow
+1. Issue a single command — updates apply immediately (dry-run mode has been removed).
+2. Review diagnostics (VP history, network trends, exploration ratio) to confirm the change is needed.
+3. Include a `correlation_id` (plan name or UUID) and descriptive `reason` so `config_actions.log` stays traceable.
+
+### Guardrails (Auto-Enforced)
+| Path | Safe Range | Notes |
+| --- | --- | --- |
+| `/feedback/knobs/mutation_rate/initial` | 0.001 – 0.05 | Mutation knob |
+| `/feedback/knobs/new_edge_rate/initial` | 0.2 – 2.0 | Connectivity growth |
+| `/feedback/knobs/clustering_bias/initial` | 0.3 – 1.5 | Triangle closure bias |
+| `/feedback/knobs/quantum_pruning/initial` | 0.0 – 1.0 | Pruning aggressiveness |
+| `/network/max_connections` | 1,000 – 20,000 | Network density ceiling |
+| `/evolution/mutation_rate_precision` | 1e-10 – 1e-2 | Precision for mutation adjustments |
+| `/quantum/superposition_tolerance` | 1e-6 – 0.01 | Quantum stability |
+| `/lattice/prune_threshold` | 0 – 0.01 | Particle pruning window |
+
+**Path Notes:** Dashes and camelCase are normalized (`/feedback/knobs/mutationrate/initial` → `/feedback/knobs/mutation_rate/initial`), but prefer underscore names.
+
+### Expected Telemetry
+- After an update, monitor `/api/cra/diagnostics/vp_history`, `/api/cra/diagnostics/network_trends`, and `/api/diagnostic/phase_sync` to confirm the change had the intended effect.
+- Summaries should state: parameter, old value → new value, and the behavioral shift (e.g., “mutation rate up to 0.024 to break VP stagnation”).
+
+### API Endpoints
+- `POST /api/config/update` – guarded JSON Patch apply (supports `correlation_id`)
+- `POST /api/config/rollback` – revert last N snapshots (history depth: 10)
+- `GET /api/config/current` – active config + version
+- `GET /api/config/history` – recent snapshots (optionally include full config payloads)
+
+Run results are logged to `data/logs/config_actions.log` and streamed to the CRA via `config_update` / `config_rollback` events.
+
+---
+
 ## 🎯 Graph View Assistance (Manual Execution)
 
 The CRA no longer sends `[[VIEW_UPDATE]]` commands. All camera movement is under your control through the navigation pad (zoom box, pan arrows, drag-to-zoom, rotation buttons).  
@@ -414,7 +457,8 @@ timestamp|level|component|metric:value|metric:value|...
 ### Snapshot System
 - Automatic capture (1-second intervals)
 - Local single-source storage (shared by viewer, vision analysis, video export)
-- Filtering: Removes blank images, ensures time spacing, even sampling
+- Historical queue keeps up to 10 snapshots per request (oldest → newest). If more are available, they’re evenly sampled across the run so the timeline stays representative.
+- Vision pipeline now streams every collected snapshot sequentially (one API call per image, ~100 KB each) which bypasses the 150 KB cloud limit while preserving full fidelity.
 - Used for vision analysis and snapshot-based video creation
 
 ---
@@ -571,7 +615,7 @@ The CRA receives rich context including:
 
 ---
 
-**Last Updated:** 2025-01-XX  
+**Last Updated:** 2025-11-26  
 **Status:** ✅ Complete and fully functional
 
 ---
@@ -620,7 +664,7 @@ The CRA receives rich context including:
 ### Snapshot Management
 - **Automatic Cleanup**: Snapshots cleared when simulation stops or starts
 - **Stale Detection**: Detects and clears old snapshots on page load
-- **Fresh Data Guarantee**: Vision model only receives snapshots from current active run
+- **Fresh Data Guarantee**: Vision model receives every captured snapshot from the current run (no blank/duplicate filtering) plus the fresh live capture.
 
 ### Image Capture Improvements
 - **Render Completion**: Double `requestAnimationFrame` + 50ms delay ensures current state

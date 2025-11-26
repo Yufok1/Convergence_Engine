@@ -1,7 +1,49 @@
 # 📚 Documentation Update Summary - Pre-GitHub Push
 
-**Date:** 2025-01-25  
-**Purpose:** Prepare documentation for GitHub repository push
+**Date:** 2025-11-26  
+**Purpose:** Final verification + archival sweep before GitHub push
+
+---
+
+## ✅ Updates Made (2025-11-26)
+
+### 1. CRA_CAPABILITIES.md
+- ✅ Documented live config orchestration changes (no dry-run mode, real-time guardrails, log panel).
+- ✅ Added snapshot/vision pipeline notes (up to 10 frames, sequential uploads, 2-minute Ollama timeout).
+- ✅ Refreshed “Last Updated” stamp to 2025-11-26.
+
+### 2. templates/causation_explorer.html
+- ✅ Added Config Actions log panel write-up (mirrors UI).
+- ✅ Documented CRA directive parsing + auto-refresh behavior.
+
+### 3. DOCUMENTATION_UPDATE_SUMMARY.md
+- ✅ New entry (this document) explaining 2025-11-26 refresh.
+
+### 4. Archived Outdated Root Docs
+- `ACTIONABLE_ISSUES_CHECKLIST.md`
+- `COMPREHENSIVE_ANALYSIS_REPORT.md`
+- `COMPREHENSIVE_CODEBASE_ANALYSIS.md`
+- ➜ moved to `docs/archive/outdated/`.
+
+---
+
+## 📦 Archive Notes (2025-11-26)
+
+### Outdated Analyses (now in `docs/archive/outdated/`)
+- ACTIONABLE_ISSUES_CHECKLIST.md – superseded by live CRA guardrails.
+- COMPREHENSIVE_ANALYSIS_REPORT.md – historical reference only.
+- COMPREHENSIVE_CODEBASE_ANALYSIS.md – superseded by latest multi-phase report.
+
+All archived docs remain accessible but no longer clutter the repo root.
+
+---
+
+## 📋 Documentation Status (2025-11-26)
+
+- ✅ README.md, CHANGELOG.md, DOCUMENTATION_HUB.md, CRA_CAPABILITIES.md = current.
+- ✅ Vision + snapshot behavior described consistently across CRA docs and UI.
+- ✅ Outdated guidance moved to archive to keep root clean.
+- ✅ No pending “review before push” items (list cleared 2025-11-26).
 
 ---
 
@@ -108,12 +150,7 @@
 
 ## 🔍 Files to Review
 
-### Potentially Outdated (Review Before Push)
-- `COMPREHENSIVE_CODEBASE_ANALYSIS.md` - Large analysis doc, verify if still relevant
-- `COMPREHENSIVE_ANALYSIS_REPORT.md` - Analysis report, verify if still relevant
-- `ACTIONABLE_ISSUES_CHECKLIST.md` - Checklist, verify if issues are resolved
-
-**Recommendation:** These files may be useful as historical reference but should be reviewed to ensure they're still accurate or moved to archive.
+*(2025-11-26 update: prior action items archived under `docs/archive/outdated/`. No remaining blockers.)*
 
 ---
 

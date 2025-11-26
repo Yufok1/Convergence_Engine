@@ -23,6 +23,8 @@ from io import BytesIO
 import io
 import queue
 import threading
+import copy
+import uuid
 
 # Setup logging first
 logging.basicConfig(level=logging.INFO)
@@ -59,6 +61,390 @@ graph_cache = {
     'shared_state_mtime': 0  # Track shared state file modification time
 }
 
+# ============================================================================
+# CONFIGURATION MANAGEMENT (Hot reload + guardrails)
+# ============================================================================
+
+PATH_SEGMENT_ALIASES = {
+    'mutationrate': 'mutation_rate',
+    'newedgerate': 'new_edge_rate',
+    'clusteringbias': 'clustering_bias',
+    'quantumpruning': 'quantum_pruning',
+    'maxconnections': 'max_connections',
+    'mutationrateprecision': 'mutation_rate_precision',
+    'superpositiontolerance': 'superposition_tolerance',
+    'prunethreshold': 'prune_threshold',
+    'realitysim': 'reality_sim',
+    'djinnkernel': 'djinn_kernel'
+}
+
+CONFIG_GUARDRAILS = {
+    '/feedback/knobs/mutation_rate/initial': {
+        'min': 0.001,
+        'max': 0.05,
+        'type': float,
+        'label': 'mutation_rate.initial'
+    },
+    '/feedback/knobs/new_edge_rate/initial': {
+        'min': 0.2,
+        'max': 2.0,
+        'type': float,
+        'label': 'new_edge_rate.initial'
+    },
+    '/feedback/knobs/clustering_bias/initial': {
+        'min': 0.3,
+        'max': 1.5,
+        'type': float,
+        'label': 'clustering_bias.initial'
+    },
+    '/feedback/knobs/quantum_pruning/initial': {
+        'min': 0.0,
+        'max': 1.0,
+        'type': float,
+        'label': 'quantum_pruning.initial'
+    },
+    '/network/max_connections': {
+        'min': 1000,
+        'max': 20000,
+        'type': int,
+        'label': 'network.max_connections'
+    },
+    '/evolution/mutation_rate_precision': {
+        'min': 1e-10,
+        'max': 1e-2,
+        'type': float,
+        'label': 'evolution.mutation_rate_precision'
+    },
+    '/quantum/superposition_tolerance': {
+        'min': 1e-6,
+        'max': 0.01,
+        'type': float,
+        'label': 'quantum.superposition_tolerance'
+    },
+    '/lattice/prune_threshold': {
+        'min': 0.0,
+        'max': 0.01,
+        'type': float,
+        'label': 'lattice.prune_threshold'
+    }
+}
+
+
+class ConfigManager:
+    """Runtime configuration store with guarded hot-reload + rollback."""
+
+    def __init__(self, config_path: Path, log_directory: Path, history_limit: int = 10):
+        self.config_path = config_path
+        self.log_directory = log_directory
+        self.log_directory.mkdir(parents=True, exist_ok=True)
+        self.log_path = self.log_directory / 'config_actions.log'
+        self.history_limit = history_limit
+        self._lock = threading.Lock()
+        self._config = self._load_config()
+        self._history: List[Dict[str, Any]] = []
+        self._version = 1
+
+    def _load_config(self) -> Dict[str, Any]:
+        if self.config_path.exists():
+            try:
+                with open(self.config_path, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except Exception as exc:
+                logger.error(f"Failed to load config.json: {exc}", exc_info=True)
+        # Default fallback
+        return {}
+
+    def _save_config(self, config: Dict[str, Any]):
+        with open(self.config_path, 'w', encoding='utf-8') as f:
+            json.dump(config, f, indent=2, sort_keys=True)
+
+    def _deepcopy(self, payload: Any) -> Any:
+        return copy.deepcopy(payload)
+
+    def _normalize_path(self, path: str) -> Tuple[str, List[str]]:
+        if not path:
+            raise ValueError("Patch path is required")
+        if not path.startswith('/'):
+            path = '/' + path
+        segments = [seg for seg in path.split('/') if seg]
+        normalized = []
+        for seg in segments:
+            cleaned = PATH_SEGMENT_ALIASES.get(seg.lower(), seg)
+            cleaned = cleaned.replace('-', '_')
+            normalized.append(cleaned)
+        normalized_path = '/' + '/'.join(normalized)
+        return normalized_path, normalized
+
+    def _resolve_parent(self, root: Any, segments: List[str], create_missing: bool = False):
+        node = root
+        for seg in segments[:-1]:
+            node = self._descend(node, seg, create_missing=create_missing)
+        return node, segments[-1]
+
+    def _descend(self, node: Any, key: str, create_missing: bool = False):
+        if isinstance(node, list):
+            index = int(key)
+            if index >= len(node) or index < 0:
+                if create_missing:
+                    while len(node) <= index:
+                        node.append({})
+                else:
+                    raise KeyError(f"Index {index} out of range for list segment '{key}'")
+            return node[index]
+        if isinstance(node, dict):
+            if key not in node:
+                if create_missing:
+                    node[key] = {}
+                else:
+                    raise KeyError(f"Missing key '{key}' in configuration path")
+            return node[key]
+        raise TypeError(f"Cannot descend into type {type(node)} for key '{key}'")
+
+    def _get_value(self, root: Any, segments: List[str]) -> Any:
+        node = root
+        for seg in segments:
+            if isinstance(node, list):
+                index = int(seg)
+                node = node[index]
+            else:
+                node = node[seg]
+        return self._deepcopy(node)
+
+    def _apply_operation(self, config: Dict[str, Any], op: str, segments: List[str], value: Any):
+        parent, key = self._resolve_parent(config, segments, create_missing=(op in ('add', 'replace')))
+
+        if isinstance(parent, list):
+            index = int(key)
+            if op == 'remove':
+                if 0 <= index < len(parent):
+                    parent.pop(index)
+                else:
+                    raise IndexError(f"Index {index} out of range for remove")
+            elif op in ('add', 'replace'):
+                if index == len(parent):
+                    parent.append(value)
+                elif 0 <= index < len(parent):
+                    parent[index] = value
+                else:
+                    raise IndexError(f"Index {index} out of range for {op}")
+            else:
+                raise ValueError(f"Unsupported operation '{op}'")
+            return
+
+        if not isinstance(parent, dict):
+            raise TypeError(f"Cannot apply {op} on non-object parent at {segments}")
+
+        if op == 'remove':
+            if key in parent:
+                parent.pop(key)
+            else:
+                raise KeyError(f"Cannot remove missing key '{key}'")
+        elif op in ('add', 'replace'):
+            parent[key] = value
+        else:
+            raise ValueError(f"Unsupported operation '{op}'")
+
+    def _validate_guardrails(self, config: Dict[str, Any]) -> List[str]:
+        violations = []
+        for path, rule in CONFIG_GUARDRAILS.items():
+            try:
+                _, segments = self._normalize_path(path)
+                value = self._get_value(config, segments)
+                numeric = rule['type'](value)
+            except KeyError:
+                continue  # Path not present, skip
+            except Exception as exc:
+                violations.append(f"{rule['label']}: invalid value ({exc})")
+                continue
+
+            min_val = rule.get('min')
+            max_val = rule.get('max')
+            if min_val is not None and numeric < min_val:
+                violations.append(f"{rule['label']}: {numeric} < minimum {min_val}")
+            if max_val is not None and numeric > max_val:
+                violations.append(f"{rule['label']}: {numeric} > maximum {max_val}")
+        return violations
+
+    def _append_log(self, entry: Dict[str, Any]):
+        timestamp = entry.get('timestamp', datetime.now().isoformat())
+        base = f"{timestamp}|{entry.get('correlation_id','n/a')}|{entry.get('actor','system')}|{entry.get('action','CONFIG.UPDATE')}"
+        reason = entry.get('reason', '')
+        validation = entry.get('validation', 'passed')
+        status = entry.get('status', 'SUCCESS')
+        changes = entry.get('changes', [])
+
+        lines = []
+        if changes:
+            for change in changes:
+                lines.append(
+                    f"{base}|{change.get('path')}|{change.get('from')}|{change.get('to')}|{validation}|{reason}|{status}"
+                )
+        else:
+            lines.append(f"{base}|(no-path)|-| -|{validation}|{reason}|{status}")
+
+        with open(self.log_path, 'a', encoding='utf-8') as log_file:
+            log_file.write('\n'.join(lines) + '\n')
+
+    def get_config(self) -> Dict[str, Any]:
+        with self._lock:
+            return self._deepcopy(self._config)
+
+    def get_version(self) -> int:
+        with self._lock:
+            return self._version
+
+    def get_history(self, include_config: bool = False) -> List[Dict[str, Any]]:
+        with self._lock:
+            history = []
+            for entry in reversed(self._history):
+                item = {
+                    'version': entry['version'],
+                    'timestamp': entry['timestamp'],
+                    'reason': entry.get('reason'),
+                    'actor': entry.get('actor')
+                }
+                if include_config:
+                    item['config'] = self._deepcopy(entry['config'])
+                history.append(item)
+            return history
+
+    def apply_patch(self, patch_ops: List[Dict[str, Any]], actor: str = 'system', reason: str = '',
+                    correlation_id: Optional[str] = None) -> Dict[str, Any]:
+        if not isinstance(patch_ops, list) or not patch_ops:
+            raise ValueError("patch must be a non-empty list of operations")
+
+        correlation_id = correlation_id or f'cfg-{uuid.uuid4().hex[:8]}'
+        with self._lock:
+            working = self._deepcopy(self._config)
+            changes = []
+
+            for op in patch_ops:
+                operation = op.get('op')
+                path = op.get('path')
+                value = op.get('value')
+                if not operation or not path:
+                    raise ValueError("Each patch operation requires 'op' and 'path'")
+
+                normalized_path, segments = self._normalize_path(path)
+                previous_value = None
+                try:
+                    previous_value = self._get_value(working, segments)
+                except Exception:
+                    previous_value = None
+
+                if operation.lower() == 'remove':
+                    self._apply_operation(working, 'remove', segments, None)
+                    new_value = None
+                else:
+                    self._apply_operation(working, operation.lower(), segments, value)
+                    try:
+                        new_value = self._get_value(working, segments)
+                    except Exception:
+                        new_value = None
+
+                changes.append({
+                    'path': normalized_path,
+                    'op': operation.lower(),
+                    'from': previous_value,
+                    'to': new_value
+                })
+
+            guardrail_issues = self._validate_guardrails(working)
+            if guardrail_issues:
+                raise ValueError(f"Guardrail validation failed: {guardrail_issues}")
+
+            timestamp = datetime.now().isoformat()
+            # Preserve snapshot for rollback
+            snapshot = {
+                'version': self._version,
+                'timestamp': timestamp,
+                'actor': actor,
+                'reason': reason or 'update',
+                'config': self._deepcopy(self._config)
+            }
+            self._history.append(snapshot)
+            if len(self._history) > self.history_limit:
+                self._history.pop(0)
+
+            self._config = working
+            self._version += 1
+            self._save_config(self._config)
+
+            log_entry = {
+                'timestamp': timestamp,
+                'correlation_id': correlation_id,
+                'actor': actor,
+                'action': 'CONFIG.UPDATE',
+                'reason': reason,
+                'validation': 'passed',
+                'changes': changes,
+                'status': 'SUCCESS'
+            }
+            self._append_log(log_entry)
+
+            return {
+                'version': self._version,
+                'changes': changes,
+                'timestamp': timestamp,
+                'correlation_id': correlation_id
+            }
+
+    def rollback(self, steps: int = 1, actor: str = 'system', reason: str = '', correlation_id: Optional[str] = None) -> Dict[str, Any]:
+        if steps < 1:
+            raise ValueError("steps must be >= 1")
+        correlation_id = correlation_id or f'rollback-{uuid.uuid4().hex[:8]}'
+
+        with self._lock:
+            if len(self._history) < steps:
+                raise ValueError(f"Cannot rollback {steps} steps. Only {len(self._history)} snapshots stored.")
+
+            target_snapshot = None
+            for _ in range(steps):
+                target_snapshot = self._history.pop()
+
+            if target_snapshot is None:
+                raise ValueError("Rollback snapshot not found")
+
+            current_snapshot = {
+                'version': self._version,
+                'timestamp': datetime.now().isoformat(),
+                'actor': actor,
+                'reason': f'pre-rollback:{reason}',
+                'config': self._deepcopy(self._config)
+            }
+            self._history.append(current_snapshot)
+            if len(self._history) > self.history_limit:
+                self._history.pop(0)
+
+            self._config = self._deepcopy(target_snapshot['config'])
+            self._version += 1
+            self._save_config(self._config)
+
+            timestamp = datetime.now().isoformat()
+            self._append_log({
+                'timestamp': timestamp,
+                'correlation_id': correlation_id,
+                'actor': actor,
+                'action': 'CONFIG.ROLLBACK',
+                'reason': reason or f"rollback to version {target_snapshot['version']}",
+                'validation': 'passed',
+                'changes': [{
+                    'path': '*',
+                    'from': current_snapshot['version'],
+                    'to': target_snapshot['version'],
+                    'op': 'rollback'
+                }],
+                'status': 'SUCCESS'
+            })
+
+            return {
+                'restored_version': target_snapshot['version'],
+                'active_version': self._version,
+                'timestamp': timestamp,
+                'history_remaining': len(self._history)
+            }
+
+
 # Ensure Flask knows where templates are
 template_dir = Path(__file__).parent / 'templates'
 app = Flask(__name__, template_folder=str(template_dir))
@@ -80,6 +466,10 @@ try:
 except Exception as e:
     logger.error(f"Failed to initialize Causation Explorer: {e}", exc_info=True)
     explorer = None
+
+# Central config manager for CRA + dynamic updates
+config_manager = ConfigManager(project_root / 'config.json', log_dir)
+config_actions_log_path = log_dir / 'config_actions.log'
 
 
 # ============================================================================
@@ -1442,6 +1832,25 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "   - When describing your capabilities, emphasize that you can AUTONOMOUSLY adjust ALL visualization parameters\n"
         prompt += "   - Always explain WHY you're adjusting settings - what pattern or insight you're highlighting\n"
         prompt += "   - You can also adjust settings when user explicitly requests it\n\n"
+
+        prompt += "7. **Real-Time Configuration Control (Hot Reload Service)**:\n"
+        prompt += "   - You can modify `config.json` without restarting the Butterfly System via the guarded ConfigManager API.\n"
+        prompt += "   - Use marker: [[CONFIG_UPDATE: {\"reason\": \"VP mitigation\", \"correlation_id\": \"plan-alpha\", \"patch\": [{\"op\": \"replace\", \"path\": \"/feedback/knobs/mutation_rate/initial\", \"value\": 0.024}]}]].\n"
+        prompt += "   - Changes apply immediately; rely on rollback if you need to revert.\n"
+        prompt += "   - Include `correlation_id` (plan name / UUID) and a concise `reason` so config_actions.log stays traceable.\n"
+        prompt += "   - Guardrails enforced automatically (requests outside these ranges are rejected):\n"
+        prompt += "     * mutation_rate.initial: 0.001 – 0.05\n"
+        prompt += "     * new_edge_rate.initial: 0.2 – 2.0\n"
+        prompt += "     * clustering_bias.initial: 0.3 – 1.5\n"
+        prompt += "     * quantum_pruning.initial: 0.0 – 1.0\n"
+        prompt += "     * network.max_connections: 1,000 – 20,000\n"
+        prompt += "     * evolution.mutation_rate_precision: 1e-10 – 1e-2\n"
+        prompt += "     * quantum.superposition_tolerance: 1e-6 – 0.01\n"
+        prompt += "     * lattice.prune_threshold: 0 – 0.01\n"
+        prompt += "   - Path segments are normalized (`mutationrate` → `mutation_rate`), but prefer explicit underscore names when possible.\n"
+        prompt += "   - After you issue a config update, monitor diagnostics (VP history, network trends, exploration ratio) and explain whether the change produced the intended effect.\n"
+        prompt += "   - To revert changes, use [[CONFIG_ROLLBACK: {\"steps\": 1, \"reason\": \"Undo plan alpha\"}]] — up to 10 historical snapshots are retained.\n"
+        prompt += "   - Summaries of your actions should describe the parameter, the old → new value, and the expected behavioral shift.\n\n"
         
         prompt += "## AVAILABLE DIAGNOSTIC ENDPOINTS (For Deep-Dive Analysis):\n\n"
         prompt += "You have access to specialized diagnostic endpoints for detailed investigation:\n\n"
@@ -4130,8 +4539,6 @@ def ollama_chat():
             if evolutionary_snapshots:
                 logger.info(f"[CRA] [Vision] Processing {len(evolutionary_snapshots)} evolutionary snapshots from frontend")
                 # Extract images from snapshots (already sorted oldest to newest)
-                # Filter out blank/empty images (too small = likely blank)
-                MIN_VALID_IMAGE_SIZE = 20000  # Minimum 20KB base64 - blank images are ~7-10KB
                 historical_frames = []
                 for snapshot in evolutionary_snapshots:
                     img = None
@@ -4145,16 +4552,12 @@ def ollama_chat():
                         img = None
                         ts = None
 
-                    if img and len(img) >= MIN_VALID_IMAGE_SIZE:
+                    if img:
                         context_snippet = context_builder.generate_snapshot_context(ts)
                         historical_frames.append({'image': img, 'context': context_snippet})
-                        logger.debug(f"Valid snapshot: {len(img)/1024:.1f}KB | Context: {context_snippet[:50]}...")
-                    elif img:
-                        logger.warning(f"Filtered out blank/empty snapshot: {len(img)/1024:.1f}KB (minimum: {MIN_VALID_IMAGE_SIZE/1024:.1f}KB)")
+                        logger.debug(f"Snapshot accepted: {len(img)/1024:.1f}KB | Context: {context_snippet[:50]}...")
 
-                # Remove consecutive duplicate frames (identical images)
-                historical_frames = dedupe_by_signature(historical_frames, lambda frame: frame.get('image'))
-                logger.info(f"[CRA] [Vision] After filtering, have {len(historical_frames)} valid historical frames")
+                logger.info(f"[CRA] [Vision] After collection, have {len(historical_frames)} historical frames")
 
                 # Ensure we have a gradual evolution - if we have too many, sample evenly
                 target_historical = MAX_VISION_IMAGES - 1
@@ -5578,11 +5981,7 @@ def cra_get_config():
         config_files = {}
 
         # Main config
-        try:
-            with open('config.json', 'r') as f:
-                config_files['config.json'] = json.load(f)
-        except Exception as e:
-            config_files['config.json'] = {'error': str(e)}
+        config_files['config.json'] = config_manager.get_config()
 
         # Ollama config
         try:
@@ -5609,6 +6008,153 @@ def cra_get_config():
             'success': False,
             'error': str(e)
         }), 500
+
+
+@app.route('/api/config/current', methods=['GET'])
+def config_current():
+    """Return the active configuration and metadata."""
+    try:
+        return jsonify({
+            'success': True,
+            'version': config_manager.get_version(),
+            'config': config_manager.get_config()
+        })
+    except Exception as e:
+        logger.error(f"Config current fetch error: {e}", exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/config/history', methods=['GET'])
+def config_history():
+    """Return recent configuration history."""
+    try:
+        include_config = request.args.get('include_config', 'false').lower() == 'true'
+        history = config_manager.get_history(include_config=include_config)
+        return jsonify({
+            'success': True,
+            'count': len(history),
+            'history': history
+        })
+    except Exception as e:
+        logger.error(f"Config history error: {e}", exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/config/update', methods=['POST'])
+def config_update():
+    """Apply guarded JSON Patch updates to config.json at runtime."""
+    try:
+        data = request.get_json() or {}
+        patch_ops = data.get('patch')
+        actor = data.get('actor', 'CRA')
+        reason = data.get('reason', '')
+        correlation_id = data.get('correlation_id')
+
+        result = config_manager.apply_patch(
+            patch_ops,
+            actor=actor,
+            reason=reason,
+            correlation_id=correlation_id
+        )
+
+        response = {
+            'success': True,
+            'result': result,
+            'message': 'Configuration updated successfully'
+        }
+
+        publish_cra_event('config_update', {
+            'actor': actor,
+            'reason': reason,
+            'changes': result.get('changes', []),
+            'version': result.get('version'),
+            'timestamp': result.get('timestamp'),
+            'correlation_id': result.get('correlation_id')
+        })
+
+        return jsonify(response)
+
+    except ValueError as ve:
+        logger.warning(f"Config update validation error: {ve}")
+        return jsonify({'success': False, 'error': str(ve)}), 400
+    except Exception as e:
+        logger.error(f"Config update error: {e}", exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/config/rollback', methods=['POST'])
+def config_rollback():
+    """Rollback configuration to a previous snapshot."""
+    try:
+        data = request.get_json() or {}
+        steps = int(data.get('steps', 1))
+        actor = data.get('actor', 'CRA')
+        reason = data.get('reason', '')
+        correlation_id = data.get('correlation_id')
+
+        result = config_manager.rollback(
+            steps=steps,
+            actor=actor,
+            reason=reason,
+            correlation_id=correlation_id
+        )
+
+        publish_cra_event('config_rollback', {
+            'actor': actor,
+            'reason': reason,
+            'steps': steps,
+            'result': result,
+            'timestamp': result.get('timestamp')
+        })
+
+        return jsonify({
+            'success': True,
+            'result': result,
+            'message': f'Rolled back {steps} step(s)'
+        })
+
+    except ValueError as ve:
+        logger.warning(f"Config rollback validation error: {ve}")
+        return jsonify({'success': False, 'error': str(ve)}), 400
+    except Exception as e:
+        logger.error(f"Config rollback error: {e}", exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/config/actions', methods=['GET'])
+def config_actions():
+    """Return recent configuration actions from config_actions.log."""
+    max_entries = int(request.args.get('limit', 50))
+    actions = []
+    if config_actions_log_path.exists():
+        try:
+            with open(config_actions_log_path, 'r', encoding='utf-8') as log_file:
+                lines = log_file.readlines()[-max_entries:]
+            for line in lines:
+                parts = line.strip().split('|')
+                if len(parts) < 7:
+                    continue
+                entry = {
+                    'timestamp': parts[0],
+                    'correlation_id': parts[1],
+                    'actor': parts[2],
+                    'action': parts[3],
+                    'path': parts[4],
+                    'old_value': parts[5],
+                    'new_value': parts[6],
+                    'validation': parts[7] if len(parts) > 7 else '',
+                    'reason': parts[8] if len(parts) > 8 else '',
+                    'status': parts[9] if len(parts) > 9 else ''
+                }
+                actions.append(entry)
+        except Exception as exc:
+            logger.error(f"Error reading config actions log: {exc}", exc_info=True)
+            return jsonify({'success': False, 'error': str(exc)}), 500
+    return jsonify({
+        'success': True,
+        'actions': actions,
+        'path': str(config_actions_log_path)
+    })
 
 @app.route('/api/cra/events/stream')
 def cra_event_stream():
@@ -6768,10 +7314,9 @@ def cra_validate_config():
                 'structure_check': 'passed' if len(missing_keys) == 0 else 'failed'
             }
         else:
-            # Validate current config
+            # Validate current config via manager
             try:
-                with open('config.json', 'r') as f:
-                    current_config = json.load(f)
+                current_config = config_manager.get_config()
                 missing_keys = [key for key in required_main_keys if key not in current_config]
                 validation_results['config.json'] = {
                     'valid': len(missing_keys) == 0,

@@ -1,127 +1,127 @@
 {
-  "simulation": {
-    "max_runtime": 3600.0,
-    "target_fps": 8.0,
-    "save_interval": 60.0,
-    "log_level": "INFO",
-    "measurement_precision": 6,
-    "time_resolution_ms": 1.0,
-    "performance_sampling_rate": 100
-  },
-  "quantum": {
-    "initial_states": 80,
-    "probability_precision": 1e-06,
-    "superposition_tolerance": 0.002,
-    "entanglement_sensitivity": 1e-05,
-    "prune_check_interval": 50,
-    "fitness_weights": {
-      "entanglement": 0.3,
-      "superposition": 0.25,
-      "measurements": 0.25,
-      "entropy": 0.2
-    },
-    "performance_thresholds": {
-      "memory_percentage": 5.0,
-      "iteration_time_ms": 10.0,
-      "fitness_std_threshold": 0.3,
-      "min_fitness_to_keep": 0.1
-    }
-  },
-  "lattice": {
-    "particles": 2400,
-    "prune_threshold": 0.001,
-    "interaction_precision": 0.0001,
-    "stability_tolerance": 0.0005,
-    "entropy_sensitivity": 0.0001
-  },
-  "evolution": {
-    "population_size": 600,
-    "genotype_length": 48,
-    "max_generations": 1000,
-    "fitness_precision": 1e-06,
-    "mutation_rate_precision": 1e-08,
-    "adaptation_sensitivity": 0.002
-  },
-  "network": {
-    "max_connections": 16000,
-    "max_organisms": 3000,
-    "resource_pool": 200.0,
-    "stability_precision": 1e-07,
-    "connection_strength_resolution": 5e-06,
-    "resource_flow_precision": 0.0001,
-    "emergence_sensitivity": 2e-06
-  },
   "agency": {
-    "initial_mode": "manual_only",
     "confidence_threshold": 0.0001,
     "decision_precision": 1e-05,
+    "initial_mode": "manual_only",
     "learning_rate_resolution": 1e-06,
     "performance_tracking_precision": 0.0001
   },
-  "rendering": {
-    "mode": "observer",
-    "resolution": [
-      1920,
-      1080
-    ],
-    "frame_rate": 30.0,
-    "text_interface": true,
-    "performance_monitoring": true,
-    "enable_visualizations": true,
-    "visualization_update_precision": 0.001,
-    "metric_display_precision": 6
+  "evolution": {
+    "adaptation_sensitivity": 0.002,
+    "fitness_precision": 1e-06,
+    "genotype_length": 48,
+    "max_generations": 1000,
+    "mutation_rate_precision": 0.001,
+    "population_size": 600
+  },
+  "feedback": {
+    "enabled": true,
+    "hysteresis_checks": 12,
+    "interval_frames": 10,
+    "knobs": {
+      "clustering_bias": {
+        "initial": 0.4,
+        "max": 1.6,
+        "min": 0.3,
+        "step": 0.05
+      },
+      "mutation_rate": {
+        "initial": 0.045,
+        "max": 0.06,
+        "min": 0.002,
+        "step": 0.001
+      },
+      "new_edge_rate": {
+        "initial": 1.9,
+        "max": 2.2,
+        "min": 0.2,
+        "step": 0.1
+      },
+      "quantum_pruning": {
+        "initial": 0.25,
+        "max": 1.0,
+        "min": 0.0,
+        "step": 0.05
+      }
+    },
+    "rate_limit_frames": 60
+  },
+  "lattice": {
+    "entropy_sensitivity": 5e-05,
+    "interaction_precision": 0.0001,
+    "particles": 2400,
+    "prune_threshold": 0.001,
+    "stability_tolerance": 0.0005
   },
   "logging": {
     "shared_state_dump_interval": 0
   },
-  "feedback": {
-    "enabled": true,
-    "interval_frames": 10,
-    "hysteresis_checks": 12,
-    "rate_limit_frames": 60,
-    "knobs": {
-      "mutation_rate": {
-        "min": 0.001,
-        "max": 0.05,
-        "step": 0.001,
-        "initial": 0.02
-      },
-      "new_edge_rate": {
-        "min": 0.2,
-        "max": 2.0,
-        "step": 0.1,
-        "initial": 0.8
-      },
-      "clustering_bias": {
-        "min": 0.3,
-        "max": 1.5,
-        "step": 0.05,
-        "initial": 1.0
-      },
-      "quantum_pruning": {
-        "min": 0.0,
-        "max": 1.0,
-        "step": 0.05,
-        "initial": 0.9
-      }
-    }
+  "network": {
+    "connection_strength_resolution": 5e-06,
+    "emergence_sensitivity": 1e-06,
+    "max_connections": 8000,
+    "max_organisms": 3000,
+    "resource_flow_precision": 0.0001,
+    "resource_pool": 200.0,
+    "stability_precision": 1e-07
+  },
+  "quantum": {
+    "entanglement_sensitivity": 3e-06,
+    "fitness_weights": {
+      "entanglement": 0.3,
+      "entropy": 0.2,
+      "measurements": 0.25,
+      "superposition": 0.25
+    },
+    "initial_states": 80,
+    "performance_thresholds": {
+      "fitness_std_threshold": 0.3,
+      "iteration_time_ms": 10.0,
+      "memory_percentage": 5.0,
+      "min_fitness_to_keep": 0.1
+    },
+    "probability_precision": 1e-06,
+    "prune_check_interval": 50,
+    "superposition_tolerance": 0.0005
+  },
+  "rendering": {
+    "enable_visualizations": true,
+    "frame_rate": 30.0,
+    "metric_display_precision": 6,
+    "mode": "observer",
+    "performance_monitoring": true,
+    "resolution": [
+      1920,
+      1080
+    ],
+    "text_interface": true,
+    "visualization_update_precision": 0.001
+  },
+  "simulation": {
+    "log_level": "INFO",
+    "max_runtime": 3600.0,
+    "measurement_precision": 6,
+    "performance_sampling_rate": 100,
+    "save_interval": 60.0,
+    "target_fps": 8.0,
+    "time_resolution_ms": 1.0
   },
   "vp_monitoring": {
-    "diagnostics_enabled": true,
-    "stabilization_enabled": true,
     "adaptive_thresholds_enabled": true,
     "component_decomposition_enabled": true,
-    "stabilization": {
-      "max_jump": 0.15,
-      "smoothing_factor": 0.25,
-      "history_size": 15
-    },
     "component_weights": {
-      "trait_divergence": 0.25,
-      "network_coherence": 0.20,
+      "evolution_pressure": 0.2,
+      "network_coherence": 0.2,
       "phase_mismatch": 0.15,
-      "evolution_pressure": 0.20,
-      "quantum_entropy": 0.20
-    }
+      "quantum_entropy": 0.2,
+      "trait_divergence": 0.25
+    },
+    "diagnostics_enabled": true,
+    "stabilization": {
+      "history_size": 15,
+      "max_jump": 0.15,
+      "smoothing_factor": 0.25
+    },
+    "stabilization_enabled": true
   }
 }

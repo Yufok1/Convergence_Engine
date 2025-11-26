@@ -605,6 +605,46 @@ class FeedbackController:
         """Get current knob values"""
         return self.current_values.copy()
 
+    def apply_runtime_config(self, feedback_config: Dict[str, Any]) -> List[str]:
+        """Apply runtime feedback adjustments from updated config."""
+        applied = []
+        if not isinstance(feedback_config, dict):
+            return applied
+
+        if 'enabled' in feedback_config:
+            new_enabled = bool(feedback_config['enabled'])
+            if new_enabled != self.enabled:
+                self.enabled = new_enabled
+                applied.append('feedback.enabled')
+
+        for field in ('interval_frames', 'hysteresis_checks', 'rate_limit_frames'):
+            if field in feedback_config:
+                setattr(self, field, feedback_config[field])
+                applied.append(f'feedback.{field}')
+
+        knobs = feedback_config.get('knobs')
+        if isinstance(knobs, dict):
+            for knob_name, knob_cfg in knobs.items():
+                if not isinstance(knob_cfg, dict):
+                    continue
+                self.knob_configs.setdefault(knob_name, {})
+                self.knob_configs[knob_name].update(knob_cfg)
+
+                min_val = self.knob_configs[knob_name].get('min', self.current_values.get(knob_name, 0.0))
+                max_val = self.knob_configs[knob_name].get('max', self.current_values.get(knob_name, 0.0))
+
+                if 'initial' in knob_cfg:
+                    self.current_values[knob_name] = knob_cfg['initial']
+                else:
+                    current_val = self.current_values.get(knob_name, 0.0)
+                    self.current_values[knob_name] = max(min_val, min(max_val, current_val))
+
+                self.hysteresis_counters.setdefault(knob_name, 0)
+                self.last_change_frames.setdefault(knob_name, 0)
+                applied.append(f'feedback.knobs.{knob_name}')
+
+        return applied
+
 
 class RealitySimulator:
     """
@@ -722,6 +762,39 @@ class RealitySimulator:
                 self._merge_configs(base[key], value)
             else:
                 base[key] = value
+
+    def apply_runtime_config(self, new_config: Dict[str, Any]) -> List[str]:
+        """Apply runtime configuration updates to live components."""
+        applied = []
+        if not isinstance(new_config, dict):
+            return applied
+
+        self._merge_configs(self.config, new_config)
+
+        if 'feedback' in new_config and self.feedback_controller:
+            applied.extend(self.feedback_controller.apply_runtime_config(new_config['feedback']) or [])
+
+        network_cfg = new_config.get('network')
+        network = self.components.get('network')
+        if network and isinstance(network_cfg, dict):
+            if 'max_connections' in network_cfg:
+                network.max_connections_per_organism = int(network_cfg['max_connections'])
+                applied.append('network.max_connections')
+            if 'new_edge_rate' in network_cfg and hasattr(network, 'set_new_edge_rate'):
+                network.set_new_edge_rate(float(network_cfg['new_edge_rate']))
+                applied.append('network.new_edge_rate')
+            if 'clustering_bias' in network_cfg and hasattr(network, 'set_clustering_bias'):
+                network.set_clustering_bias(float(network_cfg['clustering_bias']))
+                applied.append('network.clustering_bias')
+
+        quantum_cfg = new_config.get('quantum')
+        quantum = self.components.get('quantum')
+        if quantum and isinstance(quantum_cfg, dict):
+            if 'probability_precision' in quantum_cfg and hasattr(quantum, 'set_probability_precision'):
+                quantum.set_probability_precision(float(quantum_cfg['probability_precision']))
+                applied.append('quantum.probability_precision')
+
+        return applied
 
     def initialize_simulation(self) -> bool:
         """

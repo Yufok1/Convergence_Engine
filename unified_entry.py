@@ -24,6 +24,8 @@ from datetime import datetime
 import datetime as dt_module
 import traceback
 
+from runtime_config import ConfigHotReloadWatcher
+
 # Fix for Windows console encoding issues
 if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
@@ -832,6 +834,8 @@ class UnifiedSystem:
         # Initialize logging
         self.logger = StateLogger()
         self.logger.log_state('system', {'event': 'initialization_start'})
+        self.config_watcher = ConfigHotReloadWatcher(parent_path / 'config.json')
+        self.active_config = self.config_watcher.get_current_config()
         
         # Initialize systems FIRST (before visualization, which needs references)
         print("\n[UNIFIED] Initializing systems...")
@@ -840,6 +844,13 @@ class UnifiedSystem:
         if EXPLORER_AVAILABLE:
             try:
                 self.controller = BiphasicController()
+                if hasattr(self.controller, 'apply_runtime_config'):
+                    try:
+                        applied = self.controller.apply_runtime_config(self.active_config)
+                        if applied:
+                            print(f"[UNIFIED] [CONFIG] Applied startup config overrides: {applied}")
+                    except Exception as config_err:
+                        print(f"[UNIFIED] [WARN] Failed to apply startup config overrides: {config_err}")
                 print("[UNIFIED] [PASS] Explorer initialized")
                 self.logger.log_state('system', {'event': 'explorer_initialized'})
             except Exception as e:
@@ -915,6 +926,10 @@ class UnifiedSystem:
             
             # Main loop
             while True:
+                updated_config = self.config_watcher.check_for_updates()
+                if updated_config is not None:
+                    self._apply_runtime_config(updated_config)
+
                 # Get states from all systems
                 reality_sim_state = self._get_reality_sim_state()
                 explorer_state = self._get_explorer_state()
@@ -1015,6 +1030,31 @@ class UnifiedSystem:
             print(f"\n[UNIFIED] [FAIL] Error: {e}")
             traceback.print_exc()
             self.logger.log_state('system', {'event': 'error', 'error': str(e)})
+    
+    def _apply_runtime_config(self, new_config: Dict[str, Any]):
+        """Apply runtime configuration updates to live subsystems."""
+        if not isinstance(new_config, dict):
+            return
+
+        applied_sections = []
+        try:
+            if self.controller and hasattr(self.controller, 'apply_runtime_config'):
+                applied = self.controller.apply_runtime_config(new_config) or []
+                applied_sections.extend(applied)
+            self.active_config = new_config
+            summary = ', '.join(applied_sections) if applied_sections else 'no-op'
+            print(f"[UNIFIED] [CONFIG] Runtime config applied ({summary})")
+            self.logger.log_state('system', {
+                'event': 'config_runtime_update',
+                'applied': summary,
+                'timestamp': time.time()
+            })
+        except Exception as err:
+            print(f"[UNIFIED] [WARN] Runtime config update failed: {err}")
+            self.logger.log_state('system', {
+                'event': 'config_runtime_update_failed',
+                'error': str(err)
+            })
     
     def _get_reality_sim_state(self) -> Dict[str, Any]:
         """Get Reality Simulator state"""
