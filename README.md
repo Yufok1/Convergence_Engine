@@ -62,6 +62,11 @@ A multi-layered artificial life simulation system that creates evolving populati
 - **Quantum Substrate**: Quantum state management with genetic encoding
 - **Subatomic Lattice**: Particle interactions with entropy pruning
 - **Genetic Evolution Engine**: Darwinian natural selection with fitness-based selection
+- **🧠 Neural System**: PyTorch-based neural networks for organisms (DQN reinforcement learning)
+  - Deep Q-Network (DQN) with experience replay
+  - Dual inheritance (genetic + learned neural weights)
+  - Breath-synchronized training cycles
+  - Configurable reward system and exploration/exploitation balance
 - **Symbiotic Networks**: Social ecosystems with resource flow and cooperation
 - **Information Integration Tracking**: IIT-based metrics (Φ calculation) for consciousness detection
 - **Self-Modulation Feedback Controller**: Automatic parameter tuning based on performance metrics
@@ -178,6 +183,9 @@ pip install -r requirements.txt
 # Or install manually:
 pip install numpy scipy networkx psutil matplotlib flask flask-socketio requests Pillow
 
+# Optional: Neural System (PyTorch)
+pip install torch>=2.0.0  # For neural organism learning (system works without it)
+
 # Windows only (optional, for Explorer process isolation):
 pip install pywin32
 ```
@@ -282,11 +290,29 @@ Edit `config.json` to customize simulation parameters:
   "rendering": {
     "mode": "observer",
     "enable_visualizations": true
+  },
+  "neural": {
+    "enabled": false,
+    "device": "cpu",
+    "brain": {
+      "input_dim": 12,
+      "hidden_dim": 64,
+      "output_dim": 6
+    },
+    "training": {
+      "enabled": true,
+      "batch_size": 32,
+      "learning_rate": 0.001,
+      "epsilon_start": 1.0,
+      "epsilon_end": 0.01
+    }
   }
 }
 ```
 
 **Note:** Configuration has been optimized based on CRA analysis to address VP4 during Genesis, network fragmentation, and convergence stagnation. See `config.json` in the repository for all available options and current optimized values.
+
+**🧠 Neural System:** Set `"neural.enabled": true` to activate PyTorch-based learning. See [NEURAL_SYSTEM_README.md](./NEURAL_SYSTEM_README.md) for details.
 
 ---
 
@@ -332,6 +358,11 @@ The breath engine provides unified timing:
 ### Reality Simulator
 
 - **Quantum-Genetic Evolution**: Organisms evolve from quantum particles through genetic algorithms
+- **🧠 Neural Learning System**: PyTorch-based DQN reinforcement learning
+  - Organisms learn optimal policies through experience
+  - Dual inheritance: genetic code + learned neural weights (Lamarckian evolution)
+  - Breath-synchronized training cycles
+  - Configurable reward shaping and exploration strategies
 - **Symbiotic Networks**: Social ecosystems with cooperation/competition dynamics
 - **Consciousness Detection**: IIT-based Φ calculation for information integration
 - **Self-Modulation**: Automatic parameter tuning (mutation rate, edge formation, quantum pruning)
@@ -358,7 +389,11 @@ The breath engine provides unified timing:
 ### Causation Explorer Web UI
 
 - **Interactive Graph**: D3.js visualization of event causation
+  - **Neural Visualization**: Electric Blue Diamonds (decisions) and Neon Purple Squares (training events)
+  - Pulsing animations and dashed links for neural connections
 - **CRA Agent**: AI-powered research assistant with full system access
+  - **Neural-Aware**: Understands DQN architecture, training metrics, and dual inheritance
+  - Can control all neural system parameters via config updates
 - **Autonomous Control**: 40+ visualization settings, graph filters
 - **Robust Settings Management** ⭐:
   - Settings validation prevents invalid values from breaking visualization
@@ -391,6 +426,9 @@ python tests/test_e2e_unified_system.py
 # Reality Simulator component tests
 python tests/test_integration.py
 
+# Neural system integration tests
+python tests/test_neural_integration.py
+
 # Individual component tests
 python tests/test_quantum_substrate.py
 python tests/test_evolution_engine.py
@@ -401,7 +439,7 @@ python tests/test_consciousness_detector.py
 cd explorer && python test_integration.py
 ```
 
-**Test Coverage:** ~85+ test functions across all systems
+**Test Coverage:** ~92+ test functions across all systems (including 7 neural integration tests)
 
 ---
 
@@ -439,6 +477,8 @@ cd explorer && python test_integration.py
 
 - **[WEB_UI_STATUS.md](./WEB_UI_STATUS.md)** - Causation Explorer Web UI status
 - **[CRA_CAPABILITIES.md](./CRA_CAPABILITIES.md)** - Convergence Research Assistant guide
+- **[NEURAL_SYSTEM_README.md](./NEURAL_SYSTEM_README.md)** - 🧠 Neural System quick reference
+- **[NEURAL_LEARNING_SYSTEM_EXPLAINED.md](./NEURAL_LEARNING_SYSTEM_EXPLAINED.md)** - Complete neural architecture explanation
 - **[explorer/README.md](./explorer/README.md)** - Explorer system overview
 - **[kernel/README.md](./kernel/README.md)** - Djinn Kernel overview
 
@@ -465,6 +505,9 @@ cd explorer && python test_integration.py
 - Network dynamics analysis
 
 ### AI & Machine Learning
+- Reinforcement learning (DQN) for organism decision-making
+- Dual inheritance (genetic + learned neural weights)
+- Experience replay and policy optimization
 - Language learning systems
 - Vision-language integration
 - Multi-domain learning

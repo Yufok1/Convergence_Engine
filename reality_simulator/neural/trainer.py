@@ -1,0 +1,306 @@
+"""
+NeuralTrainer - Training System for Neural Organisms
+
+Manages DQN training for neural organisms, synchronized with the Breath Engine.
+"""
+
+import numpy as np
+from typing import Dict, Any, Optional, List
+import time
+
+# Try importing PyTorch
+try:
+    import torch
+    import torch.nn as nn
+    import torch.optim as optim
+    import torch.nn.functional as F
+    PYTORCH_AVAILABLE = True
+except ImportError:
+    PYTORCH_AVAILABLE = False
+    torch = None
+    nn = None
+    optim = None
+    F = None
+
+from .experience import ExperienceBuffer
+from .neural_organism import NeuralOrganism
+from .utils import get_device
+
+
+class NeuralTrainer:
+    """
+    Trainer for neural organisms using DQN (Deep Q-Network).
+    
+    Collects experiences from organisms and performs batched training
+    synchronized with the Breath Engine.
+    """
+    
+    def __init__(self, config: Dict[str, Any], device=None):
+        """
+        Initialize neural trainer.
+        
+        Args:
+            config: Neural configuration dictionary
+            device: PyTorch device (auto-detected if None)
+        """
+        if not PYTORCH_AVAILABLE:
+            raise ImportError("PyTorch is required for NeuralTrainer")
+        
+        self.config = config
+        self.device = device or get_device(config.get('device', 'cpu'))
+        
+        training_config = config.get('training', {})
+        self.batch_size = training_config.get('batch_size', 32)
+        self.learning_rate = training_config.get('learning_rate', 0.001)
+        self.gamma = training_config.get('gamma', 0.99)
+        self.update_frequency = training_config.get('update_frequency', 1)
+        
+        rewards_config = config.get('rewards', {})
+        self.reward_weights = {
+            'fitness_improvement': rewards_config.get('fitness_improvement', 1.0),
+            'survival': rewards_config.get('survival', 0.1),
+            'connection_success': rewards_config.get('connection_success', 0.5),
+            'connection_failure': rewards_config.get('connection_failure', -0.2),
+            'resource_gain': rewards_config.get('resource_gain', 0.3),
+            'resource_loss': rewards_config.get('resource_loss', -0.1),
+        }
+        
+        # Training statistics
+        self.training_step_count = 0
+        self.total_loss = 0.0
+        self.last_training_time = 0.0
+        
+        # Track organism fitness history for reward calculation
+        self.organism_fitness_history: Dict[str, float] = {}
+        
+        # Optional event emitter for causation graph visualization
+        self.event_emitter = None  # Set by main.py or unified_entry.py
+    
+    def calculate_reward(self, 
+                        organism: NeuralOrganism,
+                        prev_fitness: float,
+                        current_fitness: float,
+                        action: int,
+                        connection_success: Optional[bool] = None,
+                        resource_delta: float = 0.0) -> float:
+        """
+        Calculate reward for an organism based on various factors.
+        
+        Args:
+            organism: Neural organism
+            prev_fitness: Previous fitness value
+            current_fitness: Current fitness value
+            action: Action taken
+            connection_success: Whether connection attempt succeeded (None = no attempt)
+            resource_delta: Change in resources
+            
+        Returns:
+            Calculated reward
+        """
+        reward = 0.0
+        
+        # 1. Fitness improvement
+        fitness_delta = current_fitness - prev_fitness
+        reward += fitness_delta * self.reward_weights['fitness_improvement']
+        
+        # 2. Survival (small positive reward for staying alive)
+        reward += self.reward_weights['survival']
+        
+        # 3. Connection success/failure
+        if connection_success is not None:
+            if connection_success:
+                reward += self.reward_weights['connection_success']
+            else:
+                reward += self.reward_weights['connection_failure']
+        
+        # 4. Resource gain/loss
+        if resource_delta > 0:
+            reward += resource_delta * self.reward_weights['resource_gain']
+        elif resource_delta < 0:
+            reward += abs(resource_delta) * self.reward_weights['resource_loss']
+        
+        return reward
+    
+    def collect_experiences(self,
+                           organisms: Dict[str, NeuralOrganism],
+                           network_state: Dict[str, Any],
+                           breath_state: Optional[Dict[str, Any]] = None):
+        """
+        Collect experiences from all neural organisms.
+        
+        Args:
+            organisms: Dictionary of organisms (species_id -> NeuralOrganism)
+            network_state: Current network state
+            breath_state: Breath engine state
+        """
+        for org_id, organism in organisms.items():
+            if not isinstance(organism, NeuralOrganism) or organism.brain is None:
+                continue
+            
+            # Get previous fitness
+            prev_fitness = self.organism_fitness_history.get(org_id, organism.fitness)
+            current_fitness = organism.fitness
+            
+            # Calculate reward
+            reward = self.calculate_reward(
+                organism=organism,
+                prev_fitness=prev_fitness,
+                current_fitness=current_fitness,
+                action=organism.prev_action if hasattr(organism, 'prev_action') else 0,
+                connection_success=None,  # Would need to track this
+                resource_delta=0.0  # Would need to track this
+            )
+            
+            # Get next state
+            next_state = organism.get_state_features(
+                local_env=None,
+                network_state=network_state,
+                breath_state=breath_state
+            )
+            
+            # Record experience
+            organism.record_experience(
+                reward=reward,
+                next_state=next_state,
+                done=False  # Organisms don't "die" in the same way
+            )
+            
+            # Update fitness history
+            self.organism_fitness_history[org_id] = current_fitness
+    
+    def train_step(self,
+                   organisms: Dict[str, NeuralOrganism],
+                   network_state: Dict[str, Any],
+                   breath_state: Optional[Dict[str, Any]] = None) -> Optional[float]:
+        """
+        Perform one training step (synchronized with breath cycle).
+        
+        Args:
+            organisms: Dictionary of organisms
+            network_state: Current network state
+            breath_state: Breath engine state
+            
+        Returns:
+            Average loss, or None if no training occurred
+        """
+        if not PYTORCH_AVAILABLE:
+            return None
+        
+        # Collect experiences first
+        self.collect_experiences(organisms, network_state, breath_state)
+        
+        # Increment step count first
+        self.training_step_count += 1
+        
+        # Check if we should train this step
+        # With update_frequency=3: train on steps 3, 6, 9, etc.
+        # So we check if (step_count % update_frequency == 0)
+        if (self.training_step_count % self.update_frequency) != 0:
+            return None
+        
+        # Check if we have enough experiences to train
+        # Find organisms with sufficient experience
+        trainable_organisms = []
+        for organism in organisms.values():
+            if (isinstance(organism, NeuralOrganism) and 
+                organism.brain is not None and
+                organism.experience_buffer is not None and
+                len(organism.experience_buffer) >= self.batch_size):
+                trainable_organisms.append(organism)
+        
+        if not trainable_organisms:
+            return None
+        
+        # Train each organism's brain
+        total_loss = 0.0
+        num_trained = 0
+        
+        for organism in trainable_organisms:
+            # Sample batch
+            states, actions, rewards, next_states, dones = organism.experience_buffer.sample_batch(
+                self.batch_size
+            )
+            
+            # Convert to tensors
+            states_tensor = torch.FloatTensor(states).to(self.device)
+            actions_tensor = torch.LongTensor(actions).to(self.device)
+            rewards_tensor = torch.FloatTensor(rewards).to(self.device)
+            next_states_tensor = torch.FloatTensor(next_states).to(self.device)
+            dones_tensor = torch.BoolTensor(dones).to(self.device)
+            
+            # Get current Q values
+            organism.brain.train()  # Set to training mode
+            q_values = organism.brain(states_tensor)
+            q_value = q_values.gather(1, actions_tensor.unsqueeze(1)).squeeze(1)
+            
+            # Get next Q values (no gradient)
+            organism.brain.eval()  # Set to evaluation mode
+            with torch.no_grad():
+                next_q_values = organism.brain(next_states_tensor)
+                next_q_value = next_q_values.max(1)[0]
+            
+            # Calculate target Q values
+            target_q_value = rewards_tensor + (self.gamma * next_q_value * ~dones_tensor)
+            
+            # Calculate loss
+            loss = F.mse_loss(q_value, target_q_value)
+            
+            # Backpropagation
+            organism.brain.train()
+            optimizer = optim.Adam(organism.brain.parameters(), lr=self.learning_rate)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            
+            total_loss += loss.item()
+            num_trained += 1
+        
+        self.last_training_time = time.time()
+        
+        if num_trained > 0:
+            avg_loss = total_loss / num_trained
+            self.total_loss += avg_loss
+            
+            # Emit neural training event for visualization
+            if self.event_emitter:
+                training_stats = self.get_training_stats()
+                event_data = {
+                    'training_step': self.training_step_count,
+                    'loss': float(avg_loss),
+                    'num_organisms_trained': num_trained,
+                    'total_organisms': len(organisms),
+                    'avg_loss_history': training_stats.get('average_loss', 0.0),
+                    'breath_cycle': breath_state.get('cycle_count', 0) if breath_state else None,
+                    'breath_depth': breath_state.get('depth', 0.0) if breath_state else None
+                }
+                
+                try:
+                    from causation_explorer import Event
+                    event = Event(
+                        timestamp=time.time(),
+                        component='neural',
+                        event_type='neural_training',
+                        data=event_data
+                    )
+                    self.event_emitter(event)
+                except ImportError:
+                    pass  # CausationExplorer not available
+            
+            return avg_loss
+        
+        return None
+    
+    def get_training_stats(self) -> Dict[str, Any]:
+        """
+        Get training statistics.
+        
+        Returns:
+            Dictionary of training statistics
+        """
+        return {
+            'training_steps': self.training_step_count,
+            'average_loss': self.total_loss / max(1, self.training_step_count),
+            'last_training_time': self.last_training_time,
+            'organisms_tracked': len(self.organism_fitness_history)
+        }
+

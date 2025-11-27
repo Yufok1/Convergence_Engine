@@ -134,5 +134,44 @@
       "smoothing_factor": 0.25
     },
     "stabilization_enabled": true
+  },
+  "neural": {
+    "enabled": true,
+    "device": "cpu",
+    "initialization": {
+      "seed": null,
+      "deterministic": false
+    },
+    "brain": {
+      "input_dim": 12,
+      "hidden_dim": 64,
+      "output_dim": 6,
+      "activation": "relu",
+      "dropout": 0.1
+    },
+    "training": {
+      "enabled": true,
+      "batch_size": 32,
+      "memory_size": 1000,
+      "learning_rate": 0.001,
+      "gamma": 0.99,
+      "epsilon_start": 1.0,
+      "epsilon_end": 0.01,
+      "epsilon_decay": 0.995,
+      "update_frequency": 1
+    },
+    "rewards": {
+      "fitness_improvement": 1.0,
+      "survival": 0.1,
+      "connection_success": 0.5,
+      "connection_failure": -0.2,
+      "resource_gain": 0.3,
+      "resource_loss": -0.1
+    },
+    "inheritance": {
+      "enabled": true,
+      "mutation_rate": 0.1,
+      "crossover_rate": 0.5
+    }
   }
 }

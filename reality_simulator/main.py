@@ -663,6 +663,9 @@ class RealitySimulator:
         # Performance tracking
         self.start_time = time.time()
         self.frame_count = 0
+        
+        # Optional event emitter for causation graph visualization
+        self.event_emitter = None  # Set by unified_entry.py
     
     def pause_simulation(self):
         """Pause the simulation"""
@@ -834,7 +837,8 @@ class RealitySimulator:
             evolution_engine = create_evolution_engine(
                 population_size=self.config['evolution']['population_size'],
                 genotype_length=self.config['evolution']['genotype_length'],
-                fitness_targets=fitness_targets
+                fitness_targets=fitness_targets,
+                config=self.config  # Pass config for neural organism creation
             )
             self.components['evolution'] = evolution_engine
 
@@ -924,6 +928,41 @@ class RealitySimulator:
             # 8. Feedback Controller
             print(ColorScheme.log_component("feedback", "Initializing feedback controller..."))
             self.feedback_controller = FeedbackController(self.config)
+
+            # 9. Neural Trainer (if neural system enabled)
+            if self.config.get('neural', {}).get('enabled', False):
+                try:
+                    from .neural.trainer import NeuralTrainer
+                    from .neural.utils import get_device, set_seed
+                    
+                    # Set random seed if configured
+                    init_config = self.config['neural'].get('initialization', {})
+                    seed = init_config.get('seed')
+                    if seed is not None:
+                        set_seed(seed)
+                        if init_config.get('deterministic', False):
+                            import torch
+                            torch.backends.cudnn.deterministic = True
+                            torch.backends.cudnn.benchmark = False
+                    
+                    device = get_device(self.config['neural'].get('device', 'cpu'))
+                    self.neural_trainer = NeuralTrainer(
+                        config=self.config['neural'],
+                        device=device
+                    )
+                    # Wire up event emitter for neural trainer
+                    if self.event_emitter:
+                        self.neural_trainer.event_emitter = self.event_emitter
+                    print(ColorScheme.log_component("neural", "Neural trainer initialized"))
+                except ImportError as e:
+                    print(f"[WARN] PyTorch not available, neural features disabled: {e}")
+                    self.config['neural']['enabled'] = False
+                    self.neural_trainer = None
+                except Exception as e:
+                    print(f"[WARN] Neural trainer initialization failed: {e}")
+                    self.neural_trainer = None
+            else:
+                self.neural_trainer = None
 
             print(ColorScheme.colorize("[SUCCESS] All components initialized successfully!", ColorScheme.SUCCESS))
             return True
@@ -1200,6 +1239,94 @@ class RealitySimulator:
                     for org in new_orgs:
                         if org.species_id not in network.organisms:
                             network.add_organism(org)
+        
+        # Neural training (synchronized with breath cycle if available)
+        neural_metrics = None
+        if self.neural_trainer and 'network' in self.components:
+            network = self.components['network']
+            
+            # Get breath state from Explorer if available
+            # Try multiple ways to access breath engine (unified system, direct reference, etc.)
+            breath_state = None
+            if hasattr(self, 'explorer_ref') and self.explorer_ref:
+                if hasattr(self.explorer_ref, 'breath_engine'):
+                    breath_state = self.explorer_ref.breath_engine.get_breath_state()
+            elif hasattr(self, 'breath_engine_ref') and self.breath_engine_ref:
+                breath_state = self.breath_engine_ref.get_breath_state()
+            # Note: In unified mode, breath engine is accessed via Explorer's BiphasicController
+            # The unified system will set this reference if needed
+            
+            # Get network state for training
+            network_state = {
+                'generation': network.generation,
+                'organism_count': len(network.organisms),
+                'connection_count': len(network.connections),
+                'modularity': network.metrics.modularity,
+                'clustering_coefficient': network.metrics.clustering_coefficient,
+                'max_connections_per_organism': network.max_connections_per_organism,
+                'resource_pool': getattr(network.resource_engine, 'total_resources', 200.0),
+            }
+            
+            # Perform training step
+            try:
+                loss = self.neural_trainer.train_step(
+                    organisms=network.organisms,
+                    network_state=network_state,
+                    breath_state=breath_state
+                )
+                
+                # Collect neural metrics for logging
+                training_stats = self.neural_trainer.get_training_stats()
+                
+                # Wire up event emitters for neural organisms
+                if self.event_emitter:
+                    for org in network.organisms.values():
+                        if hasattr(org, 'event_emitter'):
+                            org.event_emitter = self.event_emitter
+                
+                # Calculate average epsilon from organisms
+                avg_epsilon = 0.0
+                neural_org_count = 0
+                for org in network.organisms.values():
+                    if hasattr(org, 'epsilon') and org.epsilon is not None:
+                        avg_epsilon += org.epsilon
+                        neural_org_count += 1
+                if neural_org_count > 0:
+                    avg_epsilon /= neural_org_count
+                
+                neural_metrics = {
+                    'enabled': True,
+                    'training_loss': loss,
+                    'avg_epsilon': avg_epsilon,
+                    'organisms_tracked': training_stats.get('organisms_tracked', 0),
+                    'training_steps': training_stats.get('training_steps', 0),
+                    'avg_loss': training_stats.get('average_loss', 0.0),
+                }
+                
+                # Log training occasionally (every 100 steps to avoid spam)
+                if loss is not None and hasattr(self, 'frame_count') and self.frame_count % 100 == 0:
+                    logger.debug(f"[NEURAL] Training step completed, loss: {loss:.6f}, epsilon: {avg_epsilon:.3f}")
+            except Exception as e:
+                logger.warning(f"[NEURAL] Training step failed: {e}")
+                neural_metrics = {
+                    'enabled': True,
+                    'error': str(e)
+                }
+        elif self.config.get('neural', {}).get('enabled', False):
+            # Neural enabled but trainer not available (PyTorch missing or error)
+            neural_metrics = {
+                'enabled': True,
+                'error': 'trainer_unavailable'
+            }
+        else:
+            # Neural disabled
+            neural_metrics = {
+                'enabled': False
+            }
+        
+        # Store neural metrics for state collection
+        if neural_metrics:
+            self._neural_metrics = neural_metrics
 
 
     def _perform_consciousness_analysis(self):
@@ -1401,6 +1528,21 @@ class RealitySimulator:
 
 
             data['agency'] = agency_data
+
+        # Neural System
+        if hasattr(self, '_neural_metrics'):
+            data['neural'] = self._neural_metrics
+        elif self.config.get('neural', {}).get('enabled', False):
+            # Neural enabled but no metrics yet
+            data['neural'] = {
+                'enabled': True,
+                'status': 'initializing'
+            }
+        else:
+            # Neural disabled
+            data['neural'] = {
+                'enabled': False
+            }
 
         return data
 

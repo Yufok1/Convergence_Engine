@@ -24,9 +24,9 @@ Pillow>=9.0.0       # For image compression in vision model analysis
 pywin32>=306; sys_platform == 'win32'  # For Explorer process isolation (Windows only)
 
 # Optional: Enhanced Features
-# torch>=2.0.0        # For advanced neural computations
+torch>=2.0.0        # Core Neural Engine - DQN reinforcement learning for organisms (optional - system works without it)
 # qutip>=4.7.0        # For quantum mechanics simulation
 
-# AI agents have been removed from this system
-# The simulator runs on pure evolution, network dynamics, and quantum physics
+# Note: Neural system is optional. If PyTorch is not installed, organisms use standard genetic evolution only.
+# The simulator runs on pure evolution, network dynamics, and quantum physics, with optional neural learning.
 

@@ -6,6 +6,109 @@
 
 ## [Unreleased] - 2025-01-XX
 
+### 🧠 Neural System Integration (2025-01-XX)
+
+#### Added
+- **PyTorch Neural Network System** (`reality_simulator/neural/`)
+  - Deep Q-Network (DQN) reinforcement learning for organisms
+  - Experience replay buffer for stable training
+  - Epsilon-greedy exploration/exploitation strategy
+  - Breath-synchronized training cycles
+  - Dual inheritance: genetic code + learned neural weights (Lamarckian evolution)
+  - Configurable reward system (fitness, survival, connections, resources)
+  - Brain architecture: Input → Hidden ReLU → Output Softmax
+  - Brain mutation and crossover during reproduction
+
+- **Neural Organism Class** (`reality_simulator/neural/neural_organism.py`)
+  - Extends base `Organism` with PyTorch brain
+  - Decision-making via Q-value policy
+  - Experience collection and reward calculation
+  - State feature extraction (fitness, resources, connections, breath state)
+  - Event emission for visualization (high-confidence decisions)
+
+- **Neural Trainer** (`reality_simulator/neural/trainer.py`)
+  - DQN training with batch processing
+  - Experience collection from all neural organisms
+  - Loss calculation and backpropagation
+  - Training statistics tracking
+  - Event emission for training visualization
+
+- **Neural Visualization** (`templates/causation_explorer.html`)
+  - Electric Blue Diamonds for neural decision events
+  - Neon Purple Squares for neural training events
+  - Pulsing animations for neural nodes
+  - Dashed, pulsing links for neural connections
+  - Component color control via `componentColor_neural`
+
+- **CRA Neural Awareness** (`causation_web_ui.py`)
+  - System prompt includes complete neural architecture details
+  - Understands DQN, experience replay, dual inheritance
+  - Can control all neural parameters via `CONFIG_UPDATE`
+  - Monitors training loss, epsilon, decision patterns
+  - Neural metrics included in snapshot context
+
+- **Configuration System** (`config.json`)
+  - Complete neural configuration section
+  - Brain architecture parameters (input_dim, hidden_dim, output_dim)
+  - Training parameters (batch_size, learning_rate, epsilon decay)
+  - Reward weights (fitness, survival, connections, resources)
+  - Inheritance parameters (mutation_rate, crossover_rate)
+  - Device selection (CPU/CUDA)
+  - Random seed for reproducibility
+
+- **Test Suite** (`tests/test_neural_integration.py`)
+  - 7 comprehensive tests covering all neural components
+  - Tests for organism spawning, brain forward pass, training, breath sync
+  - Experience buffer functionality tests
+  - Brain inheritance tests
+  - All tests passing ✅
+
+#### Changed
+- **Evolution Engine** (`reality_simulator/evolution_engine.py`)
+  - Factory method `_create_organism()` now creates `NeuralOrganism` when enabled
+  - Supports brain inheritance from parent organisms
+  - Graceful fallback to standard `Organism` if PyTorch unavailable
+
+- **Reality Simulator Main** (`reality_simulator/main.py`)
+  - Neural trainer initialization with seed support
+  - Training step synchronized with breath cycles
+  - Neural metrics collection and logging
+  - Event emitter wiring for visualization
+
+- **Unified Entry** (`unified_entry.py`)
+  - Neural event emission to Causation Explorer
+  - Neural metrics in shared state file
+  - Neural logging to `neural.log`
+
+- **Log Archive Script** (`archive_logs.py`)
+  - Added `neural.log` to archive list
+
+#### Fixed
+- **Training Frequency Logic** (`reality_simulator/neural/trainer.py`)
+  - Fixed `update_frequency` check to properly skip training steps
+  - Training now occurs on correct steps (e.g., every 3rd step with frequency=3)
+
+- **Batch Size Requirement** (`tests/test_neural_integration.py`)
+  - Fixed test to add sufficient experiences (32 total) for batch training
+
+- **Seed Initialization** (`reality_simulator/main.py`)
+  - Now properly uses `config['neural']['initialization']['seed']` if provided
+  - Supports deterministic mode for reproducibility
+
+#### Documentation
+- **NEURAL_LEARNING_SYSTEM_EXPLAINED.md**: Complete explanation of DQN architecture, rewards, inheritance
+- **NEURAL_INTEGRATION_COMPLETE.md**: Integration summary and verification
+- **CRA_NEURAL_UPGRADE_COMPLETE.md**: CRA awareness documentation
+- Updated README.md with neural system features
+- Updated ARCHITECTURE.md with neural components
+
+#### Technical Details
+- **Graceful Degradation**: System works without PyTorch (creates standard organisms)
+- **Event-Driven Visualization**: Neural decisions and training events flow to Causation Explorer
+- **Breath Synchronization**: Training happens during breath "inhale" phase
+- **Memory Efficient**: Experience buffers with configurable capacity
+- **GPU Support**: Automatic CUDA detection, configurable device selection
+
 ### 🔧 CRA Granular Logging & Fixes (2025-01-25)
 
 #### Added

@@ -5,6 +5,37 @@
     <title>🔬 Causation Explorer - Curiosity Trail System</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
+        /* Neural node pulsing animation */
+        @keyframes neuralPulse {
+            0%, 100% { 
+                opacity: 0.9;
+                transform: scale(1);
+            }
+            50% { 
+                opacity: 1;
+                transform: scale(1.1);
+            }
+        }
+        
+        .neural-node {
+            animation: neuralPulse 2s ease-in-out infinite;
+        }
+        
+        /* Neural link pulsing animation */
+        @keyframes neuralLinkPulse {
+            0%, 100% { 
+                stroke-opacity: 0.6;
+            }
+            50% { 
+                stroke-opacity: 1.0;
+            }
+        }
+        
+        .neural-link {
+            animation: neuralLinkPulse 2s ease-in-out infinite;
+            stroke-dasharray: 5, 5;
+        }
+        
         body {
             font-family: 'Courier New', monospace;
             background: #000;
@@ -3332,6 +3363,7 @@
                 'djinn_kernel': '#FF8800',     // Bright Orange
                 'utm_kernel': '#FF8800',       // Orange
                 'breath': '#FF00FF',           // Pure Magenta
+                'neural': '#00FFFF',           // 🧠 Electric Cyan (Neural System)
                 'system': '#FFFF00'            // Pure Yellow
             };
 
@@ -4783,6 +4815,7 @@
                     { name: 'Explorer', color: componentColors['explorer'] },
                     { name: 'Djinn Kernel', color: componentColors['djinn_kernel'] },
                     { name: 'Breath Engine', color: componentColors['breath'] },
+                    { name: '🧠 Neural System', color: componentColors['neural'] },
                     { name: 'System', color: componentColors['system'] }
                 ];
 
@@ -4961,7 +4994,16 @@
                     .selectAll('line')
                     .data(links, d => `${d.source}-${d.target}`)
                     .enter().append('line')
-                    .attr('class', 'link')
+                    .attr('class', d => {
+                        // Check if link connects to/from neural nodes
+                        const sourceId = typeof d.source === 'object' ? d.source.id : d.source;
+                        const targetId = typeof d.target === 'object' ? d.target.id : d.target;
+                        const sourceNode = nodes.find(n => n.id === sourceId);
+                        const targetNode = nodes.find(n => n.id === targetId);
+                        const isNeuralLink = (sourceNode && sourceNode.component === 'neural') || 
+                                           (targetNode && targetNode.component === 'neural');
+                        return isNeuralLink ? 'link neural-link' : 'link';
+                    })
                     .attr('data-link-id', (d, i) => 'link-' + i)
                     .attr('stroke', d => getLinkColor(d.type || 'unknown'))
                     // Thickness based on depth AND density: thicker in front, thinner in back (but keep distinct)
@@ -5004,78 +5046,127 @@
                     .attr('data-node-id', d => d.id)
                     .on('click', (event, d) => selectNode(d));
 
-                // Create shadow circle first (behind main circle for depth)
+                // Create shadow shape first (behind main shape for depth)
                 if (vizSettings.enableShadows) {
-                    node.append('circle')
-                        .attr('class', 'node-shadow')
-                        .attr('r', d => {
-                            const baseRadius = vizSettings.nodeBaseSize + (d.type ? 2 : 0);
-                            const depthScore = d._depthScore || 0.5;
-                            const depthStrength = vizSettings.depthStrength;
-                            const sizeRange = vizSettings.depthSizeRange;
-                            return baseRadius + (depthScore * sizeRange * depthStrength * 3);
-                        })
-                        .attr('fill', 'rgba(0, 0, 0, 0.4)')
-                        .attr('transform', d => {
-                            const depthScore = d._depthScore || 0.5;
-                            const parallax = vizSettings.depthParallaxAmount;
-                            const offset = vizSettings.shadowOffset + (depthScore * parallax * 2);
-                            return `translate(${offset}, ${offset})`;
-                        })
-                        .style('filter', 'url(#nodeShadow)');
-                }
-
-                // Main node circle with depth-based styling
-                node.append('circle')
-                    .attr('class', 'node-circle')
-                    .attr('r', d => {
+                    node.each(function(d) {
+                        const eventType = (d.type || '').toLowerCase();
+                        const comp = d.component || 'unknown';
+                        const isNeural = comp === 'neural';
+                        const isNeuralDecision = isNeural && eventType === 'neural_decision';
+                        const isNeuralTraining = isNeural && eventType === 'neural_training';
+                        
                         const baseRadius = vizSettings.nodeBaseSize + (d.type ? 2 : 0);
                         const depthScore = d._depthScore || 0.5;
                         const depthStrength = vizSettings.depthStrength;
                         const sizeRange = vizSettings.depthSizeRange;
-                        const maxSize = vizSettings.nodeMaxSize;
-                        const sizeIncrease = depthScore * sizeRange * depthStrength * (maxSize - baseRadius);
-                        return Math.min(maxSize, baseRadius + sizeIncrease);
-                    })
-                    .attr('fill', d => {
-                        // ALWAYS use component color - this is critical for color differentiation
-                        const comp = d.component || 'unknown';
-                        const baseColor = getComponentColor(comp);
-                        // Return the pure component color - no depth-based color manipulation
-                        // Depth effects should only affect opacity, not the actual color
-                        return baseColor;
-                    })
-                    .attr('fill-opacity', d => {
-                        // Keep opacity high enough to see colors clearly
-                        // Minimum 0.7 opacity to ensure colors are visible
-                        const depthScore = d._depthScore || 0.5;
-                        const depthStrength = vizSettings.depthStrength;
-                        const minOpacity = Math.max(0.7, vizSettings.nodeMinOpacity); // Ensure minimum 0.7
-                        const maxOpacity = vizSettings.nodeMaxOpacity;
-                        const opacityRange = maxOpacity - minOpacity;
-                        const depthOpacityRange = vizSettings.depthOpacityRange;
-                        const calculatedOpacity = minOpacity + (depthScore * opacityRange * depthOpacityRange * depthStrength);
-                        // Ensure we never go below 0.7 for color visibility
-                        return Math.max(0.7, calculatedOpacity);
-                    })
-                    .attr('stroke', d => {
-                        const depthScore = d._depthScore || 0.5;
-                        const brightness = depthScore > 0.5 ? vizSettings.frontColorBrightness : vizSettings.backColorBrightness;
-                        return brightness > 0.8 ? '#FFFFFF' : 'rgba(255, 255, 255, 0.6)';
-                    })
-                    .attr('stroke-width', vizSettings.nodeStrokeWidth)
-                    .attr('stroke-opacity', vizSettings.nodeStrokeOpacity)
-                    .style('filter', d => {
-                        if (!vizSettings.enableShadows && !vizSettings.enableGlow) return 'none';
-                        const depthScore = d._depthScore || 0.5;
-                        if (depthScore > 0.7 && vizSettings.enableGlow) {
-                            return 'url(#nodeGlow)';
+                        const shadowRadius = baseRadius + (depthScore * sizeRange * depthStrength * 3);
+                        const parallax = vizSettings.depthParallaxAmount;
+                        const offset = vizSettings.shadowOffset + (depthScore * parallax * 2);
+                        
+                        const nodeElement = d3.select(this);
+                        
+                        if (isNeuralDecision) {
+                            const diamond = d3.symbol().type(d3.symbolDiamond).size(shadowRadius * shadowRadius * 4);
+                            nodeElement.append('path')
+                                .attr('class', 'node-shadow')
+                                .attr('d', diamond)
+                                .attr('fill', 'rgba(0, 0, 0, 0.4)')
+                                .attr('transform', `translate(${offset}, ${offset})`)
+                                .style('filter', 'url(#nodeShadow)');
+                        } else if (isNeuralTraining) {
+                            const square = d3.symbol().type(d3.symbolSquare).size(shadowRadius * shadowRadius * 4);
+                            nodeElement.append('path')
+                                .attr('class', 'node-shadow')
+                                .attr('d', square)
+                                .attr('fill', 'rgba(0, 0, 0, 0.4)')
+                                .attr('transform', `translate(${offset}, ${offset})`)
+                                .style('filter', 'url(#nodeShadow)');
+                        } else {
+                            nodeElement.append('circle')
+                                .attr('class', 'node-shadow')
+                                .attr('r', shadowRadius)
+                                .attr('fill', 'rgba(0, 0, 0, 0.4)')
+                                .attr('transform', `translate(${offset}, ${offset})`)
+                                .style('filter', 'url(#nodeShadow)');
                         }
-                        if (vizSettings.enableShadows) {
-                            return 'url(#nodeShadow)';
-                        }
-                        return 'none';
                     });
+                }
+
+                // Main node shape with depth-based styling
+                // Neural events get special shapes: diamond for decisions, square for training
+                node.each(function(d) {
+                    const eventType = (d.type || '').toLowerCase();
+                    const comp = d.component || 'unknown';
+                    const isNeural = comp === 'neural';
+                    const isNeuralDecision = isNeural && eventType === 'neural_decision';
+                    const isNeuralTraining = isNeural && eventType === 'neural_training';
+                    
+                    const baseRadius = vizSettings.nodeBaseSize + (d.type ? 2 : 0);
+                    const depthScore = d._depthScore || 0.5;
+                    const depthStrength = vizSettings.depthStrength;
+                    const sizeRange = vizSettings.depthSizeRange;
+                    const maxSize = vizSettings.nodeMaxSize;
+                    const sizeIncrease = depthScore * sizeRange * depthStrength * (maxSize - baseRadius);
+                    const radius = Math.min(maxSize, baseRadius + sizeIncrease);
+                    
+                    const baseColor = getComponentColor(comp);
+                    const minOpacity = Math.max(0.7, vizSettings.nodeMinOpacity);
+                    const maxOpacity = vizSettings.nodeMaxOpacity;
+                    const opacityRange = maxOpacity - minOpacity;
+                    const depthOpacityRange = vizSettings.depthOpacityRange;
+                    const fillOpacity = Math.max(0.7, minOpacity + (depthScore * opacityRange * depthOpacityRange * depthStrength));
+                    const brightness = depthScore > 0.5 ? vizSettings.frontColorBrightness : vizSettings.backColorBrightness;
+                    const strokeColor = brightness > 0.8 ? '#FFFFFF' : 'rgba(255, 255, 255, 0.6)';
+                    
+                    let filterValue = 'none';
+                    if (vizSettings.enableShadows || vizSettings.enableGlow) {
+                        if (depthScore > 0.7 && vizSettings.enableGlow) {
+                            filterValue = 'url(#nodeGlow)';
+                        } else if (vizSettings.enableShadows) {
+                            filterValue = 'url(#nodeShadow)';
+                        }
+                    }
+                    
+                    const nodeElement = d3.select(this);
+                    let shapeElement;
+                    
+                    if (isNeuralDecision) {
+                        // Diamond shape for neural decisions (Electric Blue)
+                        const diamond = d3.symbol().type(d3.symbolDiamond).size(radius * radius * 4);
+                        shapeElement = nodeElement.append('path')
+                            .attr('class', 'node-circle neural-node')
+                            .attr('d', diamond)
+                            .attr('fill', '#00FFFF') // Electric Blue
+                            .attr('fill-opacity', fillOpacity)
+                            .attr('stroke', strokeColor)
+                            .attr('stroke-width', vizSettings.nodeStrokeWidth)
+                            .attr('stroke-opacity', vizSettings.nodeStrokeOpacity)
+                            .style('filter', filterValue);
+                    } else if (isNeuralTraining) {
+                        // Square shape for neural training (Neon Purple)
+                        const square = d3.symbol().type(d3.symbolSquare).size(radius * radius * 4);
+                        shapeElement = nodeElement.append('path')
+                            .attr('class', 'node-circle neural-node')
+                            .attr('d', square)
+                            .attr('fill', '#BF00FF') // Neon Purple
+                            .attr('fill-opacity', fillOpacity)
+                            .attr('stroke', strokeColor)
+                            .attr('stroke-width', vizSettings.nodeStrokeWidth)
+                            .attr('stroke-opacity', vizSettings.nodeStrokeOpacity)
+                            .style('filter', filterValue);
+                    } else {
+                        // Circle for all other events
+                        shapeElement = nodeElement.append('circle')
+                            .attr('class', isNeural ? 'node-circle neural-node' : 'node-circle')
+                            .attr('r', radius)
+                            .attr('fill', baseColor)
+                            .attr('fill-opacity', fillOpacity)
+                            .attr('stroke', strokeColor)
+                            .attr('stroke-width', vizSettings.nodeStrokeWidth)
+                            .attr('stroke-opacity', vizSettings.nodeStrokeOpacity)
+                            .style('filter', filterValue);
+                    }
+                });
 
                 node.append('text')
                     .text(d => {
@@ -6529,7 +6620,17 @@
                             const targetId = typeof d.target === 'object' ? d.target.id : d.target;
                             return `${sourceId}-${targetId}`;
                         });
-                        linkSelection.enter().append('line').attr('class', 'link')
+                        linkSelection.enter().append('line')
+                            .attr('class', d => {
+                                // Check if link connects to/from neural nodes
+                                const sourceId = typeof d.source === 'object' ? d.source.id : d.source;
+                                const targetId = typeof d.target === 'object' ? d.target.id : d.target;
+                                const sourceNode = updatedNodes.find(n => n.id === sourceId);
+                                const targetNode = updatedNodes.find(n => n.id === targetId);
+                                const isNeuralLink = (sourceNode && sourceNode.component === 'neural') || 
+                                                   (targetNode && targetNode.component === 'neural');
+                                return isNeuralLink ? 'link neural-link' : 'link';
+                            })
                             .attr('stroke', d => getLinkColor(d.type || d.causation_type || 'unknown'))
                             .attr('stroke-width', d => {
                                 const baseWidth = 2;
@@ -6544,6 +6645,16 @@
                             .style('display', filters.showLinks ? 'block' : 'none')
                             .merge(linkSelection)
                             // Update ALL links (existing + new) with depth-based styling
+                            .attr('class', d => {
+                                // Check if link connects to/from neural nodes
+                                const sourceId = typeof d.source === 'object' ? d.source.id : d.source;
+                                const targetId = typeof d.target === 'object' ? d.target.id : d.target;
+                                const sourceNode = updatedNodes.find(n => n.id === sourceId);
+                                const targetNode = updatedNodes.find(n => n.id === targetId);
+                                const isNeuralLink = (sourceNode && sourceNode.component === 'neural') || 
+                                                   (targetNode && targetNode.component === 'neural');
+                                return isNeuralLink ? 'link neural-link' : 'link';
+                            })
                             .attr('stroke', d => getLinkColor(d.type || d.causation_type || 'unknown'))
                             .attr('stroke-width', d => {
                                 const baseWidth = 2;

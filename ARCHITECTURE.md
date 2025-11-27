@@ -113,14 +113,17 @@ Breath Cycle (Explorer)
 - Network formation
 - Collapse detection
 - Network metrics
+- **🧠 Neural System**: PyTorch-based learning for organisms
 
 **Dependencies:**
 - None (standalone, imported by Explorer)
+- Optional: PyTorch (for neural features)
 
 **Exports:**
 - Network metrics (organisms, connections, modularity, clustering)
 - Generation state
 - Collapse status
+- Neural metrics (training loss, epsilon, training steps)
 
 ### Djinn Kernel (Right Wing)
 
@@ -188,6 +191,85 @@ djinn_kernel_state = get_djinn_kernel_state()
 
 ---
 
+## 🧠 Neural System Architecture
+
+### Components
+
+```
+reality_simulator/neural/
+  ├─> brain.py              # OrganismBrain (PyTorch nn.Module)
+  ├─> neural_organism.py    # NeuralOrganism (extends Organism)
+  ├─> trainer.py            # NeuralTrainer (DQN training)
+  ├─> experience.py         # ExperienceBuffer (replay buffer)
+  ├─> utils.py              # Device detection, feature extraction
+  └─> __init__.py           # Module exports
+```
+
+### Neural Organism Lifecycle
+
+```
+1. Creation (Evolution Engine)
+   ├─> Check config['neural']['enabled']
+   ├─> If True: Create NeuralOrganism
+   │   ├─> Initialize OrganismBrain
+   │   ├─> Create ExperienceBuffer
+   │   └─> Set epsilon (exploration rate)
+   └─> If False: Create standard Organism
+
+2. Decision Making (decide_action)
+   ├─> Extract state features (fitness, resources, connections, breath)
+   ├─> Forward pass through brain → Q-values
+   ├─> Epsilon-greedy action selection
+   ├─> Store prev_state and prev_action
+   └─> Emit neural_decision event (if confidence > 0.8)
+
+3. Experience Collection (trainer.collect_experiences)
+   ├─> Calculate reward (fitness change, survival, connections, resources)
+   ├─> Get next state
+   └─> Record experience (state, action, reward, next_state)
+
+4. Training (trainer.train_step)
+   ├─> Check update_frequency (skip if not time)
+   ├─> Sample batch from experience buffer
+   ├─> Calculate DQN loss (MSE between Q and target Q)
+   ├─> Backpropagation
+   └─> Emit neural_training event
+
+5. Reproduction (Evolution Engine)
+   ├─> Brain inheritance (if parent has brain)
+   │   ├─> Crossover: Blend parent brains
+   │   └─> Mutation: Random weight perturbations
+   └─> Create new NeuralOrganism with inherited brain
+```
+
+### Breath Synchronization
+
+```
+Breath Cycle
+  ├─> Breath "Inhale" Phase (depth > threshold)
+  │   └─> Neural Training Triggered
+  │       ├─> collect_experiences()
+  │       └─> train_step() (if update_frequency allows)
+  │
+  └─> Breath "Exhale" Phase
+      └─> Organisms make decisions (using learned policies)
+```
+
+### Dual Inheritance (Lamarckian Evolution)
+
+```
+Standard Evolution (Darwinian):
+  Parent Genotype → Child Genotype (genetic code only)
+
+Neural Evolution (Lamarckian):
+  Parent Genotype + Parent Brain → Child Genotype + Child Brain
+  ├─> Genetic crossover (standard)
+  ├─> Brain crossover (blend neural weights)
+  └─> Brain mutation (perturb weights)
+  
+Result: Learned behaviors can be inherited!
+```
+
 ## 📊 State Synchronization
 
 ### Breath State (Primary Driver)
@@ -210,6 +292,14 @@ Network Metrics
   ├─> clustering_coefficient: float
   ├─> average_path_length: float
   └─> generation: int
+
+Neural Metrics 🧠 NEW
+  ├─> enabled: bool
+  ├─> training_loss: float
+  ├─> avg_epsilon: float (exploration rate)
+  ├─> organisms_tracked: int
+  ├─> training_steps: int
+  └─> avg_loss: float
 ```
 
 ### Explorer State
@@ -273,6 +363,7 @@ State Logger
   ├─> reality_sim.log (network metrics)
   ├─> explorer.log (Explorer state)
   ├─> djinn_kernel.log (VP calculations)
+  ├─> neural.log (neural training metrics) 🧠 NEW
   └─> system.log (system events)
 
 Format: timestamp|level|component|metric:value|metric:value|...

@@ -342,6 +342,7 @@ class StateLogger:
             'reality_sim': self._create_logger('reality_sim', 'reality_sim.log'),
             'explorer': self._create_logger('explorer', 'explorer.log'),
             'djinn_kernel': self._create_logger('djinn_kernel', 'djinn_kernel.log'),
+            'neural': self._create_logger('neural', 'neural.log'),
             'system': self._create_logger('system', 'system.log'),
         }
         
@@ -451,6 +452,17 @@ class StateLogger:
             'vp_class': kernel_data.get('vp_classification', 'unknown'),
             'vp_calcs': kernel_data.get('vp_calculations', 0),
             'traits': kernel_data.get('trait_count', 0),
+        })
+    
+    def log_neural(self, neural_data: Dict[str, Any]):
+        """Log Neural System state"""
+        self.log_state('neural', {
+            'enabled': neural_data.get('enabled', False),
+            'training_loss': f"{neural_data.get('training_loss', 0):.6f}" if neural_data.get('training_loss') is not None else 'N/A',
+            'avg_epsilon': f"{neural_data.get('avg_epsilon', 0):.3f}",
+            'organisms_tracked': neural_data.get('organisms_tracked', 0),
+            'training_steps': neural_data.get('training_steps', 0),
+            'avg_loss': f"{neural_data.get('avg_loss', 0):.6f}" if neural_data.get('avg_loss') is not None else 'N/A',
         })
 
 
@@ -864,6 +876,21 @@ class UnifiedSystem:
         # Reality Simulator (left wing) - already initialized in Explorer
         self.reality_sim = getattr(self.controller, 'reality_sim', None) if self.controller else None
         
+        # Wire breath engine reference to Reality Simulator for neural training
+        if self.reality_sim and self.controller and hasattr(self.controller, 'breath_engine'):
+            self.reality_sim.breath_engine_ref = self.controller.breath_engine
+        
+        # Wire event emitter for neural visualization
+        if self.reality_sim and self.causation_explorer:
+            def neural_event_emitter(event):
+                """Emit neural events to causation explorer"""
+                try:
+                    self.causation_explorer.add_event(event, is_historical=False)
+                except Exception:
+                    pass  # Don't break if event emission fails
+            
+            self.reality_sim.event_emitter = neural_event_emitter
+        
         # Djinn Kernel (right wing) - already initialized in Explorer
         self.vp_monitor = getattr(self.controller, 'vp_monitor', None) if self.controller else None
         self.utm_kernel = getattr(self.controller, 'utm_kernel', None) if self.controller else None
@@ -1011,6 +1038,13 @@ class UnifiedSystem:
                     unified_state[f'explorer_{key}'] = value
                 for key, value in djinn_kernel_state.items():
                     unified_state[f'djinn_{key}'] = value
+                
+                # Add neural metrics to unified state if available
+                if self.reality_sim and hasattr(self.reality_sim, '_neural_metrics'):
+                    neural_metrics = self.reality_sim._neural_metrics
+                    for key, value in neural_metrics.items():
+                        unified_state[f'neural_{key}'] = value
+                
                 self.logger.log_state('state', unified_state)
                 
                 # Write unified shared state file (includes all three systems + phase sync!)
@@ -1231,6 +1265,7 @@ class UnifiedSystem:
             if self.reality_sim and hasattr(self.reality_sim, '_collect_simulation_data'):
                 try:
                     reality_sim_data = self.reality_sim._collect_simulation_data()
+                    # Neural metrics are already included in _collect_simulation_data
                 except Exception as e:
                     # Fallback to state we collected
                     reality_sim_data = {
@@ -1238,8 +1273,12 @@ class UnifiedSystem:
                         'evolution': {},
                         'quantum': {},
                         'lattice': {},
-                        'consciousness': {}
+                        'consciousness': {},
+                        'neural': {}
                     }
+                    # Add neural metrics if available
+                    if self.reality_sim and hasattr(self.reality_sim, '_neural_metrics'):
+                        reality_sim_data['neural'] = self.reality_sim._neural_metrics
             else:
                 # Use state we collected
                 reality_sim_data = {

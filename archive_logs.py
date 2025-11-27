@@ -37,6 +37,7 @@ LOG_FILES = [
     'reality_sim.log',
     'state.log',
     'system.log',
+    'neural.log',  # Neural system training metrics
 ]
 
 # Shared state file (in data/)

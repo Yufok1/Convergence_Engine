@@ -59,6 +59,13 @@ pip install pywin32
 - **[SCIENTIFIC_DATA_INTERFACE.md](./SCIENTIFIC_DATA_INTERFACE.md)** - Data interface documentation
 - **[LIVE_MODE_DATA_SOURCES.md](./LIVE_MODE_DATA_SOURCES.md)** - Live mode documentation
 
+### 🧠 Neural System (NEW)
+
+- **[NEURAL_LEARNING_SYSTEM_EXPLAINED.md](./NEURAL_LEARNING_SYSTEM_EXPLAINED.md)** - Complete explanation of DQN architecture, rewards, and dual inheritance ⭐
+- **[NEURAL_INTEGRATION_COMPLETE.md](./NEURAL_INTEGRATION_COMPLETE.md)** - Integration summary and verification
+- **[CRA_NEURAL_UPGRADE_COMPLETE.md](./CRA_NEURAL_UPGRADE_COMPLETE.md)** - CRA neural awareness documentation
+- **[NEURAL_INTEGRATION_PLAN.md](./NEURAL_INTEGRATION_PLAN.md)** - Original integration plan (historical)
+
 ### Explorer (Central Body / Breath Engine)
 
 - **[explorer/README.md](./explorer/README.md)** - Explorer system overview

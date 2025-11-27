@@ -412,10 +412,12 @@ class EvolutionEngine:
                  population_size: int = 100,
                  genotype_length: int = 32,
                  max_generations: int = 1000,
-                 fitness_targets: Optional[Dict[str, float]] = None):
+                 fitness_targets: Optional[Dict[str, float]] = None,
+                 config: Optional[Dict[str, Any]] = None):
         self.population_size = population_size
         self.genotype_length = genotype_length
         self.max_generations = max_generations
+        self.config = config or {}
 
         # Initialize components
         self.selection = SelectionEngine()
@@ -447,7 +449,7 @@ class EvolutionEngine:
             genes = np.random.randint(0, 2, self.genotype_length, dtype=np.uint8)
             genotype = Genotype(genes=genes, generation=0)
 
-            organism = Organism(genotype=genotype)
+            organism = self._create_organism(genotype)
             self.population.append(organism)
 
 
@@ -483,7 +485,7 @@ class EvolutionEngine:
         # Create new population
         new_population = elites.copy()
         for genotype in mutated_offspring:
-            organism = Organism(genotype=genotype)
+            organism = self._create_organism(genotype, parents=parents)
             new_population.append(organism)
 
         self.population = new_population[:self.population_size]
@@ -598,17 +600,57 @@ class EvolutionEngine:
     def get_mutation_rate(self) -> float:
         """Get the current base mutation rate"""
         return self.mutation.base_rate
+    
+    def _create_organism(self, genotype: Genotype, parents: Optional[List[Organism]] = None) -> Organism:
+        """
+        Factory method for organism creation.
+        Creates NeuralOrganism if neural is enabled, otherwise standard Organism.
+        
+        Args:
+            genotype: Organism genotype
+            parents: Parent organisms (for brain inheritance)
+            
+        Returns:
+            Organism or NeuralOrganism instance
+        """
+        neural_config = self.config.get('neural', {})
+        
+        if neural_config.get('enabled', False):
+            try:
+                from .neural.neural_organism import NeuralOrganism
+                
+                # Try to inherit brain from parents if available
+                parent_brain = None
+                if parents and len(parents) > 0:
+                    # Check if any parent is a NeuralOrganism with a brain
+                    for parent in parents:
+                        if hasattr(parent, 'brain') and parent.brain is not None:
+                            parent_brain = parent.brain
+                            break
+                
+                return NeuralOrganism(
+                    genotype=genotype,
+                    config=self.config,
+                    parent_brain=parent_brain
+                )
+            except ImportError:
+                # PyTorch not available, fall back to standard Organism
+                return Organism(genotype=genotype)
+        else:
+            return Organism(genotype=genotype)
 
 
 # Utility functions for easy use
 def create_evolution_engine(population_size: int = 100,
                           genotype_length: int = 32,
-                          fitness_targets: Optional[Dict[str, float]] = None) -> EvolutionEngine:
+                          fitness_targets: Optional[Dict[str, float]] = None,
+                          config: Optional[Dict[str, Any]] = None) -> EvolutionEngine:
     """Create a ready-to-use evolution engine"""
     return EvolutionEngine(
         population_size=population_size,
         genotype_length=genotype_length,
-        fitness_targets=fitness_targets
+        fitness_targets=fitness_targets,
+        config=config
     )
 
 
