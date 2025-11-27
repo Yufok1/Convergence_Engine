@@ -87,7 +87,7 @@ CONFIG_GUARDRAILS = {
     },
     '/feedback/knobs/new_edge_rate/initial': {
         'min': 0.2,
-        'max': 2.0,
+        'max': 3.0,  # Increased to support neural connectivity requirements
         'type': float,
         'label': 'new_edge_rate.initial'
     },
@@ -1837,7 +1837,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "     * Adjust `componentColor_neural` to change neural node color (e.g., \"#BF00FF\" for purple, \"#00FF00\" for green)\n"
         prompt += "     * Neural nodes automatically pulse to indicate active neural activity\n"
         prompt += "     * Neural events (decisions, training) appear as distinct nodes on the graph\n"
-        prompt += "     * Filter neural events: Use `components: {"neural": true}` in graph filters\n"
+        prompt += "     * Filter neural events: Use `components: {\"neural\": true}` in graph filters\n"
         prompt += "   - Use format: [[VIZ_SETTINGS_UPDATE: {\"linkBaseWidth\": 3.0, \"depthStrength\": 1.5, \"componentColor_neural\": \"#BF00FF\", ...}]]\n"
         prompt += "   - Available visualization settings (ALL tunable by you autonomously):\n"
         prompt += "     * **Link Appearance**: linkBaseWidth (1-5px), linkMaxWidth (8-30px), linkMinOpacity (0.1-0.8), linkMaxOpacity (0.5-1.0)\n"
@@ -1921,7 +1921,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "   - Include `correlation_id` (plan name / UUID) and a concise `reason` so config_actions.log stays traceable.\n"
         prompt += "   - Guardrails enforced automatically (requests outside these ranges are rejected):\n"
         prompt += "     * mutation_rate.initial: 0.001 – 0.05\n"
-        prompt += "     * new_edge_rate.initial: 0.2 – 2.0\n"
+        prompt += "     * new_edge_rate.initial: 0.2 – 3.0 (increased for neural connectivity)\n"
         prompt += "     * clustering_bias.initial: 0.3 – 1.5\n"
         prompt += "     * quantum_pruning.initial: 0.0 – 1.0\n"
         prompt += "     * network.max_connections: 1,000 – 20,000\n"
@@ -2181,14 +2181,14 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "     * Default color: Electric Cyan (#00FFFF) - adjustable via `componentColor_neural`\n"
         prompt += "     * Pulsing animation: Neural nodes automatically pulse to indicate active neural activity\n"
         prompt += "     * Event types: `neural_decision` (organism decisions), `neural_training` (training steps)\n"
-        prompt += "     * Filtering: Use `components: {"neural": true}` in graph filters to show only neural events\n"
-        prompt += "     * Example: [[VIZ_SETTINGS_UPDATE: {"componentColor_neural": "#BF00FF"}]] to change neural color to purple\n"
+        prompt += "     * Filtering: Use `components: {\"neural\": true}` in graph filters to show only neural events\n"
+        prompt += "     * Example: [[VIZ_SETTINGS_UPDATE: {\"componentColor_neural\": \"#BF00FF\"}]] to change neural color to purple\n"
         prompt += "   - **🧠 Neural Visualization Control**: Neural nodes have special styling:\n"
         prompt += "     * Default color: Electric Cyan (#00FFFF) - adjustable via `componentColor_neural`\n"
         prompt += "     * Pulsing animation: Neural nodes automatically pulse to indicate active neural activity\n"
         prompt += "     * Event types: `neural_decision` (organism decisions), `neural_training` (training steps)\n"
-        prompt += "     * Filtering: Use `components: {"neural": true}` in graph filters to show only neural events\n"
-        prompt += "     * Example: [[VIZ_SETTINGS_UPDATE: {"componentColor_neural": "#BF00FF"}]] to change neural color to purple\n"
+        prompt += "     * Filtering: Use `components: {\"neural\": true}` in graph filters to show only neural events\n"
+        prompt += "     * Example: [[VIZ_SETTINGS_UPDATE: {\"componentColor_neural\": \"#BF00FF\"}]] to change neural color to purple\n"
         prompt += "   - **Real-Time Updates**: All settings update dynamically during simulation without interrupting it\n\n"
         prompt += "**3. Graph View Control (Autonomous)**:\n"
         prompt += "   - **Zoom Control**: Adjust zoom level (1-500% or 0.01-5.0 scale)\n"
@@ -6343,35 +6343,69 @@ def config_rollback():
 def config_actions():
     """Return recent configuration actions from config_actions.log."""
     max_entries = int(request.args.get('limit', 50))
+    correlation_id_filter = request.args.get('correlation_id')
     actions = []
     if config_actions_log_path.exists():
         try:
             with open(config_actions_log_path, 'r', encoding='utf-8') as log_file:
-                lines = log_file.readlines()[-max_entries:]
+                lines = log_file.readlines()
+            
+            # Parse all lines
             for line in lines:
                 parts = line.strip().split('|')
                 if len(parts) < 7:
                     continue
+                
+                # Try to parse JSON values for old_value and new_value
+                old_val = parts[5]
+                new_val = parts[6]
+                try:
+                    if old_val and old_val not in ('-', '', 'None', 'null'):
+                        old_val = json.loads(old_val)
+                except (json.JSONDecodeError, ValueError):
+                    pass  # Keep as string if not valid JSON
+                
+                try:
+                    if new_val and new_val not in ('-', '', 'None', 'null'):
+                        new_val = json.loads(new_val)
+                except (json.JSONDecodeError, ValueError):
+                    pass  # Keep as string if not valid JSON
+                
                 entry = {
                     'timestamp': parts[0],
                     'correlation_id': parts[1],
                     'actor': parts[2],
                     'action': parts[3],
                     'path': parts[4],
-                    'old_value': parts[5],
-                    'new_value': parts[6],
+                    'old_value': old_val,
+                    'new_value': new_val,
                     'validation': parts[7] if len(parts) > 7 else '',
                     'reason': parts[8] if len(parts) > 8 else '',
                     'status': parts[9] if len(parts) > 9 else ''
                 }
-                actions.append(entry)
+                
+                # Filter by correlation_id if provided
+                if correlation_id_filter:
+                    if entry['correlation_id'] == correlation_id_filter:
+                        actions.append(entry)
+                else:
+                    actions.append(entry)
+            
+            # If filtering by correlation_id, return all matches; otherwise limit
+            if not correlation_id_filter:
+                actions = actions[-max_entries:]
+            else:
+                # Return all actions with this correlation_id (no limit when filtering)
+                pass
+                
         except Exception as exc:
             logger.error(f"Error reading config actions log: {exc}", exc_info=True)
             return jsonify({'success': False, 'error': str(exc)}), 500
     return jsonify({
         'success': True,
         'actions': actions,
-        'path': str(config_actions_log_path)
+        'path': str(config_actions_log_path),
+        'count': len(actions)
     })
 
 @app.route('/api/cra/events/stream')
@@ -7483,7 +7517,7 @@ def cra_set_viz_settings():
         
         # Component colors
         component_color_keys = ['componentColor_reality_sim', 'componentColor_explorer', 'componentColor_djinn_kernel', 
-                               'componentColor_breath', 'componentColor_system']
+                               'componentColor_breath', 'componentColor_neural', 'componentColor_system']
         for key in component_color_keys:
             if key in data:
                 viz_settings[key] = str(data[key])

@@ -956,11 +956,17 @@ class RealitySimulator:
                     print(ColorScheme.log_component("neural", "Neural trainer initialized"))
                 except ImportError as e:
                     print(f"[WARN] PyTorch not available, neural features disabled: {e}")
+                    import traceback
+                    traceback.print_exc()
                     self.config['neural']['enabled'] = False
                     self.neural_trainer = None
+                    self._neural_init_error = str(e)
                 except Exception as e:
                     print(f"[WARN] Neural trainer initialization failed: {e}")
+                    import traceback
+                    traceback.print_exc()
                     self.neural_trainer = None
+                    self._neural_init_error = str(e)
             else:
                 self.neural_trainer = None
 
@@ -1314,9 +1320,22 @@ class RealitySimulator:
                 }
         elif self.config.get('neural', {}).get('enabled', False):
             # Neural enabled but trainer not available (PyTorch missing or error)
+            # Provide more diagnostic information
+            error_msg = 'trainer_unavailable'
+            if not hasattr(self, 'neural_trainer') or self.neural_trainer is None:
+                # Check if PyTorch is available
+                try:
+                    import torch
+                    error_msg = f'trainer_unavailable (PyTorch {torch.__version__} available, but trainer not initialized)'
+                    # Include initialization error if available
+                    if hasattr(self, '_neural_init_error'):
+                        error_msg += f': {self._neural_init_error}'
+                except ImportError:
+                    error_msg = 'trainer_unavailable (PyTorch not installed)'
+            
             neural_metrics = {
                 'enabled': True,
-                'error': 'trainer_unavailable'
+                'error': error_msg
             }
         else:
             # Neural disabled

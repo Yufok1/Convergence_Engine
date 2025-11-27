@@ -1129,14 +1129,21 @@
             </div>
             <div style="background: #111; border: 1px solid #0ff; padding: 10px; text-align: left; margin-top: 10px; flex: 1;">
                 <div style="color: #0ff; margin-bottom: 8px; font-weight: bold;">🛠️ Config Actions Log</div>
+                <div style="font-size: 0.75em; color: #0aa; margin-bottom: 5px;">Click any entry to view full details</div>
                 <div id="configActionsList"
                     style="max-height: 180px; overflow-y: auto; font-size: 0.85em; color: #0aa; line-height: 1.4; border: 1px solid #033; padding: 6px; background: #050505;">
                     <div style="color: #066;">Loading config actions…</div>
                 </div>
-                <button id="configActionsRefreshBtn" onclick="refreshConfigActionsUI()"
-                    style="margin-top: 6px; padding: 4px 10px; background: #023; color: #0ff; border: 1px solid #0ff; cursor: pointer; font-size: 0.85em;">
-                    ↻ Refresh Log
-                </button>
+                <div style="display: flex; gap: 5px; margin-top: 6px;">
+                    <button id="configActionsRefreshBtn" onclick="refreshConfigActionsUI()"
+                        style="flex: 1; padding: 4px 10px; background: #023; color: #0ff; border: 1px solid #0ff; cursor: pointer; font-size: 0.85em;">
+                        ↻ Refresh
+                    </button>
+                    <button id="configActionsViewAllBtn" onclick="showAllConfigChanges()"
+                        style="flex: 1; padding: 4px 10px; background: #032; color: #0ff; border: 1px solid #0ff; cursor: pointer; font-size: 0.85em;">
+                        📋 View All
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -1254,6 +1261,16 @@
                                 <span style="min-width: 120px;">Breath Engine:</span>
                                 <input type="color" id="color-breath" value="#FF00FF"
                                     onchange="updateComponentColor('breath', this.value)"
+                                    style="width: 60px; height: 25px; cursor: pointer;">
+                            </label>
+                        </div>
+
+                        <div class="filter-item" style="margin-bottom: 8px;">
+                            <label
+                                style="display: flex; align-items: center; gap: 8px; color: #0ff; font-size: 0.85em;">
+                                <span style="min-width: 120px;">🧠 Neural System:</span>
+                                <input type="color" id="color-neural" value="#00FFFF"
+                                    onchange="updateComponentColor('neural', this.value)"
                                     style="width: 60px; height: 25px; cursor: pointer;">
                             </label>
                         </div>
@@ -7817,25 +7834,311 @@
                     return;
                 }
 
-                const latest = actions.slice(-12).reverse();
-                const rows = latest.map(entry => {
+                // Group by correlation_id to detect batch updates
+                const grouped = {};
+                actions.forEach((entry, idx) => {
+                    const cid = entry.correlation_id || `single-${idx}`;
+                    if (!grouped[cid]) {
+                        grouped[cid] = [];
+                    }
+                    grouped[cid].push({...entry, originalIndex: idx});
+                });
+
+                // Get latest 12 unique correlation_ids
+                const latestCids = Object.keys(grouped).slice(-12).reverse();
+                const rows = latestCids.map((cid, index) => {
+                    const group = grouped[cid];
+                    const entry = group[0]; // Use first entry for display
                     const time = entry.timestamp || 'unknown';
                     const actor = entry.actor || 'system';
                     const action = entry.action || 'CONFIG.UPDATE';
                     const path = entry.path || '(batch)';
-                    const oldVal = (entry.old_value ?? '').toString().slice(0, 60);
-                    const newVal = (entry.new_value ?? '').toString().slice(0, 60);
+                    const oldVal = (entry.old_value ?? '').toString().slice(0, 50);
+                    const newVal = (entry.new_value ?? '').toString().slice(0, 50);
                     const status = entry.status || 'SUCCESS';
                     const reason = entry.reason ? `<div style="color:#088;">${entry.reason}</div>` : '';
-                    const change = `${oldVal} → ${newVal}`;
-                    return `<div style="margin-bottom:6px; padding-bottom:6px; border-bottom:1px solid #022;">
-                        <div><strong>${time}</strong> · ${actor} · <span style="color:#0f0;">${action}</span> (${status})</div>
-                        <div style="color:#0ff;">${path}</div>
-                        <div style="color:#aaa; font-size:0.8em;">${change}</div>
+                    const isBatch = group.length > 1;
+                    const batchIndicator = isBatch ? `<span style="color:#ff0; font-weight:bold;">[Batch: ${group.length} changes]</span>` : '';
+                    const change = oldVal && newVal ? `${oldVal} → ${newVal}` : (isBatch ? `${group.length} changes` : '');
+                    const correlationId = cid;
+                    
+                    return `<div style="margin-bottom:6px; padding-bottom:6px; border-bottom:1px solid #022; cursor:pointer;" 
+                        onclick="showConfigDetails('${correlationId}', ${entry.originalIndex})" title="Click to view full details"
+                        onmouseover="this.style.background='#022'" onmouseout="this.style.background='transparent'">
+                        <div><strong>${time}</strong> · ${actor} · <span style="color:#0f0;">${action}</span> (${status}) ${batchIndicator} <span style="color:#0aa; font-size:0.7em;">[Click]</span></div>
+                        <div style="color:#0ff;">${isBatch ? `Multiple paths (${group.length} changes)` : path}</div>
+                        ${change ? `<div style="color:#aaa; font-size:0.8em;">${change}</div>` : ''}
                         ${reason}
                     </div>`;
                 }).join('');
                 container.innerHTML = rows;
+            }
+
+            function showConfigDetails(correlationId, actionIndex) {
+                // Fetch full details for this correlation_id
+                fetch(`/api/config/actions?correlation_id=${correlationId}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success && data.actions && data.actions.length > 0) {
+                            // Group all actions with same correlation_id
+                            const relatedActions = data.actions.filter(a => a.correlation_id === correlationId);
+                            openConfigDetailsModal(relatedActions, correlationId);
+                        } else {
+                            // Fallback: show single action details from current list
+                            fetch(`/api/config/actions?limit=100`)
+                                .then(res => res.json())
+                                .then(data => {
+                                    if (data.success && data.actions) {
+                                        // Find action by correlation_id or use index
+                                        const action = data.actions.find(a => a.correlation_id === correlationId) || 
+                                                      (actionIndex !== undefined ? data.actions[actionIndex] : null);
+                                        if (action) {
+                                            openConfigDetailsModal([action], correlationId);
+                                        } else {
+                                            alert('Config action details not found');
+                                        }
+                                    }
+                                });
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Error loading config details:', err);
+                        alert('Failed to load config details: ' + err.message);
+                    });
+            }
+
+            function openConfigDetailsModal(actions, correlationId) {
+                // Create modal overlay
+                const modal = document.createElement('div');
+                modal.id = 'configDetailsModal';
+                modal.style.cssText = `
+                    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                    background: rgba(0, 0, 0, 0.85); z-index: 10000;
+                    display: flex; align-items: center; justify-content: center;
+                    font-family: 'Courier New', monospace;
+                `;
+                modal.onclick = (e) => {
+                    if (e.target === modal) closeConfigDetailsModal();
+                };
+
+                // Modal content
+                const content = document.createElement('div');
+                content.style.cssText = `
+                    background: #111; border: 2px solid #0ff; padding: 20px;
+                    max-width: 90%; max-height: 90%; overflow: auto;
+                    color: #0ff; min-width: 600px;
+                `;
+
+                // Header
+                const header = document.createElement('div');
+                header.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #0ff; padding-bottom: 10px;';
+                header.innerHTML = `
+                    <h2 style="margin: 0; color: #0ff;">🔧 Config Update Details</h2>
+                    <button onclick="closeConfigDetailsModal()" style="background: #f00; color: #fff; border: 1px solid #0ff; padding: 5px 15px; cursor: pointer;">✕ Close</button>
+                `;
+
+                // Details content
+                const details = document.createElement('div');
+                details.style.cssText = 'color: #0aa; font-size: 0.9em; line-height: 1.6;';
+
+                actions.forEach((action, idx) => {
+                    const actionDiv = document.createElement('div');
+                    actionDiv.style.cssText = 'margin-bottom: 20px; padding: 15px; background: #050; border: 1px solid #033;';
+                    
+                    const time = new Date(action.timestamp).toLocaleString();
+                    const oldVal = action.old_value !== undefined ? JSON.stringify(action.old_value, null, 2) : '(none)';
+                    const newVal = action.new_value !== undefined ? JSON.stringify(action.new_value, null, 2) : '(none)';
+                    
+                    actionDiv.innerHTML = `
+                        <div style="color: #0ff; font-weight: bold; margin-bottom: 10px;">
+                            Change ${idx + 1} of ${actions.length}
+                        </div>
+                        <div style="margin-bottom: 8px;"><strong>Timestamp:</strong> ${time}</div>
+                        <div style="margin-bottom: 8px;"><strong>Actor:</strong> ${action.actor || 'system'}</div>
+                        <div style="margin-bottom: 8px;"><strong>Action:</strong> <span style="color: #0f0;">${action.action || 'CONFIG.UPDATE'}</span></div>
+                        <div style="margin-bottom: 8px;"><strong>Status:</strong> <span style="color: ${action.status === 'SUCCESS' ? '#0f0' : '#f00'}">${action.status || 'SUCCESS'}</span></div>
+                        <div style="margin-bottom: 8px;"><strong>Path:</strong> <code style="color: #ff0; background: #000; padding: 2px 6px;">${action.path || '(batch)'}</code></div>
+                        ${action.reason ? `<div style="margin-bottom: 8px;"><strong>Reason:</strong> ${action.reason}</div>` : ''}
+                        ${action.correlation_id ? `<div style="margin-bottom: 8px;"><strong>Correlation ID:</strong> <code style="color: #0aa;">${action.correlation_id}</code></div>` : ''}
+                        <div style="margin-top: 15px; border-top: 1px solid #033; padding-top: 10px;">
+                            <div style="margin-bottom: 10px;"><strong style="color: #f00;">❌ Old Value:</strong></div>
+                            <pre style="background: #200; padding: 10px; border: 1px solid #400; overflow-x: auto; color: #faa; margin: 0 0 10px 0; font-size: 0.85em;">${oldVal}</pre>
+                            <div style="margin-bottom: 10px;"><strong style="color: #0f0;">✅ New Value:</strong></div>
+                            <pre style="background: #020; padding: 10px; border: 1px solid #040; overflow-x: auto; color: #afa; margin: 0; font-size: 0.85em;">${newVal}</pre>
+                        </div>
+                    `;
+                    details.appendChild(actionDiv);
+                });
+
+                // Export button
+                const exportBtn = document.createElement('button');
+                exportBtn.textContent = '📥 Export as JSON';
+                exportBtn.style.cssText = 'margin-top: 15px; padding: 8px 15px; background: #023; color: #0ff; border: 1px solid #0ff; cursor: pointer;';
+                exportBtn.onclick = () => {
+                    const json = JSON.stringify(actions, null, 2);
+                    const blob = new Blob([json], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `config-update-${correlationId}-${Date.now()}.json`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                };
+
+                content.appendChild(header);
+                content.appendChild(details);
+                content.appendChild(exportBtn);
+                modal.appendChild(content);
+                document.body.appendChild(modal);
+
+                // Close on Escape key
+                const escapeHandler = (e) => {
+                    if (e.key === 'Escape') closeConfigDetailsModal();
+                };
+                modal.addEventListener('keydown', escapeHandler);
+                modal.setAttribute('data-escape-handler', 'true');
+            }
+
+            function closeConfigDetailsModal() {
+                const modal = document.getElementById('configDetailsModal');
+                if (modal) {
+                    modal.remove();
+                }
+            }
+
+            function showAllConfigChanges() {
+                // Fetch all config actions and show in modal
+                fetch('/api/config/actions?limit=1000')
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success && data.actions && data.actions.length > 0) {
+                            // Group by correlation_id
+                            const grouped = {};
+                            data.actions.forEach(action => {
+                                const cid = action.correlation_id || 'ungrouped';
+                                if (!grouped[cid]) {
+                                    grouped[cid] = [];
+                                }
+                                grouped[cid].push(action);
+                            });
+                            
+                            // Show modal with all changes grouped
+                            openAllConfigChangesModal(grouped, data.actions.length);
+                        } else {
+                            alert('No config actions found');
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Error loading all config changes:', err);
+                        alert('Failed to load config changes: ' + err.message);
+                    });
+            }
+
+            function openAllConfigChangesModal(groupedActions, totalCount) {
+                // Create modal overlay
+                const modal = document.createElement('div');
+                modal.id = 'configDetailsModal';
+                modal.style.cssText = `
+                    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                    background: rgba(0, 0, 0, 0.9); z-index: 10000;
+                    display: flex; align-items: center; justify-content: center;
+                    font-family: 'Courier New', monospace;
+                `;
+                modal.onclick = (e) => {
+                    if (e.target === modal) closeConfigDetailsModal();
+                };
+
+                // Modal content
+                const content = document.createElement('div');
+                content.style.cssText = `
+                    background: #111; border: 2px solid #0ff; padding: 20px;
+                    max-width: 95%; max-height: 95%; overflow: auto;
+                    color: #0ff; min-width: 800px;
+                `;
+
+                // Header
+                const header = document.createElement('div');
+                header.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #0ff; padding-bottom: 10px;';
+                header.innerHTML = `
+                    <h2 style="margin: 0; color: #0ff;">📋 All Config Changes (${totalCount} total)</h2>
+                    <button onclick="closeConfigDetailsModal()" style="background: #f00; color: #fff; border: 1px solid #0ff; padding: 5px 15px; cursor: pointer;">✕ Close</button>
+                `;
+
+                // Details content
+                const details = document.createElement('div');
+                details.style.cssText = 'color: #0aa; font-size: 0.9em; line-height: 1.6;';
+
+                // Iterate through grouped actions
+                Object.keys(groupedActions).sort().reverse().forEach(correlationId => {
+                    const actions = groupedActions[correlationId];
+                    const groupDiv = document.createElement('div');
+                    groupDiv.style.cssText = 'margin-bottom: 25px; padding: 15px; background: #050; border: 1px solid #033;';
+                    
+                    const firstAction = actions[0];
+                    const time = new Date(firstAction.timestamp).toLocaleString();
+                    const isBatch = actions.length > 1;
+                    
+                    groupDiv.innerHTML = `
+                        <div style="color: #0ff; font-weight: bold; margin-bottom: 10px; font-size: 1.1em;">
+                            ${isBatch ? `📦 Batch Update (${actions.length} changes)` : '🔧 Single Update'}
+                        </div>
+                        <div style="margin-bottom: 8px;"><strong>Timestamp:</strong> ${time}</div>
+                        <div style="margin-bottom: 8px;"><strong>Actor:</strong> ${firstAction.actor || 'system'}</div>
+                        <div style="margin-bottom: 8px;"><strong>Status:</strong> <span style="color: ${firstAction.status === 'SUCCESS' ? '#0f0' : '#f00'}">${firstAction.status || 'SUCCESS'}</span></div>
+                        ${firstAction.reason ? `<div style="margin-bottom: 8px;"><strong>Reason:</strong> ${firstAction.reason}</div>` : ''}
+                        <div style="margin-bottom: 8px;"><strong>Correlation ID:</strong> <code style="color: #0aa;">${correlationId}</code></div>
+                        <div style="margin-top: 15px; border-top: 1px solid #033; padding-top: 10px;">
+                    `;
+                    
+                    actions.forEach((action, idx) => {
+                        const oldVal = action.old_value !== undefined ? JSON.stringify(action.old_value, null, 2) : '(none)';
+                        const newVal = action.new_value !== undefined ? JSON.stringify(action.new_value, null, 2) : '(none)';
+                        
+                        groupDiv.innerHTML += `
+                            <div style="margin-bottom: 15px; padding: 10px; background: ${idx % 2 === 0 ? '#020' : '#030'}; border-left: 3px solid #0ff;">
+                                <div style="color: #0ff; font-weight: bold; margin-bottom: 8px;">
+                                    Change ${idx + 1}: <code style="color: #ff0;">${action.path || '(no path)'}</code>
+                                </div>
+                                <div style="margin-top: 10px;">
+                                    <div style="margin-bottom: 5px;"><strong style="color: #f00;">❌ Old:</strong></div>
+                                    <pre style="background: #200; padding: 8px; border: 1px solid #400; overflow-x: auto; color: #faa; margin: 0 0 10px 0; font-size: 0.8em; max-height: 200px; overflow-y: auto;">${oldVal}</pre>
+                                    <div style="margin-bottom: 5px;"><strong style="color: #0f0;">✅ New:</strong></div>
+                                    <pre style="background: #020; padding: 8px; border: 1px solid #040; overflow-x: auto; color: #afa; margin: 0; font-size: 0.8em; max-height: 200px; overflow-y: auto;">${newVal}</pre>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    groupDiv.innerHTML += '</div>';
+                    details.appendChild(groupDiv);
+                });
+
+                // Export button
+                const exportBtn = document.createElement('button');
+                exportBtn.textContent = '📥 Export All as JSON';
+                exportBtn.style.cssText = 'margin-top: 15px; padding: 8px 15px; background: #023; color: #0ff; border: 1px solid #0ff; cursor: pointer;';
+                exportBtn.onclick = () => {
+                    const json = JSON.stringify(groupedActions, null, 2);
+                    const blob = new Blob([json], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `all-config-changes-${Date.now()}.json`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                };
+
+                content.appendChild(header);
+                content.appendChild(details);
+                content.appendChild(exportBtn);
+                modal.appendChild(content);
+                document.body.appendChild(modal);
+
+                // Close on Escape key
+                const escapeHandler = (e) => {
+                    if (e.key === 'Escape') closeConfigDetailsModal();
+                };
+                modal.addEventListener('keydown', escapeHandler);
             }
 
             function loadConfigActions(showToast = false) {

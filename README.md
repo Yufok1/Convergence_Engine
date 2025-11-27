@@ -391,6 +391,7 @@ The breath engine provides unified timing:
 - **Interactive Graph**: D3.js visualization of event causation
   - **Neural Visualization**: Electric Blue Diamonds (decisions) and Neon Purple Squares (training events)
   - Pulsing animations and dashed links for neural connections
+  - **Neural Color Control**: Dedicated color picker in settings panel for neural system (#00FFFF default)
 - **CRA Agent**: AI-powered research assistant with full system access
   - **Neural-Aware**: Understands DQN architecture, training metrics, and dual inheritance
   - Can control all neural system parameters via config updates

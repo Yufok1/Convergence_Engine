@@ -171,7 +171,7 @@ The CRA can now adjust `config.json` while the Butterfly System keeps running. U
 | Path | Safe Range | Notes |
 | --- | --- | --- |
 | `/feedback/knobs/mutation_rate/initial` | 0.001 – 0.05 | Mutation knob |
-| `/feedback/knobs/new_edge_rate/initial` | 0.2 – 2.0 | Connectivity growth |
+| `/feedback/knobs/new_edge_rate/initial` | 0.2 – 3.0 | Connectivity growth (increased for neural signal propagation) |
 | `/feedback/knobs/clustering_bias/initial` | 0.3 – 1.5 | Triangle closure bias |
 | `/feedback/knobs/quantum_pruning/initial` | 0.0 – 1.0 | Pruning aggressiveness |
 | `/network/max_connections` | 1,000 – 20,000 | Network density ceiling |

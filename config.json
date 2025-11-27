@@ -23,25 +23,25 @@
     "interval_frames": 10,
     "knobs": {
       "clustering_bias": {
-        "initial": 0.7,
+        "initial": 1.4,
         "max": 1.6,
         "min": 0.3,
         "step": 0.05
       },
       "mutation_rate": {
-        "initial": 0.018,
+        "initial": 0.025,
         "max": 0.06,
         "min": 0.002,
         "step": 0.001
       },
       "new_edge_rate": {
-        "initial": 1.5,
+        "initial": 2,
         "max": 2.2,
         "min": 0.2,
         "step": 0.1
       },
       "quantum_pruning": {
-        "initial": 0.08,
+        "initial": 0.6,
         "max": 1.0,
         "min": 0.0,
         "step": 0.05
@@ -62,11 +62,50 @@
   "network": {
     "connection_strength_resolution": 5e-06,
     "emergence_sensitivity": 1e-06,
-    "max_connections": 8000,
+    "max_connections": 12000,
     "max_organisms": 2500,
     "resource_flow_precision": 0.0001,
     "resource_pool": 200.0,
     "stability_precision": 1e-07
+  },
+  "neural": {
+    "brain": {
+      "activation": "relu",
+      "dropout": 0.1,
+      "hidden_dim": 64,
+      "input_dim": 12,
+      "output_dim": 6
+    },
+    "device": "cpu",
+    "enabled": true,
+    "inheritance": {
+      "crossover_rate": 0.5,
+      "enabled": true,
+      "mutation_rate": 0.1
+    },
+    "initialization": {
+      "deterministic": false,
+      "seed": null
+    },
+    "rewards": {
+      "connection_failure": -0.2,
+      "connection_success": 0.5,
+      "fitness_improvement": 1.0,
+      "resource_gain": 0.3,
+      "resource_loss": -0.1,
+      "survival": 0.1
+    },
+    "training": {
+      "batch_size": 64,
+      "enabled": true,
+      "epsilon_decay": 0.995,
+      "epsilon_end": 0.12,
+      "epsilon_start": 1,
+      "gamma": 0.99,
+      "learning_rate": 0.002,
+      "memory_size": 1000,
+      "update_frequency": 1
+    }
   },
   "quantum": {
     "entanglement_sensitivity": 3e-06,
@@ -134,44 +173,5 @@
       "smoothing_factor": 0.25
     },
     "stabilization_enabled": true
-  },
-  "neural": {
-    "enabled": true,
-    "device": "cpu",
-    "initialization": {
-      "seed": null,
-      "deterministic": false
-    },
-    "brain": {
-      "input_dim": 12,
-      "hidden_dim": 64,
-      "output_dim": 6,
-      "activation": "relu",
-      "dropout": 0.1
-    },
-    "training": {
-      "enabled": true,
-      "batch_size": 32,
-      "memory_size": 1000,
-      "learning_rate": 0.001,
-      "gamma": 0.99,
-      "epsilon_start": 1.0,
-      "epsilon_end": 0.01,
-      "epsilon_decay": 0.995,
-      "update_frequency": 1
-    },
-    "rewards": {
-      "fitness_improvement": 1.0,
-      "survival": 0.1,
-      "connection_success": 0.5,
-      "connection_failure": -0.2,
-      "resource_gain": 0.3,
-      "resource_loss": -0.1
-    },
-    "inheritance": {
-      "enabled": true,
-      "mutation_rate": 0.1,
-      "crossover_rate": 0.5
-    }
   }
 }

@@ -880,17 +880,6 @@ class UnifiedSystem:
         if self.reality_sim and self.controller and hasattr(self.controller, 'breath_engine'):
             self.reality_sim.breath_engine_ref = self.controller.breath_engine
         
-        # Wire event emitter for neural visualization
-        if self.reality_sim and self.causation_explorer:
-            def neural_event_emitter(event):
-                """Emit neural events to causation explorer"""
-                try:
-                    self.causation_explorer.add_event(event, is_historical=False)
-                except Exception:
-                    pass  # Don't break if event emission fails
-            
-            self.reality_sim.event_emitter = neural_event_emitter
-        
         # Djinn Kernel (right wing) - already initialized in Explorer
         self.vp_monitor = getattr(self.controller, 'vp_monitor', None) if self.controller else None
         self.utm_kernel = getattr(self.controller, 'utm_kernel', None) if self.controller else None
@@ -927,6 +916,17 @@ class UnifiedSystem:
         except Exception as e:
             print(f"[UNIFIED] [WARN] Causation Explorer initialization failed: {e}")
             self.causation_explorer = None
+
+        # Wire event emitter for neural visualization (AFTER causation_explorer is initialized)
+        if self.reality_sim and self.causation_explorer:
+            def neural_event_emitter(event):
+                """Emit neural events to causation explorer"""
+                try:
+                    self.causation_explorer.add_event(event, is_historical=False)
+                except Exception:
+                    pass  # Don't break if event emission fails
+            
+            self.reality_sim.event_emitter = neural_event_emitter
 
         # Initialize Phase Sync Bridge (CRITICAL INTEGRATION!)
         if PHASE_SYNC_AVAILABLE:

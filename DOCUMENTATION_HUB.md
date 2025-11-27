@@ -95,6 +95,8 @@ pip install pywin32
 
 - **[WEB_UI_STATUS.md](./WEB_UI_STATUS.md)** - Web UI status (includes CRA agent integration)
 - **[CRA_CAPABILITIES.md](./CRA_CAPABILITIES.md)** - Complete CRA capabilities guide ⭐
+- **[CRA_CONTROLS_SUMMARY.md](./CRA_CONTROLS_SUMMARY.md)** - Quick reference: All CRA-controllable settings (150+)
+- **[CRA_FULL_SYSTEM_TEST_PROMPT.md](./CRA_FULL_SYSTEM_TEST_PROMPT.md)** - Ready-to-use test prompt for comprehensive CRA testing
   - **🤖 Convergence Research Assistant (CRA):** AI-powered autonomous research assistant in the Causation Explorer
     - **Full System Context:** Access to all system logs, shared state, and causation graph
     - **Vision Model Integration:** Analyzes graph viewport and evolutionary snapshots
@@ -104,10 +106,12 @@ pip install pywin32
     - **PC Resource Monitoring:** Real-time CPU/RAM/disk monitoring with correlation analysis
     - **Diagnostic Endpoints:** Access to VP history, network trends, memory breakdown, event throughput, breath cycles
     - **VP Monitoring Diagnostics:** ⭐ NEW - VP diagnostics breakdown, component decomposition, stabilization history, adaptive thresholds
-    - **Real-Time Adjustments:** All settings update dynamically during simulation without interruption
-    - **Robust Settings Management** ⭐ NEW: Settings validation, batch updates, error recovery, diagnostic functions
-    - **System Custodian:** Continuous health monitoring and protective guardian mode
-    - **Historical + Live Analysis:** Works with both stopped (historical) and running (live) systems
+  - **Real-Time Adjustments:** All settings update dynamically during simulation without interruption
+  - **Robust Settings Management** ⭐ NEW: Settings validation, batch updates, error recovery, diagnostic functions
+  - **Neural Color Control** ⭐ NEW: Dedicated color picker for neural system in settings panel
+  - **Config Actions Drill-Down** ⭐ NEW: Click any config action to see full differential changes in modal popup
+  - **System Custodian:** Continuous health monitoring and protective guardian mode
+  - **Historical + Live Analysis:** Works with both stopped (historical) and running (live) systems
 
 ---
 
