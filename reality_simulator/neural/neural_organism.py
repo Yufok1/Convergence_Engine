@@ -13,7 +13,10 @@ from dataclasses import field
 try:
     from ..evolution_engine import Organism, Genotype, Phenotype
 except ImportError:
-    from evolution_engine import Organism, Genotype, Phenotype
+    try:
+        from reality_simulator.evolution_engine import Organism, Genotype, Phenotype
+    except ImportError:
+        from evolution_engine import Organism, Genotype, Phenotype
 
 # Import neural components
 try:
@@ -22,8 +25,15 @@ try:
     from .experience import ExperienceBuffer
     PYTORCH_AVAILABLE = True
 except ImportError:
-    PYTORCH_AVAILABLE = False
-    OrganismBrain = None
+    # Fallback to absolute imports
+    try:
+        from reality_simulator.neural.brain import OrganismBrain
+        from reality_simulator.neural.utils import get_device, get_breath_features, normalize_features
+        from reality_simulator.neural.experience import ExperienceBuffer
+        PYTORCH_AVAILABLE = True
+    except ImportError:
+        PYTORCH_AVAILABLE = False
+        OrganismBrain = None
 
 
 class NeuralOrganism(Organism):
@@ -78,7 +88,10 @@ class NeuralOrganism(Organism):
                 self.brain.mutate(mutation_rate)
             else:
                 # Create new brain
-                from .utils import create_brain
+                try:
+                    from .utils import create_brain
+                except ImportError:
+                    from reality_simulator.neural.utils import create_brain
                 self.brain = create_brain(neural_config)
             
             # Experience storage

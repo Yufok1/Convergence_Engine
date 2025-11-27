@@ -117,14 +117,60 @@ def create_brain(config: Dict[str, Any]):
     if not PYTORCH_AVAILABLE:
         return None
     
-    from .brain import OrganismBrain
+    # Use absolute import to avoid relative import issues
+    try:
+        from .brain import OrganismBrain
+    except (ImportError, ValueError):
+        try:
+            from reality_simulator.neural.brain import OrganismBrain
+        except ImportError:
+            # Last resort: direct import
+            import sys
+            import os
+            neural_path = os.path.dirname(__file__)
+            if neural_path not in sys.path:
+                sys.path.insert(0, neural_path)
+            from brain import OrganismBrain
     
     brain_config = config.get('brain', {})
-    return OrganismBrain(
+    brain = OrganismBrain(
         input_dim=brain_config.get('input_dim', 12),
         hidden_dim=brain_config.get('hidden_dim', 64),
         output_dim=brain_config.get('output_dim', 6),
         activation=brain_config.get('activation', 'relu'),
         dropout=brain_config.get('dropout', 0.1)
     )
+    
+    # Optimization: Compile brain for faster training/inference (PyTorch 2.0+)
+    optimization_config = config.get('optimization', {})
+    optimizations_applied = []
+    
+    if (PYTORCH_AVAILABLE and 
+        optimization_config.get('use_compile', True) and 
+        torch is not None and 
+        hasattr(torch, 'compile')):
+        compile_mode = optimization_config.get('compile_mode', 'reduce-overhead')
+        try:
+            brain = torch.compile(brain, mode=compile_mode)
+            optimizations_applied.append(f"torch.compile({compile_mode})")
+        except Exception:
+            # Fallback if compilation fails (e.g., older PyTorch, unsupported ops)
+            pass
+    
+    # Optimization: Enable scripted inference for faster action selection
+    if optimization_config.get('use_scripted_inference', True):
+        try:
+            brain.enable_scripted_inference()
+            optimizations_applied.append("scripted_inference")
+        except Exception:
+            # Fallback if scripting fails
+            pass
+    
+    # Log optimizations if any were applied
+    if optimizations_applied:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"[NEURAL] Brain optimizations: {', '.join(optimizations_applied)}")
+    
+    return brain
 

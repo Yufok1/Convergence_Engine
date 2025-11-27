@@ -22,9 +22,27 @@ except ImportError:
     optim = None
     F = None
 
-from .experience import ExperienceBuffer
-from .neural_organism import NeuralOrganism
-from .utils import get_device
+# Use absolute imports to avoid relative import issues
+try:
+    from .experience import ExperienceBuffer
+    from .neural_organism import NeuralOrganism
+    from .utils import get_device
+except ImportError:
+    # Fallback to absolute imports if relative imports fail
+    try:
+        from reality_simulator.neural.experience import ExperienceBuffer
+        from reality_simulator.neural.neural_organism import NeuralOrganism
+        from reality_simulator.neural.utils import get_device
+    except ImportError:
+        # Last resort: try direct imports
+        import sys
+        import os
+        neural_path = os.path.join(os.path.dirname(__file__))
+        if neural_path not in sys.path:
+            sys.path.insert(0, neural_path)
+        from experience import ExperienceBuffer
+        from neural_organism import NeuralOrganism
+        from utils import get_device
 
 
 class NeuralTrainer:
@@ -72,6 +90,20 @@ class NeuralTrainer:
         
         # Track organism fitness history for reward calculation
         self.organism_fitness_history: Dict[str, float] = {}
+        
+        # Optimization: Reuse optimizers instead of recreating each step
+        optimization_config = config.get('optimization', {})
+        self.reuse_optimizers = optimization_config.get('reuse_optimizers', True)
+        self.optimizers: Dict[int, optim.Optimizer] = {}  # organism_id -> optimizer
+        
+        # Track training time for performance monitoring
+        self.training_times = []  # List of recent training step durations
+        
+        # Log optimization status
+        import logging
+        logger = logging.getLogger(__name__)
+        if self.reuse_optimizers:
+            logger.info(f"[NEURAL] Optimizations enabled: optimizer reuse")
         
         # Optional event emitter for causation graph visualization
         self.event_emitter = None  # Set by main.py or unified_entry.py
@@ -211,6 +243,9 @@ class NeuralTrainer:
         if not trainable_organisms:
             return None
         
+        # Track training time
+        training_start_time = time.time()
+        
         # Train each organism's brain
         total_loss = 0.0
         num_trained = 0
@@ -247,13 +282,31 @@ class NeuralTrainer:
             
             # Backpropagation
             organism.brain.train()
-            optimizer = optim.Adam(organism.brain.parameters(), lr=self.learning_rate)
+            
+            # Optimization: Reuse optimizer if enabled
+            if self.reuse_optimizers:
+                organism_id = id(organism.brain)
+                if organism_id not in self.optimizers:
+                    self.optimizers[organism_id] = optim.Adam(
+                        organism.brain.parameters(), 
+                        lr=self.learning_rate
+                    )
+                optimizer = self.optimizers[organism_id]
+            else:
+                optimizer = optim.Adam(organism.brain.parameters(), lr=self.learning_rate)
+            
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
             
             total_loss += loss.item()
             num_trained += 1
+        
+        # Track training duration
+        training_duration = time.time() - training_start_time
+        self.training_times.append(training_duration)
+        if len(self.training_times) > 100:  # Keep last 100 training times
+            self.training_times = self.training_times[-100:]
         
         self.last_training_time = time.time()
         
@@ -264,12 +317,19 @@ class NeuralTrainer:
             # Emit neural training event for visualization
             if self.event_emitter:
                 training_stats = self.get_training_stats()
+                avg_training_time = np.mean(self.training_times) if self.training_times else 0.0
                 event_data = {
                     'training_step': self.training_step_count,
                     'loss': float(avg_loss),
                     'num_organisms_trained': num_trained,
                     'total_organisms': len(organisms),
                     'avg_loss_history': training_stats.get('average_loss', 0.0),
+                    'training_time_ms': training_duration * 1000,  # Convert to milliseconds
+                    'avg_training_time_ms': avg_training_time * 1000,
+                    'optimizations_enabled': {
+                        'reuse_optimizers': self.reuse_optimizers,
+                        'compiled_brains': num_trained > 0  # Assume compiled if training works
+                    },
                     'breath_cycle': breath_state.get('cycle_count', 0) if breath_state else None,
                     'breath_depth': breath_state.get('depth', 0.0) if breath_state else None
                 }

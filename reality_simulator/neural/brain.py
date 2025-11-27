@@ -68,6 +68,10 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
         
         # Initialize weights
         self._initialize_weights()
+        
+        # Optimization: Script forward pass for faster inference (optional)
+        self._forward_scripted = None
+        self._use_scripted_inference = False
     
     def _initialize_weights(self):
         """Initialize network weights using Xavier initialization."""
@@ -126,10 +130,32 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
         self.eval()  # Set to evaluation mode
         with torch.no_grad():
             state_tensor = torch.FloatTensor(state).unsqueeze(0)
-            action_probs = self.forward(state_tensor)
+            
+            # Optimization: Use scripted forward pass if available (faster inference)
+            if self._use_scripted_inference and self._forward_scripted is not None:
+                action_probs = self._forward_scripted(state_tensor)
+            else:
+                action_probs = self.forward(state_tensor)
+            
             action = torch.argmax(action_probs, dim=1).item()
         
         return action
+    
+    def enable_scripted_inference(self):
+        """
+        Enable scripted inference for faster action selection.
+        Only call this after the model is fully initialized.
+        """
+        if not PYTORCH_AVAILABLE:
+            return
+        
+        try:
+            if hasattr(torch.jit, 'script'):
+                self._forward_scripted = torch.jit.script(self.forward)
+                self._use_scripted_inference = True
+        except Exception:
+            # Fallback if scripting fails
+            self._use_scripted_inference = False
     
     def mutate(self, mutation_rate: float = 0.1):
         """

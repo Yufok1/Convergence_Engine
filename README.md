@@ -186,6 +186,9 @@ pip install numpy scipy networkx psutil matplotlib flask flask-socketio requests
 # Optional: Neural System (PyTorch)
 pip install torch>=2.0.0  # For neural organism learning (system works without it)
 
+# Alternative: JAX/Flax (2-10x faster, see NEURAL_FRAMEWORK_ALTERNATIVES.md)
+# pip install jax jaxlib flax optax
+
 # Windows only (optional, for Explorer process isolation):
 pip install pywin32
 ```

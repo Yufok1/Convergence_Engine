@@ -932,8 +932,14 @@ class RealitySimulator:
             # 9. Neural Trainer (if neural system enabled)
             if self.config.get('neural', {}).get('enabled', False):
                 try:
-                    from .neural.trainer import NeuralTrainer
-                    from .neural.utils import get_device, set_seed
+                    # Try relative import first (works when run as module)
+                    try:
+                        from .neural.trainer import NeuralTrainer
+                        from .neural.utils import get_device, set_seed
+                    except (ImportError, ValueError):
+                        # Fallback to absolute import (works when run as script)
+                        from reality_simulator.neural.trainer import NeuralTrainer
+                        from reality_simulator.neural.utils import get_device, set_seed
                     
                     # Set random seed if configured
                     init_config = self.config['neural'].get('initialization', {})
@@ -955,20 +961,37 @@ class RealitySimulator:
                         self.neural_trainer.event_emitter = self.event_emitter
                     print(ColorScheme.log_component("neural", "Neural trainer initialized"))
                 except ImportError as e:
-                    print(f"[WARN] PyTorch not available, neural features disabled: {e}")
+                    error_msg = f"Import error: {e}"
+                    print(f"[WARN] Neural trainer import failed: {error_msg}")
                     import traceback
                     traceback.print_exc()
-                    self.config['neural']['enabled'] = False
+                    # Don't disable neural system, just mark trainer as unavailable
                     self.neural_trainer = None
-                    self._neural_init_error = str(e)
+                    self._neural_init_error = error_msg
+                    if 'logger' in locals() or 'logger' in globals():
+                        logger.warning(f"[NEURAL] Trainer import failed: {e}")
                 except Exception as e:
-                    print(f"[WARN] Neural trainer initialization failed: {e}")
+                    error_msg = f"Initialization error: {e}"
+                    print(f"[WARN] Neural trainer initialization failed: {error_msg}")
                     import traceback
                     traceback.print_exc()
                     self.neural_trainer = None
-                    self._neural_init_error = str(e)
+                    self._neural_init_error = error_msg
+                    if 'logger' in locals() or 'logger' in globals():
+                        logger.warning(f"[NEURAL] Trainer initialization failed: {e}")
             else:
                 self.neural_trainer = None
+            
+            # Helper method to safely check torch.compile availability
+            def _check_torch_compile_available():
+                """Safely check if torch.compile is available without scoping issues"""
+                try:
+                    import torch as torch_check
+                    return torch_check is not None and hasattr(torch_check, 'compile')
+                except (ImportError, AttributeError):
+                    return False
+            
+            self._check_torch_compile_available = _check_torch_compile_available
 
             print(ColorScheme.colorize("[SUCCESS] All components initialized successfully!", ColorScheme.SUCCESS))
             return True
@@ -1300,6 +1323,14 @@ class RealitySimulator:
                 if neural_org_count > 0:
                     avg_epsilon /= neural_org_count
                 
+                # Get training time metrics if available
+                training_time_ms = None
+                avg_training_time_ms = None
+                if hasattr(self.neural_trainer, 'training_times') and self.neural_trainer.training_times:
+                    avg_training_time_ms = np.mean(self.neural_trainer.training_times) * 1000
+                    if self.neural_trainer.training_times:
+                        training_time_ms = self.neural_trainer.training_times[-1] * 1000
+                
                 neural_metrics = {
                     'enabled': True,
                     'training_loss': loss,
@@ -1307,6 +1338,12 @@ class RealitySimulator:
                     'organisms_tracked': training_stats.get('organisms_tracked', 0),
                     'training_steps': training_stats.get('training_steps', 0),
                     'avg_loss': training_stats.get('average_loss', 0.0),
+                    'training_time_ms': training_time_ms,
+                    'avg_training_time_ms': avg_training_time_ms,
+                    'optimizations': {
+                        'reuse_optimizers': getattr(self.neural_trainer, 'reuse_optimizers', False),
+                        'compiled_brains': self._check_torch_compile_available() if hasattr(self, '_check_torch_compile_available') else False
+                    }
                 }
                 
                 # Log training occasionally (every 100 steps to avoid spam)
@@ -1325,13 +1362,20 @@ class RealitySimulator:
             if not hasattr(self, 'neural_trainer') or self.neural_trainer is None:
                 # Check if PyTorch is available
                 try:
-                    import torch
-                    error_msg = f'trainer_unavailable (PyTorch {torch.__version__} available, but trainer not initialized)'
+                    import torch as torch_module
+                    if torch_module is not None:
+                        error_msg = f'trainer_unavailable (PyTorch {torch_module.__version__} available, but trainer not initialized)'
+                    else:
+                        error_msg = 'trainer_unavailable (PyTorch import returned None)'
                     # Include initialization error if available
                     if hasattr(self, '_neural_init_error'):
                         error_msg += f': {self._neural_init_error}'
                 except ImportError:
                     error_msg = 'trainer_unavailable (PyTorch not installed)'
+                except Exception as e:
+                    error_msg = f'trainer_unavailable (PyTorch check failed: {e})'
+                    if hasattr(self, '_neural_init_error'):
+                        error_msg += f' | Init error: {self._neural_init_error}'
             
             neural_metrics = {
                 'enabled': True,

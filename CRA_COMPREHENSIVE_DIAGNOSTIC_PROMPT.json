@@ -1,0 +1,160 @@
+{
+  "diagnostic_request": {
+    "agent_type": "ALL_AGENTS",
+    "timestamp": "CURRENT_TIMESTAMP",
+    "request_id": "SYSTEM_ACCESS_AUDIT_2025",
+    "purpose": "Comprehensive access + reliability audit for the Butterfly Convergence Stack (including Neural System)",
+    "instructions": {
+      "system_access_audit": {
+        "current_capabilities": [
+          "Enumerate EVERY data source, subsystem, file type, API endpoint, log stream, config file, and live feed you can reach right now (include hot-reload services, config actions log, 10-frame snapshot history, CRA endpoints, neural training metrics, optimization status, etc.).",
+          "List all neural system endpoints: training metrics, optimization status, trainer health, brain compilation status, optimizer cache size, training time metrics.",
+          "Include neural event streams: neural_decision events, neural_training events, experience buffer status, epsilon decay progress."
+        ],
+        "designed_capabilities": [
+          "Describe what your design spec says you SHOULD access (Explorer / Reality Sim / Djinn Kernel data, unified shared state, CRA diagnostics, vision pipeline, config manager, neural system metrics, PyTorch optimization status, etc.).",
+          "Neural system capabilities: DQN training metrics, experience replay buffer status, dual inheritance tracking, breath-synchronized training cycles, neural decision confidence scores, training loss history, epsilon decay curves.",
+          "Optimization capabilities: torch.compile() status, optimizer reuse metrics, scripted inference usage, training_time_ms tracking, performance improvement ratios."
+        ],
+        "access_gaps": [
+          "Highlight anything you're supposed to reach but can't (missing datasets, blocked APIs, filtered logs, disabled config entry points, stale snapshots, neural trainer initialization failures, optimization status unavailable, etc.).",
+          "Neural-specific gaps: trainer unavailable errors, missing training metrics, optimization flags not reporting, neural events not appearing in causation graph, experience buffer not populating."
+        ]
+      },
+      "neural_system_audit": {
+        "trainer_status": [
+          "Report neural trainer initialization status: SUCCESS / FAILED / PARTIAL.",
+          "Check for import errors, PyTorch availability, device configuration (CPU/CUDA), trainer object existence.",
+          "Verify trainer is receiving organisms, collecting experiences, performing training steps."
+        ],
+        "training_metrics": [
+          "Current training loss, average loss history, training step count, organisms tracked.",
+          "Epsilon values: current, start, end, decay rate, decay progress.",
+          "Training frequency: steps per breath cycle, update frequency configuration.",
+          "Performance metrics: training_time_ms (last step), avg_training_time_ms (rolling average), optimization impact ratios."
+        ],
+        "optimization_status": [
+          "torch.compile() status: enabled/disabled, compilation mode, success/failure, fallback status.",
+          "Optimizer reuse: enabled/disabled, cache size, organisms with cached optimizers, memory savings.",
+          "Scripted inference: enabled/disabled, usage rate, performance improvement.",
+          "Overall optimization impact: before/after training times, speedup ratios, resource utilization changes."
+        ],
+        "neural_events": [
+          "neural_decision events: count, frequency, confidence distribution, action distribution, component integration.",
+          "neural_training events: count, frequency, loss values, organisms trained per event, breath cycle correlation.",
+          "Event emission: event_emitter wired correctly, events appearing in causation graph, visualization integration."
+        ],
+        "brain_architecture": [
+          "Brain configuration: input_dim, hidden_dim, output_dim, activation functions, dropout rates.",
+          "Brain compilation: which brains are compiled, compilation errors, fallback to uncompiled.",
+          "Brain inheritance: crossover rates, mutation rates, inheritance success rate, learned behavior transfer."
+        ],
+        "experience_replay": [
+          "Buffer status: capacity, current size, fill rate, sampling efficiency.",
+          "Experience quality: reward distribution, state diversity, action coverage.",
+          "Training readiness: organisms with sufficient experiences, batch availability, training triggers."
+        ]
+      },
+      "error_reporting": {
+        "current_errors": [
+          "List all active warnings/errors: failed CRA calls, Ollama timeouts, snapshot capture gaps, config write failures, SSE stream errors, neural trainer initialization failures, PyTorch import errors, optimization compilation failures, etc."
+        ],
+        "error_patterns": [
+          "Note recurring patterns (e.g., intermittent `/api/graph` failures, vision compression errors, config watcher glitches, neural training step failures, optimizer creation errors, experience buffer overflow)."
+        ],
+        "data_quality_issues": [
+          "Report data freshness issues (stale shared_state, empty logs), malformed records, missing metrics, inconsistent JSON, missing neural metrics, training_time_ms not updating, optimization status stale."
+        ],
+        "neural_specific_errors": [
+          "Trainer initialization errors: import failures, PyTorch version mismatches, device configuration issues.",
+          "Training errors: batch size mismatches, tensor shape errors, loss calculation failures, optimizer step errors.",
+          "Optimization errors: torch.compile() failures, scripted inference errors, optimizer cache corruption."
+        ]
+      },
+      "data_flow_analysis": {
+        "expected_data_flow": [
+          "Map the intended pipeline (Explorer → shared_state → CRA → Vision → ConfigManager → Neural System) including snapshot cadence (up to 10 frames), config hot-reload, event bus integration, neural training cycles, breath synchronization."
+        ],
+        "actual_data_flow": [
+          "Describe exactly what is flowing now, where it deviates (skipped snapshots, delayed VP feeds, log ingestion lag, neural training not triggering, experience collection gaps, optimization metrics not updating)."
+        ],
+        "data_routing_issues": [
+          "Identify missing routes, misconfigured endpoints, duplicated payloads, data stuck in archive folders, neural events not reaching causation graph, training metrics not in shared state."
+        ],
+        "neural_data_flow": [
+          "Organism decisions → experience buffer → trainer collection → batch training → loss calculation → backpropagation → weight updates → event emission → causation graph.",
+          "Breath cycle → training trigger → experience collection → training step → metrics update → shared state → CRA access.",
+          "Optimization pipeline: brain creation → compilation attempt → scripted inference setup → optimizer cache → performance tracking."
+        ]
+      },
+      "performance_metrics": {
+        "response_times": "Average timings for CRA phases (context build, vision, synthesis), config updates, incremental graph fetches, neural training steps, action selection, experience collection.",
+        "throughput": "Events/sec, snapshot ingestion rate, config change frequency, neural training steps per breath cycle, organisms trained per second, experience buffer fill rate.",
+        "memory_usage": "Report resource footprint for Flask, CRA, vision calls, PyTorch models, experience buffers, optimizer cache, compiled models.",
+        "error_rates": "Success/failure ratios for API calls, vision sequence attempts, config writes, neural training steps, optimizer operations, brain compilation.",
+        "resource_utilization": "CPU/memory/I/O observations impacting CRA, Butterfly runtime, neural training, PyTorch operations.",
+        "neural_performance": [
+          "Training step duration: current, average, min, max, optimization impact (before/after).",
+          "Action selection latency: per organism, batch processing, scripted vs non-scripted.",
+          "Memory efficiency: optimizer cache size, experience buffer memory, model memory footprint.",
+          "Speedup ratios: torch.compile() impact, optimizer reuse impact, scripted inference impact, overall training speedup."
+        ]
+      },
+      "configuration_status": {
+        "current_config": "Dump key live settings (mutation, new_edge_rate, clustering_bias, quantum_pruning, VP guardrails, watcher state, neural optimization flags, training parameters, brain architecture).",
+        "config_validation": "Confirm guardrails enforced, config_actions.log healthy, history depth intact, neural config valid, optimization settings correct.",
+        "config_access": "State whether you can read/write `config.json`, hot-reload via ConfigManager, observe history endpoints, update neural parameters, toggle optimizations.",
+        "environment_vars": "List relevant env vars (OLLAMA_TIMEOUT=120, base URLs, paths, PyTorch device preferences, optimization flags).",
+        "neural_config": [
+          "Neural enabled status, device (CPU/CUDA), brain architecture parameters, training hyperparameters, reward weights, inheritance settings.",
+          "Optimization config: use_compile (true/false), compile_mode, reuse_optimizers (true/false), use_scripted_inference (true/false).",
+          "Training config: batch_size, learning_rate, gamma, epsilon settings, update_frequency, memory_size."
+        ]
+      },
+      "optimization_verification": {
+        "compilation_status": [
+          "Verify torch.compile() is active: check brain objects for compilation wrapper, verify compilation mode, test fallback behavior.",
+          "Measure compilation impact: compare training times with/without compilation, check for compilation errors or warnings."
+        ],
+        "optimizer_reuse": [
+          "Verify optimizer cache: check cache size, verify optimizers are reused across training steps, measure memory savings.",
+          "Test optimizer creation: verify new optimizers only created for new organisms, existing optimizers reused."
+        ],
+        "scripted_inference": [
+          "Verify scripted forward pass: check if _forward_scripted exists, test action selection performance, compare scripted vs non-scripted times."
+        ],
+        "performance_validation": [
+          "Compare metrics: training_time_ms vs expected baseline, avg_training_time_ms trends, overall system speedup.",
+          "Verify optimization flags: check optimizations_enabled in neural metrics, confirm all optimizations reporting correctly."
+        ]
+      }
+    },
+    "required_response_format": {
+      "structure": "Use headings mirroring each category above, including neural_system_audit and optimization_verification sections.",
+      "evidence": "Quote concrete log lines, API responses, snapshot counts, config diffs, neural training metrics, optimization status, performance timings.",
+      "severity": "Tag each issue CRITICAL / HIGH / MEDIUM / LOW (include neural-specific severity: trainer down = CRITICAL, optimization disabled = MEDIUM, etc.).",
+      "recommendations": "Give explicit remediation steps per issue, including neural trainer fixes, optimization troubleshooting, performance tuning.",
+      "timeline": "Mention when issues started or how often they recur, neural training history, optimization activation timeline.",
+      "verification": "Explain how to confirm each fix (e.g., rerun CRA request, tail config_actions.log, capture new snapshots, check neural metrics, verify training steps, test optimizations)."
+    },
+    "data_to_include": {
+      "sample_data": "Show actual vs expected payload snippets (shared state entries, snapshot metadata, config actions, neural training metrics, optimization status, training time data).",
+      "error_logs": "Paste precise errors (requests.exceptions.ReadTimeout, vision payload warnings, SSE disconnects, PyTorch errors, neural trainer errors, optimization failures).",
+      "configuration": "Show relevant config values (non-secret), including neural section, optimization flags, training parameters.",
+      "performance_data": "Include timings, throughput, CPU/RAM metrics, neural training times, optimization speedup ratios, action selection latencies.",
+      "system_state": "Summarize current Butterfly phases, VP state, simulation health, neural system status, training progress, optimization status.",
+      "neural_metrics": [
+        "Training loss history, epsilon decay curve, organisms tracked, training steps completed, experience buffer status.",
+        "Optimization metrics: training_time_ms values, avg_training_time_ms trends, speedup ratios, compilation success rate.",
+        "Event counts: neural_decision events, neural_training events, frequency, distribution."
+      ]
+    },
+    "special_instructions": {
+      "neural_priority": "If neural system is enabled but trainer is unavailable, mark as CRITICAL and provide detailed diagnostic steps.",
+      "optimization_check": "Always verify optimization status even if neural system appears functional - optimizations may be silently disabled.",
+      "performance_baseline": "Establish performance baselines before optimizations for comparison (if possible from historical data).",
+      "integration_verification": "Verify neural events appear in causation graph, training metrics in shared state, optimization status in logs."
+    }
+  }
+}
+
