@@ -437,7 +437,6 @@ python tests/test_neural_integration.py
 python tests/test_quantum_substrate.py
 python tests/test_evolution_engine.py
 python tests/test_symbiotic_network.py
-python tests/test_consciousness_detector.py
 
 # Explorer integration tests
 cd explorer && python test_integration.py

@@ -37,6 +37,7 @@
 ### 2. HTML Template (`templates/causation_explorer.html`)
 - ✅ Complete D3.js visualization
 - ✅ Interactive graph rendering
+- ✅ **Collapsible Header Controls** - Collapse button in page header to hide all control panels
 - ✅ Search interface
 - ✅ Event exploration (backwards/forwards)
 - ✅ Node clicking functionality
@@ -44,6 +45,9 @@
   - ✅ **Convergence Research Assistant (CRA) Chat Panel**
   - ✅ Model selectors (research model + vision model)
   - ✅ Chat interface with message history
+  - ✅ **Collapse/Expand functionality** - Collapse button in header (▼ COLLAPSE / ▲ EXPAND)
+  - ✅ State persistence - Remembers collapsed state across page reloads
+  - ✅ Scroll position preservation when collapsing/expanding
   - ✅ View state tracking (zoom, pan, rotation, selected nodes)
   - ✅ Graph image capture (SVG to base64 for vision model)
   - ✅ Real-time context updates

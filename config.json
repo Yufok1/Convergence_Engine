@@ -6,16 +6,51 @@
     "learning_rate_resolution": 1e-06,
     "performance_tracking_precision": 0.0001
   },
+  "causation_detection": {
+    "correlation_threshold": 0.7,
+    "direct_causation_time_window": 2,
+    "enable_bidirectional_causations": true,
+    "enable_neural_causations": true,
+    "enable_neural_decision_causations": true,
+    "enable_neural_training_causations": true,
+    "enable_phase_transition_causations": true,
+    "phase_transition_time_window": 2.0,
+    "recent_events_window": 200,
+    "thresholds": {
+      "clustering_coefficient": {
+        "collapse": 0.5,
+        "direction": "above"
+      },
+      "modularity": {
+        "collapse": 0.3,
+        "direction": "below"
+      },
+      "organism_count": {
+        "collapse": 500,
+        "direction": "above"
+      },
+      "violation_pressure": {
+        "vp0": 0.25,
+        "vp1": 0.5,
+        "vp2": 0.75,
+        "vp3": 0.99
+      },
+      "vp_calculations": {
+        "direction": "above",
+        "transition": 50
+      }
+    }
+  },
   "evolution": {
     "adaptation_sensitivity": 0.002,
     "fitness_precision": 1e-06,
     "genotype_length": 48,
     "max_generations": 1000,
     "mutation_rate": {
-      "initial": 0.05
+      "initial": 0.06
     },
     "mutation_rate_precision": 0.001,
-    "population_size": 1200
+    "population_size": 1500
   },
   "feedback": {
     "enabled": true,
@@ -23,7 +58,7 @@
     "interval_frames": 10,
     "knobs": {
       "clustering_bias": {
-        "initial": 1.5,
+        "initial": 1.2,
         "max": 1.6,
         "min": 0.3,
         "step": 0.05
@@ -72,44 +107,44 @@
     "brain": {
       "activation": "relu",
       "dropout": 0.1,
-      "hidden_dim": 64,
+      "hidden_dim": 128,
       "input_dim": 12,
       "output_dim": 6
     },
     "device": "cpu",
     "enabled": true,
-    "optimization": {
-      "use_compile": true,
-      "compile_mode": "reduce-overhead",
-      "reuse_optimizers": true,
-      "use_scripted_inference": true
-    },
     "inheritance": {
-      "crossover_rate": 0.5,
+      "crossover_rate": 0.7,
       "enabled": true,
-      "mutation_rate": 0.1
+      "mutation_rate": 0.15
     },
     "initialization": {
       "deterministic": false,
       "seed": null
     },
+    "optimization": {
+      "compile_mode": "reduce-overhead",
+      "reuse_optimizers": true,
+      "use_compile": true,
+      "use_scripted_inference": true
+    },
     "rewards": {
-      "connection_failure": -0.2,
-      "connection_success": 0.5,
-      "fitness_improvement": 1.0,
+      "connection_failure": -0.1,
+      "connection_success": 1.2,
+      "fitness_improvement": 0.8,
       "resource_gain": 0.3,
       "resource_loss": -0.1,
       "survival": 0.1
     },
     "training": {
-      "batch_size": 64,
+      "batch_size": 128,
       "enabled": true,
       "epsilon_decay": 0.995,
-      "epsilon_end": 0.12,
-      "epsilon_start": 1,
-      "gamma": 0.99,
-      "learning_rate": 0.002,
-      "memory_size": 1000,
+      "epsilon_end": 0.05,
+      "epsilon_start": 0.8,
+      "gamma": 0.995,
+      "learning_rate": 0.005,
+      "memory_size": 5000,
       "update_frequency": 1
     }
   },

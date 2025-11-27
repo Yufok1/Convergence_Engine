@@ -53,6 +53,45 @@
             color: #0ff;
             border-bottom: 2px solid #0ff;
             padding-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Header controls container - collapsible */
+        .header-controls-container {
+            transition: max-height 0.3s ease, opacity 0.3s ease, margin 0.3s ease;
+            overflow: hidden;
+            max-height: 500px;
+            opacity: 1;
+        }
+
+        .header-controls-container.collapsed {
+            max-height: 0;
+            opacity: 0;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        /* Header collapse button */
+        #headerCollapseBtn {
+            background: #111;
+            color: #0ff;
+            border: 2px solid #0ff;
+            padding: 4px 10px;
+            font-size: 0.85em;
+            cursor: pointer;
+            border-radius: 3px;
+            font-weight: bold;
+            transition: all 0.2s ease;
+            font-family: 'Courier New', monospace;
+        }
+
+        #headerCollapseBtn:hover {
+            background: #0ff;
+            color: #000;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.8);
         }
 
         .main-content {
@@ -653,10 +692,47 @@
         #craChatPanel {
             border-color: #FF00FF;
             box-shadow: 0 0 25px rgba(255, 0, 255, 0.5), inset 0 0 15px rgba(0, 0, 0, 0.6);
+            transition: max-height 0.3s ease, padding 0.3s ease;
+            overflow: hidden;
         }
 
         #craChatPanel h3 {
             color: #FF00FF;
+        }
+
+        /* Collapsed state for CRA chat panel */
+        #craChatPanel.collapsed {
+            max-height: 60px;
+            padding-bottom: 0;
+        }
+
+        #craChatPanel.collapsed > *:not(h3) {
+            display: none;
+        }
+
+        #craChatPanel.collapsed h3 {
+            margin-bottom: 0;
+        }
+
+        /* Collapse toggle button */
+        #craCollapseBtn {
+            background: #111;
+            color: #FF00FF;
+            border: 2px solid #FF00FF;
+            padding: 4px 8px;
+            font-size: 0.9em;
+            cursor: pointer;
+            border-radius: 3px;
+            font-weight: bold;
+            z-index: 10;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        #craCollapseBtn:hover {
+            background: #FF00FF;
+            color: #000;
+            box-shadow: 0 0 10px rgba(255, 0, 255, 0.8);
         }
 
         /* Snapshot Gallery Modal Styles */
@@ -1032,9 +1108,14 @@
 
 <body>
     <div class="container">
-        <h1>🔬 Causation Explorer - Follow Your Curiosity</h1>
+        <h1>
+            🔬 Causation Explorer - Follow Your Curiosity
+            <button id="headerCollapseBtn" onclick="toggleHeaderControls()" title="Collapse/Expand Header Controls">
+                ▼ COLLAPSE
+            </button>
+        </h1>
 
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <div class="header-controls-container" id="headerControlsContainer" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
             <div class="search-box" style="flex: 1; margin-right: 10px;">
                 <input type="text" id="searchInput" placeholder="Search events (e.g., 'collapse', 'modularity', 'VP')">
                 <button onclick="searchEvents()">Search</button>
@@ -1146,6 +1227,7 @@
                 </div>
             </div>
         </div>
+        <!-- End of header controls container -->
 
         <div class="main-content">
             <!-- Filter Panel -->
@@ -1173,6 +1255,10 @@
                     <div class="filter-item">
                         <label><input type="checkbox" id="filter-breath" checked onchange="applyFilters()">
                             <span>Breath</span></label>
+                    </div>
+                    <div class="filter-item">
+                        <label><input type="checkbox" id="filter-neural" checked onchange="applyFilters()">
+                            <span>🧠 Neural System</span></label>
                     </div>
                     <div class="filter-item">
                         <label><input type="checkbox" id="filter-system" checked onchange="applyFilters()">
@@ -1325,6 +1411,16 @@
                                 <span style="min-width: 120px;">Temporal:</span>
                                 <input type="color" id="color-link-temporal" value="#FFFF00"
                                     onchange="updateLinkColor('temporal', this.value)"
+                                    style="width: 60px; height: 25px; cursor: pointer;">
+                            </label>
+                        </div>
+
+                        <div class="filter-item" style="margin-bottom: 8px;">
+                            <label
+                                style="display: flex; align-items: center; gap: 8px; color: #0ff; font-size: 0.85em;">
+                                <span style="min-width: 120px;">🧠 Neural Links:</span>
+                                <input type="color" id="color-link-neural" value="#00FFFF"
+                                    onchange="updateLinkColor('neural', this.value)"
                                     style="width: 60px; height: 25px; cursor: pointer;">
                             </label>
                         </div>
@@ -1762,6 +1858,8 @@
                     <h3 style="display: flex; justify-content: space-between; align-items: center;">
                         🧠 Convergence Research Assistant (CRA)
                         <div style="display: flex; gap: 5px;">
+                            <button id="craCollapseBtn" onclick="toggleCRAChatPanel()"
+                                title="Collapse/Expand Chat Panel">▼ COLLAPSE</button>
                             <button id="craFullscreenBtn"
                                 style="background: #111; color: #0ff; border: 2px solid #0ff; padding: 4px 8px; font-size: 0.9em; cursor: pointer; border-radius: 3px; font-weight: bold; z-index: 10; position: relative;"
                                 title="Toggle Fullscreen">⛶ FULLSCREEN</button>
@@ -3390,6 +3488,7 @@
                 'correlation': '#0000FF',      // Pure Blue
                 'direct': '#00FF00',           // Pure Green
                 'temporal': '#FFFF00',         // Pure Yellow
+                'neural': '#00FFFF',            // 🧠 Electric Cyan (Neural Links)
                 'unknown': '#FF8800'           // Bright Orange
             };
 
@@ -3451,6 +3550,7 @@
                     'djinn_kernel': true,
                     'utm_kernel': true,
                     'breath': true,
+                    'neural': true,
                     'system': true
                 },
                 causationTypes: {
@@ -3742,6 +3842,7 @@
                 filters.components.djinn_kernel = document.getElementById('filter-djinn_kernel').checked;
                 filters.components.utm_kernel = document.getElementById('filter-djinn_kernel').checked;
                 filters.components.breath = document.getElementById('filter-breath').checked;
+                filters.components.neural = document.getElementById('filter-neural').checked;
                 filters.components.system = document.getElementById('filter-system').checked;
 
                 filters.causationTypes.threshold = document.getElementById('filter-threshold').checked;
@@ -3820,7 +3921,7 @@
                             return (typeAllowed && hasSource && hasTarget) ? 'block' : 'none';
                         })
                         // Force update colors on all visible links
-                        .attr('stroke', d => getLinkColor(d.type || d.causation_type || 'unknown'))
+                        .attr('stroke', d => getLinkColor(d.type || d.causation_type || 'unknown', d))
                         .attr('stroke-opacity', 1.0)
                         .attr('stroke-width', d => Math.max(3, (d.strength || 0.5) * 6));
                 }
@@ -4136,6 +4237,28 @@
                     animationSpeed: 1.0,
                 };
 
+                // Reset component colors to defaults
+                componentColors = {
+                    'reality_sim': '#FF0000',
+                    'reality_simulator': '#FF0000',
+                    'explorer': '#0000FF',
+                    'djinn_kernel': '#FF8800',
+                    'utm_kernel': '#FF8800',
+                    'breath': '#FF00FF',
+                    'neural': '#00FFFF',
+                    'system': '#FFFF00'
+                };
+
+                // Reset link colors to defaults
+                linkColors = {
+                    'threshold': '#FF00FF',
+                    'correlation': '#0000FF',
+                    'direct': '#00FF00',
+                    'temporal': '#FFFF00',
+                    'neural': '#00FFFF',
+                    'unknown': '#FF8800'
+                };
+
                 // Update all UI controls
                 Object.keys(vizSettings).forEach(key => {
                     const element = document.getElementById(key);
@@ -4148,6 +4271,39 @@
                             element.value = vizSettings[key];
                         }
                         updateVizSetting(key, vizSettings[key]);
+                    }
+                });
+
+                // Reset component color pickers
+                const componentColorMap = {
+                    'reality_sim': 'color-reality_sim',
+                    'explorer': 'color-explorer',
+                    'djinn_kernel': 'color-djinn_kernel',
+                    'breath': 'color-breath',
+                    'neural': 'color-neural',
+                    'system': 'color-system'
+                };
+                Object.keys(componentColorMap).forEach(comp => {
+                    const picker = document.getElementById(componentColorMap[comp]);
+                    if (picker) {
+                        picker.value = componentColors[comp];
+                        updateComponentColor(comp, componentColors[comp]);
+                    }
+                });
+
+                // Reset link color pickers
+                const linkColorMap = {
+                    'threshold': 'color-link-threshold',
+                    'correlation': 'color-link-correlation',
+                    'direct': 'color-link-direct',
+                    'temporal': 'color-link-temporal',
+                    'neural': 'color-link-neural'
+                };
+                Object.keys(linkColorMap).forEach(linkType => {
+                    const picker = document.getElementById(linkColorMap[linkType]);
+                    if (picker) {
+                        picker.value = linkColors[linkType];
+                        updateLinkColor(linkType, linkColors[linkType]);
                     }
                 });
             }
@@ -4298,6 +4454,7 @@
                             'djinn_kernel': 'filter-djinn_kernel',
                             'utm_kernel': 'filter-djinn_kernel',
                             'breath': 'filter-breath',
+                            'neural': 'filter-neural',
                             'system': 'filter-system'
                         };
 
@@ -4842,6 +4999,7 @@
                     { name: 'Correlation', color: linkColors['correlation'] || '#0000FF' },
                     { name: 'Direct', color: linkColors['direct'] || '#00FF00' },
                     { name: 'Temporal', color: linkColors['temporal'] || '#FFFF00' },
+                    { name: '🧠 Neural', color: linkColors['neural'] || '#00FFFF' },
                     { name: 'Unknown', color: linkColors['unknown'] || '#FF8800' }
                 ];
 
@@ -4874,7 +5032,8 @@
                     const compKey = comp.name === 'Reality Simulator' ? 'reality_sim' :
                         comp.name === 'Explorer' ? 'explorer' :
                             comp.name === 'Djinn Kernel' ? 'djinn_kernel' :
-                                comp.name === 'Breath Engine' ? 'breath' : 'system';
+                                comp.name === 'Breath Engine' ? 'breath' :
+                                    comp.name === '🧠 Neural System' ? 'neural' : 'system';
                     legendGroup.append('circle')
                         .attr('cx', 0)
                         .attr('cy', yPos)
@@ -5022,7 +5181,7 @@
                         return isNeuralLink ? 'link neural-link' : 'link';
                     })
                     .attr('data-link-id', (d, i) => 'link-' + i)
-                    .attr('stroke', d => getLinkColor(d.type || 'unknown'))
+                    .attr('stroke', d => getLinkColor(d.type || 'unknown', d))
                     // Thickness based on depth AND density: thicker in front, thinner in back (but keep distinct)
                     .attr('stroke-width', d => {
                         const baseWidth = vizSettings.linkBaseWidth;
@@ -6056,7 +6215,18 @@
                 } : null;
             }
 
-            function getLinkColor(linkType) {
+            function getLinkColor(linkType, linkData = null) {
+                // Check if this is a neural link (by checking if source or target is neural)
+                if (linkData) {
+                    const sourceId = typeof linkData.source === 'object' ? linkData.source.id : linkData.source;
+                    const targetId = typeof linkData.target === 'object' ? linkData.target.id : linkData.target;
+                    const sourceNode = allNodes.find(n => n.id === sourceId);
+                    const targetNode = allNodes.find(n => n.id === targetId);
+                    if ((sourceNode && sourceNode.component === 'neural') || 
+                        (targetNode && targetNode.component === 'neural')) {
+                        return linkColors['neural'] || '#00FFFF';
+                    }
+                }
                 if (!linkType) return linkColors['unknown'] || '#FF0000';
                 const normalizedType = linkType.toLowerCase().trim();
                 return linkColors[normalizedType] || linkColors['unknown'] || '#FF0000';
@@ -6112,6 +6282,44 @@
                 // If simulation exists, real-time update already happened above
             }
 
+            function updateCausationSetting(settingName, value) {
+                // Update causation detection settings via CONFIG_UPDATE
+                const path = `/causation_detection/${settingName}`;
+                const patch = [{
+                    "op": "replace",
+                    "path": path,
+                    "value": value
+                }];
+                
+                const payload = {
+                    actor: 'User',
+                    reason: `Update causation detection setting: ${settingName}`,
+                    patch: patch
+                };
+                
+                fetch('/api/config/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        console.log(`[Causation] Updated ${settingName} to ${value}`);
+                        // Update display value
+                        const displayEl = document.getElementById(settingName + 'Value');
+                        if (displayEl) {
+                            displayEl.textContent = typeof value === 'boolean' ? (value ? 'On' : 'Off') : value;
+                        }
+                    } else {
+                        console.error(`[Causation] Failed to update ${settingName}:`, data.error);
+                    }
+                })
+                .catch(err => {
+                    console.error(`[Causation] Error updating ${settingName}:`, err);
+                });
+            }
+
             function updateLinkColor(linkType, color) {
                 const normalizedType = linkType.toLowerCase().trim();
                 linkColors[normalizedType] = color;
@@ -6121,7 +6329,16 @@
                     svg.selectAll('.link').each(function (d) {
                         const link = d3.select(this);
                         const dType = (d.type || d.causation_type || 'unknown').toLowerCase().trim();
-                        if (dType === normalizedType) {
+                        // Also check if it's a neural link
+                        const sourceId = typeof d.source === 'object' ? d.source.id : d.source;
+                        const targetId = typeof d.target === 'object' ? d.target.id : d.target;
+                        const sourceNode = allNodes.find(n => n.id === sourceId);
+                        const targetNode = allNodes.find(n => n.id === targetId);
+                        const isNeuralLink = (sourceNode && sourceNode.component === 'neural') || 
+                                           (targetNode && targetNode.component === 'neural');
+                        if (isNeuralLink && normalizedType === 'neural') {
+                            link.attr('stroke', color);
+                        } else if (dType === normalizedType && !isNeuralLink) {
                             link.attr('stroke', color);
                         }
                     });
@@ -6173,6 +6390,111 @@
                         graphContainer.style.marginLeft = '0';
                         graphContainer.style.flex = '1';
                     }
+                }
+            }
+
+            // Toggle header controls collapse/expand
+            function toggleHeaderControls() {
+                const container = document.getElementById('headerControlsContainer');
+                const collapseBtn = document.getElementById('headerCollapseBtn');
+                
+                if (!container || !collapseBtn) {
+                    console.warn('[Header] Controls container or collapse button not found');
+                    return;
+                }
+
+                const isCollapsed = container.classList.contains('collapsed');
+                
+                if (isCollapsed) {
+                    // Expand the header controls
+                    container.classList.remove('collapsed');
+                    collapseBtn.textContent = '▼ COLLAPSE';
+                    collapseBtn.title = 'Collapse Header Controls';
+                } else {
+                    // Collapse the header controls
+                    container.classList.add('collapsed');
+                    collapseBtn.textContent = '▲ EXPAND';
+                    collapseBtn.title = 'Expand Header Controls';
+                }
+                
+                // Save collapse state to localStorage
+                localStorage.setItem('headerControlsCollapsed', isCollapsed ? 'false' : 'true');
+            }
+
+            // Restore header controls state on page load
+            function restoreHeaderControlsState() {
+                const container = document.getElementById('headerControlsContainer');
+                const collapseBtn = document.getElementById('headerCollapseBtn');
+                
+                if (!container || !collapseBtn) {
+                    return;
+                }
+
+                const savedState = localStorage.getItem('headerControlsCollapsed');
+                if (savedState === 'true') {
+                    container.classList.add('collapsed');
+                    collapseBtn.textContent = '▲ EXPAND';
+                    collapseBtn.title = 'Expand Header Controls';
+                }
+            }
+
+            // Toggle CRA chat panel collapse/expand
+            function toggleCRAChatPanel() {
+                const panel = document.getElementById('craChatPanel');
+                const collapseBtn = document.getElementById('craCollapseBtn');
+                
+                if (!panel || !collapseBtn) {
+                    console.warn('[CRA] Chat panel or collapse button not found');
+                    return;
+                }
+
+                const isCollapsed = panel.classList.contains('collapsed');
+                
+                if (isCollapsed) {
+                    // Expand the panel
+                    panel.classList.remove('collapsed');
+                    collapseBtn.textContent = '▼ COLLAPSE';
+                    collapseBtn.title = 'Collapse Chat Panel';
+                    // Restore scroll position if saved
+                    const savedScroll = localStorage.getItem('craChatScrollPosition');
+                    if (savedScroll) {
+                        const chatMessages = document.getElementById('chatMessages');
+                        if (chatMessages) {
+                            setTimeout(() => {
+                                chatMessages.scrollTop = parseInt(savedScroll, 10);
+                            }, 100);
+                        }
+                    }
+                } else {
+                    // Collapse the panel
+                    // Save scroll position before collapsing
+                    const chatMessages = document.getElementById('chatMessages');
+                    if (chatMessages) {
+                        localStorage.setItem('craChatScrollPosition', chatMessages.scrollTop.toString());
+                    }
+                    panel.classList.add('collapsed');
+                    collapseBtn.textContent = '▲ EXPAND';
+                    collapseBtn.title = 'Expand Chat Panel';
+                }
+                
+                // Save collapse state to localStorage
+                localStorage.setItem('craChatCollapsed', isCollapsed ? 'false' : 'true');
+            }
+
+            // Restore CRA chat panel state on page load
+            function restoreCRAChatPanelState() {
+                const panel = document.getElementById('craChatPanel');
+                const collapseBtn = document.getElementById('craCollapseBtn');
+                
+                if (!panel || !collapseBtn) {
+                    return;
+                }
+
+                const savedState = localStorage.getItem('craChatCollapsed');
+                if (savedState === 'true') {
+                    panel.classList.add('collapsed');
+                    collapseBtn.textContent = '▲ EXPAND';
+                    collapseBtn.title = 'Expand Chat Panel';
                 }
             }
 
@@ -6648,7 +6970,7 @@
                                                    (targetNode && targetNode.component === 'neural');
                                 return isNeuralLink ? 'link neural-link' : 'link';
                             })
-                            .attr('stroke', d => getLinkColor(d.type || d.causation_type || 'unknown'))
+                            .attr('stroke', d => getLinkColor(d.type || d.causation_type || 'unknown', d))
                             .attr('stroke-width', d => {
                                 const baseWidth = 2;
                                 const densityWidth = (d._normalizedDensity || 0) * 10;
@@ -6672,7 +6994,7 @@
                                                    (targetNode && targetNode.component === 'neural');
                                 return isNeuralLink ? 'link neural-link' : 'link';
                             })
-                            .attr('stroke', d => getLinkColor(d.type || d.causation_type || 'unknown'))
+                            .attr('stroke', d => getLinkColor(d.type || d.causation_type || 'unknown', d))
                             .attr('stroke-width', d => {
                                 const baseWidth = 2;
                                 const densityWidth = (d._normalizedDensity || 0) * 10;
@@ -10334,7 +10656,17 @@
 
             // Try immediately, then on DOMContentLoaded
             setupChatListeners();
-            document.addEventListener('DOMContentLoaded', setupChatListeners);
+            document.addEventListener('DOMContentLoaded', function() {
+                setupChatListeners();
+                restoreCRAChatPanelState();
+                restoreHeaderControlsState();
+            });
+            
+            // Also restore state immediately if DOM is already loaded
+            if (document.readyState !== 'loading') {
+                restoreCRAChatPanelState();
+                restoreHeaderControlsState();
+            }
 
             // Snapshot Gallery Modal
             async function openSnapshotGallery() {

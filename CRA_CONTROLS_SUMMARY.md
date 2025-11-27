@@ -91,11 +91,12 @@
 
 ## 🎛️ **Graph Filters** (CRA Can Control)
 
-### Component Filters (5 Checkboxes)
+### Component Filters (6 Checkboxes)
 - ✅ Reality Simulator
 - ✅ Explorer
 - ✅ Djinn Kernel
 - ✅ Breath
+- ✅ 🧠 Neural System ⭐ NEW
 - ✅ System
 
 **CRA Format:** `[[GRAPH_FILTER_UPDATE: {"components": {"explorer": true, "djinn_kernel": false}}]]`
@@ -162,6 +163,23 @@ The CRA can modify `config.json` while the system is running using:
 - `vp_monitoring.component_decomposition_enabled`
 - `vp_monitoring.adaptive_thresholds_enabled`
 
+#### Causation Detection ⭐ NEW
+- `causation_detection.direct_causation_time_window` (0.1-10.0 seconds, default: 1.0)
+- `causation_detection.phase_transition_time_window` (0.5-10.0 seconds, default: 2.0)
+- `causation_detection.recent_events_window` (10-1000 events, default: 100)
+- `causation_detection.correlation_threshold` (0.0-1.0, default: 0.7)
+- `causation_detection.enable_neural_causations` (true/false, default: true) - Master toggle for all neural causations
+- `causation_detection.enable_neural_decision_causations` (true/false, default: true) ⭐ NEW - Neural decision event links
+- `causation_detection.enable_neural_training_causations` (true/false, default: true) ⭐ NEW - Neural training event links
+- `causation_detection.enable_phase_transition_causations` (true/false, default: true)
+- `causation_detection.enable_bidirectional_causations` (true/false, default: true)
+- `causation_detection.thresholds.*` (all threshold values and directions)
+
+**Examples:** 
+- `[[CONFIG_UPDATE: {"reason": "Increase neural causation sensitivity", "patch": [{"op": "replace", "path": "/causation_detection/direct_causation_time_window", "value": 2.0}]}]]`
+- `[[CONFIG_UPDATE: {"reason": "Show only decision links", "patch": [{"op": "replace", "path": "/causation_detection/enable_neural_training_causations", "value": false}]}]]`
+- `[[CONFIG_UPDATE: {"reason": "Show only training links", "patch": [{"op": "replace", "path": "/causation_detection/enable_neural_decision_causations", "value": false}]}]]`
+
 **Rollback:** `[[CONFIG_ROLLBACK: {"steps": 1, "reason": "Undo last change"}]]`
 
 ---
@@ -193,8 +211,8 @@ The CRA can modify `config.json` while the system is running using:
    - Component colors (6 colors)
    - Link colors (5 colors)
 
-2. **Graph Filters** (12 settings)
-   - Component visibility (5)
+2. **Graph Filters** (13 settings)
+   - Component visibility (6) ⭐ Neural System filter added
    - Causation type filters (4)
    - Display toggles (3)
 

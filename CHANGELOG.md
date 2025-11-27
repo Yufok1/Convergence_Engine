@@ -4,7 +4,36 @@
 
 ---
 
-## [Unreleased] - 2025-01-XX
+## [Unreleased] - 2025-01-27
+
+### 🎨 Web UI UX Enhancements - Collapsible Panels (2025-01-27)
+
+#### Added
+- **CRA Chat Panel Collapse/Expand** (`templates/causation_explorer.html`)
+  - Collapse button in CRA chat panel header (▼ COLLAPSE / ▲ EXPAND)
+  - Smooth animations for collapse/expand transitions
+  - State persistence via localStorage (remembers collapsed state across page reloads)
+  - Scroll position preservation when collapsing/expanding
+  - Matches existing UI patterns (similar to filter panel toggle)
+
+- **Header Controls Collapse/Expand** (`templates/causation_explorer.html`)
+  - Collapse button in page header (next to title)
+  - Collapses all header control panels: Search, Mode, Simulation, Snapshot, Replay, Config Actions Log
+  - Smooth animations with opacity and height transitions
+  - State persistence via localStorage
+  - Maximizes graph viewing space when collapsed
+
+#### Technical
+- CSS transitions for smooth collapse/expand animations
+- localStorage integration for state persistence
+- Consistent button styling matching existing UI theme
+- Graceful degradation if localStorage unavailable
+
+#### User Experience
+- More screen space for graph visualization
+- Quick access to collapse/expand controls
+- Persistent preferences across sessions
+- Smooth, professional animations
 
 ### 🎨 Web UI Enhancements & Bug Fixes (2025-01-XX)
 

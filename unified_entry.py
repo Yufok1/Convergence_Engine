@@ -901,10 +901,21 @@ class UnifiedSystem:
         # Initialize Causation Explorer
         try:
             from causation_explorer import CausationExplorer
+            # Load config for causation detection
+            config_path = Path('config.json')
+            causation_config = {}
+            if config_path.exists():
+                try:
+                    with open(config_path, 'r') as f:
+                        full_config = json.load(f)
+                        causation_config = full_config
+                except Exception:
+                    pass
             self.causation_explorer = CausationExplorer(
                 state_logger=self.logger,
                 log_dir=self.logger.log_dir,
-                utm_kernel=self.utm_kernel
+                utm_kernel=self.utm_kernel,
+                config=causation_config
             )
             # Connect StateLogger to CausationExplorer
             self.logger.causation_explorer = self.causation_explorer

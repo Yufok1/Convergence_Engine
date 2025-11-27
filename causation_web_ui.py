@@ -126,6 +126,93 @@ CONFIG_GUARDRAILS = {
         'max': 0.01,
         'type': float,
         'label': 'lattice.prune_threshold'
+    },
+    # Causation Detection Settings ⭐ NEW
+    '/causation_detection/direct_causation_time_window': {
+        'min': 0.1,
+        'max': 10.0,
+        'type': float,
+        'label': 'causation_detection.direct_causation_time_window'
+    },
+    '/causation_detection/phase_transition_time_window': {
+        'min': 0.5,
+        'max': 10.0,
+        'type': float,
+        'label': 'causation_detection.phase_transition_time_window'
+    },
+    '/causation_detection/recent_events_window': {
+        'min': 10,
+        'max': 1000,
+        'type': int,
+        'label': 'causation_detection.recent_events_window'
+    },
+    '/causation_detection/correlation_threshold': {
+        'min': 0.0,
+        'max': 1.0,
+        'type': float,
+        'label': 'causation_detection.correlation_threshold'
+    },
+    '/causation_detection/enable_neural_causations': {
+        'type': bool,
+        'label': 'causation_detection.enable_neural_causations'
+    },
+    '/causation_detection/enable_neural_decision_causations': {
+        'type': bool,
+        'label': 'causation_detection.enable_neural_decision_causations'
+    },
+    '/causation_detection/enable_neural_training_causations': {
+        'type': bool,
+        'label': 'causation_detection.enable_neural_training_causations'
+    },
+    '/causation_detection/enable_phase_transition_causations': {
+        'type': bool,
+        'label': 'causation_detection.enable_phase_transition_causations'
+    },
+    '/causation_detection/enable_bidirectional_causations': {
+        'type': bool,
+        'label': 'causation_detection.enable_bidirectional_causations'
+    },
+    '/causation_detection/thresholds/modularity/collapse': {
+        'min': 0.0,
+        'max': 1.0,
+        'type': float,
+        'label': 'causation_detection.thresholds.modularity.collapse'
+    },
+    '/causation_detection/thresholds/organism_count/collapse': {
+        'min': 100,
+        'max': 1000,
+        'type': int,
+        'label': 'causation_detection.thresholds.organism_count.collapse'
+    },
+    '/causation_detection/thresholds/violation_pressure/vp0': {
+        'min': 0.0,
+        'max': 1.0,
+        'type': float,
+        'label': 'causation_detection.thresholds.violation_pressure.vp0'
+    },
+    '/causation_detection/thresholds/violation_pressure/vp1': {
+        'min': 0.0,
+        'max': 1.0,
+        'type': float,
+        'label': 'causation_detection.thresholds.violation_pressure.vp1'
+    },
+    '/causation_detection/thresholds/violation_pressure/vp2': {
+        'min': 0.0,
+        'max': 1.0,
+        'type': float,
+        'label': 'causation_detection.thresholds.violation_pressure.vp2'
+    },
+    '/causation_detection/thresholds/violation_pressure/vp3': {
+        'min': 0.0,
+        'max': 1.0,
+        'type': float,
+        'label': 'causation_detection.thresholds.violation_pressure.vp3'
+    },
+    '/causation_detection/thresholds/vp_calculations/transition': {
+        'min': 10,
+        'max': 200,
+        'type': int,
+        'label': 'causation_detection.thresholds.vp_calculations.transition'
     }
 }
 
@@ -1975,6 +2062,39 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "     * Epsilon decay (exploration → exploitation transition)\n"
         prompt += "     * Organism decision patterns (check neural_decision events)\n"
         prompt += "     * Fitness improvements (should correlate with lower loss)\n\n"
+        
+        prompt += "#### Causation Detection ⭐ NEW\n"
+        prompt += "   - **Causation Detection Parameters** (control how causation links are detected and created):\n"
+        prompt += "     * **Time Windows** (control how far apart events can be to still be linked):\n"
+        prompt += "       - `/causation_detection/direct_causation_time_window` (0.1-10.0 seconds, default: 1.0) - Maximum time between events for direct causation\n"
+        prompt += "       - `/causation_detection/phase_transition_time_window` (0.5-10.0 seconds, default: 2.0) - Maximum time for phase transition links\n"
+        prompt += "     * **Detection Scope** (control which events are checked):\n"
+        prompt += "       - `/causation_detection/recent_events_window` (10-1000 events, default: 100) - How many recent events to check for causation\n"
+        prompt += "     * **Sensitivity** (control how strict causation detection is):\n"
+        prompt += "       - `/causation_detection/correlation_threshold` (0.0-1.0, default: 0.7) - Minimum correlation strength to create link\n"
+        prompt += "     * **Feature Toggles** (enable/disable specific causation types):\n"
+        prompt += "       - `/causation_detection/enable_neural_causations` (true/false, default: true) - Master toggle for all neural event causation links\n"
+        prompt += "       - `/causation_detection/enable_neural_decision_causations` (true/false, default: true) - Enable neural decision event links (thought → action)\n"
+        prompt += "       - `/causation_detection/enable_neural_training_causations` (true/false, default: true) - Enable neural training event links (learning → improvement)\n"
+        prompt += "       - `/causation_detection/enable_phase_transition_causations` (true/false, default: true) - Enable phase transition links\n"
+        prompt += "       - `/causation_detection/enable_bidirectional_causations` (true/false, default: true) - Enable reverse-direction causation links\n"
+        prompt += "     * **Thresholds** (control when threshold crossings trigger causation):\n"
+        prompt += "       - `/causation_detection/thresholds/modularity/collapse` (0.0-1.0, default: 0.3) - Modularity collapse threshold\n"
+        prompt += "       - `/causation_detection/thresholds/organism_count/collapse` (100-1000, default: 500) - Organism count collapse threshold\n"
+        prompt += "       - `/causation_detection/thresholds/violation_pressure/vp0` (0.0-1.0, default: 0.25) - VP0 threshold\n"
+        prompt += "       - `/causation_detection/thresholds/violation_pressure/vp1` (0.0-1.0, default: 0.50) - VP1 threshold\n"
+        prompt += "       - `/causation_detection/thresholds/violation_pressure/vp2` (0.0-1.0, default: 0.75) - VP2 threshold\n"
+        prompt += "       - `/causation_detection/thresholds/violation_pressure/vp3` (0.0-1.0, default: 0.99) - VP3 threshold\n"
+        prompt += "       - `/causation_detection/thresholds/vp_calculations/transition` (10-200, default: 50) - VP calculations for phase transition\n"
+        prompt += "   - **Example Causation Detection Config Updates**:\n"
+        prompt += "     * Increase neural causation sensitivity: [[CONFIG_UPDATE: {\"reason\": \"More neural links\", \"correlation_id\": \"neural-links\", \"patch\": [{\"op\": \"replace\", \"path\": \"/causation_detection/direct_causation_time_window\", \"value\": 2.0}]}]]\n"
+        prompt += "     * Disable bidirectional causations: [[CONFIG_UPDATE: {\"reason\": \"Simplify graph\", \"correlation_id\": \"simplify\", \"patch\": [{\"op\": \"replace\", \"path\": \"/causation_detection/enable_bidirectional_causations\", \"value\": false}]}]]\n"
+        prompt += "     * Adjust correlation threshold: [[CONFIG_UPDATE: {\"reason\": \"Stricter correlation\", \"correlation_id\": \"strict\", \"patch\": [{\"op\": \"replace\", \"path\": \"/causation_detection/correlation_threshold\", \"value\": 0.9}]}]]\n"
+        prompt += "   - **Causation Detection Monitoring**: After causation config changes, monitor:\n"
+        prompt += "     * Number of causation links in graph (should change based on settings)\n"
+        prompt += "     * Link types distribution (threshold, correlation, direct, temporal)\n"
+        prompt += "     * Neural link visibility (if neural causations enabled)\n"
+        prompt += "     * Graph connectivity (more links = more connected graph)\n\n"
         
         prompt += "## AVAILABLE DIAGNOSTIC ENDPOINTS (For Deep-Dive Analysis):\n\n"
         prompt += "You have access to specialized diagnostic endpoints for detailed investigation:\n\n"
@@ -7323,6 +7443,7 @@ def cra_set_graph_filters():
                 'djinn_kernel': components.get('djinn_kernel', True),
                 'utm_kernel': components.get('utm_kernel', components.get('djinn_kernel', True)),
                 'breath': components.get('breath', True),
+                'neural': components.get('neural', True),
                 'system': components.get('system', True)
             },
             'causation_types': {

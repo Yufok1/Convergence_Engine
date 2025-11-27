@@ -60,10 +60,14 @@ class CausationExplorer:
     Now integrates with Akashic Ledger for tape-based causation tracking.
     """
     
-    def __init__(self, state_logger=None, log_dir: Path = None, utm_kernel=None):
+    def __init__(self, state_logger=None, log_dir: Path = None, utm_kernel=None, config: Optional[Dict[str, Any]] = None):
         self.logger = state_logger
         self.log_dir = log_dir or (Path(__file__).parent / 'data' / 'logs')
         self.utm_kernel = utm_kernel  # UTM Kernel for Akashic Ledger access
+        
+        # Load configuration (with defaults)
+        self.config = config or {}
+        causation_config = self.config.get('causation_detection', {})
         
         # Causation graph (NetworkX directed graph)
         self.causation_graph = nx.DiGraph()
@@ -76,14 +80,34 @@ class CausationExplorer:
         # Metric tracking (for correlation detection)
         self.metric_history: Dict[str, deque] = defaultdict(lambda: deque(maxlen=1000))
         
-        # Threshold definitions
-        self.thresholds = {
+        # Threshold definitions (configurable)
+        default_thresholds = {
             'modularity': {'collapse': 0.3, 'direction': 'below'},
             'organism_count': {'collapse': 500, 'direction': 'above'},
             'clustering_coefficient': {'collapse': 0.5, 'direction': 'above'},
             'violation_pressure': {'vp0': 0.25, 'vp1': 0.50, 'vp2': 0.75, 'vp3': 0.99},
             'vp_calculations': {'transition': 50, 'direction': 'above'},
         }
+        self.thresholds = causation_config.get('thresholds', default_thresholds)
+        # Merge any custom thresholds with defaults
+        if 'thresholds' in causation_config:
+            for metric, thresholds in causation_config['thresholds'].items():
+                if metric in default_thresholds:
+                    default_thresholds[metric].update(thresholds)
+                else:
+                    default_thresholds[metric] = thresholds
+            self.thresholds = default_thresholds
+        
+        # Causation detection parameters (configurable)
+        self.direct_causation_time_window = causation_config.get('direct_causation_time_window', 1.0)  # seconds
+        self.phase_transition_time_window = causation_config.get('phase_transition_time_window', 2.0)  # seconds
+        self.recent_events_window = causation_config.get('recent_events_window', 100)  # number of events
+        self.correlation_threshold = causation_config.get('correlation_threshold', 0.7)  # 0.0-1.0
+        self.enable_neural_causations = causation_config.get('enable_neural_causations', True)  # Master toggle
+        self.enable_neural_decision_causations = causation_config.get('enable_neural_decision_causations', True)
+        self.enable_neural_training_causations = causation_config.get('enable_neural_training_causations', True)
+        self.enable_phase_transition_causations = causation_config.get('enable_phase_transition_causations', True)
+        self.enable_bidirectional_causations = causation_config.get('enable_bidirectional_causations', True)
         
         # Phase 2: Real-time event tracking state
         self._last_explorer_phase = None
@@ -428,11 +452,15 @@ class CausationExplorer:
         except Exception as e:
             pass  # Skip malformed lines
     
-    def add_event(self, event: Event):
+    def add_event(self, event: Event, is_historical: bool = False):
         """
         Add an event and detect causations
         
         Phase 2: Thread-safe for real-time event feeding from unified_entry.py
+        
+        Args:
+            event: Event to add
+            is_historical: If True, event is from historical logs (for optimization)
         """
         with self.graph_lock:
             self.events[event.event_id] = event
@@ -590,7 +618,8 @@ class CausationExplorer:
             # Calculate change percentage
             if prev_val != 0:
                 change_pct = abs((new_val - prev_val) / prev_val)
-                if change_pct > 0.1:  # 10% change
+                min_change = (1.0 - self.correlation_threshold)  # Use configurable threshold
+                if change_pct > min_change:
                     significant_changes.append((metric, change_pct))
         
         if len(significant_changes) >= 2:
@@ -611,14 +640,128 @@ class CausationExplorer:
         """Check for direct causation relationships"""
         # Known direct causations
         direct_causations = {
-            ('breath', 'reality_sim'): 'Breath cycle drives network update',
-            ('breath', 'djinn_kernel'): 'Breath cycle drives VP calculation',
+            # Bidirectional system causations
             ('reality_sim', 'djinn_kernel'): 'Network metrics feed into VP calculation',
+            ('djinn_kernel', 'reality_sim'): 'VP changes affect network behavior',
             ('explorer', 'reality_sim'): 'Explorer phase affects network behavior',
+            ('reality_sim', 'explorer'): 'Network state influences Explorer phase',
+            ('explorer', 'djinn_kernel'): 'Explorer state influences VP calculation',
+            ('djinn_kernel', 'explorer'): 'VP changes influence Explorer phase',
+            # Neural causations
+            ('neural', 'reality_sim'): 'Neural decision affects network state',
+            ('reality_sim', 'neural'): 'Network state influences neural decisions',
+            ('neural', 'neural'): 'Neural training influences future decisions',
+            ('neural', 'explorer'): 'Neural decisions influence Explorer state',
+            ('explorer', 'neural'): 'Explorer phase affects neural behavior',
         }
         
+        # Special handling for phase transitions - they should link to what caused them
+        if self.enable_phase_transition_causations and new_event.event_type == 'phase_transition':
+            # Phase transitions are caused by threshold crossings or state changes
+            if prev_event.component == 'explorer' and 'vp_calculations' in prev_event.data:
+                return CausationLink(
+                    from_event=prev_event.event_id,
+                    to_event=new_event.event_id,
+                    causation_type='direct',
+                    strength=0.9,
+                    explanation=f'VP calculations triggered phase transition ({new_event.data.get("from_phase", "?")} → {new_event.data.get("to_phase", "?")})',
+                    metrics_involved=['vp_calculations', 'phase']
+                )
+            # Also link phase transitions to what they affect
+            if time_diff < self.phase_transition_time_window:  # Configurable window for phase effects
+                return CausationLink(
+                    from_event=prev_event.event_id,
+                    to_event=new_event.event_id,
+                    causation_type='direct',
+                    strength=0.85,
+                    explanation=f'State change triggered phase transition ({new_event.data.get("from_phase", "?")} → {new_event.data.get("to_phase", "?")})',
+                    metrics_involved=list(set(prev_event.data.keys()) | set(new_event.data.keys()))
+                )
+        
+        # Special handling for breath-driven events (breath_state in explorer data)
+        if prev_event.component == 'explorer' and 'breath_cycle' in prev_event.data:
+            if new_event.component == 'reality_sim' and time_diff < self.direct_causation_time_window:
+                return CausationLink(
+                    from_event=prev_event.event_id,
+                    to_event=new_event.event_id,
+                    causation_type='direct',
+                    strength=0.8,
+                    explanation='Breath cycle drives network update',
+                    metrics_involved=list(set(prev_event.data.keys()) | set(new_event.data.keys()))
+                )
+            if new_event.component == 'djinn_kernel' and time_diff < self.direct_causation_time_window:
+                return CausationLink(
+                    from_event=prev_event.event_id,
+                    to_event=new_event.event_id,
+                    causation_type='direct',
+                    strength=0.8,
+                    explanation='Breath cycle drives VP calculation',
+                    metrics_involved=list(set(prev_event.data.keys()) | set(new_event.data.keys()))
+                )
+        
         key = (prev_event.component, new_event.component)
-        if key in direct_causations and time_diff < 1.0:  # Within 1 second
+        if key in direct_causations and time_diff < self.direct_causation_time_window:
+            # Check if neural causations are enabled
+            if not self.enable_neural_causations and (prev_event.component == 'neural' or new_event.component == 'neural'):
+                return None
+            
+            # Check if bidirectional causations are enabled
+            if not self.enable_bidirectional_causations:
+                # Only allow forward causations (reality_sim -> djinn_kernel, not reverse)
+                bidirectional_pairs = [
+                    ('djinn_kernel', 'reality_sim'),
+                    ('reality_sim', 'explorer'),
+                    ('djinn_kernel', 'explorer'),
+                ]
+                if key in bidirectional_pairs:
+                    return None
+            
+            # Special handling for neural events
+            if prev_event.component == 'neural' or new_event.component == 'neural':
+                # Check master toggle first
+                if not self.enable_neural_causations:
+                    return None
+                
+                # Check specific neural event type toggles
+                # If either event is a decision, decision causations must be enabled
+                # If either event is training, training causations must be enabled
+                # If both types are involved, both must be enabled
+                prev_is_decision = prev_event.event_type == 'neural_decision'
+                prev_is_training = prev_event.event_type == 'neural_training'
+                new_is_decision = new_event.event_type == 'neural_decision'
+                new_is_training = new_event.event_type == 'neural_training'
+                
+                has_decision = prev_is_decision or new_is_decision
+                has_training = prev_is_training or new_is_training
+                
+                # Require appropriate toggle for each event type involved
+                if has_decision and not self.enable_neural_decision_causations:
+                    return None
+                if has_training and not self.enable_neural_training_causations:
+                    return None
+                
+                # Neural links get slightly higher strength and specific explanation
+                explanation = direct_causations[key]
+                if prev_event.event_type == 'neural_decision':
+                    action = prev_event.data.get('action', 'unknown')
+                    explanation = f'Neural decision ({action}) affects network'
+                elif new_event.event_type == 'neural_decision':
+                    action = new_event.data.get('action', 'unknown')
+                    explanation = f'Network state triggers neural decision ({action})'
+                elif prev_event.event_type == 'neural_training':
+                    explanation = 'Neural training improves future decisions'
+                elif new_event.event_type == 'neural_training':
+                    explanation = 'Network state triggers neural training'
+                
+                return CausationLink(
+                    from_event=prev_event.event_id,
+                    to_event=new_event.event_id,
+                    causation_type='direct',
+                    strength=0.85,  # Slightly higher strength for neural links
+                    explanation=explanation,
+                    metrics_involved=list(set(prev_event.data.keys()) | set(new_event.data.keys()))
+                )
+            
             return CausationLink(
                 from_event=prev_event.event_id,
                 to_event=new_event.event_id,
