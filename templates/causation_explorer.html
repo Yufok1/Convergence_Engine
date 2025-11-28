@@ -36,6 +36,75 @@
             stroke-dasharray: 5, 5;
         }
         
+        /* 🔬 ML/Scikit-learn node pulsing animation - distinct from neural */
+        @keyframes mlPulse {
+            0%, 100% { 
+                opacity: 0.85;
+                transform: scale(1);
+                filter: brightness(1);
+            }
+            50% { 
+                opacity: 1;
+                transform: scale(1.15);
+                filter: brightness(1.3);
+            }
+        }
+        
+        .ml-node {
+            animation: mlPulse 1.5s ease-in-out infinite;
+        }
+        
+        /* 🔬 ML link animation - data flow style */
+        @keyframes mlLinkFlow {
+            0% { 
+                stroke-dashoffset: 20;
+                stroke-opacity: 0.5;
+            }
+            100% { 
+                stroke-dashoffset: 0;
+                stroke-opacity: 1.0;
+            }
+        }
+        
+        .ml-link {
+            animation: mlLinkFlow 1s linear infinite;
+            stroke-dasharray: 10, 5;
+        }
+        
+        /* Phenotype emergence - expanding glow */
+        @keyframes phenotypeEmerge {
+            0%, 100% { 
+                box-shadow: 0 0 5px #FF00FF;
+                transform: scale(1);
+            }
+            50% { 
+                box-shadow: 0 0 20px #FF00FF, 0 0 40px #FF00FF;
+                transform: scale(1.2);
+            }
+        }
+        
+        .phenotype-node {
+            animation: phenotypeEmerge 2s ease-in-out infinite;
+        }
+        
+        /* Anomaly spike - warning flash */
+        @keyframes anomalyFlash {
+            0%, 100% { 
+                opacity: 1;
+            }
+            25%, 75% { 
+                opacity: 0.5;
+            }
+            50% { 
+                opacity: 1;
+                filter: brightness(1.5);
+            }
+        }
+        
+        .anomaly-node {
+            animation: anomalyFlash 0.8s ease-in-out infinite;
+        }
+        
         body {
             font-family: 'Courier New', monospace;
             background: #000;
@@ -1262,6 +1331,10 @@
                             <span>🧠 Neural System</span></label>
                     </div>
                     <div class="filter-item">
+                        <label><input type="checkbox" id="filter-ml_analysis" checked onchange="applyFilters()">
+                            <span>🔬 ML Analysis (Scikit)</span></label>
+                    </div>
+                    <div class="filter-item">
                         <label><input type="checkbox" id="filter-system" checked onchange="applyFilters()">
                             <span>System</span></label>
                     </div>
@@ -1358,6 +1431,16 @@
                                 <span style="min-width: 120px;">🧠 Neural System:</span>
                                 <input type="color" id="color-neural" value="#00FFFF"
                                     onchange="updateComponentColor('neural', this.value)"
+                                    style="width: 60px; height: 25px; cursor: pointer;">
+                            </label>
+                        </div>
+
+                        <div class="filter-item" style="margin-bottom: 8px;">
+                            <label
+                                style="display: flex; align-items: center; gap: 8px; color: #0ff; font-size: 0.85em;">
+                                <span style="min-width: 120px;">🔬 ML Analysis:</span>
+                                <input type="color" id="color-ml_analysis" value="#FF00FF"
+                                    onchange="updateComponentColor('ml_analysis', this.value)"
                                     style="width: 60px; height: 25px; cursor: pointer;">
                             </label>
                         </div>
@@ -3484,6 +3567,7 @@
                 'utm_kernel': '#FF8800',       // Orange
                 'breath': '#FF00FF',           // Pure Magenta
                 'neural': '#00FFFF',           // 🧠 Electric Cyan (Neural System)
+                'ml_analysis': '#FF00FF',      // 🔬 Magenta/Purple (Scikit-learn ML)
                 'system': '#FFFF00'            // Pure Yellow
             };
 
@@ -3494,6 +3578,7 @@
                 'direct': '#00FF00',           // Pure Green
                 'temporal': '#FFFF00',         // Pure Yellow
                 'neural': '#00FFFF',            // 🧠 Electric Cyan (Neural Links)
+                'ml': '#FF00FF',                // 🔬 Magenta (ML Analysis Links)
                 'unknown': '#FF8800'           // Bright Orange
             };
 
@@ -3948,6 +4033,7 @@
                 filters.components.utm_kernel = document.getElementById('filter-djinn_kernel').checked;
                 filters.components.breath = document.getElementById('filter-breath').checked;
                 filters.components.neural = document.getElementById('filter-neural').checked;
+                filters.components.ml_analysis = document.getElementById('filter-ml_analysis').checked;
                 filters.components.system = document.getElementById('filter-system').checked;
 
                 filters.causationTypes.threshold = document.getElementById('filter-threshold').checked;
@@ -4357,6 +4443,7 @@
                     'utm_kernel': '#FF8800',
                     'breath': '#FF00FF',
                     'neural': '#00FFFF',
+                    'ml_analysis': '#FF00FF',
                     'system': '#FFFF00'
                 };
 
@@ -4392,6 +4479,7 @@
                     'djinn_kernel': 'color-djinn_kernel',
                     'breath': 'color-breath',
                     'neural': 'color-neural',
+                    'ml_analysis': 'color-ml_analysis',
                     'system': 'color-system'
                 };
                 Object.keys(componentColorMap).forEach(comp => {
@@ -4408,7 +4496,8 @@
                     'correlation': 'color-link-correlation',
                     'direct': 'color-link-direct',
                     'temporal': 'color-link-temporal',
-                    'neural': 'color-link-neural'
+                    'neural': 'color-link-neural',
+                    'ml': 'color-link-ml'
                 };
                 Object.keys(linkColorMap).forEach(linkType => {
                     const picker = document.getElementById(linkColorMap[linkType]);
@@ -4566,6 +4655,7 @@
                             'utm_kernel': 'filter-djinn_kernel',
                             'breath': 'filter-breath',
                             'neural': 'filter-neural',
+                            'ml_analysis': 'filter-ml_analysis',
                             'system': 'filter-system'
                         };
 
@@ -5119,6 +5209,7 @@
                     { name: 'Djinn Kernel', color: componentColors['djinn_kernel'] },
                     { name: 'Breath Engine', color: componentColors['breath'] },
                     { name: '🧠 Neural System', color: componentColors['neural'] },
+                    { name: '🔬 ML Analysis', color: componentColors['ml_analysis'] },
                     { name: 'System', color: componentColors['system'] }
                 ];
 
@@ -5129,6 +5220,7 @@
                     { name: 'Direct', color: linkColors['direct'] || '#00FF00' },
                     { name: 'Temporal', color: linkColors['temporal'] || '#FFFF00' },
                     { name: '🧠 Neural', color: linkColors['neural'] || '#00FFFF' },
+                    { name: '🔬 ML', color: linkColors['ml'] || '#FF00FF' },
                     { name: 'Unknown', color: linkColors['unknown'] || '#FF8800' }
                 ];
 
@@ -5251,7 +5343,7 @@
                     console.log(`[RenderGraph] Limiting initial render to ${MAX_INITIAL_NODES} nodes, ${MAX_INITIAL_LINKS} links`);
                     
                     // Sort nodes by importance (priority components first, then by connection count)
-                    const priorityComponents = new Set(['neural', 'reality_sim', 'explorer', 'djinn_kernel', 'breath']);
+                    const priorityComponents = new Set(['neural', 'ml_analysis', 'reality_sim', 'explorer', 'djinn_kernel', 'breath']);
                     
                     // Quick node connection count
                     const nodeConnCount = new Map();
@@ -5346,14 +5438,18 @@
                     .data(renderLinks, d => `${d.source}-${d.target}`)
                     .enter().append('line')
                     .attr('class', d => {
-                        // Check if link connects to/from neural nodes (using Map for O(1) lookup)
+                        // Check if link connects to/from neural or ML nodes (using Map for O(1) lookup)
                         const sourceId = typeof d.source === 'object' ? d.source.id : d.source;
                         const targetId = typeof d.target === 'object' ? d.target.id : d.target;
                         const sourceNode = nodeMapForLinks.get(sourceId);
                         const targetNode = nodeMapForLinks.get(targetId);
                         const isNeuralLink = (sourceNode && sourceNode.component === 'neural') || 
                                            (targetNode && targetNode.component === 'neural');
-                        return isNeuralLink ? 'link neural-link' : 'link';
+                        const isMLLink = (sourceNode && sourceNode.component === 'ml_analysis') || 
+                                        (targetNode && targetNode.component === 'ml_analysis');
+                        if (isMLLink) return 'link ml-link';
+                        if (isNeuralLink) return 'link neural-link';
+                        return 'link';
                     })
                     .attr('data-link-id', (d, i) => 'link-' + i)
                     .attr('stroke', d => getLinkColor(d.type || 'unknown', d))
@@ -5445,12 +5541,17 @@
 
                 // Main node shape with depth-based styling
                 // Neural events get special shapes: diamond for decisions, square for training
+                // ML events get special shapes: star for phenotype emergence, triangle for anomaly, hexagon for cluster collapse
                 node.each(function(d) {
                     const eventType = (d.type || '').toLowerCase();
                     const comp = d.component || 'unknown';
                     const isNeural = comp === 'neural';
+                    const isML = comp === 'ml_analysis';
                     const isNeuralDecision = isNeural && eventType === 'neural_decision';
                     const isNeuralTraining = isNeural && eventType === 'neural_training';
+                    const isPhenotypeEmergence = isML && eventType === 'phenotype_emergence';
+                    const isClusterCollapse = isML && eventType === 'cluster_collapse';
+                    const isAnomalySpike = isML && eventType === 'anomaly_spike';
                     
                     const baseRadius = vizSettings.nodeBaseSize + (d.type ? 2 : 0);
                     const depthScore = d._depthScore || 0.5;
@@ -5500,6 +5601,54 @@
                             .attr('class', 'node-circle neural-node')
                             .attr('d', square)
                             .attr('fill', '#BF00FF') // Neon Purple
+                            .attr('fill-opacity', fillOpacity)
+                            .attr('stroke', strokeColor)
+                            .attr('stroke-width', vizSettings.nodeStrokeWidth)
+                            .attr('stroke-opacity', vizSettings.nodeStrokeOpacity)
+                            .style('filter', filterValue);
+                    } else if (isPhenotypeEmergence) {
+                        // Star shape for phenotype emergence (Bright Magenta) - new cluster discovered!
+                        const star = d3.symbol().type(d3.symbolStar).size(radius * radius * 5);
+                        shapeElement = nodeElement.append('path')
+                            .attr('class', 'node-circle ml-node phenotype-node')
+                            .attr('d', star)
+                            .attr('fill', '#FF00FF') // Bright Magenta
+                            .attr('fill-opacity', fillOpacity)
+                            .attr('stroke', '#FFFFFF')
+                            .attr('stroke-width', vizSettings.nodeStrokeWidth + 1)
+                            .attr('stroke-opacity', vizSettings.nodeStrokeOpacity)
+                            .style('filter', 'url(#nodeGlow)');
+                    } else if (isClusterCollapse) {
+                        // Cross/X shape for cluster collapse (Dark Red) - cluster died
+                        const cross = d3.symbol().type(d3.symbolCross).size(radius * radius * 4);
+                        shapeElement = nodeElement.append('path')
+                            .attr('class', 'node-circle ml-node')
+                            .attr('d', cross)
+                            .attr('fill', '#FF3333') // Red warning
+                            .attr('fill-opacity', fillOpacity)
+                            .attr('stroke', '#FFFFFF')
+                            .attr('stroke-width', vizSettings.nodeStrokeWidth)
+                            .attr('stroke-opacity', vizSettings.nodeStrokeOpacity)
+                            .style('filter', filterValue);
+                    } else if (isAnomalySpike) {
+                        // Triangle shape for anomaly spike (Orange Warning) - outliers detected!
+                        const triangle = d3.symbol().type(d3.symbolTriangle).size(radius * radius * 4);
+                        shapeElement = nodeElement.append('path')
+                            .attr('class', 'node-circle ml-node anomaly-node')
+                            .attr('d', triangle)
+                            .attr('fill', '#FF8800') // Orange warning
+                            .attr('fill-opacity', fillOpacity)
+                            .attr('stroke', '#FFFF00')
+                            .attr('stroke-width', vizSettings.nodeStrokeWidth + 1)
+                            .attr('stroke-opacity', vizSettings.nodeStrokeOpacity)
+                            .style('filter', 'url(#nodeGlow)');
+                    } else if (isML) {
+                        // Hexagon-ish (wye symbol) for generic ML events
+                        const wye = d3.symbol().type(d3.symbolWye).size(radius * radius * 4);
+                        shapeElement = nodeElement.append('path')
+                            .attr('class', 'node-circle ml-node')
+                            .attr('d', wye)
+                            .attr('fill', '#FF00FF') // Magenta
                             .attr('fill-opacity', fillOpacity)
                             .attr('stroke', strokeColor)
                             .attr('stroke-width', vizSettings.nodeStrokeWidth)
@@ -9304,11 +9453,13 @@
                                     jsonStr = jsonStr.replace(/"componentColordjinnkernel"/g, '"componentColor_djinn_kernel"');
                                     jsonStr = jsonStr.replace(/"componentColorbreath"/g, '"componentColor_breath"');
                                     jsonStr = jsonStr.replace(/"componentColorneural"/g, '"componentColor_neural"');
+                                    jsonStr = jsonStr.replace(/"componentColormlanalysis"/g, '"componentColor_ml_analysis"');
                                     jsonStr = jsonStr.replace(/"componentColorsystem"/g, '"componentColor_system"');
                                     jsonStr = jsonStr.replace(/"linkColorthreshold"/g, '"linkColor_threshold"');
                                     jsonStr = jsonStr.replace(/"linkColorcorrelation"/g, '"linkColor_correlation"');
                                     jsonStr = jsonStr.replace(/"linkColordirect"/g, '"linkColor_direct"');
                                     jsonStr = jsonStr.replace(/"linkColortemporal"/g, '"linkColor_temporal"');
+                                    jsonStr = jsonStr.replace(/"linkColorml"/g, '"linkColor_ml"');
                                     jsonStr = jsonStr.replace(/"linkColorunknown"/g, '"linkColor_unknown"');
 
                                     console.log('[CRA] Cleaned JSON string:', jsonStr.substring(0, 500) + (jsonStr.length > 500 ? '...' : ''));

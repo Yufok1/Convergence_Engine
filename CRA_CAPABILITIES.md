@@ -52,7 +52,7 @@ The Convergence Research Assistant (CRA) is an AI-powered research assistant tha
 
 ### Graph Filter Control (Autonomous)
 The CRA can autonomously adjust:
-- **Component Visibility:** Reality Simulator, Explorer, Djinn Kernel, Breath, System
+- **Component Visibility:** Reality Simulator, Explorer, Djinn Kernel, Breath, 🧠 Neural, 🔬 ML Analysis, System
 - **Causation Type Filters:** Threshold, Correlation, Direct, Temporal
 - **Display Toggles:** Node labels, links, temporal paths
 
@@ -116,6 +116,8 @@ The CRA has **COMPLETE AUTONOMOUS control** over ALL visualization settings:
 - `componentColor_explorer` (e.g., "#0000FF")
 - `componentColor_djinn_kernel` (e.g., "#FF8800")
 - `componentColor_breath` (e.g., "#FF00FF")
+- `componentColor_neural` (e.g., "#00FFFF") - 🧠 Neural System nodes
+- `componentColor_ml_analysis` (e.g., "#32CD32") - 🔬 ML Analysis nodes (Lime Green)
 - `componentColor_system` (e.g., "#FFFF00")
 
 #### Link Colors (Hex Colors)
@@ -123,7 +125,15 @@ The CRA has **COMPLETE AUTONOMOUS control** over ALL visualization settings:
 - `linkColor_correlation` (e.g., "#0000FF")
 - `linkColor_direct` (e.g., "#00FF00")
 - `linkColor_temporal` (e.g., "#FFFF00")
+- `linkColor_neural` (e.g., "#00FFFF") - 🧠 Neural system links
+- `linkColor_ml` (e.g., "#FFA500") - 🔬 ML analysis links (Orange)
 - `linkColor_unknown` (e.g., "#FF8800")
+
+#### ML Event Types (Visual Differentiation)
+The ML Analysis component emits specialized events with distinct visual shapes:
+- **phenotype_emergence** → Hexagon shape (cyan/magenta pulse)
+- **cluster_collapse** → Pentagon shape (scale-down animation)
+- **anomaly_spike** → Triangle shape (orange flash animation)
 
 #### Performance
 - `maxVisibleLinks` (1000-50000)
@@ -277,6 +287,58 @@ The Scikit-learn system provides classical machine learning algorithms for popul
 - **Clustering**: Identify behavioral phenotype groups in organism population
 - **Anomaly Detection**: Flag unusual organisms or system states for investigation
 - **Dimensionality Reduction**: Visualize high-dimensional trait/behavior space
+
+---
+
+## 🔬 ML Analysis Visualization System
+
+The ML Analysis component has its own visual representation on the causation graph, distinct from the Neural System (PyTorch). This provides visual differentiation for scikit-learn ML events.
+
+### Component Color & Filter
+- **Default Color**: Lime Green (`#32CD32`)
+- **Filter Checkbox**: 🔬 ML Analysis - toggle visibility in the filters panel
+- **Color Picker**: Available in Settings → Component Colors → ML Analysis
+
+### Link Styling
+- **ML-Connected Links**: Orange (`#FFA500`) with animated dashed stroke
+- **Animation**: `mlLinkFlow` - 3-second dashed line flow effect
+- **Styling**: Dashed stroke (stroke-dasharray: 5,5), 2.5px width
+- Links are colored orange when either source or target node is from `ml_analysis` component
+
+### Node Shapes by Event Type
+The ML system emits specialized events with distinct visual shapes:
+
+| Event Type | Shape | Visual Effect |
+|------------|-------|---------------|
+| `phenotype_emergence` | Hexagon | Cyan/magenta pulse animation |
+| `cluster_collapse` | Pentagon (Star) | Scale-down shrink animation |
+| `anomaly_spike` | Triangle | Orange flash warning animation |
+
+### CSS Animations
+| Animation Name | Duration | Description |
+|----------------|----------|-------------|
+| `mlPulse` | 2s | Subtle pulse for ML nodes (1.0→1.05 scale) |
+| `mlLinkFlow` | 3s | Dashed line flow along ML links |
+| `phenotypeEmergence` | 1s | Scale-up emergence (0.5→1.0) |
+| `clusterCollapse` | 1.5s | Shrink-down collapse (1.0→0.3) |
+| `anomalyDetection` | 1s | Orange border flash warning |
+
+### Legend Entry
+- 🔬 **ML Analysis** (Lime Green) - Displayed in the graph legend
+
+### Visual Commands
+```json
+[[VIZ_SETTINGS_UPDATE: {
+  "componentColor_ml_analysis": "#32CD32",
+  "linkColor_ml": "#FFA500"
+}]]
+```
+
+### Relationship to Neural System
+- **Neural System** (🧠 Cyan): PyTorch DQN organism-level learning
+- **ML Analysis** (🔬 Lime Green): Scikit-learn population-level analysis
+- Both systems have independent visual representations and filters
+- They can be toggled independently to focus on specific subsystem activity
 
 ---
 
