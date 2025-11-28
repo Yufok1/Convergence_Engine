@@ -76,7 +76,6 @@
 - **New Documentation Files**
   - `COMPREHENSIVE_ANALYSIS_REPORT.md` - Complete codebase analysis (13-phase review)
   - `CRA_CONTROLS_SUMMARY.md` - Complete list of all CRA-controllable settings (150+)
-  - `CRA_FULL_SYSTEM_TEST_PROMPT.md` - Ready-to-use test prompt for CRA
 
 - **Updated Documentation**
   - `CRA_CAPABILITIES.md` - Updated guardrail limits for new_edge_rate

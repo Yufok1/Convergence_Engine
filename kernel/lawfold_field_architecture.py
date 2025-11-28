@@ -2748,22 +2748,43 @@ class MetaSovereignReflectionField(LawfoldField):
         return curvature_estimate
     
     def _estimate_prosocial_factor(self, interactions: Optional[Dict[str, Any]]) -> float:
-        if not interactions:
-            if self.prosocial_history:
-                return sum(self.prosocial_history[-10:]) / min(10, len(self.prosocial_history))
+        try:
+            if not interactions:
+                if self.prosocial_history:
+                    # Ensure prosocial_history is a list and get last 10 items
+                    if isinstance(self.prosocial_history, list) and len(self.prosocial_history) > 0:
+                        recent = self.prosocial_history[-10:] if len(self.prosocial_history) >= 10 else self.prosocial_history
+                        return sum(recent) / len(recent) if recent else 0.5
+                return 0.5
+            
+            # Ensure interactions is a dict
+            if not isinstance(interactions, dict):
+                if self.prosocial_history:
+                    recent = self.prosocial_history[-10:] if len(self.prosocial_history) >= 10 else self.prosocial_history
+                    return sum(recent) / len(recent) if recent else 0.5
+                return 0.5
+            
+            love_scores = []
+            caregiving_scores = []
+            for interaction in interactions.values():
+                if isinstance(interaction, dict):
+                    try:
+                        love_scores.append(float(interaction.get("love_score", 0.5)))
+                        caregiving_scores.append(float(interaction.get("caregiving_score", 0.5)))
+                    except (ValueError, TypeError):
+                        continue  # Skip invalid values
+            
+            love_avg = sum(love_scores) / len(love_scores) if love_scores else 0.5
+            care_avg = sum(caregiving_scores) / len(caregiving_scores) if caregiving_scores else 0.5
+            prosocial = (love_avg * 0.6) + (care_avg * 0.4)
+            return max(self.field_parameters["min_prosocial_factor"], min(1.0, prosocial))
+        except Exception as e:
+            # Fallback to history or default
+            print(f"Warning: Error in _estimate_prosocial_factor: {e}")
+            if self.prosocial_history and isinstance(self.prosocial_history, list):
+                recent = self.prosocial_history[-10:] if len(self.prosocial_history) >= 10 else self.prosocial_history
+                return sum(recent) / len(recent) if recent else 0.5
             return 0.5
-        
-        love_scores = []
-        caregiving_scores = []
-        for interaction in interactions.values():
-            if isinstance(interaction, dict):
-                love_scores.append(float(interaction.get("love_score", 0.5)))
-                caregiving_scores.append(float(interaction.get("caregiving_score", 0.5)))
-        
-        love_avg = sum(love_scores) / len(love_scores) if love_scores else 0.5
-        care_avg = sum(caregiving_scores) / len(caregiving_scores) if caregiving_scores else 0.5
-        prosocial = (love_avg * 0.6) + (care_avg * 0.4)
-        return max(self.field_parameters["min_prosocial_factor"], min(1.0, prosocial))
     
     def _calculate_reflection_index(self, avg_vp: float, curvature_index: float,
                                     prosocial_factor: float) -> float:
@@ -2810,9 +2831,25 @@ class MetaSovereignReflectionField(LawfoldField):
             print(f"Meta-Sovereign Reflection ledger write failed: {err}")
     
     def get_reflection_status(self) -> Dict[str, Any]:
+        try:
+            recent_reflection = None
+            if self.reflection_history:
+                try:
+                    recent_reflection = self.reflection_history[-1].to_dict()
+                except Exception as e:
+                    # Handle serialization errors (e.g., slice objects in data)
+                    print(f"Warning: Could not serialize recent reflection: {e}")
+                    recent_reflection = {
+                        "reflection_id": getattr(self.reflection_history[-1], 'reflection_id', 'unknown'),
+                        "error": "Serialization failed"
+                    }
+        except Exception as e:
+            print(f"Warning: Error accessing reflection history: {e}")
+            recent_reflection = None
+        
         return {
             "reflection_count": len(self.reflection_history),
-            "recent_reflection": self.reflection_history[-1].to_dict() if self.reflection_history else None,
+            "recent_reflection": recent_reflection,
             "field_state": self.field_state.value,
             "field_coherence": self.field_coherence
         }

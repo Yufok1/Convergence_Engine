@@ -7,15 +7,15 @@
     "performance_tracking_precision": 0.0001
   },
   "causation_detection": {
-    "correlation_threshold": 0.7,
-    "direct_causation_time_window": 2,
+    "correlation_threshold": 0.5,
+    "direct_causation_time_window": 3,
     "enable_bidirectional_causations": true,
     "enable_neural_causations": true,
     "enable_neural_decision_causations": true,
     "enable_neural_training_causations": true,
     "enable_phase_transition_causations": true,
     "phase_transition_time_window": 2.0,
-    "recent_events_window": 200,
+    "recent_events_window": 300,
     "thresholds": {
       "clustering_coefficient": {
         "collapse": 0.5,
@@ -43,22 +43,22 @@
   },
   "evolution": {
     "adaptation_sensitivity": 0.002,
-    "fitness_precision": 1e-06,
+    "fitness_precision": 1e-07,
     "genotype_length": 48,
-    "max_generations": 1000,
+    "max_generations": 1500,
     "mutation_rate": {
-      "initial": 0.06
+      "initial": 0.04
     },
     "mutation_rate_precision": 0.001,
-    "population_size": 1500
+    "population_size": 2000
   },
   "feedback": {
     "enabled": true,
-    "hysteresis_checks": 12,
-    "interval_frames": 10,
+    "hysteresis_checks": 6,
+    "interval_frames": 5,
     "knobs": {
       "clustering_bias": {
-        "initial": 1.2,
+        "initial": 0.7,
         "max": 1.6,
         "min": 0.3,
         "step": 0.05
@@ -70,25 +70,25 @@
         "step": 0.001
       },
       "new_edge_rate": {
-        "initial": 2,
+        "initial": 3,
         "max": 2.2,
         "min": 0.2,
         "step": 0.1
       },
       "quantum_pruning": {
-        "initial": 0,
+        "initial": 0.8,
         "max": 1.0,
         "min": 0.0,
         "step": 0.05
       }
     },
-    "rate_limit_frames": 60
+    "rate_limit_frames": 30
   },
   "lattice": {
     "entropy_sensitivity": 5e-05,
     "interaction_precision": 0.0001,
     "particles": 2400,
-    "prune_threshold": 0.0001,
+    "prune_threshold": 0,
     "stability_tolerance": 0.0005
   },
   "logging": {
@@ -98,9 +98,9 @@
     "connection_strength_resolution": 5e-06,
     "emergence_sensitivity": 1e-06,
     "max_connections": 18000,
-    "max_organisms": 2500,
+    "max_organisms": 2200,
     "resource_flow_precision": 0.0001,
-    "resource_pool": 200.0,
+    "resource_pool": 400,
     "stability_precision": 1e-07
   },
   "neural": {
@@ -114,7 +114,7 @@
     "device": "cpu",
     "enabled": true,
     "inheritance": {
-      "crossover_rate": 0.7,
+      "crossover_rate": 0.85,
       "enabled": true,
       "mutation_rate": 0.15
     },
@@ -129,22 +129,23 @@
       "use_scripted_inference": true
     },
     "rewards": {
-      "connection_failure": -0.1,
-      "connection_success": 1.2,
-      "fitness_improvement": 0.8,
-      "resource_gain": 0.3,
-      "resource_loss": -0.1,
-      "survival": 0.1
+      "connection_failure": -0.2,
+      "connection_success": 1.5,
+      "fitness_improvement": 2,
+      "resource_gain": 1.5,
+      "resource_loss": -0.3,
+      "survival": 0.8
     },
     "training": {
-      "batch_size": 128,
+      "batch_size": 64,
       "enabled": true,
-      "epsilon_decay": 0.995,
+      "epsilon": 0.8,
+      "epsilon_decay": 0.99,
       "epsilon_end": 0.05,
-      "epsilon_start": 0.8,
+      "epsilon_start": 0.95,
       "gamma": 0.995,
-      "learning_rate": 0.005,
-      "memory_size": 5000,
+      "learning_rate": 0.008,
+      "memory_size": 8000,
       "update_frequency": 1
     }
   },

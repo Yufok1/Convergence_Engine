@@ -55,10 +55,12 @@ graph_cache = {
     'nodes': [],
     'links': [],
     'last_update': 0,
-    'cache_duration': 1.0,  # Cache for 1 second
+    'cache_duration': 5.0,  # Cache for 5 seconds (increased to prevent timeout loops)
     'event_count': 0,
     'link_count': 0,
-    'shared_state_mtime': 0  # Track shared state file modification time
+    'shared_state_mtime': 0,  # Track shared state file modification time
+    'loading': False,  # Track if a load is in progress
+    'load_start_time': 0  # Track when load started
 }
 
 # ============================================================================
@@ -331,6 +333,43 @@ class ConfigManager:
         else:
             raise ValueError(f"Unsupported operation '{op}'")
 
+    def _adjust_to_guardrails(self, path: str, value: Any) -> Tuple[Any, Optional[str]]:
+        """
+        Auto-adjust a value to fit within guardrail limits.
+        
+        Returns: (adjusted_value, adjustment_message)
+        """
+        normalized_path, segments = self._normalize_path(path)
+        
+        # Find matching guardrail rule
+        for guardrail_path, rule in CONFIG_GUARDRAILS.items():
+            if guardrail_path == normalized_path:
+                try:
+                    numeric = rule['type'](value)
+                    min_val = rule.get('min')
+                    max_val = rule.get('max')
+                    original = numeric
+                    adjusted = numeric
+                    message = None
+                    
+                    # Adjust to min if below
+                    if min_val is not None and numeric < min_val:
+                        adjusted = rule['type'](min_val)
+                        message = f"{rule['label']}: {original} adjusted to minimum {min_val}"
+                    
+                    # Adjust to max if above
+                    if max_val is not None and numeric > max_val:
+                        adjusted = rule['type'](max_val)
+                        message = f"{rule['label']}: {original} adjusted to maximum {max_val}"
+                    
+                    return adjusted, message
+                except (ValueError, TypeError):
+                    # Can't convert to numeric, return as-is
+                    return value, None
+        
+        # No guardrail rule found, return as-is
+        return value, None
+
     def _validate_guardrails(self, config: Dict[str, Any]) -> List[str]:
         violations = []
         for path, rule in CONFIG_GUARDRAILS.items():
@@ -405,6 +444,8 @@ class ConfigManager:
             working = self._deepcopy(self._config)
             changes = []
 
+            adjustments = []  # Track auto-adjustments
+            
             for op in patch_ops:
                 operation = op.get('op')
                 path = op.get('path')
@@ -423,6 +464,13 @@ class ConfigManager:
                     self._apply_operation(working, 'remove', segments, None)
                     new_value = None
                 else:
+                    # Auto-adjust value to guardrail limits before applying
+                    # Use normalized_path to ensure proper matching
+                    adjusted_value, adjustment_msg = self._adjust_to_guardrails(normalized_path, value)
+                    if adjustment_msg:
+                        adjustments.append(adjustment_msg)
+                        value = adjusted_value  # Use adjusted value
+                    
                     self._apply_operation(working, operation.lower(), segments, value)
                     try:
                         new_value = self._get_value(working, segments)
@@ -436,9 +484,74 @@ class ConfigManager:
                     'to': new_value
                 })
 
+            # Final validation (should pass after auto-adjustments)
             guardrail_issues = self._validate_guardrails(working)
             if guardrail_issues:
-                raise ValueError(f"Guardrail validation failed: {guardrail_issues}")
+                # If there are still issues after auto-adjustment, try to auto-fix them
+                # This handles cases where the adjustment didn't catch something
+                for issue in guardrail_issues[:]:  # Copy list to modify during iteration
+                    # Parse the issue message to extract path and value
+                    # Format: "label: value > maximum max_val" or "label: value < minimum min_val"
+                    if '> maximum' in issue:
+                        parts = issue.split('> maximum')
+                        if len(parts) == 2:
+                            label_part = parts[0].strip()
+                            max_val = float(parts[1].strip())
+                            # Extract label (everything before the colon)
+                            label = label_part.split(':')[0].strip() if ':' in label_part else label_part
+                            # Find the guardrail rule by label
+                            for guardrail_path, rule in CONFIG_GUARDRAILS.items():
+                                if rule['label'] == label:
+                                    # Get current value and adjust it
+                                    _, segments = self._normalize_path(guardrail_path)
+                                    try:
+                                        current_value = self._get_value(working, segments)
+                                        adjusted_value = rule['type'](max_val)
+                                        self._apply_operation(working, 'replace', segments, adjusted_value)
+                                        adjustments.append(f"{rule['label']}: {current_value} auto-adjusted to maximum {max_val}")
+                                        guardrail_issues.remove(issue)
+                                        # Update the change record
+                                        for change in changes:
+                                            if change['path'] == guardrail_path:
+                                                change['to'] = adjusted_value
+                                                break
+                                    except Exception as e:
+                                        logger.warning(f"Auto-adjustment failed for {guardrail_path}: {e}")
+                                    break
+                    elif '< minimum' in issue:
+                        parts = issue.split('< minimum')
+                        if len(parts) == 2:
+                            label_part = parts[0].strip()
+                            min_val = float(parts[1].strip())
+                            # Extract label (everything before the colon)
+                            label = label_part.split(':')[0].strip() if ':' in label_part else label_part
+                            # Find the guardrail rule by label
+                            for guardrail_path, rule in CONFIG_GUARDRAILS.items():
+                                if rule['label'] == label:
+                                    # Get current value and adjust it
+                                    _, segments = self._normalize_path(guardrail_path)
+                                    try:
+                                        current_value = self._get_value(working, segments)
+                                        adjusted_value = rule['type'](min_val)
+                                        self._apply_operation(working, 'replace', segments, adjusted_value)
+                                        adjustments.append(f"{rule['label']}: {current_value} auto-adjusted to minimum {min_val}")
+                                        guardrail_issues.remove(issue)
+                                        # Update the change record
+                                        for change in changes:
+                                            if change['path'] == guardrail_path:
+                                                change['to'] = adjusted_value
+                                                break
+                                    except Exception as e:
+                                        logger.warning(f"Auto-adjustment failed for {guardrail_path}: {e}")
+                                    break
+                
+                # If there are still issues after auto-fix, they're non-numeric or other errors
+                if guardrail_issues:
+                    raise ValueError(f"Guardrail validation failed (after auto-adjustment): {guardrail_issues}")
+            
+            # Add adjustment messages to reason if any were made
+            if adjustments:
+                reason = f"{reason} [Auto-adjusted: {', '.join(adjustments)}]" if reason else f"Auto-adjusted: {', '.join(adjustments)}"
 
             timestamp = datetime.now().isoformat()
             # Preserve snapshot for rollback
@@ -4238,8 +4351,9 @@ def get_graph():
     Get full causation graph for visualization
     
     🚀 OPTIMIZED (Phase 1):
-    - Graph data caching (1-second cache to avoid repeated processing)
+    - Graph data caching (5-second cache to prevent timeout loops)
     - File modification time tracking (skip unchanged shared state files)
+    - Timeout protection (skip heavy loads if taking too long)
     
     🔍 DATA SOURCES ACCESSED:
     - explorer.events{} - Dictionary of all events loaded from:
@@ -4268,7 +4382,7 @@ def get_graph():
     if explorer is None:
         return jsonify({'nodes': [], 'links': [], 'error': 'Causation Explorer not initialized'}), 200
     try:
-        # 🚀 OPTIMIZATION: Check cache first (1-second cache to reduce file I/O)
+        # 🚀 OPTIMIZATION: Check cache first (5-second cache to reduce file I/O and prevent timeout loops)
         current_time = time.time()
         if (current_time - graph_cache['last_update']) < graph_cache['cache_duration']:
             logger.debug(f"Returning cached graph data (cache age: {current_time - graph_cache['last_update']:.2f}s)")
@@ -4279,6 +4393,24 @@ def get_graph():
                 'event_count': graph_cache['event_count'],
                 'link_count': graph_cache['link_count']
             })
+        
+        # 🚀 TIMEOUT PROTECTION: If a load is in progress and taking too long, return cached data
+        if graph_cache['loading']:
+            load_duration = current_time - graph_cache['load_start_time']
+            if load_duration > 10.0:  # If load has been running >10 seconds, something's wrong
+                logger.warning(f"Previous load still in progress ({load_duration:.1f}s), returning cached data")
+                return jsonify({
+                    'nodes': graph_cache['nodes'],
+                    'links': graph_cache['links'],
+                    'cached': True,
+                    'event_count': graph_cache['event_count'],
+                    'link_count': graph_cache['link_count'],
+                    'warning': 'Load in progress, returning cached data'
+                })
+        
+        # Mark load as starting
+        graph_cache['loading'] = True
+        graph_cache['load_start_time'] = current_time
         
         # Phase 2: Load latest state from shared state file ONLY if simulation is running
         # Check simulation control file to see if simulation is actually running
@@ -4294,6 +4426,7 @@ def get_graph():
 
             # CRITICAL: Only load from shared state if simulation is actually running
             # If stopped, return existing graph data only (no new events from shared state)
+            # 🚀 TIMEOUT PROTECTION: Limit shared state loading time
             if simulation_running:
                 shared_state_path = Path('data/.shared_simulation_state.json')
                 if shared_state_path.exists():
@@ -4307,12 +4440,25 @@ def get_graph():
                         # If file was modified in the last 10 seconds, definitely reload
                         if (current_time_check - file_mtime) < 10:
                             logger.info(f"Shared state file updated ({current_time_check - file_mtime:.1f}s ago), loading...")
-                            explorer._load_from_shared_state(force_reload=True)  # Force reload recent data
-                            graph_cache['shared_state_mtime'] = file_mtime  # Update tracked mtime
+                            # 🚀 TIMEOUT PROTECTION: Try to load, but don't wait forever
+                            try:
+                                # Set a timeout for the load operation
+                                load_start = time.time()
+                                explorer._load_from_shared_state(force_reload=True)  # Force reload recent data
+                                load_duration = time.time() - load_start
+                                if load_duration > 2.0:
+                                    logger.warning(f"Shared state load took {load_duration:.1f}s (slow)")
+                                graph_cache['shared_state_mtime'] = file_mtime  # Update tracked mtime
+                            except Exception as load_error:
+                                logger.warning(f"Shared state load failed (returning cached): {load_error}")
+                                # Continue with cached data
                         else:
-                            # File exists but might be old, still try incremental load
-                            explorer._load_from_shared_state(force_reload=False)
-                            graph_cache['shared_state_mtime'] = file_mtime  # Update tracked mtime
+                            # File exists but might be old, still try incremental load (faster)
+                            try:
+                                explorer._load_from_shared_state(force_reload=False)
+                                graph_cache['shared_state_mtime'] = file_mtime  # Update tracked mtime
+                            except Exception as load_error:
+                                logger.warning(f"Incremental load failed (returning cached): {load_error}")
                     else:
                         logger.debug(f"Shared state file unchanged (mtime: {file_mtime}, last: {graph_cache['shared_state_mtime']}), skipping reload")
                 else:
@@ -4333,9 +4479,14 @@ def get_graph():
         # - Akashic Ledger loaded on startup
         # - Shared state file (just loaded above for live updates)
         # Add nodes (use lock for thread safety)
+        # 🚀 TIMEOUT PROTECTION: Quick snapshot to avoid long lock times
+        snapshot_start = time.time()
         with explorer.graph_lock:
             events_snapshot = dict(explorer.events)  # Create snapshot inside lock
             edges_snapshot = list(explorer.causation_graph.edges(data=True))  # Create snapshot inside lock
+        snapshot_duration = time.time() - snapshot_start
+        if snapshot_duration > 1.0:
+            logger.warning(f"Graph snapshot took {snapshot_duration:.1f}s (large graph)")
         
         # Process snapshots outside lock
         if events_snapshot:
@@ -4417,14 +4568,47 @@ def get_graph():
         
         logger.info(f"Serializing graph response: {len(nodes)} nodes, {len(links)} links")
         try:
-            response_data = {
-                'nodes': nodes,
-                'links': links,
-                'diagnostic': diagnostic_info if diagnostic_info else None,
-                'cached': False,
-                'event_count': len(nodes),
-                'link_count': len(links)
-            }
+            # 🚀 OPTIMIZATION: For large graphs, send metadata first, then chunked data
+            # Check if graph is large enough to warrant chunked loading
+            LARGE_GRAPH_THRESHOLD = 10000  # If >10k nodes, use chunked loading
+            
+            if len(nodes) > LARGE_GRAPH_THRESHOLD:
+                # Return initial response with first chunk + metadata
+                chunk_size = 5000  # Send 5k nodes at a time
+                first_chunk_nodes = nodes[:chunk_size]
+                first_chunk_links = [link for link in links 
+                                    if any(n['id'] == link['source'] for n in first_chunk_nodes) or
+                                       any(n['id'] == link['target'] for n in first_chunk_nodes)][:chunk_size * 2]
+                
+                response_data = {
+                    'nodes': first_chunk_nodes,
+                    'links': first_chunk_links,
+                    'diagnostic': diagnostic_info if diagnostic_info else None,
+                    'cached': False,
+                    'event_count': len(nodes),
+                    'link_count': len(links),
+                    'chunked': True,
+                    'chunk_index': 0,
+                    'total_chunks': (len(nodes) + chunk_size - 1) // chunk_size,
+                    'chunk_size': chunk_size
+                }
+                
+                # Store remaining chunks in cache for subsequent requests
+                graph_cache['remaining_nodes'] = nodes[chunk_size:]
+                graph_cache['remaining_links'] = links
+                graph_cache['chunk_index'] = 0
+                graph_cache['chunk_size'] = chunk_size
+            else:
+                # Small graph - send everything at once
+                response_data = {
+                    'nodes': nodes,
+                    'links': links,
+                    'diagnostic': diagnostic_info if diagnostic_info else None,
+                    'cached': False,
+                    'event_count': len(nodes),
+                    'link_count': len(links),
+                    'chunked': False
+                }
             
             # 🚀 OPTIMIZATION: Update cache with processed graph data
             graph_cache['nodes'] = nodes
@@ -4432,16 +4616,91 @@ def get_graph():
             graph_cache['last_update'] = time.time()
             graph_cache['event_count'] = len(nodes)
             graph_cache['link_count'] = len(links)
+            graph_cache['loading'] = False  # Mark load as complete
             
             logger.info("Graph data serialized and cached, returning response")
             return jsonify(response_data)
         except Exception as serialize_error:
             logger.error(f"Error serializing graph response: {serialize_error}", exc_info=True)
+            graph_cache['loading'] = False  # Reset loading flag
+            # Return cached data if available, otherwise error
+            if graph_cache['nodes']:
+                logger.info("Returning cached data due to serialization error")
+                return jsonify({
+                    'nodes': graph_cache['nodes'],
+                    'links': graph_cache['links'],
+                    'cached': True,
+                    'error': f'Serialization error: {str(serialize_error)}'
+                })
             return jsonify({'nodes': [], 'links': [], 'error': f'Serialization error: {str(serialize_error)}'}), 500
     except Exception as e:
         logger.error(f"Error getting graph: {e}", exc_info=True)
+        graph_cache['loading'] = False  # Reset loading flag
         import traceback
         logger.error(f"Traceback: {traceback.format_exc()}")
+        # Return cached data if available, otherwise error
+        if graph_cache['nodes']:
+            logger.info("Returning cached data due to error")
+            return jsonify({
+                'nodes': graph_cache['nodes'],
+                'links': graph_cache['links'],
+                'cached': True,
+                'error': str(e)
+            })
+        return jsonify({'nodes': [], 'links': [], 'error': str(e)}), 500
+
+
+@app.route('/api/graph/chunk')
+def get_graph_chunk():
+    """
+    Get next chunk of graph data (for progressive loading of large graphs)
+    """
+    if explorer is None:
+        return jsonify({'nodes': [], 'links': [], 'error': 'Causation Explorer not initialized'}), 200
+    
+    try:
+        chunk_index = request.args.get('chunk_index', 0, type=int)
+        chunk_size = graph_cache.get('chunk_size', 5000)
+        remaining_nodes = graph_cache.get('remaining_nodes', [])
+        remaining_links = graph_cache.get('remaining_links', [])
+        
+        if not remaining_nodes:
+            return jsonify({
+                'nodes': [],
+                'links': [],
+                'chunked': True,
+                'chunk_index': chunk_index,
+                'complete': True
+            })
+        
+        # Get next chunk
+        start_idx = chunk_index * chunk_size
+        end_idx = start_idx + chunk_size
+        chunk_nodes = remaining_nodes[start_idx:end_idx]
+        
+        # Get links for this chunk (links connecting nodes in this chunk)
+        chunk_node_ids = {n['id'] for n in chunk_nodes}
+        chunk_links = [link for link in remaining_links
+                      if (isinstance(link.get('source'), str) and link.get('source') in chunk_node_ids) or
+                         (isinstance(link.get('target'), str) and link.get('target') in chunk_node_ids)]
+        
+        # Limit links per chunk to prevent huge responses
+        max_links_per_chunk = chunk_size * 3
+        if len(chunk_links) > max_links_per_chunk:
+            chunk_links = chunk_links[:max_links_per_chunk]
+        
+        is_complete = end_idx >= len(remaining_nodes)
+        
+        return jsonify({
+            'nodes': chunk_nodes,
+            'links': chunk_links,
+            'chunked': True,
+            'chunk_index': chunk_index + 1,
+            'complete': is_complete,
+            'total_chunks': (len(remaining_nodes) + chunk_size - 1) // chunk_size
+        })
+    except Exception as e:
+        logger.error(f"Error getting graph chunk: {e}", exc_info=True)
         return jsonify({'nodes': [], 'links': [], 'error': str(e)}), 500
 
 

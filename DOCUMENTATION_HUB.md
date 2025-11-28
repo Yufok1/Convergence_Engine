@@ -98,9 +98,6 @@ pip install pywin32
 - **[WEB_UI_STATUS.md](./WEB_UI_STATUS.md)** - Web UI status (includes CRA agent integration)
 - **[CRA_CAPABILITIES.md](./CRA_CAPABILITIES.md)** - Complete CRA capabilities guide ⭐
 - **[CRA_CONTROLS_SUMMARY.md](./CRA_CONTROLS_SUMMARY.md)** - Quick reference: All CRA-controllable settings (150+)
-- **[CRA_FULL_SYSTEM_TEST_PROMPT.md](./CRA_FULL_SYSTEM_TEST_PROMPT.md)** - Ready-to-use test prompt for comprehensive CRA testing
-- **[CRA_COMPREHENSIVE_DIAGNOSTIC_PROMPT.json](./CRA_COMPREHENSIVE_DIAGNOSTIC_PROMPT.json)** - ⭐ NEW: Complete system audit prompt (JSON format) including neural system, optimizations, and trainer status
-- **[CRA_COMPREHENSIVE_DIAGNOSTIC_PROMPT.md](./CRA_COMPREHENSIVE_DIAGNOSTIC_PROMPT.md)** - ⭐ NEW: Same prompt in markdown format for easy copy-paste
   - **🤖 Convergence Research Assistant (CRA):** AI-powered autonomous research assistant in the Causation Explorer
     - **Full System Context:** Access to all system logs, shared state, and causation graph
     - **Vision Model Integration:** Analyzes graph viewport and evolutionary snapshots

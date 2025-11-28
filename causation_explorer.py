@@ -12,12 +12,15 @@ This is about scientific exploration, not just visualization.
 
 import time
 import json
+import logging
 from typing import Dict, List, Tuple, Optional, Any, Set
 from dataclasses import dataclass, field
 from collections import defaultdict, deque
 from pathlib import Path
 import networkx as nx
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -222,19 +225,37 @@ class CausationExplorer:
         Args:
             force_reload: If True, reload all data. If False, only load new frames (incremental)
         """
+        import time
+        load_start = time.time()
+        MAX_LOAD_TIME = 3.0  # Don't spend more than 3 seconds loading
+        
         shared_state_file = Path('data/.shared_simulation_state.json')
         if not shared_state_file.exists():
             return
         
         # Check if file is empty or too small to be valid JSON
-        if shared_state_file.stat().st_size < 10:
-            return  # File is empty or corrupted
+        try:
+            file_size = shared_state_file.stat().st_size
+            if file_size < 10:
+                return  # File is empty or corrupted
+            # 🚀 TIMEOUT PROTECTION: Skip very large files that would take too long
+            if file_size > 10 * 1024 * 1024:  # >10MB
+                logger.warning(f"Shared state file is very large ({file_size/1024/1024:.1f}MB), skipping load to prevent timeout")
+                return
+        except Exception as e:
+            logger.warning(f"Could not check shared state file size: {e}")
+            return
         
         try:
-            # Retry logic for file locking/race conditions
-            max_retries = 5
+            # Retry logic for file locking/race conditions (with timeout)
+            max_retries = 3  # Reduced from 5 to speed up
             shared_state = None
             for attempt in range(max_retries):
+                # Check timeout
+                if time.time() - load_start > MAX_LOAD_TIME:
+                    logger.warning(f"Shared state load timeout after {time.time() - load_start:.1f}s, aborting")
+                    return
+                    
                 try:
                     with open(shared_state_file, 'r', encoding='utf-8') as f:
                         content = f.read().strip()
@@ -245,11 +266,12 @@ class CausationExplorer:
                         break  # Success
                 except (json.JSONDecodeError, ValueError) as e:
                     if attempt < max_retries - 1:
-                        time.sleep(0.1)  # Brief delay before retry
+                        time.sleep(0.05)  # Reduced delay
                         continue
                     else:
-                        # Last attempt failed, re-raise
-                        raise
+                        # Last attempt failed, log and return (don't raise)
+                        logger.warning(f"Could not parse shared state file after {max_retries} attempts: {e}")
+                        return
             
             if not shared_state or 'data' not in shared_state:
                 return
@@ -303,6 +325,11 @@ class CausationExplorer:
                         return v
                 return v
             
+            # 🚀 TIMEOUT PROTECTION: Check timeout before processing
+            if time.time() - load_start > MAX_LOAD_TIME:
+                logger.warning(f"Shared state processing timeout, aborting")
+                return
+            
             # Extract Reality Simulator events
             if 'network' in data:
                 network_data = data['network']
@@ -323,6 +350,11 @@ class CausationExplorer:
                         }
                     )
                     self.add_event(event)
+                    
+                    # 🚀 TIMEOUT PROTECTION: Check after each major operation
+                    if time.time() - load_start > MAX_LOAD_TIME:
+                        logger.warning(f"Shared state processing timeout after network events, aborting")
+                        return
             
             # Extract Explorer events
             if 'explorer' in data:
@@ -360,6 +392,11 @@ class CausationExplorer:
                             )
                             self.add_event(phase_event)
                     self._last_explorer_phase = explorer_data.get('phase')
+                    
+                    # 🚀 TIMEOUT PROTECTION: Check after explorer processing
+                    if time.time() - load_start > MAX_LOAD_TIME:
+                        logger.warning(f"Shared state processing timeout after explorer events, aborting")
+                        return
             
             # Extract Djinn Kernel events
             if 'djinn_kernel' in data:
@@ -404,9 +441,15 @@ class CausationExplorer:
                                 )
                                 self.add_event(vp_event)
                     self._last_vp = vp
+                    
+                    # 🚀 TIMEOUT PROTECTION: Final check
+                    if time.time() - load_start > MAX_LOAD_TIME:
+                        logger.warning(f"Shared state processing timeout after djinn events, aborting")
+                        return
             
         except Exception as e:
-            print(f"[CausationExplorer] Warning: Could not load from shared state: {e}")
+            logger.warning(f"[CausationExplorer] Could not load from shared state: {e}")
+            # Don't raise - just log and return (prevents hanging)
     
     def _parse_log_line(self, line: str, component: str):
         """Parse a log line and extract events"""

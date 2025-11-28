@@ -289,7 +289,7 @@ class DjinnAgent:
                     target_position=instruction.target_position,
                     parameters={
                         "content": result,
-                        "symbol": "ARBITRATION_RESULT"
+                        "symbol": TapeSymbol.ARBITRATION_RESULT.value
                     }
                 )
                 return self._execute_write(write_instruction)
