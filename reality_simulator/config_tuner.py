@@ -411,17 +411,20 @@ class ConfigTuner:
         if not neural_metrics or not neural_metrics.get('enabled'):
             return None
 
-        # Track neural loss
+        # Track neural loss (only track non-None values)
         if 'training_loss' in neural_metrics:
             loss = neural_metrics['training_loss']
-            self.neural_loss_history.append(loss)
-            if len(self.neural_loss_history) > 100:
-                self.neural_loss_history.pop(0)
+            # Only append if loss is a valid number (not None - happens during buffer warmup)
+            if loss is not None:
+                self.neural_loss_history.append(loss)
+                if len(self.neural_loss_history) > 100:
+                    self.neural_loss_history.pop(0)
 
         # Check if loss is increasing (learning getting worse)
         if len(self.neural_loss_history) >= 20:
-            recent_loss = self.neural_loss_history[-10:]
-            older_loss = self.neural_loss_history[-20:-10]
+            # Filter out any None values that might have slipped through
+            recent_loss = [l for l in self.neural_loss_history[-10:] if l is not None]
+            older_loss = [l for l in self.neural_loss_history[-20:-10] if l is not None]
 
             if len(recent_loss) > 0 and len(older_loss) > 0:
                 avg_recent = sum(recent_loss) / len(recent_loss)
