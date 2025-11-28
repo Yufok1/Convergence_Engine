@@ -1256,6 +1256,14 @@ class RealitySimulator:
         # Update network
         if 'network' in self.components:
             network = self.components['network']
+            
+            # Wire up event emitters for neural organisms BEFORE they make decisions
+            # This ensures neural_decision events are captured during decide_action()
+            if self.event_emitter:
+                for org in network.organisms.values():
+                    if hasattr(org, 'event_emitter') and org.event_emitter is None:
+                        org.event_emitter = self.event_emitter
+            
             network.update_network()
 
             # Add new organisms from evolution
@@ -1307,11 +1315,8 @@ class RealitySimulator:
                 # Collect neural metrics for logging
                 training_stats = self.neural_trainer.get_training_stats()
                 
-                # Wire up event emitters for neural organisms
-                if self.event_emitter:
-                    for org in network.organisms.values():
-                        if hasattr(org, 'event_emitter'):
-                            org.event_emitter = self.event_emitter
+                # Note: Event emitters are wired up BEFORE network.update_network()
+                # to ensure neural_decision events are captured during decide_action()
                 
                 # Calculate average epsilon from organisms
                 avg_epsilon = 0.0
