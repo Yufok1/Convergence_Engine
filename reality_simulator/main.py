@@ -1576,9 +1576,16 @@ class RealitySimulator:
 
                 evolution_metrics = {}
                 if evolution:
+                    # Get best fitness from history or calculate from current population
+                    best_fitness = 0.0
+                    if hasattr(evolution, 'best_fitness_history') and evolution.best_fitness_history:
+                        best_fitness = evolution.best_fitness_history[-1]
+                    elif evolution.population:
+                        best_fitness = max(org.fitness for org in evolution.population)
+
                     evolution_metrics = {
                         'generation': evolution.generation,
-                        'best_fitness': evolution.best_fitness,
+                        'best_fitness': best_fitness,
                         'population_size': len(evolution.population) if evolution.population else 0
                     }
 
