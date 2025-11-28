@@ -772,19 +772,20 @@ class EvolutionEngine:
             try:
                 from .neural.neural_organism import NeuralOrganism
                 
-                # Try to inherit brain from parents if available
-                parent_brain = None
+                # Try to inherit brains from parents if available
+                parent_brains = []
                 if parents and len(parents) > 0:
-                    # Check if any parent is a NeuralOrganism with a brain
+                    # Collect brains from neural parents (up to 2)
                     for parent in parents:
                         if hasattr(parent, 'brain') and parent.brain is not None:
-                            parent_brain = parent.brain
-                            break
+                            parent_brains.append(parent.brain)
+                            if len(parent_brains) >= 2:
+                                break
                 
                 return NeuralOrganism(
                     genotype=genotype,
                     config=self.config,
-                    parent_brain=parent_brain
+                    parent_brains=parent_brains if parent_brains else None
                 )
             except ImportError:
                 # PyTorch not available, fall back to standard Organism

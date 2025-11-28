@@ -48,10 +48,11 @@ class NeuralOrganism(Organism):
     """
     
     def __init__(self, 
-                 genotype: Genotype,
-                 phenotype: Optional[Phenotype] = None,
+                 genotype: Genotype, 
+                 phenotype: 'Phenotype' = None,
                  config: Optional[Dict[str, Any]] = None,
-                 parent_brain: Optional[OrganismBrain] = None):
+                 parent_brains: Optional[List['OrganismBrain']] = None,
+                 parent_brain: Optional['OrganismBrain'] = None):  # Deprecated, use parent_brains
         """
         Initialize neural organism.
         
@@ -76,14 +77,31 @@ class NeuralOrganism(Organism):
         if PYTORCH_AVAILABLE and neural_config.get('enabled', False):
             brain_config = neural_config.get('brain', {})
             
-            if parent_brain is not None:
-                # Inherit from parent with mutation
+            # Handle legacy parent_brain parameter
+            if parent_brains is None and parent_brain is not None:
+                parent_brains = [parent_brain]
+            
+            if parent_brains is not None and len(parent_brains) > 0:
+                # Inherit from parent(s) with mutation
                 inheritance_config = neural_config.get('inheritance', {})
                 mutation_rate = inheritance_config.get('mutation_rate', 0.1)
                 crossover_rate = inheritance_config.get('crossover_rate', 0.5)
                 
-                # Create new brain via crossover
-                self.brain = parent_brain.crossover(parent_brain, crossover_rate)
+                if len(parent_brains) >= 2:
+                    # Two parents: proper crossover
+                    self.brain = parent_brains[0].crossover(parent_brains[1], crossover_rate)
+                else:
+                    # Single parent: copy weights directly
+                    from .brain import OrganismBrain
+                    self.brain = OrganismBrain(
+                        input_dim=brain_config.get('input_dim', 12),
+                        hidden_dim=brain_config.get('hidden_dim', 64),
+                        output_dim=brain_config.get('output_dim', 6),
+                        activation=brain_config.get('activation', 'relu'),
+                        dropout=brain_config.get('dropout', 0.1)
+                    )
+                    self.brain.load_state_dict(parent_brains[0].state_dict())
+                
                 # Add mutation
                 self.brain.mutate(mutation_rate)
             else:

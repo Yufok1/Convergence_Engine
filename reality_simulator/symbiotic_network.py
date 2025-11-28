@@ -849,6 +849,9 @@ class SymbioticNetwork:
             'max_connections_per_organism': self.max_connections_per_organism,
             'resource_pool': getattr(self.resource_engine, 'total_resources', 200.0),
         }
+        
+        # Collect organism actions for batch execution
+        organism_actions = {}
         for org_id, organism in self.organisms.items():
             if hasattr(organism, 'decide_action') and hasattr(organism, 'brain') and organism.brain is not None:
                 # Get local environment for this organism
@@ -858,13 +861,17 @@ class SymbioticNetwork:
                 }
                 # Let organism make decision (accumulates experience, decays epsilon)
                 try:
-                    organism.decide_action(
+                    action = organism.decide_action(
                         local_env=local_env,
                         network_state=network_state,
                         breath_state=None  # Will be set by unified entry if available
                     )
+                    organism_actions[org_id] = action
                 except Exception:
                     pass  # Don't let neural decision errors crash the simulation
+        
+        # Execute collected actions
+        self._execute_organism_actions(organism_actions, network_state)
 
         # Calculate resource flows
         flows = self.resource_engine.calculate_flows(self.network_graph, self.organisms)
@@ -930,6 +937,127 @@ class SymbioticNetwork:
             'emergent_properties': stability_analysis['emergent_properties'],
             'elapsed_seconds': elapsed
         }
+
+    def _execute_organism_actions(self, organism_actions: Dict[str, int], network_state: Dict[str, Any]):
+        """
+        Execute the actions decided by neural organisms.
+        
+        Actions:
+            0 = move: Try to form new connection with a random non-neighbor
+            1 = cooperate: Strengthen connections with neighbors, share resources
+            2 = compete: Attempt to gain resources from neighbors
+            3 = rest: Do nothing, small fitness recovery
+            4 = reproduce: Signal reproductive intent (fitness bonus if high enough)
+            5 = isolate: Weaken connections, become more independent
+        
+        Args:
+            organism_actions: Dict mapping organism_id to action index
+            network_state: Current network state for context
+        """
+        for org_id, action in organism_actions.items():
+            organism = self.organisms.get(org_id)
+            if organism is None:
+                continue
+            
+            try:
+                if action == 0:  # MOVE - form new connection
+                    self._execute_move_action(org_id, organism)
+                elif action == 1:  # COOPERATE - strengthen bonds
+                    self._execute_cooperate_action(org_id, organism)
+                elif action == 2:  # COMPETE - take resources
+                    self._execute_compete_action(org_id, organism)
+                elif action == 3:  # REST - recover
+                    self._execute_rest_action(org_id, organism)
+                elif action == 4:  # REPRODUCE - signal intent
+                    self._execute_reproduce_action(org_id, organism)
+                elif action == 5:  # ISOLATE - weaken connections
+                    self._execute_isolate_action(org_id, organism)
+            except Exception:
+                pass  # Don't let action execution errors crash simulation
+    
+    def _execute_move_action(self, org_id: str, organism):
+        """Move action: Try to form a new connection with a non-neighbor"""
+        if org_id not in self.network_graph:
+            return
+        
+        neighbors = set(self.network_graph.neighbors(org_id))
+        non_neighbors = [oid for oid in self.organisms.keys() 
+                        if oid != org_id and oid not in neighbors]
+        
+        if non_neighbors and len(neighbors) < self.max_connections_per_organism:
+            target_id = np.random.choice(non_neighbors)
+            if not self.network_graph.has_edge(org_id, target_id):
+                self.add_connection(org_id, target_id)
+    
+    def _execute_cooperate_action(self, org_id: str, organism):
+        """Cooperate action: Strengthen connections and share resources"""
+        if org_id not in self.network_graph:
+            return
+        
+        neighbors = list(self.network_graph.neighbors(org_id))
+        for neighbor_id in neighbors:
+            edge_key = (org_id, neighbor_id) if (org_id, neighbor_id) in self.connections else (neighbor_id, org_id)
+            if edge_key in self.connections:
+                # Strengthen the connection
+                connection = self.connections[edge_key]
+                connection.strength = min(1.0, connection.strength + 0.05)
+                connection.stability = min(1.0, connection.stability + 0.02)
+                
+                # Small resource sharing (boost neighbor fitness slightly)
+                neighbor = self.organisms.get(neighbor_id)
+                if neighbor and organism.fitness > 0.3:
+                    fitness_gift = 0.01
+                    organism.fitness = max(0.0, organism.fitness - fitness_gift)
+                    neighbor.fitness = min(1.0, neighbor.fitness + fitness_gift)
+    
+    def _execute_compete_action(self, org_id: str, organism):
+        """Compete action: Try to gain resources from neighbors"""
+        if org_id not in self.network_graph:
+            return
+        
+        neighbors = list(self.network_graph.neighbors(org_id))
+        for neighbor_id in neighbors:
+            neighbor = self.organisms.get(neighbor_id)
+            if neighbor:
+                # Competition based on relative fitness
+                if organism.fitness > neighbor.fitness:
+                    # Winner takes a small portion
+                    gain = 0.02 * (organism.fitness - neighbor.fitness)
+                    organism.fitness = min(1.0, organism.fitness + gain)
+                    neighbor.fitness = max(0.0, neighbor.fitness - gain)
+                else:
+                    # Loser loses a bit for trying
+                    organism.fitness = max(0.0, organism.fitness - 0.005)
+    
+    def _execute_rest_action(self, org_id: str, organism):
+        """Rest action: Small fitness recovery, do nothing else"""
+        # Small passive fitness gain for resting
+        organism.fitness = min(1.0, organism.fitness + 0.005)
+    
+    def _execute_reproduce_action(self, org_id: str, organism):
+        """Reproduce action: Signal reproductive intent via fitness boost"""
+        # Reproduction intent - if fitness is high enough, get a small boost
+        # (actual reproduction handled by evolution engine based on fitness)
+        if organism.fitness > 0.6:
+            organism.fitness = min(1.0, organism.fitness + 0.01)
+            # Mark as wanting to reproduce (for evolution engine to pick up)
+            if not hasattr(organism, 'reproduction_intent'):
+                organism.reproduction_intent = 0
+            organism.reproduction_intent += 1
+    
+    def _execute_isolate_action(self, org_id: str, organism):
+        """Isolate action: Weaken connections, become more independent"""
+        if org_id not in self.network_graph:
+            return
+        
+        neighbors = list(self.network_graph.neighbors(org_id))
+        for neighbor_id in neighbors:
+            edge_key = (org_id, neighbor_id) if (org_id, neighbor_id) in self.connections else (neighbor_id, org_id)
+            if edge_key in self.connections:
+                # Weaken the connection
+                connection = self.connections[edge_key]
+                connection.strength = max(0.0, connection.strength - 0.1)
+                connection.stability = max(0.0, connection.stability - 0.05)
 
     def _prune_weak_connections_protected(self):
         """Remove connections that have become too weak, with linguistic edge protection
