@@ -406,6 +406,28 @@ CONFIG_GUARDRAILS = {
         'type': int,
         'label': 'scikit.dimensionality_reduction.tsne_perplexity'
     },
+    # Meta-Cognitive Settings (Self-Tuning / Autonomous Optimization)
+    '/meta_cognitive/self_tuning/enabled': {
+        'type': bool,
+        'label': 'meta_cognitive.self_tuning.enabled'
+    },
+    '/meta_cognitive/self_tuning/mode': {
+        'type': str,
+        'allowed': ['off', 'observing', 'learning', 'autonomous'],
+        'label': 'meta_cognitive.self_tuning.mode'
+    },
+    '/meta_cognitive/self_tuning/tuning_interval_frames': {
+        'min': 10,
+        'max': 200,
+        'type': int,
+        'label': 'meta_cognitive.self_tuning.tuning_interval_frames'
+    },
+    '/meta_cognitive/self_tuning/min_confidence_threshold': {
+        'min': 0.3,
+        'max': 0.95,
+        'type': float,
+        'label': 'meta_cognitive.self_tuning.min_confidence_threshold'
+    },
 }
 
 

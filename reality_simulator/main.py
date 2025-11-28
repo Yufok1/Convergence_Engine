@@ -1018,6 +1018,26 @@ class RealitySimulator:
             else:
                 self.ml_analyzer = None
 
+            # 11. Config Tuner (autonomous parameter optimization)
+            meta_config = self.config.get('meta_cognitive', {})
+            tuner_enabled = meta_config.get('self_tuning', {}).get('enabled', False)
+            if tuner_enabled:
+                try:
+                    try:
+                        from .config_tuner import ConfigTuner
+                    except (ImportError, ValueError):
+                        from reality_simulator.config_tuner import ConfigTuner
+
+                    self.config_tuner = ConfigTuner(config=self.config, enabled=True)
+                    print(ColorScheme.log_component("tuner", "Config tuner initialized (AUTONOMOUS MODE)"))
+                except Exception as e:
+                    print(f"[WARN] Config tuner initialization failed: {e}")
+                    import traceback
+                    traceback.print_exc()
+                    self.config_tuner = None
+            else:
+                self.config_tuner = None
+
             # Helper method to safely check torch.compile availability
             def _check_torch_compile_available():
                 """Safely check if torch.compile is available without scoping issues"""
@@ -1546,6 +1566,63 @@ class RealitySimulator:
         # Store ML metrics for state collection
         if ml_metrics:
             self._ml_metrics = ml_metrics
+
+        # Config Tuner (autonomous parameter optimization)
+        if self.config_tuner and hasattr(self, 'frame_count'):
+            try:
+                # Gather metrics for tuning analysis
+                evolution = self.components.get('evolution')
+                network = self.components.get('network')
+
+                evolution_metrics = {}
+                if evolution:
+                    evolution_metrics = {
+                        'generation': evolution.generation,
+                        'best_fitness': evolution.best_fitness,
+                        'population_size': len(evolution.population) if evolution.population else 0
+                    }
+
+                network_metrics = {}
+                if network:
+                    network_metrics = {
+                        'organism_count': len(network.organisms),
+                        'connection_count': len(network.connections),
+                        'modularity': network.metrics.modularity,
+                        'clustering_coefficient': network.metrics.clustering_coefficient
+                    }
+
+                # Analyze and get tuning recommendation
+                tuning_action = self.config_tuner.analyze_and_tune(
+                    ml_metrics=ml_metrics or {},
+                    neural_metrics=neural_metrics or {},
+                    evolution_metrics=evolution_metrics,
+                    network_metrics=network_metrics,
+                    frame_count=self.frame_count
+                )
+
+                # Apply tuning action if recommended
+                if tuning_action:
+                    self.config_tuner.apply_action(tuning_action)
+
+                    # Emit tuning event for causation tracking
+                    if self.event_emitter:
+                        self.event_emitter({
+                            'event_type': 'config_tuning',
+                            'component': 'config_tuner',
+                            'data': {
+                                'parameter': tuning_action.parameter_path,
+                                'old_value': tuning_action.current_value,
+                                'new_value': tuning_action.proposed_value,
+                                'reason': tuning_action.reason,
+                                'confidence': tuning_action.confidence,
+                                'timestamp': time.time()
+                            }
+                        })
+
+            except Exception as e:
+                logger.warning(f"[CONFIG_TUNER] Analysis failed: {e}")
+                import traceback
+                traceback.print_exc()
 
 
     def _perform_consciousness_analysis(self):
