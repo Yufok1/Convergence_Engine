@@ -67,6 +67,17 @@ A multi-layered artificial life simulation system that creates evolving populati
   - Dual inheritance (genetic + learned neural weights)
   - Breath-synchronized training cycles
   - Configurable reward system and exploration/exploitation balance
+- **🔬 ML Analysis System**: Scikit-learn population analytics
+  - HDBSCAN/KMeans clustering (behavioral phenotype detection)
+  - Isolation Forest anomaly detection
+  - PCA/t-SNE dimensionality reduction for visualization
+  - Real-time insights emitted to causation graph
+- **🤖 Meta-Cognitive Layer**: Autonomous self-tuning based on ML/Neural insights
+  - **33 tunable parameters** across Evolution, Neural, Network, ML, Quantum, VP systems
+  - **9 intelligent tuning rules** (cluster diversity, neural loss, network density, etc.)
+  - **Meta-meta-learning**: The tuner can tune itself!
+  - Safety bounds, confidence thresholds, meta-learning tracking
+  - See [SELF_TUNING_GUIDE.md](./SELF_TUNING_GUIDE.md) for full details
 - **Symbiotic Networks**: Social ecosystems with resource flow and cooperation
 - **Information Integration Tracking**: IIT-based metrics (Φ calculation) for consciousness detection
 - **Self-Modulation Feedback Controller**: Automatic parameter tuning based on performance metrics
