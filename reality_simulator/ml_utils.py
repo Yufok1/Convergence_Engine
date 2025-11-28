@@ -510,6 +510,9 @@ class MLAnalyzer:
         self._last_analysis: Dict[str, Any] = {}
         self._last_analysis_time: float = 0
         self._analysis_interval: float = 5.0  # Minimum seconds between analyses
+
+        # Optional event emitter for causation graph visualization
+        self.event_emitter = None  # Set by main.py or unified_entry.py
     
     def update_config(self, config: Dict[str, Any]):
         """Update configuration dynamically (for hot reload)"""

@@ -981,7 +981,43 @@ class RealitySimulator:
                         logger.warning(f"[NEURAL] Trainer initialization failed: {e}")
             else:
                 self.neural_trainer = None
-            
+
+            # 10. ML Analyzer (if scikit-learn system enabled)
+            if self.config.get('scikit', {}).get('enabled', False):
+                try:
+                    # Try relative import first
+                    try:
+                        from .ml_utils import MLAnalyzer
+                    except (ImportError, ValueError):
+                        # Fallback to absolute import
+                        from reality_simulator.ml_utils import MLAnalyzer
+
+                    self.ml_analyzer = MLAnalyzer(config=self.config.get('scikit', {}))
+                    # Wire up event emitter for ML analyzer
+                    if self.event_emitter:
+                        self.ml_analyzer.event_emitter = self.event_emitter
+                    print(ColorScheme.log_component("ml", "ML analyzer initialized"))
+                except ImportError as e:
+                    error_msg = f"Import error: {e}"
+                    print(f"[WARN] ML analyzer import failed: {error_msg}")
+                    import traceback
+                    traceback.print_exc()
+                    self.ml_analyzer = None
+                    self._ml_init_error = error_msg
+                    if 'logger' in locals() or 'logger' in globals():
+                        logger.warning(f"[ML] Analyzer import failed: {e}")
+                except Exception as e:
+                    error_msg = f"Initialization error: {e}"
+                    print(f"[WARN] ML analyzer initialization failed: {error_msg}")
+                    import traceback
+                    traceback.print_exc()
+                    self.ml_analyzer = None
+                    self._ml_init_error = error_msg
+                    if 'logger' in locals() or 'logger' in globals():
+                        logger.warning(f"[ML] Analyzer initialization failed: {e}")
+            else:
+                self.ml_analyzer = None
+
             # Helper method to safely check torch.compile availability
             def _check_torch_compile_available():
                 """Safely check if torch.compile is available without scoping issues"""
@@ -992,6 +1028,16 @@ class RealitySimulator:
                     return False
             
             self._check_torch_compile_available = _check_torch_compile_available
+
+            # Wire up event emitter for any initial organisms (if available)
+            if self.event_emitter and 'network' in self.components:
+                network = self.components['network']
+                for org in network.organisms.values():
+                    if hasattr(org, 'event_emitter') and org.event_emitter is None:
+                        org.event_emitter = self.event_emitter
+                # Wire ML event emitter to network
+                if hasattr(network, 'ml_event_emitter') and network.ml_event_emitter is None:
+                    network.ml_event_emitter = self.event_emitter
 
             print(ColorScheme.colorize("[SUCCESS] All components initialized successfully!", ColorScheme.SUCCESS))
             return True
@@ -1263,6 +1309,9 @@ class RealitySimulator:
                 for org in network.organisms.values():
                     if hasattr(org, 'event_emitter') and org.event_emitter is None:
                         org.event_emitter = self.event_emitter
+                # Wire ML event emitter to network
+                if hasattr(network, 'ml_event_emitter') and network.ml_event_emitter is None:
+                    network.ml_event_emitter = self.event_emitter
             
             network.update_network()
 
@@ -1395,6 +1444,100 @@ class RealitySimulator:
         # Store neural metrics for state collection
         if neural_metrics:
             self._neural_metrics = neural_metrics
+
+        # ML Analysis (population-level analytics)
+        ml_metrics = None
+        if self.ml_analyzer and 'network' in self.components:
+            network = self.components['network']
+
+            try:
+                # Run ML analysis on organism population
+                analysis_results = self.ml_analyzer.analyze(network.organisms)
+
+                if analysis_results.get('enabled', False):
+                    ml_metrics = {
+                        'enabled': True,
+                        'organism_count': analysis_results.get('organism_count', 0),
+                        'timestamp': analysis_results.get('timestamp', time.time())
+                    }
+
+                    # Add clustering results
+                    if analysis_results.get('clustering'):
+                        clustering = analysis_results['clustering']
+                        ml_metrics['clustering'] = {
+                            'n_clusters': clustering.get('n_clusters', 0),
+                            'cluster_sizes': clustering.get('cluster_sizes', {}),
+                            'algorithm': clustering.get('algorithm', 'unknown'),
+                            'noise_count': clustering.get('noise_count', 0)
+                        }
+
+                        # Emit phenotype emergence events if significant clusters detected
+                        if self.event_emitter and clustering.get('n_clusters', 0) > 0:
+                            self.event_emitter.emit('ml_analysis', {
+                                'type': 'phenotype_emergence',
+                                'n_clusters': clustering['n_clusters'],
+                                'cluster_sizes': clustering['cluster_sizes'],
+                                'timestamp': time.time()
+                            })
+
+                    # Add anomaly detection results
+                    if analysis_results.get('anomalies'):
+                        anomalies = analysis_results['anomalies']
+                        ml_metrics['anomalies'] = {
+                            'anomaly_count': anomalies.get('anomaly_count', 0),
+                            'anomaly_ratio': anomalies.get('anomaly_ratio', 0.0),
+                            'algorithm': anomalies.get('algorithm', 'unknown')
+                        }
+
+                        # Emit anomaly spike events if significant anomalies detected
+                        if self.event_emitter and anomalies.get('anomaly_ratio', 0) > 0.15:
+                            self.event_emitter.emit('ml_analysis', {
+                                'type': 'anomaly_spike',
+                                'anomaly_count': anomalies['anomaly_count'],
+                                'anomaly_ratio': anomalies['anomaly_ratio'],
+                                'timestamp': time.time()
+                            })
+
+                    # Add dimensionality reduction results
+                    if analysis_results.get('reduction'):
+                        reduction = analysis_results['reduction']
+                        ml_metrics['reduction'] = {
+                            'n_components': reduction.get('n_components', 0),
+                            'algorithm': reduction.get('algorithm', 'unknown'),
+                            'sample_count': reduction.get('sample_count', 0)
+                        }
+
+                    logger.debug(f"[ML] Analysis: {ml_metrics['clustering']['n_clusters']} clusters, "
+                               f"{ml_metrics['anomalies']['anomaly_count']} anomalies")
+                else:
+                    ml_metrics = {'enabled': False, 'reason': 'sklearn_unavailable'}
+
+            except Exception as e:
+                logger.warning(f"[ML] Analysis failed: {e}")
+                import traceback
+                traceback.print_exc()
+                ml_metrics = {
+                    'enabled': True,
+                    'error': str(e)
+                }
+        elif self.config.get('scikit', {}).get('enabled', False):
+            # ML enabled but analyzer not available
+            error_msg = 'analyzer_unavailable'
+            if hasattr(self, '_ml_init_error'):
+                error_msg += f': {self._ml_init_error}'
+            ml_metrics = {
+                'enabled': True,
+                'error': error_msg
+            }
+        else:
+            # ML disabled
+            ml_metrics = {
+                'enabled': False
+            }
+
+        # Store ML metrics for state collection
+        if ml_metrics:
+            self._ml_metrics = ml_metrics
 
 
     def _perform_consciousness_analysis(self):
@@ -1622,6 +1765,21 @@ class RealitySimulator:
         else:
             # Neural disabled
             data['neural'] = {
+                'enabled': False
+            }
+
+        # ML Analysis System
+        if hasattr(self, '_ml_metrics'):
+            data['ml'] = self._ml_metrics
+        elif self.config.get('scikit', {}).get('enabled', False):
+            # ML enabled but no metrics yet
+            data['ml'] = {
+                'enabled': True,
+                'status': 'initializing'
+            }
+        else:
+            # ML disabled
+            data['ml'] = {
                 'enabled': False
             }
 
