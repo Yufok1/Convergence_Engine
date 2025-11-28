@@ -837,6 +837,34 @@ class SymbioticNetwork:
 
         # Try to form new connections between organisms
         self._attempt_connection_formation()
+        
+        # Execute neural organism decisions (for DQN learning)
+        # This enables neural organisms to accumulate experiences and learn
+        network_state = {
+            'generation': self.generation,
+            'organism_count': len(self.organisms),
+            'connection_count': len(self.network_graph.edges()),
+            'modularity': self.metrics.modularity,
+            'clustering_coefficient': self.metrics.clustering_coefficient,
+            'max_connections_per_organism': self.max_connections_per_organism,
+            'resource_pool': getattr(self.resource_engine, 'total_resources', 200.0),
+        }
+        for org_id, organism in self.organisms.items():
+            if hasattr(organism, 'decide_action') and hasattr(organism, 'brain') and organism.brain is not None:
+                # Get local environment for this organism
+                local_env = {
+                    'resources': getattr(organism, 'resources', 0.5),
+                    'neighbors': len(list(self.network_graph.neighbors(org_id))) if org_id in self.network_graph else 0,
+                }
+                # Let organism make decision (accumulates experience, decays epsilon)
+                try:
+                    organism.decide_action(
+                        local_env=local_env,
+                        network_state=network_state,
+                        breath_state=None  # Will be set by unified entry if available
+                    )
+                except Exception:
+                    pass  # Don't let neural decision errors crash the simulation
 
         # Calculate resource flows
         flows = self.resource_engine.calculate_flows(self.network_graph, self.organisms)

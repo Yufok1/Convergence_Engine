@@ -59,14 +59,12 @@ pip install pywin32
 - **[SCIENTIFIC_DATA_INTERFACE.md](./SCIENTIFIC_DATA_INTERFACE.md)** - Data interface documentation
 - **[LIVE_MODE_DATA_SOURCES.md](./LIVE_MODE_DATA_SOURCES.md)** - Live mode documentation
 
-### 🧠 Neural System (NEW)
+### 🧠 Neural System
 
 - **[NEURAL_LEARNING_SYSTEM_EXPLAINED.md](./NEURAL_LEARNING_SYSTEM_EXPLAINED.md)** - Complete explanation of DQN architecture, rewards, and dual inheritance ⭐
-- **[NEURAL_INTEGRATION_COMPLETE.md](./NEURAL_INTEGRATION_COMPLETE.md)** - Integration summary and verification
-- **[CRA_NEURAL_UPGRADE_COMPLETE.md](./CRA_NEURAL_UPGRADE_COMPLETE.md)** - CRA neural awareness documentation
-- **[NEURAL_INTEGRATION_PLAN.md](./NEURAL_INTEGRATION_PLAN.md)** - Original integration plan (historical)
-- **[NEURAL_FRAMEWORK_ALTERNATIVES.md](./NEURAL_FRAMEWORK_ALTERNATIVES.md)** - ⭐ NEW: Alternative deep learning frameworks (JAX, TensorFlow, Flax, etc.) for AI growth
-- **[SIMPLE_PYTORCH_OPTIMIZATIONS.md](./SIMPLE_PYTORCH_OPTIMIZATIONS.md)** - ⭐ SIMPLEST: Get 5-10x speedup with 10 minutes of code changes (no rebuild needed!)
+- **[NEURAL_SYSTEM_README.md](./NEURAL_SYSTEM_README.md)** - Neural system quick reference
+- **[NEURAL_FRAMEWORK_ALTERNATIVES.md](./NEURAL_FRAMEWORK_ALTERNATIVES.md)** - Alternative deep learning frameworks (JAX, TensorFlow, Flax, etc.)
+- **[SIMPLE_PYTORCH_OPTIMIZATIONS.md](./SIMPLE_PYTORCH_OPTIMIZATIONS.md)** - Get 5-10x speedup with simple code changes
 
 ### Explorer (Central Body / Breath Engine)
 
@@ -124,7 +122,6 @@ pip install pywin32
 
 ## 🤝 Collaboration & Processes
 
-- **[GROUNDED_COLLABORATION.md](./GROUNDED_COLLABORATION.md)** - Collaboration framework
 - **[explorer/CONTRIBUTING.md](./explorer/CONTRIBUTING.md)** - Contribution guidelines
 - **[explorer/CODE_OF_CONDUCT.md](./explorer/CODE_OF_CONDUCT.md)** - Code of conduct
 - **[explorer/SECURITY.md](./explorer/SECURITY.md)** - Security policy
@@ -136,19 +133,30 @@ pip install pywin32
 
 **Historical documentation is archived in `docs/archive/`:**
 
-### Completed Work Archive (47 files)
-All completed analysis, integration, verification, and refactoring reports have been moved to:
-- **`docs/archive/completed_work/`** - Analysis reports, integration traces, verification reports, refactoring summaries, issue resolution docs
+### Completed Plans (`docs/archive/completed_plans/`)
+- `NEURAL_INTEGRATION_PLAN.md` - Original neural integration plan (implemented)
+- `NEURAL_INTEGRATION_COMPLETE.md` - Neural integration completion record
+- `CRA_NEURAL_UPGRADE_COMPLETE.md` - CRA neural upgrade completion record
+- `CAUSATION_UI_OPTIMIZATION_PLAN.md` - UI optimization plan (implemented)
+- `DIVERSITY_GUARD_IMPLEMENTATION.md` - Diversity guard spec (implemented)
+- `ENHANCED_AGENT_ROADMAP.md` - Agent development roadmap
+- `COGNITIVE_EVENT_SCHEMA.md` - Event schema specification
 
-These documents represent completed milestones and are preserved for historical reference but are no longer needed for active development.
+### Analysis Reports (`docs/archive/analysis_reports/`)
+- `COMPREHENSIVE_ANALYSIS_REPORT_2025.md` - January 2025 codebase analysis
+- `COMPREHENSIVE_MULTI_STEP_ANALYSIS_2025.md` - Multi-step analysis report
+- `SIMULATION_STAGNATION_EXPLANATION.md` - Stagnation debugging session
+- `SYSTEM_OPTIMIZATION_SUMMARY.md` - Optimization changes record
 
-**Archived Categories:**
-- 10 Analysis reports (comprehensive, code review, system analysis)
-- 14 Integration reports (status, traces, assessment)
-- 7 Verification reports (final verification, validation)
-- 6 Refactoring reports (cleanup, logging, progress)
-- 5 Issue/fix reports (VP fixes, trait mismatches)
-- 5 Architecture decision docs (agency router, event bus)
+### Release Notes (`docs/archive/release_notes/`)
+- `RELEASE_NOTES_NEURAL.md` - Neural system v1.0 release notes
+
+### Other Archives (`docs/archive/`)
+- `GROUNDED_COLLABORATION.md` - AI collaboration framework
+- `completed_work/` - 47 files: analysis, integration, verification reports
+- `implementation_guides/` - Historical implementation guides
+- `outdated/` - Superseded documentation
+- `performance_optimization/` - Performance tuning records
 
 ---
 

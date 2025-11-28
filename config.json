@@ -131,7 +131,7 @@
     "optimization": {
       "compile_mode": "reduce-overhead",
       "reuse_optimizers": true,
-      "use_compile": true,
+      "use_compile": false,
       "use_scripted_inference": true
     },
     "rewards": {
