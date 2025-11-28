@@ -8164,7 +8164,7 @@
                 const payload = {
                     actor: command.actor || command.source || 'CRA',
                     reason: command.reason || command.description || 'CRA autonomous config update',
-                    correlation_id: command.correlation_id || command.plan_id || undefined,
+                    correlation_id: command.correlation_id || command.correlationid || command.plan_id || undefined,
                     patch: command.patch
                 };
 
@@ -8225,7 +8225,7 @@
                 const payload = {
                     actor: command.actor || command.source || 'CRA',
                     reason: command.reason || command.description || 'CRA rollback request',
-                    correlation_id: command.correlation_id || command.plan_id || undefined,
+                    correlation_id: command.correlation_id || command.correlationid || command.plan_id || undefined,
                     steps
                 };
 
@@ -9303,6 +9303,7 @@
                                     jsonStr = jsonStr.replace(/"componentColorexplorer"/g, '"componentColor_explorer"');
                                     jsonStr = jsonStr.replace(/"componentColordjinnkernel"/g, '"componentColor_djinn_kernel"');
                                     jsonStr = jsonStr.replace(/"componentColorbreath"/g, '"componentColor_breath"');
+                                    jsonStr = jsonStr.replace(/"componentColorneural"/g, '"componentColor_neural"');
                                     jsonStr = jsonStr.replace(/"componentColorsystem"/g, '"componentColor_system"');
                                     jsonStr = jsonStr.replace(/"linkColorthreshold"/g, '"linkColor_threshold"');
                                     jsonStr = jsonStr.replace(/"linkColorcorrelation"/g, '"linkColor_correlation"');

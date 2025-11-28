@@ -43,6 +43,12 @@
   },
   "evolution": {
     "adaptation_sensitivity": 0.002,
+    "diversity_guard": {
+      "enabled": true,
+      "frequency_threshold": 0.1,
+      "hash_similarity_threshold": 0.92,
+      "penalty": 0.05
+    },
     "fitness_precision": 1e-07,
     "genotype_length": 48,
     "max_generations": 1500,
@@ -50,13 +56,7 @@
       "initial": 0.04
     },
     "mutation_rate_precision": 0.001,
-    "population_size": 2000,
-    "diversity_guard": {
-      "enabled": true,
-      "hash_similarity_threshold": 0.92,
-      "penalty": 0.05,
-      "frequency_threshold": 0.1
-    }
+    "population_size": 2000
   },
   "feedback": {
     "enabled": true,
@@ -155,27 +155,6 @@
       "update_frequency": 1
     }
   },
-  "scikit": {
-    "enabled": false,
-    "clustering": {
-      "enabled": true,
-      "algorithm": "hdbscan",
-      "min_cluster_size": 5,
-      "min_samples": 3
-    },
-    "anomaly_detection": {
-      "enabled": true,
-      "algorithm": "isolation_forest",
-      "contamination": 0.1,
-      "n_estimators": 100
-    },
-    "dimensionality_reduction": {
-      "enabled": true,
-      "algorithm": "pca",
-      "n_components": 3,
-      "tsne_perplexity": 30
-    }
-  },
   "quantum": {
     "entanglement_sensitivity": 3e-06,
     "fitness_weights": {
@@ -207,6 +186,27 @@
     ],
     "text_interface": true,
     "visualization_update_precision": 0.001
+  },
+  "scikit": {
+    "anomaly_detection": {
+      "algorithm": "isolation_forest",
+      "contamination": 0.1,
+      "enabled": true,
+      "n_estimators": 100
+    },
+    "clustering": {
+      "algorithm": "hdbscan",
+      "enabled": true,
+      "min_cluster_size": 5,
+      "min_samples": 3
+    },
+    "dimensionality_reduction": {
+      "algorithm": "pca",
+      "enabled": true,
+      "n_components": 3,
+      "tsne_perplexity": 30
+    },
+    "enabled": true
   },
   "simulation": {
     "log_level": "INFO",

@@ -68,6 +68,7 @@ graph_cache = {
 # ============================================================================
 
 PATH_SEGMENT_ALIASES = {
+    # Legacy feedback/evolution aliases
     'mutationrate': 'mutation_rate',
     'newedgerate': 'new_edge_rate',
     'clusteringbias': 'clustering_bias',
@@ -80,7 +81,35 @@ PATH_SEGMENT_ALIASES = {
     'djinnkernel': 'djinn_kernel',
     'diversityguard': 'diversity_guard',
     'hashsimilaritythreshold': 'hash_similarity_threshold',
-    'frequencythreshold': 'frequency_threshold'
+    'frequencythreshold': 'frequency_threshold',
+    # Scikit-learn path aliases (CRA often omits underscores)
+    'anomalydetection': 'anomaly_detection',
+    'dimensionalityreduction': 'dimensionality_reduction',
+    'minclustersize': 'min_cluster_size',
+    'minsamples': 'min_samples',
+    'nestimators': 'n_estimators',
+    'ncomponents': 'n_components',
+    'tsneperplexity': 'tsne_perplexity',
+    'isolationforest': 'isolation_forest',
+    # Neural path aliases
+    'batchsize': 'batch_size',
+    'memorysize': 'memory_size',
+    'updatefrequency': 'update_frequency',
+    'learningrate': 'learning_rate',
+    'epsilondecay': 'epsilon_decay',
+    'epsilonend': 'epsilon_end',
+    'epsilonstart': 'epsilon_start',
+    'compilemode': 'compile_mode',
+    'reuseoptimizers': 'reuse_optimizers',
+    'usecompile': 'use_compile',
+    'usescriptedinference': 'use_scripted_inference',
+    'connectionfailure': 'connection_failure',
+    'connectionsuccess': 'connection_success',
+    'fitnessimprovement': 'fitness_improvement',
+    'resourcegain': 'resource_gain',
+    'resourceloss': 'resource_loss',
+    'inheritancerate': 'inheritance_rate',
+    'inheritanceblend': 'inheritance_blend'
 }
 
 CONFIG_GUARDRAILS = {
