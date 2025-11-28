@@ -2127,6 +2127,25 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "      * Color adjustable via `componentColor_ml_analysis` setting\n"
         prompt += "    - **Autonomous Control**: You can adjust `componentColor_ml_analysis` to change ML node color (e.g., \"#32CD32\" for lime, \"#00FF00\" for green)\n"
         prompt += "    - **Configuration Control**: You can manipulate ALL scikit parameters via CONFIG_UPDATE (see section 7 below)\n"
+        prompt += "  * **Config Tuner** (config_tuner): 🧠🔧 **NEW** - Meta-cognitive autonomous parameter optimization\n"
+        prompt += "    - **Architecture**: Analyzes ML/Neural/Evolution metrics and autonomously tunes 33 parameters across all systems\n"
+        prompt += "    - **Capabilities**:\n"
+        prompt += "      * Tunes Evolution (mutation rate, diversity guard, population size, adaptation sensitivity)\n"
+        prompt += "      * Tunes Neural Learning (learning rate, gamma, epsilon decay, batch size, rewards, inheritance)\n"
+        prompt += "      * Tunes Network Dynamics (max organisms, max connections, resource pool)\n"
+        prompt += "      * Tunes Feedback Knobs (mutation rate, new edge rate, clustering bias, quantum pruning)\n"
+        prompt += "      * Tunes ML Analysis (clustering min size, anomaly contamination, n_estimators)\n"
+        prompt += "      * Tunes Quantum Substrate (initial states, entanglement sensitivity, prune interval)\n"
+        prompt += "      * Tunes VP Monitoring (adaptive response, stabilization, correlation threshold)\n"
+        prompt += "      * **Meta-Meta Tuning**: Tunes ITSELF (tuning interval, confidence threshold)\n"
+        prompt += "    - **Event Types**:\n"
+        prompt += "      * `config_tuning`: Parameter adjustment event with full details (parameter, old/new value, reason, confidence)\n"
+        prompt += "    - **Intelligence**: 9 tuning rules based on cluster diversity, anomaly ratio, fitness trends, neural loss, network density, ML effectiveness, VP stability, meta-tuning performance\n"
+        prompt += "    - **Safety**: Bounded parameters, confidence thresholds (>0.6), rate limiting, meta-learning tracks success rates\n"
+        prompt += "    - **Modes**: off / observing / learning / autonomous\n"
+        prompt += "    - **Diagnostic Endpoint**: `/api/cra/diagnostics/config_tuner` - Get tuning stats, success rates, recent actions\n"
+        prompt += "    - **Configuration Control**: Toggle via `meta_cognitive.self_tuning.enabled`, adjust mode/interval/confidence threshold\n"
+        prompt += "    - **Full Documentation**: See SELF_TUNING_GUIDE.md for complete details on all 33 tunable parameters and 9 intelligent rules\n"
         prompt += "  * **Explorer** (explorer): Phase transitions, VP calculations, sovereign IDs, mathematical capability\n"
         prompt += "  * **Djinn Kernel** (djinn_kernel): Violation pressure calculations, VP classifications (VP0-VP4), trait counts\n"
         prompt += "  * **Breath Engine** (breath): Breath cycles, depth, phase, pulse (the central rhythm driving the system)\n"
@@ -2535,6 +2554,20 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "   - `/api/ml/anomalies` - Get detected anomalous organisms and anomaly ratio\n"
         prompt += "   - `/api/ml/reduction` - Get dimensionality-reduced coordinates for visualization\n"
         prompt += "   - Use to understand organism population structure and detect unusual patterns\n\n"
+        prompt += "5d. **ConfigTuner Self-Tuning Statistics**: `/api/cra/diagnostics/config_tuner` ⭐ NEW:\n"
+        prompt += "   - Returns meta-cognitive self-tuning system status and performance\n"
+        prompt += "   - **enabled**: Whether autonomous parameter optimization is active\n"
+        prompt += "   - **mode**: Current mode (off/observing/learning/autonomous)\n"
+        prompt += "   - **total_actions**: Total parameter tuning actions attempted\n"
+        prompt += "   - **successful_actions**: Actions that improved system performance\n"
+        prompt += "   - **success_rate**: Overall success rate of tuning actions\n"
+        prompt += "   - **param_success_rates**: Success rate per parameter (which parameters tune well)\n"
+        prompt += "   - **recent_actions**: Last 10 tuning actions with parameter, change, reason, success\n"
+        prompt += "   - **tuning_interval_frames**: How often tuning occurs (e.g., every 50 frames)\n"
+        prompt += "   - **min_confidence_threshold**: Minimum confidence required to apply changes (e.g., 0.6)\n"
+        prompt += "   - Use when investigating autonomous tuning effectiveness or troubleshooting self-optimization\n"
+        prompt += "   - **CRITICAL**: If success_rate < 40%, system is struggling to self-tune (recommend increasing confidence threshold)\n"
+        prompt += "   - **WATCH FOR**: High-frequency failed actions on specific parameters (may need manual intervention)\n\n"
         prompt += "6. **PC System Resource Monitoring**: `/api/cra/system/state` and `/api/cra/health/check`\n"
         prompt += "   - Returns real-time PC stats: CPU (total, per-core), RAM, disk usage\n"
         prompt += "   - Returns Butterfly System resource usage: lattice CPU, RAM\n"
@@ -8064,6 +8097,95 @@ def cra_get_memory_stability():
             'success': False,
             'error': str(e),
             'memory_stability': {}
+        }), 500
+
+@app.route('/api/cra/diagnostics/config_tuner', methods=['GET'])
+def cra_get_config_tuner():
+    """Get ConfigTuner self-tuning statistics and status
+
+    Returns metrics about autonomous parameter optimization:
+    - enabled: Whether self-tuning is active
+    - mode: Current mode (off/observing/learning/autonomous)
+    - total_actions: Total tuning actions attempted
+    - successful_actions: Actions that improved performance
+    - success_rate: Overall success rate
+    - param_success_rates: Success rate per parameter
+    - recent_actions: Last 10 tuning actions with details
+    - tuning_interval_frames: How often tuning occurs
+    - min_confidence_threshold: Minimum confidence to act
+    """
+    try:
+        result = {
+            'enabled': False,
+            'mode': 'off',
+            'total_actions': 0,
+            'successful_actions': 0,
+            'success_rate': 0.0,
+            'param_success_rates': {},
+            'recent_actions': [],
+            'tuning_interval_frames': 50,
+            'min_confidence_threshold': 0.6,
+            'source': 'none'
+        }
+
+        # Try to get from shared state first
+        if shared_state_path.exists():
+            try:
+                with open(shared_state_path, 'r') as f:
+                    state = json.load(f)
+                    reality_sim = state.get('data', {}).get('reality_sim', {})
+
+                    # Check for config_tuner data in shared state
+                    config_tuner_data = reality_sim.get('config_tuner', {})
+                    if config_tuner_data and config_tuner_data.get('enabled', False):
+                        stats = config_tuner_data.get('stats', {})
+                        result.update({
+                            'enabled': True,
+                            'mode': config_tuner_data.get('mode', 'autonomous'),
+                            'total_actions': stats.get('total_actions', 0),
+                            'successful_actions': stats.get('successful_actions', 0),
+                            'success_rate': stats.get('success_rate', 0.0),
+                            'param_success_rates': stats.get('param_success_rates', {}),
+                            'recent_actions': stats.get('recent_actions', []),
+                            'tuning_interval_frames': config_tuner_data.get('tuning_interval_frames', 50),
+                            'min_confidence_threshold': config_tuner_data.get('min_confidence_threshold', 0.6),
+                            'source': 'shared_state'
+                        })
+            except Exception as e:
+                logger.debug(f"Could not read config_tuner from shared state: {e}")
+
+        # Also check config.json for current settings
+        config_path = Path('config.json')
+        if config_path.exists():
+            try:
+                with open(config_path, 'r') as f:
+                    config = json.load(f)
+                    meta_config = config.get('meta_cognitive', {})
+                    tuning_config = meta_config.get('self_tuning', {})
+
+                    if result['source'] == 'none':
+                        # No shared state, use config values
+                        result.update({
+                            'enabled': tuning_config.get('enabled', False),
+                            'mode': tuning_config.get('mode', 'off'),
+                            'tuning_interval_frames': tuning_config.get('tuning_interval_frames', 50),
+                            'min_confidence_threshold': tuning_config.get('min_confidence_threshold', 0.6),
+                            'source': 'config.json'
+                        })
+            except Exception as e:
+                logger.debug(f"Could not read config.json: {e}")
+
+        return jsonify({
+            'success': True,
+            'config_tuner': result,
+            'message': 'ConfigTuner self-tuning statistics - autonomous parameter optimization'
+        })
+    except Exception as e:
+        logger.error(f"Error getting config_tuner stats: {e}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'config_tuner': {}
         }), 500
 
 # ============================================================================

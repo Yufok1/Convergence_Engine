@@ -1875,6 +1875,29 @@ class RealitySimulator:
                 'enabled': False
             }
 
+        # Config Tuner System (Meta-Cognitive Self-Tuning)
+        if hasattr(self, 'config_tuner') and self.config_tuner:
+            # Get tuner stats for CRA visibility
+            tuner_stats = self.config_tuner.get_stats()
+            data['config_tuner'] = {
+                'enabled': True,
+                'mode': self.config.get('meta_cognitive', {}).get('self_tuning', {}).get('mode', 'autonomous'),
+                'stats': tuner_stats,
+                'tuning_interval_frames': self.config.get('meta_cognitive', {}).get('self_tuning', {}).get('tuning_interval_frames', 50),
+                'min_confidence_threshold': self.config.get('meta_cognitive', {}).get('self_tuning', {}).get('min_confidence_threshold', 0.6)
+            }
+        elif self.config.get('meta_cognitive', {}).get('self_tuning', {}).get('enabled', False):
+            # Tuner enabled but not initialized yet
+            data['config_tuner'] = {
+                'enabled': True,
+                'status': 'initializing'
+            }
+        else:
+            # Tuner disabled
+            data['config_tuner'] = {
+                'enabled': False
+            }
+
         return data
 
     def _make_json_serializable(self, obj):

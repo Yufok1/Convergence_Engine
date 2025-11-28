@@ -78,6 +78,7 @@ A multi-layered artificial life simulation system that creates evolving populati
   - **Meta-meta-learning**: The tuner can tune itself!
   - Safety bounds, confidence thresholds, meta-learning tracking
   - See [SELF_TUNING_GUIDE.md](./SELF_TUNING_GUIDE.md) for full details
+  - See [CRA_SELF_TUNING_GUIDE.md](./CRA_SELF_TUNING_GUIDE.md) for CRA monitoring guide
 - **Symbiotic Networks**: Social ecosystems with resource flow and cooperation
 - **Information Integration Tracking**: IIT-based metrics (Φ calculation) for consciousness detection
 - **Self-Modulation Feedback Controller**: Automatic parameter tuning based on performance metrics
