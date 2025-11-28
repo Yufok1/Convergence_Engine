@@ -241,7 +241,142 @@ CONFIG_GUARDRAILS = {
         'max': 0.5,
         'type': float,
         'label': 'evolution.diversity_guard.frequency_threshold'
-    }
+    },
+    # Neural System Settings (PyTorch DQN)
+    '/neural/enabled': {
+        'type': bool,
+        'label': 'neural.enabled'
+    },
+    '/neural/training/enabled': {
+        'type': bool,
+        'label': 'neural.training.enabled'
+    },
+    '/neural/training/learning_rate': {
+        'min': 0.0001,
+        'max': 0.1,
+        'type': float,
+        'label': 'neural.training.learning_rate'
+    },
+    '/neural/training/batch_size': {
+        'min': 8,
+        'max': 256,
+        'type': int,
+        'label': 'neural.training.batch_size'
+    },
+    '/neural/training/gamma': {
+        'min': 0.9,
+        'max': 0.999,
+        'type': float,
+        'label': 'neural.training.gamma'
+    },
+    '/neural/training/epsilon_start': {
+        'min': 0.5,
+        'max': 1.0,
+        'type': float,
+        'label': 'neural.training.epsilon_start'
+    },
+    '/neural/training/epsilon_end': {
+        'min': 0.01,
+        'max': 0.2,
+        'type': float,
+        'label': 'neural.training.epsilon_end'
+    },
+    '/neural/training/epsilon_decay': {
+        'min': 0.9,
+        'max': 0.999,
+        'type': float,
+        'label': 'neural.training.epsilon_decay'
+    },
+    '/neural/training/memory_size': {
+        'min': 1000,
+        'max': 50000,
+        'type': int,
+        'label': 'neural.training.memory_size'
+    },
+    '/neural/inheritance/enabled': {
+        'type': bool,
+        'label': 'neural.inheritance.enabled'
+    },
+    '/neural/inheritance/crossover_rate': {
+        'min': 0.5,
+        'max': 1.0,
+        'type': float,
+        'label': 'neural.inheritance.crossover_rate'
+    },
+    '/neural/inheritance/mutation_rate': {
+        'min': 0.01,
+        'max': 0.3,
+        'type': float,
+        'label': 'neural.inheritance.mutation_rate'
+    },
+    # Scikit-learn ML Enhancement Settings
+    '/scikit/enabled': {
+        'type': bool,
+        'label': 'scikit.enabled'
+    },
+    '/scikit/clustering/enabled': {
+        'type': bool,
+        'label': 'scikit.clustering.enabled'
+    },
+    '/scikit/clustering/algorithm': {
+        'type': str,
+        'allowed': ['hdbscan', 'kmeans', 'dbscan'],
+        'label': 'scikit.clustering.algorithm'
+    },
+    '/scikit/clustering/min_cluster_size': {
+        'min': 2,
+        'max': 50,
+        'type': int,
+        'label': 'scikit.clustering.min_cluster_size'
+    },
+    '/scikit/clustering/min_samples': {
+        'min': 1,
+        'max': 20,
+        'type': int,
+        'label': 'scikit.clustering.min_samples'
+    },
+    '/scikit/anomaly_detection/enabled': {
+        'type': bool,
+        'label': 'scikit.anomaly_detection.enabled'
+    },
+    '/scikit/anomaly_detection/algorithm': {
+        'type': str,
+        'allowed': ['isolation_forest', 'lof'],
+        'label': 'scikit.anomaly_detection.algorithm'
+    },
+    '/scikit/anomaly_detection/contamination': {
+        'min': 0.01,
+        'max': 0.5,
+        'type': float,
+        'label': 'scikit.anomaly_detection.contamination'
+    },
+    '/scikit/anomaly_detection/n_estimators': {
+        'min': 10,
+        'max': 500,
+        'type': int,
+        'label': 'scikit.anomaly_detection.n_estimators'
+    },
+    '/scikit/dimensionality_reduction/enabled': {
+        'type': bool,
+        'label': 'scikit.dimensionality_reduction.enabled'
+    },
+    '/scikit/dimensionality_reduction/algorithm': {
+        'type': str,
+        'allowed': ['pca', 'tsne'],
+        'label': 'scikit.dimensionality_reduction.algorithm'
+    },
+    '/scikit/dimensionality_reduction/n_components': {
+        'min': 2,
+        'max': 10,
+        'type': int,
+        'label': 'scikit.dimensionality_reduction.n_components'
+    },
+    '/scikit/dimensionality_reduction/tsne_perplexity': {
+        'min': 5,
+        'max': 50,
+        'type': int,
+        'label': 'scikit.dimensionality_reduction.tsne_perplexity'
+    },
 }
 
 
@@ -2202,6 +2337,38 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "     * Organism decision patterns (check neural_decision events)\n"
         prompt += "     * Fitness improvements (should correlate with lower loss)\n\n"
         
+        prompt += "#### Scikit-learn ML System ⭐ NEW\n"
+        prompt += "   - **Overview**: The Scikit-learn ML system provides classical machine learning algorithms for population analysis:\n"
+        prompt += "     * **HDBSCAN Clustering**: Density-based clustering to identify behavioral phenotype groups in the organism population\n"
+        prompt += "     * **Isolation Forest**: Anomaly detection to identify unusual organisms or system states\n"
+        prompt += "     * **PCA/t-SNE**: Dimensionality reduction for visualizing high-dimensional trait and behavior spaces\n"
+        prompt += "   - **System Toggle** (enable/disable entire ML subsystem):\n"
+        prompt += "     * `/scikit/enabled` (true/false, default: false) - Master toggle for Scikit-learn ML system\n"
+        prompt += "   - **Clustering Parameters** (group organisms by behavior/traits):\n"
+        prompt += "     * `/scikit/clustering/enabled` (true/false, default: true) - Enable HDBSCAN clustering\n"
+        prompt += "     * `/scikit/clustering/algorithm` (string, default: \"hdbscan\") - Clustering algorithm: \"hdbscan\", \"kmeans\", \"dbscan\"\n"
+        prompt += "     * `/scikit/clustering/min_cluster_size` (2-50, default: 5) - Minimum cluster size for HDBSCAN\n"
+        prompt += "     * `/scikit/clustering/min_samples` (1-20, default: 3) - Minimum samples for core point\n"
+        prompt += "   - **Anomaly Detection Parameters** (identify unusual organisms):\n"
+        prompt += "     * `/scikit/anomaly_detection/enabled` (true/false, default: true) - Enable Isolation Forest anomaly detection\n"
+        prompt += "     * `/scikit/anomaly_detection/algorithm` (string, default: \"isolation_forest\") - Algorithm: \"isolation_forest\", \"lof\"\n"
+        prompt += "     * `/scikit/anomaly_detection/contamination` (0.01-0.5, default: 0.1) - Expected proportion of outliers\n"
+        prompt += "     * `/scikit/anomaly_detection/n_estimators` (10-500, default: 100) - Number of estimators in forest\n"
+        prompt += "   - **Dimensionality Reduction Parameters** (visualize trait space):\n"
+        prompt += "     * `/scikit/dimensionality_reduction/enabled` (true/false, default: true) - Enable PCA/t-SNE\n"
+        prompt += "     * `/scikit/dimensionality_reduction/algorithm` (string, default: \"pca\") - Algorithm: \"pca\", \"tsne\"\n"
+        prompt += "     * `/scikit/dimensionality_reduction/n_components` (2-10, default: 3) - Number of output dimensions\n"
+        prompt += "     * `/scikit/dimensionality_reduction/tsne_perplexity` (5-50, default: 30) - t-SNE perplexity parameter\n"
+        prompt += "   - **Example Scikit-learn Config Updates**:\n"
+        prompt += "     * Enable ML system: [[CONFIG_UPDATE: {\"reason\": \"Activate ML analysis\", \"correlation_id\": \"ml-activation\", \"patch\": [{\"op\": \"replace\", \"path\": \"/scikit/enabled\", \"value\": true}]}]]\n"
+        prompt += "     * Fine-tune clustering: [[CONFIG_UPDATE: {\"reason\": \"Smaller clusters\", \"correlation_id\": \"cluster-tune\", \"patch\": [{\"op\": \"replace\", \"path\": \"/scikit/clustering/min_cluster_size\", \"value\": 3}]}]]\n"
+        prompt += "     * Increase anomaly sensitivity: [[CONFIG_UPDATE: {\"reason\": \"Find more outliers\", \"correlation_id\": \"anomaly-boost\", \"patch\": [{\"op\": \"replace\", \"path\": \"/scikit/anomaly_detection/contamination\", \"value\": 0.2}]}]]\n"
+        prompt += "     * Switch to t-SNE: [[CONFIG_UPDATE: {\"reason\": \"Better visualization\", \"correlation_id\": \"tsne-viz\", \"patch\": [{\"op\": \"replace\", \"path\": \"/scikit/dimensionality_reduction/algorithm\", \"value\": \"tsne\"}]}]]\n"
+        prompt += "   - **Scikit-learn Monitoring**: After ML config changes, monitor:\n"
+        prompt += "     * Cluster count and distribution (are organisms grouping meaningfully?)\n"
+        prompt += "     * Anomaly detection rate (how many outliers are being flagged?)\n"
+        prompt += "     * Dimensionality reduction quality (are distinct groups visible in reduced space?)\n\n"
+        
         prompt += "#### Causation Detection ⭐ NEW\n"
         prompt += "   - **Causation Detection Parameters** (control how causation links are detected and created):\n"
         prompt += "     * **Time Windows** (control how far apart events can be to still be linked):\n"
@@ -2261,6 +2428,13 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "   - **reference_triangle_bonus_count**: Edges boosted for closing reference triangles\n"
         prompt += "   - **linguistic_integration_ratio**: Ratio of language-tagged edges to total edges\n"
         prompt += "   - Use when investigating how language memory shapes network evolution\n\n"
+        prompt += "5c. **ML Analysis Endpoints** (Scikit-learn) ⭐ NEW:\n"
+        prompt += "   - `/api/ml/status` - Check if scikit-learn is available and ML analyzer is configured\n"
+        prompt += "   - `/api/ml/analysis` - Get full ML analysis (clustering, anomalies, reduction)\n"
+        prompt += "   - `/api/ml/clusters` - Get current phenotype cluster assignments and sizes\n"
+        prompt += "   - `/api/ml/anomalies` - Get detected anomalous organisms and anomaly ratio\n"
+        prompt += "   - `/api/ml/reduction` - Get dimensionality-reduced coordinates for visualization\n"
+        prompt += "   - Use to understand organism population structure and detect unusual patterns\n\n"
         prompt += "6. **PC System Resource Monitoring**: `/api/cra/system/state` and `/api/cra/health/check`\n"
         prompt += "   - Returns real-time PC stats: CPU (total, per-core), RAM, disk usage\n"
         prompt += "   - Returns Butterfly System resource usage: lattice CPU, RAM\n"
@@ -7537,6 +7711,260 @@ def cra_get_memory_stability():
             'success': False,
             'error': str(e),
             'memory_stability': {}
+        }), 500
+
+# ============================================================================
+# SCIKIT-LEARN ML ANALYSIS ENDPOINTS
+# ============================================================================
+
+@app.route('/api/ml/status', methods=['GET'])
+def ml_get_status():
+    """Get ML analyzer status - shows if sklearn is available and configured
+    
+    Returns:
+        - available: Whether scikit-learn is installed
+        - enabled: Whether ML analysis is currently enabled in config
+        - clustering_enabled: HDBSCAN/KMeans clustering toggle
+        - anomaly_enabled: Isolation Forest anomaly detection toggle
+        - reduction_enabled: PCA/t-SNE dimensionality reduction toggle
+        - algorithms: Current algorithm selections
+    """
+    try:
+        # Try to get from shared state
+        status = {
+            'available': False,
+            'enabled': False,
+            'sklearn_available': False,
+            'hdbscan_available': False,
+            'clustering_enabled': False,
+            'anomaly_enabled': False,
+            'reduction_enabled': False,
+            'clusterer_algorithm': 'none',
+            'anomaly_algorithm': 'none',
+            'reducer_algorithm': 'none',
+            'source': 'none'
+        }
+        
+        # Check if ml_utils module is available
+        try:
+            from reality_simulator.ml_utils import is_sklearn_available, HDBSCAN_AVAILABLE
+            status['available'] = True
+            status['sklearn_available'] = is_sklearn_available()
+            status['hdbscan_available'] = HDBSCAN_AVAILABLE
+        except ImportError:
+            status['available'] = False
+        
+        # Get config from current config
+        try:
+            with open('config.json', 'r') as f:
+                config = json.load(f)
+                scikit_config = config.get('scikit', {})
+                status['enabled'] = scikit_config.get('enabled', False)
+                status['clustering_enabled'] = scikit_config.get('clustering', {}).get('enabled', False)
+                status['anomaly_enabled'] = scikit_config.get('anomaly_detection', {}).get('enabled', False)
+                status['reduction_enabled'] = scikit_config.get('dimensionality_reduction', {}).get('enabled', False)
+                status['clusterer_algorithm'] = scikit_config.get('clustering', {}).get('algorithm', 'hdbscan')
+                status['anomaly_algorithm'] = scikit_config.get('anomaly_detection', {}).get('algorithm', 'isolation_forest')
+                status['reducer_algorithm'] = scikit_config.get('dimensionality_reduction', {}).get('algorithm', 'pca')
+                status['source'] = 'config'
+        except Exception as e:
+            logger.debug(f"Could not read scikit config: {e}")
+        
+        return jsonify({
+            'success': True,
+            'ml_status': status
+        })
+    except Exception as e:
+        logger.error(f"Error getting ML status: {e}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/ml/analysis', methods=['GET'])
+def ml_get_analysis():
+    """Get latest ML analysis results - clustering, anomalies, reduction
+    
+    Returns latest analysis from SymbioticNetwork's ML analyzer if available.
+    Query params:
+        - force: If 'true', forces a fresh analysis (rate-limited to 5s intervals)
+    """
+    try:
+        force = request.args.get('force', 'false').lower() == 'true'
+        
+        result = {
+            'enabled': False,
+            'clustering': None,
+            'anomalies': None,
+            'reduction': None,
+            'organism_count': 0,
+            'timestamp': None,
+            'source': 'none'
+        }
+        
+        # Try to get from shared state
+        if shared_state_path.exists():
+            try:
+                with open(shared_state_path, 'r') as f:
+                    state = json.load(f)
+                    reality_sim = state.get('data', {}).get('reality_sim', {})
+                    ml_analysis = reality_sim.get('ml_analysis', {})
+                    if ml_analysis:
+                        result.update(ml_analysis)
+                        result['source'] = 'shared_state'
+            except Exception as e:
+                logger.debug(f"Could not read ML analysis from shared state: {e}")
+        
+        return jsonify({
+            'success': True,
+            'ml_analysis': result
+        })
+    except Exception as e:
+        logger.error(f"Error getting ML analysis: {e}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/ml/clusters', methods=['GET'])
+def ml_get_clusters():
+    """Get current clustering results - phenotype groups in organism population
+    
+    Returns:
+        - n_clusters: Number of distinct clusters found
+        - cluster_sizes: Count of organisms per cluster
+        - algorithm: Clustering algorithm used (hdbscan/kmeans/dbscan)
+        - noise_count: Number of organisms not assigned to any cluster
+    """
+    try:
+        result = {
+            'n_clusters': 0,
+            'cluster_sizes': {},
+            'algorithm': 'none',
+            'noise_count': 0,
+            'timestamp': None,
+            'source': 'none'
+        }
+        
+        # Try to get from shared state
+        if shared_state_path.exists():
+            try:
+                with open(shared_state_path, 'r') as f:
+                    state = json.load(f)
+                    ml_analysis = state.get('data', {}).get('reality_sim', {}).get('ml_analysis', {})
+                    clustering = ml_analysis.get('clustering', {})
+                    if clustering:
+                        result.update(clustering)
+                        result['source'] = 'shared_state'
+            except Exception as e:
+                logger.debug(f"Could not read clustering from shared state: {e}")
+        
+        return jsonify({
+            'success': True,
+            'clusters': result
+        })
+    except Exception as e:
+        logger.error(f"Error getting cluster data: {e}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/ml/anomalies', methods=['GET'])
+def ml_get_anomalies():
+    """Get current anomaly detection results - unusual organisms in population
+    
+    Returns:
+        - anomaly_count: Number of organisms flagged as anomalies
+        - anomaly_ratio: Proportion of population flagged
+        - algorithm: Detection algorithm used (isolation_forest/lof)
+        - anomaly_organisms: List of organism IDs flagged as anomalies
+    """
+    try:
+        result = {
+            'anomaly_count': 0,
+            'anomaly_ratio': 0.0,
+            'algorithm': 'none',
+            'anomaly_organisms': [],
+            'timestamp': None,
+            'source': 'none'
+        }
+        
+        # Try to get from shared state
+        if shared_state_path.exists():
+            try:
+                with open(shared_state_path, 'r') as f:
+                    state = json.load(f)
+                    ml_analysis = state.get('data', {}).get('reality_sim', {}).get('ml_analysis', {})
+                    anomalies = ml_analysis.get('anomalies', {})
+                    if anomalies:
+                        result.update(anomalies)
+                        # Also get anomaly organisms list
+                        result['anomaly_organisms'] = ml_analysis.get('anomaly_organisms', [])
+                        result['source'] = 'shared_state'
+            except Exception as e:
+                logger.debug(f"Could not read anomalies from shared state: {e}")
+        
+        return jsonify({
+            'success': True,
+            'anomalies': result
+        })
+    except Exception as e:
+        logger.error(f"Error getting anomaly data: {e}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/ml/reduction', methods=['GET'])
+def ml_get_reduction():
+    """Get dimensionality reduction results - organism coordinates in reduced space
+    
+    Returns:
+        - n_components: Number of dimensions in reduced space
+        - algorithm: Reduction algorithm used (pca/tsne)
+        - explained_variance: Variance explained by each component (PCA only)
+        - coordinates: Dict mapping organism IDs to [x, y, z] coordinates
+    """
+    try:
+        result = {
+            'n_components': 0,
+            'algorithm': 'none',
+            'explained_variance': None,
+            'sample_count': 0,
+            'coordinates': {},
+            'timestamp': None,
+            'source': 'none'
+        }
+        
+        # Try to get from shared state
+        if shared_state_path.exists():
+            try:
+                with open(shared_state_path, 'r') as f:
+                    state = json.load(f)
+                    ml_analysis = state.get('data', {}).get('reality_sim', {}).get('ml_analysis', {})
+                    reduction = ml_analysis.get('reduction', {})
+                    if reduction:
+                        result.update(reduction)
+                        # Also get coordinates
+                        result['coordinates'] = ml_analysis.get('coordinates', {})
+                        result['source'] = 'shared_state'
+            except Exception as e:
+                logger.debug(f"Could not read reduction from shared state: {e}")
+        
+        return jsonify({
+            'success': True,
+            'reduction': result
+        })
+    except Exception as e:
+        logger.error(f"Error getting reduction data: {e}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': str(e)
         }), 500
 
 # ============================================================================

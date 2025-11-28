@@ -178,6 +178,15 @@ The CRA can now adjust `config.json` while the Butterfly System keeps running. U
 | `/evolution/mutation_rate_precision` | 1e-10 – 1e-2 | Precision for mutation adjustments |
 | `/quantum/superposition_tolerance` | 1e-6 – 0.01 | Quantum stability |
 | `/lattice/prune_threshold` | 0 – 0.01 | Particle pruning window |
+| `/neural/enabled` | true/false | Neural system master toggle |
+| `/neural/training/enabled` | true/false | Neural training toggle |
+| `/neural/training/learning_rate` | 0.0001 – 0.1 | DQN learning rate |
+| `/neural/training/epsilon_start` | 0.5 – 1.0 | Initial exploration rate |
+| `/neural/training/epsilon_end` | 0.01 – 0.2 | Final exploration rate |
+| `/scikit/enabled` | true/false | Scikit-learn ML system toggle |
+| `/scikit/clustering/enabled` | true/false | HDBSCAN clustering toggle |
+| `/scikit/anomaly_detection/enabled` | true/false | Isolation Forest toggle |
+| `/scikit/dimensionality_reduction/enabled` | true/false | PCA/t-SNE toggle |
 
 **Path Notes:** Dashes and camelCase are normalized (`/feedback/knobs/mutationrate/initial` → `/feedback/knobs/mutation_rate/initial`), but prefer underscore names.
 
@@ -201,6 +210,73 @@ The Explorer now auto-corrects Genesis VP saturation. CRA can:
 - Query `/api/config/current` → `vp_monitoring.adaptive_response` to inspect/edit tunables (`high_vp_threshold`, `streak_threshold`, `envelope_widen_factor`).
 - Use `[[CONFIG_UPDATE]]` to adjust those tunables if the system needs more/less aggression.
 - Monitor `data/logs/state.log` and `get_utm_status()` output to verify that VP drops below 0.25, arbitration instructions execute, and ledger metadata markers appear.
+
+---
+
+## 🤖 Machine Learning Systems Control
+
+The CRA has full configuration control over both ML subsystems via `[[CONFIG_UPDATE]]` commands.
+
+### Neural System (PyTorch DQN)
+
+The Neural System provides deep Q-learning for organism decision-making. Each organism has a "brain" (small neural network) that learns optimal behaviors through reinforcement learning.
+
+#### Key Config Paths
+| Path | Safe Range | Description |
+| --- | --- | --- |
+| `/neural/enabled` | true/false | Master toggle for neural learning system |
+| `/neural/training/enabled` | true/false | Enable/disable training updates |
+| `/neural/training/learning_rate` | 0.0001 – 0.1 | DQN learning rate |
+| `/neural/training/epsilon_start` | 0.5 – 1.0 | Initial exploration rate |
+| `/neural/training/epsilon_end` | 0.01 – 0.2 | Final exploration rate |
+| `/neural/rewards/connection_success` | 0.0 – 1.0 | Reward for successful connections |
+| `/neural/rewards/connection_failure` | -1.0 – 0.0 | Penalty for failed connections |
+| `/neural/inheritance/enabled` | true/false | Lamarckian weight inheritance |
+| `/neural/inheritance/mutation_rate` | 0.0 – 0.5 | Brain weight mutation during reproduction |
+
+#### Example Commands
+```
+[[CONFIG_UPDATE: {"reason": "Activate neural learning", "correlation_id": "neural-on", "patch": [{"op": "replace", "path": "/neural/enabled", "value": true}]}]]
+[[CONFIG_UPDATE: {"reason": "Faster learning", "correlation_id": "lr-boost", "patch": [{"op": "replace", "path": "/neural/training/learning_rate", "value": 0.002}]}]]
+[[CONFIG_UPDATE: {"reason": "Exploit more", "correlation_id": "exploit-mode", "patch": [{"op": "replace", "path": "/neural/training/epsilon_end", "value": 0.05}]}]]
+```
+
+#### What to Monitor
+- Training loss trends (should decrease over time)
+- Epsilon decay progression (exploration → exploitation)
+- `neural_decision` events in causation graph
+- Organism fitness correlation with neural updates
+
+### Scikit-learn ML System (Classical ML)
+
+The Scikit-learn system provides classical machine learning algorithms for population-level analysis: clustering, anomaly detection, and dimensionality reduction.
+
+#### Key Config Paths
+| Path | Safe Range | Description |
+| --- | --- | --- |
+| `/scikit/enabled` | true/false | Master toggle for Scikit-learn ML system |
+| `/scikit/clustering/enabled` | true/false | Enable HDBSCAN clustering |
+| `/scikit/clustering/algorithm` | "hdbscan", "kmeans", "dbscan" | Clustering algorithm |
+| `/scikit/clustering/min_cluster_size` | 2 – 50 | Minimum cluster size (HDBSCAN) |
+| `/scikit/anomaly_detection/enabled` | true/false | Enable Isolation Forest anomaly detection |
+| `/scikit/anomaly_detection/contamination` | 0.01 – 0.5 | Expected outlier proportion |
+| `/scikit/anomaly_detection/n_estimators` | 10 – 500 | Number of trees in forest |
+| `/scikit/dimensionality_reduction/enabled` | true/false | Enable PCA/t-SNE |
+| `/scikit/dimensionality_reduction/algorithm` | "pca", "tsne", "umap" | Reduction algorithm |
+| `/scikit/dimensionality_reduction/n_components` | 2 – 10 | Output dimensions |
+
+#### Example Commands
+```
+[[CONFIG_UPDATE: {"reason": "Activate ML analysis", "correlation_id": "ml-on", "patch": [{"op": "replace", "path": "/scikit/enabled", "value": true}]}]]
+[[CONFIG_UPDATE: {"reason": "Smaller clusters", "correlation_id": "cluster-tune", "patch": [{"op": "replace", "path": "/scikit/clustering/min_cluster_size", "value": 3}]}]]
+[[CONFIG_UPDATE: {"reason": "Find more outliers", "correlation_id": "anomaly-boost", "patch": [{"op": "replace", "path": "/scikit/anomaly_detection/contamination", "value": 0.2}]}]]
+[[CONFIG_UPDATE: {"reason": "Use t-SNE", "correlation_id": "tsne-viz", "patch": [{"op": "replace", "path": "/scikit/dimensionality_reduction/algorithm", "value": "tsne"}]}]]
+```
+
+#### Use Cases
+- **Clustering**: Identify behavioral phenotype groups in organism population
+- **Anomaly Detection**: Flag unusual organisms or system states for investigation
+- **Dimensionality Reduction**: Visualize high-dimensional trait/behavior space
 
 ---
 
@@ -566,6 +642,14 @@ The CRA acts as a **System Custodian** with:
 - `/api/cra/diagnostics/memory_breakdown` - Memory breakdown
 - `/api/cra/diagnostics/event_throughput` - Event throughput
 - `/api/cra/diagnostics/breath_cycles` - Breath cycle stats
+- `/api/cra/diagnostics/memory_stability` - ContextMemory stability metrics
+
+### ML Analysis (Scikit-learn) ⭐ NEW
+- `/api/ml/status` - Check sklearn availability and ML config
+- `/api/ml/analysis` - Full ML analysis (clustering, anomalies, reduction)
+- `/api/ml/clusters` - Current phenotype cluster assignments
+- `/api/ml/anomalies` - Detected anomalous organisms
+- `/api/ml/reduction` - Dimensionality-reduced coordinates
 
 ### VP Monitoring Diagnostics ⭐ NEW
 - `/api/diagnostic/vp_diagnostics` - VP diagnostic breakdown (trait-by-trait analysis)

@@ -13,7 +13,7 @@ Features:
 """
 
 import numpy as np
-from typing import List, Dict, Tuple, Optional, Set, Any
+from typing import List, Dict, Tuple, Optional, Set, Any, Callable
 from dataclasses import dataclass, field
 from enum import Enum
 import networkx as nx
@@ -32,6 +32,20 @@ except ImportError:
     if memory_dir not in sys.path:
         sys.path.insert(0, memory_dir)
     from context_memory import ContextMemory
+
+# Import ML utilities (optional - graceful degradation if unavailable)
+try:
+    from .ml_utils import MLAnalyzer, get_ml_analyzer, is_sklearn_available
+    ML_UTILS_AVAILABLE = True
+except ImportError:
+    try:
+        from ml_utils import MLAnalyzer, get_ml_analyzer, is_sklearn_available
+        ML_UTILS_AVAILABLE = True
+    except ImportError:
+        ML_UTILS_AVAILABLE = False
+        MLAnalyzer = None
+        get_ml_analyzer = None
+        is_sklearn_available = lambda: False
 
 try:
     from evolution_engine import Organism
@@ -642,6 +656,127 @@ class SymbioticNetwork:
         # Metrics tracking
         self.metrics = EcosystemMetrics()
         self.generation = 0
+        
+        # ML Analyzer for population analysis (optional - config-driven)
+        self.ml_analyzer: Optional[MLAnalyzer] = None
+        self.ml_config: Dict[str, Any] = {}
+        self._last_ml_analysis: Dict[str, Any] = {}
+        self._previous_cluster_count: int = 0
+        self._previous_anomaly_count: int = 0
+        
+        # Event emitter callback for causation graph integration
+        self.ml_event_emitter: Optional[Callable] = None
+
+    def configure_ml_analyzer(self, config: Dict[str, Any]):
+        """
+        Configure and enable the ML analyzer for population analysis.
+        
+        Config structure:
+        {
+            "enabled": true/false,
+            "clustering": {"enabled": true, "algorithm": "hdbscan", ...},
+            "anomaly_detection": {"enabled": true, ...},
+            "dimensionality_reduction": {"enabled": true, ...}
+        }
+        """
+        self.ml_config = config
+        if ML_UTILS_AVAILABLE and config.get('enabled', False):
+            self.ml_analyzer = get_ml_analyzer(config)
+        elif self.ml_analyzer is not None and not config.get('enabled', False):
+            self.ml_analyzer = None
+    
+    def run_ml_analysis(self, force: bool = False) -> Dict[str, Any]:
+        """
+        Run ML analysis on current organism population.
+        
+        Returns analysis results including clustering, anomalies, and dimensionality reduction.
+        Emits causation events when significant changes are detected.
+        """
+        if not ML_UTILS_AVAILABLE or self.ml_analyzer is None:
+            return {'enabled': False, 'reason': 'ML analyzer not available or disabled'}
+        
+        if not self.organisms:
+            return {'enabled': True, 'reason': 'No organisms to analyze'}
+        
+        self._last_ml_analysis = self.ml_analyzer.analyze(self.organisms, force=force)
+        
+        # Emit causation events for significant ML changes
+        if self.ml_event_emitter and self._last_ml_analysis.get('enabled'):
+            self._emit_ml_events(self._last_ml_analysis)
+        
+        return self._last_ml_analysis
+    
+    def _emit_ml_events(self, analysis: Dict[str, Any]):
+        """Emit causation events for significant ML analysis changes"""
+        try:
+            current_time = time.time()
+            
+            # Check for cluster count changes
+            clustering = analysis.get('clustering', {})
+            current_clusters = clustering.get('n_clusters', 0)
+            if current_clusters != self._previous_cluster_count and current_clusters > 0:
+                cluster_diff = current_clusters - self._previous_cluster_count
+                
+                # Import Event class for causation graph
+                try:
+                    from causation_explorer import Event
+                except ImportError:
+                    return  # Can't emit without Event class
+                
+                if abs(cluster_diff) >= 1:  # Significant cluster change
+                    event_type = 'phenotype_emergence' if cluster_diff > 0 else 'cluster_collapse'
+                    event = Event(
+                        timestamp=current_time,
+                        component='ml_analysis',
+                        event_type=event_type,
+                        data={
+                            'previous_clusters': self._previous_cluster_count,
+                            'current_clusters': current_clusters,
+                            'cluster_change': cluster_diff,
+                            'cluster_sizes': clustering.get('cluster_sizes', {}),
+                            'algorithm': clustering.get('algorithm', 'unknown'),
+                            'generation': self.generation
+                        }
+                    )
+                    self.ml_event_emitter(event)
+                
+                self._previous_cluster_count = current_clusters
+            
+            # Check for anomaly spikes
+            anomalies = analysis.get('anomalies', {})
+            current_anomalies = anomalies.get('anomaly_count', 0)
+            if current_anomalies > self._previous_anomaly_count + 2:  # Spike of 3+ anomalies
+                try:
+                    from causation_explorer import Event
+                except ImportError:
+                    return
+                
+                event = Event(
+                    timestamp=current_time,
+                    component='ml_analysis',
+                    event_type='anomaly_spike',
+                    data={
+                        'previous_anomalies': self._previous_anomaly_count,
+                        'current_anomalies': current_anomalies,
+                        'anomaly_ratio': anomalies.get('anomaly_ratio', 0.0),
+                        'algorithm': anomalies.get('algorithm', 'unknown'),
+                        'generation': self.generation
+                    }
+                )
+                self.ml_event_emitter(event)
+            
+            self._previous_anomaly_count = current_anomalies
+            
+        except Exception:
+            pass  # Don't let event emission break ML analysis
+    
+    def get_ml_status(self) -> Dict[str, Any]:
+        """Get current ML analyzer status"""
+        if not ML_UTILS_AVAILABLE:
+            return {'available': False, 'reason': 'ml_utils module not available'}
+        if self.ml_analyzer is None:
+            return {'available': True, 'enabled': False, 'reason': 'ML analyzer not configured'}
+        return self.ml_analyzer.get_status()
 
     def add_organism(self, organism: Organism):
         """Add an organism to the network"""
@@ -924,6 +1059,12 @@ class SymbioticNetwork:
         # Log memory stability metrics every 10 generations
         if self.generation % 10 == 0:
             self.log_memory_stability_metrics(self.context_memory)
+        
+        # Run ML analysis (clustering, anomaly detection, dimensionality reduction)
+        # Only runs if ML analyzer is configured and enabled
+        ml_analysis = None
+        if self.ml_analyzer is not None:
+            ml_analysis = self.run_ml_analysis()
             
         # Record generation state in context memory for episodic tracking
         self.context_memory.record_generation_state(self.generation, {
@@ -948,7 +1089,7 @@ class SymbioticNetwork:
 
         elapsed = time.time() - start_time
 
-        return {
+        result = {
             'generation': self.generation,
             'num_organisms': len(self.organisms),
             'num_connections': len(self.connections),
@@ -957,6 +1098,16 @@ class SymbioticNetwork:
             'emergent_properties': stability_analysis['emergent_properties'],
             'elapsed_seconds': elapsed
         }
+        
+        # Include ML analysis summary if available
+        if ml_analysis and ml_analysis.get('enabled'):
+            result['ml_analysis'] = {
+                'clustering': ml_analysis.get('clustering'),
+                'anomalies': ml_analysis.get('anomalies'),
+                'reduction': ml_analysis.get('reduction')
+            }
+        
+        return result
 
     def _execute_organism_actions(self, organism_actions: Dict[str, int], network_state: Dict[str, Any]):
         """

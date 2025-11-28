@@ -978,6 +978,25 @@ class UnifiedSystem:
                     pass  # Don't break if event emission fails
             
             self.reality_sim.event_emitter = neural_event_emitter
+            
+            # Wire ML event emitter for SymbioticNetwork (clustering, anomaly, phenotype events)
+            network = self.reality_sim.components.get('network')
+            if network and hasattr(network, 'ml_event_emitter'):
+                network.ml_event_emitter = neural_event_emitter  # Reuse same emitter
+                
+                # Configure ML analyzer from config if available
+                if hasattr(network, 'configure_ml_analyzer'):
+                    try:
+                        config_path = Path('config.json')
+                        if config_path.exists():
+                            with open(config_path, 'r') as f:
+                                full_config = json.load(f)
+                                scikit_config = full_config.get('scikit', {})
+                                if scikit_config.get('enabled', False):
+                                    network.configure_ml_analyzer(scikit_config)
+                                    print("[UNIFIED] [PASS] 🧠 ML Analyzer configured (Scikit-learn)")
+                    except Exception as e:
+                        print(f"[UNIFIED] [WARN] ML Analyzer configuration failed: {e}")
 
         # Initialize Phase Sync Bridge (CRITICAL INTEGRATION!)
         if PHASE_SYNC_AVAILABLE:

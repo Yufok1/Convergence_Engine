@@ -155,6 +155,27 @@
       "update_frequency": 1
     }
   },
+  "scikit": {
+    "enabled": false,
+    "clustering": {
+      "enabled": true,
+      "algorithm": "hdbscan",
+      "min_cluster_size": 5,
+      "min_samples": 3
+    },
+    "anomaly_detection": {
+      "enabled": true,
+      "algorithm": "isolation_forest",
+      "contamination": 0.1,
+      "n_estimators": 100
+    },
+    "dimensionality_reduction": {
+      "enabled": true,
+      "algorithm": "pca",
+      "n_components": 3,
+      "tsne_perplexity": 30
+    }
+  },
   "quantum": {
     "entanglement_sensitivity": 3e-06,
     "fitness_weights": {
