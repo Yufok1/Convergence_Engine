@@ -474,8 +474,9 @@ class LightweightVisualizationViewer:
             ax.set_facecolor('black')
 
             network_data = data.get("network", {})
-            num_orgs = network_data.get("organisms", 0)
-            num_conns = network_data.get("connections", 0)
+            network_info = network_data.get("network", {})
+            num_orgs = network_info.get("organisms", 0)
+            num_conns = network_info.get("connections", 0)
 
             if num_orgs > 0 and num_conns > 0:
                 # Reconstruct graph
@@ -483,7 +484,7 @@ class LightweightVisualizationViewer:
                 for i in range(num_orgs):
                     G.add_node(i)
 
-                graph_edges = network_data.get('graph_edges', [])
+                graph_edges = network_info.get('graph_edges', [])
                 if graph_edges and len(graph_edges) > self.max_edges_to_plot:
                     graph_edges = graph_edges[:self.max_edges_to_plot]
                 if graph_edges:
@@ -545,7 +546,7 @@ class LightweightVisualizationViewer:
                         clustering = nx.average_clustering(G)
                     except Exception:
                         avg_deg, clustering = 0.0, 0.0
-                    language_connections = network_data.get('language_connections', 0)
+                    language_connections = network_info.get('language_connections', 0)
                     language_ratio = (language_connections / max(1, len(G.edges()))) if len(G.edges()) else 0.0
 
                     # ==================================================================

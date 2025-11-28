@@ -695,8 +695,10 @@ class UnifiedVisualization:
 
                     # Add network metrics for diagnostic panels
                     if hasattr(network, 'metrics'):
-                        network_data['stability'] = getattr(network.metrics, 'stability_index', 0.0)
-                        network_data['connectivity'] = getattr(network.metrics, 'connectivity', 0.0)
+                        stability = getattr(network.metrics, 'stability_index', 0.0)
+                        connectivity = getattr(network.metrics, 'connectivity', 0.0)
+                        network_data['stability'] = stability
+                        network_data['connectivity'] = connectivity
 
                 # Combine data from ALL systems for comprehensive diagnostic panels
                 # Get neural data
@@ -763,7 +765,7 @@ class UnifiedVisualization:
                         }
 
                 viz_data = {
-                    'network': network_data.get('network', {}),
+                    'network': network_data,
                     'neural': neural_data,
                     'ml': ml_data,
                     'evolution': evolution_data,
@@ -1124,7 +1126,12 @@ class UnifiedSystem:
 
                 # Update reality sim (includes neural training and config tuner)
                 if self.reality_sim:
-                    self.reality_sim._update_simulation_components()
+                    try:
+                        self.reality_sim._update_simulation_components()
+                    except Exception as e:
+                        print(f"[ERROR] Reality sim update failed: {e}")
+                        import traceback
+                        traceback.print_exc()
 
                 # Get states from all systems
                 reality_sim_state = self._get_reality_sim_state()
