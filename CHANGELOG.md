@@ -6,6 +6,40 @@
 
 ## [Unreleased] - 2025-01-27
 
+### 🔧 Headless Backend & Documentation Fixes (2025-01-27)
+
+#### Added
+- **Headless Mode Support** (`unified_entry.py`)
+  - `--no-viz` flag now makes tkinter optional (no longer blocks headless runs)
+  - PreFlightChecker accepts `require_visualization` parameter
+  - Headless backend runs faster without GUI overhead
+  - Perfect for log compilation and server deployments
+
+- **Missing Documentation** (`EVENT_BUS_VS_AGENCY_ROUTER.md`)
+  - Created comprehensive guide explaining Event Bus vs Agency Router
+  - Documents integration status and usage patterns
+  - Referenced in ARCHITECTURE.md (was missing)
+
+#### Fixed
+- **Dependency Gap** (`requirements.txt`)
+  - Added `cryptography>=3.0.0` to root requirements (was only in kernel/requirements.txt)
+  - Prevents import failures in `kernel/security_compliance.py`
+
+- **Documentation Gaps** (`README.md`)
+  - Added FFmpeg installation instructions for video export
+  - Clarified headless mode usage (`--no-viz`)
+  - Documented shared_state_dump_interval behavior
+
+#### Improved
+- **Directory Hygiene** (`trait_plugins/.gitkeep`)
+  - Documented empty trait_plugins directory purpose
+  - Clarified Explorer has its own trait_plugins at `explorer/trait_plugins/`
+
+#### Technical
+- Backward compatible: All existing tests work (default `require_visualization=True`)
+- No breaking changes: Existing code paths unchanged
+- Headless performance: Faster log compilation without GUI blocking
+
 ### 🎨 Web UI UX Enhancements - Collapsible Panels (2025-01-27)
 
 #### Added

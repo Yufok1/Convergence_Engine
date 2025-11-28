@@ -96,19 +96,22 @@ class PreFlightChecker:
         self.critical_failures = []
         self.warnings = []
     
-    def check_dependencies(self) -> List[SystemCheck]:
-        """Check all Python dependencies"""
+    def check_dependencies(self, require_visualization: bool = True) -> List[SystemCheck]:
+        """Check all Python dependencies
+        
+        Args:
+            require_visualization: If False, tkinter is optional (for headless runs)
+        """
         checks = []
         
-        # Core dependencies
-        deps = {
+        # Core dependencies (always required)
+        core_deps = {
             'numpy': 'numpy',
             'networkx': 'networkx',
             'matplotlib': 'matplotlib',
-            'tkinter': 'tkinter',
         }
         
-        for dep_name, import_name in deps.items():
+        for dep_name, import_name in core_deps.items():
             try:
                 __import__(import_name)
                 checks.append(SystemCheck(
@@ -123,6 +126,39 @@ class PreFlightChecker:
                     message=f"{dep_name} missing"
                 ))
                 self.critical_failures.append(f"Missing dependency: {dep_name}")
+        
+        # Visualization dependencies (optional for headless runs)
+        if require_visualization:
+            try:
+                __import__('tkinter')
+                checks.append(SystemCheck(
+                    name="dep_tkinter",
+                    status='pass',
+                    message="tkinter available"
+                ))
+            except ImportError:
+                checks.append(SystemCheck(
+                    name="dep_tkinter",
+                    status='fail',
+                    message="tkinter missing (required for visualization)"
+                ))
+                self.critical_failures.append("Missing dependency: tkinter (required for visualization)")
+        else:
+            # Optional for headless runs
+            try:
+                __import__('tkinter')
+                checks.append(SystemCheck(
+                    name="opt_tkinter",
+                    status='pass',
+                    message="tkinter available (optional, not required for headless)"
+                ))
+            except ImportError:
+                checks.append(SystemCheck(
+                    name="opt_tkinter",
+                    status='warn',
+                    message="tkinter missing (optional for headless runs)"
+                ))
+                self.warnings.append("Optional dependency missing: tkinter (only needed for visualization)")
         
         # Optional dependencies
         optional_deps = {
@@ -273,14 +309,18 @@ class PreFlightChecker:
         
         return checks
     
-    def run_all_checks(self) -> Dict[str, Any]:
-        """Run all pre-flight checks"""
+    def run_all_checks(self, require_visualization: bool = True) -> Dict[str, Any]:
+        """Run all pre-flight checks
+        
+        Args:
+            require_visualization: If False, tkinter is optional (for headless runs)
+        """
         print("\n" + "="*70)
         print("[BUTTERFLY] PRE-FLIGHT SYSTEM CHECKS")
         print("="*70)
         
         all_checks = []
-        all_checks.extend(self.check_dependencies())
+        all_checks.extend(self.check_dependencies(require_visualization=require_visualization))
         all_checks.extend(self.check_systems())
         all_checks.extend(self.check_files())
         all_checks.extend(self.check_directories())
@@ -837,9 +877,9 @@ class UnifiedSystem:
     """The unified butterfly system - one cohesive unit"""
     
     def __init__(self, enable_visualization: bool = True):
-        # Pre-flight checks
+        # Pre-flight checks (tkinter optional for headless runs)
         checker = PreFlightChecker()
-        check_results = checker.run_all_checks()
+        check_results = checker.run_all_checks(require_visualization=enable_visualization)
         
         if not check_results['can_start']:
             raise RuntimeError("Pre-flight checks failed. Cannot start system.")
@@ -1416,7 +1456,8 @@ def main():
     
     if args.check_only:
         checker = PreFlightChecker()
-        checker.run_all_checks()
+        # For check-only, assume visualization is required (can be overridden with --no-viz)
+        checker.run_all_checks(require_visualization=not args.no_viz)
         return
     
     # Create and run unified system

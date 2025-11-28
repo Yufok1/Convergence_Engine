@@ -153,6 +153,12 @@ Interactive web interface for exploring event causation and system dynamics.
   - Diagnostic data access
 - **Evolutionary Snapshot System**: Automatic capture, server-side storage, vision analysis
 - **Video Export**: MP4 creation with AI-generated narration
+  - **Note:** Requires FFmpeg for video creation
+  - **Install FFmpeg:**
+    - Windows: `winget install ffmpeg` or download from https://ffmpeg.org/download.html
+    - Mac: `brew install ffmpeg`
+    - Linux: `sudo apt-get install ffmpeg`
+  - If FFmpeg is not available, the system will download individual PNG frames instead
 
 **Run the Web UI:**
 ```bash
@@ -181,7 +187,7 @@ cd Convergence_Engine
 pip install -r requirements.txt
 
 # Or install manually:
-pip install numpy scipy networkx psutil matplotlib flask flask-socketio requests Pillow
+pip install numpy scipy networkx psutil matplotlib flask flask-socketio requests Pillow cryptography
 
 # Optional: Neural System (PyTorch)
 pip install torch>=2.0.0  # For neural organism learning (system works without it)
@@ -231,7 +237,12 @@ python unified_entry.py
 
 # Options:
 python unified_entry.py --check-only    # Pre-flight checks only
-python unified_entry.py --no-viz        # Disable visualization
+python unified_entry.py --no-viz        # Disable visualization (headless mode - tkinter not required)
+
+Headless mode:
+- Skips tkinter dependency and GUI initialization.
+- Suitable for servers/CI and low-resource environments.
+- Logging, shared state writes, causation tracking all remain active.
 ```
 
 ### Reality Simulator (Standalone)
@@ -314,6 +325,11 @@ Edit `config.json` to customize simulation parameters:
 ```
 
 **Note:** Configuration has been optimized based on CRA analysis to address VP4 during Genesis, network fragmentation, and convergence stagnation. See `config.json` in the repository for all available options and current optimized values.
+
+**Shared State Dump Interval:**
+- `logging.shared_state_dump_interval = 0` disables periodic writes in standalone Reality Simulator mode.
+- `unified_entry.py` independently writes a unified shared state snapshot (≈1s cadence) so `0` is fine in unified runs.
+- Increase this interval (e.g. `5`) when running `reality_simulator/main.py` directly and you want external tools (web UI, viewers) to ingest fresh state.
 
 **🧠 Neural System:** Set `"neural.enabled": true` to activate PyTorch-based learning. See [NEURAL_SYSTEM_README.md](./NEURAL_SYSTEM_README.md) for details.
 
@@ -418,6 +434,9 @@ The breath engine provides unified timing:
   - Single source of truth shared across viewer, vision analysis, and video export
 - **Causation Tree Graph**: Interactive nested tree visualization for event causation trails
 - **Video Export**: MP4 creation from timeline playback or selected snapshots
+  - Requires external **FFmpeg** (not a Python package). If absent, you can still collect PNG frames.
+  - Install: Windows `winget install FFmpeg.FFmpeg`, macOS `brew install ffmpeg`, Linux `sudo apt-get install -y ffmpeg`.
+  - Assemble snapshots: `python create_video_from_frames.py <frames_dir>`
 
 ---
 

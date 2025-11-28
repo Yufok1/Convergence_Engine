@@ -27,6 +27,11 @@ pywin32>=306; sys_platform == 'win32'  # For Explorer process isolation (Windows
 torch>=2.0.0        # Core Neural Engine - DQN reinforcement learning for organisms (optional - system works without it)
 # qutip>=4.7.0        # For quantum mechanics simulation
 
+# Kernel Dependencies (required if using Djinn Kernel features)
+cryptography>=3.0.0  # Used in kernel/security_compliance.py for security features
+
+# External (not installed via pip here): FFmpeg required for video export (see README)
+
 # Note: Neural system is optional. If PyTorch is not installed, organisms use standard genetic evolution only.
 # The simulator runs on pure evolution, network dynamics, and quantum physics, with optional neural learning.
 
