@@ -1473,11 +1473,15 @@ class RealitySimulator:
 
                         # Emit phenotype emergence events if significant clusters detected
                         if self.event_emitter and clustering.get('n_clusters', 0) > 0:
-                            self.event_emitter.emit('ml_analysis', {
-                                'type': 'phenotype_emergence',
-                                'n_clusters': clustering['n_clusters'],
-                                'cluster_sizes': clustering['cluster_sizes'],
-                                'timestamp': time.time()
+                            self.event_emitter({
+                                'event_type': 'ml_analysis',
+                                'component': 'ml_analyzer',
+                                'data': {
+                                    'type': 'phenotype_emergence',
+                                    'n_clusters': clustering['n_clusters'],
+                                    'cluster_sizes': clustering['cluster_sizes'],
+                                    'timestamp': time.time()
+                                }
                             })
 
                     # Add anomaly detection results
@@ -1491,11 +1495,15 @@ class RealitySimulator:
 
                         # Emit anomaly spike events if significant anomalies detected
                         if self.event_emitter and anomalies.get('anomaly_ratio', 0) > 0.15:
-                            self.event_emitter.emit('ml_analysis', {
-                                'type': 'anomaly_spike',
-                                'anomaly_count': anomalies['anomaly_count'],
-                                'anomaly_ratio': anomalies['anomaly_ratio'],
-                                'timestamp': time.time()
+                            self.event_emitter({
+                                'event_type': 'ml_analysis',
+                                'component': 'ml_analyzer',
+                                'data': {
+                                    'type': 'anomaly_spike',
+                                    'anomaly_count': anomalies['anomaly_count'],
+                                    'anomaly_ratio': anomalies['anomaly_ratio'],
+                                    'timestamp': time.time()
+                                }
                             })
 
                     # Add dimensionality reduction results
