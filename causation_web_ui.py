@@ -4374,7 +4374,10 @@ def get_new_events():
 @app.route('/api/graph')
 def get_graph():
     """
-    Get full causation graph for visualization
+    Get causation graph for visualization
+    
+    Note: Large graphs are handled via viewport culling in the browser.
+    All data is sent to enable full graph analysis.
     
     🚀 OPTIMIZED (Phase 1):
     - Graph data caching (5-second cache to prevent timeout loops)
@@ -4594,6 +4597,9 @@ def get_graph():
         
         logger.info(f"Serializing graph response: {len(nodes)} nodes, {len(links)} links")
         try:
+            # Note: Large graphs are handled via viewport culling in the browser
+            # No server-side limiting - send all data for full analysis capability
+            
             # 🚀 OPTIMIZATION: For large graphs, send metadata first, then chunked data
             # Check if graph is large enough to warrant chunked loading
             LARGE_GRAPH_THRESHOLD = 10000  # If >10k nodes, use chunked loading

@@ -1,6 +1,0 @@
-{
-  "base_url": "https://ollama.com",
-  "api_key": "YOUR_API_KEY_HERE",
-  "timeout": 240.0
-}
-

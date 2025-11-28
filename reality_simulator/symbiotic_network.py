@@ -614,7 +614,8 @@ class SymbioticNetwork:
 
     def __init__(self, max_connections_per_organism: int = 5,
                  resource_pool_size: float = 100.0,
-                 new_edge_rate: float = 1.0):
+                 new_edge_rate: float = 1.0,
+                 context_memory: Optional[ContextMemory] = None):
         self.network_graph = nx.Graph()
         self.connections: Dict[Tuple[str, str], SymbioticConnection] = {}
         self.organisms: Dict[str, Organism] = {}
@@ -622,6 +623,10 @@ class SymbioticNetwork:
 
         # NEW: Protected linguistic subgraph with retention policies
         self.language_subgraph = LinguisticSubgraph()
+        
+        # Context memory for language anchoring and stability metrics
+        # Creates a new instance if none provided (lazy initialization pattern)
+        self.context_memory = context_memory if context_memory is not None else ContextMemory()
 
         # Component engines
         self.resource_engine = ResourceFlowEngine(resource_pool_size)
@@ -912,6 +917,21 @@ class SymbioticNetwork:
         stability_analysis = self.emergence_engine.analyze_ecosystem_stability(
             self.network_graph, self.metrics
         )
+
+        # Apply memory-based selection pressure (penalize unreferenced, boost reference triangles)
+        memory_adjustments = self.apply_memory_based_selection_pressure(self.context_memory)
+        
+        # Log memory stability metrics every 10 generations
+        if self.generation % 10 == 0:
+            self.log_memory_stability_metrics(self.context_memory)
+            
+        # Record generation state in context memory for episodic tracking
+        self.context_memory.record_generation_state(self.generation, {
+            'organism_count': len(self.organisms),
+            'connection_count': len(self.connections),
+            'avg_fitness': np.mean([org.fitness for org in self.organisms.values()]) if self.organisms else 0.0,
+            'memory_adjustments': memory_adjustments
+        })
 
         # Remove weak/unstable connections (with linguistic edge protection)
         self._prune_weak_connections_protected()
@@ -1254,10 +1274,23 @@ class SymbioticNetwork:
 # Utility function for easy network creation
 def create_symbiotic_network(organisms: List[Organism] = None,
                            max_connections: int = 5,
-                           new_edge_rate: float = 1.0) -> SymbioticNetwork:
-    """Create a symbiotic network with optional initial organisms"""
+                           new_edge_rate: float = 1.0,
+                           context_memory: Optional[ContextMemory] = None) -> SymbioticNetwork:
+    """Create a symbiotic network with optional initial organisms
+    
+    Args:
+        organisms: Optional list of initial organisms to add to the network
+        max_connections: Maximum connections per organism
+        new_edge_rate: Multiplier for connection attempt rate (0.0 to 2.0)
+        context_memory: Optional ContextMemory instance for language anchoring.
+                       If None, a new instance is created automatically.
+    
+    Returns:
+        Configured SymbioticNetwork instance
+    """
     network = SymbioticNetwork(max_connections_per_organism=max_connections,
-                               new_edge_rate=new_edge_rate)
+                               new_edge_rate=new_edge_rate,
+                               context_memory=context_memory)
 
     if organisms:
         for organism in organisms:

@@ -3523,9 +3523,9 @@
                 depthSizeRange: 0.4,                // Size difference between front/back (0-1)
                 depthParallaxAmount: 0.5,          // Parallax offset amount (0-2)
 
-                // Visual effects
-                enableShadows: true,
-                enableGlow: true,
+                // Visual effects - DISABLED BY DEFAULT for faster loading
+                enableShadows: false,              // Shadows add significant render time
+                enableGlow: false,                 // Glow adds significant render time
                 shadowOffset: 2,                   // Shadow offset in pixels (0-5)
                 shadowBlur: 3,                     // Shadow blur radius (0-10)
                 glowIntensity: 2,                   // Glow blur radius (0-5)
@@ -4086,6 +4086,12 @@
                         // Recalculate visibility
                         scheduleViewportRecalc();
                     } else {
+                        // 🚀 PERF: Build node map ONCE for O(1) lookups
+                        const nodeVisibilityMap = new Map();
+                        allNodes.forEach(n => {
+                            nodeVisibilityMap.set(n.id, filters.components[n.component || 'unknown'] !== false);
+                        });
+                        
                         // Show all nodes/links (respecting component/causation type filters)
                         if (node) {
                             node.style('display', d => {
@@ -4099,9 +4105,9 @@
                                 const baseFilter = filters.causationTypes[linkType] !== false;
                                 const sourceId = typeof d.source === 'object' ? d.source.id : d.source;
                                 const targetId = typeof d.target === 'object' ? d.target.id : d.target;
-                                // Check if both source and target nodes are visible (from component filters)
-                                const sourceVisible = allNodes.find(n => n.id === sourceId && (filters.components[n.component || 'unknown'] !== false));
-                                const targetVisible = allNodes.find(n => n.id === targetId && (filters.components[n.component || 'unknown'] !== false));
+                                // Check if both source and target nodes are visible (using Map for O(1) lookup)
+                                const sourceVisible = nodeVisibilityMap.get(sourceId) || false;
+                                const targetVisible = nodeVisibilityMap.get(targetId) || false;
                                 return baseFilter && sourceVisible && targetVisible ? 'block' : 'none';
                             });
                         }
@@ -5229,12 +5235,55 @@
                     };
                 });
                 const nodes = filteredNodes.map(d => ({ ...d }));
+                
+                // 🚀 PERF: For massive graphs, limit initial DOM creation
+                // We'll render a subset initially and use viewport culling for navigation
+                const MAX_INITIAL_NODES = 10000;  // Max nodes to create DOM elements for
+                const MAX_INITIAL_LINKS = 50000;  // Max links to create DOM elements for
+                
+                let renderNodes = nodes;
+                let renderLinks = links;
+                let isLargeGraph = false;
+                
+                if (nodes.length > MAX_INITIAL_NODES || links.length > MAX_INITIAL_LINKS) {
+                    isLargeGraph = true;
+                    console.log(`[RenderGraph] Large graph detected: ${nodes.length} nodes, ${links.length} links`);
+                    console.log(`[RenderGraph] Limiting initial render to ${MAX_INITIAL_NODES} nodes, ${MAX_INITIAL_LINKS} links`);
+                    
+                    // Sort nodes by importance (priority components first, then by connection count)
+                    const priorityComponents = new Set(['neural', 'reality_sim', 'explorer', 'djinn_kernel', 'breath']);
+                    
+                    // Quick node connection count
+                    const nodeConnCount = new Map();
+                    links.forEach(l => {
+                        nodeConnCount.set(l.source, (nodeConnCount.get(l.source) || 0) + 1);
+                        nodeConnCount.set(l.target, (nodeConnCount.get(l.target) || 0) + 1);
+                    });
+                    
+                    // Score and sort nodes
+                    const scoredNodes = nodes.map(n => ({
+                        node: n,
+                        score: (priorityComponents.has(n.component) ? 1000 : 0) + (nodeConnCount.get(n.id) || 0)
+                    }));
+                    scoredNodes.sort((a, b) => b.score - a.score);
+                    
+                    renderNodes = scoredNodes.slice(0, MAX_INITIAL_NODES).map(s => s.node);
+                    const renderNodeIds = new Set(renderNodes.map(n => n.id));
+                    
+                    // Filter links to only those connecting rendered nodes
+                    renderLinks = links.filter(l => renderNodeIds.has(l.source) && renderNodeIds.has(l.target));
+                    if (renderLinks.length > MAX_INITIAL_LINKS) {
+                        renderLinks = renderLinks.slice(0, MAX_INITIAL_LINKS);
+                    }
+                    
+                    console.log(`[RenderGraph] Rendering ${renderNodes.length} nodes, ${renderLinks.length} links`);
+                }
 
                 // Calculate link density for visual depth (safely, without circular refs)
                 const linkDensity = new Map();
                 const nodeLinkCount = new Map();
 
-                links.forEach(link => {
+                renderLinks.forEach(link => {
                     const key = `${link.source}-${link.target}`;
                     linkDensity.set(key, (linkDensity.get(key) || 0) + 1);
                     nodeLinkCount.set(link.source, (nodeLinkCount.get(link.source) || 0) + 1);
@@ -5252,7 +5301,7 @@
                 }
 
                 // Add density info to each link (safely)
-                links.forEach(link => {
+                renderLinks.forEach(link => {
                     const key = `${link.source}-${link.target}`;
                     link._density = linkDensity.get(key) || 1;
                     link._normalizedDensity = maxDensity > 0 ? link._density / maxDensity : 0;
@@ -5263,8 +5312,8 @@
                 });
 
                 // Calculate link depth based on source/target node depths (optimized with Map)
-                const nodeMapForDepth = new Map(nodes.map(n => [n.id, n]));
-                links.forEach(link => {
+                const nodeMapForDepth = new Map(renderNodes.map(n => [n.id, n]));
+                renderLinks.forEach(link => {
                     const sourceNode = nodeMapForDepth.get(link.source);
                     const targetNode = nodeMapForDepth.get(link.target);
                     const sourceDepth = sourceNode?._depthScore || 0.5;
@@ -5273,9 +5322,9 @@
                 });
 
                 // Sort links by depth (render back first, front last for proper layering)
-                links.sort((a, b) => (a._depthScore || 0.5) - (b._depthScore || 0.5));
+                renderLinks.sort((a, b) => (a._depthScore || 0.5) - (b._depthScore || 0.5));
                 // Also sort by density within same depth layer
-                links.sort((a, b) => {
+                renderLinks.sort((a, b) => {
                     const depthDiff = (a._depthScore || 0.5) - (b._depthScore || 0.5);
                     if (Math.abs(depthDiff) < 0.1) {
                         return (a._normalizedDensity || 0) - (b._normalizedDensity || 0);
@@ -5284,21 +5333,24 @@
                 });
 
                 // Sort nodes by depth (render back first, front last)
-                nodes.sort((a, b) => (a._depthScore || 0.5) - (b._depthScore || 0.5));
+                renderNodes.sort((a, b) => (a._depthScore || 0.5) - (b._depthScore || 0.5));
+
+                // 🚀 PERF: Build node lookup map ONCE (O(n) instead of O(n²) for link class assignment)
+                const nodeMapForLinks = new Map(renderNodes.map(n => [n.id, n]));
 
                 // Create link elements with volumetric depth styling
                 // Note: We'll apply viewport culling after simulation positions nodes
                 const link = graphGroup.append('g')
                     .attr('class', 'links')
                     .selectAll('line')
-                    .data(links, d => `${d.source}-${d.target}`)
+                    .data(renderLinks, d => `${d.source}-${d.target}`)
                     .enter().append('line')
                     .attr('class', d => {
-                        // Check if link connects to/from neural nodes
+                        // Check if link connects to/from neural nodes (using Map for O(1) lookup)
                         const sourceId = typeof d.source === 'object' ? d.source.id : d.source;
                         const targetId = typeof d.target === 'object' ? d.target.id : d.target;
-                        const sourceNode = nodes.find(n => n.id === sourceId);
-                        const targetNode = nodes.find(n => n.id === targetId);
+                        const sourceNode = nodeMapForLinks.get(sourceId);
+                        const targetNode = nodeMapForLinks.get(targetId);
                         const isNeuralLink = (sourceNode && sourceNode.component === 'neural') || 
                                            (targetNode && targetNode.component === 'neural');
                         return isNeuralLink ? 'link neural-link' : 'link';
@@ -5339,7 +5391,7 @@
                 const node = graphGroup.append('g')
                     .attr('class', 'nodes')
                     .selectAll('g')
-                    .data(nodes, d => d.id)
+                    .data(renderNodes, d => d.id)
                     .enter().append('g')
                     .attr('class', 'node')
                     .attr('data-node-id', d => d.id)
@@ -5501,7 +5553,7 @@
                 // Simulation - D3 force simulation will convert IDs to node references
                 // Initialize nodes with random positions (not predetermined template)
                 // This makes each load look unique and organic, not template-like
-                nodes.forEach(node => {
+                renderNodes.forEach(node => {
                     if (!node.x && !node.y) {
                         // Random position in a circle around center (distributes nodes organically)
                         const angle = Math.random() * Math.PI * 2;
@@ -5512,8 +5564,8 @@
                 });
 
                 // Convert link source/target IDs to node references for D3 simulation
-                const nodeMapForSimulation = new Map(nodes.map(n => [n.id, n]));
-                const simulationLinks = links.map(l => {
+                const nodeMapForSimulation = new Map(renderNodes.map(n => [n.id, n]));
+                const simulationLinks = renderLinks.map(l => {
                     const sourceNode = nodeMapForSimulation.get(l.source);
                     const targetNode = nodeMapForSimulation.get(l.target);
                     if (sourceNode && targetNode) {
@@ -5530,19 +5582,20 @@
                     return null;
                 }).filter(l => l !== null);
 
-                simulation = d3.forceSimulation(nodes)
-                    .force('link', d3.forceLink(simulationLinks).id(d => d.id).distance(100))
-                    .force('charge', d3.forceManyBody().strength(-300))
+                simulation = d3.forceSimulation(renderNodes)
+                    .force('link', d3.forceLink(simulationLinks).id(d => d.id).distance(80))
+                    .force('charge', d3.forceManyBody().strength(-200))  // Reduced from -300 for faster settling
                     .force('center', d3.forceCenter(width / 2, height / 2))
-                    .velocityDecay(0.6); // Higher decay = more stable, less jittery
+                    .velocityDecay(0.7)  // Increased from 0.6 for faster settling
+                    .alphaDecay(0.03);   // Faster simulation cooldown (default is 0.0228)
 
                 // Add temporal trajectories overlay (shows paths through time)
                 if (filters.showTemporalPaths) {
-                    addTemporalPaths(nodes, links);
+                    addTemporalPaths(renderNodes, renderLinks);
                 }
 
                 // Create persistent node map for tick function
-                const tickNodeMap = new Map(nodes.map(n => [n.id, n]));
+                const tickNodeMap = new Map(renderNodes.map(n => [n.id, n]));
 
                 // Optimized tick handler with requestAnimationFrame throttling
                 // This prevents excessive DOM updates and improves performance
@@ -5580,12 +5633,8 @@
                     node
                         .attr('transform', d => `translate(${d.x || 0},${d.y || 0})`);
                     
-                    // CRITICAL: Refresh node colors on every tick to ensure component colors are visible
-                    // This ensures colors are always correct, even if they were overridden
-                    node.select('.node-circle').attr('fill', d => {
-                        const comp = d.component || 'unknown';
-                        return getComponentColor(comp);
-                    });
+                    // NOTE: Node colors are set during initial render - no need to refresh every tick
+                    // Removing this expensive operation improves frame rate significantly
 
                             // Apply viewport culling every N frames (throttled for performance)
                             // Check visibility based on current node positions
@@ -5608,7 +5657,7 @@
                                         }[lodLevel] || Infinity;
                                         
                                         // Check each node's visibility (only if node has position)
-                                        nodes.forEach(node => {
+                                        renderNodes.forEach(node => {
                                             if (visibleCount < maxNodes && node.x !== undefined && node.y !== undefined) {
                                                 if (isPointInViewport(node.x, node.y, bounds)) {
                                                     visibleNodeIds.add(node.id);
@@ -5642,15 +5691,14 @@
                     }
                 });
 
-                // Force refresh all node colors after simulation starts
-                // This ensures component colors are visible from the start
+                // Single consolidated end handler (D3 only keeps one per event name)
                 simulation.on('end', () => {
+                    // Refresh node colors once when simulation ends
                     if (svg) {
                         svg.selectAll('.node-circle').attr('fill', d => {
                             const comp = d.component || 'unknown';
                             return getComponentColor(comp);
                         }).attr('fill-opacity', d => {
-                            // Ensure minimum 0.7 opacity for color visibility
                             const depthScore = d._depthScore || 0.5;
                             const depthStrength = vizSettings.depthStrength;
                             const minOpacity = Math.max(0.7, vizSettings.nodeMinOpacity);
@@ -5661,33 +5709,15 @@
                             return Math.max(0.7, calculatedOpacity);
                         });
                     }
-                });
-                
-                // Initial temporal paths if enabled
-                if (filters.showTemporalPaths) {
-                    simulation.on('end', () => {
-                        addTemporalPaths(nodes);
-                    });
-                }
-                
-                // Force refresh all node colors when simulation ends
-                // This ensures component colors are visible from the start
-                simulation.on('end', () => {
-                    if (svg) {
-                        svg.selectAll('.node-circle').attr('fill', d => {
-                            const comp = d.component || 'unknown';
-                            return getComponentColor(comp);
-                        }).attr('fill-opacity', d => {
-                            // Ensure minimum 0.7 opacity for color visibility
-                            const depthScore = d._depthScore || 0.5;
-                            const depthStrength = vizSettings.depthStrength;
-                            const minOpacity = Math.max(0.7, vizSettings.nodeMinOpacity);
-                            const maxOpacity = vizSettings.nodeMaxOpacity;
-                            const opacityRange = maxOpacity - minOpacity;
-                            const depthOpacityRange = vizSettings.depthOpacityRange;
-                            const calculatedOpacity = minOpacity + (depthScore * opacityRange * depthOpacityRange * depthStrength);
-                            return Math.max(0.7, calculatedOpacity);
-                        });
+                    
+                    // Add temporal paths if enabled
+                    if (filters.showTemporalPaths) {
+                        addTemporalPaths(renderNodes);
+                    }
+                    
+                    // Log if we had to limit the graph
+                    if (isLargeGraph) {
+                        console.log(`[RenderGraph] Large graph render complete. Showing ${renderNodes.length}/${nodes.length} nodes, ${renderLinks.length}/${links.length} links`);
                     }
                 });
                 

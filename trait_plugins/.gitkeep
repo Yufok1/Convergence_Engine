@@ -1,8 +1,0 @@
-# This directory is intentionally empty
-# 
-# The Explorer system maintains its own trait_plugins directory at:
-# explorer/trait_plugins/
-#
-# This root-level directory exists for potential future use or compatibility.
-# It is safe to ignore or remove if not needed.
-
