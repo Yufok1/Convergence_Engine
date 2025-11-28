@@ -163,6 +163,16 @@ The CRA can modify `config.json` while the system is running using:
 - `vp_monitoring.component_decomposition_enabled`
 - `vp_monitoring.adaptive_thresholds_enabled`
 
+#### Meta-Cognitive Self-Tuning
+- `meta_cognitive.self_tuning.enabled` (true/false, default: true) - Enable/disable autonomous config tuning
+- `meta_cognitive.self_tuning.mode` ("off"/"observing"/"learning"/"autonomous", default: "autonomous")
+- `meta_cognitive.self_tuning.tuning_interval_frames` (10-200 frames, default: 50) - How often tuner analyzes system
+- `meta_cognitive.self_tuning.min_confidence_threshold` (0.3-0.95, default: 0.6) - Minimum confidence to apply changes
+
+**Examples:**
+- `[[CONFIG_UPDATE: {"reason": "Speed up tuning for rapid adaptation", "patch": [{"op": "replace", "path": "/meta_cognitive/self_tuning/tuning_interval_frames", "value": 25}]}]]`
+- `[[CONFIG_UPDATE: {"reason": "Make tuner more conservative", "patch": [{"op": "replace", "path": "/meta_cognitive/self_tuning/min_confidence_threshold", "value": 0.8}]}]]`
+
 #### Causation Detection ⭐ NEW
 - `causation_detection.direct_causation_time_window` (0.1-10.0 seconds, default: 1.0)
 - `causation_detection.phase_transition_time_window` (0.5-10.0 seconds, default: 2.0)
