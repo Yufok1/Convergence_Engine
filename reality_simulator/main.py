@@ -1059,6 +1059,42 @@ class RealitySimulator:
                 if hasattr(network, 'ml_event_emitter') and network.ml_event_emitter is None:
                     network.ml_event_emitter = self.event_emitter
 
+            # Initialize metrics with default values so visualization always has data
+            # Neural metrics
+            if self.config.get('neural', {}).get('enabled', False):
+                if self.neural_trainer:
+                    self._neural_metrics = {
+                        'enabled': True,
+                        'training_loss': 0.0,
+                        'epsilon': self.config.get('neural', {}).get('training', {}).get('epsilon_start', 1.0),
+                        'organisms_trained': 0,
+                        'status': 'initialized'
+                    }
+                else:
+                    self._neural_metrics = {
+                        'enabled': False,
+                        'error': 'trainer_unavailable'
+                    }
+            else:
+                self._neural_metrics = {'enabled': False}
+
+            # ML metrics
+            if self.config.get('scikit', {}).get('enabled', False):
+                if self.ml_analyzer:
+                    self._ml_metrics = {
+                        'enabled': True,
+                        'clustering': {'n_clusters': 0},
+                        'anomalies': {'anomaly_ratio': 0.0},
+                        'status': 'initialized'
+                    }
+                else:
+                    self._ml_metrics = {
+                        'enabled': False,
+                        'error': 'analyzer_unavailable'
+                    }
+            else:
+                self._ml_metrics = {'enabled': False}
+
             print(ColorScheme.colorize("[SUCCESS] All components initialized successfully!", ColorScheme.SUCCESS))
             return True
 

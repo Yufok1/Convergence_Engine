@@ -705,13 +705,27 @@ class UnifiedVisualization:
                 evolution_data = {}
                 if hasattr(self, 'reality_sim') and hasattr(self.reality_sim, 'components'):
                     evolution = self.reality_sim.components.get('evolution')
-                    if evolution:
-                        evolution_data = {
-                            'generation': evolution.generation if hasattr(evolution, 'generation') else 0,
-                            'population_size': len(evolution.population) if evolution.population else 0,
-                            'best_fitness': max(org.fitness for org in evolution.population) if evolution.population else 0.0,
-                            'avg_fitness': sum(org.fitness for org in evolution.population) / len(evolution.population) if evolution.population else 0.0
-                        }
+                    if evolution and hasattr(evolution, 'population'):
+                        pop = evolution.population
+                        # Handle population as dict or list
+                        pop_values = pop.values() if isinstance(pop, dict) else pop
+                        pop_size = len(pop) if pop else 0
+
+                        if pop_size > 0:
+                            fitnesses = [org.fitness for org in pop_values if hasattr(org, 'fitness')]
+                            evolution_data = {
+                                'generation': evolution.generation if hasattr(evolution, 'generation') else 0,
+                                'population_size': pop_size,
+                                'best_fitness': max(fitnesses) if fitnesses else 0.0,
+                                'avg_fitness': sum(fitnesses) / len(fitnesses) if fitnesses else 0.0
+                            }
+                        else:
+                            evolution_data = {
+                                'generation': evolution.generation if hasattr(evolution, 'generation') else 0,
+                                'population_size': 0,
+                                'best_fitness': 0.0,
+                                'avg_fitness': 0.0
+                            }
 
                 # Get config_tuner data
                 config_tuner_data = {}
@@ -832,14 +846,14 @@ class UnifiedVisualization:
                     f"CLUSTERING: {clust:.3f}\n"
                     f"PATH LENGTH: {path_len:.2f}"
                 )
-                # Position stats box bottom-center, clustered around the grid visualization
-                ax.text2D(0.5, 0.18, all_stats, ha='center', va='bottom', color='cyan',
-                         fontsize=11, family='monospace', fontweight='bold', transform=ax.transAxes,
-                         bbox=dict(boxstyle='round,pad=0.8', facecolor='black', alpha=0.9, edgecolor='cyan', linewidth=2.5))
+                # Position stats box on left side, between Network Topology and Evolution panels
+                ax.text2D(0.10, 0.50, all_stats, ha='left', va='center', color='cyan',
+                         fontsize=10, family='monospace', fontweight='bold', transform=ax.transAxes,
+                         bbox=dict(boxstyle='round,pad=0.7', facecolor='black', alpha=0.9, edgecolor='cyan', linewidth=2.5))
 
-                # System label - bottom right (small, unobtrusive)
-                ax.text2D(0.90, 0.10, 'Left Wing', ha='right', va='bottom', color='cyan',
-                         fontsize=10, family='monospace', style='italic', transform=ax.transAxes, alpha=0.7)
+                # System label - top left corner near title (small, unobtrusive)
+                ax.text2D(0.10, 0.95, 'Left Wing', ha='left', va='top', color='cyan',
+                         fontsize=9, family='monospace', style='italic', transform=ax.transAxes, alpha=0.6)
 
                 return
         except Exception as e:

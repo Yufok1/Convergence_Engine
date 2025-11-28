@@ -687,6 +687,10 @@ class LightweightVisualizationViewer:
                         change = last.get('change', '')
                         success_icon = "✅" if last.get('success', False) else "❌"
                         events_text += f"\n{success_icon} {param}: {change}"
+                    elif tuner_enabled:
+                        events_text += "\nMonitoring..."
+                    else:
+                        events_text += "\nNo tuner active"
 
                     ax.text2D(0.50, 0.10, events_text, transform=ax.transAxes,
                               ha='center', va='bottom', fontsize=7, color='orange',
