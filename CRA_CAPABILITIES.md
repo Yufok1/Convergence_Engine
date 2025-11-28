@@ -14,6 +14,48 @@ The Convergence Research Assistant (CRA) is an AI-powered research assistant tha
 
 ---
 
+## 🎯 System Maturity Awareness (Context-Sensitive Diagnostics)
+
+**NEW**: The CRA now recognizes system maturity states and adjusts diagnostic severity accordingly. This prevents false alarms during early startup.
+
+### Maturity Thresholds
+
+| Metric | Early Startup | Warming Up | Mature | Notes |
+|--------|---------------|------------|--------|-------|
+| Frame Count | < 10 | 10-100 | > 100 | First 10 frames = initialization |
+| Organism Count | < 50 | 50-200 | > 200 | Population needs time to grow |
+| Neural Training Steps | < 10 | 10-100 | > 100 | DQN needs warm-up |
+| Causation Links | 0 | 1-10 | > 10 | Links form over time |
+| ML Clusters | 0 | 1-3 | > 3 | Need population for clustering |
+| Breath Cycles | < 5 | 5-20 | > 20 | System rhythm stabilizes |
+
+### Severity Levels by Maturity
+
+**🟢 EARLY STARTUP (Frame < 10, Organisms < 50)**
+- All zeros and missing data = NORMAL, not failures
+- Neural loss = None is EXPECTED (no training yet)
+- Causation links = 0 is EXPECTED (no events yet)
+- ML clusters = 0 is EXPECTED (population too small)
+- **Severity**: INFO only, never CRITICAL
+
+**🟡 WARMING UP (Frame 10-100, Organisms 50-200)**
+- Some metrics may still be zero or low
+- Neural training should show first losses
+- Causation links should start appearing
+- **Severity**: WARNING only for metrics that should be non-zero
+
+**🔴 MATURE (Frame > 100, Organisms > 200)**
+- All systems should be producing data
+- Zero values now indicate actual problems
+- **Severity**: CRITICAL is appropriate for missing expected data
+
+### Critical Rule
+
+> **Never flag CRITICAL on a system with Frame < 10 or Organisms < 50.**
+> Early startup metrics are NOT failures - they're expected initialization states.
+
+---
+
 ## 🧠 Core Capabilities
 
 ### 1. Pattern Recognition Excellence
