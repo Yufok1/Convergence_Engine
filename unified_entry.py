@@ -512,14 +512,15 @@ class StateLogger:
 
 class UnifiedVisualization:
     """Three-panel visualization: Left=Reality Sim, Middle=Explorer, Right=Djinn Kernel"""
-    
-    def __init__(self, network_ref=None, renderer_ref=None):
+
+    def __init__(self, network_ref=None, renderer_ref=None, reality_sim_ref=None):
         self.root = None
         self.fig = None
         self.axes = {}
         self.running = False
         self._network_ref = network_ref  # Reference to Reality Simulator network
         self._renderer_ref = renderer_ref  # Reference to Reality Simulator renderer
+        self.reality_sim = reality_sim_ref  # Reference to Reality Simulator itself for metrics
         self.grid_enabled = True  # Grid toggle state
         self.canvas = None  # Store canvas reference for redraw
         self._last_reality_sim_state = {}  # Store last state for redraw
@@ -1095,7 +1096,7 @@ class UnifiedSystem:
         # Initialize visualization with references to Reality Simulator components (AFTER systems are initialized)
         network_ref = getattr(self.reality_sim, 'components', {}).get('network') if self.reality_sim else None
         renderer_ref = getattr(self.reality_sim, 'components', {}).get('renderer') if self.reality_sim else None
-        self.visualization = UnifiedVisualization(network_ref=network_ref, renderer_ref=renderer_ref) if enable_visualization else None
+        self.visualization = UnifiedVisualization(network_ref=network_ref, renderer_ref=renderer_ref, reality_sim_ref=self.reality_sim) if enable_visualization else None
         if self.visualization:
             self.visualization.initialize()
         
