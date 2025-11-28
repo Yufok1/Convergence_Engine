@@ -688,9 +688,59 @@ class UnifiedVisualization:
                     node_map = {node: i for i, node in enumerate(G.nodes())}
                     network_data['network']['graph_edges'] = [(node_map[u], node_map[v]) for u, v in G.edges()]
 
-                # Combine data
+                # Combine data from ALL systems for comprehensive diagnostic panels
+                # Get neural data
+                neural_data = {}
+                if hasattr(self, 'reality_sim') and hasattr(self.reality_sim, '_neural_metrics'):
+                    neural_data = self.reality_sim._neural_metrics
+
+                # Get ML data
+                ml_data = {}
+                if hasattr(self, 'reality_sim') and hasattr(self.reality_sim, '_ml_metrics'):
+                    ml_data = self.reality_sim._ml_metrics
+
+                # Get evolution data
+                evolution_data = {}
+                if hasattr(self, 'reality_sim') and hasattr(self.reality_sim, 'components'):
+                    evolution = self.reality_sim.components.get('evolution')
+                    if evolution:
+                        evolution_data = {
+                            'generation': evolution.generation if hasattr(evolution, 'generation') else 0,
+                            'population_size': len(evolution.population) if evolution.population else 0,
+                            'best_fitness': max(org.fitness for org in evolution.population) if evolution.population else 0.0,
+                            'avg_fitness': sum(org.fitness for org in evolution.population) / len(evolution.population) if evolution.population else 0.0
+                        }
+
+                # Get config_tuner data
+                config_tuner_data = {}
+                if hasattr(self, 'reality_sim') and hasattr(self.reality_sim, 'config_tuner') and self.reality_sim.config_tuner:
+                    tuner_stats = self.reality_sim.config_tuner.get_stats()
+                    config_tuner_data = {
+                        'enabled': True,
+                        'mode': self.reality_sim.config.get('meta_cognitive', {}).get('self_tuning', {}).get('mode', 'unknown'),
+                        'stats': tuner_stats
+                    }
+
+                # Get djinn_kernel data (VP info)
+                djinn_kernel_data = self._get_djinn_kernel_state()
+
+                # Get quantum data
+                quantum_data = {}
+                if hasattr(self, 'reality_sim') and hasattr(self.reality_sim, 'components'):
+                    quantum = self.reality_sim.components.get('quantum')
+                    if quantum:
+                        quantum_data = {
+                            'states': len(quantum.states) if hasattr(quantum, 'states') else 0
+                        }
+
                 viz_data = {
-                    'network': network_data.get('network', {})
+                    'network': network_data.get('network', {}),
+                    'neural': neural_data,
+                    'ml': ml_data,
+                    'evolution': evolution_data,
+                    'config_tuner': config_tuner_data,
+                    'djinn_kernel': djinn_kernel_data,
+                    'quantum': quantum_data
                 }
 
                 # Ensure 3D axes
@@ -704,14 +754,12 @@ class UnifiedVisualization:
                     ax = fig.add_subplot(131, projection='3d')
                     self.axes['left'] = ax
 
-                # Render using the existing 3D method
+                # Render using the existing 3D method (includes enhanced diagnostic panels!)
                 self._viewer.render_network_graph(viz_data, ax)
 
-                # Clear any text overlays from the viewer (we'll add our own organized layout)
-                # Remove all text2D elements that the viewer may have added
-                for text_obj in ax.texts:
-                    if hasattr(text_obj, 'get_position'):
-                        text_obj.remove()
+                # NOTE: Do NOT remove text overlays - render_network_graph now includes
+                # comprehensive 5-panel diagnostic dashboard utilizing empty space!
+                # Panels: Network Topology, Neural/ML, Evolution/VP, Meta-Cognitive, Events
 
                 # Make network dominant - set equal aspect and proper limits
                 ax.set_box_aspect([1, 1, 1])
