@@ -578,22 +578,33 @@ class LightweightVisualizationViewer:
 
                     panel2_lines = ["━━━ NEURAL & ML ━━━"]
                     if neural_enabled:
-                        training_loss = neural_data.get('training_loss', 0.0)
-                        epsilon = neural_data.get('avg_epsilon', neural_data.get('epsilon', 0.0))
-                        organisms_tracked = neural_data.get('organisms_tracked', 0)
-                        training_steps = neural_data.get('training_steps', 0)
+                        # Check for error state first
+                        if 'error' in neural_data:
+                            error_msg = neural_data['error']
+                            # Truncate long error messages
+                            if len(error_msg) > 40:
+                                error_msg = error_msg[:37] + "..."
+                            panel2_lines.extend([
+                                f"🧠 Neural: ERROR",
+                                f"{error_msg}"
+                            ])
+                        else:
+                            training_loss = neural_data.get('training_loss', 0.0)
+                            epsilon = neural_data.get('avg_epsilon', neural_data.get('epsilon', 0.0))
+                            organisms_tracked = neural_data.get('organisms_tracked', 0)
+                            training_steps = neural_data.get('training_steps', 0)
 
-                        # Handle None values properly
-                        loss_str = f"{training_loss:.4f}" if training_loss is not None else "N/A"
-                        epsilon_val = epsilon if epsilon is not None else 0.0
+                            # Handle None values properly
+                            loss_str = f"{training_loss:.4f}" if training_loss is not None else "N/A"
+                            epsilon_val = epsilon if epsilon is not None else 0.0
 
-                        panel2_lines.extend([
-                            f"🧠 Neural: ACTIVE",
-                            f"Loss: {loss_str}",
-                            f"Epsilon: {epsilon_val:.3f}",
-                            f"Tracked: {organisms_tracked}",
-                            f"Steps: {training_steps}"
-                        ])
+                            panel2_lines.extend([
+                                f"🧠 Neural: ACTIVE",
+                                f"Loss: {loss_str}",
+                                f"Epsilon: {epsilon_val:.3f}",
+                                f"Tracked: {organisms_tracked}",
+                                f"Steps: {training_steps}"
+                            ])
                     else:
                         panel2_lines.append("🧠 Neural: OFF")
 

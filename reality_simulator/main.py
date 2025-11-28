@@ -1303,6 +1303,12 @@ class RealitySimulator:
 
     def _update_simulation_components(self):
         """Update all simulation components for one time step"""
+        # Increment frame count for unified mode
+        if hasattr(self, 'frame_count'):
+            self.frame_count += 1
+        else:
+            self.frame_count = 0
+
         # Update quantum substrate (create new quantum states)
         if 'quantum' in self.components:
             quantum_manager = self.components['quantum']
@@ -1315,11 +1321,9 @@ class RealitySimulator:
             
             # Adaptive pruning: Check performance and prune if needed
             prune_check_interval = self.config.get('quantum', {}).get('prune_check_interval', 50)
-            # Use frame_count if available (tracked in run_simulation), otherwise use call counter
-            # Note: frame_count is incremented AFTER _update_simulation_components, so we check previous frame
+            # Use frame_count if available (incremented at start of this method)
             if hasattr(self, 'frame_count'):
-                # Check if we should prune based on previous frame count (will increment after this update)
-                frame_count_for_check = self.frame_count + 1
+                frame_count_for_check = self.frame_count
             else:
                 # Fallback: track internally
                 if not hasattr(quantum_manager, '_prune_check_counter'):
