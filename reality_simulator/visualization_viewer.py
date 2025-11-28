@@ -578,12 +578,17 @@ class LightweightVisualizationViewer:
                     panel2_lines = ["━━━ NEURAL & ML ━━━"]
                     if neural_enabled:
                         training_loss = neural_data.get('training_loss', 0.0)
-                        epsilon = neural_data.get('epsilon', 0.0)
+                        epsilon = neural_data.get('avg_epsilon', neural_data.get('epsilon', 0.0))
                         organisms_trained = neural_data.get('organisms_trained', 0)
+
+                        # Handle None values properly
+                        loss_str = f"{training_loss:.4f}" if training_loss is not None else "N/A"
+                        epsilon_val = epsilon if epsilon is not None else 0.0
+
                         panel2_lines.extend([
                             f"🧠 Neural: ACTIVE",
-                            f"Loss: {training_loss:.4f}",
-                            f"Epsilon: {epsilon:.3f}",
+                            f"Loss: {loss_str}",
+                            f"Epsilon: {epsilon_val:.3f}",
                             f"Trained: {organisms_trained}"
                         ])
                     else:
