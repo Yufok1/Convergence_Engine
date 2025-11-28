@@ -901,7 +901,7 @@ class BiphasicController:
                     # Publish reflection results to event bus for system coordination
                     if hasattr(self.lawfold_orchestrator, 'utm_kernel') and self.lawfold_orchestrator.utm_kernel:
                         try:
-                            from event_driven_coordination import DjinnEvent, EventType
+                            from kernel.event_driven_coordination import DjinnEvent, EventType
                             reflection_event = DjinnEvent(
                                 event_type=EventType.META_SOVEREIGN_REFLECTION,
                                 data={
@@ -909,8 +909,7 @@ class BiphasicController:
                                     "civilization_state": civilization_state,
                                     "breath_cycle": breath_data.get('cycle_count', 0)
                                 },
-                                source="lawfold_field_orchestrator",
-                                timestamp=time.time()
+                                source_agent="lawfold_field_orchestrator"
                             )
                             self.lawfold_orchestrator.utm_kernel.event_bus.publish(reflection_event)
                         except Exception as event_err:

@@ -54,15 +54,19 @@ class DjinnEvent:
     timestamp: datetime = field(default_factory=datetime.utcnow)
     source_agent: Optional[str] = None
     priority: int = 0  # Higher number = higher priority
+    data: Optional[Dict[str, Any]] = None  # Generic payload for flexible event data
     
     def to_dict(self) -> Dict[str, Any]:
-        return {
+        result = {
             "event_id": self.event_id,
             "event_type": self.event_type.value,
-            "timestamp": self.timestamp.isoformat() + "Z",
+            "timestamp": self.timestamp.isoformat() + "Z" if isinstance(self.timestamp, datetime) else str(self.timestamp),
             "source_agent": self.source_agent,
             "priority": self.priority
         }
+        if self.data:
+            result["data"] = self.data
+        return result
 
 
 @dataclass
