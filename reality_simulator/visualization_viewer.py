@@ -547,14 +547,151 @@ class LightweightVisualizationViewer:
                         avg_deg, clustering = 0.0, 0.0
                     language_connections = network_data.get('language_connections', 0)
                     language_ratio = (language_connections / max(1, len(G.edges()))) if len(G.edges()) else 0.0
-                    stats_text = (
+
+                    # ==================================================================
+                    # COMPREHENSIVE DIAGNOSTIC PANELS (utilizing empty space)
+                    # ==================================================================
+
+                    # Panel 1: TOP-LEFT - Network Topology Metrics
+                    stability = network_data.get('stability', 0.0)
+                    connectivity = network_data.get('connectivity', 0.0)
+                    panel1_text = (
+                        f"━━━ NETWORK TOPOLOGY ━━━\n"
                         f"Nodes: {len(G.nodes())}\n"
                         f"Edges: {len(G.edges())}\n"
-                        f"Avg degree: {avg_deg:.2f}\n"
-                        f"Clustering: {clustering:.2f}"
+                        f"Avg Degree: {avg_deg:.2f}\n"
+                        f"Clustering: {clustering:.3f}\n"
+                        f"Stability: {stability:.3f}\n"
+                        f"Connectivity: {connectivity:.3f}"
                     )
-                    ax.text2D(0.02, 0.98, stats_text, transform=ax.transAxes,
-                              ha='left', va='top', fontsize=9, color='white', bbox=dict(facecolor='black', alpha=0.3, edgecolor='white', linewidth=0.5))
+                    ax.text2D(0.02, 0.98, panel1_text, transform=ax.transAxes,
+                              ha='left', va='top', fontsize=8, color='cyan',
+                              bbox=dict(facecolor='black', alpha=0.7, edgecolor='cyan', linewidth=1),
+                              family='monospace')
+
+                    # Panel 2: TOP-RIGHT - Neural & ML Insights
+                    neural_data = data.get('neural', {})
+                    ml_data = data.get('ml', {})
+                    neural_enabled = neural_data.get('enabled', False)
+                    ml_enabled = ml_data.get('enabled', False)
+
+                    panel2_lines = ["━━━ NEURAL & ML ━━━"]
+                    if neural_enabled:
+                        training_loss = neural_data.get('training_loss', 0.0)
+                        epsilon = neural_data.get('epsilon', 0.0)
+                        organisms_trained = neural_data.get('organisms_trained', 0)
+                        panel2_lines.extend([
+                            f"🧠 Neural: ACTIVE",
+                            f"Loss: {training_loss:.4f}",
+                            f"Epsilon: {epsilon:.3f}",
+                            f"Trained: {organisms_trained}"
+                        ])
+                    else:
+                        panel2_lines.append("🧠 Neural: OFF")
+
+                    if ml_enabled:
+                        clustering = ml_data.get('clustering', {})
+                        anomalies = ml_data.get('anomalies', {})
+                        n_clusters = clustering.get('n_clusters', 0)
+                        anomaly_ratio = anomalies.get('anomaly_ratio', 0.0)
+                        panel2_lines.extend([
+                            f"🔬 ML: ACTIVE",
+                            f"Clusters: {n_clusters}",
+                            f"Anomalies: {anomaly_ratio:.1%}"
+                        ])
+                    else:
+                        panel2_lines.append("🔬 ML: OFF")
+
+                    panel2_text = "\n".join(panel2_lines)
+                    ax.text2D(0.98, 0.98, panel2_text, transform=ax.transAxes,
+                              ha='right', va='top', fontsize=8, color='magenta',
+                              bbox=dict(facecolor='black', alpha=0.7, edgecolor='magenta', linewidth=1),
+                              family='monospace')
+
+                    # Panel 3: BOTTOM-LEFT - Evolution & VP Metrics
+                    evolution_data = data.get('evolution', {})
+                    generation = evolution_data.get('generation', 0)
+                    best_fitness = evolution_data.get('best_fitness', 0.0)
+                    avg_fitness = evolution_data.get('avg_fitness', 0.0)
+                    population_size = evolution_data.get('population_size', 0)
+
+                    # Get VP data from djinn_kernel (correct location in unified_entry structure)
+                    djinn_kernel_data = data.get('djinn_kernel', {})
+                    vp_value = djinn_kernel_data.get('violation_pressure', 0.0)
+                    vp_classification = djinn_kernel_data.get('vp_classification', 'VP0')
+
+                    panel3_text = (
+                        f"━━━ EVOLUTION & VP ━━━\n"
+                        f"Generation: {generation}\n"
+                        f"Population: {population_size}\n"
+                        f"Best Fitness: {best_fitness:.4f}\n"
+                        f"Avg Fitness: {avg_fitness:.4f}\n"
+                        f"VP: {vp_value:.4f}\n"
+                        f"Class: {vp_classification}"
+                    )
+                    ax.text2D(0.02, 0.02, panel3_text, transform=ax.transAxes,
+                              ha='left', va='bottom', fontsize=8, color='lime',
+                              bbox=dict(facecolor='black', alpha=0.7, edgecolor='lime', linewidth=1),
+                              family='monospace')
+
+                    # Panel 4: BOTTOM-RIGHT - ConfigTuner & Meta-Cognitive
+                    config_tuner_data = data.get('config_tuner', {})
+                    tuner_enabled = config_tuner_data.get('enabled', False)
+
+                    panel4_lines = ["━━━ META-COGNITIVE ━━━"]
+                    if tuner_enabled:
+                        tuner_mode = config_tuner_data.get('mode', 'unknown')
+                        tuner_stats = config_tuner_data.get('stats', {})
+                        total_actions = tuner_stats.get('total_actions', 0)
+                        success_rate = tuner_stats.get('success_rate', 0.0)
+                        recent_actions = tuner_stats.get('recent_actions', [])
+
+                        # Get last action if available
+                        last_action = ""
+                        if recent_actions and len(recent_actions) > 0:
+                            last = recent_actions[-1]
+                            param_short = last.get('param', '').split('.')[-1][:10]
+                            last_action = f"Last: {param_short}"
+
+                        panel4_lines.extend([
+                            f"🧠🔧 Tuner: {tuner_mode.upper()}",
+                            f"Actions: {total_actions}",
+                            f"Success: {success_rate:.1%}",
+                            f"{last_action}"
+                        ])
+                    else:
+                        panel4_lines.append("🧠🔧 Tuner: OFF")
+
+                    # Add quantum info if available
+                    quantum_data = data.get('quantum', {})
+                    if quantum_data:
+                        quantum_states = quantum_data.get('states', 0)
+                        panel4_lines.extend([
+                            f"⚛️ Quantum: {quantum_states} states"
+                        ])
+
+                    panel4_text = "\n".join(panel4_lines)
+                    ax.text2D(0.98, 0.02, panel4_text, transform=ax.transAxes,
+                              ha='right', va='bottom', fontsize=8, color='yellow',
+                              bbox=dict(facecolor='black', alpha=0.7, edgecolor='yellow', linewidth=1),
+                              family='monospace')
+
+                    # Panel 5: CENTER-BOTTOM - Real-Time Event Stream
+                    # Show last significant event from causation graph
+                    events_text = "━━━ RECENT EVENTS ━━━"
+
+                    # Try to get recent tuning action
+                    if tuner_enabled and recent_actions and len(recent_actions) > 0:
+                        last = recent_actions[-1]
+                        param = last.get('param', 'unknown')
+                        change = last.get('change', '')
+                        success_icon = "✅" if last.get('success', False) else "❌"
+                        events_text += f"\n{success_icon} {param}: {change}"
+
+                    ax.text2D(0.50, 0.02, events_text, transform=ax.transAxes,
+                              ha='center', va='bottom', fontsize=7, color='orange',
+                              bbox=dict(facecolor='black', alpha=0.7, edgecolor='orange', linewidth=1),
+                              family='monospace')
 
                     profile = self.grid_profiles[self.current_grid_profile_index] if self.grid_profiles else {}
                     derived = {

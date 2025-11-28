@@ -95,7 +95,12 @@ A multi-layered artificial life simulation system that creates evolving populati
 
 **Visualizations:**
 - Tabbed interface with network graphs, evolution trees, IIT metrics, performance monitors
-- 3D network visualization with interactive controls
+- **Enhanced 3D Network Visualization** with comprehensive diagnostic panels:
+  - **Panel 1 (Top-Left)**: Network topology metrics (nodes, edges, degree, clustering, stability)
+  - **Panel 2 (Top-Right)**: Neural & ML insights (training loss, epsilon, clusters, anomalies)
+  - **Panel 3 (Bottom-Left)**: Evolution & VP metrics (generation, fitness, VP classification)
+  - **Panel 4 (Bottom-Right)**: Meta-Cognitive tuner stats (mode, actions, success rate)
+  - **Panel 5 (Center-Bottom)**: Real-time event stream (recent tuning actions)
 - Real-time particle cloud display
 - Lightweight viewer process (separate from simulation backend)
 
