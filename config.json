@@ -246,7 +246,7 @@
   "meta_cognitive": {
     "self_tuning": {
       "enabled": true,
-      "mode": "observing",
+      "mode": "autonomous",
       "tuning_interval_frames": 50,
       "min_confidence_threshold": 0.6,
       "safe_parameters": [

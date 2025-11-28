@@ -844,18 +844,16 @@ class UnifiedVisualization:
                 clust = state.get('clustering_coefficient', 0)
                 path_len = state.get('average_path_length', 0)
                 
-                # Clustered stats box - all metrics together, positioned around grid center
+                # Compact stats box with shorter labels to prevent text overflow
                 all_stats = (
-                    f"ORGANISMS: {orgs}\n"
-                    f"CONNECTIONS: {conns}\n"
-                    f"MODULARITY: {mod:.3f}\n"
-                    f"CLUSTERING: {clust:.3f}\n"
-                    f"PATH LENGTH: {path_len:.2f}"
+                    f"O:{orgs} C:{conns}\n"
+                    f"M:{mod:.3f} CL:{clust:.3f}\n"
+                    f"PATH:{path_len:.2f}"
                 )
                 # Position stats box on left side, between Network Topology and Evolution panels
-                ax.text2D(0.10, 0.50, all_stats, ha='left', va='center', color='cyan',
-                         fontsize=10, family='monospace', fontweight='bold', transform=ax.transAxes,
-                         bbox=dict(boxstyle='round,pad=0.7', facecolor='black', alpha=0.9, edgecolor='cyan', linewidth=2.5))
+                ax.text2D(0.15, 0.50, all_stats, ha='left', va='center', color='cyan',
+                         fontsize=9, family='monospace', fontweight='bold', transform=ax.transAxes,
+                         bbox=dict(boxstyle='round,pad=0.5', facecolor='black', alpha=0.9, edgecolor='cyan', linewidth=2.5))
 
                 # System label - top left corner near title (small, unobtrusive)
                 ax.text2D(0.10, 0.95, 'Left Wing', ha='left', va='top', color='cyan',
