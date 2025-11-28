@@ -675,21 +675,28 @@ class UnifiedVisualization:
                 # Prepare data in the format expected by the viewer
                 network = getattr(self, '_network_ref', None)
 
-                # Build network data dict with actual graph edges
+                # Build network data dict with actual graph edges and metrics
                 network_data = {
                     'network': {
                         'organisms': state.get('organism_count', 0),
                         'connections': state.get('connection_count', 0),
                         'graph_edges': []
-                    }
+                    },
+                    'stability': 0.0,
+                    'connectivity': 0.0
                 }
 
-                # Get actual graph edges if network is available
+                # Get actual graph edges and metrics if network is available
                 if network and hasattr(network, 'network_graph'):
                     G = network.network_graph
                     # Convert node IDs to integers for the viewer (it expects integer nodes)
                     node_map = {node: i for i, node in enumerate(G.nodes())}
                     network_data['network']['graph_edges'] = [(node_map[u], node_map[v]) for u, v in G.edges()]
+
+                    # Add network metrics for diagnostic panels
+                    if hasattr(network, 'metrics'):
+                        network_data['stability'] = getattr(network.metrics, 'stability_index', 0.0)
+                        network_data['connectivity'] = getattr(network.metrics, 'connectivity', 0.0)
 
                 # Combine data from ALL systems for comprehensive diagnostic panels
                 # Get neural data
@@ -1114,6 +1121,10 @@ class UnifiedSystem:
                 updated_config = self.config_watcher.check_for_updates()
                 if updated_config is not None:
                     self._apply_runtime_config(updated_config)
+
+                # Update reality sim (includes neural training and config tuner)
+                if self.reality_sim:
+                    self.reality_sim._update_simulation_components()
 
                 # Get states from all systems
                 reality_sim_state = self._get_reality_sim_state()
