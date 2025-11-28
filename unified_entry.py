@@ -833,12 +833,12 @@ class UnifiedVisualization:
                     f"PATH LENGTH: {path_len:.2f}"
                 )
                 # Position stats box bottom-center, clustered around the grid visualization
-                ax.text2D(0.5, 0.12, all_stats, ha='center', va='bottom', color='cyan',
+                ax.text2D(0.5, 0.18, all_stats, ha='center', va='bottom', color='cyan',
                          fontsize=11, family='monospace', fontweight='bold', transform=ax.transAxes,
                          bbox=dict(boxstyle='round,pad=0.8', facecolor='black', alpha=0.9, edgecolor='cyan', linewidth=2.5))
-                
+
                 # System label - bottom right (small, unobtrusive)
-                ax.text2D(0.98, 0.02, 'Left Wing', ha='right', va='bottom', color='cyan',
+                ax.text2D(0.90, 0.10, 'Left Wing', ha='right', va='bottom', color='cyan',
                          fontsize=10, family='monospace', style='italic', transform=ax.transAxes, alpha=0.7)
 
                 return

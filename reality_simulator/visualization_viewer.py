@@ -564,7 +564,7 @@ class LightweightVisualizationViewer:
                         f"Stability: {stability:.3f}\n"
                         f"Connectivity: {connectivity:.3f}"
                     )
-                    ax.text2D(0.02, 0.98, panel1_text, transform=ax.transAxes,
+                    ax.text2D(0.10, 0.90, panel1_text, transform=ax.transAxes,
                               ha='left', va='top', fontsize=8, color='cyan',
                               bbox=dict(facecolor='black', alpha=0.7, edgecolor='cyan', linewidth=1),
                               family='monospace')
@@ -603,7 +603,7 @@ class LightweightVisualizationViewer:
                         panel2_lines.append("🔬 ML: OFF")
 
                     panel2_text = "\n".join(panel2_lines)
-                    ax.text2D(0.98, 0.98, panel2_text, transform=ax.transAxes,
+                    ax.text2D(0.90, 0.90, panel2_text, transform=ax.transAxes,
                               ha='right', va='top', fontsize=8, color='magenta',
                               bbox=dict(facecolor='black', alpha=0.7, edgecolor='magenta', linewidth=1),
                               family='monospace')
@@ -629,7 +629,7 @@ class LightweightVisualizationViewer:
                         f"VP: {vp_value:.4f}\n"
                         f"Class: {vp_classification}"
                     )
-                    ax.text2D(0.02, 0.02, panel3_text, transform=ax.transAxes,
+                    ax.text2D(0.10, 0.10, panel3_text, transform=ax.transAxes,
                               ha='left', va='bottom', fontsize=8, color='lime',
                               bbox=dict(facecolor='black', alpha=0.7, edgecolor='lime', linewidth=1),
                               family='monospace')
@@ -671,7 +671,7 @@ class LightweightVisualizationViewer:
                         ])
 
                     panel4_text = "\n".join(panel4_lines)
-                    ax.text2D(0.98, 0.02, panel4_text, transform=ax.transAxes,
+                    ax.text2D(0.90, 0.10, panel4_text, transform=ax.transAxes,
                               ha='right', va='bottom', fontsize=8, color='yellow',
                               bbox=dict(facecolor='black', alpha=0.7, edgecolor='yellow', linewidth=1),
                               family='monospace')
@@ -688,7 +688,7 @@ class LightweightVisualizationViewer:
                         success_icon = "✅" if last.get('success', False) else "❌"
                         events_text += f"\n{success_icon} {param}: {change}"
 
-                    ax.text2D(0.50, 0.02, events_text, transform=ax.transAxes,
+                    ax.text2D(0.50, 0.10, events_text, transform=ax.transAxes,
                               ha='center', va='bottom', fontsize=7, color='orange',
                               bbox=dict(facecolor='black', alpha=0.7, edgecolor='orange', linewidth=1),
                               family='monospace')
