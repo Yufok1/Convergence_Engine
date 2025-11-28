@@ -6,6 +6,8 @@ Device detection, feature normalization, and other neural utilities.
 
 import numpy as np
 from typing import Dict, Any, Optional
+import platform
+import shutil
 
 # Try importing PyTorch
 try:
@@ -145,10 +147,22 @@ def create_brain(config: Dict[str, Any]):
     optimization_config = config.get('optimization', {})
     optimizations_applied = []
     
-    if (PYTORCH_AVAILABLE and 
-        optimization_config.get('use_compile', True) and 
-        torch is not None and 
-        hasattr(torch, 'compile')):
+    # Only attempt to compile if PyTorch supports it and the platform/compiler is available.
+    # On Windows, torch.inductor requires MSVC 'cl' to be installed; avoid compile when missing.
+    can_compile = (
+        PYTORCH_AVAILABLE and
+        optimization_config.get('use_compile', True) and
+        torch is not None and
+        hasattr(torch, 'compile')
+    )
+    if can_compile:
+        # Additional Windows compiler check
+        if platform.system().lower().startswith('windows'):
+            if shutil.which('cl') is None:
+                # MSVC cl compiler not available, skip compile to avoid inductor errors
+                can_compile = False
+
+    if can_compile:
         compile_mode = optimization_config.get('compile_mode', 'reduce-overhead')
         try:
             brain = torch.compile(brain, mode=compile_mode)
