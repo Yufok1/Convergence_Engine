@@ -695,33 +695,44 @@ class UnifiedVisualization:
                 neural_data = {}
                 if hasattr(self, 'reality_sim') and hasattr(self.reality_sim, '_neural_metrics'):
                     neural_data = self.reality_sim._neural_metrics
+                    print(f"[DEBUG] Neural data: {neural_data}")
+                else:
+                    print(f"[DEBUG] No neural metrics found, checking attributes: has reality_sim={hasattr(self, 'reality_sim')}, has _neural_metrics={hasattr(self.reality_sim, '_neural_metrics') if hasattr(self, 'reality_sim') else False}")
 
                 # Get ML data
                 ml_data = {}
                 if hasattr(self, 'reality_sim') and hasattr(self.reality_sim, '_ml_metrics'):
                     ml_data = self.reality_sim._ml_metrics
+                    print(f"[DEBUG] ML data: {ml_data}")
+                else:
+                    print(f"[DEBUG] No ML metrics found")
 
-                # Get evolution data
+                # Get evolution data - organisms live in network component
                 evolution_data = {}
                 if hasattr(self, 'reality_sim') and hasattr(self.reality_sim, 'components'):
+                    network = self.reality_sim.components.get('network')
                     evolution = self.reality_sim.components.get('evolution')
-                    if evolution and hasattr(evolution, 'population'):
-                        pop = evolution.population
-                        # Handle population as dict or list
-                        pop_values = pop.values() if isinstance(pop, dict) else pop
-                        pop_size = len(pop) if pop else 0
 
-                        if pop_size > 0:
-                            fitnesses = [org.fitness for org in pop_values if hasattr(org, 'fitness')]
+                    # Get organisms from network component
+                    if network and hasattr(network, 'organisms'):
+                        organisms = network.organisms
+                        # Handle organisms as dict or list
+                        org_values = organisms.values() if isinstance(organisms, dict) else organisms
+                        org_count = len(organisms) if organisms else 0
+
+                        if org_count > 0:
+                            fitnesses = [org.fitness for org in org_values if hasattr(org, 'fitness')]
+                            generation = evolution.generation if evolution and hasattr(evolution, 'generation') else 0
+
                             evolution_data = {
-                                'generation': evolution.generation if hasattr(evolution, 'generation') else 0,
-                                'population_size': pop_size,
+                                'generation': generation,
+                                'population_size': org_count,
                                 'best_fitness': max(fitnesses) if fitnesses else 0.0,
                                 'avg_fitness': sum(fitnesses) / len(fitnesses) if fitnesses else 0.0
                             }
                         else:
                             evolution_data = {
-                                'generation': evolution.generation if hasattr(evolution, 'generation') else 0,
+                                'generation': 0,
                                 'population_size': 0,
                                 'best_fitness': 0.0,
                                 'avg_fitness': 0.0
@@ -736,6 +747,9 @@ class UnifiedVisualization:
                         'mode': self.reality_sim.config.get('meta_cognitive', {}).get('self_tuning', {}).get('mode', 'unknown'),
                         'stats': tuner_stats
                     }
+                    print(f"[DEBUG] Config tuner data: enabled={config_tuner_data['enabled']}, mode={config_tuner_data['mode']}, actions={tuner_stats.get('total_actions', 0)}")
+                else:
+                    print(f"[DEBUG] No config tuner found")
 
                 # Get djinn_kernel data (VP info) - passed as parameter
                 djinn_kernel_data = djinn_kernel_state if djinn_kernel_state else {}
