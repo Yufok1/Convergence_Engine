@@ -901,7 +901,7 @@ class BiphasicController:
                     # Publish reflection results to event bus for system coordination
                     if hasattr(self.lawfold_orchestrator, 'utm_kernel') and self.lawfold_orchestrator.utm_kernel:
                         try:
-                            from kernel.event_driven_coordination import DjinnEvent, EventType
+                            from event_driven_coordination import DjinnEvent, EventType
                             reflection_event = DjinnEvent(
                                 event_type=EventType.META_SOVEREIGN_REFLECTION,
                                 data={
