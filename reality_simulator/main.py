@@ -1414,6 +1414,34 @@ class RealitySimulator:
                 'resource_pool': getattr(network.resource_engine, 'total_resources', 200.0),
             }
             
+            # Diagnostic: Check neural organism status (first time only)
+            if not hasattr(self, '_neural_diagnostic_printed'):
+                neural_org_count = 0
+                brains_count = 0
+                exp_buffer_count = 0
+                sufficient_exp_count = 0
+                batch_size = self.neural_trainer.batch_size
+
+                for org in network.organisms.values():
+                    if hasattr(org, 'brain'):
+                        neural_org_count += 1
+                        if org.brain is not None:
+                            brains_count += 1
+                        if hasattr(org, 'experience_buffer') and org.experience_buffer is not None:
+                            exp_buffer_count += 1
+                            if len(org.experience_buffer) >= batch_size:
+                                sufficient_exp_count += 1
+
+                print(f"\n[NEURAL DIAGNOSTIC]")
+                print(f"  Total organisms: {len(network.organisms)}")
+                print(f"  Neural organisms (has brain attr): {neural_org_count}")
+                print(f"  With initialized brains: {brains_count}")
+                print(f"  With experience buffers: {exp_buffer_count}")
+                print(f"  With sufficient experiences (>={batch_size}): {sufficient_exp_count}")
+                print(f"  Trainer step count: {self.neural_trainer.training_step_count}")
+                print(f"  Frame count: {self.frame_count}")
+                self._neural_diagnostic_printed = True
+
             # Perform training step
             try:
                 loss = self.neural_trainer.train_step(
