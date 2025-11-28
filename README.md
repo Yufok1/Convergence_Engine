@@ -215,6 +215,25 @@ For AI-assisted features (chat mode, CRA, vision analysis):
 - See [OLLAMA_CLOUD_SETUP.md](./OLLAMA_CLOUD_SETUP.md) for cloud API configuration
 - Set `OLLAMA_BASE_URL=https://ollama.com` and `OLLAMA_API_KEY=your_key`
 
+### Secrets & Environment Variables
+
+To keep secrets out of the repository, this project uses environment variables and an optional `.env` file.
+
+- Copy the example env file to `.env` and update the values locally:
+```powershell
+copy .env.example .env
+# Then edit .env to add your API keys and database password
+```
+
+- Important environment variables:
+  - `OLLAMA_API_KEY` — Your Ollama Cloud API key (recommended)
+  - `OLLAMA_BASE_URL` — Ollama base URL (default: https://ollama.com)
+  - `POSTGRES_PASSWORD` — DB password for local `postgres` service
+  - `DJINN_DB_USERNAME`, `DJINN_DB_PASSWORD` — Djinn DB credentials
+  - `INTERNAL_API_KEY`, `EXTERNAL_API_KEY` — Optional API keys used by the system
+
+Environment variables are used in the code to avoid committing secrets to the repository. See `.env.example` for details.
+
 ### Verify Installation
 
 ```bash
@@ -224,6 +243,20 @@ python unified_entry.py --check-only
 # Or use the setup checker
 python check_setup.py
 ```
+
+```bash
+# Quick environment checks
+python scripts/check_env.py
+```
+
+### Running a fixed number of cycles (safe smoke test)
+
+If you want to run the unified system for a short, deterministic time and then exit (useful for smoke testing), use the `--max-cycles` option. Each cycle corresponds to one breath cycle.
+
+```bash
+python unified_entry.py --no-viz --max-cycles 200
+```
+This will run the system headlessly for 200 breath cycles and then exit automatically.
 
 ---
 

@@ -117,7 +117,7 @@
       "input_dim": 12,
       "output_dim": 6
     },
-    "device": "cpu",
+  "device": "cuda",
     "enabled": true,
     "inheritance": {
       "crossover_rate": 0.9,
@@ -129,9 +129,9 @@
       "seed": null
     },
     "optimization": {
-      "compile_mode": "reduce-overhead",
+      "compile_mode": "max-autotune",
       "reuse_optimizers": true,
-      "use_compile": false,
+      "use_compile": true,
       "use_scripted_inference": true
     },
     "rewards": {
@@ -143,16 +143,16 @@
       "survival": 0.8
     },
     "training": {
-      "batch_size": 32,
+      "batch_size": 128,
       "enabled": true,
-      "epsilon": 0.8,
-      "epsilon_decay": 0.997,
-      "epsilon_end": 0.1,
-      "epsilon_start": 0.95,
+      "epsilon": 0.95,
+      "epsilon_decay": 0.995,
+      "epsilon_end": 0.01,
+      "epsilon_start": 0.999,
       "gamma": 0.995,
-      "learning_rate": 0.002,
-      "memory_size": 8000,
-      "update_frequency": 2
+      "learning_rate": 0.001,
+      "memory_size": 20000,
+      "update_frequency": 1
     }
   },
   "quantum": {
@@ -190,15 +190,15 @@
   "scikit": {
     "anomaly_detection": {
       "algorithm": "isolation_forest",
-      "contamination": 0.15,
+      "contamination": 0.1,
       "enabled": true,
-      "n_estimators": 100
+      "n_estimators": 300
     },
     "clustering": {
       "algorithm": "hdbscan",
       "enabled": true,
-      "min_cluster_size": 3,
-      "min_samples": 2
+      "min_cluster_size": 2,
+      "min_samples": 1
     },
     "dimensionality_reduction": {
       "algorithm": "tsne",

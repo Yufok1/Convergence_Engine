@@ -876,7 +876,7 @@ Status: ACTIVE"""
 class UnifiedSystem:
     """The unified butterfly system - one cohesive unit"""
     
-    def __init__(self, enable_visualization: bool = True):
+    def __init__(self, enable_visualization: bool = True, max_cycles: int = 0):
         # Pre-flight checks (tkinter optional for headless runs)
         checker = PreFlightChecker()
         check_results = checker.run_all_checks(require_visualization=enable_visualization)
@@ -1023,6 +1023,8 @@ class UnifiedSystem:
         
         self.logger.log_state('system', {'event': 'initialization_complete'})
         print("[UNIFIED] [PASS] All systems initialized\n")
+        # Max cycles (0 means run indefinitely)
+        self.max_cycles = int(max_cycles or 0)
     
     def run(self):
         """Run the unified system"""
@@ -1037,6 +1039,7 @@ class UnifiedSystem:
                 return
             
             # Main loop
+            cycle_count = 0
             while True:
                 updated_config = self.config_watcher.check_for_updates()
                 if updated_config is not None:
@@ -1141,6 +1144,11 @@ class UnifiedSystem:
                 
                 # Small delay
                 time.sleep(0.1)
+                # Increment cycle counter and break if requested
+                cycle_count += 1
+                if self.max_cycles > 0 and cycle_count >= self.max_cycles:
+                    print(f"[UNIFIED] Reached max cycles ({self.max_cycles}). Exiting loop.")
+                    break
                 
         except KeyboardInterrupt:
             print("\n[UNIFIED] Shutting down gracefully...")
@@ -1470,6 +1478,7 @@ def main():
     parser = argparse.ArgumentParser(description='The Butterfly System - Unified Entry Point')
     parser.add_argument('--no-viz', action='store_true', help='Disable visualization')
     parser.add_argument('--check-only', action='store_true', help='Run pre-flight checks only')
+    parser.add_argument('--max-cycles', type=int, default=0, help='Number of breath cycles to run (0 = unlimited)')
     
     args = parser.parse_args()
     
@@ -1480,7 +1489,7 @@ def main():
         return
     
     # Create and run unified system
-    system = UnifiedSystem(enable_visualization=not args.no_viz)
+    system = UnifiedSystem(enable_visualization=not args.no_viz, max_cycles=args.max_cycles)
     system.run()
 
 

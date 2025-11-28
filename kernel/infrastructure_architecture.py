@@ -26,6 +26,8 @@ from typing import Dict, List, Any, Optional, Tuple, Set, Callable, Union
 from dataclasses import dataclass, field
 from enum import Enum
 import uuid
+import os
+import base64
 from datetime import datetime, timedelta
 from collections import defaultdict, deque
 import heapq
@@ -614,6 +616,13 @@ class InfrastructureArchitecture:
         secrets = []
         
         # Database credentials
+        def _b64_env(key: str, default_b64: str = "") -> str:
+            """Return the base64-encoded value of an env var or default base64 value."""
+            val = os.environ.get(key)
+            if val:
+                return base64.b64encode(val.encode()).decode()
+            return default_b64
+
         db_secret = {
             "apiVersion": "v1",
             "kind": "Secret",
@@ -622,9 +631,9 @@ class InfrastructureArchitecture:
                 "namespace": self.configurations["orchestration"].namespace
             },
             "type": "Opaque",
-            "data": {
-                "username": "ZGppbm4tdXNlcg==",  # djinn-user
-                "password": "c29tZXNlY3JldHBhc3N3b3Jk"  # somesecretpassword
+                "data": {
+                "username": _b64_env('DJINN_DB_USERNAME', 'ZGppbm4tdXNlcg=='),  # djinn-user (b64)
+                "password": _b64_env('DJINN_DB_PASSWORD', '')  # set DJINN_DB_PASSWORD (plain) in env
             }
         }
         secrets.append(db_secret)
@@ -639,8 +648,8 @@ class InfrastructureArchitecture:
             },
             "type": "Opaque",
             "data": {
-                "internal_api_key": "aW50ZXJuYWwtYXBpLWtleQ==",  # internal-api-key
-                "external_api_key": "ZXh0ZXJuYWwtYXBpLWtleQ=="   # external-api-key
+                "internal_api_key": _b64_env('INTERNAL_API_KEY'),  # set INTERNAL_API_KEY (plain)
+                "external_api_key": _b64_env('EXTERNAL_API_KEY')   # set EXTERNAL_API_KEY (plain)
             }
         }
         secrets.append(api_secret)
@@ -1048,7 +1057,7 @@ class InfrastructureArchitecture:
                     "environment": [
                         "POSTGRES_DB=djinn_kernel",
                         "POSTGRES_USER=djinn_user",
-                        "POSTGRES_PASSWORD=somesecretpassword"
+                        f"POSTGRES_PASSWORD={os.environ.get('POSTGRES_PASSWORD','changeme') }"
                     ],
                     "volumes": ["postgres_data:/var/lib/postgresql/data"],
                     "ports": ["5432:5432"]

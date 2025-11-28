@@ -47,6 +47,16 @@ python causation_web_ui.py
    python causation_web_ui.py
    ```
 
+### Secrets and Environment Variables
+
+This repository includes a `.env.example` showing the environment variables used by the system. Use a `.env` file or set environment variables directly to provide secrets and credentials. Avoid adding secrets to the source code.
+
+```bash
+# Copy the example
+cp .env.example .env
+# Then edit .env to add your keys and secrets
+```
+
 ## Using Cloud Models
 
 Cloud models are models with the `-cloud` suffix. To use them:
