@@ -1633,7 +1633,7 @@ class OllamaBridge:
             logger.error(f"Error in Ollama vision: {e}", exc_info=True)
             raise
     
-    def analyze_sequence(self, model: str, images: List[str], prompt: str, snapshot_contexts: Optional[List[str]] = None) -> tuple[Optional[str], Optional[List[Optional[dict]]]]:
+    def analyze_sequence(self, model: str, images: List[str], prompt: str, snapshot_contexts: Optional[List[str]] = None, temporal_deltas: Optional[List[str]] = None) -> tuple[Optional[str], Optional[List[Optional[dict]]]]:
         """
         Analyze a sequence of images one by one and synthesize the results.
         This bypasses the multi-image payload limit by sending images individually.
@@ -1645,6 +1645,7 @@ class OllamaBridge:
             images: List of base64-encoded images
             prompt: Base prompt for the sequence
             snapshot_contexts: Optional list of CRA-generated contextual summaries (one per image)
+            temporal_deltas: Optional list of change summaries between consecutive snapshots
         """
         sequence_start = time.time()
         logger.info(f"[Ollama] [Vision Sequence] Starting sequential analysis of {len(images)} images (model: {model})")
@@ -1658,6 +1659,12 @@ class OllamaBridge:
         elif len(snapshot_contexts) < len(images):
             # Pad with None if contexts are missing
             snapshot_contexts.extend([None] * (len(images) - len(snapshot_contexts)))
+        
+        # Ensure temporal deltas list matches images list
+        if temporal_deltas is None:
+            temporal_deltas = [None] * len(images)
+        elif len(temporal_deltas) < len(images):
+            temporal_deltas.extend([None] * (len(images) - len(temporal_deltas)))
             
         try:
             descriptions = []
@@ -1672,17 +1679,21 @@ class OllamaBridge:
                 
                 # Get CRA contextual summary for this image (if available)
                 cra_context = snapshot_contexts[i] if i < len(snapshot_contexts) else None
+                temporal_delta = temporal_deltas[i] if i < len(temporal_deltas) else None
                 context_section = ""
-                if cra_context:
-                    context_section = f"""
-
-📊 SYSTEM CONTEXT (from CRA analysis):
-{cra_context}
+                if cra_context or temporal_delta:
+                    context_section = "\n\n📊 SYSTEM CONTEXT (from CRA analysis):"
+                    if cra_context:
+                        context_section += f"\n{cra_context}"
+                    if temporal_delta:
+                        context_section += f"\n\n🔄 TEMPORAL DELTA (changes since previous snapshot):\n{temporal_delta}"
+                    context_section += """
 
 Use this context to understand what the graph structure means. For example:
 - If VP is high, the graph may show stress patterns
 - If modularity is low, expect a more integrated/spherical topology
 - If fitness is near-max, the system may be converging
+- If temporal delta shows new nodes, look for recently added graph elements
 - Match the visual patterns you see with the system state described above."""
                 
                 # Create a specific prompt for this individual image
@@ -1965,6 +1976,26 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
             for alert in alerts[:5]:  # Top 5 alerts
                 severity = alert.get('severity', 'info')
                 parts.append(f"  [{severity.upper()}] {alert.get('message', 'Unknown alert')}")
+        
+        # Add structured vision insights (Vision → CRA feedback loop)
+        if context.get('vision_insights'):
+            insights = context['vision_insights']
+            parts.append(f"\n# 👁️ Vision Model Insights (Structured Analysis)")
+            if insights.get('detected_patterns'):
+                parts.append(f"  Detected Patterns: {', '.join(insights['detected_patterns'])}")
+            if insights.get('structural_assessment') and insights['structural_assessment'] != 'unknown':
+                parts.append(f"  Graph Structure: {insights['structural_assessment']}")
+            if insights.get('evolution_trend') and insights['evolution_trend'] != 'stable':
+                parts.append(f"  Evolution Trend: {insights['evolution_trend']}")
+            if insights.get('cluster_info'):
+                parts.append(f"  Clusters Identified: {len(insights['cluster_info'])} (see annotations)")
+                for cluster in insights['cluster_info'][:3]:
+                    parts.append(f"    - {cluster.get('label', 'Unknown')} at ({cluster['location']['x']}, {cluster['location']['y']})")
+            if insights.get('anomaly_flags'):
+                parts.append(f"  Visual Anomalies: {len(insights['anomaly_flags'])}")
+                for anomaly in insights['anomaly_flags'][:2]:
+                    parts.append(f"    ⚠️ {anomaly}")
+            parts.append(f"  Confidence: {insights.get('confidence_level', 'medium')}")
         
         prompt = "\n".join(parts)
         prompt += "\n\n" + "="*80
@@ -3296,6 +3327,175 @@ class SystemContextBuilder:
         except Exception as e:
             logger.debug(f"Error generating snapshot context: {e}")
             return "Context unavailable."
+    
+    def generate_temporal_delta(self, prev_timestamp: Optional[float], curr_timestamp: Optional[float]) -> str:
+        """
+        Generate a temporal delta summary showing what changed between two snapshots.
+        This enhances Vision's understanding of evolution by highlighting changes.
+        
+        Args:
+            prev_timestamp: Timestamp of the previous snapshot
+            curr_timestamp: Timestamp of the current snapshot
+        
+        Returns:
+            Delta summary string describing changes between snapshots
+        """
+        if not self.shared_state_path.exists() or not self.explorer:
+            return ""
+        
+        try:
+            # Get events in each time window
+            all_events = list(self.explorer.events.values())
+            
+            # Filter events by timestamp ranges
+            prev_events = [e for e in all_events if prev_timestamp and e.timestamp <= prev_timestamp]
+            curr_events = [e for e in all_events if curr_timestamp and e.timestamp <= curr_timestamp]
+            new_events = [e for e in all_events if prev_timestamp and curr_timestamp and prev_timestamp < e.timestamp <= curr_timestamp]
+            
+            if not new_events:
+                return "No new events between snapshots"
+            
+            delta_parts = []
+            
+            # Node/event changes
+            node_delta = len(curr_events) - len(prev_events)
+            if node_delta > 0:
+                delta_parts.append(f"+{node_delta} new nodes")
+            elif node_delta < 0:
+                delta_parts.append(f"{node_delta} nodes (pruned)")
+            
+            # Component breakdown of new events
+            component_counts = {}
+            event_type_counts = {}
+            for event in new_events:
+                component_counts[event.component] = component_counts.get(event.component, 0) + 1
+                event_type_counts[event.event_type] = event_type_counts.get(event.event_type, 0) + 1
+            
+            if component_counts:
+                top_components = sorted(component_counts.items(), key=lambda x: x[1], reverse=True)[:3]
+                comp_str = ", ".join([f"{c}:{n}" for c, n in top_components])
+                delta_parts.append(f"Active: {comp_str}")
+            
+            if event_type_counts:
+                top_types = sorted(event_type_counts.items(), key=lambda x: x[1], reverse=True)[:2]
+                type_str = ", ".join([f"{t}:{n}" for t, n in top_types])
+                delta_parts.append(f"Types: {type_str}")
+            
+            # Try to get metric changes from shared state
+            with open(self.shared_state_path, 'r') as f:
+                state = json.load(f)
+            data = state.get('data', {})
+            
+            # Check for significant metric changes (stored in previous context if available)
+            network_data = data.get('network', {})
+            modularity = network_data.get('modularity', 0.0)
+            djinn_data = data.get('djinn_kernel', {})
+            vp = djinn_data.get('violation_pressure', 0.0)
+            
+            # Highlight critical states
+            if vp > 0.75:
+                delta_parts.append("⚠️ HIGH VP")
+            if modularity < 0.2:
+                delta_parts.append("⚠️ LOW MODULARITY")
+            
+            if delta_parts:
+                return f"Δ Changes: {' | '.join(delta_parts)}"
+            return ""
+            
+        except Exception as e:
+            logger.debug(f"Error generating temporal delta: {e}")
+            return ""
+    
+    def extract_vision_insights(self, visual_description: str, annotations: Optional[Dict] = None) -> Dict[str, Any]:
+        """
+        Extract structured insights from Vision model's analysis to feed back to CRA.
+        This closes the Vision → CRA feedback loop with queryable structured data.
+        
+        Args:
+            visual_description: Raw text description from Vision model
+            annotations: Parsed JSON annotations from Vision model
+        
+        Returns:
+            Structured insights dict with detected_patterns, structural_assessment, etc.
+        """
+        insights = {
+            'detected_patterns': [],
+            'structural_assessment': 'unknown',
+            'cluster_info': [],
+            'anomaly_flags': [],
+            'evolution_trend': 'stable',
+            'confidence_level': 'medium'
+        }
+        
+        if not visual_description:
+            return insights
+        
+        desc_lower = visual_description.lower()
+        
+        # Detect patterns from description text
+        pattern_keywords = {
+            'dense_cluster': ['dense cluster', 'tightly connected', 'hub', 'central node', 'high connectivity'],
+            'isolated_nodes': ['isolated', 'disconnected', 'orphan', 'standalone', 'peripheral'],
+            'causation_chain': ['chain', 'sequence', 'flow', 'cascade', 'propagation'],
+            'star_topology': ['star', 'radiating', 'central hub', 'spokes'],
+            'modular_structure': ['modular', 'communities', 'clusters', 'groups', 'partitions'],
+            'hierarchical': ['hierarchical', 'tree', 'layers', 'levels', 'parent-child'],
+            'ring_structure': ['ring', 'circular', 'loop', 'cycle'],
+            'bridge_nodes': ['bridge', 'connector', 'bottleneck', 'gateway']
+        }
+        
+        for pattern, keywords in pattern_keywords.items():
+            if any(kw in desc_lower for kw in keywords):
+                insights['detected_patterns'].append(pattern)
+        
+        # Structural assessment
+        if 'modular' in desc_lower or 'cluster' in desc_lower:
+            insights['structural_assessment'] = 'modular_with_clusters'
+        elif 'dense' in desc_lower and 'connected' in desc_lower:
+            insights['structural_assessment'] = 'highly_integrated'
+        elif 'sparse' in desc_lower or 'scattered' in desc_lower:
+            insights['structural_assessment'] = 'sparse_distributed'
+        elif 'star' in desc_lower or 'hub' in desc_lower:
+            insights['structural_assessment'] = 'hub_and_spoke'
+        
+        # Evolution trend detection
+        evolution_keywords = {
+            'expanding': ['growing', 'expanding', 'increasing', 'more nodes', 'added'],
+            'contracting': ['shrinking', 'decreasing', 'fewer', 'reduced', 'collapsed'],
+            'fragmenting': ['fragmenting', 'splitting', 'dividing', 'separating'],
+            'consolidating': ['consolidating', 'merging', 'combining', 'integrating']
+        }
+        
+        for trend, keywords in evolution_keywords.items():
+            if any(kw in desc_lower for kw in keywords):
+                insights['evolution_trend'] = trend
+                break
+        
+        # Anomaly detection from description
+        anomaly_keywords = ['unusual', 'anomaly', 'unexpected', 'strange', 'outlier', 'abnormal']
+        if any(kw in desc_lower for kw in anomaly_keywords):
+            # Try to extract what the anomaly is
+            for sentence in visual_description.split('.'):
+                if any(kw in sentence.lower() for kw in anomaly_keywords):
+                    insights['anomaly_flags'].append(sentence.strip()[:100])
+        
+        # Extract cluster info from annotations
+        if annotations and 'annotations' in annotations:
+            for ann in annotations['annotations']:
+                if ann.get('type') == 'circle' and 'cluster' in ann.get('label', '').lower():
+                    insights['cluster_info'].append({
+                        'label': ann.get('label', 'Unknown cluster'),
+                        'location': {'x': ann.get('x', 0), 'y': ann.get('y', 0)},
+                        'size': ann.get('radius', 50)
+                    })
+        
+        # Confidence level based on description specificity
+        if len(visual_description) > 500 and len(insights['detected_patterns']) >= 2:
+            insights['confidence_level'] = 'high'
+        elif len(visual_description) < 100:
+            insights['confidence_level'] = 'low'
+        
+        return insights
     
     def _load_configuration(self) -> str:
         """Load system configuration files"""
@@ -5642,9 +5842,33 @@ This is a single snapshot of a causation graph network visualization (no previou
                         if len(all_images) > 1:
                             logger.info(f"[CRA] [Vision] Starting sequential analysis for {len(all_images)} images with CRA contextual summaries")
                             logger.info(f"[CRA] [Vision] This may take a while - analyzing each image sequentially...")
-                            # Pass snapshot contexts to analyze_sequence for CRA → Vision feedback loop
+                            
+                            # Generate temporal deltas between consecutive snapshots
+                            # This tells Vision what CHANGED between each snapshot
+                            temporal_deltas = [None]  # First snapshot has no previous
+                            if evolutionary_snapshots and len(evolutionary_snapshots) > 1:
+                                prev_ts = None
+                                for snapshot in evolutionary_snapshots:
+                                    if isinstance(snapshot, dict):
+                                        curr_ts = snapshot.get('timestamp')
+                                    else:
+                                        curr_ts = None
+                                    
+                                    if prev_ts and curr_ts:
+                                        delta = context_builder.generate_temporal_delta(prev_ts, curr_ts)
+                                        temporal_deltas.append(delta)
+                                    else:
+                                        temporal_deltas.append(None)
+                                    prev_ts = curr_ts
+                                
+                                # Add delta for current snapshot (compared to last historical)
+                                if prev_ts:
+                                    current_delta = context_builder.generate_temporal_delta(prev_ts, time.time())
+                                    temporal_deltas.append(current_delta)
+                            
+                            # Pass snapshot contexts AND temporal deltas to analyze_sequence for CRA → Vision feedback loop
                             # analyze_sequence now returns (description, per_image_annotations)
-                            vision_result = bridge_to_use.analyze_sequence(vision_model, all_images, vision_prompt, snapshot_contexts)
+                            vision_result = bridge_to_use.analyze_sequence(vision_model, all_images, vision_prompt, snapshot_contexts, temporal_deltas)
                             if isinstance(vision_result, tuple):
                                 visual_description, per_image_annotations = vision_result
                             else:
@@ -5753,6 +5977,12 @@ Use this context to understand what the graph structure means. Match the visual 
                             if annotations:
                                 context['vision_annotations'] = annotations
                                 logger.info(f"[CRA] [Vision] ✓ Final annotations count: {len(annotations.get('annotations', []))}")
+                            
+                            # ENHANCEMENT: Extract structured vision insights for CRA feedback loop
+                            # This closes the Vision → CRA loop with queryable structured data
+                            vision_insights = context_builder.extract_vision_insights(visual_description, annotations)
+                            context['vision_insights'] = vision_insights
+                            logger.info(f"[CRA] [Vision] ✓ Extracted vision insights: patterns={vision_insights.get('detected_patterns', [])}, structure={vision_insights.get('structural_assessment')}, trend={vision_insights.get('evolution_trend')}")
                     except Exception as e:
                         vision_error = f"Vision model error: {str(e)}"
                         logger.error(f"[CRA] [Vision] ✗ Vision model call failed: {e}", exc_info=True)

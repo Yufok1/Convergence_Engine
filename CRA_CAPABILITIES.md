@@ -384,6 +384,107 @@ The ML system emits specialized events with distinct visual shapes:
 
 ---
 
+## 👁️ Vision Model ↔ CRA Bidirectional Feedback Loop
+
+The CRA and Vision Model work together in a sophisticated feedback loop that enhances both perspectives. This creates emergent understanding that neither could achieve alone.
+
+### Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    BIDIRECTIONAL FEEDBACK LOOP                       │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  ┌──────────────┐          Context Feed          ┌──────────────┐   │
+│  │              │ ─────────────────────────────> │              │   │
+│  │     CRA      │   • Snapshot Context           │    Vision    │   │
+│  │  (Analysis)  │   • Temporal Deltas            │    Model     │   │
+│  │              │   • System Metrics             │  (Visual)    │   │
+│  │              │ <───────────────────────────── │              │   │
+│  └──────────────┘    Structured Insights         └──────────────┘   │
+│                      • Detected Patterns                            │
+│                      • Structural Assessment                        │
+│                      • Evolution Trend                              │
+│                      • Cluster Info                                 │
+│                      • Anomaly Flags                                │
+│                                                                      │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### CRA → Vision Model (Context Feed)
+
+For each graph snapshot, CRA generates contextual summaries that help Vision understand **what the graph means**:
+
+#### Snapshot Context (per-image)
+```
+Phase: GENESIS | Breath: 42 | VP: 0.450 (VP2) | Network: 23 orgs, 156 links | 
+Modularity: 0.342, Clustering: 0.567 | Evolution: Gen 15, Fitness: 0.823 | 
+🧠 Neural: Loss=0.003, ε=0.15, Steps=1200
+```
+
+#### Temporal Deltas (between consecutive snapshots)
+```
+Δ Changes: +12 new nodes | Active: djinn_kernel:5, explorer:4, neural:3 | 
+Types: threshold_crossing:7, neural_decision:5 | ⚠️ HIGH VP
+```
+
+This tells Vision **what changed** between snapshots, so it can correlate visual changes with system events.
+
+### Vision Model → CRA (Structured Insights)
+
+Vision's analysis is parsed into structured data that CRA can query and reason about:
+
+| Field | Description | Example Values |
+|-------|-------------|----------------|
+| `detected_patterns` | Graph patterns identified | `["dense_cluster", "isolated_nodes", "causation_chain"]` |
+| `structural_assessment` | Overall graph topology | `"modular_with_clusters"`, `"highly_integrated"`, `"hub_and_spoke"` |
+| `evolution_trend` | How graph is changing | `"expanding"`, `"contracting"`, `"fragmenting"`, `"consolidating"` |
+| `cluster_info` | Located clusters with positions | `[{label: "Dense cluster", location: {x: 200, y: 300}, size: 50}]` |
+| `anomaly_flags` | Visual anomalies detected | `["Unusual isolation at top-right region"]` |
+| `confidence_level` | Vision's confidence | `"high"`, `"medium"`, `"low"` |
+
+### CRA System Prompt Integration
+
+When vision insights are available, CRA sees them as structured context:
+
+```
+# 👁️ Vision Model Insights (Structured Analysis)
+  Detected Patterns: dense_cluster, causation_chain
+  Graph Structure: modular_with_clusters
+  Evolution Trend: expanding
+  Clusters Identified: 2 (see annotations)
+    - Dense cluster at (200, 300)
+    - Bridge region at (450, 200)
+  Visual Anomalies: 1
+    ⚠️ Unusual isolation pattern in top-right region
+  Confidence: high
+```
+
+### Emergent Behaviors Enabled
+
+1. **Spatial-Aware Analysis**: CRA can now say "the djinn_kernel cluster at (200, 300) is expanding" by combining component knowledge with Vision's spatial data
+
+2. **Visual Validation**: If CRA predicts "high VP should cause fragmentation," Vision can confirm or refute with actual visual evidence
+
+3. **Change Detection**: Vision now knows what system changes occurred between snapshots, helping it identify which visual changes correspond to which events
+
+4. **Pattern Correlation**: Vision's detected patterns (e.g., "dense_cluster") can be correlated with CRA's metrics (e.g., "high modularity") for cross-validation
+
+5. **Anomaly Triangulation**: Both CRA (metric-based) and Vision (visual-based) can flag anomalies independently, with higher confidence when they agree
+
+### Configuration
+
+The feedback loop is automatically active when both CRA and a Vision model are used. No configuration required.
+
+### API Integration
+
+Vision insights are included in CRA's context automatically via:
+- `context['vision_insights']` - Structured insights dict
+- `context['visual_description']` - Full text description
+- `context['vision_annotations']` - JSON annotations for overlay
+
+---
+
 ## 🧠 Context Memory System (Language-Based Selection Pressure)
 
 The ContextMemory system provides language anchoring that shapes organism selection pressure in the SymbioticNetwork.
