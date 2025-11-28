@@ -160,7 +160,7 @@ class ConfigTuner:
         # History tracking
         self.tuning_history: List[TuningHistory] = []
         self.last_tuning_time = 0
-        self.tuning_interval = 50  # Frames between tuning actions
+        self.tuning_interval = self.config.get('meta_cognitive', {}).get('self_tuning', {}).get('tuning_interval_frames', 50)
 
         # Performance tracking
         self.fitness_history: List[float] = []
