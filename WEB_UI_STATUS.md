@@ -32,6 +32,7 @@
   - `/api/cra/diagnostics/memory_breakdown` - Component memory breakdown
   - `/api/cra/diagnostics/event_throughput` - Event bus throughput metrics
   - `/api/cra/diagnostics/breath_cycles` - Breath cycle statistics
+  - `/api/cra/diagnostics/memory_stability` - ContextMemory stability metrics (language-based selection pressure)
   - `/api/export/create_snapshot_video` - Create MP4 video from selected snapshots
 
 ### 2. HTML Template (`templates/causation_explorer.html`)

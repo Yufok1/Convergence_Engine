@@ -2252,6 +2252,15 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "5. **Breath Cycle Statistics**: `/api/cra/diagnostics/breath_cycles`\n"
         prompt += "   - Returns breath cycle duration, total cycles, inhale/exhale ratios\n"
         prompt += "   - Use when investigating timing or synchronization issues\n\n"
+        prompt += "5b. **Memory Stability Metrics**: `/api/cra/diagnostics/memory_stability` ⭐ NEW\n"
+        prompt += "   - Returns ContextMemory stability metrics from the SymbioticNetwork\n"
+        prompt += "   - **anchor_density**: Ratio of organisms referenced in language memory (selection pressure indicator)\n"
+        prompt += "   - **language_coherence**: Consistency of organism-to-concept mappings\n"
+        prompt += "   - **cluster_stability**: Stability of language-anchored clusters\n"
+        prompt += "   - **unreferenced_penalty_count**: Organisms penalized for not being in language memory\n"
+        prompt += "   - **reference_triangle_bonus_count**: Edges boosted for closing reference triangles\n"
+        prompt += "   - **linguistic_integration_ratio**: Ratio of language-tagged edges to total edges\n"
+        prompt += "   - Use when investigating how language memory shapes network evolution\n\n"
         prompt += "6. **PC System Resource Monitoring**: `/api/cra/system/state` and `/api/cra/health/check`\n"
         prompt += "   - Returns real-time PC stats: CPU (total, per-core), RAM, disk usage\n"
         prompt += "   - Returns Butterfly System resource usage: lattice CPU, RAM\n"
@@ -2293,6 +2302,13 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "       - **PATH**: `data/logs/vp_diagnostics.log`\n"
         prompt += "       - **ONLY EXISTS** if `vp_monitoring.diagnostics_enabled=true` in config.json\n"
         prompt += "       - **USE THIS** to understand what's driving VP saturation or high values\n"
+        prompt += "     * **MEMORY STABILITY METRICS** (Console/log output with [MEMORY_STABILITY] prefix) ⭐ NEW\n"
+        prompt += "       - Format: [MEMORY_STABILITY] Gen N - Anchor Density: 0.XXX, Language Coherence: 0.XXX, Cluster Stability: 0.XXX\n"
+        prompt += "       - **Anchor Density** (0.0-1.0): Ratio of organisms referenced in ContextMemory language anchors\n"
+        prompt += "       - **Language Coherence** (0.0-1.0): Consistency of organism-to-language-concept mappings\n"
+        prompt += "       - **Cluster Stability** (0.0-1.0): Stability of organism clusters anchored by shared language references\n"
+        prompt += "       - **IMPORTANCE**: These metrics show how language memory shapes organism selection pressure\n"
+        prompt += "       - **WATCH FOR**: Low anchor density = organisms disconnected from language, low coherence = fragmented concepts\n"
         prompt += "     * `system.log` - System-level events (initialization, shutdown, errors)\n"
         prompt += "       - Format: timestamp|level|system|event:str|...\n"
         prompt += "       - Contains: System lifecycle events, initialization status, shutdown events, errors\n"
@@ -2408,6 +2424,29 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "- **Event Type**: `META_SOVEREIGN_REFLECTION` events published to DjinnEventBus\n"
         prompt += "- **Integration**: LawfoldFieldOrchestrator initialized in both UnifiedSystem and BiphasicController\n"
         prompt += "- **Access**: Check shared state for `lawfold` section or look for reflection events in logs\n\n"
+        
+        prompt += "**CONTEXT MEMORY SYSTEM (Language-Based Selection Pressure)** ⭐ NEW:\n"
+        prompt += "- **Purpose**: ContextMemory provides language anchoring that shapes organism selection pressure\n"
+        prompt += "- **Core Mechanism**: Organisms referenced in language memory get survival advantages\n"
+        prompt += "- **Key Functions**:\n"
+        prompt += "  * `apply_memory_based_selection_pressure()`: Penalizes unreferenced organisms, boosts language-connected edges\n"
+        prompt += "  * `log_memory_stability_metrics()`: Outputs [MEMORY_STABILITY] metrics to console/logs\n"
+        prompt += "- **Language Anchors**: Map words/concepts to organism IDs (creates semantic network layer)\n"
+        prompt += "- **Reference Triangles**: Edges between organisms in same language cluster get stability bonuses\n"
+        prompt += "- **Selection Pressure Effects**:\n"
+        prompt += "  * Unreferenced organisms: -0.05 fitness penalty (scaled by anchor density)\n"
+        prompt += "  * Cluster edges: +0.02 strength bonus per cluster (scaled by cluster size)\n"
+        prompt += "- **Metrics Available via `/api/cra/diagnostics/memory_stability`**:\n"
+        prompt += "  * `anchor_density`: How many organisms are referenced in language memory\n"
+        prompt += "  * `language_coherence`: Consistency of organism-to-concept mappings\n"
+        prompt += "  * `cluster_stability`: Stability of language-anchored clusters\n"
+        prompt += "- **Integration Point**: Called in `SymbioticNetwork.update_network()` each generation\n\n"
+        
+        prompt += "**LANGUAGE SUBGRAPH SYSTEM**:\n"
+        prompt += "- **Purpose**: LanguageSubgraph tracks edges with semantic/language tags\n"
+        prompt += "- **Key Metric**: `linguistic_integration_ratio` = language-tagged edges / total edges\n"
+        prompt += "- **Interpretation**: Higher ratio = more linguistically-structured network\n"
+        prompt += "- **Access**: Available in network stats as `linguistic_subgraph` and `linguistic_integration_ratio`\n\n"
         
         prompt += "**Note**: These endpoints provide raw data streams that complement the context you receive. "
         prompt += "When you request specific diagnostic data in your recommendations, mention these endpoints "
@@ -7404,6 +7443,100 @@ def cra_get_breath_cycles():
             'success': False,
             'error': str(e),
             'breath_cycles': {}
+        }), 500
+
+@app.route('/api/cra/diagnostics/memory_stability', methods=['GET'])
+def cra_get_memory_stability():
+    """Get ContextMemory stability metrics from the SymbioticNetwork
+    
+    Returns metrics about how language memory shapes organism selection pressure:
+    - anchor_density: Ratio of organisms referenced in language memory
+    - language_coherence: Consistency of organism-to-concept mappings
+    - cluster_stability: Stability of language-anchored clusters
+    - unreferenced_penalty_count: Organisms penalized for lack of language references
+    - reference_triangle_bonus_count: Edges boosted for closing reference triangles
+    - linguistic_integration_ratio: Language-tagged edges / total edges
+    """
+    try:
+        metrics = {
+            'anchor_density': 0.0,
+            'language_coherence': 0.0,
+            'cluster_stability': 0.0,
+            'unreferenced_penalty_count': 0,
+            'reference_triangle_bonus_count': 0,
+            'total_penalty_applied': 0.0,
+            'total_bonus_applied': 0.0,
+            'linguistic_integration_ratio': 0.0,
+            'language_anchors_count': 0,
+            'anchor_clusters_count': 0,
+            'generation': 0,
+            'source': 'none'
+        }
+        
+        # Try to get from shared state first
+        if shared_state_path.exists():
+            try:
+                with open(shared_state_path, 'r') as f:
+                    state = json.load(f)
+                    reality_sim = state.get('data', {}).get('reality_sim', {})
+                    
+                    # Check for memory stability metrics in shared state
+                    memory_metrics = reality_sim.get('memory_stability', {})
+                    if memory_metrics:
+                        metrics.update(memory_metrics)
+                        metrics['source'] = 'shared_state'
+                    
+                    # Also get linguistic integration ratio from network stats
+                    network_stats = reality_sim.get('network_stats', {})
+                    if 'linguistic_integration_ratio' in network_stats:
+                        metrics['linguistic_integration_ratio'] = network_stats['linguistic_integration_ratio']
+                    
+                    # Get generation
+                    metrics['generation'] = reality_sim.get('generation', 0)
+            except Exception as e:
+                logger.debug(f"Could not read memory metrics from shared state: {e}")
+        
+        # Parse from console output if available (look for [MEMORY_STABILITY] lines)
+        logs_dir = Path('data/logs')
+        system_log = logs_dir / 'system.log'
+        if system_log.exists() and metrics['source'] == 'none':
+            try:
+                with open(system_log, 'r', encoding='utf-8') as f:
+                    lines = f.readlines()[-500:]  # Last 500 lines
+                    
+                    for line in reversed(lines):
+                        if '[MEMORY_STABILITY]' in line:
+                            # Parse: [MEMORY_STABILITY] Gen N - Anchor Density: 0.XXX, Language Coherence: 0.XXX, Cluster Stability: 0.XXX
+                            gen_match = re.search(r'Gen\s+(\d+)', line)
+                            anchor_match = re.search(r'Anchor Density:\s*([\d.]+)', line)
+                            coherence_match = re.search(r'Language Coherence:\s*([\d.]+)', line)
+                            stability_match = re.search(r'Cluster Stability:\s*([\d.]+)', line)
+                            
+                            if gen_match:
+                                metrics['generation'] = int(gen_match.group(1))
+                            if anchor_match:
+                                metrics['anchor_density'] = float(anchor_match.group(1))
+                            if coherence_match:
+                                metrics['language_coherence'] = float(coherence_match.group(1))
+                            if stability_match:
+                                metrics['cluster_stability'] = float(stability_match.group(1))
+                            
+                            metrics['source'] = 'system_log'
+                            break  # Found most recent entry
+            except Exception as e:
+                logger.debug(f"Could not parse memory stability from logs: {e}")
+        
+        return jsonify({
+            'success': True,
+            'memory_stability': metrics,
+            'message': 'ContextMemory stability metrics - shows how language memory shapes organism selection pressure'
+        })
+    except Exception as e:
+        logger.error(f"Error getting memory stability metrics: {e}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'memory_stability': {}
         }), 500
 
 # ============================================================================

@@ -204,6 +204,45 @@ The Explorer now auto-corrects Genesis VP saturation. CRA can:
 
 ---
 
+## 🧠 Context Memory System (Language-Based Selection Pressure)
+
+The ContextMemory system provides language anchoring that shapes organism selection pressure in the SymbioticNetwork.
+
+### Core Mechanism
+- **Language Anchors**: Map words/concepts to organism IDs, creating a semantic network layer
+- **Selection Pressure**: Organisms referenced in language memory get survival advantages
+- **Reference Triangles**: Edges between organisms in same language cluster get stability bonuses
+
+### Key Functions
+- `apply_memory_based_selection_pressure()`: Called each generation to:
+  - Penalize unreferenced organisms (-0.05 fitness, scaled by anchor density)
+  - Boost edges within language clusters (+0.02 strength per cluster)
+- `log_memory_stability_metrics()`: Outputs `[MEMORY_STABILITY]` metrics to console/logs
+
+### Stability Metrics (via `/api/cra/diagnostics/memory_stability`)
+- **anchor_density** (0.0-1.0): Ratio of organisms referenced in ContextMemory
+- **language_coherence** (0.0-1.0): Consistency of organism-to-concept mappings
+- **cluster_stability** (0.0-1.0): Stability of language-anchored clusters
+- **unreferenced_penalty_count**: Organisms penalized for lack of language references
+- **reference_triangle_bonus_count**: Edges boosted for closing reference triangles
+
+### Language Subgraph
+- **linguistic_integration_ratio**: Language-tagged edges / total edges
+- Higher ratio = more linguistically-structured network
+- Available in network stats as `linguistic_subgraph`
+
+### Console Output Format
+```
+[MEMORY_STABILITY] Gen 42 - Anchor Density: 0.750, Language Coherence: 0.680, Cluster Stability: 0.820
+```
+
+### What to Watch For
+- **Low anchor density**: Organisms disconnected from language concepts
+- **Low coherence**: Fragmented or inconsistent concept mappings
+- **Low cluster stability**: Unstable language-based groupings
+
+---
+
 ## 🎯 Graph View Assistance (Manual Execution)
 
 The CRA no longer sends `[[VIEW_UPDATE]]` commands. All camera movement is under your control through the navigation pad (zoom box, pan arrows, drag-to-zoom, rotation buttons).  
@@ -263,7 +302,17 @@ The CRA has access to specialized diagnostic endpoints:
    - Returns breath cycle duration, total cycles, inhale/exhale ratios
    - Use when investigating timing or synchronization issues
 
-6. **VP Diagnostics Breakdown:** `/api/diagnostic/vp_diagnostics` ⭐ NEW
+6. **Memory Stability Metrics:** `/api/cra/diagnostics/memory_stability` ⭐ NEW
+   - Returns ContextMemory stability metrics from the SymbioticNetwork
+   - **anchor_density**: Ratio of organisms referenced in language memory (0.0-1.0)
+   - **language_coherence**: Consistency of organism-to-concept mappings (0.0-1.0)
+   - **cluster_stability**: Stability of language-anchored clusters (0.0-1.0)
+   - **unreferenced_penalty_count**: Organisms penalized for not being in language memory
+   - **reference_triangle_bonus_count**: Edges boosted for closing reference triangles
+   - **linguistic_integration_ratio**: Ratio of language-tagged edges to total edges
+   - **USE THIS** when investigating how language memory shapes network evolution
+
+7. **VP Diagnostics Breakdown:** `/api/diagnostic/vp_diagnostics`
    - Detailed trait-by-trait breakdown of VP calculation
    - Trait values, envelope centers, deviations, per-trait VPs
    - Normalization factors and VP contribution ratios
@@ -271,7 +320,7 @@ The CRA has access to specialized diagnostic endpoints:
    - **USE THIS** when investigating why VP is high or saturating
    - Diagnostic data is logged to `data/logs/vp_diagnostics.log` if diagnostics enabled
 
-7. **VP Component Decomposition:** `/api/diagnostic/vp_components` ⭐ NEW
+8. **VP Component Decomposition:** `/api/diagnostic/vp_components`
    - Weighted component breakdown showing which components drive VP:
      * `trait_divergence` (25%): Average deviation from stability centers
      * `network_coherence` (20%): Coherence of network traits
