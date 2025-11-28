@@ -40,7 +40,10 @@ class EventType(Enum):
     DECISION_MADE = "decision_made"
     NETWORK_DECISION = "network_decision"
     EVOLUTION_DECISION = "evolution_decision"
-    AGENCY_DECISION = "agency_decision"  # NEW: Agency Router decisions
+    AGENCY_DECISION = "agency_decision"  # Agency Router decisions
+    
+    # Meta-Sovereign events (Lawfold VII integration)
+    META_SOVEREIGN_REFLECTION = "meta_sovereign_reflection"
 
 
 @dataclass
