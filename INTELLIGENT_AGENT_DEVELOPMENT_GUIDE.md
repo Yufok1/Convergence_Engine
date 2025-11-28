@@ -806,6 +806,10 @@ print(agent.answer_why("Why did you search the web?"))
 
 ## 🚀 Recommended Implementation Path
 
+**📋 For a comprehensive roadmap addressing safety, memory, planning, metrics, and system integration, see:**
+- **[ENHANCED_AGENT_ROADMAP.md](./ENHANCED_AGENT_ROADMAP.md)** - Augmented implementation plan
+- **[COGNITIVE_EVENT_SCHEMA.md](./COGNITIVE_EVENT_SCHEMA.md)** - Event definitions and integration
+
 ### Phase 1: Cognitive Foundation (Week 1-2)
 1. Implement `SelfModel` - self-awareness
 2. Implement `IntentionalitySystem` - goal tracking
