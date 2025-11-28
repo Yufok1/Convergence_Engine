@@ -53,24 +53,108 @@ class ConfigTuner:
         self.config = config
         self.enabled = enabled
 
-        # Tuning constraints (safety bounds)
+        # Tuning constraints (safety bounds) - FULL EXPANSION
         self.param_bounds = {
+            # Evolution (Phase 1 - Original + Expanded)
             'evolution.mutation_rate.initial': (0.001, 0.15),
+            'evolution.diversity_guard.penalty': (0.01, 0.2),
+            'evolution.diversity_guard.frequency_threshold': (0.05, 0.3),
+            'evolution.diversity_guard.hash_similarity_threshold': (0.8, 0.98),
+            'evolution.population_size': (500, 5000),
+            'evolution.adaptation_sensitivity': (0.0001, 0.01),
+
+            # Feedback Knobs (Phase 1 - Original)
             'feedback.knobs.mutation_rate.initial': (0.002, 0.06),
             'feedback.knobs.new_edge_rate.initial': (0.2, 6.0),
             'feedback.knobs.clustering_bias.initial': (0.3, 1.6),
-            'evolution.diversity_guard.penalty': (0.01, 0.2),
-            'evolution.diversity_guard.frequency_threshold': (0.05, 0.3),
+            'feedback.knobs.quantum_pruning.initial': (0.0, 1.0),
+
+            # Neural Learning (Phase 1 - Neural Expansion)
+            'neural.training.learning_rate': (0.0001, 0.01),
+            'neural.training.gamma': (0.9, 0.999),
+            'neural.training.epsilon_decay': (0.9, 0.999),
+            'neural.training.batch_size': (32, 256),
+            'neural.rewards.fitness_improvement': (0.5, 5.0),
+            'neural.rewards.connection_success': (0.2, 3.0),
+            'neural.rewards.survival': (0.1, 2.0),
+            'neural.inheritance.crossover_rate': (0.5, 1.0),
+            'neural.inheritance.mutation_rate': (0.05, 0.4),
+
+            # Network Dynamics (Phase 2)
+            'network.max_organisms': (500, 5000),
+            'network.max_connections': (1000, 30000),
+            'network.resource_pool': (100, 1000),
+
+            # ML Analysis (Phase 3 - Meta-tuning!)
+            'scikit.clustering.min_cluster_size': (2, 20),
+            'scikit.anomaly_detection.contamination': (0.01, 0.3),
+            'scikit.anomaly_detection.n_estimators': (50, 500),
+
+            # Quantum Substrate (Phase 5)
+            'quantum.initial_states': (20, 200),
+            'quantum.entanglement_sensitivity': (1e-07, 1e-04),
+            'quantum.prune_check_interval': (10, 200),
+
+            # VP Monitoring (Phase 6)
+            'vp_monitoring.adaptive_response.high_vp_threshold': (0.5, 0.95),
+            'vp_monitoring.stabilization.smoothing_factor': (0.1, 0.5),
+            'causation_detection.correlation_threshold': (0.3, 0.9),
+
+            # META-META: Self-tuning the tuner! (CRAZY Phase)
+            'meta_cognitive.self_tuning.tuning_interval_frames': (10, 200),
+            'meta_cognitive.self_tuning.min_confidence_threshold': (0.3, 0.95),
         }
 
         # Tuning aggressiveness (how much to change per adjustment)
         self.step_sizes = {
+            # Evolution
             'evolution.mutation_rate.initial': 0.005,
+            'evolution.diversity_guard.penalty': 0.01,
+            'evolution.diversity_guard.frequency_threshold': 0.02,
+            'evolution.diversity_guard.hash_similarity_threshold': 0.02,
+            'evolution.population_size': 100,
+            'evolution.adaptation_sensitivity': 0.0005,
+
+            # Feedback
             'feedback.knobs.mutation_rate.initial': 0.002,
             'feedback.knobs.new_edge_rate.initial': 0.2,
             'feedback.knobs.clustering_bias.initial': 0.05,
-            'evolution.diversity_guard.penalty': 0.01,
-            'evolution.diversity_guard.frequency_threshold': 0.02,
+            'feedback.knobs.quantum_pruning.initial': 0.05,
+
+            # Neural
+            'neural.training.learning_rate': 0.0005,
+            'neural.training.gamma': 0.005,
+            'neural.training.epsilon_decay': 0.005,
+            'neural.training.batch_size': 16,
+            'neural.rewards.fitness_improvement': 0.2,
+            'neural.rewards.connection_success': 0.2,
+            'neural.rewards.survival': 0.1,
+            'neural.inheritance.crossover_rate': 0.05,
+            'neural.inheritance.mutation_rate': 0.02,
+
+            # Network
+            'network.max_organisms': 200,
+            'network.max_connections': 1000,
+            'network.resource_pool': 50,
+
+            # ML
+            'scikit.clustering.min_cluster_size': 2,
+            'scikit.anomaly_detection.contamination': 0.02,
+            'scikit.anomaly_detection.n_estimators': 50,
+
+            # Quantum
+            'quantum.initial_states': 10,
+            'quantum.entanglement_sensitivity': 1e-06,
+            'quantum.prune_check_interval': 10,
+
+            # VP
+            'vp_monitoring.adaptive_response.high_vp_threshold': 0.05,
+            'vp_monitoring.stabilization.smoothing_factor': 0.05,
+            'causation_detection.correlation_threshold': 0.05,
+
+            # Meta-meta
+            'meta_cognitive.self_tuning.tuning_interval_frames': 10,
+            'meta_cognitive.self_tuning.min_confidence_threshold': 0.05,
         }
 
         # History tracking
@@ -82,6 +166,9 @@ class ConfigTuner:
         self.fitness_history: List[float] = []
         self.cluster_count_history: List[int] = []
         self.anomaly_ratio_history: List[float] = []
+        self.neural_loss_history: List[float] = []
+        self.network_density_history: List[float] = []
+        self.vp_history: List[float] = []
 
         # Meta-learning: track which actions work
         self.action_success_rates: Dict[str, Tuple[int, int]] = {}  # param -> (successes, total)
@@ -113,28 +200,52 @@ class ConfigTuner:
         # Update history
         self._update_history(ml_metrics, neural_metrics, evolution_metrics)
 
-        # Analyze different aspects
+        # Analyze different aspects (ALL PHASES!)
         actions = []
 
-        # 1. Cluster diversity analysis
+        # Phase 1 - Evolution & Diversity
         cluster_action = self._analyze_cluster_diversity(ml_metrics, evolution_metrics)
         if cluster_action:
             actions.append(cluster_action)
 
-        # 2. Anomaly analysis
         anomaly_action = self._analyze_anomalies(ml_metrics)
         if anomaly_action:
             actions.append(anomaly_action)
 
-        # 3. Fitness stagnation analysis
         fitness_action = self._analyze_fitness_trends(evolution_metrics)
         if fitness_action:
             actions.append(fitness_action)
 
-        # 4. Neural learning analysis
+        # Phase 1 - Neural Learning
         neural_action = self._analyze_neural_learning(neural_metrics)
         if neural_action:
             actions.append(neural_action)
+
+        # Phase 2 - Network Health
+        network_action = self._analyze_network_health(network_metrics)
+        if network_action:
+            actions.append(network_action)
+
+        # Phase 3 - ML Meta-Tuning
+        ml_action = self._analyze_ml_effectiveness(ml_metrics)
+        if ml_action:
+            actions.append(ml_action)
+
+        # Phase 5 - Quantum (placeholder for now)
+        # quantum_action = self._analyze_quantum_stability(quantum_metrics)
+        # if quantum_action:
+        #     actions.append(quantum_action)
+
+        # Phase 6 - VP Health
+        vp_value = network_metrics.get('vp', None) if network_metrics else None
+        vp_action = self._analyze_vp_health(vp_value)
+        if vp_action:
+            actions.append(vp_action)
+
+        # CRAZY PHASE - Meta-Meta Learning (tune the tuner!)
+        meta_action = self._analyze_meta_tuning_performance()
+        if meta_action:
+            actions.append(meta_action)
 
         # Select best action (highest confidence)
         if actions:
@@ -300,8 +411,177 @@ class ConfigTuner:
         if not neural_metrics or not neural_metrics.get('enabled'):
             return None
 
-        # Could add: if training loss not decreasing, adjust learning rate
-        # For now, placeholder
+        # Track neural loss
+        if 'training_loss' in neural_metrics:
+            loss = neural_metrics['training_loss']
+            self.neural_loss_history.append(loss)
+            if len(self.neural_loss_history) > 100:
+                self.neural_loss_history.pop(0)
+
+        # Check if loss is increasing (learning getting worse)
+        if len(self.neural_loss_history) >= 20:
+            recent_loss = self.neural_loss_history[-10:]
+            older_loss = self.neural_loss_history[-20:-10]
+
+            if len(recent_loss) > 0 and len(older_loss) > 0:
+                avg_recent = sum(recent_loss) / len(recent_loss)
+                avg_older = sum(older_loss) / len(older_loss)
+
+                # Loss increasing = learning degrading
+                if avg_recent > avg_older * 1.2:  # 20% worse
+                    param = 'neural.training.learning_rate'
+                    current = self._get_param_value(param)
+                    proposed = max(current * 0.8, self.param_bounds[param][0])  # Decrease by 20%
+
+                    if proposed < current:
+                        return TuningAction(
+                            parameter_path=param,
+                            current_value=current,
+                            proposed_value=proposed,
+                            reason=f"Neural loss increasing ({avg_recent:.4f}) - reducing learning rate",
+                            confidence=0.75
+                        )
+
+        return None
+
+    def _analyze_network_health(self, network_metrics) -> Optional[TuningAction]:
+        """Analyze network density and resource availability"""
+        if not network_metrics:
+            return None
+
+        organism_count = network_metrics.get('organism_count', 0)
+        connection_count = network_metrics.get('connection_count', 0)
+
+        if organism_count > 0:
+            density = connection_count / max(organism_count, 1)
+            self.network_density_history.append(density)
+            if len(self.network_density_history) > 100:
+                self.network_density_history.pop(0)
+
+        # Network too dense = performance issues
+        if len(self.network_density_history) >= 10:
+            avg_density = sum(self.network_density_history[-10:]) / 10
+
+            if avg_density > 8.0:  # Very high connections per organism
+                param = 'network.max_organisms'
+                current = self._get_param_value(param)
+                proposed = max(current - self.step_sizes[param], self.param_bounds[param][0])
+
+                if proposed < current:
+                    return TuningAction(
+                        parameter_path=param,
+                        current_value=current,
+                        proposed_value=proposed,
+                        reason=f"Network too dense (avg {avg_density:.1f} conn/org) - reducing max organisms",
+                        confidence=0.7
+                    )
+
+        return None
+
+    def _analyze_ml_effectiveness(self, ml_metrics) -> Optional[TuningAction]:
+        """Meta-tune the ML analyzer itself!"""
+        if not ml_metrics or not ml_metrics.get('enabled'):
+            return None
+
+        clustering = ml_metrics.get('clustering', {})
+        cluster_sizes = clustering.get('cluster_sizes', {})
+
+        # Too many tiny clusters = min_cluster_size too small
+        if cluster_sizes:
+            tiny_clusters = sum(1 for size in cluster_sizes.values() if size < 5)
+            total_clusters = len(cluster_sizes)
+
+            if total_clusters > 0 and tiny_clusters / total_clusters > 0.5:
+                param = 'scikit.clustering.min_cluster_size'
+                current = self._get_param_value(param)
+                proposed = min(current + self.step_sizes[param], self.param_bounds[param][1])
+
+                if proposed > current:
+                    return TuningAction(
+                        parameter_path=param,
+                        current_value=current,
+                        proposed_value=proposed,
+                        reason=f"Too many tiny clusters ({tiny_clusters}/{total_clusters}) - increasing min size",
+                        confidence=0.65
+                    )
+
+        return None
+
+    def _analyze_quantum_stability(self, quantum_metrics) -> Optional[TuningAction]:
+        """Analyze quantum substrate performance"""
+        # Placeholder for quantum metrics
+        # Could check: pruning frequency, state count, entanglement levels
+        return None
+
+    def _analyze_vp_health(self, vp_value: float) -> Optional[TuningAction]:
+        """Analyze VP levels and stabilization"""
+        if vp_value is not None:
+            self.vp_history.append(vp_value)
+            if len(self.vp_history) > 100:
+                self.vp_history.pop(0)
+
+        # Check if VP is oscillating wildly
+        if len(self.vp_history) >= 20:
+            recent_vp = self.vp_history[-20:]
+            vp_variance = sum((v - sum(recent_vp)/len(recent_vp))**2 for v in recent_vp) / len(recent_vp)
+            vp_std = vp_variance ** 0.5
+
+            if vp_std > 0.3:  # High variance = unstable
+                param = 'vp_monitoring.stabilization.smoothing_factor'
+                current = self._get_param_value(param)
+                proposed = min(current + self.step_sizes[param], self.param_bounds[param][1])
+
+                if proposed > current:
+                    return TuningAction(
+                        parameter_path=param,
+                        current_value=current,
+                        proposed_value=proposed,
+                        reason=f"VP unstable (std={vp_std:.3f}) - increasing smoothing",
+                        confidence=0.65
+                    )
+
+        return None
+
+    def _analyze_meta_tuning_performance(self) -> Optional[TuningAction]:
+        """META-META: Tune the tuner itself!"""
+        if len(self.tuning_history) < 10:
+            return None
+
+        # Check recent success rate
+        recent_actions = self.tuning_history[-10:]
+        successful = sum(1 for h in recent_actions if h.success)
+        success_rate = successful / len(recent_actions) if recent_actions else 0
+
+        # Low success rate = being too aggressive, increase confidence threshold
+        if success_rate < 0.3:
+            param = 'meta_cognitive.self_tuning.min_confidence_threshold'
+            current = self._get_param_value(param)
+            proposed = min(current + self.step_sizes[param], self.param_bounds[param][1])
+
+            if proposed > current:
+                return TuningAction(
+                    parameter_path=param,
+                    current_value=current,
+                    proposed_value=proposed,
+                    reason=f"Low tuning success rate ({success_rate:.1%}) - requiring higher confidence",
+                    confidence=0.8
+                )
+
+        # High success rate = can be more aggressive, decrease interval
+        elif success_rate > 0.7:
+            param = 'meta_cognitive.self_tuning.tuning_interval_frames'
+            current = self._get_param_value(param)
+            proposed = max(current - self.step_sizes[param], self.param_bounds[param][0])
+
+            if proposed < current:
+                return TuningAction(
+                    parameter_path=param,
+                    current_value=current,
+                    proposed_value=proposed,
+                    reason=f"High tuning success rate ({success_rate:.1%}) - tuning more frequently",
+                    confidence=0.7
+                )
+
         return None
 
     def _get_param_value(self, path: str) -> float:
