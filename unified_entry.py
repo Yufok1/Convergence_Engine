@@ -613,7 +613,8 @@ class UnifiedVisualization:
             self.grid_toggle_button.config(text=f"Grid: {'ON' if self.grid_enabled else 'OFF'}")
         # Redraw the reality sim panel with new grid state
         if self._last_reality_sim_state:
-            self._update_reality_sim_panel(self.axes['left'], self._last_reality_sim_state)
+            djinn_state = getattr(self, '_last_djinn_kernel_state', {})
+            self._update_reality_sim_panel(self.axes['left'], self._last_reality_sim_state, djinn_state)
             if self.canvas:
                 self.canvas.draw()
 
@@ -628,7 +629,8 @@ class UnifiedVisualization:
 
             # Left panel: Reality Simulator 3D Network
             self._last_reality_sim_state = reality_sim_state  # Store for grid toggle redraw
-            self._update_reality_sim_panel(self.axes['left'], reality_sim_state)
+            self._last_djinn_kernel_state = djinn_kernel_state  # Store for grid toggle redraw
+            self._update_reality_sim_panel(self.axes['left'], reality_sim_state, djinn_kernel_state)
 
             # Middle panel: Explorer
             self._update_explorer_panel(self.axes['middle'], explorer_state)
@@ -650,7 +652,7 @@ class UnifiedVisualization:
         except Exception as e:
             print(f"[VISUALIZATION] [WARN] Update error: {e}")
     
-    def _update_reality_sim_panel(self, ax, state: Dict):
+    def _update_reality_sim_panel(self, ax, state: Dict, djinn_kernel_state: Dict = None):
         """Update Reality Simulator panel using 3D network visualization"""
         try:
             import sys
@@ -721,8 +723,8 @@ class UnifiedVisualization:
                         'stats': tuner_stats
                     }
 
-                # Get djinn_kernel data (VP info)
-                djinn_kernel_data = self._get_djinn_kernel_state()
+                # Get djinn_kernel data (VP info) - passed as parameter
+                djinn_kernel_data = djinn_kernel_state if djinn_kernel_state else {}
 
                 # Get quantum data
                 quantum_data = {}
