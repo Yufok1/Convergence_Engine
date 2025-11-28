@@ -88,6 +88,7 @@ class Colors:
     YELLOW = '\033[93m'
     GRAY = '\033[90m'
     ORANGE = '\033[38;5;214m'  # Orange/Gold for math
+    MAGENTA = '\033[95m'  # Magenta/Purple for transitions
     END = '\033[0m'
 
 TRAIT_TRANSLATIONS = {
