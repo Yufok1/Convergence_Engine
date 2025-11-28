@@ -876,7 +876,9 @@ class BiphasicController:
                 if self.reality_sim and self.reality_sim.components:
                     network = self.reality_sim.components.get('network')
                     if network and hasattr(network, 'organisms'):
-                        for i, organism in enumerate(network.organisms[:10]):  # Sample first 10
+                        # organisms is a Dict[str, Organism], need to convert to list first
+                        organism_list = list(network.organisms.values()) if isinstance(network.organisms, dict) else list(network.organisms)
+                        for i, organism in enumerate(organism_list[:10]):  # Sample first 10
                             # Generate mock interaction data based on organism properties
                             love_score = getattr(organism, 'fitness', 0.5) * 0.8 + 0.2
                             caregiving_score = getattr(organism, 'age', 0.5) * 0.6 + 0.4

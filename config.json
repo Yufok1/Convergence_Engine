@@ -7,8 +7,8 @@
     "performance_tracking_precision": 0.0001
   },
   "causation_detection": {
-    "correlation_threshold": 0.5,
-    "direct_causation_time_window": 1.0,
+    "correlation_threshold": 0.6,
+    "direct_causation_time_window": 2,
     "enable_bidirectional_causations": true,
     "enable_neural_causations": true,
     "enable_neural_decision_causations": true,
@@ -64,25 +64,25 @@
     "interval_frames": 5,
     "knobs": {
       "clustering_bias": {
-        "initial": 0.7,
+        "initial": 1.5,
         "max": 1.6,
         "min": 0.3,
         "step": 0.05
       },
       "mutation_rate": {
-        "initial": 0.05,
+        "initial": 0.035,
         "max": 0.06,
         "min": 0.002,
         "step": 0.001
       },
       "new_edge_rate": {
-        "initial": 6.0,
+        "initial": 3.5,
         "max": 6.0,
         "min": 0.2,
         "step": 0.1
       },
       "quantum_pruning": {
-        "initial": 0.8,
+        "initial": 0.6,
         "max": 1.0,
         "min": 0.0,
         "step": 0.05
@@ -103,7 +103,7 @@
   "network": {
     "connection_strength_resolution": 5e-06,
     "emergence_sensitivity": 1e-06,
-    "max_connections": 18000,
+    "max_connections": 15000,
     "max_organisms": 2200,
     "resource_flow_precision": 0.0001,
     "resource_pool": 400,
@@ -120,9 +120,9 @@
     "device": "cpu",
     "enabled": true,
     "inheritance": {
-      "crossover_rate": 0.85,
+      "crossover_rate": 0.9,
       "enabled": true,
-      "mutation_rate": 0.15
+      "mutation_rate": 0.2
     },
     "initialization": {
       "deterministic": false,
@@ -136,23 +136,23 @@
     },
     "rewards": {
       "connection_failure": -0.2,
-      "connection_success": 1.5,
-      "fitness_improvement": 2,
-      "resource_gain": 1.5,
+      "connection_success": 1.2,
+      "fitness_improvement": 1.8,
+      "resource_gain": 1,
       "resource_loss": -0.3,
       "survival": 0.8
     },
     "training": {
-      "batch_size": 64,
+      "batch_size": 32,
       "enabled": true,
       "epsilon": 0.8,
-      "epsilon_decay": 0.99,
-      "epsilon_end": 0.05,
+      "epsilon_decay": 0.997,
+      "epsilon_end": 0.1,
       "epsilon_start": 0.95,
       "gamma": 0.995,
-      "learning_rate": 0.008,
+      "learning_rate": 0.002,
       "memory_size": 8000,
-      "update_frequency": 1
+      "update_frequency": 2
     }
   },
   "quantum": {
@@ -190,7 +190,7 @@
   "scikit": {
     "anomaly_detection": {
       "algorithm": "isolation_forest",
-      "contamination": 0.1,
+      "contamination": 0.15,
       "enabled": true,
       "n_estimators": 100
     },
@@ -198,10 +198,10 @@
       "algorithm": "hdbscan",
       "enabled": true,
       "min_cluster_size": 3,
-      "min_samples": 3
+      "min_samples": 2
     },
     "dimensionality_reduction": {
-      "algorithm": "pca",
+      "algorithm": "tsne",
       "enabled": true,
       "n_components": 3,
       "tsne_perplexity": 30
