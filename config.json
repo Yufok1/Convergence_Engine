@@ -8,7 +8,7 @@
   },
   "causation_detection": {
     "correlation_threshold": 0.5,
-    "direct_causation_time_window": 3,
+    "direct_causation_time_window": 1.0,
     "enable_bidirectional_causations": true,
     "enable_neural_causations": true,
     "enable_neural_decision_causations": true,
@@ -50,7 +50,13 @@
       "initial": 0.04
     },
     "mutation_rate_precision": 0.001,
-    "population_size": 2000
+    "population_size": 2000,
+    "diversity_guard": {
+      "enabled": true,
+      "hash_similarity_threshold": 0.92,
+      "penalty": 0.05,
+      "frequency_threshold": 0.1
+    }
   },
   "feedback": {
     "enabled": true,

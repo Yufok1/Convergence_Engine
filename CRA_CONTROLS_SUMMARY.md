@@ -221,6 +221,11 @@ The CRA can modify `config.json` while the system is running using:
    - Feedback controller knobs
    - Network settings
    - Evolution parameters
+   - **🧬 Diversity Guard Settings** ⭐ NEW
+     - `evolution.diversity_guard.enabled` (bool) - Enable/disable diversity guard
+     - `evolution.diversity_guard.hash_similarity_threshold` (0.5-1.0) - Genotype similarity threshold
+     - `evolution.diversity_guard.penalty` (0.0-0.2) - Fitness penalty for over-represented genotypes
+     - `evolution.diversity_guard.frequency_threshold` (0.05-0.5) - Frequency above which penalty applies
    - Quantum settings
    - VP monitoring options
 
@@ -251,6 +256,14 @@ The CRA can modify `config.json` while the system is running using:
 ### Example 4: Adjust Neural Learning
 **You:** "Increase neural learning rate"
 **CRA Response:** `[[CONFIG_UPDATE: {"reason": "Increase neural learning rate for faster adaptation", "correlation_id": "neural-lr-increase", "patch": [{"op": "replace", "path": "/neural/training/learning_rate", "value": 0.002}]}]]`
+
+### Example 5: Enable Diversity Guard ⭐ NEW
+**You:** "Enable diversity guard to prevent premature convergence"
+**CRA Response:** `[[CONFIG_UPDATE: {"reason": "Enable diversity guard to maintain genetic diversity", "correlation_id": "diversity-enable", "patch": [{"op": "replace", "path": "/evolution/diversity_guard/enabled", "value": true}]}]]`
+
+### Example 6: Adjust Diversity Penalty ⭐ NEW
+**You:** "Increase diversity penalty to 0.08"
+**CRA Response:** `[[CONFIG_UPDATE: {"reason": "Increase diversity penalty to prevent genotype clustering", "correlation_id": "diversity-penalty", "patch": [{"op": "replace", "path": "/evolution/diversity_guard/penalty", "value": 0.08}]}]]`
 
 ---
 

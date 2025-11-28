@@ -77,7 +77,10 @@ PATH_SEGMENT_ALIASES = {
     'superpositiontolerance': 'superposition_tolerance',
     'prunethreshold': 'prune_threshold',
     'realitysim': 'reality_sim',
-    'djinnkernel': 'djinn_kernel'
+    'djinnkernel': 'djinn_kernel',
+    'diversityguard': 'diversity_guard',
+    'hashsimilaritythreshold': 'hash_similarity_threshold',
+    'frequencythreshold': 'frequency_threshold'
 }
 
 CONFIG_GUARDRAILS = {
@@ -89,7 +92,7 @@ CONFIG_GUARDRAILS = {
     },
     '/feedback/knobs/new_edge_rate/initial': {
         'min': 0.2,
-        'max': 3.0,  # Increased to support neural connectivity requirements
+        'max': 6.0,  # Increased to support neural connectivity requirements and connectivity boost
         'type': float,
         'label': 'new_edge_rate.initial'
     },
@@ -215,6 +218,29 @@ CONFIG_GUARDRAILS = {
         'max': 200,
         'type': int,
         'label': 'causation_detection.thresholds.vp_calculations.transition'
+    },
+    # Diversity Guard Settings ⭐ NEW
+    '/evolution/diversity_guard/enabled': {
+        'type': bool,
+        'label': 'evolution.diversity_guard.enabled'
+    },
+    '/evolution/diversity_guard/hash_similarity_threshold': {
+        'min': 0.5,
+        'max': 1.0,
+        'type': float,
+        'label': 'evolution.diversity_guard.hash_similarity_threshold'
+    },
+    '/evolution/diversity_guard/penalty': {
+        'min': 0.0,
+        'max': 0.2,
+        'type': float,
+        'label': 'evolution.diversity_guard.penalty'
+    },
+    '/evolution/diversity_guard/frequency_threshold': {
+        'min': 0.05,
+        'max': 0.5,
+        'type': float,
+        'label': 'evolution.diversity_guard.frequency_threshold'
     }
 }
 

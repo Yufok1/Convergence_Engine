@@ -19,6 +19,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 import time
 import hashlib
+from collections import Counter
+import math
 
 
 class GenotypeEncoding(Enum):
@@ -403,6 +405,111 @@ class MutationEngine:
                 self.generation_stats['mutation_rates'] = self.generation_stats['mutation_rates'][-max_stats:]
 
 
+class DiversityGuard:
+    """
+    Prevents premature convergence through diversity enforcement
+    
+    Tracks genotype frequencies and applies fitness penalties to over-represented genotypes.
+    """
+    
+    def __init__(self, 
+                 hash_similarity_threshold: float = 0.92,
+                 penalty: float = 0.05,
+                 frequency_threshold: float = 0.1,
+                 enabled: bool = True):
+        self.hash_similarity_threshold = hash_similarity_threshold
+        self.penalty = penalty
+        self.frequency_threshold = frequency_threshold
+        self.enabled = enabled
+        
+        # Track genotype frequencies per generation
+        self.genotype_counts: Counter = Counter()
+        self.generation_history: List[Dict[str, int]] = []
+        
+    def calculate_genotype_similarity(self, hash1: str, hash2: str) -> float:
+        """Calculate similarity between two genotype hashes (0.0-1.0)"""
+        if len(hash1) != len(hash2):
+            return 0.0
+        
+        matches = sum(c1 == c2 for c1, c2 in zip(hash1, hash2))
+        return matches / len(hash1) if len(hash1) > 0 else 0.0
+    
+    def find_similar_genotypes(self, target_hash: str, population_hashes: List[str]) -> List[str]:
+        """Find genotypes similar to target (above threshold)"""
+        similar = []
+        for hash_val in population_hashes:
+            similarity = self.calculate_genotype_similarity(target_hash, hash_val)
+            if similarity >= self.hash_similarity_threshold:
+                similar.append(hash_val)
+        return similar
+    
+    def apply_diversity_penalty(self, organism, population: List) -> float:
+        """Apply fitness penalty based on genotype frequency"""
+        if not self.enabled or not population:
+            return 0.0
+        
+        # Get organism's genotype hash
+        genotype_hash = organism.genotype.get_hash()
+        
+        # Count similar genotypes in population
+        population_hashes = [org.genotype.get_hash() for org in population]
+        similar_count = len(self.find_similar_genotypes(genotype_hash, population_hashes))
+        
+        # Calculate frequency
+        total_population = len(population)
+        frequency = similar_count / total_population if total_population > 0 else 0.0
+        
+        # Apply penalty if frequency exceeds threshold
+        if frequency > self.frequency_threshold:
+            # Penalty increases with frequency
+            penalty_multiplier = min(frequency / 0.5, 1.0)  # Max penalty at 50% frequency
+            return self.penalty * penalty_multiplier
+        
+        return 0.0
+    
+    def update_generation(self, population: List):
+        """Track genotype frequencies for this generation"""
+        self.genotype_counts.clear()
+        for org in population:
+            hash_val = org.genotype.get_hash()
+            self.genotype_counts[hash_val] += 1
+        
+        # Store generation snapshot
+        self.generation_history.append(dict(self.genotype_counts))
+        
+        # Keep only last 10 generations
+        if len(self.generation_history) > 10:
+            self.generation_history.pop(0)
+    
+    def get_diversity_metrics(self) -> Dict[str, float]:
+        """Get current diversity metrics"""
+        if not self.genotype_counts:
+            return {
+                'unique_genotypes': 0,
+                'max_frequency': 0.0,
+                'diversity_index': 0.0,
+                'unique_genotypes_ratio': 0.0
+            }
+        
+        total = sum(self.genotype_counts.values())
+        unique = len(self.genotype_counts)
+        max_freq = max(self.genotype_counts.values()) / total if total > 0 else 0.0
+        
+        # Shannon diversity index
+        diversity_index = 0.0
+        for count in self.genotype_counts.values():
+            if count > 0:
+                p = count / total
+                diversity_index -= p * math.log2(p) if p > 0 else 0
+        
+        return {
+            'unique_genotypes': unique,
+            'max_frequency': max_freq,
+            'diversity_index': diversity_index,
+            'unique_genotypes_ratio': unique / total if total > 0 else 0.0
+        }
+
+
 class EvolutionEngine:
     """
     Main evolution engine coordinating all genetic operations
@@ -423,6 +530,18 @@ class EvolutionEngine:
         self.selection = SelectionEngine()
         self.mutation = MutationEngine()
         self.fitness_cache = FitnessCache()
+        
+        # Initialize diversity guard from config
+        diversity_config = self.config.get('evolution', {}).get('diversity_guard', {})
+        if diversity_config:
+            self.diversity_guard = DiversityGuard(
+                hash_similarity_threshold=diversity_config.get('hash_similarity_threshold', 0.92),
+                penalty=diversity_config.get('penalty', 0.05),
+                frequency_threshold=diversity_config.get('frequency_threshold', 0.1),
+                enabled=diversity_config.get('enabled', True)
+            )
+        else:
+            self.diversity_guard = DiversityGuard(enabled=False)
 
         # Fitness targets for evaluation
         self.fitness_targets = fitness_targets or {
@@ -490,6 +609,19 @@ class EvolutionEngine:
 
         self.population = new_population[:self.population_size]
         self.generation += 1
+        
+        # Update diversity guard
+        self.diversity_guard.update_generation(self.population)
+        
+        # Get diversity metrics
+        diversity_metrics = self.diversity_guard.get_diversity_metrics()
+        
+        # Log warning if diversity is low
+        if diversity_metrics['max_frequency'] > 0.2:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"[Diversity] High genotype frequency: {diversity_metrics['max_frequency']:.2%}, "
+                          f"unique genotypes: {diversity_metrics['unique_genotypes']}/{len(self.population)}")
 
         # Performance metrics
         elapsed = time.time() - start_time
@@ -500,26 +632,37 @@ class EvolutionEngine:
             'avg_fitness': np.mean(fitnesses),
             'mutation_rate': mutation_rate,
             'elapsed_seconds': elapsed,
-            'population_diversity': np.std(fitnesses)
+            'population_diversity': np.std(fitnesses),
+            'unique_genotypes': diversity_metrics['unique_genotypes'],
+            'max_genotype_frequency': diversity_metrics['max_frequency'],
+            'diversity_index': diversity_metrics['diversity_index'],
+            'unique_genotypes_ratio': diversity_metrics['unique_genotypes_ratio']
         }
 
     def _evaluate_population(self):
-        """Evaluate fitness for all organisms (with caching)"""
+        """Evaluate fitness for all organisms (with caching and diversity penalty)"""
         for organism in self.population:
             # Check cache first
             genotype_hash = organism.genotype.get_hash()
             cached_fitness = self.fitness_cache.get(genotype_hash)
 
             if cached_fitness is not None:
-                organism.fitness = cached_fitness
-                organism.genotype.fitness = cached_fitness
+                base_fitness = cached_fitness
             else:
                 # Develop phenotype and calculate fitness
                 organism.develop_phenotype()
-                fitness = organism.calculate_fitness(self.fitness_targets)
+                base_fitness = organism.calculate_fitness(self.fitness_targets)
 
-                # Cache result
-                self.fitness_cache.put(genotype_hash, fitness)
+                # Cache base fitness (before diversity penalty)
+                self.fitness_cache.put(genotype_hash, base_fitness)
+            
+            # Apply diversity penalty
+            penalty = self.diversity_guard.apply_diversity_penalty(organism, self.population)
+            adjusted_fitness = base_fitness - penalty
+            
+            # Clamp to valid range
+            organism.fitness = max(0.0, min(1.0, adjusted_fitness))
+            organism.genotype.fitness = organism.fitness
 
     def _create_offspring(self, parents: List[Organism], num_offspring: int) -> List[Genotype]:
         """Create offspring from selected parents"""
@@ -575,6 +718,9 @@ class EvolutionEngine:
 
         fitnesses = [org.fitness for org in self.population]
         genotypes = [org.genotype for org in self.population]
+        
+        # Get diversity metrics
+        diversity_metrics = self.diversity_guard.get_diversity_metrics()
 
         return {
             'population_size': len(self.population),
@@ -584,7 +730,14 @@ class EvolutionEngine:
             'fitness_std': np.std(fitnesses),
             'genotype_diversity': len(set(g.get_hash() for g in genotypes)),
             'cache_stats': self.fitness_cache.stats(),
-            'mutation_stats': self.mutation.generation_stats
+            'mutation_stats': self.mutation.generation_stats,
+            'diversity_guard': {
+                'enabled': self.diversity_guard.enabled,
+                'unique_genotypes': diversity_metrics['unique_genotypes'],
+                'max_genotype_frequency': diversity_metrics['max_frequency'],
+                'diversity_index': diversity_metrics['diversity_index'],
+                'unique_genotypes_ratio': diversity_metrics['unique_genotypes_ratio']
+            }
         }
 
     def get_best_organism(self) -> Optional[Organism]:

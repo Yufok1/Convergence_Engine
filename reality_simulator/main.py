@@ -1508,12 +1508,25 @@ class RealitySimulator:
             if self._gen_debug_count == 1 or self._gen_debug_count % 100 == 0:
                 logger.debug(f"Reading evolution generation: {gen} (type: {type(gen)}, hasattr: {hasattr(evolution, 'generation')})")
             
+            # Get population stats (includes diversity metrics)
+            pop_stats = evolution.get_population_stats() if hasattr(evolution, 'get_population_stats') else {}
+            
             data['evolution'] = {
                 'generation': int(gen),  # Ensure it's an integer, read dynamically from component
                 'population_size': len(evolution.population) if evolution.population else 0,
                 'best_fitness': evolution.get_best_organism().fitness if evolution.population else 0,
                 'avg_fitness': np.mean([org.fitness for org in evolution.population]) if evolution.population else 0
             }
+            
+            # Add diversity metrics if available
+            if 'diversity_guard' in pop_stats:
+                diversity = pop_stats['diversity_guard']
+                data['evolution'].update({
+                    'unique_genotypes': diversity.get('unique_genotypes', 0),
+                    'max_genotype_frequency': diversity.get('max_genotype_frequency', 0.0),
+                    'diversity_index': diversity.get('diversity_index', 0.0),
+                    'unique_genotypes_ratio': diversity.get('unique_genotypes_ratio', 0.0)
+                })
 
         # Network
         network = self.components.get('network')
