@@ -299,7 +299,8 @@ class NeuralOrganism(Organism):
         confidence = float(np.max(action_probs)) if action_probs is not None else 0.5
         
         # Emit neural decision event for visualization
-        if self.event_emitter and confidence > 0.8:  # Only emit high-confidence decisions
+        # Allow events during exploration (high epsilon) OR when confidence is meaningful
+        if self.event_emitter and (confidence > 0.5 or self.epsilon > 0.5):
             import time
             action_names = ['move', 'cooperate', 'compete', 'rest', 'reproduce', 'isolate']
             action_name = action_names[action] if 0 <= action < len(action_names) else 'unknown'

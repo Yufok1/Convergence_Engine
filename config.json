@@ -117,7 +117,7 @@
       "input_dim": 12,
       "output_dim": 6
     },
-  "device": "cuda",
+    "device": "cuda",
     "enabled": true,
     "inheritance": {
       "crossover_rate": 0.9,
@@ -148,9 +148,9 @@
       "epsilon": 0.95,
       "epsilon_decay": 0.995,
       "epsilon_end": 0.01,
-      "epsilon_start": 0.999,
+      "epsilon_start": 0.95,
       "gamma": 0.995,
-      "learning_rate": 0.001,
+      "learning_rate": 0.002,
       "memory_size": 20000,
       "update_frequency": 1
     }
