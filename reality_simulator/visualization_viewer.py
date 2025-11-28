@@ -713,7 +713,8 @@ class LightweightVisualizationViewer:
                         "organisms": len(G.nodes())
                     }
                     self._apply_grid_profile(ax, profile)
-                    self._draw_profile_label(ax, profile, data, derived)
+                    # Bottom menu removed per user request - was showing cluster_sizes and running off window
+                    # self._draw_profile_label(ax, profile, data, derived)
                     self._draw_profile_planes(ax, profile, xs, ys, zs)
                 else:
                     ax.text2D(0.5, 0.5, f'{num_orgs} Organisms\n{num_conns} Connections',
