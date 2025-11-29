@@ -143,6 +143,10 @@ def create_brain(config: Dict[str, Any]):
         dropout=brain_config.get('dropout', 0.1)
     )
     
+    # Move to GPU if available
+    device = get_device("cuda")
+    brain = brain.to(device)
+    
     # Optimization: Compile brain for faster training/inference (PyTorch 2.0+)
     optimization_config = config.get('optimization', {})
     optimizations_applied = []
