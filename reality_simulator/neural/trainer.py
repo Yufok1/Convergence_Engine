@@ -165,10 +165,16 @@ class NeuralTrainer:
             network_state: Current network state
             breath_state: Breath engine state
         """
+        experiences_collected = 0
         for org_id, organism in organisms.items():
-            if not isinstance(organism, NeuralOrganism) or organism.brain is None:
+            # Use duck typing instead of isinstance() to avoid import issues
+            # Check if organism has neural capabilities
+            if not (hasattr(organism, 'brain') and organism.brain is not None):
                 continue
-            
+
+            if not hasattr(organism, 'record_experience'):
+                continue  # Not a neural organism
+
             # Get previous fitness
             prev_fitness = self.organism_fitness_history.get(org_id, organism.fitness)
             current_fitness = organism.fitness
@@ -196,9 +202,14 @@ class NeuralTrainer:
                 next_state=next_state,
                 done=False  # Organisms don't "die" in the same way
             )
-            
+            experiences_collected += 1
+
             # Update fitness history
             self.organism_fitness_history[org_id] = current_fitness
+
+        # Debug logging (only log occasionally to avoid spam)
+        if experiences_collected > 0 and self.training_step_count % 50 == 0:
+            print(f"[NEURAL] Collected {experiences_collected} experiences from {len(organisms)} organisms")
     
     def train_step(self,
                    organisms: Dict[str, NeuralOrganism],
@@ -234,9 +245,9 @@ class NeuralTrainer:
         # Find organisms with sufficient experience
         trainable_organisms = []
         for organism in organisms.values():
-            if (isinstance(organism, NeuralOrganism) and 
-                organism.brain is not None and
-                organism.experience_buffer is not None and
+            # Use duck typing instead of isinstance()
+            if (hasattr(organism, 'brain') and organism.brain is not None and
+                hasattr(organism, 'experience_buffer') and organism.experience_buffer is not None and
                 len(organism.experience_buffer) >= self.batch_size):
                 trainable_organisms.append(organism)
         
