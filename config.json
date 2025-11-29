@@ -57,7 +57,7 @@
       "initial": 0.04
     },
     "mutation_rate_precision": 0.001,
-    "population_size": 1200
+    "population_size": 1400
   },
   "feedback": {
     "enabled": true,
@@ -71,13 +71,13 @@
         "step": 0.05
       },
       "mutation_rate": {
-        "initial": 0.032,
+        "initial": 0.035,
         "max": 0.06,
         "min": 0.002,
         "step": 0.001
       },
       "new_edge_rate": {
-        "initial": 5,
+        "initial": 5.2,
         "max": 6.0,
         "min": 0.2,
         "step": 0.1
@@ -106,7 +106,7 @@
     "self_tuning": {
       "enabled": true,
       "min_confidence_threshold": 0.6,
-      "mode": "autonomous",
+      "mode": "observing",
       "performance_targets": {
         "max_anomaly_ratio": 0.2,
         "min_cluster_diversity": 3,
@@ -186,8 +186,8 @@
     },
     "rewards": {
       "connection_failure": -0.2,
-      "connection_success": 1.5,
-      "fitness_improvement": 2.2,
+      "connection_success": 1.8,
+      "fitness_improvement": 2.5,
       "resource_gain": 1,
       "resource_loss": -0.3,
       "survival": 0.8
@@ -200,13 +200,13 @@
       "epsilon_end": 0.01,
       "epsilon_start": 0.95,
       "gamma": 0.995,
-      "learning_rate": 0.004,
+      "learning_rate": 0.0035,
       "memory_size": 20000,
       "update_frequency": 1
     }
   },
   "quantum": {
-    "entanglement_sensitivity": 3e-06,
+    "entanglement_sensitivity": 2.5e-06,
     "fitness_weights": {
       "entanglement": 0.3,
       "entropy": 0.2,
@@ -240,14 +240,14 @@
   "scikit": {
     "anomaly_detection": {
       "algorithm": "isolation_forest",
-      "contamination": 0.18,
+      "contamination": 0.12,
       "enabled": true,
       "n_estimators": 450
     },
     "clustering": {
       "algorithm": "hdbscan",
       "enabled": true,
-      "min_cluster_size": 4,
+      "min_cluster_size": 2,
       "min_samples": 1
     },
     "dimensionality_reduction": {
