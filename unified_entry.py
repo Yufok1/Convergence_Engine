@@ -536,12 +536,12 @@ class UnifiedVisualization:
 
             self.root = tk.Tk()
             self.root.title("The Convergence Engine - 3D Network Visualization")
-            self.root.geometry("1920x1080")
+            self.root.geometry("1280x720")
 
             # Create figure with 3D network graph - make left panel dominant (60% width)
             from mpl_toolkits.mplot3d import Axes3D
             import matplotlib.gridspec as gridspec
-            self.fig = plt.figure(figsize=(19.2, 10.8), facecolor='black')
+            self.fig = plt.figure(figsize=(12.8, 7.2), facecolor='black')
             
             # Create GridSpec with 60/20/20 width ratios
             gs = gridspec.GridSpec(1, 5, figure=self.fig, width_ratios=[3, 0.2, 1, 0.2, 1], wspace=0.05)

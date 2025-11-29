@@ -230,8 +230,8 @@
     "mode": "observer",
     "performance_monitoring": true,
     "resolution": [
-      1920,
-      1080
+      1280,
+      720
     ],
     "text_interface": true,
     "visualization_update_precision": 0.001
