@@ -188,6 +188,10 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
             dropout=self.dropout_rate
         )
         
+        # Move child to same device as parent
+        device = next(self.parameters()).device
+        child = child.to(device)
+        
         with torch.no_grad():
             for child_param, self_param, other_param in zip(
                 child.parameters(), self.parameters(), other_brain.parameters()

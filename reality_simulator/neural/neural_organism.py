@@ -100,6 +100,9 @@ class NeuralOrganism(Organism):
                         activation=brain_config.get('activation', 'relu'),
                         dropout=brain_config.get('dropout', 0.1)
                     )
+                    # Move to same device as parent
+                    device = next(parent_brains[0].parameters()).device
+                    self.brain = self.brain.to(device)
                     self.brain.load_state_dict(parent_brains[0].state_dict())
                 
                 # Add mutation
