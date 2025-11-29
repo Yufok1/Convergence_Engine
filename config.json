@@ -100,6 +100,55 @@
   "logging": {
     "shared_state_dump_interval": 0
   },
+  "meta_cognitive": {
+    "description": "Meta-cognitive systems: self-awareness, self-tuning, autonomous optimization",
+    "self_tuning": {
+      "enabled": true,
+      "min_confidence_threshold": 0.6,
+      "mode": "autonomous",
+      "performance_targets": {
+        "max_anomaly_ratio": 0.2,
+        "min_cluster_diversity": 3,
+        "min_fitness_std": 0.05
+      },
+      "safe_parameters": [
+        "evolution.mutation_rate.initial",
+        "evolution.diversity_guard.penalty",
+        "evolution.diversity_guard.frequency_threshold",
+        "evolution.diversity_guard.hash_similarity_threshold",
+        "evolution.population_size",
+        "evolution.adaptation_sensitivity",
+        "feedback.knobs.mutation_rate.initial",
+        "feedback.knobs.new_edge_rate.initial",
+        "feedback.knobs.clustering_bias.initial",
+        "feedback.knobs.quantum_pruning.initial",
+        "neural.training.learning_rate",
+        "neural.training.gamma",
+        "neural.training.epsilon_decay",
+        "neural.training.batch_size",
+        "neural.rewards.fitness_improvement",
+        "neural.rewards.connection_success",
+        "neural.rewards.survival",
+        "neural.inheritance.crossover_rate",
+        "neural.inheritance.mutation_rate",
+        "network.max_organisms",
+        "network.max_connections",
+        "network.resource_pool",
+        "scikit.clustering.min_cluster_size",
+        "scikit.anomaly_detection.contamination",
+        "scikit.anomaly_detection.n_estimators",
+        "quantum.initial_states",
+        "quantum.entanglement_sensitivity",
+        "quantum.prune_check_interval",
+        "vp_monitoring.adaptive_response.high_vp_threshold",
+        "vp_monitoring.stabilization.smoothing_factor",
+        "causation_detection.correlation_threshold",
+        "meta_cognitive.self_tuning.tuning_interval_frames",
+        "meta_cognitive.self_tuning.min_confidence_threshold"
+      ],
+      "tuning_interval_frames": 50
+    }
+  },
   "network": {
     "connection_strength_resolution": 5e-06,
     "emergence_sensitivity": 1e-06,
@@ -190,7 +239,7 @@
   "scikit": {
     "anomaly_detection": {
       "algorithm": "isolation_forest",
-      "contamination": 0.1,
+      "contamination": 0.05,
       "enabled": true,
       "n_estimators": 300
     },
@@ -242,54 +291,5 @@
       "smoothing_factor": 0.25
     },
     "stabilization_enabled": true
-  },
-  "meta_cognitive": {
-    "self_tuning": {
-      "enabled": true,
-      "mode": "autonomous",
-      "tuning_interval_frames": 50,
-      "min_confidence_threshold": 0.6,
-      "safe_parameters": [
-        "evolution.mutation_rate.initial",
-        "evolution.diversity_guard.penalty",
-        "evolution.diversity_guard.frequency_threshold",
-        "evolution.diversity_guard.hash_similarity_threshold",
-        "evolution.population_size",
-        "evolution.adaptation_sensitivity",
-        "feedback.knobs.mutation_rate.initial",
-        "feedback.knobs.new_edge_rate.initial",
-        "feedback.knobs.clustering_bias.initial",
-        "feedback.knobs.quantum_pruning.initial",
-        "neural.training.learning_rate",
-        "neural.training.gamma",
-        "neural.training.epsilon_decay",
-        "neural.training.batch_size",
-        "neural.rewards.fitness_improvement",
-        "neural.rewards.connection_success",
-        "neural.rewards.survival",
-        "neural.inheritance.crossover_rate",
-        "neural.inheritance.mutation_rate",
-        "network.max_organisms",
-        "network.max_connections",
-        "network.resource_pool",
-        "scikit.clustering.min_cluster_size",
-        "scikit.anomaly_detection.contamination",
-        "scikit.anomaly_detection.n_estimators",
-        "quantum.initial_states",
-        "quantum.entanglement_sensitivity",
-        "quantum.prune_check_interval",
-        "vp_monitoring.adaptive_response.high_vp_threshold",
-        "vp_monitoring.stabilization.smoothing_factor",
-        "causation_detection.correlation_threshold",
-        "meta_cognitive.self_tuning.tuning_interval_frames",
-        "meta_cognitive.self_tuning.min_confidence_threshold"
-      ],
-      "performance_targets": {
-        "min_cluster_diversity": 3,
-        "max_anomaly_ratio": 0.2,
-        "min_fitness_std": 0.05
-      }
-    },
-    "description": "Meta-cognitive systems: self-awareness, self-tuning, autonomous optimization"
   }
 }
