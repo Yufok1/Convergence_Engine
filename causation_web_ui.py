@@ -3563,6 +3563,65 @@ class SystemContextBuilder:
                 with open(config_path, 'r') as f:
                     config = json.load(f)
                 parts.append(f"# System Configuration (config.json)\n{json.dumps(config, indent=2)}")
+
+                # Consistency summary block (defaults vs current overrides)
+                try:
+                    summary_lines = []
+                    # Meta-cognitive tuning interval: show current and documented default
+                    mc = config.get('meta_cognitive', {}).get('self_tuning', {})
+                    current_interval = mc.get('tuning_interval_frames')
+                    documented_default = 50  # 2025 docs default
+                    if current_interval is not None:
+                        summary_lines.append(f"meta_cognitive.self_tuning.tuning_interval_frames: current={current_interval}, default={documented_default}")
+
+                    # ML config: highlight common overrides vs typical defaults
+                    scikit = config.get('scikit', {})
+                    clustering = scikit.get('clustering', {})
+                    anomaly = scikit.get('anomaly_detection', {})
+                    # Typical defaults used in docs
+                    defaults = {
+                        'min_cluster_size': 2,
+                        'min_samples': 1,
+                        'contamination': 0.10,
+                        'n_estimators': 300
+                    }
+                    if clustering:
+                        mcs = clustering.get('min_cluster_size')
+                        ms = clustering.get('min_samples')
+                        if mcs is not None:
+                            summary_lines.append(f"scikit.clustering.min_cluster_size: current={mcs}, default={defaults['min_cluster_size']}")
+                        if ms is not None:
+                            summary_lines.append(f"scikit.clustering.min_samples: current={ms}, default={defaults['min_samples']}")
+                    if anomaly:
+                        contam = anomaly.get('contamination')
+                        nest = anomaly.get('n_estimators')
+                        if contam is not None:
+                            summary_lines.append(f"scikit.anomaly_detection.contamination: current={contam}, default={defaults['contamination']}")
+                        if nest is not None:
+                            summary_lines.append(f"scikit.anomaly_detection.n_estimators: current={nest}, default={defaults['n_estimators']}")
+
+                    # Causation toggles: show current values for quick verification
+                    cd = config.get('causation_detection', {})
+                    if cd:
+                        toggles = [
+                            'enable_neural_causations',
+                            'enable_neural_decision_causations',
+                            'enable_neural_training_causations',
+                            'enable_phase_transition_causations',
+                            'enable_bidirectional_causations',
+                            'enable_ml_causations'
+                        ]
+                        for t in toggles:
+                            if t in cd:
+                                summary_lines.append(f"causation_detection.{t}: {cd.get(t)}")
+
+                    if summary_lines:
+                        parts.append("\n# Configuration Consistency Summary")
+                        parts.append("- Values marked 'current' reflect runtime config; 'default' reflects documented typical defaults")
+                        parts.extend([f"- {line}" for line in summary_lines])
+                except Exception as _e:
+                    # Non-fatal: this is an informational block
+                    parts.append("\n# Configuration Consistency Summary\n(Unable to generate summary)")
             except Exception as e:
                 parts.append(f"Error loading config.json: {e}")
         
@@ -3718,6 +3777,9 @@ class SystemContextBuilder:
                 parts.append(f"Explorer Phase: {explorer_phase}")
                 parts.append(f"VP Calculations: {vp_calculations:,}")
                 parts.append(f"Tape Cells: {tape_cells:,}")
+
+                # Diagnostics log path note (standardized)
+                parts.append("Diagnostics Log: data/logs/vp_diagnostics.log (if diagnostics_enabled=true)")
                 
                 # Synchronization check
                 if vp_calculations > 0 and tape_cells > 0:
