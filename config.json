@@ -146,7 +146,7 @@
         "meta_cognitive.self_tuning.tuning_interval_frames",
         "meta_cognitive.self_tuning.min_confidence_threshold"
       ],
-      "tuning_interval_frames": 50
+      "tuning_interval_frames": 10
     }
   },
   "network": {
