@@ -49,10 +49,26 @@ class ExplorerIntegrationBridge:
         self.mirror_insight = MirrorOfInsight() if EXPLORER_COMPONENTS_AVAILABLE else None
         self.mirror_portent = MirrorOfPortent() if EXPLORER_COMPONENTS_AVAILABLE else None
         self.bloom_system = BloomSystem() if EXPLORER_COMPONENTS_AVAILABLE else None
-        
+
+        # Djinn Kernel VP Monitor (lazy initialized)
+        self.vp_monitor = None
+
         # Integration state
         self.integration_active = False
         self.last_sync_time = time.time()
+
+    def _get_vp_monitor(self):
+        """Lazy initialization of ViolationMonitor to avoid heavy startup cost"""
+        if self.vp_monitor is None:
+            try:
+                kernel_path = Path(__file__).parent.parent / 'kernel'
+                if str(kernel_path) not in sys.path:
+                    sys.path.insert(0, str(kernel_path))
+                from violation_pressure_calculation import ViolationMonitor
+                self.vp_monitor = ViolationMonitor()
+            except ImportError:
+                pass
+        return self.vp_monitor
         
     def collect_reality_simulator_traits(self) -> Dict[str, Any]:
         """Collect traits from Reality Simulator using test_func1"""
@@ -75,16 +91,16 @@ class ExplorerIntegrationBridge:
     def collect_djinn_kernel_traits(self) -> Dict[str, Any]:
         """Collect traits from Djinn Kernel using test_func2"""
         try:
-            # Import and run test_func2
+            # Import and run test_func2 with shared vp_monitor instance
             sys.path.insert(0, str(Path(__file__).parent))
             from test_func2 import main as calculate_vp
-            traits = calculate_vp()
-            
+            traits = calculate_vp(vp_monitor=self._get_vp_monitor())
+
             # Translate using trait hub
             if self.trait_hub:
                 translated = self.trait_hub.translate(traits)
                 return {t['trait']: t['value'] for t in translated}
-            
+
             return traits
         except Exception as e:
             print(f"[Integration Bridge] Error collecting Djinn Kernel traits: {e}")
@@ -95,7 +111,7 @@ class ExplorerIntegrationBridge:
         try:
             sys.path.insert(0, str(Path(__file__).parent))
             from test_func3 import main as detect_transition
-            return detect_transition()
+            return detect_transition(sentinel=self.sentinel, vp_monitor=self._get_vp_monitor())
         except Exception as e:
             print(f"[Integration Bridge] Error detecting phase transition: {e}")
             return {'phase': 'chaos', 'transition_ready': 0}
@@ -105,7 +121,7 @@ class ExplorerIntegrationBridge:
         try:
             sys.path.insert(0, str(Path(__file__).parent))
             from test_func4 import main as track_exploration
-            return track_exploration()
+            return track_exploration(sentinel=self.sentinel, vp_monitor=self._get_vp_monitor())
         except Exception as e:
             print(f"[Integration Bridge] Error tracking exploration: {e}")
             return {'total_exploration': 0.0}
@@ -115,7 +131,7 @@ class ExplorerIntegrationBridge:
         try:
             sys.path.insert(0, str(Path(__file__).parent))
             from test_func5 import main as coordinate
-            return coordinate()
+            return coordinate(sentinel=self.sentinel, kernel=self.kernel, vp_monitor=self._get_vp_monitor())
         except Exception as e:
             print(f"[Integration Bridge] Error coordinating systems: {e}")
             return {'coordination_health': 0.0, 'sync_status': 'error'}

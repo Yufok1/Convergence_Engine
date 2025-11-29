@@ -8,46 +8,52 @@ import os
 import json
 from pathlib import Path
 
-def main():
+def main(sentinel=None, vp_monitor=None):
     """
     Track total exploration across Reality Simulator, Explorer, and Djinn Kernel.
-    
+
     Returns traits indicating exploration progress and conversion factors.
+
+    Args:
+        sentinel: Optional Sentinel instance to avoid heavy instantiation
+        vp_monitor: Optional ViolationMonitor instance to avoid heavy instantiation
     """
     # Add paths
     reality_sim_path = Path(__file__).parent.parent / 'reality_simulator'
     kernel_path = Path(__file__).parent.parent / 'kernel'
-    
+
     if str(reality_sim_path) not in sys.path:
         sys.path.insert(0, str(reality_sim_path))
     if str(kernel_path) not in sys.path:
         sys.path.insert(0, str(kernel_path))
-    
+
     try:
         # Get Reality Simulator exploration (organism count)
         shared_state_path = Path(__file__).parent.parent / 'data' / 'shared_state.json'
         reality_sim_explorations = 0
-        
+
         if shared_state_path.exists():
             with open(shared_state_path, 'r') as f:
                 shared_state = json.load(f)
             network_data = shared_state.get('network', {})
             reality_sim_explorations = network_data.get('organisms', 0)
-        
+
         # Get Explorer exploration (VP calculations)
         explorer_explorations = 0
         try:
-            from sentinel import Sentinel
-            sentinel = Sentinel()
+            if sentinel is None:
+                from sentinel import Sentinel
+                sentinel = Sentinel()
             explorer_explorations = len(sentinel.vp_history)
         except:
             pass
-        
+
         # Get Djinn Kernel exploration (trait explorations)
         djinn_kernel_explorations = 0
         try:
-            from violation_pressure_calculation import ViolationMonitor
-            vp_monitor = ViolationMonitor()
+            if vp_monitor is None:
+                from violation_pressure_calculation import ViolationMonitor
+                vp_monitor = ViolationMonitor()
             djinn_kernel_explorations = len(vp_monitor.vp_history)
         except:
             pass

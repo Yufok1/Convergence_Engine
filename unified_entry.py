@@ -627,6 +627,12 @@ class UnifiedVisualization:
 
         try:
             import matplotlib.pyplot as plt
+            # Prefer a Windows font that supports emojis (no suppression; allow warnings to surface)
+            try:
+                import matplotlib as mpl
+                mpl.rcParams['font.family'] = ['Segoe UI Emoji', 'Segoe UI Symbol', 'DejaVu Sans']
+            except Exception:
+                pass
 
             # Left panel: Reality Simulator 3D Network
             self._last_reality_sim_state = reality_sim_state  # Store for grid toggle redraw
@@ -1047,7 +1053,7 @@ class UnifiedSystem:
             print(f"[UNIFIED] [WARN] Causation Explorer initialization failed: {e}")
             self.causation_explorer = None
 
-        # Wire event emitter for neural visualization (AFTER causation_explorer is initialized)
+        # Wire event emitter for neural/ML visualization (AFTER causation_explorer is initialized)
         if self.reality_sim and self.causation_explorer:
             from causation_explorer import Event
             def neural_event_emitter(event_dict):
@@ -1065,6 +1071,29 @@ class UnifiedSystem:
                     pass  # Don't break if event emission fails
             
             self.reality_sim.event_emitter = neural_event_emitter
+
+            # Also wire ML event emitter on the network (clustering, anomaly, phenotype events)
+            try:
+                network = self.reality_sim.components.get('network') if hasattr(self.reality_sim, 'components') else None
+                if network and hasattr(network, 'ml_event_emitter'):
+                    network.ml_event_emitter = neural_event_emitter  # Reuse same emitter for ML events
+
+                    # Configure ML analyzer from config if available and enabled
+                    if hasattr(network, 'configure_ml_analyzer'):
+                        try:
+                            config_path = Path('config.json')
+                            if config_path.exists():
+                                with open(config_path, 'r') as f:
+                                    full_config = json.load(f)
+                                    scikit_config = full_config.get('scikit', {})
+                                    if scikit_config.get('enabled', False):
+                                        network.configure_ml_analyzer(scikit_config)
+                                        print("[UNIFIED] [PASS] 🧠 ML Analyzer configured (Scikit-learn)")
+                        except Exception as e:
+                            print(f"[UNIFIED] [WARN] ML Analyzer configuration failed: {e}")
+            except Exception:
+                # Don't let ML wiring break initialization
+                pass
         else:
             print(f"[UNIFIED] [WARN] Cannot wire event emitter - reality_sim: {bool(self.reality_sim)}, causation_explorer: {bool(self.causation_explorer)}")
             

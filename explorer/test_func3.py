@@ -8,27 +8,31 @@ import os
 import json
 from pathlib import Path
 
-def main():
+def main(sentinel=None, vp_monitor=None):
     """
     Detect phase transition (chaos→precision) across all three systems.
-    
+
     Returns traits indicating transition status and proximity.
+
+    Args:
+        sentinel: Optional Sentinel instance to avoid heavy instantiation
+        vp_monitor: Optional ViolationMonitor instance to avoid heavy instantiation
     """
     # Add paths
     reality_sim_path = Path(__file__).parent.parent / 'reality_simulator'
     kernel_path = Path(__file__).parent.parent / 'kernel'
-    
+
     if str(reality_sim_path) not in sys.path:
         sys.path.insert(0, str(reality_sim_path))
     if str(kernel_path) not in sys.path:
         sys.path.insert(0, str(kernel_path))
-    
+
     try:
         # Get Reality Simulator state
         shared_state_path = Path(__file__).parent.parent / 'data' / 'shared_state.json'
         reality_sim_ready = False
         reality_sim_proximity = 0.0
-        
+
         if shared_state_path.exists():
             with open(shared_state_path, 'r') as f:
                 shared_state = json.load(f)
@@ -37,7 +41,7 @@ def main():
             modularity = network_data.get('modularity', 1.0)
             clustering = network_data.get('clustering_coefficient', 0.0)
             path_length = network_data.get('average_path_length', float('inf'))
-            
+
             # Check collapse conditions
             reality_sim_ready = (
                 org_count >= 500 and
@@ -46,30 +50,31 @@ def main():
                 path_length < 3.0
             )
             reality_sim_proximity = min(1.0, org_count / 500.0)
-        
+
         # Get Explorer state (from current system)
         # Explorer needs 50 VP calculations and mathematical capability
         explorer_ready = False
         explorer_proximity = 0.0
-        
-        # This would be set by Explorer's main controller
-        # For now, we'll check if we can detect it
+
+        # Use provided instance or create new one
         try:
-            from sentinel import Sentinel
-            sentinel = Sentinel()
+            if sentinel is None:
+                from sentinel import Sentinel
+                sentinel = Sentinel()
             vp_calculations = len(sentinel.vp_history)
             explorer_proximity = min(1.0, vp_calculations / 50.0)
             explorer_ready = sentinel.check_mathematical_capability()
         except:
             pass
-        
+
         # Get Djinn Kernel state
         djinn_kernel_ready = False
         djinn_kernel_proximity = 0.0
-        
+
         try:
-            from violation_pressure_calculation import ViolationMonitor
-            vp_monitor = ViolationMonitor()
+            if vp_monitor is None:
+                from violation_pressure_calculation import ViolationMonitor
+                vp_monitor = ViolationMonitor()
             if vp_monitor.vp_history:
                 recent_vp = vp_monitor.vp_history[-1]
                 total_vp = recent_vp.get('total_vp', 1.0)

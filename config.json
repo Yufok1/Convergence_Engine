@@ -7,14 +7,14 @@
     "performance_tracking_precision": 0.0001
   },
   "causation_detection": {
-    "correlation_threshold": 0.6,
-    "direct_causation_time_window": 2,
+    "correlation_threshold": 0.55,
+    "direct_causation_time_window": 5,
     "enable_bidirectional_causations": true,
     "enable_neural_causations": true,
     "enable_neural_decision_causations": true,
     "enable_neural_training_causations": true,
     "enable_phase_transition_causations": true,
-    "phase_transition_time_window": 2.0,
+    "phase_transition_time_window": 5,
     "recent_events_window": 300,
     "thresholds": {
       "clustering_coefficient": {
@@ -70,19 +70,19 @@
         "step": 0.05
       },
       "mutation_rate": {
-        "initial": 0.035,
+        "initial": 0.032,
         "max": 0.06,
         "min": 0.002,
         "step": 0.001
       },
       "new_edge_rate": {
-        "initial": 3.5,
+        "initial": 5,
         "max": 6.0,
         "min": 0.2,
         "step": 0.1
       },
       "quantum_pruning": {
-        "initial": 0.6,
+        "initial": 0.45,
         "max": 1.0,
         "min": 0.0,
         "step": 0.05
@@ -152,10 +152,10 @@
   "network": {
     "connection_strength_resolution": 5e-06,
     "emergence_sensitivity": 1e-06,
-    "max_connections": 15000,
+    "max_connections": 17000,
     "max_organisms": 2200,
     "resource_flow_precision": 0.0001,
-    "resource_pool": 400,
+    "resource_pool": 480,
     "stability_precision": 1e-07
   },
   "neural": {
@@ -195,11 +195,11 @@
       "batch_size": 128,
       "enabled": true,
       "epsilon": 0.95,
-      "epsilon_decay": 0.995,
+      "epsilon_decay": 0.991,
       "epsilon_end": 0.01,
       "epsilon_start": 0.95,
-      "gamma": 0.995,
-      "learning_rate": 0.002,
+      "gamma": 0.997,
+      "learning_rate": 0.004,
       "memory_size": 20000,
       "update_frequency": 1
     }
@@ -239,14 +239,14 @@
   "scikit": {
     "anomaly_detection": {
       "algorithm": "isolation_forest",
-      "contamination": 0.05,
+      "contamination": 0.18,
       "enabled": true,
-      "n_estimators": 300
+      "n_estimators": 450
     },
     "clustering": {
       "algorithm": "hdbscan",
       "enabled": true,
-      "min_cluster_size": 2,
+      "min_cluster_size": 3,
       "min_samples": 1
     },
     "dimensionality_reduction": {

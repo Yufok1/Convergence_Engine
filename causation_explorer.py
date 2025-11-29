@@ -528,14 +528,14 @@ class CausationExplorer:
         
         Phase 2: Thread-safe - assumes called from within graph_lock
         """
-        # Look at recent events (last 100)
+        # Look at recent events (configurable window)
         # Create snapshot to avoid iteration issues if events are modified concurrently
         events_snapshot = list(self.events.values())
         recent_events = sorted(
             events_snapshot,
             key=lambda e: e.timestamp,
             reverse=True
-        )[:100]
+        )[: max(1, int(getattr(self, 'recent_events_window', 100)))]
         
         for prev_event in recent_events:
             if prev_event.event_id == new_event.event_id:

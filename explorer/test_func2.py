@@ -8,30 +8,31 @@ import os
 import json
 from pathlib import Path
 
-def main():
+def main(vp_monitor=None):
     """
     Calculate VP from Djinn Kernel traits.
-    
+
     This function is called by Explorer's Sentinel to get VP from Djinn Kernel.
     Returns traits in Explorer format for VP calculation.
+
+    Args:
+        vp_monitor: Optional ViolationMonitor instance to avoid heavy instantiation
     """
     # Add kernel to path
     kernel_path = Path(__file__).parent.parent / 'kernel'
     if str(kernel_path) not in sys.path:
         sys.path.insert(0, str(kernel_path))
-    
+
     try:
-        # Try to import Djinn Kernel components
-        from violation_pressure_calculation import ViolationMonitor
-        from event_driven_coordination import DjinnEventBus
-        
-        # Initialize VP monitor (if not already initialized)
-        # In practice, this would connect to running Djinn Kernel instance
-        vp_monitor = ViolationMonitor()
-        
+        # Use provided instance or create new one
+        if vp_monitor is None:
+            from violation_pressure_calculation import ViolationMonitor
+            from event_driven_coordination import DjinnEventBus
+            vp_monitor = ViolationMonitor()
+
         # Get system health metrics
         health_metrics = vp_monitor.calculate_system_health_metrics()
-        
+
         # Get recent VP history
         if vp_monitor.vp_history:
             recent_vp = vp_monitor.vp_history[-1]
@@ -40,7 +41,7 @@ def main():
         else:
             total_vp = 0.0
             classification = 'VP0'
-        
+
         # Return traits in Explorer format
         traits = {
             'violation_pressure': total_vp,
@@ -56,11 +57,11 @@ def main():
             'uuid_anchored': 1 if len(vp_monitor.vp_history) > 0 else 0,
             'identity_completion': 1.0 - total_vp if total_vp < 1.0 else 0.0
         }
-        
+
         # Output traits (Explorer will capture this)
         print(json.dumps(traits))
         return traits
-        
+
     except ImportError:
         # Djinn Kernel not available - return default traits
         return {

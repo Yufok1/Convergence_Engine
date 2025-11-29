@@ -1439,7 +1439,7 @@
                             <label
                                 style="display: flex; align-items: center; gap: 8px; color: #0ff; font-size: 0.85em;">
                                 <span style="min-width: 120px;">🔬 ML Analysis:</span>
-                                <input type="color" id="color-ml_analysis" value="#FF00FF"
+                                <input type="color" id="color-ml_analysis" value="#32CD32"
                                     onchange="updateComponentColor('ml_analysis', this.value)"
                                     style="width: 60px; height: 25px; cursor: pointer;">
                             </label>
@@ -4053,7 +4053,9 @@
                 // Filter nodes by component
                 filteredNodes = allNodes.filter(node => {
                     const comp = node.component || 'unknown';
-                    return filters.components[comp] || filters.components['system'];
+                    // If filter exists for this component, use it. Otherwise default to true.
+                    const filterValue = filters.components.hasOwnProperty(comp) ? filters.components[comp] : filters.components['system'];
+                    return filterValue !== false;
                 });
 
                 // Filter links by causation type and ensure both nodes are visible
@@ -4077,12 +4079,16 @@
                     };
                 }).filter(link => nodeMapForFiltering.has(link.source) && nodeMapForFiltering.has(link.target));
 
-                // If graph hasn't been rendered yet, render it with filters
+                // If graph hasn't been rendered yet, render it with filters (but only if we have data)
                 if (!svg || !simulation) {
-                    renderGraph();
+                    if (allNodes.length > 0) {
+                        renderGraph();
+                    }
                 } else {
                     // Graph already exists - just update visibility without resetting
                     updateFilterVisibility();
+                    // Re-center view on visible nodes
+                    setTimeout(fitToVisibleNodes, 100);
                 }
             }
 
@@ -4217,9 +4223,47 @@
                 console.log(`[Viewport Culling] ${enabled ? 'ENABLED' : 'DISABLED'}`);
             }
 
+            // Fit view to visible nodes after filtering
+            function fitToVisibleNodes() {
+                if (!svg || !allNodes || allNodes.length === 0) return;
+                
+                // Get all visible nodes
+                const visibleNodes = allNodes.filter(n => {
+                    const comp = n.component || 'unknown';
+                    return filters.components[comp] !== false && n.x !== undefined && n.y !== undefined;
+                });
+                
+                if (visibleNodes.length === 0) return;
+                
+                // Calculate bounding box of visible nodes
+                const padding = 100;
+                const minX = Math.min(...visibleNodes.map(n => n.x)) - padding;
+                const maxX = Math.max(...visibleNodes.map(n => n.x)) + padding;
+                const minY = Math.min(...visibleNodes.map(n => n.y)) - padding;
+                const maxY = Math.max(...visibleNodes.map(n => n.y)) + padding;
+                
+                const graphElement = document.getElementById('graph');
+                const width = graphElement.clientWidth;
+                const height = graphElement.clientHeight;
+                
+                const boundsWidth = maxX - minX;
+                const boundsHeight = maxY - minY;
+                const scale = Math.min(width / boundsWidth, height / boundsHeight, 2); // Max zoom of 2x
+                
+                const centerX = (minX + maxX) / 2;
+                const centerY = (minY + maxY) / 2;
+                const translateX = width / 2 - centerX * scale;
+                const translateY = height / 2 - centerY * scale;
+                
+                // Apply transform smoothly
+                const transform = d3.zoomIdentity.translate(translateX, translateY).scale(scale);
+                svg.transition().duration(500).call(zoom.transform, transform);
+            }
+
             // Visualization settings management
             function updateVizSetting(key, value) {
                 vizSettings[key] = value;
+                console.log(`[VizSettings] Updated ${key} = ${value}`);
                 // Update display value if it exists
                 const displayElement = document.getElementById(key + 'Value');
                 if (displayElement) {
@@ -4452,7 +4496,7 @@
                     'utm_kernel': '#FF8800',
                     'breath': '#FF00FF',
                     'neural': '#00FFFF',
-                    'ml_analysis': '#FF00FF',
+                    'ml_analysis': '#32CD32',
                     'system': '#FFFF00'
                 };
 
@@ -4463,6 +4507,7 @@
                     'direct': '#00FF00',
                     'temporal': '#FFFF00',
                     'neural': '#00FFFF',
+                    'ml': '#FFA500',
                     'unknown': '#FF8800'
                 };
 
@@ -5578,6 +5623,17 @@
                     const depthStrength = vizSettings.depthStrength;
                     const sizeRange = vizSettings.depthSizeRange;
                     const maxSize = vizSettings.nodeMaxSize;
+                    
+                    // Debug: Log settings for first node only
+                    if (!window._nodeRenderLogged) {
+                        console.log('[NodeRender] Using vizSettings:', {
+                            nodeBaseSize: vizSettings.nodeBaseSize,
+                            nodeMaxSize: vizSettings.nodeMaxSize,
+                            baseRadius: baseRadius,
+                            maxSize: maxSize
+                        });
+                        window._nodeRenderLogged = true;
+                    }
                     const sizeIncrease = depthScore * sizeRange * depthStrength * (maxSize - baseRadius);
                     const radius = Math.min(maxSize, baseRadius + sizeIncrease);
                     
@@ -12745,6 +12801,12 @@
             // Initialize minimap on page load
             document.addEventListener('DOMContentLoaded', function() {
                 initMinimap();
+                
+                // Sync all sliders to vizSettings on page load
+                document.querySelectorAll('input[type="range"]').forEach(slider => {
+                    const event = new Event('input', { bubbles: true });
+                    slider.dispatchEvent(event);
+                });
                 
                 // Set up viewport culling toggle event listener
                 const viewportCullingCheckbox = document.getElementById('viewportCullingEnabled');

@@ -218,14 +218,21 @@ class ContextMemory:
         Returns:
             Dictionary of stability metrics
         """
-        print(f"[CONTEXT_MEMORY_DEBUG] get_stability_metrics called: language_anchors={len(self.language_anchors)}, node_word_associations={len(self.node_word_associations)}")
+        # Friendly debug: when empty, make it clear it's a normal initial state
+        if len(self.language_anchors) == 0 and len(self.node_word_associations) == 0:
+            print("[Context Memory] No anchors yet – metrics default to 0 (will populate as the system runs)")
+        else:
+            print(f"[CONTEXT_MEMORY_DEBUG] get_stability_metrics called: language_anchors={len(self.language_anchors)}, node_word_associations={len(self.node_word_associations)}")
         metrics = {}
 
         # Anchor density: how many nodes have language anchors
         total_nodes = len(set().union(*self.node_word_associations.values()))
         anchored_nodes = len(self.node_word_associations)
         metrics['anchor_density'] = anchored_nodes / max(total_nodes, 1)
-        print(f"[CONTEXT_MEMORY_DEBUG] anchor_density calculation: anchored_nodes={anchored_nodes}, total_nodes={total_nodes}, density={metrics['anchor_density']}")
+        if total_nodes == 0:
+            print("[Context Memory] Anchor density: 0.0 (no nodes yet)")
+        else:
+            print(f"[CONTEXT_MEMORY_DEBUG] anchor_density calculation: anchored_nodes={anchored_nodes}, total_nodes={total_nodes}, density={metrics['anchor_density']}")
 
         # Language coherence: average words per anchored node
         if anchored_nodes > 0:

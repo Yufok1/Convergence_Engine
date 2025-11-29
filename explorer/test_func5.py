@@ -9,28 +9,33 @@ import json
 import time
 from pathlib import Path
 
-def main():
+def main(sentinel=None, kernel=None, vp_monitor=None):
     """
     Coordinate Reality Simulator, Explorer, and Djinn Kernel.
-    
+
     Returns traits indicating coordination health and sync status.
+
+    Args:
+        sentinel: Optional Sentinel instance to avoid heavy instantiation
+        kernel: Optional Kernel instance to avoid heavy instantiation
+        vp_monitor: Optional ViolationMonitor instance to avoid heavy instantiation
     """
     # Add paths
     reality_sim_path = Path(__file__).parent.parent / 'reality_simulator'
     kernel_path = Path(__file__).parent.parent / 'kernel'
-    
+
     if str(reality_sim_path) not in sys.path:
         sys.path.insert(0, str(reality_sim_path))
     if str(kernel_path) not in sys.path:
         sys.path.insert(0, str(kernel_path))
-    
+
     try:
         coordination_status = {
             'reality_simulator': 'unknown',
             'explorer': 'unknown',
             'djinn_kernel': 'unknown'
         }
-        
+
         # Check Reality Simulator
         shared_state_path = Path(__file__).parent.parent / 'data' / 'shared_state.json'
         if shared_state_path.exists():
@@ -42,22 +47,25 @@ def main():
                 coordination_status['reality_simulator'] = 'stale'
         else:
             coordination_status['reality_simulator'] = 'inactive'
-        
+
         # Check Explorer
         try:
-            from sentinel import Sentinel
-            from kernel import Kernel
-            sentinel = Sentinel()
-            kernel = Kernel()
+            if sentinel is None:
+                from sentinel import Sentinel
+                sentinel = Sentinel()
+            if kernel is None:
+                from kernel import Kernel
+                kernel = Kernel()
             if sentinel and kernel:
                 coordination_status['explorer'] = 'active'
         except:
             coordination_status['explorer'] = 'inactive'
-        
+
         # Check Djinn Kernel
         try:
-            from violation_pressure_calculation import ViolationMonitor
-            vp_monitor = ViolationMonitor()
+            if vp_monitor is None:
+                from violation_pressure_calculation import ViolationMonitor
+                vp_monitor = ViolationMonitor()
             if vp_monitor:
                 coordination_status['djinn_kernel'] = 'active'
         except:
