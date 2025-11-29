@@ -85,13 +85,13 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
     def _get_activation(self, x):
         """Get activation function."""
         if self.activation_name == 'relu':
-            return F.relu(x)
+            return torch.relu(x)
         elif self.activation_name == 'tanh':
             return torch.tanh(x)
         elif self.activation_name == 'sigmoid':
             return torch.sigmoid(x)
         else:
-            return F.relu(x)  # Default
+            return torch.relu(x)  # Default
     
     def forward(self, x):
         """
@@ -109,7 +109,7 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
         x = self.dropout(x)
         x = self.fc3(x)
         # Softmax for action probabilities
-        return F.softmax(x, dim=-1)
+        return x.softmax(dim=-1)
     
     def get_action(self, state: np.ndarray, epsilon: float = 0.0) -> int:
         """
