@@ -3630,8 +3630,8 @@
                 colorSaturation: 1.0,              // Overall color saturation (0-2)
 
                 // Rendering performance
-                maxVisibleLinks: 10000,            // Maximum links to render (performance)
-                maxVisibleNodes: 5000,             // Maximum nodes to render (performance)
+                maxVisibleLinks: 500000,           // Maximum links to render (performance) - increased for large graphs
+                maxVisibleNodes: 200000,           // Maximum nodes to render (performance) - increased for large graphs
                 renderQuality: 'high',             // 'low', 'medium', 'high'
 
                 // Animation/transitions
@@ -3864,8 +3864,10 @@
             }
 
             function loadGraph(forceLoad = false) {
-                // Don't load graph if simulation is stopped (unless explicitly forced)
-                if (!simulationRunning && !forceLoad) {
+                // Always allow loading historical data on page load, or if explicitly forced
+                // Only skip if simulation is stopped AND this is not initial load AND not forced
+                const isInitialLoad = allNodes.length === 0 && allLinks.length === 0;
+                if (!simulationRunning && !forceLoad && !isInitialLoad) {
                     console.log('Graph load skipped: simulation is stopped');
                     return Promise.resolve(); // Return resolved promise to prevent errors
                 }
@@ -3890,8 +3892,15 @@
                 }
 
                 return d3.json('/api/graph').then(data => {
-                    // Double-check simulation status before applying updates
-                    if (!simulationRunning && !forceLoad) {
+                    console.log('[LoadGraph] Received graph data:', {
+                        nodes: data.nodes?.length || 0,
+                        links: data.links?.length || 0,
+                        chunked: data.chunked || false
+                    });
+                    
+                    // Double-check simulation status before applying updates (but allow initial load)
+                    const isInitialLoad = allNodes.length === 0 && allLinks.length === 0;
+                    if (!simulationRunning && !forceLoad && !isInitialLoad) {
                         console.log('Graph update skipped: simulation is stopped');
                         return;
                     }
@@ -4027,9 +4036,12 @@
                         }, 100);
                     }
                 }).catch(err => {
-                    console.error('Error loading graph:', err);
+                    console.error('[LoadGraph] Error loading graph:', err);
+                    console.error('[LoadGraph] Error stack:', err.stack);
                     const loadingDiv = document.getElementById('graphLoadingIndicator');
                     if (loadingDiv) loadingDiv.style.display = 'none';
+                    // Show user-friendly error
+                    alert('Failed to load graph: ' + (err.message || 'Unknown error. Check console for details.'));
                 });
             }
 
@@ -4662,6 +4674,12 @@
                     linkCount: allLinks.length
                 });
 
+                // Validate settings is an object with properties
+                if (!settings || typeof settings !== 'object' || Object.keys(settings).length === 0) {
+                    console.error('[CRA] Invalid settings object:', settings);
+                    throw new Error('Settings must be a non-empty object with key-value pairs');
+                }
+
                 try {
                     // ENABLE BATCH MODE for bulk CRA updates
                     enableBatchUpdateMode();
@@ -5229,6 +5247,7 @@
             }
             
             function renderGraphImmediate() {
+                console.log('[RenderGraphImmediate] Starting render, filteredNodes:', filteredNodes.length, 'filteredLinks:', filteredLinks.length);
                 try {
                     // Save current transform state for restoration
                     let savedTransform = null;
@@ -5257,14 +5276,32 @@
                 d3.select('#graph').selectAll('*').remove();
 
                 const graphElement = document.getElementById('graph');
-                const width = graphElement.clientWidth;
-                const height = graphElement.clientHeight || 792; // Use actual height, fallback to 792px
+                if (!graphElement) {
+                    console.error('[RenderGraph] Graph element not found!');
+                    throw new Error('Graph container element #graph not found in DOM');
+                }
+                
+                const width = graphElement.clientWidth || window.innerWidth;
+                const height = graphElement.clientHeight || window.innerHeight || 792;
+                
+                if (width === 0 || height === 0) {
+                    console.warn('[RenderGraph] Graph element has zero size, using window dimensions');
+                }
 
+                console.log('[RenderGraph] Creating SVG:', { width, height, nodeCount: filteredNodes.length, linkCount: filteredLinks.length });
+                
                 svg = d3.select('#graph')
                     .append('svg')
                     .attr('width', width)
                     .attr('height', height)
                     .style('cursor', 'default');
+                    
+                if (!svg || !svg.node()) {
+                    console.error('[RenderGraph] Failed to create SVG element!');
+                    throw new Error('Failed to create SVG element');
+                }
+                
+                console.log('[RenderGraph] SVG created successfully');
 
                 // Create SVG filters for depth effects (shadows, blur, glow)
                 const defs = svg.append('defs');
@@ -6155,8 +6192,12 @@
 
                 // Single consolidated end handler (D3 only keeps one per event name)
                 simulation.on('end', () => {
+                    console.log('[RenderGraph] Simulation ended, nodes rendered:', renderNodes.length, 'links rendered:', renderLinks.length);
                     // Refresh node colors once when simulation ends
                     if (svg) {
+                        const nodeCount = svg.selectAll('.node').size();
+                        const linkCount = svg.selectAll('.link').size();
+                        console.log('[RenderGraph] DOM elements:', { nodes: nodeCount, links: linkCount });
                         svg.selectAll('.node-circle').attr('fill', d => {
                             const comp = d.component || 'unknown';
                             return getComponentColor(comp);
@@ -9795,6 +9836,14 @@
                                     jsonStr = jsonStr.replace(/"linkColorunknown"/g, '"linkColor_unknown"');
 
                                     console.log('[CRA] Cleaned JSON string:', jsonStr.substring(0, 500) + (jsonStr.length > 500 ? '...' : ''));
+
+                                    // Validate JSON string before parsing
+                                    if (!jsonStr || jsonStr.trim().length === 0) {
+                                        throw new Error('Empty JSON string captured from VIZ_SETTINGS_UPDATE marker');
+                                    }
+                                    if (jsonStr.trim() === '{}') {
+                                        throw new Error('Empty object {} in VIZ_SETTINGS_UPDATE - CRA must provide actual settings');
+                                    }
 
                                     // Try to parse the JSON
                                     let vizData;

@@ -98,6 +98,8 @@ A multi-layered artificial life simulation system that creates evolving populati
 - **🔬 ML Analysis System**: Scikit-learn population analytics
   - HDBSCAN/KMeans clustering (behavioral phenotype detection)
   - Isolation Forest anomaly detection
+  - Automatic event emission to causation graph (phenotype_emergence, cluster_collapse, anomaly_spike)
+  - Causation links connect ML events to network/neural/explorer events
   - PCA/t-SNE dimensionality reduction for visualization
   - Real-time insights emitted to causation graph
 - **🤖 Meta-Cognitive Layer**: Autonomous self-tuning based on ML/Neural insights
@@ -486,12 +488,20 @@ The breath engine provides unified timing:
 ### Causation Explorer Web UI
 
 - **Interactive Graph**: D3.js visualization of event causation
-  - **Neural Visualization**: Electric Blue Diamonds (decisions) and Neon Purple Squares (training events)
-  - Pulsing animations and dashed links for neural connections
-  - **Neural Color Control**: Dedicated color picker in settings panel for neural system (#00FFFF default)
+  - **Neural Visualization**: Diamonds (decisions) and Squares (training events) with pulsing animations
+  - **Dynamic Color Control**: Neural node color controlled by `componentColor_neural` setting (check current value in graph context)
+  - **Neural Link Colors**: Controlled by `linkColor_neural` setting (check current value in graph context)
+  - **ML Analysis Visualization**: Specialized node shapes (hexagon/pentagon/triangle by event type) with pulsing animations
+  - **ML Node Colors**: Controlled by `componentColor_ml_analysis` setting (check current value in graph context)
+  - **ML Link Colors**: Controlled by `linkColor_ml` setting (check current value in graph context)
+  - **ML Causation Links**: Connect ML events (phenotype_emergence, cluster_collapse, anomaly_spike) to network/neural/explorer events
+  - **Causation Toggles**: Control neural and ML causation link generation via config (`enable_neural_causations`, `enable_ml_causations`)
+  - **Dynamic Color System**: All colors are dynamic - CRA receives current color values in graph context and references settings instead of hardcoded values
 - **CRA Agent**: AI-powered research assistant with full system access
   - **Neural-Aware**: Understands DQN architecture, training metrics, and dual inheritance
-  - Can control all neural system parameters via config updates
+  - **ML-Aware**: Understands ML analysis events, clustering, anomaly detection, and causation links
+  - Can control all neural and ML system parameters via config updates
+  - Can enable/disable causation link generation for neural and ML events
 - **Autonomous Control**: 40+ visualization settings, graph filters
 - **Robust Settings Management** ⭐:
   - Settings validation prevents invalid values from breaking visualization

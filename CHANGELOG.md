@@ -6,6 +6,72 @@
 
 ## [Unreleased] - 2025-01-27
 
+### 🔧 ML Event Emission & Causation Link Fixes (2025-01-27)
+
+#### Fixed
+- **ML Event Emission** (`reality_simulator/main.py`)
+  - Fixed critical bug where ML events were not being emitted to causation graph
+  - Changed from direct `ml_analyzer.analyze()` call to `network.run_ml_analysis()`
+  - `network.run_ml_analysis()` properly calls `_emit_ml_events()` after analysis
+  - ML events (phenotype_emergence, cluster_collapse, anomaly_spike) now properly emitted when:
+    - Cluster count changes (phenotype_emergence/cluster_collapse)
+    - Anomaly count spikes by 3+ (anomaly_spike)
+  - Events now appear in causation graph with proper timestamps
+
+- **ML Causation Link Time Window** (`causation_explorer.py`)
+  - Extended ML causation link time window from 2s to 6s (3x normal window)
+  - ML events can now form links with events up to 6 seconds apart
+  - Moved ML causation check earlier in detection logic for better coverage
+  - ML links now properly connect to reality_sim, neural, explorer, and other ML events
+
+#### Technical
+- ML event emission now fully integrated with causation graph
+- ML causation links form reliably with extended time window
+- Backward compatible: existing functionality unchanged
+- All ML/neural intelligence systems now properly wired end-to-end
+
+### 🎨 Dynamic Color System & ML Causation Links (2025-01-27)
+
+#### Added
+- **Dynamic Color System** (`causation_web_ui.py`)
+  - CRA now receives current color values in graph context
+  - All color references updated to use dynamic settings instead of hardcoded hex values
+  - `_get_viz_settings_context()` method extracts current visualization settings
+  - Graph context includes current component and link colors for CRA awareness
+  - CRA prompts updated to reference settings (e.g., `componentColor_neural`) instead of hardcoded colors
+
+- **ML Causation Links** (`causation_explorer.py`, `causation_web_ui.py`)
+  - ML events (phenotype_emergence, cluster_collapse, anomaly_spike) now create causation links
+  - Links connect ML events to network/neural/explorer events showing pattern detection → system response
+  - Controlled by `/causation_detection/enable_ml_causations` toggle (default: true)
+  - Visual styling: dashed connections with flow animation using `linkColor_ml` setting
+  - CRA can enable/disable via `[[CONFIG_UPDATE]]` commands
+
+#### Changed
+- **CRA System Prompts** (`causation_web_ui.py`)
+  - Removed all hardcoded color values (e.g., `#00FFFF`, `#32CD32`, `#FFA500`)
+  - Updated to reference dynamic color settings (e.g., "check current value in graph context")
+  - Neural visualization section now references `componentColor_neural` and `linkColor_neural`
+  - ML visualization section now references `componentColor_ml_analysis` and `linkColor_ml`
+  - Added explicit instruction: "All colors are dynamic - check current values in graph context"
+
+- **Graph Context** (`causation_web_ui.py`)
+  - `_get_graph_context()` now accepts `view_state` parameter
+  - Includes visualization settings section with current color values
+  - CRA can see actual current colors when analyzing the graph
+
+#### Fixed
+- **Indentation Errors** (`causation_web_ui.py`)
+  - Fixed indentation error at line 2562 in causation detection config section
+  - Fixed indentation error at line 2581 in example config updates
+  - Fixed syntax error with duplicate return statements
+
+#### Technical
+- All color references are now dynamic and adjust with actual settings
+- CRA receives current color values in graph context for accurate descriptions
+- ML causation links fully integrated with visualization system
+- Backward compatible: existing functionality unchanged
+
 ### 🔧 Headless Backend & Documentation Fixes (2025-01-27)
 
 #### Added

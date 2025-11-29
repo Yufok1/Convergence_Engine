@@ -109,6 +109,7 @@ class CausationExplorer:
         self.enable_neural_causations = causation_config.get('enable_neural_causations', True)  # Master toggle
         self.enable_neural_decision_causations = causation_config.get('enable_neural_decision_causations', True)
         self.enable_neural_training_causations = causation_config.get('enable_neural_training_causations', True)
+        self.enable_ml_causations = causation_config.get('enable_ml_causations', True)  # ML Analysis causation toggle
         self.enable_phase_transition_causations = causation_config.get('enable_phase_transition_causations', True)
         self.enable_bidirectional_causations = causation_config.get('enable_bidirectional_causations', True)
         
@@ -803,6 +804,14 @@ class CausationExplorer:
             ('neural', 'neural'): 'Neural training influences future decisions',
             ('neural', 'explorer'): 'Neural decisions influence Explorer state',
             ('explorer', 'neural'): 'Explorer phase affects neural behavior',
+            # ML Analysis causations
+            ('ml_analysis', 'reality_sim'): 'ML analysis detects patterns affecting network state',
+            ('reality_sim', 'ml_analysis'): 'Network state provides data for ML analysis',
+            ('ml_analysis', 'ml_analysis'): 'ML clustering/anomaly detection influences future analysis',
+            ('ml_analysis', 'neural'): 'ML patterns influence neural decisions',
+            ('neural', 'ml_analysis'): 'Neural decisions affect population patterns analyzed by ML',
+            ('ml_analysis', 'explorer'): 'ML analysis influences Explorer state',
+            ('explorer', 'ml_analysis'): 'Explorer phase affects ML analysis context',
         }
         
         # Special handling for phase transitions - they should link to what caused them
@@ -850,9 +859,54 @@ class CausationExplorer:
                 )
         
         key = (prev_event.component, new_event.component)
+        
+        # Special handling for ML Analysis events - use longer time window
+        if (prev_event.component == 'ml_analysis' or new_event.component == 'ml_analysis') and key in direct_causations:
+            # Check master toggle first
+            if not self.enable_ml_causations:
+                return None
+            
+            # ML events can have longer time windows since they're analysis results
+            # Use a more lenient time window (3x normal) for ML causations
+            ml_time_window = self.direct_causation_time_window * 3.0
+            if time_diff > ml_time_window:
+                return None
+            
+            # ML links get specific explanations based on event type
+            explanation = direct_causations[key]
+            if prev_event.event_type == 'phenotype_emergence':
+                n_clusters = prev_event.data.get('n_clusters', 0)
+                explanation = f'Phenotype emergence ({n_clusters} clusters) affects system'
+            elif new_event.event_type == 'phenotype_emergence':
+                n_clusters = new_event.data.get('n_clusters', 0)
+                explanation = f'System state triggers phenotype emergence ({n_clusters} clusters)'
+            elif prev_event.event_type == 'cluster_collapse':
+                explanation = 'Cluster collapse affects network structure'
+            elif new_event.event_type == 'cluster_collapse':
+                explanation = 'Network changes trigger cluster collapse'
+            elif prev_event.event_type == 'anomaly_spike':
+                anomaly_count = prev_event.data.get('anomaly_count', 0)
+                explanation = f'Anomaly spike ({anomaly_count} anomalies) detected'
+            elif new_event.event_type == 'anomaly_spike':
+                anomaly_count = new_event.data.get('anomaly_count', 0)
+                explanation = f'System changes trigger anomaly spike ({anomaly_count} anomalies)'
+            
+            return CausationLink(
+                from_event=prev_event.event_id,
+                to_event=new_event.event_id,
+                causation_type='direct',
+                strength=0.85,  # Slightly higher strength for ML links
+                explanation=explanation,
+                metrics_involved=list(set(prev_event.data.keys()) | set(new_event.data.keys()))
+            )
+        
         if key in direct_causations and time_diff < self.direct_causation_time_window:
             # Check if neural causations are enabled
             if not self.enable_neural_causations and (prev_event.component == 'neural' or new_event.component == 'neural'):
+                return None
+            
+            # Check if ML causations are enabled (already handled above, but keep for consistency)
+            if not self.enable_ml_causations and (prev_event.component == 'ml_analysis' or new_event.component == 'ml_analysis'):
                 return None
             
             # Check if bidirectional causations are enabled

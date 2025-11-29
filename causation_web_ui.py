@@ -206,6 +206,10 @@ CONFIG_GUARDRAILS = {
         'type': bool,
         'label': 'causation_detection.enable_bidirectional_causations'
     },
+    '/causation_detection/enable_ml_causations': {
+        'type': bool,
+        'label': 'causation_detection.enable_ml_causations'
+    },
     '/causation_detection/thresholds/modularity/collapse': {
         'min': 0.0,
         'max': 1.0,
@@ -675,6 +679,14 @@ class ConfigManager:
                 if operation.lower() == 'remove':
                     self._apply_operation(working, 'remove', segments, None)
                     new_value = None
+                    # For remove operations, always log the change if something was actually removed
+                    if previous_value is not None:
+                        changes.append({
+                            'path': normalized_path,
+                            'op': operation.lower(),
+                            'from': previous_value,
+                            'to': new_value
+                        })
                 else:
                     # Auto-adjust value to guardrail limits before applying
                     # Use normalized_path to ensure proper matching
@@ -689,12 +701,14 @@ class ConfigManager:
                     except Exception:
                         new_value = None
 
-                changes.append({
-                    'path': normalized_path,
-                    'op': operation.lower(),
-                    'from': previous_value,
-                    'to': new_value
-                })
+                    # Only log changes when values actually differ (prevents false "true → true" reports)
+                    if previous_value != new_value:
+                        changes.append({
+                            'path': normalized_path,
+                            'op': operation.lower(),
+                            'from': previous_value,
+                            'to': new_value
+                        })
 
             # Final validation (should pass after auto-adjustments)
             guardrail_issues = self._validate_guardrails(working)
@@ -794,9 +808,13 @@ class ConfigManager:
             }
             self._append_log(log_entry)
 
+            # Filter out no-op changes (where from == to) before returning
+            # This prevents false "true → true" reports in the UI
+            actual_changes = [c for c in changes if c.get('from') != c.get('to')]
+            
             return {
                 'version': self._version,
-                'changes': changes,
+                'changes': actual_changes,  # Only return actual value changes
                 'timestamp': timestamp,
                 'correlation_id': correlation_id
             }
@@ -2098,7 +2116,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "    - **Brain Complexity**: `organisms_tracked` (number of neural organisms), `avg_loss` (average training loss over time)\n"
         prompt += "    - **Decision-Making**: Neural organisms make decisions (move, cooperate, compete, rest, reproduce, isolate) based on learned Q-value policies\n"
         prompt += "      * High confidence decisions (>0.8) emit `neural_decision` events with full metadata\n"
-        prompt += "      * Decisions show on graph as Electric Blue Diamonds (neural_decision) or Neon Purple Squares (neural_training)\n"
+        prompt += "      * Decisions show on graph as Diamonds (neural_decision) or Squares (neural_training) with colors from `componentColor_neural` setting\n"
         prompt += "    - **Breath Synchronization**: Training happens per breath cycle, synchronized with the Breath Engine\n"
         prompt += "      * Training triggered during breath \"inhale\" phase (depth > threshold)\n"
         prompt += "      * Creates temporal rhythm - \"hive mind\" pulses of learning activity\n"
@@ -2107,11 +2125,12 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "      * `neural_decision`: High-confidence organism decisions (confidence, action, epsilon, fitness, input features, action probabilities)\n"
         prompt += "      * `neural_training`: Training steps (loss, organisms trained, training step count, breath cycle info)\n"
         prompt += "    - **Visualization**:\n"
-        prompt += "      * Neural Decision nodes: Electric Blue Diamonds (#00FFFF) with pulsing animation\n"
-        prompt += "      * Neural Training nodes: Neon Purple Squares (#BF00FF) with pulsing animation\n"
+        prompt += "      * Neural Decision nodes: Diamonds with pulsing animation\n"
+        prompt += "      * Neural Training nodes: Squares with pulsing animation\n"
         prompt += "      * Neural links: Dashed, pulsing connections showing thought → action causality\n"
-        prompt += "      * Color adjustable via `componentColor_neural` setting\n"
-        prompt += "    - **Autonomous Control**: You can adjust `componentColor_neural` to change neural node color (e.g., \"#BF00FF\" for purple, \"#00FF00\" for green)\n"
+        prompt += "      * **Colors are dynamic**: Neural node color controlled by `componentColor_neural` setting (check current value in graph context or viz settings)\n"
+        prompt += "      * Neural link color controlled by `linkColor_neural` setting (check current value in graph context or viz settings)\n"
+        prompt += "    - **Autonomous Control**: You can adjust `componentColor_neural` and `linkColor_neural` via [[VIZ_SETTINGS_UPDATE: {...}]] to change colors dynamically\n"
         prompt += "    - **Causation Links**: Neural decisions connect to actions showing thought → action causality on the graph\n"
         prompt += "    - **Configuration Control**: You can manipulate ALL neural parameters via CONFIG_UPDATE (see section 7 below)\n"
         prompt += "  * **ML Analysis** (ml_analysis): 🔬 **NEW** - Scikit-learn population-level machine learning\n"
@@ -2121,12 +2140,22 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "      * `cluster_collapse`: Phenotype cluster dissolved/merged (pentagon shape, shrink animation)\n"
         prompt += "      * `anomaly_spike`: Isolation Forest detected unusual organism or state (triangle shape, orange flash)\n"
         prompt += "    - **Visualization**:\n"
-        prompt += "      * ML Analysis nodes: Lime Green (#32CD32) with pulsing animation\n"
-        prompt += "      * ML links: Orange (#FFA500) dashed connections with flow animation\n"
-        prompt += "      * Special shapes for each event type (hexagon, pentagon, triangle)\n"
-        prompt += "      * Color adjustable via `componentColor_ml_analysis` setting\n"
-        prompt += "    - **Autonomous Control**: You can adjust `componentColor_ml_analysis` to change ML node color (e.g., \"#32CD32\" for lime, \"#00FF00\" for green)\n"
-        prompt += "    - **Configuration Control**: You can manipulate ALL scikit parameters via CONFIG_UPDATE (see section 7 below)\n"
+        prompt += "      * ML Analysis nodes: Special shapes (hexagon, pentagon, triangle) with pulsing animation\n"
+        prompt += "      * ML links: Dashed connections with flow animation\n"
+        prompt += "      * **Colors are dynamic**: ML node color controlled by `componentColor_ml_analysis` setting (check current value in graph context or viz settings)\n"
+        prompt += "      * ML link color controlled by `linkColor_ml` setting (check current value in graph context or viz settings)\n"
+        prompt += "    - **Autonomous Control**: You can adjust `componentColor_ml_analysis` and `linkColor_ml` via [[VIZ_SETTINGS_UPDATE: {...}]] to change colors dynamically\n"
+        prompt += "    - **Causation Links**: ML events (phenotype_emergence, cluster_collapse, anomaly_spike) connect to network/neural/explorer events showing pattern detection → system response causality\n"
+        prompt += "      * Controlled by `/causation_detection/enable_ml_causations` toggle (default: true)\n"
+        prompt += "      * ML links appear as dashed connections with flow animation (color from `linkColor_ml` setting - check current value in graph context)\n"
+        prompt += "      * Links connect ML analysis events to: reality_sim (network state), neural (decisions/training), explorer (phase changes), and other ML events\n"
+        prompt += "    - **Causation Links Verification** (CRITICAL): When reporting ML links, you MUST verify actual causation graph edges, not just report link styles\n"
+        prompt += "      * Check graph context for actual edges where source/target are ML event IDs\n"
+        prompt += "      * Count edges: `explorer.causation_graph.edges()` filtered by ML component\n"
+        prompt += "      * Report format: \"ML events: X, causation links: Y (isolated if Y=0)\"\n"
+        prompt += "      * DO NOT infer links from event existence or link styles - verify actual graph edges\n"
+        prompt += "      * If links=0 but events exist, check `/causation_detection/enable_ml_causations` toggle status\n"
+        prompt += "    - **Configuration Control**: You can manipulate ALL scikit parameters AND ML causation toggle via CONFIG_UPDATE (see section 7 below)\n"
         prompt += "  * **Config Tuner** (config_tuner): 🧠🔧 **NEW** - Meta-cognitive autonomous parameter optimization\n"
         prompt += "    - **Architecture**: Analyzes ML/Neural/Evolution metrics and autonomously tunes 33 parameters across all systems\n"
         prompt += "    - **Capabilities**:\n"
@@ -2144,8 +2173,20 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "    - **Safety**: Bounded parameters, confidence thresholds (>0.6), rate limiting, meta-learning tracks success rates\n"
         prompt += "    - **Modes**: off / observing / learning / autonomous\n"
         prompt += "    - **Diagnostic Endpoint**: `/api/cra/diagnostics/config_tuner` - Get tuning stats, success rates, recent actions\n"
+        prompt += "    - **Proactive Verification** (CRITICAL): When you identify that tuner status needs verification, YOU MUST actually call the diagnostic endpoint\n"
+        prompt += "      * Do NOT just mention \"needs verification\" - make the actual API call\n"
+        prompt += "      * At frame 169, tuner should have 3+ actions (frames 50, 100, 150) - verify this\n"
+        prompt += "      * Report findings: \"Tuner status: ACTIVE, Actions: X, Success rate: Y%\"\n"
+        prompt += "      * If you recommend a diagnostic call, execute it immediately and report results\n"
         prompt += "    - **Configuration Control**: Toggle via `meta_cognitive.self_tuning.enabled`, adjust mode/interval/confidence threshold\n"
         prompt += "    - **Full Documentation**: See SELF_TUNING_GUIDE.md for complete details on all 33 tunable parameters and 9 intelligent rules\n"
+        prompt += "  * **NEURAL TRAINING METRICS CLARIFICATION** (CRITICAL):\n"
+        prompt += "    - `training_step_count`: Number of times trainer was called (increments EVERY breath cycle, always increases)\n"
+        prompt += "    - `training_loss`: Actual DQN loss value (ONLY set when training occurs - organisms have ≥128 experiences + update_frequency met)\n"
+        prompt += "    - `training_occurred_this_step`: Boolean flag indicating if training happened this cycle\n"
+        prompt += "    - **NORMAL BEHAVIOR**: training_step_count = 169, training_loss = null → System is collecting experiences, NOT a failure\n"
+        prompt += "    - **TRAINING CONDITIONS**: Training only occurs when (step_count % update_frequency == 0) AND organisms have batch_size experiences\n"
+        prompt += "    - **YOUR ANALYSIS**: Do NOT flag \"training not working\" if training_loss is null - check organism experience buffer size first\n"
         prompt += "  * **Explorer** (explorer): Phase transitions, VP calculations, sovereign IDs, mathematical capability\n"
         prompt += "  * **Djinn Kernel** (djinn_kernel): Violation pressure calculations, VP classifications (VP0-VP4), trait counts\n"
         prompt += "  * **Breath Engine** (breath): Breath cycles, depth, phase, pulse (the central rhythm driving the system)\n"
@@ -2308,14 +2349,18 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "   - You have COMPLETE AUTONOMOUS control over ALL graph visualization settings - this is a core capability\n"
         prompt += "   - Use your judgment to adjust visualization to accentuate patterns, highlight anomalies, or improve clarity\n"
         prompt += "   - When you discover something interesting, proactively adjust colors, sizes, opacity, or effects to make it stand out\n"
-        prompt += "   - **🧠 Neural Visualization**: Neural nodes appear with Electric Cyan color (#00FFFF) and pulsing animation\n"
-        prompt += "     * Adjust `componentColor_neural` to change neural node color (e.g., \"#BF00FF\" for purple, \"#00FF00\" for green)\n"
+        prompt += "   - **🧠 Neural Visualization**: Neural nodes appear with pulsing animation\n"
+        prompt += "     * Node color controlled by `componentColor_neural` setting (check current value in graph context or viz settings)\n"
+        prompt += "     * Link color controlled by `linkColor_neural` setting (check current value in graph context or viz settings)\n"
+        prompt += "     * Adjust colors via [[VIZ_SETTINGS_UPDATE: {\"componentColor_neural\": \"#BF00FF\", \"linkColor_neural\": \"#00FFFF\"}]]\n"
         prompt += "     * Neural nodes automatically pulse to indicate active neural activity\n"
         prompt += "     * Neural events (decisions, training) appear as distinct nodes on the graph\n"
         prompt += "     * Filter neural events: Use `components: {\"neural\": true}` in graph filters\n"
-        prompt += "   - **🔬 ML Analysis Visualization**: ML Analysis nodes appear with Lime Green color (#32CD32) and specialized animations\n"
-        prompt += "     * Adjust `componentColor_ml_analysis` to change ML node color (e.g., \"#32CD32\" for lime, \"#00FF00\" for green)\n"
-        prompt += "     * ML links: Orange (#FFA500) dashed connections with flow animation\n"
+        prompt += "   - **🔬 ML Analysis Visualization**: ML Analysis nodes appear with specialized animations\n"
+        prompt += "     * Node color controlled by `componentColor_ml_analysis` setting (check current value in graph context or viz settings)\n"
+        prompt += "     * Link color controlled by `linkColor_ml` setting (check current value in graph context or viz settings)\n"
+        prompt += "     * ML links: Dashed connections with flow animation\n"
+        prompt += "     * Adjust colors via [[VIZ_SETTINGS_UPDATE: {\"componentColor_ml_analysis\": \"#32CD32\", \"linkColor_ml\": \"#FFA500\"}]]\n"
         prompt += "     * Special node shapes: hexagon (phenotype_emergence), pentagon (cluster_collapse), triangle (anomaly_spike)\n"
         prompt += "     * Filter ML events: Use `components: {\"ml_analysis\": true}` in graph filters\n"
         prompt += "   - Use format: [[VIZ_SETTINGS_UPDATE: {\"linkBaseWidth\": 3.0, \"depthStrength\": 1.5, \"componentColor_neural\": \"#BF00FF\", \"componentColor_ml_analysis\": \"#32CD32\", ...}]]\n"
@@ -2327,13 +2372,33 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "     * **Depth Effects**: depthStrength (0-2), depthOpacityRange (0-1), depthSizeRange (0-1), depthParallaxAmount (0-2)\n"
         prompt += "     * **Visual Effects**: enableShadows (true/false), enableGlow (true/false), shadowOffset (0-5px), shadowBlur (0-10), glowIntensity (0-5)\n"
         prompt += "     * **Color Settings**: frontColorBrightness (0.5-1.5), backColorBrightness (0.3-1.0), colorSaturation (0-2)\n"
-        prompt += "     * **Component Colors**: componentColor_reality_sim, componentColor_explorer, componentColor_djinn_kernel, componentColor_breath, componentColor_neural (🧠 Electric Cyan #00FFFF), componentColor_ml_analysis (🔬 Lime Green #32CD32), componentColor_system (hex colors like \"#FF0000\")\n"
-        prompt += "     * **Link Colors**: linkColor_threshold, linkColor_correlation, linkColor_direct, linkColor_temporal, linkColor_neural (🧠 Cyan), linkColor_ml (🔬 Orange #FFA500), linkColor_unknown (hex colors)\n"
+        prompt += "     * **Component Colors**: componentColor_reality_sim, componentColor_explorer, componentColor_djinn_kernel, componentColor_breath, componentColor_neural (🧠 Neural - check current value), componentColor_ml_analysis (🔬 ML Analysis - check current value), componentColor_system (hex colors)\n"
+        prompt += "     * **Link Colors**: linkColor_threshold, linkColor_correlation, linkColor_direct, linkColor_temporal, linkColor_neural (🧠 Neural links - check current value), linkColor_ml (🔬 ML links - check current value), linkColor_unknown (hex colors)\n"
+        prompt += "     * **IMPORTANT**: All colors are dynamic - check current values in graph context or visualization settings, don't assume default colors\n"
         prompt += "     * **Performance**: maxVisibleLinks (1000-50000), maxVisibleNodes (500-20000), renderQuality (\"low\"/\"medium\"/\"high\")\n"
         prompt += "     * **Animation/Transitions**: enableTransitions (true/false), transitionDuration (100-1000ms), animationSpeed (0.1-3.0)\n"
         prompt += "   - **CRITICAL FORMAT REQUIREMENT**: When adjusting ANY visualization settings, you MUST include the marker in your response:\n"
         prompt += "     Format: [[VIZ_SETTINGS_UPDATE: {\"settingName\": value, ...}]]\n"
-        prompt += "     Example: [[VIZ_SETTINGS_UPDATE: {\"renderQuality\": \"low\", \"componentColor_explorer\": \"#FF0000\", \"linkBaseWidth\": 3.0}]]\n"
+        prompt += "     Example: [[VIZ_SETTINGS_UPDATE: {\"renderQuality\": \"low\", \"componentColor_explorer\": \"#FF0000\", \"linkBaseWidth\": 3.0}]]\n\n"
+        
+        prompt += "7. **Diagnostic Verification (CRITICAL - Proactive Action Required)**:\n"
+        prompt += "   - **RULE**: When you identify that a diagnostic check is needed, YOU MUST actually execute it, not just mention it\n"
+        prompt += "   - **Available Diagnostic Endpoints**:\n"
+        prompt += "     * `/api/cra/diagnostics/config_tuner` - Config tuner status, actions, success rates\n"
+        prompt += "     * `/api/diagnostic/phasesync` - Phase synchronization metrics\n"
+        prompt += "     * `/api/diagnostic/explorationratio` - Exploration-to-precision ratio analysis\n"
+        prompt += "     * `/api/diagnostic/unifiedhealth` - Overall system health metrics\n"
+        prompt += "     * `/api/diagnostic/collapseprediction` - Network collapse predictions\n"
+        prompt += "   - **Verification Workflow**:\n"
+        prompt += "     1. When you recommend a diagnostic check, immediately make the API call\n"
+        prompt += "     2. Report the actual results in your response (not just \"needs verification\")\n"
+        prompt += "     3. Use findings to inform your analysis and recommendations\n"
+        prompt += "   - **Example**: If you say \"tuner status needs verification\", immediately call `/api/cra/diagnostics/config_tuner` and report: \"Tuner status: ACTIVE, Actions: 3, Success rate: 67%\"\n"
+        prompt += "   - **Graph Edge Verification**: When reporting causation links (especially ML/Neural), verify actual graph edges:\n"
+        prompt += "     * Count edges in context: `explorer.causation_graph.edges()` filtered by component/type\n"
+        prompt += "     * Report format: \"ML events: X nodes, Y actual causation links (isolated if Y=0)\"\n"
+        prompt += "     * DO NOT infer links from event existence - verify actual graph structure\n"
+        prompt += "     * If events exist but links=0, report as \"isolated nodes\" (not \"connected\")\n\n"
         prompt += "     **IF YOU DON'T INCLUDE THIS MARKER, YOUR SETTINGS WILL NOT BE APPLIED!**\n"
         prompt += "   - **SNAPSHOT CONFIGURATION CONTROL (Full Autonomy)**:\n"
         prompt += "     - **SYSTEM PURPOSE**: Snapshots are used for vision model analysis (visual pattern recognition), video creation (MP4 animations), replay (graph evolution animation), and historical trend analysis\n"
@@ -2501,6 +2566,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "       - `/causation_detection/enable_neural_causations` (true/false, default: true) - Master toggle for all neural event causation links\n"
         prompt += "       - `/causation_detection/enable_neural_decision_causations` (true/false, default: true) - Enable neural decision event links (thought → action)\n"
         prompt += "       - `/causation_detection/enable_neural_training_causations` (true/false, default: true) - Enable neural training event links (learning → improvement)\n"
+        prompt += "       - `/causation_detection/enable_ml_causations` (true/false, default: true) - Master toggle for ML Analysis event causation links (phenotype_emergence, cluster_collapse, anomaly_spike)\n"
         prompt += "       - `/causation_detection/enable_phase_transition_causations` (true/false, default: true) - Enable phase transition links\n"
         prompt += "       - `/causation_detection/enable_bidirectional_causations` (true/false, default: true) - Enable reverse-direction causation links\n"
         prompt += "     * **Thresholds** (control when threshold crossings trigger causation):\n"
@@ -2513,6 +2579,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "       - `/causation_detection/thresholds/vp_calculations/transition` (10-200, default: 50) - VP calculations for phase transition\n"
         prompt += "   - **Example Causation Detection Config Updates**:\n"
         prompt += "     * Increase neural causation sensitivity: [[CONFIG_UPDATE: {\"reason\": \"More neural links\", \"correlation_id\": \"neural-links\", \"patch\": [{\"op\": \"replace\", \"path\": \"/causation_detection/direct_causation_time_window\", \"value\": 2.0}]}]]\n"
+        prompt += "     * Enable ML causation links: [[CONFIG_UPDATE: {\"reason\": \"Connect ML events to graph\", \"correlation_id\": \"ml-links\", \"patch\": [{\"op\": \"replace\", \"path\": \"/causation_detection/enable_ml_causations\", \"value\": true}]}]]\n"
         prompt += "     * Disable bidirectional causations: [[CONFIG_UPDATE: {\"reason\": \"Simplify graph\", \"correlation_id\": \"simplify\", \"patch\": [{\"op\": \"replace\", \"path\": \"/causation_detection/enable_bidirectional_causations\", \"value\": false}]}]]\n"
         prompt += "     * Adjust correlation threshold: [[CONFIG_UPDATE: {\"reason\": \"Stricter correlation\", \"correlation_id\": \"strict\", \"patch\": [{\"op\": \"replace\", \"path\": \"/causation_detection/correlation_threshold\", \"value\": 0.9}]}]]\n"
         prompt += "   - **Causation Detection Monitoring**: After causation config changes, monitor:\n"
@@ -2775,25 +2842,26 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "   - **Depth Effects**: depthStrength, depthOpacityRange, depthSizeRange, depthParallaxAmount\n"
         prompt += "   - **Visual Effects**: enableShadows, enableGlow, shadowOffset, shadowBlur, glowIntensity\n"
         prompt += "   - **Color Settings**: frontColorBrightness, backColorBrightness, colorSaturation\n"
-        prompt += "   - **Component Colors**: componentColor_reality_sim, componentColor_explorer, componentColor_djinn_kernel, componentColor_breath, componentColor_neural (🧠 **NEW** - Electric Cyan #00FFFF), componentColor_system (hex colors)\n"
-        prompt += "   - **Link Colors**: linkColor_threshold, linkColor_correlation, linkColor_direct, linkColor_temporal, linkColor_unknown (hex colors)\n"
+        prompt += "   - **Component Colors**: componentColor_reality_sim, componentColor_explorer, componentColor_djinn_kernel, componentColor_breath, componentColor_neural (🧠 **NEW** - check current value), componentColor_ml_analysis (🔬 **NEW** - check current value), componentColor_system (hex colors)\n"
+        prompt += "   - **Link Colors**: linkColor_threshold, linkColor_correlation, linkColor_direct, linkColor_temporal, linkColor_neural (🧠 Neural links - check current value), linkColor_ml (🔬 ML links - check current value), linkColor_unknown (hex colors)\n"
         prompt += "   - **Performance**: maxVisibleLinks, maxVisibleNodes, renderQuality (\"low\"/\"medium\"/\"high\")\n"
         prompt += "   - **Animation/Transitions**: enableTransitions, transitionDuration, animationSpeed\n"
         prompt += "   - **Format**: [[VIZ_SETTINGS_UPDATE: {...}]] - You can include ANY combination of these settings\n"
         prompt += "   - **Important**: You can adjust ALL of these settings autonomously - every slider, checkbox, dropdown, and color picker\n"
         prompt += "   - **Color Control**: You can adjust component colors (reality_sim, explorer, djinn_kernel, breath, 🧠 **neural**, system) and link colors (threshold, correlation, direct, temporal, unknown) - THIS IS FULLY IMPLEMENTED AND WORKING\n"
         prompt += "   - **🧠 Neural Visualization Control**: Neural nodes have special styling:\n"
-        prompt += "     * Default color: Electric Cyan (#00FFFF) - adjustable via `componentColor_neural`\n"
+        prompt += "     * Node color: Controlled by `componentColor_neural` setting (check current value in graph context)\n"
+        prompt += "     * Link color: Controlled by `linkColor_neural` setting (check current value in graph context)\n"
         prompt += "     * Pulsing animation: Neural nodes automatically pulse to indicate active neural activity\n"
         prompt += "     * Event types: `neural_decision` (organism decisions), `neural_training` (training steps)\n"
         prompt += "     * Filtering: Use `components: {\"neural\": true}` in graph filters to show only neural events\n"
-        prompt += "     * Example: [[VIZ_SETTINGS_UPDATE: {\"componentColor_neural\": \"#BF00FF\"}]] to change neural color to purple\n"
-        prompt += "   - **🧠 Neural Visualization Control**: Neural nodes have special styling:\n"
-        prompt += "     * Default color: Electric Cyan (#00FFFF) - adjustable via `componentColor_neural`\n"
-        prompt += "     * Pulsing animation: Neural nodes automatically pulse to indicate active neural activity\n"
-        prompt += "     * Event types: `neural_decision` (organism decisions), `neural_training` (training steps)\n"
-        prompt += "     * Filtering: Use `components: {\"neural\": true}` in graph filters to show only neural events\n"
-        prompt += "     * Example: [[VIZ_SETTINGS_UPDATE: {\"componentColor_neural\": \"#BF00FF\"}]] to change neural color to purple\n"
+        prompt += "     * Example: [[VIZ_SETTINGS_UPDATE: {\"componentColor_neural\": \"#BF00FF\", \"linkColor_neural\": \"#00FFFF\"}]] to change colors\n"
+        prompt += "   - **🔬 ML Analysis Visualization Control**: ML nodes have special styling:\n"
+        prompt += "     * Node color: Controlled by `componentColor_ml_analysis` setting (check current value in graph context)\n"
+        prompt += "     * Link color: Controlled by `linkColor_ml` setting (check current value in graph context)\n"
+        prompt += "     * Special shapes: hexagon (phenotype_emergence), pentagon (cluster_collapse), triangle (anomaly_spike)\n"
+        prompt += "     * Filtering: Use `components: {\"ml_analysis\": true}` in graph filters to show only ML events\n"
+        prompt += "     * Example: [[VIZ_SETTINGS_UPDATE: {\"componentColor_ml_analysis\": \"#32CD32\", \"linkColor_ml\": \"#FFA500\"}]] to change colors\n"
         prompt += "   - **Real-Time Updates**: All settings update dynamically during simulation without interrupting it\n\n"
         prompt += "**3. Graph View Control (Autonomous)**:\n"
         prompt += "   - **Zoom Control**: Adjust zoom level (1-500% or 0.01-5.0 scale)\n"
@@ -3285,7 +3353,7 @@ class SystemContextBuilder:
         context['recent_logs'] = self._load_recent_logs()
         
         # Get graph context
-        context['graph_context'] = self._get_graph_context(selected_event)
+        context['graph_context'] = self._get_graph_context(selected_event, view_state)
         
         # Load configuration
         context['configuration'] = self._load_configuration()
@@ -3852,7 +3920,7 @@ class SystemContextBuilder:
         log_data = self.log_parser.parse_all_logs(max_lines_per_file=500)
         return self.log_parser.summarize_logs(log_data)
     
-    def _get_graph_context(self, selected_event: str = None) -> str:
+    def _get_graph_context(self, selected_event: str = None, view_state: Dict[str, Any] = None) -> str:
         """Get comprehensive causation graph context with FULL event details and recall"""
         if not self.explorer:
             return "Causation Explorer not available."
@@ -4043,12 +4111,55 @@ class SystemContextBuilder:
             parts.append(f"- **Breath Engine**: Breath cycles, depth, phase, pulse (drives entire system)")
             parts.append(f"- **System**: Initialization, shutdown, errors, lifecycle events")
             
-            return "\n".join(parts)
+            # Add visualization settings if available
+            if view_state:
+                viz_context = self._get_viz_settings_context(view_state)
+                if viz_context:
+                    parts.append(viz_context)
             
             return "\n".join(parts)
         except Exception as e:
             logger.error(f"Error getting graph context: {e}", exc_info=True)
             return f"Error getting graph context: {e}"
+    
+    def _get_viz_settings_context(self, view_state: Dict[str, Any] = None) -> str:
+        """Get current visualization settings for CRA context"""
+        if not view_state:
+            return ""
+        
+        viz_settings = view_state.get('vizSettings', {})
+        if not viz_settings:
+            return ""
+        
+        parts = []
+        parts.append(f"\n## 🎨 CURRENT VISUALIZATION SETTINGS (Dynamic Colors)")
+        parts.append(f"**IMPORTANT**: All colors are dynamic and can change. Use these current values when referencing colors:")
+        
+        # Component colors
+        component_colors = []
+        for comp in ['reality_sim', 'explorer', 'djinn_kernel', 'breath', 'neural', 'ml_analysis', 'system']:
+            color_key = f'componentColor_{comp}'
+            color = viz_settings.get(color_key, 'N/A')
+            if color != 'N/A':
+                component_colors.append(f"  - {comp}: {color}")
+        
+        if component_colors:
+            parts.append(f"\n**Component Colors**:")
+            parts.extend(component_colors)
+        
+        # Link colors
+        link_colors = []
+        for link_type in ['threshold', 'correlation', 'direct', 'temporal', 'neural', 'ml', 'unknown']:
+            color_key = f'linkColor_{link_type}'
+            color = viz_settings.get(color_key, 'N/A')
+            if color != 'N/A':
+                link_colors.append(f"  - {link_type}: {color}")
+        
+        if link_colors:
+            parts.append(f"\n**Link Colors**:")
+            parts.extend(link_colors)
+        
+        return "\n".join(parts) if parts else ""
 
 
 class SystemKnowledgeBase:
@@ -5165,6 +5276,10 @@ def get_graph():
                     component = 'breath'
                 elif 'system' in component:
                     component = 'system'
+                elif 'neural' in component:
+                    component = 'neural'  # Keep 'neural' for neural system events
+                elif 'ml' in component or 'analysis' in component:
+                    component = 'ml_analysis'  # Standardize ML component name
                 else:
                     component = component  # Keep as-is (will default to orange)
                 
@@ -5233,15 +5348,18 @@ def get_graph():
             
             # 🚀 OPTIMIZATION: For large graphs, send metadata first, then chunked data
             # Check if graph is large enough to warrant chunked loading
-            LARGE_GRAPH_THRESHOLD = 10000  # If >10k nodes, use chunked loading
+            # Note: Modern browsers with viewport culling can handle 20k+ nodes easily
+            LARGE_GRAPH_THRESHOLD = 50000  # If >50k nodes, use chunked loading
             
             if len(nodes) > LARGE_GRAPH_THRESHOLD:
                 # Return initial response with first chunk + metadata
                 chunk_size = 5000  # Send 5k nodes at a time
                 first_chunk_nodes = nodes[:chunk_size]
+                # 🚀 OPTIMIZATION: Use set for O(1) lookups instead of O(n) any() checks
+                first_chunk_node_ids = {n['id'] for n in first_chunk_nodes}
                 first_chunk_links = [link for link in links 
-                                    if any(n['id'] == link['source'] for n in first_chunk_nodes) or
-                                       any(n['id'] == link['target'] for n in first_chunk_nodes)][:chunk_size * 2]
+                                    if link['source'] in first_chunk_node_ids or
+                                       link['target'] in first_chunk_node_ids][:chunk_size * 2]
                 
                 response_data = {
                     'nodes': first_chunk_nodes,

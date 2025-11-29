@@ -85,6 +85,7 @@ class NeuralTrainer:
         
         # Training statistics
         self.training_step_count = 0
+        self.training_occurred_this_step = False  # Track if training happened in current step
         self.total_loss = 0.0
         self.last_training_time = 0.0
         
@@ -210,6 +211,9 @@ class NeuralTrainer:
         # Log training progress periodically (every 50 steps to avoid spam)
         if experiences_collected > 0 and self.training_step_count % 50 == 0:
             print(f"[NEURAL] Collected {experiences_collected} experiences from {len(organisms)} organisms")
+        
+        # Track whether training occurred this step (for diagnostics)
+        self.training_occurred_this_step = False
     
     def train_step(self,
                    organisms: Dict[str, NeuralOrganism],
@@ -225,6 +229,11 @@ class NeuralTrainer:
             
         Returns:
             Average loss, or None if no training occurred
+            
+        Note:
+            - training_step_count increments EVERY call (tracks trainer invocations)
+            - training_loss is only returned when actual training occurs (batch_size met)
+            - None means no training this step (waiting for experiences or update_frequency)
         """
         if not PYTORCH_AVAILABLE:
             return None
@@ -322,6 +331,7 @@ class NeuralTrainer:
         self.last_training_time = time.time()
         
         if num_trained > 0:
+            self.training_occurred_this_step = True
             avg_loss = total_loss / num_trained
             self.total_loss += avg_loss
             

@@ -1541,8 +1541,16 @@ class RealitySimulator:
             network = self.components['network']
 
             try:
-                # Run ML analysis on organism population
-                analysis_results = self.ml_analyzer.analyze(network.organisms)
+                # Run ML analysis on organism population via network (emits events)
+                # This ensures _emit_ml_events() is called for causation graph integration
+                if hasattr(network, 'run_ml_analysis'):
+                    analysis_results = network.run_ml_analysis()
+                else:
+                    # Fallback: direct analysis if network method not available
+                    analysis_results = self.ml_analyzer.analyze(network.organisms)
+                    # Manually emit events if network has the method
+                    if hasattr(network, '_emit_ml_events') and network.ml_event_emitter:
+                        network._emit_ml_events(analysis_results)
 
                 if analysis_results.get('enabled', False):
                     ml_metrics = {

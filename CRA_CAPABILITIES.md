@@ -153,22 +153,24 @@ The CRA has **COMPLETE AUTONOMOUS control** over ALL visualization settings:
 - `backColorBrightness` (0.3-1.0)
 - `colorSaturation` (0-2)
 
-#### Component Colors (Hex Colors)
+#### Component Colors (Hex Colors - Dynamic)
+**IMPORTANT**: All colors are dynamic and can change. The CRA receives current color values in the graph context. Reference settings instead of hardcoded values.
 - `componentColor_reality_sim` (e.g., "#FF0000")
 - `componentColor_explorer` (e.g., "#0000FF")
 - `componentColor_djinn_kernel` (e.g., "#FF8800")
 - `componentColor_breath` (e.g., "#FF00FF")
-- `componentColor_neural` (e.g., "#00FFFF") - 🧠 Neural System nodes
-- `componentColor_ml_analysis` (e.g., "#32CD32") - 🔬 ML Analysis nodes (Lime Green)
+- `componentColor_neural` - 🧠 Neural System nodes (check current value in graph context)
+- `componentColor_ml_analysis` - 🔬 ML Analysis nodes (check current value in graph context)
 - `componentColor_system` (e.g., "#FFFF00")
 
-#### Link Colors (Hex Colors)
+#### Link Colors (Hex Colors - Dynamic)
+**IMPORTANT**: All colors are dynamic and can change. The CRA receives current color values in the graph context. Reference settings instead of hardcoded values.
 - `linkColor_threshold` (e.g., "#FF00FF")
 - `linkColor_correlation` (e.g., "#0000FF")
 - `linkColor_direct` (e.g., "#00FF00")
 - `linkColor_temporal` (e.g., "#FFFF00")
-- `linkColor_neural` (e.g., "#00FFFF") - 🧠 Neural system links
-- `linkColor_ml` (e.g., "#FFA500") - 🔬 ML analysis links (Orange)
+- `linkColor_neural` - 🧠 Neural system links (check current value in graph context)
+- `linkColor_ml` - 🔬 ML analysis links (check current value in graph context)
 - `linkColor_unknown` (e.g., "#FF8800")
 
 #### ML Event Types (Visual Differentiation)
@@ -337,15 +339,15 @@ The Scikit-learn system provides classical machine learning algorithms for popul
 The ML Analysis component has its own visual representation on the causation graph, distinct from the Neural System (PyTorch). This provides visual differentiation for scikit-learn ML events.
 
 ### Component Color & Filter
-- **Default Color**: Lime Green (`#32CD32`)
+- **Dynamic Color**: Controlled by `componentColor_ml_analysis` setting (check current value in graph context)
 - **Filter Checkbox**: 🔬 ML Analysis - toggle visibility in the filters panel
 - **Color Picker**: Available in Settings → Component Colors → ML Analysis
 
 ### Link Styling
-- **ML-Connected Links**: Orange (`#FFA500`) with animated dashed stroke
+- **ML-Connected Links**: Color controlled by `linkColor_ml` setting (check current value in graph context)
 - **Animation**: `mlLinkFlow` - 3-second dashed line flow effect
 - **Styling**: Dashed stroke (stroke-dasharray: 5,5), 2.5px width
-- Links are colored orange when either source or target node is from `ml_analysis` component
+- Links are colored using `linkColor_ml` when either source or target node is from `ml_analysis` component
 
 ### Node Shapes by Event Type
 The ML system emits specialized events with distinct visual shapes:
@@ -376,10 +378,37 @@ The ML system emits specialized events with distinct visual shapes:
 }]]
 ```
 
+### ML Causation Links
+- **Causation Detection**: ML events create causation links to other system components
+  - **Toggle Control**: `/causation_detection/enable_ml_causations` (default: true)
+  - **Link Targets**: ML events connect to:
+    - `reality_sim` (network state changes)
+    - `neural` (decision/training events)
+    - `explorer` (phase transitions)
+    - `ml_analysis` (other ML events for clustering chains)
+  - **Event Types with Links**:
+    - `phenotype_emergence` → network/neural/explorer events
+    - `cluster_collapse` → network structure changes
+    - `anomaly_spike` → system state triggers
+  - **Visual Styling**: Orange dashed links with flow animation
+  - **CRA Control**: Can enable/disable via `[[CONFIG_UPDATE]]`:
+    ```json
+    [[CONFIG_UPDATE: {
+      "reason": "Connect ML events to graph",
+      "correlation_id": "ml-links",
+      "patch": [{
+        "op": "replace",
+        "path": "/causation_detection/enable_ml_causations",
+        "value": true
+      }]
+    }]]
+    ```
+
 ### Relationship to Neural System
 - **Neural System** (🧠 Cyan): PyTorch DQN organism-level learning
 - **ML Analysis** (🔬 Lime Green): Scikit-learn population-level analysis
 - Both systems have independent visual representations and filters
+- Both systems have causation link generation (controlled by separate toggles)
 - They can be toggled independently to focus on specific subsystem activity
 
 ---

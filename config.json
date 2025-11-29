@@ -7,9 +7,10 @@
     "performance_tracking_precision": 0.0001
   },
   "causation_detection": {
-    "correlation_threshold": 0.5,
+    "correlation_threshold": 0.55,
     "direct_causation_time_window": 2,
     "enable_bidirectional_causations": true,
+    "enable_ml_causations": true,
     "enable_neural_causations": true,
     "enable_neural_decision_causations": true,
     "enable_neural_training_causations": true,
@@ -70,7 +71,7 @@
         "step": 0.05
       },
       "mutation_rate": {
-        "initial": 0.035,
+        "initial": 0.032,
         "max": 0.06,
         "min": 0.002,
         "step": 0.001
@@ -152,10 +153,10 @@
   "network": {
     "connection_strength_resolution": 5e-06,
     "emergence_sensitivity": 1e-06,
-    "max_connections": 18000,
+    "max_connections": 17000,
     "max_organisms": 2000,
     "resource_flow_precision": 0.0001,
-    "resource_pool": 480,
+    "resource_pool": 475,
     "stability_precision": 1e-07
   },
   "neural": {
@@ -195,7 +196,7 @@
       "batch_size": 112,
       "enabled": true,
       "epsilon": 0.95,
-      "epsilon_decay": 0.990,
+      "epsilon_decay": 0.991,
       "epsilon_end": 0.01,
       "epsilon_start": 0.95,
       "gamma": 0.995,
