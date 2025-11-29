@@ -7354,7 +7354,8 @@ def cra_get_logs():
         log_data = {}
 
         if logs_dir.exists():
-            for log_file in ['breath.log', 'state.log', 'system.log', 'reality_sim.log', 'explorer.log', 'djinn_kernel.log', 'application.log']:
+            # Include all critical log files for comprehensive CRA access
+            for log_file in ['breath.log', 'state.log', 'system.log', 'reality_sim.log', 'explorer.log', 'djinn_kernel.log', 'application.log', 'neural.log', 'vp_diagnostics.log', 'config_actions.log']:
                 log_path = logs_dir / log_file
                 if log_path.exists():
                     try:
