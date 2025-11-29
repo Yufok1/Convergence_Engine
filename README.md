@@ -19,6 +19,30 @@ python unified_entry.py --check-only
 
 # Without visualization
 python unified_entry.py --no-viz
+### Reset Logs & Checkpoints (Safe Wipe)
+
+If you want a clean slate, you can safely delete regenerable artifacts. The system will recreate them on next run.
+
+- Backend logs: `data/logs/*`
+- Checkpoints: `data/checkpoints/*`
+- CRA chat history: `data/causation_explorer/chat_history.json`
+- CRA snapshots: `data/causation_explorer/snapshots/*`
+- Optional shared state (regenerable):
+  - `data/.shared_simulation_state.json`
+  - `data/.simulation_control.json`
+  - `data/context_memory.json`
+
+Windows PowerShell (optional):
+
+```powershell
+Remove-Item "data/logs/*" -Force -ErrorAction SilentlyContinue
+Remove-Item "data/checkpoints/*" -Force -ErrorAction SilentlyContinue
+Remove-Item "data/causation_explorer/chat_history.json" -Force -ErrorAction SilentlyContinue
+Remove-Item "data/causation_explorer/snapshots/*" -Force -ErrorAction SilentlyContinue
+# Optional shared state
+Remove-Item "data/.shared_simulation_state.json" -Force -ErrorAction SilentlyContinue
+Remove-Item "data/.simulation_control.json" -Force -ErrorAction SilentlyContinue
+Remove-Item "data/context_memory.json" -Force -ErrorAction SilentlyContinue
 ```
 
 ### Run Individual Systems
@@ -36,6 +60,10 @@ python causation_web_ui.py
 
 **📚 [DOCUMENTATION_HUB.md](./DOCUMENTATION_HUB.md)** - Central documentation hub with links to all guides
 
+Recent updates:
+- Visualization filters: component deselection now correctly excludes nodes before first render
+- Graph view auto-fit after filtering to keep remaining nodes visible
+- CRA logs and snapshots can be safely wiped; they will regenerate automatically
 ---
 
 ## 🦋 The Butterfly Architecture
