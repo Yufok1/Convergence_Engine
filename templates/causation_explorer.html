@@ -2071,6 +2071,48 @@
         let liveModeInterval = null;
         let lastEventTimestamp = 0;
         let lastGraphUpdate = 0;
+        
+        // CRITICAL: Track ALL intervals and timeouts for cleanup
+        let allIntervals = [];
+        let allTimeouts = [];
+        
+        // Wrapper functions to track intervals/timeouts
+        const originalSetInterval = window.setInterval;
+        const originalSetTimeout = window.setTimeout;
+        const originalClearInterval = window.clearInterval;
+        const originalClearTimeout = window.clearTimeout;
+        
+        window.setInterval = function(...args) {
+            const id = originalSetInterval.apply(window, args);
+            allIntervals.push(id);
+            return id;
+        };
+        
+        window.setTimeout = function(...args) {
+            const id = originalSetTimeout.apply(window, args);
+            allTimeouts.push(id);
+            return id;
+        };
+        
+        window.clearInterval = function(id) {
+            const index = allIntervals.indexOf(id);
+            if (index > -1) allIntervals.splice(index, 1);
+            return originalClearInterval.apply(window, arguments);
+        };
+        
+        window.clearTimeout = function(id) {
+            const index = allTimeouts.indexOf(id);
+            if (index > -1) allTimeouts.splice(index, 1);
+            return originalClearTimeout.apply(window, arguments);
+        };
+        
+        // Function to clear ALL intervals and timeouts
+        function clearAllTimers() {
+            allIntervals.forEach(id => originalClearInterval(id));
+            allTimeouts.forEach(id => originalClearTimeout(id));
+            allIntervals = [];
+            allTimeouts = [];
+        }
 
         // Simulation control state (declared early to avoid initialization errors)
         let simulationRunning = false; // Default to stopped
@@ -5273,6 +5315,9 @@
                     tickAnimationFrame = null;
                 }
                 
+                // CRITICAL: Clean up drag zoom listeners before removing SVG
+                cleanupDragZoomListeners();
+                
                 d3.select('#graph').selectAll('*').remove();
 
                 const graphElement = document.getElementById('graph');
@@ -6697,9 +6742,29 @@
                 toggleBtn.textContent = graphControlsCollapsed ? '＋ Show Navigation' : '⎯ Minimize Navigation';
             }
 
+            // CRITICAL: Store event listener references for cleanup
+            let dragZoomMouseMoveHandler = null;
+            let dragZoomMouseUpHandler = null;
+            let dragZoomMousedownHandler = null;
+
+            // Cleanup function for drag zoom listeners
+            function cleanupDragZoomListeners() {
+                if (dragZoomMouseMoveHandler) {
+                    document.removeEventListener('mousemove', dragZoomMouseMoveHandler);
+                    dragZoomMouseMoveHandler = null;
+                }
+                if (dragZoomMouseUpHandler) {
+                    document.removeEventListener('mouseup', dragZoomMouseUpHandler);
+                    dragZoomMouseUpHandler = null;
+                }
+            }
+
             // Setup drag-to-zoom functionality
             function setupDragZoom() {
                 if (!svg) return;
+
+                // CRITICAL: Clean up old listeners before adding new ones
+                cleanupDragZoomListeners();
 
                 const overlay = svg.select('.overlay');
                 if (!overlay.node()) return;
@@ -6709,7 +6774,11 @@
                 const eventTarget = overlayBg.node() ? overlayBg : overlay;
 
                 // Mouse down - start selection
-                eventTarget.on('mousedown', function (event) {
+                // Remove old handler if exists
+                if (dragZoomMousedownHandler) {
+                    eventTarget.on('mousedown', null);
+                }
+                dragZoomMousedownHandler = function (event) {
                     // Only if drag zoom is enabled OR Shift key is held
                     if (!dragZoomEnabled && !event.shiftKey) return;
 
@@ -6734,10 +6803,11 @@
                     }
 
                     svg.style('cursor', 'crosshair');
-                });
+                };
+                eventTarget.on('mousedown', dragZoomMousedownHandler);
 
                 // Mouse move - update selection rectangle (use document to track mouse even outside overlay)
-                document.addEventListener('mousemove', function dragZoomMouseMove(event) {
+                dragZoomMouseMoveHandler = function dragZoomMouseMove(event) {
                     if (!isDragging) return;
                     
                     const graphElement = document.getElementById('graph');
@@ -6762,10 +6832,11 @@
                             .attr('width', width)
                             .attr('height', height);
                     }
-                });
+                };
+                document.addEventListener('mousemove', dragZoomMouseMoveHandler);
 
                 // Mouse up - complete selection and zoom
-                document.addEventListener('mouseup', function dragZoomMouseUp(event) {
+                dragZoomMouseUpHandler = function dragZoomMouseUp(event) {
                     if (!isDragging) return;
 
                     event.preventDefault();
@@ -6851,7 +6922,8 @@
                     panY = newPanY;
 
                     updateTransform();
-                });
+                };
+                document.addEventListener('mouseup', dragZoomMouseUpHandler);
 
                 // Handle mouse leave to cancel drag (use document mouseleave as fallback)
                 // Note: We track mouse events on document now, so mouseleave on overlay isn't needed
@@ -8057,8 +8129,13 @@
                 }
 
                 // Check live status every 2 seconds
-                if (liveModeInterval) clearInterval(liveModeInterval);
+                if (liveModeInterval) {
+                    clearInterval(liveModeInterval);
+                    const index = allIntervals.indexOf(liveModeInterval);
+                    if (index > -1) allIntervals.splice(index, 1);
+                }
                 liveModeInterval = setInterval(checkLiveStatus, 2000);
+                allIntervals.push(liveModeInterval);
 
                 // Initial check
                 checkLiveStatus();
@@ -8067,6 +8144,8 @@
             function stopLiveMode() {
                 if (liveModeInterval) {
                     clearInterval(liveModeInterval);
+                    const index = allIntervals.indexOf(liveModeInterval);
+                    if (index > -1) allIntervals.splice(index, 1);
                     liveModeInterval = null;
                 }
             }
@@ -10693,6 +10772,9 @@
                                 loadGraphThrottle = null;
                             }
                             
+                            // CRITICAL: Clean up drag zoom event listeners
+                            cleanupDragZoomListeners();
+                            
                             // REMOVED: clearSnapshotHistory() - keep snapshots so user can review them!
                             // Snapshots are preserved when stopping simulation
                             console.log(`[SNAPSHOT] Simulation stopped - keeping ${snapshotHistory.length} snapshots for review`);
@@ -11290,8 +11372,12 @@
                 }
             }
 
-            // Initialize fullscreen functionality - try multiple approaches
+            // Initialize fullscreen functionality - prevent multiple initializations
+            let fullscreenInitialized = false;
             function initFullscreen() {
+                if (fullscreenInitialized) {
+                    return; // Already initialized, prevent duplicate
+                }
                 console.log('[CRA] Attempting to initialize fullscreen functionality...');
                 const fullscreenBtn = document.getElementById('craFullscreenBtn');
                 const minimizeBtn = document.getElementById('craMinimizeBtn');
@@ -11306,19 +11392,17 @@
                         toggleCraFullscreen();
                     });
                     fullscreenBtn._hasListener = true;
+                    fullscreenInitialized = true;
                 } else if (!fullscreenBtn) {
-                    console.log('[CRA] Fullscreen button not found, will retry...');
-                    setTimeout(initFullscreen, 100);
+                    // Only retry if not already initialized
+                    if (!fullscreenInitialized) {
+                        console.log('[CRA] Fullscreen button not found, will retry...');
+                        setTimeout(initFullscreen, 100);
+                    }
                 }
             }
 
-            // Try immediately, then on DOMContentLoaded, then after a delay
-            initFullscreen();
-            document.addEventListener('DOMContentLoaded', function() {
-                initFullscreen();
-                updateSnapshotMethodStatus(); // Initialize snapshot method status display
-            });
-            setTimeout(initFullscreen, 1000);
+            // Initialize only once - consolidated into single DOMContentLoaded handler below
 
             // Handle minimize button clicks (both original and cloned)
             document.addEventListener('click', function (e) {
@@ -11362,13 +11446,8 @@
                 }
             }
 
-            // Try immediately, then on DOMContentLoaded
+            // Try immediately, then on DOMContentLoaded (consolidated below)
             setupChatListeners();
-            document.addEventListener('DOMContentLoaded', function() {
-                setupChatListeners();
-                restoreCRAChatPanelState();
-                restoreHeaderControlsState();
-            });
             
             // Also restore state immediately if DOM is already loaded
             if (document.readyState !== 'loading') {
@@ -12182,50 +12261,7 @@
                 }
             }
 
-            // Add click handler to snapshot count display
-            document.addEventListener('DOMContentLoaded', function () {
-                const snapshotCountDisplay = document.getElementById('snapshotCountDisplay');
-                if (snapshotCountDisplay) {
-                    snapshotCountDisplay.addEventListener('click', openSnapshotGallery);
-                }
-                
-                // Initialize snapshot enabled toggle checkbox
-                const snapshotToggle = document.getElementById('snapshotEnabledToggle');
-                if (snapshotToggle) {
-                    snapshotToggle.checked = snapshotConfig.global.enabled;
-                }
-                
-                // Initial status update
-                updateSnapshotMethodStatus();
-
-                // Close modal when clicking outside
-                const modal = document.getElementById('snapshotGalleryModal');
-                if (modal) {
-                    modal.addEventListener('click', function (e) {
-                        if (e.target === modal) {
-                            closeSnapshotGallery();
-                        }
-                    });
-                }
-
-                // Close viewer when clicking outside
-                const viewer = document.getElementById('snapshotViewer');
-                if (viewer) {
-                    viewer.addEventListener('click', function (e) {
-                        if (e.target === viewer) {
-                            closeSnapshotViewer();
-                        }
-                    });
-                }
-            });
-
-            document.addEventListener('DOMContentLoaded', function () {
-                startConfigActionsPolling();
-                const refreshBtn = document.getElementById('configActionsRefreshBtn');
-                if (refreshBtn) {
-                    refreshBtn.addEventListener('click', refreshConfigActionsUI);
-                }
-            });
+            // Snapshot and config actions initialization (consolidated below)
 
             // ============================================================================
             // MINIMAP/RADAR SYSTEM (Navigation aid for viewport culling mode)
@@ -13066,8 +13102,110 @@
                 }
             }
             
-            // Initialize minimap on page load
-            document.addEventListener('DOMContentLoaded', function() {
+            // CRITICAL: Cleanup on page unload to prevent memory leaks
+            window.addEventListener('beforeunload', function() {
+                // Stop simulation
+                if (simulation) {
+                    simulation.stop();
+                    simulation.on('tick', null);
+                    simulation.on('end', null);
+                    simulation = null;
+                }
+                
+                // Clean up event listeners
+                cleanupDragZoomListeners();
+                
+                // Clear ALL intervals and timeouts
+                clearAllTimers();
+                if (liveModeInterval) {
+                    originalClearInterval(liveModeInterval);
+                    liveModeInterval = null;
+                }
+                
+                // Cancel animation frames
+                if (tickAnimationFrame !== null) {
+                    cancelAnimationFrame(tickAnimationFrame);
+                    tickAnimationFrame = null;
+                }
+                
+                // Clear throttles
+                if (loadGraphThrottle) {
+                    originalClearTimeout(loadGraphThrottle);
+                    loadGraphThrottle = null;
+                }
+                
+                // Clear all D3 selections
+                if (svg) {
+                    svg.selectAll('*').remove();
+                    svg = null;
+                }
+                
+                // Clear large data structures
+                allNodes = [];
+                allLinks = [];
+                filteredNodes = [];
+                filteredLinks = [];
+            });
+
+            // SINGLE DOMContentLoaded handler - consolidate ALL initializations
+            let domContentLoadedFired = false;
+            function initializeOnDOMReady() {
+                if (domContentLoadedFired) {
+                    console.warn('[INIT] DOMContentLoaded already fired, skipping duplicate');
+                    return;
+                }
+                domContentLoadedFired = true;
+                console.log('[INIT] DOMContentLoaded - Initializing all components...');
+                
+                // Initialize fullscreen
+                initFullscreen();
+                updateSnapshotMethodStatus();
+                
+                // Setup chat listeners
+                setupChatListeners();
+                restoreCRAChatPanelState();
+                restoreHeaderControlsState();
+                
+                // Snapshot count display
+                const snapshotCountDisplay = document.getElementById('snapshotCountDisplay');
+                if (snapshotCountDisplay) {
+                    snapshotCountDisplay.addEventListener('click', openSnapshotGallery);
+                }
+                
+                // Initialize snapshot enabled toggle checkbox
+                const snapshotToggle = document.getElementById('snapshotEnabledToggle');
+                if (snapshotToggle) {
+                    snapshotToggle.checked = snapshotConfig.global.enabled;
+                }
+                
+                // Close modal when clicking outside
+                const modal = document.getElementById('snapshotGalleryModal');
+                if (modal) {
+                    modal.addEventListener('click', function (e) {
+                        if (e.target === modal) {
+                            closeSnapshotGallery();
+                        }
+                    });
+                }
+
+                // Close viewer when clicking outside
+                const viewer = document.getElementById('snapshotViewer');
+                if (viewer) {
+                    viewer.addEventListener('click', function (e) {
+                        if (e.target === viewer) {
+                            closeSnapshotViewer();
+                        }
+                    });
+                }
+                
+                // Config actions polling
+                startConfigActionsPolling();
+                const refreshBtn = document.getElementById('configActionsRefreshBtn');
+                if (refreshBtn) {
+                    refreshBtn.addEventListener('click', refreshConfigActionsUI);
+                }
+                
+                // Initialize minimap
                 initMinimap();
                 
                 // Sync all sliders to vizSettings on page load
@@ -13083,7 +13221,17 @@
                         toggleViewportCulling(this.checked);
                     });
                 }
-            });
+                
+                console.log('[INIT] All components initialized');
+            }
+            
+            // Use single DOMContentLoaded handler
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initializeOnDOMReady);
+            } else {
+                // DOM already loaded
+                initializeOnDOMReady();
+            }
             
             // Also try immediately in case DOM is already loaded
             if (document.readyState === 'loading') {
