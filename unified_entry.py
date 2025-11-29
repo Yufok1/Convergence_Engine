@@ -1056,19 +1056,32 @@ class UnifiedSystem:
         # Wire event emitter for neural/ML visualization (AFTER causation_explorer is initialized)
         if self.reality_sim and self.causation_explorer:
             from causation_explorer import Event
-            def neural_event_emitter(event_dict):
-                """Emit neural events to causation explorer"""
+            def neural_event_emitter(event_input):
+                """Emit neural/ML events to causation explorer - handles both dicts and Event objects"""
                 try:
-                    # Convert dict to Event object
-                    event = Event(
-                        timestamp=event_dict.get('timestamp', time.time()),
-                        component=event_dict.get('component', 'unknown'),
-                        event_type=event_dict.get('event_type', 'unknown'),
-                        data=event_dict.get('data', {})
-                    )
+                    # Handle both Event objects and dicts
+                    if isinstance(event_input, Event):
+                        # Already an Event object, use it directly
+                        event = event_input
+                    elif isinstance(event_input, dict):
+                        # Convert dict to Event object
+                        event = Event(
+                            timestamp=event_input.get('timestamp', time.time()),
+                            component=event_input.get('component', 'unknown'),
+                            event_type=event_input.get('event_type', 'unknown'),
+                            data=event_input.get('data', {})
+                        )
+                    else:
+                        # Unknown type, skip
+                        return
+                    
                     self.causation_explorer.add_event(event, is_historical=False)
-                except Exception:
-                    pass  # Don't break if event emission fails
+                except Exception as e:
+                    # Don't break if event emission fails, but log for debugging
+                    if not hasattr(self, '_event_emitter_error_logged'):
+                        print(f"[UNIFIED] [WARN] Event emission failed: {e}")
+                        self._event_emitter_error_logged = True
+                    pass
             
             self.reality_sim.event_emitter = neural_event_emitter
 
@@ -1244,6 +1257,25 @@ class UnifiedSystem:
                     neural_metrics = self.reality_sim._neural_metrics
                     for key, value in neural_metrics.items():
                         unified_state[f'neural_{key}'] = value
+                    
+                    # Log neural metrics to neural.log file
+                    if neural_metrics.get('enabled', False):
+                        self.logger.log_neural(neural_metrics)
+                
+                # Log ML analysis results if available
+                if self.reality_sim and hasattr(self.reality_sim, '_ml_metrics'):
+                    ml_metrics = self.reality_sim._ml_metrics
+                    if ml_metrics and ml_metrics.get('enabled', False):
+                        # Log ML metrics to neural.log (or create ml.log if needed)
+                        ml_log_data = {
+                            'enabled': True,
+                            'organism_count': ml_metrics.get('organism_count', 0),
+                            'n_clusters': ml_metrics.get('clustering', {}).get('n_clusters', 0),
+                            'anomaly_count': ml_metrics.get('anomalies', {}).get('anomaly_count', 0),
+                            'anomaly_ratio': f"{ml_metrics.get('anomalies', {}).get('anomaly_ratio', 0):.4f}",
+                            'algorithm': ml_metrics.get('clustering', {}).get('algorithm', 'unknown')
+                        }
+                        self.logger.log_state('neural', ml_log_data)  # Use neural.log for now
                 
                 self.logger.log_state('state', unified_state)
                 

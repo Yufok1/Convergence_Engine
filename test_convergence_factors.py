@@ -95,7 +95,6 @@ class ConvergenceFactorTester:
         # Create simulator with custom config
         custom_config = self._create_custom_config(config)
         
-        # Debug: Verify config
         logger.debug(f"Config rendering.enable_visualizations = {custom_config.get('rendering', {}).get('enable_visualizations', 'NOT SET')}")
         
         try:
@@ -109,7 +108,6 @@ class ConvergenceFactorTester:
             simulator.config['rendering']['enable_visualizations'] = False
             simulator.config['rendering']['text_interface'] = False
             
-            # Debug: Verify after override
             logger.debug(f"After override: rendering.enable_visualizations = {simulator.config.get('rendering', {}).get('enable_visualizations', 'NOT SET')}")
             
             # Initialize simulation
@@ -135,7 +133,6 @@ class ConvergenceFactorTester:
                 # Don't cap it at 600 - let it grow naturally to see collapse
                 simulator.config['network']['max_organisms'] = max(config.max_organisms, 1000)  # At least 1000 to allow growth
                 
-                # Debug: Verify network settings
                 logger.debug("Network settings after override:")
                 logger.debug(f"  max_connections_per_organism: {network.max_connections_per_organism}")
                 logger.debug(f"  new_edge_rate: {getattr(network, 'new_edge_rate', 'NOT SET')}")
@@ -265,12 +262,12 @@ class ConvergenceFactorTester:
             # Use graph edges as source of truth (matches what collapse detection uses)
             connection_count = connection_count_graph
             
-            # Debug: Check if dict and graph are out of sync
+            # Check if dict and graph are out of sync
             if abs(connection_count_dict - connection_count_graph) > 5:
                 print(f"[WARNING] Gen {generation}: Connection count mismatch!")
                 print(f"  Dict count: {connection_count_dict}, Graph count: {connection_count_graph}")
             
-            # Debug: Check connection growth rate (should be ~2x organism count)
+            # Check connection growth rate (should be ~2x organism count)
             if generation > 0 and generation % 50 == 0:
                 expected_connections = organism_count * 2
                 ratio = connection_count / organism_count if organism_count > 0 else 0

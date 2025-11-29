@@ -442,9 +442,116 @@ class CausationExplorer:
                                 self.add_event(vp_event)
                     self._last_vp = vp
                     
-                    # 🚀 TIMEOUT PROTECTION: Final check
+                    # 🚀 TIMEOUT PROTECTION: Check after djinn processing
                     if time.time() - load_start > MAX_LOAD_TIME:
                         logger.warning(f"Shared state processing timeout after djinn events, aborting")
+                        return
+            
+            # Extract Neural System events
+            if 'neural' in data:
+                neural_data = data['neural']
+                if neural_data and neural_data.get('enabled', False):
+                    # Normalize all values in neural_data
+                    normalized_neural = {k: normalize_value(v) for k, v in neural_data.items()}
+                    
+                    # Create neural training event if training occurred
+                    if normalized_neural.get('training_steps', 0) > 0:
+                        training_event = Event(
+                            timestamp=timestamp,
+                            component='neural',
+                            event_type='neural_training',
+                            data={
+                                'training_steps': normalized_neural.get('training_steps', 0),
+                                'organisms_tracked': normalized_neural.get('organisms_tracked', 0),
+                                'avg_loss': normalized_neural.get('avg_loss', 0),
+                                'avg_epsilon': normalized_neural.get('avg_epsilon', 0),
+                                'frame_count': frame_count,
+                                **normalized_neural
+                            }
+                        )
+                        self.add_event(training_event)
+                    
+                    # Create general neural state event
+                    neural_event = Event(
+                        timestamp=timestamp,
+                        component='neural',
+                        event_type='state_change',
+                        data={
+                            'enabled': True,
+                            'organisms_tracked': normalized_neural.get('organisms_tracked', 0),
+                            'training_steps': normalized_neural.get('training_steps', 0),
+                            'avg_epsilon': normalized_neural.get('avg_epsilon', 0),
+                            'frame_count': frame_count,
+                            **normalized_neural
+                        }
+                    )
+                    self.add_event(neural_event)
+                    
+                    # 🚀 TIMEOUT PROTECTION: Check after neural processing
+                    if time.time() - load_start > MAX_LOAD_TIME:
+                        logger.warning(f"Shared state processing timeout after neural events, aborting")
+                        return
+            
+            # Extract ML Analysis events
+            if 'ml' in data:
+                ml_data = data['ml']
+                if ml_data and ml_data.get('enabled', False):
+                    # Normalize all values in ml_data
+                    normalized_ml = {k: normalize_value(v) for k, v in ml_data.items()}
+                    
+                    # Create phenotype emergence event if clusters detected
+                    clustering = normalized_ml.get('clustering', {})
+                    if clustering.get('n_clusters', 0) > 0:
+                        phenotype_event = Event(
+                            timestamp=timestamp,
+                            component='ml_analysis',
+                            event_type='phenotype_emergence',
+                            data={
+                                'n_clusters': clustering.get('n_clusters', 0),
+                                'cluster_sizes': clustering.get('cluster_sizes', {}),
+                                'algorithm': clustering.get('algorithm', 'unknown'),
+                                'frame_count': frame_count,
+                                **normalized_ml
+                            }
+                        )
+                        self.add_event(phenotype_event)
+                    
+                    # Create anomaly spike event if significant anomalies
+                    anomalies = normalized_ml.get('anomalies', {})
+                    if anomalies.get('anomaly_ratio', 0) > 0.15:
+                        anomaly_event = Event(
+                            timestamp=timestamp,
+                            component='ml_analysis',
+                            event_type='anomaly_spike',
+                            data={
+                                'anomaly_count': anomalies.get('anomaly_count', 0),
+                                'anomaly_ratio': anomalies.get('anomaly_ratio', 0),
+                                'algorithm': anomalies.get('algorithm', 'unknown'),
+                                'frame_count': frame_count,
+                                **normalized_ml
+                            }
+                        )
+                        self.add_event(anomaly_event)
+                    
+                    # Create general ML state event
+                    ml_event = Event(
+                        timestamp=timestamp,
+                        component='ml_analysis',
+                        event_type='state_change',
+                        data={
+                            'enabled': True,
+                            'organism_count': normalized_ml.get('organism_count', 0),
+                            'n_clusters': clustering.get('n_clusters', 0),
+                            'anomaly_count': anomalies.get('anomaly_count', 0),
+                            'frame_count': frame_count,
+                            **normalized_ml
+                        }
+                    )
+                    self.add_event(ml_event)
+                    
+                    # 🚀 TIMEOUT PROTECTION: Final check
+                    if time.time() - load_start > MAX_LOAD_TIME:
+                        logger.warning(f"Shared state processing timeout after ML events, aborting")
                         return
             
         except Exception as e:

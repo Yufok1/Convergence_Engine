@@ -4058,13 +4058,31 @@
                     return filterValue !== false;
                 });
 
-                // Filter links by causation type and ensure both nodes are visible
+                // NOTE: maxVisibleNodes limit is now handled by updateVisualNodeLimit()
+                // which only affects CSS visibility, not the simulation
+                // This prevents physics from changing when you adjust the slider
+                
+                // Filter links by causation type
+                // FIX: Show edges between visible components even if one component is disabled
+                // (edges connect components, so they should be visible if either component is visible)
                 const visibleNodeIds = new Set(filteredNodes.map(n => n.id));
+                const visibleComponents = new Set(filteredNodes.map(n => n.component || 'unknown'));
                 filteredLinks = allLinks.filter(link => {
-                    const linkType = link.type || 'unknown';
-                    const hasSource = visibleNodeIds.has(link.source);
-                    const hasTarget = visibleNodeIds.has(link.target);
-                    return filters.causationTypes[linkType] && hasSource && hasTarget;
+                    const linkType = (link.type || 'unknown').toLowerCase();
+                    if (!filters.causationTypes[linkType]) return false;
+                    
+                    // Get source and target IDs and components
+                    const srcId = typeof link.source === 'object' ? (link.source.id || link.source) : link.source;
+                    const tgtId = typeof link.target === 'object' ? (link.target.id || link.target) : link.target;
+                    const srcNode = allNodes.find(n => n.id === srcId);
+                    const tgtNode = allNodes.find(n => n.id === tgtId);
+                    const srcComp = srcNode ? (srcNode.component || 'unknown') : 'unknown';
+                    const tgtComp = tgtNode ? (tgtNode.component || 'unknown') : 'unknown';
+                    
+                    // Show edge if: both nodes are visible OR both components are visible
+                    const bothNodesVisible = visibleNodeIds.has(srcId) && visibleNodeIds.has(tgtId);
+                    const bothComponentsVisible = visibleComponents.has(srcComp) && visibleComponents.has(tgtComp);
+                    return bothNodesVisible || bothComponentsVisible;
                 });
 
                 // Rebuild link source/target references - keep as IDs for simulation
@@ -4113,18 +4131,40 @@
                         });
                 }
 
-                // Update link visibility (check both causation type and node visibility)
+                // Update link visibility (check causation type and component visibility)
+                // FIX: Show edges if both components are visible, even if nodes are filtered out
                 if (svg) {
+                    // Build set of visible components
+                    const visibleComponents = new Set();
+                    allNodes.forEach(node => {
+                        const comp = node.component || 'unknown';
+                        if (filters.components[comp] !== false) {
+                            visibleComponents.add(comp);
+                        }
+                    });
+                    
                     svg.selectAll('.link')
                         .style('display', d => {
                             const linkType = (d.type || d.causation_type || 'unknown').toLowerCase();
+                            const typeAllowed = filters.causationTypes[linkType] !== false;
+                            if (!typeAllowed) return 'none';
+                            
                             // Handle both ID strings and node objects (D3 converts IDs to objects)
                             const sourceId = typeof d.source === 'object' && d.source.id ? d.source.id : (typeof d.source === 'object' ? d.source : d.source);
                             const targetId = typeof d.target === 'object' && d.target.id ? d.target.id : (typeof d.target === 'object' ? d.target : d.target);
-                            const hasSource = visibleNodeIds.has(sourceId);
-                            const hasTarget = visibleNodeIds.has(targetId);
-                            const typeAllowed = filters.causationTypes[linkType] !== false;
-                            return (typeAllowed && hasSource && hasTarget) ? 'block' : 'none';
+                            
+                            // Check if both nodes are visible
+                            const bothNodesVisible = visibleNodeIds.has(sourceId) && visibleNodeIds.has(targetId);
+                            if (bothNodesVisible) return 'block';
+                            
+                            // Check if both components are visible (show edge even if nodes filtered)
+                            const srcNode = allNodes.find(n => n.id === sourceId);
+                            const tgtNode = allNodes.find(n => n.id === targetId);
+                            const srcComp = srcNode ? (srcNode.component || 'unknown') : 'unknown';
+                            const tgtComp = tgtNode ? (tgtNode.component || 'unknown') : 'unknown';
+                            const bothComponentsVisible = visibleComponents.has(srcComp) && visibleComponents.has(tgtComp);
+                            
+                            return bothComponentsVisible ? 'block' : 'none';
                         })
                         // Force update colors on all visible links
                         .attr('stroke', d => getLinkColor(d.type || d.causation_type || 'unknown', d))
@@ -4132,43 +4172,9 @@
                         .attr('stroke-width', d => Math.max(3, (d.strength || 0.5) * 6));
                 }
 
-                // Update simulation to only include visible nodes (preserve positions with gentle restart)
-                if (simulation) {
-                    // Get currently visible nodes (preserve their positions from simulation)
-                    const visibleNodes = allNodes.filter(node => {
-                        const comp = node.component || 'unknown';
-                        return filters.components[comp] || filters.components['system'];
-                    }).map(node => {
-                        // Find existing node in simulation to preserve position
-                        const existing = simulation.nodes().find(n => n.id === node.id);
-                        if (existing) {
-                            return existing; // Keep existing position
-                        }
-                        return node; // New node
-                    });
-
-                    // Get currently visible links
-                    const visibleLinks = allLinks.filter(link => {
-                        const linkType = (link.type || link.causation_type || 'unknown').toLowerCase();
-                        const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
-                        const targetId = typeof link.target === 'object' ? link.target.id : link.target;
-                        const hasSource = visibleNodeIds.has(sourceId);
-                        const hasTarget = visibleNodeIds.has(targetId);
-                        return filters.causationTypes[linkType] !== false && hasSource && hasTarget;
-                    }).map(link => ({
-                        ...link,
-                        source: typeof link.source === 'object' ? link.source.id : link.source,
-                        target: typeof link.target === 'object' ? link.target.id : link.target
-                    }));
-
-                    // Update simulation nodes and links (preserves existing positions)
-                    simulation.nodes(visibleNodes);
-                    simulation.force('link').links(visibleLinks);
-                    // Only restart if simulation has stopped, otherwise just update
-                    if (simulation.alpha() < 0.001) {
-                    simulation.alpha(0.05).restart(); // Very gentle restart to adjust layout slightly
-                    }
-                }
+                // DO NOT MODIFY SIMULATION - just hide/show visually
+                // The simulation keeps running with all nodes, we just hide some with CSS
+                // This prevents the graph from moving when you toggle component visibility
             }
 
             function resetFilters() {
@@ -4260,6 +4266,69 @@
                 svg.transition().duration(500).call(zoom.transform, transform);
             }
 
+            // Update visual node limit without touching simulation
+            function updateVisualNodeLimit() {
+                if (!svg || !simulation) return;
+                
+                const maxNodes = vizSettings.maxVisibleNodes || Infinity;
+                const maxLinks = vizSettings.maxVisibleLinks || Infinity;
+                
+                // Get all nodes sorted by importance (connection count)
+                const nodeConnCount = new Map();
+                allLinks.forEach(l => {
+                    const srcId = typeof l.source === 'object' ? (l.source.id || l.source) : l.source;
+                    const tgtId = typeof l.target === 'object' ? (l.target.id || l.target) : l.target;
+                    nodeConnCount.set(srcId, (nodeConnCount.get(srcId) || 0) + 1);
+                    nodeConnCount.set(tgtId, (nodeConnCount.get(tgtId) || 0) + 1);
+                });
+                
+                // Sort nodes by importance
+                const sortedNodes = Array.from(allNodes).sort((a, b) => {
+                    return (nodeConnCount.get(b.id) || 0) - (nodeConnCount.get(a.id) || 0);
+                });
+                
+                // Create set of visible node IDs
+                const visibleNodeIds = new Set(sortedNodes.slice(0, maxNodes).map(n => n.id));
+                
+                // Update node visibility (CSS only, simulation unchanged)
+                svg.selectAll('.node')
+                    .style('display', d => {
+                        // Check component filter first
+                        const comp = d.component || 'unknown';
+                        const componentVisible = filters.components[comp] !== false;
+                        if (!componentVisible) return 'none';
+                        
+                        // Then check maxVisibleNodes limit
+                        return visibleNodeIds.has(d.id) ? 'block' : 'none';
+                    });
+                
+                // Update link visibility (CSS only)
+                const visibleLinkIds = new Set();
+                let linkCount = 0;
+                allLinks.forEach(link => {
+                    if (linkCount >= maxLinks) return;
+                    const srcId = typeof link.source === 'object' ? (link.source.id || link.source) : link.source;
+                    const tgtId = typeof link.target === 'object' ? (link.target.id || link.target) : link.target;
+                    if (visibleNodeIds.has(srcId) && visibleNodeIds.has(tgtId)) {
+                        visibleLinkIds.add(`${srcId}-${tgtId}`);
+                        linkCount++;
+                    }
+                });
+                
+                svg.selectAll('.link')
+                    .style('display', d => {
+                        // Check causation type filter first
+                        const linkType = (d.type || d.causation_type || 'unknown').toLowerCase();
+                        if (filters.causationTypes[linkType] === false) return 'none';
+                        
+                        // Check if both nodes are visible
+                        const srcId = typeof d.source === 'object' ? (d.source.id || d.source) : d.source;
+                        const tgtId = typeof d.target === 'object' ? (d.target.id || d.target) : d.target;
+                        const key = `${srcId}-${tgtId}`;
+                        return visibleLinkIds.has(key) ? 'block' : 'none';
+                    });
+            }
+
             // Visualization settings management
             function updateVizSetting(key, value) {
                 vizSettings[key] = value;
@@ -4268,6 +4337,27 @@
                 const displayElement = document.getElementById(key + 'Value');
                 if (displayElement) {
                     displayElement.textContent = typeof value === 'boolean' ? (value ? 'On' : 'Off') : value;
+                }
+
+                // Visual rendering limits - only affect display, NOT simulation
+                if (key === 'maxVisibleNodes' || key === 'maxVisibleLinks') {
+                    console.log(`[VizSettings] Visual limit ${key} changed to ${value}, updating display only`);
+                    if (svg && allNodes.length > 0 && simulation) {
+                        // Just update visual visibility without touching simulation
+                        updateVisualNodeLimit();
+                    } else if (allNodes.length > 0) {
+                        renderGraph();
+                    }
+                    return;
+                }
+
+                // Render quality - may require re-render but shouldn't affect physics
+                if (key === 'renderQuality') {
+                    console.log(`[VizSettings] Render quality changed, re-rendering`);
+                    if (svg && allNodes.length > 0) {
+                        renderGraph();
+                    }
+                    return;
                 }
 
                 // REAL-TIME UPDATE: Apply settings immediately without recreating simulation
@@ -5289,16 +5379,29 @@
                     { name: 'Unknown', color: linkColors['unknown'] || '#FF8800' }
                 ];
 
-                // Calculate legend dimensions based on content (components + links + info)
+                // Neural/ML icon shapes (for vision model recognition)
+                const neuralMLIcons = [
+                    { name: '🧠 Neural Decision', shape: 'diamond', color: '#00FFFF', eventType: 'neural_decision' },
+                    { name: '🧠 Neural Training', shape: 'square', color: '#BF00FF', eventType: 'neural_training' },
+                    { name: '🔬 Phenotype Emergence', shape: 'star', color: '#FF00FF', eventType: 'phenotype_emergence' },
+                    { name: '🔬 Anomaly Spike', shape: 'triangle', color: '#FF8800', eventType: 'anomaly_spike' },
+                    { name: '🔬 Cluster Collapse', shape: 'cross', color: '#FF3333', eventType: 'cluster_collapse' },
+                    { name: '🔬 ML Analysis', shape: 'wye', color: '#FF00FF', eventType: 'ml_analysis' }
+                ];
+
+                // Calculate legend dimensions based on content (components + links + neuralML + info)
                 const titleHeight = 20;
                 const itemHeight = 18;
                 const componentsHeight = components.length * itemHeight;
                 const linksHeight = linkTypes.length * itemHeight;
+                // Neural/ML icons have descriptions, so they take more vertical space
+                const neuralMLItemHeight = itemHeight + 8; // Extra space for description text
+                const neuralMLHeight = neuralMLIcons.length * neuralMLItemHeight;
                 const sectionSpacing = 10; // Space between sections
-                const infoHeight = 20;
+                const infoHeight = 80; // Increased for vision recognition note
                 const padding = 10;
                 const legendWidth = 300; // Wider to fit longer names
-                const legendHeight = titleHeight + componentsHeight + sectionSpacing + linksHeight + infoHeight + (padding * 2);
+                const legendHeight = titleHeight + componentsHeight + sectionSpacing + linksHeight + sectionSpacing + neuralMLHeight + infoHeight + (padding * 2);
 
                 // Legend background - REMOVED (no box around legend)
 
@@ -5363,8 +5466,84 @@
                         .text(link.name);
                 });
 
+                // Neural/ML Icon Shapes Section (for vision model recognition)
+                const neuralMLSectionY = titleHeight + componentsHeight + sectionSpacing + linksHeight + sectionSpacing;
+                legendGroup.append('text')
+                    .attr('x', 0)
+                    .attr('y', neuralMLSectionY - 2)
+                    .attr('fill', '#0ff')
+                    .attr('font-size', '12px')
+                    .attr('font-weight', 'bold')
+                    .text('🧠 Neural & ML Icons:');
+                
+                neuralMLIcons.forEach((icon, i) => {
+                    // Each icon takes more space due to description text
+                    const yPos = neuralMLSectionY + (i * (itemHeight + 8));
+                    const iconSize = 8;
+                    const shapeElement = legendGroup.append('g')
+                        .attr('transform', `translate(${iconSize}, ${yPos})`)
+                        .attr('class', 'legend-neural-ml-icon')
+                        .attr('data-event-type', icon.eventType);
+                    
+                    // Create the appropriate shape
+                    let shapePath;
+                    switch(icon.shape) {
+                        case 'diamond':
+                            shapePath = d3.symbol().type(d3.symbolDiamond).size(iconSize * iconSize * 4);
+                            break;
+                        case 'square':
+                            shapePath = d3.symbol().type(d3.symbolSquare).size(iconSize * iconSize * 4);
+                            break;
+                        case 'star':
+                            shapePath = d3.symbol().type(d3.symbolStar).size(iconSize * iconSize * 5);
+                            break;
+                        case 'triangle':
+                            shapePath = d3.symbol().type(d3.symbolTriangle).size(iconSize * iconSize * 4);
+                            break;
+                        case 'cross':
+                            shapePath = d3.symbol().type(d3.symbolCross).size(iconSize * iconSize * 4);
+                            break;
+                        case 'wye':
+                            shapePath = d3.symbol().type(d3.symbolWye).size(iconSize * iconSize * 4);
+                            break;
+                        default:
+                            shapePath = d3.symbol().type(d3.symbolCircle).size(iconSize * iconSize * 4);
+                    }
+                    
+                    shapeElement.append('path')
+                        .attr('d', shapePath)
+                        .attr('fill', icon.color)
+                        .attr('fill-opacity', 0.9)
+                        .attr('stroke', '#FFFFFF')
+                        .attr('stroke-width', 1.5)
+                        .style('filter', icon.shape === 'star' || icon.shape === 'triangle' ? 'url(#nodeGlow)' : 'none');
+                    
+                    // Label with description for vision models
+                    legendGroup.append('text')
+                        .attr('x', iconSize * 2 + 5)
+                        .attr('y', yPos + 4)
+                        .attr('fill', '#fff')
+                        .attr('font-size', '11px')
+                        .text(icon.name);
+                    
+                    // Add descriptive text for vision models (smaller, below icon name)
+                    const description = icon.eventType === 'neural_decision' ? 'Decision-making event' :
+                                      icon.eventType === 'neural_training' ? 'Training/learning event' :
+                                      icon.eventType === 'phenotype_emergence' ? 'New cluster discovered' :
+                                      icon.eventType === 'anomaly_spike' ? 'Outlier detection' :
+                                      icon.eventType === 'cluster_collapse' ? 'Cluster died/extinct' :
+                                      'ML analysis state change';
+                    legendGroup.append('text')
+                        .attr('x', iconSize * 2 + 5)
+                        .attr('y', yPos + 15)
+                        .attr('fill', '#aaa')
+                        .attr('font-size', '9px')
+                        .attr('font-style', 'italic')
+                        .text(description);
+                });
+
                 // Graph info (on separate line for clarity)
-                const infoY = titleHeight + componentsHeight + sectionSpacing + linksHeight + 5;
+                const infoY = titleHeight + componentsHeight + sectionSpacing + linksHeight + sectionSpacing + neuralMLHeight + 5;
                 legendGroup.append('text')
                     .attr('x', 0)
                     .attr('y', infoY)
@@ -5377,6 +5556,27 @@
                     .attr('fill', '#888')
                     .attr('font-size', '10px')
                     .text('Links = Causation');
+                
+                // Vision Model Recognition Note
+                legendGroup.append('text')
+                    .attr('x', 0)
+                    .attr('y', infoY + 32)
+                    .attr('fill', '#0aa')
+                    .attr('font-size', '9px')
+                    .attr('font-weight', 'bold')
+                    .text('👁️ Vision Recognition:');
+                legendGroup.append('text')
+                    .attr('x', 0)
+                    .attr('y', infoY + 46)
+                    .attr('fill', '#aaa')
+                    .attr('font-size', '9px')
+                    .text('Neural/ML shapes indicate system');
+                legendGroup.append('text')
+                    .attr('x', 0)
+                    .attr('y', infoY + 60)
+                    .attr('fill', '#aaa')
+                    .attr('font-size', '9px')
+                    .text('positions & causality patterns.');
 
                 updateTransform();
 
@@ -5394,18 +5594,18 @@
                 const nodes = filteredNodes.map(d => ({ ...d }));
                 
                 // 🚀 PERF: For massive graphs, limit initial DOM creation
-                // We'll render a subset initially and use viewport culling for navigation
-                const MAX_INITIAL_NODES = 10000;  // Max nodes to create DOM elements for
-                const MAX_INITIAL_LINKS = 50000;  // Max links to create DOM elements for
+                // Use user-configured limits from vizSettings
+                const maxNodes = vizSettings.maxVisibleNodes || 5000;
+                const maxLinks = vizSettings.maxVisibleLinks || 10000;
                 
                 let renderNodes = nodes;
                 let renderLinks = links;
                 let isLargeGraph = false;
                 
-                if (nodes.length > MAX_INITIAL_NODES || links.length > MAX_INITIAL_LINKS) {
+                if (nodes.length > maxNodes || links.length > maxLinks) {
                     isLargeGraph = true;
                     console.log(`[RenderGraph] Large graph detected: ${nodes.length} nodes, ${links.length} links`);
-                    console.log(`[RenderGraph] Limiting initial render to ${MAX_INITIAL_NODES} nodes, ${MAX_INITIAL_LINKS} links`);
+                    console.log(`[RenderGraph] Limiting render to ${maxNodes} nodes, ${maxLinks} links (user setting)`);
                     
                     // Sort nodes by importance (priority components first, then by connection count)
                     const priorityComponents = new Set(['neural', 'ml_analysis', 'reality_sim', 'explorer', 'djinn_kernel', 'breath']);
@@ -5413,8 +5613,10 @@
                     // Quick node connection count
                     const nodeConnCount = new Map();
                     links.forEach(l => {
-                        nodeConnCount.set(l.source, (nodeConnCount.get(l.source) || 0) + 1);
-                        nodeConnCount.set(l.target, (nodeConnCount.get(l.target) || 0) + 1);
+                        const srcId = typeof l.source === 'object' ? l.source.id : l.source;
+                        const tgtId = typeof l.target === 'object' ? l.target.id : l.target;
+                        nodeConnCount.set(srcId, (nodeConnCount.get(srcId) || 0) + 1);
+                        nodeConnCount.set(tgtId, (nodeConnCount.get(tgtId) || 0) + 1);
                     });
                     
                     // Score and sort nodes
@@ -5424,13 +5626,17 @@
                     }));
                     scoredNodes.sort((a, b) => b.score - a.score);
                     
-                    renderNodes = scoredNodes.slice(0, MAX_INITIAL_NODES).map(s => s.node);
+                    renderNodes = scoredNodes.slice(0, maxNodes).map(s => s.node);
                     const renderNodeIds = new Set(renderNodes.map(n => n.id));
                     
                     // Filter links to only those connecting rendered nodes
-                    renderLinks = links.filter(l => renderNodeIds.has(l.source) && renderNodeIds.has(l.target));
-                    if (renderLinks.length > MAX_INITIAL_LINKS) {
-                        renderLinks = renderLinks.slice(0, MAX_INITIAL_LINKS);
+                    renderLinks = links.filter(l => {
+                        const srcId = typeof l.source === 'object' ? l.source.id : l.source;
+                        const tgtId = typeof l.target === 'object' ? l.target.id : l.target;
+                        return renderNodeIds.has(srcId) && renderNodeIds.has(tgtId);
+                    });
+                    if (renderLinks.length > maxLinks) {
+                        renderLinks = renderLinks.slice(0, maxLinks);
                     }
                     
                     console.log(`[RenderGraph] Rendering ${renderNodes.length} nodes, ${renderLinks.length} links`);
@@ -6625,15 +6831,27 @@
             }
 
             function getLinkColor(linkType, linkData = null) {
-                // Check if this is a neural link (by checking if source or target is neural)
+                // Check if this is a neural or ML link (by checking source/target components and event types)
                 if (linkData) {
                     const sourceId = typeof linkData.source === 'object' ? linkData.source.id : linkData.source;
                     const targetId = typeof linkData.target === 'object' ? linkData.target.id : linkData.target;
                     const sourceNode = allNodes.find(n => n.id === sourceId);
                     const targetNode = allNodes.find(n => n.id === targetId);
+                    
+                    // Check for neural links
                     if ((sourceNode && sourceNode.component === 'neural') || 
                         (targetNode && targetNode.component === 'neural')) {
                         return linkColors['neural'] || '#00FFFF';
+                    }
+                    
+                    // Check for ML links (by component or event type)
+                    const isMLLink = (sourceNode && sourceNode.component === 'ml_analysis') ||
+                                    (targetNode && targetNode.component === 'ml_analysis');
+                    const linkTypeStr = (linkType || '').toLowerCase().trim();
+                    const isMLEventType = ['phenotype_emergence', 'cluster_collapse', 'anomaly_spike', 'ml_analysis'].includes(linkTypeStr);
+                    
+                    if (isMLLink || isMLEventType) {
+                        return linkColors['ml'] || '#FFA500';
                     }
                 }
                 if (!linkType) return linkColors['unknown'] || '#FF0000';
@@ -9572,6 +9790,7 @@
                                     jsonStr = jsonStr.replace(/"linkColorcorrelation"/g, '"linkColor_correlation"');
                                     jsonStr = jsonStr.replace(/"linkColordirect"/g, '"linkColor_direct"');
                                     jsonStr = jsonStr.replace(/"linkColortemporal"/g, '"linkColor_temporal"');
+                                    jsonStr = jsonStr.replace(/"linkColorneural"/g, '"linkColor_neural"');
                                     jsonStr = jsonStr.replace(/"linkColorml"/g, '"linkColor_ml"');
                                     jsonStr = jsonStr.replace(/"linkColorunknown"/g, '"linkColor_unknown"');
 

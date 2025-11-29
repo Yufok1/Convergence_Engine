@@ -714,17 +714,20 @@ class SymbioticNetwork:
             # Check for cluster count changes
             clustering = analysis.get('clustering', {})
             current_clusters = clustering.get('n_clusters', 0)
-            if current_clusters != self._previous_cluster_count and current_clusters > 0:
+            
+            # Import Event class for causation graph
+            try:
+                from causation_explorer import Event
+            except ImportError:
+                return  # Can't emit without Event class
+            
+            # Emit events on cluster count changes OR periodically when clusters exist
+            if current_clusters > 0:
                 cluster_diff = current_clusters - self._previous_cluster_count
                 
-                # Import Event class for causation graph
-                try:
-                    from causation_explorer import Event
-                except ImportError:
-                    return  # Can't emit without Event class
-                
-                if abs(cluster_diff) >= 1:  # Significant cluster change
-                    event_type = 'phenotype_emergence' if cluster_diff > 0 else 'cluster_collapse'
+                # Emit on change OR if this is first detection (previous was 0)
+                if self._previous_cluster_count == 0 or abs(cluster_diff) >= 1:
+                    event_type = 'phenotype_emergence' if cluster_diff >= 0 else 'cluster_collapse'
                     event = Event(
                         timestamp=current_time,
                         component='ml_analysis',
@@ -738,7 +741,8 @@ class SymbioticNetwork:
                             'generation': self.generation
                         }
                     )
-                    self.ml_event_emitter(event)
+                    if self.ml_event_emitter:
+                        self.ml_event_emitter(event)
                 
                 self._previous_cluster_count = current_clusters
             

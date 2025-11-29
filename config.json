@@ -7,14 +7,14 @@
     "performance_tracking_precision": 0.0001
   },
   "causation_detection": {
-    "correlation_threshold": 0.55,
-    "direct_causation_time_window": 5,
+    "correlation_threshold": 0.5,
+    "direct_causation_time_window": 2,
     "enable_bidirectional_causations": true,
     "enable_neural_causations": true,
     "enable_neural_decision_causations": true,
     "enable_neural_training_causations": true,
     "enable_phase_transition_causations": true,
-    "phase_transition_time_window": 5,
+    "phase_transition_time_window": 3,
     "recent_events_window": 300,
     "thresholds": {
       "clustering_coefficient": {
@@ -56,7 +56,7 @@
       "initial": 0.04
     },
     "mutation_rate_precision": 0.001,
-    "population_size": 4000
+    "population_size": 1200
   },
   "feedback": {
     "enabled": true,
@@ -70,7 +70,7 @@
         "step": 0.05
       },
       "mutation_rate": {
-        "initial": 0.032,
+        "initial": 0.035,
         "max": 0.06,
         "min": 0.002,
         "step": 0.001
@@ -93,7 +93,7 @@
   "lattice": {
     "entropy_sensitivity": 5e-05,
     "interaction_precision": 0.0001,
-    "particles": 2400,
+    "particles": 1200,
     "prune_threshold": 0,
     "stability_tolerance": 0.0005
   },
@@ -146,23 +146,23 @@
         "meta_cognitive.self_tuning.tuning_interval_frames",
         "meta_cognitive.self_tuning.min_confidence_threshold"
       ],
-      "tuning_interval_frames": 10
+      "tuning_interval_frames": 50
     }
   },
   "network": {
     "connection_strength_resolution": 5e-06,
     "emergence_sensitivity": 1e-06,
-    "max_connections": 34000,
-    "max_organisms": 4400,
+    "max_connections": 18000,
+    "max_organisms": 2000,
     "resource_flow_precision": 0.0001,
-    "resource_pool": 960,
+    "resource_pool": 480,
     "stability_precision": 1e-07
   },
   "neural": {
     "brain": {
       "activation": "relu",
       "dropout": 0.1,
-      "hidden_dim": 128,
+      "hidden_dim": 64,
       "input_dim": 12,
       "output_dim": 6
     },
@@ -178,29 +178,29 @@
       "seed": null
     },
     "optimization": {
-      "compile_mode": "max-autotune",
+      "compile_mode": "reduce-overhead",
       "reuse_optimizers": true,
       "use_compile": true,
-      "use_scripted_inference": true
+      "use_scripted_inference": false
     },
     "rewards": {
       "connection_failure": -0.2,
-      "connection_success": 1.2,
-      "fitness_improvement": 1.8,
+      "connection_success": 1.5,
+      "fitness_improvement": 2.2,
       "resource_gain": 1,
       "resource_loss": -0.3,
       "survival": 0.8
     },
     "training": {
-      "batch_size": 256,
+      "batch_size": 112,
       "enabled": true,
       "epsilon": 0.95,
-      "epsilon_decay": 0.991,
+      "epsilon_decay": 0.990,
       "epsilon_end": 0.01,
       "epsilon_start": 0.95,
-      "gamma": 0.997,
+      "gamma": 0.995,
       "learning_rate": 0.004,
-      "memory_size": 40000,
+      "memory_size": 20000,
       "update_frequency": 1
     }
   },
@@ -246,14 +246,14 @@
     "clustering": {
       "algorithm": "hdbscan",
       "enabled": true,
-      "min_cluster_size": 3,
+      "min_cluster_size": 4,
       "min_samples": 1
     },
     "dimensionality_reduction": {
       "algorithm": "tsne",
       "enabled": true,
       "n_components": 3,
-      "tsne_perplexity": 30
+      "tsne_perplexity": 45
     },
     "enabled": true
   },
@@ -263,7 +263,7 @@
     "measurement_precision": 6,
     "performance_sampling_rate": 100,
     "save_interval": 60.0,
-    "target_fps": 8.0,
+    "target_fps": 5.0,
     "time_resolution_ms": 1.0
   },
   "vp_monitoring": {

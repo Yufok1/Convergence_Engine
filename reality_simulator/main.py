@@ -1356,7 +1356,6 @@ class RealitySimulator:
             evolution.evolve_generation()
             gen_after = evolution.generation
             logger.debug(f"After evolve_generation(): {gen_before} -> {gen_after}")
-            # Debug: Log generation progression
             if gen_after != gen_before + 1:
                 logger.debug(f"Generation jump: {gen_before} -> {gen_after} (expected {gen_before + 1})")
 
@@ -1535,6 +1534,8 @@ class RealitySimulator:
             self._neural_metrics = neural_metrics
 
         # ML Analysis (population-level analytics)
+        # Store ML metrics for logging
+        self._ml_metrics = None
         ml_metrics = None
         if self.ml_analyzer and 'network' in self.components:
             network = self.components['network']
@@ -1561,17 +1562,22 @@ class RealitySimulator:
                         }
 
                         # Emit phenotype emergence events if significant clusters detected
+                        # Note: This is a fallback - network._emit_ml_events() handles the main emission
+                        # Only emit here if network's ml_event_emitter isn't set
                         if self.event_emitter and clustering.get('n_clusters', 0) > 0:
-                            self.event_emitter({
-                                'timestamp': time.time(),
-                                'event_type': 'ml_analysis',
-                                'component': 'ml_analysis',
-                                'data': {
-                                    'type': 'phenotype_emergence',
-                                    'n_clusters': clustering['n_clusters'],
-                                    'cluster_sizes': clustering['cluster_sizes']
-                                }
-                            })
+                            # Check if network has its own emitter (preferred)
+                            network = self.components.get('network')
+                            if not (network and hasattr(network, 'ml_event_emitter') and network.ml_event_emitter):
+                                self.event_emitter({
+                                    'timestamp': time.time(),
+                                    'event_type': 'ml_analysis',
+                                    'component': 'ml_analysis',
+                                    'data': {
+                                        'type': 'phenotype_emergence',
+                                        'n_clusters': clustering['n_clusters'],
+                                        'cluster_sizes': clustering['cluster_sizes']
+                                    }
+                                })
 
                     # Add anomaly detection results
                     if analysis_results.get('anomalies'):
@@ -1810,7 +1816,7 @@ class RealitySimulator:
             # This MUST read the actual current generation, not a default value
             gen = evolution.generation if hasattr(evolution, 'generation') else 0
             
-            # Debug: log what we're actually reading (only first time and every 100 frames)
+            # Log generation reading (only first time and every 100 frames)
             if not hasattr(self, '_gen_debug_count'):
                 self._gen_debug_count = 0
             self._gen_debug_count += 1
@@ -2352,7 +2358,7 @@ def run_consciousness_test_continuous(simulator: RealitySimulator, max_generatio
             phi_history.append(phi_score)
             connections_history.append(connections)
 
-            # Debug: Show language connections
+            # Log language connections periodically
             language_connections = len(getattr(network_obj, 'language_connections', set()))
             if gen % 5 == 0 or gen == 0:  # Every 5 generations
                 logger.debug(f"Gen {gen}: Total connections = {connections}, Language connections = {language_connections}")

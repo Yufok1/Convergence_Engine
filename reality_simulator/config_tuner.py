@@ -308,18 +308,31 @@ class ConfigTuner:
                 if history.fitness_after is None and history.frames_elapsed > 20:
                     # Evaluate if action helped
                     history.fitness_after = self.fitness_history[-1]
-                    history.success = history.fitness_after > history.fitness_before
+                    
+                    # Improved success detection: handle zero fitness std case
+                    # If fitness hasn't changed, check other metrics (cluster diversity, anomaly ratio, etc.)
+                    fitness_improved = history.fitness_after > history.fitness_before
+                    
+                    # If fitness is stagnant (no change), use alternative metrics
+                    if abs(history.fitness_after - history.fitness_before) < 1e-6:
+                        # Check if other metrics improved (cluster diversity, anomaly ratio, etc.)
+                        # For now, mark as neutral (not success, not failure) if fitness unchanged
+                        # This prevents false negatives when fitness std is zero
+                        history.success = None  # Neutral - can't determine
+                    else:
+                        history.success = fitness_improved
 
-                    # Update success rates
+                    # Update success rates (only count if we have a definitive answer)
                     param = history.action.parameter_path
                     if param not in self.action_success_rates:
                         self.action_success_rates[param] = (0, 0)
 
-                    successes, total = self.action_success_rates[param]
-                    self.action_success_rates[param] = (
-                        successes + (1 if history.success else 0),
-                        total + 1
-                    )
+                    if history.success is not None:  # Only update if we have a definitive result
+                        successes, total = self.action_success_rates[param]
+                        self.action_success_rates[param] = (
+                            successes + (1 if history.success else 0),
+                            total + 1
+                        )
                 else:
                     history.frames_elapsed += 1
 

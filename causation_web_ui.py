@@ -9027,13 +9027,14 @@ def cra_set_viz_settings():
         
         # Component colors
         component_color_keys = ['componentColor_reality_sim', 'componentColor_explorer', 'componentColor_djinn_kernel', 
-                               'componentColor_breath', 'componentColor_neural', 'componentColor_system']
+                               'componentColor_breath', 'componentColor_neural', 'componentColor_ml_analysis', 'componentColor_system']
         for key in component_color_keys:
             if key in data:
                 viz_settings[key] = str(data[key])
         
         # Link colors
-        link_color_keys = ['linkColor_threshold', 'linkColor_correlation', 'linkColor_direct', 'linkColor_temporal', 'linkColor_unknown']
+        link_color_keys = ['linkColor_threshold', 'linkColor_correlation', 'linkColor_direct', 'linkColor_temporal', 
+                          'linkColor_neural', 'linkColor_ml', 'linkColor_unknown']
         for key in link_color_keys:
             if key in data:
                 viz_settings[key] = str(data[key])

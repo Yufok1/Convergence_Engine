@@ -104,7 +104,6 @@ def read_visualization_data() -> Optional[Dict[str, Any]]:
             with open(shared_state_file, 'r') as f:
                 shared_state = json.load(f)
 
-            # Debug: show what we found
             timestamp = shared_state.get('timestamp', 0)
             age = time.time() - timestamp
             print(f"[Viewer] File timestamp: {timestamp}, age: {age:.1f}s")

@@ -207,7 +207,7 @@ class NeuralTrainer:
             # Update fitness history
             self.organism_fitness_history[org_id] = current_fitness
 
-        # Debug logging (only log occasionally to avoid spam)
+        # Log training progress periodically (every 50 steps to avoid spam)
         if experiences_collected > 0 and self.training_step_count % 50 == 0:
             print(f"[NEURAL] Collected {experiences_collected} experiences from {len(organisms)} organisms")
     
