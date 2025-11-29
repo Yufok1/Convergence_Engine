@@ -1049,14 +1049,24 @@ class UnifiedSystem:
 
         # Wire event emitter for neural visualization (AFTER causation_explorer is initialized)
         if self.reality_sim and self.causation_explorer:
-            def neural_event_emitter(event):
+            from causation_explorer import Event
+            def neural_event_emitter(event_dict):
                 """Emit neural events to causation explorer"""
                 try:
+                    # Convert dict to Event object
+                    event = Event(
+                        timestamp=event_dict.get('timestamp', time.time()),
+                        component=event_dict.get('component', 'unknown'),
+                        event_type=event_dict.get('event_type', 'unknown'),
+                        data=event_dict.get('data', {})
+                    )
                     self.causation_explorer.add_event(event, is_historical=False)
                 except Exception:
                     pass  # Don't break if event emission fails
             
             self.reality_sim.event_emitter = neural_event_emitter
+        else:
+            print(f"[UNIFIED] [WARN] Cannot wire event emitter - reality_sim: {bool(self.reality_sim)}, causation_explorer: {bool(self.causation_explorer)}")
             
             # Wire ML event emitter for SymbioticNetwork (clustering, anomaly, phenotype events)
             network = self.reality_sim.components.get('network')

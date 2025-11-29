@@ -8147,7 +8147,7 @@ def cra_get_config_tuner():
                             'success_rate': stats.get('success_rate', 0.0),
                             'param_success_rates': stats.get('param_success_rates', {}),
                             'recent_actions': stats.get('recent_actions', []),
-                            'tuning_interval_frames': config_tuner_data.get('tuning_interval_frames', 50),
+                            'tuning_interval_frames': config_tuner_data.get('tuning_interval_frames', 10),
                             'min_confidence_threshold': config_tuner_data.get('min_confidence_threshold', 0.6),
                             'source': 'shared_state'
                         })
@@ -8168,7 +8168,7 @@ def cra_get_config_tuner():
                         result.update({
                             'enabled': tuning_config.get('enabled', False),
                             'mode': tuning_config.get('mode', 'off'),
-                            'tuning_interval_frames': tuning_config.get('tuning_interval_frames', 50),
+                            'tuning_interval_frames': tuning_config.get('tuning_interval_frames', 10),
                             'min_confidence_threshold': tuning_config.get('min_confidence_threshold', 0.6),
                             'source': 'config.json'
                         })

@@ -1563,13 +1563,13 @@ class RealitySimulator:
                         # Emit phenotype emergence events if significant clusters detected
                         if self.event_emitter and clustering.get('n_clusters', 0) > 0:
                             self.event_emitter({
+                                'timestamp': time.time(),
                                 'event_type': 'ml_analysis',
-                                'component': 'ml_analyzer',
+                                'component': 'ml_analysis',
                                 'data': {
                                     'type': 'phenotype_emergence',
                                     'n_clusters': clustering['n_clusters'],
-                                    'cluster_sizes': clustering['cluster_sizes'],
-                                    'timestamp': time.time()
+                                    'cluster_sizes': clustering['cluster_sizes']
                                 }
                             })
 
@@ -1585,13 +1585,13 @@ class RealitySimulator:
                         # Emit anomaly spike events if significant anomalies detected
                         if self.event_emitter and anomalies.get('anomaly_ratio', 0) > 0.15:
                             self.event_emitter({
+                                'timestamp': time.time(),
                                 'event_type': 'ml_analysis',
-                                'component': 'ml_analyzer',
+                                'component': 'ml_analysis',
                                 'data': {
                                     'type': 'anomaly_spike',
                                     'anomaly_count': anomalies['anomaly_count'],
-                                    'anomaly_ratio': anomalies['anomaly_ratio'],
-                                    'timestamp': time.time()
+                                    'anomaly_ratio': anomalies['anomaly_ratio']
                                 }
                             })
 
@@ -1683,6 +1683,7 @@ class RealitySimulator:
                     # Emit tuning event for causation tracking
                     if self.event_emitter:
                         self.event_emitter({
+                            'timestamp': time.time(),
                             'event_type': 'config_tuning',
                             'component': 'config_tuner',
                             'data': {
@@ -1690,8 +1691,7 @@ class RealitySimulator:
                                 'old_value': tuning_action.current_value,
                                 'new_value': tuning_action.proposed_value,
                                 'reason': tuning_action.reason,
-                                'confidence': tuning_action.confidence,
-                                'timestamp': time.time()
+                                'confidence': tuning_action.confidence
                             }
                         })
 
@@ -1952,7 +1952,7 @@ class RealitySimulator:
                 'enabled': True,
                 'mode': self.config.get('meta_cognitive', {}).get('self_tuning', {}).get('mode', 'autonomous'),
                 'stats': tuner_stats,
-                'tuning_interval_frames': self.config.get('meta_cognitive', {}).get('self_tuning', {}).get('tuning_interval_frames', 50),
+                'tuning_interval_frames': self.config.get('meta_cognitive', {}).get('self_tuning', {}).get('tuning_interval_frames', 10),
                 'min_confidence_threshold': self.config.get('meta_cognitive', {}).get('self_tuning', {}).get('min_confidence_threshold', 0.6)
             }
         elif self.config.get('meta_cognitive', {}).get('self_tuning', {}).get('enabled', False):

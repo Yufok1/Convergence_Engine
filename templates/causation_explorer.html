@@ -1508,6 +1508,15 @@
                                     style="width: 60px; height: 25px; cursor: pointer;">
                             </label>
                         </div>
+                        <div class="filter-item" style="margin-bottom: 8px;">
+                            <label
+                                style="display: flex; align-items: center; gap: 8px; color: #0ff; font-size: 0.85em;">
+                                <span style="min-width: 120px;">🔬 ML Links:</span>
+                                <input type="color" id="color-link-ml" value="#FFA500"
+                                    onchange="updateLinkColor('ml', this.value)"
+                                    style="width: 60px; height: 25px; cursor: pointer;">
+                            </label>
+                        </div>
                     </div>
 
                     <!-- Link Appearance -->
@@ -3560,15 +3569,15 @@
 
             // Component colors (configurable)
             let componentColors = {
-                'reality_sim': '#FF0000',      // Pure Red
-                'reality_simulator': '#FF0000', // Red
-                'explorer': '#0000FF',         // Pure Blue
-                'djinn_kernel': '#FF8800',     // Bright Orange
-                'utm_kernel': '#FF8800',       // Orange
-                'breath': '#FF00FF',           // Pure Magenta
-                'neural': '#00FFFF',           // 🧠 Electric Cyan (Neural System)
-                'ml_analysis': '#FF00FF',      // 🔬 Magenta/Purple (Scikit-learn ML)
-                'system': '#FFFF00'            // Pure Yellow
+                'reality_sim': '#FF0000',       // Pure Red
+                'reality_simulator': '#FF0000', // Red (alias)
+                'explorer': '#0000FF',          // Pure Blue
+                'djinn_kernel': '#FF8800',      // Bright Orange
+                'utm_kernel': '#FF8800',        // Orange (alias)
+                'breath': '#FF00FF',            // Pure Magenta
+                'neural': '#00FFFF',            // 🧠 Electric Cyan (Neural System)
+                'ml_analysis': '#32CD32',       // 🔬 Lime Green (ML Analysis) - doc consistency
+                'system': '#FFFF00'             // Pure Yellow
             };
 
             // Link colors (configurable)
@@ -3577,8 +3586,8 @@
                 'correlation': '#0000FF',      // Pure Blue
                 'direct': '#00FF00',           // Pure Green
                 'temporal': '#FFFF00',         // Pure Yellow
-                'neural': '#00FFFF',            // 🧠 Electric Cyan (Neural Links)
-                'ml': '#FF00FF',                // 🔬 Magenta (ML Analysis Links)
+                'neural': '#00FFFF',           // 🧠 Electric Cyan (Neural Links)
+                'ml': '#FFA500',               // 🔬 Orange (ML Analysis Links) - doc consistency
                 'unknown': '#FF8800'           // Bright Orange
             };
 
@@ -4583,7 +4592,18 @@
                                 if (svg && simulation) {
                                     svg.selectAll('.link').each(function(d) {
                                         const type = (d.type || 'unknown').toLowerCase();
-                                        if (type === linkType) {
+                                        const sourceId = typeof d.source === 'object' ? d.source.id : d.source;
+                                        const targetId = typeof d.target === 'object' ? d.target.id : d.target;
+                                        const sourceNode = allNodes.find(n => n.id === sourceId);
+                                        const targetNode = allNodes.find(n => n.id === targetId);
+                                        const isNeuralLink = (sourceNode && sourceNode.component === 'neural') || (targetNode && targetNode.component === 'neural');
+                                        const isMLLink = (sourceNode && sourceNode.component === 'ml_analysis') || (targetNode && targetNode.component === 'ml_analysis');
+                                        const isMLEventType = ['phenotype_emergence','cluster_collapse','anomaly_spike'].includes(type);
+                                        if (linkType === 'ml' && (isMLLink || isMLEventType)) {
+                                            d3.select(this).attr('stroke', validated.value);
+                                        } else if (linkType === 'neural' && isNeuralLink) {
+                                            d3.select(this).attr('stroke', validated.value);
+                                        } else if (type === linkType && !isNeuralLink && !isMLLink) {
                                             d3.select(this).attr('stroke', validated.value);
                                         }
                                     });
@@ -5731,12 +5751,43 @@
                     return null;
                 }).filter(l => l !== null);
 
+                // 🚀 PERFORMANCE: Adaptive simulation based on graph size
+                const nodeCount = renderNodes.length;
+                const isHugeGraph = nodeCount > 5000;
+                const isMassiveGraph = nodeCount > 10000;
+
+                console.log(`[Force Simulation] ${nodeCount} nodes, ${simulationLinks.length} links - ${isMassiveGraph ? 'MASSIVE' : isHugeGraph ? 'HUGE' : 'NORMAL'} mode`);
+
                 simulation = d3.forceSimulation(renderNodes)
-                    .force('link', d3.forceLink(simulationLinks).id(d => d.id).distance(80))
-                    .force('charge', d3.forceManyBody().strength(-200))  // Reduced from -300 for faster settling
+                    .force('link', d3.forceLink(simulationLinks)
+                        .id(d => d.id)
+                        .distance(isMassiveGraph ? 30 : (isHugeGraph ? 50 : 80))
+                        .iterations(isMassiveGraph ? 1 : (isHugeGraph ? 1 : 2)))
+                    .force('charge', d3.forceManyBody()
+                        .strength(isMassiveGraph ? -40 : (isHugeGraph ? -90 : -180))
+                        .theta(isMassiveGraph ? 0.95 : 0.85)  // Barnes-Hut approximation: higher = faster but less accurate
+                        .distanceMax(isMassiveGraph ? 250 : (isHugeGraph ? 400 : 600)))  // Limit interaction distance
                     .force('center', d3.forceCenter(width / 2, height / 2))
-                    .velocityDecay(0.7)  // Increased from 0.6 for faster settling
-                    .alphaDecay(0.03);   // Faster simulation cooldown (default is 0.0228)
+                    .velocityDecay(isMassiveGraph ? 0.92 : (isHugeGraph ? 0.85 : 0.75))  // Higher = faster settling
+                    .alphaDecay(isMassiveGraph ? 0.12 : (isHugeGraph ? 0.07 : 0.03))   // Higher = stops sooner
+                    .alphaTarget(0)  // Target alpha when simulation "ends"
+                    .alphaMin(0.002);  // Stop when alpha drops below this
+
+                // For massive graphs, limit simulation iterations to prevent infinite running
+                if (isMassiveGraph) {
+                    const maxIterations = 120;  // Slightly higher to allow better settling
+                    let tickCount = 0;
+                    // Wrap existing tick to enforce cap without removing rendering updates
+                    const existingTick = simulation.on('tick');
+                    simulation.on('tick', () => {
+                        if (existingTick) existingTick();
+                        tickCount++;
+                        if (tickCount >= maxIterations) {
+                            console.log(`[Force Simulation] Stopped after ${maxIterations} iterations (massive graph optimization)`);
+                            simulation.stop();
+                        }
+                    });
+                }
 
                 // Add temporal trajectories overlay (shows paths through time)
                 if (filters.showTemporalPaths) {
@@ -6638,9 +6689,15 @@
                         const targetNode = allNodes.find(n => n.id === targetId);
                         const isNeuralLink = (sourceNode && sourceNode.component === 'neural') || 
                                            (targetNode && targetNode.component === 'neural');
-                        if (isNeuralLink && normalizedType === 'neural') {
+                        const isMLLink = (sourceNode && sourceNode.component === 'ml_analysis') ||
+                                        (targetNode && targetNode.component === 'ml_analysis');
+                        // Treat phenotype/anomaly/cluster events as ML links when updating 'ml'
+                        const isMLEventType = ['phenotype_emergence','cluster_collapse','anomaly_spike'].includes(dType);
+                        if (normalizedType === 'ml' && (isMLLink || isMLEventType)) {
                             link.attr('stroke', color);
-                        } else if (dType === normalizedType && !isNeuralLink) {
+                        } else if (isNeuralLink && normalizedType === 'neural') {
+                            link.attr('stroke', color);
+                        } else if (dType === normalizedType && !isNeuralLink && !isMLLink) {
                             link.attr('stroke', color);
                         }
                     });
