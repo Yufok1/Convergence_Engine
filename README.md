@@ -117,11 +117,10 @@ A multi-layered artificial life simulation system that creates evolving populati
 - **Referential Memory System**: Shared contextual memory unifies language and network structure
 
 **Interaction Modes:**
-- **👑 God Mode**: Full control over the entire simulation
+- **👑 God Mode**: Omniscient overview and full control
 - **👁️ Observer Mode**: Scientific analysis and data collection
 - **🌟 Participant Mode**: Immersive experience within the simulation
 - **🔬 Scientist Mode**: Experimental controls and hypothesis testing
-- **🗣️ Chat Mode**: Real-time conversation with AI assistant (requires Ollama)
 
 **Visualizations:**
 - Tabbed interface with network graphs, evolution trees, IIT metrics, performance monitors
@@ -248,7 +247,7 @@ pip install pywin32
 
 ### Optional: AI Features (Ollama)
 
-For AI-assisted features (chat mode, CRA, vision analysis):
+For AI-assisted features (CRA, vision analysis):
 
 1. **Install Ollama**: Download from https://ollama.ai/
 2. **Start Ollama**: Run `ollama serve` (or use Ollama Cloud)
@@ -332,13 +331,10 @@ Headless mode:
 .\run_reality_simulator.bat
 
 # Direct run
-python reality_simulator/main.py --mode observer
-
-# Chat mode (requires Ollama)
-python reality_simulator/main.py --mode chat
+python reality_simulator/main.py
 
 # With custom config
-python reality_simulator/main.py --mode observer --config config.json
+python reality_simulator/main.py --config config.json
 ```
 
 ### Causation Explorer Web UI
