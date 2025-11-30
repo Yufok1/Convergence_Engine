@@ -1,0 +1,1157 @@
+---
+🔍 CRA Diagnostic Prompt - 2025 Edition (Quick Wins #1-5 Integrated)
+
+Complete system audit - Neural, ML, Meta-Cognitive Tuning, VP Monitoring, Unified 
+Visualization, Causation Detection, Health Monitor, Concept Tracking
+
+---
+📋 1. System Access Audit
+
+Check:
+- All data sources, APIs, endpoints, logs, config files
+- Neural: training metrics, optimization status, trainer health, event streams, field names
+  (organisms_tracked vs organisms_trained), VP-aware perception (18 input dims)
+- ML Analysis: clustering status, anomaly detection, dimensionality reduction, concept tracking
+- Meta-Cognitive: config_tuner status, autonomous/learning/observing modes, action history,
+  safe parameters
+- VP Monitoring: component decomposition, adaptive thresholds, stabilization, diagnostics logs
+- Health Monitor: unified health score, 5 components, state change events
+- Unified Visualization: 5 diagnostic panels, 3D network graph, stats box, system labels
+- Causation: time windows, thresholds, toggles (enable_neural_decision_causations,
+  enable_neural_training_causations)
+- Visualization: 40+ settings, graph filters (7 components), link colors (7 types)
+
+Gaps: Missing/blocked access, stale data, unavailable endpoints, field name mismatches
+
+---
+⭐ QUICK WINS STATUS (1-7) ⭐
+
+Quick Win #1: VP-Aware Perception
+- Status: ENABLED / DISABLED
+- Neural input_dim: 18 (verify in config neural.brain.input_dim)
+- Features 1-12: Base organism features
+- Features 13-17: VP components (trait_divergence, network_coherence, quantum_entropy,
+  evolution_pressure, phase_mismatch)
+- Feature 18: System health (from Health Monitor)
+- Verification: Organisms receiving VP state in network_state['vp_components']
+
+Quick Win #2: Concept Tracking
+- Status: ENABLED / DISABLED
+- ConceptTracker initialized in ML Analyzer
+- Config: scikit.concept_tracking.enabled, persistence_threshold (3), stale_threshold (10.0)
+- Events: concept_emergence, concept_extinction appearing in causation graph
+- Cluster naming: semantic tags (thrivers, strugglers, cooperators, lone_wolves, etc.)
+- Verification: Clusters show names like "Cluster 3: cooperators (high sharing)"
+
+Quick Win #3: Structured Explanations
+- Format: OBSERVATION → PATTERN → INTERPRETATION → RECOMMENDATION
+- CRA system prompt includes format instruction
+- Verification: CRA responses follow 4-part structure
+
+Quick Win #4: VP-Aware Planning
+- Status: ENABLED / DISABLED
+- Config: neural.vp_aware_planning.enabled, base_boost (0.15), strong_boost (0.25)
+- Thresholds: high_threshold (0.5), low_threshold (0.3)
+- Rules active:
+  * High trait_divergence → boost reproduce (+20-25%)
+  * Low network_coherence → boost cooperate (+25-30%)
+  * High quantum_entropy → boost rest (+20-25%)
+  * High evolution_pressure → boost move (+20-25%)
+  * High phase_mismatch → boost rest (+20-25%)
+- Verification: _apply_vp_aware_adjustments() called during organism decisions
+
+Quick Win #5: Health Index
+- Status: ENABLED / DISABLED
+- Config: health_monitor.enabled
+- Components (weights):
+  * Coherence (0.30): Network connectivity, clustering, modularity
+  * Diversity (0.20): Cluster count, cluster balance, species diversity
+  * Adaptability (0.20): Epsilon decay progress, loss reduction, training activity
+  * Lawfulness (0.20): Inverse of violation pressure
+  * Sustainability (0.10): Resource pool ratio, population stability
+- Thresholds: critical (<0.3), warning (<0.5), healthy (<0.7), optimal (≥0.7)
+- Events: health_state_change emitted on threshold crossings
+- Neural integration: Health is 18th input feature
+- Endpoint: /api/diagnostic/unified_health
+- Verification: health_monitor.get_health() returns 0.0-1.0 score
+
+Quick Win #6: Illumination Engine ⭐ NEW
+- Status: ENABLED / DISABLED
+- CRA has autonomous control over Illumination Engine UI panel
+- Marker format: [[ILLUMINATE: {"action": "...", ...}]]
+- 6 Backend Methods:
+  * find_root_causes: Trace ultimate origins
+  * analyze_impact: Forward cascade analysis
+  * explain_event: Natural language explanation
+  * search_advanced: Multi-filter event search
+  * get_most_consequential: Top events by impact
+  * get_timeline: Time-based clustering
+- 7 API Endpoints: /api/events/<id>/root-causes, /impact, /explain, /search/advanced, 
+  /consequential, /timeline, /stats
+- UI Actions: set_params, investigate, trace_causation, investigate_component
+- Verification: CRA can issue [[ILLUMINATE: ...]] and UI panel updates
+
+Quick Win #7: Research Notepad ⭐ NEW
+- Status: ENABLED / DISABLED
+- CRA has access to persistent research notepad
+- Marker format: [[NOTEPAD: {"action": "...", ...}]]
+- Entry Types (8):
+  * observe: Record observations with event links
+  * hypothesize: Form hypotheses with confidence levels
+  * causation: Document cause → effect relationships
+  * analyze: Pattern analysis across observations
+  * conclude: Draw evidence-based conclusions
+  * question: Questions for later investigation
+  * todo: Research tasks
+  * auto: Internal reasoning notes
+- Reference Commands: read (all/by type), search (query), summary
+- Best Practice: Use #hashtags for categorization (#vp_spike #collapse)
+- Verification: CRA can issue [[NOTEPAD: ...]] and entries appear in panel
+
+---
+2. Neural System Audit
+
+Trainer: SUCCESS / FAILED / PARTIAL
+- Import errors, PyTorch, device (CPU/CUDA), trainer exists
+- Receiving organisms, collecting experiences, training
+- Experience threshold: organisms need batch_size experiences before training starts
+  (default: 112)
+
+Input Dimensions (Quick Win #1):
+- input_dim: 18 (was 12)
+- Features 1-12: Base (fitness, resources, connections, local metrics, position)
+- Features 13-17: VP components (trait_divergence, network_coherence, quantum_entropy,
+  evolution_pressure, phase_mismatch)
+- Feature 18: System health (0.0-1.0 from Health Monitor)
+
+VP-Aware Planning (Quick Win #4):
+- _apply_vp_aware_adjustments() active
+- Action probability adjustments based on VP state
+- 5 rules mapping VP components to action boosts
+- Config: neural.vp_aware_planning.*
+
+Metrics:
+- training_loss: None until first training (shows "N/A" in panel)
+- avg_epsilon: average exploration rate across organisms
+- organisms_tracked: count of organisms being trained (NOT organisms_trained)
+- training_steps: total training iterations
+- training_time_ms, optimization ratios
+
+Initialization:
+- _neural_metrics initialized in init with default values
+- Fields: training_loss=None, avg_epsilon, organisms_tracked=0, training_steps=0,
+  status='initialized'
+
+Optimization:
+- torch.compile(): enabled/mode/success/fallback (compile_mode: reduce-overhead)
+- Optimizer reuse: enabled/cache size/memory savings
+- Scripted inference: disabled by default (use_scripted_inference: false)
+- Speedup ratios, resource utilization
+
+Events:
+- neural_decision: count/frequency/confidence/action distribution
+- neural_training: count/frequency/loss/organisms per event
+- Event emission: wired, appearing in graph
+- Component filter: Neural checkbox works
+
+Brain: Config (input_dim: 18, hidden_dim: 64, output_dim: 6, activation: relu, dropout: 0.1),
+compilation status, inheritance rates
+
+Experience Replay: Buffer capacity/size/fill rate (memory_size: 20000), quality, readiness
+(batch_size: 112)
+
+Panel Display (Top-Right):
+- Shows: Loss (N/A until training), Epsilon, Tracked organisms, Training steps
+- Handles None values gracefully
+- Status: ACTIVE / OFF
+
+---
+3. ML Analysis System Audit
+
+Status: SUCCESS / FAILED / PARTIAL
+- Import errors, scikit-learn available, analyzer initialized
+- Receiving population data, processing clusters, detecting anomalies
+
+Initialization:
+- _ml_metrics initialized in init with default values
+- Fields: enabled=True, clustering={'n_clusters': 0}, anomalies={'anomaly_ratio': 0.0},
+  status='initialized'
+
+Subsystems:
+- HDBSCAN Clustering: enabled/min_cluster_size (2)/min_samples (1)/cluster_count/cluster_sizes
+- Isolation Forest: enabled/contamination (0.1)/n_estimators (300)/anomaly_count/anomaly_ratio
+- Dimensionality Reduction: enabled/algorithm (tsne)/n_components (3)/tsne_perplexity (45)
+
+Concept Tracking (Quick Win #2): ⭐ NEW
+- ConceptTracker: initialized/enabled
+- persistence_threshold: 3 (cycles before cluster becomes "concept")
+- stale_threshold: 10.0 (seconds before concept marked stale)
+- Semantic tags assigned: thrivers, strugglers, cooperators, lone_wolves, efficient_survivors,
+  hoarders, balanced, explorers, settlers
+- Events: concept_emergence (new stable concept), concept_extinction (concept died)
+- Integration: Concepts appear in causation graph with semantic names
+
+Events:
+- phenotype_emergence: count/frequency/cluster details (hexagon nodes)
+- cluster_collapse: count/frequency/merge details (pentagon nodes)
+- anomaly_spike: count/frequency/anomaly details (triangle nodes)
+- concept_emergence: count/frequency/concept name/cluster id ⭐ NEW
+- concept_extinction: count/frequency/concept name/lifespan ⭐ NEW
+- Event emission: wired, appearing in graph with correct shapes
+
+Panel Display (Top-Right):
+- Shows: Clusters count, Anomaly ratio (percentage)
+- Status: ACTIVE / OFF
+- Combined with Neural panel
+
+Visualization:
+- Component color: Lime Green (#32CD32) configurable via componentColor_ml_analysis
+- Link color: Orange (#FFA500) configurable via linkColor_ml
+- Filter: ml_analysis checkbox works
+- Node shapes: hexagon/pentagon/triangle rendering correctly
+- Animations: mlPulse, mlLinkFlow, phenotypeEmergence, clusterCollapse, anomalyDetection
+
+Config Paths:
+- /scikit/enabled, /scikit/clustering/enabled, /scikit/anomaly_detection/enabled
+- /scikit/dimensionality_reduction/enabled, /scikit/clustering/min_cluster_size (default: 2)
+- /scikit/anomaly_detection/contamination (default: 0.1), n_estimators (default: 300)
+- /scikit/dimensionality_reduction/algorithm (tsne), n_components (3), tsne_perplexity (45)
+- /scikit/concept_tracking/enabled, persistence_threshold (3), stale_threshold (10.0) ⭐ NEW
+
+---
+4. Meta-Cognitive Self-Tuning System Audit
+
+Status: SUCCESS / FAILED / PARTIAL
+- Config tuner initialized, mode (autonomous/learning/observing/off)
+- Current mode: observing
+- Tuning interval: default 50 frames
+- Safe parameters list: 30+ parameters tunable
+
+Modes:
+- autonomous: Full self-tuning without human approval
+- learning: Proposes changes, learns from outcomes
+- observing: Monitors but doesn't act
+- off: Disabled
+
+Metrics:
+- total_actions: Total tuning attempts
+- successful_actions: Successful parameter changes
+- success_rate: Ratio of successful to total actions
+- param_success_rates: Per-parameter success tracking
+- recent_actions: Last N actions with details (param, change, reason, success)
+
+Performance Targets:
+- min_cluster_diversity: 3
+- max_anomaly_ratio: 0.2
+- min_fitness_std: 0.05
+
+Safe Parameters (can be tuned - 30+):
+- evolution.mutation_rate.initial, evolution.population_size, evolution.adaptation_sensitivity
+- evolution.diversity_guard.penalty, frequency_threshold, hash_similarity_threshold
+- feedback.knobs.* (mutation_rate, new_edge_rate, clustering_bias, quantum_pruning)
+- neural.training.learning_rate, gamma, epsilon_decay, batch_size
+- neural.rewards.* (fitness_improvement, connection_success, survival)
+- neural.inheritance.crossover_rate, mutation_rate
+- network.max_organisms, max_connections, resource_pool
+- scikit.clustering.min_cluster_size, scikit.anomaly_detection.contamination, n_estimators
+- quantum.initial_states, entanglement_sensitivity, prune_check_interval
+- vp_monitoring.adaptive_response.high_vp_threshold, stabilization.smoothing_factor
+- causation_detection.correlation_threshold
+- meta_cognitive.self_tuning.tuning_interval_frames, min_confidence_threshold
+
+Panel Display (Bottom-Right):
+- Shows: Mode (AUTONOMOUS/LEARNING/OBSERVING), Actions count, Success rate (%), Last action
+- Status: OFF if disabled
+- Note: Actions=0 is normal before first tuning interval (frame 50)
+
+Config Paths:
+- /meta_cognitive/self_tuning/enabled
+- /meta_cognitive/self_tuning/mode (current: observing)
+- /meta_cognitive/self_tuning/tuning_interval_frames (default: 50)
+- /meta_cognitive/self_tuning/min_confidence_threshold (default: 0.6)
+- /meta_cognitive/self_tuning/safe_parameters (array of 30+)
+- /meta_cognitive/self_tuning/performance_targets
+
+Integration:
+- CRA can control via CONFIG_UPDATE capability
+- Can toggle enabled status, switch modes, adjust interval, change confidence threshold
+- Action history available via get_stats()
+
+---
+5. VP Monitoring System Audit
+
+Status: SUCCESS / FAILED / PARTIAL
+- ViolationMonitor enabled, diagnostics logging
+- Component decomposition enabled
+- Adaptive thresholds enabled
+- Stabilization enabled
+
+Component Decomposition:
+- trait_divergence: Weight 0.25 - measures how far traits are from ideal centers
+- quantum_entropy: Weight 0.20 - quantum state disorder
+- evolution_pressure: Weight 0.20 - evolutionary stress
+- network_coherence: Weight 0.20 - network connectivity health
+- phase_mismatch: Weight 0.15 - phase transition alignment
+
+VP Components → Neural Integration (Quick Win #1):
+- VP components passed to organisms via network_state['vp_components']
+- Organisms perceive VP as features 13-17 in neural input
+- Enables ecosystem-aware decision making
+
+Adaptive Thresholds:
+- Dynamic envelope widening based on sustained violations
+- Per-trait radius adjustment (organism_count, modularity, clustering_coefficient,
+  average_path_length)
+- Fallback reset when envelopes exceed limits
+
+Stabilization:
+- smoothing_factor: 0.25 - smooths VP jumps
+- max_jump: 0.1 - maximum allowed VP change per frame
+- history_size: 15 - rolling window for smoothing
+- Prevents VP oscillation
+
+VP Classification:
+- VP0: < 0.25 (healthy)
+- VP1: 0.25-0.50 (mild pressure)
+- VP2: 0.50-0.75 (moderate pressure)
+- VP3: 0.75-0.99 (high pressure)
+- VP4: ≥ 0.99 (critical collapse risk)
+
+Panel Display (Bottom-Left):
+- Shows: VP value (4 decimals), Classification (VP0-VP4)
+- Combined with Evolution metrics (Generation, Population, Best/Avg Fitness)
+
+Diagnostics Logging:
+- Log file: data/logs/vp_diagnostics.log
+- Per-trait contributions, envelope adjustments, stabilization actions
+
+Config Paths:
+- /vp_monitoring/diagnostics_enabled
+- /vp_monitoring/component_decomposition_enabled
+- /vp_monitoring/component_weights
+- /vp_monitoring/adaptive_thresholds_enabled
+- /vp_monitoring/adaptive_response/high_vp_threshold (default: 0.75)
+- /vp_monitoring/adaptive_response/streak_threshold (default: 3)
+- /vp_monitoring/stabilization_enabled
+- /vp_monitoring/stabilization/smoothing_factor, max_jump, history_size
+
+---
+6. Health Monitor System Audit ⭐ NEW (Quick Win #5)
+
+Status: SUCCESS / FAILED / PARTIAL
+- HealthMonitor initialized
+- 5 components calculating
+- Events emitting on state changes
+- Neural integration (18th input feature)
+
+Formula:
+health = 0.30*coherence + 0.20*diversity + 0.20*adaptability + 0.20*lawfulness + 0.10*sustainability
+
+Components:
+1. Coherence (30%):
+   - Network connectivity, clustering coefficient, modularity
+   - Inverse of network-related VP
+   - Config: health_monitor.weight_coherence
+
+2. Diversity (20%):
+   - Cluster count from ML analyzer
+   - Cluster balance (size distribution)
+   - Species diversity
+   - Config: health_monitor.weight_diversity
+
+3. Adaptability (20%):
+   - Epsilon decay progress (exploration → exploitation)
+   - Training loss reduction over time
+   - Training activity (steps, frequency)
+   - Config: health_monitor.weight_adaptability
+
+4. Lawfulness (20%):
+   - 1.0 - violation_pressure
+   - Measures rule-following, stability
+   - Config: health_monitor.weight_lawfulness
+
+5. Sustainability (10%):
+   - Resource pool ratio (current/max)
+   - Population stability (not too high, not too low)
+   - Config: health_monitor.weight_sustainability
+
+Thresholds:
+- Critical: < 0.3 (red alert)
+- Warning: < 0.5 (caution)
+- Healthy: < 0.7 (good)
+- Optimal: ≥ 0.7 (excellent)
+- Config: health_monitor.critical_threshold, warning_threshold, healthy_threshold
+
+Events:
+- health_state_change: Emitted when health crosses threshold boundaries
+- Contains: old_state, new_state, health_value, components breakdown
+- Appears in causation graph
+
+Neural Integration:
+- System health passed to organisms via network_state['system_health']
+- Feature 18 in neural input (input_dim: 18)
+- Organisms perceive ecosystem wellness
+
+Endpoint:
+- /api/diagnostic/unified_health
+- Returns: health score, components, state, history
+
+History:
+- history_size: 100 (rolling window)
+- Tracks health over time for trend analysis
+
+Config Paths:
+- /health_monitor/enabled
+- /health_monitor/weight_coherence (0.30)
+- /health_monitor/weight_diversity (0.20)
+- /health_monitor/weight_adaptability (0.20)
+- /health_monitor/weight_lawfulness (0.20)
+- /health_monitor/weight_sustainability (0.10)
+- /health_monitor/critical_threshold (0.3)
+- /health_monitor/warning_threshold (0.5)
+- /health_monitor/healthy_threshold (0.7)
+- /health_monitor/history_size (100)
+
+---
+7. Unified Visualization System Audit
+
+Status: SUCCESS / FAILED / PARTIAL
+- UnifiedVisualization initialized
+- 3D network graph rendering
+- 5 diagnostic panels displayed
+- Stats box visible
+
+Architecture:
+- unified_entry.py → UnifiedVisualization → visualization_viewer.py → render_network_graph()
+- reality_sim_ref passed to UnifiedVisualization for metric access
+- Data collected from: _neural_metrics, _ml_metrics, config_tuner, network, health_monitor,
+  djinn_kernel
+
+5 Diagnostic Panels:
+
+1. Panel 1 (Top-Left, Cyan) - Network Topology:
+   - Nodes, Edges, Avg Degree, Clustering, Stability, Connectivity
+   - Position: (0.10, 0.90)
+   - Font size: 8
+
+2. Panel 2 (Top-Right, Magenta) - Neural & ML:
+   - Neural: Loss (N/A until training), Epsilon, Tracked organisms, Training steps
+   - ML: Clusters count, Anomaly ratio
+   - VP-Aware: Planning status (Quick Win #4)
+   - Position: (0.90, 0.90)
+   - Font size: 8
+   - Critical: Uses organisms_tracked (not organisms_trained)
+
+3. Panel 3 (Bottom-Left, Lime) - Evolution & VP:
+   - Generation, Population, Best/Avg Fitness
+   - VP value, Classification (VP0-VP4)
+   - Health Index score (Quick Win #5) ⭐ NEW
+   - Position: (0.10, 0.10)
+   - Font size: 8
+
+4. Panel 4 (Bottom-Right, Yellow) - Meta-Cognitive:
+   - Tuner mode (AUTONOMOUS/LEARNING/OBSERVING), Actions count, Success rate
+   - Last action details
+   - Quantum states (if available)
+   - Position: (0.90, 0.10)
+   - Font size: 8
+
+5. Panel 5 (Center-Bottom, Orange) - Recent Events:
+   - Last tuning action with success/failure icon
+   - Concept events (Quick Win #2) ⭐ NEW
+   - Health state changes (Quick Win #5) ⭐ NEW
+   - "Monitoring..." if no actions yet
+   - Position: (0.50, 0.10)
+   - Font size: 7
+
+Stats Box (Left-Center, Cyan):
+- Shows: ORGANISMS, CONNECTIONS, MODULARITY, CLUSTERING, PATH LENGTH, HEALTH
+- Position: (0.10, 0.50)
+- Font size: 10
+- Full labels (not abbreviated)
+
+System Label (Top-Left, Cyan):
+- Text: "Left Wing"
+- Position: (0.10, 0.95)
+- Font size: 9, italic, alpha 0.6
+
+Title (Top-Center, Cyan):
+- Text: "Reality Simulator Network"
+- Font size: 18, bold
+
+Bottom Profile Menu:
+- REMOVED - was showing "Topology Matrix Grid" with cluster_sizes that ran off window
+- Commented out: _draw_profile_label() call
+
+Data Flow:
+- unified_entry.py collects: neural_data, ml_data, evolution_data, config_tuner_data,
+  health_data, djinn_kernel_data, network_data
+- Passes all via viz_data dict to UnifiedVisualization
+- visualization_viewer.py extracts and displays in panels
+
+Common Issues:
+- Panels not appearing: check reality_sim_ref passed correctly
+- N/A values: check None handling in visualization code
+- Field name errors: organisms_tracked vs organisms_trained mismatch
+- Overflow text: stats box or panels too wide for window
+
+---
+8. Causation Detection Audit
+
+Config: All causation_detection settings in config.json verified
+- Toggles: enable_neural_causations (master), enable_neural_decision_causations,
+  enable_neural_training_causations, enable_phase_transition_causations,
+  enable_bidirectional_causations, enable_ml_causations
+
+Link Generation:
+- Neural decision/training links created when toggles enabled
+- ML analysis links created (phenotype/cluster/anomaly events)
+- Concept links created (concept_emergence/extinction) ⭐ NEW
+- Health state change links created ⭐ NEW
+- Phase transition/bidirectional links work
+- Time windows respected (direct_causation_time_window: 2, phase_transition_time_window: 3)
+
+Graph: Neural nodes/links appear, ML nodes/links appear, concept nodes appear, health nodes
+appear, filters work, CRA can control
+
+Config Paths:
+- /causation_detection/enable_neural_causations
+- /causation_detection/enable_neural_decision_causations
+- /causation_detection/enable_neural_training_causations
+- /causation_detection/enable_phase_transition_causations
+- /causation_detection/enable_bidirectional_causations
+- /causation_detection/correlation_threshold (default: 0.55)
+- /causation_detection/direct_causation_time_window (default: 2)
+- /causation_detection/phase_transition_time_window (default: 3)
+- /causation_detection/recent_events_window (default: 300)
+
+---
+9. Error Reporting
+
+Current: All warnings/errors
+- CRA failures, Ollama timeouts, snapshot gaps, config failures
+- Neural trainer errors, PyTorch errors, field name mismatches
+- Scikit errors, ML analyzer failures, concept tracker errors
+- Health monitor errors, component calculation failures
+- Causation errors, link generation failures
+- Visualization errors (None value crashes, panel rendering failures)
+- Meta-cognitive tuner errors, safe parameter validation failures
+
+Patterns: Recurring issues
+- API failures, vision errors, config glitches
+- Neural failures (experiences < batch_size, training_loss=None)
+- ML failures (sklearn import errors, clustering failures)
+- Concept tracking failures (semantic naming errors)
+- Health calculation failures (missing component data)
+- Missing links (causation toggles disabled)
+- Panel display issues (field name mismatches, None value formatting)
+- Tuner issues (actions=0 before frame 50)
+
+Data Quality: Stale shared_state, empty logs, malformed records, missing metrics
+
+Neural: Trainer init errors, training errors, optimization errors, field name errors
+(organisms_trained vs organisms_tracked), VP perception errors (input_dim mismatch)
+
+ML Analysis: Analyzer init errors, clustering errors, anomaly detection errors, sklearn
+import errors, concept tracker errors
+
+Health Monitor: Init errors, component calculation errors, event emission errors, neural
+integration errors
+
+Meta-Cognitive: Tuner init errors, mode change failures, parameter validation errors, action
+execution failures
+
+VP Monitoring: Component decomposition errors, adaptive threshold failures, stabilization
+errors, diagnostics logging failures
+
+Causation: Settings not read, links not generated, time windows not respected, filter broken
+
+Visualization: Panel rendering crashes, None value formatting errors, field name mismatches,
+text overflow
+
+---
+10. Data Flow
+
+Expected:
+Explorer → shared_state → CRA → Vision → ConfigManager → Neural → ML Analysis →
+Concept Tracker → Health Monitor → Meta-Cognitive → VP Monitoring → CausationExplorer →
+UnifiedVisualization
+
+Actual: What's flowing, deviations
+- Skipped snapshots, delayed feeds
+- Neural not triggering (organisms < batch_size)
+- ML not triggering (not enough population data)
+- Concepts not emerging (clusters not stable for 3+ cycles)
+- Health not calculating (missing component data)
+- Links missing (causation toggles)
+- Panels not displaying (field name mismatches, None values)
+- Tuner not acting (frame < tuning_interval)
+
+Issues:
+- Missing routes, misconfigured endpoints
+- Neural events not reaching graph
+- ML events not reaching graph
+- Concept events not reaching graph
+- Health events not reaching graph
+- Causation settings not applied
+- Visualization not receiving metrics
+- Tuner actions not logged
+
+Neural Flow:
+Decisions → buffer → (wait for batch_size) → trainer → training → loss → backprop → weights →
+VP-aware adjustments → events → graph → panel display
+
+ML Flow:
+Population data → analyzer → clustering/anomaly/reduction → concept tracker → events → graph →
+panel display
+
+Health Flow:
+Network metrics + ML metrics + Neural metrics + VP → HealthMonitor → 5 components →
+weighted average → health score → state classification → events → neural input (feature 18)
+
+Meta-Cognitive Flow:
+Frame count → (if frame % tuning_interval == 0) → performance analysis → safe parameter
+selection → action proposal → execution → success tracking → panel display
+
+VP Flow:
+Trait measurements → component decomposition → neural input (features 13-17) → adaptive
+thresholds → stabilization → VP calculation → classification → panel display
+
+Visualization Flow:
+reality_sim._neural_metrics/_ml_metrics/health_monitor → unified_entry.py data collection →
+viz_data dict → UnifiedVisualization.update_frame() → visualization_viewer.render_network_graph()
+→ 5 panels + stats box
+
+Causation Flow:
+Events (neural, ML, concept, health, VP) → CausationExplorer → detection → link generation →
+graph
+
+---
+11. Performance
+
+Response Times:
+- CRA phases, config updates, graph fetches
+- Neural training (early: None, later: actual timing)
+- ML analysis, concept tracking
+- Health calculation
+- Causation links
+- Visualization rendering, panel updates
+
+Throughput:
+- Events/sec, snapshots/sec
+- Neural steps/breath (update_frequency: 1)
+- ML analyses/generation
+- Concept evaluations/cycle
+- Health updates/cycle
+- Causation links/sec
+- Panel updates/frame
+
+Memory:
+- Flask, CRA, vision
+- PyTorch (CUDA/CPU), scikit-learn
+- Buffers (experience replay: 20000), cache
+- Health history (100 entries)
+- Causation graph, visualization objects
+
+Error Rates:
+- API calls, vision, config writes
+- Neural training, ML analysis
+- Concept tracking, health calculation
+- Causation links, tuner actions
+- Panel rendering
+
+Neural:
+- Training duration (current/avg/min/max)
+- Action latency, memory, speedup ratios
+- VP-aware adjustment overhead
+- Note: None until organisms collect batch_size (112) experiences
+
+ML Analysis:
+- Clustering duration, anomaly detection duration, reduction duration, memory
+- Concept evaluation duration
+
+Health Monitor:
+- Component calculation time (5 components)
+- Event emission time
+- History update time
+
+Meta-Cognitive:
+- Tuning interval adherence
+- Action execution time
+- Safe parameter validation time
+- Performance target evaluation time
+
+VP Monitoring:
+- Component decomposition calculation time
+- Adaptive threshold adjustment time
+- Stabilization smoothing time
+
+Causation:
+- Link generation time, graph update latency, memory
+
+Visualization:
+- Panel rendering time (5 panels)
+- Stats box update time
+- Total frame render time
+
+---
+12. Configuration
+
+Current: Key settings
+- evolution.mutation_rate, feedback.knobs.new_edge_rate
+- neural.enabled, neural.training.*, neural.optimization.*, neural.vp_aware_planning.*
+- scikit.enabled, scikit.clustering.*, scikit.anomaly_detection.*, scikit.concept_tracking.*
+- health_monitor.enabled, health_monitor.weight_*, health_monitor.*_threshold
+- meta_cognitive.self_tuning.enabled, meta_cognitive.self_tuning.mode
+- vp_monitoring.diagnostics_enabled, vp_monitoring.component_decomposition_enabled
+- causation_detection.enable_*, causation_detection.time_windows
+
+Validation:
+- Guardrails enforced
+- config_actions.log healthy
+- Neural/scikit/health_monitor/meta_cognitive/vp_monitoring/causation config valid
+- Safe parameters list enforced by tuner
+
+Access:
+- Can read/write config.json
+- Hot-reload, update neural/scikit/health/meta_cognitive/causation
+- CRA has CONFIG_UPDATE capability for all safe parameters
+
+Neural Config:
+- enabled (true), device (cuda/cpu)
+- brain (input_dim: 18, hidden_dim: 64, output_dim: 6, activation: relu, dropout: 0.1)
+- training (batch_size: 112, learning_rate: 0.0035, gamma: 0.995, epsilon_start/end/decay,
+  memory_size: 20000, update_frequency: 1)
+- optimization (use_compile: true, compile_mode: reduce-overhead, reuse_optimizers: true,
+  use_scripted_inference: false)
+- vp_aware_planning (enabled: true, base_boost: 0.15, strong_boost: 0.25, thresholds) ⭐ QW#4
+
+ML Config:
+- enabled (true)
+- clustering (algorithm: hdbscan, min_cluster_size: 2, min_samples: 1)
+- anomaly_detection (algorithm: isolation_forest, contamination: 0.1, n_estimators: 300)
+- dimensionality_reduction (algorithm: tsne, n_components: 3, tsne_perplexity: 45)
+- concept_tracking (enabled: true, persistence_threshold: 3, stale_threshold: 10.0) ⭐ QW#2
+
+Health Monitor Config: ⭐ QW#5
+- enabled (true)
+- weight_coherence (0.30), weight_diversity (0.20), weight_adaptability (0.20)
+- weight_lawfulness (0.20), weight_sustainability (0.10)
+- critical_threshold (0.3), warning_threshold (0.5), healthy_threshold (0.7)
+- history_size (100)
+
+Meta-Cognitive Config:
+- self_tuning.enabled (true)
+- self_tuning.mode (observing)
+- self_tuning.tuning_interval_frames (50)
+- self_tuning.min_confidence_threshold (0.6)
+- self_tuning.safe_parameters (array of 30+)
+- self_tuning.performance_targets (min_cluster_diversity: 3, max_anomaly_ratio: 0.2,
+  min_fitness_std: 0.05)
+
+VP Monitoring Config:
+- diagnostics_enabled (true)
+- component_decomposition_enabled (true)
+- component_weights (trait_divergence: 0.25, quantum_entropy: 0.20, evolution_pressure: 0.20,
+  network_coherence: 0.20, phase_mismatch: 0.15)
+- adaptive_thresholds_enabled (true)
+- adaptive_response (high_vp_threshold: 0.75, streak_threshold: 3)
+- stabilization_enabled (true)
+- stabilization (smoothing_factor: 0.25, max_jump: 0.1, history_size: 15)
+
+Causation Config:
+- Time windows (direct: 2, phase_transition: 3, recent_events: 300)
+- Thresholds (correlation: 0.55)
+- Toggles (all enable_* flags)
+
+---
+13. Visualization & Graph Controls
+
+Filters:
+- 7 component filters work (reality_sim, explorer, djinn_kernel, breath, neural, ml_analysis,
+  system)
+- Causation type filters work
+- Display toggles work
+- CRA can control
+
+Settings:
+- CRA controls 40+ settings
+- Component colors (7 including Neural=Cyan, ML=Lime Green)
+- Link colors (7 including Neural=Cyan dashed, ML=Orange dashed)
+- Real-time updates
+
+Neural Viz:
+- Nodes appear (diamonds/squares)
+- Links appear (dashed/pulsing cyan)
+- Color configurable via componentColor_neural
+- Filter works
+
+ML Viz:
+- Nodes appear (hexagon/pentagon/triangle by event type)
+- Links appear (dashed orange with flow animation)
+- Color configurable via componentColor_ml_analysis and linkColor_ml
+- Filter works
+
+Concept Viz: ⭐ NEW (Quick Win #2)
+- concept_emergence nodes appear with semantic labels
+- concept_extinction nodes appear
+- Linked to originating cluster events
+
+Health Viz: ⭐ NEW (Quick Win #5)
+- health_state_change nodes appear on threshold crossings
+- Color indicates state (red=critical, yellow=warning, green=healthy, blue=optimal)
+
+Unified Viz:
+- 5 diagnostic panels all visible
+- Stats box showing full labels (including HEALTH)
+- "Left Wing" system label
+- Title: "Reality Simulator Network"
+- Bottom profile menu removed
+- No text overflow
+
+---
+14. Vision Model
+
+Capture:
+- Current snapshot fresh
+- Historical snapshots (up to 10)
+- Includes neural nodes/links
+- Includes ML nodes/links
+- Includes concept nodes (Quick Win #2)
+- Includes health nodes (Quick Win #5)
+- Includes diagnostic panels in 3D view
+
+Context:
+- CRA generates summaries
+- Includes neural state (trainer status, loss, organisms_tracked, training_steps, VP-aware
+  planning status)
+- Includes ML state (clusters, anomalies, algorithm, concepts)
+- Includes health state (score, components, classification) ⭐ NEW
+- Includes meta-cognitive state (tuner mode, actions, success_rate)
+- Includes VP state (value, classification, component breakdown)
+- Includes causation state (toggles, time windows)
+- Includes visualization state (5 panels, stats box)
+
+Analysis:
+- Vision receives images + context
+- Identifies network graph
+- Analyzes neural nodes/links
+- Analyzes ML nodes/links (hexagon/pentagon/triangle shapes)
+- Identifies concept labels
+- Identifies health indicators
+- Identifies diagnostic panels
+- Reads panel contents (may see emojis as boxes if font missing)
+
+---
+15. Illumination Engine System ⭐ NEW (Quick Win #6)
+
+Status: SUCCESS / FAILED / PARTIAL
+- CausationExplorer deep analysis methods available
+- CRA has autonomous control over Illumination Engine UI panel
+- 7 API endpoints responding
+
+Backend Methods (causation_explorer.py):
+1. find_root_causes(event_id, max_depth=20)
+   - Traces ALL the way back to find ultimate origins
+   - Returns: root_causes list with depth, causal_chain, chain_explanations, avg_strength, narrative
+   
+2. analyze_impact(event_id, max_depth=20)
+   - Forward cascade analysis - what effects ripple out from an event
+   - Returns: impact_events with depth, cascade chains, total_impact score
+   
+3. explain_event(event_id)
+   - Natural language explanation generator
+   - Returns: explanation, event details, timing, causes/effects lists
+   
+4. search_advanced(component, event_type, min_severity, max_severity, has_causes, has_effects, limit)
+   - Multi-filter search across events
+   - Returns: matching events with full metadata
+   
+5. get_most_consequential(top_n=10)
+   - Finds most significant events by impact score
+   - Returns: events ranked by influence (connections × severity)
+   
+6. get_timeline(window_hours, bucket_minutes)
+   - Time-based event clustering and pattern detection
+   - Returns: time buckets with event counts, component breakdown
+
+API Endpoints (causation_web_ui.py):
+- GET /api/events/<event_id>/root-causes → find_root_causes()
+- GET /api/events/<event_id>/impact → analyze_impact()
+- GET /api/events/<event_id>/explain → explain_event()
+- GET /api/events/search/advanced → search_advanced()
+- GET /api/events/consequential → get_most_consequential()
+- GET /api/timeline → get_timeline()
+- GET /api/stats → global statistics
+
+CRA Marker Format:
+[[ILLUMINATE: {"action": "root_causes", "event_id": "evt_123"}]]
+[[ILLUMINATE: {"action": "impact", "event_id": "evt_123"}]]
+[[ILLUMINATE: {"action": "explain", "event_id": "evt_123"}]]
+[[ILLUMINATE: {"action": "search", "component": "realitysim", "min_severity": 0.7}]]
+[[ILLUMINATE: {"action": "consequential", "limit": 10}]]
+[[ILLUMINATE: {"action": "timeline", "window_hours": 1, "bucket_minutes": 5}]]
+
+UI Control Actions:
+- set_params: Configure Illumination Engine filter parameters
+- investigate: Deep dive into specific event or most consequential
+- trace_causation: Trace root causes with custom depth
+- investigate_component: Filter by component with severity threshold
+
+Frontend Integration:
+- processIlluminateCommand() parses CRA responses for [[ILLUMINATE: ...]] markers
+- window.craIllumination object provides programmatic access
+- Illumination Engine panel updates automatically from CRA commands
+
+Priority:
+- Backend methods unavailable = HIGH
+- API endpoints not responding = HIGH
+- CRA markers not being processed = MEDIUM
+- UI panel not updating = MEDIUM
+
+---
+16. Research Notepad System ⭐ NEW (Quick Win #7)
+
+Status: SUCCESS / FAILED / PARTIAL
+- Notepad panel visible in CRA chat interface
+- CRA can add, read, search, and summarize notes
+- Notes persist across sessions
+
+Entry Types (Actions):
+1. observe: Record observations
+   - Fields: content (required), events (optional array of event IDs)
+   - Example: {"action": "observe", "content": "VP spiked to 0.85 at 14:32:05", "events": ["evt_123"]}
+
+2. hypothesize: Form hypotheses
+   - Fields: content (required), confidence (low/medium/high), events (optional)
+   - Example: {"action": "hypothesize", "content": "High VP triggers collapse", "confidence": "medium"}
+
+3. causation: Document causal relationships
+   - Fields: content (required), cause (event ID), effect (event ID)
+   - Example: {"action": "causation", "content": "Config change caused modularity drop", "cause": "evt_config_123", "effect": "evt_collapse_456"}
+
+4. analyze: Record pattern analysis
+   - Fields: content (required), events (optional)
+   - Example: {"action": "analyze", "content": "Pattern: VP spikes precede collapses by 10-15 cycles"}
+
+5. conclude: Draw conclusions
+   - Fields: content (required), events (optional)
+   - Example: {"action": "conclude", "content": "Confirmed: reproduction_rate > 1.5 causes instability"}
+
+6. question: Ask questions for later investigation
+   - Fields: content (required)
+   - Example: {"action": "question", "content": "Why does organism count spike before collapse?"}
+
+7. todo: Add research tasks
+   - Fields: content (required)
+   - Example: {"action": "todo", "content": "Investigate neural sync correlation with VP"}
+
+8. auto: Internal reasoning notes (not shown prominently)
+   - Fields: content (required)
+   - Example: {"action": "auto", "content": "Need to trace root causes of the 14:32 event"}
+
+Reference Commands:
+- read: Read all notes or filter by type
+  - {"action": "read"} - all notes
+  - {"action": "read", "type": "hypothesis"} - filter by type
+- search: Search notes by query
+  - {"action": "search", "query": "VP spike"}
+- summary: Get summary of all notes
+  - {"action": "summary"}
+
+CRA Marker Format:
+[[NOTEPAD: {"action": "observe", "content": "...", "events": [...]}]]
+[[NOTEPAD: {"action": "hypothesize", "content": "...", "confidence": "high"}]]
+[[NOTEPAD: {"action": "causation", "content": "...", "cause": "evt_1", "effect": "evt_2"}]]
+[[NOTEPAD: {"action": "read", "type": "hypothesis"}]]
+[[NOTEPAD: {"action": "search", "query": "collapse"}]]
+[[NOTEPAD: {"action": "summary"}]]
+
+Frontend Integration:
+- processNotepadCommand() parses CRA responses for [[NOTEPAD: ...]] markers
+- window.craNotepad object provides programmatic access
+- notepadAddEntry() adds entries to the notepad panel
+- Notepad panel shows entries with timestamps, types, and content
+
+Best Practices for CRA:
+- Use #hashtags in content for categorization (#vp_spike #collapse #neural)
+- OBSERVE before analyzing - record what you see first
+- HYPOTHESIZE with confidence levels - be honest about uncertainty
+- DOCUMENT CAUSATION with event IDs - make chains traceable
+- ANALYZE patterns across multiple observations
+- CONCLUDE only when evidence is strong
+- QUESTION things you don't understand - revisit later
+
+Priority:
+- Notepad not saving = HIGH
+- Notepad not displaying = MEDIUM
+- CRA markers not being processed = MEDIUM
+- Read/search not returning results = MEDIUM
+
+---
+Response Format
+
+Structure: Headings for each category
+
+Evidence: Log lines, API responses, config diffs, metrics
+
+Severity: CRITICAL / HIGH / MEDIUM / LOW
+- Trainer down = CRITICAL
+- ML Analyzer down = HIGH
+- Health Monitor down = HIGH
+- Concept Tracker down = MEDIUM
+- Tuner down = HIGH
+- Causation links missing = HIGH
+- Neural/ML filter broken = MEDIUM
+- Panel field name mismatch = MEDIUM
+- Tuner actions=0 before frame 50 = INFO (expected)
+- Neural loss=None before batch_size experiences = INFO (expected)
+- Health components missing = MEDIUM
+
+Recommendations: Remediation steps per issue
+
+Verification: How to confirm fixes
+
+---
+Data to Include
+
+- Sample payloads, error logs, config values, performance data, system state
+- Neural metrics: loss (None or float), avg_epsilon, organisms_tracked (NOT organisms_trained),
+  training_steps, buffer size, optimization status, events, VP-aware adjustments
+- ML metrics: cluster count, anomaly count/ratio, phenotype events, collapse events, spike
+  events, concept events (emergence/extinction)
+- Health metrics: score, components (5), state, history, neural integration status ⭐ NEW
+- Meta-cognitive metrics: mode, total_actions, successful_actions, success_rate, recent_actions
+  (param/change/reason/success)
+- VP metrics: value, classification, component weights, trait contributions, adaptive
+  thresholds, stabilization
+- Causation metrics: link counts by type, time window effectiveness, toggle effectiveness
+- Visualization metrics: node/link counts by component, panel visibility, stats box display,
+  filter effectiveness, settings impact
+
+---
+Special Instructions
+
+- Quick Wins Priority:
+  - QW#1 (VP-Aware Perception): input_dim must be 18, verify features 13-18 populated
+  - QW#2 (Concept Tracking): Check concept_emergence/extinction events in graph
+  - QW#3 (Structured Explanations): CRA responses follow OBSERVATION→PATTERN→INTERPRETATION→
+    RECOMMENDATION format
+  - QW#4 (VP-Aware Planning): vp_aware_planning.enabled=true, action adjustments happening
+  - QW#5 (Health Index): health_monitor.enabled=true, score calculating, events emitting
+  - QW#6 (Illumination Engine): 6 backend methods available, 7 API endpoints responding,
+    CRA [[ILLUMINATE: ...]] markers processed, UI panel updating ⭐ NEW
+  - QW#7 (Research Notepad): CRA [[NOTEPAD: ...]] markers processed, entries persisting,
+    read/search/summary working, notepad panel visible ⭐ NEW
+
+- Neural Priority: Enabled but trainer unavailable = CRITICAL
+- Neural Expected Behavior:
+  - loss=None and organisms_tracked=0 is NORMAL until organisms collect 112 experiences
+  - Panel shows "N/A" for loss until first training
+  - training_steps=0 is normal early-game
+  - input_dim=18 (was 12) for VP-aware perception
+
+- ML Priority: Enabled but analyzer unavailable = HIGH, sklearn import failure = HIGH
+- Concept Tracking: Clusters need 3+ cycles to become concepts (persistence_threshold)
+
+- Health Monitor Priority: Enabled but not calculating = HIGH
+  - All 5 components must be calculating
+  - Events must emit on state changes
+  - Feature 18 in neural input must be populated
+
+- Meta-Cognitive Priority:
+  - Enabled but tuner unavailable = HIGH
+  - actions=0 is NORMAL before frame 50 (tuning_interval_frames)
+  - Panel shows "Monitoring..." or "Next action: frame X" is expected
+
+- VP Priority:
+  - Component decomposition disabled = MEDIUM
+  - Stabilization disabled = MEDIUM
+  - Diagnostics not logging = LOW
+  - VP components not reaching neural = HIGH (breaks QW#1)
+
+- Causation Priority: Events exist but no links = HIGH, verify toggles/time windows
+
+- Visualization Priority:
+  - Panels not displaying = HIGH
+  - Field name mismatch (organisms_trained vs organisms_tracked) = HIGH
+  - None value crashes = CRITICAL
+  - Stats box overflow = MEDIUM
+  - Bottom profile menu still showing = MEDIUM (should be removed)
+  - Health not showing = MEDIUM
+
+- Optimization Check: Verify even if neural appears functional (may be silently disabled)
+
+- Integration:
+  - Neural events in graph
+  - ML events in graph
+  - Concept events in graph (QW#2)
+  - Health events in graph (QW#5)
+  - Metrics in shared state
+  - Causation settings applied
+  - Filters working
+  - Visualization controllable
+  - 5 diagnostic panels visible
+  - Stats box showing full labels
+  - reality_sim_ref passed correctly
+  - VP components reaching neural (QW#1)
+  - VP-aware planning active (QW#4)
+  - Health reaching neural as feature 18 (QW#5)
+  - Illumination Engine API endpoints responding (QW#6) ⭐ NEW
+  - CRA [[ILLUMINATE: ...]] markers processed (QW#6) ⭐ NEW
+  - Illumination Engine UI panel updating (QW#6) ⭐ NEW
+  - CRA [[NOTEPAD: ...]] markers processed (QW#7) ⭐ NEW
+  - Research Notepad entries persisting (QW#7) ⭐ NEW
+  - Notepad panel visible in CRA chat (QW#7) ⭐ NEW
+
+- Vision:
+  - Receives proper context
+  - Identifies neural nodes/links
+  - Identifies ML nodes/links (hexagon/pentagon/triangle shapes)
+  - Identifies concept nodes (QW#2)
+  - Identifies health nodes (QW#5)
+  - Can see diagnostic panels
+  - Can read stats box
+
+- Color Verification:
+  - Neural = Cyan (#00FFFF)
+  - ML = Lime Green (#32CD32)
+  - ML Links = Orange (#FFA500)
+  - Panel 1 = Cyan, Panel 2 = Magenta, Panel 3 = Lime, Panel 4 = Yellow, Panel 5 = Orange
+  - Health Critical = Red, Warning = Yellow, Healthy = Green, Optimal = Blue
+
+---
+Key Updates for 2025 (Quick Wins Edition):
+
+- Quick Win #1: VP-Aware Perception - neural input_dim: 18, features 13-17 = VP components,
+  feature 18 = system health
+- Quick Win #2: Concept Tracking - ConceptTracker, semantic cluster naming, concept_emergence/
+  concept_extinction events
+- Quick Win #3: Structured Explanations - CRA follows OBSERVATION→PATTERN→INTERPRETATION→
+  RECOMMENDATION format
+- Quick Win #4: VP-Aware Planning - _apply_vp_aware_adjustments(), 5 rules, action probability
+  boosts based on VP state
+- Quick Win #5: Health Index - HealthMonitor with 5 weighted components, unified 0.0-1.0 score,
+  health_state_change events, neural integration as feature 18
+- Quick Win #6: Illumination Engine - Deep causal analysis with 6 methods (root_causes, impact,
+  explain, search_advanced, consequential, timeline), 7 API endpoints, [[ILLUMINATE: {...}]]
+  marker format, CRA autonomous UI control ⭐ NEW
+- Quick Win #7: Research Notepad - Scientific journal with 8 entry types (observe, hypothesize,
+  causation, analyze, conclude, question, todo, auto), [[NOTEPAD: {...}]] marker format,
+  persistent storage, read/search/summary ⭐ NEW
+
+- Section 6: Health Monitor System
+- Section 15: Illumination Engine System (NEW)
+- Section 16: Research Notepad System (NEW)
+- Neural field names: organisms_tracked (not organisms_trained)
+- Neural input_dim: 18 (was 12)
+- batch_size: 112 (was 128)
+- Expected behaviors: loss=None, actions=0 before thresholds
+- Stats box: full labels, no overflow, includes HEALTH
+- Bottom profile menu: removed
+- Panel positions and colors documented
+- Data flow: includes health_monitor, concept_tracker
+- Safe parameters: 30+ tunable by meta-cognitive system
+- Config paths updated for all Quick Wins
+
+---

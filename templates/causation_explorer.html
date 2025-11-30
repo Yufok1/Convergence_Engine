@@ -680,11 +680,28 @@
             border-left-color: #0f0;
         }
 
+        .tree-node.root-cause {
+            border-left-color: #f00;
+            background: rgba(255, 0, 0, 0.1);
+        }
+
+        .tree-node.high-severity {
+            border-left-color: #ff0;
+            background: rgba(255, 255, 0, 0.1);
+        }
+
+        .tree-node.selected-event {
+            border-left-color: #0ff;
+            background: rgba(0, 255, 255, 0.2);
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
         .tree-node-header {
             display: flex;
             align-items: center;
             gap: 8px;
             user-select: none;
+            flex-wrap: wrap;
         }
 
         .tree-toggle {
@@ -716,6 +733,74 @@
 
         .tree-event-type {
             color: #0f0;
+        }
+
+        .tree-causation-type {
+            color: #888;
+            font-size: 0.85em;
+        }
+
+        .tree-strength {
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 0.75em;
+            font-weight: bold;
+        }
+
+        .tree-strength.high {
+            background: #0f0;
+            color: #000;
+        }
+
+        .tree-strength.medium {
+            background: #ff0;
+            color: #000;
+        }
+
+        .tree-strength.low {
+            background: #f90;
+            color: #000;
+        }
+
+        .tree-explanation {
+            color: #aaa;
+            font-size: 0.85em;
+            font-style: italic;
+            margin-left: 28px;
+            margin-top: 4px;
+        }
+
+        .tree-metric-deltas {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-left: 28px;
+            margin-top: 6px;
+        }
+
+        .metric-delta {
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            font-family: 'Courier New', monospace;
+        }
+
+        .metric-delta.up {
+            background: rgba(0, 255, 0, 0.2);
+            color: #0f0;
+            border: 1px solid #0f0;
+        }
+
+        .metric-delta.down {
+            background: rgba(255, 0, 0, 0.2);
+            color: #f00;
+            border: 1px solid #f00;
+        }
+
+        .metric-delta.neutral {
+            background: rgba(128, 128, 128, 0.2);
+            color: #888;
+            border: 1px solid #888;
         }
 
         .tree-children {
@@ -772,12 +857,16 @@
 
         /* Collapsed state for CRA chat panel */
         #craChatPanel.collapsed {
-            max-height: 60px;
+            max-height: 50px !important;
+            min-height: 50px !important;
+            height: 50px !important;
+            overflow: hidden !important;
             padding-bottom: 0;
         }
 
         #craChatPanel.collapsed > *:not(h3) {
-            display: none;
+            display: none !important;
+            visibility: hidden !important;
         }
 
         #craChatPanel.collapsed h3 {
@@ -1954,82 +2043,338 @@
                 <div class="info-panel" id="craChatPanel" style="width: 100%; margin: 25px 0;">
                     <h3 style="display: flex; justify-content: space-between; align-items: center;">
                         🧠 Convergence Research Assistant (CRA)
-                        <div style="display: flex; gap: 5px;">
+                        <div style="display: flex; gap: 5px; align-items: center;">
                             <button id="craCollapseBtn" onclick="toggleCRAChatPanel()"
+                                style="background: #111; color: #0ff; border: 2px solid #0ff; padding: 4px 8px; font-size: 0.9em; cursor: pointer; border-radius: 3px; font-weight: bold;"
                                 title="Collapse/Expand Chat Panel">▼ COLLAPSE</button>
                             <button id="craFullscreenBtn"
-                                style="background: #111; color: #0ff; border: 2px solid #0ff; padding: 4px 8px; font-size: 0.9em; cursor: pointer; border-radius: 3px; font-weight: bold; z-index: 10; position: relative;"
+                                style="background: #111; color: #0ff; border: 2px solid #0ff; padding: 4px 8px; font-size: 0.9em; cursor: pointer; border-radius: 3px; font-weight: bold;"
                                 title="Toggle Fullscreen">⛶ FULLSCREEN</button>
                             <button id="craMinimizeBtn"
-                                style="background: #111; color: #888; border: 1px solid #666; padding: 2px 6px; font-size: 0.8em; cursor: pointer; border-radius: 3px; display: none;"
+                                style="background: #111; color: #888; border: 1px solid #666; padding: 4px 8px; font-size: 0.9em; cursor: pointer; border-radius: 3px; font-weight: bold; display: none;"
                                 title="Minimize">⎯ MINIMIZE</button>
                         </div>
                     </h3>
-                    <div style="margin-bottom: 10px;">
-                        <div style="margin-bottom: 8px;">
-                            <label style="color: #0ff; display: block; margin-bottom: 5px; font-size: 0.9em;">Research
-                                Model:</label>
-                            <select id="researchModelSelect"
-                                style="width: 100%; background: #111; color: #0f0; border: 1px solid #0ff; padding: 5px; font-family: 'Courier New', monospace; font-size: 0.9em;">
-                                <option value="">Loading models...</option>
-                            </select>
-                            <div style="font-size: 0.75em; color: #888; margin-top: 3px;">
-                                Text model for answering questions about the system
+                    
+                    <!-- Tab Navigation for Chat/Notepad -->
+                    <div id="craTabs" style="display: flex; gap: 2px; margin-bottom: 10px; border-bottom: 2px solid #0aa;">
+                        <button id="tabChat" onclick="switchCRATab('chat')" class="cra-tab active"
+                            style="flex: 1; padding: 8px 15px; background: #0aa; color: #000; border: 1px solid #0ff; border-bottom: none; cursor: pointer; font-family: 'Courier New', monospace; font-weight: bold; border-radius: 5px 5px 0 0; transition: all 0.2s;">
+                            💬 Chat
+                        </button>
+                        <button id="tabNotepad" onclick="switchCRATab('notepad')" class="cra-tab"
+                            style="flex: 1; padding: 8px 15px; background: #111; color: #f90; border: 1px solid #f90; border-bottom: none; cursor: pointer; font-family: 'Courier New', monospace; font-weight: bold; border-radius: 5px 5px 0 0; transition: all 0.2s;">
+                            📓 Research Notepad <span id="notepadCount" style="background: #f90; color: #000; padding: 1px 6px; border-radius: 10px; font-size: 0.8em; margin-left: 5px;">0</span>
+                        </button>
+                    </div>
+                    
+                    <!-- Chat Tab Content -->
+                    <div id="chatTabContent" style="display: block;">
+                        <div style="margin-bottom: 10px;">
+                            <div style="margin-bottom: 8px;">
+                                <label style="color: #0ff; display: block; margin-bottom: 5px; font-size: 0.9em;">Research
+                                    Model:</label>
+                                <select id="researchModelSelect"
+                                    style="width: 100%; background: #111; color: #0f0; border: 1px solid #0ff; padding: 5px; font-family: 'Courier New', monospace; font-size: 0.9em;">
+                                    <option value="">Loading models...</option>
+                                </select>
+                                <div style="font-size: 0.75em; color: #888; margin-top: 3px;">
+                                    Text model for answering questions about the system
+                                </div>
+                            </div>
+                            <div style="margin-bottom: 8px;">
+                                <label style="color: #0ff; display: block; margin-bottom: 5px; font-size: 0.9em;">Vision
+                                    Model:</label>
+                                <select id="visionModelSelect"
+                                    style="width: 100%; background: #111; color: #0f0; border: 1px solid #0ff; padding: 5px; font-family: 'Courier New', monospace; font-size: 0.9em;">
+                                    <option value="">Loading models...</option>
+                                </select>
+                                <div style="font-size: 0.75em; color: #888; margin-top: 3px;" id="visionModelHint">
+                                    Vision model (like llava) for analyzing graph screenshots
+                                </div>
                             </div>
                         </div>
-                        <div style="margin-bottom: 8px;">
-                            <label style="color: #0ff; display: block; margin-bottom: 5px; font-size: 0.9em;">Vision
-                                Model:</label>
-                            <select id="visionModelSelect"
-                                style="width: 100%; background: #111; color: #0f0; border: 1px solid #0ff; padding: 5px; font-family: 'Courier New', monospace; font-size: 0.9em;">
-                                <option value="">Loading models...</option>
-                            </select>
-                            <div style="font-size: 0.75em; color: #888; margin-top: 3px;" id="visionModelHint">
-                                Vision model (like llava) for analyzing graph screenshots
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; gap: 5px;">
+                            <label style="color: #0ff; font-size: 0.9em; font-weight: bold;">Chat Log</label>
+                            <button onclick="copyAllChat()"
+                                style="padding: 4px 10px; background: #0aa; border: 1px solid #0ff; color: #fff; cursor: pointer; font-size: 0.8em; font-family: 'Courier New', monospace; font-weight: bold;"
+                                title="Copy all chat messages to clipboard">📋 Copy All</button>
+                            <button onclick="exportAnalysis()"
+                                style="padding: 4px 10px; background: #0aa; border: 1px solid #0ff; color: #fff; cursor: pointer; font-size: 0.8em; font-family: 'Courier New', monospace; font-weight: bold;"
+                                title="Export analysis report to file">💾 Export</button>
+                            <span id="snapshotCountDisplay"
+                                style="padding: 4px 10px; background: #1a1a1a; border: 1px solid #0ff; color: #0ff; font-size: 0.8em; font-family: 'Courier New', monospace; font-weight: bold; border-radius: 3px; cursor: pointer;"
+                                title="Click to view all snapshots">📸 Snapshots: <span
+                                    id="snapshotCountValue">0</span></span>
+                        </div>
+                        <div id="chatMessages"
+                            style="height: 550px; overflow-y: auto; background: #000; border: 1px solid #0ff; padding: 10px; margin-bottom: 10px; font-size: 0.9em; will-change: scroll-position; contain: layout style paint;">
+                            <div style="color: #0aa; margin-bottom: 10px;">CRA: Hello! I'm your Convergence Research
+                                Assistant. I have access to all system logs, shared state, and the causation graph. Ask me
+                                anything about the Butterfly System!</div>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="chatInput" placeholder="Ask about the system..."
+                                style="flex: 1; padding: 8px; background: #111; color: #0f0; border: 1px solid #0ff; font-family: 'Courier New', monospace;">
+                            <button id="chatSendButton" style="padding: 8px 15px;">Send</button>
+                        </div>
+                        <div id="chatStatus" style="color: #0aa; font-size: 0.8em; margin-top: 5px;"></div>
+                    </div>
+                    
+                    <!-- Research Notepad Tab Content -->
+                    <div id="notepadTabContent" style="display: none;">
+                        <!-- Notepad Header with Controls -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+                            <div style="display: flex; gap: 5px; align-items: center;">
+                                <span style="color: #f90; font-weight: bold;">📓 Research Notes</span>
+                                <span id="notepadLastSaved" style="color: #666; font-size: 0.75em;"></span>
+                            </div>
+                            <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                                <button onclick="notepadAddEntry('observation')" 
+                                    style="padding: 4px 10px; background: #1a3000; border: 1px solid #0f0; color: #0f0; cursor: pointer; font-size: 0.8em; font-family: 'Courier New', monospace; border-radius: 3px;"
+                                    title="Add an observation">👁️ Observation</button>
+                                <button onclick="notepadAddEntry('hypothesis')" 
+                                    style="padding: 4px 10px; background: #301a00; border: 1px solid #f90; color: #f90; cursor: pointer; font-size: 0.8em; font-family: 'Courier New', monospace; border-radius: 3px;"
+                                    title="Add a hypothesis">💡 Hypothesis</button>
+                                <button onclick="notepadAddEntry('causation')" 
+                                    style="padding: 4px 10px; background: #300030; border: 1px solid #f0f; color: #f0f; cursor: pointer; font-size: 0.8em; font-family: 'Courier New', monospace; border-radius: 3px;"
+                                    title="Record cause-effect relationship">⚡ Causation</button>
+                                <button onclick="notepadAddEntry('analysis')" 
+                                    style="padding: 4px 10px; background: #001a30; border: 1px solid #0ff; color: #0ff; cursor: pointer; font-size: 0.8em; font-family: 'Courier New', monospace; border-radius: 3px;"
+                                    title="Add detailed analysis">🔬 Analysis</button>
+                                <button onclick="notepadAddEntry('conclusion')" 
+                                    style="padding: 4px 10px; background: #300000; border: 1px solid #f00; color: #f00; cursor: pointer; font-size: 0.8em; font-family: 'Courier New', monospace; border-radius: 3px;"
+                                    title="Record a conclusion">✓ Conclusion</button>
                             </div>
                         </div>
+                        
+                        <!-- Quick Note Input -->
+                        <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                            <select id="notepadQuickType" style="background: #111; color: #f90; border: 1px solid #f90; padding: 5px; font-family: 'Courier New', monospace; font-size: 0.85em; min-width: 120px;">
+                                <option value="note">📝 Note</option>
+                                <option value="observation">👁️ Observation</option>
+                                <option value="hypothesis">💡 Hypothesis</option>
+                                <option value="causation">⚡ Causation</option>
+                                <option value="analysis">🔬 Analysis</option>
+                                <option value="conclusion">✓ Conclusion</option>
+                                <option value="question">❓ Question</option>
+                                <option value="todo">📋 TODO</option>
+                            </select>
+                            <input type="text" id="notepadQuickInput" placeholder="Quick note... (Enter to add)"
+                                style="flex: 1; padding: 8px; background: #111; color: #f90; border: 1px solid #f90; font-family: 'Courier New', monospace;"
+                                onkeypress="if(event.key === 'Enter') notepadQuickAdd();">
+                            <button onclick="notepadQuickAdd()" 
+                                style="padding: 8px 15px; background: #f90; border: 1px solid #ff0; color: #000; cursor: pointer; font-family: 'Courier New', monospace; font-weight: bold;">
+                                + Add
+                            </button>
+                        </div>
+                        
+                        <!-- Filter/Search Controls -->
+                        <div style="display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; align-items: center;">
+                            <input type="text" id="notepadSearch" placeholder="🔍 Search notes..."
+                                style="flex: 1; min-width: 150px; padding: 5px 10px; background: #111; color: #fff; border: 1px solid #666; font-family: 'Courier New', monospace; font-size: 0.85em;"
+                                oninput="notepadFilter()">
+                            <select id="notepadFilterType" onchange="notepadFilter()"
+                                style="background: #111; color: #888; border: 1px solid #666; padding: 5px; font-family: 'Courier New', monospace; font-size: 0.85em;">
+                                <option value="">All Types</option>
+                                <option value="observation">👁️ Observations</option>
+                                <option value="hypothesis">💡 Hypotheses</option>
+                                <option value="causation">⚡ Causations</option>
+                                <option value="analysis">🔬 Analyses</option>
+                                <option value="conclusion">✓ Conclusions</option>
+                                <option value="question">❓ Questions</option>
+                                <option value="note">📝 Notes</option>
+                                <option value="todo">📋 TODOs</option>
+                                <option value="cra">🤖 CRA Auto</option>
+                            </select>
+                            <button onclick="notepadExport()" 
+                                style="padding: 5px 10px; background: #222; border: 1px solid #666; color: #0ff; cursor: pointer; font-size: 0.8em; font-family: 'Courier New', monospace;"
+                                title="Export notes to file">💾 Export</button>
+                            <button onclick="notepadClear()" 
+                                style="padding: 5px 10px; background: #220000; border: 1px solid #600; color: #f66; cursor: pointer; font-size: 0.8em; font-family: 'Courier New', monospace;"
+                                title="Clear all notes (with confirmation)">🗑️ Clear</button>
+                        </div>
+                        
+                        <!-- Notes Display Area -->
+                        <div id="notepadEntries" style="height: 475px; overflow-y: auto; background: linear-gradient(180deg, #0a0a05 0%, #050505 100%); border: 1px solid #f90; padding: 10px; font-size: 0.9em;">
+                            <div style="color: #666; text-align: center; padding: 40px;">
+                                <div style="font-size: 2em; margin-bottom: 10px;">📓</div>
+                                <div style="color: #f90;">Research Notepad</div>
+                                <div style="font-size: 0.85em; margin-top: 10px; color: #888;">
+                                    Document observations, hypotheses, causation chains, and conclusions.<br>
+                                    The CRA can also add notes automatically during analysis.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Notepad Stats Footer -->
+                        <div style="display: flex; justify-content: space-between; margin-top: 8px; padding: 5px 10px; background: #111; border: 1px solid #333; border-radius: 3px; font-size: 0.8em;">
+                            <span style="color: #888;">Total: <span id="notepadTotalCount" style="color: #f90;">0</span> entries</span>
+                            <span style="color: #888;">Session: <span id="notepadSessionId" style="color: #666;"></span></span>
+                            <span style="color: #888;">
+                                <span id="notepadHypothesesCount" style="color: #f90;">0</span> hypotheses |
+                                <span id="notepadConclusionsCount" style="color: #0f0;">0</span> conclusions
+                            </span>
+                        </div>
                     </div>
-                    <div
-                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; gap: 5px;">
-                        <label style="color: #0ff; font-size: 0.9em; font-weight: bold;">Chat Log</label>
-                        <button onclick="copyAllChat()"
-                            style="padding: 4px 10px; background: #0aa; border: 1px solid #0ff; color: #fff; cursor: pointer; font-size: 0.8em; font-family: 'Courier New', monospace; font-weight: bold;"
-                            title="Copy all chat messages to clipboard">📋 Copy All</button>
-                        <button onclick="exportAnalysis()"
-                            style="padding: 4px 10px; background: #0aa; border: 1px solid #0ff; color: #fff; cursor: pointer; font-size: 0.8em; font-family: 'Courier New', monospace; font-weight: bold;"
-                            title="Export analysis report to file">💾 Export</button>
-                        <span id="snapshotCountDisplay"
-                            style="padding: 4px 10px; background: #1a1a1a; border: 1px solid #0ff; color: #0ff; font-size: 0.8em; font-family: 'Courier New', monospace; font-weight: bold; border-radius: 3px; cursor: pointer;"
-                            title="Click to view all snapshots">📸 Snapshots: <span
-                                id="snapshotCountValue">0</span></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 🔬 ILLUMINATION ENGINE - Deep Causal Intelligence Panel -->
+        <div id="illuminationPanel" class="info-panel" style="border-color: #f0f; margin-top: 20px; background: linear-gradient(135deg, #0a0015 0%, #000510 100%); position: relative;">
+            <!-- CRA Control Indicator -->
+            <div id="craControlIndicator" style="display: none; position: absolute; top: 10px; right: 10px; background: linear-gradient(135deg, #300030, #100010); border: 1px solid #f0f; border-radius: 4px; padding: 4px 8px; font-size: 0.75em;">
+                <span style="color: #f0f; animation: blink 1s infinite;">⚡ CRA ACTIVE</span>
+            </div>
+            <style>
+                @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+            </style>
+            
+            <h3 style="color: #f0f; display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                <span style="font-size: 1.3em;">🔬</span> ILLUMINATION ENGINE
+                <span style="font-size: 0.7em; color: #888; font-weight: normal;">Deep Causal Intelligence</span>
+                <span id="illuminationStatus" style="font-size: 0.7em; color: #0f0; font-weight: normal; margin-left: auto;"></span>
+            </h3>
+            
+            <!-- Quick Actions Row -->
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
+                <button onclick="illuminationFindConsequential()" 
+                    style="padding: 8px 15px; background: linear-gradient(135deg, #300030 0%, #150015 100%); border: 1px solid #f0f; color: #f0f; cursor: pointer; font-family: 'Courier New', monospace; border-radius: 4px; transition: all 0.2s;"
+                    onmouseover="this.style.background='#500050'; this.style.boxShadow='0 0 10px #f0f';"
+                    onmouseout="this.style.background='linear-gradient(135deg, #300030 0%, #150015 100%)'; this.style.boxShadow='none';">
+                    💥 Find Big Bang Events
+                </button>
+                <button onclick="illuminationGetTimeline()" 
+                    style="padding: 8px 15px; background: linear-gradient(135deg, #003000 0%, #001500 100%); border: 1px solid #0f0; color: #0f0; cursor: pointer; font-family: 'Courier New', monospace; border-radius: 4px; transition: all 0.2s;"
+                    onmouseover="this.style.background='#005000'; this.style.boxShadow='0 0 10px #0f0';"
+                    onmouseout="this.style.background='linear-gradient(135deg, #003000 0%, #001500 100%)'; this.style.boxShadow='none';">
+                    📅 View Timeline
+                </button>
+                <button onclick="illuminationShowStats()" 
+                    style="padding: 8px 15px; background: linear-gradient(135deg, #003030 0%, #001515 100%); border: 1px solid #0ff; color: #0ff; cursor: pointer; font-family: 'Courier New', monospace; border-radius: 4px; transition: all 0.2s;"
+                    onmouseover="this.style.background='#005050'; this.style.boxShadow='0 0 10px #0ff';"
+                    onmouseout="this.style.background='linear-gradient(135deg, #003030 0%, #001515 100%)'; this.style.boxShadow='none';">
+                    📊 Causation Stats
+                </button>
+            </div>
+
+            <!-- Advanced Search Section -->
+            <div style="background: #0a0a0a; border: 1px solid #333; border-radius: 5px; padding: 12px; margin-bottom: 15px;">
+                <div style="color: #0ff; font-weight: bold; margin-bottom: 10px; font-size: 0.9em;">🔎 Advanced Event Search</div>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end;">
+                    <div style="flex: 1; min-width: 120px;">
+                        <label style="color: #888; font-size: 0.75em; display: block; margin-bottom: 3px;">Component</label>
+                        <select id="illuminationComponent" style="width: 100%; background: #111; color: #0f0; border: 1px solid #0aa; padding: 5px; font-family: 'Courier New', monospace; font-size: 0.85em;">
+                            <option value="">All Components</option>
+                            <option value="realitysim">realitysim</option>
+                            <option value="explorer">explorer</option>
+                            <option value="djinnkernel">djinnkernel</option>
+                            <option value="quantum">quantum</option>
+                            <option value="neural">neural</option>
+                            <option value="ml_analysis">ml_analysis</option>
+                        </select>
                     </div>
-                    <div id="chatMessages"
-                        style="height: 1100px; overflow-y: auto; background: #000; border: 1px solid #0ff; padding: 10px; margin-bottom: 10px; font-size: 0.9em; will-change: scroll-position; contain: layout style paint;">
-                        <div style="color: #0aa; margin-bottom: 10px;">CRA: Hello! I'm your Convergence Research
-                            Assistant. I have access to all system logs, shared state, and the causation graph. Ask me
-                            anything about the Butterfly System!</div>
+                    <div style="flex: 1; min-width: 120px;">
+                        <label style="color: #888; font-size: 0.75em; display: block; margin-bottom: 3px;">Event Type</label>
+                        <input type="text" id="illuminationEventType" placeholder="e.g., config_update" 
+                            style="width: 100%; background: #111; color: #0f0; border: 1px solid #0aa; padding: 5px; font-family: 'Courier New', monospace; font-size: 0.85em; box-sizing: border-box;">
                     </div>
-                    <div style="display: flex; gap: 10px;">
-                        <input type="text" id="chatInput" placeholder="Ask about the system..."
-                            style="flex: 1; padding: 8px; background: #111; color: #0f0; border: 1px solid #0ff; font-family: 'Courier New', monospace;">
-                        <button id="chatSendButton" style="padding: 8px 15px;">Send</button>
+                    <div style="flex: 0.7; min-width: 80px;">
+                        <label style="color: #888; font-size: 0.75em; display: block; margin-bottom: 3px;">Min Severity</label>
+                        <input type="number" id="illuminationSeverity" placeholder="0.0-1.0" min="0" max="1" step="0.1" value="0"
+                            style="width: 100%; background: #111; color: #f90; border: 1px solid #f90; padding: 5px; font-family: 'Courier New', monospace; font-size: 0.85em; box-sizing: border-box;">
                     </div>
-                    <div id="chatStatus" style="color: #0aa; font-size: 0.8em; margin-top: 5px;"></div>
+                    <div style="flex: 0.5; min-width: 60px;">
+                        <label style="color: #888; font-size: 0.75em; display: block; margin-bottom: 3px;">Limit</label>
+                        <input type="number" id="illuminationLimit" value="20" min="1" max="100"
+                            style="width: 100%; background: #111; color: #0f0; border: 1px solid #0aa; padding: 5px; font-family: 'Courier New', monospace; font-size: 0.85em; box-sizing: border-box;">
+                    </div>
+                    <button onclick="illuminationSearch()" 
+                        style="padding: 8px 20px; background: #0aa; border: 1px solid #0ff; color: #000; cursor: pointer; font-family: 'Courier New', monospace; font-weight: bold; border-radius: 4px;">
+                        🔍 Search
+                    </button>
+                </div>
+            </div>
+
+            <!-- Selected Event Analysis -->
+            <div style="background: #0a0a0a; border: 1px solid #333; border-radius: 5px; padding: 12px; margin-bottom: 15px;">
+                <div style="color: #ff0; font-weight: bold; margin-bottom: 10px; font-size: 0.9em;">📍 Analyze Specific Event</div>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end;">
+                    <div style="flex: 2; min-width: 200px;">
+                        <label style="color: #888; font-size: 0.75em; display: block; margin-bottom: 3px;">Event ID (or click an event in the graph)</label>
+                        <input type="text" id="illuminationEventId" placeholder="evt-xxx or click graph node" 
+                            style="width: 100%; background: #111; color: #ff0; border: 1px solid #ff0; padding: 5px; font-family: 'Courier New', monospace; font-size: 0.85em; box-sizing: border-box;">
+                    </div>
+                    <button onclick="illuminationRootCauses()" 
+                        style="padding: 8px 12px; background: linear-gradient(135deg, #300000 0%, #150000 100%); border: 1px solid #f00; color: #f00; cursor: pointer; font-family: 'Courier New', monospace; border-radius: 4px;"
+                        title="Find ALL root causes">
+                        🔍 Root Causes
+                    </button>
+                    <button onclick="illuminationImpact()" 
+                        style="padding: 8px 12px; background: linear-gradient(135deg, #003000 0%, #001500 100%); border: 1px solid #0f0; color: #0f0; cursor: pointer; font-family: 'Courier New', monospace; border-radius: 4px;"
+                        title="Analyze downstream impact">
+                        💥 Impact
+                    </button>
+                    <button onclick="illuminationExplain()" 
+                        style="padding: 8px 12px; background: linear-gradient(135deg, #303000 0%, #151500 100%); border: 1px solid #ff0; color: #ff0; cursor: pointer; font-family: 'Courier New', monospace; border-radius: 4px;"
+                        title="Get full explanation">
+                        📖 Explain
+                    </button>
+                </div>
+            </div>
+
+            <!-- Results Panel -->
+            <div id="illuminationResults" style="background: #050510; border: 1px solid #f0f; border-radius: 5px; padding: 15px; min-height: 150px; max-height: 400px; overflow-y: auto;">
+                <div style="color: #888; text-align: center; padding: 40px;">
+                    <div style="font-size: 2em; margin-bottom: 10px;">🔬</div>
+                    <div>Use the controls above to illuminate your causation data</div>
+                    <div style="font-size: 0.85em; color: #666; margin-top: 5px;">Find root causes, analyze impact, search events, discover patterns</div>
                 </div>
             </div>
         </div>
 
         <!-- Causation Tree Panels (replaces old flat lists) - Hidden by default, shown when event selected -->
         <div style="margin-top: 20px; display: none;" id="causationTreePanels">
-            <div class="info-panel" style="border-color: #0ff;">
-                <h3>🌳 Causation Tree (What Caused This?)</h3>
-                <div id="backwardsTrail" style="max-height: 400px; overflow-y: auto;">Click an event to see causation
-                    tree</div>
+            <!-- Event Explanation Panel -->
+            <div class="info-panel" style="border-color: #ff0; margin-bottom: 15px;">
+                <h3>📖 Event Explanation</h3>
+                <div id="eventExplanation" style="padding: 10px;">
+                    <div id="eventSummary" style="color: #fff; margin-bottom: 10px; font-size: 1.1em;"></div>
+                    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                        <div id="eventSeverity" style="padding: 5px 10px; border-radius: 5px;"></div>
+                        <div id="eventUpstream" style="color: #0aa;"></div>
+                        <div id="eventDownstream" style="color: #0f0;"></div>
+                    </div>
+                </div>
             </div>
 
-            <div class="info-panel" style="border-color: #0f0;">
-                <h3>🌳 Effects Tree (What Did This Cause?)</h3>
-                <div id="forwardsTrail" style="max-height: 400px; overflow-y: auto;">Click an event to see effects tree
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <div class="info-panel" style="border-color: #f00; flex: 1; min-width: 400px;">
+                    <h3>🔍 Root Causes (Why Did This Happen?)</h3>
+                    <div id="rootCausesPanel" style="max-height: 400px; overflow-y: auto; padding: 10px;">
+                        Click an event to analyze root causes
+                    </div>
+                </div>
+
+                <div class="info-panel" style="border-color: #0f0; flex: 1; min-width: 400px;">
+                    <h3>💥 Impact Analysis (What Did This Cause?)</h3>
+                    <div id="impactPanel" style="max-height: 400px; overflow-y: auto; padding: 10px;">
+                        Click an event to analyze downstream effects
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 15px;">
+                <div class="info-panel" style="border-color: #0ff; flex: 1; min-width: 400px;">
+                    <h3>🌳 Causation Tree (Immediate Causes)</h3>
+                    <div id="backwardsTrail" style="max-height: 400px; overflow-y: auto;">Click an event to see causation tree</div>
+                </div>
+
+                <div class="info-panel" style="border-color: #0f0; flex: 1; min-width: 400px;">
+                    <h3>🌳 Effects Tree (Immediate Effects)</h3>
+                    <div id="forwardsTrail" style="max-height: 400px; overflow-y: auto;">Click an event to see effects tree</div>
                 </div>
             </div>
         </div>
@@ -5584,26 +5929,44 @@
                     }
                 }
                 
-                // Attach click handler to the button - use a more direct approach
+                // Attach click handler to the button - prevent double-firing
+                let isToggling = false; // Flag to prevent rapid double-clicks
                 const handleMinimize = function(event) {
-                    event.stopPropagation(); // Prevent event bubbling to overlay
-                    event.preventDefault();
+                    // Prevent event bubbling to overlay
+                    if (event) {
+                        event.stopPropagation();
+                        event.preventDefault();
+                    }
+                    
+                    // Prevent rapid double-clicks (hair trigger fix)
+                    if (isToggling) {
+                        console.log('[Legend] Toggle already in progress, ignoring');
+                        return false;
+                    }
+                    
+                    isToggling = true;
                     const wasMinimized = legendGroup.node().__legendMinimized;
                     legendGroup.node().__legendMinimized = !wasMinimized;
                     toggleLegend();
                     console.log('[Legend] Toggled, minimized:', legendGroup.node().__legendMinimized);
+                    
+                    // Reset flag after a short delay to allow normal clicks
+                    setTimeout(() => {
+                        isToggling = false;
+                    }, 150);
+                    
                     return false;
                 };
                 
-                // Attach to both the group and the circle for maximum compatibility
-                minimizeBtn.on('click', handleMinimize);
-                minimizeBtn.on('mousedown', handleMinimize);
-                
-                // Also attach directly to the circle element
+                // Attach ONLY to the circle element with ONLY click event (not mousedown)
+                // This prevents the double-firing issue where mousedown + click both fire
                 const btnCircle = minimizeBtn.select('circle');
                 if (btnCircle.size() > 0) {
+                    // Only use click, not mousedown, to prevent double-firing
                     btnCircle.on('click', handleMinimize);
-                    btnCircle.on('mousedown', handleMinimize);
+                } else {
+                    // Fallback to group if circle not found
+                    minimizeBtn.on('click', handleMinimize);
                 }
                 
                 // Make sure button is on top (render last) and has highest z-index
@@ -7364,6 +7727,13 @@
 
             // Toggle CRA chat panel collapse/expand
             function toggleCRAChatPanel() {
+                // If in fullscreen mode, exit fullscreen instead of collapsing
+                if (craFullscreenMode) {
+                    console.log('[CRA] In fullscreen mode, exiting instead of collapsing');
+                    toggleCraFullscreen();
+                    return;
+                }
+                
                 const panel = document.getElementById('craChatPanel');
                 const collapseBtn = document.getElementById('craCollapseBtn');
                 
@@ -7468,8 +7838,169 @@
                     // Scroll to tree panels
                     treePanels.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 }
+                
+                // 🔬 Auto-populate Illumination Engine event ID field
+                const illuminationEventId = document.getElementById('illuminationEventId');
+                if (illuminationEventId) {
+                    illuminationEventId.value = node.id;
+                    illuminationEventId.style.background = '#220022';
+                    setTimeout(() => {
+                        illuminationEventId.style.background = '#111';
+                    }, 500);
+                }
+                
+                // Load all causation data for this event
+                loadEventExplanation(node.id);
+                loadRootCauses(node.id);
+                loadImpactAnalysis(node.id);
                 exploreBackwards(node.id);
                 exploreForwards(node.id);
+            }
+
+            // 📖 Load complete event explanation
+            function loadEventExplanation(eventId) {
+                d3.json(`/api/events/${eventId}/explain`).then(data => {
+                    if (data.error) {
+                        document.getElementById('eventSummary').textContent = data.error;
+                        return;
+                    }
+                    
+                    // Summary
+                    document.getElementById('eventSummary').innerHTML = data.summary || 'No summary available';
+                    
+                    // Severity
+                    const severityEl = document.getElementById('eventSeverity');
+                    const severity = data.severity || 0.5;
+                    if (severity >= 0.8) {
+                        severityEl.innerHTML = '🔴 HIGH SEVERITY';
+                        severityEl.style.background = 'rgba(255, 0, 0, 0.3)';
+                        severityEl.style.color = '#f00';
+                    } else if (severity >= 0.6) {
+                        severityEl.innerHTML = '🟡 MEDIUM SEVERITY';
+                        severityEl.style.background = 'rgba(255, 255, 0, 0.3)';
+                        severityEl.style.color = '#ff0';
+                    } else {
+                        severityEl.innerHTML = '🟢 LOW SEVERITY';
+                        severityEl.style.background = 'rgba(0, 255, 0, 0.3)';
+                        severityEl.style.color = '#0f0';
+                    }
+                    
+                    // Upstream/Downstream counts
+                    document.getElementById('eventUpstream').innerHTML = 
+                        `🔍 ${data.total_upstream_events || 0} upstream causes`;
+                    document.getElementById('eventDownstream').innerHTML = 
+                        `💥 ${data.total_downstream_events || 0} downstream effects`;
+                    
+                }).catch(err => {
+                    console.error('Error loading event explanation:', err);
+                    document.getElementById('eventSummary').textContent = `Error: ${err.message}`;
+                });
+            }
+
+            // 🔍 Load root cause analysis
+            function loadRootCauses(eventId) {
+                const panel = document.getElementById('rootCausesPanel');
+                panel.innerHTML = '<div style="color: #888;">Loading root causes...</div>';
+                
+                d3.json(`/api/events/${eventId}/root-causes?depth=15`).then(data => {
+                    if (data.error || !data.root_causes || data.root_causes.length === 0) {
+                        panel.innerHTML = '<div style="color: #888;">No root causes found (this is a root event)</div>';
+                        return;
+                    }
+                    
+                    let html = `<div style="color: #0aa; margin-bottom: 10px;">Found ${data.total_roots_found} root cause(s)</div>`;
+                    
+                    data.root_causes.forEach((root, idx) => {
+                        const event = root.root_event;
+                        const strengthClass = root.avg_strength >= 0.8 ? 'high' : (root.avg_strength >= 0.6 ? 'medium' : 'low');
+                        
+                        html += `
+                            <div class="tree-node root-cause" style="margin-bottom: 10px;" onclick="selectEventById('${event.event_id}')">
+                                <div class="tree-node-header">
+                                    <span style="color: #f00; font-weight: bold;">#${idx + 1}</span>
+                                    <span class="tree-component">${event.component?.toUpperCase() || 'UNKNOWN'}</span>
+                                    <span style="color: #0f0;">→</span>
+                                    <span class="tree-event-type">${event.event_type}</span>
+                                    <span class="tree-strength ${strengthClass}">${(root.avg_strength * 100).toFixed(0)}%</span>
+                                </div>
+                                <div class="tree-explanation">
+                                    📍 ${root.depth} step(s) back via ${root.num_paths} path(s)
+                                </div>
+                                <div class="tree-explanation" style="color: #ff0;">
+                                    ${root.narrative || 'No narrative available'}
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    panel.innerHTML = html;
+                }).catch(err => {
+                    console.error('Error loading root causes:', err);
+                    panel.innerHTML = `<div style="color: #f00;">Error: ${err.message}</div>`;
+                });
+            }
+
+            // 💥 Load impact analysis
+            function loadImpactAnalysis(eventId) {
+                const panel = document.getElementById('impactPanel');
+                panel.innerHTML = '<div style="color: #888;">Loading impact analysis...</div>';
+                
+                d3.json(`/api/events/${eventId}/impact?depth=15`).then(data => {
+                    if (data.error) {
+                        panel.innerHTML = `<div style="color: #f00;">Error: ${data.error}</div>`;
+                        return;
+                    }
+                    
+                    if (!data.leaf_effects || data.leaf_effects.length === 0) {
+                        panel.innerHTML = '<div style="color: #888;">No downstream effects found (leaf event)</div>';
+                        return;
+                    }
+                    
+                    let html = `
+                        <div style="color: #0f0; margin-bottom: 10px;">
+                            💥 Triggered ${data.total_affected_events} event(s) total
+                        </div>
+                        <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
+                    `;
+                    
+                    // Component breakdown
+                    for (const [component, count] of Object.entries(data.affected_by_component || {})) {
+                        html += `<span style="padding: 3px 8px; background: rgba(0, 255, 255, 0.2); border: 1px solid #0ff; border-radius: 4px; font-size: 0.8em;">${component}: ${count}</span>`;
+                    }
+                    html += '</div>';
+                    
+                    // Leaf effects (final outcomes)
+                    html += '<div style="color: #888; margin-bottom: 8px;">📍 Final Effects:</div>';
+                    data.leaf_effects.forEach((effect, idx) => {
+                        const event = effect.effect_event;
+                        const severityClass = effect.severity >= 0.8 ? 'high-severity' : '';
+                        
+                        html += `
+                            <div class="tree-node ${severityClass}" style="margin-bottom: 8px;" onclick="selectEventById('${event.event_id}')">
+                                <div class="tree-node-header">
+                                    <span class="tree-component">${event.component?.toUpperCase() || 'UNKNOWN'}</span>
+                                    <span style="color: #0f0;">→</span>
+                                    <span class="tree-event-type">${event.event_type}</span>
+                                    <span style="color: #888;">(${effect.propagation_depth} hops)</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    panel.innerHTML = html;
+                }).catch(err => {
+                    console.error('Error loading impact analysis:', err);
+                    panel.innerHTML = `<div style="color: #f00;">Error: ${err.message}</div>`;
+                });
+            }
+
+            // Helper to select event by ID
+            function selectEventById(eventId) {
+                d3.json(`/api/events/${eventId}`).then(data => {
+                    if (data && data.event) {
+                        selectNode({ id: eventId, component: data.event.component, event_type: data.event.event_type });
+                    }
+                });
             }
 
             // Removed updateEventInfo - replaced by tree graph visualization
@@ -7558,18 +8089,25 @@
                 addCausesAsChildren(rootNode);
             }
 
-            // Render tree node recursively
-            function renderTreeNode(node, container, onClickCallback) {
+            // Render tree node recursively with enhanced info
+            function renderTreeNode(node, container, onClickCallback, isRootCause = false) {
                 if (!node) return;
 
                 const nodeDiv = document.createElement('div');
                 nodeDiv.className = 'tree-node collapsed';
+                if (isRootCause) nodeDiv.classList.add('root-cause');
                 nodeDiv.dataset.eventId = node.event.event_id;
 
                 const component = node.event.component || 'unknown';
                 const hasChildren = node.children && node.children.length > 0;
-                const dataStr = JSON.stringify(node.event.data, null, 2);
-                const dataPreview = dataStr.length > 200 ? dataStr.substring(0, 200) + '...' : dataStr;
+                
+                // Extract key metrics for display
+                const keyMetrics = extractKeyMetrics(node.event.data);
+                const metricsHtml = keyMetrics.length > 0 
+                    ? `<div class="tree-metric-deltas">${keyMetrics.map(m => 
+                        `<span class="metric-delta ${m.class}">${m.name}: ${m.value}</span>`
+                      ).join('')}</div>` 
+                    : '';
 
                 nodeDiv.innerHTML = `
                 <div class="tree-node-header">
@@ -7579,10 +8117,8 @@
                     <span style="color: #0f0;">→</span>
                     <span class="tree-event-type">${node.event.event_type}</span>
                     <span class="tree-causation-type">(${node.causation_type})</span>
-                        </div>
-                <div class="tree-node-data">
-                    <pre>${dataPreview}</pre>
-                        </div>
+                </div>
+                ${metricsHtml}
                 ${hasChildren ? '<div class="tree-children"></div>' : ''}
             `;
 
@@ -7604,15 +8140,59 @@
                     }
                 });
 
-                // Render children
+                // Render children - mark deepest as root cause
                 if (hasChildren) {
                     const childrenContainer = nodeDiv.querySelector('.tree-children');
+                    const maxDepth = Math.max(...node.children.map(c => c.depth));
                     node.children.forEach(child => {
-                        renderTreeNode(child, childrenContainer, onClickCallback);
+                        const isChildRoot = !hasChildren && child.depth === maxDepth;
+                        renderTreeNode(child, childrenContainer, onClickCallback, isChildRoot);
                     });
                 }
 
                 container.appendChild(nodeDiv);
+            }
+
+            // Extract key metrics from event data for display
+            function extractKeyMetrics(data) {
+                if (!data) return [];
+                
+                const keyMetricNames = [
+                    'modularity', 'organism_count', 'connection_count', 
+                    'violation_pressure', 'vp_classification', 'phase',
+                    'is_collapsed', 'clustering_coefficient', 'health_score',
+                    'n_clusters', 'anomaly_count', 'action'
+                ];
+                
+                const metrics = [];
+                for (const [key, value] of Object.entries(data)) {
+                    if (keyMetricNames.includes(key) && value !== undefined && value !== null) {
+                        let displayValue = value;
+                        let metricClass = 'neutral';
+                        
+                        // Format numbers
+                        if (typeof value === 'number') {
+                            displayValue = value % 1 === 0 ? value : value.toFixed(3);
+                            
+                            // Determine color class based on metric
+                            if (key === 'modularity' && value < 0.3) metricClass = 'down';
+                            else if (key === 'violation_pressure' && value > 0.5) metricClass = 'down';
+                            else if (key === 'health_score' && value > 0.7) metricClass = 'up';
+                            else if (key === 'organism_count' && value > 100) metricClass = 'up';
+                        } else if (typeof value === 'boolean') {
+                            displayValue = value ? '✓' : '✗';
+                            metricClass = value ? 'down' : 'up';  // is_collapsed=true is bad
+                        }
+                        
+                        metrics.push({
+                            name: key.replace(/_/g, ' '),
+                            value: displayValue,
+                            class: metricClass
+                        });
+                    }
+                }
+                
+                return metrics.slice(0, 5);  // Limit to 5 key metrics
             }
 
             function exploreBackwards(eventId) {
@@ -9077,10 +9657,2104 @@
                     }
                 });
 
+                // Process CAUSAL_ANALYSIS commands from CRA (Illumination Engine)
+                const causalPayloads = extractJsonPayloadsFromMarker(responseText, '\\[\\[(CAUSAL[_\\-]?ANALYSIS|CAUSALANALYSIS)\\s*:?');
+                causalPayloads.forEach(payload => {
+                    try {
+                        const command = JSON.parse(payload.cleaned);
+                        console.log('[CRA] CAUSAL_ANALYSIS command received:', command);
+                        processCausalAnalysisCommand(command);
+                    } catch (err) {
+                        console.error('[CRA] Failed to parse CAUSAL_ANALYSIS payload:', err, payload.raw);
+                        addChatMessage('system', `❌ Error parsing CAUSAL_ANALYSIS JSON: ${err.message}`, true);
+                    }
+                });
+
+                // Process ILLUMINATE commands from CRA (Illumination Engine - alternate marker)
+                // Check if response contains any ILLUMINATE markers at all
+                if (responseText.includes('[[ILLUMINATE:') || responseText.includes('[[ILLUMINATE :')) {
+                    console.log('[CRA] 🔬 Found ILLUMINATE marker in response, attempting to extract...');
+                }
+                const illuminatePayloads = extractJsonPayloadsFromMarker(responseText, '\\[\\[(ILLUMINATE|ILLUMINATION)\\s*:?');
+                console.log(`[CRA] 🔬 Extracted ${illuminatePayloads.length} ILLUMINATE payloads`);
+                if (illuminatePayloads.length > 0) {
+                    console.log('[CRA] 🔬 ILLUMINATE payloads:', illuminatePayloads);
+                } else if (responseText.includes('ILLUMINATE')) {
+                    // Debug: marker found but not extracted
+                    console.warn('[CRA] 🔬 ILLUMINATE keyword found in response but no payloads extracted. Attempting direct extraction...');
+                    // Try a simpler direct extraction
+                    const simpleMatch = responseText.match(/\[\[ILLUMINATE:\s*(\{[^}]+\})\s*\]\]/gi);
+                    if (simpleMatch) {
+                        console.log('[CRA] 🔬 Direct extraction found:', simpleMatch.length, 'matches');
+                        simpleMatch.forEach(match => {
+                            try {
+                                const jsonStr = match.replace(/\[\[ILLUMINATE:\s*/i, '').replace(/\s*\]\]$/, '');
+                                console.log('[CRA] 🔬 Attempting to parse:', jsonStr);
+                                const cmd = JSON.parse(jsonStr);
+                                console.log('[CRA] 🔬 Successfully parsed, executing:', cmd);
+                                processIlluminateCommand(cmd);
+                            } catch (e) {
+                                console.error('[CRA] 🔬 Direct extraction parse failed:', e, match);
+                            }
+                        });
+                    }
+                }
+                illuminatePayloads.forEach(payload => {
+                    try {
+                        const command = JSON.parse(payload.cleaned);
+                        console.log('[CRA] ILLUMINATE command received:', command);
+                        processIlluminateCommand(command);
+                    } catch (err) {
+                        console.error('[CRA] Failed to parse ILLUMINATE payload:', err, payload.raw);
+                        addChatMessage('system', `❌ Error parsing ILLUMINATE JSON: ${err.message}`, true);
+                    }
+                });
+
+                // ═══════════════════════════════════════════════════════════════════════════
+                // 📓 Process NOTEPAD commands from CRA (Research Notepad)
+                // ═══════════════════════════════════════════════════════════════════════════
+                const notepadPayloads = extractJsonPayloadsFromMarker(responseText, '\\[\\[NOTEPAD\\s*:?');
+                console.log(`[CRA] 📓 Extracted ${notepadPayloads.length} NOTEPAD payloads`);
+                
+                // Also try direct extraction for NOTEPAD
+                if (notepadPayloads.length === 0 && responseText.includes('NOTEPAD')) {
+                    const notepadMatch = responseText.match(/\[\[NOTEPAD:\s*(\{[^}]+\})\s*\]\]/gi);
+                    if (notepadMatch) {
+                        notepadMatch.forEach(match => {
+                            try {
+                                const jsonStr = match.replace(/\[\[NOTEPAD:\s*/i, '').replace(/\s*\]\]$/, '');
+                                const cmd = JSON.parse(jsonStr);
+                                processNotepadCommand(cmd);
+                            } catch (e) {
+                                console.error('[CRA] 📓 NOTEPAD parse failed:', e, match);
+                            }
+                        });
+                    }
+                }
+                
+                notepadPayloads.forEach(payload => {
+                    try {
+                        const command = JSON.parse(payload.cleaned);
+                        console.log('[CRA] 📓 NOTEPAD command received:', command);
+                        processNotepadCommand(command);
+                    } catch (err) {
+                        console.error('[CRA] Failed to parse NOTEPAD payload:', err, payload.raw);
+                    }
+                });
+
                 if ((responseText.toLowerCase().includes('configupdate') || responseText.toLowerCase().includes('config rollback')) &&
                     updatePayloads.length === 0 && rollbackPayloads.length === 0) {
                     console.warn('[CRA] Config command mentioned but no valid marker found');
                 }
+            }
+            
+            // Process NOTEPAD commands from CRA
+            function processNotepadCommand(command) {
+                const action = command.action?.toLowerCase();
+                const content = command.content;
+                const events = command.events || [];
+                
+                console.log('[CRA→NOTEPAD] Processing:', action, command);
+                
+                switch (action) {
+                    case 'observe':
+                    case 'observation':
+                        window.craNotepad.observe(content, events);
+                        flashNotepadTab();
+                        addChatMessage('system', `📓 <span style="color:#0f0;">Observation recorded</span>`, true);
+                        break;
+                        
+                    case 'hypothesize':
+                    case 'hypothesis':
+                        window.craNotepad.hypothesize(content, command.confidence || 'medium', events);
+                        flashNotepadTab();
+                        addChatMessage('system', `📓 <span style="color:#f90;">Hypothesis recorded</span>`, true);
+                        break;
+                        
+                    case 'causation':
+                    case 'cause':
+                        window.craNotepad.recordCausation(content, command.cause, command.effect);
+                        flashNotepadTab();
+                        addChatMessage('system', `📓 <span style="color:#f0f;">Causation documented</span>`, true);
+                        break;
+                        
+                    case 'analyze':
+                    case 'analysis':
+                        window.craNotepad.analyze(content, events);
+                        flashNotepadTab();
+                        addChatMessage('system', `📓 <span style="color:#0ff;">Analysis recorded</span>`, true);
+                        break;
+                        
+                    case 'conclude':
+                    case 'conclusion':
+                        window.craNotepad.conclude(content, events);
+                        flashNotepadTab();
+                        addChatMessage('system', `📓 <span style="color:#f00;">Conclusion recorded</span>`, true);
+                        break;
+                        
+                    case 'question':
+                        window.craNotepad.question(content, events);
+                        flashNotepadTab();
+                        addChatMessage('system', `📓 <span style="color:#ff0;">Question recorded</span>`, true);
+                        break;
+                        
+                    case 'todo':
+                        window.craNotepad.todo(content, events);
+                        flashNotepadTab();
+                        addChatMessage('system', `📓 <span style="color:#0af;">TODO added</span>`, true);
+                        break;
+                        
+                    case 'auto':
+                    case 'note':
+                        window.craNotepad.autoNote(content, { linkedEvents: events });
+                        flashNotepadTab();
+                        break;
+                        
+                    case 'read':
+                        // Return notes to CRA
+                        let notes;
+                        if (command.type) {
+                            notes = window.craNotepad.getNotesByType(command.type);
+                        } else {
+                            notes = window.craNotepad.getAllNotes();
+                        }
+                        displayNotepadReadResults(notes, command.type);
+                        break;
+                        
+                    case 'search':
+                        const searchResults = window.craNotepad.searchNotes(command.query || '');
+                        displayNotepadReadResults(searchResults, `search: "${command.query}"`);
+                        break;
+                        
+                    case 'summary':
+                        const summary = window.craNotepad.getSummary();
+                        displayNotepadSummary(summary);
+                        break;
+                        
+                    default:
+                        console.warn('[CRA→NOTEPAD] Unknown action:', action);
+                }
+            }
+            
+            // Display notepad read results in chat
+            function displayNotepadReadResults(notes, filter) {
+                const count = notes.length;
+                const preview = notes.slice(0, 5).map(n => {
+                    const typeConfig = noteTypes[n.type] || noteTypes.note;
+                    const shortContent = n.content.length > 80 ? n.content.substr(0, 80) + '...' : n.content;
+                    return `<div style="margin: 3px 0; padding: 3px 6px; background: ${typeConfig.bgColor}; border-left: 2px solid ${typeConfig.color};">
+                        <span style="color: ${typeConfig.color};">${typeConfig.icon}</span> ${shortContent}
+                    </div>`;
+                }).join('');
+                
+                const resultHtml = `
+                    <div style="background: #1a1000; padding: 10px; border: 1px solid #f90; border-radius: 4px; margin: 5px 0;">
+                        <div style="color: #f90; font-weight: bold; margin-bottom: 8px;">📓 Notepad${filter ? ` (${filter})` : ''}: ${count} entries</div>
+                        ${preview}
+                        ${count > 5 ? `<div style="color: #888; font-size: 0.85em; margin-top: 5px;">...and ${count - 5} more (switch to Notepad tab to see all)</div>` : ''}
+                    </div>
+                `;
+                addChatMessage('system', resultHtml, true);
+            }
+            
+            // Display notepad summary in chat
+            function displayNotepadSummary(summary) {
+                const resultHtml = `
+                    <div style="background: #1a1000; padding: 10px; border: 1px solid #f90; border-radius: 4px; margin: 5px 0;">
+                        <div style="color: #f90; font-weight: bold; margin-bottom: 8px;">📓 Research Notepad Summary</div>
+                        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+                            <span style="background: #222; padding: 3px 8px; border-radius: 3px;">Total: <span style="color: #f90;">${summary.total}</span></span>
+                            <span style="background: #0a1a0a; padding: 3px 8px; border-radius: 3px; color: #0f0;">👁️ ${summary.byType.observations}</span>
+                            <span style="background: #1a1000; padding: 3px 8px; border-radius: 3px; color: #f90;">💡 ${summary.byType.hypotheses}</span>
+                            <span style="background: #1a0a1a; padding: 3px 8px; border-radius: 3px; color: #f0f;">⚡ ${summary.byType.causations}</span>
+                            <span style="background: #0a1a1a; padding: 3px 8px; border-radius: 3px; color: #0ff;">🔬 ${summary.byType.analyses}</span>
+                            <span style="background: #1a0a0a; padding: 3px 8px; border-radius: 3px; color: #f00;">✓ ${summary.byType.conclusions}</span>
+                        </div>
+                        ${summary.pendingTodos > 0 ? `<div style="color: #0af;">📋 ${summary.pendingTodos} pending TODOs</div>` : ''}
+                        ${summary.lastEntry ? `<div style="color: #666; font-size: 0.85em; margin-top: 5px;">Last entry: ${new Date(summary.lastEntry.timestamp).toLocaleString()}</div>` : ''}
+                    </div>
+                `;
+                addChatMessage('system', resultHtml, true);
+            }
+
+            // Test function for debugging illumination marker processing
+            window.testIlluminationMarker = function(testJson) {
+                const testResponse = testJson || '[[ILLUMINATE: {"action": "consequential", "limit": 5}]]';
+                console.log('[TEST] Testing illumination marker processing with:', testResponse);
+                processConfigDirectives(testResponse);
+            };
+            
+            // Test function for debugging notepad marker processing
+            window.testNotepadMarker = function(testJson) {
+                const testResponse = testJson || '[[NOTEPAD: {"action": "observe", "content": "Test observation from CRA"}]]';
+                console.log('[TEST] Testing notepad marker processing with:', testResponse);
+                processConfigDirectives(testResponse);
+            };
+
+            // ═══════════════════════════════════════════════════════════════════════════
+            // 🔬 CRA AUTONOMOUS ILLUMINATION ENGINE CONTROL SYSTEM
+            // ═══════════════════════════════════════════════════════════════════════════
+            // The CRA has FULL AUTONOMY over the Illumination Engine UI - it can:
+            // - Set search parameters programmatically
+            // - Trigger any illumination action
+            // - Chain multiple analyses together
+            // - React to results and perform follow-up investigations
+            // ═══════════════════════════════════════════════════════════════════════════
+
+            // CRA Control State - tracks what the CRA is doing with Illumination Engine
+            const craIlluminationState = {
+                isAutonomousMode: false,
+                currentInvestigation: null,
+                investigationQueue: [],
+                results: {},
+                analysisChain: [],
+                lastAction: null,
+                lastEventId: null
+            };
+
+            // Expose CRA control interface globally
+            window.craIllumination = {
+                // ═══════════════════════════════════════════════════════════════════
+                // PARAMETER CONTROL - CRA can set any UI parameter
+                // ═══════════════════════════════════════════════════════════════════
+                
+                setComponent: function(component) {
+                    const el = document.getElementById('illuminationComponent');
+                    if (el) {
+                        el.value = component || '';
+                        flashElement(el, '#f0f');
+                        console.log('[CRA→ILLUMINATION] Set component:', component);
+                    }
+                    return this;
+                },
+                
+                setEventType: function(eventType) {
+                    const el = document.getElementById('illuminationEventType');
+                    if (el) {
+                        el.value = eventType || '';
+                        flashElement(el, '#f0f');
+                        console.log('[CRA→ILLUMINATION] Set event type:', eventType);
+                    }
+                    return this;
+                },
+                
+                setSeverity: function(severity) {
+                    const el = document.getElementById('illuminationSeverity');
+                    if (el) {
+                        el.value = severity || 0;
+                        flashElement(el, '#f90');
+                        console.log('[CRA→ILLUMINATION] Set severity threshold:', severity);
+                    }
+                    return this;
+                },
+                
+                setLimit: function(limit) {
+                    const el = document.getElementById('illuminationLimit');
+                    if (el) {
+                        el.value = limit || 20;
+                        flashElement(el, '#0ff');
+                        console.log('[CRA→ILLUMINATION] Set limit:', limit);
+                    }
+                    return this;
+                },
+                
+                setEventId: function(eventId) {
+                    const el = document.getElementById('illuminationEventId');
+                    if (el) {
+                        el.value = eventId || '';
+                        flashElement(el, '#ff0');
+                        craIlluminationState.lastEventId = eventId;
+                        console.log('[CRA→ILLUMINATION] Set event ID:', eventId);
+                    }
+                    return this;
+                },
+                
+                // ═══════════════════════════════════════════════════════════════════
+                // ACTION TRIGGERS - CRA can execute any illumination action
+                // ═══════════════════════════════════════════════════════════════════
+                
+                findConsequential: async function(limit = 10) {
+                    console.log('[CRA→ILLUMINATION] 🔬 Finding consequential events, limit:', limit);
+                    this.setLimit(limit);
+                    craIlluminationState.lastAction = 'consequential';
+                    highlightIlluminationPanel();
+                    await illuminationFindConsequential();
+                    return craIlluminationState.results.consequential;
+                },
+                
+                getTimeline: async function(options = {}) {
+                    console.log('[CRA→ILLUMINATION] 🔬 Getting timeline:', options);
+                    craIlluminationState.lastAction = 'timeline';
+                    highlightIlluminationPanel();
+                    await illuminationGetTimeline();
+                    return craIlluminationState.results.timeline;
+                },
+                
+                getStats: async function() {
+                    console.log('[CRA→ILLUMINATION] 🔬 Getting causation stats');
+                    craIlluminationState.lastAction = 'stats';
+                    highlightIlluminationPanel();
+                    await illuminationShowStats();
+                    return craIlluminationState.results.stats;
+                },
+                
+                search: async function(options = {}) {
+                    console.log('[CRA→ILLUMINATION] 🔬 Executing search:', options);
+                    if (options.component) this.setComponent(options.component);
+                    if (options.event_type) this.setEventType(options.event_type);
+                    if (options.min_severity !== undefined) this.setSeverity(options.min_severity);
+                    if (options.limit) this.setLimit(options.limit);
+                    
+                    craIlluminationState.lastAction = 'search';
+                    highlightIlluminationPanel();
+                    await illuminationSearch();
+                    return craIlluminationState.results.search;
+                },
+                
+                analyzeRootCauses: async function(eventId) {
+                    console.log('[CRA→ILLUMINATION] 🔬 Analyzing root causes for:', eventId);
+                    this.setEventId(eventId);
+                    craIlluminationState.lastAction = 'root_causes';
+                    highlightIlluminationPanel();
+                    await illuminationRootCauses();
+                    return craIlluminationState.results.root_causes;
+                },
+                
+                analyzeImpact: async function(eventId) {
+                    console.log('[CRA→ILLUMINATION] 🔬 Analyzing impact for:', eventId);
+                    this.setEventId(eventId);
+                    craIlluminationState.lastAction = 'impact';
+                    highlightIlluminationPanel();
+                    await illuminationImpact();
+                    return craIlluminationState.results.impact;
+                },
+                
+                explainEvent: async function(eventId) {
+                    console.log('[CRA→ILLUMINATION] 🔬 Explaining event:', eventId);
+                    this.setEventId(eventId);
+                    craIlluminationState.lastAction = 'explain';
+                    highlightIlluminationPanel();
+                    await illuminationExplain();
+                    return craIlluminationState.results.explain;
+                },
+                
+                // ═══════════════════════════════════════════════════════════════════
+                // INVESTIGATION CHAINS - Complex multi-step autonomous analysis
+                // ═══════════════════════════════════════════════════════════════════
+                
+                startInvestigation: function(description) {
+                    craIlluminationState.isAutonomousMode = true;
+                    craIlluminationState.currentInvestigation = description;
+                    craIlluminationState.analysisChain = [];
+                    showCRAAutonomousIndicator(description);
+                    console.log('[CRA→ILLUMINATION] 🔬 Starting investigation:', description);
+                    return this;
+                },
+                
+                endInvestigation: function() {
+                    const results = {
+                        investigation: craIlluminationState.currentInvestigation,
+                        chain: [...craIlluminationState.analysisChain],
+                        results: {...craIlluminationState.results}
+                    };
+                    craIlluminationState.isAutonomousMode = false;
+                    craIlluminationState.currentInvestigation = null;
+                    hideCRAAutonomousIndicator();
+                    console.log('[CRA→ILLUMINATION] 🔬 Investigation complete:', results);
+                    return results;
+                },
+                
+                // Deep causal chain investigation
+                traceFullCausation: async function(eventId, maxDepth = 15) {
+                    this.startInvestigation(`Deep causation trace for ${eventId}`);
+                    
+                    // Step 1: Get event explanation
+                    await this.explainEvent(eventId);
+                    craIlluminationState.analysisChain.push({ step: 1, action: 'explain', eventId });
+                    
+                    // Step 2: Find root causes
+                    await this.analyzeRootCauses(eventId);
+                    craIlluminationState.analysisChain.push({ step: 2, action: 'root_causes', eventId });
+                    
+                    // Step 3: Analyze downstream impact
+                    await this.analyzeImpact(eventId);
+                    craIlluminationState.analysisChain.push({ step: 3, action: 'impact', eventId });
+                    
+                    return this.endInvestigation();
+                },
+                
+                // Find and investigate the biggest event
+                investigateBiggestEvent: async function() {
+                    this.startInvestigation('Investigating most consequential event');
+                    
+                    // Step 1: Find most consequential events
+                    const consequential = await this.findConsequential(5);
+                    craIlluminationState.analysisChain.push({ step: 1, action: 'consequential' });
+                    
+                    if (consequential && consequential.events && consequential.events.length > 0) {
+                        const topEvent = consequential.events[0];
+                        const eventId = topEvent.event?.event_id || topEvent.event_id;
+                        
+                        // Step 2: Deep trace on the biggest event
+                        await this.explainEvent(eventId);
+                        craIlluminationState.analysisChain.push({ step: 2, action: 'explain', eventId });
+                        
+                        await this.analyzeRootCauses(eventId);
+                        craIlluminationState.analysisChain.push({ step: 3, action: 'root_causes', eventId });
+                    }
+                    
+                    return this.endInvestigation();
+                },
+                
+                // Investigate a component's behavior
+                investigateComponent: async function(component, severityThreshold = 0.5) {
+                    this.startInvestigation(`Investigating component: ${component}`);
+                    
+                    // Step 1: Search for high severity events in this component
+                    await this.search({
+                        component: component,
+                        min_severity: severityThreshold,
+                        limit: 10
+                    });
+                    craIlluminationState.analysisChain.push({ step: 1, action: 'search', component });
+                    
+                    // Step 2: Get overall stats
+                    await this.getStats();
+                    craIlluminationState.analysisChain.push({ step: 2, action: 'stats' });
+                    
+                    return this.endInvestigation();
+                },
+                
+                // Get current state for CRA to analyze
+                getState: function() {
+                    return {
+                        ...craIlluminationState,
+                        uiValues: {
+                            component: document.getElementById('illuminationComponent')?.value,
+                            eventType: document.getElementById('illuminationEventType')?.value,
+                            severity: document.getElementById('illuminationSeverity')?.value,
+                            limit: document.getElementById('illuminationLimit')?.value,
+                            eventId: document.getElementById('illuminationEventId')?.value
+                        }
+                    };
+                }
+            };
+
+            // Visual feedback - flash an element when CRA changes it
+            function flashElement(element, color) {
+                const originalBorder = element.style.border;
+                const originalBackground = element.style.background;
+                element.style.border = `2px solid ${color}`;
+                element.style.background = color + '33';
+                element.style.transition = 'all 0.3s';
+                
+                setTimeout(() => {
+                    element.style.border = originalBorder;
+                    element.style.background = originalBackground;
+                }, 500);
+            }
+
+            // Highlight the illumination panel when CRA is using it
+            function highlightIlluminationPanel() {
+                const panel = document.getElementById('illuminationPanel') ||
+                              document.querySelector('.info-panel[style*="border-color: #f0f"]') ||
+                              document.querySelector('.info-panel[style*="border-color: rgb(255, 0, 255)"]');
+                const indicator = document.getElementById('craControlIndicator');
+                const status = document.getElementById('illuminationStatus');
+                
+                if (panel) {
+                    panel.style.boxShadow = '0 0 20px #f0f, inset 0 0 10px rgba(255,0,255,0.1)';
+                    panel.style.transition = 'box-shadow 0.3s';
+                    
+                    setTimeout(() => {
+                        panel.style.boxShadow = 'none';
+                    }, 2000);
+                }
+                
+                // Show CRA control indicator
+                if (indicator) {
+                    indicator.style.display = 'block';
+                    setTimeout(() => {
+                        indicator.style.display = 'none';
+                    }, 3000);
+                }
+                
+                // Update status
+                if (status) {
+                    status.textContent = `CRA: ${craIlluminationState.lastAction || 'active'}`;
+                    status.style.color = '#f0f';
+                    setTimeout(() => {
+                        status.textContent = '';
+                    }, 5000);
+                }
+            }
+
+            // Show CRA autonomous mode indicator
+            function showCRAAutonomousIndicator(description) {
+                let indicator = document.getElementById('craAutonomousIndicator');
+                if (!indicator) {
+                    indicator = document.createElement('div');
+                    indicator.id = 'craAutonomousIndicator';
+                    indicator.style.cssText = `
+                        position: fixed;
+                        top: 10px;
+                        right: 10px;
+                        background: linear-gradient(135deg, #300030 0%, #100010 100%);
+                        border: 2px solid #f0f;
+                        border-radius: 8px;
+                        padding: 10px 15px;
+                        z-index: 9999;
+                        font-family: 'Courier New', monospace;
+                        box-shadow: 0 0 20px #f0f;
+                        animation: autonomousPulse 1.5s infinite;
+                    `;
+                    document.body.appendChild(indicator);
+                    
+                    // Add animation style
+                    const style = document.createElement('style');
+                    style.textContent = `
+                        @keyframes autonomousPulse {
+                            0%, 100% { box-shadow: 0 0 20px #f0f; }
+                            50% { box-shadow: 0 0 40px #f0f, 0 0 60px #f0f; }
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+                
+                indicator.innerHTML = `
+                    <div style="color: #f0f; font-weight: bold; margin-bottom: 5px;">
+                        🔬 CRA AUTONOMOUS MODE
+                    </div>
+                    <div style="color: #fff; font-size: 0.85em;">
+                        ${description || 'Investigating...'}
+                    </div>
+                `;
+                indicator.style.display = 'block';
+            }
+
+            function hideCRAAutonomousIndicator() {
+                const indicator = document.getElementById('craAutonomousIndicator');
+                if (indicator) {
+                    indicator.style.display = 'none';
+                }
+            }
+
+            // Store results for CRA access
+            function storeIlluminationResult(type, data) {
+                craIlluminationState.results[type] = data;
+                console.log(`[ILLUMINATION] Stored ${type} result for CRA access`);
+            }
+
+            // Process ILLUMINATE commands (alternate format used by CRA)
+            async function processIlluminateCommand(command) {
+                // ILLUMINATE format: {"action": "root_causes", "event_id": "xxx", ...}
+                // Convert to CAUSAL_ANALYSIS format: {"command": "root_causes", "params": {...}}
+                const action = command.action;
+                const params = { ...command };
+                delete params.action;
+
+                // Map action names to command names
+                const actionMap = {
+                    'root_causes': 'root_causes',
+                    'rootcauses': 'root_causes',
+                    'impact': 'impact',
+                    'explain': 'explain',
+                    'search': 'search',
+                    'consequential': 'most_consequential',
+                    'most_consequential': 'most_consequential',
+                    'timeline': 'timeline',
+                    'stats': 'stats',
+                    // Extended autonomous actions
+                    'investigate': 'investigate',
+                    'trace_causation': 'trace_causation',
+                    'investigate_component': 'investigate_component',
+                    'set_params': 'set_params'
+                };
+
+                const cmd = actionMap[action?.toLowerCase()] || action;
+                console.log(`[CRA] ILLUMINATE: Executing ${cmd} with params:`, params);
+                
+                // Handle extended autonomous commands
+                if (cmd === 'set_params') {
+                    // CRA wants to set UI parameters without executing
+                    if (params.component) window.craIllumination.setComponent(params.component);
+                    if (params.event_type) window.craIllumination.setEventType(params.event_type);
+                    if (params.min_severity !== undefined) window.craIllumination.setSeverity(params.min_severity);
+                    if (params.limit) window.craIllumination.setLimit(params.limit);
+                    if (params.event_id) window.craIllumination.setEventId(params.event_id);
+                    addChatMessage('system', '✅ Illumination Engine parameters updated', false);
+                    return;
+                }
+                
+                if (cmd === 'investigate') {
+                    // CRA wants to do a full investigation on an event
+                    const eventId = params.event_id || params.eventid || params.eventId;
+                    if (eventId) {
+                        await window.craIllumination.traceFullCausation(eventId);
+                    } else {
+                        await window.craIllumination.investigateBiggestEvent();
+                    }
+                    return;
+                }
+                
+                if (cmd === 'trace_causation') {
+                    const eventId = params.event_id || params.eventid || params.eventId;
+                    if (eventId) {
+                        await window.craIllumination.traceFullCausation(eventId, params.max_depth || 15);
+                    }
+                    return;
+                }
+                
+                if (cmd === 'investigate_component') {
+                    const component = params.component;
+                    if (component) {
+                        await window.craIllumination.investigateComponent(component, params.min_severity || 0.5);
+                    }
+                    return;
+                }
+                
+                // Update UI to reflect CRA's parameters
+                if (params.component) window.craIllumination.setComponent(params.component);
+                if (params.event_type) window.craIllumination.setEventType(params.event_type);
+                if (params.min_severity !== undefined) window.craIllumination.setSeverity(params.min_severity);
+                if (params.limit) window.craIllumination.setLimit(params.limit);
+                if (params.event_id || params.eventid || params.eventId) {
+                    window.craIllumination.setEventId(params.event_id || params.eventid || params.eventId);
+                }
+                
+                // Show loading in illumination panel
+                showIlluminationLoading(`CRA executing: ${action}...`);
+                highlightIlluminationPanel();
+
+                // Execute the command
+                await processCausalAnalysisCommand({ command: cmd, params });
+            }
+
+            // Process causal analysis commands from CRA
+            async function processCausalAnalysisCommand(command) {
+                const { command: cmd, params = {} } = command;
+                let endpoint = '';
+                let queryParams = '';
+                
+                // Normalize event_id (CRA may use eventid, event_id, or eventId)
+                const eventId = params.event_id || params.eventid || params.eventId;
+
+                switch (cmd) {
+                    case 'root_causes':
+                        if (!eventId) {
+                            addChatMessage('system', '⚠️ ILLUMINATE: root_causes requires event_id', false);
+                            return;
+                        }
+                        endpoint = `/api/events/${eventId}/root-causes`;
+                        break;
+
+                    case 'impact':
+                        if (!eventId) {
+                            addChatMessage('system', '⚠️ ILLUMINATE: impact requires event_id', false);
+                            return;
+                        }
+                        endpoint = `/api/events/${eventId}/impact`;
+                        break;
+
+                    case 'explain':
+                        if (!eventId) {
+                            addChatMessage('system', '⚠️ ILLUMINATE: explain requires event_id', false);
+                            return;
+                        }
+                        endpoint = `/api/events/${eventId}/explain`;
+                        break;
+
+                    case 'search':
+                        endpoint = '/api/events/search/advanced';
+                        const searchParams = new URLSearchParams();
+                        // Normalize parameter names (CRA may use various formats)
+                        const component = params.component;
+                        const eventType = params.event_type || params.eventtype || params.query;
+                        const minSeverity = params.min_severity || params.minseverity;
+                        const startTime = params.start_time || params.starttime;
+                        const endTime = params.end_time || params.endtime;
+                        const limit = params.limit;
+                        
+                        if (component) searchParams.append('component', component);
+                        if (eventType) searchParams.append('event_type', eventType);
+                        if (minSeverity) searchParams.append('min_severity', minSeverity);
+                        if (startTime) searchParams.append('start_time', startTime);
+                        if (endTime) searchParams.append('end_time', endTime);
+                        if (limit) searchParams.append('limit', limit);
+                        queryParams = searchParams.toString() ? `?${searchParams.toString()}` : '';
+                        break;
+
+                    case 'most_consequential':
+                        endpoint = '/api/events/consequential';
+                        if (params.limit) queryParams = `?limit=${params.limit}`;
+                        break;
+
+                    case 'timeline':
+                        endpoint = '/api/timeline';
+                        const timelineParams = new URLSearchParams();
+                        if (params.start_time || params.starttime) timelineParams.append('start_time', params.start_time || params.starttime);
+                        if (params.end_time || params.endtime) timelineParams.append('end_time', params.end_time || params.endtime);
+                        queryParams = timelineParams.toString() ? `?${timelineParams.toString()}` : '';
+                        break;
+                    
+                    case 'stats':
+                        endpoint = '/api/stats';
+                        break;
+
+                    default:
+                        addChatMessage('system', `⚠️ Unknown ILLUMINATE command: ${cmd}`, false);
+                        return;
+                }
+
+                try {
+                    console.log(`[CRA] Executing illumination: ${endpoint}${queryParams}`);
+                    addChatMessage('system', `🔬 Illuminating: ${cmd}...`, false);
+
+                    const response = await fetch(endpoint + queryParams);
+                    const data = await response.json();
+
+                    // Check for explicit error first
+                    if (data.error && !data.root_causes?.length && !data.impact_events?.length) {
+                        console.error('[CRA] Causal analysis error:', data.error);
+                        addChatMessage('system', `⚠️ ${data.error}`, false);
+                        return;
+                    }
+
+                    // Check for valid response patterns
+                    const hasValidData = data.success || 
+                                        data.event_id || 
+                                        data.event ||
+                                        data.events || 
+                                        data.results ||
+                                        data.root_causes || 
+                                        data.impact_events ||
+                                        data.source_event ||
+                                        data.summary ||
+                                        data.total_events !== undefined ||
+                                        data.timeline;
+                    
+                    if (hasValidData) {
+                        console.log('[CRA] Illumination result:', data);
+                        displayCausalAnalysisResult(cmd, data);
+                    } else {
+                        console.error('[CRA] Causal analysis failed:', data);
+                        addChatMessage('system', `❌ Causal analysis failed: No data returned`, false);
+                    }
+                } catch (err) {
+                    console.error('[CRA] Error executing causal analysis:', err);
+                    addChatMessage('system', `❌ Error executing causal analysis: ${err.message}`, false);
+                }
+            }
+
+            // Display causal analysis results in chat
+            function displayCausalAnalysisResult(cmd, data) {
+                let resultHtml = '';
+
+                switch (cmd) {
+                    case 'root_causes':
+                        const rootCauses = data.root_causes || [];
+                        const eventInfo = data.event || {};
+                        const eventId = eventInfo.event_id || data.event_id || 'event';
+                        
+                        if (rootCauses.length === 0) {
+                            // Provide helpful message when no root causes found
+                            resultHtml = `<div style="background:#101000; padding:10px; border:1px solid #f90; margin:5px 0; border-radius:4px;">
+                                <div style="color:#f90; font-weight:bold; margin-bottom:8px;">🔍 Root Cause Analysis</div>
+                                <div style="color:#ff0;">Event: <span style="color:#fff;">${eventId}</span></div>
+                                <div style="color:#aaa; margin-top:8px;">
+                                    ${eventInfo.event_id ? 
+                                        'ℹ️ This event has no upstream causes (it may be a root event itself)' : 
+                                        '⚠️ Event not found in the causation graph. Try using a real event ID from the graph or use [[ILLUMINATE: {"action": "most_consequential"}]] to find events.'}
+                                </div>
+                            </div>`;
+                        } else {
+                            resultHtml = `<div style="background:#100000; padding:10px; border:1px solid #f00; margin:5px 0; border-radius:4px;">
+                                <div style="color:#f00; font-weight:bold; margin-bottom:8px;">🔍 Root Cause Analysis</div>
+                                <div style="color:#f90;">Found ${rootCauses.length} root causes for <span style="color:#ff0;">${eventId}</span></div>
+                                ${rootCauses.slice(0, 5).map(rc => {
+                                    const rcEvt = rc.root_event || rc;
+                                    return `
+                                    <div style="margin:5px 0; padding:5px; background:#200000; border-left:2px solid #f00;">
+                                        <span style="color:#ff0; font-weight:bold;">${rcEvt.event_type || 'Unknown'}</span>
+                                        <span style="color:#888;"> @ ${rcEvt.component || 'Unknown'}</span>
+                                        <span style="color:#666; font-size:0.8em;"> (depth: ${rc.depth || '?'})</span>
+                                        ${rc.narrative ? `<div style="color:#aaa; font-size:0.85em; margin-top:3px;">${rc.narrative}</div>` : ''}
+                                    </div>`;
+                                }).join('')}
+                                ${rootCauses.length > 5 ? `<div style="color:#888; font-style:italic;">...and ${rootCauses.length - 5} more</div>` : ''}
+                            </div>`;
+                        }
+                        break;
+
+                    case 'impact':
+                        const sourceEvent = data.source_event || {};
+                        const totalAffected = data.total_affected_events || 0;
+                        const affectedByComp = data.affected_by_component || {};
+                        const leafEffects = data.leaf_effects || [];
+                        const impactEventId = sourceEvent.event_id || data.event_id || 'Unknown';
+                        
+                        if (data.error && !sourceEvent.event_id) {
+                            // Event not found
+                            resultHtml = `<div style="background:#101000; padding:10px; border:1px solid #f90; margin:5px 0; border-radius:4px;">
+                                <div style="color:#f90; font-weight:bold; margin-bottom:8px;">💥 Impact Analysis</div>
+                                <div style="color:#aaa;">
+                                    ⚠️ Event not found. Try using a real event ID from the graph or use [[ILLUMINATE: {"action": "most_consequential"}]] to find events.
+                                </div>
+                            </div>`;
+                        } else if (totalAffected === 0) {
+                            resultHtml = `<div style="background:#101000; padding:10px; border:1px solid #f90; margin:5px 0; border-radius:4px;">
+                                <div style="color:#f90; font-weight:bold; margin-bottom:8px;">💥 Impact Analysis</div>
+                                <div style="color:#ff0;">Event: <span style="color:#fff;">${impactEventId}</span></div>
+                                <div style="color:#aaa; margin-top:8px;">ℹ️ This event has no downstream effects (it may be a leaf event)</div>
+                            </div>`;
+                        } else {
+                            resultHtml = `<div style="background:#001500; padding:10px; border:1px solid #0f0; margin:5px 0; border-radius:4px;">
+                                <div style="color:#0f0; font-weight:bold; margin-bottom:8px;">💥 Impact Analysis</div>
+                                <div style="color:#0f0;">Event <span style="color:#ff0;">${impactEventId}</span> caused <strong>${totalAffected}</strong> downstream effects</div>
+                                <div style="color:#aaa; margin-top:5px;">Affected components:</div>
+                                <div style="margin-top:5px;">
+                                ${Object.entries(affectedByComp).slice(0, 6).map(([comp, count]) => `
+                                    <span style="background:#002200; padding:2px 6px; margin:2px; display:inline-block; border:1px solid #0a0; border-radius:3px; color:#0f0;">${comp}: ${count}</span>
+                                `).join('')}
+                                </div>
+                                ${leafEffects.length > 0 ? `<div style="color:#666; font-size:0.85em; margin-top:5px;">${leafEffects.length} leaf effects identified</div>` : ''}
+                            </div>`;
+                        }
+                        break;
+
+                    case 'explain':
+                        const explainEvt = data.event || {};
+                        const summary = data.summary || 'No explanation available';
+                        const severity = data.severity || 0;
+                        const sevColor = severity > 0.7 ? '#f00' : severity > 0.4 ? '#f90' : '#0f0';
+                        resultHtml = `<div style="background:#101010; padding:10px; border:1px solid #ff0; margin:5px 0; border-radius:4px;">
+                            <div style="color:#ff0; font-weight:bold; margin-bottom:8px;">📖 Event Explanation</div>
+                            <div style="color:#fff; line-height:1.5;">${summary}</div>
+                            <div style="display:flex; gap:15px; margin-top:10px; flex-wrap:wrap;">
+                                <span style="color:${sevColor};">Severity: ${(severity * 100).toFixed(0)}%</span>
+                                <span style="color:#0ff;">${explainEvt.event_type || ''}</span>
+                                <span style="color:#0aa;">@ ${explainEvt.component || ''}</span>
+                            </div>
+                            ${data.total_upstream_events ? `<div style="color:#888; font-size:0.85em; margin-top:5px;">${data.total_upstream_events} upstream → ${data.total_downstream_events || 0} downstream events</div>` : ''}
+                        </div>`;
+                        break;
+
+                    case 'search':
+                        const searchResults = data.results || data.events || [];
+                        resultHtml = `<div style="background:#0a0a1a; padding:10px; border:1px solid #00f; margin:5px 0; border-radius:4px;">
+                            <div style="color:#00f; font-weight:bold; margin-bottom:8px;">🔎 Search Results</div>
+                            <div style="color:#0ff;">Found ${data.total_matches || searchResults.length} events</div>
+                            ${searchResults.slice(0, 5).map(item => {
+                                const ev = item.event || item;
+                                return `
+                                <div style="margin:5px 0; padding:5px; background:#00001a; border-left:2px solid #00f;">
+                                    <span style="color:#ff0;">${ev.event_type || 'Unknown'}</span>
+                                    <span style="color:#888;"> @ ${ev.component || 'Unknown'}</span>
+                                    ${item.severity !== undefined ? `<span style="color:#f90;"> [${(item.severity * 100).toFixed(0)}%]</span>` : ''}
+                                </div>`;
+                            }).join('')}
+                        </div>`;
+                        break;
+
+                    case 'most_consequential':
+                        const consequentialEvents = data.events || [];
+                        resultHtml = `<div style="background:#1a0a1a; padding:10px; border:1px solid #f0f; margin:5px 0; border-radius:4px;">
+                            <div style="color:#f0f; font-weight:bold; margin-bottom:8px;">💥 Most Consequential Events</div>
+                            ${consequentialEvents.slice(0, 5).map((item, i) => {
+                                const ev = item.event || item;
+                                return `
+                                <div style="margin:5px 0; padding:5px; background:#1a001a; border-left:2px solid #f0f;">
+                                    <span style="color:#f0f; font-weight:bold;">#${i+1}</span>
+                                    <span style="color:#ff0; margin-left:5px;">${ev.event_type || 'Unknown'}</span>
+                                    <span style="color:#888;"> @ ${ev.component || 'Unknown'}</span>
+                                    <span style="color:#0f0; font-weight:bold; margin-left:10px;">→ ${item.downstream_effects || item.downstream_count || 0} effects</span>
+                                </div>`;
+                            }).join('')}
+                        </div>`;
+                        break;
+
+                    case 'timeline':
+                        const timelineEvents = data.events || [];
+                        const timelineLinks = data.links || [];
+                        resultHtml = `<div style="background:#0a1a0a; padding:10px; border:1px solid #0a0; margin:5px 0; border-radius:4px;">
+                            <div style="color:#0a0; font-weight:bold; margin-bottom:8px;">📅 Timeline View</div>
+                            <div style="color:#0f0;">Events: ${timelineEvents.length} | Causation links: ${timelineLinks.length}</div>
+                            <div style="color:#aaa; font-size:0.85em;">${data.total_events || timelineEvents.length} total events in range</div>
+                        </div>`;
+                        break;
+                    
+                    case 'stats':
+                        const totalEvents = data.total_events || 0;
+                        const totalLinks = data.total_links || 0;
+                        resultHtml = `<div style="background:#001a1a; padding:10px; border:1px solid #0ff; margin:5px 0; border-radius:4px;">
+                            <div style="color:#0ff; font-weight:bold; margin-bottom:8px;">📊 Causation Statistics</div>
+                            <div style="display:flex; gap:15px; flex-wrap:wrap;">
+                                <span style="color:#0ff;">Events: ${totalEvents}</span>
+                                <span style="color:#f0f;">Links: ${totalLinks}</span>
+                                <span style="color:#0f0;">Avg: ${totalEvents > 0 ? (totalLinks/totalEvents).toFixed(2) : '0'} links/event</span>
+                            </div>
+                        </div>`;
+                        break;
+
+                    default:
+                        resultHtml = `<div style="background:#222; padding:10px; border:1px solid #666; margin:5px 0; border-radius:4px;">
+                            <pre style="color:#0f0; overflow:auto; max-height:200px;">${JSON.stringify(data, null, 2)}</pre>
+                        </div>`;
+                }
+
+                addChatMessage('system', resultHtml, true);
+            }
+
+            // ============================================
+            // 📓 RESEARCH NOTEPAD SYSTEM
+            // ============================================
+            // A persistent, appendable memory system for the CRA to document
+            // observations, hypotheses, causation chains, and analytical notes.
+            // ============================================
+
+            // Notepad state - persisted to localStorage
+            const researchNotepad = {
+                entries: [],
+                sessionId: generateNotepadSessionId(),
+                lastSaved: null
+            };
+
+            // Note type configurations
+            const noteTypes = {
+                note: { icon: '📝', color: '#888', bgColor: '#1a1a1a', label: 'Note' },
+                observation: { icon: '👁️', color: '#0f0', bgColor: '#0a1a0a', label: 'Observation' },
+                hypothesis: { icon: '💡', color: '#f90', bgColor: '#1a1000', label: 'Hypothesis' },
+                causation: { icon: '⚡', color: '#f0f', bgColor: '#1a0a1a', label: 'Causation' },
+                analysis: { icon: '🔬', color: '#0ff', bgColor: '#0a1a1a', label: 'Analysis' },
+                conclusion: { icon: '✓', color: '#f00', bgColor: '#1a0a0a', label: 'Conclusion' },
+                question: { icon: '❓', color: '#ff0', bgColor: '#1a1a0a', label: 'Question' },
+                todo: { icon: '📋', color: '#0af', bgColor: '#0a0a1a', label: 'TODO' },
+                cra: { icon: '🤖', color: '#0ff', bgColor: '#001a1a', label: 'CRA Auto' }
+            };
+
+            function generateNotepadSessionId() {
+                return 'session_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 5);
+            }
+
+            // Initialize notepad from localStorage
+            function initResearchNotepad() {
+                try {
+                    const saved = localStorage.getItem('researchNotepad');
+                    if (saved) {
+                        const data = JSON.parse(saved);
+                        researchNotepad.entries = data.entries || [];
+                        researchNotepad.lastSaved = data.lastSaved;
+                        // Keep session ID fresh
+                        researchNotepad.sessionId = generateNotepadSessionId();
+                    }
+                } catch (e) {
+                    console.error('[Notepad] Failed to load from localStorage:', e);
+                }
+                
+                document.getElementById('notepadSessionId').textContent = researchNotepad.sessionId.substr(0, 15) + '...';
+                updateNotepadDisplay();
+                updateNotepadStats();
+            }
+
+            // Save notepad to localStorage
+            function saveNotepad() {
+                try {
+                    researchNotepad.lastSaved = new Date().toISOString();
+                    localStorage.setItem('researchNotepad', JSON.stringify(researchNotepad));
+                    
+                    const lastSavedEl = document.getElementById('notepadLastSaved');
+                    if (lastSavedEl) {
+                        lastSavedEl.textContent = 'Saved ' + new Date().toLocaleTimeString();
+                    }
+                } catch (e) {
+                    console.error('[Notepad] Failed to save:', e);
+                }
+            }
+
+            // Switch between Chat and Notepad tabs
+            function switchCRATab(tab) {
+                const chatTab = document.getElementById('tabChat');
+                const notepadTab = document.getElementById('tabNotepad');
+                const chatContent = document.getElementById('chatTabContent');
+                const notepadContent = document.getElementById('notepadTabContent');
+                
+                if (tab === 'chat') {
+                    chatTab.style.background = '#0aa';
+                    chatTab.style.color = '#000';
+                    notepadTab.style.background = '#111';
+                    notepadTab.style.color = '#f90';
+                    chatContent.style.display = 'block';
+                    notepadContent.style.display = 'none';
+                } else {
+                    chatTab.style.background = '#111';
+                    chatTab.style.color = '#0ff';
+                    notepadTab.style.background = '#f90';
+                    notepadTab.style.color = '#000';
+                    chatContent.style.display = 'none';
+                    notepadContent.style.display = 'block';
+                    updateNotepadDisplay();
+                }
+            }
+
+            // Add a new entry to the notepad
+            function notepadAddEntry(type, content = null, metadata = {}) {
+                if (!content) {
+                    // Show modal for entry input
+                    showNotepadEntryModal(type);
+                    return;
+                }
+                
+                const entry = {
+                    id: 'note_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+                    type: type,
+                    content: content,
+                    timestamp: new Date().toISOString(),
+                    session: researchNotepad.sessionId,
+                    metadata: metadata,
+                    tags: extractTags(content),
+                    linkedEvents: metadata.linkedEvents || [],
+                    status: type === 'todo' ? 'pending' : null
+                };
+                
+                researchNotepad.entries.unshift(entry); // Add to beginning
+                saveNotepad();
+                updateNotepadDisplay();
+                updateNotepadStats();
+                
+                // Flash the notepad tab if on chat
+                flashNotepadTab();
+                
+                return entry;
+            }
+
+            // Quick add from the input field
+            function notepadQuickAdd() {
+                const input = document.getElementById('notepadQuickInput');
+                const typeSelect = document.getElementById('notepadQuickType');
+                const content = input.value.trim();
+                
+                if (!content) return;
+                
+                notepadAddEntry(typeSelect.value, content);
+                input.value = '';
+                input.focus();
+            }
+
+            // Extract hashtags from content
+            function extractTags(content) {
+                const matches = content.match(/#\w+/g);
+                return matches ? matches.map(t => t.toLowerCase()) : [];
+            }
+
+            // Show modal for detailed entry
+            function showNotepadEntryModal(type) {
+                const typeConfig = noteTypes[type] || noteTypes.note;
+                
+                const modal = document.createElement('div');
+                modal.id = 'notepadEntryModal';
+                modal.style.cssText = `
+                    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+                    background: rgba(0, 0, 0, 0.85); z-index: 10000;
+                    display: flex; align-items: center; justify-content: center;
+                `;
+                
+                modal.innerHTML = `
+                    <div style="background: #111; border: 2px solid ${typeConfig.color}; border-radius: 8px; padding: 20px; width: 90%; max-width: 600px; max-height: 80vh; overflow-y: auto;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h3 style="color: ${typeConfig.color}; margin: 0;">${typeConfig.icon} New ${typeConfig.label}</h3>
+                            <button onclick="closeNotepadModal()" style="background: none; border: none; color: #666; font-size: 1.5em; cursor: pointer;">✕</button>
+                        </div>
+                        
+                        <div style="margin-bottom: 15px;">
+                            <label style="color: #888; display: block; margin-bottom: 5px; font-size: 0.9em;">Content:</label>
+                            <textarea id="notepadModalContent" rows="6" 
+                                style="width: 100%; background: #0a0a0a; color: ${typeConfig.color}; border: 1px solid ${typeConfig.color}; padding: 10px; font-family: 'Courier New', monospace; font-size: 0.9em; resize: vertical; box-sizing: border-box;"
+                                placeholder="Enter your ${typeConfig.label.toLowerCase()}... Use #tags for categorization"></textarea>
+                        </div>
+                        
+                        ${type === 'causation' ? `
+                            <div style="margin-bottom: 15px; display: flex; gap: 10px;">
+                                <div style="flex: 1;">
+                                    <label style="color: #888; display: block; margin-bottom: 5px; font-size: 0.9em;">Cause Event ID:</label>
+                                    <input type="text" id="notepadModalCause" 
+                                        style="width: 100%; background: #0a0a0a; color: #f00; border: 1px solid #f00; padding: 8px; font-family: 'Courier New', monospace; box-sizing: border-box;"
+                                        placeholder="evt_xxx">
+                                </div>
+                                <div style="flex: 1;">
+                                    <label style="color: #888; display: block; margin-bottom: 5px; font-size: 0.9em;">Effect Event ID:</label>
+                                    <input type="text" id="notepadModalEffect" 
+                                        style="width: 100%; background: #0a0a0a; color: #0f0; border: 1px solid #0f0; padding: 8px; font-family: 'Courier New', monospace; box-sizing: border-box;"
+                                        placeholder="evt_yyy">
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                        ${type === 'hypothesis' ? `
+                            <div style="margin-bottom: 15px;">
+                                <label style="color: #888; display: block; margin-bottom: 5px; font-size: 0.9em;">Confidence Level:</label>
+                                <select id="notepadModalConfidence" 
+                                    style="background: #0a0a0a; color: #f90; border: 1px solid #f90; padding: 8px; font-family: 'Courier New', monospace;">
+                                    <option value="low">Low - Speculative</option>
+                                    <option value="medium" selected>Medium - Plausible</option>
+                                    <option value="high">High - Strong Evidence</option>
+                                </select>
+                            </div>
+                        ` : ''}
+                        
+                        <div style="margin-bottom: 15px;">
+                            <label style="color: #888; display: block; margin-bottom: 5px; font-size: 0.9em;">Related Event IDs (comma-separated):</label>
+                            <input type="text" id="notepadModalEvents" 
+                                style="width: 100%; background: #0a0a0a; color: #0ff; border: 1px solid #333; padding: 8px; font-family: 'Courier New', monospace; box-sizing: border-box;"
+                                placeholder="evt_123, evt_456">
+                        </div>
+                        
+                        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                            <button onclick="closeNotepadModal()" 
+                                style="padding: 10px 20px; background: #222; border: 1px solid #666; color: #888; cursor: pointer; font-family: 'Courier New', monospace;">
+                                Cancel
+                            </button>
+                            <button onclick="submitNotepadModal('${type}')" 
+                                style="padding: 10px 20px; background: ${typeConfig.color}; border: 1px solid ${typeConfig.color}; color: #000; cursor: pointer; font-family: 'Courier New', monospace; font-weight: bold;">
+                                ${typeConfig.icon} Add ${typeConfig.label}
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+                document.getElementById('notepadModalContent').focus();
+            }
+
+            function closeNotepadModal() {
+                const modal = document.getElementById('notepadEntryModal');
+                if (modal) modal.remove();
+            }
+
+            function submitNotepadModal(type) {
+                const content = document.getElementById('notepadModalContent').value.trim();
+                if (!content) {
+                    alert('Please enter content for the note.');
+                    return;
+                }
+                
+                const metadata = {};
+                
+                // Get related events
+                const eventsInput = document.getElementById('notepadModalEvents');
+                if (eventsInput && eventsInput.value.trim()) {
+                    metadata.linkedEvents = eventsInput.value.split(',').map(e => e.trim()).filter(e => e);
+                }
+                
+                // Type-specific metadata
+                if (type === 'causation') {
+                    metadata.causeEventId = document.getElementById('notepadModalCause')?.value.trim();
+                    metadata.effectEventId = document.getElementById('notepadModalEffect')?.value.trim();
+                }
+                
+                if (type === 'hypothesis') {
+                    metadata.confidence = document.getElementById('notepadModalConfidence')?.value || 'medium';
+                }
+                
+                notepadAddEntry(type, content, metadata);
+                closeNotepadModal();
+            }
+
+            // Update the notepad display
+            function updateNotepadDisplay() {
+                const container = document.getElementById('notepadEntries');
+                const searchQuery = document.getElementById('notepadSearch')?.value.toLowerCase() || '';
+                const filterType = document.getElementById('notepadFilterType')?.value || '';
+                
+                let filteredEntries = researchNotepad.entries;
+                
+                // Apply type filter
+                if (filterType) {
+                    filteredEntries = filteredEntries.filter(e => e.type === filterType);
+                }
+                
+                // Apply search filter
+                if (searchQuery) {
+                    filteredEntries = filteredEntries.filter(e => 
+                        e.content.toLowerCase().includes(searchQuery) ||
+                        e.tags.some(t => t.includes(searchQuery)) ||
+                        (e.metadata.linkedEvents && e.metadata.linkedEvents.some(ev => ev.toLowerCase().includes(searchQuery)))
+                    );
+                }
+                
+                if (filteredEntries.length === 0) {
+                    container.innerHTML = `
+                        <div style="color: #666; text-align: center; padding: 40px;">
+                            <div style="font-size: 2em; margin-bottom: 10px;">📓</div>
+                            <div style="color: #888;">${searchQuery || filterType ? 'No matching notes found' : 'No research notes yet'}</div>
+                            <div style="font-size: 0.85em; margin-top: 10px; color: #666;">
+                                ${searchQuery || filterType ? 'Try adjusting your filters' : 'Use the buttons above to add observations, hypotheses, and more'}
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                container.innerHTML = filteredEntries.map(entry => renderNotepadEntry(entry)).join('');
+            }
+
+            // Render a single notepad entry
+            function renderNotepadEntry(entry) {
+                const typeConfig = noteTypes[entry.type] || noteTypes.note;
+                const timestamp = new Date(entry.timestamp);
+                const timeStr = timestamp.toLocaleString();
+                
+                // Build metadata display
+                let metadataHtml = '';
+                if (entry.metadata.confidence) {
+                    const confColors = { low: '#f66', medium: '#f90', high: '#0f0' };
+                    metadataHtml += `<span style="color: ${confColors[entry.metadata.confidence]}; font-size: 0.8em;">Confidence: ${entry.metadata.confidence}</span>`;
+                }
+                if (entry.metadata.causeEventId || entry.metadata.effectEventId) {
+                    metadataHtml += `<span style="color: #f0f; font-size: 0.8em;">${entry.metadata.causeEventId || '?'} → ${entry.metadata.effectEventId || '?'}</span>`;
+                }
+                
+                // Tags
+                const tagsHtml = entry.tags.length > 0 
+                    ? entry.tags.map(t => `<span style="background: #222; color: #888; padding: 1px 5px; border-radius: 3px; font-size: 0.75em; margin-right: 3px;">${t}</span>`).join('')
+                    : '';
+                
+                // Linked events
+                const eventsHtml = entry.linkedEvents && entry.linkedEvents.length > 0
+                    ? `<div style="margin-top: 5px;">${entry.linkedEvents.map(ev => 
+                        `<span style="background: #001a1a; color: #0ff; padding: 2px 6px; border-radius: 3px; font-size: 0.75em; margin-right: 3px; cursor: pointer;" onclick="illuminationSelectEvent('${ev}')">${ev}</span>`
+                      ).join('')}</div>`
+                    : '';
+                
+                // Status for TODOs
+                const statusHtml = entry.type === 'todo' 
+                    ? `<button onclick="toggleTodoStatus('${entry.id}')" style="background: ${entry.status === 'done' ? '#0a3' : '#333'}; border: none; color: ${entry.status === 'done' ? '#0f0' : '#888'}; padding: 2px 8px; border-radius: 3px; cursor: pointer; font-size: 0.75em;">${entry.status === 'done' ? '✓ Done' : '○ Pending'}</button>`
+                    : '';
+                
+                return `
+                    <div class="notepad-entry" data-id="${entry.id}" style="background: ${typeConfig.bgColor}; border-left: 3px solid ${typeConfig.color}; padding: 12px; margin-bottom: 10px; border-radius: 0 5px 5px 0; position: relative;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                            <div>
+                                <span style="color: ${typeConfig.color}; font-weight: bold;">${typeConfig.icon} ${typeConfig.label}</span>
+                                ${statusHtml}
+                                <span style="color: #666; font-size: 0.75em; margin-left: 10px;">${timeStr}</span>
+                            </div>
+                            <button onclick="deleteNotepadEntry('${entry.id}')" 
+                                style="background: none; border: none; color: #600; cursor: pointer; font-size: 0.9em;" 
+                                title="Delete this entry">✕</button>
+                        </div>
+                        <div style="color: #ddd; line-height: 1.5; white-space: pre-wrap;">${escapeHtml(entry.content)}</div>
+                        ${metadataHtml ? `<div style="margin-top: 8px; display: flex; gap: 10px; flex-wrap: wrap;">${metadataHtml}</div>` : ''}
+                        ${tagsHtml ? `<div style="margin-top: 8px;">${tagsHtml}</div>` : ''}
+                        ${eventsHtml}
+                    </div>
+                `;
+            }
+
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            // Delete an entry
+            function deleteNotepadEntry(id) {
+                if (!confirm('Delete this research note?')) return;
+                
+                researchNotepad.entries = researchNotepad.entries.filter(e => e.id !== id);
+                saveNotepad();
+                updateNotepadDisplay();
+                updateNotepadStats();
+            }
+
+            // Toggle TODO status
+            function toggleTodoStatus(id) {
+                const entry = researchNotepad.entries.find(e => e.id === id);
+                if (entry && entry.type === 'todo') {
+                    entry.status = entry.status === 'done' ? 'pending' : 'done';
+                    saveNotepad();
+                    updateNotepadDisplay();
+                }
+            }
+
+            // Filter notes
+            function notepadFilter() {
+                updateNotepadDisplay();
+            }
+
+            // Update stats display
+            function updateNotepadStats() {
+                const total = researchNotepad.entries.length;
+                const hypotheses = researchNotepad.entries.filter(e => e.type === 'hypothesis').length;
+                const conclusions = researchNotepad.entries.filter(e => e.type === 'conclusion').length;
+                
+                document.getElementById('notepadTotalCount').textContent = total;
+                document.getElementById('notepadHypothesesCount').textContent = hypotheses;
+                document.getElementById('notepadConclusionsCount').textContent = conclusions;
+                document.getElementById('notepadCount').textContent = total;
+            }
+
+            // Flash the notepad tab to indicate new entry
+            function flashNotepadTab() {
+                const tab = document.getElementById('tabNotepad');
+                if (!tab) return;
+                
+                const originalBg = tab.style.background;
+                tab.style.background = '#ff0';
+                tab.style.transition = 'background 0.3s';
+                
+                setTimeout(() => {
+                    tab.style.background = originalBg || '#111';
+                }, 300);
+            }
+
+            // Export notes to file
+            function notepadExport() {
+                const data = {
+                    exported: new Date().toISOString(),
+                    sessionId: researchNotepad.sessionId,
+                    totalEntries: researchNotepad.entries.length,
+                    entries: researchNotepad.entries
+                };
+                
+                // Create markdown format
+                let markdown = `# Research Notepad Export\n\n`;
+                markdown += `**Exported:** ${new Date().toLocaleString()}\n`;
+                markdown += `**Session:** ${researchNotepad.sessionId}\n`;
+                markdown += `**Total Entries:** ${researchNotepad.entries.length}\n\n---\n\n`;
+                
+                researchNotepad.entries.forEach((entry, i) => {
+                    const typeConfig = noteTypes[entry.type] || noteTypes.note;
+                    markdown += `## ${typeConfig.icon} ${typeConfig.label} #${researchNotepad.entries.length - i}\n`;
+                    markdown += `*${new Date(entry.timestamp).toLocaleString()}*\n\n`;
+                    markdown += `${entry.content}\n\n`;
+                    if (entry.tags.length > 0) {
+                        markdown += `Tags: ${entry.tags.join(', ')}\n`;
+                    }
+                    if (entry.linkedEvents && entry.linkedEvents.length > 0) {
+                        markdown += `Related Events: ${entry.linkedEvents.join(', ')}\n`;
+                    }
+                    markdown += `\n---\n\n`;
+                });
+                
+                // Download
+                const blob = new Blob([markdown], { type: 'text/markdown' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `research_notepad_${new Date().toISOString().split('T')[0]}.md`;
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+
+            // Clear all notes
+            function notepadClear() {
+                if (!confirm('Are you sure you want to clear ALL research notes? This cannot be undone.')) return;
+                if (!confirm('Really clear all notes?')) return;
+                
+                researchNotepad.entries = [];
+                saveNotepad();
+                updateNotepadDisplay();
+                updateNotepadStats();
+            }
+
+            // ═══════════════════════════════════════════════════════════════════════════
+            // 🤖 CRA NOTEPAD INTEGRATION - Allow CRA to add notes automatically
+            // ═══════════════════════════════════════════════════════════════════════════
+
+            // Expose notepad interface to CRA
+            window.craNotepad = {
+                // Add any type of note
+                addNote: function(type, content, metadata = {}) {
+                    metadata.source = 'cra';
+                    metadata.automated = true;
+                    return notepadAddEntry(type, content, metadata);
+                },
+                
+                // Convenience methods
+                observe: function(observation, eventIds = []) {
+                    return this.addNote('observation', observation, { linkedEvents: eventIds });
+                },
+                
+                hypothesize: function(hypothesis, confidence = 'medium', eventIds = []) {
+                    return this.addNote('hypothesis', hypothesis, { confidence, linkedEvents: eventIds });
+                },
+                
+                recordCausation: function(description, causeEventId, effectEventId) {
+                    return this.addNote('causation', description, { causeEventId, effectEventId, linkedEvents: [causeEventId, effectEventId].filter(e => e) });
+                },
+                
+                analyze: function(analysis, eventIds = []) {
+                    return this.addNote('analysis', analysis, { linkedEvents: eventIds });
+                },
+                
+                conclude: function(conclusion, eventIds = []) {
+                    return this.addNote('conclusion', conclusion, { linkedEvents: eventIds });
+                },
+                
+                question: function(question, eventIds = []) {
+                    return this.addNote('question', question, { linkedEvents: eventIds });
+                },
+                
+                todo: function(task, eventIds = []) {
+                    return this.addNote('todo', task, { linkedEvents: eventIds });
+                },
+                
+                // Auto-note from CRA reasoning
+                autoNote: function(content, metadata = {}) {
+                    return this.addNote('cra', content, metadata);
+                },
+                
+                // Get all notes (for CRA to reference)
+                getAllNotes: function() {
+                    return researchNotepad.entries;
+                },
+                
+                // Get notes by type
+                getNotesByType: function(type) {
+                    return researchNotepad.entries.filter(e => e.type === type);
+                },
+                
+                // Search notes
+                searchNotes: function(query) {
+                    const q = query.toLowerCase();
+                    return researchNotepad.entries.filter(e => 
+                        e.content.toLowerCase().includes(q) ||
+                        e.tags.some(t => t.includes(q))
+                    );
+                },
+                
+                // Get hypotheses that need validation
+                getOpenHypotheses: function() {
+                    return researchNotepad.entries.filter(e => e.type === 'hypothesis');
+                },
+                
+                // Get pending TODOs
+                getPendingTodos: function() {
+                    return researchNotepad.entries.filter(e => e.type === 'todo' && e.status !== 'done');
+                },
+                
+                // Get notes related to an event
+                getNotesForEvent: function(eventId) {
+                    return researchNotepad.entries.filter(e => 
+                        (e.linkedEvents && e.linkedEvents.includes(eventId)) ||
+                        e.content.includes(eventId)
+                    );
+                },
+                
+                // Get summary stats
+                getSummary: function() {
+                    const entries = researchNotepad.entries;
+                    return {
+                        total: entries.length,
+                        byType: {
+                            observations: entries.filter(e => e.type === 'observation').length,
+                            hypotheses: entries.filter(e => e.type === 'hypothesis').length,
+                            causations: entries.filter(e => e.type === 'causation').length,
+                            analyses: entries.filter(e => e.type === 'analysis').length,
+                            conclusions: entries.filter(e => e.type === 'conclusion').length,
+                            questions: entries.filter(e => e.type === 'question').length,
+                            todos: entries.filter(e => e.type === 'todo').length,
+                            craNotes: entries.filter(e => e.type === 'cra').length
+                        },
+                        pendingTodos: entries.filter(e => e.type === 'todo' && e.status !== 'done').length,
+                        lastEntry: entries.length > 0 ? entries[0] : null
+                    };
+                }
+            };
+
+            // Initialize notepad on page load
+            document.addEventListener('DOMContentLoaded', function() {
+                setTimeout(initResearchNotepad, 100);
+            });
+
+            // ============================================
+            // 🔬 ILLUMINATION ENGINE UI FUNCTIONS
+            // ============================================
+
+            function showIlluminationLoading(message = 'Analyzing...') {
+                const results = document.getElementById('illuminationResults');
+                results.innerHTML = `
+                    <div style="color: #f0f; text-align: center; padding: 40px;">
+                        <div style="font-size: 2em; margin-bottom: 10px; animation: pulse 1s infinite;">🔬</div>
+                        <div>${message}</div>
+                    </div>
+                    <style>
+                        @keyframes pulse {
+                            0%, 100% { opacity: 1; }
+                            50% { opacity: 0.5; }
+                        }
+                    </style>
+                `;
+            }
+
+            function showIlluminationError(error) {
+                const results = document.getElementById('illuminationResults');
+                results.innerHTML = `
+                    <div style="color: #f00; padding: 20px; border: 1px solid #f00; border-radius: 5px; background: #200000;">
+                        <div style="font-weight: bold; margin-bottom: 10px;">❌ Error</div>
+                        <div>${error}</div>
+                    </div>
+                `;
+            }
+
+            // Find most consequential "big bang" events
+            async function illuminationFindConsequential() {
+                showIlluminationLoading('Finding most consequential events...');
+                try {
+                    const limit = document.getElementById('illuminationLimit')?.value || 10;
+                    const response = await fetch(`/api/events/consequential?limit=${limit}`);
+                    const data = await response.json();
+                    storeIlluminationResult('consequential', data);
+                    renderConsequentialResults(data);
+                    return data;
+                } catch (err) {
+                    showIlluminationError(err.message);
+                    return null;
+                }
+            }
+
+            function renderConsequentialResults(data) {
+                const results = document.getElementById('illuminationResults');
+                if (!data.events || data.events.length === 0) {
+                    results.innerHTML = '<div style="color: #888; padding: 20px;">No consequential events found yet. Run the simulation to generate events.</div>';
+                    return;
+                }
+
+                const eventsHtml = data.events.map((ev, i) => {
+                    // Handle nested event structure from backend
+                    const eventData = ev.event || ev;
+                    const eventId = eventData.event_id || eventData.id || 'unknown';
+                    const eventType = eventData.event_type || 'Unknown';
+                    const component = eventData.component || 'Unknown';
+                    const downstreamCount = ev.downstream_effects || ev.downstream_count || 0;
+                    const impactScore = ev.impact_score || downstreamCount;
+                    
+                    return `
+                    <div style="background: ${i === 0 ? '#200020' : '#100010'}; border: 1px solid ${i === 0 ? '#f0f' : '#606'}; border-radius: 5px; padding: 10px; margin-bottom: 8px; cursor: pointer;"
+                         onclick="illuminationSelectEvent('${eventId}')"
+                         onmouseover="this.style.borderColor='#f0f'; this.style.boxShadow='0 0 5px #f0f';"
+                         onmouseout="this.style.borderColor='${i === 0 ? '#f0f' : '#606'}'; this.style.boxShadow='none';">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <span style="color: #f0f; font-weight: bold;">#${i + 1}</span>
+                                <span style="color: #ff0; margin-left: 10px;">${eventType}</span>
+                                <span style="color: #888; margin-left: 10px;">@ ${component}</span>
+                            </div>
+                            <div style="color: #0f0; font-weight: bold; font-size: 1.1em;">
+                                💥 ${downstreamCount} effects
+                            </div>
+                        </div>
+                        <div style="color: #666; font-size: 0.8em; margin-top: 5px;">${eventId} | Impact: ${impactScore}</div>
+                    </div>
+                `}).join('');
+
+                results.innerHTML = `
+                    <div style="color: #f0f; font-weight: bold; margin-bottom: 15px; font-size: 1.1em;">
+                        💥 Most Consequential Events (Big Bang Events)
+                    </div>
+                    <div style="color: #888; font-size: 0.85em; margin-bottom: 10px;">
+                        Events that caused the most downstream effects. Click to analyze.
+                    </div>
+                    ${eventsHtml}
+                `;
+            }
+
+            // Get timeline view
+            async function illuminationGetTimeline() {
+                showIlluminationLoading('Loading timeline...');
+                try {
+                    const response = await fetch('/api/timeline');
+                    const data = await response.json();
+                    storeIlluminationResult('timeline', data);
+                    renderTimelineResults(data);
+                    return data;
+                } catch (err) {
+                    showIlluminationError(err.message);
+                    return null;
+                }
+            }
+
+            function renderTimelineResults(data) {
+                const results = document.getElementById('illuminationResults');
+                // Backend returns: events, links, time_range, total_events, total_links
+                const events = data.events || [];
+                const links = data.links || [];
+
+                if (events.length === 0) {
+                    results.innerHTML = '<div style="color: #888; padding: 20px;">No events in timeline.</div>';
+                    return;
+                }
+
+                // Group events by component for summary
+                const byComponent = {};
+                events.forEach(ev => {
+                    const comp = ev.component || 'unknown';
+                    byComponent[comp] = (byComponent[comp] || 0) + 1;
+                });
+
+                const componentSummary = Object.entries(byComponent)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 6)
+                    .map(([comp, count]) => `<span style="background: #002020; padding: 3px 8px; border-radius: 3px; margin: 2px; display: inline-block;">${comp}: ${count}</span>`)
+                    .join('');
+
+                // Use time_range if available, otherwise extract from first/last events
+                const timeRange = data.time_range || {};
+                const startTs = timeRange.start || events[0].timestamp;
+                const endTs = timeRange.end || events[events.length - 1].timestamp;
+                
+                // Format timestamps - handle both Unix and ISO formats
+                const formatTime = (ts) => {
+                    if (!ts) return '?';
+                    if (typeof ts === 'number') {
+                        return new Date(ts * 1000).toLocaleTimeString();
+                    }
+                    return ts.substring(11, 19) || ts;
+                };
+
+                results.innerHTML = `
+                    <div style="color: #0f0; font-weight: bold; margin-bottom: 15px; font-size: 1.1em;">
+                        📅 Event Timeline
+                    </div>
+                    <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 15px;">
+                        <div style="background: #001a00; padding: 10px 15px; border-radius: 5px; border: 1px solid #0f0;">
+                            <div style="color: #888; font-size: 0.8em;">Time Range</div>
+                            <div style="color: #0f0; font-size: 1.1em;">${formatTime(startTs)} → ${formatTime(endTs)}</div>
+                        </div>
+                        <div style="background: #001a1a; padding: 10px 15px; border-radius: 5px; border: 1px solid #0ff;">
+                            <div style="color: #888; font-size: 0.8em;">Total Events</div>
+                            <div style="color: #0ff; font-size: 1.1em;">${data.total_events || events.length}</div>
+                        </div>
+                        <div style="background: #1a001a; padding: 10px 15px; border-radius: 5px; border: 1px solid #f0f;">
+                            <div style="color: #888; font-size: 0.8em;">Causation Links</div>
+                            <div style="color: #f0f; font-size: 1.1em;">${data.total_links || links.length}</div>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <div style="color: #888; font-size: 0.85em; margin-bottom: 5px;">Events by Component:</div>
+                        ${componentSummary}
+                    </div>
+                `;
+            }
+
+            // Show causation stats
+            async function illuminationShowStats() {
+                showIlluminationLoading('Loading causation statistics...');
+                try {
+                    const response = await fetch('/api/stats');
+                    const data = await response.json();
+                    storeIlluminationResult('stats', data);
+                    renderStatsResults(data);
+                    return data;
+                } catch (err) {
+                    showIlluminationError(err.message);
+                    return null;
+                }
+            }
+
+            function renderStatsResults(data) {
+                const results = document.getElementById('illuminationResults');
+                
+                // Calculate average effects per event
+                const totalEvents = data.total_events || 0;
+                const totalLinks = data.total_links || data.total_causation_links || 0;
+                const avgEffects = totalEvents > 0 ? (totalLinks / totalEvents).toFixed(2) : '0.00';
+                const density = data.graph_density ? (data.graph_density * 100).toFixed(1) : '0.0';
+                
+                // Format components list
+                const components = data.components || [];
+                const componentsList = components.length > 0 
+                    ? components.map(c => `<span style="background:#002020; padding:2px 6px; margin:2px; display:inline-block; border-radius:3px;">${c}</span>`).join('') 
+                    : 'None';
+                
+                // Format event types
+                const eventTypes = data.event_types || [];
+                const eventTypesList = eventTypes.slice(0, 10).map(t => `<span style="background:#200020; padding:2px 6px; margin:2px; display:inline-block; border-radius:3px; color:#f0f;">${t}</span>`).join('');
+
+                results.innerHTML = `
+                    <div style="color: #0ff; font-weight: bold; margin-bottom: 15px; font-size: 1.1em;">
+                        📊 Causation Graph Statistics
+                    </div>
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 15px;">
+                        <div style="background: #001a1a; padding: 15px; border-radius: 5px; border: 1px solid #0ff; flex: 1; min-width: 120px;">
+                            <div style="color: #888; font-size: 0.8em;">Total Events</div>
+                            <div style="color: #0ff; font-size: 1.5em; font-weight: bold;">${totalEvents}</div>
+                        </div>
+                        <div style="background: #1a001a; padding: 15px; border-radius: 5px; border: 1px solid #f0f; flex: 1; min-width: 120px;">
+                            <div style="color: #888; font-size: 0.8em;">Causation Links</div>
+                            <div style="color: #f0f; font-size: 1.5em; font-weight: bold;">${totalLinks}</div>
+                        </div>
+                        <div style="background: #001a00; padding: 15px; border-radius: 5px; border: 1px solid #0f0; flex: 1; min-width: 120px;">
+                            <div style="color: #888; font-size: 0.8em;">Avg. Links/Event</div>
+                            <div style="color: #0f0; font-size: 1.5em; font-weight: bold;">${avgEffects}</div>
+                        </div>
+                        <div style="background: #1a1a00; padding: 15px; border-radius: 5px; border: 1px solid #ff0; flex: 1; min-width: 120px;">
+                            <div style="color: #888; font-size: 0.8em;">Graph Density</div>
+                            <div style="color: #ff0; font-size: 1.5em; font-weight: bold;">${density}%</div>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <div style="color: #888; font-size: 0.85em; margin-bottom: 5px;">Components (${components.length}):</div>
+                        ${componentsList}
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <div style="color: #888; font-size: 0.85em; margin-bottom: 5px;">Event Types (${eventTypes.length}):</div>
+                        ${eventTypesList}
+                        ${eventTypes.length > 10 ? `<span style="color:#666;">...and ${eventTypes.length - 10} more</span>` : ''}
+                    </div>
+                `;
+            }
+
+            // Advanced search
+            async function illuminationSearch() {
+                const component = document.getElementById('illuminationComponent').value;
+                const eventType = document.getElementById('illuminationEventType').value;
+                const minSeverity = document.getElementById('illuminationSeverity').value;
+                const limit = document.getElementById('illuminationLimit').value;
+
+                showIlluminationLoading('Searching events...');
+
+                const params = new URLSearchParams();
+                if (component) params.append('component', component);
+                if (eventType) params.append('event_type', eventType);
+                if (minSeverity && parseFloat(minSeverity) > 0) params.append('min_severity', minSeverity);
+                if (limit) params.append('limit', limit);
+
+                try {
+                    const response = await fetch(`/api/events/search/advanced?${params.toString()}`);
+                    const data = await response.json();
+                    storeIlluminationResult('search', data);
+                    renderSearchResults(data);
+                    return data;
+                } catch (err) {
+                    showIlluminationError(err.message);
+                    return null;
+                }
+            }
+
+            function renderSearchResults(data) {
+                const resultsPanel = document.getElementById('illuminationResults');
+                // Handle both 'events' and 'results' response formats
+                const searchResults = data.results || data.events || [];
+                const totalMatches = data.total_matches || searchResults.length;
+
+                if (searchResults.length === 0) {
+                    resultsPanel.innerHTML = '<div style="color: #888; padding: 20px;">No events match your search criteria.</div>';
+                    return;
+                }
+
+                const eventsHtml = searchResults.slice(0, 20).map(item => {
+                    // Handle nested event structure
+                    const ev = item.event || item;
+                    const eventId = ev.event_id || ev.id || 'unknown';
+                    const eventType = ev.event_type || 'Unknown';
+                    const component = ev.component || 'Unknown';
+                    const severity = item.severity || ev.severity;
+                    const timestamp = ev.timestamp;
+                    const numCauses = item.num_causes || 0;
+                    const numEffects = item.num_effects || 0;
+                    
+                    return `
+                    <div style="background: #000510; border: 1px solid #006; border-radius: 4px; padding: 8px 12px; margin-bottom: 6px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;"
+                         onclick="illuminationSelectEvent('${eventId}')"
+                         onmouseover="this.style.borderColor='#0ff';"
+                         onmouseout="this.style.borderColor='#006';">
+                        <div>
+                            <span style="color: #ff0;">${eventType}</span>
+                            <span style="color: #888;"> @ ${component}</span>
+                            <span style="color: #0aa; font-size: 0.8em; margin-left: 5px;">[${numCauses}→ ${numEffects}]</span>
+                        </div>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            ${severity !== undefined ? `<span style="background: ${severity > 0.7 ? '#600' : severity > 0.4 ? '#630' : '#030'}; padding: 2px 6px; border-radius: 3px; font-size: 0.8em;">${(severity * 100).toFixed(0)}%</span>` : ''}
+                            <span style="color: #666; font-size: 0.75em;">${timestamp ? new Date(timestamp * 1000).toLocaleTimeString() : ''}</span>
+                        </div>
+                    </div>
+                `}).join('');
+
+                // Show aggregations if available
+                const aggHtml = data.aggregations ? `
+                    <div style="margin-bottom: 10px; padding: 8px; background: #0a0a0a; border-radius: 4px;">
+                        <div style="color: #888; font-size: 0.8em; margin-bottom: 5px;">By Component:</div>
+                        ${Object.entries(data.aggregations.by_component || {}).map(([k,v]) => 
+                            `<span style="background:#002020; padding:2px 6px; margin:2px; display:inline-block; border-radius:3px;">${k}: ${v}</span>`
+                        ).join('')}
+                    </div>
+                ` : '';
+
+                resultsPanel.innerHTML = `
+                    <div style="color: #00f; font-weight: bold; margin-bottom: 10px;">
+                        🔎 Search Results (${searchResults.length} of ${totalMatches} matches)
+                    </div>
+                    ${aggHtml}
+                    ${eventsHtml}
+                    ${totalMatches > 20 ? `<div style="color: #888; text-align: center; padding: 10px;">Showing first 20 of ${totalMatches} results</div>` : ''}
+                `;
+            }
+
+            // Select event for analysis
+            function illuminationSelectEvent(eventId) {
+                document.getElementById('illuminationEventId').value = eventId;
+                document.getElementById('illuminationEventId').style.background = '#220022';
+                setTimeout(() => {
+                    document.getElementById('illuminationEventId').style.background = '#111';
+                }, 500);
+            }
+
+            // Root causes analysis
+            async function illuminationRootCauses() {
+                const eventId = document.getElementById('illuminationEventId').value.trim();
+                if (!eventId) {
+                    showIlluminationError('Please enter an Event ID or click an event in the graph/search results');
+                    return null;
+                }
+
+                showIlluminationLoading(`Finding root causes of ${eventId}...`);
+
+                try {
+                    const response = await fetch(`/api/events/${eventId}/root-causes`);
+                    const data = await response.json();
+                    storeIlluminationResult('root_causes', data);
+                    renderRootCausesResults(data);
+                    return data;
+                } catch (err) {
+                    showIlluminationError(err.message);
+                    return null;
+                }
+            }
+
+            function renderRootCausesResults(data) {
+                const results = document.getElementById('illuminationResults');
+                const rootCauses = data.root_causes || [];
+
+                if (rootCauses.length === 0) {
+                    results.innerHTML = `
+                        <div style="color: #f00; padding: 20px;">
+                            <div style="font-weight: bold; margin-bottom: 10px;">🔍 Root Cause Analysis: ${data.event_id || 'Unknown'}</div>
+                            <div style="color: #888;">This event has no upstream causes - it may be a root/origin event itself.</div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const causesHtml = rootCauses.map((rc, i) => {
+                    // Backend returns root_event object inside each root cause
+                    const evt = rc.root_event || rc;
+                    const eventId = evt.event_id || '';
+                    const eventType = evt.event_type || 'Unknown';
+                    const component = evt.component || 'Unknown';
+                    const depth = rc.depth || '?';
+                    const narrative = rc.narrative || '';
+                    const avgStrength = rc.avg_strength ? (rc.avg_strength * 100).toFixed(0) + '%' : '';
+                    
+                    return `
+                    <div style="background: #100000; border-left: 3px solid #f00; padding: 10px; margin-bottom: 8px; cursor: pointer;"
+                         onclick="illuminationSelectEvent('${eventId}')"
+                         onmouseover="this.style.background='#200000';"
+                         onmouseout="this.style.background='#100000';">
+                        <div style="display: flex; justify-content: space-between;">
+                            <div>
+                                <span style="color: #f00; font-weight: bold;">${eventType}</span>
+                                <span style="color: #888;"> @ ${component}</span>
+                            </div>
+                            <div>
+                                ${avgStrength ? `<span style="color: #0f0; font-size: 0.8em; margin-right: 10px;">Strength: ${avgStrength}</span>` : ''}
+                                <span style="color: #666; font-size: 0.8em;">Depth: ${depth}</span>
+                            </div>
+                        </div>
+                        ${narrative ? `<div style="color: #aaa; font-size: 0.85em; margin-top: 5px;">${narrative}</div>` : ''}
+                    </div>
+                    `;
+                }).join('');
+
+                results.innerHTML = `
+                    <div style="color: #f00; font-weight: bold; margin-bottom: 15px; font-size: 1.1em;">
+                        🔍 Root Cause Analysis
+                    </div>
+                    <div style="color: #888; margin-bottom: 10px;">
+                        Event <span style="color: #ff0;">${data.event_id}</span> has <span style="color: #f00; font-weight: bold;">${rootCauses.length}</span> root causes
+                    </div>
+                    ${causesHtml}
+                `;
+            }
+
+            // Impact analysis
+            async function illuminationImpact() {
+                const eventId = document.getElementById('illuminationEventId').value.trim();
+                if (!eventId) {
+                    showIlluminationError('Please enter an Event ID or click an event in the graph/search results');
+                    return null;
+                }
+
+                showIlluminationLoading(`Analyzing impact of ${eventId}...`);
+
+                try {
+                    const response = await fetch(`/api/events/${eventId}/impact`);
+                    const data = await response.json();
+                    storeIlluminationResult('impact', data);
+                    renderImpactResults(data);
+                    return data;
+                } catch (err) {
+                    showIlluminationError(err.message);
+                    return null;
+                }
+            }
+
+            function renderImpactResults(data) {
+                const results = document.getElementById('illuminationResults');
+                // Backend returns: source_event, total_affected_events, affected_by_component, leaf_effects
+                const sourceEvent = data.source_event || {};
+                const totalAffected = data.total_affected_events || 0;
+                const affectedByComponent = data.affected_by_component || {};
+                const leafEffects = data.leaf_effects || [];
+
+                // Convert affected_by_component object to array
+                const componentEntries = Object.entries(affectedByComponent);
+
+                // Build leaf effects HTML
+                const effectsHtml = leafEffects.slice(0, 8).map(eff => {
+                    const evt = eff.effect_event || {};
+                    const eventId = evt.event_id || '';
+                    const eventType = evt.event_type || 'Unknown';
+                    const component = evt.component || 'Unknown';
+                    const depth = eff.propagation_depth || 0;
+                    const strength = eff.propagation_strength ? (eff.propagation_strength * 100).toFixed(0) + '%' : '';
+                    const severity = eff.severity || 0;
+                    const severityColor = severity > 0.7 ? '#f00' : severity > 0.4 ? '#f90' : '#0f0';
+                    
+                    return `
+                    <div style="background: #001500; border-left: 3px solid #0f0; padding: 8px; margin-bottom: 6px; cursor: pointer;"
+                         onclick="illuminationSelectEvent('${eventId}')"
+                         onmouseover="this.style.background='#002500';"
+                         onmouseout="this.style.background='#001500';">
+                        <div style="display: flex; justify-content: space-between;">
+                            <div>
+                                <span style="color: #0f0; font-weight: bold;">${eventType}</span>
+                                <span style="color: #888;"> @ ${component}</span>
+                            </div>
+                            <div>
+                                <span style="color: ${severityColor}; font-size: 0.8em; margin-right: 8px;">Sev: ${(severity * 100).toFixed(0)}%</span>
+                                <span style="color: #666; font-size: 0.8em;">Depth: ${depth}</span>
+                            </div>
+                        </div>
+                    </div>
+                    `;
+                }).join('');
+
+                results.innerHTML = `
+                    <div style="color: #0f0; font-weight: bold; margin-bottom: 15px; font-size: 1.1em;">
+                        💥 Impact Analysis
+                    </div>
+                    <div style="color: #888; margin-bottom: 15px;">
+                        Event <span style="color: #ff0;">${sourceEvent.event_id || 'Unknown'}</span> caused <span style="color: #0f0; font-weight: bold;">${totalAffected}</span> downstream effects
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <div style="color: #888; font-size: 0.85em; margin-bottom: 8px;">Affected Components:</div>
+                        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                            ${componentEntries.map(([comp, count]) => `
+                                <div style="background: #001500; border: 1px solid #0f0; padding: 8px 12px; border-radius: 5px;">
+                                    <div style="color: #0f0; font-weight: bold;">${comp}</div>
+                                    <div style="color: #888; font-size: 0.85em;">${count} events</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    ${leafEffects.length > 0 ? `
+                        <div style="margin-bottom: 10px;">
+                            <div style="color: #888; font-size: 0.85em; margin-bottom: 8px;">Top Downstream Effects (${data.total_leaf_effects || leafEffects.length} total):</div>
+                            ${effectsHtml}
+                        </div>
+                    ` : ''}
+                `;
+            }
+
+            // Explain event
+            async function illuminationExplain() {
+                const eventId = document.getElementById('illuminationEventId').value.trim();
+                if (!eventId) {
+                    showIlluminationError('Please enter an Event ID or click an event in the graph/search results');
+                    return null;
+                }
+
+                showIlluminationLoading(`Generating explanation for ${eventId}...`);
+
+                try {
+                    const response = await fetch(`/api/events/${eventId}/explain`);
+                    const data = await response.json();
+                    storeIlluminationResult('explain', data);
+                    renderExplainResults(data);
+                    return data;
+                } catch (err) {
+                    showIlluminationError(err.message);
+                    return null;
+                }
+            }
+
+            function renderExplainResults(data) {
+                const results = document.getElementById('illuminationResults');
+                // Backend returns: event, summary, immediate_causes, immediate_effects, root_causes, major_impacts, severity
+                const evt = data.event || {};
+                const severity = data.severity || 0;
+                const severityColor = severity > 0.7 ? '#f00' : severity > 0.4 ? '#f90' : '#0f0';
+                const summary = data.summary || 'No explanation available';
+                const immediateCauses = data.immediate_causes || [];
+                const immediateEffects = data.immediate_effects || [];
+                const totalUpstream = data.total_upstream_events || 0;
+                const totalDownstream = data.total_downstream_events || 0;
+
+                // Build immediate causes list
+                const causesHtml = immediateCauses.slice(0, 3).map(c => {
+                    const causeEvt = c.event || {};
+                    return `<div style="color: #f00; font-size: 0.9em;">← ${causeEvt.event_type || 'Unknown'} @ ${causeEvt.component || '?'}</div>`;
+                }).join('');
+
+                // Build immediate effects list
+                const effectsHtml = immediateEffects.slice(0, 3).map(e => {
+                    const effEvt = e.event || {};
+                    return `<div style="color: #0f0; font-size: 0.9em;">→ ${effEvt.event_type || 'Unknown'} @ ${effEvt.component || '?'}</div>`;
+                }).join('');
+
+                results.innerHTML = `
+                    <div style="color: #ff0; font-weight: bold; margin-bottom: 15px; font-size: 1.1em;">
+                        📖 Event Explanation
+                    </div>
+                    <div style="background: #101000; border: 1px solid #ff0; border-radius: 5px; padding: 15px; margin-bottom: 15px;">
+                        <div style="color: #fff; line-height: 1.6;">${summary}</div>
+                    </div>
+                    <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 15px;">
+                        <div style="background: #0a0a0a; padding: 10px 15px; border-radius: 5px; border: 1px solid ${severityColor};">
+                            <div style="color: #888; font-size: 0.8em;">Severity</div>
+                            <div style="color: ${severityColor}; font-size: 1.3em; font-weight: bold;">${(severity * 100).toFixed(0)}%</div>
+                        </div>
+                        <div style="background: #0a0a0a; padding: 10px 15px; border-radius: 5px; border: 1px solid #0ff;">
+                            <div style="color: #888; font-size: 0.8em;">Type</div>
+                            <div style="color: #0ff;">${evt.event_type || 'Unknown'}</div>
+                        </div>
+                        <div style="background: #0a0a0a; padding: 10px 15px; border-radius: 5px; border: 1px solid #0aa;">
+                            <div style="color: #888; font-size: 0.8em;">Component</div>
+                            <div style="color: #0aa;">${evt.component || 'Unknown'}</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 20px;">
+                        ${immediateCauses.length > 0 ? `
+                            <div style="flex: 1; background: #100000; border: 1px solid #f00; border-radius: 5px; padding: 10px;">
+                                <div style="color: #f00; font-weight: bold; margin-bottom: 8px;">Immediate Causes (${totalUpstream} total upstream)</div>
+                                ${causesHtml}
+                            </div>
+                        ` : ''}
+                        ${immediateEffects.length > 0 ? `
+                            <div style="flex: 1; background: #001500; border: 1px solid #0f0; border-radius: 5px; padding: 10px;">
+                                <div style="color: #0f0; font-weight: bold; margin-bottom: 8px;">Immediate Effects (${totalDownstream} total downstream)</div>
+                                ${effectsHtml}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+
+            // Hook into graph node clicks to auto-populate event ID
+            function hookIlluminationToGraph() {
+                // This will be called when a node is clicked in the graph
+                // We'll add this to the existing selectNode function
             }
 
             let configActionsTimer = null;
@@ -11485,6 +14159,13 @@
                     const clonedMinimizeBtn = clonedPanel.querySelector('#craMinimizeBtn');
                     if (clonedMinimizeBtn) {
                         clonedMinimizeBtn.style.display = 'inline-block';
+                        // Add direct click handler for the cloned minimize button
+                        clonedMinimizeBtn.onclick = function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log('[CRA] Cloned minimize button clicked');
+                            toggleCraFullscreen();
+                        };
                     }
                     const clonedFullscreenBtn = clonedPanel.querySelector('#craFullscreenBtn');
                     if (clonedFullscreenBtn) {
@@ -11525,6 +14206,122 @@
 
                     fullscreenOverlay.appendChild(clonedPanel);
                     document.body.appendChild(fullscreenOverlay);
+
+                    // ═══════════════════════════════════════════════════════════════════
+                    // WIRE UP ALL CLONED BUTTON HANDLERS
+                    // ═══════════════════════════════════════════════════════════════════
+                    
+                    // Chat send button
+                    const clonedSendBtn = clonedPanel.querySelector('#chatSendButton');
+                    const clonedChatInput = clonedPanel.querySelector('#chatInput');
+                    if (clonedSendBtn) {
+                        clonedSendBtn.onclick = function() {
+                            // Get message from cloned input, send it, then sync
+                            const msg = clonedChatInput ? clonedChatInput.value : '';
+                            if (msg.trim()) {
+                                // Set the original input and send
+                                const originalInput = document.getElementById('chatInput');
+                                if (originalInput) originalInput.value = msg;
+                                sendChatMessage();
+                                if (clonedChatInput) clonedChatInput.value = '';
+                            }
+                        };
+                    }
+                    if (clonedChatInput) {
+                        clonedChatInput.onkeypress = function(e) {
+                            if (e.key === 'Enter') {
+                                const msg = clonedChatInput.value;
+                                if (msg.trim()) {
+                                    const originalInput = document.getElementById('chatInput');
+                                    if (originalInput) originalInput.value = msg;
+                                    sendChatMessage();
+                                    clonedChatInput.value = '';
+                                }
+                            }
+                        };
+                    }
+                    
+                    // Copy All button
+                    const clonedCopyBtn = clonedPanel.querySelector('button[onclick="copyAllChat()"]');
+                    if (clonedCopyBtn) {
+                        clonedCopyBtn.onclick = function() { copyAllChat(); };
+                    }
+                    
+                    // Export button
+                    const clonedExportBtn = clonedPanel.querySelector('button[onclick="exportAnalysis()"]');
+                    if (clonedExportBtn) {
+                        clonedExportBtn.onclick = function() { exportAnalysis(); };
+                    }
+                    
+                    // Collapse button (should work as minimize in fullscreen)
+                    const clonedCollapseBtn = clonedPanel.querySelector('#craCollapseBtn');
+                    if (clonedCollapseBtn) {
+                        clonedCollapseBtn.onclick = function(e) {
+                            e.preventDefault();
+                            toggleCraFullscreen(); // Exit fullscreen instead of collapse
+                        };
+                    }
+                    
+                    // Tab buttons
+                    const clonedTabChat = clonedPanel.querySelector('#tabChat');
+                    const clonedTabNotepad = clonedPanel.querySelector('#tabNotepad');
+                    if (clonedTabChat) {
+                        clonedTabChat.onclick = function() { 
+                            switchCRATab('chat'); 
+                            // Also update cloned tab styles
+                            clonedTabChat.style.background = '#0aa';
+                            clonedTabChat.style.color = '#000';
+                            if (clonedTabNotepad) {
+                                clonedTabNotepad.style.background = '#111';
+                                clonedTabNotepad.style.color = '#f90';
+                            }
+                            // Show/hide cloned content
+                            const clonedChatContent = clonedPanel.querySelector('#chatTabContent');
+                            const clonedNotepadContent = clonedPanel.querySelector('#notepadTabContent');
+                            if (clonedChatContent) clonedChatContent.style.display = 'block';
+                            if (clonedNotepadContent) clonedNotepadContent.style.display = 'none';
+                        };
+                    }
+                    if (clonedTabNotepad) {
+                        clonedTabNotepad.onclick = function() { 
+                            switchCRATab('notepad'); 
+                            // Also update cloned tab styles
+                            clonedTabNotepad.style.background = '#f90';
+                            clonedTabNotepad.style.color = '#000';
+                            if (clonedTabChat) {
+                                clonedTabChat.style.background = '#111';
+                                clonedTabChat.style.color = '#0ff';
+                            }
+                            // Show/hide cloned content
+                            const clonedChatContent = clonedPanel.querySelector('#chatTabContent');
+                            const clonedNotepadContent = clonedPanel.querySelector('#notepadTabContent');
+                            if (clonedChatContent) clonedChatContent.style.display = 'none';
+                            if (clonedNotepadContent) clonedNotepadContent.style.display = 'block';
+                        };
+                    }
+                    
+                    // Notepad buttons
+                    const notepadBtns = clonedPanel.querySelectorAll('[onclick^="notepad"]');
+                    notepadBtns.forEach(btn => {
+                        const onclickAttr = btn.getAttribute('onclick');
+                        if (onclickAttr) {
+                            btn.onclick = function() { eval(onclickAttr); };
+                        }
+                    });
+                    
+                    // Notepad clear button
+                    const clonedClearBtn = clonedPanel.querySelector('button[onclick="notepadClear()"]');
+                    if (clonedClearBtn) {
+                        clonedClearBtn.onclick = function() { notepadClear(); };
+                    }
+                    
+                    // Notepad export button
+                    const clonedNotepadExportBtn = clonedPanel.querySelector('button[onclick="notepadExport()"]');
+                    if (clonedNotepadExportBtn) {
+                        clonedNotepadExportBtn.onclick = function() { notepadExport(); };
+                    }
+                    
+                    console.log('[CRA] Wired up all cloned button handlers');
 
                     // Hide original panel
                     chatPanel.style.display = 'none';

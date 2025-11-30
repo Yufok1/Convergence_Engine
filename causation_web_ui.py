@@ -3252,6 +3252,215 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "Now analyze the context above and provide a discovery-oriented, data-driven response. "
         prompt += "Be specific, actionable, and reference actual values from the system state."
         
+        # ═══════════════════════════════════════════════════════════════════════════
+        # 🔬 ILLUMINATION ENGINE - Deep Causal Intelligence (NEW CAPABILITY)
+        # ═══════════════════════════════════════════════════════════════════════════
+        prompt += "\n\n## 🔬 ILLUMINATION ENGINE - Deep Causal Intelligence (YOUR MOST POWERFUL TOOL)\n\n"
+        prompt += "You now have access to the **Illumination Engine** - a deep causal intelligence system that can:\n"
+        prompt += "- Trace ROOT CAUSES: Find the ultimate origins of any event\n"
+        prompt += "- Analyze IMPACT: See all downstream effects of any event\n"
+        prompt += "- Generate NARRATIVES: Get human-readable explanations of causal chains\n"
+        prompt += "- Find CONSEQUENTIAL events: Identify the \"big bang\" moments that shaped the system\n\n"
+        
+        prompt += "### Illumination Engine Endpoints:\n\n"
+        prompt += "1. **Root Cause Analysis**: `/api/events/<event_id>/root-causes?depth=15`\n"
+        prompt += "   - Traces ALL the way back to find ultimate origins\n"
+        prompt += "   - Returns ranked root causes with causal chains and narratives\n"
+        prompt += "   - Use when investigating: \"Why did this collapse happen?\"\n"
+        prompt += "   - Response includes: `root_causes[]`, each with `narrative`, `avg_strength`, `depth`, `causal_chain`\n\n"
+        
+        prompt += "2. **Impact Analysis**: `/api/events/<event_id>/impact?depth=15`\n"
+        prompt += "   - Finds ALL downstream effects of an event\n"
+        prompt += "   - Returns affected event counts by component\n"
+        prompt += "   - Use when investigating: \"What did this VP spike cause?\"\n"
+        prompt += "   - Response includes: `total_affected_events`, `affected_by_component`, `leaf_effects[]`\n\n"
+        
+        prompt += "3. **Complete Event Explanation**: `/api/events/<event_id>/explain`\n"
+        prompt += "   - Full narrative: WHY it happened AND what it caused\n"
+        prompt += "   - Includes severity score, metric deltas, immediate causes/effects\n"
+        prompt += "   - Use when a user asks: \"What's going on with event X?\"\n"
+        prompt += "   - Response includes: `summary`, `severity`, `immediate_causes[]`, `immediate_effects[]`, `root_causes[]`, `major_impacts[]`\n\n"
+        
+        prompt += "4. **Advanced Search**: `/api/events/search/advanced?component=X&event_type=Y&min_severity=0.7`\n"
+        prompt += "   - Filtered search with aggregations\n"
+        prompt += "   - Parameters: `q`, `component`, `event_type`, `time_start`, `time_end`, `min_severity`, `has_caused`, `has_been_caused`, `limit`\n"
+        prompt += "   - Use when investigating: \"Show me all high-severity neural events\"\n"
+        prompt += "   - Response includes: `results[]`, `aggregations.by_component`, `aggregations.by_type`\n\n"
+        
+        prompt += "5. **Most Consequential Events**: `/api/events/consequential?limit=10`\n"
+        prompt += "   - Finds events that triggered the most downstream effects\n"
+        prompt += "   - These are the \"big bang\" moments in your simulation\n"
+        prompt += "   - Use when investigating: \"What were the pivotal moments?\"\n"
+        prompt += "   - Response includes: `events[]` with `downstream_effects`, `impact_score`, `severity`\n\n"
+        
+        prompt += "6. **Timeline View**: `/api/timeline?start=X&end=Y&components=reality_sim,neural`\n"
+        prompt += "   - Events and causation links over a time period\n"
+        prompt += "   - Use for temporal pattern analysis\n"
+        prompt += "   - Response includes: `events[]`, `links[]`, `time_range`\n\n"
+        
+        prompt += "### How to Use the Illumination Engine:\n\n"
+        prompt += "**When a user asks \"Why did X happen?\":**\n"
+        prompt += "1. First, search for the event: `/api/events/search?q=collapse` or use advanced search\n"
+        prompt += "2. Get the event_id from the results\n"
+        prompt += "3. Call root cause analysis: `/api/events/<event_id>/root-causes?depth=15`\n"
+        prompt += "4. Present the narrative: \"This collapse was caused by... which was triggered by... which originated from...\"\n\n"
+        
+        prompt += "**When a user asks \"What did X cause?\":**\n"
+        prompt += "1. Find the event (search or from context)\n"
+        prompt += "2. Call impact analysis: `/api/events/<event_id>/impact?depth=15`\n"
+        prompt += "3. Summarize: \"This event triggered N downstream events across M components\"\n\n"
+        
+        prompt += "**When investigating system behavior:**\n"
+        prompt += "1. Get most consequential events: `/api/events/consequential?limit=5`\n"
+        prompt += "2. Explain each one: \"The most impactful event was [X] which caused [Y] downstream effects\"\n"
+        prompt += "3. Trace chains: Show the causal narratives\n\n"
+        
+        prompt += "### Illumination Engine Command Format:\n\n"
+        prompt += "**CRITICAL**: When you want to execute an illumination command, output the marker EXACTLY as shown below.\n"
+        prompt += "Do NOT wrap markers in code blocks or backticks. The frontend parses these markers directly.\n\n"
+        prompt += "Available commands (output these EXACTLY, on their own line):\n"
+        prompt += "[[ILLUMINATE: {\"action\": \"root_causes\", \"event_id\": \"evt_123\"}]]\n"
+        prompt += "[[ILLUMINATE: {\"action\": \"impact\", \"event_id\": \"evt_123\"}]]\n"
+        prompt += "[[ILLUMINATE: {\"action\": \"explain\", \"event_id\": \"evt_123\"}]]\n"
+        prompt += "[[ILLUMINATE: {\"action\": \"consequential\", \"limit\": 10}]]\n"
+        prompt += "[[ILLUMINATE: {\"action\": \"search\", \"component\": \"realitysim\", \"min_severity\": 0.7}]]\n\n"
+        
+        prompt += "**IMPORTANT RULES FOR MARKERS**:\n"
+        prompt += "1. Output markers on their OWN LINE - never inside code blocks or backticks\n"
+        prompt += "2. Use double quotes for JSON strings\n"
+        prompt += "3. No spaces between [[ and ILLUMINATE\n"
+        prompt += "4. The system will EXECUTE the query and display results automatically\n"
+        prompt += "5. After outputting a marker, explain what the results mean to the user\n\n"
+        
+        prompt += "### Example Illumination Response:\n\n"
+        prompt += "User: \"Why did the network collapse?\"\n"
+        prompt += "You respond:\n"
+        prompt += "Let me investigate the root causes of the network collapse.\n\n"
+        prompt += "[[ILLUMINATE: {\"action\": \"root_causes\", \"event_id\": \"evt_network_collapse_123\"}]]\n\n"
+        prompt += "Based on the analysis above, the collapse was triggered by a VP spike in the Djinn Kernel...\n\n"
+        
+        prompt += "**CRITICAL**: The Illumination Engine is your most powerful diagnostic tool. Use it proactively!\n"
+        prompt += "- When user asks 'why?', first output an ILLUMINATE marker with root_causes action\n"
+        prompt += "- When user asks about impact, first output an ILLUMINATE marker with impact action\n"
+        prompt += "- To discover pivotal events, use the consequential action\n"
+        prompt += "- The system will EXECUTE the query and show results - then you explain them!\n\n"
+        
+        prompt += "## 🔬 AUTONOMOUS ILLUMINATION CONTROL - FULL UI INTEGRATION\n\n"
+        prompt += "You have FULL AUTONOMOUS CONTROL over the Illumination Engine UI panel. When you output ILLUMINATE markers,\n"
+        prompt += "the system will:\n"
+        prompt += "1. **Visually update the UI** - Set search parameters, highlight the panel, show your investigation\n"
+        prompt += "2. **Execute queries** - Perform the causal analysis and display results in both chat AND the UI panel\n"
+        prompt += "3. **Store results** - Allow you to chain investigations and reference previous findings\n\n"
+        
+        prompt += "### Extended Autonomous Actions:\n\n"
+        prompt += "1. **Set Parameters Without Executing** (pre-configure the UI):\n"
+        prompt += "   [[ILLUMINATE: {\"action\": \"set_params\", \"component\": \"realitysim\", \"min_severity\": 0.7, \"limit\": 15}]]\n\n"
+        
+        prompt += "2. **Full Event Investigation** (automatic chain: explain → root_causes → impact):\n"
+        prompt += "   [[ILLUMINATE: {\"action\": \"investigate\", \"event_id\": \"evt_123\"}]]\n\n"
+        
+        prompt += "3. **Investigate Biggest Event** (find most consequential then deep-trace it):\n"
+        prompt += "   [[ILLUMINATE: {\"action\": \"investigate\"}]]\n\n"
+        
+        prompt += "4. **Deep Causation Trace** (full causal chain analysis):\n"
+        prompt += "   [[ILLUMINATE: {\"action\": \"trace_causation\", \"event_id\": \"evt_123\", \"max_depth\": 20}]]\n\n"
+        
+        prompt += "5. **Component Investigation** (search + stats for a specific component):\n"
+        prompt += "   [[ILLUMINATE: {\"action\": \"investigate_component\", \"component\": \"djinnkernel\", \"min_severity\": 0.5}]]\n\n"
+        
+        prompt += "### Investigation Strategy:\n\n"
+        prompt += "When faced with complex scenarios, use the Illumination Engine systematically:\n"
+        prompt += "1. **Discovery Phase**: Use `consequential` to find high-impact events\n"
+        prompt += "2. **Root Cause Phase**: Use `root_causes` to trace origins\n"
+        prompt += "3. **Impact Phase**: Use `impact` to understand downstream effects\n"
+        prompt += "4. **Synthesis**: Combine findings into a coherent narrative\n\n"
+        
+        prompt += "Example multi-step investigation:\n"
+        prompt += "```\n"
+        prompt += "User: \"The system is unstable, what's going on?\"\n"
+        prompt += "You:\n"
+        prompt += "Let me perform a comprehensive investigation.\n\n"
+        prompt += "[[ILLUMINATE: {\"action\": \"investigate\"}]]\n\n"
+        prompt += "The investigation reveals that [interpret the cascading results]...\n"
+        prompt += "```\n\n"
+        
+        prompt += "The UI will show a glowing 'CRA AUTONOMOUS MODE' indicator when you're performing\n"
+        prompt += "multi-step investigations, giving users visibility into your reasoning process.\n\n"
+        
+        # ═══════════════════════════════════════════════════════════════════════════
+        # 📓 RESEARCH NOTEPAD - Scientific Documentation System
+        # ═══════════════════════════════════════════════════════════════════════════
+        prompt += "## 📓 RESEARCH NOTEPAD - Your Scientific Journal\n\n"
+        prompt += "You have access to a **Research Notepad** - a persistent memory system for documenting your investigations.\n"
+        prompt += "Use this like a real scientist would: record observations, form hypotheses, document causation chains,\n"
+        prompt += "and draw conclusions. Your notes persist across sessions and can be referenced later.\n\n"
+        
+        prompt += "### Notepad Command Format:\n\n"
+        prompt += "Output these markers on their own line (no code blocks):\n\n"
+        
+        prompt += "**Record an Observation:**\n"
+        prompt += "[[NOTEPAD: {\"action\": \"observe\", \"content\": \"VP spiked to 0.85 in Djinn Kernel at 14:32:05\", \"events\": [\"evt_123\"]}]]\n\n"
+        
+        prompt += "**Form a Hypothesis:**\n"
+        prompt += "[[NOTEPAD: {\"action\": \"hypothesize\", \"content\": \"High VP may trigger cluster collapse within 30 cycles\", \"confidence\": \"medium\", \"events\": [\"evt_123\", \"evt_124\"]}]]\n\n"
+        
+        prompt += "**Document Causation:**\n"
+        prompt += "[[NOTEPAD: {\"action\": \"causation\", \"content\": \"Config change caused modularity drop\", \"cause\": \"evt_config_123\", \"effect\": \"evt_collapse_456\"}]]\n\n"
+        
+        prompt += "**Record Analysis:**\n"
+        prompt += "[[NOTEPAD: {\"action\": \"analyze\", \"content\": \"Pattern detected: VP spikes precede collapses by 10-15 cycles\", \"events\": [\"evt_1\", \"evt_2\"]}]]\n\n"
+        
+        prompt += "**Draw Conclusion:**\n"
+        prompt += "[[NOTEPAD: {\"action\": \"conclude\", \"content\": \"Confirmed: reproduction_rate > 1.5 causes instability\", \"events\": [\"evt_final\"]}]]\n\n"
+        
+        prompt += "**Ask a Question (for later investigation):**\n"
+        prompt += "[[NOTEPAD: {\"action\": \"question\", \"content\": \"Why does organism count spike before collapse?\"}]]\n\n"
+        
+        prompt += "**Add a TODO:**\n"
+        prompt += "[[NOTEPAD: {\"action\": \"todo\", \"content\": \"Investigate neural sync correlation with VP\"}]]\n\n"
+        
+        prompt += "**Auto-Note (for your internal reasoning):**\n"
+        prompt += "[[NOTEPAD: {\"action\": \"auto\", \"content\": \"Need to trace root causes of the 14:32 event\"}]]\n\n"
+        
+        prompt += "### Referencing Your Notes:\n\n"
+        prompt += "**Read all notes:**\n"
+        prompt += "[[NOTEPAD: {\"action\": \"read\"}]]\n\n"
+        
+        prompt += "**Read notes by type:**\n"
+        prompt += "[[NOTEPAD: {\"action\": \"read\", \"type\": \"hypothesis\"}]]\n\n"
+        
+        prompt += "**Search notes:**\n"
+        prompt += "[[NOTEPAD: {\"action\": \"search\", \"query\": \"VP spike\"}]]\n\n"
+        
+        prompt += "**Get summary:**\n"
+        prompt += "[[NOTEPAD: {\"action\": \"summary\"}]]\n\n"
+        
+        prompt += "### Best Practices for Research Documentation:\n\n"
+        prompt += "1. **OBSERVE** before analyzing - record what you see first\n"
+        prompt += "2. **HYPOTHESIZE** with confidence levels - be honest about uncertainty\n"
+        prompt += "3. **DOCUMENT CAUSATION** with event IDs - make chains traceable\n"
+        prompt += "4. **ANALYZE** patterns across multiple observations\n"
+        prompt += "5. **CONCLUDE** only when evidence is strong\n"
+        prompt += "6. **QUESTION** things you don't understand - revisit later\n"
+        prompt += "7. **Use #hashtags** in content for categorization (e.g., #vp_spike #collapse)\n\n"
+        
+        prompt += "Example Investigation Flow:\n"
+        prompt += "```\n"
+        prompt += "User: \"Why did the system collapse at 14:32?\"\n"
+        prompt += "You:\n"
+        prompt += "[[NOTEPAD: {\"action\": \"observe\", \"content\": \"System collapse reported at 14:32. Beginning investigation. #collapse #incident\"}]]\n\n"
+        prompt += "[[ILLUMINATE: {\"action\": \"search\", \"event_type\": \"collapse\"}]]\n\n"
+        prompt += "I found the collapse event. Let me trace its origins...\n\n"
+        prompt += "[[ILLUMINATE: {\"action\": \"root_causes\", \"event_id\": \"evt_collapse_123\"}]]\n\n"
+        prompt += "[[NOTEPAD: {\"action\": \"hypothesize\", \"content\": \"Collapse triggered by VP exceeding 0.8 threshold #vp_spike\", \"confidence\": \"high\", \"events\": [\"evt_vp_spike\", \"evt_collapse_123\"]}]]\n\n"
+        prompt += "[[NOTEPAD: {\"action\": \"causation\", \"content\": \"VP spike → threshold_crossed → cluster_collapse\", \"cause\": \"evt_vp_spike\", \"effect\": \"evt_collapse_123\"}]]\n\n"
+        prompt += "Based on my investigation: The collapse was caused by...\n"
+        prompt += "```\n\n"
+        
+        prompt += "**IMPORTANT**: Use the notepad liberally! It's your scientific journal. Document your reasoning process,\n"
+        prompt += "not just final conclusions. This helps users understand your analysis AND helps you build up\n"
+        prompt += "knowledge across multiple investigations.\n\n"
+        
         return prompt
 
 
@@ -5050,6 +5259,128 @@ def find_path(from_id, to_id):
     except Exception as e:
         logger.error(f"Error finding path from {from_id} to {to_id}: {e}", exc_info=True)
         return jsonify({'path': None, 'events': [], 'error': str(e)}), 200
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 🔬 ILLUMINATION ENGINE API - Deep Causal Intelligence Endpoints
+# ═══════════════════════════════════════════════════════════════════════════
+
+@app.route('/api/events/<event_id>/root-causes')
+def get_root_causes(event_id):
+    """
+    🔍 DEEP ROOT CAUSE ANALYSIS
+    Trace ALL the way back to find ultimate origins.
+    """
+    if explorer is None:
+        return jsonify({'error': 'Causation Explorer not initialized'}), 500
+    try:
+        max_depth = int(request.args.get('depth', 20))
+        analysis = explorer.find_root_causes(event_id, max_depth)
+        return jsonify(analysis)
+    except Exception as e:
+        logger.error(f"Error finding root causes for {event_id}: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/events/<event_id>/impact')
+def get_impact_analysis(event_id):
+    """
+    💥 IMPACT ANALYSIS
+    What were ALL downstream effects of this event?
+    """
+    if explorer is None:
+        return jsonify({'error': 'Causation Explorer not initialized'}), 500
+    try:
+        max_depth = int(request.args.get('depth', 20))
+        analysis = explorer.analyze_impact(event_id, max_depth)
+        return jsonify(analysis)
+    except Exception as e:
+        logger.error(f"Error analyzing impact for {event_id}: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/events/<event_id>/explain')
+def explain_event(event_id):
+    """
+    📖 COMPLETE EVENT EXPLANATION
+    Why did this happen AND what did it cause?
+    """
+    if explorer is None:
+        return jsonify({'error': 'Causation Explorer not initialized'}), 500
+    try:
+        explanation = explorer.explain_event(event_id)
+        return jsonify(explanation)
+    except Exception as e:
+        logger.error(f"Error explaining event {event_id}: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/events/search/advanced')
+def search_events_advanced():
+    """
+    🔎 ADVANCED SEARCH with filters and aggregation
+    """
+    if explorer is None:
+        return jsonify({'error': 'Causation Explorer not initialized'}), 500
+    try:
+        results = explorer.search_advanced(
+            query=request.args.get('q'),
+            component=request.args.get('component'),
+            event_type=request.args.get('event_type'),
+            time_start=float(request.args.get('time_start')) if request.args.get('time_start') else None,
+            time_end=float(request.args.get('time_end')) if request.args.get('time_end') else None,
+            min_severity=float(request.args.get('min_severity')) if request.args.get('min_severity') else None,
+            has_caused=request.args.get('has_caused', '').lower() == 'true' if request.args.get('has_caused') else None,
+            has_been_caused=request.args.get('has_been_caused', '').lower() == 'true' if request.args.get('has_been_caused') else None,
+            limit=int(request.args.get('limit', 50))
+        )
+        return jsonify(results)
+    except Exception as e:
+        logger.error(f"Error in advanced search: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/events/consequential')
+def get_consequential_events():
+    """
+    🏆 MOST CONSEQUENTIAL EVENTS
+    Events that caused the most downstream effects.
+    """
+    if explorer is None:
+        return jsonify({'error': 'Causation Explorer not initialized'}), 500
+    try:
+        limit = int(request.args.get('limit', 10))
+        events = explorer.get_most_consequential(limit)
+        return jsonify({'events': events, 'count': len(events)})
+    except Exception as e:
+        logger.error(f"Error getting consequential events: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/timeline')
+def get_timeline():
+    """
+    📅 TIMELINE VIEW
+    Events and causation links over a time period.
+    """
+    if explorer is None:
+        return jsonify({'error': 'Causation Explorer not initialized'}), 500
+    try:
+        start_time = float(request.args.get('start')) if request.args.get('start') else None
+        end_time = float(request.args.get('end')) if request.args.get('end') else None
+        components = request.args.get('components', '').split(',') if request.args.get('components') else None
+        include_links = request.args.get('include_links', 'true').lower() == 'true'
+        
+        timeline = explorer.get_timeline(
+            start_time=start_time,
+            end_time=end_time,
+            components=components if components and components[0] else None,
+            include_causation_links=include_links
+        )
+        return jsonify(timeline)
+    except Exception as e:
+        logger.error(f"Error getting timeline: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/stats')

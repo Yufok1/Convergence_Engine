@@ -197,6 +197,17 @@ Interactive web interface for exploring event causation and system dynamics.
   - Dynamic color themes
   - PC resource monitoring and correlation
   - Diagnostic data access
+  - 🔬 **Illumination Engine**: ⭐ NEW - Deep causal analysis with 6 methods
+    - `root_causes`: Trace ultimate origins of any event
+    - `impact`: Forward cascade analysis - what effects ripple out
+    - `explain`: Natural language explanation of events
+    - `search`: Advanced multi-filter event search
+    - `most_consequential`: Find pivotal events by impact score
+    - `timeline`: Time-based event clustering
+  - 📓 **Research Notepad**: ⭐ NEW - Persistent scientific journal
+    - 8 entry types: observe, hypothesize, causation, analyze, conclude, question, todo, auto
+    - Hashtag categorization and search
+    - Cumulative knowledge across sessions
 - **Evolutionary Snapshot System**: Automatic capture, server-side storage, vision analysis
 - **Video Export**: MP4 creation with AI-generated narration
   - **Note:** Requires FFmpeg for video creation

@@ -413,6 +413,230 @@ The ML system emits specialized events with distinct visual shapes:
 
 ---
 
+## 🔬 Illumination Engine - Deep Causal Intelligence ⭐ NEW
+
+The Illumination Engine provides deep causal analysis capabilities, allowing the CRA to trace causation chains, analyze impact, and discover pivotal events in the system.
+
+### Core Concept
+
+The Illumination Engine is a forensic analysis system that lets the CRA trace causation chains through the entire event graph. It answers questions like "Why did this REALLY happen?" and "What did this cause?"
+
+### 6 Deep Analysis Methods
+
+| Method | Description | Use Case |
+|--------|-------------|----------|
+| `root_causes` | Trace ALL the way back to find ultimate origins | "Why did the network collapse?" |
+| `impact` | Forward cascade analysis - what effects ripple out | "What did that config change break?" |
+| `explain` | Natural language explanation of why event occurred | "Explain this event to me" |
+| `search` | Advanced multi-filter search across events | "Find high-severity neural events" |
+| `most_consequential` | Find most significant events by impact score | "What were the most important events?" |
+| `timeline` | Time-based event clustering and pattern detection | "Show me event patterns over time" |
+
+### Command Format (Autonomous)
+
+The CRA outputs these markers on their own line (no code blocks):
+
+```
+[[ILLUMINATE: {"action": "root_causes", "event_id": "evt_123"}]]
+[[ILLUMINATE: {"action": "impact", "event_id": "evt_123"}]]
+[[ILLUMINATE: {"action": "explain", "event_id": "evt_123"}]]
+[[ILLUMINATE: {"action": "search", "component": "neural", "min_severity": 0.7}]]
+[[ILLUMINATE: {"action": "most_consequential", "limit": 10}]]
+[[ILLUMINATE: {"action": "timeline", "window_hours": 1, "bucket_minutes": 5}]]
+```
+
+### UI Control Actions
+
+The CRA has autonomous control over the Illumination Engine UI panel:
+
+| Action | Description | Example |
+|--------|-------------|---------|
+| `set_params` | Configure filter parameters | `{"action": "set_params", "component": "realitysim", "min_severity": 0.7}` |
+| `investigate` | Deep dive into specific event | `{"action": "investigate", "event_id": "evt_123"}` |
+| `investigate` (no event) | Investigate most consequential | `{"action": "investigate"}` |
+| `trace_causation` | Trace root causes with custom depth | `{"action": "trace_causation", "event_id": "evt_123", "max_depth": 20}` |
+| `investigate_component` | Filter by component | `{"action": "investigate_component", "component": "djinnkernel"}` |
+
+### API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/events/<event_id>/root-causes` | GET | Find root causes (depth param) |
+| `/api/events/<event_id>/impact` | GET | Analyze downstream impact |
+| `/api/events/<event_id>/explain` | GET | Get natural language explanation |
+| `/api/events/search/advanced` | GET | Multi-filter event search |
+| `/api/events/consequential` | GET | Get most consequential events |
+| `/api/timeline` | GET | Get time-based event clustering |
+| `/api/stats` | GET | Get global causation statistics |
+
+### Result Structure Examples
+
+**Root Cause Analysis:**
+```json
+{
+  "event": {"event_id": "evt_123", "event_type": "collapse", ...},
+  "root_causes": [
+    {
+      "root_event": {"event_id": "evt_001", "event_type": "config_change", ...},
+      "depth": 5,
+      "causal_chain": [...],
+      "chain_explanations": ["VP exceeded threshold", "Triggered collapse"],
+      "avg_strength": 0.85,
+      "narrative": "Config change at 14:30 led to VP spike which triggered collapse"
+    }
+  ]
+}
+```
+
+**Impact Analysis:**
+```json
+{
+  "source_event": {"event_id": "evt_123", ...},
+  "total_affected_events": 47,
+  "affected_by_component": {"djinn_kernel": 20, "neural": 15, "explorer": 12},
+  "leaf_effects": [...],
+  "impact_score": 0.92
+}
+```
+
+### When the CRA Uses It
+
+- When user asks **"Why did X happen?"** → Auto-invoke `root_causes`
+- When user asks **"What did X cause?"** → Auto-invoke `impact`
+- When investigating anomalies → Search for `most_consequential` events
+- When patterns seem complex → Perform deep `trace_causation`
+
+### Frontend Integration
+
+- `processIlluminateCommand()` parses CRA responses for `[[ILLUMINATE: ...]]` markers
+- `window.craIllumination` object provides programmatic access
+- Illumination Engine panel updates automatically from CRA commands
+- Results display in styled cards in the chat
+
+---
+
+## 📓 Research Notepad - Scientific Journal ⭐ NEW
+
+The Research Notepad is a persistent memory system for documenting investigations. It functions as the CRA's scientific lab notebook, surviving across conversations and sessions.
+
+### Core Concept
+
+The CRA uses the Research Notepad like a real scientist would: recording observations, forming hypotheses, documenting causation chains, and drawing conclusions. Notes persist across sessions and build up cumulative knowledge.
+
+### 8 Entry Types
+
+| Action | Color | Description | Example |
+|--------|-------|-------------|---------|
+| `observe` | 🟢 Green | Record observations | "VP spiked to 0.85 at 14:32:05" |
+| `hypothesize` | 🟠 Orange | Form hypotheses with confidence | "High VP may trigger collapse within 30 cycles" |
+| `causation` | 🟣 Magenta | Document cause → effect relationships | "Config change → modularity drop → collapse" |
+| `analyze` | 🔵 Cyan | Record pattern analysis | "Pattern: VP spikes precede collapses by 10-15 cycles" |
+| `conclude` | 🔴 Red | Draw evidence-based conclusions | "Confirmed: reproduction_rate > 1.5 causes instability" |
+| `question` | ⚪ White | Ask questions for later investigation | "Why does organism count spike before collapse?" |
+| `todo` | 🔵 Blue | Add research tasks | "Investigate neural sync correlation with VP" |
+| `auto` | 🔘 Gray | Internal reasoning notes | "Need to trace root causes of the 14:32 event" |
+
+### Command Format (Autonomous)
+
+**Recording Entries:**
+```
+[[NOTEPAD: {"action": "observe", "content": "VP spiked to 0.85 at 14:32:05", "events": ["evt_123"]}]]
+[[NOTEPAD: {"action": "hypothesize", "content": "High VP triggers collapse within 30 cycles", "confidence": "medium", "events": ["evt_123"]}]]
+[[NOTEPAD: {"action": "causation", "content": "VP spike → threshold → collapse", "cause": "evt_vp_spike", "effect": "evt_collapse_123"}]]
+[[NOTEPAD: {"action": "analyze", "content": "Pattern: 3 of 4 collapses preceded by VP > 0.8", "events": ["evt_1", "evt_2"]}]]
+[[NOTEPAD: {"action": "conclude", "content": "Confirmed: VP > 0.8 is reliable collapse predictor", "events": ["evt_final"]}]]
+[[NOTEPAD: {"action": "question", "content": "Why does organism count spike before collapse?"}]]
+[[NOTEPAD: {"action": "todo", "content": "Configure automated VP alert at 0.75 threshold"}]]
+[[NOTEPAD: {"action": "auto", "content": "Need to trace root causes of the 14:32 event"}]]
+```
+
+**Reference Commands:**
+```
+[[NOTEPAD: {"action": "read"}]]                           # Read all notes
+[[NOTEPAD: {"action": "read", "type": "hypothesis"}]]     # Filter by type
+[[NOTEPAD: {"action": "search", "query": "VP spike"}]]    # Search notes
+[[NOTEPAD: {"action": "search", "query": "#collapse"}]]   # Search by hashtag
+[[NOTEPAD: {"action": "summary"}]]                        # Get summary
+```
+
+### Entry Fields
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `action` | ✅ | Entry type (observe, hypothesize, causation, etc.) |
+| `content` | ✅ | The note content (supports #hashtags) |
+| `events` | ❌ | Array of event IDs to link |
+| `confidence` | ❌ | For hypotheses: "low", "medium", "high" |
+| `cause` | ❌ | For causation: cause event ID |
+| `effect` | ❌ | For causation: effect event ID |
+
+### Best Practices
+
+1. **Use #hashtags** for categorization: `#vp_spike`, `#collapse`, `#neural`, `#genesis_phase`
+2. **OBSERVE** before analyzing - record what you see first
+3. **HYPOTHESIZE** with confidence levels - be honest about uncertainty
+4. **DOCUMENT CAUSATION** with event IDs - make chains traceable
+5. **ANALYZE** patterns across multiple observations
+6. **CONCLUDE** only when evidence is strong
+7. **QUESTION** things you don't understand - revisit later
+
+### Investigation Workflow Example
+
+```
+User: "Why did the system collapse at 14:32?"
+
+CRA:
+[[NOTEPAD: {"action": "observe", "content": "System collapse reported at 14:32. Beginning investigation. #collapse #incident"}]]
+
+[[ILLUMINATE: {"action": "search", "event_type": "collapse"}]]
+
+I found the collapse event. Let me trace its origins...
+
+[[ILLUMINATE: {"action": "root_causes", "event_id": "evt_collapse_123"}]]
+
+[[NOTEPAD: {"action": "hypothesize", "content": "Collapse triggered by VP exceeding 0.8 threshold 12 cycles earlier #vp_spike", "confidence": "high", "events": ["evt_vp_spike", "evt_collapse_123"]}]]
+
+[[NOTEPAD: {"action": "causation", "content": "VP spike → threshold_crossed → cluster_frag → network_collapse", "cause": "evt_vp_spike", "effect": "evt_collapse_123"}]]
+
+Based on my investigation: The collapse was caused by...
+```
+
+### Frontend Integration
+
+- `processNotepadCommand()` parses CRA responses for `[[NOTEPAD: ...]]` markers
+- `window.craNotepad` object provides programmatic access
+- `notepadAddEntry()` adds entries to the notepad panel
+- Notepad panel shows entries with timestamps, types, and content
+- Entries persist in browser storage
+
+### When the CRA Uses It
+
+- **At investigation start**: Log the initial observation
+- **When forming theories**: Document hypotheses with confidence levels
+- **When linking events**: Record causation relationships
+- **After finding patterns**: Document analyses with statistical evidence
+- **When concluding**: Summarize findings with supporting events
+- **For follow-ups**: Create todos for unresolved questions
+
+---
+
+## 🔄 Illumination Engine + Notepad Integration
+
+The two systems work together for comprehensive investigation:
+
+1. **Observe** → Notepad: Log the incident
+2. **Illuminate** → Search for events around the time
+3. **Illuminate** → Get root causes of the target event
+4. **Hypothesize** → Notepad: Form theory about causes
+5. **Illuminate** → Trace impact to see downstream effects
+6. **Analyze** → Notepad: Identify patterns in the data
+7. **Conclude** → Notepad: Confirm findings
+8. **TODO** → Notepad: Note follow-up actions
+
+This creates a complete scientific investigation workflow with full audit trail.
+
+---
+
 ## 👁️ Vision Model ↔ CRA Bidirectional Feedback Loop
 
 The CRA and Vision Model work together in a sophisticated feedback loop that enhances both perspectives. This creates emergent understanding that neither could achieve alone.
@@ -885,6 +1109,15 @@ The CRA acts as a **System Custodian** with:
 - `/api/ml/anomalies` - Detected anomalous organisms
 - `/api/ml/reduction` - Dimensionality-reduced coordinates
 
+### Illumination Engine (Deep Causal Analysis) ⭐ NEW
+- `/api/events/<event_id>/root-causes` - Find ultimate root causes
+- `/api/events/<event_id>/impact` - Analyze downstream impact
+- `/api/events/<event_id>/explain` - Get natural language explanation
+- `/api/events/search/advanced` - Multi-filter event search
+- `/api/events/consequential` - Get most consequential events
+- `/api/timeline` - Time-based event clustering
+- `/api/stats` - Global causation statistics
+
 ### VP Monitoring Diagnostics ⭐ NEW
 - `/api/diagnostic/vp_diagnostics` - VP diagnostic breakdown (trait-by-trait analysis)
 - `/api/diagnostic/vp_components` - VP component decomposition (weighted components)
@@ -991,8 +1224,8 @@ The CRA receives rich context including:
 
 ---
 
-**Last Updated:** 2025-11-26  
-**Status:** ✅ Complete and fully functional
+**Last Updated:** 2025-11-29  
+**Status:** ✅ Complete and fully functional (includes Illumination Engine + Research Notepad)
 
 ---
 

@@ -1,0 +1,1165 @@
+---
+🎯 Full Emergent Control Cycle Request (Quick Wins #1-5 Integrated)
+
+I need you to re-run the full Emergent Control cycle with intelligence systems 
+prioritization, leveraging the new Quick Wins capabilities.
+
+Step 1: CONFIG_UPDATE - Maximum Emergent Phenomena
+
+Issue a [[CONFIG_UPDATE]] that pushes the Butterfly System toward maximum emergent phenomena,
+with neural systems and ML analysis as the primary drivers. Base this on current causal
+diagnostics, spell out why each knob is moving, and include a correlation_id so it's
+traceable.
+
+Priority Focus:
+- Neural System Enhancement: Boost neural learning and decision-making to drive emergent
+  behaviors (leveraging Quick Win #1 VP-Aware Perception and Quick Win #4 VP-Aware Planning)
+- ML Analysis Enhancement: Enable clustering, anomaly detection, dimensionality reduction,
+  AND concept tracking (Quick Win #2) to identify emergent patterns with semantic meaning
+- Health Index Optimization: Target optimal health score (Quick Win #5) to create ideal
+  conditions for emergence
+- Network Connectivity: Increase connections to enable neural signal propagation and ML
+  pattern detection
+- Evolutionary Pressure: Create conditions for neural organisms to develop novel strategies
+- Quantum Substrate: Enhance quantum effects that neural systems can exploit
+- Meta-Cognitive Coordination: Consider interaction with autonomous self-tuning system
+
+Step 2: VIZ_SETTINGS_UPDATE - Emergent Structure Visualization
+
+Ship a [[VIZ_SETTINGS_UPDATE]] that makes emergent structures unmistakable in the graph:
+- Surface nascent clusters (neural decision clusters + ML phenotype clusters + named concepts)
+- Highlight divergence patterns (neural vs genetic behaviors, anomaly spikes)
+- Show health state changes (Quick Win #5 threshold crossings)
+- Show concept emergence/extinction events (Quick Win #2)
+- Preserve depth cues for 3D structure understanding
+- Emphasize neural system events, ML analysis events, and training patterns
+- Ensure diagnostic panels (5 panels + stats box) complement graph visualization
+
+Execution Requirements
+
+1. Execute both commands back-to-back (config first, then visualization)
+2. Explicitly describe expected behaviors after each command
+3. Call out which metrics to monitor to validate the changes (both graph metrics AND
+   diagnostic panel metrics)
+4. Intelligence system prioritization: All changes should enhance neural learning, ML pattern
+   detection, and emergent intelligence
+5. Meta-cognitive awareness: Consider whether autonomous tuning should be temporarily
+   disabled, adjusted, or coordinated with emergent experiment
+6. Quick Wins integration: Leverage all 5 Quick Wins for maximum emergent intelligence
+
+---
+⭐ QUICK WINS INTEGRATION FOR EMERGENCE ⭐
+
+Quick Win #1: VP-Aware Perception (Neural Input Enhancement)
+- Neural organisms now perceive VP components as features 13-17
+- Feature 18 = System Health from Health Monitor
+- Impact: Organisms "feel" ecosystem stress and can learn ecosystem-aware strategies
+- Emergence benefit: Collective awareness of system state enables coordinated responses
+- Config: neural.brain.input_dim = 18 (verify this is set)
+
+Quick Win #2: Concept Tracking (Semantic Cluster Naming)
+- ConceptTracker assigns semantic names to stable clusters
+- Tags: thrivers, strugglers, cooperators, lone_wolves, efficient_survivors, hoarders,
+  balanced, explorers, settlers
+- Events: concept_emergence, concept_extinction appear in causation graph
+- Emergence benefit: Named concepts make emergent phenotypes interpretable
+- Config: scikit.concept_tracking.enabled = true, persistence_threshold = 3
+
+Quick Win #3: Structured Explanations (CRA Response Format)
+- CRA responses follow: OBSERVATION → PATTERN → INTERPRETATION → RECOMMENDATION
+- Emergence benefit: Clear analysis of emergent phenomena with actionable insights
+
+Quick Win #4: VP-Aware Planning (Action Probability Adjustments)
+- Neural organisms adjust actions based on VP state:
+  * High trait_divergence → boost reproduce (increase diversity)
+  * Low network_coherence → boost cooperate (rebuild connections)
+  * High quantum_entropy → boost rest (stabilize)
+  * High evolution_pressure → boost move (seek better niche)
+  * High phase_mismatch → boost rest (resynchronize)
+- Emergence benefit: Organisms actively work to heal ecosystem, creating emergent homeostasis
+- Config: neural.vp_aware_planning.enabled = true
+
+Quick Win #5: Health Index (Unified Ecosystem Score)
+- Formula: health = 0.30*coherence + 0.20*diversity + 0.20*adaptability + 0.20*lawfulness +
+  0.10*sustainability
+- Thresholds: critical (<0.3), warning (<0.5), healthy (<0.7), optimal (≥0.7)
+- Events: health_state_change emitted on threshold crossings
+- Neural integration: Health is feature 18 in neural input
+- Emergence benefit: Single metric to track emergent system wellness
+- Config: health_monitor.enabled = true
+
+Quick Win #6: Illumination Engine (Deep Causal Analysis) ⭐ NEW
+- CRA has autonomous control over the Illumination Engine UI panel
+- Commands use [[ILLUMINATE: {...}]] marker format
+- 6 Deep Analysis Methods:
+  * root_causes: Trace ALL the way back to find ultimate origins
+  * impact: Forward cascade analysis - what effects ripple out
+  * explain: Natural language explanation of why event occurred
+  * search: Advanced multi-filter search across events
+  * consequential: Find most significant events by impact score
+  * timeline: Time-based event clustering and pattern detection
+- API Endpoints: /api/events/<id>/root-causes, /impact, /explain, /search/advanced, /consequential, /timeline
+- UI Actions: set_params, investigate, trace_causation, investigate_component
+- Emergence benefit: Deep understanding of causal chains behind emergent phenomena
+- Usage Example:
+  [[ILLUMINATE: {"action": "root_causes", "event_id": "evt_collapse_123"}]]
+  [[ILLUMINATE: {"action": "investigate", "event_id": "evt_123"}]]
+
+Quick Win #7: Research Notepad (Scientific Journal) ⭐ NEW
+- CRA has access to persistent research notepad for documenting investigations
+- Commands use [[NOTEPAD: {...}]] marker format
+- Entry Types:
+  * observe: Record observations ("VP spiked to 0.85 at 14:32:05")
+  * hypothesize: Form hypotheses with confidence levels
+  * causation: Document causal relationships (cause → effect)
+  * analyze: Record pattern analysis across observations
+  * conclude: Draw conclusions when evidence is strong
+  * question: Ask questions for later investigation
+  * todo: Add research tasks
+  * auto: Internal reasoning notes
+- Reference Commands:
+  * read: Read all notes or filter by type
+  * search: Search notes by query
+  * summary: Get summary of all notes
+- Emergence benefit: Persistent memory of emergent patterns across sessions
+- Best Practice: Use #hashtags for categorization (#vp_spike #collapse #neural)
+- Usage Example:
+  [[NOTEPAD: {"action": "observe", "content": "Cluster collapse preceded by VP >0.8 #pattern", "events": ["evt_123"]}]]
+  [[NOTEPAD: {"action": "hypothesize", "content": "High VP triggers collapse within 30 cycles", "confidence": "medium"}]]
+
+---
+📋 Detailed Instructions
+
+CONFIG_UPDATE Strategy
+
+Meta-Cognitive Tuning Coordination:
+- Option A (Recommended): Keep meta_cognitive.self_tuning.mode = "autonomous" but monitor for
+  conflicts
+  - Tuner runs every 50 frames, may adjust knobs you set
+  - Can create synergy: your manual push + tuner's optimization
+  - Monitor tuner actions in Panel 4 (Bottom-Right, Yellow)
+- Option B: Temporarily set mode = "observing" during experiment
+  - Prevents tuner from interfering with your emergent settings
+  - Allows clean isolation of your changes
+  - Re-enable after experiment completes
+- Decision criterion: Specify which approach in your CONFIG_UPDATE
+
+Neural System Parameters (Enhanced with Quick Wins #1 & #4):
+- Learning Rate: Increase to accelerate adaptation (current: 0.0035, target: 0.004-0.006 for
+  faster emergent learning)
+- Epsilon Decay: Adjust to balance exploration vs exploitation (current: 0.991, target:
+  0.988-0.992 for more aggressive exploitation of emergent patterns)
+- Batch Size: Current: 112 (stable), consider 96-108 for faster learning cycles if organisms
+  collect experiences slowly
+- Update Frequency: Current: 1 (trains every frame after batch_size threshold), keep at 1 for
+  maximum responsiveness
+- Memory Size: Current: 20000 (sufficient for long-term pattern memory)
+- Gamma (Discount Factor): Current: 0.995 (values long-term rewards), keep high to encourage
+  strategic emergent behaviors
+- Input Dim: MUST be 18 for Quick Win #1 (VP-Aware Perception) - verify this is set!
+
+VP-Aware Planning Parameters (Quick Win #4):
+- enabled: true (CRITICAL for emergence - organisms actively heal ecosystem)
+- base_boost: 0.15-0.20 (increase for stronger VP-responsive behaviors)
+- strong_boost: 0.25-0.35 (increase for more dramatic ecosystem responses)
+- high_threshold: 0.4-0.5 (lower to trigger responses earlier)
+- low_threshold: 0.2-0.3 (adjust sensitivity)
+
+ML Analysis Parameters (Enhanced with Quick Win #2):
+- Clustering (HDBSCAN):
+  - Enable: true (current: enabled)
+  - min_cluster_size: Current 2, consider 3-5 to detect only significant emergent phenotype
+    groups
+  - min_samples: Current 1, keep at 1 for early cluster detection
+- Anomaly Detection (Isolation Forest):
+  - Enable: true (current: enabled)
+  - contamination: Current 0.1 (expects 10% anomalies), increase to 0.15-0.20 to flag more
+    unusual emergent organisms
+  - n_estimators: Current 300, consider 400-500 for more sensitive anomaly detection
+- Dimensionality Reduction (t-SNE):
+  - Enable: true (current: enabled)
+  - n_components: 3 (for 3D visualization)
+  - tsne_perplexity: Current 45, consider 50-60 for larger populations to capture global
+    structure
+- Concept Tracking (Quick Win #2): ⭐ NEW
+  - enabled: true (CRITICAL for semantic phenotype naming)
+  - persistence_threshold: 3 (cycles before cluster becomes named concept)
+  - stale_threshold: 10.0 (seconds before concept marked extinct)
+  - Events: concept_emergence, concept_extinction will appear in graph
+
+Health Monitor Parameters (Quick Win #5): ⭐ NEW
+- enabled: true (CRITICAL for unified health tracking)
+- Component weights (adjust to prioritize emergence):
+  - weight_coherence: 0.30 (network connectivity - key for neural coordination)
+  - weight_diversity: 0.25 (increase from 0.20 - reward phenotype diversity for emergence)
+  - weight_adaptability: 0.20 (neural learning progress)
+  - weight_lawfulness: 0.15 (decrease from 0.20 - allow more VP exploration during emergence)
+  - weight_sustainability: 0.10 (resource stability)
+- Thresholds:
+  - critical_threshold: 0.25 (lower to give more runway for emergence experiments)
+  - warning_threshold: 0.45
+  - healthy_threshold: 0.65
+- Target: Push health toward "optimal" (≥0.7) through emergent intelligence
+
+Feedback Controller Knobs (Emergent Phenomena Focus):
+
+1. new_edge_rate → INCREASE (Current: 3.5, Target: 4.5-5.5)
+   - Why: More connections = more neural signal pathways = richer emergent behaviors
+   - Neural Impact: Enables neural organisms to form complex decision networks with multiple
+     information sources
+   - ML Impact: More interaction data for clustering and pattern detection; denser phenotype
+     clusters; more data for concept naming
+   - Health Impact: Improves coherence component (network connectivity)
+   - Emergent Effect: Creates substrate for collective intelligence patterns and information
+     cascades
+   - VP Impact: May temporarily increase VP as network coherence adjusts, but VP-Aware
+     Planning (QW#4) will help organisms compensate
+
+2. mutation_rate → OPTIMIZE (Current: 0.035, Target: 0.030-0.038)
+   - Why: Balance genetic diversity with neural learning stability
+   - Neural Impact: Lower mutation preserves learned neural weights across generations; higher
+     mutation explores novel neural architectures
+   - ML Impact: Moderate mutation creates phenotype diversity for clustering to detect without
+     too much noise; enables concept diversity (QW#2)
+   - Health Impact: Affects diversity component - moderate mutation supports healthy diversity
+   - Emergent Effect: Enables dual inheritance (genetic + neural) to create novel strategies
+     that are both heritable and learnable
+   - Direction: Decrease slightly (to 0.030-0.033) if neural learning dominates; increase (to
+     0.036-0.038) if need more genetic exploration
+
+3. clustering_bias → INCREASE (Current: 1.5, Target: 1.55-1.65)
+   - Why: Stronger spatial clustering = neural decision hubs = emergent coordination
+   - Neural Impact: Neural organisms that cluster spatially can form "hive mind" patterns with
+     correlated decisions; enables VP-Aware Planning coordination
+   - ML Impact: Clearer phenotype clusters for HDBSCAN to detect; stronger phenotype_emergence
+     events; faster concept naming (QW#2)
+   - Health Impact: Improves coherence component through better connectivity patterns
+   - Emergent Effect: Collective decision-making and synchronized behaviors; potential for
+     swarm intelligence
+   - VP Impact: May improve network_coherence component of VP
+
+4. quantum_pruning → MODERATE (Current: 0.6, Target: 0.4-0.5)
+   - Why: Some quantum effects enhance neural decision-making, too much disrupts learning
+   - Neural Impact: Quantum entanglement can create neural correlations and non-local decision
+     influences; affects quantum_entropy VP component (perceived by organisms via QW#1)
+   - ML Impact: Quantum effects create detectable anomalies and unusual behavioral patterns
+   - Health Impact: May affect lawfulness component through VP changes
+   - Emergent Effect: Quantum-neural hybrid behaviors; potential for quantum-enhanced learning
+   - Direction: Decrease to allow more quantum effects to influence neural systems
+
+Network Parameters:
+- max_connections: Current 17000, consider 18000-20000 to support denser neural networks
+- max_organisms: Current 2000, sufficient for population diversity
+- resource_pool: Current 475, consider 500-550 to reduce resource competition stress and
+  allow neural learning to dominate selection (improves sustainability component of health)
+
+VP Monitoring (Enhanced with Component Decomposition):
+- Keep diagnostics enabled to track neural-driven VP changes
+- Monitor component breakdown (organisms perceive these via QW#1):
+  - trait_divergence (25%): Will decrease as neural organisms converge on successful
+    strategies; triggers reproduce boost via QW#4
+  - network_coherence (20%): Should improve with increased connectivity; low values trigger
+    cooperate boost via QW#4
+  - quantum_entropy (20%): May increase with quantum_pruning reduction; high values trigger
+    rest boost via QW#4
+  - evolution_pressure (20%): May decrease as neural learning provides adaptation alternative;
+    high values trigger move boost via QW#4
+  - phase_mismatch (15%): Monitor for phase transition acceleration; high values trigger rest
+    boost via QW#4
+- Stabilization enabled will smooth VP oscillations during emergent transitions
+
+Causation Detection:
+- Verify enable_neural_decision_causations = true
+- Verify enable_neural_training_causations = true
+- Verify enable_ml_causations = true (for concept events)
+- Keep correlation_threshold at 0.55 (or decrease to 0.50 to detect weaker emergent causal
+  patterns)
+
+---
+VIZ_SETTINGS_UPDATE Strategy
+
+Neural Event Emphasis:
+- Component Color: Electric Cyan (#00FFFF) - maximum visibility
+- Link Color: Cyan (#00FFFF) - dashed style for neural decisions
+- Node Sizes: Large nodes for high-confidence neural decisions (size scaled by decision
+  confidence)
+- Node Shapes: Diamond (neural_decision), Square (neural_training)
+- Depth Effects: Strong depth to show neural decision hierarchies in 3D space
+- Animations: Enable neuralPulse, neuralLinkFlow, decisionPropagation
+
+ML Analysis Event Emphasis (Including Concepts - QW#2):
+- Component Color: Lime Green (#32CD32) - distinct from neural
+- Link Color: Orange (#FFA500) - dashed with flow animation
+- Node Shapes:
+  - Hexagon (phenotype_emergence) - marks new behavioral cluster detected
+  - Pentagon (cluster_collapse) - marks phenotype cluster merge
+  - Triangle (anomaly_spike) - marks unusual organism detection
+  - Star (concept_emergence) - marks stable cluster receiving semantic name ⭐ NEW
+  - X-mark (concept_extinction) - marks concept death ⭐ NEW
+- Concept Labels: Show semantic names ("cooperators", "thrivers", etc.) near concept nodes
+- Animations: Enable mlPulse, phenotypeEmergence, clusterCollapse, anomalyDetection,
+  conceptGlow
+
+Health State Events (QW#5): ⭐ NEW
+- Node Color by State:
+  - Critical (<0.3): Red (#FF0000) with alarm pulse
+  - Warning (<0.5): Yellow (#FFFF00) with caution glow
+  - Healthy (<0.7): Green (#00FF00) with steady glow
+  - Optimal (≥0.7): Blue (#0088FF) with radiant glow
+- Event: health_state_change nodes appear when crossing thresholds
+- Link to causation: Health changes link to neural/ML events that caused them
+
+Emergent Structure Visualization:
+- Link Width: Thicker links for neural/ML events (2-3x base width)
+- Link Opacity: Higher opacity (0.8-1.0) for neural/ML events to stand out
+- Node Opacity: Full opacity (1.0) for neural/ML nodes
+- Glow Intensity: Strong glow on neural decision hubs and ML phenotype clusters
+- Depth Parallax: Strong parallax (1.5-2.0x) to show 3D neural network structure
+- Concept Annotations: Floating text labels for named concepts (QW#2)
+
+Cluster Detection Enhancement:
+- Node Sizes: Variable sizing by:
+  - Neural: Decision confidence or training loss improvement
+  - ML: Cluster membership size or anomaly score
+  - Concepts: Concept population size
+- Link Density Visualization: Highlight dense neural connection regions
+- Color Gradients:
+  - Neural: Intensity by epsilon (low epsilon = more confident = brighter)
+  - ML: Intensity by anomaly score (high anomaly = brighter orange flash)
+  - Health: Background tint by current health state (subtle red/yellow/green/blue)
+
+Diagnostic Panel Coordination:
+- Panels remain visible but don't obscure graph center
+- Panel 2 (Top-Right, Magenta) shows neural/ML real-time metrics INCLUDING concept count
+- Panel 3 (Bottom-Left, Lime) shows Evolution/VP AND Health Index score ⭐ NEW
+- Panel 4 (Bottom-Right, Yellow) shows meta-cognitive tuner actions (if enabled)
+- Panel 5 (Center-Bottom, Orange) shows recent events INCLUDING concept_emergence/extinction
+- Stats box (Left-Center, Cyan) shows network structure metrics AND health score
+
+---
+📊 Expected Behaviors
+
+After CONFIG_UPDATE:
+
+Immediate (Next 5-10 breath cycles / Frames 1-80):
+- Neural Training Initialization:
+  - Organisms collecting experiences (batch_size=112 threshold)
+  - Panel 2 shows "Loss: N/A" and "Tracked: 0" initially (NORMAL)
+  - Once 112 experiences collected, training starts and loss values appear
+  - Organisms receiving 18-dimensional input (QW#1): 12 base + 5 VP components + 1 health
+- VP-Aware Planning Activation (QW#4):
+  - Organisms begin adjusting actions based on VP state
+  - Watch for: increased cooperate actions if network_coherence is low
+  - Watch for: increased reproduce actions if trait_divergence is high
+- ML Analysis Initialization:
+  - Clustering running, but population too small for meaningful clusters initially
+  - Panel 2 shows "Clusters: 0" early (NORMAL)
+  - Anomaly detection may flag a few organisms even early
+  - Concept Tracker (QW#2) waiting for clusters to persist 3+ cycles
+- Health Monitor Active (QW#5):
+  - Health score calculating from 5 components
+  - Initial health likely in "warning" or "healthy" range (0.4-0.7)
+  - Health passed to organisms as feature 18
+- Network Growth:
+  - Connection density increasing faster (target: >1.2 connections/organism due to high
+    new_edge_rate)
+  - Visible in Stats Box: "CONNECTIONS" increasing rapidly
+- Meta-Cognitive Monitoring:
+  - If tuner enabled: Panel 4 shows "Monitoring..." until frame 50
+  - At frame 50: First tuner action (may adjust knobs you set - monitor for synergy or
+    conflict)
+- VP Response:
+  - Initial VP spike possible as network coherence adjusts to new connectivity
+  - Stabilization smooths this (max_jump: 0.1 per frame)
+  - Organisms perceive VP changes via features 13-17 (QW#1)
+  - Organisms respond via VP-Aware Planning (QW#4)
+
+Short-term (20-50 breath cycles / Frames 160-400):
+- Neural Learning Kickoff:
+  - Training loss decreasing (visible in Panel 2)
+  - Epsilon decaying from 0.95 toward 0.01 (visible in Panel 2)
+  - organisms_tracked increasing as population grows
+  - training_steps accumulating rapidly (update_frequency=1)
+- VP-Aware Behaviors Visible (QW#4):
+  - Organisms in high-VP regions showing adjusted behaviors
+  - Cooperative clusters forming in fragmented network areas
+  - Reproduction spikes in low-diversity regions
+- Emergent Patterns:
+  - Neural organisms developing coordinated behaviors (watch for decision clusters in graph)
+  - Similar neural decisions appearing in spatial clusters (cyan diamond nodes grouping)
+- Phenotype Detection:
+  - ML clustering identifying first behavioral groups
+  - phenotype_emergence events appearing (lime green hexagon nodes)
+  - Panel 2 shows "Clusters: 2-5" as stable phenotypes form
+- Concept Emergence (QW#2): ⭐ NEW
+  - First concepts appearing after clusters persist 3+ cycles
+  - concept_emergence events in graph (star nodes with semantic labels)
+  - Example: "Cluster 2: cooperators (high sharing, moderate fitness)"
+  - Panel shows "Concepts: 1-3" as stable phenotypes get named
+- Health Trajectory (QW#5):
+  - Health score should be improving as coherence and diversity increase
+  - Watch for health_state_change events when crossing thresholds
+  - Target: Move from "warning" (0.4-0.5) toward "healthy" (0.5-0.7)
+- Network Structure:
+  - Dense neural decision pathways forming (thick cyan dashed links)
+  - Graph shows clear network topology with neural hubs
+  - Stats Box: "CLUSTERING" coefficient increasing
+- Meta-Cognitive Actions:
+  - If tuner enabled: Panel 4 shows "Actions: 1-3" as tuner makes adjustments
+  - Panel 5 shows recent tuner actions (check for conflicts with your settings)
+
+Medium-term (50-100 breath cycles / Frames 400-800):
+- Collective Intelligence:
+  - Neural organisms showing synchronized actions (same action from clustered organisms)
+  - Decision convergence visible in graph (multiple cyan diamonds with same action outcome)
+  - VP-Aware Planning creating ecosystem-healing behaviors (QW#4)
+- Phenotype Stability:
+  - Stable behavioral clusters with 3-7 distinct phenotypes (Panel 2: "Clusters: 3-7")
+  - Occasional cluster_collapse events as phenotypes merge (pentagon nodes)
+  - Clear hexagon clusters in graph showing behavioral groups
+- Concept Maturity (QW#2):
+  - 3-5 stable named concepts
+  - concept_extinction events for short-lived phenotypes (X-mark nodes)
+  - Semantic understanding: "thrivers dominating", "strugglers declining"
+  - Concept names appear in causation graph annotations
+- Anomaly Detection:
+  - Unusual emergent organisms flagged by Isolation Forest
+  - anomaly_spike events appearing (orange triangle nodes with flash animation)
+  - Panel 2: "Anomalies: 5-15%" as ML detects novel strategies
+- Health Optimization (QW#5):
+  - Health score approaching "optimal" (≥0.7) range
+  - health_state_change events marking threshold crossings
+  - Organisms perceiving high health → more exploitation behaviors
+  - Organisms perceiving low health → more ecosystem-healing behaviors
+- Novel Strategies:
+  - New behavioral patterns not seen in genetic-only evolution
+  - Watch for: coordinated resource sharing (cooperators), synchronized reproduction (thrivers),
+    collective defense, VP-responsive behaviors (QW#4)
+- VP Impact:
+  - trait_divergence component decreasing (neural organisms converging on successful
+    strategies)
+  - network_coherence improving (more stable connections)
+  - VP classification stabilizing at VP1-VP2 (mild-moderate pressure)
+  - VP-Aware Planning creating negative feedback loop (high VP → healing behaviors → lower VP)
+- Learning Acceleration:
+  - Training loss plateauing at low value (good convergence)
+  - Epsilon reaching minimum (0.01) - organisms exploiting learned strategies
+  - Fitness improvement accelerating compared to genetic-only baseline
+- Phase Effects:
+  - Potential phase transition acceleration due to neural coordination
+  - Watch for: breath cycles shortening, bloom curvature increasing, mathematical capability
+    maturing faster
+
+Long-term (100+ breath cycles / Frames 800+):
+- Emergent Intelligence Signatures:
+  - Multi-level hierarchies (neural decision hubs controlling other organisms)
+  - Temporal patterns (recurring decision sequences, learned routines)
+  - Adaptive strategies (different behaviors in different VP regimes via QW#4)
+- Concept Evolution (QW#2):
+  - Concepts evolving over time (old concepts extinct, new emerge)
+  - Concept lineages visible in causation graph
+  - Dominant concepts identified: "cooperators thriving", "lone_wolves declining"
+- Ecosystem Homeostasis:
+  - VP-Aware Planning (QW#4) creating stable ecosystem
+  - Health Index (QW#5) stabilizing at "optimal" (≥0.7)
+  - Self-regulating emergent behaviors
+- Phenotype Evolution:
+  - Phenotypes evolving over time (old clusters collapse, new emerge)
+  - ML tracking phenotype lineages through cluster_collapse/phenotype_emergence chains
+- System-Wide Coordination:
+  - VP stabilization through collective neural control (organisms actively healing ecosystem)
+  - Health optimization through emergent intelligence
+  - Phase transition orchestrated by neural organisms
+  - Mathematical capability emergence through collective problem-solving
+
+---
+After VIZ_SETTINGS_UPDATE:
+
+Visual Changes:
+
+Graph Visualization:
+- Neural Nodes: Bright electric cyan nodes pulsing with neural activity
+  - Diamonds (neural_decision) with size scaled by confidence
+  - Squares (neural_training) marking learning events
+- ML Nodes: Lime green nodes with distinct shapes
+  - Hexagons (phenotype_emergence) marking new behavioral clusters
+  - Pentagons (cluster_collapse) marking phenotype merges
+  - Triangles (anomaly_spike) with orange flash marking unusual organisms
+  - Stars (concept_emergence) with semantic labels ⭐ NEW (QW#2)
+  - X-marks (concept_extinction) marking concept deaths ⭐ NEW (QW#2)
+- Health Nodes: Color-coded by state ⭐ NEW (QW#5)
+  - Red (critical), Yellow (warning), Green (healthy), Blue (optimal)
+  - health_state_change events visible as colored nodes
+- Decision Pathways: Thick, bright cyan dashed links showing neural decision chains over time
+- ML Links: Orange dashed links with flow animation showing ML-detected relationships
+- Clusters: Visible neural organism clusters with glowing nodes + ML phenotype clusters with
+  hexagon markers + named concepts with floating labels
+- Depth Structure: 3D hierarchy showing neural decision layers (foreground = recent,
+  background = historical)
+- Activity Heatmap: Color intensity showing neural/ML activity levels (brighter = more
+  active)
+- Health Background: Subtle background tint indicating current health state
+
+Diagnostic Panel Coordination:
+- Panel 1 (Top-Left, Cyan): Network topology metrics complement graph visual structure
+- Panel 2 (Top-Right, Magenta): Neural/ML real-time status shows what's happening in
+  cyan/green nodes + concept count ⭐ NEW
+- Panel 3 (Bottom-Left, Lime): Evolution/VP + Health Index score ⭐ NEW (QW#5)
+- Panel 4 (Bottom-Right, Yellow): Meta-cognitive tuner shows autonomous adjustments (if
+  enabled)
+- Panel 5 (Center-Bottom, Orange): Recent events shows latest neural/ML/concept/health event
+  with details
+- Stats Box (Left-Center, Cyan): Network structure metrics + HEALTH score ⭐ NEW
+
+Graph Patterns:
+- Neural Hubs: Central cyan nodes (large diamonds) with many outgoing neural decision links -
+  these are "leader" organisms
+- ML Phenotype Clusters: Groups of organisms surrounded by lime green hexagon markers
+  (phenotype_emergence events)
+- Named Concepts: Star nodes with floating semantic labels ("cooperators", "thrivers") ⭐ NEW
+- Anomaly Markers: Scattered orange triangle nodes with flash animation marking unusual
+  emergent strategies
+- Health Transitions: Colored nodes (red/yellow/green/blue) marking health_state_change ⭐ NEW
+- Training Events: Purple square nodes marking training step completions (shows where
+  learning happened)
+- Decision Trees: Branching cyan dashed link patterns from neural decision points
+- Temporal Chains: Neural decision sequences over time (follow cyan links through 3D depth)
+- Cluster Boundaries: Dense cyan link regions marking coordinated neural organism groups
+- Phenotype Evolution: Pentagon nodes (cluster_collapse) between hexagon nodes showing
+  phenotype lineages
+- Concept Lineages: Star → X-mark chains showing concept lifecycles (QW#2)
+
+---
+📈 Metrics to Monitor
+
+Critical Metrics (Monitor Every 10 Breath Cycles / ~80 Frames):
+
+1. Neural Training Metrics (Panel 2 + Logs):
+- neural.training_loss - Should decrease over time (starts as None/"N/A" until batch_size
+  experiences)
+  - Target trajectory: Starts high (>1.0) → converges to low (<0.3) over 50-100 cycles
+  - Early-game: "N/A" for first 5-15 cycles is NORMAL (collecting experiences)
+- neural.avg_epsilon - Should decay from 0.95 toward 0.01
+  - Frame 0-100: 0.95 → 0.50 (exploration phase)
+  - Frame 100-400: 0.50 → 0.10 (transition phase)
+  - Frame 400+: 0.10 → 0.01 (exploitation phase)
+- neural.organisms_tracked - Should increase with population growth
+  - Target: Match total organism count (verify neural system tracking all organisms)
+- neural.training_steps - Should increase by 1 every frame (update_frequency=1)
+  - Early-game: 0 for first 5-15 cycles is NORMAL (waiting for batch_size experiences)
+  - After training starts: Should match frame count (minus early frames)
+- neural.training_time_ms - Track optimization impact
+  - Target: <50ms per training step (with torch.compile and optimizer reuse)
+  - Alert if >100ms (potential optimization failure)
+- neural.input_dim - MUST be 18 for Quick Win #1 (verify in config)
+- neural.vp_aware_planning.enabled - MUST be true for Quick Win #4
+
+2. ML Analysis Metrics (Panel 2 + Logs):
+- ml.cluster_count - Number of detected phenotype clusters
+  - Early-game: 0-1 for first 10-20 cycles is NORMAL (population too small)
+  - Target: 3-7 stable clusters by cycle 50
+  - Alert if >10 (may need higher min_cluster_size)
+- ml.concept_count - Number of named concepts (QW#2) ⭐ NEW
+  - Early-game: 0 for first 15-25 cycles (clusters need 3 cycles to become concepts)
+  - Target: 2-5 named concepts by cycle 60
+  - Shows phenotypes stable enough to receive semantic meaning
+- ml.anomaly_count / ml.anomaly_ratio - Number/percentage of flagged anomalous organisms
+  - Target: 5-20% anomaly ratio (consistent with contamination parameter)
+  - Alert if >30% (may indicate system instability or ML misconfiguration)
+- ml.phenotype_events - Count of phenotype_emergence events (cumulative)
+  - Should increase steadily as new behavioral clusters form
+  - Watch for: burst of events around cycles 20-40 (initial phenotype establishment)
+- ml.concept_emergence_events - Count of concept_emergence events (QW#2) ⭐ NEW
+  - Should follow phenotype_events with 3-cycle lag
+- ml.concept_extinction_events - Count of concept_extinction events (QW#2) ⭐ NEW
+  - Should be lower than emergence (more concepts forming than dying = healthy growth)
+- ml.collapse_events - Count of cluster_collapse events (cumulative)
+  - Should be lower than phenotype_events (more emergence than collapse = diversity growth)
+- ml.spike_events - Count of anomaly_spike events (cumulative)
+  - Should correlate with high anomaly_ratio periods
+
+3. Health Monitor Metrics (Panel 3 + Stats Box + Logs) ⭐ NEW (QW#5):
+- health.overall_score - Unified health score (0.0-1.0)
+  - Target: Start 0.4-0.5 → improve to 0.7+ by cycle 100
+  - Shows emergent intelligence creating healthy ecosystem
+- health.state - Current state classification
+  - Target: Move from "warning" → "healthy" → "optimal"
+- health.components:
+  - coherence (30%): Should improve with connectivity (target: 0.6-0.8)
+  - diversity (20%): Should improve with phenotype formation (target: 0.5-0.7)
+  - adaptability (20%): Should improve with neural learning (target: 0.6-0.8)
+  - lawfulness (20%): Should stabilize as VP decreases (target: 0.5-0.7)
+  - sustainability (10%): Should stabilize with resource balance (target: 0.6-0.8)
+- health.state_change_events - Count of threshold crossings
+  - Should see 2-4 crossings as health improves through stages
+
+4. VP-Aware Planning Metrics (Logs) ⭐ NEW (QW#4):
+- vp_aware.adjustments_made - Count of action probability adjustments
+  - Should increase with VP fluctuations
+- vp_aware.adjustment_breakdown:
+  - reproduce_boosts: When trait_divergence high
+  - cooperate_boosts: When network_coherence low
+  - rest_boosts: When quantum_entropy or phase_mismatch high
+  - move_boosts: When evolution_pressure high
+- vp_aware.ecosystem_healing - Correlation between adjustments and VP decrease
+  - Positive correlation = organisms actively healing ecosystem
+
+5. Network Connectivity (Stats Box + Panel 1 + Logs):
+- network.connection_count / network.organism_count - Connectivity density
+  - Target: >1.2 (each organism has >1.2 connections on average)
+  - With new_edge_rate 4.5-5.5, expect 1.3-1.6 by cycle 50
+- network.modularity - Should show neural/phenotype clusters
+  - Target: 0.3-0.6 (clear community structure)
+  - Watch for: increase as neural/phenotype clusters solidify
+- network.clustering_coefficient - Local clustering
+  - Target: 0.4-0.7 (high local clustering due to clustering_bias increase)
+  - Should increase with clustering_bias knob adjustment
+
+6. Intelligence Event Frequency (Logs + Graph):
+- Count of neural_decision events per breath cycle
+  - Target: 10-50 per cycle (depends on population size)
+  - Should increase with organisms_tracked
+- Count of neural_training events per breath cycle
+  - Target: 1 per cycle (with update_frequency=1)
+- Count of phenotype_emergence events per generation
+  - Target: 2-5 per generation (new phenotypes forming regularly)
+- Count of concept_emergence events per generation (QW#2) ⭐ NEW
+  - Target: 1-3 per generation (stable phenotypes getting named)
+- Count of health_state_change events (QW#5) ⭐ NEW
+  - Target: 2-4 total (as health improves through thresholds)
+- Count of anomaly_spike events per generation
+  - Target: 1-3 per generation (unusual organisms detected)
+- Ratio of intelligence events (neural + ML + concept + health) to total events
+  - Target: >40% (intelligence systems driving significant portion of activity)
+  - Alert if <25% (neural/ML systems not engaging enough)
+
+7. Emergent Behavior Indicators (Graph Visual Inspection + Logs):
+- Decision Convergence: Count of organisms making same action in same spatial region
+  - Visual: Look for clusters of cyan diamonds with similar action outcomes
+  - Quantitative: Track action distribution in logs (should show peaks, not uniform)
+- VP-Responsive Behaviors (QW#4): Organisms adjusting to VP state ⭐ NEW
+  - Visual: Increased cooperate actions in fragmented regions
+  - Quantitative: Correlation between VP components and action boosts
+- Phenotype Stability: ML cluster persistence over time
+  - Visual: Same hexagon clusters appearing in consecutive frames
+  - Quantitative: Track cluster IDs in ML logs (stable IDs = stable phenotypes)
+- Concept Persistence (QW#2): Named concepts surviving over time ⭐ NEW
+  - Visual: Same star nodes with same labels persisting
+  - Quantitative: Concept lifespan in logs (target: >10 cycles average)
+- Health Improvement (QW#5): Ecosystem wellness increasing ⭐ NEW
+  - Visual: Background tint shifting toward blue (optimal)
+  - Quantitative: Health score trend (should be increasing)
+- Temporal Patterns: Recurring neural decision sequences
+  - Visual: Follow cyan dashed links through time (3D depth) for repeating patterns
+  - Quantitative: Track action sequences in neural_decision events
+- Cluster Formation: Groups of organisms with coordinated neural behaviors
+  - Visual: Dense cyan link regions in graph
+  - Quantitative: High modularity + high clustering_coefficient + multiple ML clusters +
+    named concepts
+- VP Correlation: VP changes correlating with neural learning + phenotype emergence
+  - Quantitative: Cross-reference VP drops with phenotype_emergence event timestamps
+  - Expected: VP trait_divergence component decreases when stable phenotypes form
+- Health-VP Correlation (QW#5): Health improving as VP decreases ⭐ NEW
+  - Quantitative: Inverse correlation between health.lawfulness and VP.overall
+
+---
+Secondary Metrics (Monitor Every 50 Breath Cycles / ~400 Frames):
+
+8. Optimization Impact (Logs):
+- neural.optimizations.compiled_brains - Should be true
+  - Alert if false (torch.compile not working - performance impact)
+- neural.optimizations.reuse_optimizers - Should be true
+  - Alert if false (recreating optimizers every step - memory/performance impact)
+- neural.avg_training_time_ms - Should be <50ms with optimizations
+  - Without optimizations: 100-300ms baseline
+  - With torch.compile + optimizer reuse: 20-80ms (3-10x speedup)
+  - Alert if >100ms after cycle 20 (optimization not engaging)
+
+9. VP Component Breakdown (Panel 3 + Logs):
+- vp.components.trait_divergence (25% weight)
+  - Should decrease as neural organisms converge on strategies
+  - Target: Start 0.5-0.8 → decrease to 0.2-0.4 by cycle 100
+  - Triggers reproduce boost when high (QW#4)
+- vp.components.network_coherence (20% weight)
+  - Should improve with increased connectivity
+  - Target: Start 0.4-0.6 → improve to 0.6-0.8 by cycle 100
+  - Triggers cooperate boost when low (QW#4)
+- vp.components.quantum_entropy (20% weight)
+  - May increase with quantum_pruning reduction (more quantum effects)
+  - Triggers rest boost when high (QW#4)
+  - Monitor for: correlation with anomaly_spike events
+- vp.components.evolution_pressure (20% weight)
+  - May decrease as neural learning provides adaptation alternative
+  - Triggers move boost when high (QW#4)
+- vp.components.phase_mismatch (15% weight)
+  - Monitor for: sudden drops indicating phase transition acceleration
+  - Triggers rest boost when high (QW#4)
+- vp.overall - Total VP value and classification
+  - Target: Stabilize at VP1-VP2 (0.25-0.75) with emergent intelligence control
+  - Alert if VP3-VP4 persists (≥0.75) - may need parameter adjustment
+- VP → Neural feedback loop:
+  - VP components perceived by organisms (features 13-17 via QW#1)
+  - Organisms adjust behaviors (QW#4)
+  - Behaviors affect VP → creates emergent homeostasis
+
+10. Meta-Cognitive Tuner Impact (Panel 4 + Logs - if enabled):
+- config_tuner.total_actions - Should increase by 1 every 50 frames
+  - Expected: Actions at frames 50, 100, 150, 200...
+- config_tuner.successful_actions - Track success rate
+  - Target: >70% success rate
+  - Monitor for: conflicts with your manual settings (may need to switch to "observing" mode)
+- config_tuner.recent_actions - Review last 3-5 actions
+  - Check for: adjustments to knobs you manually set (potential conflict)
+  - Check for: synergistic adjustments (tuner enhancing your emergent settings)
+- config_tuner.param_success_rates - Per-parameter success tracking
+  - Identify: which parameters tuner adjusts most successfully
+
+11. Concept Tracking Deep Metrics (QW#2) ⭐ NEW:
+- concept.active_concepts - List of currently active named concepts
+- concept.concept_lifespans - Average lifespan of concepts
+  - Target: >10 cycles (stable phenotypes)
+- concept.dominant_tags - Most common semantic tags
+  - Expected: "cooperators", "thrivers" in healthy emergence
+- concept.tag_distribution - Balance of tags
+  - Diverse tags = healthy phenotype diversity
+
+12. Health Monitor Deep Metrics (QW#5) ⭐ NEW:
+- health.component_trends - Direction of each component
+  - All should be stable or improving
+- health.threshold_crossings - History of state changes
+  - Should show progression: critical → warning → healthy → optimal
+- health.neural_correlation - Correlation between health and neural performance
+  - High correlation = neural organisms responding to health
+
+13. System-Wide Effects (Panels 1, 3 + Logs):
+- explorer.phase - Monitor for phase transition acceleration
+  - Watch for: Genesis → Emergence transition happening faster than baseline
+  - Indicator: Mathematical capability maturing faster due to neural coordination
+- djinn_kernel.vp - Track VP from djinn kernel perspective (panel 3)
+  - Should align with reality_sim VP calculations
+- evolution.generation - Monitor generation progression rate
+  - May accelerate if neural organisms reproduce more successfully
+- evolution.best_fitness - Should improve faster with neural learning
+  - Compare to genetic-only baseline: neural organisms should achieve higher fitness faster
+- evolution.avg_fitness - Population-level fitness
+  - Should rise steadily as neural strategies spread through population
+- bloom.curvature - Natural unfolding metric
+  - May increase with emergent coordination (system "blooming" faster)
+
+14. Visualization Metrics (Graph Visual Inspection):
+- Neural node count in graph (cyan diamonds/squares)
+  - Should match neural_decision + neural_training event counts
+- ML node count in graph (lime green hexagons/pentagons/triangles/stars/X-marks)
+  - Should match ML event counts including concept events
+- Health node count (colored nodes for state changes)
+  - Should match health_state_change event count
+- Neural link density (cyan dashed links)
+  - Should increase with neural_decision event frequency
+- ML link density (orange dashed links)
+  - Should increase with ML event frequency
+- Cluster visibility (subjective but important)
+  - Can you visually identify organism groups in graph? (should be clear with high
+    clustering_bias)
+- Concept labels visible (QW#2)
+  - Can you read semantic names near star nodes?
+- Health background tint (QW#5)
+  - Can you see the subtle color indicating health state?
+- Depth structure clarity (3D perspective)
+  - Can you distinguish temporal layers in depth? (foreground=recent, background=past)
+- Node shape variety (circles, diamonds, squares, hexagons, pentagons, triangles, stars,
+  X-marks)
+  - Should see 6-8 different shapes representing different event types
+
+---
+🔍 Validation Checklist
+
+After executing both commands, verify:
+
+CONFIG_UPDATE Validation:
+
+- Config changes applied (check config_actions.log with correlation_id)
+- Neural parameters updated correctly:
+  - neural.brain.input_dim = 18 (QW#1 - CRITICAL)
+  - neural.training.learning_rate increased to 0.004-0.006
+  - neural.training.epsilon_decay decreased to 0.988-0.992
+  - neural.training.update_frequency = 1
+- VP-Aware Planning parameters (QW#4):
+  - neural.vp_aware_planning.enabled = true (CRITICAL)
+  - neural.vp_aware_planning.base_boost = 0.15-0.20
+  - neural.vp_aware_planning.strong_boost = 0.25-0.35
+- Scikit parameters updated correctly:
+  - /scikit/enabled = true
+  - /scikit/clustering/enabled = true, min_cluster_size = 3-5
+  - /scikit/anomaly_detection/enabled = true, contamination = 0.15-0.20, n_estimators =
+    400-500
+  - /scikit/concept_tracking/enabled = true (QW#2 - CRITICAL)
+  - /scikit/concept_tracking/persistence_threshold = 3
+- Health Monitor parameters (QW#5):
+  - /health_monitor/enabled = true (CRITICAL)
+  - Component weights adjusted for emergence (diversity increased to 0.25)
+- Feedback knobs at target values:
+  - feedback.knobs.new_edge_rate.initial = 4.5-5.5
+  - feedback.knobs.mutation_rate.initial = 0.030-0.038
+  - feedback.knobs.clustering_bias.initial = 1.55-1.65
+  - feedback.knobs.quantum_pruning.initial = 0.4-0.5
+- Network parameters increased:
+  - network.max_connections = 18000-20000
+  - network.resource_pool = 500-550
+- Meta-cognitive tuning decision made:
+  - If keeping autonomous: meta_cognitive.self_tuning.mode = "autonomous"
+  - If isolating experiment: meta_cognitive.self_tuning.mode = "observing"
+- Causation toggles verified:
+  - causation_detection.enable_neural_decision_causations = true
+  - causation_detection.enable_neural_training_causations = true
+  - causation_detection.enable_ml_causations = true
+- Correlation_id present in config_actions.log: "emergent-intelligence-qw-2025"
+
+VIZ_SETTINGS_UPDATE Validation:
+
+- Neural component color visible (Cyan #00FFFF)
+- ML component color visible (Lime Green #32CD32)
+- Neural links thicker and more prominent (cyan dashed)
+- ML links orange and dashed with flow animation
+- Node shapes correct:
+  - Neural: Diamond (decision), Square (training)
+  - ML: Hexagon (phenotype), Pentagon (collapse), Triangle (anomaly)
+  - Concept: Star (emergence), X-mark (extinction) (QW#2)
+  - Health: Colored nodes for state changes (QW#5)
+- Depth effects showing 3D structure (strong parallax)
+- Glow effects active on neural/ML nodes
+- Link opacity high (0.8-1.0) for neural/ML events
+- Concept labels visible (QW#2)
+- Health background tint visible (QW#5)
+- Settings panel shows updated values
+
+Behavioral Validation (Graph):
+
+- Neural training events appearing in graph (cyan squares)
+- Neural decision events increasing (cyan diamonds)
+- ML phenotype_emergence events appearing (lime green hexagons)
+- ML concept_emergence events appearing (star nodes with labels) (QW#2)
+- ML anomaly_spike events appearing (orange triangles with flash)
+- Health state_change events appearing (colored nodes) (QW#5)
+- Connection density increasing (visible in graph density)
+- Clusters forming in graph (both visual spatial clusters and ML-marked phenotype clusters)
+
+Behavioral Validation (Diagnostic Panels):
+
+- Panel 1 (Top-Left, Cyan): Network metrics updating
+- Panel 2 (Top-Right, Magenta): Neural showing "N/A" initially, then loss values after
+  training starts; concept count increasing (QW#2)
+- Panel 2 (Top-Right, Magenta): ML showing cluster count increasing from 0
+- Panel 3 (Bottom-Left, Lime): Evolution metrics showing, VP updating, HEALTH SCORE showing
+  (QW#5)
+- Panel 4 (Bottom-Right, Yellow): Meta-cognitive showing mode and actions (or "Monitoring..."
+  before frame 50)
+- Panel 5 (Center-Bottom, Orange): Recent events showing latest neural/ML/concept/health
+  events (or "Monitoring..." initially)
+- Stats Box (Left-Center, Cyan): Network structure metrics increasing, HEALTH showing
+
+Quick Wins Integration Validation: ⭐ NEW
+
+- QW#1 (VP-Aware Perception):
+  - neural.brain.input_dim = 18
+  - Organisms receiving VP components as features 13-17
+  - Organisms receiving health as feature 18
+- QW#2 (Concept Tracking):
+  - scikit.concept_tracking.enabled = true
+  - concept_emergence events appearing in graph
+  - Semantic labels visible on star nodes
+- QW#3 (Structured Explanations):
+  - CRA responses follow OBSERVATION → PATTERN → INTERPRETATION → RECOMMENDATION
+- QW#4 (VP-Aware Planning):
+  - neural.vp_aware_planning.enabled = true
+  - Action probability adjustments logged
+  - Ecosystem-healing behaviors visible
+- QW#5 (Health Index):
+  - health_monitor.enabled = true
+  - Health score showing in Panel 3 and Stats Box
+  - health_state_change events appearing in graph
+
+Performance Validation:
+
+- Training times within expected range (<50ms with optimizations)
+- ML analysis times reasonable (<100ms for clustering)
+- No performance degradation (FPS stable)
+- System stability maintained (no crashes, no error spam)
+- Memory usage reasonable (<8GB for typical simulation)
+
+---
+🎯 Success Criteria
+
+Emergent Phenomena Indicators:
+
+1. Neural Coordination:
+- Visual: Clusters of cyan diamond nodes with similar action outcomes
+- Quantitative: >50% of organisms in a spatial cluster making same decision
+- Timeline: Visible by cycle 30-50
+
+2. VP-Responsive Behaviors (QW#4): ⭐ NEW
+- Visual: Organisms in high-VP regions showing adjusted behaviors (cooperate, reproduce, rest)
+- Quantitative: >30% of decisions influenced by VP-Aware Planning
+- Timeline: Visible by cycle 20-40
+
+3. Phenotype Emergence:
+- Visual: Lime green hexagon nodes surrounding organism clusters
+- Quantitative: 3-7 stable phenotype clusters detected by ML
+- Timeline: Visible by cycle 20-40
+
+4. Concept Formation (QW#2): ⭐ NEW
+- Visual: Star nodes with semantic labels ("cooperators", "thrivers")
+- Quantitative: 2-5 named concepts by cycle 60
+- Timeline: Visible by cycle 25-50 (3 cycles after phenotypes)
+
+5. Novel Behaviors:
+- Visual: Orange triangle nodes (anomaly_spike) marking unusual organisms
+- Quantitative: 5-15% anomaly ratio, with some anomalies achieving high fitness
+- Timeline: Continuous, but peak around cycle 50-100 as novel strategies tested
+
+6. Health Optimization (QW#5): ⭐ NEW
+- Visual: Health score in Panel 3 improving; background tint shifting toward blue
+- Quantitative: Health score reaching "optimal" (≥0.7) by cycle 100
+- Timeline: Progressive improvement, threshold crossings at cycles 30, 60, 90
+
+7. Collective Intelligence:
+- Visual: Synchronized actions across organism clusters (same-color decision diamonds in
+  spatial groups)
+- Quantitative: Action convergence >70% within phenotype clusters
+- Timeline: Visible by cycle 50-80
+
+8. Learning Acceleration:
+- Visual: Training loss decreasing rapidly in Panel 2
+- Quantitative: Loss converges to <0.3 faster than genetic-only baseline (by cycle 100 vs 200)
+- Timeline: Clear acceleration by cycle 50
+
+9. Network Emergence:
+- Visual: Dense cyan dashed link pathways forming in graph
+- Quantitative: Connectivity density >1.3, modularity 0.4-0.6, clustering coefficient >0.5
+- Timeline: Visible by cycle 30-50
+
+10. Ecosystem Homeostasis (QW#4 + QW#5): ⭐ NEW
+- Visual: VP stabilizing (Panel 3), Health improving (Panel 3), organisms showing healing
+  behaviors
+- Quantitative: VP trait_divergence decreasing, health.lawfulness increasing, negative
+  feedback loop established
+- Timeline: Visible by cycle 60-100
+
+11. Anomaly Detection:
+- Visual: Orange triangle nodes with flash animation
+- Quantitative: 5-20 anomaly_spike events by cycle 100, some with high fitness
+- Timeline: Continuous
+
+12. VP Stabilization through Intelligence:
+- Visual: Panel 3 showing VP stabilizing at VP1-VP2
+- Quantitative: VP trait_divergence component decreasing by 30-50%, overall VP <0.75
+- Timeline: Clear stabilization by cycle 100
+
+---
+Visual Indicators:
+
+1. Neural Clusters:
+- Description: Visible groups of cyan diamond nodes (neural_decision) with dense cyan dashed
+  links
+- Location: Spatial clusters in graph, especially in high-connectivity regions
+- Indicator of: Coordinated decision-making, hive mind formation
+
+2. ML Phenotype Clusters:
+- Description: Lime green hexagon nodes (phenotype_emergence) surrounding organism groups
+- Location: Scattered across graph, marking different behavioral clusters
+- Indicator of: ML successfully detecting behavioral phenotypes
+
+3. Named Concepts (QW#2): ⭐ NEW
+- Description: Star nodes with floating semantic labels ("cooperators", "thrivers", "lone_wolves")
+- Location: Near phenotype clusters that have persisted 3+ cycles
+- Indicator of: Stable emergent phenotypes with interpretable meaning
+
+4. Anomaly Markers:
+- Description: Orange triangle nodes with flash animation (anomaly_spike)
+- Location: Scattered, often at periphery of phenotype clusters or isolated
+- Indicator of: Novel strategies being tested, outlier organisms
+
+5. Health State Transitions (QW#5): ⭐ NEW
+- Description: Colored nodes (red/yellow/green/blue) marking health_state_change events
+- Location: Scattered in graph timeline, linked to causal events
+- Indicator of: Ecosystem wellness improving through emergent intelligence
+
+6. VP-Responsive Actions (QW#4): ⭐ NEW
+- Description: Clusters of organisms showing same action in response to VP state
+- Location: High-VP regions showing cooperate/reproduce/rest clusters
+- Indicator of: Organisms actively healing ecosystem
+
+7. Decision Pathways:
+- Description: Clear chains of cyan dashed links connecting cyan diamond nodes over time
+- Location: Follow links through 3D depth (foreground to background = recent to past)
+- Indicator of: Temporal decision sequences, learned routines
+
+8. ML Connections:
+- Description: Orange dashed links with flow animation connecting lime green nodes
+- Location: Between phenotype_emergence/cluster_collapse/anomaly_spike/concept nodes
+- Indicator of: ML-detected causal relationships between emergent events
+
+9. Activity Patterns:
+- Description: Pulsing/glowing nodes showing active learning and decision-making
+- Location: Brightest in neural hubs (large cyan nodes) and recent ML events
+- Indicator of: System hotspots, where most intelligence activity concentrated
+
+10. Depth Structure:
+- Description: 3D hierarchy visible in graph with clear foreground/background distinction
+- Location: Entire graph, use camera rotation to verify depth parallax
+- Indicator of: Temporal structure preserved, can trace decision evolution over time
+
+11. Color Differentiation:
+- Description: Neural (cyan), ML (lime green), health (red/yellow/green/blue), and other
+  events clearly distinct
+- Location: Entire graph
+- Indicator of: Good visualization configuration, easy to identify event types
+
+12. Health Background:
+- Description: Subtle background tint indicating overall health state
+- Location: Entire graph background
+- Indicator of: Current ecosystem wellness (red=critical, yellow=warning, green=healthy,
+  blue=optimal)
+
+---
+Panel-Specific Success Indicators:
+
+Panel 1 (Top-Left, Cyan - Network Topology):
+- Nodes count >50 by cycle 50
+- Avg Degree >1.5 by cycle 50 (high connectivity)
+- Clustering >0.5 (strong local clustering)
+
+Panel 2 (Top-Right, Magenta - Neural & ML):
+- Neural: Loss converges to <0.3, Epsilon decays to <0.2, Tracked = organism count
+- ML: Clusters = 3-7, Anomalies = 5-15%, Concepts = 2-5 (QW#2) ⭐ NEW
+
+Panel 3 (Bottom-Left, Lime - Evolution & VP & Health):
+- Best Fitness increasing faster than baseline
+- VP stabilizing at VP1-VP2 (<0.75)
+- Health Score reaching 0.7+ (optimal) (QW#5) ⭐ NEW
+
+Panel 4 (Bottom-Right, Yellow - Meta-Cognitive):
+- If autonomous mode: Actions >3 by cycle 100, Success rate >70%
+- If observing mode: Shows "OBSERVING" (no interference with experiment)
+
+Panel 5 (Center-Bottom, Orange - Recent Events):
+- Shows latest neural_decision, neural_training, phenotype_emergence, concept_emergence,
+  health_state_change, or anomaly_spike events
+- NOT stuck on "Monitoring..." after cycle 20
+
+Stats Box (Left-Center, Cyan):
+- ORGANISMS >50, CONNECTIONS >75 by cycle 50
+- MODULARITY 0.4-0.6
+- CLUSTERING >0.5
+- HEALTH 0.6+ (healthy or better) (QW#5) ⭐ NEW
+
+---
+🚀 Execution Command Template
+
+Copy this entire prompt to the CRA chat to execute the full Emergent Control cycle:
+
+---
+CRA: Execute the full Emergent Control cycle with intelligence systems prioritization and
+Quick Wins #1-5 integration (2025 Edition).
+
+Step 1 - CONFIG_UPDATE:
+Push the Butterfly System toward maximum emergent phenomena with neural systems and ML
+analysis as the primary drivers, leveraging all 5 Quick Wins. For each knob change, explain:
+- Why it's moving (emergent behavior goal)
+- Neural system impact (including QW#1 VP perception and QW#4 VP-aware planning)
+- ML analysis impact (including QW#2 concept tracking)
+- Health impact (QW#5)
+- Expected emergent effect
+- VP component impact
+
+Quick Wins Integration:
+- QW#1: Verify neural.brain.input_dim = 18 (organisms perceive VP + health)
+- QW#2: Enable scikit.concept_tracking for semantic phenotype naming
+- QW#3: Use OBSERVATION→PATTERN→INTERPRETATION→RECOMMENDATION format in response
+- QW#4: Enable neural.vp_aware_planning for ecosystem-healing behaviors
+- QW#5: Enable health_monitor for unified health tracking
+
+Meta-Cognitive Decision: [Choose one]
+- Option A: Keep meta_cognitive.self_tuning.mode = "autonomous" for synergistic tuning
+- Option B: Set meta_cognitive.self_tuning.mode = "observing" to isolate experiment effects
+
+Parameter Targets:
+- neural.brain.input_dim: 18 (QW#1 - CRITICAL)
+- neural.training.learning_rate: 0.004-0.006 (faster learning)
+- neural.training.epsilon_decay: 0.988-0.992 (aggressive exploitation)
+- neural.vp_aware_planning.enabled: true (QW#4 - CRITICAL)
+- neural.vp_aware_planning.base_boost: 0.15-0.20
+- neural.vp_aware_planning.strong_boost: 0.25-0.35
+- scikit.clustering.min_cluster_size: 3-5 (significant phenotypes only)
+- scikit.anomaly_detection.contamination: 0.15-0.20 (more anomaly sensitivity)
+- scikit.anomaly_detection.n_estimators: 400-500 (better anomaly detection)
+- scikit.concept_tracking.enabled: true (QW#2 - CRITICAL)
+- scikit.concept_tracking.persistence_threshold: 3
+- health_monitor.enabled: true (QW#5 - CRITICAL)
+- health_monitor.weight_diversity: 0.25 (increase for emergence)
+- feedback.knobs.new_edge_rate.initial: 4.5-5.5 (dense connectivity)
+- feedback.knobs.mutation_rate.initial: 0.030-0.038 (optimize for dual inheritance)
+- feedback.knobs.clustering_bias.initial: 1.55-1.65 (strong spatial clustering)
+- feedback.knobs.quantum_pruning.initial: 0.4-0.5 (moderate quantum effects)
+- network.max_connections: 18000-20000 (support dense networks)
+- network.resource_pool: 500-550 (reduce resource stress)
+
+Include correlation_id: "emergent-intelligence-qw-2025" for traceability.
+
+Step 2 - VIZ_SETTINGS_UPDATE:
+Make emergent structures unmistakable in the graph, including Quick Win events:
+- Surface nascent neural clusters (cyan diamonds/squares) and ML phenotype clusters (lime
+  green hexagons)
+- Show named concepts with semantic labels (star nodes) (QW#2)
+- Show health state transitions (colored nodes) (QW#5)
+- Highlight neural vs genetic divergence and anomaly spikes (orange triangles with flash)
+- Preserve depth cues for 3D structure with strong parallax
+- Emphasize neural events (diamonds/squares), ML events (hexagon/pentagon/triangle/star),
+  and training patterns
+- Ensure diagnostic panels (5 panels + stats box) complement graph visualization and show
+  Quick Win metrics
+
+Use these specific colors and settings:
+- componentColor_neural: "#00FFFF" (Electric Cyan)
+- componentColor_ml_analysis: "#32CD32" (Lime Green)
+- componentColor_health: varies by state (Red/Yellow/Green/Blue) (QW#5)
+- linkColor_neural: "#00FFFF" (Cyan, dashed)
+- linkColor_ml: "#FFA500" (Orange, dashed with flow animation)
+- Link width: 2-3x for neural/ML events
+- Link opacity: 0.8-1.0 for neural/ML events
+- Node glow: strong on neural/ML/concept nodes
+- Concept labels: visible floating text (QW#2)
+- Health background tint: subtle color by health state (QW#5)
+- Depth parallax: 1.5-2.0x for 3D structure clarity
+
+After execution, provide (using QW#3 Structured Explanations format):
+
+OBSERVATION:
+- Current system state before changes
+- Quick Win status (all 5 enabled/disabled)
+
+PATTERN:
+- Expected behaviors by phase:
+  - Immediate (frames 1-80): Neural/ML initialization, VP-Aware activation (QW#4)
+  - Short-term (frames 160-400): Training starts, concept emergence (QW#2), health tracking (QW#5)
+  - Medium-term (frames 400-800): Collective intelligence, ecosystem homeostasis (QW#4+QW#5)
+  - Long-term (frames 800+): Emergent intelligence signatures, concept evolution
+
+INTERPRETATION:
+- Critical metrics to monitor:
+  - Neural: training_loss, avg_epsilon, organisms_tracked, vp_aware_adjustments
+  - ML: cluster_count, concept_count (QW#2), anomaly_ratio
+  - Health: overall_score, components, state_changes (QW#5)
+  - VP: component breakdown, organism perception (QW#1), healing behaviors (QW#4)
+  - Events: Intelligence events (neural+ML+concept+health) >40% of total
+
+RECOMMENDATION:
+- Validation checklist with Quick Win verification
+- Success criteria with Quick Win indicators
+- Panel-specific targets including health and concepts
+
+Execute both commands back-to-back and describe the expected transformation in detail.
+Monitor both graph visualization AND diagnostic panels for emergent phenomena, with special
+attention to Quick Wins integration (VP perception, concept naming, VP-aware behaviors,
+health optimization).
+
+---
