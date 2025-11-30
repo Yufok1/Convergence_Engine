@@ -724,18 +724,21 @@ class NeuralOrganism(Organism):
                 SPECIAL_TOKENS = {'<PAD>': 0, '<UNK>': 1, '<START>': 2, '<END>': 3, '<VP_GATE>': 4}
         
         generated = [vocab.get_id('<START>')]
-        
+        # Get device from brain model (CPU or CUDA)
+        device = next(self.brain.parameters()).device
+        # Get correct input dimension from config
+        input_dim = self.config.get('neural', {}).get('brain', {}).get('input_dim', 18)
         self.brain.eval()
         with torch.no_grad():
             # Start with current state as context
             if len(self.state_history) > 0:
                 state = self.state_history[-1]
                 if isinstance(state, np.ndarray):
-                    state_tensor = torch.FloatTensor(state).unsqueeze(0)
+                    state_tensor = torch.FloatTensor(state).unsqueeze(0).to(device)
                 else:
-                    state_tensor = torch.zeros(1, 12)  # Default input dim
+                    state_tensor = torch.zeros(1, input_dim, device=device)  # Default input dim
             else:
-                state_tensor = torch.zeros(1, 12)
+                state_tensor = torch.zeros(1, input_dim, device=device)
             
             for _ in range(max_length - 1):
                 # Get language logits from brain
