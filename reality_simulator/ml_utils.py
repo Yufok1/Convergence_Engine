@@ -209,6 +209,9 @@ class PopulationClusterer:
         # Standardize features
         features_scaled = self.scaler.fit_transform(features)
         
+        # Track which algorithm is actually used (separate from config setting)
+        used_algorithm = self.algorithm
+        
         # Select and run clustering algorithm
         if self.algorithm == 'hdbscan' and HDBSCAN_AVAILABLE:
             clusterer = HDBSCAN(
@@ -217,22 +220,25 @@ class PopulationClusterer:
             )
             labels = clusterer.fit_predict(features_scaled)
             centroids = None
+            used_algorithm = 'hdbscan'
         elif self.algorithm == 'kmeans':
             n_clusters = min(self.n_clusters, len(organisms))
             clusterer = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
             labels = clusterer.fit_predict(features_scaled)
             centroids = clusterer.cluster_centers_
+            used_algorithm = 'kmeans'
         elif self.algorithm == 'dbscan':
             clusterer = DBSCAN(eps=0.5, min_samples=self.min_samples)
             labels = clusterer.fit_predict(features_scaled)
             centroids = None
+            used_algorithm = 'dbscan'
         else:
-            # Fallback to KMeans if HDBSCAN not available
+            # Fallback to KMeans if HDBSCAN not available or unknown algorithm
             n_clusters = min(self.n_clusters, len(organisms))
             clusterer = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
             labels = clusterer.fit_predict(features_scaled)
             centroids = clusterer.cluster_centers_
-            self.algorithm = 'kmeans_fallback'
+            used_algorithm = 'kmeans_fallback'
         
         # Calculate cluster sizes
         unique_labels = set(labels)
@@ -244,7 +250,7 @@ class PopulationClusterer:
             n_clusters=n_clusters,
             cluster_sizes=cluster_sizes,
             cluster_centroids=centroids,
-            algorithm=self.algorithm
+            algorithm=used_algorithm  # Report actual algorithm used, not config setting
         )
         
         return self._last_result

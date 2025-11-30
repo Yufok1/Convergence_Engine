@@ -71,13 +71,13 @@
         "step": 0.05
       },
       "mutation_rate": {
-        "initial": 0.035,
+        "initial": 0.033,
         "max": 0.06,
         "min": 0.002,
         "step": 0.001
       },
       "new_edge_rate": {
-        "initial": 5.2,
+        "initial": 5,
         "max": 6.0,
         "min": 0.2,
         "step": 0.1
@@ -90,6 +90,18 @@
       }
     },
     "rate_limit_frames": 30
+  },
+  "health_monitor": {
+    "critical_threshold": 0.25,
+    "enabled": true,
+    "healthy_threshold": 0.65,
+    "history_size": 100,
+    "warning_threshold": 0.45,
+    "weight_adaptability": 0.2,
+    "weight_coherence": 0.3,
+    "weight_diversity": 0.25,
+    "weight_lawfulness": 0.15,
+    "weight_sustainability": 0.1
   },
   "lattice": {
     "entropy_sensitivity": 5e-05,
@@ -106,7 +118,7 @@
     "self_tuning": {
       "enabled": true,
       "min_confidence_threshold": 0.6,
-      "mode": "observing",
+      "mode": "autonomous",
       "performance_targets": {
         "max_anomaly_ratio": 0.2,
         "min_cluster_diversity": 3,
@@ -153,18 +165,18 @@
   "network": {
     "connection_strength_resolution": 5e-06,
     "emergence_sensitivity": 1e-06,
-    "max_connections": 17000,
+    "max_connections": 19000,
     "max_organisms": 2000,
     "resource_flow_precision": 0.0001,
-    "resource_pool": 475,
+    "resource_pool": 525,
     "stability_precision": 1e-07
   },
   "neural": {
     "brain": {
       "activation": "relu",
       "dropout": 0.1,
-  "hidden_dim": 64,
-  "input_dim": 18,
+      "hidden_dim": 64,
+      "input_dim": 18,
       "output_dim": 6
     },
     "device": "cuda",
@@ -193,36 +205,24 @@
       "survival": 0.8
     },
     "training": {
-      "batch_size": 112,
+      "batch_size": 96,
       "enabled": true,
       "epsilon": 0.95,
-      "epsilon_decay": 0.991,
+      "epsilon_decay": 0.99,
       "epsilon_end": 0.01,
       "epsilon_start": 0.95,
       "gamma": 0.995,
-      "learning_rate": 0.0035,
+      "learning_rate": 0.005,
       "memory_size": 20000,
       "update_frequency": 1
     },
     "vp_aware_planning": {
+      "base_boost": 0.18,
       "enabled": true,
-      "base_boost": 0.15,
-      "strong_boost": 0.25,
-      "high_threshold": 0.5,
-      "low_threshold": 0.3
+      "high_threshold": 0.45,
+      "low_threshold": 0.25,
+      "strong_boost": 0.3
     }
-  },
-  "health_monitor": {
-    "enabled": true,
-    "weight_coherence": 0.30,
-    "weight_diversity": 0.20,
-    "weight_adaptability": 0.20,
-    "weight_lawfulness": 0.20,
-    "weight_sustainability": 0.10,
-    "critical_threshold": 0.3,
-    "warning_threshold": 0.5,
-    "healthy_threshold": 0.7,
-    "history_size": 100
   },
   "quantum": {
     "entanglement_sensitivity": 2.5e-06,
@@ -259,19 +259,23 @@
   "scikit": {
     "anomaly_detection": {
       "algorithm": "isolation_forest",
-      "contamination": 0.12,
+      "contamination": 0.18,
       "enabled": true,
       "n_estimators": 450
     },
     "clustering": {
       "algorithm": "hdbscan",
       "enabled": true,
-      "min_cluster_size": 2,
+      "min_cluster_size": 3,
       "min_samples": 1
     },
     "concept_tracking": {
       "enabled": true,
       "persistence_threshold": 3,
+      "semantic_mapping": {
+        "cooperators": "Team Builders",
+        "lone_wolves": "Lone Hunters"
+      },
       "stale_threshold": 10.0
     },
     "dimensionality_reduction": {

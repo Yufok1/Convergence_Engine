@@ -4,7 +4,51 @@
 
 ---
 
+## [Unreleased] - 2025-11-30
+
+### 🔧 Bug Fixes & Stability Improvements (2025-11-30)
+
+#### Fixed
+- **ILLUMINATE/NOTEPAD JSON Parsing** (`templates/causation_explorer.html`)
+  - Added robust character cleanup for LLM responses containing invisible Unicode characters
+  - Handles smart quotes (", ", ', '), non-breaking spaces, zero-width characters
+  - Fallback regex parsing when standard JSON.parse fails
+  - CRA research features now work reliably with all LLM response formats
+
+- **HDBSCAN Algorithm Tracking Bug** (`reality_simulator/ml_utils.py`)
+  - Fixed issue where `self.algorithm` was being permanently modified to 'kmeans_fallback'
+  - Now uses local `used_algorithm` variable for tracking without corrupting state
+  - HDBSCAN remains available for subsequent analyses when library is present
+
+- **Health Monitor Configuration** (`unified_entry.py`)
+  - Verified HealthMonitor is properly wired with event_emitter
+  - `configure_health_monitor()` correctly passes dependencies to SymbioticNetwork
+
+#### Changed
+- **Documentation Cleanup**
+  - Archived 8 session-specific/dated analysis documents to `docs/archive/`
+  - Moved: COMPREHENSIVE_*_ANALYSIS_2025.md, LOG_ANALYSIS_INSIGHTS.md, PUSH_SUMMARY.md
+  - Moved: CURSOR_HANDOFF_BRIEFING.md, CRA_AUDIT_VERIFICATION.md, CRA_*_FIX.md
+  - Root directory now cleaner with only essential documentation
+
+---
+
 ## [Unreleased] - 2025-11-29
+
+### 🧠 Understanding Roadmap Implementation - Quick Wins #1-7 (2025-11-29)
+
+#### Added
+- **Quick Win #6: CRA System Custodian Mode** (`causation_web_ui.py`)
+  - CRA operates as continuous System Custodian with health monitoring responsibilities
+  - Monitors population, VP classification, neural activity, and connectivity
+  - Protective guardian mode: suggests parameter adjustments when thresholds exceeded
+  - Automatic integration with Health Monitor for real-time ecosystem wellness tracking
+
+- **Quick Win #7: Causal Chain Visualization** (`templates/causation_explorer.html`)
+  - Downstream impact tracing from any selected node
+  - Causal chain highlighting with visual differentiation
+  - Root cause analysis: trace upstream to identify triggering events
+  - Integration with CRA ILLUMINATE engine for automated chain discovery
 
 ### 🧠 Understanding Roadmap Implementation - Quick Wins #1-5 (2025-11-29)
 

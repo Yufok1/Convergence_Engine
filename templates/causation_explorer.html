@@ -9701,11 +9701,33 @@
                 }
                 illuminatePayloads.forEach(payload => {
                     try {
-                        const command = JSON.parse(payload.cleaned);
+                        // Robust JSON parsing with character cleanup
+                        let jsonStr = payload.cleaned || payload.raw;
+                        // Remove invisible characters and normalize whitespace
+                        jsonStr = jsonStr
+                            .replace(/[\u200B-\u200D\uFEFF]/g, '') // Zero-width chars
+                            .replace(/[\u00A0]/g, ' ') // Non-breaking space
+                            .replace(/[""]/g, '"') // Smart quotes to regular
+                            .replace(/['']/g, "'") // Smart apostrophes
+                            .trim();
+                        console.log('[CRA] 🔬 Parsing ILLUMINATE JSON:', jsonStr);
+                        const command = JSON.parse(jsonStr);
                         console.log('[CRA] ILLUMINATE command received:', command);
                         processIlluminateCommand(command);
                     } catch (err) {
-                        console.error('[CRA] Failed to parse ILLUMINATE payload:', err, payload.raw);
+                        console.error('[CRA] Failed to parse ILLUMINATE payload:', err, 'raw:', payload.raw, 'cleaned:', payload.cleaned);
+                        // Try to extract with simpler regex as fallback
+                        try {
+                            const simpleJson = (payload.raw || '').match(/\{[^}]+\}/);
+                            if (simpleJson) {
+                                const fallbackCmd = JSON.parse(simpleJson[0]);
+                                console.log('[CRA] 🔬 Fallback parse succeeded:', fallbackCmd);
+                                processIlluminateCommand(fallbackCmd);
+                                return;
+                            }
+                        } catch (fallbackErr) {
+                            console.error('[CRA] 🔬 Fallback parse also failed:', fallbackErr);
+                        }
                         addChatMessage('system', `❌ Error parsing ILLUMINATE JSON: ${err.message}`, true);
                     }
                 });
@@ -9722,7 +9744,14 @@
                     if (notepadMatch) {
                         notepadMatch.forEach(match => {
                             try {
-                                const jsonStr = match.replace(/\[\[NOTEPAD:\s*/i, '').replace(/\s*\]\]$/, '');
+                                let jsonStr = match.replace(/\[\[NOTEPAD:\s*/i, '').replace(/\s*\]\]$/, '');
+                                // Cleanup invisible/smart characters
+                                jsonStr = jsonStr
+                                    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+                                    .replace(/[\u00A0]/g, ' ')
+                                    .replace(/[""]/g, '"')
+                                    .replace(/['']/g, "'")
+                                    .trim();
                                 const cmd = JSON.parse(jsonStr);
                                 processNotepadCommand(cmd);
                             } catch (e) {
@@ -9734,11 +9763,20 @@
                 
                 notepadPayloads.forEach(payload => {
                     try {
-                        const command = JSON.parse(payload.cleaned);
+                        // Robust JSON parsing with character cleanup
+                        let jsonStr = payload.cleaned || payload.raw;
+                        jsonStr = jsonStr
+                            .replace(/[\u200B-\u200D\uFEFF]/g, '')
+                            .replace(/[\u00A0]/g, ' ')
+                            .replace(/[""]/g, '"')
+                            .replace(/['']/g, "'")
+                            .trim();
+                        console.log('[CRA] 📓 Parsing NOTEPAD JSON:', jsonStr);
+                        const command = JSON.parse(jsonStr);
                         console.log('[CRA] 📓 NOTEPAD command received:', command);
                         processNotepadCommand(command);
                     } catch (err) {
-                        console.error('[CRA] Failed to parse NOTEPAD payload:', err, payload.raw);
+                        console.error('[CRA] Failed to parse NOTEPAD payload:', err, 'raw:', payload.raw, 'cleaned:', payload.cleaned);
                     }
                 });
 

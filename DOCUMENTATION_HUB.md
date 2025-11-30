@@ -147,15 +147,22 @@ pip install pywin32
 ### Analysis Reports (`docs/archive/analysis_reports/`)
 - `COMPREHENSIVE_ANALYSIS_REPORT_2025.md` - January 2025 codebase analysis
 - `COMPREHENSIVE_MULTI_STEP_ANALYSIS_2025.md` - Multi-step analysis report
+- `COMPREHENSIVE_PROJECT_ANALYSIS_REPORT.md` - Complete project analysis
 - `SIMULATION_STAGNATION_EXPLANATION.md` - Stagnation debugging session
 - `SYSTEM_OPTIMIZATION_SUMMARY.md` - Optimization changes record
 
 ### Release Notes (`docs/archive/release_notes/`)
 - `RELEASE_NOTES_NEURAL.md` - Neural system v1.0 release notes
+- `PUSH_SUMMARY.md` - ML & Neural Intelligence Systems push summary
+
+### Session Archives (`docs/archive/2025-11-30/`)
+- `LOG_ANALYSIS_INSIGHTS.md` - Comprehensive log analysis session
+- `CURSOR_HANDOFF_BRIEFING.md` - Multi-agent handoff documentation
+- `CRA_AUDIT_VERIFICATION.md` - CRA audit verification report
 
 ### Other Archives (`docs/archive/`)
 - `GROUNDED_COLLABORATION.md` - AI collaboration framework
-- `completed_work/` - 47 files: analysis, integration, verification reports
+- `completed_work/` - 50+ files: analysis, integration, verification reports, CRA fixes
 - `implementation_guides/` - Historical implementation guides
 - `outdated/` - Superseded documentation
 - `performance_optimization/` - Performance tuning records
@@ -350,8 +357,8 @@ logger.info("Info message")
 
 ---
 
-**Last Updated:** 2025-11-24  
-**Status:** ✅ All systems verified, tested, and documented  
-**Documentation:** ✨ Cleaned and organized (47 files archived)
+**Last Updated:** 2025-11-30  
+**Status:** ✅ All 7 Quick Wins operational, system health 0.81 (Optimal)  
+**Documentation:** ✨ Cleaned and organized (55+ files archived)
 
 **The butterfly is soaring with clean documentation!** 🦋✨

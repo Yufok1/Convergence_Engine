@@ -1104,6 +1104,20 @@ class UnifiedSystem:
                                         print("[UNIFIED] [PASS] 🧠 ML Analyzer configured (Scikit-learn)")
                         except Exception as e:
                             print(f"[UNIFIED] [WARN] ML Analyzer configuration failed: {e}")
+                    
+                    # Configure Health Monitor (Quick Win #5)
+                    if hasattr(network, 'configure_health_monitor'):
+                        try:
+                            config_path = Path('config.json')
+                            if config_path.exists():
+                                with open(config_path, 'r') as f:
+                                    full_config = json.load(f)
+                                    health_config = full_config.get('health_monitor', {})
+                                    if health_config.get('enabled', True):
+                                        network.configure_health_monitor(health_config, event_emitter=neural_event_emitter)
+                                        print("[UNIFIED] [PASS] ❤️ Health Monitor configured")
+                        except Exception as e:
+                            print(f"[UNIFIED] [WARN] Health Monitor configuration failed: {e}")
             except Exception:
                 # Don't let ML wiring break initialization
                 pass
@@ -1128,6 +1142,20 @@ class UnifiedSystem:
                                     print("[UNIFIED] [PASS] 🧠 ML Analyzer configured (Scikit-learn)")
                     except Exception as e:
                         print(f"[UNIFIED] [WARN] ML Analyzer configuration failed: {e}")
+                
+                # Configure Health Monitor (Quick Win #5)
+                if hasattr(network, 'configure_health_monitor'):
+                    try:
+                        config_path = Path('config.json')
+                        if config_path.exists():
+                            with open(config_path, 'r') as f:
+                                full_config = json.load(f)
+                                health_config = full_config.get('health_monitor', {})
+                                if health_config.get('enabled', True):
+                                    network.configure_health_monitor(health_config, event_emitter=neural_event_emitter)
+                                    print("[UNIFIED] [PASS] ❤️ Health Monitor configured")
+                    except Exception as e:
+                        print(f"[UNIFIED] [WARN] Health Monitor configuration failed: {e}")
 
         # Initialize Phase Sync Bridge (CRITICAL INTEGRATION!)
         if PHASE_SYNC_AVAILABLE:

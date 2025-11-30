@@ -70,6 +70,15 @@ data/*.json
 data/.shared_simulation_state.json
 data/.simulation_paused
 
+# Causation Explorer runtime data
+data/causation_explorer/chat_history.json
+data/causation_explorer/snapshots/
+
+# Kernel runtime state
+data/kernel/latest.link
+data/kernel/versions/*
+!data/kernel/versions/.gitkeep
+
 # Config (optional - you might want to commit config.json, or keep it private)
 # config.json
 
