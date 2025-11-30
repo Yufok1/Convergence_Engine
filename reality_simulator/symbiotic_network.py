@@ -47,6 +47,19 @@ except ImportError:
         get_ml_analyzer = None
         is_sklearn_available = lambda: False
 
+# Import Health Monitor (Quick Win #5)
+try:
+    from .health_monitor import HealthMonitor, get_health_monitor
+    HEALTH_MONITOR_AVAILABLE = True
+except ImportError:
+    try:
+        from health_monitor import HealthMonitor, get_health_monitor
+        HEALTH_MONITOR_AVAILABLE = True
+    except ImportError:
+        HEALTH_MONITOR_AVAILABLE = False
+        HealthMonitor = None
+        get_health_monitor = None
+
 try:
     from evolution_engine import Organism
 except ImportError:
@@ -666,6 +679,11 @@ class SymbioticNetwork:
         
         # Event emitter callback for causation graph integration
         self.ml_event_emitter: Optional[Callable] = None
+        
+        # Health Monitor for unified ecosystem health scoring (Quick Win #5)
+        self.health_monitor: Optional['HealthMonitor'] = None
+        self.health_config: Dict[str, Any] = {}
+        self._last_health_snapshot: Optional[Any] = None
 
     def configure_ml_analyzer(self, config: Dict[str, Any]):
         """
@@ -684,6 +702,88 @@ class SymbioticNetwork:
             self.ml_analyzer = get_ml_analyzer(config)
         elif self.ml_analyzer is not None and not config.get('enabled', False):
             self.ml_analyzer = None
+    
+    def configure_health_monitor(self, config: Dict[str, Any], event_emitter: Optional[Callable] = None):
+        """
+        Configure and enable the Health Monitor for unified ecosystem health scoring.
+        
+        Config structure (Quick Win #5):
+        {
+            "enabled": true/false,
+            "weight_coherence": 0.30,
+            "weight_diversity": 0.20,
+            "weight_adaptability": 0.20,
+            "weight_lawfulness": 0.20,
+            "weight_sustainability": 0.10,
+            "critical_threshold": 0.3,
+            "warning_threshold": 0.5,
+            "healthy_threshold": 0.7
+        }
+        """
+        self.health_config = config
+        if HEALTH_MONITOR_AVAILABLE and config.get('enabled', True):
+            self.health_monitor = HealthMonitor(
+                enabled=config.get('enabled', True),
+                history_size=config.get('history_size', 100),
+                event_emitter=event_emitter or self.ml_event_emitter,
+                config=config
+            )
+        elif self.health_monitor is not None and not config.get('enabled', True):
+            self.health_monitor = None
+    
+    def compute_ecosystem_health(self, 
+                                  neural_stats: Optional[Dict[str, float]] = None,
+                                  vp_components: Optional[Dict[str, float]] = None) -> Dict[str, Any]:
+        """
+        Compute unified ecosystem health score.
+        
+        Aggregates data from network metrics, ML clustering, neural training,
+        VP components, and resource/population data into a single health score.
+        
+        Returns dict with health_score and component breakdown.
+        """
+        if not HEALTH_MONITOR_AVAILABLE or self.health_monitor is None:
+            return {'enabled': False, 'health_score': 0.5, 'reason': 'Health monitor not available'}
+        
+        # Gather network metrics
+        network_metrics = {
+            'connectivity': self.metrics.connectivity,
+            'clustering_coefficient': self.metrics.clustering_coefficient,
+            'modularity': self.metrics.modularity,
+            'species_diversity': self.metrics.species_diversity,
+        }
+        
+        # Gather resource data
+        resource_data = {
+            'resource_pool': getattr(self.resource_engine, 'total_resources', 200.0),
+            'initial_resources': 200.0,  # Default initial
+            'population': len(self.organisms),
+            'target_population': 100,  # Config-driven target
+        }
+        
+        # Get clustering result if available
+        clustering_result = None
+        if self._last_ml_analysis and self._last_ml_analysis.get('enabled'):
+            clustering_result = self._last_ml_analysis.get('clustering')
+        
+        # Compute health
+        snapshot = self.health_monitor.compute_health(
+            network_metrics=network_metrics,
+            clustering_result=clustering_result,
+            neural_stats=neural_stats,
+            vp_components=vp_components,
+            resource_data=resource_data
+        )
+        
+        self._last_health_snapshot = snapshot
+        
+        return snapshot.to_dict()
+    
+    def get_current_health(self) -> float:
+        """Get the current ecosystem health score (0.0-1.0)"""
+        if self.health_monitor:
+            return self.health_monitor.get_current_health()
+        return 0.5  # Neutral default
     
     def run_ml_analysis(self, force: bool = False) -> Dict[str, Any]:
         """
@@ -993,6 +1093,62 @@ class SymbioticNetwork:
             'max_connections_per_organism': self.max_connections_per_organism,
             'resource_pool': getattr(self.resource_engine, 'total_resources', 200.0),
         }
+        # Enrich network_state with latest VP metrics if available via Agency Router
+        try:
+            vp_components_default = {
+                'trait_divergence': 0.0,
+                'network_coherence': 0.0,
+                'quantum_entropy': 0.0,
+                'evolution_pressure': 0.0,
+                'phase_mismatch': 0.0,
+            }
+            vp_total = None
+            if hasattr(self, 'agency_router') and self.agency_router and getattr(self.agency_router, 'vp_monitor', None):
+                vp_monitor = self.agency_router.vp_monitor
+                if hasattr(vp_monitor, 'vp_history') and vp_monitor.vp_history:
+                    recent = vp_monitor.vp_history[-1]
+                    # Total VP
+                    if isinstance(recent, dict):
+                        vp_total = recent.get('total_vp', None)
+                        # Component breakdown present only when component_decomposition_enabled
+                        comp = recent.get('component_breakdown') or {}
+                        # Normalize to known keys with defaults
+                        vp_components = {
+                            'trait_divergence': float(comp.get('trait_divergence', 0.0)),
+                            'network_coherence': float(comp.get('network_coherence', 0.0)),
+                            'quantum_entropy': float(comp.get('quantum_entropy', 0.0)),
+                            'evolution_pressure': float(comp.get('evolution_pressure', 0.0)),
+                            'phase_mismatch': float(comp.get('phase_mismatch', 0.0)),
+                        }
+                        network_state['vp_components'] = vp_components
+            # Always include keys to keep contracts stable
+            if 'vp_components' not in network_state:
+                network_state['vp_components'] = vp_components_default
+            if vp_total is not None:
+                network_state['vp_total'] = float(vp_total)
+        except Exception:
+            # Never let VP enrichment break simulation; fall back silently
+            network_state['vp_components'] = {
+                'trait_divergence': 0.0,
+                'network_coherence': 0.0,
+                'quantum_entropy': 0.0,
+                'evolution_pressure': 0.0,
+                'phase_mismatch': 0.0,
+            }
+        
+        # Quick Win #5: Add system_health to network_state for organism perception
+        try:
+            if self.health_monitor is not None:
+                # Compute health with available data (neural_stats will be added later if available)
+                health_result = self.compute_ecosystem_health(
+                    neural_stats=None,  # Neural trainer stats added by main.py if available
+                    vp_components=network_state.get('vp_components')
+                )
+                network_state['system_health'] = health_result.get('health_score', 0.5)
+            else:
+                network_state['system_health'] = 0.5  # Neutral default
+        except Exception:
+            network_state['system_health'] = 0.5
         
         # Collect organism actions for batch execution
         organism_actions = {}

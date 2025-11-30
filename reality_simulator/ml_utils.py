@@ -10,6 +10,7 @@ Features:
 - Isolation Forest anomaly detection for unusual organisms
 - PCA/t-SNE dimensionality reduction for visualization
 - Config-driven enabling/disabling of each subsystem
+- ConceptTracker for semantic naming of stable behavioral clusters (Quick Win #2)
 - Optional dependency - system works without scikit-learn installed
 """
 
@@ -17,6 +18,12 @@ import numpy as np
 from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass, field
 import time
+import logging
+
+# Concept tracking for semantic naming (Quick Win #2)
+from .concept_tracker import ConceptTracker
+
+logger = logging.getLogger(__name__)
 
 # Optional scikit-learn import - graceful degradation if not installed
 SKLEARN_AVAILABLE = False
@@ -48,6 +55,8 @@ class ClusteringResult:
     cluster_centroids: Optional[np.ndarray] = None  # Centroid positions if available
     algorithm: str = "none"
     timestamp: float = field(default_factory=time.time)
+    # NEW: Concept tracking fields (Quick Win #2)
+    concept_tags: Dict[int, str] = field(default_factory=dict)  # cluster_id → concept_id
     
     def get_cluster_organisms(self, cluster_id: int, organism_ids: List[str]) -> List[str]:
         """Get organism IDs belonging to a specific cluster"""
@@ -60,7 +69,8 @@ class ClusteringResult:
             'cluster_sizes': self.cluster_sizes,
             'algorithm': self.algorithm,
             'timestamp': self.timestamp,
-            'noise_count': int(np.sum(self.labels == -1)) if self.labels is not None else 0
+            'noise_count': int(np.sum(self.labels == -1)) if self.labels is not None else 0,
+            'concept_tags': self.concept_tags  # NEW: semantic concept names
         }
 
 
@@ -475,6 +485,8 @@ class MLAnalyzer:
     
     Coordinates clustering, anomaly detection, and dimensionality reduction,
     respecting configuration toggles.
+    
+    Includes ConceptTracker for semantic naming of stable behavioral clusters (Quick Win #2).
     """
     
     def __init__(self, config: Dict[str, Any] = None):
@@ -486,7 +498,8 @@ class MLAnalyzer:
             "enabled": true/false,
             "clustering": {"enabled": true, "algorithm": "hdbscan", ...},
             "anomaly_detection": {"enabled": true, "algorithm": "isolation_forest", ...},
-            "dimensionality_reduction": {"enabled": true, "algorithm": "pca", ...}
+            "dimensionality_reduction": {"enabled": true, "algorithm": "pca", ...},
+            "concept_tracking": {"enabled": true, "persistence_threshold": 3, ...}
         }
         """
         self.config = config or {}
@@ -496,15 +509,24 @@ class MLAnalyzer:
         clustering_config = self.config.get('clustering', {})
         anomaly_config = self.config.get('anomaly_detection', {})
         reduction_config = self.config.get('dimensionality_reduction', {})
+        concept_config = self.config.get('concept_tracking', {})
         
         self.clusterer = PopulationClusterer(clustering_config)
         self.anomaly_detector = AnomalyDetector(anomaly_config)
         self.reducer = TraitReducer(reduction_config)
         
+        # NEW: Concept tracking for semantic naming (Quick Win #2)
+        self.concept_tracker = ConceptTracker(
+            persistence_threshold=concept_config.get('persistence_threshold', 3),
+            stale_threshold=concept_config.get('stale_threshold', 10.0),
+            enabled=concept_config.get('enabled', True)
+        )
+        
         # Feature toggles
         self.clustering_enabled = clustering_config.get('enabled', True)
         self.anomaly_enabled = anomaly_config.get('enabled', True)
         self.reduction_enabled = reduction_config.get('enabled', True)
+        self.concept_tracking_enabled = concept_config.get('enabled', True)
         
         # Last analysis results
         self._last_analysis: Dict[str, Any] = {}
@@ -523,14 +545,21 @@ class MLAnalyzer:
         clustering_config = config.get('clustering', {})
         anomaly_config = config.get('anomaly_detection', {})
         reduction_config = config.get('dimensionality_reduction', {})
+        concept_config = config.get('concept_tracking', {})
         
         self.clusterer = PopulationClusterer(clustering_config)
         self.anomaly_detector = AnomalyDetector(anomaly_config)
         self.reducer = TraitReducer(reduction_config)
         
+        # Update concept tracker settings (preserve history, just update config)
+        self.concept_tracker.enabled = concept_config.get('enabled', True)
+        self.concept_tracker.persistence_threshold = concept_config.get('persistence_threshold', 3)
+        self.concept_tracker.stale_threshold = concept_config.get('stale_threshold', 10.0)
+        
         self.clustering_enabled = clustering_config.get('enabled', True)
         self.anomaly_enabled = anomaly_config.get('enabled', True)
         self.reduction_enabled = reduction_config.get('enabled', True)
+        self.concept_tracking_enabled = concept_config.get('enabled', True)
     
     def analyze(self, organisms: Dict[str, Any], force: bool = False) -> Dict[str, Any]:
         """
@@ -555,7 +584,8 @@ class MLAnalyzer:
                 'sklearn_available': SKLEARN_AVAILABLE,
                 'clustering': None,
                 'anomalies': None,
-                'reduction': None
+                'reduction': None,
+                'concept_tracking': None
             }
         
         results = {
@@ -566,12 +596,36 @@ class MLAnalyzer:
         }
         
         # Clustering
+        cluster_result = None
         if self.clustering_enabled:
             cluster_result = self.clusterer.fit_predict(organisms)
+            
+            # NEW: Concept tracking - semantic naming of stable clusters (Quick Win #2)
+            concept_tags = {}
+            if self.concept_tracking_enabled and cluster_result.labels.size > 0:
+                # Wire event emitter to concept tracker for causation graph events
+                if self.event_emitter:
+                    self.concept_tracker.event_emitter = self.event_emitter
+                
+                # Update concept tracking with clustering results
+                concept_tags = self.concept_tracker.update(
+                    cluster_labels=cluster_result.labels,
+                    cluster_sizes=cluster_result.cluster_sizes,
+                    organisms=organisms,
+                    timestamp=current_time
+                )
+                
+                # Attach concept tags to cluster result
+                cluster_result.concept_tags = concept_tags
+            
             results['clustering'] = cluster_result.to_dict()
             results['cluster_labels'] = cluster_result.labels.tolist() if cluster_result.labels.size > 0 else []
+            results['concept_tags'] = concept_tags
+            results['concept_summary'] = self.concept_tracker.get_concept_summary() if self.concept_tracking_enabled else None
         else:
             results['clustering'] = None
+            results['concept_tags'] = {}
+            results['concept_summary'] = None
         
         # Anomaly Detection
         if self.anomaly_enabled:
@@ -605,10 +659,12 @@ class MLAnalyzer:
             'clustering_enabled': self.clustering_enabled,
             'anomaly_enabled': self.anomaly_enabled,
             'reduction_enabled': self.reduction_enabled,
+            'concept_tracking_enabled': self.concept_tracking_enabled,
             'last_analysis_time': self._last_analysis_time,
             'clusterer_algorithm': self.clusterer.algorithm,
             'anomaly_algorithm': self.anomaly_detector.algorithm,
-            'reducer_algorithm': self.reducer.algorithm
+            'reducer_algorithm': self.reducer.algorithm,
+            'active_concepts': len(self.concept_tracker.get_active_concepts()) if self.concept_tracking_enabled else 0
         }
 
 

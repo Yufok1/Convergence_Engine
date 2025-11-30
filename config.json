@@ -163,8 +163,8 @@
     "brain": {
       "activation": "relu",
       "dropout": 0.1,
-      "hidden_dim": 64,
-      "input_dim": 12,
+  "hidden_dim": 64,
+  "input_dim": 18,
       "output_dim": 6
     },
     "device": "cuda",
@@ -203,7 +203,26 @@
       "learning_rate": 0.0035,
       "memory_size": 20000,
       "update_frequency": 1
+    },
+    "vp_aware_planning": {
+      "enabled": true,
+      "base_boost": 0.15,
+      "strong_boost": 0.25,
+      "high_threshold": 0.5,
+      "low_threshold": 0.3
     }
+  },
+  "health_monitor": {
+    "enabled": true,
+    "weight_coherence": 0.30,
+    "weight_diversity": 0.20,
+    "weight_adaptability": 0.20,
+    "weight_lawfulness": 0.20,
+    "weight_sustainability": 0.10,
+    "critical_threshold": 0.3,
+    "warning_threshold": 0.5,
+    "healthy_threshold": 0.7,
+    "history_size": 100
   },
   "quantum": {
     "entanglement_sensitivity": 2.5e-06,
@@ -249,6 +268,11 @@
       "enabled": true,
       "min_cluster_size": 2,
       "min_samples": 1
+    },
+    "concept_tracking": {
+      "enabled": true,
+      "persistence_threshold": 3,
+      "stale_threshold": 10.0
     },
     "dimensionality_reduction": {
       "algorithm": "tsne",

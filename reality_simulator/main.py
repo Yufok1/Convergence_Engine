@@ -1029,6 +1029,42 @@ class RealitySimulator:
                         from reality_simulator.config_tuner import ConfigTuner
 
                     self.config_tuner = ConfigTuner(config=self.config, enabled=True)
+                    # Wire event emitter for structured explanations (Quick Win #3)
+                    if self.event_emitter:
+                        self.config_tuner.event_emitter = self.event_emitter
+                        # Wrap event emitter to track events for causation linking
+                        original_emitter = self.event_emitter
+                        def tracking_emitter(event):
+                            # Track event for ConfigTuner causation linking
+                            if self.config_tuner:
+                                # Extract event_id if available (from Event object or dict)
+                                event_id = None
+                                if hasattr(event, 'event_id'):
+                                    event_id = event.event_id
+                                elif isinstance(event, dict):
+                                    event_id = event.get('event_id') or event.get('data', {}).get('event_id')
+                                
+                                # Convert to dict format for tracking
+                                if hasattr(event, '__dict__'):
+                                    event_dict = {
+                                        'component': getattr(event, 'component', 'unknown'),
+                                        'event_type': getattr(event, 'event_type', 'unknown'),
+                                        'event_id': event_id or f"evt_{int(time.time() * 1000)}",
+                                        'timestamp': getattr(event, 'timestamp', time.time())
+                                    }
+                                else:
+                                    event_dict = {
+                                        'component': event.get('component', 'unknown'),
+                                        'event_type': event.get('event_type', 'unknown'),
+                                        'event_id': event_id or f"evt_{int(time.time() * 1000)}",
+                                        'timestamp': event.get('timestamp', time.time())
+                                    }
+                                self.config_tuner.track_event(event_dict)
+                            
+                            # Forward to original emitter
+                            original_emitter(event)
+                        
+                        self.config_tuner.event_emitter = tracking_emitter
                     print(ColorScheme.log_component("tuner", "Config tuner initialized (AUTONOMOUS MODE)"))
                 except Exception as e:
                     print(f"[WARN] Config tuner initialization failed: {e}")
@@ -1058,6 +1094,10 @@ class RealitySimulator:
                 # Wire ML event emitter to network
                 if hasattr(network, 'ml_event_emitter') and network.ml_event_emitter is None:
                     network.ml_event_emitter = self.event_emitter
+                # Wire up Health Monitor (Quick Win #5)
+                if hasattr(network, 'configure_health_monitor'):
+                    health_config = self.config.get('health_monitor', {'enabled': True})
+                    network.configure_health_monitor(health_config, event_emitter=self.event_emitter)
 
             # Initialize metrics with default values so visualization always has data
             # Neural metrics
@@ -1372,6 +1412,10 @@ class RealitySimulator:
                 # Wire ML event emitter to network
                 if hasattr(network, 'ml_event_emitter') and network.ml_event_emitter is None:
                     network.ml_event_emitter = self.event_emitter
+                # Wire up Health Monitor (Quick Win #5)
+                if hasattr(network, 'configure_health_monitor') and network.health_monitor is None:
+                    health_config = self.config.get('health_monitor', {'enabled': True})
+                    network.configure_health_monitor(health_config, event_emitter=self.event_emitter)
             
             network.update_network()
 
@@ -1693,21 +1737,7 @@ class RealitySimulator:
                 # Apply tuning action if recommended
                 if tuning_action:
                     self.config_tuner.apply_action(tuning_action)
-
-                    # Emit tuning event for causation tracking
-                    if self.event_emitter:
-                        self.event_emitter({
-                            'timestamp': time.time(),
-                            'event_type': 'config_tuning',
-                            'component': 'config_tuner',
-                            'data': {
-                                'parameter': tuning_action.parameter_path,
-                                'old_value': tuning_action.current_value,
-                                'new_value': tuning_action.proposed_value,
-                                'reason': tuning_action.reason,
-                                'confidence': tuning_action.confidence
-                            }
-                        })
+                    # Event emission is now handled by ConfigTuner._emit_tuning_event() with structured explanations
 
             except Exception as e:
                 logger.warning(f"[CONFIG_TUNER] Analysis failed: {e}")

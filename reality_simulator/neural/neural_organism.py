@@ -248,6 +248,25 @@ class NeuralOrganism(Organism):
         # 11-12. Breath features
         breath_features = get_breath_features(breath_state)
         features.extend(breath_features.tolist())
+
+        # 13-17. Violation Pressure component features (system health perception)
+        # Pull from network_state['vp_components'] if provided by SymbioticNetwork
+        vp_comp = {}
+        if network_state:
+            vp_comp = network_state.get('vp_components', {}) or {}
+        # Maintain stable feature order with safe defaults
+        features.append(float(vp_comp.get('trait_divergence', 0.0)))
+        features.append(float(vp_comp.get('network_coherence', 0.0)))
+        features.append(float(vp_comp.get('quantum_entropy', 0.0)))
+        features.append(float(vp_comp.get('evolution_pressure', 0.0)))
+        features.append(float(vp_comp.get('phase_mismatch', 0.0)))
+        
+        # 18. System health (Quick Win #5) - unified ecosystem wellness signal
+        # Pull from network_state['system_health'] if provided by SymbioticNetwork
+        system_health = 0.5  # Neutral default
+        if network_state:
+            system_health = float(network_state.get('system_health', 0.5))
+        features.append(np.clip(system_health, 0.0, 1.0))
         
         # Ensure we have exactly input_dim features
         input_dim = self.config.get('neural', {}).get('brain', {}).get('input_dim', 12)
@@ -262,16 +281,124 @@ class NeuralOrganism(Organism):
         
         return feature_array
     
+    def _apply_vp_aware_adjustments(self, 
+                                    action_probs: np.ndarray,
+                                    vp_components: Dict[str, float]) -> np.ndarray:
+        """
+        Apply VP-aware adjustments to action probabilities.
+        
+        This implements ecosystem-aware decision making where organisms
+        consider system health when choosing actions.
+        
+        Action indices:
+            0 = move (exploration/dispersal)
+            1 = cooperate (form connections, share resources)
+            2 = compete (resource acquisition)
+            3 = rest (stabilization, conservation)
+            4 = reproduce (increase diversity)
+            5 = isolate (reduce connections)
+        
+        VP Component Mappings:
+            - High trait_divergence → boost reproduce (increase genetic diversity)
+            - Low network_coherence → boost cooperate (improve connectivity)
+            - High quantum_entropy → boost rest (stabilization)
+            - High evolution_pressure → boost move (seek better environment)
+            - High phase_mismatch → boost rest (synchronization)
+        
+        Args:
+            action_probs: Base action probabilities from neural network
+            vp_components: VP component values from network_state
+            
+        Returns:
+            Adjusted action probabilities (normalized)
+        """
+        vp_config = self.config.get('neural', {}).get('vp_aware_planning', {})
+        
+        # Get adjustment weights (configurable)
+        base_boost = vp_config.get('base_boost', 0.15)
+        strong_boost = vp_config.get('strong_boost', 0.25)
+        
+        # Get thresholds for triggering adjustments
+        high_threshold = vp_config.get('high_threshold', 0.5)
+        low_threshold = vp_config.get('low_threshold', 0.3)
+        
+        # Make a copy to modify
+        adjusted = action_probs.copy()
+        
+        # Track adjustments for logging
+        adjustments_made = []
+        
+        # Rule 1: High trait_divergence → boost reproduce (action 4)
+        # When genetic diversity is causing VP issues, encourage reproduction
+        trait_div = vp_components.get('trait_divergence', 0.0)
+        if trait_div > high_threshold:
+            adjusted[4] += strong_boost  # reproduce
+            adjustments_made.append(f"trait_div({trait_div:.2f})→reproduce+{strong_boost}")
+        elif trait_div > low_threshold:
+            adjusted[4] += base_boost
+            adjustments_made.append(f"trait_div({trait_div:.2f})→reproduce+{base_boost}")
+        
+        # Rule 2: Low network_coherence → boost cooperate (action 1)
+        # When network is fragmented, encourage connection formation
+        net_coh = vp_components.get('network_coherence', 0.0)
+        if net_coh > high_threshold:  # High VP means LOW coherence
+            adjusted[1] += strong_boost  # cooperate
+            adjusted[5] -= base_boost   # reduce isolate tendency
+            adjustments_made.append(f"net_coh({net_coh:.2f})→cooperate+{strong_boost}")
+        elif net_coh > low_threshold:
+            adjusted[1] += base_boost
+            adjustments_made.append(f"net_coh({net_coh:.2f})→cooperate+{base_boost}")
+        
+        # Rule 3: High quantum_entropy → boost rest (action 3)
+        # When quantum layer is chaotic, encourage stabilization
+        q_entropy = vp_components.get('quantum_entropy', 0.0)
+        if q_entropy > high_threshold:
+            adjusted[3] += strong_boost  # rest
+            adjusted[0] -= base_boost   # reduce move (less chaos)
+            adjustments_made.append(f"q_entropy({q_entropy:.2f})→rest+{strong_boost}")
+        elif q_entropy > low_threshold:
+            adjusted[3] += base_boost
+            adjustments_made.append(f"q_entropy({q_entropy:.2f})→rest+{base_boost}")
+        
+        # Rule 4: High evolution_pressure → boost move (action 0)
+        # When evolution is stressed, encourage exploration for better niches
+        evo_pressure = vp_components.get('evolution_pressure', 0.0)
+        if evo_pressure > high_threshold:
+            adjusted[0] += strong_boost  # move
+            adjusted[3] -= base_boost   # reduce rest (be active)
+            adjustments_made.append(f"evo_pressure({evo_pressure:.2f})→move+{strong_boost}")
+        elif evo_pressure > low_threshold:
+            adjusted[0] += base_boost
+            adjustments_made.append(f"evo_pressure({evo_pressure:.2f})→move+{base_boost}")
+        
+        # Rule 5: High phase_mismatch → boost rest (action 3)
+        # When phase sync is off, encourage settling to resync
+        phase_mis = vp_components.get('phase_mismatch', 0.0)
+        if phase_mis > high_threshold:
+            adjusted[3] += strong_boost  # rest
+            adjustments_made.append(f"phase_mis({phase_mis:.2f})→rest+{strong_boost}")
+        elif phase_mis > low_threshold:
+            adjusted[3] += base_boost
+            adjustments_made.append(f"phase_mis({phase_mis:.2f})→rest+{base_boost}")
+        
+        # Ensure no negative probabilities
+        adjusted = np.maximum(adjusted, 0.01)
+        
+        # Renormalize to valid probability distribution
+        adjusted = adjusted / adjusted.sum()
+        
+        return adjusted, adjustments_made
+    
     def decide_action(self, 
                      local_env: Optional[Dict[str, Any]] = None,
                      network_state: Optional[Dict[str, Any]] = None,
                      breath_state: Optional[Dict[str, Any]] = None) -> int:
         """
-        Decide action using neural network.
+        Decide action using neural network with optional VP-aware planning.
         
         Args:
             local_env: Local environment information
-            network_state: Network state information
+            network_state: Network state information (includes vp_components)
             breath_state: Breath engine state
             
         Returns:
@@ -285,18 +412,38 @@ class NeuralOrganism(Organism):
         # Extract state features
         state = self.get_state_features(local_env, network_state, breath_state)
         
-        # Get action from brain
-        action = self.brain.get_action(state, epsilon=self.epsilon)
+        # Check if VP-aware planning is enabled
+        vp_planning_enabled = self.config.get('neural', {}).get('vp_aware_planning', {}).get('enabled', False)
         
-        # Get action probabilities for event emission
+        # Get action probabilities from brain
+        import torch
         action_probs = None
-        if hasattr(self.brain, 'get_action_probs'):
-            action_probs = self.brain.get_action_probs(state)
-        elif hasattr(self.brain, 'forward'):
-            import torch
-            state_tensor = torch.tensor(state, dtype=torch.float32).unsqueeze(0)
+        vp_adjustments = []
+        
+        if np.random.random() < self.epsilon:
+            # Exploration: random action (but still get probs for logging)
+            action = np.random.randint(0, 6)
+            if hasattr(self.brain, 'forward'):
+                state_tensor = torch.tensor(state, dtype=torch.float32).unsqueeze(0)
+                with torch.no_grad():
+                    action_probs = self.brain.forward(state_tensor).cpu().numpy()[0]
+        else:
+            # Exploitation: use neural network with optional VP adjustments
+            self.brain.eval()
             with torch.no_grad():
+                state_tensor = torch.FloatTensor(state).unsqueeze(0)
                 action_probs = self.brain.forward(state_tensor).cpu().numpy()[0]
+            
+            # Apply VP-aware adjustments if enabled
+            if vp_planning_enabled and network_state:
+                vp_components = network_state.get('vp_components', {})
+                if vp_components:
+                    action_probs, vp_adjustments = self._apply_vp_aware_adjustments(
+                        action_probs, vp_components
+                    )
+            
+            # Select action from (possibly adjusted) probabilities
+            action = int(np.argmax(action_probs))
         
         # Calculate confidence (max probability)
         confidence = float(np.max(action_probs)) if action_probs is not None else 0.5
@@ -316,7 +463,9 @@ class NeuralOrganism(Organism):
                 'epsilon': float(self.epsilon),
                 'fitness': float(self.fitness),
                 'input_features': state.tolist() if isinstance(state, np.ndarray) else state,
-                'action_probs': action_probs.tolist() if action_probs is not None else None
+                'action_probs': action_probs.tolist() if action_probs is not None else None,
+                'vp_planning_enabled': vp_planning_enabled,
+                'vp_adjustments': vp_adjustments if vp_adjustments else None
             }
             
             try:
