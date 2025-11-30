@@ -420,6 +420,78 @@ CONFIG_GUARDRAILS = {
         'type': float,
         'label': 'neural.language_model.generation.vp_gate_threshold'
     },
+    # Language Teacher Settings ⭐ NEW
+    '/neural/language_model/teacher/enabled': {
+        'type': bool,
+        'label': 'neural.language_model.teacher.enabled'
+    },
+    '/neural/language_model/teacher/use_semantic_embeddings': {
+        'type': bool,
+        'label': 'neural.language_model.teacher.use_semantic_embeddings'
+    },
+    '/neural/language_model/teacher/use_knowledge_web': {
+        'type': bool,
+        'label': 'neural.language_model.teacher.use_knowledge_web'
+    },
+    '/neural/language_model/teacher/embedding_dim': {
+        'min': 16,
+        'max': 256,
+        'type': int,
+        'label': 'neural.language_model.teacher.embedding_dim'
+    },
+    '/neural/language_model/teacher/vocab_size': {
+        'min': 256,
+        'max': 4096,
+        'type': int,
+        'label': 'neural.language_model.teacher.vocab_size'
+    },
+    '/neural/language_model/teacher/min_experiences': {
+        'min': 50,
+        'max': 500,
+        'type': int,
+        'label': 'neural.language_model.teacher.min_experiences'
+    },
+    '/neural/language_model/teacher/training_frequency': {
+        'min': 1,
+        'max': 50,
+        'type': int,
+        'label': 'neural.language_model.teacher.training_frequency'
+    },
+    '/neural/language_model/teacher/min_confidence': {
+        'min': 0.0,
+        'max': 1.0,
+        'type': float,
+        'label': 'neural.language_model.teacher.min_confidence'
+    },
+    '/neural/language_model/teacher/teaching_frequency': {
+        'min': 1,
+        'max': 10,
+        'type': int,
+        'label': 'neural.language_model.teacher.teaching_frequency'
+    },
+    '/neural/language_model/teacher/min_action_history': {
+        'min': 1,
+        'max': 20,
+        'type': int,
+        'label': 'neural.language_model.teacher.min_action_history'
+    },
+    # Linguistic Knowledge Web Settings ⭐ NEW
+    '/neural/language_model/knowledge_web/enabled': {
+        'type': bool,
+        'label': 'neural.language_model.knowledge_web.enabled'
+    },
+    '/neural/language_model/knowledge_web/embedding_dim': {
+        'min': 16,
+        'max': 256,
+        'type': int,
+        'label': 'neural.language_model.knowledge_web.embedding_dim'
+    },
+    '/neural/language_model/knowledge_web/max_concepts': {
+        'min': 100,
+        'max': 1000,
+        'type': int,
+        'label': 'neural.language_model.knowledge_web.max_concepts'
+    },
     # Scikit-learn ML Enhancement Settings
     '/scikit/enabled': {
         'type': bool,
@@ -965,15 +1037,100 @@ if SOCKETIO_AVAILABLE:
 # Set log_dir explicitly to ensure it finds logs on Render
 project_root = Path(__file__).parent
 log_dir = project_root / 'data' / 'logs'
-try:
-    explorer = CausationExplorer(log_dir=log_dir)
-    logger.info(f"Causation Explorer initialized successfully (log_dir: {log_dir}, exists: {log_dir.exists()})")
-    if log_dir.exists():
-        log_files = list(log_dir.glob('*.log'))
-        logger.info(f"Found {len(log_files)} log files: {[f.name for f in log_files]}")
-except Exception as e:
-    logger.error(f"Failed to initialize Causation Explorer: {e}", exc_info=True)
-    explorer = None
+
+# Check if unified_entry.py has already created a CausationExplorer instance
+# If so, use that one instead of creating a new one (prevents duplicate instances)
+explorer = None
+if app.config.get('explorer'):
+    explorer = app.config['explorer']
+    logger.info("Using shared CausationExplorer instance from unified_entry.py")
+else:
+    try:
+        explorer = CausationExplorer(log_dir=log_dir)
+        logger.info(f"Causation Explorer initialized successfully (log_dir: {log_dir}, exists: {log_dir.exists()})")
+        if log_dir.exists():
+            log_files = list(log_dir.glob('*.log'))
+            logger.info(f"Found {len(log_files)} log files: {[f.name for f in log_files]}")
+    except Exception as e:
+        logger.error(f"Failed to initialize Causation Explorer: {e}", exc_info=True)
+        explorer = None
+
+if explorer is None:
+    logger.warning("Causation Explorer not available - some features will be disabled")
+
+# Set up event emitter to connect Butterfly Chat events to CausationExplorer
+def event_emitter(event):
+    """Emit events to CausationExplorer for graph visualization and Illumination Engine"""
+    # Use shared explorer if available, otherwise use local one
+    target_explorer = app.config.get('explorer') or explorer
+    explorer_source = 'shared' if app.config.get('explorer') else 'local'
+    
+    if target_explorer is not None:
+        try:
+            from causation_explorer import Event
+            # Handle both Event objects and dicts
+            if isinstance(event, Event):
+                event_id = event.event_id
+                target_explorer.add_event(event, is_historical=False)
+                # CRITICAL: Verify event was stored immediately after adding
+                if event_id not in target_explorer.events:
+                    logger.error(f"[EVENT_EMITTER] ❌ CRITICAL: Event {event_id} was NOT stored in {explorer_source} explorer.events after add_event()!")
+                    logger.error(f"[EVENT_EMITTER] Explorer has {len(target_explorer.events)} total events")
+                    logger.error(f"[EVENT_EMITTER] Event details: type={event.event_type}, component={event.component}")
+                else:
+                    logger.info(f"[EVENT_EMITTER] ✅ Stored event {event_id} in {explorer_source} explorer (type={event.event_type}, total events: {len(target_explorer.events)})")
+                # Invalidate graph cache when new events are added
+                graph_cache['last_update'] = 0  # Force cache refresh
+            elif isinstance(event, dict):
+                # Convert dict to Event object
+                event_obj = Event(
+                    timestamp=event.get('timestamp', time.time()),
+                    component=event.get('component', 'unknown'),
+                    event_type=event.get('event_type', 'unknown'),
+                    data=event.get('data', {})
+                )
+                event_id = event_obj.event_id
+                target_explorer.add_event(event_obj, is_historical=False)
+                # CRITICAL: Verify event was stored immediately after adding
+                if event_id not in target_explorer.events:
+                    logger.error(f"[EVENT_EMITTER] ❌ CRITICAL: Event {event_id} was NOT stored in {explorer_source} explorer.events after add_event()!")
+                    logger.error(f"[EVENT_EMITTER] Explorer has {len(target_explorer.events)} total events")
+                else:
+                    logger.info(f"[EVENT_EMITTER] ✅ Stored event {event_id} in {explorer_source} explorer (type={event_obj.event_type}, total events: {len(target_explorer.events)})")
+                # Invalidate graph cache when new events are added
+                graph_cache['last_update'] = 0  # Force cache refresh
+        except Exception as e:
+            logger.error(f"[EVENT_EMITTER] Event emission failed: {e}", exc_info=True)
+            # Log event details for debugging
+            if isinstance(event, Event):
+                logger.error(f"[EVENT_EMITTER] Failed event: id={event.event_id}, type={event.event_type}, component={event.component}")
+            elif isinstance(event, dict):
+                logger.error(f"[EVENT_EMITTER] Failed event dict: {event}")
+    else:
+        logger.warning(f"[EVENT_EMITTER] No explorer available - event not stored (type={event.event_type if hasattr(event, 'event_type') else 'unknown'})")
+
+# Store event emitter in app config for Butterfly Chat to use
+app.config['event_emitter'] = event_emitter
+
+# Wire vocabulary event_emitter if vocabulary exists in app config
+# This enables vocabulary_growth events to be emitted
+def wire_vocabulary_emitter():
+    vocabulary = app.config.get('vocabulary')
+    if vocabulary and hasattr(vocabulary, 'event_emitter'):
+        vocabulary.event_emitter = event_emitter
+
+# Wire it immediately if vocabulary already exists
+wire_vocabulary_emitter()
+
+# Also wire it when vocabulary is set in app config (for lazy initialization)
+original_config_set = app.config.__setitem__
+def config_set_with_vocabulary_wiring(key, value):
+    original_config_set(key, value)
+    if key == 'vocabulary' and value and hasattr(value, 'event_emitter'):
+        value.event_emitter = event_emitter
+app.config.__setitem__ = config_set_with_vocabulary_wiring
+
+logger.info("Event emitter connected to CausationExplorer")
 
 # Central config manager for CRA + dynamic updates
 config_manager = ConfigManager(project_root / 'config.json', log_dir)
@@ -2733,6 +2890,34 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "     * Neural link visibility (if neural causations enabled)\n"
         prompt += "     * Graph connectivity (more links = more connected graph)\n\n"
         
+        prompt += "#### 🦋 Language Teacher & Knowledge Web Configuration ⭐ NEW\n"
+        prompt += "   - **Language Teacher Parameters** (control how organisms learn words):\n"
+        prompt += "     * `/neural/language_model/teacher/enabled` (true/false, default: true) - Master toggle for language teacher\n"
+        prompt += "     * `/neural/language_model/teacher/use_semantic_embeddings` (true/false, default: true) - Enable learned semantic embeddings (Phase 2)\n"
+        prompt += "     * `/neural/language_model/teacher/use_knowledge_web` (true/false, default: true) - Enable linguistic knowledge web (Phase 3)\n"
+        prompt += "     * `/neural/language_model/teacher/embedding_dim` (16-256, default: 64) - Semantic embedding dimension\n"
+        prompt += "     * `/neural/language_model/teacher/vocab_size` (256-4096, default: 1000) - Vocabulary size for embeddings\n"
+        prompt += "     * `/neural/language_model/teacher/min_experiences` (50-500, default: 100) - Minimum experiences before training semantic teacher\n"
+        prompt += "     * `/neural/language_model/teacher/training_frequency` (1-50, default: 10) - Train semantic teacher every N generations\n"
+        prompt += "     * `/neural/language_model/teacher/min_confidence` (0.0-1.0, default: 0.3) - Confidence threshold for using learned embeddings (vs hardcoded)\n"
+        prompt += "     * `/neural/language_model/teacher/teaching_frequency` (1-10, default: 1) - Teach organisms every N generations\n"
+        prompt += "     * `/neural/language_model/teacher/min_action_history` (1-20, default: 3) - Minimum action history before teaching\n"
+        prompt += "   - **Linguistic Knowledge Web Parameters** (control semantic network):\n"
+        prompt += "     * `/neural/language_model/knowledge_web/enabled` (true/false, default: true) - Enable/disable knowledge web\n"
+        prompt += "     * `/neural/language_model/knowledge_web/embedding_dim` (16-256, default: 64) - Future embedding dimension for concepts\n"
+        prompt += "     * `/neural/language_model/knowledge_web/max_concepts` (100-1000, default: 500) - Maximum concepts in knowledge web\n"
+        prompt += "   - **Example Language Teacher Config Updates**:\n"
+        prompt += "     * Enable knowledge web: [[CONFIG_UPDATE: {\"reason\": \"Activate situational awareness\", \"correlation_id\": \"knowledge-web\", \"patch\": [{\"op\": \"replace\", \"path\": \"/neural/language_model/knowledge_web/enabled\", \"value\": true}]}]]\n"
+        prompt += "     * Increase embedding dimension: [[CONFIG_UPDATE: {\"reason\": \"Richer semantic space\", \"correlation_id\": \"embedding-boost\", \"patch\": [{\"op\": \"replace\", \"path\": \"/neural/language_model/teacher/embedding_dim\", \"value\": 128}]}]]\n"
+        prompt += "     * Lower confidence threshold: [[CONFIG_UPDATE: {\"reason\": \"Use learned embeddings earlier\", \"correlation_id\": \"early-learning\", \"patch\": [{\"op\": \"replace\", \"path\": \"/neural/language_model/teacher/min_confidence\", \"value\": 0.2}]}]]\n"
+        prompt += "     * Increase training frequency: [[CONFIG_UPDATE: {\"reason\": \"Faster semantic learning\", \"correlation_id\": \"faster-learning\", \"patch\": [{\"op\": \"replace\", \"path\": \"/neural/language_model/teacher/training_frequency\", \"value\": 5}]}]]\n"
+        prompt += "   - **Language Teacher Monitoring**: After language teacher config changes, monitor:\n"
+        prompt += "     * Vocabulary growth rate (should increase with better teaching)\n"
+        prompt += "     * Word association quality (check organism_communication events)\n"
+        prompt += "     * Learning confidence progression (should increase over time)\n"
+        prompt += "     * Situational awareness accuracy (words match organism context)\n"
+        prompt += "     * Knowledge web concept usage (how many concepts are being used)\n\n"
+        
         prompt += "## AVAILABLE DIAGNOSTIC ENDPOINTS (For Deep-Dive Analysis):\n\n"
         prompt += "You have access to specialized diagnostic endpoints for detailed investigation:\n\n"
         prompt += "1. **Historical VP Data**: `/api/cra/diagnostics/vp_history?breaths=50`\n"
@@ -2766,6 +2951,25 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "   - `/api/ml/anomalies` - Get detected anomalous organisms and anomaly ratio\n"
         prompt += "   - `/api/ml/reduction` - Get dimensionality-reduced coordinates for visualization\n"
         prompt += "   - Use to understand organism population structure and detect unusual patterns\n\n"
+        prompt += "5d. **Language System Diagnostics** ⭐ NEW:\n"
+        prompt += "   - `/api/cra/diagnostics/language_teacher` - Complete Language Teacher statistics:\n"
+        prompt += "     * enabled, use_semantic_embeddings, use_knowledge_web, learning_confidence\n"
+        prompt += "     * stats: organisms_taught, words_assigned, total_teachings, words_by_type (situational, associative, action, fitness, connections, resources)\n"
+        prompt += "     * stats: hardcoded_words, learned_words, situational_words, associative_words, training_steps\n"
+        prompt += "     * config: embedding_dim, vocab_size, min_experiences, training_frequency, min_confidence, teaching_frequency, min_action_history\n"
+        prompt += "     * experience_buffer: size, ready_for_training status\n"
+        prompt += "   - `/api/cra/diagnostics/knowledge_web` - Linguistic Knowledge Web statistics:\n"
+        prompt += "     * concepts: total count, breakdown by semantic frame (action, state, quality, relationship, temporal, spatial, meta, system)\n"
+        prompt += "     * relations: total count, breakdown by type (synonym, antonym, causes, enables, prevents, similar_to, part_of, related_to)\n"
+        prompt += "     * semantic_clusters: cluster count and sizes\n"
+        prompt += "     * word_mappings: action_word_map (6 actions), state_word_map, situational_contexts count\n"
+        prompt += "   - `/api/cra/diagnostics/language_system` - Comprehensive language system overview:\n"
+        prompt += "     * teacher: enabled, learning_confidence, all stats\n"
+        prompt += "     * knowledge_web: enabled, concepts_count, relations_count\n"
+        prompt += "     * vocabulary: vocab_size, total_word_frequency, unique_words, top_words (top 20 by frequency)\n"
+        prompt += "     * word_associations: organisms_with_words, total_associations, avg_words_per_organism, max/min words per organism\n"
+        prompt += "   - `/api/language/data` - Raw language data (language_anchors, node_word_associations, word_frequencies)\n"
+        prompt += "   - Use to monitor language learning progress, word assignment quality, and system health\n\n"
         prompt += "5d. **ConfigTuner Self-Tuning Statistics**: `/api/cra/diagnostics/config_tuner` ⭐ NEW:\n"
         prompt += "   - Returns meta-cognitive self-tuning system status and performance\n"
         prompt += "   - **enabled**: Whether autonomous parameter optimization is active\n"
@@ -3714,8 +3918,8 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "not just final conclusions. This helps users understand your analysis AND helps you build up\n"
         prompt += "knowledge across multiple investigations.\n\n"
         
-        prompt += "## 🦋 LANGUAGE SYSTEM CAPABILITIES (NEW):\n\n"
-        prompt += "**The Butterfly System now includes emergent language capabilities:**\n\n"
+        prompt += "## 🦋 LANGUAGE SYSTEM CAPABILITIES (ENHANCED WITH DYNAMIC MULTI-DIMENSIONAL AWARENESS):\n\n"
+        prompt += "**The Butterfly System now includes emergent language capabilities with advanced situational awareness:**\n\n"
         
         prompt += "### Language Model Architecture:\n"
         prompt += "- **Neural Language Generation**: Organisms use attention-based tokenization + generation\n"
@@ -3723,6 +3927,118 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "- **Token Exchange**: Organisms communicate via generated text sequences\n"
         prompt += "- **VP Integration**: Violation pressure affects language generation patterns\n"
         prompt += "- **Evolution Tracking**: Vocabulary grows as organisms develop communication\n\n"
+        
+        prompt += "### 🧠 Dynamic Multi-Dimensional Linguistic Awareness System (NEW):\n"
+        prompt += "- **Core Concept**: A dynamic, context-aware word association framework that operates like a precise, adaptive system\n"
+        prompt += "- **Multi-Dimensional Assessment**: Evaluates 14 distinct dimensions simultaneously:\n"
+        prompt += "  1. **Action-Based**: Immediate behavioral context (move, cooperate, compete, rest, reproduce, isolate)\n"
+        prompt += "  2. **Fitness-Based**: Organism vitality (thrive, struggle, stable)\n"
+        prompt += "  3. **Resource-Based**: Material context (rich, poor, abundant, scarce)\n"
+        prompt += "  4. **Connection-Based**: Social/network context (social, isolated, connected, alone)\n"
+        prompt += "  5. **Positional Awareness**: Spatial context (center/edge, proximity - near/far, here/there)\n"
+        prompt += "  6. **Local Density**: Environmental context (crowded, dense, sparse)\n"
+        prompt += "  7. **Violation Pressure**: System stability context (pressure, unstable, crisis, stress, calm, balanced)\n"
+        prompt += "  8. **Network Coherence**: System integration context (connected, united, coherent, fragmented, disconnected)\n"
+        prompt += "  9. **Evolution Pressure**: Adaptation context (adapt, evolve, change, persist)\n"
+        prompt += "  10. **Phase Mismatch**: Synchronization context (mismatch, desynchronized)\n"
+        prompt += "  11. **System Health**: Ecosystem wellness context (healthy, thriving, sick, declining)\n"
+        prompt += "  12. **Breath Phase**: Temporal/rhythmic context (expand during inhale, consolidate during exhale, precise/focused in sovereign, discover in genesis)\n"
+        prompt += "  13. **Action Success**: Behavioral feedback context (success, effective, failure, ineffective)\n"
+        prompt += "  14. **Generation Age**: Temporal/evolutionary context (mature, experienced, young, new)\n"
+        prompt += "- **Dynamic Word Scoring**: Words are scored across dimensions (0.0-1.0) and prioritized by contextual relevance\n"
+        prompt += "- **Full State Integration**: Uses all 18 state features plus network and breath state for comprehensive context\n"
+        prompt += "- **Associative Complexity**: Semantic relationships expand high-scoring words for rich word networks\n"
+        prompt += "- **Precision**: Context-aware word selection based on comprehensive data\n"
+        prompt += "- **Responsiveness**: Real-time adaptation to changing conditions\n"
+        prompt += "- **Expanded Vocabulary**: 40+ new words covering system dynamics, spatial concepts, health states, and more\n\n"
+        
+        prompt += "### Language Teacher System:\n"
+        prompt += "- **Phase 1**: Behavior-based word mapping (hardcoded fallback) - REMOVED, now uses Knowledge Web exclusively\n"
+        prompt += "- **Phase 2**: Semantic embeddings learned from organism experiences (optional, for future learning)\n"
+        prompt += "- **Phase 3**: Linguistic Knowledge Web for situational awareness and associative complexity (PRIMARY METHOD)\n"
+        prompt += "- **Hybrid Approach**: Currently uses Knowledge Web exclusively. Semantic embeddings are collected but not yet primary.\n"
+        prompt += "- **Teaching Process** (`teach_organism` method):\n"
+        prompt += "  1. Get organism's full 18-feature state vector (via `get_state_features()`)\n"
+        prompt += "  2. Get current/recent action from organism\n"
+        prompt += "  3. Call `knowledge_web.get_situational_awareness()` with full state, action, network_state, breath_state\n"
+        prompt += "  4. Knowledge web evaluates all 14 dimensions and returns prioritized word list\n"
+        prompt += "  5. For each word, call `context_memory.link_word_to_node(word, organism_id, generation)`\n"
+        prompt += "  6. Track statistics: words_assigned, organisms_taught, words_by_type (situational, associative, action, fitness, connections, resources)\n"
+        prompt += "  7. Emit `word_assignment` event for causation tracking\n"
+        prompt += "- **Teaching Frequency**: Configurable (teach every N generations via `teaching_frequency`)\n"
+        prompt += "- **Learning Confidence**: Tracks transition from hardcoded (0.0) to learned (1.0) - currently 0.0 (using Knowledge Web)\n"
+        prompt += "- **Experience Buffer**: Stores organism experiences (state-action-reward) for semantic teacher training (Phase 2, future use)\n"
+        prompt += "- **Statistics Tracked** (accessible via `/api/cra/diagnostics/language_teacher`):\n"
+        prompt += "  * `organisms_taught`: Total organisms that received words\n"
+        prompt += "  * `words_assigned`: Total words assigned across all organisms\n"
+        prompt += "  * `total_teachings`: Number of times `teach_network()` was called\n"
+        prompt += "  * `words_by_type`: Breakdown by type (situational, associative, action, fitness, connections, resources)\n"
+        prompt += "  * `hardcoded_words`: Words from hardcoded maps (currently 0, using Knowledge Web)\n"
+        prompt += "  * `learned_words`: Words from learned embeddings (currently 0, Phase 2 not active)\n"
+        prompt += "  * `situational_words`: Words from situational awareness (14-dimensional assessment)\n"
+        prompt += "  * `associative_words`: Words from associative complexity expansion\n"
+        prompt += "  * `training_steps`: Number of semantic teacher training steps (Phase 2)\n"
+        prompt += "  * `learning_confidence`: Current confidence in learned embeddings (0.0-1.0)\n"
+        prompt += "- **Configuration** (all controllable via CRA):\n"
+        prompt += "  * `/neural/language_model/teacher/enabled` (true/false) - Enable/disable language teacher\n"
+        prompt += "  * `/neural/language_model/teacher/use_semantic_embeddings` (true/false) - Enable learned embeddings (Phase 2)\n"
+        prompt += "  * `/neural/language_model/teacher/use_knowledge_web` (true/false) - Enable linguistic knowledge web (Phase 3, PRIMARY)\n"
+        prompt += "  * `/neural/language_model/teacher/embedding_dim` (16-256, default: 64) - Semantic embedding dimension (Phase 2)\n"
+        prompt += "  * `/neural/language_model/teacher/vocab_size` (256-4096, default: 1000) - Vocabulary size for embeddings (Phase 2)\n"
+        prompt += "  * `/neural/language_model/teacher/min_experiences` (50-500, default: 100) - Minimum experiences before training (Phase 2)\n"
+        prompt += "  * `/neural/language_model/teacher/training_frequency` (1-50, default: 10) - Train every N generations (Phase 2)\n"
+        prompt += "  * `/neural/language_model/teacher/min_confidence` (0.0-1.0, default: 0.3) - Confidence threshold for using learned embeddings (Phase 2)\n"
+        prompt += "  * `/neural/language_model/teacher/teaching_frequency` (1-10, default: 1) - Teach organisms every N generations\n"
+        prompt += "  * `/neural/language_model/teacher/min_action_history` (1-20, default: 3) - Minimum action history before teaching\n\n"
+        
+        prompt += "### Linguistic Knowledge Web:\n"
+        prompt += "- **Purpose**: Comprehensive semantic network for linguistic understanding and situational awareness\n"
+        prompt += "- **Core Data Structures**:\n"
+        prompt += "  * `concepts`: Dict[str, LinguisticConcept] - All linguistic concepts with definitions, frames, associations\n"
+        prompt += "  * `relations`: List[SemanticRelation] - All semantic relationships between words\n"
+        prompt += "  * `relation_index`: Dict[str, List[SemanticRelation]] - Indexed by source word for fast lookup\n"
+        prompt += "  * `word_to_concept`: Dict[str, str] - Word to concept ID mapping\n"
+        prompt += "  * `state_word_map`: Dict[str, List[str]] - State type to word list (e.g., 'high_fitness' -> ['thrive', 'flourish'])\n"
+        prompt += "  * `action_word_map`: Dict[int, List[str]] - Action index to word list (e.g., 0 -> ['move', 'explore'])\n"
+        prompt += "  * `semantic_clusters`: Dict[str, Set[str]] - Clustered words by semantic similarity\n"
+        prompt += "- **Concepts**: 100+ linguistic concepts organized by semantic frames:\n"
+        prompt += "  * **Action Frame**: move, cooperate, compete, rest, reproduce, isolate (6 core actions)\n"
+        prompt += "  * **State Frame**: thrive, struggle, stable, rich, poor, connected, isolated, etc.\n"
+        prompt += "  * **Quality Frame**: strong, weak, fast, slow, efficient, wasteful, etc.\n"
+        prompt += "  * **Relationship Frame**: together, apart, near, far, here, there, etc.\n"
+        prompt += "  * **Temporal Frame**: now, then, before, after, persistent, transient, etc.\n"
+        prompt += "  * **Spatial Frame**: center, edge, near, far, here, there, crowded, sparse, etc.\n"
+        prompt += "  * **Meta-Cognitive Frame**: think, know, understand, learn, remember, etc.\n"
+        prompt += "  * **System Dynamics Frame**: pressure, stable, unstable, coherent, fragmented, adapt, evolve, etc.\n"
+        prompt += "- **Relationships**: Semantic relationships with strength (0.0-1.0):\n"
+        prompt += "  * `synonym`: Words with similar meaning (strength: 0.9-1.0)\n"
+        prompt += "  * `antonym`: Words with opposite meaning (strength: 0.8-0.9)\n"
+        prompt += "  * `causes`: Causal relationships (strength: 0.7-0.9)\n"
+        prompt += "  * `enables`: Enabling relationships (strength: 0.7-0.9)\n"
+        prompt += "  * `prevents`: Preventing relationships (strength: 0.7-0.9)\n"
+        prompt += "  * `similar_to`: Similarity relationships (strength: 0.6-0.8)\n"
+        prompt += "  * `part_of`: Part-whole relationships (strength: 0.7-0.9)\n"
+        prompt += "  * `related_to`: General relatedness (strength: 0.5-0.7)\n"
+        prompt += "- **Key Methods**:\n"
+        prompt += "  * `get_situational_awareness(organism_state, action, network_state, breath_state) -> List[str]`:\n"
+        prompt += "    - Evaluates all 14 dimensions, scores words, applies associative complexity, returns prioritized list\n"
+        prompt += "  * `get_words_for_action(action_idx) -> List[str]`: Returns words for specific action (0-5)\n"
+        prompt += "  * `get_words_for_state(state_type) -> List[str]`: Returns words for specific state (e.g., 'high_fitness')\n"
+        prompt += "  * `get_related_words(word, relation_type=None) -> List[str]`: Get semantically related words\n"
+        prompt += "- **Situational Contexts**: Context-dependent word selection based on organism state and action\n"
+        prompt += "- **Statistics** (accessible via `/api/cra/diagnostics/knowledge_web`):\n"
+        prompt += "  * `concepts.total`: Total number of concepts\n"
+        prompt += "  * `concepts.by_frame`: Breakdown by semantic frame (action, state, quality, etc.)\n"
+        prompt += "  * `relations.total`: Total number of semantic relations\n"
+        prompt += "  * `relations.by_type`: Breakdown by relation type (synonym, antonym, causes, etc.)\n"
+        prompt += "  * `semantic_clusters.count`: Number of semantic clusters\n"
+        prompt += "  * `word_mappings.action_words`: Words per action (6 actions)\n"
+        prompt += "  * `word_mappings.state_words`: Words per state type\n"
+        prompt += "  * `word_mappings.situational_contexts`: Number of situational context mappings\n"
+        prompt += "- **Configuration** (all controllable via CRA):\n"
+        prompt += "  * `/neural/language_model/knowledge_web/enabled` (true/false) - Enable/disable knowledge web\n"
+        prompt += "  * `/neural/language_model/knowledge_web/embedding_dim` (16-256, default: 64) - Future embedding dimension\n"
+        prompt += "  * `/neural/language_model/knowledge_web/max_concepts` (100-1000, default: 500) - Maximum concepts in web\n\n"
         
         prompt += "### Language Events (NEW Component):\n"
         prompt += "- **vocabulary_growth**: New words discovered and added to vocabulary\n"
@@ -3736,20 +4052,36 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "- **Routing Strategies**: All, Random, Fittest, Connected, By Word\n"
         prompt += "- **Live Language Evolution**: Observe vocabulary growth in real-time\n"
         prompt += "- **Confidence Scoring**: Response quality metrics from multiple organisms\n"
-        prompt += "- **Causation Integration**: Chat events appear in causation graph\n\n"
+        prompt += "- **Causation Integration**: Chat events appear in causation graph\n"
+        prompt += "- **Debug Panel**: Comprehensive logging, causation trail, and error analysis (1/3 of chat window)\n"
+        prompt += "- **Learning Integration**: Chat interactions stored as learning experiences for organisms\n\n"
         
         prompt += "### Language Analysis Capabilities:\n"
         prompt += "- **Vocabulary Search**: Find words and their usage patterns\n"
         prompt += "- **Communication Networks**: Map organism conversation patterns\n"
         prompt += "- **Language Evolution**: Track how vocabulary develops over time\n"
         prompt += "- **Semantic Clustering**: Group words by meaning/context\n"
-        prompt += "- **VP-Language Correlation**: How violation pressure affects communication\n\n"
+        prompt += "- **VP-Language Correlation**: How violation pressure affects communication\n"
+        prompt += "- **Situational Awareness Analysis**: Understand how context shapes word associations\n"
+        prompt += "- **Multi-Dimensional Word Scoring**: See which dimensions drive word selection\n\n"
         
-        prompt += "### Language Configuration:\n"
-        prompt += "- **neural.language_model.enabled**: Enable/disable language generation\n"
-        prompt += "- **vocab_size**: Maximum vocabulary size (default: 1000)\n"
-        prompt += "- **language_model.vocab_size**: Current vocabulary count\n"
-        prompt += "- **language_model.training_loss**: Language model training progress\n"
+        prompt += "### Language Configuration (CRA-Controllable):\n"
+        prompt += "- **neural.language_model.enabled**: Enable/disable language generation (master toggle)\n"
+        prompt += "- **neural.language_model.vocabulary.max_size**: Maximum vocabulary size (default: 1024)\n"
+        prompt += "- **neural.language_model.sequence.max_length**: Maximum sequence length (default: 128)\n"
+        prompt += "- **neural.language_model.sequence.context_window**: Context window size (default: 32)\n"
+        prompt += "- **neural.language_model.attention.enabled**: Enable multi-head attention\n"
+        prompt += "- **neural.language_model.attention.num_heads**: Number of attention heads (1-8, default: 4)\n"
+        prompt += "- **neural.language_model.attention.attention_dim**: Attention dimension (16-128, default: 32)\n"
+        prompt += "- **neural.language_model.training.alpha**: DQN loss weight (0.0-1.0, default: 0.9)\n"
+        prompt += "- **neural.language_model.training.beta**: Language loss weight (0.0-1.0, default: 0.1)\n"
+        prompt += "- **neural.language_model.training.vp_temperature_scale**: VP-aware temperature scaling (true/false)\n"
+        prompt += "- **neural.language_model.generation.max_length**: Max generation length (8-128, default: 32)\n"
+        prompt += "- **neural.language_model.generation.temperature**: Generation temperature (0.1-2.0, default: 1.0)\n"
+        prompt += "- **neural.language_model.generation.vp_gate_threshold**: VP gate threshold (0.0-1.0, default: 0.5)\n"
+        prompt += "- **neural.language_model.curriculum.enabled**: Enable curriculum learning (true/false)\n"
+        prompt += "- **Language Teacher Settings** (see Language Teacher System section above)\n"
+        prompt += "- **Knowledge Web Settings** (see Linguistic Knowledge Web section above)\n"
         prompt += "- **butterfly_chat.max_organisms**: Max organisms per chat response\n\n"
         
         prompt += "### Language Visualization:\n"
@@ -5529,10 +5861,20 @@ def search_events():
 @app.route('/api/events/<event_id>')
 def get_event(event_id):
     """Get event details"""
-    if explorer is None:
+    # CRITICAL: Use shared explorer if available (from unified_entry.py), otherwise local one
+    target_explorer = app.config.get('explorer') or explorer
+    if target_explorer is None:
         return jsonify({'error': 'Causation Explorer not initialized'}), 500
     try:
-        summary = explorer.get_event_summary(event_id)
+        # Normalize event ID format
+        if event_id.startswith('evt') and not event_id.startswith('evt_'):
+            event_id = 'evt_' + event_id[3:] if len(event_id) > 3 else event_id
+        
+        if event_id not in target_explorer.events:
+            logger.warning(f"[GET_EVENT] Event {event_id} not found in target_explorer.events (total: {len(target_explorer.events)})")
+            logger.warning(f"[GET_EVENT] Using {'shared' if app.config.get('explorer') else 'local'} explorer instance")
+        
+        summary = target_explorer.get_event_summary(event_id)
         return jsonify(summary)
     except Exception as e:
         logger.error(f"Error getting event {event_id}: {e}", exc_info=True)
@@ -5542,11 +5884,21 @@ def get_event(event_id):
 @app.route('/api/events/<event_id>/backwards')
 def explore_backwards(event_id):
     """Explore what caused this event"""
-    if explorer is None:
+    # CRITICAL: Use shared explorer if available (from unified_entry.py), otherwise local one
+    target_explorer = app.config.get('explorer') or explorer
+    if target_explorer is None:
         return jsonify({'error': 'Causation Explorer not initialized'}), 500
     try:
+        # Normalize event ID format
+        if event_id.startswith('evt') and not event_id.startswith('evt_'):
+            event_id = 'evt_' + event_id[3:] if len(event_id) > 3 else event_id
+        
+        if event_id not in target_explorer.events:
+            logger.warning(f"[BACKWARDS] Event {event_id} not found in target_explorer.events")
+            return jsonify({'error': f'Event not found: {event_id}'}), 404
+        
         max_depth = int(request.args.get('depth', 10))
-        trail = explorer.explore_backwards(event_id, max_depth)
+        trail = target_explorer.explore_backwards(event_id, max_depth)
         return jsonify(trail)
     except Exception as e:
         logger.error(f"Error exploring backwards for {event_id}: {e}", exc_info=True)
@@ -5556,11 +5908,21 @@ def explore_backwards(event_id):
 @app.route('/api/events/<event_id>/forwards')
 def explore_forwards(event_id):
     """Explore what this event caused"""
-    if explorer is None:
+    # CRITICAL: Use shared explorer if available (from unified_entry.py), otherwise local one
+    target_explorer = app.config.get('explorer') or explorer
+    if target_explorer is None:
         return jsonify({'error': 'Causation Explorer not initialized'}), 500
     try:
+        # Normalize event ID format
+        if event_id.startswith('evt') and not event_id.startswith('evt_'):
+            event_id = 'evt_' + event_id[3:] if len(event_id) > 3 else event_id
+        
+        if event_id not in target_explorer.events:
+            logger.warning(f"[FORWARDS] Event {event_id} not found in target_explorer.events")
+            return jsonify({'error': f'Event not found: {event_id}'}), 404
+        
         max_depth = int(request.args.get('depth', 10))
-        trail = explorer.explore_forwards(event_id, max_depth)
+        trail = target_explorer.explore_forwards(event_id, max_depth)
         return jsonify(trail)
     except Exception as e:
         logger.error(f"Error exploring forwards for {event_id}: {e}", exc_info=True)
@@ -5593,11 +5955,30 @@ def get_root_causes(event_id):
     🔍 DEEP ROOT CAUSE ANALYSIS
     Trace ALL the way back to find ultimate origins.
     """
-    if explorer is None:
+    # CRITICAL: Use shared explorer if available (from unified_entry.py), otherwise local one
+    target_explorer = app.config.get('explorer') or explorer
+    if target_explorer is None:
         return jsonify({'error': 'Causation Explorer not initialized'}), 500
     try:
+        # Normalize event ID format (handle both evt_xxx and evt-xxx)
+        if event_id.startswith('evt') and not event_id.startswith('evt_'):
+            # Convert "evt1764508627579022" to "evt_1764508627579022"
+            event_id = 'evt_' + event_id[3:] if len(event_id) > 3 else event_id
+        
         max_depth = int(request.args.get('depth', 20))
-        analysis = explorer.find_root_causes(event_id, max_depth)
+        
+        # CRITICAL: Verify event exists in the CORRECT explorer instance
+        if event_id not in target_explorer.events:
+            logger.warning(f"[ROOT_CAUSES] Event {event_id} not found in target_explorer.events (total events: {len(target_explorer.events)})")
+            logger.warning(f"[ROOT_CAUSES] Using {'shared' if app.config.get('explorer') else 'local'} explorer instance")
+            # Try to find similar event IDs (for debugging)
+            similar_ids = [eid for eid in target_explorer.events.keys() if event_id[:10] in eid][:5]
+            recent_ids = list(target_explorer.events.keys())[-20:]
+            if similar_ids:
+                logger.warning(f"[ROOT_CAUSES] Similar event IDs found: {similar_ids}")
+            logger.warning(f"[ROOT_CAUSES] Recent event IDs (last 20): {recent_ids}")
+        
+        analysis = target_explorer.find_root_causes(event_id, max_depth)
         return jsonify(analysis)
     except Exception as e:
         logger.error(f"Error finding root causes for {event_id}: {e}", exc_info=True)
@@ -5610,11 +5991,26 @@ def get_impact_analysis(event_id):
     💥 IMPACT ANALYSIS
     What were ALL downstream effects of this event?
     """
-    if explorer is None:
+    # CRITICAL: Use shared explorer if available (from unified_entry.py), otherwise local one
+    target_explorer = app.config.get('explorer') or explorer
+    if target_explorer is None:
         return jsonify({'error': 'Causation Explorer not initialized'}), 500
     try:
+        # Normalize event ID format (handle both evt_xxx and evt-xxx)
+        if event_id.startswith('evt') and not event_id.startswith('evt_'):
+            # Convert "evt1764508627579022" to "evt_1764508627579022"
+            event_id = 'evt_' + event_id[3:] if len(event_id) > 3 else event_id
+        
         max_depth = int(request.args.get('depth', 20))
-        analysis = explorer.analyze_impact(event_id, max_depth)
+        
+        # CRITICAL: Verify event exists in the CORRECT explorer instance
+        if event_id not in target_explorer.events:
+            logger.warning(f"[IMPACT] Event {event_id} not found in target_explorer.events (total events: {len(target_explorer.events)})")
+            logger.warning(f"[IMPACT] Using {'shared' if app.config.get('explorer') else 'local'} explorer instance")
+            recent_ids = list(target_explorer.events.keys())[-20:]
+            logger.warning(f"[IMPACT] Recent event IDs (last 20): {recent_ids}")
+        
+        analysis = target_explorer.analyze_impact(event_id, max_depth)
         return jsonify(analysis)
     except Exception as e:
         logger.error(f"Error analyzing impact for {event_id}: {e}", exc_info=True)
@@ -5627,10 +6023,24 @@ def explain_event(event_id):
     📖 COMPLETE EVENT EXPLANATION
     Why did this happen AND what did it cause?
     """
-    if explorer is None:
+    # CRITICAL: Use shared explorer if available (from unified_entry.py), otherwise local one
+    target_explorer = app.config.get('explorer') or explorer
+    if target_explorer is None:
         return jsonify({'error': 'Causation Explorer not initialized'}), 500
     try:
-        explanation = explorer.explain_event(event_id)
+        # Normalize event ID format (handle both evt_xxx and evt-xxx)
+        if event_id.startswith('evt') and not event_id.startswith('evt_'):
+            # Convert "evt1764508627579022" to "evt_1764508627579022"
+            event_id = 'evt_' + event_id[3:] if len(event_id) > 3 else event_id
+        
+        # CRITICAL: Verify event exists in the CORRECT explorer instance
+        if event_id not in target_explorer.events:
+            logger.warning(f"[EXPLAIN] Event {event_id} not found in target_explorer.events (total events: {len(target_explorer.events)})")
+            logger.warning(f"[EXPLAIN] Using {'shared' if app.config.get('explorer') else 'local'} explorer instance")
+            recent_ids = list(target_explorer.events.keys())[-20:]
+            logger.warning(f"[EXPLAIN] Recent event IDs (last 20): {recent_ids}")
+        
+        explanation = target_explorer.explain_event(event_id)
         return jsonify(explanation)
     except Exception as e:
         logger.error(f"Error explaining event {event_id}: {e}", exc_info=True)
@@ -5775,6 +6185,70 @@ def get_live_status():
         return jsonify({'live': False, 'error': str(e)})
 
 
+@app.route('/api/debug/events')
+def debug_events():
+    """
+    Debug endpoint to inspect all stored events.
+    
+    Returns:
+        - total_events: Total number of events
+        - event_ids: List of all event IDs (first 100)
+        - events_by_type: Count of events by type
+        - events_by_component: Count of events by component
+        - recent_events: Last 20 events with full details
+        - language_events: All language-related events (butterfly_chat, vocabulary_growth, etc.)
+        - word_assignment_events: All word_assignment events with details
+    """
+    # Use shared explorer if available, otherwise local
+    target_explorer = app.config.get('explorer') or explorer
+    if target_explorer is None:
+        return jsonify({'error': 'Causation Explorer not initialized', 'total_events': 0})
+    
+    # Get all event IDs (first 100 for debugging)
+    all_event_ids = list(target_explorer.events.keys())[:100]
+    
+    # Get recent events (last 20, sorted by timestamp)
+    all_events_list = sorted(
+        target_explorer.events.values(),
+        key=lambda e: e.timestamp,
+        reverse=True
+    )[:20]
+    recent_events = [e.to_dict() for e in all_events_list]
+    
+    # Get language events
+    language_events = []
+    word_assignment_events = []
+    for event_id, event in target_explorer.events.items():
+        if event.event_type in ['butterfly_chat_message', 'butterfly_chat_response', 'vocabulary_growth', 'organism_communication', 'word_assignment']:
+            event_dict = {
+                'event_id': event_id,
+                'type': event.event_type,
+                'component': event.component,
+                'timestamp': event.timestamp,
+                'data': event.data
+            }
+            language_events.append(event_dict)
+            
+            if event.event_type == 'word_assignment':
+                word_assignment_events.append(event_dict)
+    
+    # Sort language events by timestamp
+    language_events.sort(key=lambda x: x['timestamp'], reverse=True)
+    word_assignment_events.sort(key=lambda x: x['timestamp'], reverse=True)
+    
+    return jsonify({
+        'total_events': len(target_explorer.events),
+        'event_ids': all_event_ids,
+        'events_by_type': {k: len(v) for k, v in target_explorer.events_by_type.items()},
+        'events_by_component': {k: len(v) for k, v in target_explorer.events_by_component.items()},
+        'recent_events': recent_events,
+        'language_events_count': len(language_events),
+        'language_events': language_events[:50],  # First 50 language events
+        'word_assignment_events_count': len(word_assignment_events),
+        'word_assignment_events': word_assignment_events[:20],  # First 20 word assignments
+        'explorer_source': 'shared' if app.config.get('explorer') else 'local'
+    })
+
 @app.route('/api/live/events')
 def get_new_events():
     """
@@ -5859,13 +6333,18 @@ def get_graph():
     - Shows new events from running unified_entry.py in real-time
     - Thread-safe access to event graph (snapshots prevent iteration errors)
     """
-    if explorer is None:
+    # Use shared explorer if available, otherwise use local one
+    target_explorer = app.config.get('explorer') or explorer
+    
+    if target_explorer is None:
         return jsonify({'nodes': [], 'links': [], 'error': 'Causation Explorer not initialized'}), 200
     try:
-        # 🚀 OPTIMIZATION: Check cache first (5-second cache to reduce file I/O and prevent timeout loops)
+            # 🚀 OPTIMIZATION: Check cache first (5-second cache to reduce file I/O and prevent timeout loops)
         current_time = time.time()
-        if (current_time - graph_cache['last_update']) < graph_cache['cache_duration']:
-            logger.debug(f"Returning cached graph data (cache age: {current_time - graph_cache['last_update']:.2f}s)")
+        # Always check if new events were added (cache invalidation via last_update = 0)
+        cache_age = current_time - graph_cache['last_update']
+        if cache_age > 0 and cache_age < graph_cache['cache_duration']:
+            logger.debug(f"Returning cached graph data (cache age: {cache_age:.2f}s)")
             return jsonify({
                 'nodes': graph_cache['nodes'],
                 'links': graph_cache['links'],
@@ -5924,7 +6403,7 @@ def get_graph():
                             try:
                                 # Set a timeout for the load operation
                                 load_start = time.time()
-                                explorer._load_from_shared_state(force_reload=True)  # Force reload recent data
+                                target_explorer._load_from_shared_state(force_reload=True)  # Force reload recent data
                                 load_duration = time.time() - load_start
                                 if load_duration > 2.0:
                                     logger.warning(f"Shared state load took {load_duration:.1f}s (slow)")
@@ -5935,7 +6414,7 @@ def get_graph():
                         else:
                             # File exists but might be old, still try incremental load (faster)
                             try:
-                                explorer._load_from_shared_state(force_reload=False)
+                                target_explorer._load_from_shared_state(force_reload=False)
                                 graph_cache['shared_state_mtime'] = file_mtime  # Update tracked mtime
                             except Exception as load_error:
                                 logger.warning(f"Incremental load failed (returning cached): {load_error}")
@@ -5961,9 +6440,9 @@ def get_graph():
         # Add nodes (use lock for thread safety)
         # 🚀 TIMEOUT PROTECTION: Quick snapshot to avoid long lock times
         snapshot_start = time.time()
-        with explorer.graph_lock:
-            events_snapshot = dict(explorer.events)  # Create snapshot inside lock
-            edges_snapshot = list(explorer.causation_graph.edges(data=True))  # Create snapshot inside lock
+        with target_explorer.graph_lock:
+            events_snapshot = dict(target_explorer.events)  # Create snapshot inside lock
+            edges_snapshot = list(target_explorer.causation_graph.edges(data=True))  # Create snapshot inside lock
         snapshot_duration = time.time() - snapshot_start
         if snapshot_duration > 1.0:
             logger.warning(f"Graph snapshot took {snapshot_duration:.1f}s (large graph)")
@@ -5973,36 +6452,46 @@ def get_graph():
             component_counts = {}  # Debug: track component distribution
             for event_id, event in events_snapshot.items():
                 # Normalize component names to match color mapping in HTML
-                component = (event.component or 'unknown').lower().strip()
-                # Map variations to standard names
-                if 'reality' in component or 'sim' in component:
+                # BUT: Check event_type FIRST to preserve language event identity
+                original_component = (event.component or 'unknown').lower().strip()
+                event_type = (event.event_type or '').lower().strip()
+                
+                # Language events: Check event_type first to preserve identity
+                if event_type in ['vocabulary_growth', 'organism_communication', 'word_assignment']:
+                    component = 'language'
+                elif event_type in ['butterfly_chat_message', 'butterfly_chat_response']:
+                    component = 'butterfly_chat'
+                # Then check component name as fallback
+                elif 'reality' in original_component or 'sim' in original_component:
                     component = 'reality_sim'
-                elif 'explorer' in component:
+                elif 'explorer' in original_component:
                     component = 'explorer'
-                elif 'djinn' in component or 'kernel' in component or 'utm' in component:
+                elif 'djinn' in original_component or 'kernel' in original_component or 'utm' in original_component:
                     component = 'djinn_kernel'
-                elif 'breath' in component:
+                elif 'breath' in original_component:
                     component = 'breath'
-                elif 'system' in component:
+                elif 'system' in original_component:
                     component = 'system'
-                elif 'neural' in component:
+                elif 'neural' in original_component:
                     component = 'neural'  # Keep 'neural' for neural system events
-                elif 'ml' in component or 'analysis' in component:
+                elif 'ml' in original_component or 'analysis' in original_component:
                     component = 'ml_analysis'  # Standardize ML component name
-                elif 'language' in component or 'vocabulary' in component or 'communication' in component:
+                elif 'language' in original_component or 'vocabulary' in original_component or 'communication' in original_component:
                     component = 'language'  # Language system events
-                elif 'butterfly_chat' in component or 'chat' in component:
+                elif 'butterfly_chat' in original_component or ('chat' in original_component and 'butterfly' in original_component):
                     component = 'butterfly_chat'  # Butterfly Chat events
                 else:
-                    component = component  # Keep as-is (will default to orange)
+                    component = original_component  # Keep as-is (will default to orange)
                 
                 component_counts[component] = component_counts.get(component, 0) + 1
                 # Filter out large nested data to reduce memory usage
                 node_data = {
                     'id': event_id,
                     'component': component,  # Normalized component name
-                    'type': event.event_type,
-                    'timestamp': event.timestamp
+                    'type': event.event_type,  # Preserve original event_type for language detection
+                    'timestamp': event.timestamp,
+                    # Preserve original component for debugging (but use normalized for filtering)
+                    '_original_component': event.component
                 }
                 # Only include simple data (no nested dicts/lists >200 chars)
                 if event.data and isinstance(event.data, dict):
@@ -7195,6 +7684,10 @@ def butterfly_chat():
         
         if not vocabulary:
             return jsonify({'error': 'Language vocabulary not available'}), 503
+        
+        # Wire vocabulary event_emitter if not already set (enables vocabulary_growth events)
+        if vocabulary and hasattr(vocabulary, 'event_emitter') and vocabulary.event_emitter is None:
+            vocabulary.event_emitter = event_emitter
         
         # Create router and process message
         # Convert organisms list to dict (keyed by organism ID)
@@ -9179,6 +9672,241 @@ def cra_get_memory_stability():
             'error': str(e),
             'memory_stability': {}
         }), 500
+
+@app.route('/api/cra/diagnostics/language_teacher', methods=['GET'])
+def get_language_teacher_diagnostics():
+    """
+    Get comprehensive Language Teacher statistics and status.
+    
+    Returns:
+        - enabled: Whether language teacher is active
+        - use_semantic_embeddings: Phase 2 status
+        - use_knowledge_web: Phase 3 status
+        - stats: Complete statistics (organisms_taught, words_assigned, learning_confidence, etc.)
+        - config: Current configuration settings
+        - experience_buffer: Experience collection status
+    """
+    try:
+        network = app.config.get('network')
+        if not network or not hasattr(network, 'language_teacher') or network.language_teacher is None:
+            return jsonify({
+                'enabled': False,
+                'available': False,
+                'error': 'Language teacher not initialized'
+            })
+        
+        teacher = network.language_teacher
+        
+        # Get stats
+        stats = teacher.get_stats() if hasattr(teacher, 'get_stats') else {}
+        
+        # Get experience buffer info if available
+        experience_buffer_info = {}
+        if hasattr(teacher, 'semantic_teacher') and teacher.semantic_teacher is not None:
+            if hasattr(teacher.semantic_teacher, 'experience_buffer'):
+                exp_buf = teacher.semantic_teacher.experience_buffer
+                experience_buffer_info = {
+                    'size': len(exp_buf) if hasattr(exp_buf, '__len__') else 0,
+                    'ready_for_training': len(exp_buf) >= teacher.min_experiences if hasattr(teacher, 'min_experiences') else False
+                }
+        
+        return jsonify({
+            'enabled': teacher.enabled if hasattr(teacher, 'enabled') else False,
+            'use_semantic_embeddings': teacher.use_semantic_embeddings if hasattr(teacher, 'use_semantic_embeddings') else False,
+            'use_knowledge_web': teacher.use_knowledge_web if hasattr(teacher, 'use_knowledge_web') else False,
+            'learning_confidence': teacher.learning_confidence if hasattr(teacher, 'learning_confidence') else 0.0,
+            'stats': stats,
+            'config': {
+                'embedding_dim': teacher.embedding_dim if hasattr(teacher, 'embedding_dim') else None,
+                'vocab_size': teacher.vocab_size if hasattr(teacher, 'vocab_size') else None,
+                'min_experiences': teacher.min_experiences if hasattr(teacher, 'min_experiences') else None,
+                'training_frequency': teacher.training_frequency if hasattr(teacher, 'training_frequency') else None,
+                'min_confidence': teacher.min_confidence if hasattr(teacher, 'min_confidence') else None,
+                'teaching_frequency': teacher.teaching_frequency if hasattr(teacher, 'teaching_frequency') else None,
+                'min_action_history': teacher.min_action_history if hasattr(teacher, 'min_action_history') else None
+            },
+            'experience_buffer': experience_buffer_info,
+            'available': True
+        })
+    except Exception as e:
+        logger.error(f"Error getting language teacher diagnostics: {e}", exc_info=True)
+        return jsonify({
+            'enabled': False,
+            'available': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/cra/diagnostics/knowledge_web', methods=['GET'])
+def get_knowledge_web_diagnostics():
+    """
+    Get comprehensive Linguistic Knowledge Web statistics and status.
+    
+    Returns:
+        - enabled: Whether knowledge web is active
+        - concepts: Concept count and breakdown by semantic frame
+        - relations: Relation count and breakdown by type
+        - semantic_clusters: Cluster information
+        - word_mappings: Action/state word map sizes
+    """
+    try:
+        network = app.config.get('network')
+        if not network or not hasattr(network, 'language_teacher') or network.language_teacher is None:
+            return jsonify({
+                'enabled': False,
+                'available': False,
+                'error': 'Language teacher not initialized'
+            })
+        
+        teacher = network.language_teacher
+        if not hasattr(teacher, 'knowledge_web') or teacher.knowledge_web is None:
+            return jsonify({
+                'enabled': False,
+                'available': False,
+                'error': 'Knowledge web not initialized'
+            })
+        
+        web = teacher.knowledge_web
+        
+        # Count concepts by semantic frame
+        concepts_by_frame = {}
+        for concept in web.concepts.values():
+            frame = concept.semantic_frame
+            concepts_by_frame[frame] = concepts_by_frame.get(frame, 0) + 1
+        
+        # Count relations by type
+        relations_by_type = {}
+        for relation in web.relations:
+            rel_type = relation.relation_type
+            relations_by_type[rel_type] = relations_by_type.get(rel_type, 0) + 1
+        
+        return jsonify({
+            'enabled': True,
+            'available': True,
+            'concepts': {
+                'total': len(web.concepts),
+                'by_frame': concepts_by_frame,
+                'sample': list(web.concepts.keys())[:20]  # First 20 concept words
+            },
+            'relations': {
+                'total': len(web.relations),
+                'by_type': relations_by_type
+            },
+            'semantic_clusters': {
+                'count': len(web.semantic_clusters),
+                'cluster_sizes': {k: len(v) for k, v in list(web.semantic_clusters.items())[:10]}
+            },
+            'word_mappings': {
+                'action_words': {str(k): len(v) for k, v in list(web.action_word_map.items())[:6]},
+                'state_words': {k: len(v) for k, v in list(web.state_word_map.items())[:10]},
+                'situational_contexts': len(web.situational_contexts)
+            },
+            'config': {
+                'embedding_dim': web.config.get('embedding_dim', None) if hasattr(web, 'config') else None,
+                'max_concepts': web.config.get('max_concepts', None) if hasattr(web, 'config') else None
+            }
+        })
+    except Exception as e:
+        logger.error(f"Error getting knowledge web diagnostics: {e}", exc_info=True)
+        return jsonify({
+            'enabled': False,
+            'available': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/cra/diagnostics/language_system', methods=['GET'])
+def get_language_system_diagnostics():
+    """
+    Get comprehensive language system diagnostics (teacher + knowledge web + vocabulary + associations).
+    
+    Returns:
+        - teacher: Language teacher diagnostics
+        - knowledge_web: Knowledge web diagnostics
+        - vocabulary: Vocabulary statistics
+        - word_associations: Word-organism association statistics
+        - situational_awareness: Situational awareness metrics
+    """
+    try:
+        network = app.config.get('network')
+        if not network:
+            return jsonify({
+                'available': False,
+                'error': 'Network not available'
+            })
+        
+        # Get teacher diagnostics
+        teacher_diag = {}
+        if hasattr(network, 'language_teacher') and network.language_teacher:
+            teacher = network.language_teacher
+            teacher_diag = {
+                'enabled': teacher.enabled if hasattr(teacher, 'enabled') else False,
+                'learning_confidence': teacher.learning_confidence if hasattr(teacher, 'learning_confidence') else 0.0,
+                'stats': teacher.get_stats() if hasattr(teacher, 'get_stats') else {}
+            }
+        
+        # Get knowledge web diagnostics
+        web_diag = {}
+        if hasattr(network, 'language_teacher') and network.language_teacher:
+            teacher = network.language_teacher
+            if hasattr(teacher, 'knowledge_web') and teacher.knowledge_web:
+                web = teacher.knowledge_web
+                web_diag = {
+                    'enabled': True,
+                    'concepts_count': len(web.concepts),
+                    'relations_count': len(web.relations)
+                }
+        
+        # Get vocabulary and associations
+        vocab_stats = {}
+        association_stats = {}
+        if hasattr(network, 'context_memory') and network.context_memory:
+            cm = network.context_memory
+            
+            # Vocabulary stats
+            vocab_size = len(cm.language_anchors) if hasattr(cm, 'language_anchors') else 0
+            total_word_freq = sum(cm.word_frequencies.values()) if hasattr(cm, 'word_frequencies') else 0
+            
+            vocab_stats = {
+                'vocab_size': vocab_size,
+                'total_word_frequency': total_word_freq,
+                'unique_words': vocab_size,
+                'top_words': dict(sorted(
+                    (cm.word_frequencies.items() if hasattr(cm, 'word_frequencies') else {}).items(),
+                    key=lambda x: x[1],
+                    reverse=True
+                )[:20])
+            }
+            
+            # Association stats
+            node_associations = cm.node_word_associations if hasattr(cm, 'node_word_associations') else {}
+            organisms_with_words = len(node_associations)
+            total_associations = sum(len(words) for words in node_associations.values())
+            avg_words_per_organism = total_associations / organisms_with_words if organisms_with_words > 0 else 0
+            
+            association_stats = {
+                'organisms_with_words': organisms_with_words,
+                'total_associations': total_associations,
+                'avg_words_per_organism': avg_words_per_organism,
+                'max_words_per_organism': max((len(words) for words in node_associations.values()), default=0),
+                'min_words_per_organism': min((len(words) for words in node_associations.values()), default=0)
+            }
+        
+        return jsonify({
+            'available': True,
+            'teacher': teacher_diag,
+            'knowledge_web': web_diag,
+            'vocabulary': vocab_stats,
+            'word_associations': association_stats,
+            'timestamp': time.time()
+        })
+    except Exception as e:
+        logger.error(f"Error getting language system diagnostics: {e}", exc_info=True)
+        return jsonify({
+            'available': False,
+            'error': str(e)
+        }), 500
+
 
 @app.route('/api/cra/diagnostics/config_tuner', methods=['GET'])
 def cra_get_config_tuner():

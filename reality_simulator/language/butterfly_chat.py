@@ -179,7 +179,7 @@ class ButterflyChatRouter:
                 response_words = self.vocabulary.decode(response_tokens, skip_special=True) if self.vocabulary else [str(t) for t in response_tokens]
                 response_text = ' '.join(response_words) if isinstance(response_words, list) else str(response_words)
                 
-                # If response is empty, try to learn from the interaction
+                # If response is empty, try to learn from the interaction and use fallback words
                 if not response_text or response_text.strip() == '':
                     # Extract words from user message to add to vocabulary
                     if self.vocabulary and words:
@@ -189,6 +189,25 @@ class ButterflyChatRouter:
                                 self._log_debug("STEP_4", f"Learned new word: {word}", {
                                     "organism_id": org_id,
                                     "word": word,
+                                    "vocab_size": self.vocabulary.vocab_size
+                                })
+                    
+                    # If still empty, use a fallback response based on organism state
+                    if not response_text or response_text.strip() == '':
+                        # Generate a simple fallback response using vocabulary words
+                        fallback_words = []
+                        if self.vocabulary:
+                            # Try to use words that exist in vocabulary
+                            available_words = [w for w in self.vocabulary.word_to_id.keys() 
+                                             if w not in ['<PAD>', '<UNK>', '<START>', '<END>', '<VP_GATE>']]
+                            if available_words:
+                                # Use a few random words from vocabulary as fallback
+                                import random
+                                fallback_words = random.sample(available_words, min(3, len(available_words)))
+                                response_text = ' '.join(fallback_words)
+                                self._log_debug("STEP_4", f"Using fallback response for {org_id}", {
+                                    "organism_id": org_id,
+                                    "fallback_words": fallback_words,
                                     "vocab_size": self.vocabulary.vocab_size
                                 })
                 
@@ -276,10 +295,26 @@ class ButterflyChatRouter:
             emitted_event_ids = self._emit_chat_events(message, prompt_tokens, organism_responses, aggregated_response)
             
             # Link event IDs to causation trail steps
-            for i, step in enumerate(self.causation_trail):
-                if i < len(emitted_event_ids):
-                    step['event_id'] = emitted_event_ids[i]
-                    step['step_data']['event_id'] = emitted_event_ids[i]
+            # emitted_event_ids[0] is the message event, [1:] are organism response events
+            # Match response events to steps by organism_id to ensure correct pairing
+            if len(emitted_event_ids) > 1:
+                response_event_ids = emitted_event_ids[1:]  # Skip message event
+                # Create mapping: organism_id -> event_id
+                organism_to_event = {}
+                for resp in organism_responses:
+                    org_id = resp.get('organism_id')
+                    # Find matching event ID (they should be in same order)
+                    resp_idx = organism_responses.index(resp)
+                    if resp_idx < len(response_event_ids):
+                        organism_to_event[org_id] = response_event_ids[resp_idx]
+                
+                # Link event IDs to steps by organism_id
+                for step in self.causation_trail:
+                    org_id = step.get('organism_id')
+                    if org_id and org_id in organism_to_event:
+                        event_id = organism_to_event[org_id]
+                        step['event_id'] = event_id
+                        step['step_data']['event_id'] = event_id
         else:
             self._log_error("CAUSATION_EVENT_WARNING", "Event emitter not available", {
                 "events_skipped": True

@@ -700,6 +700,11 @@ class SymbioticNetwork:
         # Creates a new instance if none provided (lazy initialization pattern)
         self.context_memory = context_memory if context_memory is not None else ContextMemory()
         
+        # Initialize event_emitter attribute (will be wired later by unified_entry.py or reality_simulator/main.py)
+        # This ensures word_assignment events can be emitted when words are linked
+        if not hasattr(self.context_memory, 'event_emitter'):
+            self.context_memory.event_emitter = None
+        
         # Store config for language teacher
         self.config = config or {}
         

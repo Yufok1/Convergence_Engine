@@ -1098,6 +1098,19 @@ class UnifiedSystem:
             
             self.reality_sim.event_emitter = neural_event_emitter
 
+            # CRITICAL: Wire context_memory and vocabulary event emitters for language events
+            # This MUST happen BEFORE any word assignments occur
+            # Do this immediately after network is created, not later
+            if hasattr(self.reality_sim, 'components') and 'network' in self.reality_sim.components:
+                network = self.reality_sim.components['network']
+                if hasattr(network, 'context_memory') and network.context_memory:
+                    # Wire event_emitter immediately - this ensures word_assignment events are emitted
+                    network.context_memory.event_emitter = neural_event_emitter
+                    # Also wire vocabulary if it exists
+                    if hasattr(network.context_memory, 'vocabulary') and network.context_memory.vocabulary:
+                        network.context_memory.vocabulary.event_emitter = neural_event_emitter
+                    print(f"[UNIFIED] [LANGUAGE] Wired event_emitter to context_memory (event_emitter is {'set' if neural_event_emitter else 'None'})")
+
             # Also wire ML event emitter on the network (clustering, anomaly, phenotype events)
             try:
                 network = self.reality_sim.components.get('network') if hasattr(self.reality_sim, 'components') else None
@@ -1214,6 +1227,14 @@ class UnifiedSystem:
             
             # Get the Flask app from the module
             self.web_ui = causation_web_ui.app
+            
+            # CRITICAL: Share CausationExplorer instance with web UI
+            # This ensures events from unified_entry.py appear in the web UI
+            if self.causation_explorer:
+                self.web_ui.config['explorer'] = self.causation_explorer
+                # Also update the web UI's explorer variable directly
+                causation_web_ui.explorer = self.causation_explorer
+                print("[UNIFIED] [WEB] Shared CausationExplorer instance with web UI")
             
             # Store references for butterfly chat access
             if self.reality_sim:

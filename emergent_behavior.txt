@@ -129,6 +129,33 @@ Quick Win #7: Research Notepad (Scientific Journal) ⭐ NEW
   [[NOTEPAD: {"action": "observe", "content": "Cluster collapse preceded by VP >0.8 #pattern", "events": ["evt_123"]}]]
   [[NOTEPAD: {"action": "hypothesize", "content": "High VP triggers collapse within 30 cycles", "confidence": "medium"}]]
 
+Quick Win #8: Dynamic Multi-Dimensional Linguistic Awareness ⭐ NEW
+- **Core Concept**: Dynamic, context-aware word association framework with 14-dimensional situational assessment
+- **Multi-Dimensional Assessment**: Evaluates simultaneously:
+  1. Action-Based (behavioral context)
+  2. Fitness-Based (organism vitality)
+  3. Resource-Based (material context)
+  4. Connection-Based (social/network context)
+  5. Positional Awareness (spatial: center/edge, proximity)
+  6. Local Density (environmental: crowded/sparse)
+  7. Violation Pressure (system stability)
+  8. Network Coherence (system integration)
+  9. Evolution Pressure (adaptation context)
+  10. Phase Mismatch (synchronization)
+  11. System Health (ecosystem wellness)
+  12. Breath Phase (temporal/rhythmic)
+  13. Action Success (behavioral feedback)
+  14. Generation Age (temporal/evolutionary)
+- **Dynamic Word Scoring**: Words scored across dimensions (0.0-1.0), prioritized by contextual relevance
+- **Full State Integration**: Uses all 18 state features plus network and breath state
+- **Language Teacher System**: Three-phase architecture (hardcoded → semantic embeddings → knowledge web)
+- **Linguistic Knowledge Web**: 100+ concepts, semantic relationships, situational contexts
+- **Expanded Vocabulary**: 40+ new words covering system dynamics, spatial concepts, health states
+- **Emergence benefit**: Context-aware word associations enable organisms to develop nuanced communication that reflects true situational awareness
+- **Config**: neural.language_model.enabled, neural.language_model.teacher.*, neural.language_model.knowledge_web.*
+- **Events**: vocabulary_growth, organism_communication, butterfly_chat_message/response
+- **Visualization**: Language nodes (Circle/Wye shapes, Teal #00BCD4), linguistic edges (Purple #9B59B6)
+
 ---
 📋 Detailed Instructions
 
@@ -205,6 +232,22 @@ Health Monitor Parameters (Quick Win #5): ⭐ NEW
   - healthy_threshold: 0.65
 - Target: Push health toward "optimal" (≥0.7) through emergent intelligence
 - **Recent Fix (2025-11-30)**: HealthMonitor properly wired with event_emitter, `configure_health_monitor()` correctly passes dependencies to SymbioticNetwork
+
+Language System Parameters (Quick Win #8): ⭐ NEW
+- neural.language_model.enabled: true (CRITICAL for emergent language)
+- Language Teacher:
+  - teacher.enabled: true
+  - teacher.use_semantic_embeddings: true (Phase 2 - learned associations)
+  - teacher.use_knowledge_web: true (Phase 3 - situational awareness)
+  - teacher.embedding_dim: 64-128 (richer semantic space for emergence)
+  - teacher.min_confidence: 0.2-0.3 (use learned embeddings earlier)
+  - teacher.training_frequency: 5-10 (faster semantic learning)
+- Knowledge Web:
+  - knowledge_web.enabled: true (CRITICAL for multi-dimensional awareness)
+  - knowledge_web.max_concepts: 500-1000 (comprehensive semantic network)
+- Vocabulary: max_size 1024-2048 (allow rich emergent vocabulary)
+- Generation: temperature 0.8-1.2 (balance creativity vs coherence)
+- Emergence benefit: Context-aware word associations enable nuanced communication reflecting true situational awareness across 14 dimensions
 
 Feedback Controller Knobs (Emergent Phenomena Focus):
 
@@ -1102,6 +1145,9 @@ Parameter Targets:
 - scikit.concept_tracking.persistence_threshold: 3
 - health_monitor.enabled: true (QW#5 - CRITICAL)
 - health_monitor.weight_diversity: 0.25 (increase for emergence)
+- neural.language_model.enabled: true (QW#8 - CRITICAL for emergent language)
+- neural.language_model.teacher.use_knowledge_web: true (QW#8 - situational awareness)
+- neural.language_model.knowledge_web.enabled: true (QW#8 - multi-dimensional assessment)
 - feedback.knobs.new_edge_rate.initial: 4.5-5.5 (dense connectivity)
 - feedback.knobs.mutation_rate.initial: 0.030-0.038 (optimize for dual inheritance)
 - feedback.knobs.clustering_bias.initial: 1.55-1.65 (strong spatial clustering)
@@ -1117,6 +1163,7 @@ Make emergent structures unmistakable in the graph, including Quick Win events:
   green hexagons)
 - Show named concepts with semantic labels (star nodes) (QW#2)
 - Show health state transitions (colored nodes) (QW#5)
+- Show language events (vocabulary_growth, organism_communication, butterfly_chat) (QW#8)
 - Highlight neural vs genetic divergence and anomaly spikes (orange triangles with flash)
 - Preserve depth cues for 3D structure with strong parallax
 - Emphasize neural events (diamonds/squares), ML events (hexagon/pentagon/triangle/star),
@@ -1128,9 +1175,13 @@ Use these specific colors and settings:
 - **Note (2025-01-27)**: All colors are now dynamic - CRA receives current color values in graph context. Reference settings (e.g., `componentColor_neural`, `linkColor_neural`) instead of hardcoded hex values. Check current values in graph context before making color recommendations.
 - componentColor_neural: Check current value (typically "#00FFFF" Electric Cyan)
 - componentColor_ml_analysis: Check current value (typically "#32CD32" Lime Green)
+- componentColor_language: Check current value (typically "#00BCD4" Teal) (QW#8)
+- componentColor_butterfly_chat: Check current value (typically "#8BC34A" Light Green) (QW#8)
 - componentColor_health: varies by state (Red/Yellow/Green/Blue) (QW#5)
 - linkColor_neural: Check current value (typically "#00FFFF" Cyan, dashed)
 - linkColor_ml: Check current value (typically "#FFA500" Orange, dashed with flow animation)
+- linkColor_language: Check current value (typically "#9B59B6" Purple) (QW#8)
+- linkColor_linguistic: Check current value (typically "#9B59B6" Purple) (QW#8)
 - Link width: 2-3x for neural/ML events
 - Link opacity: 0.8-1.0 for neural/ML events
 - Node glow: strong on neural/ML/concept nodes
@@ -1156,8 +1207,9 @@ INTERPRETATION:
   - Neural: training_loss, avg_epsilon, organisms_tracked, vp_aware_adjustments
   - ML: cluster_count, concept_count (QW#2), anomaly_ratio
   - Health: overall_score, components, state_changes (QW#5)
+  - Language: vocabulary_size, word_associations, situational_awareness_accuracy (QW#8)
   - VP: component breakdown, organism perception (QW#1), healing behaviors (QW#4)
-  - Events: Intelligence events (neural+ML+concept+health) >40% of total
+  - Events: Intelligence events (neural+ML+concept+health+language) >40% of total
 
 RECOMMENDATION:
 - Validation checklist with Quick Win verification

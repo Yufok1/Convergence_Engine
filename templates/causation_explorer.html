@@ -13037,7 +13037,7 @@
                                     if (braceEnd !== -1) {
                                         const afterBrace = data.response.substring(braceEnd + 1).trim();
                                         if (afterBrace.startsWith(']]')) {
-                                            const jsonStr = data.response.substring(braceStart, braceEnd + 1);
+                                            let jsonStr = data.response.substring(braceStart, braceEnd + 1);
                                             vizUpdateMatch = [null, jsonStr]; // Create match array format
                                             // Strip JSON comments (JSON doesn't support # comments)
                                             // Remove lines starting with # or containing # after valid JSON
@@ -13745,21 +13745,22 @@
                     const weight = stepData.weight || (fitness * confidence);
                     
                     // Illumination buttons (only show if event_id exists)
+                    // DIRECT: Just set the input field and call the function
                     let illuminationButtons = '';
                     if (eventId) {
                         illuminationButtons = `
                             <div style="margin-top: 8px; display: flex; gap: 5px; flex-wrap: wrap;">
-                                <button onclick="illuminateRootCauses('${eventId}', ${idx})" 
+                                <button onclick="document.getElementById('illuminationEventId').value='${eventId}'; illuminationRootCauses();" 
                                     style="padding: 4px 8px; background: #0aa; color: #000; border: 1px solid #0ff; cursor: pointer; font-size: 0.75em; font-weight: bold; border-radius: 3px;"
                                     title="Trace root causes of this event">
                                     🔍 Root Causes
                                 </button>
-                                <button onclick="illuminateImpact('${eventId}', ${idx})" 
+                                <button onclick="document.getElementById('illuminationEventId').value='${eventId}'; illuminationImpact();" 
                                     style="padding: 4px 8px; background: #0a0; color: #000; border: 1px solid #0f0; cursor: pointer; font-size: 0.75em; font-weight: bold; border-radius: 3px;"
                                     title="See what this event caused">
                                     💥 Impact
                                 </button>
-                                <button onclick="illuminateExplain('${eventId}', ${idx})" 
+                                <button onclick="document.getElementById('illuminationEventId').value='${eventId}'; illuminationExplain();" 
                                     style="padding: 4px 8px; background: #aa0; color: #000; border: 1px solid #ff0; cursor: pointer; font-size: 0.75em; font-weight: bold; border-radius: 3px;"
                                     title="Get full explanation">
                                     📖 Explain
@@ -13929,167 +13930,6 @@
             }
             
             // Illumination: Root Causes
-            async function illuminateRootCauses(eventId, stepIdx) {
-                eventId = normalizeEventId(eventId);
-                if (!eventId) {
-                    alert('No event ID available for this step');
-                    return;
-                }
-                
-                const resultDiv = document.getElementById(`illumination-result-${stepIdx}`);
-                if (resultDiv) {
-                    resultDiv.style.display = 'block';
-                    resultDiv.innerHTML = '<div style="color: #0ff;">🔍 Analyzing root causes...</div>';
-                }
-                
-                try {
-                    const response = await fetch(`/api/events/${eventId}/root-causes?depth=15`);
-                    const data = await response.json();
-                    
-                    if (data.error) {
-                        if (resultDiv) {
-                            resultDiv.innerHTML = `<div style="color: #f00;">⚠️ ${data.error}</div>`;
-                        }
-                        return;
-                    }
-                    
-                    if (resultDiv) {
-                        let html = '<div style="color: #0ff; font-weight: bold; margin-bottom: 5px;">🔍 Root Causes Found:</div>';
-                        if (data.root_causes && data.root_causes.length > 0) {
-                            data.root_causes.slice(0, 5).forEach((cause, idx) => {
-                                html += `
-                                    <div style="margin: 5px 0; padding: 5px; background: rgba(0,255,255,0.1); border-left: 3px solid #0ff;">
-                                        <div style="color: #0ff; font-weight: bold;">${idx + 1}. ${cause.event_id || 'Unknown'}</div>
-                                        <div style="color: #aaa; font-size: 0.85em;">${cause.narrative || cause.explanation || 'No explanation'}</div>
-                                        <div style="color: #888; font-size: 0.75em;">Score: ${(cause.score || 0).toFixed(3)}</div>
-                                    </div>
-                                `;
-                            });
-                        } else {
-                            html += '<div style="color: #888;">No root causes found (this may be a root event).</div>';
-                        }
-                        resultDiv.innerHTML = html;
-                    }
-                    
-                    // Also trigger main Illumination panel if available
-                    if (window.craIllumination && typeof window.craIllumination.analyzeRootCauses === 'function') {
-                        await window.craIllumination.analyzeRootCauses(eventId);
-                    }
-                } catch (err) {
-                    console.error('Error analyzing root causes:', err);
-                    if (resultDiv) {
-                        resultDiv.innerHTML = `<div style="color: #f00;">⚠️ Error: ${err.message}</div>`;
-                    }
-                }
-            }
-            
-            // Illumination: Impact Analysis
-            async function illuminateImpact(eventId, stepIdx) {
-                eventId = normalizeEventId(eventId);
-                if (!eventId) {
-                    alert('No event ID available for this step');
-                    return;
-                }
-                
-                const resultDiv = document.getElementById(`illumination-result-${stepIdx}`);
-                if (resultDiv) {
-                    resultDiv.style.display = 'block';
-                    resultDiv.innerHTML = '<div style="color: #0f0;">💥 Analyzing impact...</div>';
-                }
-                
-                try {
-                    const response = await fetch(`/api/events/${eventId}/impact?depth=15`);
-                    const data = await response.json();
-                    
-                    if (data.error) {
-                        if (resultDiv) {
-                            resultDiv.innerHTML = `<div style="color: #f00;">⚠️ ${data.error}</div>`;
-                        }
-                        return;
-                    }
-                    
-                    if (resultDiv) {
-                        let html = '<div style="color: #0f0; font-weight: bold; margin-bottom: 5px;">💥 Impact Analysis:</div>';
-                        if (data.impact_events && data.impact_events.length > 0) {
-                            html += `<div style="color: #aaa; font-size: 0.85em; margin-bottom: 5px;">Found ${data.impact_events.length} downstream effects</div>`;
-                            data.impact_events.slice(0, 5).forEach((impact, idx) => {
-                                html += `
-                                    <div style="margin: 5px 0; padding: 5px; background: rgba(0,255,0,0.1); border-left: 3px solid #0f0;">
-                                        <div style="color: #0f0; font-weight: bold;">${idx + 1}. ${impact.event_id || 'Unknown'}</div>
-                                        <div style="color: #aaa; font-size: 0.85em;">${impact.narrative || impact.explanation || 'No explanation'}</div>
-                                        <div style="color: #888; font-size: 0.75em;">Impact Score: ${(impact.impact_score || 0).toFixed(3)}</div>
-                                    </div>
-                                `;
-                            });
-                        } else {
-                            html += '<div style="color: #888;">No downstream effects found.</div>';
-                        }
-                        resultDiv.innerHTML = html;
-                    }
-                    
-                    // Also trigger main Illumination panel if available
-                    if (window.craIllumination && typeof window.craIllumination.analyzeImpact === 'function') {
-                        await window.craIllumination.analyzeImpact(eventId);
-                    }
-                } catch (err) {
-                    console.error('Error analyzing impact:', err);
-                    if (resultDiv) {
-                        resultDiv.innerHTML = `<div style="color: #f00;">⚠️ Error: ${err.message}</div>`;
-                    }
-                }
-            }
-            
-            // Illumination: Full Explanation
-            async function illuminateExplain(eventId, stepIdx) {
-                eventId = normalizeEventId(eventId);
-                if (!eventId) {
-                    alert('No event ID available for this step');
-                    return;
-                }
-                
-                const resultDiv = document.getElementById(`illumination-result-${stepIdx}`);
-                if (resultDiv) {
-                    resultDiv.style.display = 'block';
-                    resultDiv.innerHTML = '<div style="color: #ff0;">📖 Generating explanation...</div>';
-                }
-                
-                try {
-                    const response = await fetch(`/api/events/${eventId}/explain`);
-                    const data = await response.json();
-                    
-                    if (data.error) {
-                        if (resultDiv) {
-                            resultDiv.innerHTML = `<div style="color: #f00;">⚠️ ${data.error}</div>`;
-                        }
-                        return;
-                    }
-                    
-                    if (resultDiv) {
-                        let html = '<div style="color: #ff0; font-weight: bold; margin-bottom: 5px;">📖 Complete Explanation:</div>';
-                        if (data.explanation) {
-                            html += `<div style="color: #aaa; font-size: 0.85em; line-height: 1.4; margin-bottom: 10px;">${data.explanation}</div>`;
-                        }
-                        if (data.root_causes_summary) {
-                            html += `<div style="color: #0ff; font-size: 0.85em; margin-top: 5px;"><strong>Root Causes:</strong> ${data.root_causes_summary}</div>`;
-                        }
-                        if (data.impact_summary) {
-                            html += `<div style="color: #0f0; font-size: 0.85em; margin-top: 5px;"><strong>Impact:</strong> ${data.impact_summary}</div>`;
-                        }
-                        resultDiv.innerHTML = html;
-                    }
-                    
-                    // Also trigger main Illumination panel if available
-                    if (window.craIllumination && typeof window.craIllumination.explainEvent === 'function') {
-                        await window.craIllumination.explainEvent(eventId);
-                    }
-                } catch (err) {
-                    console.error('Error explaining event:', err);
-                    if (resultDiv) {
-                        resultDiv.innerHTML = `<div style="color: #f00;">⚠️ Error: ${err.message}</div>`;
-                    }
-                }
-            }
-
             // Load Ollama configuration on page load
             function loadOllamaConfig() {
                 fetch('/api/ollama/config')

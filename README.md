@@ -59,11 +59,15 @@ python causation_web_ui.py
 **📚 [DOCUMENTATION_HUB.md](./DOCUMENTATION_HUB.md)** - Central documentation hub with links to all guides
 
 Recent updates:
+- 🧠 **Dynamic Multi-Dimensional Linguistic Awareness**: Context-aware word association framework with 14-dimensional situational assessment
+- 🧠 **Language Teacher System**: Three-phase architecture (hardcoded → semantic embeddings → knowledge web)
+- 🧠 **Linguistic Knowledge Web**: Comprehensive semantic network with 100+ concepts and relationships
 - 🦋 **Butterfly Chat Debug Panel**: Comprehensive debug/analysis panel with step-by-step logging, causation trail, and error detection
 - 🦋 **Illumination Engine Integration**: Direct linking between chat interactions and deep causal analysis
 - 🦋 **Learning from Interactions**: Organisms learn from every chat interaction with automatic experience storage
 - 🦋 **Language Visualization**: Complete language system representation in graph legend with distinct icons and link colors
 - 🦋 **Vocabulary Learning**: Automatic vocabulary growth from user messages when responses are empty
+- 🤖 **CRA Integration**: Complete knowledge and control over all language system settings
 - 🐛 **Bug Fixes**: Event ID collision, division by zero errors, token ID clamping, empty response handling
 - Visualization filters: component deselection now correctly excludes nodes before first render
 - Graph view auto-fit after filtering to keep remaining nodes visible
@@ -106,10 +110,26 @@ A multi-layered artificial life simulation system that creates evolving populati
   - Token-based communication between organisms
   - VP-integrated language generation (violation pressure affects communication)
   - Curriculum learning based on VP stability
+  - **🧠 Dynamic Multi-Dimensional Linguistic Awareness**: ⭐ NEW - Context-aware word association framework
+    - 14-dimensional situational assessment (action, fitness, resources, connections, positional, density, VP, coherence, evolution, phase, health, breath, success, age)
+    - Dynamic word scoring across dimensions (0.0-1.0)
+    - Full 18-feature state vector integration
+    - Network and breath state integration
+    - 40+ new words covering system dynamics, spatial concepts, health states
+  - **Language Teacher System**: Three-phase architecture (hardcoded → semantic embeddings → knowledge web)
+    - Phase 1: Behavior-based word mapping (fallback)
+    - Phase 2: Learned semantic embeddings from organism experiences
+    - Phase 3: Linguistic Knowledge Web for situational awareness and associative complexity
+  - **Linguistic Knowledge Web**: Comprehensive semantic network
+    - 100+ linguistic concepts organized by semantic frames
+    - Semantic relationships (synonym, antonym, causes, enables, etc.)
+    - Situational contexts for context-dependent word selection
   - **Butterfly Chat**: Direct chat interface with organism network
     - 5 routing strategies: All, Random, Fittest, Connected, By Word
     - Real-time language evolution observation
     - Confidence scoring and response aggregation
+    - Debug panel with step-by-step logging, causation trail, and error analysis
+    - Learning integration: chat interactions stored as learning experiences
 - **🔬 ML Analysis System**: Scikit-learn population analytics
   - HDBSCAN/KMeans clustering (behavioral phenotype detection)
   - Isolation Forest anomaly detection

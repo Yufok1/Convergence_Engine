@@ -224,6 +224,98 @@ Config Paths:
 - /scikit/concept_tracking/enabled, persistence_threshold (3), stale_threshold (10.0) ⭐ NEW
 
 ---
+3b. Language System Audit (Quick Win #8) ⭐ NEW
+
+Status: SUCCESS / FAILED / PARTIAL
+- Language model enabled, vocabulary initialized, language teacher active
+- Organisms receiving words, generating tokens, communicating
+
+Language Model:
+- enabled: true/false (master toggle)
+- vocabulary.max_size: 256-4096 (default: 1024)
+- vocabulary.current_size: actual word count
+- sequence.max_length: 16-512 (default: 128)
+- sequence.context_window: 8-256 (default: 32)
+- attention.enabled: true/false
+- attention.num_heads: 1-8 (default: 4)
+- generation.temperature: 0.1-2.0 (default: 1.0)
+- generation.vp_gate_threshold: 0.0-1.0 (default: 0.5)
+
+Language Teacher (Three-Phase Architecture):
+- teacher.enabled: true/false
+- teacher.use_semantic_embeddings: true/false (Phase 2 - learned associations)
+- teacher.use_knowledge_web: true/false (Phase 3 - CRITICAL for situational awareness)
+- teacher.embedding_dim: 16-256 (default: 64)
+- teacher.vocab_size: 256-4096 (default: 1000)
+- teacher.min_experiences: 50-500 (default: 100) - experiences before training
+- teacher.training_frequency: 1-50 (default: 10) - train every N generations
+- teacher.min_confidence: 0.0-1.0 (default: 0.3) - confidence threshold for learned embeddings
+- teacher.teaching_frequency: 1-10 (default: 1) - teach organisms every N generations
+- teacher.min_action_history: 1-20 (default: 3) - minimum actions before teaching
+- learning_confidence: 0.0-1.0 (tracks transition from hardcoded to learned)
+- experience_buffer: size, fill rate, readiness for training
+
+Linguistic Knowledge Web (Multi-Dimensional Awareness):
+- knowledge_web.enabled: true/false (CRITICAL for 14-dimensional assessment)
+- knowledge_web.max_concepts: 100-1000 (default: 500)
+- concepts: count, semantic frames (action, state, quality, relationship, temporal, spatial, meta, system)
+- relationships: count, types (synonym, antonym, causes, enables, similar_to, etc.)
+- situational_contexts: count, coverage
+
+14-Dimensional Assessment:
+- Action-Based: words from organism actions (move, cooperate, compete, etc.)
+- Fitness-Based: words from organism vitality (thrive, struggle, stable)
+- Resource-Based: words from material context (rich, poor, abundant)
+- Connection-Based: words from social/network context (social, isolated, connected)
+- Positional Awareness: words from spatial context (center, edge, near, far, here, there)
+- Local Density: words from environmental context (crowded, dense, sparse)
+- Violation Pressure: words from system stability (pressure, unstable, crisis, calm)
+- Network Coherence: words from system integration (connected, united, coherent, fragmented)
+- Evolution Pressure: words from adaptation context (adapt, evolve, change, persist)
+- Phase Mismatch: words from synchronization (mismatch, desynchronized)
+- System Health: words from ecosystem wellness (healthy, thriving, sick, declining)
+- Breath Phase: words from temporal/rhythmic context (expand, consolidate, precise, discover)
+- Action Success: words from behavioral feedback (success, effective, failure)
+- Generation Age: words from temporal/evolutionary context (mature, experienced, young, new)
+
+Dynamic Word Scoring:
+- Words scored across dimensions (0.0-1.0)
+- Top 15 words selected (score > 0.3)
+- Semantic expansion: high-scoring words expand through relationships
+- Prioritization: sorted by aggregated score
+
+Events:
+- vocabulary_growth: count/frequency/new_words/vocab_size
+- organism_communication: count/frequency/token_count/word_count
+- butterfly_chat_message: count/frequency/user_message/routing_strategy
+- butterfly_chat_response: count/frequency/organism_id/response_text/confidence
+- Event emission: wired, appearing in graph
+- Component filter: Language checkbox works
+
+Butterfly Chat:
+- Debug panel: comprehensive logging, causation trail, error analysis (1/3 of chat window)
+- Learning integration: chat interactions stored as learning experiences
+- Routing strategies: all, random, fittest, connected, by_word
+- Response aggregation: weighted_by_fitness_confidence
+- Illumination integration: causation trail linked to Illumination Engine
+
+Visualization:
+- Component color: Teal (#00BCD4) configurable via componentColor_language
+- Butterfly Chat color: Light Green (#8BC34A) configurable via componentColor_butterfly_chat
+- Link color: Purple (#9B59B6) configurable via linkColor_language and linkColor_linguistic
+- Node shapes: Circle (vocabulary_growth, butterfly_chat), Wye (organism_communication)
+- Linguistic edges: Dashed purple lines connecting organisms that share words
+- Filter: language checkbox works
+
+Config Paths:
+- /neural/language_model/enabled (master toggle)
+- /neural/language_model/teacher/enabled, use_semantic_embeddings, use_knowledge_web
+- /neural/language_model/teacher/embedding_dim (16-256), vocab_size (256-4096)
+- /neural/language_model/teacher/min_experiences (50-500), training_frequency (1-50)
+- /neural/language_model/teacher/min_confidence (0.0-1.0), teaching_frequency (1-10)
+- /neural/language_model/knowledge_web/enabled, max_concepts (100-1000)
+
+---
 4. Meta-Cognitive Self-Tuning System Audit
 
 Status: SUCCESS / FAILED / PARTIAL
@@ -615,6 +707,11 @@ Health Flow:
 Network metrics + ML metrics + Neural metrics + VP → HealthMonitor → 5 components →
 weighted average → health score → state classification → events → neural input (feature 18)
 
+Language Flow:
+Organism state (18 features) + network state + breath state → Linguistic Knowledge Web →
+14-dimensional assessment → dynamic word scoring → top 15 words → Language Teacher →
+word assignment → vocabulary growth → organism communication → events → graph
+
 Meta-Cognitive Flow:
 Frame count → (if frame % tuning_interval == 0) → performance analysis → safe parameter
 selection → action proposal → execution → success tracking → panel display
@@ -629,8 +726,13 @@ viz_data dict → UnifiedVisualization.update_frame() → visualization_viewer.r
 → 5 panels + stats box
 
 Causation Flow:
-Events (neural, ML, concept, health, VP) → CausationExplorer → detection → link generation →
+Events (neural, ML, concept, health, VP, language) → CausationExplorer → detection → link generation →
 graph
+
+Language Flow:
+Organism state (18 features) + network state + breath state → Linguistic Knowledge Web →
+14-dimensional assessment → dynamic word scoring → top 15 words → Language Teacher →
+word assignment → vocabulary growth → organism communication → events → graph
 
 ---
 11. Performance
@@ -649,6 +751,8 @@ Throughput:
 - ML analyses/generation
 - Concept evaluations/cycle
 - Health updates/cycle
+- Language word assignments/generation
+- Vocabulary growth rate
 - Causation links/sec
 - Panel updates/frame
 
@@ -663,6 +767,7 @@ Error Rates:
 - API calls, vision, config writes
 - Neural training, ML analysis
 - Concept tracking, health calculation
+- Language word assignment, vocabulary growth
 - Causation links, tuner actions
 - Panel rendering
 
@@ -680,6 +785,12 @@ Health Monitor:
 - Component calculation time (5 components)
 - Event emission time
 - History update time
+
+Language System:
+- Knowledge web assessment time (14 dimensions)
+- Word scoring time
+- Language teacher assignment time
+- Vocabulary growth processing time
 
 Meta-Cognitive:
 - Tuning interval adherence
@@ -1147,10 +1258,37 @@ Key Updates for 2025 (Quick Wins Edition):
 - Quick Win #7: Research Notepad - Scientific journal with 8 entry types (observe, hypothesize,
   causation, analyze, conclude, question, todo, auto), [[NOTEPAD: {...}]] marker format,
   persistent storage, read/search/summary ⭐ NEW
+- Quick Win #8: Dynamic Multi-Dimensional Linguistic Awareness - 14-dimensional situational
+  assessment, dynamic word scoring, linguistic knowledge web, language teacher (three-phase),
+  context-aware word associations, expanded vocabulary (40+ words) ⭐ NEW
+
+Quick Win #8: Dynamic Multi-Dimensional Linguistic Awareness ⭐ NEW
+- Status: ENABLED / DISABLED
+- Language Model: neural.language_model.enabled
+- Language Teacher: Three-phase architecture (hardcoded → semantic embeddings → knowledge web)
+  - teacher.enabled: true/false
+  - teacher.use_semantic_embeddings: true/false (Phase 2)
+  - teacher.use_knowledge_web: true/false (Phase 3 - CRITICAL for situational awareness)
+  - teacher.embedding_dim: 16-256 (default: 64)
+  - teacher.min_confidence: 0.0-1.0 (default: 0.3) - confidence threshold for using learned embeddings
+  - teacher.training_frequency: 1-50 (default: 10) - train semantic teacher every N generations
+- Linguistic Knowledge Web: Comprehensive semantic network
+  - knowledge_web.enabled: true/false (CRITICAL for multi-dimensional assessment)
+  - knowledge_web.max_concepts: 100-1000 (default: 500)
+  - 100+ concepts organized by semantic frames
+  - Semantic relationships (synonym, antonym, causes, enables, etc.)
+- 14-Dimensional Assessment: Evaluates simultaneously across action, fitness, resources, connections, positional, density, VP, coherence, evolution, phase, health, breath, success, age
+- Dynamic Word Scoring: Words scored across dimensions (0.0-1.0), prioritized by contextual relevance
+- Full State Integration: Uses all 18 state features plus network and breath state
+- Expanded Vocabulary: 40+ new words covering system dynamics, spatial concepts, health states
+- Events: vocabulary_growth, organism_communication, butterfly_chat_message/response
+- Visualization: Language nodes (Circle/Wye shapes), linguistic edges (Purple #9B59B6)
+- Verification: Organisms receive contextually appropriate words based on comprehensive situational assessment
 
 - Section 6: Health Monitor System
 - Section 15: Illumination Engine System (NEW)
 - Section 16: Research Notepad System (NEW)
+- Section 3b: Language System Audit (NEW - Quick Win #8)
 - Neural field names: organisms_tracked (not organisms_trained)
 - Neural input_dim: 18 (was 12)
 - batch_size: 96 (check config.json neural.training.batch_size for actual value)

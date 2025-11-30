@@ -75,6 +75,9 @@ class ContextMemory:
         self.word_frequencies: Dict[str, int] = defaultdict(int)  # word usage counts
         self.node_word_associations: Dict[int, Set[str]] = defaultdict(set)  # organism_id -> words
         
+        # Event emitter for word assignment events
+        self.event_emitter: Optional[Any] = None
+        
         # Language model integration
         self.vocabulary: Optional['LanguageVocabulary'] = None
         self.word_embedding: Optional['nn.Embedding'] = None
@@ -298,11 +301,11 @@ class ContextMemory:
             organism_id: ID of the organism node
             generation: Optional generation when this link was made
         """
-        print(f"[CONTEXT_MEMORY_DEBUG] link_word_to_node called: word='{word}', organism_id={organism_id}")
         # Update language anchors
         self.language_anchors[word].add(organism_id)
 
         # Update node associations
+        was_new_word = word not in self.node_word_associations[organism_id]
         self.node_word_associations[organism_id].add(word)
 
         # Update word frequency
@@ -310,6 +313,33 @@ class ContextMemory:
 
         # Create/update embedding for this node
         self._update_node_embedding(organism_id, word)
+        
+        # Emit word_assignment event if this is a new word for this organism
+        if was_new_word:
+            if self.event_emitter:
+                try:
+                    import time
+                    from causation_explorer import Event
+                    event = Event(
+                        timestamp=time.time(),
+                        component='language',
+                        event_type='word_assignment',
+                        data={
+                            'word': word,
+                            'organism_id': organism_id,
+                            'generation': generation,
+                            'total_words_for_organism': len(self.node_word_associations[organism_id]),
+                            'total_organisms_with_word': len(self.language_anchors[word]),
+                            'word_frequency': self.word_frequencies[word]
+                        }
+                    )
+                    self.event_emitter(event)
+                except (ImportError, Exception) as e:
+                    # Event emission failed - but don't break word assignment
+                    import logging
+                    logging.getLogger(__name__).warning(f"word_assignment event emission failed: {e}")
+            # If event_emitter is None, word is still assigned but no event emitted
+            # This is OK - events will start appearing once emitter is wired
 
         # Persist changes periodically
         if len(self.language_anchors) % 10 == 0:  # Save every 10 links

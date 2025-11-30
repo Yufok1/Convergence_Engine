@@ -70,16 +70,33 @@ pip install pywin32
 
 - **[docs/LANGUAGE_SYSTEM_INTEGRATION_ANALYSIS.md](./docs/LANGUAGE_SYSTEM_INTEGRATION_ANALYSIS.md)** - Complete analysis of language system implementation
 - **[BUTTERFLY_CHAT_COMPREHENSIVE_ANALYSIS.md](./BUTTERFLY_CHAT_COMPREHENSIVE_ANALYSIS.md)** - Complete Butterfly Chat system analysis
+- **[DYNAMIC_LINGUISTIC_AWARENESS_REDESIGN.md](./DYNAMIC_LINGUISTIC_AWARENESS_REDESIGN.md)** - Dynamic Multi-Dimensional Linguistic Awareness System guide ⭐ NEW
+- **[LINGUISTIC_KNOWLEDGE_WEB_GUIDE.md](./LINGUISTIC_KNOWLEDGE_WEB_GUIDE.md)** - Linguistic Knowledge Web architecture and concepts ⭐ NEW
+- **[CRA_LINGUISTIC_AWARENESS_INTEGRATION.md](./CRA_LINGUISTIC_AWARENESS_INTEGRATION.md)** - CRA integration with linguistic awareness system ⭐ NEW
 - **Language Model Features:**
   - Multi-head self-attention with VP-aware temperature scaling
   - Dual-head architecture (action + language)
   - Dynamic vocabulary learning from organism interactions and user messages
   - Token-based communication between organisms
+  - **🧠 Dynamic Multi-Dimensional Linguistic Awareness**: ⭐ NEW - Context-aware word association framework
+    - 14-dimensional situational assessment (action, fitness, resources, connections, positional, density, VP, coherence, evolution, phase, health, breath, success, age)
+    - Dynamic word scoring across dimensions (0.0-1.0)
+    - Full 18-feature state vector integration
+    - 40+ new words covering system dynamics, spatial concepts, health states
+  - **Language Teacher System**: ⭐ NEW - Three-phase architecture
+    - Phase 1: Behavior-based word mapping (hardcoded fallback)
+    - Phase 2: Learned semantic embeddings from organism experiences
+    - Phase 3: Linguistic Knowledge Web for situational awareness
+  - **Linguistic Knowledge Web**: ⭐ NEW - Comprehensive semantic network
+    - 100+ linguistic concepts organized by semantic frames
+    - Semantic relationships (synonym, antonym, causes, enables, etc.)
+    - Situational contexts for context-dependent word selection
   - **Butterfly Chat Interface**: Direct chat with organism network through web UI
   - **Debug Panel**: Comprehensive logging, causation trail analysis, and error detection
   - **Learning System**: Organisms learn from every chat interaction with reward-based experience storage
   - **Illumination Integration**: Direct linking between chat interactions and deep causal analysis
   - **Language Visualization**: Complete representation in graph with distinct icons and link colors
+  - **CRA Integration**: Complete knowledge and control over all language system settings
   - **Status:** ✅ Fully implemented and operational
 
 ### Explorer (Central Body / Breath Engine)

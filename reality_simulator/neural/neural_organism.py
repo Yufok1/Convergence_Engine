@@ -761,6 +761,24 @@ class NeuralOrganism(Organism):
                     # Sample next token, ensuring it's within vocabulary range
                     next_token = torch.multinomial(probs, 1).item()
                     next_token = min(next_token, vocab_size - 1)  # Clamp to valid range
+                    
+                    # Ensure token maps to an actual word (not UNK)
+                    # If token is UNK, try to find a valid word token nearby
+                    word = vocab.get_word(next_token)
+                    if word == '<UNK>' and vocab_size > len(SPECIAL_TOKENS):
+                        # Try nearby tokens to find a valid word
+                        non_special_size = vocab_size - len(SPECIAL_TOKENS)
+                        for offset in range(1, min(10, non_special_size)):
+                            # Try both directions
+                            for direction in [-1, 1]:
+                                candidate = next_token + (offset * direction)
+                                if candidate >= len(SPECIAL_TOKENS) and candidate < vocab_size:
+                                    candidate_word = vocab.get_word(candidate)
+                                    if candidate_word and candidate_word != '<UNK>':
+                                        next_token = candidate
+                                        break
+                            if vocab.get_word(next_token) != '<UNK>':
+                                break
                 else:
                     # No language head, use action as pseudo-token
                     # Map action to a valid vocabulary token (use modulo to keep in range)
@@ -769,8 +787,23 @@ class NeuralOrganism(Organism):
                     # Map action to vocabulary range (skip special tokens)
                     # Prevent division by zero if vocab only has special tokens
                     non_special_size = max(1, vocab_size - len(SPECIAL_TOKENS))
-                    next_token = (action_token % non_special_size) + len(SPECIAL_TOKENS)
-                    next_token = min(next_token, vocab_size - 1)
+                    if non_special_size > 0:
+                        # Map to valid word token range (after special tokens)
+                        next_token = (action_token % non_special_size) + len(SPECIAL_TOKENS)
+                        next_token = min(next_token, vocab_size - 1)
+                        # Ensure token maps to an actual word (not just any ID)
+                        # Try to find a valid word token by checking if it exists in vocabulary
+                        max_attempts = min(10, non_special_size)
+                        for attempt in range(max_attempts):
+                            if next_token < vocab_size:
+                                word = vocab.get_word(next_token)
+                                if word and word != '<UNK>':
+                                    break  # Found a valid word
+                            # Try next token
+                            next_token = ((next_token - len(SPECIAL_TOKENS) + 1) % non_special_size) + len(SPECIAL_TOKENS)
+                    else:
+                        # Vocabulary only has special tokens, use END to stop generation
+                        next_token = vocab.get_id('<END>')
                 
                 generated.append(next_token)
                 

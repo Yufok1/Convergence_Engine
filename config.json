@@ -7,7 +7,7 @@
     "performance_tracking_precision": 0.0001
   },
   "causation_detection": {
-    "correlation_threshold": 0.5,
+    "correlation_threshold": 0.3,
     "direct_causation_time_window": 2,
     "enable_bidirectional_causations": true,
     "enable_language_causations": true,

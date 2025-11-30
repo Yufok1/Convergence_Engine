@@ -1406,6 +1406,7 @@ class RealitySimulator:
             
             # Wire up event emitters for neural organisms BEFORE they make decisions
             # This ensures neural_decision events are captured during decide_action()
+            # CRITICAL: Wire event_emitter BEFORE update_network() so word_assignment events are emitted
             if self.event_emitter:
                 for org in network.organisms.values():
                     if hasattr(org, 'event_emitter') and org.event_emitter is None:
@@ -1417,7 +1418,23 @@ class RealitySimulator:
                 if hasattr(network, 'configure_health_monitor') and network.health_monitor is None:
                     health_config = self.config.get('health_monitor', {'enabled': True})
                     network.configure_health_monitor(health_config, event_emitter=self.event_emitter)
+                # CRITICAL: Wire context_memory event_emitter BEFORE update_network() calls teach_network()
+                # This ensures word_assignment events are emitted when words are assigned
+                if hasattr(network, 'context_memory') and network.context_memory:
+                    # Use self.event_emitter if available, otherwise keep existing one (might be set by unified_entry.py)
+                    if self.event_emitter:
+                        network.context_memory.event_emitter = self.event_emitter
+                    # If event_emitter is None but context_memory already has one, keep it
+                    # (This handles the case where unified_entry.py wired it directly)
+                    elif network.context_memory.event_emitter is None:
+                        # Fallback: try to get from unified_entry if available
+                        # This is a safety net - unified_entry.py should have wired it already
+                        pass
+                    if hasattr(network.context_memory, 'vocabulary') and network.context_memory.vocabulary:
+                        if self.event_emitter:
+                            network.context_memory.vocabulary.event_emitter = self.event_emitter
             
+            # NOW update_network() - word assignments will emit events because event_emitter is wired
             network.update_network()
 
             # Add new organisms from evolution

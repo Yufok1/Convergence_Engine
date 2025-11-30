@@ -624,9 +624,34 @@ class CausationExplorer:
             is_historical: If True, event is from historical logs (for optimization)
         """
         with self.graph_lock:
-            self.events[event.event_id] = event
-            self.events_by_component[event.component].append(event.event_id)
-            self.events_by_type[event.event_type].append(event.event_id)
+            event_id = event.event_id
+            # Store event in main dictionary
+            self.events[event_id] = event
+            
+            # CRITICAL VERIFICATION: Check immediately after assignment
+            if event_id not in self.events:
+                logger.error(f"[ADD_EVENT] CRITICAL: Event {event_id} missing immediately after assignment! This should never happen.")
+                import traceback
+                logger.error(f"[ADD_EVENT] Traceback: {traceback.format_exc()}")
+            
+            # Index by component
+            self.events_by_component[event.component].append(event_id)
+            
+            # Index by type
+            self.events_by_type[event.event_type].append(event_id)
+            
+            # Add event as node to causation graph
+            if event_id not in self.causation_graph:
+                self.causation_graph.add_node(event_id, **event.to_dict())
+            
+            # Verify storage (debug logging for language events)
+            if event.event_type in ['butterfly_chat_message', 'butterfly_chat_response', 'vocabulary_growth', 'organism_communication', 'word_assignment']:
+                logger.info(f"[EVENT_STORAGE] ✅ Stored language event: {event_id} (type={event.event_type}, component={event.component}) in events dict (total: {len(self.events)})")
+                # Verify it's actually in the dict
+                if event_id not in self.events:
+                    logger.error(f"[EVENT_STORAGE] ❌ CRITICAL: Event {event_id} was not found in self.events immediately after storage!")
+                else:
+                    logger.info(f"[EVENT_STORAGE] ✅ Verified: Event {event_id} is present in self.events (can be looked up)")
             
             # Update metric history
             for metric, value in event.data.items():
@@ -988,6 +1013,77 @@ class CausationExplorer:
                     metrics_involved=list(set(prev_event.data.keys()) | set(new_event.data.keys()))
                 )
             
+            # Special handling for word_assignment events - create linguistic connections
+            if prev_event.event_type == 'word_assignment' and new_event.event_type == 'word_assignment':
+                prev_word = prev_event.data.get('word')
+                new_word = new_event.data.get('word')
+                prev_org = prev_event.data.get('organism_id')
+                new_org = new_event.data.get('organism_id')
+                
+                # Same word assigned to different organisms = linguistic connection
+                if prev_word == new_word and prev_org != new_org:
+                    return CausationLink(
+                        from_event=prev_event.event_id,
+                        to_event=new_event.event_id,
+                        causation_type='language',
+                        strength=0.95,  # Very strong - shared vocabulary
+                        explanation=f"Organisms share word '{prev_word}' (linguistic connection)",
+                        metrics_involved=['word', 'organism_id']
+                    )
+                # Word assignments to same organism = vocabulary building
+                elif prev_org == new_org:
+                    return CausationLink(
+                        from_event=prev_event.event_id,
+                        to_event=new_event.event_id,
+                        causation_type='language',
+                        strength=0.8,
+                        explanation=f"Organism {prev_org} learns multiple words",
+                        metrics_involved=['word', 'organism_id']
+                    )
+            
+            # Vocabulary growth → word assignment connections
+            if prev_event.event_type == 'vocabulary_growth' and new_event.event_type == 'word_assignment':
+                prev_word = prev_event.data.get('word')
+                new_word = new_event.data.get('word')
+                if prev_word == new_word:
+                    return CausationLink(
+                        from_event=prev_event.event_id,
+                        to_event=new_event.event_id,
+                        causation_type='language',
+                        strength=0.9,
+                        explanation=f"Word '{prev_word}' added to vocabulary, then assigned to organism",
+                        metrics_involved=['word', 'vocab_size']
+                    )
+            
+            # Word assignment → vocabulary growth (if word is new)
+            if prev_event.event_type == 'word_assignment' and new_event.event_type == 'vocabulary_growth':
+                prev_word = prev_event.data.get('word')
+                new_word = new_event.data.get('word')
+                if prev_word == new_word:
+                    return CausationLink(
+                        from_event=prev_event.event_id,
+                        to_event=new_event.event_id,
+                        causation_type='language',
+                        strength=0.85,
+                        explanation=f"Word assignment triggers vocabulary growth",
+                        metrics_involved=['word', 'vocab_size']
+                    )
+            
+            # Word assignment → organism communication (organisms with shared words communicate)
+            if prev_event.event_type == 'word_assignment' and new_event.event_type == 'organism_communication':
+                prev_word = prev_event.data.get('word')
+                prev_org = prev_event.data.get('organism_id')
+                comm_orgs = {new_event.data.get('organism_a_id'), new_event.data.get('organism_b_id')}
+                if prev_org in comm_orgs:
+                    return CausationLink(
+                        from_event=prev_event.event_id,
+                        to_event=new_event.event_id,
+                        causation_type='language',
+                        strength=0.8,
+                        explanation=f"Word assignment enables organism communication",
+                        metrics_involved=['word', 'tokens_exchanged']
+                    )
+            
             # Special handling for language events
             if prev_event.component in ['language', 'butterfly_chat'] or new_event.component in ['language', 'butterfly_chat']:
                 # Check master toggle first
@@ -1001,12 +1097,22 @@ class CausationExplorer:
                 
                 # Language links get specific explanations based on event type
                 explanation = direct_causations.get(key, 'Language event affects system')
-                if prev_event.event_type == 'vocabulary_growth':
+                if prev_event.event_type == 'word_assignment':
+                    word = prev_event.data.get('word', 'unknown')
+                    org_id = prev_event.data.get('organism_id', 'unknown')
+                    explanation = f"Word '{word}' assigned to organism {org_id}"
+                elif new_event.event_type == 'word_assignment':
+                    word = new_event.data.get('word', 'unknown')
+                    org_id = new_event.data.get('organism_id', 'unknown')
+                    explanation = f"System state triggers word assignment: '{word}' to organism {org_id}"
+                elif prev_event.event_type == 'vocabulary_growth':
                     vocab_size = prev_event.data.get('vocab_size', 0)
-                    explanation = f'Vocabulary growth ({vocab_size} words) enables communication'
+                    word = prev_event.data.get('word', 'unknown')
+                    explanation = f"Vocabulary growth: word '{word}' added (vocab size: {vocab_size})"
                 elif new_event.event_type == 'vocabulary_growth':
                     vocab_size = new_event.data.get('vocab_size', 0)
-                    explanation = f'System state triggers vocabulary growth ({vocab_size} words)'
+                    word = new_event.data.get('word', 'unknown')
+                    explanation = f"System state triggers vocabulary growth: '{word}' added (vocab size: {vocab_size})"
                 elif prev_event.event_type == 'organism_communication':
                     num_organisms = prev_event.data.get('num_organisms', 0)
                     explanation = f'Organism communication ({num_organisms} organisms) affects network'
@@ -1044,6 +1150,16 @@ class CausationExplorer:
     
     def _add_causation_link(self, link: CausationLink):
         """Add a causation link to the graph"""
+        # Ensure both nodes exist in the graph
+        if link.from_event not in self.causation_graph:
+            from_event = self.events.get(link.from_event)
+            if from_event:
+                self.causation_graph.add_node(link.from_event, **from_event.to_dict())
+        if link.to_event not in self.causation_graph:
+            to_event = self.events.get(link.to_event)
+            if to_event:
+                self.causation_graph.add_node(link.to_event, **to_event.to_dict())
+        
         if not self.causation_graph.has_edge(link.from_event, link.to_event):
             self.causation_graph.add_edge(
                 link.from_event,
@@ -1163,10 +1279,40 @@ class CausationExplorer:
     
     def get_event_summary(self, event_id: str) -> Dict[str, Any]:
         """Get comprehensive summary of an event"""
-        if event_id not in self.events:
-            return {}
-        
-        event = self.events[event_id]
+        # CRITICAL: Use lock to ensure thread-safe access
+        with self.graph_lock:
+            # Try exact match first
+            if event_id not in self.events:
+                # Try normalizing event ID (handle variations like evt_xxx vs evt-xxx)
+                normalized_id = event_id
+                if event_id.startswith('evt') and not event_id.startswith('evt_'):
+                    normalized_id = 'evt_' + event_id[3:] if len(event_id) > 3 else event_id
+                
+                if normalized_id not in self.events:
+                    # Log available event IDs for debugging (check for similar IDs)
+                    available_ids = list(self.events.keys())
+                    similar_ids = [eid for eid in available_ids if event_id in eid or eid in event_id][:10]
+                    recent_ids = available_ids[-20:] if len(available_ids) > 20 else available_ids
+                    
+                    logger.warning(f"[EVENT_LOOKUP] ❌ Event not found in get_event_summary: {event_id} (normalized: {normalized_id})")
+                    logger.warning(f"[EVENT_LOOKUP] Total events in dict: {len(self.events)}")
+                    logger.warning(f"[EVENT_LOOKUP] Recent event IDs (last 20): {recent_ids}")
+                    if similar_ids:
+                        logger.warning(f"[EVENT_LOOKUP] Similar IDs found: {similar_ids}")
+                    
+                    return {
+                        'error': f'Event not found: {event_id}',
+                        'normalized_id': normalized_id,
+                        'available_event_count': len(self.events),
+                        'recent_event_ids': recent_ids,
+                        'similar_event_ids': similar_ids
+                    }
+                
+                event_id = normalized_id
+                logger.debug(f"[EVENT_LOOKUP] Event ID normalized: {normalized_id} -> {event_id}")
+            
+            event = self.events[event_id]
+            logger.debug(f"[EVENT_LOOKUP] ✅ Found event: {event_id} (type={event.event_type}, component={event.component})")
         
         # Get causation info
         predecessors = list(self.causation_graph.predecessors(event_id))
@@ -1251,39 +1397,67 @@ class CausationExplorer:
         
         This is the "why did this REALLY happen?" query.
         """
-        if event_id not in self.events:
-            return {'error': 'Event not found', 'root_causes': []}
-        
-        root_causes = []
-        visited = set()
-        paths_to_roots = {}  # root_id -> list of paths to it
-        
-        def trace_to_roots(current_id: str, path: List[str], depth: int):
-            if depth > max_depth or current_id in visited:
-                return
+        # CRITICAL: Use lock to ensure thread-safe access
+        with self.graph_lock:
+            # Try exact match first
+            if event_id not in self.events:
+                # Try normalizing event ID (handle variations like evt_xxx vs evt-xxx)
+                normalized_id = event_id
+                if event_id.startswith('evt') and not event_id.startswith('evt_'):
+                    normalized_id = 'evt_' + event_id[3:] if len(event_id) > 3 else event_id
+                
+                if normalized_id not in self.events:
+                    # Log available event IDs for debugging
+                    available_ids = list(self.events.keys())
+                    recent_ids = available_ids[-20:] if len(available_ids) > 20 else available_ids
+                    similar_ids = [eid for eid in available_ids if event_id in eid or eid in event_id][:10]
+                    
+                    logger.warning(f"[FIND_ROOT_CAUSES] ❌ Event not found: {event_id} (normalized: {normalized_id})")
+                    logger.warning(f"[FIND_ROOT_CAUSES] Total events: {len(self.events)}, Recent IDs: {recent_ids}")
+                    if similar_ids:
+                        logger.warning(f"[FIND_ROOT_CAUSES] Similar IDs: {similar_ids}")
+                    
+                    return {
+                        'error': f'Event not found: {event_id}',
+                        'normalized_id': normalized_id,
+                        'root_causes': [],
+                        'available_event_count': len(self.events),
+                        'recent_event_ids': recent_ids,
+                        'similar_event_ids': similar_ids
+                    }
+                
+                event_id = normalized_id
             
-            visited.add(current_id)
-            path = path + [current_id]
+            root_causes = []
+            visited = set()
+            paths_to_roots = {}  # root_id -> list of paths to it
             
-            predecessors = list(self.causation_graph.predecessors(current_id))
+            def trace_to_roots(current_id: str, path: List[str], depth: int):
+                if depth > max_depth or current_id in visited:
+                    return
+                
+                visited.add(current_id)
+                path = path + [current_id]
+                
+                predecessors = list(self.causation_graph.predecessors(current_id))
+                
+                if not predecessors:
+                    # Found a root cause!
+                    if current_id not in paths_to_roots:
+                        paths_to_roots[current_id] = []
+                    paths_to_roots[current_id].append(path)
+                else:
+                    for pred_id in predecessors:
+                        trace_to_roots(pred_id, path, depth + 1)
             
-            if not predecessors:
-                # Found a root cause!
-                if current_id not in paths_to_roots:
-                    paths_to_roots[current_id] = []
-                paths_to_roots[current_id].append(path)
-            else:
-                for pred_id in predecessors:
-                    trace_to_roots(pred_id, path, depth + 1)
-        
-        trace_to_roots(event_id, [], 0)
-        
-        # Build rich root cause analysis
-        for root_id, paths in paths_to_roots.items():
-            if root_id not in self.events:
-                continue
+            trace_to_roots(event_id, [], 0)
             
-            root_event = self.events[root_id]
+            # Build rich root cause analysis
+            for root_id, paths in paths_to_roots.items():
+                if root_id not in self.events:
+                    continue
+                
+                root_event = self.events[root_id]
             shortest_path = min(paths, key=len)
             
             # Calculate total causal strength along path
@@ -1322,15 +1496,15 @@ class CausationExplorer:
                 'narrative': narrative
             })
         
-        # Sort by relevance: higher strength and shorter depth = more relevant
-        root_causes.sort(key=lambda x: (x['avg_strength'] * 2 - x['depth'] * 0.1), reverse=True)
-        
-        return {
-            'event': self.events[event_id].to_dict(),
-            'root_causes': root_causes[:10],  # Top 10 root causes
-            'total_roots_found': len(root_causes),
-            'analysis_depth': max_depth
-        }
+            # Sort by relevance: higher strength and shorter depth = more relevant
+            root_causes.sort(key=lambda x: (x['avg_strength'] * 2 - x['depth'] * 0.1), reverse=True)
+            
+            return {
+                'event': self.events[event_id].to_dict(),
+                'root_causes': root_causes[:10],  # Top 10 root causes
+                'total_roots_found': len(root_causes),
+                'analysis_depth': max_depth
+            }
     
     def analyze_impact(self, event_id: str, max_depth: int = 20) -> Dict[str, Any]:
         """
@@ -1341,10 +1515,28 @@ class CausationExplorer:
         
         This is the "what did this set in motion?" query.
         """
+        # Try exact match first
         if event_id not in self.events:
-            return {'error': 'Event not found', 'impacts': []}
-        
-        impacts = []
+            # Try normalizing event ID
+            normalized_id = event_id
+            if event_id.startswith('evt') and not event_id.startswith('evt_'):
+                normalized_id = 'evt_' + event_id[3:] if len(event_id) > 3 else event_id
+            
+            if normalized_id not in self.events:
+                available_ids = list(self.events.keys())[:20]
+                logger.warning(f"[EVENT_LOOKUP] Event not found in analyze_impact: {event_id} (normalized: {normalized_id}). Available events: {len(self.events)} total. Sample IDs: {available_ids}")
+                return {
+                    'error': f'Event not found: {event_id}',
+                    'normalized_id': normalized_id,
+                    'available_event_count': len(self.events),
+                    'sample_event_ids': available_ids,
+                    'impacts': []
+                }
+            
+                event_id = normalized_id
+                logger.debug(f"[EVENT_LOOKUP] Event ID normalized in analyze_impact: {normalized_id} -> {event_id}")
+            
+            impacts = []
         visited = set()
         leaf_effects = {}  # leaf_id -> list of paths to it
         
@@ -1434,14 +1626,14 @@ class CausationExplorer:
             if eid in self.events:
                 affected_by_component[self.events[eid].component] += 1
         
-        return {
-            'source_event': self.events[event_id].to_dict(),
-            'total_affected_events': len(all_affected),
-            'affected_by_component': dict(affected_by_component),
-            'leaf_effects': impacts[:15],  # Top 15 most significant effects
-            'total_leaf_effects': len(impacts),
-            'analysis_depth': max_depth
-        }
+            return {
+                'source_event': self.events[event_id].to_dict(),
+                'total_affected_events': len(all_affected),
+                'affected_by_component': dict(affected_by_component),
+                'leaf_effects': impacts[:15],  # Top 15 most significant effects
+                'total_leaf_effects': len(impacts),
+                'analysis_depth': max_depth
+            }
     
     def _calculate_severity(self, event: Event) -> float:
         """Calculate severity score for an event (0.0-1.0)"""
@@ -1522,59 +1714,86 @@ class CausationExplorer:
         Answer: "Why did this happen and what did it cause?"
         Returns a comprehensive narrative with all context.
         """
-        if event_id not in self.events:
-            return {'error': 'Event not found'}
-        
-        event = self.events[event_id]
-        
-        # Get root causes
-        root_analysis = self.find_root_causes(event_id, max_depth=10)
-        
-        # Get impacts
-        impact_analysis = self.analyze_impact(event_id, max_depth=10)
-        
-        # Get direct predecessors and successors
-        predecessors = list(self.causation_graph.predecessors(event_id))
-        successors = list(self.causation_graph.successors(event_id))
-        
-        # Build rich explanation
-        pred_details = []
-        for pred_id in predecessors[:5]:
-            if pred_id in self.events and self.causation_graph.has_edge(pred_id, event_id):
-                edge = self.causation_graph[pred_id][event_id]
-                pred_event = self.events[pred_id]
-                pred_details.append({
-                    'event': pred_event.to_dict(),
-                    'causation_type': edge.get('causation_type', 'unknown'),
-                    'strength': edge.get('strength', 0.0),
-                    'explanation': edge.get('explanation', ''),
-                    'metric_deltas': self._calculate_metric_deltas(pred_event, event)
-                })
-        
-        succ_details = []
-        for succ_id in successors[:5]:
-            if succ_id in self.events and self.causation_graph.has_edge(event_id, succ_id):
-                edge = self.causation_graph[event_id][succ_id]
-                succ_event = self.events[succ_id]
-                succ_details.append({
-                    'event': succ_event.to_dict(),
-                    'causation_type': edge.get('causation_type', 'unknown'),
-                    'strength': edge.get('strength', 0.0),
-                    'explanation': edge.get('explanation', ''),
-                    'metric_deltas': self._calculate_metric_deltas(event, succ_event)
-                })
-        
-        return {
-            'event': event.to_dict(),
-            'summary': self._generate_event_summary(event, root_analysis, impact_analysis, context_memory=None),
-            'immediate_causes': pred_details,
-            'immediate_effects': succ_details,
-            'root_causes': root_analysis.get('root_causes', [])[:3],
-            'major_impacts': impact_analysis.get('leaf_effects', [])[:3],
-            'total_upstream_events': len(root_analysis.get('root_causes', [])),
-            'total_downstream_events': impact_analysis.get('total_affected_events', 0),
-            'severity': self._calculate_severity(event)
-        }
+        # CRITICAL: Use lock to ensure thread-safe access
+        with self.graph_lock:
+            # Try exact match first
+            if event_id not in self.events:
+                # Try normalizing event ID
+                normalized_id = event_id
+                if event_id.startswith('evt') and not event_id.startswith('evt_'):
+                    normalized_id = 'evt_' + event_id[3:] if len(event_id) > 3 else event_id
+                
+                if normalized_id not in self.events:
+                    available_ids = list(self.events.keys())
+                    recent_ids = available_ids[-20:] if len(available_ids) > 20 else available_ids
+                    similar_ids = [eid for eid in available_ids if event_id in eid or eid in event_id][:10]
+                    
+                    logger.warning(f"[EXPLAIN_EVENT] ❌ Event not found: {event_id} (normalized: {normalized_id})")
+                    logger.warning(f"[EXPLAIN_EVENT] Total events: {len(self.events)}, Recent IDs: {recent_ids}")
+                    if similar_ids:
+                        logger.warning(f"[EXPLAIN_EVENT] Similar IDs: {similar_ids}")
+                    
+                    return {
+                        'error': f'Event not found: {event_id}',
+                        'normalized_id': normalized_id,
+                        'available_event_count': len(self.events),
+                        'recent_event_ids': recent_ids,
+                        'similar_event_ids': similar_ids
+                    }
+                
+                event_id = normalized_id
+                logger.debug(f"[EVENT_LOOKUP] Event ID normalized in explain_event: {normalized_id} -> {event_id}")
+            
+            event = self.events[event_id]
+            
+            # Get root causes
+            root_analysis = self.find_root_causes(event_id, max_depth=10)
+            
+            # Get impacts
+            impact_analysis = self.analyze_impact(event_id, max_depth=10)
+            
+            # Get direct predecessors and successors
+            predecessors = list(self.causation_graph.predecessors(event_id))
+            successors = list(self.causation_graph.successors(event_id))
+            
+            # Build rich explanation
+            pred_details = []
+            for pred_id in predecessors[:5]:
+                if pred_id in self.events and self.causation_graph.has_edge(pred_id, event_id):
+                    edge = self.causation_graph[pred_id][event_id]
+                    pred_event = self.events[pred_id]
+                    pred_details.append({
+                        'event': pred_event.to_dict(),
+                        'causation_type': edge.get('causation_type', 'unknown'),
+                        'strength': edge.get('strength', 0.0),
+                        'explanation': edge.get('explanation', ''),
+                        'metric_deltas': self._calculate_metric_deltas(pred_event, event)
+                    })
+            
+            succ_details = []
+            for succ_id in successors[:5]:
+                if succ_id in self.events and self.causation_graph.has_edge(event_id, succ_id):
+                    edge = self.causation_graph[event_id][succ_id]
+                    succ_event = self.events[succ_id]
+                    succ_details.append({
+                        'event': succ_event.to_dict(),
+                        'causation_type': edge.get('causation_type', 'unknown'),
+                        'strength': edge.get('strength', 0.0),
+                        'explanation': edge.get('explanation', ''),
+                        'metric_deltas': self._calculate_metric_deltas(event, succ_event)
+                    })
+            
+            return {
+                'event': event.to_dict(),
+                'summary': self._generate_event_summary(event, root_analysis, impact_analysis, context_memory=None),
+                'immediate_causes': pred_details,
+                'immediate_effects': succ_details,
+                'root_causes': root_analysis.get('root_causes', [])[:3],
+                'major_impacts': impact_analysis.get('leaf_effects', [])[:3],
+                'total_upstream_events': len(root_analysis.get('root_causes', [])),
+                'total_downstream_events': impact_analysis.get('total_affected_events', 0),
+                'severity': self._calculate_severity(event)
+            }
     
     def _calculate_metric_deltas(self, from_event: Event, to_event: Event) -> Dict[str, Any]:
         """Calculate metric changes between two events"""

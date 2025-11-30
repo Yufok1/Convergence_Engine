@@ -6,6 +6,102 @@
 
 ## [Unreleased] - 2025-12-01
 
+### 🧠 Dynamic Multi-Dimensional Linguistic Awareness System (2025-12-01)
+
+#### Added
+- **Dynamic Multi-Dimensional Situational Awareness** (`reality_simulator/language/linguistic_knowledge_web.py`)
+  - 14-dimensional context assessment system
+  - Evaluates simultaneously: action, fitness, resources, connections, positional awareness, local density, VP, network coherence, evolution pressure, phase mismatch, system health, breath phase, action success, generation age
+  - Dynamic word scoring across dimensions (0.0-1.0)
+  - Prioritized word selection (top 15 words, score > 0.3)
+  - Semantic expansion through relationships
+  - Full 18-feature state vector integration
+  - Network and breath state integration
+
+- **Expanded Vocabulary** (`reality_simulator/language/linguistic_knowledge_web.py`)
+  - 40+ new words covering system dynamics, spatial concepts, health states
+  - Words: center, edge, crowded, dense, sparse, pressure, crisis, stress, calm, balanced, connected, united, coherent, fragmented, disconnected, adapt, evolve, change, persist, mismatch, desynchronized, healthy, thriving, sick, declining, expand, consolidate, precise, focused, discover, success, effective, failure, ineffective, mature, experienced, young, new, exist, be, act
+
+- **Linguistic Knowledge Web Enhancements** (`reality_simulator/language/linguistic_knowledge_web.py`)
+  - System dynamics concepts (VP, health, stability, synchronization)
+  - Spatial concepts (center, edge, crowded, dense, sparse)
+  - Enhanced situational context mapping
+  - Multi-dimensional state descriptor generation
+
+- **Language Teacher Integration** (`reality_simulator/language/language_teacher.py`)
+  - Full 18-feature state vector retrieval via `get_state_features()`
+  - Complete context passing (state, action, network, breath)
+  - Graceful fallback when full state unavailable
+  - Dynamic awareness as primary, hardcoded maps as supplement
+
+- **CRA Integration** (`causation_web_ui.py`)
+  - Complete knowledge of 14-dimensional assessment system
+  - Full control over 13 new language teacher and knowledge web config settings
+  - Enhanced system prompt with comprehensive language system documentation
+  - Configuration control section with examples and monitoring guidelines
+
+#### Changed
+- **Language Teacher Situational Awareness** (`reality_simulator/language/language_teacher.py`)
+  - Upgraded from basic state dictionary to full 18-feature state vector
+  - Now passes complete context (network_state, breath_state) to knowledge web
+  - Uses dynamic multi-dimensional awareness as primary word source
+
+- **Linguistic Knowledge Web** (`reality_simulator/language/linguistic_knowledge_web.py`)
+  - Redesigned `get_situational_awareness()` method
+  - Changed from simple state dictionary to comprehensive multi-dimensional assessment
+  - Added numpy import for state vector processing
+  - Enhanced with 14-dimensional word scoring system
+
+- **CRA System Prompt** (`causation_web_ui.py`)
+  - Added comprehensive "Dynamic Multi-Dimensional Linguistic Awareness System" section
+  - Added "Language Teacher System" documentation
+  - Added "Linguistic Knowledge Web" documentation
+  - Added configuration control section with 13 new settings
+  - Added monitoring guidelines for language system performance
+
+- **Configuration Guardrails** (`causation_web_ui.py`)
+  - Added 13 new config settings to CONFIG_GUARDRAILS:
+    - 10 Language Teacher settings (enabled, use_semantic_embeddings, use_knowledge_web, embedding_dim, vocab_size, min_experiences, training_frequency, min_confidence, teaching_frequency, min_action_history)
+    - 3 Knowledge Web settings (enabled, embedding_dim, max_concepts)
+
+- **Prompt Files Updated** (`emergent_behavior.txt`, `system_diagnostics.txt`)
+  - Added Quick Win #8: Dynamic Multi-Dimensional Linguistic Awareness
+  - Added language system parameters to CONFIG_UPDATE strategy
+  - Added language system audit section to diagnostics
+  - Added language flow to data flow diagrams
+  - Added language metrics to performance tracking
+
+#### Technical Details
+- **14 Dimensions Assessed**:
+  1. Action-Based (immediate behavioral context)
+  2. Fitness-Based (organism vitality)
+  3. Resource-Based (material context)
+  4. Connection-Based (social/network context)
+  5. Positional Awareness (spatial: center/edge, proximity)
+  6. Local Density (environmental: crowded/sparse)
+  7. Violation Pressure (system stability)
+  8. Network Coherence (system integration)
+  9. Evolution Pressure (adaptation context)
+  10. Phase Mismatch (synchronization)
+  11. System Health (ecosystem wellness)
+  12. Breath Phase (temporal/rhythmic)
+  13. Action Success (behavioral feedback)
+  14. Generation Age (temporal/evolutionary)
+
+- **Word Scoring Algorithm**:
+  - Each dimension contributes score (0.0-1.0) based on context
+  - Scores aggregated to prioritize most contextually relevant words
+  - Semantic relationships expand high-scoring words
+  - Top 15 words selected (score > 0.3)
+
+- **Integration Points**:
+  - Uses `organism.get_state_features()` for full 18-feature vector
+  - Accesses `context_memory.network_state` and `context_memory.breath_state`
+  - Falls back gracefully when full state unavailable
+  - Works with all organism types (neural and non-neural)
+
+---
+
 ### 🦋 Butterfly Chat Debug Panel & Learning System (2025-12-01)
 
 #### Added
