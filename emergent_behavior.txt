@@ -101,6 +101,7 @@ Quick Win #6: Illumination Engine (Deep Causal Analysis) ⭐ NEW
 - API Endpoints: /api/events/<id>/root-causes, /impact, /explain, /search/advanced, /consequential, /timeline
 - UI Actions: set_params, investigate, trace_causation, investigate_component
 - Emergence benefit: Deep understanding of causal chains behind emergent phenomena
+- **Recent Fix (2025-11-30)**: Robust JSON parsing handles invisible Unicode characters, smart quotes, non-breaking spaces
 - Usage Example:
   [[ILLUMINATE: {"action": "root_causes", "event_id": "evt_collapse_123"}]]
   [[ILLUMINATE: {"action": "investigate", "event_id": "evt_123"}]]
@@ -123,6 +124,7 @@ Quick Win #7: Research Notepad (Scientific Journal) ⭐ NEW
   * summary: Get summary of all notes
 - Emergence benefit: Persistent memory of emergent patterns across sessions
 - Best Practice: Use #hashtags for categorization (#vp_spike #collapse #neural)
+- **Recent Fix (2025-11-30)**: Robust JSON parsing handles invisible Unicode characters, smart quotes, non-breaking spaces - CRA research features now work reliably with all LLM response formats
 - Usage Example:
   [[NOTEPAD: {"action": "observe", "content": "Cluster collapse preceded by VP >0.8 #pattern", "events": ["evt_123"]}]]
   [[NOTEPAD: {"action": "hypothesize", "content": "High VP triggers collapse within 30 cycles", "confidence": "medium"}]]
@@ -171,6 +173,7 @@ ML Analysis Parameters (Enhanced with Quick Win #2):
   - min_cluster_size: Current 2, consider 3-5 to detect only significant emergent phenotype
     groups
   - min_samples: Current 1, keep at 1 for early cluster detection
+  - **Recent Fix (2025-11-30)**: HDBSCAN algorithm tracking bug fixed - algorithm no longer permanently modified to 'kmeans_fallback', HDBSCAN remains available for subsequent analyses
 - Anomaly Detection (Isolation Forest):
   - Enable: true (current: enabled)
   - contamination: Current 0.1 (expects 10% anomalies), increase to 0.15-0.20 to flag more
@@ -186,6 +189,7 @@ ML Analysis Parameters (Enhanced with Quick Win #2):
   - persistence_threshold: 3 (cycles before cluster becomes named concept)
   - stale_threshold: 10.0 (seconds before concept marked extinct)
   - Events: concept_emergence, concept_extinction will appear in graph
+- **Recent Fix (2025-01-27)**: ML events now properly emitted via `network.run_ml_analysis()` - phenotype_emergence, cluster_collapse, anomaly_spike events appear in causation graph with proper timestamps
 
 Health Monitor Parameters (Quick Win #5): ⭐ NEW
 - enabled: true (CRITICAL for unified health tracking)
@@ -200,6 +204,7 @@ Health Monitor Parameters (Quick Win #5): ⭐ NEW
   - warning_threshold: 0.45
   - healthy_threshold: 0.65
 - Target: Push health toward "optimal" (≥0.7) through emergent intelligence
+- **Recent Fix (2025-11-30)**: HealthMonitor properly wired with event_emitter, `configure_health_monitor()` correctly passes dependencies to SymbioticNetwork
 
 Feedback Controller Knobs (Emergent Phenomena Focus):
 
@@ -274,6 +279,7 @@ Causation Detection:
 - Verify enable_ml_causations = true (for concept events)
 - Keep correlation_threshold at 0.55 (or decrease to 0.50 to detect weaker emergent causal
   patterns)
+- **Recent Fix (2025-01-27)**: ML causation link time window extended from 2s to 6s (3x normal window) - ML events can now form links with events up to 6 seconds apart, properly connecting to reality_sim, neural, explorer, and other ML events
 
 ---
 VIZ_SETTINGS_UPDATE Strategy
@@ -1119,11 +1125,12 @@ Make emergent structures unmistakable in the graph, including Quick Win events:
   Quick Win metrics
 
 Use these specific colors and settings:
-- componentColor_neural: "#00FFFF" (Electric Cyan)
-- componentColor_ml_analysis: "#32CD32" (Lime Green)
+- **Note (2025-01-27)**: All colors are now dynamic - CRA receives current color values in graph context. Reference settings (e.g., `componentColor_neural`, `linkColor_neural`) instead of hardcoded hex values. Check current values in graph context before making color recommendations.
+- componentColor_neural: Check current value (typically "#00FFFF" Electric Cyan)
+- componentColor_ml_analysis: Check current value (typically "#32CD32" Lime Green)
 - componentColor_health: varies by state (Red/Yellow/Green/Blue) (QW#5)
-- linkColor_neural: "#00FFFF" (Cyan, dashed)
-- linkColor_ml: "#FFA500" (Orange, dashed with flow animation)
+- linkColor_neural: Check current value (typically "#00FFFF" Cyan, dashed)
+- linkColor_ml: Check current value (typically "#FFA500" Orange, dashed with flow animation)
 - Link width: 2-3x for neural/ML events
 - Link opacity: 0.8-1.0 for neural/ML events
 - Node glow: strong on neural/ML/concept nodes

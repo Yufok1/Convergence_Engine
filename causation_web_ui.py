@@ -2205,6 +2205,8 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "  - **Lawfulness** (20%): Inverse of total violation pressure\n"
         prompt += "  - **Sustainability** (10%): Resource pool ratio, population stability\n"
         prompt += "**Thresholds**: critical (<0.3), warning (<0.5), healthy (<0.7), optimal (>=0.7)\n"
+        prompt += "**State Classification Logic**: Check thresholds in order - if health < 0.3 = critical, else if < 0.5 = warning, else if < 0.7 = healthy, else = optimal\n"
+        prompt += "**Example**: health_score=0.289 → 0.289 < 0.3 → state=\"critical\" (NOT warning!)\n"
         prompt += "**Events**: `health_state_change` emitted when crossing thresholds\n"
         prompt += "**Neural integration**: System health is now the 18th neural input feature - organisms perceive ecosystem wellness\n"
         prompt += "**Endpoint**: Check via `/api/diagnostic/unified_health` or in shared_state.json\n"
@@ -2489,7 +2491,18 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "     * Adjust colors via [[VIZ_SETTINGS_UPDATE: {\"componentColor_ml_analysis\": \"#32CD32\", \"linkColor_ml\": \"#FFA500\"}]]\n"
         prompt += "     * Special node shapes: hexagon (phenotype_emergence), pentagon (cluster_collapse), triangle (anomaly_spike)\n"
         prompt += "     * Filter ML events: Use `components: {\"ml_analysis\": true}` in graph filters\n"
-        prompt += "   - Use format: [[VIZ_SETTINGS_UPDATE: {\"linkBaseWidth\": 3.0, \"depthStrength\": 1.5, \"componentColor_neural\": \"#BF00FF\", \"componentColor_ml_analysis\": \"#32CD32\", ...}]]\n"
+        prompt += "   - **🦋 Language System Visualization**:\n"
+        prompt += "     * Language events show on graph as **Circle** shapes (vocabulary_growth, butterfly_chat_message/response) or **Wye** shapes (organism_communication)\n"
+        prompt += "     * **Distinct from Neural**: Neural Decision = Diamond, Neural Training = Square; Language = Circle/Wye (different shapes!)\n"
+        prompt += "     * **Distinct from ML**: ML uses Star/Triangle/Cross/Wye; Language uses Circle/Wye (different colors distinguish them)\n"
+        prompt += "     * Node color controlled by `componentColor_language` setting (default: #00BCD4 Teal - check current value in graph context or viz settings)\n"
+        prompt += "     * Butterfly Chat node color controlled by `componentColor_butterfly_chat` setting (default: #8BC34A Light Green - check current value)\n"
+        prompt += "     * Language causation link color controlled by `linkColor_language` setting (default: #9B59B6 Purple - check current value)\n"
+        prompt += "     * Linguistic edge color controlled by `linkColor_linguistic` setting (default: #9B59B6 Purple - check current value)\n"
+        prompt += "     * **Linguistic Edges**: Dashed purple lines connecting organisms that share words (from language_anchors)\n"
+        prompt += "     * **Language Causation Links**: Solid purple lines connecting language events (vocabulary_growth → organism_communication, etc.)\n"
+        prompt += "     * Adjust colors via [[VIZ_SETTINGS_UPDATE: {\"componentColor_language\": \"#00BCD4\", \"componentColor_butterfly_chat\": \"#8BC34A\", \"linkColor_language\": \"#9B59B6\", \"linkColor_linguistic\": \"#9B59B6\"}]]\n"
+        prompt += "   - Use format: [[VIZ_SETTINGS_UPDATE: {\"linkBaseWidth\": 3.0, \"depthStrength\": 1.5, \"componentColor_neural\": \"#BF00FF\", \"componentColor_ml_analysis\": \"#32CD32\", \"componentColor_language\": \"#00BCD4\", \"linkColor_language\": \"#9B59B6\", ...}]]\n"
         prompt += "   - Available visualization settings (ALL tunable by you autonomously):\n"
         prompt += "     * **Link Appearance**: linkBaseWidth (1-5px), linkMaxWidth (8-30px), linkMinOpacity (0.1-0.8), linkMaxOpacity (0.5-1.0)\n"
         prompt += "     * **Link Depth Effects**: linkDensityMultiplier (0-10), linkDepthMultiplier (0-5), linkNodeConnMultiplier (0-3)\n"
@@ -2498,14 +2511,18 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "     * **Depth Effects**: depthStrength (0-2), depthOpacityRange (0-1), depthSizeRange (0-1), depthParallaxAmount (0-2)\n"
         prompt += "     * **Visual Effects**: enableShadows (true/false), enableGlow (true/false), shadowOffset (0-5px), shadowBlur (0-10), glowIntensity (0-5)\n"
         prompt += "     * **Color Settings**: frontColorBrightness (0.5-1.5), backColorBrightness (0.3-1.0), colorSaturation (0-2)\n"
-        prompt += "     * **Component Colors**: componentColor_reality_sim, componentColor_explorer, componentColor_djinn_kernel, componentColor_breath, componentColor_neural (🧠 Neural - check current value), componentColor_ml_analysis (🔬 ML Analysis - check current value), componentColor_system (hex colors)\n"
-        prompt += "     * **Link Colors**: linkColor_threshold, linkColor_correlation, linkColor_direct, linkColor_temporal, linkColor_neural (🧠 Neural links - check current value), linkColor_ml (🔬 ML links - check current value), linkColor_unknown (hex colors)\n"
+        prompt += "     * **Component Colors**: componentColor_reality_sim, componentColor_explorer, componentColor_djinn_kernel, componentColor_breath, componentColor_neural (🧠 Neural - check current value), componentColor_ml_analysis (🔬 ML Analysis - check current value), componentColor_language (🦋 Language System - default: #00BCD4 Teal - check current value), componentColor_butterfly_chat (🦋 Butterfly Chat - default: #8BC34A Light Green - check current value), componentColor_system (hex colors)\n"
+        prompt += "     * **Link Colors**: linkColor_threshold, linkColor_correlation, linkColor_direct, linkColor_temporal, linkColor_neural (🧠 Neural links - check current value), linkColor_ml (🔬 ML links - check current value), linkColor_language (🦋 Language causation links - default: #9B59B6 Purple - check current value), linkColor_linguistic (🦋 Linguistic edges from language_anchors - default: #9B59B6 Purple - check current value), linkColor_unknown (hex colors)\n"
         prompt += "     * **IMPORTANT**: All colors are dynamic - check current values in graph context or visualization settings, don't assume default colors\n"
         prompt += "     * **Performance**: maxVisibleLinks (1000-50000), maxVisibleNodes (500-20000), renderQuality (\"low\"/\"medium\"/\"high\")\n"
         prompt += "     * **Animation/Transitions**: enableTransitions (true/false), transitionDuration (100-1000ms), animationSpeed (0.1-3.0)\n"
         prompt += "   - **CRITICAL FORMAT REQUIREMENT**: When adjusting ANY visualization settings, you MUST include the marker in your response:\n"
         prompt += "     Format: [[VIZ_SETTINGS_UPDATE: {\"settingName\": value, ...}]]\n"
-        prompt += "     Example: [[VIZ_SETTINGS_UPDATE: {\"renderQuality\": \"low\", \"componentColor_explorer\": \"#FF0000\", \"linkBaseWidth\": 3.0}]]\n\n"
+        prompt += "     Example: [[VIZ_SETTINGS_UPDATE: {\"renderQuality\": \"low\", \"componentColor_explorer\": \"#FF0000\", \"linkBaseWidth\": 3.0}]]\n"
+        prompt += "     **CRITICAL**: JSON does NOT support comments (# ...). NEVER include comments inside JSON markers.\n"
+        prompt += "     If you need to explain a setting, put the explanation OUTSIDE the JSON marker, before or after it.\n"
+        prompt += "     BAD: [[VIZ_SETTINGS_UPDATE: {\"color\": \"#FF0000\", # Red for visibility}]]\n"
+        prompt += "     GOOD: Using red for better visibility. [[VIZ_SETTINGS_UPDATE: {\"componentColor_neural\": \"#FF0000\"}]]\n\n"
         
         prompt += "7. **Diagnostic Verification (CRITICAL - Proactive Action Required)**:\n"
         prompt += "   - **RULE**: When you identify that a diagnostic check is needed, YOU MUST actually execute it, not just mention it\n"
@@ -2588,6 +2605,8 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "7. **Real-Time Configuration Control (Hot Reload Service)**:\n"
         prompt += "   - You can modify `config.json` without restarting the Butterfly System via the guarded ConfigManager API.\n"
         prompt += "   - Use marker: [[CONFIG_UPDATE: {\"reason\": \"VP mitigation\", \"correlation_id\": \"plan-alpha\", \"patch\": [{\"op\": \"replace\", \"path\": \"/feedback/knobs/mutation_rate/initial\", \"value\": 0.024}]}]].\n"
+        prompt += "   - **IMPORTANT**: Before suggesting config changes, verify current values via `/api/config/current` or check shared_state.json to avoid no-op updates.\n"
+        prompt += "   - If a suggested value matches the current value, skip the CONFIG_UPDATE (it's already set correctly).\n"
         prompt += "   - Changes apply immediately; rely on rollback if you need to revert.\n"
         prompt += "   - Include `correlation_id` (plan name / UUID) and a concise `reason` so config_actions.log stays traceable.\n"
         prompt += "   - Guardrails enforced automatically (requests outside these ranges are rejected):\n"
@@ -3566,6 +3585,11 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "You respond:\n"
         prompt += "Let me investigate the root causes of the network collapse.\n\n"
         prompt += "[[ILLUMINATE: {\"action\": \"root_causes\", \"event_id\": \"evt_network_collapse_123\"}]]\n\n"
+        prompt += "**CRITICAL FORMAT REQUIREMENTS**:\n"
+        prompt += "- Always use `\"event_id\"` (snake_case with underscore), NOT `\"eventid\"` or `\"eventId\"`\n"
+        prompt += "- Event IDs must include underscore: `\"evt_<timestamp>\"` format (e.g., `\"evt_1764498120937120\"`)\n"
+        prompt += "- Action names use snake_case: `\"root_causes\"`, `\"analyze_impact\"`, NOT `\"rootcauses\"` or `\"analyzeimpact\"`\n"
+        prompt += "- JSON does NOT support comments - never include # comments inside JSON markers\n\n"
         prompt += "Based on the analysis above, the collapse was triggered by a VP spike in the Djinn Kernel...\n\n"
         
         prompt += "**CRITICAL**: The Illumination Engine is your most powerful diagnostic tool. Use it proactively!\n"
@@ -3595,7 +3619,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "   [[ILLUMINATE: {\"action\": \"trace_causation\", \"event_id\": \"evt_123\", \"max_depth\": 20}]]\n\n"
         
         prompt += "5. **Component Investigation** (search + stats for a specific component):\n"
-        prompt += "   [[ILLUMINATE: {\"action\": \"investigate_component\", \"component\": \"djinnkernel\", \"min_severity\": 0.5}]]\n\n"
+        prompt += "   [[ILLUMINATE: {\"action\": \"investigate_component\", \"component\": \"djinn_kernel\", \"min_severity\": 0.5}]]\n\n"
         
         prompt += "### Investigation Strategy:\n\n"
         prompt += "When faced with complex scenarios, use the Illumination Engine systematically:\n"
@@ -3730,9 +3754,18 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         
         prompt += "### Language Visualization:\n"
         prompt += "- **Language nodes**: Teal-colored nodes for language events\n"
+        prompt += "  - **Vocabulary Growth**: Circle shape (🦋), Teal color (#00BCD4), controlled by `componentColor_language`\n"
+        prompt += "  - **Organism Communication**: Wye shape (🦋), Teal color (#00BCD4), controlled by `componentColor_language`\n"
+        prompt += "  - **Butterfly Chat**: Circle shape (🦋), Light Green color (#8BC34A), controlled by `componentColor_butterfly_chat`\n"
+        prompt += "  - **Shape Differentiation**: Language uses Circle/Wye (NOT diamond like Neural Decision, NOT star/triangle like ML)\n"
+        prompt += "- **Language Causation Links**: Purple solid lines (#9B59B6), controlled by `linkColor_language`\n"
+        prompt += "- **Linguistic Edges**: Purple dashed lines (#9B59B6), controlled by `linkColor_linguistic`\n"
+        prompt += "  - Connect organisms that share words (from language_anchors)\n"
+        prompt += "  - Thicker width (1.5x) and higher opacity (+0.2) for visibility\n"
         prompt += "- **Word association links**: Connect words to organisms/concepts\n"
         prompt += "- **Communication flows**: Show token exchange patterns\n"
-        prompt += "- **Vocabulary growth timeline**: Track language evolution\n\n"
+        prompt += "- **Vocabulary growth timeline**: Track language evolution\n"
+        prompt += "- **CRA Control**: Adjust language colors via [[VIZ_SETTINGS_UPDATE: {\"componentColor_language\": \"#00BCD4\", \"componentColor_butterfly_chat\": \"#8BC34A\", \"linkColor_language\": \"#9B59B6\", \"linkColor_linguistic\": \"#9B59B6\"}]]\n\n"
         
         prompt += "### Language Causation Patterns:\n"
         prompt += "- **VP → Language**: How violation pressure affects communication\n"
@@ -4683,7 +4716,7 @@ class SystemContextBuilder:
         
         # Component colors
         component_colors = []
-        for comp in ['reality_sim', 'explorer', 'djinn_kernel', 'breath', 'neural', 'ml_analysis', 'system']:
+        for comp in ['reality_sim', 'explorer', 'djinn_kernel', 'breath', 'neural', 'ml_analysis', 'language', 'butterfly_chat', 'system']:
             color_key = f'componentColor_{comp}'
             color = viz_settings.get(color_key, 'N/A')
             if color != 'N/A':
@@ -4695,7 +4728,7 @@ class SystemContextBuilder:
         
         # Link colors
         link_colors = []
-        for link_type in ['threshold', 'correlation', 'direct', 'temporal', 'neural', 'ml', 'unknown']:
+        for link_type in ['threshold', 'correlation', 'direct', 'temporal', 'neural', 'ml', 'language', 'linguistic', 'unknown']:
             color_key = f'linkColor_{link_type}'
             color = viz_settings.get(color_key, 'N/A')
             if color != 'N/A':
@@ -5988,17 +6021,47 @@ def get_graph():
         
         # DATA ACCESS: Read all causation links from explorer.causation_graph (snapshot)
         # This is a NetworkX DiGraph built when events are added
-        # Causation links are detected automatically (threshold, correlation, direct, temporal)
+        # Causation links are detected automatically (threshold, correlation, direct, temporal, language)
         # Add links
+        # Load language data for linguistic edge detection
+        node_word_associations = {}
+        try:
+            network = app.config.get('network')
+            if network and hasattr(network, 'context_memory'):
+                context_memory = network.context_memory
+                node_word_associations = {
+                    str(org_id): set(words) 
+                    for org_id, words in context_memory.node_word_associations.items()
+                }
+        except Exception as e:
+            logger.debug(f"Could not load language data for linguistic edge detection: {e}")
+        
         if edges_snapshot:
             for u, v, data in edges_snapshot:
-                links.append({
+                link_data = {
                     'source': u,
                     'target': v,
                     'type': data.get('causation_type', 'unknown'),
                     'strength': data.get('strength', 0.0),
                     'explanation': data.get('explanation', '')
-                })
+                }
+                
+                # Detect linguistic edges: check if source/target organisms share words
+                if node_word_associations:
+                    source_words = node_word_associations.get(str(u), set())
+                    target_words = node_word_associations.get(str(v), set())
+                    shared_words = source_words & target_words
+                    
+                    if shared_words:
+                        link_data['is_linguistic'] = True
+                        link_data['linguistic_edge'] = True
+                        link_data['shared_words'] = list(shared_words)[:10]  # Limit to 10 words
+                        link_data['shared_word_count'] = len(shared_words)
+                        # Override type to 'language' if it's a linguistic edge
+                        if link_data['type'] == 'direct':
+                            link_data['type'] = 'language'
+                
+                links.append(link_data)
         
         # Add diagnostic info if no data
         diagnostic_info = {}
@@ -7147,18 +7210,54 @@ def butterfly_chat():
         network = app.config.get('network')
         network_state = None
         if network and hasattr(network, 'context_memory'):
+            # Extract connections from network graph for "connected" routing strategy
+            connections = {}
+            if hasattr(network, 'graph') and network.graph:
+                for edge in network.graph.edges():
+                    source_id = str(edge[0])
+                    target_id = str(edge[1])
+                    edge_data = network.graph.get_edge_data(edge[0], edge[1], {})
+                    connections[(source_id, target_id)] = {
+                        'strength': edge_data.get('strength', 1.0),
+                        'type': edge_data.get('type', 'symbiotic')
+                    }
+            
+            # Get VP value from VP monitor if available
+            vp_value = None
+            if hasattr(network, 'vp_monitor') and network.vp_monitor:
+                vp_value = float(getattr(network.vp_monitor, 'violation_pressure', 0.0))
+            elif hasattr(network, 'violation_pressure'):
+                vp_value = float(network.violation_pressure)
+            
             network_state = {
                 'language_anchors': {k: list(v) for k, v in network.context_memory.language_anchors.items()},
-                'connections': {}  # Could extract from network graph if needed
+                'connections': connections,  # FIXED: Now populated with actual network connections
+                'context_memory': network.context_memory,  # FIXED: Pass context_memory for generate_tokens()
+                'vp_value': vp_value  # FIXED: Pass VP value for VP-aware generation
             }
         
         response = router.route_message(message, routing_strategy, max_organisms, network_state=network_state)
         
+        # Calculate confidence and organism count for backward compatibility
+        organism_responses = response.get('organism_responses', [])
+        confidence = 0.0
+        if organism_responses:
+            confidences = [r.get('confidence', 0.0) for r in organism_responses]
+            confidence = sum(confidences) / len(confidences) if confidences else 0.0
+        
         return jsonify({
             'response': response.get('response', '<no response>'),
-            'organism_responses': response.get('organism_responses', []),
+            'organism_responses': organism_responses,
             'routing_info': response.get('routing_info', {}),
-            'tokens_used': response.get('tokens_used', [])
+            'routing_strategy': routing_strategy,
+            'organism_count': len(organism_responses),
+            'confidence': confidence,
+            'tokens_used': response.get('tokens_used', []),
+            # Debug information
+            'debug_logs': response.get('debug_logs', []),
+            'causation_trail': response.get('causation_trail', []),
+            'errors': response.get('errors', []),
+            'performance': response.get('performance', {})
         })
         
     except Exception as e:
@@ -9947,14 +10046,15 @@ def cra_set_viz_settings():
         
         # Component colors
         component_color_keys = ['componentColor_reality_sim', 'componentColor_explorer', 'componentColor_djinn_kernel', 
-                               'componentColor_breath', 'componentColor_neural', 'componentColor_ml_analysis', 'componentColor_system']
+                               'componentColor_breath', 'componentColor_neural', 'componentColor_ml_analysis', 
+                               'componentColor_language', 'componentColor_butterfly_chat', 'componentColor_system']
         for key in component_color_keys:
             if key in data:
                 viz_settings[key] = str(data[key])
         
         # Link colors
         link_color_keys = ['linkColor_threshold', 'linkColor_correlation', 'linkColor_direct', 'linkColor_temporal', 
-                          'linkColor_neural', 'linkColor_ml', 'linkColor_unknown']
+                          'linkColor_neural', 'linkColor_ml', 'linkColor_language', 'linkColor_linguistic', 'linkColor_unknown']
         for key in link_color_keys:
             if key in data:
                 viz_settings[key] = str(data[key])

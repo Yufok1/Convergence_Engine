@@ -59,6 +59,15 @@ pip install pywin32
    ```
 3. Check for import path issues (kernel should be importable)
 
+### Butterfly Chat Issues
+
+**Problem:** Empty responses, errors, or no learning
+
+**Solutions:**
+- See [Butterfly Chat Troubleshooting](#-butterfly-chat-issues) section below
+- Check debug panel for detailed error information
+- Verify vocabulary is growing (check for "Learned new word" in logs)
+
 ---
 
 ## ⚠️ Warnings
@@ -220,6 +229,112 @@ pip install pywin32
 2. Run without visualization: `--no-viz`
 3. Close other applications
 4. Check system memory: `python unified_entry.py --check-only`
+
+---
+
+## 🦋 Butterfly Chat Issues
+
+### Empty Responses from Organisms
+
+**Symptoms:**
+- Chat shows "[Confidence: X%, Organisms: Y, Strategy: Z]" but no actual response text
+- Debug logs show `word_count: 0` for most organisms
+
+**Causes:**
+- Vocabulary is too small (only special tokens)
+- Generated token IDs don't map to vocabulary words
+- Organisms haven't learned words yet
+
+**Solutions:**
+1. **Wait for Vocabulary Growth**: Organisms learn words from interactions
+   - Send a few messages to help vocabulary grow
+   - Check "Logs" tab for "Learned new word" entries
+2. **Check Debug Panel**: 
+   - Open "Causation Trail" tab to see token generation
+   - Check "Errors" tab for generation issues
+3. **Verify Vocabulary**: 
+   - Check that vocabulary has words beyond special tokens
+   - Look for vocabulary_growth events in causation graph
+
+### "integer modulo by zero" Error
+
+**Symptoms:**
+- Error in debug logs: `ZeroDivisionError: integer modulo by zero`
+- All organisms fail to generate responses
+
+**Cause:**
+- Vocabulary only has special tokens (vocab_size = 5)
+- Token mapping tries to divide by zero
+
+**Solution:**
+- ✅ **FIXED**: System now handles empty vocabularies safely
+- Restart the system - fix is already applied
+- Vocabulary will grow as organisms learn
+
+### Event ID Collision
+
+**Symptoms:**
+- All events in debug logs have the same event ID
+- Illumination Engine can't distinguish between events
+
+**Cause:**
+- Events created at same timestamp get identical IDs
+
+**Solution:**
+- ✅ **FIXED**: Event IDs now include counter for uniqueness
+- Format: `evt_{timestamp}_{counter}`
+- Restart system to apply fix
+
+### No Learning from Interactions
+
+**Symptoms:**
+- Organisms don't improve over time
+- No experience storage in debug logs
+
+**Causes:**
+- Organisms don't have experience buffers
+- Neural system not enabled
+- Experience storage failing silently
+
+**Solutions:**
+1. **Check Neural System**: Ensure `config.json` has `"neural": {"enabled": true}`
+2. **Check Debug Logs**: Look for "Stored chat experience" entries
+3. **Verify Experience Buffers**: Organisms need `experience_buffer` attribute
+4. **Check Errors Tab**: Look for "EXPERIENCE_STORAGE_ERROR" entries
+
+### Vocabulary Not Growing
+
+**Symptoms:**
+- Vocabulary size stays at 5 (only special tokens)
+- No new words added from interactions
+
+**Causes:**
+- Vocabulary learning not triggered
+- Words already in vocabulary
+- Learning mechanism not active
+
+**Solutions:**
+1. **Check Debug Logs**: Look for "Learned new word" entries
+2. **Send Diverse Messages**: Use different words to trigger learning
+3. **Check Vocabulary**: Verify words are being added via `vocabulary.add_word()`
+4. **Monitor Events**: Check for `vocabulary_growth` events in causation graph
+
+### Illumination Buttons Not Working
+
+**Symptoms:**
+- Clicking Root Causes/Impact/Explain does nothing
+- No results appear in debug panel
+
+**Causes:**
+- Event ID not captured
+- Illumination Engine not initialized
+- API endpoint errors
+
+**Solutions:**
+1. **Check Event IDs**: Verify causation trail steps have `event_id` field
+2. **Check Console**: Look for JavaScript errors in browser console
+3. **Verify API**: Check that `/api/events/<event_id>/root-causes` works
+4. **Check Network State**: Ensure event emitter is available
 
 ---
 

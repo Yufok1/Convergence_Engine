@@ -204,6 +204,18 @@ class LanguageVocabulary:
         """
         return self.word_to_id.get(word, SPECIAL_TOKENS['<UNK>'])
     
+    def get_token_id(self, word: str) -> int:
+        """
+        Alias for get_id() for backward compatibility.
+        
+        Args:
+            word: Word to look up
+            
+        Returns:
+            Integer ID for the word
+        """
+        return self.get_id(word)
+    
     def get_word(self, token_id: int) -> str:
         """
         Get the word for an ID, returning <UNK> if not found.
@@ -257,7 +269,11 @@ class LanguageVocabulary:
         for token_id in token_ids:
             if token_id in special_ids:
                 continue
-            words.append(self.get_word(token_id))
+            word = self.get_word(token_id)
+            # Only add non-UNK words, or UNK if we want to show them
+            # For now, skip UNK to avoid empty responses
+            if word != '<UNK>':
+                words.append(word)
         
         return words
     

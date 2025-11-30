@@ -713,7 +713,17 @@ class NeuralOrganism(Organism):
             return []
         
         vocab = context_memory.vocabulary
-        generated = [vocab.get_token_id('<START>')]
+        
+        # Import special tokens for range checking
+        try:
+            from ..language_system import SPECIAL_TOKENS
+        except ImportError:
+            try:
+                from reality_simulator.language_system import SPECIAL_TOKENS
+            except ImportError:
+                SPECIAL_TOKENS = {'<PAD>': 0, '<UNK>': 1, '<START>': 2, '<END>': 3, '<VP_GATE>': 4}
+        
+        generated = [vocab.get_id('<START>')]
         
         self.brain.eval()
         with torch.no_grad():
@@ -739,20 +749,33 @@ class NeuralOrganism(Organism):
                         ))
                     )
                     
+                    # Clamp logits to vocabulary size to avoid out-of-range tokens
+                    vocab_size = vocab.vocab_size
+                    if language_logits.shape[-1] > vocab_size:
+                        language_logits = language_logits[..., :vocab_size]
+                    
                     # Apply temperature
                     logits = language_logits[0] / temperature
                     probs = torch.softmax(logits, dim=-1)
                     
-                    # Sample next token
+                    # Sample next token, ensuring it's within vocabulary range
                     next_token = torch.multinomial(probs, 1).item()
+                    next_token = min(next_token, vocab_size - 1)  # Clamp to valid range
                 else:
                     # No language head, use action as pseudo-token
-                    next_token = torch.argmax(output, dim=-1).item()
+                    # Map action to a valid vocabulary token (use modulo to keep in range)
+                    action_token = torch.argmax(output, dim=-1).item()
+                    vocab_size = vocab.vocab_size
+                    # Map action to vocabulary range (skip special tokens)
+                    # Prevent division by zero if vocab only has special tokens
+                    non_special_size = max(1, vocab_size - len(SPECIAL_TOKENS))
+                    next_token = (action_token % non_special_size) + len(SPECIAL_TOKENS)
+                    next_token = min(next_token, vocab_size - 1)
                 
                 generated.append(next_token)
                 
                 # Stop at END token
-                if next_token == vocab.get_token_id('<END>'):
+                if next_token == vocab.get_id('<END>'):
                     break
         
         return generated

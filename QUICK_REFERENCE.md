@@ -97,6 +97,28 @@ python archive_logs.py --list     # List archives
 
 ---
 
+## 🦋 Butterfly Chat
+
+**Location:** Web UI → CRA Panel → 🦋 Butterfly Chat tab
+
+**Features:**
+- 5 routing strategies: All, Random, Fittest, Connected, By Word
+- Debug panel: Logs, Causation Trail, Errors
+- Illumination integration: Analyze each response step
+- Learning system: Organisms learn from every interaction
+- Vocabulary growth: Auto-learns words from user messages
+
+**Usage:**
+1. Open Butterfly Chat tab
+2. Select routing strategy
+3. Type message and send
+4. View debug panel for analysis
+5. Click Illumination buttons to analyze responses
+
+**See:** [BUTTERFLY_CHAT_DEBUG_PANEL_GUIDE.md](./BUTTERFLY_CHAT_DEBUG_PANEL_GUIDE.md)
+
+---
+
 ## 📚 Documentation
 
 **Central Hub:** [DOCUMENTATION_HUB.md](./DOCUMENTATION_HUB.md)

@@ -23,6 +23,15 @@ from datetime import datetime
 logger = logging.getLogger(__name__)
 
 
+# Global counter for unique event IDs
+_event_counter = 0
+
+def _generate_unique_event_id() -> str:
+    """Generate a unique event ID using timestamp and counter"""
+    global _event_counter
+    _event_counter += 1
+    return f"evt_{int(time.time() * 1000000)}_{_event_counter}"
+
 @dataclass
 class Event:
     """A system event with causation context"""
@@ -30,7 +39,7 @@ class Event:
     component: str
     event_type: str  # 'state_change', 'threshold_crossed', 'transition', etc.
     data: Dict[str, Any]
-    event_id: str = field(default_factory=lambda: f"evt_{int(time.time() * 1000000)}")
+    event_id: str = field(default_factory=_generate_unique_event_id)
     
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -1016,7 +1025,7 @@ class CausationExplorer:
                 return CausationLink(
                     from_event=prev_event.event_id,
                     to_event=new_event.event_id,
-                    causation_type='direct',
+                    causation_type='language',  # ✅ Use 'language' type for language links
                     strength=0.8,  # Language links strength
                     explanation=explanation,
                     metrics_involved=list(set(prev_event.data.keys()) | set(new_event.data.keys()))
@@ -1289,6 +1298,20 @@ class CausationExplorer:
             
             avg_strength = total_strength / max(1, len(shortest_path) - 1)
             
+            # Enhanced narrative for language events
+            narrative = self._build_causation_narrative(shortest_path, chain_explanations)
+            
+            # Add language-specific context to narrative
+            if root_event.component in ['language', 'butterfly_chat']:
+                if root_event.event_type == 'vocabulary_growth':
+                    vocab_size = root_event.data.get('vocab_size', 0)
+                    narrative = f"🦋 Language Root: Vocabulary growth ({vocab_size} words) → " + narrative
+                elif root_event.event_type == 'organism_communication':
+                    num_orgs = root_event.data.get('num_organisms', root_event.data.get('tokens_exchanged', 0))
+                    narrative = f"💬 Language Root: Organism communication ({num_orgs} tokens) → " + narrative
+                elif root_event.event_type in ['butterfly_chat_message', 'butterfly_chat_response']:
+                    narrative = f"💭 Language Root: User-organism interaction → " + narrative
+            
             root_causes.append({
                 'root_event': root_event.to_dict(),
                 'depth': len(shortest_path) - 1,
@@ -1296,7 +1319,7 @@ class CausationExplorer:
                 'chain_explanations': chain_explanations,
                 'avg_strength': round(avg_strength, 3),
                 'num_paths': len(paths),
-                'narrative': self._build_causation_narrative(shortest_path, chain_explanations)
+                'narrative': narrative
             })
         
         # Sort by relevance: higher strength and shorter depth = more relevant
@@ -1377,6 +1400,20 @@ class CausationExplorer:
             
             avg_strength = total_strength / max(1, len(shortest_path) - 1)
             
+            # Enhanced propagation narrative for language events
+            propagation_narrative = self._build_propagation_narrative(shortest_path, chain_explanations)
+            
+            # Add language-specific context
+            if leaf_event.component in ['language', 'butterfly_chat']:
+                if leaf_event.event_type == 'vocabulary_growth':
+                    vocab_size = leaf_event.data.get('vocab_size', 0)
+                    propagation_narrative = f"🦋 Language Impact: {propagation_narrative} → Vocabulary growth ({vocab_size} words)"
+                elif leaf_event.event_type == 'organism_communication':
+                    tokens = leaf_event.data.get('tokens_exchanged', leaf_event.data.get('num_organisms', 0))
+                    propagation_narrative = f"💬 Language Impact: {propagation_narrative} → Organism communication ({tokens} tokens)"
+                elif leaf_event.event_type in ['butterfly_chat_message', 'butterfly_chat_response']:
+                    propagation_narrative = f"💭 Language Impact: {propagation_narrative} → User-organism interaction"
+            
             impacts.append({
                 'effect_event': leaf_event.to_dict(),
                 'propagation_depth': len(shortest_path) - 1,
@@ -1384,7 +1421,8 @@ class CausationExplorer:
                 'chain_explanations': chain_explanations,
                 'propagation_strength': round(avg_strength, 3),
                 'num_paths': len(paths),
-                'severity': self._calculate_severity(leaf_event)
+                'severity': self._calculate_severity(leaf_event),
+                'propagation_narrative': propagation_narrative
             })
         
         # Sort by severity and propagation strength
@@ -1452,6 +1490,30 @@ class CausationExplorer:
                     narrative_parts.append(f"which {explanations[i-1].lower()}")
         
         return " → ".join(narrative_parts) if narrative_parts else "Unknown chain"
+    
+    def _build_propagation_narrative(self, path: List[str], explanations: List[str]) -> str:
+        """Build a human-readable narrative of a propagation chain (for impact analysis)"""
+        if not path or len(path) < 2:
+            return "Direct effect (no propagation chain)"
+        
+        narrative_parts = []
+        for i, event_id in enumerate(path):
+            if event_id not in self.events:
+                continue
+            event = self.events[event_id]
+            
+            if i == 0:
+                # Source event
+                narrative_parts.append(f"Started from {event.component.upper()}: {event.event_type}")
+            elif i == len(path) - 1:
+                # Final effect
+                narrative_parts.append(f"resulted in {event.component.upper()}: {event.event_type}")
+            else:
+                # Intermediate propagation
+                if i - 1 < len(explanations):
+                    narrative_parts.append(f"which {explanations[i-1].lower()}")
+        
+        return " → ".join(narrative_parts) if narrative_parts else "Unknown propagation"
     
     def explain_event(self, event_id: str) -> Dict[str, Any]:
         """

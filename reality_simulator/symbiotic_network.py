@@ -745,6 +745,9 @@ class SymbioticNetwork:
         self.health_monitor: Optional['HealthMonitor'] = None
         self.health_config: Dict[str, Any] = {}
         self._last_health_snapshot: Optional[Any] = None
+        
+        # External VP data source (from Explorer/Djinn Kernel via unified_entry.py)
+        self._external_vp_data: Optional[Dict[str, Any]] = None
 
     def configure_ml_analyzer(self, config: Dict[str, Any]):
         """
@@ -791,6 +794,22 @@ class SymbioticNetwork:
             )
         elif self.health_monitor is not None and not config.get('enabled', True):
             self.health_monitor = None
+    
+    def inject_vp_data(self, vp_total: Optional[float] = None, vp_components: Optional[Dict[str, float]] = None):
+        """
+        Inject VP data from external source (Explorer/Djinn Kernel).
+        
+        This allows the unified system to pass VP components from Explorer's sentinel
+        to the network for Quick Win #1 (VP-Aware Perception).
+        
+        Args:
+            vp_total: Total violation pressure value
+            vp_components: Dict with component breakdown (trait_divergence, network_coherence, etc.)
+        """
+        self._external_vp_data = {
+            'vp_total': vp_total,
+            'vp_components': vp_components or {}
+        }
     
     def compute_ecosystem_health(self, 
                                   neural_stats: Optional[Dict[str, float]] = None,
@@ -1159,7 +1178,7 @@ class SymbioticNetwork:
             'max_connections_per_organism': self.max_connections_per_organism,
             'resource_pool': getattr(self.resource_engine, 'total_resources', 200.0),
         }
-        # Enrich network_state with latest VP metrics if available via Agency Router
+        # Enrich network_state with latest VP metrics if available via Agency Router OR external VP source
         try:
             vp_components_default = {
                 'trait_divergence': 0.0,
@@ -1169,7 +1188,24 @@ class SymbioticNetwork:
                 'phase_mismatch': 0.0,
             }
             vp_total = None
-            if hasattr(self, 'agency_router') and self.agency_router and getattr(self.agency_router, 'vp_monitor', None):
+            vp_components = None
+            
+            # Try external VP source first (from Explorer/Djinn Kernel via unified_entry.py)
+            if hasattr(self, '_external_vp_data') and self._external_vp_data:
+                vp_data = self._external_vp_data
+                vp_total = vp_data.get('vp_total')
+                vp_components = vp_data.get('vp_components')
+                if vp_components:
+                    network_state['vp_components'] = {
+                        'trait_divergence': float(vp_components.get('trait_divergence', 0.0)),
+                        'network_coherence': float(vp_components.get('network_coherence', 0.0)),
+                        'quantum_entropy': float(vp_components.get('quantum_entropy', 0.0)),
+                        'evolution_pressure': float(vp_components.get('evolution_pressure', 0.0)),
+                        'phase_mismatch': float(vp_components.get('phase_mismatch', 0.0)),
+                    }
+            
+            # Fallback to Agency Router if external source not available
+            if vp_components is None and hasattr(self, 'agency_router') and self.agency_router and getattr(self.agency_router, 'vp_monitor', None):
                 vp_monitor = self.agency_router.vp_monitor
                 if hasattr(vp_monitor, 'vp_history') and vp_monitor.vp_history:
                     recent = vp_monitor.vp_history[-1]
@@ -1187,6 +1223,7 @@ class SymbioticNetwork:
                             'phase_mismatch': float(comp.get('phase_mismatch', 0.0)),
                         }
                         network_state['vp_components'] = vp_components
+            
             # Always include keys to keep contracts stable
             if 'vp_components' not in network_state:
                 network_state['vp_components'] = vp_components_default
@@ -1731,12 +1768,13 @@ class SymbioticNetwork:
                         from causation_explorer import Event
                         event = Event(
                             timestamp=time.time(),
-                            component='network',
+                            component='language',  # FIXED: Changed from 'network' to 'language' for proper causation linking
                             event_type='organism_communication',
                             data={
                                 'organism_a_id': a_id,
                                 'organism_b_id': b_id,
                                 'tokens_exchanged': tokens_exchanged,
+                                'num_organisms': 2,  # Added for causation explanation
                                 'connection_strength': edge_data.get('strength', 0.5),
                                 'vp_value': vp_value,
                                 'is_linguistic_edge': edge_data.get('min_lifetime_generations', 0) >= 10

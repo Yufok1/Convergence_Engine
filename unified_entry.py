@@ -1261,7 +1261,16 @@ class UnifiedSystem:
                 # Fallback: Create empty vocabulary if no context_memory
                 if vocabulary is None:
                     vocabulary = LanguageVocabulary()
-                    print("[UNIFIED] [WEB] Created empty vocabulary (will populate as organisms learn words)")
+                    # FIXED: Seed vocabulary with basic words to prevent empty vocabulary on first use
+                    seed_words = [
+                        'hello', 'hi', 'yes', 'no', 'thrive', 'struggle',
+                        'connect', 'move', 'rest', 'grow', 'alone', 'together',
+                        'help', 'share', 'compete', 'cooperate', 'survive', 'live',
+                        'good', 'bad', 'more', 'less', 'fast', 'slow', 'strong', 'weak'
+                    ]
+                    for word in seed_words:
+                        vocabulary.add_word(word)
+                    print(f"[UNIFIED] [WEB] Created vocabulary with {len(seed_words)} seed words (will expand as organisms learn)")
                 
                 self.web_ui.config['vocabulary'] = vocabulary
                 
@@ -1328,6 +1337,20 @@ class UnifiedSystem:
                 # Update reality sim (includes neural training and config tuner)
                 if self.reality_sim:
                     try:
+                        # Inject VP data from Explorer into network (Quick Win #1)
+                        network = self.reality_sim.components.get('network') if hasattr(self.reality_sim, 'components') else None
+                        if network and self.controller and hasattr(self.controller, 'sentinel'):
+                            try:
+                                if hasattr(self.controller.sentinel, 'vp_history') and self.controller.sentinel.vp_history:
+                                    latest_vp = self.controller.sentinel.vp_history[-1]
+                                    if isinstance(latest_vp, dict):
+                                        vp_total = latest_vp.get('total_vp')
+                                        vp_components = latest_vp.get('component_breakdown', {})
+                                        if hasattr(network, 'inject_vp_data'):
+                                            network.inject_vp_data(vp_total=vp_total, vp_components=vp_components)
+                            except Exception:
+                                pass  # Don't break if VP injection fails
+                        
                         self.reality_sim._update_simulation_components()
                     except Exception as e:
                         print(f"[ERROR] Reality sim update failed: {e}")
@@ -1500,7 +1523,7 @@ class UnifiedSystem:
         if not network:
             return {'organism_count': 0, 'connection_count': 0, 'modularity': 0, 'clustering_coefficient': 0}
         
-        return {
+        state = {
             'organism_count': len(network.organisms),
             'connection_count': len(network.connections),
             'modularity': network.metrics.modularity if hasattr(network.metrics, 'modularity') else 0,
@@ -1508,6 +1531,89 @@ class UnifiedSystem:
             'average_path_length': network.metrics.average_path_length if hasattr(network.metrics, 'average_path_length') else 0,
             'generation': network.generation if hasattr(network, 'generation') else 0,
         }
+        
+        # Quick Win #5: Add Health Monitor data to shared state
+        if hasattr(network, 'health_monitor') and network.health_monitor is not None:
+            try:
+                # Get neural stats if available
+                neural_stats = None
+                if hasattr(self.reality_sim, '_neural_metrics') and self.reality_sim._neural_metrics:
+                    neural_stats = {
+                        'training_loss': self.reality_sim._neural_metrics.get('training_loss'),
+                        'avg_epsilon': self.reality_sim._neural_metrics.get('avg_epsilon', 0.0),
+                        'organisms_tracked': self.reality_sim._neural_metrics.get('organisms_tracked', 0),
+                        'training_steps': self.reality_sim._neural_metrics.get('training_steps', 0),
+                    }
+                
+                # Get VP components from Explorer if available
+                vp_components = None
+                if self.controller and hasattr(self.controller, 'sentinel'):
+                    try:
+                        if hasattr(self.controller.sentinel, 'vp_history') and self.controller.sentinel.vp_history:
+                            latest_vp = self.controller.sentinel.vp_history[-1]
+                            if isinstance(latest_vp, dict) and 'component_breakdown' in latest_vp:
+                                vp_components = latest_vp['component_breakdown']
+                    except Exception:
+                        pass
+                
+                # Compute health
+                health_result = network.compute_ecosystem_health(
+                    neural_stats=neural_stats,
+                    vp_components=vp_components
+                )
+                
+                # Add health data to state
+                if health_result and health_result.get('enabled', False):
+                    state['health'] = {
+                        'health_score': health_result.get('health_score', 0.5),
+                        'state': health_result.get('state', 'unknown'),
+                        'components': {
+                            'coherence': health_result.get('components', {}).get('coherence', 0.0),
+                            'diversity': health_result.get('components', {}).get('diversity', 0.0),
+                            'adaptability': health_result.get('components', {}).get('adaptability', 0.0),
+                            'lawfulness': health_result.get('components', {}).get('lawfulness', 0.0),
+                            'sustainability': health_result.get('components', {}).get('sustainability', 0.0),
+                        }
+                    }
+                else:
+                    # Health monitor disabled or unavailable
+                    state['health'] = {
+                        'health_score': 0.5,
+                        'state': 'unknown',
+                        'enabled': False
+                    }
+            except Exception as e:
+                # Don't break if health calculation fails
+                state['health'] = {
+                    'health_score': 0.5,
+                    'state': 'error',
+                    'error': str(e)
+                }
+        else:
+            # Health monitor not initialized
+            state['health'] = {
+                'health_score': 0.5,
+                'state': 'not_initialized',
+                'enabled': False
+            }
+        
+        # Add meta-cognitive tuner status if available
+        if hasattr(self.reality_sim, 'config_tuner') and self.reality_sim.config_tuner:
+            try:
+                tuner_stats = self.reality_sim.config_tuner.get_stats()
+                state['meta_cognitive'] = {
+                    'enabled': tuner_stats.get('enabled', False),
+                    'mode': tuner_stats.get('mode', 'unknown'),
+                    'total_actions': tuner_stats.get('total_actions', 0),
+                    'successful_actions': tuner_stats.get('successful_actions', 0),
+                    'success_rate': tuner_stats.get('success_rate', 0.0),
+                }
+            except Exception:
+                state['meta_cognitive'] = {'enabled': False, 'mode': 'unknown'}
+        else:
+            state['meta_cognitive'] = {'enabled': False, 'mode': 'not_initialized'}
+        
+        return state
     
     def _get_explorer_state(self) -> Dict[str, Any]:
         """Get Explorer state"""
@@ -1701,14 +1807,34 @@ class UnifiedSystem:
 
                 # Build unified health metrics for CRA
                 network_health = 1.0 - phase_sync_state.get('synchronization', {}).get('proximity_difference', 0.0)
-                unified_health = {
-                    'overall_health': network_health * 0.9,  # Slight penalty if not fully aligned
-                    'reality_sim_health': min(1.0, phase_sync_state.get('network', {}).get('collapse_proximity', 0.0) + 0.2),
-                    'explorer_health': min(1.0, phase_sync_state.get('explorer', {}).get('genesis_proximity', 0.0) + 0.2),
-                    'djinn_kernel_health': 0.82,  # Default, could calculate from VP if available
-                    'integration_health': network_health,
-                    'phase_alignment_health': 1.0 - phase_sync_state.get('synchronization', {}).get('proximity_difference', 0.0)
-                }
+                
+                # FIXED: Include actual Health Monitor data if available (Quick Win #5)
+                health_monitor_data = reality_sim_state.get('health', {})
+                if health_monitor_data and health_monitor_data.get('health_score') is not None:
+                    # Use actual health monitor score
+                    actual_health_score = health_monitor_data.get('health_score', 0.5)
+                    unified_health = {
+                        'overall_health': actual_health_score,  # Use actual health monitor score
+                        'reality_sim_health': actual_health_score,  # Health Monitor score
+                        'health_score': actual_health_score,  # For /api/diagnostic/unified_health compatibility
+                        'state': health_monitor_data.get('state', 'unknown'),
+                        'components': health_monitor_data.get('components', {}),
+                        'explorer_health': min(1.0, phase_sync_state.get('explorer', {}).get('genesis_proximity', 0.0) + 0.2),
+                        'djinn_kernel_health': 0.82,  # Default, could calculate from VP if available
+                        'integration_health': network_health,
+                        'phase_alignment_health': 1.0 - phase_sync_state.get('synchronization', {}).get('proximity_difference', 0.0)
+                    }
+                else:
+                    # Fallback to phase sync-based health
+                    unified_health = {
+                        'overall_health': network_health * 0.9,  # Slight penalty if not fully aligned
+                        'reality_sim_health': min(1.0, phase_sync_state.get('network', {}).get('collapse_proximity', 0.0) + 0.2),
+                        'health_score': min(1.0, phase_sync_state.get('network', {}).get('collapse_proximity', 0.0) + 0.2),  # For compatibility
+                        'explorer_health': min(1.0, phase_sync_state.get('explorer', {}).get('genesis_proximity', 0.0) + 0.2),
+                        'djinn_kernel_health': 0.82,  # Default, could calculate from VP if available
+                        'integration_health': network_health,
+                        'phase_alignment_health': 1.0 - phase_sync_state.get('synchronization', {}).get('proximity_difference', 0.0)
+                    }
                 unified_data['unified_health'] = unified_health
 
                 # Build transition status for CRA

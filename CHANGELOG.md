@@ -4,6 +4,91 @@
 
 ---
 
+## [Unreleased] - 2025-12-01
+
+### 🦋 Butterfly Chat Debug Panel & Learning System (2025-12-01)
+
+#### Added
+- **Butterfly Chat Debug Panel** (`templates/causation_explorer.html`, `reality_simulator/language/butterfly_chat.py`)
+  - Split-panel UI: 2/3 chat interface, 1/3 debug/analysis panel
+  - Three debug tabs: Logs, Causation Trail, Errors
+  - Step-by-step debug logging with timestamps and detailed data
+  - Causation trail analysis showing response formation process
+  - Error detection and interpretation with context
+  - Performance metrics tracking (total time, avg response time)
+  - Real-time updates as messages are processed
+
+- **Illumination Engine Integration** (`templates/causation_explorer.html`, `reality_simulator/language/butterfly_chat.py`)
+  - Direct linking between causation trail and Illumination Engine
+  - Clickable buttons on each causation step: Root Causes, Impact, Explain
+  - Inline Illumination results displayed in debug panel
+  - Automatic event ID capture and linking
+  - Dual display: results in both debug panel and main Illumination panel
+
+- **Learning from Chat Interactions** (`reality_simulator/language/butterfly_chat.py`)
+  - Automatic experience storage for neural organisms
+  - Reward calculation based on response quality:
+    - +0.5 for non-empty responses
+    - +0.3 × confidence bonus
+    - +0.2 for longer responses (up to 10 words)
+    - -0.1 for empty responses
+  - Token sequence storage for language model training
+  - VP-aware learning (includes violation pressure in experiences)
+  - Vocabulary learning from empty responses (auto-adds user words)
+
+- **Language Visualization Enhancements** (`templates/causation_explorer.html`, `causation_web_ui.py`)
+  - Language systems added to graph legend (🦋 Language System, 🦋 Butterfly Chat)
+  - Language links added to legend (🦋 Language Links)
+  - Distinct icon shapes for language events:
+    - Circle for vocabulary_growth and butterfly_chat_message
+    - Wye for organism_communication
+  - Language link color picker in UI settings
+  - Linguistic edge detection (connections based on shared vocabulary)
+  - CRA updated with knowledge of all language visualization settings
+
+#### Fixed
+- **Event ID Collision** (`causation_explorer.py`)
+  - Fixed issue where all events shared the same ID
+  - Added global counter for unique event IDs: `evt_{timestamp}_{counter}`
+  - Changed `default_factory=lambda: _generate_unique_event_id()` to `default_factory=_generate_unique_event_id`
+
+- **Division by Zero Error** (`reality_simulator/neural/neural_organism.py`)
+  - Fixed "integer modulo by zero" when vocabulary only has special tokens
+  - Added safety check: `non_special_size = max(1, vocab_size - len(SPECIAL_TOKENS))`
+  - Prevents crash when vocab_size equals number of special tokens
+
+- **Method Name Mismatch** (`reality_simulator/neural/neural_organism.py`, `reality_simulator/language_system.py`)
+  - Fixed `get_token_id()` calls to use `get_id()` method
+  - Added compatibility method `get_token_id()` as alias for `get_id()`
+  - Ensures backward compatibility
+
+- **Token ID Clamping** (`reality_simulator/neural/neural_organism.py`)
+  - Added vocabulary size clamping to prevent out-of-range tokens
+  - Clamps language logits to vocabulary size
+  - Maps action tokens to valid vocabulary range when no language head exists
+
+- **Empty Response Handling** (`reality_simulator/language_system.py`)
+  - Modified decode to skip `<UNK>` tokens to avoid empty responses
+  - Added vocabulary learning when responses are empty
+  - Automatically adds user message words to vocabulary
+
+#### Changed
+- **Butterfly Chat UI Layout** (`templates/causation_explorer.html`)
+  - Changed from single panel to split layout (2/3 chat, 1/3 debug)
+  - Increased height to 600px for better visibility
+  - Added tabbed interface for debug views
+
+- **CRA System Prompt** (`causation_web_ui.py`)
+  - Added detailed "Language Visualization" section
+  - Includes node shapes, colors, link types, and control instructions
+  - CRA now has full knowledge of language visualization settings
+
+- **API Response Format** (`causation_web_ui.py`)
+  - Added `debug_logs`, `causation_trail`, `errors`, and `performance` fields
+  - Backward compatible with existing response format
+
+---
+
 ## [Unreleased] - 2025-11-30
 
 ### 🔧 Bug Fixes & Stability Improvements (2025-11-30)

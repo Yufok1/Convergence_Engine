@@ -1455,6 +1455,10 @@
                         <label><input type="checkbox" id="filter-temporal" checked onchange="applyFilters()">
                             <span>Temporal</span></label>
                     </div>
+                    <div class="filter-item">
+                        <label><input type="checkbox" id="filter-language-type" checked onchange="applyFilters()">
+                            <span>🦋 Language</span></label>
+                    </div>
                 </div>
 
                 <div class="filter-section">
@@ -1631,6 +1635,15 @@
                                 <span style="min-width: 120px;">🔬 ML Links:</span>
                                 <input type="color" id="color-link-ml" value="#FFA500"
                                     onchange="updateLinkColor('ml', this.value)"
+                                    style="width: 60px; height: 25px; cursor: pointer;">
+                            </label>
+                        </div>
+                        <div class="filter-item" style="margin-bottom: 8px;">
+                            <label
+                                style="display: flex; align-items: center; gap: 8px; color: #0ff; font-size: 0.85em;">
+                                <span style="min-width: 120px;">🦋 Language Links:</span>
+                                <input type="color" id="color-link-language" value="#9B59B6"
+                                    onchange="updateLinkColor('language', this.value)"
                                     style="width: 60px; height: 25px; cursor: pointer;">
                             </label>
                         </div>
@@ -2156,31 +2169,67 @@
                     
                     <!-- Butterfly Chat Tab Content -->
                     <div id="butterflyTabContent" style="display: none;">
-                        <div style="margin-bottom: 10px;">
-                            <div style="margin-bottom: 8px;">
-                                <label style="color: #ff0; display: block; margin-bottom: 5px; font-size: 0.9em;">Routing Strategy:</label>
-                                <select id="butterflyRoutingSelect"
-                                    style="width: 100%; background: #111; color: #ff0; border: 1px solid #ff0; padding: 5px; font-family: 'Courier New', monospace; font-size: 0.9em;">
-                                    <option value="all">All Organisms</option>
-                                    <option value="random">Random Sample</option>
-                                    <option value="fittest">Fittest Organisms</option>
-                                    <option value="connected">Connected Organisms</option>
-                                    <option value="by_word">By Word Match</option>
-                                </select>
+                        <!-- Split Layout: 2/3 Chat, 1/3 Debug -->
+                        <div style="display: flex; gap: 10px; height: 600px;">
+                            <!-- Chat Panel (2/3 width) -->
+                            <div style="flex: 2; display: flex; flex-direction: column;">
+                                <div style="margin-bottom: 10px;">
+                                    <div style="margin-bottom: 8px;">
+                                        <label style="color: #ff0; display: block; margin-bottom: 5px; font-size: 0.9em;">Routing Strategy:</label>
+                                        <select id="butterflyRoutingSelect"
+                                            style="width: 100%; background: #111; color: #ff0; border: 1px solid #ff0; padding: 5px; font-family: 'Courier New', monospace; font-size: 0.9em;">
+                                            <option value="all">All Organisms</option>
+                                            <option value="random">Random Sample</option>
+                                            <option value="fittest">Fittest Organisms</option>
+                                            <option value="connected">Connected Organisms</option>
+                                            <option value="by_word">By Word Match</option>
+                                        </select>
+                                    </div>
+                                    <div style="margin-bottom: 8px;">
+                                        <label style="color: #ff0; display: block; margin-bottom: 5px; font-size: 0.9em;">Max Organisms:</label>
+                                        <input type="number" id="butterflyMaxOrganisms" value="10" min="1" max="50"
+                                            style="width: 100%; background: #111; color: #ff0; border: 1px solid #ff0; padding: 5px; font-family: 'Courier New', monospace; font-size: 0.9em;">
+                                    </div>
+                                </div>
+                                <div id="butterflyChatHistory" style="flex: 1; overflow-y: auto; background: #000; border: 1px solid #ff0; padding: 10px; margin-bottom: 10px; font-family: 'Courier New', monospace; font-size: 0.9em; min-height: 0;"></div>
+                                <div style="display: flex; gap: 10px;">
+                                    <input type="text" id="butterflyChatInput" placeholder="Chat with organism networks..."
+                                        style="flex: 1; padding: 8px; background: #111; color: #ff0; border: 1px solid #ff0; font-family: 'Courier New', monospace;">
+                                    <button id="butterflyChatSendButton" style="padding: 8px 15px; background: #ff0; color: #000; border: 1px solid #ff0; cursor: pointer;">Send</button>
+                                </div>
+                                <div id="butterflyChatStatus" style="color: #ff0; font-size: 0.8em; margin-top: 5px;"></div>
                             </div>
-                            <div style="margin-bottom: 8px;">
-                                <label style="color: #ff0; display: block; margin-bottom: 5px; font-size: 0.9em;">Max Organisms:</label>
-                                <input type="number" id="butterflyMaxOrganisms" value="10" min="1" max="50"
-                                    style="width: 100%; background: #111; color: #ff0; border: 1px solid #ff0; padding: 5px; font-family: 'Courier New', monospace; font-size: 0.9em;">
+                            
+                            <!-- Debug Panel (1/3 width) -->
+                            <div style="flex: 1; display: flex; flex-direction: column; border-left: 2px solid #ff0; padding-left: 10px;">
+                                <div style="margin-bottom: 8px;">
+                                    <h4 style="color: #ff0; margin: 0 0 5px 0; font-size: 1em; border-bottom: 1px solid #ff0; padding-bottom: 5px;">🔍 Debug & Analysis</h4>
+                                    <div style="display: flex; gap: 5px; margin-bottom: 5px;">
+                                        <button id="debugTabLogs" onclick="switchDebugTab('logs')" class="debug-tab active"
+                                            style="flex: 1; padding: 4px 8px; background: #ff0; color: #000; border: 1px solid #ff0; cursor: pointer; font-size: 0.8em; font-weight: bold;">Logs</button>
+                                        <button id="debugTabCausation" onclick="switchDebugTab('causation')" class="debug-tab"
+                                            style="flex: 1; padding: 4px 8px; background: #111; color: #ff0; border: 1px solid #ff0; cursor: pointer; font-size: 0.8em; font-weight: bold;">Causation</button>
+                                        <button id="debugTabErrors" onclick="switchDebugTab('errors')" class="debug-tab"
+                                            style="flex: 1; padding: 4px 8px; background: #111; color: #f00; border: 1px solid #f00; cursor: pointer; font-size: 0.8em; font-weight: bold;">Errors</button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Debug Logs Tab -->
+                                <div id="debugLogsContent" class="debug-content" style="flex: 1; overflow-y: auto; background: #000; border: 1px solid #ff0; padding: 8px; font-family: 'Courier New', monospace; font-size: 0.75em; min-height: 0;">
+                                    <div style="color: #888; font-style: italic;">Debug logs will appear here...</div>
+                                </div>
+                                
+                                <!-- Causation Trail Tab -->
+                                <div id="debugCausationContent" class="debug-content" style="display: none; flex: 1; overflow-y: auto; background: #000; border: 1px solid #ff0; padding: 8px; font-family: 'Courier New', monospace; font-size: 0.75em; min-height: 0;">
+                                    <div style="color: #888; font-style: italic;">Causation trail will appear here...</div>
+                                </div>
+                                
+                                <!-- Errors Tab -->
+                                <div id="debugErrorsContent" class="debug-content" style="display: none; flex: 1; overflow-y: auto; background: #000; border: 1px solid #f00; padding: 8px; font-family: 'Courier New', monospace; font-size: 0.75em; min-height: 0;">
+                                    <div style="color: #888; font-style: italic;">Errors will appear here...</div>
+                                </div>
                             </div>
                         </div>
-                        <div id="butterflyChatHistory" style="height: 300px; overflow-y: auto; background: #000; border: 1px solid #ff0; padding: 10px; margin-bottom: 10px; font-family: 'Courier New', monospace; font-size: 0.9em;"></div>
-                        <div style="display: flex; gap: 10px;">
-                            <input type="text" id="butterflyChatInput" placeholder="Chat with organism networks..."
-                                style="flex: 1; padding: 8px; background: #111; color: #ff0; border: 1px solid #ff0; font-family: 'Courier New', monospace;">
-                            <button id="butterflyChatSendButton" style="padding: 8px 15px; background: #ff0; color: #000; border: 1px solid #ff0; cursor: pointer;">Send</button>
-                        </div>
-                        <div id="butterflyChatStatus" style="color: #ff0; font-size: 0.8em; margin-top: 5px;"></div>
                     </div>
                     
                     <!-- Research Notepad Tab Content -->
@@ -4111,6 +4160,8 @@
                     'correlation': true,
                     'direct': true,
                     'temporal': true,
+                    'language': true,  // Language causation links
+                    'linguistic': true,  // Linguistic edges (from language_anchors)
                     'unknown': true
                 },
                 showLabels: true,
@@ -4536,7 +4587,11 @@
                 const visibleNodeIds = new Set(filteredNodes.map(n => n.id));
                 const visibleComponents = new Set(filteredNodes.map(n => n.component || 'unknown'));
                 filteredLinks = allLinks.filter(link => {
-                    const linkType = (link.type || 'unknown').toLowerCase();
+                    // Check causation type (language, direct, threshold, etc.)
+                    const linkType = (link.type || link.causation_type || 'unknown').toLowerCase();
+                    // Also check if it's a linguistic edge (from language_anchors)
+                    const isLinguistic = link.is_linguistic || link.linguistic_edge;
+                    if (isLinguistic && !filters.causationTypes['linguistic']) return false;
                     if (!filters.causationTypes[linkType]) return false;
                     
                     // Get source and target IDs and components
@@ -5113,7 +5168,9 @@
                     'direct': 'color-link-direct',
                     'temporal': 'color-link-temporal',
                     'neural': 'color-link-neural',
-                    'ml': 'color-link-ml'
+                    'ml': 'color-link-ml',
+                    'language': 'color-link-language',  // 🦋 Language causation links
+                    'linguistic': 'color-link-language'  // 🦋 Linguistic edges (share same color)
                 };
                 Object.keys(linkColorMap).forEach(linkType => {
                     const picker = document.getElementById(linkColorMap[linkType]);
@@ -5875,6 +5932,8 @@
                     { name: 'Breath Engine', color: componentColors['breath'] },
                     { name: '🧠 Neural System', color: componentColors['neural'] },
                     { name: '🔬 ML Analysis', color: componentColors['ml_analysis'] },
+                    { name: '🦋 Language System', color: componentColors['language'] || '#00BCD4' },
+                    { name: '🦋 Butterfly Chat', color: componentColors['butterfly_chat'] || '#8BC34A' },
                     { name: 'System', color: componentColors['system'] }
                 ];
 
@@ -5885,18 +5944,22 @@
                     { name: 'Direct', color: linkColors['direct'] || '#00FF00' },
                     { name: 'Temporal', color: linkColors['temporal'] || '#FFFF00' },
                     { name: '🧠 Neural', color: linkColors['neural'] || '#00FFFF' },
-                    { name: '🔬 ML', color: linkColors['ml'] || '#FF00FF' },
+                    { name: '🔬 ML', color: linkColors['ml'] || '#FFA500' },
+                    { name: '🦋 Language', color: linkColors['language'] || '#9B59B6' },
                     { name: 'Unknown', color: linkColors['unknown'] || '#FF8800' }
                 ];
 
-                // Neural/ML icon shapes (for vision model recognition)
+                // Neural/ML/Language icon shapes (for vision model recognition)
                 const neuralMLIcons = [
                     { name: '🧠 Neural Decision', shape: 'diamond', color: '#00FFFF', eventType: 'neural_decision' },
                     { name: '🧠 Neural Training', shape: 'square', color: '#BF00FF', eventType: 'neural_training' },
                     { name: '🔬 Phenotype Emergence', shape: 'star', color: '#FF00FF', eventType: 'phenotype_emergence' },
                     { name: '🔬 Anomaly Spike', shape: 'triangle', color: '#FF8800', eventType: 'anomaly_spike' },
                     { name: '🔬 Cluster Collapse', shape: 'cross', color: '#FF3333', eventType: 'cluster_collapse' },
-                    { name: '🔬 ML Analysis', shape: 'wye', color: '#FF00FF', eventType: 'ml_analysis' }
+                    { name: '🔬 ML Analysis', shape: 'wye', color: '#FF00FF', eventType: 'ml_analysis' },
+                    { name: '🦋 Vocabulary Growth', shape: 'circle', color: '#00BCD4', eventType: 'vocabulary_growth' },
+                    { name: '🦋 Organism Communication', shape: 'wye', color: '#00BCD4', eventType: 'organism_communication' },
+                    { name: '🦋 Butterfly Chat', shape: 'circle', color: '#8BC34A', eventType: 'butterfly_chat_message' }
                 ];
 
                 // Calculate legend dimensions based on content (components + links + neuralML + info)
@@ -6066,7 +6129,10 @@
                         comp.name === 'Explorer' ? 'explorer' :
                             comp.name === 'Djinn Kernel' ? 'djinn_kernel' :
                                 comp.name === 'Breath Engine' ? 'breath' :
-                                    comp.name === '🧠 Neural System' ? 'neural' : 'system';
+                                    comp.name === '🧠 Neural System' ? 'neural' :
+                                        comp.name === '🔬 ML Analysis' ? 'ml_analysis' :
+                                            comp.name === '🦋 Language System' ? 'language' :
+                                                comp.name === '🦋 Butterfly Chat' ? 'butterfly_chat' : 'system';
                     legendContent.append('circle')
                         .attr('cx', 0)
                         .attr('cy', yPos)
@@ -6110,7 +6176,7 @@
                         .text(link.name);
                 });
 
-                // Neural/ML Icon Shapes Section (for vision model recognition)
+                // Neural/ML/Language Icon Shapes Section (for vision model recognition)
                 const neuralMLSectionY = titleHeight + componentsHeight + sectionSpacing + linksHeight + sectionSpacing;
                 legendContent.append('text')
                     .attr('x', 0)
@@ -6118,7 +6184,7 @@
                     .attr('fill', '#0ff')
                     .attr('font-size', '12px')
                     .attr('font-weight', 'bold')
-                    .text('🧠 Neural & ML Icons:');
+                    .text('🧠 Neural, 🔬 ML & 🦋 Language Icons:');
                 
                 neuralMLIcons.forEach((icon, i) => {
                     // Each icon takes more space due to description text
@@ -6462,11 +6528,14 @@
                     const comp = d.component || 'unknown';
                     const isNeural = comp === 'neural';
                     const isML = comp === 'ml_analysis';
+                    const isLanguage = comp === 'language';
+                    const isButterflyChat = comp === 'butterfly_chat';
                     const isNeuralDecision = isNeural && eventType === 'neural_decision';
                     const isNeuralTraining = isNeural && eventType === 'neural_training';
                     const isPhenotypeEmergence = isML && eventType === 'phenotype_emergence';
                     const isClusterCollapse = isML && eventType === 'cluster_collapse';
                     const isAnomalySpike = isML && eventType === 'anomaly_spike';
+                    const isLanguageEvent = isLanguage || isButterflyChat || eventType === 'vocabulary_growth' || eventType === 'organism_communication' || eventType === 'butterfly_chat_message' || eventType === 'butterfly_chat_response';
                     
                     const baseRadius = vizSettings.nodeBaseSize + (d.type ? 2 : 0);
                     const depthScore = d._depthScore || 0.5;
@@ -6575,6 +6644,26 @@
                             .attr('class', 'node-circle ml-node')
                             .attr('d', wye)
                             .attr('fill', '#FF00FF') // Magenta
+                            .attr('fill-opacity', fillOpacity)
+                            .attr('stroke', strokeColor)
+                            .attr('stroke-width', vizSettings.nodeStrokeWidth)
+                            .attr('stroke-opacity', vizSettings.nodeStrokeOpacity)
+                            .style('filter', filterValue);
+                    } else if (isLanguageEvent) {
+                        // Language events use Circle (vocabulary_growth, butterfly_chat) or Wye (organism_communication)
+                        const languageColor = isButterflyChat ? '#8BC34A' : '#00BCD4';
+                        let languageShape;
+                        if (eventType === 'organism_communication') {
+                            // Wye shape for organism communication (represents connection/branching)
+                            languageShape = d3.symbol().type(d3.symbolWye).size(radius * radius * 4);
+                        } else {
+                            // Circle shape for vocabulary growth and butterfly chat (represents growth/expansion)
+                            languageShape = d3.symbol().type(d3.symbolCircle).size(radius * radius * 4);
+                        }
+                        shapeElement = nodeElement.append('path')
+                            .attr('class', 'node-circle language-node')
+                            .attr('d', languageShape)
+                            .attr('fill', languageColor)
                             .attr('fill-opacity', fillOpacity)
                             .attr('stroke', strokeColor)
                             .attr('stroke-width', vizSettings.nodeStrokeWidth)
@@ -7554,12 +7643,22 @@
             }
 
             function getLinkColor(linkType, linkData = null) {
-                // Check if this is a neural or ML link (by checking source/target components and event types)
+                // Check if this is a neural, ML, or language link (by checking source/target components and event types)
                 if (linkData) {
                     const sourceId = typeof linkData.source === 'object' ? linkData.source.id : linkData.source;
                     const targetId = typeof linkData.target === 'object' ? linkData.target.id : linkData.target;
                     const sourceNode = allNodes.find(n => n.id === sourceId);
                     const targetNode = allNodes.find(n => n.id === targetId);
+                    
+                    // Check for language links (by component or causation type)
+                    const isLanguageLink = (sourceNode && (sourceNode.component === 'language' || sourceNode.component === 'butterfly_chat')) ||
+                                         (targetNode && (targetNode.component === 'language' || targetNode.component === 'butterfly_chat'));
+                    const linkTypeStr = (linkType || '').toLowerCase().trim();
+                    const isLanguageType = linkTypeStr === 'language' || linkTypeStr === 'linguistic';
+                    
+                    if (isLanguageLink || isLanguageType) {
+                        return linkColors['language'] || '#9B59B6';
+                    }
                     
                     // Check for neural links
                     if ((sourceNode && sourceNode.component === 'neural') || 
@@ -7570,7 +7669,6 @@
                     // Check for ML links (by component or event type)
                     const isMLLink = (sourceNode && sourceNode.component === 'ml_analysis') ||
                                     (targetNode && targetNode.component === 'ml_analysis');
-                    const linkTypeStr = (linkType || '').toLowerCase().trim();
                     const isMLEventType = ['phenotype_emergence', 'cluster_collapse', 'anomaly_spike', 'ml_analysis'].includes(linkTypeStr);
                     
                     if (isMLLink || isMLEventType) {
@@ -7688,13 +7786,24 @@
                                            (targetNode && targetNode.component === 'neural');
                         const isMLLink = (sourceNode && sourceNode.component === 'ml_analysis') ||
                                         (targetNode && targetNode.component === 'ml_analysis');
+                        const isLanguageLink = (sourceNode && (sourceNode.component === 'language' || sourceNode.component === 'butterfly_chat')) ||
+                                             (targetNode && (targetNode.component === 'language' || targetNode.component === 'butterfly_chat'));
+                        const isLinguisticEdge = d.is_linguistic || d.linguistic_edge;
                         // Treat phenotype/anomaly/cluster events as ML links when updating 'ml'
                         const isMLEventType = ['phenotype_emergence','cluster_collapse','anomaly_spike'].includes(dType);
+                        const isLanguageType = dType === 'language' || dType === 'linguistic';
                         if (normalizedType === 'ml' && (isMLLink || isMLEventType)) {
                             link.attr('stroke', color);
                         } else if (isNeuralLink && normalizedType === 'neural') {
                             link.attr('stroke', color);
-                        } else if (dType === normalizedType && !isNeuralLink && !isMLLink) {
+                        } else if ((normalizedType === 'language' || normalizedType === 'linguistic') && (isLanguageLink || isLinguisticEdge || isLanguageType)) {
+                            // Update both language and linguistic edges when language color changes
+                            link.attr('stroke', color);
+                            // Also update linguistic color if it's the same
+                            if (normalizedType === 'language') {
+                                linkColors['linguistic'] = color;
+                            }
+                        } else if (dType === normalizedType && !isNeuralLink && !isMLLink && !isLanguageLink) {
                             link.attr('stroke', color);
                         }
                     });
@@ -10494,7 +10603,12 @@
                 let queryParams = '';
                 
                 // Normalize event_id (CRA may use eventid, event_id, or eventId)
-                const eventId = params.event_id || params.eventid || params.eventId;
+                let eventId = params.event_id || params.eventid || params.eventId;
+                // Normalize event ID format: ensure it has underscore (evt_xxx not evtxxx)
+                if (eventId && typeof eventId === 'string' && eventId.startsWith('evt') && !eventId.includes('_')) {
+                    // Convert "evt1764498120937120" to "evt_1764498120937120"
+                    eventId = 'evt_' + eventId.substring(3);
+                }
 
                 switch (cmd) {
                     case 'root_causes':
@@ -12304,27 +12418,41 @@
                 let graphImage = null;
 
                 if (hasGraphData) {
-                    // CRITICAL: Wait for browser to finish rendering before capturing
-                    // This ensures we capture the CURRENT state, not a cached/old state
-                    // Use requestAnimationFrame to wait for the next paint cycle
-                    await new Promise(resolve => {
-                        requestAnimationFrame(() => {
-                            requestAnimationFrame(() => { // Double RAF ensures paint is complete
-                                resolve();
+                    // FIXED: Add retry logic for graph capture with exponential backoff
+                    const MAX_RETRIES = 3;
+                    let retryCount = 0;
+                    
+                    while (retryCount < MAX_RETRIES && !graphImage) {
+                        // CRITICAL: Wait for browser to finish rendering before capturing
+                        // This ensures we capture the CURRENT state, not a cached/old state
+                        // Use requestAnimationFrame to wait for the next paint cycle
+                        await new Promise(resolve => {
+                            requestAnimationFrame(() => {
+                                requestAnimationFrame(() => { // Double RAF ensures paint is complete
+                                    resolve();
+                                });
                             });
                         });
-                    });
 
-                    // Small additional delay to ensure all DOM updates are flushed
-                    await new Promise(resolve => setTimeout(resolve, 50));
+                        // Small additional delay to ensure all DOM updates are flushed
+                        // Increase delay on retries
+                        const delay = 50 * (retryCount + 1);
+                        await new Promise(resolve => setTimeout(resolve, delay));
 
-                    console.log('[VISION] Capturing current graph state (ensured render completion)');
-                    graphImage = await captureGraphImage();
+                        console.log(`[VISION] Capturing current graph state (attempt ${retryCount + 1}/${MAX_RETRIES})`);
+                        graphImage = await captureGraphImage();
 
-                    if (graphImage) {
-                        console.log(`[VISION] Captured fresh graph image: ${(graphImage.length / 1024).toFixed(1)}KB`);
-                    } else {
-                        console.warn('[VISION] Graph image capture returned null');
+                        if (graphImage) {
+                            console.log(`[VISION] Captured fresh graph image: ${(graphImage.length / 1024).toFixed(1)}KB`);
+                            break; // Success, exit retry loop
+                        } else {
+                            retryCount++;
+                            if (retryCount < MAX_RETRIES) {
+                                console.warn(`[VISION] Graph image capture returned null, retrying (${retryCount}/${MAX_RETRIES})...`);
+                            } else {
+                                console.warn('[VISION] Graph image capture failed after all retries');
+                            }
+                        }
                     }
                 } else {
                     console.log(`[SNAPSHOT] Skipping graph capture - no graph data available (${allNodes ? allNodes.length : 0} nodes)`);
@@ -12911,6 +13039,12 @@
                                         if (afterBrace.startsWith(']]')) {
                                             const jsonStr = data.response.substring(braceStart, braceEnd + 1);
                                             vizUpdateMatch = [null, jsonStr]; // Create match array format
+                                            // Strip JSON comments (JSON doesn't support # comments)
+                                            // Remove lines starting with # or containing # after valid JSON
+                                            jsonStr = jsonStr.replace(/#.*$/gm, '').trim();
+                                            // Remove trailing commas before closing braces/brackets
+                                            jsonStr = jsonStr.replace(/,(\s*[}\]])/g, '$1');
+                                            
                                             console.log('[CRA] Found VIZ_SETTINGS_UPDATE marker, extracted JSON length:', jsonStr.length);
                                         }
                                     }
@@ -13204,12 +13338,27 @@
 
                         if (data.error) {
                             addButterflyChatMessage('assistant', `Error: ${data.error}`, true);
+                            displayDebugError("API_ERROR", data.error, {});
                             return;
                         }
 
                         // Add response with metadata
-                        const responseText = `${data.response}\n\n[Confidence: ${(data.confidence * 100).toFixed(1)}%, Organisms: ${data.organism_count}, Strategy: ${data.routing_strategy}]`;
+                        const responseText = `${data.response}\n\n[Confidence: ${(data.confidence || 0) * 100}%, Organisms: ${data.organism_count || 0}, Strategy: ${data.routing_strategy || 'unknown'}]`;
                         addButterflyChatMessage('assistant', responseText);
+                        
+                        // Display debug information
+                        if (data.debug_logs) {
+                            displayDebugLogs(data.debug_logs);
+                        }
+                        if (data.causation_trail) {
+                            displayCausationTrail(data.causation_trail, data.organism_responses || []);
+                        }
+                        if (data.errors) {
+                            displayDebugErrors(data.errors);
+                        }
+                        if (data.performance) {
+                            displayPerformanceMetrics(data.performance);
+                        }
                     })
                     .catch(err => {
                         console.error('Error sending butterfly chat message:', err);
@@ -13485,6 +13634,460 @@
             // Update butterfly chat status
             function updateButterflyChatStatus(status) {
                 document.getElementById('butterflyChatStatus').textContent = status;
+            }
+            
+            // Debug panel tab switching
+            function switchDebugTab(tab) {
+                const logsTab = document.getElementById('debugTabLogs');
+                const causationTab = document.getElementById('debugTabCausation');
+                const errorsTab = document.getElementById('debugTabErrors');
+                const logsContent = document.getElementById('debugLogsContent');
+                const causationContent = document.getElementById('debugCausationContent');
+                const errorsContent = document.getElementById('debugErrorsContent');
+                
+                // Reset all tabs
+                [logsTab, causationTab, errorsTab].forEach(btn => {
+                    if (btn) {
+                        btn.style.background = '#111';
+                        btn.style.color = btn === errorsTab ? '#f00' : '#ff0';
+                    }
+                });
+                [logsContent, causationContent, errorsContent].forEach(content => {
+                    if (content) content.style.display = 'none';
+                });
+                
+                // Activate selected tab
+                if (tab === 'logs' && logsTab && logsContent) {
+                    logsTab.style.background = '#ff0';
+                    logsTab.style.color = '#000';
+                    logsContent.style.display = 'flex';
+                } else if (tab === 'causation' && causationTab && causationContent) {
+                    causationTab.style.background = '#ff0';
+                    causationTab.style.color = '#000';
+                    causationContent.style.display = 'flex';
+                } else if (tab === 'errors' && errorsTab && errorsContent) {
+                    errorsTab.style.background = '#f00';
+                    errorsTab.style.color = '#000';
+                    errorsContent.style.display = 'flex';
+                }
+            }
+            
+            // Display debug logs
+            function displayDebugLogs(logs) {
+                const container = document.getElementById('debugLogsContent');
+                if (!container) return;
+                
+                container.innerHTML = '';
+                if (!logs || logs.length === 0) {
+                    container.innerHTML = '<div style="color: #888; font-style: italic;">No debug logs available.</div>';
+                    return;
+                }
+                
+                logs.forEach((log, idx) => {
+                    const logDiv = document.createElement('div');
+                    logDiv.style.marginBottom = '8px';
+                    logDiv.style.padding = '6px';
+                    logDiv.style.borderLeft = '3px solid ' + (log.level === 'error' ? '#f00' : '#ff0');
+                    logDiv.style.background = log.level === 'error' ? 'rgba(255,0,0,0.1)' : 'rgba(255,255,0,0.05)';
+                    
+                    const time = new Date(log.timestamp * 1000).toLocaleTimeString();
+                    const step = log.step || log.error_type || 'UNKNOWN';
+                    const action = log.action || log.message || 'No action';
+                    
+                    logDiv.innerHTML = `
+                        <div style="color: #ff0; font-weight: bold; font-size: 0.85em; margin-bottom: 3px;">
+                            [${time}] ${step}: ${action}
+                        </div>
+                        <div style="color: #aaa; font-size: 0.75em; margin-left: 10px;">
+                            ${formatDebugData(log.data || {})}
+                        </div>
+                    `;
+                    
+                    container.appendChild(logDiv);
+                });
+                
+                // Auto-scroll to bottom
+                container.scrollTop = container.scrollHeight;
+            }
+            
+            // Display causation trail with Illumination Engine integration
+            function displayCausationTrail(trail, organismResponses) {
+                const container = document.getElementById('debugCausationContent');
+                if (!container) return;
+                
+                container.innerHTML = '';
+                if (!trail || trail.length === 0) {
+                    container.innerHTML = '<div style="color: #888; font-style: italic;">No causation trail available.</div>';
+                    return;
+                }
+                
+                // Create response map for quick lookup
+                const responseMap = {};
+                organismResponses.forEach(resp => {
+                    responseMap[resp.organism_id] = resp;
+                });
+                
+                trail.forEach((step, idx) => {
+                    const stepDiv = document.createElement('div');
+                    stepDiv.style.marginBottom = '10px';
+                    stepDiv.style.padding = '8px';
+                    stepDiv.style.border = '1px solid #ff0';
+                    stepDiv.style.background = 'rgba(255,255,0,0.05)';
+                    
+                    const orgId = step.organism_id;
+                    const stepData = step.step_data || {};
+                    const response = responseMap[orgId] || {};
+                    const eventId = step.event_id || stepData.event_id;
+                    
+                    const time = new Date(step.timestamp * 1000).toLocaleTimeString();
+                    const fitness = stepData.fitness || response.fitness || 0;
+                    const confidence = stepData.confidence || response.confidence || 0;
+                    const weight = stepData.weight || (fitness * confidence);
+                    
+                    // Illumination buttons (only show if event_id exists)
+                    let illuminationButtons = '';
+                    if (eventId) {
+                        illuminationButtons = `
+                            <div style="margin-top: 8px; display: flex; gap: 5px; flex-wrap: wrap;">
+                                <button onclick="illuminateRootCauses('${eventId}', ${idx})" 
+                                    style="padding: 4px 8px; background: #0aa; color: #000; border: 1px solid #0ff; cursor: pointer; font-size: 0.75em; font-weight: bold; border-radius: 3px;"
+                                    title="Trace root causes of this event">
+                                    🔍 Root Causes
+                                </button>
+                                <button onclick="illuminateImpact('${eventId}', ${idx})" 
+                                    style="padding: 4px 8px; background: #0a0; color: #000; border: 1px solid #0f0; cursor: pointer; font-size: 0.75em; font-weight: bold; border-radius: 3px;"
+                                    title="See what this event caused">
+                                    💥 Impact
+                                </button>
+                                <button onclick="illuminateExplain('${eventId}', ${idx})" 
+                                    style="padding: 4px 8px; background: #aa0; color: #000; border: 1px solid #ff0; cursor: pointer; font-size: 0.75em; font-weight: bold; border-radius: 3px;"
+                                    title="Get full explanation">
+                                    📖 Explain
+                                </button>
+                            </div>
+                        `;
+                    }
+                    
+                    stepDiv.innerHTML = `
+                        <div style="color: #ff0; font-weight: bold; margin-bottom: 5px;">
+                            Step ${idx + 1}: Organism ${orgId} [${time}]
+                            ${eventId ? `<span style="color: #0ff; font-size: 0.8em; margin-left: 10px;">Event: ${eventId}</span>` : ''}
+                        </div>
+                        <div style="color: #aaa; font-size: 0.85em; margin-left: 10px;">
+                            <div><strong>Input:</strong> ${stepData.input_tokens?.length || 0} tokens</div>
+                            <div><strong>Output:</strong> ${stepData.output_tokens?.length || 0} tokens → "${(stepData.response_text || '').substring(0, 50)}..."</div>
+                            <div><strong>Metrics:</strong> Fitness=${fitness.toFixed(3)}, Confidence=${confidence.toFixed(3)}, Weight=${weight.toFixed(3)}</div>
+                            <div><strong>Context:</strong> ${stepData.context_memory_used ? 'Used' : 'Not used'}, VP=${stepData.vp_value !== null && stepData.vp_value !== undefined ? stepData.vp_value.toFixed(3) : 'N/A'}</div>
+                        </div>
+                        ${illuminationButtons}
+                        <div id="illumination-result-${idx}" style="margin-top: 8px; display: none;"></div>
+                    `;
+                    
+                    container.appendChild(stepDiv);
+                });
+                
+                // Add aggregation summary
+                if (organismResponses.length > 0) {
+                    const summaryDiv = document.createElement('div');
+                    summaryDiv.style.marginTop = '10px';
+                    summaryDiv.style.padding = '8px';
+                    summaryDiv.style.border = '2px solid #0f0';
+                    summaryDiv.style.background = 'rgba(0,255,0,0.1)';
+                    
+                    const bestResponse = organismResponses.reduce((best, resp) => {
+                        const weight = (resp.fitness || 0) * (resp.confidence || 0);
+                        return weight > (best.weight || 0) ? {...resp, weight} : best;
+                    }, {weight: 0});
+                    
+                    summaryDiv.innerHTML = `
+                        <div style="color: #0f0; font-weight: bold; margin-bottom: 5px;">Aggregation Summary</div>
+                        <div style="color: #aaa; font-size: 0.85em;">
+                            <div><strong>Total Responses:</strong> ${organismResponses.length}</div>
+                            <div><strong>Selected Organism:</strong> ${bestResponse.organism_id || 'N/A'}</div>
+                            <div><strong>Selection Weight:</strong> ${bestResponse.weight?.toFixed(3) || 'N/A'}</div>
+                            <div><strong>Reason:</strong> Highest fitness × confidence product</div>
+                        </div>
+                    `;
+                    
+                    container.appendChild(summaryDiv);
+                }
+                
+                container.scrollTop = container.scrollHeight;
+            }
+            
+            // Display debug errors
+            function displayDebugErrors(errors) {
+                const container = document.getElementById('debugErrorsContent');
+                if (!container) return;
+                
+                container.innerHTML = '';
+                if (!errors || errors.length === 0) {
+                    container.innerHTML = '<div style="color: #0f0; font-style: italic;">✅ No errors detected.</div>';
+                    return;
+                }
+                
+                errors.forEach((error, idx) => {
+                    const errorDiv = document.createElement('div');
+                    errorDiv.style.marginBottom = '10px';
+                    errorDiv.style.padding = '8px';
+                    errorDiv.style.border = '2px solid #f00';
+                    errorDiv.style.background = 'rgba(255,0,0,0.15)';
+                    
+                    const time = new Date(error.timestamp * 1000).toLocaleTimeString();
+                    const errorType = error.error_type || 'UNKNOWN_ERROR';
+                    const message = error.message || 'No message';
+                    
+                    errorDiv.innerHTML = `
+                        <div style="color: #f00; font-weight: bold; margin-bottom: 5px;">
+                            [${time}] ${errorType}
+                        </div>
+                        <div style="color: #faa; margin-bottom: 5px;">
+                            ${message}
+                        </div>
+                        <div style="color: #aaa; font-size: 0.75em; margin-left: 10px;">
+                            ${formatDebugData(error.data || {})}
+                        </div>
+                    `;
+                    
+                    container.appendChild(errorDiv);
+                });
+                
+                // Switch to errors tab if there are errors
+                if (errors.length > 0) {
+                    switchDebugTab('errors');
+                }
+                
+                container.scrollTop = container.scrollHeight;
+            }
+            
+            // Display performance metrics
+            function displayPerformanceMetrics(perf) {
+                const container = document.getElementById('debugLogsContent');
+                if (!container) return;
+                
+                const perfDiv = document.createElement('div');
+                perfDiv.style.marginTop = '10px';
+                perfDiv.style.padding = '8px';
+                perfDiv.style.border = '1px solid #0f0';
+                perfDiv.style.background = 'rgba(0,255,0,0.1)';
+                
+                perfDiv.innerHTML = `
+                    <div style="color: #0f0; font-weight: bold; margin-bottom: 5px;">⚡ Performance Metrics</div>
+                    <div style="color: #aaa; font-size: 0.85em;">
+                        <div><strong>Total Time:</strong> ${(perf.total_time_ms || 0).toFixed(2)}ms</div>
+                        <div><strong>Avg Response Time:</strong> ${(perf.avg_response_time_ms || 0).toFixed(2)}ms</div>
+                    </div>
+                `;
+                
+                container.appendChild(perfDiv);
+            }
+            
+            // Helper to format debug data
+            function formatDebugData(data) {
+                if (!data || typeof data !== 'object') {
+                    return String(data || 'N/A');
+                }
+                
+                const entries = Object.entries(data).slice(0, 10); // Limit to 10 entries
+                return entries.map(([key, value]) => {
+                    let displayValue = value;
+                    if (Array.isArray(value)) {
+                        displayValue = `[${value.length} items]`;
+                    } else if (typeof value === 'object') {
+                        displayValue = '{object}';
+                    } else if (typeof value === 'string' && value.length > 50) {
+                        displayValue = value.substring(0, 50) + '...';
+                    }
+                    return `<strong>${key}:</strong> ${displayValue}`;
+                }).join('<br>');
+            }
+            
+            // Display single error
+            function displayDebugError(errorType, message, data) {
+                displayDebugErrors([{
+                    timestamp: Date.now() / 1000,
+                    error_type: errorType,
+                    message: message,
+                    data: data,
+                    level: 'error'
+                }]);
+            }
+            
+            // ═══════════════════════════════════════════════════════════════════════════
+            // 🔬 ILLUMINATION ENGINE INTEGRATION - Link causation trail to Illumination
+            // ═══════════════════════════════════════════════════════════════════════════
+            
+            // Normalize event ID format
+            function normalizeEventId(eventId) {
+                if (!eventId) return null;
+                if (typeof eventId !== 'string') eventId = String(eventId);
+                // Convert "evt1764498120937120" to "evt_1764498120937120"
+                if (eventId.startsWith('evt') && !eventId.includes('_')) {
+                    return 'evt_' + eventId.substring(3);
+                }
+                return eventId;
+            }
+            
+            // Illumination: Root Causes
+            async function illuminateRootCauses(eventId, stepIdx) {
+                eventId = normalizeEventId(eventId);
+                if (!eventId) {
+                    alert('No event ID available for this step');
+                    return;
+                }
+                
+                const resultDiv = document.getElementById(`illumination-result-${stepIdx}`);
+                if (resultDiv) {
+                    resultDiv.style.display = 'block';
+                    resultDiv.innerHTML = '<div style="color: #0ff;">🔍 Analyzing root causes...</div>';
+                }
+                
+                try {
+                    const response = await fetch(`/api/events/${eventId}/root-causes?depth=15`);
+                    const data = await response.json();
+                    
+                    if (data.error) {
+                        if (resultDiv) {
+                            resultDiv.innerHTML = `<div style="color: #f00;">⚠️ ${data.error}</div>`;
+                        }
+                        return;
+                    }
+                    
+                    if (resultDiv) {
+                        let html = '<div style="color: #0ff; font-weight: bold; margin-bottom: 5px;">🔍 Root Causes Found:</div>';
+                        if (data.root_causes && data.root_causes.length > 0) {
+                            data.root_causes.slice(0, 5).forEach((cause, idx) => {
+                                html += `
+                                    <div style="margin: 5px 0; padding: 5px; background: rgba(0,255,255,0.1); border-left: 3px solid #0ff;">
+                                        <div style="color: #0ff; font-weight: bold;">${idx + 1}. ${cause.event_id || 'Unknown'}</div>
+                                        <div style="color: #aaa; font-size: 0.85em;">${cause.narrative || cause.explanation || 'No explanation'}</div>
+                                        <div style="color: #888; font-size: 0.75em;">Score: ${(cause.score || 0).toFixed(3)}</div>
+                                    </div>
+                                `;
+                            });
+                        } else {
+                            html += '<div style="color: #888;">No root causes found (this may be a root event).</div>';
+                        }
+                        resultDiv.innerHTML = html;
+                    }
+                    
+                    // Also trigger main Illumination panel if available
+                    if (window.craIllumination && typeof window.craIllumination.analyzeRootCauses === 'function') {
+                        await window.craIllumination.analyzeRootCauses(eventId);
+                    }
+                } catch (err) {
+                    console.error('Error analyzing root causes:', err);
+                    if (resultDiv) {
+                        resultDiv.innerHTML = `<div style="color: #f00;">⚠️ Error: ${err.message}</div>`;
+                    }
+                }
+            }
+            
+            // Illumination: Impact Analysis
+            async function illuminateImpact(eventId, stepIdx) {
+                eventId = normalizeEventId(eventId);
+                if (!eventId) {
+                    alert('No event ID available for this step');
+                    return;
+                }
+                
+                const resultDiv = document.getElementById(`illumination-result-${stepIdx}`);
+                if (resultDiv) {
+                    resultDiv.style.display = 'block';
+                    resultDiv.innerHTML = '<div style="color: #0f0;">💥 Analyzing impact...</div>';
+                }
+                
+                try {
+                    const response = await fetch(`/api/events/${eventId}/impact?depth=15`);
+                    const data = await response.json();
+                    
+                    if (data.error) {
+                        if (resultDiv) {
+                            resultDiv.innerHTML = `<div style="color: #f00;">⚠️ ${data.error}</div>`;
+                        }
+                        return;
+                    }
+                    
+                    if (resultDiv) {
+                        let html = '<div style="color: #0f0; font-weight: bold; margin-bottom: 5px;">💥 Impact Analysis:</div>';
+                        if (data.impact_events && data.impact_events.length > 0) {
+                            html += `<div style="color: #aaa; font-size: 0.85em; margin-bottom: 5px;">Found ${data.impact_events.length} downstream effects</div>`;
+                            data.impact_events.slice(0, 5).forEach((impact, idx) => {
+                                html += `
+                                    <div style="margin: 5px 0; padding: 5px; background: rgba(0,255,0,0.1); border-left: 3px solid #0f0;">
+                                        <div style="color: #0f0; font-weight: bold;">${idx + 1}. ${impact.event_id || 'Unknown'}</div>
+                                        <div style="color: #aaa; font-size: 0.85em;">${impact.narrative || impact.explanation || 'No explanation'}</div>
+                                        <div style="color: #888; font-size: 0.75em;">Impact Score: ${(impact.impact_score || 0).toFixed(3)}</div>
+                                    </div>
+                                `;
+                            });
+                        } else {
+                            html += '<div style="color: #888;">No downstream effects found.</div>';
+                        }
+                        resultDiv.innerHTML = html;
+                    }
+                    
+                    // Also trigger main Illumination panel if available
+                    if (window.craIllumination && typeof window.craIllumination.analyzeImpact === 'function') {
+                        await window.craIllumination.analyzeImpact(eventId);
+                    }
+                } catch (err) {
+                    console.error('Error analyzing impact:', err);
+                    if (resultDiv) {
+                        resultDiv.innerHTML = `<div style="color: #f00;">⚠️ Error: ${err.message}</div>`;
+                    }
+                }
+            }
+            
+            // Illumination: Full Explanation
+            async function illuminateExplain(eventId, stepIdx) {
+                eventId = normalizeEventId(eventId);
+                if (!eventId) {
+                    alert('No event ID available for this step');
+                    return;
+                }
+                
+                const resultDiv = document.getElementById(`illumination-result-${stepIdx}`);
+                if (resultDiv) {
+                    resultDiv.style.display = 'block';
+                    resultDiv.innerHTML = '<div style="color: #ff0;">📖 Generating explanation...</div>';
+                }
+                
+                try {
+                    const response = await fetch(`/api/events/${eventId}/explain`);
+                    const data = await response.json();
+                    
+                    if (data.error) {
+                        if (resultDiv) {
+                            resultDiv.innerHTML = `<div style="color: #f00;">⚠️ ${data.error}</div>`;
+                        }
+                        return;
+                    }
+                    
+                    if (resultDiv) {
+                        let html = '<div style="color: #ff0; font-weight: bold; margin-bottom: 5px;">📖 Complete Explanation:</div>';
+                        if (data.explanation) {
+                            html += `<div style="color: #aaa; font-size: 0.85em; line-height: 1.4; margin-bottom: 10px;">${data.explanation}</div>`;
+                        }
+                        if (data.root_causes_summary) {
+                            html += `<div style="color: #0ff; font-size: 0.85em; margin-top: 5px;"><strong>Root Causes:</strong> ${data.root_causes_summary}</div>`;
+                        }
+                        if (data.impact_summary) {
+                            html += `<div style="color: #0f0; font-size: 0.85em; margin-top: 5px;"><strong>Impact:</strong> ${data.impact_summary}</div>`;
+                        }
+                        resultDiv.innerHTML = html;
+                    }
+                    
+                    // Also trigger main Illumination panel if available
+                    if (window.craIllumination && typeof window.craIllumination.explainEvent === 'function') {
+                        await window.craIllumination.explainEvent(eventId);
+                    }
+                } catch (err) {
+                    console.error('Error explaining event:', err);
+                    if (resultDiv) {
+                        resultDiv.innerHTML = `<div style="color: #f00;">⚠️ Error: ${err.message}</div>`;
+                    }
+                }
             }
 
             // Load Ollama configuration on page load

@@ -19,31 +19,29 @@ python unified_entry.py --check-only
 
 # Without visualization
 python unified_entry.py --no-viz
-### Reset Logs & Checkpoints (Safe Wipe)
+### Reset Logs & Checkpoints (Fresh Start)
 
-If you want a clean slate, you can safely delete regenerable artifacts. The system will recreate them on next run.
+For a completely fresh run, use the cleanup script:
 
-- Backend logs: `data/logs/*`
-- Checkpoints: `data/checkpoints/*`
-- CRA chat history: `data/causation_explorer/chat_history.json`
-- CRA snapshots: `data/causation_explorer/snapshots/*`
-- Optional shared state (regenerable):
-  - `data/.shared_simulation_state.json`
-  - `data/.simulation_control.json`
-  - `data/context_memory.json`
-
-Windows PowerShell (optional):
-
-```powershell
-Remove-Item "data/logs/*" -Force -ErrorAction SilentlyContinue
-Remove-Item "data/checkpoints/*" -Force -ErrorAction SilentlyContinue
-Remove-Item "data/causation_explorer/chat_history.json" -Force -ErrorAction SilentlyContinue
-Remove-Item "data/causation_explorer/snapshots/*" -Force -ErrorAction SilentlyContinue
-# Optional shared state
-Remove-Item "data/.shared_simulation_state.json" -Force -ErrorAction SilentlyContinue
-Remove-Item "data/.simulation_control.json" -Force -ErrorAction SilentlyContinue
-Remove-Item "data/context_memory.json" -Force -ErrorAction SilentlyContinue
+```bash
+python clear_all_data.py
 ```
+
+This will clear:
+- All log files (`data/logs/*.log`)
+- All checkpoints (`data/checkpoints/*.json`)
+- Shared state (`data/.shared_simulation_state.json`)
+- Context memory (`data/context_memory.json`)
+- Kernel versions (`data/kernel/versions/*.json`)
+- Causation explorer snapshots (`data/causation_explorer/snapshots/*`)
+- Chat history (`data/causation_explorer/chat_history.json`)
+
+**Preserved:**
+- `data/config.json` - System configuration
+- `data/causation_explorer/ollama_config.json` - Ollama settings
+- Directory structure - All directories maintained
+
+The system will recreate all runtime data on next run.
 
 ### Run Individual Systems
 
@@ -61,8 +59,12 @@ python causation_web_ui.py
 **📚 [DOCUMENTATION_HUB.md](./DOCUMENTATION_HUB.md)** - Central documentation hub with links to all guides
 
 Recent updates:
-- 🦋 **Language Model System**: Complete neural language model integration with Butterfly Chat interface
-- 🦋 **Butterfly Chat**: Direct chat with organism network through web UI
+- 🦋 **Butterfly Chat Debug Panel**: Comprehensive debug/analysis panel with step-by-step logging, causation trail, and error detection
+- 🦋 **Illumination Engine Integration**: Direct linking between chat interactions and deep causal analysis
+- 🦋 **Learning from Interactions**: Organisms learn from every chat interaction with automatic experience storage
+- 🦋 **Language Visualization**: Complete language system representation in graph legend with distinct icons and link colors
+- 🦋 **Vocabulary Learning**: Automatic vocabulary growth from user messages when responses are empty
+- 🐛 **Bug Fixes**: Event ID collision, division by zero errors, token ID clamping, empty response handling
 - Visualization filters: component deselection now correctly excludes nodes before first render
 - Graph view auto-fit after filtering to keep remaining nodes visible
 - CRA logs and snapshots can be safely wiped; they will regenerate automatically

@@ -90,6 +90,7 @@ Quick Win #6: Illumination Engine ⭐ NEW
   /consequential, /timeline, /stats
 - UI Actions: set_params, investigate, trace_causation, investigate_component
 - Verification: CRA can issue [[ILLUMINATE: ...]] and UI panel updates
+- **Recent Fix (2025-11-30)**: Robust JSON parsing - handles invisible Unicode characters, smart quotes (", ", ', '), non-breaking spaces, zero-width characters. Fallback regex parsing when standard JSON.parse fails. CRA research features now work reliably with all LLM response formats.
 
 Quick Win #7: Research Notepad ⭐ NEW
 - Status: ENABLED / DISABLED
@@ -107,6 +108,7 @@ Quick Win #7: Research Notepad ⭐ NEW
 - Reference Commands: read (all/by type), search (query), summary
 - Best Practice: Use #hashtags for categorization (#vp_spike #collapse)
 - Verification: CRA can issue [[NOTEPAD: ...]] and entries appear in panel
+- **Recent Fix (2025-11-30)**: Robust JSON parsing - handles invisible Unicode characters, smart quotes (", ", ', '), non-breaking spaces, zero-width characters. Fallback regex parsing when standard JSON.parse fails. CRA research features now work reliably with all LLM response formats.
 
 ---
 2. Neural System Audit
@@ -115,7 +117,7 @@ Trainer: SUCCESS / FAILED / PARTIAL
 - Import errors, PyTorch, device (CPU/CUDA), trainer exists
 - Receiving organisms, collecting experiences, training
 - Experience threshold: organisms need batch_size experiences before training starts
-  (default: 112)
+  (default: 96, check config.json neural.training.batch_size)
 
 Input Dimensions (Quick Win #1):
 - input_dim: 18 (was 12)
@@ -158,7 +160,7 @@ Brain: Config (input_dim: 18, hidden_dim: 64, output_dim: 6, activation: relu, d
 compilation status, inheritance rates
 
 Experience Replay: Buffer capacity/size/fill rate (memory_size: 20000), quality, readiness
-(batch_size: 112)
+(batch_size: 96, check config.json for actual value)
 
 Panel Display (Top-Right):
 - Shows: Loss (N/A until training), Epsilon, Tracked organisms, Training steps
@@ -190,6 +192,7 @@ Concept Tracking (Quick Win #2): ⭐ NEW
   hoarders, balanced, explorers, settlers
 - Events: concept_emergence (new stable concept), concept_extinction (concept died)
 - Integration: Concepts appear in causation graph with semantic names
+- **Recent Fix (2025-11-30)**: HDBSCAN algorithm tracking bug fixed - `self.algorithm` no longer permanently modified to 'kmeans_fallback', now uses local `used_algorithm` variable. HDBSCAN remains available for subsequent analyses when library is present.
 
 Events:
 - phenotype_emergence: count/frequency/cluster details (hexagon nodes)
@@ -198,6 +201,7 @@ Events:
 - concept_emergence: count/frequency/concept name/cluster id ⭐ NEW
 - concept_extinction: count/frequency/concept name/lifespan ⭐ NEW
 - Event emission: wired, appearing in graph with correct shapes
+- **Recent Fix (2025-01-27)**: ML events now properly emitted via `network.run_ml_analysis()` instead of direct `ml_analyzer.analyze()` call. `_emit_ml_events()` properly called after analysis. Events appear in causation graph with proper timestamps when: cluster count changes (phenotype_emergence/cluster_collapse) or anomaly count spikes by 3+ (anomaly_spike).
 
 Panel Display (Top-Right):
 - Shows: Clusters count, Anomaly ratio (percentage)
@@ -210,6 +214,7 @@ Visualization:
 - Filter: ml_analysis checkbox works
 - Node shapes: hexagon/pentagon/triangle rendering correctly
 - Animations: mlPulse, mlLinkFlow, phenotypeEmergence, clusterCollapse, anomalyDetection
+- **Recent Update (2025-01-27)**: Dynamic Color System - All colors are now dynamic. CRA receives current color values in graph context via `_get_viz_settings_context()`. CRA should reference settings (e.g., `componentColor_neural`, `linkColor_neural`) instead of hardcoded hex values. Check current values in graph context before making color recommendations.
 
 Config Paths:
 - /scikit/enabled, /scikit/clustering/enabled, /scikit/anomaly_detection/enabled
@@ -510,6 +515,7 @@ Link Generation:
 - Health state change links created ⭐ NEW
 - Phase transition/bidirectional links work
 - Time windows respected (direct_causation_time_window: 2, phase_transition_time_window: 3)
+- **Recent Fix (2025-01-27)**: ML causation link time window extended from 2s to 6s (3x normal window). ML events can now form links with events up to 6 seconds apart. ML causation check moved earlier in detection logic for better coverage. ML links now properly connect to reality_sim, neural, explorer, and other ML events.
 
 Graph: Neural nodes/links appear, ML nodes/links appear, concept nodes appear, health nodes
 appear, filters work, CRA can control
@@ -664,7 +670,7 @@ Neural:
 - Training duration (current/avg/min/max)
 - Action latency, memory, speedup ratios
 - VP-aware adjustment overhead
-- Note: None until organisms collect batch_size (112) experiences
+- Note: None until organisms collect batch_size (96, check config) experiences
 
 ML Analysis:
 - Clustering duration, anomaly detection duration, reduction duration, memory
@@ -720,7 +726,7 @@ Access:
 Neural Config:
 - enabled (true), device (cuda/cpu)
 - brain (input_dim: 18, hidden_dim: 64, output_dim: 6, activation: relu, dropout: 0.1)
-- training (batch_size: 112, learning_rate: 0.0035, gamma: 0.995, epsilon_start/end/decay,
+- training (batch_size: 96, learning_rate: 0.0035, gamma: 0.995, epsilon_start/end/decay,
   memory_size: 20000, update_frequency: 1)
 - optimization (use_compile: true, compile_mode: reduce-overhead, reuse_optimizers: true,
   use_scripted_inference: false)
@@ -739,6 +745,7 @@ Health Monitor Config: ⭐ QW#5
 - weight_lawfulness (0.20), weight_sustainability (0.10)
 - critical_threshold (0.3), warning_threshold (0.5), healthy_threshold (0.7)
 - history_size (100)
+- **Recent Fix (2025-11-30)**: HealthMonitor properly wired with event_emitter, `configure_health_monitor()` correctly passes dependencies to SymbioticNetwork
 
 Meta-Cognitive Config:
 - self_tuning.enabled (true)
@@ -1046,7 +1053,7 @@ Special Instructions
 
 - Neural Priority: Enabled but trainer unavailable = CRITICAL
 - Neural Expected Behavior:
-  - loss=None and organisms_tracked=0 is NORMAL until organisms collect 112 experiences
+  - loss=None and organisms_tracked=0 is NORMAL until organisms collect batch_size (96, check config) experiences
   - Panel shows "N/A" for loss until first training
   - training_steps=0 is normal early-game
   - input_dim=18 (was 12) for VP-aware perception
@@ -1114,9 +1121,10 @@ Special Instructions
   - Can read stats box
 
 - Color Verification:
-  - Neural = Cyan (#00FFFF)
-  - ML = Lime Green (#32CD32)
-  - ML Links = Orange (#FFA500)
+  - **Note (2025-01-27)**: All colors are now dynamic - CRA receives current color values in graph context. Reference settings instead of hardcoded hex values. Check current values before making color recommendations.
+  - Neural = Check componentColor_neural (typically #00FFFF Cyan)
+  - ML = Check componentColor_ml_analysis (typically #32CD32 Lime Green)
+  - ML Links = Check linkColor_ml (typically #FFA500 Orange)
   - Panel 1 = Cyan, Panel 2 = Magenta, Panel 3 = Lime, Panel 4 = Yellow, Panel 5 = Orange
   - Health Critical = Red, Warning = Yellow, Healthy = Green, Optimal = Blue
 
@@ -1145,7 +1153,7 @@ Key Updates for 2025 (Quick Wins Edition):
 - Section 16: Research Notepad System (NEW)
 - Neural field names: organisms_tracked (not organisms_trained)
 - Neural input_dim: 18 (was 12)
-- batch_size: 112 (was 128)
+- batch_size: 96 (check config.json neural.training.batch_size for actual value)
 - Expected behaviors: loss=None, actions=0 before thresholds
 - Stats box: full labels, no overflow, includes HEALTH
 - Bottom profile menu: removed
@@ -1153,5 +1161,14 @@ Key Updates for 2025 (Quick Wins Edition):
 - Data flow: includes health_monitor, concept_tracker
 - Safe parameters: 30+ tunable by meta-cognitive system
 - Config paths updated for all Quick Wins
+- **Recent Bug Fixes (2025-11-30)**:
+  - ILLUMINATE/NOTEPAD JSON parsing: Robust character cleanup for invisible Unicode, smart quotes, non-breaking spaces
+  - HDBSCAN algorithm tracking: Fixed permanent modification bug, HDBSCAN remains available
+  - Health Monitor configuration: Properly wired with event_emitter
+- **Recent Improvements (2025-01-27)**:
+  - ML event emission: Fixed via `network.run_ml_analysis()`, events properly appear in causation graph
+  - ML causation links: Time window extended to 6s, better coverage and connections
+  - Dynamic color system: All colors dynamic, CRA receives current values in graph context
+  - Headless backend: `--no-viz` flag makes tkinter optional
 
 ---

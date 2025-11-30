@@ -211,7 +211,7 @@
           "stage_3": 0.3
         }
       },
-      "enabled": false,
+      "enabled": true,
       "generation": {
         "max_length": 32,
         "temperature": 1.0,
@@ -306,14 +306,14 @@
   "scikit": {
     "anomaly_detection": {
       "algorithm": "isolation_forest",
-      "contamination": 0.18,
+      "contamination": 0.22,
       "enabled": true,
       "n_estimators": 450
     },
     "clustering": {
       "algorithm": "hdbscan",
       "enabled": true,
-      "min_cluster_size": 4,
+      "min_cluster_size": 6,
       "min_samples": 1
     },
     "concept_tracking": {
@@ -344,7 +344,7 @@
   },
   "vp_monitoring": {
     "adaptive_response": {
-      "high_vp_threshold": 0.75,
+      "high_vp_threshold": 0.85,
       "streak_threshold": 3
     },
     "adaptive_thresholds": {

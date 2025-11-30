@@ -69,14 +69,18 @@ pip install pywin32
 ### 🦋 Language Model System ⭐ NEW
 
 - **[docs/LANGUAGE_SYSTEM_INTEGRATION_ANALYSIS.md](./docs/LANGUAGE_SYSTEM_INTEGRATION_ANALYSIS.md)** - Complete analysis of language system implementation
-- **[docs/LANGUAGE_TEACHER_ARCHITECTURE_PROPOSAL.md](./docs/LANGUAGE_TEACHER_ARCHITECTURE_PROPOSAL.md)** - ⚠️ CRITICAL: Language Teacher system proposal (needed for vocabulary learning)
+- **[BUTTERFLY_CHAT_COMPREHENSIVE_ANALYSIS.md](./BUTTERFLY_CHAT_COMPREHENSIVE_ANALYSIS.md)** - Complete Butterfly Chat system analysis
 - **Language Model Features:**
   - Multi-head self-attention with VP-aware temperature scaling
   - Dual-head architecture (action + language)
-  - Dynamic vocabulary learning from organism interactions
+  - Dynamic vocabulary learning from organism interactions and user messages
   - Token-based communication between organisms
-  - Butterfly Chat interface for direct organism communication
-  - **Status:** Core implementation complete, vocabulary learning mechanism needed
+  - **Butterfly Chat Interface**: Direct chat with organism network through web UI
+  - **Debug Panel**: Comprehensive logging, causation trail analysis, and error detection
+  - **Learning System**: Organisms learn from every chat interaction with reward-based experience storage
+  - **Illumination Integration**: Direct linking between chat interactions and deep causal analysis
+  - **Language Visualization**: Complete representation in graph with distinct icons and link colors
+  - **Status:** ✅ Fully implemented and operational
 
 ### Explorer (Central Body / Breath Engine)
 
