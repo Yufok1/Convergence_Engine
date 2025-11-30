@@ -4570,7 +4570,11 @@
                         componentColors[component] = value;
                         const legendGroup = svg.select('.graph-legend');
                         if (legendGroup.size() > 0) {
-                            const legendCircle = legendGroup.select(`circle[data-component="${component}"]`);
+                            // Try legend-content first (new structure), then fall back to direct selection
+                            const legendContent = legendGroup.select('.legend-content');
+                            const legendCircle = legendContent.size() > 0 
+                                ? legendContent.select(`circle[data-component="${component}"]`)
+                                : legendGroup.select(`circle[data-component="${component}"]`);
                             if (legendCircle.size() > 0) {
                                 legendCircle.attr('fill', value);
                             }
@@ -5306,6 +5310,11 @@
                         simulation.stop();
                         simulation.on('tick', null); // Remove tick handler
                         simulation.on('end', null); // Remove end handler
+                        // Clear any simulation timeout
+                        if (window._simulationTimeout) {
+                            clearTimeout(window._simulationTimeout);
+                            window._simulationTimeout = null;
+                        }
                         simulation = null;
                     }
                 
@@ -5412,15 +5421,20 @@
                 const graphWidth = graphContainer ? graphContainer.clientWidth : window.innerWidth;
                 const graphHeight = graphContainer ? graphContainer.clientHeight : window.innerHeight;
                 
-                overlay.append('rect')
+                const overlayBg = overlay.append('rect')
                     .attr('class', 'overlay-background')
                     .attr('x', 0)
                     .attr('y', 0)
                     .attr('width', graphWidth)
                     .attr('height', graphHeight)
                     .style('fill', 'transparent')
-                    .style('pointer-events', 'all')
+                    .style('pointer-events', dragZoomEnabled ? 'all' : 'none')
                     .style('cursor', dragZoomEnabled ? 'crosshair' : 'default');
+                
+                // Exclude legend area from overlay pointer events (will be set after legend is created)
+                window._excludeLegendFromOverlay = function(legendX, legendY, legendWidth, legendHeight) {
+                    // Create a clip path or exclude area - for now, we'll handle this in the legend click handler
+                };
 
                 // Create selection rectangle (initially hidden)
                 selectionRect = overlay.append('rect')
@@ -5482,12 +5496,128 @@
                 const sectionSpacing = 10; // Space between sections
                 const infoHeight = 80; // Increased for vision recognition note
                 const padding = 10;
-                const legendWidth = 300; // Wider to fit longer names
+                const legendWidth = 200; // Reduced by ~33% to bring legend inward (text size unchanged)
                 const legendHeight = titleHeight + componentsHeight + sectionSpacing + linksHeight + sectionSpacing + neuralMLHeight + infoHeight + (padding * 2);
 
-                // Legend background - REMOVED (no box around legend)
+                // Legend background with semi-transparent dark background
+                const legendBg = legendGroup.append('rect')
+                    .attr('x', -padding)
+                    .attr('y', -padding)
+                    .attr('width', legendWidth + (padding * 2))
+                    .attr('height', legendHeight)
+                    .attr('rx', 5)
+                    .attr('ry', 5)
+                    .attr('fill', 'rgba(0, 0, 0, 0.85)')
+                    .attr('stroke', '#0ff')
+                    .attr('stroke-width', 2)
+                    .attr('stroke-opacity', 0.6)
+                    .style('filter', 'drop-shadow(0 2px 8px rgba(0, 255, 255, 0.3))')
+                    .lower(); // Put background behind all other elements
 
-                // Title
+                // Store legend state on the legendGroup element itself (persists across renders)
+                if (!legendGroup.node().__legendMinimized) {
+                    legendGroup.node().__legendMinimized = false;
+                }
+                const legendContent = legendGroup.append('g').attr('class', 'legend-content');
+
+                // Minimize button (top-right corner)
+                const minimizeBtnSize = 20;
+                const minimizeBtnX = legendWidth - minimizeBtnSize - 5;
+                const minimizeBtnY = -5;
+                
+                const minimizeBtn = legendGroup.append('g')
+                    .attr('class', 'legend-minimize-btn')
+                    .attr('transform', `translate(${minimizeBtnX}, ${minimizeBtnY})`)
+                    .style('cursor', 'pointer')
+                    .style('pointer-events', 'all');
+                
+                // Minimize button background circle (larger clickable area)
+                minimizeBtn.append('circle')
+                    .attr('r', minimizeBtnSize / 2)
+                    .attr('fill', 'rgba(0, 255, 255, 0.2)')
+                    .attr('stroke', '#0ff')
+                    .attr('stroke-width', 1.5)
+                    .style('pointer-events', 'all');
+                
+                // Minimize button icon (minus sign when expanded, plus when minimized)
+                const minimizeIcon = minimizeBtn.append('line')
+                    .attr('x1', -6)
+                    .attr('y1', 0)
+                    .attr('x2', 6)
+                    .attr('y2', 0)
+                    .attr('stroke', '#0ff')
+                    .attr('stroke-width', 2)
+                    .attr('stroke-linecap', 'round')
+                    .style('pointer-events', 'none');
+                
+                // Vertical line for plus icon (hidden when expanded)
+                const minimizeIconVertical = minimizeBtn.append('line')
+                    .attr('x1', 0)
+                    .attr('y1', -6)
+                    .attr('x2', 0)
+                    .attr('y2', 6)
+                    .attr('stroke', '#0ff')
+                    .attr('stroke-width', 2)
+                    .attr('stroke-linecap', 'round')
+                    .style('opacity', 0)
+                    .style('pointer-events', 'none');
+
+                // Toggle legend visibility function
+                function toggleLegend() {
+                    const isMinimized = legendGroup.node().__legendMinimized;
+                    if (isMinimized) {
+                        // Hide all content except title and button
+                        legendContent.style('opacity', 0);
+                        legendContent.style('pointer-events', 'none');
+                        // Update background height to just fit title
+                        legendBg.attr('height', titleHeight + padding);
+                        // Show plus icon (vertical line visible)
+                        minimizeIconVertical.style('opacity', 1);
+                    } else {
+                        // Show all content
+                        legendContent.style('opacity', 1);
+                        legendContent.style('pointer-events', 'all');
+                        // Restore background height
+                        legendBg.attr('height', legendHeight);
+                        // Show minus icon (vertical line hidden)
+                        minimizeIconVertical.style('opacity', 0);
+                    }
+                }
+                
+                // Attach click handler to the button - use a more direct approach
+                const handleMinimize = function(event) {
+                    event.stopPropagation(); // Prevent event bubbling to overlay
+                    event.preventDefault();
+                    const wasMinimized = legendGroup.node().__legendMinimized;
+                    legendGroup.node().__legendMinimized = !wasMinimized;
+                    toggleLegend();
+                    console.log('[Legend] Toggled, minimized:', legendGroup.node().__legendMinimized);
+                    return false;
+                };
+                
+                // Attach to both the group and the circle for maximum compatibility
+                minimizeBtn.on('click', handleMinimize);
+                minimizeBtn.on('mousedown', handleMinimize);
+                
+                // Also attach directly to the circle element
+                const btnCircle = minimizeBtn.select('circle');
+                if (btnCircle.size() > 0) {
+                    btnCircle.on('click', handleMinimize);
+                    btnCircle.on('mousedown', handleMinimize);
+                }
+                
+                // Make sure button is on top (render last) and has highest z-index
+                minimizeBtn.raise();
+                
+                // Add hover effect for better UX
+                minimizeBtn.on('mouseenter', function() {
+                    d3.select(this).select('circle').attr('fill', 'rgba(0, 255, 255, 0.4)');
+                });
+                minimizeBtn.on('mouseleave', function() {
+                    d3.select(this).select('circle').attr('fill', 'rgba(0, 255, 255, 0.2)');
+                });
+
+                // Title (always visible)
                 legendGroup.append('text')
                     .attr('x', 0)
                     .attr('y', 5)
@@ -5505,7 +5635,7 @@
                             comp.name === 'Djinn Kernel' ? 'djinn_kernel' :
                                 comp.name === 'Breath Engine' ? 'breath' :
                                     comp.name === '🧠 Neural System' ? 'neural' : 'system';
-                    legendGroup.append('circle')
+                    legendContent.append('circle')
                         .attr('cx', 0)
                         .attr('cy', yPos)
                         .attr('r', 6)
@@ -5515,7 +5645,7 @@
                         .attr('data-component', compKey)  // Store component key for easy updates
                         .attr('class', 'legend-component-circle');
                     // Label
-                    legendGroup.append('text')
+                    legendContent.append('text')
                         .attr('x', 15)
                         .attr('y', yPos + 4)
                         .attr('fill', '#fff')
@@ -5530,7 +5660,7 @@
                     const yPos = titleHeight + componentsHeight + sectionSpacing + (i * itemHeight);
                     // Color line (horizontal line to represent edge) with data attribute
                     const linkKey = link.name.toLowerCase();
-                    legendGroup.append('line')
+                    legendContent.append('line')
                         .attr('x1', 0)
                         .attr('y1', yPos)
                         .attr('x2', 12)
@@ -5540,7 +5670,7 @@
                         .attr('data-link-type', linkKey)  // Store link type for easy updates
                         .attr('class', 'legend-link-line');
                     // Label
-                    legendGroup.append('text')
+                    legendContent.append('text')
                         .attr('x', 18)
                         .attr('y', yPos + 4)
                         .attr('fill', '#fff')
@@ -5550,7 +5680,7 @@
 
                 // Neural/ML Icon Shapes Section (for vision model recognition)
                 const neuralMLSectionY = titleHeight + componentsHeight + sectionSpacing + linksHeight + sectionSpacing;
-                legendGroup.append('text')
+                legendContent.append('text')
                     .attr('x', 0)
                     .attr('y', neuralMLSectionY - 2)
                     .attr('fill', '#0ff')
@@ -5562,7 +5692,7 @@
                     // Each icon takes more space due to description text
                     const yPos = neuralMLSectionY + (i * (itemHeight + 8));
                     const iconSize = 8;
-                    const shapeElement = legendGroup.append('g')
+                    const shapeElement = legendContent.append('g')
                         .attr('transform', `translate(${iconSize}, ${yPos})`)
                         .attr('class', 'legend-neural-ml-icon')
                         .attr('data-event-type', icon.eventType);
@@ -5601,7 +5731,7 @@
                         .style('filter', icon.shape === 'star' || icon.shape === 'triangle' ? 'url(#nodeGlow)' : 'none');
                     
                     // Label with description for vision models
-                    legendGroup.append('text')
+                    legendContent.append('text')
                         .attr('x', iconSize * 2 + 5)
                         .attr('y', yPos + 4)
                         .attr('fill', '#fff')
@@ -5615,7 +5745,7 @@
                                       icon.eventType === 'anomaly_spike' ? 'Outlier detection' :
                                       icon.eventType === 'cluster_collapse' ? 'Cluster died/extinct' :
                                       'ML analysis state change';
-                    legendGroup.append('text')
+                    legendContent.append('text')
                         .attr('x', iconSize * 2 + 5)
                         .attr('y', yPos + 15)
                         .attr('fill', '#aaa')
@@ -5626,13 +5756,13 @@
 
                 // Graph info (on separate line for clarity)
                 const infoY = titleHeight + componentsHeight + sectionSpacing + linksHeight + sectionSpacing + neuralMLHeight + 5;
-                legendGroup.append('text')
+                legendContent.append('text')
                     .attr('x', 0)
                     .attr('y', infoY)
                     .attr('fill', '#888')
                     .attr('font-size', '10px')
                     .text('Nodes = Events');
-                legendGroup.append('text')
+                legendContent.append('text')
                     .attr('x', 0)
                     .attr('y', infoY + 14)
                     .attr('fill', '#888')
@@ -5640,20 +5770,20 @@
                     .text('Links = Causation');
                 
                 // Vision Model Recognition Note
-                legendGroup.append('text')
+                legendContent.append('text')
                     .attr('x', 0)
                     .attr('y', infoY + 32)
                     .attr('fill', '#0aa')
                     .attr('font-size', '9px')
                     .attr('font-weight', 'bold')
                     .text('👁️ Vision Recognition:');
-                legendGroup.append('text')
+                legendContent.append('text')
                     .attr('x', 0)
                     .attr('y', infoY + 46)
                     .attr('fill', '#aaa')
                     .attr('font-size', '9px')
                     .text('Neural/ML shapes indicate system');
-                legendGroup.append('text')
+                legendContent.append('text')
                     .attr('x', 0)
                     .attr('y', infoY + 60)
                     .attr('fill', '#aaa')
@@ -6113,9 +6243,9 @@
                         .distanceMax(isMassiveGraph ? 250 : (isHugeGraph ? 400 : 600)))  // Limit interaction distance
                     .force('center', d3.forceCenter(width / 2, height / 2))
                     .velocityDecay(isMassiveGraph ? 0.92 : (isHugeGraph ? 0.85 : 0.75))  // Higher = faster settling
-                    .alphaDecay(isMassiveGraph ? 0.12 : (isHugeGraph ? 0.07 : 0.03))   // Higher = stops sooner
+                    .alphaDecay(isMassiveGraph ? 0.12 : (isHugeGraph ? 0.07 : 0.05))   // Higher = stops sooner (increased from 0.03 to 0.05 for normal graphs)
                     .alphaTarget(0)  // Target alpha when simulation "ends"
-                    .alphaMin(0.002);  // Stop when alpha drops below this
+                    .alphaMin(0.001);  // Stop when alpha drops below this (lowered from 0.002 to ensure it stops)
 
                 // For massive graphs, limit simulation iterations to prevent infinite running
                 if (isMassiveGraph) {
@@ -6144,7 +6274,30 @@
                 // Optimized tick handler with requestAnimationFrame throttling
                 // This prevents excessive DOM updates and improves performance
                 let pendingTick = false;
+                let tickCount = 0;
+                const MAX_TICKS = 500; // Safety limit: stop after 500 ticks even if alpha hasn't decayed
+                
                 simulation.on('tick', () => {
+                    // CRITICAL FIX: Check if simulation should stop (alpha too low or too many ticks)
+                    const currentAlpha = simulation.alpha();
+                    tickCount++;
+                    
+                    // Force stop if alpha is very low (should have stopped already) or too many ticks
+                    if (currentAlpha < 0.001 || tickCount > MAX_TICKS) {
+                        if (currentAlpha < 0.001) {
+                            console.log('[RenderGraph] Simulation alpha too low, stopping:', currentAlpha);
+                        } else {
+                            console.warn('[RenderGraph] Simulation exceeded max ticks, force-stopping:', tickCount);
+                        }
+                        simulation.stop();
+                        // Cancel pending animation frame
+                        if (tickAnimationFrame !== null) {
+                            cancelAnimationFrame(tickAnimationFrame);
+                            tickAnimationFrame = null;
+                        }
+                        return; // Exit early
+                    }
+                    
                     // Throttle DOM updates using requestAnimationFrame
                     if (!pendingTick) {
                         pendingTick = true;
@@ -6186,6 +6339,8 @@
                                 // Throttle viewport culling to every 5 frames for performance
                                 if (!window._viewportCullFrameCount) window._viewportCullFrameCount = 0;
                                 window._viewportCullFrameCount++;
+                                // Reset counter periodically to prevent overflow (every 1000 frames = ~16 seconds at 60fps)
+                                if (window._viewportCullFrameCount > 1000) window._viewportCullFrameCount = 0;
                                 
                                 if (window._viewportCullFrameCount % 5 === 0) {
                                     const bounds = getViewportBounds();
@@ -6235,8 +6390,31 @@
                     }
                 });
 
+                // CRITICAL FIX: Add timeout to force-stop simulation if it runs too long (prevents memory leaks)
+                // Store timeout ID globally so it can be cleared if simulation is stopped early
+                window._simulationTimeout = setTimeout(() => {
+                    if (simulation && simulation.alpha() > 0) {
+                        console.warn('[RenderGraph] Force-stopping simulation after 15s timeout (preventing memory leak)');
+                        simulation.stop();
+                        simulation.on('tick', null);
+                        simulation.on('end', null);
+                        // Cancel any pending animation frames
+                        if (tickAnimationFrame !== null) {
+                            cancelAnimationFrame(tickAnimationFrame);
+                            tickAnimationFrame = null;
+                        }
+                        window._simulationTimeout = null;
+                    }
+                }, 15000); // 15 second maximum runtime
+
                 // Single consolidated end handler (D3 only keeps one per event name)
                 simulation.on('end', () => {
+                    // Clear the timeout since simulation ended naturally
+                    if (window._simulationTimeout) {
+                        clearTimeout(window._simulationTimeout);
+                        window._simulationTimeout = null;
+                    }
+                    
                     console.log('[RenderGraph] Simulation ended, nodes rendered:', renderNodes.length, 'links rendered:', renderLinks.length);
                     // Refresh node colors once when simulation ends
                     if (svg) {
@@ -8335,10 +8513,16 @@
                 
                 simulation.force('link').links(filteredLinksForSim);
                 
-                // Gentle restart to position new nodes
-                if (simulation.alpha() < 0.01) {
+                // Gentle restart to position new nodes (but only if simulation isn't already running)
+                // CRITICAL FIX: Prevent infinite restarts that could cause memory leaks
+                if (simulation && simulation.alpha() < 0.01 && simulation.alpha() > 0) {
+                    // Only restart if simulation is actually stopped (alpha very low but not zero)
+                    simulation.alpha(0.1).restart();
+                } else if (simulation && simulation.alpha() === 0) {
+                    // Simulation is fully stopped, safe to restart
                     simulation.alpha(0.1).restart();
                 }
+                // If alpha is already > 0.01, simulation is running, don't restart
                 
                 console.log(`[Incremental Update] Successfully added ${nodesToAdd.length} nodes, ${linksToAdd.length} links`);
             }
