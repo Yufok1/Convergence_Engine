@@ -1424,6 +1424,14 @@
                             <span>🔬 ML Analysis (Scikit)</span></label>
                     </div>
                     <div class="filter-item">
+                        <label><input type="checkbox" id="filter-language" checked onchange="applyFilters()">
+                            <span>🦋 Language System</span></label>
+                    </div>
+                    <div class="filter-item">
+                        <label><input type="checkbox" id="filter-butterfly_chat" checked onchange="applyFilters()">
+                            <span>🦋 Butterfly Chat</span></label>
+                    </div>
+                    <div class="filter-item">
                         <label><input type="checkbox" id="filter-system" checked onchange="applyFilters()">
                             <span>System</span></label>
                     </div>
@@ -1530,6 +1538,26 @@
                                 <span style="min-width: 120px;">🔬 ML Analysis:</span>
                                 <input type="color" id="color-ml_analysis" value="#32CD32"
                                     onchange="updateComponentColor('ml_analysis', this.value)"
+                                    style="width: 60px; height: 25px; cursor: pointer;">
+                            </label>
+                        </div>
+
+                        <div class="filter-item" style="margin-bottom: 8px;">
+                            <label
+                                style="display: flex; align-items: center; gap: 8px; color: #0ff; font-size: 0.85em;">
+                                <span style="min-width: 120px;">🦋 Language:</span>
+                                <input type="color" id="color-language" value="#00BCD4"
+                                    onchange="updateComponentColor('language', this.value)"
+                                    style="width: 60px; height: 25px; cursor: pointer;">
+                            </label>
+                        </div>
+
+                        <div class="filter-item" style="margin-bottom: 8px;">
+                            <label
+                                style="display: flex; align-items: center; gap: 8px; color: #0ff; font-size: 0.85em;">
+                                <span style="min-width: 120px;">🦋 Butterfly Chat:</span>
+                                <input type="color" id="color-butterfly_chat" value="#8BC34A"
+                                    onchange="updateComponentColor('butterfly_chat', this.value)"
                                     style="width: 60px; height: 25px; cursor: pointer;">
                             </label>
                         </div>
@@ -2062,6 +2090,10 @@
                             style="flex: 1; padding: 8px 15px; background: #0aa; color: #000; border: 1px solid #0ff; border-bottom: none; cursor: pointer; font-family: 'Courier New', monospace; font-weight: bold; border-radius: 5px 5px 0 0; transition: all 0.2s;">
                             💬 Chat
                         </button>
+                        <button id="tabButterfly" onclick="switchCRATab('butterfly')" class="cra-tab"
+                            style="flex: 1; padding: 8px 15px; background: #111; color: #ff0; border: 1px solid #ff0; border-bottom: none; cursor: pointer; font-family: 'Courier New', monospace; font-weight: bold; border-radius: 5px 5px 0 0; transition: all 0.2s;">
+                            🦋 Butterfly Chat
+                        </button>
                         <button id="tabNotepad" onclick="switchCRATab('notepad')" class="cra-tab"
                             style="flex: 1; padding: 8px 15px; background: #111; color: #f90; border: 1px solid #f90; border-bottom: none; cursor: pointer; font-family: 'Courier New', monospace; font-weight: bold; border-radius: 5px 5px 0 0; transition: all 0.2s;">
                             📓 Research Notepad <span id="notepadCount" style="background: #f90; color: #000; padding: 1px 6px; border-radius: 10px; font-size: 0.8em; margin-left: 5px;">0</span>
@@ -2120,6 +2152,35 @@
                             <button id="chatSendButton" style="padding: 8px 15px;">Send</button>
                         </div>
                         <div id="chatStatus" style="color: #0aa; font-size: 0.8em; margin-top: 5px;"></div>
+                    </div>
+                    
+                    <!-- Butterfly Chat Tab Content -->
+                    <div id="butterflyTabContent" style="display: none;">
+                        <div style="margin-bottom: 10px;">
+                            <div style="margin-bottom: 8px;">
+                                <label style="color: #ff0; display: block; margin-bottom: 5px; font-size: 0.9em;">Routing Strategy:</label>
+                                <select id="butterflyRoutingSelect"
+                                    style="width: 100%; background: #111; color: #ff0; border: 1px solid #ff0; padding: 5px; font-family: 'Courier New', monospace; font-size: 0.9em;">
+                                    <option value="all">All Organisms</option>
+                                    <option value="random">Random Sample</option>
+                                    <option value="fittest">Fittest Organisms</option>
+                                    <option value="connected">Connected Organisms</option>
+                                    <option value="by_word">By Word Match</option>
+                                </select>
+                            </div>
+                            <div style="margin-bottom: 8px;">
+                                <label style="color: #ff0; display: block; margin-bottom: 5px; font-size: 0.9em;">Max Organisms:</label>
+                                <input type="number" id="butterflyMaxOrganisms" value="10" min="1" max="50"
+                                    style="width: 100%; background: #111; color: #ff0; border: 1px solid #ff0; padding: 5px; font-family: 'Courier New', monospace; font-size: 0.9em;">
+                            </div>
+                        </div>
+                        <div id="butterflyChatHistory" style="height: 300px; overflow-y: auto; background: #000; border: 1px solid #ff0; padding: 10px; margin-bottom: 10px; font-family: 'Courier New', monospace; font-size: 0.9em;"></div>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="butterflyChatInput" placeholder="Chat with organism networks..."
+                                style="flex: 1; padding: 8px; background: #111; color: #ff0; border: 1px solid #ff0; font-family: 'Courier New', monospace;">
+                            <button id="butterflyChatSendButton" style="padding: 8px 15px; background: #ff0; color: #000; border: 1px solid #ff0; cursor: pointer;">Send</button>
+                        </div>
+                        <div id="butterflyChatStatus" style="color: #ff0; font-size: 0.8em; margin-top: 5px;"></div>
                     </div>
                     
                     <!-- Research Notepad Tab Content -->
@@ -3964,6 +4025,8 @@
                 'breath': '#FF00FF',            // Pure Magenta
                 'neural': '#00FFFF',            // 🧠 Electric Cyan (Neural System)
                 'ml_analysis': '#32CD32',       // 🔬 Lime Green (ML Analysis) - doc consistency
+                'language': '#00BCD4',          // 🦋 Teal (Language System)
+                'butterfly_chat': '#8BC34A',    // 🦋 Light Green (Chat Interactions)
                 'system': '#FFFF00'             // Pure Yellow
             };
 
@@ -3975,6 +4038,8 @@
                 'temporal': '#FFFF00',         // Pure Yellow
                 'neural': '#00FFFF',           // 🧠 Electric Cyan (Neural Links)
                 'ml': '#FFA500',               // 🔬 Orange (ML Analysis Links) - doc consistency
+                'language': '#9B59B6',         // 🦋 Purple (Language Links)
+                'linguistic': '#9B59B6',      // 🦋 Purple (Linguistic Edge Connections)
                 'unknown': '#FF8800'           // Bright Orange
             };
 
@@ -4037,6 +4102,8 @@
                     'utm_kernel': true,
                     'breath': true,
                     'neural': true,
+                    'language': true,  // Language events
+                    'butterfly_chat': true,  // Butterfly Chat events
                     'system': true
                 },
                 causationTypes: {
@@ -4442,6 +4509,8 @@
                 filters.components.breath = document.getElementById('filter-breath').checked;
                 filters.components.neural = document.getElementById('filter-neural').checked;
                 filters.components.ml_analysis = document.getElementById('filter-ml_analysis').checked;
+                filters.components.language = document.getElementById('filter-language') ? document.getElementById('filter-language').checked : true;
+                filters.components.butterfly_chat = document.getElementById('filter-butterfly_chat') ? document.getElementById('filter-butterfly_chat').checked : true;
                 filters.components.system = document.getElementById('filter-system').checked;
 
                 filters.causationTypes.threshold = document.getElementById('filter-threshold').checked;
@@ -8472,18 +8541,37 @@
                                 const targetNode = updatedNodes.find(n => n.id === targetId);
                                 const isNeuralLink = (sourceNode && sourceNode.component === 'neural') || 
                                                    (targetNode && targetNode.component === 'neural');
-                                return isNeuralLink ? 'link neural-link' : 'link';
+                                const isLinguisticEdge = d.is_linguistic || d.linguistic_edge || false;
+                                
+                                if (isLinguisticEdge) {
+                                    return 'link linguistic-link';
+                                } else if (isNeuralLink) {
+                                    return 'link neural-link';
+                                } else {
+                                    return 'link';
+                                }
                             })
                             .attr('stroke', d => getLinkColor(d.type || d.causation_type || 'unknown', d))
                             .attr('stroke-width', d => {
                                 const baseWidth = 2;
                                 const densityWidth = (d._normalizedDensity || 0) * 10;
                                 const nodeWidth = (d._normalizedNodeLinks || 0) * 3;
-                                return Math.max(baseWidth, baseWidth + densityWidth + nodeWidth);
+                                // Linguistic edges slightly thicker to stand out
+                                const linguisticBoost = (d.is_linguistic || d.linguistic_edge) ? 1.5 : 1.0;
+                                return Math.max(baseWidth, (baseWidth + densityWidth + nodeWidth) * linguisticBoost);
+                            })
+                            .attr('stroke-dasharray', d => {
+                                // Dashed line for linguistic edges (Phase 2)
+                                if (d.is_linguistic || d.linguistic_edge) {
+                                    return '5,5';  // 5px dash, 5px gap
+                                }
+                                return 'none';  // Solid line for regular links
                             })
                             .attr('stroke-opacity', d => {
                                 const normalizedDensity = d._normalizedDensity || 0;
-                                return 0.4 + (1 - normalizedDensity) * 0.6;
+                                // Linguistic edges slightly more opaque
+                                const baseOpacity = 0.4 + (1 - normalizedDensity) * 0.6;
+                                return (d.is_linguistic || d.linguistic_edge) ? Math.min(1.0, baseOpacity + 0.2) : baseOpacity;
                             })
                             .style('display', filters.showLinks ? 'block' : 'none')
                             .merge(linkSelection)
@@ -8496,18 +8584,49 @@
                                 const targetNode = updatedNodes.find(n => n.id === targetId);
                                 const isNeuralLink = (sourceNode && sourceNode.component === 'neural') || 
                                                    (targetNode && targetNode.component === 'neural');
-                                return isNeuralLink ? 'link neural-link' : 'link';
+                                const isLinguisticEdge = d.is_linguistic || d.linguistic_edge || false;
+                                
+                                if (isLinguisticEdge) {
+                                    return 'link linguistic-link';
+                                } else if (isNeuralLink) {
+                                    return 'link neural-link';
+                                } else {
+                                    return 'link';
+                                }
                             })
                             .attr('stroke', d => getLinkColor(d.type || d.causation_type || 'unknown', d))
                             .attr('stroke-width', d => {
                                 const baseWidth = 2;
                                 const densityWidth = (d._normalizedDensity || 0) * 10;
                                 const nodeWidth = (d._normalizedNodeLinks || 0) * 3;
-                                return Math.max(baseWidth, baseWidth + densityWidth + nodeWidth);
+                                // Linguistic edges slightly thicker to stand out
+                                const linguisticBoost = (d.is_linguistic || d.linguistic_edge) ? 1.5 : 1.0;
+                                return Math.max(baseWidth, (baseWidth + densityWidth + nodeWidth) * linguisticBoost);
+                            })
+                            .attr('stroke-dasharray', d => {
+                                // Dashed line for linguistic edges (Phase 2)
+                                if (d.is_linguistic || d.linguistic_edge) {
+                                    return '5,5';  // 5px dash, 5px gap
+                                }
+                                return 'none';  // Solid line for regular links
                             })
                             .attr('stroke-opacity', d => {
                                 const normalizedDensity = d._normalizedDensity || 0;
-                                return 0.4 + (1 - normalizedDensity) * 0.6;
+                                // Linguistic edges slightly more opaque
+                                const baseOpacity = 0.4 + (1 - normalizedDensity) * 0.6;
+                                return (d.is_linguistic || d.linguistic_edge) ? Math.min(1.0, baseOpacity + 0.2) : baseOpacity;
+                            })
+                            .attr('title', d => {
+                                // Tooltip for linguistic edges showing shared words
+                                if (d.is_linguistic || d.linguistic_edge) {
+                                    const sharedWords = d.shared_words || [];
+                                    const wordCount = d.shared_word_count || sharedWords.length;
+                                    if (sharedWords.length > 0) {
+                                        return `Linguistic Edge: ${wordCount} shared word(s): ${sharedWords.slice(0, 5).join(', ')}${sharedWords.length > 5 ? '...' : ''}`;
+                                    }
+                                    return 'Linguistic Edge: Organisms share words';
+                                }
+                                return d.explanation || `${d.type || 'unknown'} causation`;
                             });
                         linkSelection.exit().remove();
 
@@ -10709,26 +10828,44 @@
                 }
             }
 
-            // Switch between Chat and Notepad tabs
+            // Switch between Chat, Butterfly Chat and Notepad tabs
             function switchCRATab(tab) {
                 const chatTab = document.getElementById('tabChat');
+                const butterflyTab = document.getElementById('tabButterfly');
                 const notepadTab = document.getElementById('tabNotepad');
                 const chatContent = document.getElementById('chatTabContent');
+                const butterflyContent = document.getElementById('butterflyTabContent');
                 const notepadContent = document.getElementById('notepadTabContent');
                 
                 if (tab === 'chat') {
                     chatTab.style.background = '#0aa';
                     chatTab.style.color = '#000';
+                    butterflyTab.style.background = '#111';
+                    butterflyTab.style.color = '#ff0';
                     notepadTab.style.background = '#111';
                     notepadTab.style.color = '#f90';
                     chatContent.style.display = 'block';
+                    butterflyContent.style.display = 'none';
+                    notepadContent.style.display = 'none';
+                } else if (tab === 'butterfly') {
+                    chatTab.style.background = '#111';
+                    chatTab.style.color = '#0ff';
+                    butterflyTab.style.background = '#ff0';
+                    butterflyTab.style.color = '#000';
+                    notepadTab.style.background = '#111';
+                    notepadTab.style.color = '#f90';
+                    chatContent.style.display = 'none';
+                    butterflyContent.style.display = 'block';
                     notepadContent.style.display = 'none';
                 } else {
                     chatTab.style.background = '#111';
                     chatTab.style.color = '#0ff';
+                    butterflyTab.style.background = '#111';
+                    butterflyTab.style.color = '#ff0';
                     notepadTab.style.background = '#f90';
                     notepadTab.style.color = '#000';
                     chatContent.style.display = 'none';
+                    butterflyContent.style.display = 'none';
                     notepadContent.style.display = 'block';
                     updateNotepadDisplay();
                 }
@@ -13027,6 +13164,60 @@
                     });
             }
 
+            // Send butterfly chat message
+            async function sendButterflyChatMessage() {
+                const input = document.getElementById('butterflyChatInput');
+                const message = input.value.trim();
+
+                if (!message) return;
+
+                // Clear input
+                input.value = '';
+
+                // Add user message to chat
+                addButterflyChatMessage('user', message);
+
+                // Update status
+                updateButterflyChatStatus('Querying organism networks...');
+
+                // Get routing strategy and max organisms
+                const routingStrategy = document.getElementById('butterflyRoutingSelect').value;
+                const maxOrganisms = parseInt(document.getElementById('butterflyMaxOrganisms').value) || 10;
+
+                const requestData = {
+                    message: message,
+                    routing_strategy: routingStrategy,
+                    max_organisms: maxOrganisms
+                };
+
+                // Send to backend
+                fetch('/api/butterfly/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        updateButterflyChatStatus('');
+
+                        if (data.error) {
+                            addButterflyChatMessage('assistant', `Error: ${data.error}`, true);
+                            return;
+                        }
+
+                        // Add response with metadata
+                        const responseText = `${data.response}\n\n[Confidence: ${(data.confidence * 100).toFixed(1)}%, Organisms: ${data.organism_count}, Strategy: ${data.routing_strategy}]`;
+                        addButterflyChatMessage('assistant', responseText);
+                    })
+                    .catch(err => {
+                        console.error('Error sending butterfly chat message:', err);
+                        updateButterflyChatStatus('Error sending message.');
+                        addButterflyChatMessage('assistant', `Error: ${err.message}`, true);
+                    });
+            }
+
             // Simple markdown renderer for chat messages
             function renderMarkdown(text) {
                 if (!text) return '';
@@ -13260,6 +13451,40 @@
             // Update chat status
             function updateChatStatus(status) {
                 document.getElementById('chatStatus').textContent = status;
+            }
+
+            // Add message to butterfly chat
+            function addButterflyChatMessage(role, message, isError = false) {
+                const chatHistory = document.getElementById('butterflyChatHistory');
+                if (!chatHistory) return;
+
+                const messageDiv = document.createElement('div');
+                messageDiv.style.cssText = 'margin: 8px 0; padding: 8px; border-radius: 4px;';
+
+                if (role === 'user') {
+                    messageDiv.style.cssText += 'background: rgba(255, 255, 0, 0.1); border: 1px solid #ff0; color: #ff0;';
+                } else {
+                    messageDiv.style.cssText += 'background: rgba(0, 255, 255, 0.1); border: 1px solid #0ff; color: #0ff;';
+                }
+
+                if (isError) {
+                    messageDiv.style.cssText += 'background: rgba(255, 0, 0, 0.1); border: 1px solid #f00; color: #f00;';
+                }
+
+                // Render markdown for assistant messages
+                if (role === 'assistant' && !isError) {
+                    messageDiv.innerHTML = renderMarkdown(message);
+                } else {
+                    messageDiv.textContent = message;
+                }
+
+                chatHistory.appendChild(messageDiv);
+                chatHistory.scrollTop = chatHistory.scrollHeight;
+            }
+
+            // Update butterfly chat status
+            function updateButterflyChatStatus(status) {
+                document.getElementById('butterflyChatStatus').textContent = status;
             }
 
             // Load Ollama configuration on page load
@@ -14465,8 +14690,31 @@
                 }
             }
 
+            // Set up butterfly chat input event listeners
+            function setupButterflyChatListeners() {
+                const butterflyChatInput = document.getElementById('butterflyChatInput');
+                const butterflyChatSendButton = document.getElementById('butterflyChatSendButton');
+
+                if (butterflyChatInput && !butterflyChatInput._listenerAttached) {
+                    butterflyChatInput.addEventListener('keypress', function (e) {
+                        if (e.key === 'Enter') {
+                            sendButterflyChatMessage();
+                        }
+                    });
+                    butterflyChatInput._listenerAttached = true;
+                }
+
+                if (butterflyChatSendButton && !butterflyChatSendButton._listenerAttached) {
+                    butterflyChatSendButton.addEventListener('click', function () {
+                        sendButterflyChatMessage();
+                    });
+                    butterflyChatSendButton._listenerAttached = true;
+                }
+            }
+
             // Try immediately, then on DOMContentLoaded (consolidated below)
             setupChatListeners();
+            setupButterflyChatListeners();
             
             // Also restore state immediately if DOM is already loaded
             if (document.readyState !== 'loading') {

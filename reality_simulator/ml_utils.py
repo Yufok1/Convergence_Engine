@@ -139,7 +139,8 @@ class PopulationClusterer:
         self.scaler = StandardScaler() if SKLEARN_AVAILABLE else None
         self._last_result: Optional[ClusteringResult] = None
     
-    def extract_features(self, organisms: Dict[str, Any]) -> Tuple[np.ndarray, List[str]]:
+    def extract_features(self, organisms: Dict[str, Any], 
+                        context_memory: Optional[Any] = None) -> Tuple[np.ndarray, List[str]]:
         """
         Extract feature vectors from organisms.
         
@@ -148,6 +149,10 @@ class PopulationClusterer:
         - Fitness value
         - Resources (if available)
         - Connection count (if available)
+        - Language features (if context_memory available):
+          - Vocabulary size (normalized)
+          - Communication activity (normalized)
+          - Linguistic connections (normalized)
         """
         organism_ids = list(organisms.keys())
         features = []
@@ -178,11 +183,32 @@ class PopulationClusterer:
             else:
                 feature_vec.append(0.0)
             
+            # NEW: Language features (if context_memory available)
+            if context_memory and hasattr(context_memory, 'node_word_associations'):
+                # Convert org_id to int for lookup
+                org_id_int = hash(org_id) if isinstance(org_id, str) else org_id
+                
+                # Vocabulary size (normalized to 0-1, assuming max 100 words)
+                vocab_size = len(context_memory.node_word_associations.get(org_id_int, set()))
+                feature_vec.append(min(1.0, vocab_size / 100.0))
+                
+                # Communication activity (normalized, assuming max 50 communications)
+                comm_activity = getattr(org, 'communication_count', 0)
+                feature_vec.append(min(1.0, comm_activity / 50.0))
+                
+                # Linguistic connections (normalized, assuming max 10 linguistic edges)
+                linguistic_conns = getattr(org, 'linguistic_connection_count', 0)
+                feature_vec.append(min(1.0, linguistic_conns / 10.0))
+            else:
+                # No language data available - use zeros
+                feature_vec.extend([0.0] * 3)
+            
             features.append(feature_vec)
         
         return np.array(features), organism_ids
     
-    def fit_predict(self, organisms: Dict[str, Any]) -> ClusteringResult:
+    def fit_predict(self, organisms: Dict[str, Any],
+                    context_memory: Optional[Any] = None) -> ClusteringResult:
         """
         Cluster organisms and return results.
         
@@ -204,7 +230,7 @@ class PopulationClusterer:
                 algorithm="insufficient_data"
             )
         
-        features, organism_ids = self.extract_features(organisms)
+        features, organism_ids = self.extract_features(organisms, context_memory=context_memory)
         
         # Standardize features
         features_scaled = self.scaler.fit_transform(features)
@@ -274,8 +300,9 @@ class AnomalyDetector:
         self.scaler = StandardScaler() if SKLEARN_AVAILABLE else None
         self._last_result: Optional[AnomalyResult] = None
     
-    def extract_features(self, organisms: Dict[str, Any]) -> Tuple[np.ndarray, List[str]]:
-        """Extract feature vectors from organisms (same as clustering)"""
+    def extract_features(self, organisms: Dict[str, Any],
+                        context_memory: Optional[Any] = None) -> Tuple[np.ndarray, List[str]]:
+        """Extract feature vectors from organisms (same as clustering, with language features)"""
         organism_ids = list(organisms.keys())
         features = []
         
@@ -303,15 +330,32 @@ class AnomalyDetector:
             else:
                 feature_vec.append(0.0)
             
+            # NEW: Language features (if context_memory available)
+            if context_memory and hasattr(context_memory, 'node_word_associations'):
+                org_id_int = hash(org_id) if isinstance(org_id, str) else org_id
+                vocab_size = len(context_memory.node_word_associations.get(org_id_int, set()))
+                feature_vec.append(min(1.0, vocab_size / 100.0))
+                comm_activity = getattr(org, 'communication_count', 0)
+                feature_vec.append(min(1.0, comm_activity / 50.0))
+                linguistic_conns = getattr(org, 'linguistic_connection_count', 0)
+                feature_vec.append(min(1.0, linguistic_conns / 10.0))
+            else:
+                feature_vec.extend([0.0] * 3)
+            
             features.append(feature_vec)
         
         return np.array(features), organism_ids
     
-    def fit_predict(self, organisms: Dict[str, Any]) -> AnomalyResult:
+    def fit_predict(self, organisms: Dict[str, Any], context_memory: Optional[Any] = None) -> AnomalyResult:
         """
         Detect anomalies in organism population.
         
-        Returns empty result if sklearn not available or insufficient data.
+        Args:
+            organisms: Dict mapping organism IDs to Organism objects
+            context_memory: Optional ContextMemory instance for language features
+        
+        Returns:
+            AnomalyResult with detected anomalies
         """
         if not SKLEARN_AVAILABLE:
             return AnomalyResult(
@@ -331,7 +375,7 @@ class AnomalyDetector:
                 algorithm="insufficient_data"
             )
         
-        features, organism_ids = self.extract_features(organisms)
+        features, organism_ids = self.extract_features(organisms, context_memory=context_memory)
         features_scaled = self.scaler.fit_transform(features)
         
         if self.algorithm == 'isolation_forest':
@@ -392,8 +436,9 @@ class TraitReducer:
         self.scaler = StandardScaler() if SKLEARN_AVAILABLE else None
         self._last_result: Optional[ReductionResult] = None
     
-    def extract_features(self, organisms: Dict[str, Any]) -> Tuple[np.ndarray, List[str]]:
-        """Extract feature vectors from organisms"""
+    def extract_features(self, organisms: Dict[str, Any],
+                        context_memory: Optional[Any] = None) -> Tuple[np.ndarray, List[str]]:
+        """Extract feature vectors from organisms (with language features)"""
         organism_ids = list(organisms.keys())
         features = []
         
@@ -421,15 +466,32 @@ class TraitReducer:
             else:
                 feature_vec.append(0.0)
             
+            # NEW: Language features (if context_memory available)
+            if context_memory and hasattr(context_memory, 'node_word_associations'):
+                org_id_int = hash(org_id) if isinstance(org_id, str) else org_id
+                vocab_size = len(context_memory.node_word_associations.get(org_id_int, set()))
+                feature_vec.append(min(1.0, vocab_size / 100.0))
+                comm_activity = getattr(org, 'communication_count', 0)
+                feature_vec.append(min(1.0, comm_activity / 50.0))
+                linguistic_conns = getattr(org, 'linguistic_connection_count', 0)
+                feature_vec.append(min(1.0, linguistic_conns / 10.0))
+            else:
+                feature_vec.extend([0.0] * 3)
+            
             features.append(feature_vec)
         
         return np.array(features), organism_ids
     
-    def fit_transform(self, organisms: Dict[str, Any]) -> ReductionResult:
+    def fit_transform(self, organisms: Dict[str, Any], context_memory: Optional[Any] = None) -> ReductionResult:
         """
         Reduce dimensionality of organism features.
         
-        Returns empty result if sklearn not available or insufficient data.
+        Args:
+            organisms: Dict mapping organism IDs to Organism objects
+            context_memory: Optional ContextMemory instance for language features
+        
+        Returns:
+            ReductionResult with reduced coordinates
         """
         if not SKLEARN_AVAILABLE:
             return ReductionResult(
@@ -445,7 +507,7 @@ class TraitReducer:
                 algorithm="insufficient_data"
             )
         
-        features, organism_ids = self.extract_features(organisms)
+        features, organism_ids = self.extract_features(organisms, context_memory=context_memory)
         features_scaled = self.scaler.fit_transform(features)
         
         # Limit n_components to number of features/samples
@@ -567,13 +629,14 @@ class MLAnalyzer:
         self.reduction_enabled = reduction_config.get('enabled', True)
         self.concept_tracking_enabled = concept_config.get('enabled', True)
     
-    def analyze(self, organisms: Dict[str, Any], force: bool = False) -> Dict[str, Any]:
+    def analyze(self, organisms: Dict[str, Any], force: bool = False, context_memory: Optional[Any] = None) -> Dict[str, Any]:
         """
         Run all enabled ML analyses on organism population.
         
         Args:
             organisms: Dict mapping organism IDs to Organism objects
             force: If True, run analysis regardless of interval
+            context_memory: Optional ContextMemory instance for language features
             
         Returns:
             Dict with clustering, anomaly, and reduction results
@@ -604,7 +667,7 @@ class MLAnalyzer:
         # Clustering
         cluster_result = None
         if self.clustering_enabled:
-            cluster_result = self.clusterer.fit_predict(organisms)
+            cluster_result = self.clusterer.fit_predict(organisms, context_memory=context_memory)
             
             # NEW: Concept tracking - semantic naming of stable clusters (Quick Win #2)
             concept_tags = {}
@@ -635,7 +698,7 @@ class MLAnalyzer:
         
         # Anomaly Detection
         if self.anomaly_enabled:
-            anomaly_result = self.anomaly_detector.fit_predict(organisms)
+            anomaly_result = self.anomaly_detector.fit_predict(organisms, context_memory=context_memory)
             results['anomalies'] = anomaly_result.to_dict()
             results['anomaly_organisms'] = anomaly_result.get_anomaly_organisms(list(organisms.keys()))
         else:
@@ -643,7 +706,7 @@ class MLAnalyzer:
         
         # Dimensionality Reduction
         if self.reduction_enabled:
-            reduction_result = self.reducer.fit_transform(organisms)
+            reduction_result = self.reducer.fit_transform(organisms, context_memory=context_memory)
             results['reduction'] = reduction_result.to_dict()
             # Include coordinates for visualization
             if reduction_result.coordinates.size > 0:

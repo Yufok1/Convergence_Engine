@@ -3,6 +3,11 @@ Context Memory System for Referential Storage
 
 Provides shared contextual memory to unify organism nodes in contextual reference.
 Enables organisms to correlate language patterns with network structure.
+
+Extended with:
+- Integration with LanguageVocabulary for tokenization
+- Optional nn.Embedding for learned word representations
+- Token sequence storage for language model training
 """
 
 import json
@@ -10,6 +15,26 @@ import os
 from typing import Dict, List, Set, Any, Optional, Tuple
 from collections import defaultdict
 from datetime import datetime
+import numpy as np
+
+# Try importing PyTorch for nn.Embedding
+try:
+    import torch
+    import torch.nn as nn
+    PYTORCH_AVAILABLE = True
+except ImportError:
+    PYTORCH_AVAILABLE = False
+    torch = None
+    nn = None
+
+# Import LanguageVocabulary if available
+try:
+    from reality_simulator.language_system import LanguageVocabulary, SPECIAL_TOKENS
+    LANGUAGE_SYSTEM_AVAILABLE = True
+except ImportError:
+    LANGUAGE_SYSTEM_AVAILABLE = False
+    LanguageVocabulary = None
+    SPECIAL_TOKENS = {}
 
 
 class ContextMemory:
@@ -20,18 +45,202 @@ class ContextMemory:
     - node_embeddings: vector representations of organisms
     - language_anchors: words mapped to node IDs they reference
     - episodic_events: generation snapshots of key metrics
+    - vocabulary: LanguageVocabulary for tokenization (optional)
+    - word_embedding: nn.Embedding for learned representations (optional)
+    - organism_sequences: token sequences for each organism (for LM training)
     """
 
-    def __init__(self, persistence_path: str = "data/context_memory.json"):
+    def __init__(self, persistence_path: str = "data/context_memory.json",
+                 use_learned_embeddings: bool = False,
+                 embedding_dim: int = 64,
+                 max_vocab_size: int = 10000):
+        """
+        Initialize context memory.
+        
+        Args:
+            persistence_path: Path for JSON persistence
+            use_learned_embeddings: Use nn.Embedding for learned word representations
+            embedding_dim: Dimension for learned embeddings
+            max_vocab_size: Maximum vocabulary size
+        """
         self.persistence_path = persistence_path
+        self.use_learned_embeddings = use_learned_embeddings and PYTORCH_AVAILABLE
+        self.embedding_dim = embedding_dim
+        self.max_vocab_size = max_vocab_size
+        
+        # Core data structures
         self.node_embeddings: Dict[int, List[float]] = {}  # organism_id -> embedding vector
         self.language_anchors: Dict[str, Set[int]] = defaultdict(set)  # word -> set of organism_ids
         self.episodic_events: Dict[int, Dict[str, Any]] = {}  # generation -> metrics snapshot
         self.word_frequencies: Dict[str, int] = defaultdict(int)  # word usage counts
         self.node_word_associations: Dict[int, Set[str]] = defaultdict(set)  # organism_id -> words
+        
+        # Language model integration
+        self.vocabulary: Optional['LanguageVocabulary'] = None
+        self.word_embedding: Optional['nn.Embedding'] = None
+        self.organism_sequences: Dict[int, List[int]] = defaultdict(list)  # organism_id -> token_ids
+        
+        # Initialize vocabulary if available
+        if LANGUAGE_SYSTEM_AVAILABLE:
+            self.vocabulary = LanguageVocabulary(max_vocab_size=max_vocab_size)
+        
+        # Initialize learned embeddings if enabled
+        if self.use_learned_embeddings:
+            self._initialize_learned_embeddings()
 
         # Load existing data if available
         self._load_persistence()
+    
+    def _initialize_learned_embeddings(self):
+        """Initialize PyTorch nn.Embedding for learned word representations."""
+        if not PYTORCH_AVAILABLE:
+            print("[CONTEXT_MEMORY] PyTorch not available, using frequency-based embeddings")
+            self.use_learned_embeddings = False
+            return
+        
+        self.word_embedding = nn.Embedding(
+            num_embeddings=self.max_vocab_size,
+            embedding_dim=self.embedding_dim,
+            padding_idx=SPECIAL_TOKENS.get('<PAD>', 0) if SPECIAL_TOKENS else 0
+        )
+        
+        # Xavier initialization
+        nn.init.xavier_uniform_(self.word_embedding.weight)
+        
+        print(f"[CONTEXT_MEMORY] Initialized learned embeddings: {self.max_vocab_size} x {self.embedding_dim}")
+    
+    def build_vocabulary_from_anchors(self) -> int:
+        """
+        Build vocabulary from existing language_anchors structure.
+        
+        Returns:
+            Number of words added to vocabulary
+        """
+        if not LANGUAGE_SYSTEM_AVAILABLE or self.vocabulary is None:
+            print("[CONTEXT_MEMORY] LanguageVocabulary not available, skipping vocabulary build")
+            return 0
+        
+        words_added = self.vocabulary.build_from_language_anchors(
+            language_anchors=dict(self.language_anchors),
+            node_word_associations={k: v for k, v in self.node_word_associations.items()}
+        )
+        
+        return words_added
+    
+    def get_word_embedding(self, word: str) -> Optional[np.ndarray]:
+        """
+        Get embedding vector for a word.
+        
+        Uses learned embeddings if available, otherwise frequency-based.
+        
+        Args:
+            word: Word to get embedding for
+            
+        Returns:
+            Embedding vector as numpy array, or None if not found
+        """
+        if self.use_learned_embeddings and self.word_embedding is not None and self.vocabulary is not None:
+            token_id = self.vocabulary.get_id(word)
+            with torch.no_grad():
+                embedding = self.word_embedding(torch.tensor([token_id]))
+            return embedding.squeeze().numpy()
+        
+        # Fallback to frequency-based embedding
+        if word in self.word_frequencies:
+            # Simple one-hot style embedding based on word index
+            word_idx = list(self.word_frequencies.keys()).index(word)
+            embedding = np.zeros(min(len(self.word_frequencies), 100))
+            if word_idx < len(embedding):
+                embedding[word_idx] = self.word_frequencies[word]
+            return embedding
+        
+        return None
+    
+    def tokenize_sequence(self, words: List[str], add_special: bool = True) -> List[int]:
+        """
+        Tokenize a sequence of words to token IDs.
+        
+        Args:
+            words: List of words to tokenize
+            add_special: Add <START> and <END> tokens
+            
+        Returns:
+            List of token IDs
+        """
+        if self.vocabulary is None:
+            # Fallback: return word indices
+            token_ids = []
+            word_list = list(self.word_frequencies.keys())
+            for word in words:
+                if word in word_list:
+                    token_ids.append(word_list.index(word))
+                else:
+                    token_ids.append(0)  # Unknown
+            return token_ids
+        
+        return self.vocabulary.encode(words, add_special=add_special)
+    
+    def detokenize_sequence(self, token_ids: List[int], skip_special: bool = True) -> List[str]:
+        """
+        Convert token IDs back to words.
+        
+        Args:
+            token_ids: List of token IDs
+            skip_special: Skip special tokens in output
+            
+        Returns:
+            List of words
+        """
+        if self.vocabulary is None:
+            # Fallback: return words by index
+            word_list = list(self.word_frequencies.keys())
+            words = []
+            for idx in token_ids:
+                if 0 <= idx < len(word_list):
+                    words.append(word_list[idx])
+                else:
+                    words.append('<UNK>')
+            return words
+        
+        return self.vocabulary.decode(token_ids, skip_special=skip_special)
+    
+    def record_organism_sequence(self, organism_id: int, token_ids: List[int], 
+                                  max_length: int = 128) -> None:
+        """
+        Record token sequence for an organism (for LM training).
+        
+        Args:
+            organism_id: Organism ID
+            token_ids: Token IDs to append
+            max_length: Maximum sequence length to maintain
+        """
+        self.organism_sequences[organism_id].extend(token_ids)
+        
+        # Truncate to max length (keep most recent)
+        if len(self.organism_sequences[organism_id]) > max_length:
+            self.organism_sequences[organism_id] = self.organism_sequences[organism_id][-max_length:]
+    
+    def get_organism_sequence(self, organism_id: int) -> List[int]:
+        """
+        Get the token sequence for an organism.
+        
+        Args:
+            organism_id: Organism ID
+            
+        Returns:
+            List of token IDs
+        """
+        return self.organism_sequences.get(organism_id, [])
+    
+    def clear_organism_sequence(self, organism_id: int) -> None:
+        """
+        Clear sequence data for a dead organism.
+        
+        Args:
+            organism_id: Organism ID to clear
+        """
+        if organism_id in self.organism_sequences:
+            del self.organism_sequences[organism_id]
 
     def _load_persistence(self) -> None:
         """Load context memory from disk if it exists."""
@@ -40,10 +249,12 @@ class ContextMemory:
                 with open(self.persistence_path, 'r') as f:
                     data = json.load(f)
                     self.node_embeddings = {int(k): v for k, v in data.get('node_embeddings', {}).items()}
-                    self.language_anchors = {k: set(v) for k, v in data.get('language_anchors', {}).items()}
+                    # Convert back to defaultdict to maintain auto-creation behavior
+                    self.language_anchors = defaultdict(set, {k: set(v) for k, v in data.get('language_anchors', {}).items()})
                     self.episodic_events = {int(k): v for k, v in data.get('episodic_events', {}).items()}
                     self.word_frequencies = defaultdict(int, data.get('word_frequencies', {}))
-                    self.node_word_associations = {int(k): set(v) for k, v in data.get('node_word_associations', {}).items()}
+                    # Convert back to defaultdict to maintain auto-creation behavior
+                    self.node_word_associations = defaultdict(set, {int(k): set(v) for k, v in data.get('node_word_associations', {}).items()})
         except Exception as e:
             print(f"[CONTEXT_MEMORY] Warning: Could not load persistence data: {e}")
 

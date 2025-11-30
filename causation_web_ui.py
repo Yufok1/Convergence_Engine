@@ -7,6 +7,7 @@ Uses Flask + D3.js for interactive graph visualization
 
 from flask import Flask, render_template, jsonify, request, abort, Response
 from causation_explorer import CausationExplorer
+from reality_simulator.language.butterfly_chat import ButterflyChatRouter
 import json
 from pathlib import Path
 import logging
@@ -341,6 +342,83 @@ CONFIG_GUARDRAILS = {
         'max': 0.3,
         'type': float,
         'label': 'neural.inheritance.mutation_rate'
+    },
+    # Language Model Settings ⭐ NEW
+    '/neural/language_model/enabled': {
+        'type': bool,
+        'label': 'neural.language_model.enabled'
+    },
+    '/neural/language_model/attention/enabled': {
+        'type': bool,
+        'label': 'neural.language_model.attention.enabled'
+    },
+    '/neural/language_model/attention/num_heads': {
+        'min': 1,
+        'max': 16,
+        'type': int,
+        'label': 'neural.language_model.attention.num_heads'
+    },
+    '/neural/language_model/attention/attention_dim': {
+        'min': 8,
+        'max': 128,
+        'type': int,
+        'label': 'neural.language_model.attention.attention_dim'
+    },
+    '/neural/language_model/vocabulary/max_size': {
+        'min': 128,
+        'max': 10000,
+        'type': int,
+        'label': 'neural.language_model.vocabulary.max_size'
+    },
+    '/neural/language_model/sequence/max_length': {
+        'min': 16,
+        'max': 512,
+        'type': int,
+        'label': 'neural.language_model.sequence.max_length'
+    },
+    '/neural/language_model/sequence/context_window': {
+        'min': 8,
+        'max': 256,
+        'type': int,
+        'label': 'neural.language_model.sequence.context_window'
+    },
+    '/neural/language_model/training/alpha': {
+        'min': 0.0,
+        'max': 1.0,
+        'type': float,
+        'label': 'neural.language_model.training.alpha'
+    },
+    '/neural/language_model/training/beta': {
+        'min': 0.0,
+        'max': 1.0,
+        'type': float,
+        'label': 'neural.language_model.training.beta'
+    },
+    '/neural/language_model/training/vp_temperature_scale': {
+        'type': bool,
+        'label': 'neural.language_model.training.vp_temperature_scale'
+    },
+    '/neural/language_model/curriculum/enabled': {
+        'type': bool,
+        'label': 'neural.language_model.curriculum.enabled'
+    },
+    '/neural/language_model/generation/max_length': {
+        'min': 8,
+        'max': 128,
+        'type': int,
+        'label': 'neural.language_model.generation.max_length'
+    },
+    '/neural/language_model/generation/temperature': {
+        'min': 0.1,
+        'max': 2.0,
+        'type': float,
+        'label': 'neural.language_model.generation.temperature'
+    },
+    '/neural/language_model/generation/vp_gate_threshold': {
+        'min': 0.0,
+        'max': 1.0,
+        'type': float,
+        'label': 'neural.language_model.generation.vp_gate_threshold'
     },
     # Scikit-learn ML Enhancement Settings
     '/scikit/enabled': {
@@ -3281,10 +3359,11 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "   - Use when a user asks: \"What's going on with event X?\"\n"
         prompt += "   - Response includes: `summary`, `severity`, `immediate_causes[]`, `immediate_effects[]`, `root_causes[]`, `major_impacts[]`\n\n"
         
-        prompt += "4. **Advanced Search**: `/api/events/search/advanced?component=X&event_type=Y&min_severity=0.7`\n"
+        prompt += "4. **Advanced Search**: `/api/events/search/advanced?component=X&event_type=Y&min_severity=0.7&word=explore`\n"
         prompt += "   - Filtered search with aggregations\n"
-        prompt += "   - Parameters: `q`, `component`, `event_type`, `time_start`, `time_end`, `min_severity`, `has_caused`, `has_been_caused`, `limit`\n"
-        prompt += "   - Use when investigating: \"Show me all high-severity neural events\"\n"
+        prompt += "   - Parameters: `q`, `component`, `event_type`, `time_start`, `time_end`, `min_severity`, `has_caused`, `has_been_caused`, `word`, `limit`\n"
+        prompt += "   - **NEW**: `word=<word>` parameter for language-specific filtering\n"
+        prompt += "   - Use when investigating: \"Show me all high-severity neural events\" or \"Find events with word 'explore'\"\n"
         prompt += "   - Response includes: `results[]`, `aggregations.by_component`, `aggregations.by_type`\n\n"
         
         prompt += "5. **Most Consequential Events**: `/api/events/consequential?limit=10`\n"
@@ -3298,22 +3377,172 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "   - Use for temporal pattern analysis\n"
         prompt += "   - Response includes: `events[]`, `links[]`, `time_range`\n\n"
         
-        prompt += "### How to Use the Illumination Engine:\n\n"
-        prompt += "**When a user asks \"Why did X happen?\":**\n"
-        prompt += "1. First, search for the event: `/api/events/search?q=collapse` or use advanced search\n"
-        prompt += "2. Get the event_id from the results\n"
-        prompt += "3. Call root cause analysis: `/api/events/<event_id>/root-causes?depth=15`\n"
-        prompt += "4. Present the narrative: \"This collapse was caused by... which was triggered by... which originated from...\"\n\n"
+        prompt += "### 🔍 CAUSATION TYPE-AWARE DECISION MAKING (CRITICAL):\n\n"
+        prompt += "**YOU MUST DIFFERENTIATE between causation types and choose appropriate analysis methods.**\n\n"
+        prompt += "#### Causation Types in the System:\n\n"
+        prompt += "1. **Language Causation** (`component='language'` or `event_type` contains `vocabulary`, `communication`, `chat`):\n"
+        prompt += "   - **Characteristics**: Word associations, vocabulary growth, organism communication, token exchanges\n"
+        prompt += "   - **Best Analysis Methods**:\n"
+        prompt += "     * **Search with word filter**: `search` with `component=language&word=<word>` to find word-specific patterns\n"
+        prompt += "     * **Timeline analysis**: Track vocabulary evolution over time\n"
+        prompt += "     * **Impact analysis**: See how vocabulary growth affects other systems\n"
+        prompt += "     * **Root causes**: Trace back to what triggered vocabulary growth\n"
+        prompt += "   - **Example**: \"What words are organisms using?\" → Use `search` with `component=language`\n"
+        prompt += "   - **Example**: \"How did word 'explore' spread?\" → Use `search` with `component=language&word=explore`, then `impact`\n"
+        prompt += "   - **Example**: \"Why did vocabulary spike?\" → Use `root_causes` on vocabulary_growth event\n\n"
         
-        prompt += "**When a user asks \"What did X cause?\":**\n"
-        prompt += "1. Find the event (search or from context)\n"
-        prompt += "2. Call impact analysis: `/api/events/<event_id>/impact?depth=15`\n"
-        prompt += "3. Summarize: \"This event triggered N downstream events across M components\"\n\n"
+        prompt += "2. **Neural Causation** (`component='neural'` or `event_type` contains `neural`, `training`, `decision`):\n"
+        prompt += "   - **Characteristics**: DQN training, neural decisions, Q-value updates, experience replay\n"
+        prompt += "   - **Best Analysis Methods**:\n"
+        prompt += "     * **Search by severity**: Find high-confidence decisions or training spikes\n"
+        prompt += "     * **Impact analysis**: See how neural decisions affect organism behavior\n"
+        prompt += "     * **Root causes**: Trace back to what triggered training updates\n"
+        prompt += "   - **Example**: \"Why did training loss spike?\" → Use `root_causes` on neural_training event\n"
+        prompt += "   - **Example**: \"What did this neural decision cause?\" → Use `impact` on neural_decision event\n\n"
         
-        prompt += "**When investigating system behavior:**\n"
-        prompt += "1. Get most consequential events: `/api/events/consequential?limit=5`\n"
-        prompt += "2. Explain each one: \"The most impactful event was [X] which caused [Y] downstream effects\"\n"
-        prompt += "3. Trace chains: Show the causal narratives\n\n"
+        prompt += "3. **Network Causation** (`component='reality_sim'` or `event_type` contains `network`, `collapse`, `modularity`):\n"
+        prompt += "   - **Characteristics**: Network topology changes, organism count, modularity, clustering\n"
+        prompt += "   - **Best Analysis Methods**:\n"
+        prompt += "     * **Root causes**: Deep trace back to find what triggered network changes\n"
+        prompt += "     * **Impact analysis**: See cascading effects of network collapse\n"
+        prompt += "     * **Consequential events**: Find pivotal network moments\n"
+        prompt += "   - **Example**: \"Why did the network collapse?\" → Use `root_causes` on collapse event\n"
+        prompt += "   - **Example**: \"What did the collapse cause?\" → Use `impact` on collapse event\n\n"
+        
+        prompt += "4. **VP Causation** (`component='djinn_kernel'` or `event_type` contains `vp`, `violation_pressure`):\n"
+        prompt += "   - **Characteristics**: Violation pressure calculations, VP classifications, trait convergence\n"
+        prompt += "   - **Best Analysis Methods**:\n"
+        prompt += "     * **Root causes**: Trace back to what caused VP spikes\n"
+        prompt += "     * **Impact analysis**: See how VP affects all systems\n"
+        prompt += "     * **Timeline**: Track VP evolution over time\n"
+        prompt += "   - **Example**: \"Why did VP spike?\" → Use `root_causes` on VP calculation event\n"
+        prompt += "   - **Example**: \"What did VP spike cause?\" → Use `impact` on VP event\n\n"
+        
+        prompt += "5. **ML Causation** (`component='ml_analysis'` or `event_type` contains `clustering`, `anomaly`, `phenotype`):\n"
+        prompt += "   - **Characteristics**: Clustering results, anomaly detection, phenotype identification\n"
+        prompt += "   - **Best Analysis Methods**:\n"
+        prompt += "     * **Search**: Find clustering or anomaly events\n"
+        prompt += "     * **Impact**: See how ML insights affect system behavior\n"
+        prompt += "   - **Example**: \"What clusters were found?\" → Use `search` with `component=ml_analysis&event_type=clustering`\n\n"
+        
+        prompt += "6. **Cross-System Causation** (Events connecting different components):\n"
+        prompt += "   - **Characteristics**: Language→Neural, VP→Network, Neural→Language, etc.\n"
+        prompt += "   - **Best Analysis Methods**:\n"
+        prompt += "     * **Explain**: Get full narrative of cross-system interactions\n"
+        prompt += "     * **Root causes**: Trace back through multiple systems\n"
+        prompt += "     * **Impact**: See cascading effects across systems\n"
+        prompt += "   - **Example**: \"How does language affect neural training?\" → Use `search` with `component=language`, then `impact`\n"
+        prompt += "   - **Example**: \"Why did VP spike cause vocabulary growth?\" → Use `root_causes` on vocabulary_growth, look for VP links\n\n"
+        
+        prompt += "#### Decision Tree for Analysis Selection:\n\n"
+        prompt += "```\n"
+        prompt += "**Question Type** → **Causation Type** → **Analysis Method**\n\n"
+        prompt += "1. \"What words...?\" or \"How did vocabulary...?\"\n"
+        prompt += "   → Language causation\n"
+        prompt += "   → Use `search` with `component=language` (add `word=<word>` if specific word)\n\n"
+        prompt += "2. \"Why did [language event] happen?\"\n"
+        prompt += "   → Language causation\n"
+        prompt += "   → Use `root_causes` on language event\n\n"
+        prompt += "3. \"What did [language event] cause?\"\n"
+        prompt += "   → Language causation\n"
+        prompt += "   → Use `impact` on language event\n\n"
+        prompt += "4. \"Why did [neural/network/VP] event happen?\"\n"
+        prompt += "   → Neural/Network/VP causation\n"
+        prompt += "   → Use `root_causes` on event\n\n"
+        prompt += "5. \"What did [neural/network/VP] event cause?\"\n"
+        prompt += "   → Neural/Network/VP causation\n"
+        prompt += "   → Use `impact` on event\n\n"
+        prompt += "6. \"Show me all [component] events\"\n"
+        prompt += "   → Any causation type\n"
+        prompt += "   → Use `search` with `component=<component>`\n\n"
+        prompt += "7. \"What were the most important events?\"\n"
+        prompt += "   → Any causation type\n"
+        prompt += "   → Use `consequential` to find high-impact events\n\n"
+        prompt += "8. \"Explain this event\"\n"
+        prompt += "   → Any causation type\n"
+        prompt += "   → Use `explain` for complete narrative\n"
+        prompt += "```\n\n"
+        
+        prompt += "#### Language-Specific Analysis Patterns:\n\n"
+        prompt += "**When analyzing language causation, ALWAYS consider:**\n"
+        prompt += "- **Word associations**: Use `word` parameter in search\n"
+        prompt += "- **Vocabulary evolution**: Use timeline or search for `vocabulary_growth` events\n"
+        prompt += "- **Communication networks**: Search for `organism_communication` events\n"
+        prompt += "- **Cross-system effects**: Language events often affect neural training and network structure\n"
+        prompt += "- **Semantic chains**: Language causation can form conceptual chains (word→word→concept)\n\n"
+        
+        prompt += "**Language Analysis Examples:**\n"
+        prompt += "- \"What words are organisms using?\" → `search` with `component=language`\n"
+        prompt += "- \"How did word 'explore' spread?\" → `search` with `component=language&word=explore`, then `impact`\n"
+        prompt += "- \"Why did vocabulary grow?\" → `root_causes` on vocabulary_growth event\n"
+        prompt += "- \"What did vocabulary growth cause?\" → `impact` on vocabulary_growth event\n"
+        prompt += "- \"Show me language events\" → `search` with `component=language`\n"
+        prompt += "- \"Explain this vocabulary event\" → `explain` on vocabulary_growth event\n\n"
+        
+        prompt += "### How to Use the Illumination Engine (Causation-Type-Aware):\n\n"
+        prompt += "**CRITICAL**: Always identify the causation type FIRST, then choose the appropriate analysis method.\n\n"
+        
+        prompt += "**Step 1: Identify Causation Type**\n"
+        prompt += "- Check event `component` field: `language`, `neural`, `reality_sim`, `djinn_kernel`, `ml_analysis`\n"
+        prompt += "- Check event `event_type` field: `vocabulary_growth`, `organism_communication`, `neural_training`, `network_collapse`, `vp_calculation`\n"
+        prompt += "- Check if question mentions: words, vocabulary, communication (→ language), training, decisions (→ neural), network, collapse (→ network), VP (→ djinn_kernel)\n\n"
+        
+        prompt += "**Step 2: Choose Analysis Method Based on Causation Type**\n\n"
+        
+        prompt += "**For Language Causation:**\n"
+        prompt += "- \"What words...?\" → Use `search` with `component=language` (add `word=<word>` if specific)\n"
+        prompt += "- \"Why did vocabulary...?\" → Use `root_causes` on vocabulary_growth event\n"
+        prompt += "- \"What did vocabulary growth cause?\" → Use `impact` on vocabulary_growth event\n"
+        prompt += "- \"How did word X spread?\" → Use `search` with `component=language&word=X`, then `impact`\n"
+        prompt += "- \"Show me language events\" → Use `search` with `component=language`\n\n"
+        
+        prompt += "**For Neural Causation:**\n"
+        prompt += "- \"Why did training...?\" → Use `root_causes` on neural_training event\n"
+        prompt += "- \"What did neural decision cause?\" → Use `impact` on neural_decision event\n"
+        prompt += "- \"Show me high-confidence decisions\" → Use `search` with `component=neural&min_severity=0.8`\n\n"
+        
+        prompt += "**For Network Causation:**\n"
+        prompt += "- \"Why did network collapse?\" → Use `root_causes` on collapse event\n"
+        prompt += "- \"What did collapse cause?\" → Use `impact` on collapse event\n"
+        prompt += "- \"Show me network events\" → Use `search` with `component=reality_sim`\n\n"
+        
+        prompt += "**For VP Causation:**\n"
+        prompt += "- \"Why did VP spike?\" → Use `root_causes` on VP calculation event\n"
+        prompt += "- \"What did VP spike cause?\" → Use `impact` on VP event\n"
+        prompt += "- \"Show me VP events\" → Use `search` with `component=djinn_kernel`\n\n"
+        
+        prompt += "**For Cross-System Causation:**\n"
+        prompt += "- \"How does language affect neural?\" → Use `search` with `component=language`, then `impact`\n"
+        prompt += "- \"Why did VP cause vocabulary growth?\" → Use `root_causes` on vocabulary_growth, look for VP links\n"
+        prompt += "- \"Explain this cross-system event\" → Use `explain` for full narrative\n\n"
+        
+        prompt += "**Step 3: Execute and Interpret**\n"
+        prompt += "1. Execute the chosen analysis method\n"
+        prompt += "2. Interpret results in context of causation type\n"
+        prompt += "3. Present findings with causation-type-specific insights\n\n"
+        
+        prompt += "**Example: Language Causation Analysis**\n"
+        prompt += "```\n"
+        prompt += "User: \"What words are organisms using?\"\n"
+        prompt += "You:\n"
+        prompt += "1. Identify: Language causation (question about words)\n"
+        prompt += "2. Choose: `search` with `component=language`\n"
+        prompt += "3. Execute: [[ILLUMINATE: {\"action\": \"search\", \"component\": \"language\"}]]\n"
+        prompt += "4. Interpret: Look at vocabulary_growth and organism_communication events\n"
+        prompt += "5. Present: \"Organisms are using words like 'explore', 'cooperate', 'survive'...\"\n"
+        prompt += "```\n\n"
+        
+        prompt += "**Example: Cross-System Causation Analysis**\n"
+        prompt += "```\n"
+        prompt += "User: \"How does vocabulary growth affect neural training?\"\n"
+        prompt += "You:\n"
+        prompt += "1. Identify: Cross-system causation (language → neural)\n"
+        prompt += "2. Choose: `search` for vocabulary_growth, then `impact` to see neural effects\n"
+        prompt += "3. Execute: [[ILLUMINATE: {\"action\": \"search\", \"event_type\": \"vocabulary_growth\"}]]\n"
+        prompt += "4. Then: [[ILLUMINATE: {\"action\": \"impact\", \"event_id\": \"<vocab_event_id>\"}]]\n"
+        prompt += "5. Interpret: Look for neural_training events in impact results\n"
+        prompt += "6. Present: \"Vocabulary growth triggered N neural training events...\"\n"
+        prompt += "```\n\n"
         
         prompt += "### Illumination Engine Command Format:\n\n"
         prompt += "**CRITICAL**: When you want to execute an illumination command, output the marker EXACTLY as shown below.\n"
@@ -3460,6 +3689,66 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "**IMPORTANT**: Use the notepad liberally! It's your scientific journal. Document your reasoning process,\n"
         prompt += "not just final conclusions. This helps users understand your analysis AND helps you build up\n"
         prompt += "knowledge across multiple investigations.\n\n"
+        
+        prompt += "## 🦋 LANGUAGE SYSTEM CAPABILITIES (NEW):\n\n"
+        prompt += "**The Butterfly System now includes emergent language capabilities:**\n\n"
+        
+        prompt += "### Language Model Architecture:\n"
+        prompt += "- **Neural Language Generation**: Organisms use attention-based tokenization + generation\n"
+        prompt += "- **Dynamic Vocabulary**: Words learned from organism interactions, not pre-programmed\n"
+        prompt += "- **Token Exchange**: Organisms communicate via generated text sequences\n"
+        prompt += "- **VP Integration**: Violation pressure affects language generation patterns\n"
+        prompt += "- **Evolution Tracking**: Vocabulary grows as organisms develop communication\n\n"
+        
+        prompt += "### Language Events (NEW Component):\n"
+        prompt += "- **vocabulary_growth**: New words discovered and added to vocabulary\n"
+        prompt += "- **organism_communication**: Token exchanges between organisms\n"
+        prompt += "- **neural_language_training**: Language model training progress\n"
+        prompt += "- **butterfly_chat_message**: User chat interactions with organisms\n"
+        prompt += "- **butterfly_chat_response**: Organism responses to user messages\n\n"
+        
+        prompt += "### Butterfly Chat Interface:\n"
+        prompt += "- **Direct Organism Chat**: Talk to running neural organisms via web UI\n"
+        prompt += "- **Routing Strategies**: All, Random, Fittest, Connected, By Word\n"
+        prompt += "- **Live Language Evolution**: Observe vocabulary growth in real-time\n"
+        prompt += "- **Confidence Scoring**: Response quality metrics from multiple organisms\n"
+        prompt += "- **Causation Integration**: Chat events appear in causation graph\n\n"
+        
+        prompt += "### Language Analysis Capabilities:\n"
+        prompt += "- **Vocabulary Search**: Find words and their usage patterns\n"
+        prompt += "- **Communication Networks**: Map organism conversation patterns\n"
+        prompt += "- **Language Evolution**: Track how vocabulary develops over time\n"
+        prompt += "- **Semantic Clustering**: Group words by meaning/context\n"
+        prompt += "- **VP-Language Correlation**: How violation pressure affects communication\n\n"
+        
+        prompt += "### Language Configuration:\n"
+        prompt += "- **neural.language_model.enabled**: Enable/disable language generation\n"
+        prompt += "- **vocab_size**: Maximum vocabulary size (default: 1000)\n"
+        prompt += "- **language_model.vocab_size**: Current vocabulary count\n"
+        prompt += "- **language_model.training_loss**: Language model training progress\n"
+        prompt += "- **butterfly_chat.max_organisms**: Max organisms per chat response\n\n"
+        
+        prompt += "### Language Visualization:\n"
+        prompt += "- **Language nodes**: Teal-colored nodes for language events\n"
+        prompt += "- **Word association links**: Connect words to organisms/concepts\n"
+        prompt += "- **Communication flows**: Show token exchange patterns\n"
+        prompt += "- **Vocabulary growth timeline**: Track language evolution\n\n"
+        
+        prompt += "### Language Causation Patterns:\n"
+        prompt += "- **VP → Language**: How violation pressure affects communication\n"
+        prompt += "- **Fitness → Vocabulary**: How successful organisms develop language\n"
+        prompt += "- **Network → Communication**: How connectivity enables token exchange\n"
+        prompt += "- **Evolution → Semantics**: How language evolves with organism complexity\n\n"
+        
+        prompt += "**LANGUAGE SYSTEM STATUS**: Check `/api/cra/data` for current language model status, vocabulary size, and training metrics.\n"
+        prompt += "**BUTTERFLY CHAT**: Available at `http://localhost:5000` → \"🦋 Butterfly Chat\" tab for direct organism interaction.\n"
+        prompt += "**LANGUAGE ANALYSIS**: Use Illumination Engine with language filters:\n"
+        prompt += "  - [[ILLUMINATE: {\"action\": \"search\", \"component\": \"language\"}]] - Find all language events\n"
+        prompt += "  - [[ILLUMINATE: {\"action\": \"search\", \"component\": \"language\", \"word\": \"explore\"}]] - Find events related to word 'explore'\n"
+        prompt += "  - [[ILLUMINATE: {\"action\": \"search\", \"event_type\": \"vocabulary_growth\"}]] - Track vocabulary evolution\n"
+        prompt += "  - [[ILLUMINATE: {\"action\": \"search\", \"event_type\": \"organism_communication\"}]] - Analyze communication patterns\n"
+        prompt += "  - Use `/api/events/search/advanced?component=language&word=<word>` for word-specific searches\n"
+        prompt += "  - Use `/api/language/data` to get vocabulary, word associations, and frequencies\n\n"
         
         return prompt
 
@@ -5319,10 +5608,16 @@ def explain_event(event_id):
 def search_events_advanced():
     """
     🔎 ADVANCED SEARCH with filters and aggregation
+    
+    NEW: Language support via 'word' parameter and context_memory integration
     """
     if explorer is None:
         return jsonify({'error': 'Causation Explorer not initialized'}), 500
     try:
+        # Get context_memory from network if available
+        network = app.config.get('network')
+        context_memory = network.context_memory if network and hasattr(network, 'context_memory') else None
+        
         results = explorer.search_advanced(
             query=request.args.get('q'),
             component=request.args.get('component'),
@@ -5332,7 +5627,9 @@ def search_events_advanced():
             min_severity=float(request.args.get('min_severity')) if request.args.get('min_severity') else None,
             has_caused=request.args.get('has_caused', '').lower() == 'true' if request.args.get('has_caused') else None,
             has_been_caused=request.args.get('has_been_caused', '').lower() == 'true' if request.args.get('has_been_caused') else None,
-            limit=int(request.args.get('limit', 50))
+            word=request.args.get('word'),  # NEW: Language filter
+            limit=int(request.args.get('limit', 50)),
+            context_memory=context_memory  # NEW: Pass for language support
         )
         return jsonify(results)
     except Exception as e:
@@ -5659,6 +5956,10 @@ def get_graph():
                     component = 'neural'  # Keep 'neural' for neural system events
                 elif 'ml' in component or 'analysis' in component:
                     component = 'ml_analysis'  # Standardize ML component name
+                elif 'language' in component or 'vocabulary' in component or 'communication' in component:
+                    component = 'language'  # Language system events
+                elif 'butterfly_chat' in component or 'chat' in component:
+                    component = 'butterfly_chat'  # Butterfly Chat events
                 else:
                     component = component  # Keep as-is (will default to orange)
                 
@@ -6101,6 +6402,60 @@ def test_ollama_connection():
             'connected': False,
             'error': str(e)
         }), 503
+
+
+@app.route('/api/language/data')
+def get_language_data():
+    """
+    Get language data (language_anchors, node_word_associations) for linguistic edge detection
+    
+    Returns:
+        - language_anchors: word -> list of organism_ids
+        - node_word_associations: organism_id -> list of words
+        - word_frequencies: word -> count
+    """
+    try:
+        network = app.config.get('network')
+        if not network or not hasattr(network, 'context_memory'):
+            return jsonify({
+                'language_anchors': {},
+                'node_word_associations': {},
+                'word_frequencies': {},
+                'available': False
+            })
+        
+        context_memory = network.context_memory
+        
+        # Convert sets to lists for JSON serialization
+        language_anchors = {
+            word: list(organism_ids) 
+            for word, organism_ids in context_memory.language_anchors.items()
+        }
+        
+        node_word_associations = {
+            str(organism_id): list(words)
+            for organism_id, words in context_memory.node_word_associations.items()
+        }
+        
+        word_frequencies = dict(context_memory.word_frequencies)
+        
+        return jsonify({
+            'language_anchors': language_anchors,
+            'node_word_associations': node_word_associations,
+            'word_frequencies': word_frequencies,
+            'available': True,
+            'vocab_size': len(language_anchors),
+            'total_associations': sum(len(words) for words in node_word_associations.values())
+        })
+    except Exception as e:
+        logger.error(f"Error getting language data: {e}", exc_info=True)
+        return jsonify({
+            'language_anchors': {},
+            'node_word_associations': {},
+            'word_frequencies': {},
+            'available': False,
+            'error': str(e)
+        })
 
 
 @app.route('/api/ollama/models')
@@ -6752,6 +7107,62 @@ Use this context to understand what the graph structure means. Match the visual 
         })
     except Exception as e:
         logger.error(f"Error in Ollama chat: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/butterfly/chat', methods=['POST'])
+def butterfly_chat():
+    """Chat with organism networks using Butterfly Chat router"""
+    try:
+        data = request.get_json()
+        message = data.get('message', '')
+        routing_strategy = data.get('routing_strategy', 'all')
+        max_organisms = data.get('max_organisms', 10)
+        
+        if not message:
+            return jsonify({'error': 'Message is required'}), 400
+        
+        # Get stored references from unified system integration
+        organisms = app.config.get('organisms', [])
+        vocabulary = app.config.get('vocabulary')
+        event_emitter = app.config.get('event_emitter')
+        
+        if not organisms:
+            return jsonify({'error': 'No organism networks available. Please ensure the Butterfly system is running.'}), 503
+        
+        if not vocabulary:
+            return jsonify({'error': 'Language vocabulary not available'}), 503
+        
+        # Create router and process message
+        # Convert organisms list to dict (keyed by organism ID)
+        organisms_dict = {}
+        for i, org in enumerate(organisms):
+            # Try to get organism ID from various attributes
+            org_id = getattr(org, 'species_id', None) or getattr(org, 'id', None) or str(i)
+            organisms_dict[str(org_id)] = org
+        
+        router = ButterflyChatRouter(organisms_dict, vocabulary, event_emitter)
+        
+        # Get network state for routing strategies that need it
+        network = app.config.get('network')
+        network_state = None
+        if network and hasattr(network, 'context_memory'):
+            network_state = {
+                'language_anchors': {k: list(v) for k, v in network.context_memory.language_anchors.items()},
+                'connections': {}  # Could extract from network graph if needed
+            }
+        
+        response = router.route_message(message, routing_strategy, max_organisms, network_state=network_state)
+        
+        return jsonify({
+            'response': response.get('response', '<no response>'),
+            'organism_responses': response.get('organism_responses', []),
+            'routing_info': response.get('routing_info', {}),
+            'tokens_used': response.get('tokens_used', [])
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in butterfly chat: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 
@@ -7570,6 +7981,17 @@ def cra_get_data():
                 'initialized': explorer is not None,
                 'event_count': graph_stats.get('total_events', 0),
                 'link_count': graph_stats.get('total_links', 0)
+            },
+            'language_model': {
+                'enabled': config_data.get('neural', {}).get('language_model', {}).get('enabled', False),
+                'vocab_size': config_data.get('neural', {}).get('language_model', {}).get('vocabulary', {}).get('max_size', 1024),
+                'current_sequence_length': config_data.get('neural', {}).get('language_model', {}).get('sequence', {}).get('context_window', 32),
+                'curriculum_enabled': config_data.get('neural', {}).get('language_model', {}).get('curriculum', {}).get('enabled', True),
+                'attention_enabled': config_data.get('neural', {}).get('language_model', {}).get('attention', {}).get('enabled', True),
+                'loss_weights': {
+                    'alpha': config_data.get('neural', {}).get('language_model', {}).get('training', {}).get('alpha', 0.9),
+                    'beta': config_data.get('neural', {}).get('language_model', {}).get('training', {}).get('beta', 0.1)
+                }
             }
         }
 

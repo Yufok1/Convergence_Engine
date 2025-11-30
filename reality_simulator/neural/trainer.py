@@ -2,10 +2,16 @@
 NeuralTrainer - Training System for Neural Organisms
 
 Manages DQN training for neural organisms, synchronized with the Breath Engine.
+
+Extended with:
+- VP-aware language model training
+- Dual-loss system: DQN (action) + Next-token prediction (language)
+- VP temperature scaling for stable training
+- Curriculum learning based on VP thresholds
 """
 
 import numpy as np
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Tuple
 import time
 
 # Try importing PyTorch
@@ -51,6 +57,11 @@ class NeuralTrainer:
     
     Collects experiences from organisms and performs batched training
     synchronized with the Breath Engine.
+    
+    Extended with:
+    - Language model training (next-token prediction)
+    - VP-aware temperature scaling
+    - Curriculum learning for sequence lengths
     """
     
     def __init__(self, config: Dict[str, Any], device=None):
@@ -83,10 +94,32 @@ class NeuralTrainer:
             'resource_loss': rewards_config.get('resource_loss', -0.1),
         }
         
+        # Language model configuration
+        language_config = config.get('language_model', {})
+        self.language_model_enabled = language_config.get('enabled', False)
+        self.rl_loss_weight = language_config.get('rl_loss_weight', 0.9)  # alpha
+        self.language_loss_weight = language_config.get('language_loss_weight', 0.1)  # beta (conservative start)
+        self.vp_gate_threshold = language_config.get('vp_gate_threshold', 0.75)
+        self.vp_temperature_scaling = language_config.get('vp_temperature_scaling', True)
+        
+        # Curriculum learning configuration
+        self.curriculum_learning = language_config.get('curriculum_learning', True)
+        self.current_sequence_length = language_config.get('start_sequence_length', 8)
+        self.curriculum_thresholds = language_config.get('curriculum_thresholds', {
+            '8_to_16': {'vp_threshold': 0.5, 'stability_steps': 20},
+            '16_to_32': {'vp_threshold': 0.4, 'stability_steps': 30},
+            '32_to_128': {'vp_threshold': 0.3, 'stability_steps': 50}
+        })
+        
+        # VP history for curriculum learning decisions
+        self.vp_history: List[float] = []
+        self.vp_stable_steps = 0
+        
         # Training statistics
         self.training_step_count = 0
         self.training_occurred_this_step = False  # Track if training happened in current step
         self.total_loss = 0.0
+        self.total_language_loss = 0.0
         self.last_training_time = 0.0
         
         # Track organism fitness history for reward calculation
@@ -381,7 +414,153 @@ class NeuralTrainer:
         return {
             'training_steps': self.training_step_count,
             'average_loss': self.total_loss / max(1, self.training_step_count),
+            'average_language_loss': self.total_language_loss / max(1, self.training_step_count) if self.language_model_enabled else None,
             'last_training_time': self.last_training_time,
-            'organisms_tracked': len(self.organism_fitness_history)
+            'organisms_tracked': len(self.organism_fitness_history),
+            'language_model_enabled': self.language_model_enabled,
+            'current_sequence_length': self.current_sequence_length,
+            'vp_stable_steps': self.vp_stable_steps
         }
+    
+    def calculate_language_loss(self,
+                                language_logits: 'torch.Tensor',
+                                target_tokens: 'torch.Tensor',
+                                vp_value: Optional[float] = None) -> 'torch.Tensor':
+        """
+        Calculate next-token prediction loss with VP-aware scaling.
+        
+        Args:
+            language_logits: Predicted logits from language head (batch, seq, vocab)
+            target_tokens: Target token IDs (batch, seq)
+            vp_value: Current VP value for temperature scaling
+            
+        Returns:
+            Scaled language loss tensor
+        """
+        # Apply VP temperature scaling to logits before loss calculation
+        if self.vp_temperature_scaling and vp_value is not None and vp_value > 0:
+            # Higher VP = lower temperature = more confident predictions
+            temperature = 1.0 / (1.0 + vp_value)
+            language_logits = language_logits / temperature
+        
+        # Reshape for cross-entropy: (batch * seq, vocab) and (batch * seq)
+        batch_size, seq_len, vocab_size = language_logits.shape
+        logits_flat = language_logits.view(-1, vocab_size)
+        targets_flat = target_tokens.view(-1)
+        
+        # Calculate cross-entropy loss (ignores padding tokens with index 0)
+        loss = F.cross_entropy(logits_flat, targets_flat, ignore_index=0)
+        
+        # VP gating: if VP > threshold, reduce language loss influence
+        if vp_value is not None and vp_value > self.vp_gate_threshold:
+            # Scale down language loss when system is unstable
+            gate_factor = 1.0 - ((vp_value - self.vp_gate_threshold) / (1.0 - self.vp_gate_threshold))
+            gate_factor = max(0.1, gate_factor)  # Never fully zero out
+            loss = loss * gate_factor
+        
+        # Emit neural_language_training event for causation graph
+        if self.event_emitter:
+            try:
+                from causation_explorer import Event
+                event = Event(
+                    timestamp=time.time(),
+                    component='neural',
+                    event_type='neural_language_training',
+                    data={
+                        'vocab_size': vocab_size,
+                        'language_loss': float(loss.item()) if hasattr(loss, 'item') else float(loss),
+                        'token_sequence_length': seq_len,
+                        'batch_size': batch_size,
+                        'vp_value': vp_value,
+                        'vp_gated': vp_value is not None and vp_value > self.vp_gate_threshold,
+                        'current_curriculum_length': self.current_sequence_length
+                    }
+                )
+                self.event_emitter(event)
+            except ImportError:
+                pass  # CausationExplorer not available
+        
+        return loss
+    
+    def update_curriculum(self, vp_value: float) -> bool:
+        """
+        Update curriculum learning based on VP stability.
+        
+        Increases sequence length when VP is stable below thresholds.
+        
+        Args:
+            vp_value: Current VP value
+            
+        Returns:
+            True if sequence length was increased
+        """
+        if not self.curriculum_learning or not self.language_model_enabled:
+            return False
+        
+        # Track VP history
+        self.vp_history.append(vp_value)
+        if len(self.vp_history) > 100:
+            self.vp_history = self.vp_history[-100:]
+        
+        # Determine current curriculum stage
+        if self.current_sequence_length == 8:
+            threshold_key = '8_to_16'
+            next_length = 16
+        elif self.current_sequence_length == 16:
+            threshold_key = '16_to_32'
+            next_length = 32
+        elif self.current_sequence_length == 32:
+            threshold_key = '32_to_128'
+            next_length = 128
+        else:
+            return False  # Already at max
+        
+        threshold_config = self.curriculum_thresholds.get(threshold_key, {})
+        vp_threshold = threshold_config.get('vp_threshold', 0.5)
+        stability_steps = threshold_config.get('stability_steps', 20)
+        
+        # Check if VP is below threshold
+        if vp_value < vp_threshold:
+            self.vp_stable_steps += 1
+        else:
+            self.vp_stable_steps = 0  # Reset on threshold breach
+        
+        # Advance curriculum if stable for required steps
+        if self.vp_stable_steps >= stability_steps:
+            self.current_sequence_length = next_length
+            self.vp_stable_steps = 0  # Reset for next stage
+            
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"[CURRICULUM] Advanced sequence length: {self.current_sequence_length}")
+            
+            return True
+        
+        return False
+    
+    def apply_vp_temperature_to_logits(self, 
+                                        logits: 'torch.Tensor', 
+                                        vp_value: float) -> 'torch.Tensor':
+        """
+        Apply VP-based temperature scaling to language logits.
+        
+        Higher VP = lower temperature = sharper predictions (more conservative).
+        
+        Args:
+            logits: Raw logits from language head
+            vp_value: Current VP value
+            
+        Returns:
+            Temperature-scaled logits
+        """
+        if vp_value <= 0:
+            return logits
+        
+        # Temperature scaling: T = 1 / (1 + VP)
+        # VP=0 → T=1.0 (no change)
+        # VP=0.5 → T=0.67 (sharper)
+        # VP=1.0 → T=0.5 (very sharp)
+        temperature = 1.0 / (1.0 + vp_value)
+        
+        return logits / temperature
 

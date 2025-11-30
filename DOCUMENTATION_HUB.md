@@ -66,6 +66,18 @@ pip install pywin32
 - **[NEURAL_FRAMEWORK_ALTERNATIVES.md](./NEURAL_FRAMEWORK_ALTERNATIVES.md)** - Alternative deep learning frameworks (JAX, TensorFlow, Flax, etc.)
 - **[SIMPLE_PYTORCH_OPTIMIZATIONS.md](./SIMPLE_PYTORCH_OPTIMIZATIONS.md)** - Get 5-10x speedup with simple code changes
 
+### 🦋 Language Model System ⭐ NEW
+
+- **[docs/LANGUAGE_SYSTEM_INTEGRATION_ANALYSIS.md](./docs/LANGUAGE_SYSTEM_INTEGRATION_ANALYSIS.md)** - Complete analysis of language system implementation
+- **[docs/LANGUAGE_TEACHER_ARCHITECTURE_PROPOSAL.md](./docs/LANGUAGE_TEACHER_ARCHITECTURE_PROPOSAL.md)** - ⚠️ CRITICAL: Language Teacher system proposal (needed for vocabulary learning)
+- **Language Model Features:**
+  - Multi-head self-attention with VP-aware temperature scaling
+  - Dual-head architecture (action + language)
+  - Dynamic vocabulary learning from organism interactions
+  - Token-based communication between organisms
+  - Butterfly Chat interface for direct organism communication
+  - **Status:** Core implementation complete, vocabulary learning mechanism needed
+
 ### Explorer (Central Body / Breath Engine)
 
 - **[explorer/README.md](./explorer/README.md)** - Explorer system overview

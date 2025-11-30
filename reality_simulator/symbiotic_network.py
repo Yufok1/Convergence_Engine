@@ -19,6 +19,7 @@ from enum import Enum
 import networkx as nx
 from collections import defaultdict
 import time
+import logging
 
 # Import context memory system
 try:
@@ -619,6 +620,49 @@ class LinguisticSubgraph:
             'current_generation': self.generation
         }
 
+    @property
+    def edges(self) -> Dict[Tuple[str, str], Dict[str, Any]]:
+        """
+        Property accessor for edges with metadata (for token embedding exchange).
+        
+        Returns dict mapping (org_a, org_b) -> edge metadata dict
+        """
+        result = {}
+        for edge_key, edge in self.linguistic_edges.items():
+            result[edge_key] = {
+                'strength': edge.strength,
+                'min_lifetime_generations': self.generation - edge.creation_generation,
+                'word_a': edge.word_a,
+                'word_b': edge.word_b,
+                'connector': edge.connector
+            }
+        return result
+
+    def remove_organism_edges(self, organism_id: str) -> int:
+        """
+        Remove all edges associated with a specific organism.
+        
+        Called during organism death to clean up linguistic subgraph.
+        
+        Args:
+            organism_id: ID of the organism being removed
+            
+        Returns:
+            Number of edges removed
+        """
+        edges_to_remove = [
+            edge_key for edge_key in self.linguistic_edges.keys()
+            if organism_id in edge_key
+        ]
+        
+        for edge_key in edges_to_remove:
+            del self.linguistic_edges[edge_key]
+        
+        if edges_to_remove:
+            print(f"[LINGUISTIC SUBGRAPH] Removed {len(edges_to_remove)} edges for organism {organism_id}")
+        
+        return len(edges_to_remove)
+
 
 @dataclass
 class LinguisticEdge:
@@ -642,7 +686,8 @@ class SymbioticNetwork:
     def __init__(self, max_connections_per_organism: int = 5,
                  resource_pool_size: float = 100.0,
                  new_edge_rate: float = 1.0,
-                 context_memory: Optional[ContextMemory] = None):
+                 context_memory: Optional[ContextMemory] = None,
+                 config: Optional[Dict[str, Any]] = None):
         self.network_graph = nx.Graph()
         self.connections: Dict[Tuple[str, str], SymbioticConnection] = {}
         self.organisms: Dict[str, Organism] = {}
@@ -654,6 +699,22 @@ class SymbioticNetwork:
         # Context memory for language anchoring and stability metrics
         # Creates a new instance if none provided (lazy initialization pattern)
         self.context_memory = context_memory if context_memory is not None else ContextMemory()
+        
+        # Store config for language teacher
+        self.config = config or {}
+        
+        # Language Teacher (Phase 1: Behavior-based word mapping)
+        self.language_teacher = None
+        try:
+            from .language.language_teacher import create_language_teacher
+            self.language_teacher = create_language_teacher(self.config)
+            if self.language_teacher and self.language_teacher.enabled:
+                print(f"[SYMBIOTIC_NETWORK] Language Teacher enabled (Phase 1: Behavior-based mapping)")
+        except ImportError:
+            # Language teacher module not available - continue without it
+            pass
+        except Exception as e:
+            print(f"[SYMBIOTIC_NETWORK] Warning: Could not initialize Language Teacher: {e}")
 
         # Component engines
         self.resource_engine = ResourceFlowEngine(resource_pool_size)
@@ -798,7 +859,12 @@ class SymbioticNetwork:
         if not self.organisms:
             return {'enabled': True, 'reason': 'No organisms to analyze'}
         
-        self._last_ml_analysis = self.ml_analyzer.analyze(self.organisms, force=force)
+        # Pass context_memory to enable language features in ML analysis
+        self._last_ml_analysis = self.ml_analyzer.analyze(
+            self.organisms, 
+            force=force,
+            context_memory=self.context_memory
+        )
         
         # Emit causation events for significant ML changes
         if self.ml_event_emitter and self._last_ml_analysis.get('enabled'):
@@ -1216,6 +1282,24 @@ class SymbioticNetwork:
         # Apply memory-based selection pressure (penalize unreferenced, boost reference triangles)
         memory_adjustments = self.apply_memory_based_selection_pressure(self.context_memory)
         
+        # Language Teacher: Teach organisms words based on behavior and state
+        if self.language_teacher is not None:
+            try:
+                teaching_result = self.language_teacher.teach_network(
+                    self.organisms,
+                    self.context_memory,
+                    self.generation
+                )
+                # Store teaching stats in result for monitoring
+                if teaching_result.get('enabled'):
+                    result['language_teaching'] = {
+                        'organisms_taught': teaching_result.get('organisms_taught', 0),
+                        'words_assigned': teaching_result.get('words_assigned', 0)
+                    }
+            except Exception as e:
+                # Don't let language teaching errors break simulation
+                logging.warning(f"[SYMBIOTIC_NETWORK] Language teaching error: {e}")
+        
         # Log memory stability metrics every 10 generations
         if self.generation % 10 == 0:
             self.log_memory_stability_metrics(self.context_memory)
@@ -1573,6 +1657,123 @@ class SymbioticNetwork:
         """Get the current new edge formation rate multiplier"""
         return self.new_edge_rate
 
+    def exchange_token_embeddings(self, 
+                                   vp_value: Optional[float] = None,
+                                   max_exchanges: int = 10) -> Dict[str, Any]:
+        """
+        Exchange token embeddings between connected organisms for language learning.
+        
+        This enables organisms to share "communication patterns" across network edges,
+        facilitating emergent vocabulary through social learning.
+        
+        Respects LinguisticSubgraph retention policies:
+        - Only exchanges over edges with min_lifetime_generations >= 10
+        - VP gating: Higher VP = more selective exchange
+        
+        Args:
+            vp_value: Current VP value for gating exchanges
+            max_exchanges: Maximum exchanges per update
+            
+        Returns:
+            Summary of exchanges performed
+        """
+        exchanges = []
+        
+        # VP gating - reduce exchanges during high uncertainty
+        if vp_value is not None and vp_value > 0.6:
+            max_exchanges = max(1, max_exchanges // 3)
+        
+        # Get eligible language connections from linguistic subgraph
+        eligible_edges = []
+        for (a, b), edge_data in self.language_subgraph.edges.items():
+            # Only use edges with sufficient lifetime
+            if edge_data.get('min_lifetime_generations', 0) >= 10:
+                if a in self.organisms and b in self.organisms:
+                    eligible_edges.append((a, b, edge_data))
+        
+        # Fallback to regular connections if no linguistic edges
+        if not eligible_edges:
+            for (a, b) in list(self.language_connections)[:max_exchanges]:
+                if a in self.organisms and b in self.organisms:
+                    eligible_edges.append((a, b, {'strength': 0.5}))
+        
+        # Perform token exchanges
+        for a_id, b_id, edge_data in eligible_edges[:max_exchanges]:
+            org_a = self.organisms[a_id]
+            org_b = self.organisms[b_id]
+            
+            # Exchange token sequences if organisms have them
+            if hasattr(org_a, 'token_sequence') and hasattr(org_b, 'token_sequence'):
+                # Get recent tokens from both
+                tokens_a = list(org_a.token_sequence)[-16:] if org_a.token_sequence else []
+                tokens_b = list(org_b.token_sequence)[-16:] if org_b.token_sequence else []
+                
+                # Cross-pollinate: each organism gets a sample from the other
+                if tokens_a and len(org_b.token_sequence) < 128:
+                    for t in tokens_a[:4]:  # Exchange up to 4 tokens
+                        org_b.token_sequence.append(t)
+                
+                if tokens_b and len(org_a.token_sequence) < 128:
+                    for t in tokens_b[:4]:
+                        org_a.token_sequence.append(t)
+                
+                tokens_exchanged = min(4, len(tokens_a), len(tokens_b))
+                exchanges.append({
+                    'from': a_id,
+                    'to': b_id,
+                    'tokens_exchanged': tokens_exchanged,
+                    'edge_strength': edge_data.get('strength', 0.5)
+                })
+                
+                # Emit organism_communication event for causation graph
+                if self.ml_event_emitter and tokens_exchanged > 0:
+                    try:
+                        from causation_explorer import Event
+                        event = Event(
+                            timestamp=time.time(),
+                            component='network',
+                            event_type='organism_communication',
+                            data={
+                                'organism_a_id': a_id,
+                                'organism_b_id': b_id,
+                                'tokens_exchanged': tokens_exchanged,
+                                'connection_strength': edge_data.get('strength', 0.5),
+                                'vp_value': vp_value,
+                                'is_linguistic_edge': edge_data.get('min_lifetime_generations', 0) >= 10
+                            }
+                        )
+                        self.ml_event_emitter(event)
+                    except ImportError:
+                        pass  # CausationExplorer not available
+        
+        return {
+            'exchanges_performed': len(exchanges),
+            'eligible_edges': len(eligible_edges),
+            'vp_gated': vp_value is not None and vp_value > 0.6,
+            'details': exchanges if len(exchanges) <= 5 else exchanges[:5]  # Limit for logging
+        }
+
+    def cleanup_organism_embeddings(self, organism_id: str) -> None:
+        """
+        Clean up token embeddings when an organism dies.
+        
+        Removes any cached embeddings or token sequences associated
+        with the deceased organism to prevent memory leaks.
+        
+        Args:
+            organism_id: ID of the organism being removed
+        """
+        # Remove from linguistic subgraph
+        self.language_subgraph.remove_organism_edges(organism_id)
+        
+        # Remove from language connections tracking
+        connections_to_remove = [
+            (a, b) for (a, b) in self.language_connections 
+            if a == organism_id or b == organism_id
+        ]
+        for conn in connections_to_remove:
+            self.language_connections.discard(conn)
+
     def set_clustering_bias(self, bias: float):
         """Set bias toward triangle closure (0.0 = explore, 1.0 = cluster)"""
         self.clustering_bias = float(np.clip(bias, 0.0, 1.0))
@@ -1586,7 +1787,8 @@ class SymbioticNetwork:
 def create_symbiotic_network(organisms: List[Organism] = None,
                            max_connections: int = 5,
                            new_edge_rate: float = 1.0,
-                           context_memory: Optional[ContextMemory] = None) -> SymbioticNetwork:
+                           context_memory: Optional[ContextMemory] = None,
+                           config: Optional[Dict[str, Any]] = None) -> SymbioticNetwork:
     """Create a symbiotic network with optional initial organisms
     
     Args:
@@ -1595,13 +1797,15 @@ def create_symbiotic_network(organisms: List[Organism] = None,
         new_edge_rate: Multiplier for connection attempt rate (0.0 to 2.0)
         context_memory: Optional ContextMemory instance for language anchoring.
                        If None, a new instance is created automatically.
+        config: Optional configuration dictionary for language teacher and other features
     
     Returns:
         Configured SymbioticNetwork instance
     """
     network = SymbioticNetwork(max_connections_per_organism=max_connections,
                                new_edge_rate=new_edge_rate,
-                               context_memory=context_memory)
+                               context_memory=context_memory,
+                               config=config)
 
     if organisms:
         for organism in organisms:

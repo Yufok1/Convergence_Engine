@@ -61,6 +61,8 @@ python causation_web_ui.py
 **📚 [DOCUMENTATION_HUB.md](./DOCUMENTATION_HUB.md)** - Central documentation hub with links to all guides
 
 Recent updates:
+- 🦋 **Language Model System**: Complete neural language model integration with Butterfly Chat interface
+- 🦋 **Butterfly Chat**: Direct chat with organism network through web UI
 - Visualization filters: component deselection now correctly excludes nodes before first render
 - Graph view auto-fit after filtering to keep remaining nodes visible
 - CRA logs and snapshots can be safely wiped; they will regenerate automatically
@@ -95,6 +97,17 @@ A multi-layered artificial life simulation system that creates evolving populati
   - Dual inheritance (genetic + learned neural weights)
   - Breath-synchronized training cycles
   - Configurable reward system and exploration/exploitation balance
+- **🦋 Language Model System**: ⭐ NEW - Emergent language through neural organisms
+  - Multi-head self-attention mechanism with VP-aware temperature scaling
+  - Dual-head architecture: action head (RL) + language head (next-token prediction)
+  - Dynamic vocabulary learning from organism interactions
+  - Token-based communication between organisms
+  - VP-integrated language generation (violation pressure affects communication)
+  - Curriculum learning based on VP stability
+  - **Butterfly Chat**: Direct chat interface with organism network
+    - 5 routing strategies: All, Random, Fittest, Connected, By Word
+    - Real-time language evolution observation
+    - Confidence scoring and response aggregation
 - **🔬 ML Analysis System**: Scikit-learn population analytics
   - HDBSCAN/KMeans clustering (behavioral phenotype detection)
   - Isolation Forest anomaly detection
@@ -115,6 +128,12 @@ A multi-layered artificial life simulation system that creates evolving populati
 - **Multi-Domain Learning**: AI tutoring across quantum, temporal, social, epistemic, and mathematical domains
 - **Vision-Language Integration**: AI vision model analyzes network visualizations
 - **Referential Memory System**: Shared contextual memory unifies language and network structure
+- **🦋 Language Model Integration**: ⭐ NEW - Neural organisms develop emergent language
+  - Vocabulary management with deterministic ordering
+  - Character-level and action-sequence tokenization
+  - Token exchange between organisms via LinguisticSubgraph
+  - Language events tracked in causation graph (vocabulary_growth, organism_communication, neural_language_training)
+  - Butterfly Chat interface for direct organism communication
 
 **Interaction Modes:**
 - **👑 God Mode**: Omniscient overview and full control
@@ -218,9 +237,22 @@ Interactive web interface for exploring event causation and system dynamics.
   - If FFmpeg is not available, the system will download individual PNG frames instead
 
 **Run the Web UI:**
+
+**Option 1: Integrated (Recommended)**
+```bash
+python unified_entry.py
+# Automatically launches:
+# - Butterfly simulation (Explorer + Reality Simulator + Djinn Kernel)
+# - Web UI at http://localhost:5000 (integrated)
+# - 🦋 Butterfly Chat with live organism access
+# - Single matplotlib visualization window (3-panel display)
+```
+
+**Option 2: Standalone**
 ```bash
 python causation_web_ui.py
 # Then open http://localhost:5000
+# Note: Butterfly Chat requires unified system for organism access
 ```
 
 ---
@@ -406,6 +438,22 @@ Edit `config.json` to customize simulation parameters:
       "learning_rate": 0.001,
       "epsilon_start": 1.0,
       "epsilon_end": 0.01
+    },
+    "language_model": {
+      "enabled": false,
+      "attention": {
+        "enabled": true,
+        "num_heads": 4,
+        "attention_dim": 32
+      },
+      "vocabulary": {
+        "max_size": 1024
+      },
+      "training": {
+        "alpha": 0.9,
+        "beta": 0.1,
+        "vp_temperature_scale": true
+      }
     }
   }
 }
@@ -419,6 +467,8 @@ Edit `config.json` to customize simulation parameters:
 - Increase this interval (e.g. `5`) when running `reality_simulator/main.py` directly and you want external tools (web UI, viewers) to ingest fresh state.
 
 **🧠 Neural System:** Set `"neural.enabled": true` to activate PyTorch-based learning. See [NEURAL_SYSTEM_README.md](./NEURAL_SYSTEM_README.md) for details.
+
+**🦋 Language Model:** Set `"neural.language_model.enabled": true` to activate emergent language system. See [docs/LANGUAGE_SYSTEM_INTEGRATION_ANALYSIS.md](./docs/LANGUAGE_SYSTEM_INTEGRATION_ANALYSIS.md) for complete details.
 
 ---
 
@@ -507,8 +557,9 @@ The breath engine provides unified timing:
 - **CRA Agent**: AI-powered research assistant with full system access
   - **Neural-Aware**: Understands DQN architecture, training metrics, and dual inheritance
   - **ML-Aware**: Understands ML analysis events, clustering, anomaly detection, and causation links
-  - Can control all neural and ML system parameters via config updates
-  - Can enable/disable causation link generation for neural and ML events
+  - **🦋 Language-Aware**: ⭐ NEW - Understands language model architecture, vocabulary evolution, and organism communication
+  - Can control all neural, ML, and language system parameters via config updates
+  - Can enable/disable causation link generation for neural, ML, and language events
 - **Autonomous Control**: 40+ visualization settings, graph filters
 - **Robust Settings Management** ⭐:
   - Settings validation prevents invalid values from breaking visualization

@@ -849,7 +849,8 @@ class RealitySimulator:
             network = create_symbiotic_network(
                 organisms=initial_organisms,
                 max_connections=self.config['network']['max_connections'],
-                new_edge_rate=1.0  # Default, will be modified by feedback controller
+                new_edge_rate=1.0,  # Default, will be modified by feedback controller
+                config=self.config  # Pass config for language teacher
             )
             # Allow much denser connection topology for high-capacity runs
             try:

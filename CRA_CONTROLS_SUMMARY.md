@@ -91,15 +91,17 @@
 
 ## 🎛️ **Graph Filters** (CRA Can Control)
 
-### Component Filters (6 Checkboxes)
+### Component Filters (7 Checkboxes)
 - ✅ Reality Simulator
 - ✅ Explorer
 - ✅ Djinn Kernel
 - ✅ Breath
 - ✅ 🧠 Neural System ⭐ NEW
+- ✅ 🦋 Language System ⭐ NEW (vocabulary growth, organism communication, language teacher)
+- ✅ 🦋 Butterfly Chat ⭐ NEW (user chat interactions)
 - ✅ System
 
-**CRA Format:** `[[GRAPH_FILTER_UPDATE: {"components": {"explorer": true, "djinn_kernel": false}}]]`
+**CRA Format:** `[[GRAPH_FILTER_UPDATE: {"components": {"explorer": true, "djinn_kernel": false, "language": true}}]]`
 
 ### Causation Type Filters (4 Checkboxes)
 - ✅ Threshold
@@ -135,6 +137,28 @@ The CRA can modify `config.json` while the system is running using:
 - `neural.inheritance.*` (mutation_rate, crossover_rate)
 
 **Example:** `[[CONFIG_UPDATE: {"reason": "Increase neural learning rate", "patch": [{"op": "replace", "path": "/neural/training/learning_rate", "value": 0.002}]}]]`
+
+#### Language Model Configuration ⭐ NEW
+- `neural.language_model.enabled` (true/false, default: false) - Master toggle for language model
+- `neural.language_model.attention.enabled` (true/false) - Enable multi-head attention
+- `neural.language_model.attention.num_heads` (1-8, default: 4) - Number of attention heads
+- `neural.language_model.attention.attention_dim` (16-128, default: 32) - Attention dimension
+- `neural.language_model.vocabulary.max_size` (256-4096, default: 1024) - Maximum vocabulary size
+- `neural.language_model.sequence.max_length` (32-256, default: 128) - Maximum sequence length
+- `neural.language_model.sequence.context_window` (8-64, default: 32) - Context window size
+- `neural.language_model.training.alpha` (0.5-1.0, default: 0.9) - DQN loss weight
+- `neural.language_model.training.beta` (0.0-0.5, default: 0.1) - Language loss weight
+- `neural.language_model.training.vp_temperature_scale` (true/false) - VP-based temperature scaling
+- `neural.language_model.curriculum.enabled` (true/false) - Enable curriculum learning
+- `neural.language_model.curriculum.vp_thresholds.stage_*` (0.0-1.0) - VP thresholds for stages
+- `neural.language_model.generation.max_length` (8-64, default: 32) - Max generation length
+- `neural.language_model.generation.temperature` (0.1-2.0, default: 1.0) - Sampling temperature
+- `neural.language_model.generation.vp_gate_threshold` (0.0-1.0, default: 0.5) - VP threshold for generation
+
+**Examples:**
+- `[[CONFIG_UPDATE: {"reason": "Enable language model", "patch": [{"op": "replace", "path": "/neural/language_model/enabled", "value": true}]}]]`
+- `[[CONFIG_UPDATE: {"reason": "Increase language loss weight", "patch": [{"op": "replace", "path": "/neural/language_model/training/beta", "value": 0.2}]}]]`
+- `[[CONFIG_UPDATE: {"reason": "Lower curriculum threshold", "patch": [{"op": "replace", "path": "/neural/language_model/curriculum/vp_thresholds/stage_1", "value": 0.4}]}]]`
 
 #### Feedback Controller
 - `feedback.knobs.mutation_rate.initial`

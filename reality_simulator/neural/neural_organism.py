@@ -3,11 +3,17 @@ NeuralOrganism - Organism with Neural Brain
 
 Extends the base Organism class with PyTorch neural network capabilities
 for decision-making through reinforcement learning.
+
+Extended with:
+- Sequence tracking for language model training
+- Token sequence storage via deque sliding windows
+- Communication pattern extraction
 """
 
 import numpy as np
 from typing import Dict, Any, Optional, List, Tuple
 from dataclasses import field
+from collections import deque
 
 # Import base Organism class
 try:
@@ -120,6 +126,13 @@ class NeuralOrganism(Organism):
                 capacity=neural_config.get('training', {}).get('memory_size', 1000)
             )
             
+            # Sequence tracking for language model (deque auto-truncates)
+            language_config = neural_config.get('language_model', {})
+            max_seq_len = language_config.get('max_sequence_length', 128)
+            self.action_history = deque(maxlen=max_seq_len)  # Recent actions
+            self.state_history = deque(maxlen=max_seq_len)   # Recent states
+            self.token_sequence = deque(maxlen=max_seq_len)  # Token IDs for LM training
+            
             # Track previous state for experience recording
             self.prev_state = None
             self.prev_action = None
@@ -133,6 +146,9 @@ class NeuralOrganism(Organism):
         else:
             self.brain = None
             self.experience_buffer = None
+            self.action_history = deque(maxlen=128)
+            self.state_history = deque(maxlen=128)
+            self.token_sequence = deque(maxlen=128)
             self.prev_state = None
             self.prev_action = None
             self.prev_fitness = self.fitness
@@ -484,10 +500,116 @@ class NeuralOrganism(Organism):
         self.prev_state = state
         self.prev_action = action
         
+        # Update sequence histories for language model training
+        self.action_history.append(action)
+        self.state_history.append(state.copy() if isinstance(state, np.ndarray) else state)
+        
         # Decay epsilon
         self.epsilon = max(self.epsilon_end, self.epsilon * self.epsilon_decay)
         
         return action
+    
+    def get_action_sequence(self, length: Optional[int] = None) -> List[int]:
+        """
+        Get recent action history for language model training.
+        
+        Args:
+            length: Maximum length to return (None = all)
+            
+        Returns:
+            List of recent action indices
+        """
+        actions = list(self.action_history)
+        if length is not None:
+            return actions[-length:]
+        return actions
+    
+    def get_token_sequence(self, length: Optional[int] = None) -> List[int]:
+        """
+        Get token sequence for language model training.
+        
+        Args:
+            length: Maximum length to return (None = all)
+            
+        Returns:
+            List of token IDs
+        """
+        tokens = list(self.token_sequence)
+        if length is not None:
+            return tokens[-length:]
+        return tokens
+    
+    def append_tokens(self, token_ids: List[int]) -> None:
+        """
+        Append token IDs to the organism's sequence.
+        
+        Args:
+            token_ids: Token IDs to append
+        """
+        for token_id in token_ids:
+            self.token_sequence.append(token_id)
+    
+    def extract_communication_pattern(self, 
+                                       network_state: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """
+        Extract communication pattern from recent organism activity.
+        
+        This creates a tokenizable representation of the organism's
+        actions, connections, and resource flows.
+        
+        Args:
+            network_state: Current network state
+            
+        Returns:
+            Dictionary with communication pattern data
+        """
+        pattern = {
+            'organism_id': self.species_id,
+            'action_sequence': list(self.action_history),
+            'fitness_trend': self._calculate_fitness_trend(),
+            'connection_events': [],
+            'resource_events': []
+        }
+        
+        if network_state:
+            # Extract connection information
+            connections = network_state.get('connections', {})
+            for (a, b), conn_data in connections.items():
+                if a == self.species_id or b == self.species_id:
+                    pattern['connection_events'].append({
+                        'partner': b if a == self.species_id else a,
+                        'type': conn_data.get('type', 'unknown'),
+                        'strength': conn_data.get('strength', 0.0)
+                    })
+            
+            # Extract resource flow
+            flows = network_state.get('flows', {})
+            for (a, b), flow in flows.items():
+                if a == self.species_id:
+                    pattern['resource_events'].append({'direction': 'out', 'amount': flow})
+                elif b == self.species_id:
+                    pattern['resource_events'].append({'direction': 'in', 'amount': flow})
+        
+        return pattern
+    
+    def _calculate_fitness_trend(self) -> str:
+        """Calculate fitness trend from state history."""
+        if len(self.state_history) < 2:
+            return 'stable'
+        
+        # Fitness is first feature in state
+        recent_fitness = [s[0] if isinstance(s, np.ndarray) and len(s) > 0 else 0.5 
+                         for s in list(self.state_history)[-5:]]
+        
+        if len(recent_fitness) < 2:
+            return 'stable'
+        
+        trend = recent_fitness[-1] - recent_fitness[0]
+        if trend > 0.1:
+            return 'improving'
+        elif trend < -0.1:
+            return 'declining'
+        return 'stable'
     
     def record_experience(self, 
                          reward: float,
@@ -556,6 +678,84 @@ class NeuralOrganism(Organism):
         # Action 1 (cooperate) means connect
         # Action 2 (compete) means don't connect
         return action == 1
+    
+    def generate_tokens(self, 
+                         context_memory: Any = None,
+                         max_length: int = 32,
+                         vp_value: Optional[float] = None,
+                         temperature: float = 1.0) -> List[int]:
+        """
+        Generate token sequence using the language head (autoregressive).
+        
+        VP gating: Only generates if VP is below threshold (stable system).
+        Higher VP = more cautious = shorter/no generation.
+        
+        Args:
+            context_memory: ContextMemory instance with vocabulary
+            max_length: Maximum tokens to generate
+            vp_value: Current VP value (if None, generates freely)
+            temperature: Sampling temperature (higher = more random)
+            
+        Returns:
+            List of generated token IDs
+        """
+        if self.brain is None:
+            return []
+        
+        # VP gating - don't generate during high uncertainty
+        if vp_value is not None and vp_value > 0.5:
+            return []  # System too unstable for language generation
+        
+        import torch
+        
+        # Get vocabulary from context memory
+        if context_memory is None or not hasattr(context_memory, 'vocabulary'):
+            return []
+        
+        vocab = context_memory.vocabulary
+        generated = [vocab.get_token_id('<START>')]
+        
+        self.brain.eval()
+        with torch.no_grad():
+            # Start with current state as context
+            if len(self.state_history) > 0:
+                state = self.state_history[-1]
+                if isinstance(state, np.ndarray):
+                    state_tensor = torch.FloatTensor(state).unsqueeze(0)
+                else:
+                    state_tensor = torch.zeros(1, 12)  # Default input dim
+            else:
+                state_tensor = torch.zeros(1, 12)
+            
+            for _ in range(max_length - 1):
+                # Get language logits from brain
+                output = self.brain.forward(state_tensor, vp_value=vp_value)
+                
+                # If brain has language head, use it
+                if hasattr(self.brain, 'fc_language'):
+                    language_logits = self.brain.fc_language(
+                        torch.relu(self.brain.fc2(
+                            torch.relu(self.brain.fc1(state_tensor))
+                        ))
+                    )
+                    
+                    # Apply temperature
+                    logits = language_logits[0] / temperature
+                    probs = torch.softmax(logits, dim=-1)
+                    
+                    # Sample next token
+                    next_token = torch.multinomial(probs, 1).item()
+                else:
+                    # No language head, use action as pseudo-token
+                    next_token = torch.argmax(output, dim=-1).item()
+                
+                generated.append(next_token)
+                
+                # Stop at END token
+                if next_token == vocab.get_token_id('<END>'):
+                    break
+        
+        return generated
     
     def inherit_brain(self, parent_brain: OrganismBrain, 
                      mutation_rate: float = 0.1,

@@ -191,6 +191,109 @@ djinn_kernel_state = get_djinn_kernel_state()
 
 ---
 
+## 🦋 Language Model System Architecture ⭐ NEW
+
+### Overview
+
+The Butterfly System includes a **complete neural language model (LLM) integration** that enables organisms to develop emergent language through token-based communication. The system integrates seamlessly with existing neural networks, causation tracking, and the web UI.
+
+### Components
+
+```
+reality_simulator/language/
+  ├─> language_system.py     # LanguageVocabulary, tokenizers
+  └─> butterfly_chat.py      # ButterflyChatRouter (user→organism chat)
+
+reality_simulator/neural/
+  ├─> brain.py               # OrganismBrain with MultiHeadAttention + language head
+  ├─> neural_organism.py     # Sequence modeling, generate_tokens()
+  └─> trainer.py             # Dual-loss training (DQN + language)
+
+reality_simulator/memory/
+  └─> context_memory.py      # language_anchors, word associations
+
+reality_simulator/symbiotic_network.py
+  └─> LinguisticSubgraph    # Protected linguistic connections
+```
+
+### Architecture Flow
+
+```
+Organism State (18 features)
+    ↓
+OrganismBrain.forward()
+    ↓
+MultiHeadAttention (VP-aware temperature scaling)
+    ↓
+Dual Heads:
+  ├─> Action Head → RL decisions
+  └─> Language Head → Next-token prediction
+    ↓
+Token Generation (autoregressive)
+    ↓
+Vocabulary.decode() → Response text
+    ↓
+Event Emission → Causation Graph
+```
+
+### Key Features
+
+- **Multi-Head Self-Attention**: VP-aware temperature scaling (`scores / (1.0 + vp_value)`)
+- **Dual-Head Architecture**: Action head (RL) + Language head (next-token prediction)
+- **Dynamic Vocabulary**: Grows from organism interactions via `language_anchors`
+- **Token Exchange**: Organisms communicate via `LinguisticSubgraph`
+- **VP Integration**: Violation pressure affects language generation
+- **Curriculum Learning**: Sequence length increases based on VP stability
+- **Butterfly Chat**: Direct user→organism communication interface
+
+### Vocabulary Learning
+
+**Current Status:** ⚠️ **CRITICAL GAP IDENTIFIED**
+
+The system has vocabulary management but **no automatic word learning mechanism**. Words need to be associated with organisms through a "Language Teacher" system.
+
+**Proposed Solution:** See [docs/LANGUAGE_TEACHER_ARCHITECTURE_PROPOSAL.md](./docs/LANGUAGE_TEACHER_ARCHITECTURE_PROPOSAL.md)
+
+**Options:**
+1. **Behavior-Based Mapping** (Simple): Map organism actions/states to words
+2. **Embedding-Based Grounding** (Recommended): Use learned embeddings to map states→words
+3. **Transformer Teacher** (Advanced): Sequence-aware word learning
+
+### Integration Points
+
+- **ContextMemory**: Stores `language_anchors` (word→organism mappings)
+- **SymbioticNetwork**: `LinguisticSubgraph` for protected linguistic connections
+- **Neural Trainer**: Dual-loss training (alpha * DQN + beta * language)
+- **Causation Graph**: Language events tracked (`vocabulary_growth`, `organism_communication`, `neural_language_training`, `butterfly_chat_message`, `butterfly_chat_response`)
+- **Web UI**: Butterfly Chat interface for direct organism communication
+
+### Configuration
+
+```json
+{
+  "neural": {
+    "language_model": {
+      "enabled": false,  // Master toggle
+      "attention": {
+        "enabled": true,
+        "num_heads": 4,
+        "attention_dim": 32
+      },
+      "vocabulary": {
+        "max_size": 1024
+      },
+      "training": {
+        "alpha": 0.9,  // DQN loss weight
+        "beta": 0.1,   // Language loss weight
+        "vp_temperature_scale": true
+      }
+    }
+  }
+}
+```
+
+---
+
 ## 🧠 Neural System Architecture
 
 ### Components

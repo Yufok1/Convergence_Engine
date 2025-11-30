@@ -738,6 +738,47 @@ Vision insights are included in CRA's context automatically via:
 
 ---
 
+## 🦋 Language Model System ⭐ NEW
+
+The Butterfly System includes a complete neural language model (LLM) integration that enables organisms to develop emergent language through token-based communication.
+
+### Core Architecture
+- **Multi-Head Self-Attention**: VP-aware temperature scaling for language generation
+- **Dual-Head Architecture**: Action head (RL) + Language head (next-token prediction)
+- **Dynamic Vocabulary**: Grows from organism interactions via `language_anchors`
+- **Token Exchange**: Organisms communicate via `LinguisticSubgraph`
+- **Butterfly Chat**: Direct user→organism communication interface
+
+### Language Events Tracked
+- `vocabulary_growth`: New words added to vocabulary
+- `organism_communication`: Token exchanges between organisms
+- `neural_language_training`: Language model training updates
+- `butterfly_chat_message`: User messages to organisms
+- `butterfly_chat_response`: Organism responses to user
+
+### CRA Language Awareness
+CRA understands:
+- Language model architecture (attention, vocabulary, tokenization)
+- Vocabulary evolution and word-organism associations
+- Organism communication patterns
+- Language causation patterns in the graph
+- Butterfly Chat interactions
+
+### Configuration Control
+CRA can control language model settings via `/api/cra/config`:
+- `neural.language_model.enabled`: Master toggle
+- `neural.language_model.attention.enabled`: Attention mechanism toggle
+- `neural.language_model.training.alpha`: DQN loss weight
+- `neural.language_model.training.beta`: Language loss weight
+- `neural.language_model.vocabulary.max_size`: Vocabulary size limit
+
+### ⚠️ Critical Gap Identified
+**Vocabulary Learning Mechanism Missing**: The system has vocabulary management but no automatic word learning. Words need to be associated with organisms through a "Language Teacher" system.
+
+**See:** [docs/LANGUAGE_TEACHER_ARCHITECTURE_PROPOSAL.md](./docs/LANGUAGE_TEACHER_ARCHITECTURE_PROPOSAL.md)
+
+---
+
 ## 🧠 Context Memory System (Language-Based Selection Pressure)
 
 The ContextMemory system provides language anchoring that shapes organism selection pressure in the SymbioticNetwork.

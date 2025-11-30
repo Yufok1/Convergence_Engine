@@ -110,6 +110,7 @@ class CausationExplorer:
         self.enable_neural_decision_causations = causation_config.get('enable_neural_decision_causations', True)
         self.enable_neural_training_causations = causation_config.get('enable_neural_training_causations', True)
         self.enable_ml_causations = causation_config.get('enable_ml_causations', True)  # ML Analysis causation toggle
+        self.enable_language_causations = causation_config.get('enable_language_causations', True)  # Language model causations
         self.enable_phase_transition_causations = causation_config.get('enable_phase_transition_causations', True)
         self.enable_bidirectional_causations = causation_config.get('enable_bidirectional_causations', True)
         
@@ -812,6 +813,14 @@ class CausationExplorer:
             ('neural', 'ml_analysis'): 'Neural decisions affect population patterns analyzed by ML',
             ('ml_analysis', 'explorer'): 'ML analysis influences Explorer state',
             ('explorer', 'ml_analysis'): 'Explorer phase affects ML analysis context',
+            # Language model causations (Phase 1)
+            ('language', 'language'): 'Vocabulary growth enables organism communication',
+            ('language', 'neural'): 'Language learning influences neural training',
+            ('neural', 'language'): 'Neural training improves language generation',
+            ('language', 'reality_sim'): 'Language associations affect organism behavior',
+            ('reality_sim', 'language'): 'Organism behavior creates language associations',
+            ('butterfly_chat', 'language'): 'User chat interactions trigger language events',
+            ('language', 'butterfly_chat'): 'Language events enable chat responses',
         }
         
         # Special handling for phase transitions - they should link to what caused them
@@ -909,6 +918,10 @@ class CausationExplorer:
             if not self.enable_ml_causations and (prev_event.component == 'ml_analysis' or new_event.component == 'ml_analysis'):
                 return None
             
+            # Check if language causations are enabled
+            if not self.enable_language_causations and (prev_event.component in ['language', 'butterfly_chat'] or new_event.component in ['language', 'butterfly_chat']):
+                return None
+            
             # Check if bidirectional causations are enabled
             if not self.enable_bidirectional_causations:
                 # Only allow forward causations (reality_sim -> djinn_kernel, not reverse)
@@ -962,6 +975,49 @@ class CausationExplorer:
                     to_event=new_event.event_id,
                     causation_type='direct',
                     strength=0.85,  # Slightly higher strength for neural links
+                    explanation=explanation,
+                    metrics_involved=list(set(prev_event.data.keys()) | set(new_event.data.keys()))
+                )
+            
+            # Special handling for language events
+            if prev_event.component in ['language', 'butterfly_chat'] or new_event.component in ['language', 'butterfly_chat']:
+                # Check master toggle first
+                if not self.enable_language_causations:
+                    return None
+                
+                # Language events can have longer time windows since they're communication-based
+                language_time_window = self.direct_causation_time_window * 2.0
+                if time_diff > language_time_window:
+                    return None
+                
+                # Language links get specific explanations based on event type
+                explanation = direct_causations.get(key, 'Language event affects system')
+                if prev_event.event_type == 'vocabulary_growth':
+                    vocab_size = prev_event.data.get('vocab_size', 0)
+                    explanation = f'Vocabulary growth ({vocab_size} words) enables communication'
+                elif new_event.event_type == 'vocabulary_growth':
+                    vocab_size = new_event.data.get('vocab_size', 0)
+                    explanation = f'System state triggers vocabulary growth ({vocab_size} words)'
+                elif prev_event.event_type == 'organism_communication':
+                    num_organisms = prev_event.data.get('num_organisms', 0)
+                    explanation = f'Organism communication ({num_organisms} organisms) affects network'
+                elif new_event.event_type == 'organism_communication':
+                    num_organisms = new_event.data.get('num_organisms', 0)
+                    explanation = f'Network state triggers organism communication ({num_organisms} organisms)'
+                elif prev_event.event_type == 'neural_language_training':
+                    explanation = 'Language training improves communication'
+                elif new_event.event_type == 'neural_language_training':
+                    explanation = 'Communication patterns trigger language training'
+                elif prev_event.event_type == 'butterfly_chat_message':
+                    explanation = 'User chat message triggers organism responses'
+                elif new_event.event_type == 'butterfly_chat_response':
+                    explanation = 'Organism responds to user message'
+                
+                return CausationLink(
+                    from_event=prev_event.event_id,
+                    to_event=new_event.event_id,
+                    causation_type='direct',
+                    strength=0.8,  # Language links strength
                     explanation=explanation,
                     metrics_involved=list(set(prev_event.data.keys()) | set(new_event.data.keys()))
                 )
@@ -1448,7 +1504,7 @@ class CausationExplorer:
         
         return {
             'event': event.to_dict(),
-            'summary': self._generate_event_summary(event, root_analysis, impact_analysis),
+            'summary': self._generate_event_summary(event, root_analysis, impact_analysis, context_memory=None),
             'immediate_causes': pred_details,
             'immediate_effects': succ_details,
             'root_causes': root_analysis.get('root_causes', [])[:3],
@@ -1485,12 +1541,38 @@ class CausationExplorer:
         
         return deltas
     
-    def _generate_event_summary(self, event: Event, root_analysis: Dict, impact_analysis: Dict) -> str:
+    def _generate_event_summary(self, event: Event, root_analysis: Dict, impact_analysis: Dict,
+                                context_memory: Optional[Any] = None) -> str:
         """Generate a human-readable summary of an event"""
         parts = []
         
+        # Language event types
+        language_event_types = {'vocabulary_growth', 'organism_communication', 
+                               'neural_language_training', 'butterfly_chat_message', 
+                               'butterfly_chat_response'}
+        language_components = {'language', 'butterfly_chat', 'vocabulary', 'communication', 'chat'}
+        is_language_event = (event.component.lower() in language_components or 
+                           event.event_type in language_event_types)
+        
         # What happened
-        parts.append(f"📍 {event.component.upper()} generated a {event.event_type} event.")
+        if is_language_event:
+            parts.append(f"🦋 {event.component.upper()} generated a {event.event_type} event.")
+        else:
+            parts.append(f"📍 {event.component.upper()} generated a {event.event_type} event.")
+        
+        # Language-specific data
+        if is_language_event:
+            if event.event_type == 'vocabulary_growth':
+                vocab_size = event.data.get('vocab_size', event.data.get('new_words', 0))
+                parts.append(f"📚 Vocabulary: {vocab_size} words")
+            elif event.event_type == 'organism_communication':
+                num_orgs = event.data.get('num_organisms', event.data.get('organism_count', 0))
+                tokens = event.data.get('tokens_exchanged', event.data.get('token_count', 0))
+                parts.append(f"💬 Communication: {num_orgs} organisms, {tokens} tokens")
+            elif event.event_type in {'butterfly_chat_message', 'butterfly_chat_response'}:
+                message = event.data.get('message', event.data.get('response', ''))
+                if message:
+                    parts.append(f"💭 Message: {message[:50]}...")
         
         # Key data
         important_keys = ['modularity', 'organism_count', 'violation_pressure', 'phase', 'is_collapsed']
@@ -1521,14 +1603,26 @@ class CausationExplorer:
                        min_severity: float = None,
                        has_caused: bool = None,
                        has_been_caused: bool = None,
-                       limit: int = 50) -> Dict[str, Any]:
+                       word: str = None,
+                       limit: int = 50,
+                       context_memory: Optional[Any] = None) -> Dict[str, Any]:
         """
         🔎 ADVANCED SEARCH with filters and aggregation
         
         Find events matching complex criteria.
         Returns events with metadata about the search.
+        
+        NEW: Language support:
+        - component='language' or component='butterfly_chat' for language events
+        - word='<word>' to find events related to specific words
         """
         results = []
+        
+        # Language event types
+        language_event_types = {'vocabulary_growth', 'organism_communication', 
+                               'neural_language_training', 'butterfly_chat_message', 
+                               'butterfly_chat_response'}
+        language_components = {'language', 'butterfly_chat', 'vocabulary', 'communication', 'chat'}
         
         for event_id, event in self.events.items():
             # Text query filter
@@ -1547,9 +1641,54 @@ class CausationExplorer:
                 if not match:
                     continue
             
-            # Component filter
-            if component and event.component.lower() != component.lower():
-                continue
+            # Component filter (with language normalization)
+            if component:
+                comp_normalized = component.lower()
+                # Normalize language component variations
+                if comp_normalized in language_components:
+                    comp_normalized = 'language' if comp_normalized in {'language', 'vocabulary', 'communication'} else 'butterfly_chat'
+                
+                event_comp_normalized = event.component.lower()
+                if event_comp_normalized in language_components:
+                    event_comp_normalized = 'language' if event_comp_normalized in {'language', 'vocabulary', 'communication'} else 'butterfly_chat'
+                
+                if event_comp_normalized != comp_normalized:
+                    continue
+            
+            # Word filter (NEW: language-specific)
+            if word:
+                word_lower = word.lower()
+                # Check if event is language-related
+                is_language_event = (event.component.lower() in language_components or 
+                                   event.event_type in language_event_types)
+                
+                if is_language_event:
+                    # Check event data for word mentions
+                    word_found = False
+                    for key, value in event.data.items():
+                        if word_lower in str(key).lower() or word_lower in str(value).lower():
+                            word_found = True
+                            break
+                    
+                    # Check context_memory for word associations
+                    if not word_found and context_memory and hasattr(context_memory, 'language_anchors'):
+                        # Get organism IDs from event
+                        org_ids = event.data.get('organism_ids', [])
+                        if not org_ids:
+                            org_id = event.data.get('organism_id')
+                            if org_id:
+                                org_ids = [org_id]
+                        
+                        # Check if any organism uses this word
+                        for org_id in org_ids:
+                            org_id_int = hash(org_id) if isinstance(org_id, str) else org_id
+                            if org_id_int in context_memory.node_word_associations:
+                                if word_lower in {w.lower() for w in context_memory.node_word_associations[org_id_int]}:
+                                    word_found = True
+                                    break
+                    
+                    if not word_found:
+                        continue
             
             # Event type filter
             if event_type and event_type.lower() not in event.event_type.lower():

@@ -7,9 +7,10 @@
     "performance_tracking_precision": 0.0001
   },
   "causation_detection": {
-    "correlation_threshold": 0.55,
+    "correlation_threshold": 0.5,
     "direct_causation_time_window": 2,
     "enable_bidirectional_causations": true,
+    "enable_language_causations": true,
     "enable_ml_causations": true,
     "enable_neural_causations": true,
     "enable_neural_decision_causations": true,
@@ -71,13 +72,13 @@
         "step": 0.05
       },
       "mutation_rate": {
-        "initial": 0.033,
+        "initial": 0.034,
         "max": 0.06,
         "min": 0.002,
         "step": 0.001
       },
       "new_edge_rate": {
-        "initial": 5,
+        "initial": 3.5,
         "max": 6.0,
         "min": 0.2,
         "step": 0.1
@@ -190,6 +191,52 @@
       "deterministic": false,
       "seed": null
     },
+    "language_model": {
+      "attention": {
+        "attention_dim": 32,
+        "enabled": true,
+        "num_heads": 4
+      },
+      "curriculum": {
+        "enabled": true,
+        "sequence_lengths": {
+          "stage_0": 8,
+          "stage_1": 16,
+          "stage_2": 32,
+          "stage_3": 128
+        },
+        "vp_thresholds": {
+          "stage_1": 0.5,
+          "stage_2": 0.4,
+          "stage_3": 0.3
+        }
+      },
+      "enabled": false,
+      "generation": {
+        "max_length": 32,
+        "temperature": 1.0,
+        "vp_gate_threshold": 0.5
+      },
+      "sequence": {
+        "context_window": 32,
+        "max_length": 128
+      },
+      "training": {
+        "alpha": 0.9,
+        "beta": 0.1,
+        "vp_temperature_scale": true
+      },
+      "vocabulary": {
+        "max_size": 1024,
+        "special_tokens": [
+          "<PAD>",
+          "<UNK>",
+          "<START>",
+          "<END>",
+          "<VP_GATE>"
+        ]
+      }
+    },
     "optimization": {
       "compile_mode": "reduce-overhead",
       "reuse_optimizers": true,
@@ -266,7 +313,7 @@
     "clustering": {
       "algorithm": "hdbscan",
       "enabled": true,
-      "min_cluster_size": 3,
+      "min_cluster_size": 4,
       "min_samples": 1
     },
     "concept_tracking": {
@@ -276,7 +323,7 @@
         "cooperators": "Team Builders",
         "lone_wolves": "Lone Hunters"
       },
-      "stale_threshold": 10.0
+      "stale_threshold": 10
     },
     "dimensionality_reduction": {
       "algorithm": "tsne",

@@ -23,6 +23,7 @@ from dataclasses import dataclass, asdict
 from datetime import datetime
 import datetime as dt_module
 import traceback
+import webbrowser
 
 from runtime_config import ConfigHotReloadWatcher
 
@@ -580,6 +581,18 @@ class UnifiedVisualization:
         except Exception as e:
             print(f"[VISUALIZATION] [WARN] Error initializing: {e}")
             self.running = False
+    
+    def show(self):
+        """Show the visualization window - called from main thread"""
+        if self.root and self.running:
+            try:
+                # Make sure window is visible
+                self.root.deiconify()
+                self.root.lift()
+                self.root.focus_force()
+                print("[VISUALIZATION] [PASS] Visualization window displayed")
+            except Exception as e:
+                print(f"[VISUALIZATION] [WARN] Error showing window: {e}")
     
     def _create_grid_toggle_button(self):
         """Create toggle button for grid visibility"""
@@ -1179,11 +1192,119 @@ class UnifiedSystem:
         self.visualization = UnifiedVisualization(network_ref=network_ref, renderer_ref=renderer_ref, reality_sim_ref=self.reality_sim) if enable_visualization else None
         if self.visualization:
             self.visualization.initialize()
+            self.visualization.show()
+        
+        # Initialize Web UI integration
+        self.web_ui = None
+        self._initialize_web_ui()
         
         self.logger.log_state('system', {'event': 'initialization_complete'})
         print("[UNIFIED] [PASS] All systems initialized\n")
         # Max cycles (0 means run indefinitely)
         self.max_cycles = int(max_cycles or 0)
+    
+    def _initialize_web_ui(self):
+        """Initialize web UI integration with access to organism networks"""
+        try:
+            print("[UNIFIED] [WEB] Initializing web UI integration...")
+            
+            # Import web UI app directly
+            import causation_web_ui
+            from reality_simulator.language_system import LanguageVocabulary
+            
+            # Get the Flask app from the module
+            self.web_ui = causation_web_ui.app
+            
+            # Store references for butterfly chat access
+            if self.reality_sim:
+                # Get organism networks from the symbiotic network
+                network = self.reality_sim.components.get('network')
+                if network:
+                    organism_networks = list(network.organisms.values()) if hasattr(network, 'organisms') else []
+                    self.web_ui.config['organisms'] = organism_networks
+                    # Store network reference for language data access
+                    self.web_ui.config['network'] = network
+                else:
+                    self.web_ui.config['organisms'] = []
+                    self.web_ui.config['network'] = None
+                
+                # Get vocabulary from context_memory (if available)
+                vocabulary = None
+                if network and hasattr(network, 'context_memory'):
+                    context_memory = network.context_memory
+                    # Use existing vocabulary if it exists and has words
+                    if hasattr(context_memory, 'vocabulary') and context_memory.vocabulary:
+                        # Check if vocabulary has words beyond special tokens
+                        special_token_count = len(context_memory.vocabulary.word_to_id) - len([k for k in context_memory.vocabulary.word_to_id.keys() if k.startswith('<') and k.endswith('>')])
+                        if context_memory.vocabulary.vocab_size > 5:  # More than just special tokens
+                            vocabulary = context_memory.vocabulary
+                            print(f"[UNIFIED] [WEB] Using vocabulary from context_memory ({vocabulary.vocab_size} words)")
+                        else:
+                            # Build vocabulary from language_anchors
+                            if context_memory.language_anchors:
+                                vocabulary = LanguageVocabulary()
+                                words_added = vocabulary.build_from_language_anchors(
+                                    language_anchors=dict(context_memory.language_anchors),
+                                    node_word_associations={k: v for k, v in context_memory.node_word_associations.items()}
+                                )
+                                print(f"[UNIFIED] [WEB] Built vocabulary from language_anchors ({words_added} words added)")
+                    else:
+                        # Create new vocabulary and build from anchors
+                        vocabulary = LanguageVocabulary()
+                        if context_memory.language_anchors:
+                            words_added = vocabulary.build_from_language_anchors(
+                                language_anchors=dict(context_memory.language_anchors),
+                                node_word_associations={k: v for k, v in context_memory.node_word_associations.items()}
+                            )
+                            print(f"[UNIFIED] [WEB] Created vocabulary from language_anchors ({words_added} words added)")
+                
+                # Fallback: Create empty vocabulary if no context_memory
+                if vocabulary is None:
+                    vocabulary = LanguageVocabulary()
+                    print("[UNIFIED] [WEB] Created empty vocabulary (will populate as organisms learn words)")
+                
+                self.web_ui.config['vocabulary'] = vocabulary
+                
+                # Store event emitter for causation events
+                if self.causation_explorer:
+                    def event_emitter(event_data):
+                        from causation_explorer import Event
+                        if isinstance(event_data, dict):
+                            event = Event(
+                                timestamp=event_data.get('timestamp', time.time()),
+                                component=event_data.get('component', 'butterfly_chat'),
+                                event_type=event_data.get('event_type', 'butterfly_chat_message'),
+                                data=event_data.get('data', {})
+                            )
+                            self.causation_explorer.add_event(event, is_historical=False)
+                    
+                    self.web_ui.config['event_emitter'] = event_emitter
+                else:
+                    self.web_ui.config['event_emitter'] = None
+            
+            # Start web UI in separate thread
+            import threading
+            web_thread = threading.Thread(
+                target=lambda: self.web_ui.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False),
+                daemon=True
+            )
+            web_thread.start()
+            
+            print("[UNIFIED] [WEB] ✅ Web UI integration complete - Butterfly Chat ready")
+            print("[UNIFIED] [WEB] 🌐 Web interface available at http://localhost:5000")
+            
+            # Auto-launch browser
+            try:
+                webbrowser.open('http://localhost:5000')
+                print("[UNIFIED] [WEB] 🌐 Browser launched automatically")
+            except Exception as e:
+                print(f"[UNIFIED] [WEB] Could not auto-launch browser: {e}")
+            
+        except Exception as e:
+            print(f"[UNIFIED] [WEB] ❌ Web UI integration failed: {e}")
+            import traceback
+            traceback.print_exc()
+            self.web_ui = None
     
     def run(self):
         """Run the unified system"""
