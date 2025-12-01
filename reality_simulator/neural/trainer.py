@@ -443,8 +443,49 @@ class NeuralTrainer:
             # Calculate target Q values
             target_q_value = rewards_tensor + (self.gamma * next_q_value * ~dones_tensor)
             
-            # Calculate loss
-            loss = F.mse_loss(q_value, target_q_value)
+            # Calculate RL loss (Q-learning)
+            rl_loss = F.mse_loss(q_value, target_q_value)
+            
+            # Calculate language loss if enabled and brain has language head
+            language_loss = None
+            if (self.language_model_enabled and 
+                hasattr(organism.brain, 'use_language_head') and 
+                organism.brain.use_language_head and
+                hasattr(organism, 'token_sequence') and 
+                len(organism.token_sequence) >= 2):
+                
+                # Get token sequence for next-token prediction
+                token_seq = list(organism.token_sequence)[-self.current_sequence_length:]
+                if len(token_seq) >= 2:
+                    # Prepare input (all but last) and target (all but first)
+                    input_tokens = torch.LongTensor([token_seq[:-1]]).to(self.device)
+                    target_tokens = torch.LongTensor([token_seq[1:]]).to(self.device)
+                    
+                    # Get VP value for temperature scaling
+                    vp_value = network_state.get('vp_value', 0.0) if network_state else 0.0
+                    
+                    # Get language logits from brain
+                    try:
+                        _, language_logits = organism.brain(
+                            states_tensor[:1],  # Single sample for language
+                            return_language_logits=True
+                        )
+                        if language_logits is not None:
+                            # Expand logits to match sequence length if needed
+                            if language_logits.dim() == 2:
+                                language_logits = language_logits.unsqueeze(1).expand(-1, len(token_seq)-1, -1)
+                            language_loss = self.calculate_language_loss(
+                                language_logits, target_tokens, vp_value
+                            )
+                            self.total_language_loss += language_loss.item()
+                    except Exception:
+                        pass  # Skip language loss on error
+            
+            # Combine losses with weighting
+            if language_loss is not None:
+                loss = (self.rl_loss_weight * rl_loss) + (self.language_loss_weight * language_loss)
+            else:
+                loss = rl_loss
             
             # Backpropagation
             organism.brain.train()
@@ -519,6 +560,11 @@ class NeuralTrainer:
             # Reset language reward tracking for next step (ConfigTuner tracks per-step totals)
             self.language_reward_total = 0.0
             self.language_reward_count = 0
+            
+            # Curriculum learning: adjust sequence length based on VP stability
+            if self.curriculum_learning and self.language_model_enabled:
+                vp_value = network_state.get('vp_value', 0.0) if network_state else 0.0
+                self.update_curriculum(vp_value)
             
             return avg_loss
         

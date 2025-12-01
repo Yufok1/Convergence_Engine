@@ -2558,6 +2558,14 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "- **Impact**: Cleaner console output, faster neural learning, all metrics still logged via StateLogger\n"
         prompt += "- **Language System Verification**: All language systems confirmed wired and operational (Language Teacher, Knowledge Web, Context Memory, Event Emitters)\n\n"
         
+        prompt += "### 🔄 Full System Integration (2025-12-01):\n"
+        prompt += "- **Language Loss Integration**: `calculate_language_loss()` now wired into `train_step()` - VP-aware language training active\n"
+        prompt += "- **Curriculum Learning**: Sequence length progression (8→16→32→128) now active based on VP stability\n"
+        prompt += "- **Causation Mapping**: 22 new causation relationships added (alliance, combat, germination, highlander)\n"
+        prompt += "- **Legend Updates**: Germination (🌱) and Highlander (🗡️) components added to visualization legend\n"
+        prompt += "- **Event Icons**: 4 new event types in legend (neural_language_training, organism_germinated, germination_failed, essence_collected)\n"
+        prompt += "- **Impact**: Complete neural-language symbiosis, full event chain from combat→germination→evolution\n\n"
+        
         prompt += "## 🔬 CRITICAL GRAPH UNDERSTANDING:\n\n"
         prompt += "**YOU MUST UNDERSTAND THE GRAPH STRUCTURE:**\n"
         prompt += "- **NODES = EVENTS**: Each node represents a system event (state change, threshold crossing, phase transition, etc.)\n"

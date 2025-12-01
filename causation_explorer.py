@@ -956,6 +956,34 @@ class CausationExplorer:
             ('health_monitor', 'djinn_kernel'): 'Health issues affect VP calculation',
             ('djinn_kernel', 'health_monitor'): 'VP changes impact system health',
             ('health_monitor', 'health_monitor'): 'Health state changes influence future health',
+            # Alliance Warfare causations (Collective Competition)
+            ('alliance', 'reality_sim'): 'Alliance formation affects population dynamics',
+            ('reality_sim', 'alliance'): 'Population state influences alliance decisions',
+            ('alliance', 'neural'): 'Alliance membership affects neural decision-making',
+            ('neural', 'alliance'): 'Neural decisions influence alliance behavior',
+            ('alliance', 'combat'): 'Alliance wars trigger combat events',
+            ('combat', 'alliance'): 'Battle outcomes affect alliance power',
+            ('alliance', 'alliance'): 'Alliance actions influence other alliances',
+            # Combat/Battle causations (Individual Competition)
+            ('combat', 'reality_sim'): 'Battle outcomes affect fitness distribution',
+            ('reality_sim', 'combat'): 'Population fitness triggers battles',
+            ('combat', 'neural'): 'Battle outcomes affect neural learning',
+            ('neural', 'combat'): 'Neural decisions influence battle tactics',
+            ('combat', 'combat'): 'Combat victories enable further battles',
+            # Germination Pool causations (Life Cycle)
+            ('germination', 'reality_sim'): 'Germination produces new organisms',
+            ('reality_sim', 'germination'): 'Deaths provide genetic essence for germination',
+            ('germination', 'neural'): 'New organisms inherit neural traits',
+            ('neural', 'germination'): 'Neural quality affects offspring viability',
+            ('germination', 'ml_analysis'): 'Germination affects population diversity metrics',
+            ('combat', 'germination'): 'Combat deaths feed germination pool',
+            ('germination', 'germination'): 'Germination quality affects future germinations',
+            # Highlander Protocol causations (Tournament Orchestration)
+            ('highlander', 'combat'): 'Highlander schedules combat events',
+            ('combat', 'highlander'): 'Battle outcomes update Highlander rankings',
+            ('highlander', 'germination'): 'Highlander controls germination timing',
+            ('highlander', 'alliance'): 'Highlander influences alliance opportunities',
+            ('highlander', 'reality_sim'): 'Highlander affects population management',
         }
         
         # Special handling for phase transitions - they should link to what caused them

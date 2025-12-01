@@ -32,6 +32,20 @@ if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
     sys.stderr.reconfigure(encoding='utf-8')
 
+# Setup logging early (before imports that may fail)
+try:
+    from logging_config import setup_logging, get_logger
+    setup_logging(level=logging.INFO, debug=False, console=False)
+    logger = get_logger(__name__)
+except ImportError:
+    # Fallback if logging_config not available
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s | %(levelname)-8s | %(name)s | %(message)s',
+        datefmt='%H:%M:%S'
+    )
+    logger = logging.getLogger(__name__)
+
 # Setup paths
 parent_path = Path(__file__).parent
 explorer_path = parent_path / 'explorer'
@@ -59,7 +73,7 @@ except ImportError as e:
     logger.warning(f"Reality Simulator not available: {e}")
 
 try:
-    # Import directly from kernel directory (not as package)
+    # Import from kernel (now has proper __init__.py for package recognition)
     from utm_kernel_design import UTMKernel
     from violation_pressure_calculation import ViolationMonitor
     from lawfold_field_architecture import LawfoldFieldOrchestrator
@@ -1701,47 +1715,28 @@ class UnifiedSystem:
             
             # ⚔️🪐 ALLIANCE WARFARE - Collective battles for existential dominance
             if hasattr(self, 'alliance_warfare') and self.alliance_warfare:
-                # Define concept getter for knowledge sharing
-                def get_concepts(organism):
-                    if hasattr(organism, 'concepts'):
-                        return list(organism.concepts)
-                    if hasattr(organism, 'knowledge'):
-                        return list(organism.knowledge.keys()) if isinstance(organism.knowledge, dict) else []
-                    return []
-                
-                # Run alliance warfare round
-                war_results = self.alliance_warfare.run_warfare_round(
-                    organisms, get_fitness, get_concepts
-                )
+                # Process alliance round (cleanup, proposal timeouts, alliance dissolution)
+                war_results = self.alliance_warfare.process_round(organisms)
                 
                 # Log alliance warfare activity
                 if war_results:
-                    formations = war_results.get('formations', [])
-                    wars = war_results.get('wars', [])
-                    alliance_count = war_results.get('alliance_count', 0)
+                    alliance_count = war_results.get('alliances', 0)
+                    proposals_timed_out = war_results.get('proposals_timed_out', 0)
+                    alliances_dissolved = war_results.get('alliances_dissolved', 0)
                     
-                    if formations:
-                        print(f"[ALLIANCE WAR] 🪐 {len(formations)} new planetary alliances formed!")
+                    if alliances_dissolved > 0:
+                        print(f"[ALLIANCE WAR] 💀 {alliances_dissolved} alliance(s) dissolved (insufficient members)")
                     
-                    if wars:
-                        for war in wars:
-                            print(f"[ALLIANCE WAR] ⚔️ {war.get('winner_name', 'Unknown')} defeats "
-                                  f"{war.get('loser_name', 'Unknown')}! "
-                                  f"Margin: {war.get('margin', 0)*100:.1f}%")
-                    
-                    # Check for galactic dominance
-                    dominant = war_results.get('dominant_alliance')
-                    if dominant:
-                        print(f"[ALLIANCE WAR] 🌟🌟🌟 GALACTIC DOMINANCE ACHIEVED! 🌟🌟🌟")
+                    if proposals_timed_out > 0:
+                        print(f"[ALLIANCE WAR] ⏰ {proposals_timed_out} proposal(s) timed out")
                     
                     # Log to state
                     self.logger.log_state('highlander', {
-                        'event': 'alliance_warfare_round',
+                        'event': 'alliance_round',
                         'cycle': cycle_count,
                         'alliance_count': alliance_count,
-                        'formations': len(formations),
-                        'wars': len(wars),
-                        'dominant_alliance': dominant
+                        'proposals_timed_out': proposals_timed_out,
+                        'alliances_dissolved': alliances_dissolved
                     })
                           
         except Exception as e:

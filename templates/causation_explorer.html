@@ -4138,6 +4138,8 @@
                 'health_monitor': '#FF69B4',    // ⚕️ Hot Pink (Health Monitor - system health)
                 'alliance': '#9400D3',          // ⚔️ Dark Violet (Alliance Warfare System)
                 'combat': '#DC143C',            // ⚔️ Crimson (Combat/Battle Events)
+                'germination': '#32CD32',       // 🌱 Lime Green (Germination Pool - new life)
+                'highlander': '#FF1493',        // 🗡️ Deep Pink (Highlander Protocol)
                 'system': '#FFFF00'             // Pure Yellow
             };
 
@@ -6065,6 +6067,7 @@
                     { name: '⚕️ Health Monitor', color: componentColors['health_monitor'] || '#FF69B4' },
                     { name: '⚔️ Alliance System', color: componentColors['alliance'] || '#9400D3' },
                     { name: '⚔️ Combat/Battle', color: componentColors['combat'] || '#DC143C' },
+                    { name: '🌱 Germination', color: componentColors['germination'] || '#32CD32' },
                     { name: 'System', color: componentColors['system'] }
                 ];
 
@@ -6085,6 +6088,7 @@
                     { name: '🧠 Neural Decision', shape: 'diamond', color: '#00FFFF', eventType: 'neural_decision' },
                     { name: '🧠 Neural Training', shape: 'square', color: '#BF00FF', eventType: 'neural_training' },
                     { name: '🧠 Neural-Language Reward', shape: 'diamond', color: '#00CED1', eventType: 'neural_language_reward' },
+                    { name: '🧠 Neural-Language Training', shape: 'square', color: '#7B68EE', eventType: 'neural_language_training' },
                     { name: '🧠 Curriculum Adjustment', shape: 'square', color: '#20B2AA', eventType: 'neural_curriculum_adjustment' },
                     { name: '🔬 Phenotype Emergence', shape: 'star', color: '#FF00FF', eventType: 'phenotype_emergence' },
                     { name: '🔬 Anomaly Spike', shape: 'triangle', color: '#FF8800', eventType: 'anomaly_spike' },
@@ -6096,6 +6100,9 @@
                     { name: '⚔️ Alliance Formed', shape: 'star', color: '#9400D3', eventType: 'alliance_formed' },
                     { name: '⚔️ Alliance Dissolved', shape: 'cross', color: '#8B008B', eventType: 'alliance_dissolved' },
                     { name: '⚔️ Battle Concluded', shape: 'triangle', color: '#DC143C', eventType: 'battle_concluded' },
+                    { name: '🌱 Organism Germinated', shape: 'star', color: '#32CD32', eventType: 'organism_germinated' },
+                    { name: '🌱 Germination Failed', shape: 'cross', color: '#8B0000', eventType: 'germination_failed' },
+                    { name: '🌱 Essence Collected', shape: 'circle', color: '#7CFC00', eventType: 'essence_collected' },
                     { name: '🔧 Config Tuned', shape: 'wye', color: '#FFD700', eventType: 'config_tuned' }
                 ];
 
