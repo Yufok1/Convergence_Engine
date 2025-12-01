@@ -9,9 +9,7 @@ All traits must be mathematically consistent for UUID anchoring, VP calculation,
 from dataclasses import dataclass, field
 from typing import Dict, Any, List, Optional, Union
 from enum import Enum
-import uuid
 import json
-import hashlib
 from datetime import datetime
 
 

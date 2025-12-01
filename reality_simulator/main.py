@@ -41,27 +41,21 @@ except ImportError:
 
 # Handle imports for both module and script execution
 try:
-    from .colors import ColorScheme
-except ImportError:
-    # If running as script, add parent directory to path
-    sys.path.insert(0, str(Path(__file__).parent.parent))
     from reality_simulator.colors import ColorScheme
-
-# Import other components with fallback
-try:
-    from .quantum_substrate import QuantumStateManager
-    from .subatomic_lattice import create_subatomic_lattice, ResourceMonitor
-    from .evolution_engine import EvolutionEngine, create_evolution_engine
-    from .symbiotic_network import SymbioticNetwork, create_symbiotic_network
-    from .agency import create_agency_router, AgencyMode
-    from .reality_renderer import (
+    from reality_simulator.quantum_substrate import QuantumStateManager
+    from reality_simulator.subatomic_lattice import create_subatomic_lattice, ResourceMonitor
+    from reality_simulator.evolution_engine import EvolutionEngine, create_evolution_engine
+    from reality_simulator.symbiotic_network import SymbioticNetwork, create_symbiotic_network
+    from reality_simulator.agency import create_agency_router, AgencyMode
+    from reality_simulator.reality_renderer import (
         RealityRenderer, InteractionMode, VisualizationConfig,
         create_reality_renderer, render_text_interface
     )
-except ImportError as e:
-    # Fallback for script execution
+except ImportError:
+    # If running as script, add parent directory to path and try again
     sys.path.insert(0, str(Path(__file__).parent.parent))
     try:
+        from reality_simulator.colors import ColorScheme
         from reality_simulator.quantum_substrate import QuantumStateManager
         from reality_simulator.subatomic_lattice import create_subatomic_lattice, ResourceMonitor
         from reality_simulator.evolution_engine import EvolutionEngine, create_evolution_engine
@@ -71,7 +65,7 @@ except ImportError as e:
             RealityRenderer, InteractionMode, VisualizationConfig,
             create_reality_renderer, render_text_interface
         )
-    except ImportError:
+    except ImportError as e:
         print(f"[ERROR] Import error: {e}")
         print("Make sure all Reality Simulator components are properly installed.")
         sys.exit(1)
@@ -935,8 +929,8 @@ class RealitySimulator:
                 try:
                     # Try relative import first (works when run as module)
                     try:
-                        from .neural.trainer import NeuralTrainer
-                        from .neural.utils import get_device, set_seed
+                        from reality_simulator.neural.trainer import NeuralTrainer
+                        from reality_simulator.neural.utils import get_device, set_seed
                     except (ImportError, ValueError):
                         # Fallback to absolute import (works when run as script)
                         from reality_simulator.neural.trainer import NeuralTrainer
@@ -988,7 +982,7 @@ class RealitySimulator:
                 try:
                     # Try relative import first
                     try:
-                        from .ml_utils import MLAnalyzer
+                        from reality_simulator.ml_utils import MLAnalyzer
                     except (ImportError, ValueError):
                         # Fallback to absolute import
                         from reality_simulator.ml_utils import MLAnalyzer
@@ -1027,7 +1021,7 @@ class RealitySimulator:
             if tuner_enabled:
                 try:
                     try:
-                        from .tuning.atomic_config import AtomicConfigSystem
+                        from reality_simulator.tuning.atomic_config import AtomicConfigSystem
                     except (ImportError, ValueError):
                         from reality_simulator.tuning.atomic_config import AtomicConfigSystem
 

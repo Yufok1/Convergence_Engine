@@ -1278,6 +1278,169 @@ class AtomicConfigSystem:
     
     def __repr__(self) -> str:
         return f"AtomicConfigSystem(id={self.system_id}, atoms={len(self.atoms)}, updates={self.total_updates})"
+    
+    # ═══════════════════════════════════════════════════════════════════════
+    # LEGACY CONFIGTUNER API COMPATIBILITY
+    # These methods provide full API compatibility with the legacy ConfigTuner
+    # so AtomicConfigSystem can be used as a drop-in replacement
+    # ═══════════════════════════════════════════════════════════════════════
+    
+    def should_tune(self, frame_count: int, tuning_interval: int = 100) -> bool:
+        """
+        Check if tuning should occur - ConfigTuner compatible.
+        
+        Args:
+            frame_count: Current frame number
+            tuning_interval: Frames between tuning attempts
+            
+        Returns:
+            True if enough frames have passed since last tuning
+        """
+        if not hasattr(self, '_last_tuning_frame'):
+            self._last_tuning_frame = 0
+        return frame_count - self._last_tuning_frame >= tuning_interval
+    
+    def analyze_and_tune(self,
+                         ml_metrics: Dict[str, Any] = None,
+                         neural_metrics: Dict[str, Any] = None,
+                         evolution_metrics: Dict[str, Any] = None,
+                         network_metrics: Dict[str, Any] = None,
+                         frame_count: int = 0) -> Optional[Dict[str, Any]]:
+        """
+        Analyze system state and propose config changes - ConfigTuner compatible.
+        
+        This is the main tuning interface matching the legacy ConfigTuner.
+        Returns a TuningAction-like dict if a change is recommended, None otherwise.
+        
+        Args:
+            ml_metrics: ML system metrics (clustering, anomalies, etc.)
+            neural_metrics: Neural network training metrics
+            evolution_metrics: Evolution system metrics (fitness, diversity)
+            network_metrics: Network health metrics (VP, connectivity)
+            frame_count: Current simulation frame
+            
+        Returns:
+            Dict with tuning action if recommended, None otherwise
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        # Check tuning interval
+        if not self.should_tune(frame_count):
+            return None
+        
+        self._last_tuning_frame = frame_count
+        
+        # Merge all metrics for domain evaluation
+        all_metrics = {}
+        for metrics in [ml_metrics, neural_metrics, evolution_metrics, network_metrics]:
+            if metrics:
+                all_metrics.update(metrics)
+        
+        # Record outcomes for all atoms based on current metrics
+        for param_name, atom in self.atoms.items():
+            domain_success = self._evaluate_domain_success(atom.domain, all_metrics)
+            atom.record_outcome(domain_success, f"frame_{frame_count}")
+        
+        # Find atoms that need tuning (poor performance, enough data)
+        candidates = []
+        for param_name, atom in self.atoms.items():
+            performance = atom.get_value_performance()
+            if performance < 0.4 and atom.update_count >= 3:
+                suggested = atom.suggest_value()
+                if suggested != atom.value:
+                    # Calculate confidence based on performance history
+                    confidence = min(0.9, 0.5 + (0.5 - performance) + (atom.strength * 0.2))
+                    candidates.append({
+                        'parameter_path': param_name,
+                        'current_value': atom.value,
+                        'proposed_value': suggested,
+                        'confidence': confidence,
+                        'reason': f"Performance {performance:.1%} below threshold, suggesting historically better value",
+                        'trigger_metrics': {
+                            'current_performance': performance,
+                            'atom_strength': atom.strength,
+                            'update_count': atom.update_count
+                        },
+                        'expected_impact': f"Improve {atom.domain.value} domain performance",
+                        'timestamp': time.time()
+                    })
+        
+        # Select best candidate (highest confidence)
+        if candidates:
+            best_action = max(candidates, key=lambda a: a['confidence'])
+            
+            # Only return if confidence is high enough
+            if best_action['confidence'] > 0.6:
+                logger.info(f"[ATOMIC_CONFIG] Proposing: {best_action['parameter_path']} "
+                          f"{best_action['current_value']} → {best_action['proposed_value']} "
+                          f"(confidence: {best_action['confidence']:.2f})")
+                return best_action
+        
+        return None
+    
+    def apply_action(self, action: Dict[str, Any]) -> bool:
+        """
+        Apply a tuning action - ConfigTuner compatible.
+        
+        Args:
+            action: Dict with 'parameter_path', 'proposed_value', and optionally 'reason'
+            
+        Returns:
+            True if action was applied successfully
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        if action is None:
+            return False
+        
+        param_path = action.get('parameter_path')
+        proposed_value = action.get('proposed_value')
+        reason = action.get('reason', 'tuning_action')
+        
+        if not param_path or proposed_value is None:
+            logger.warning(f"[ATOMIC_CONFIG] Invalid action: missing parameter_path or proposed_value")
+            return False
+        
+        # Handle nested paths (e.g., 'neural.learning_rate')
+        if '.' in param_path:
+            # For nested paths, use the last component as the atom name
+            atom_name = param_path.split('.')[-1]
+        else:
+            atom_name = param_path
+        
+        if atom_name in self.atoms:
+            old_value = self.atoms[atom_name].value
+            success = self.atoms[atom_name].update_value(proposed_value, reason)
+            if success:
+                logger.info(f"[ATOMIC_CONFIG] Applied: {param_path} {old_value} → {proposed_value}")
+            return success
+        else:
+            # Create new atom for unknown parameters
+            logger.info(f"[ATOMIC_CONFIG] Creating new atom for: {param_path}")
+            self._add_atom(ConfigAtom(
+                param_name=atom_name,
+                value=proposed_value,
+                domain=ConfigDomain.SIMULATION,  # Default domain
+                config_type=self._infer_config_type(proposed_value)
+            ))
+            return True
+    
+    def _infer_config_type(self, value: Any) -> 'ConfigType':
+        """Infer ConfigType from a value."""
+        if isinstance(value, bool):
+            return ConfigType.BOOL
+        elif isinstance(value, int):
+            return ConfigType.INT
+        elif isinstance(value, float):
+            return ConfigType.FLOAT
+        elif isinstance(value, str):
+            return ConfigType.CATEGORICAL
+        elif isinstance(value, list):
+            return ConfigType.LIST
+        else:
+            return ConfigType.FLOAT  # Default
 
 
 # ═══════════════════════════════════════════════════════════════════════

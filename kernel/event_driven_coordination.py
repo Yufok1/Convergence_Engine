@@ -14,6 +14,7 @@ This is the operational foundation that coordinates:
 """
 
 import asyncio
+import logging
 import threading
 from typing import Dict, List, Any, Optional, Callable, Type
 from dataclasses import dataclass, field
@@ -296,11 +297,16 @@ class DjinnEventBus:
     Foundation for temporal isolation and monitoring systems.
     """
     
-    def __init__(self):
+    def __init__(self, max_history_size: int = 1000, max_subscribers_per_type: int = 100):
         self.subscribers: Dict[EventType, List[Callable]] = {}
         self.event_history: List[DjinnEvent] = []
+        self.max_history_size = max_history_size  # Bound history to prevent memory leaks
+        self.max_subscribers_per_type = max_subscribers_per_type  # Cap subscribers per event type
         self.event_processor = AsyncEventProcessor()
         self.coordination_lock = threading.Lock()
+        
+        # Logging
+        self.logger = logging.getLogger(__name__)
         
         # Initialize event type subscriptions
         for event_type in EventType:
@@ -314,6 +320,9 @@ class DjinnEventBus:
         with self.coordination_lock:
             # Record event in history
             self.event_history.append(event)
+            # Bound history size to prevent memory leaks
+            if len(self.event_history) > self.max_history_size:
+                self.event_history = self.event_history[-self.max_history_size:]
             
             # Process event through all subscribers
             event_type = event.event_type
@@ -329,7 +338,15 @@ class DjinnEventBus:
         """Subscribe to specific event types"""
         if event_type not in self.subscribers:
             self.subscribers[event_type] = []
+        # Prevent duplicate subscriptions
+        if handler in self.subscribers[event_type]:
+            self.logger.debug(f"Handler {getattr(handler,'__name__',str(handler))} already subscribed for {event_type}")
+            return
         self.subscribers[event_type].append(handler)
+        # Enforce per-event-type subscriber cap
+        if len(self.subscribers[event_type]) > self.max_subscribers_per_type:
+            removed = self.subscribers[event_type].pop(0)
+            self.logger.warning(f"Subscriber cap exceeded for {event_type}; removed oldest handler {getattr(removed,'__name__',str(removed))}")
     
     def unsubscribe(self, event_type: EventType, handler: Callable):
         """Unsubscribe from specific event types"""

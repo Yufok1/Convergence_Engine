@@ -14,10 +14,13 @@ and integrates with the violation pressure system for mathematical governance.
 
 import random
 import math
+import logging
 from typing import Dict, List, Tuple, Optional, Any
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
+
+logger = logging.getLogger(__name__)
 
 from violation_pressure_calculation import StabilityEnvelope, ViolationMonitor
 from event_driven_coordination import DjinnEventBus, EventType, TraitConvergenceRequest
@@ -338,7 +341,7 @@ class TraitConvergenceEngine:
         if self.event_bus:
             # This would integrate with the event bus from Phase 0.3
             # For now, we'll just log the event
-            print(f"Convergence event: {result.convergence_method.value} for {len(result.child_traits)} traits")
+            logger.debug(f"Convergence event: {result.convergence_method.value} for {len(result.child_traits)} traits")
     
     def get_convergence_history(self, limit: int = 100) -> List[ConvergenceResult]:
         """Get recent convergence history"""

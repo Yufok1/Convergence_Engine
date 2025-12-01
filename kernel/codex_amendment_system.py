@@ -767,7 +767,10 @@ class CodexAmendmentSystem:
             major, minor, patch = int(parts[0]), int(parts[1]), int(parts[2])
             patch += 1
             return f"{major}.{minor}.{patch}"
-        except:
+        except (ValueError, IndexError, AttributeError) as e:
+            # Log malformed version and return safe default
+            import logging
+            logging.getLogger(__name__).warning(f"Failed to increment version '{current_version}': {e}")
             return "1.0.1"
     
     def get_amendment_status(self, amendment_id: str) -> Optional[Dict[str, Any]]:

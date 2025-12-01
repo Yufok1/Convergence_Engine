@@ -28,7 +28,7 @@ if str(kernel_path) not in sys.path:
 
 # Import Reality Simulator and Djinn Kernel
 try:
-    from main import RealitySimulator
+    from reality_simulator.main import RealitySimulator
     REALITY_SIM_AVAILABLE = True
 except ImportError:
     REALITY_SIM_AVAILABLE = False

@@ -13,14 +13,10 @@ Key Features:
 - Real-time Stability Monitoring: Continuous VP and health assessment
 """
 
-import time
-import math
 import random
-from typing import Dict, List, Any, Optional, Tuple, Union
+from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass, field
 from enum import Enum
-import json
-import uuid
 from datetime import datetime
 
 from core_trait_framework import CoreTraitFramework, TraitDefinition, StabilityEnvelope, TraitCategory

@@ -49,14 +49,14 @@ try:
     EXPLORER_AVAILABLE = True
 except ImportError as e:
     EXPLORER_AVAILABLE = False
-    print(f"[UNIFIED] [WARN] Explorer not available: {e}")
+    logger.warning(f"Explorer not available: {e}")
 
 try:
     from reality_simulator.main import RealitySimulator
     REALITY_SIM_AVAILABLE = True
 except ImportError as e:
     REALITY_SIM_AVAILABLE = False
-    print(f"[UNIFIED] [WARN] Reality Simulator not available: {e}")
+    logger.warning(f"Reality Simulator not available: {e}")
 
 try:
     # Import directly from kernel directory (not as package)
@@ -66,7 +66,7 @@ try:
     DJINN_KERNEL_AVAILABLE = True
 except ImportError as e:
     DJINN_KERNEL_AVAILABLE = False
-    print(f"[UNIFIED] [WARN] Djinn Kernel not available: {e}")
+    logger.warning(f"Djinn Kernel not available: {e}")
 
 # Import integration facilities
 try:
@@ -74,7 +74,7 @@ try:
     PHASE_SYNC_AVAILABLE = True
 except ImportError as e:
     PHASE_SYNC_AVAILABLE = False
-    print(f"[UNIFIED] [WARN] Phase Sync Bridge not available: {e}")
+    logger.warning(f"Phase Sync Bridge not available: {e}")
 
 
 # ============================================================================
@@ -1350,23 +1350,27 @@ class UnifiedSystem:
             
             print("[UNIFIED] [WEB] 🌐 Web interface available at http://localhost:5000")
             
-            # Wait for server to be ready before launching browser
-            import requests
-            for _ in range(20):
+            # Auto-launch browser in a separate thread to avoid GIL issues
+            def launch_browser():
+                import requests
+                # Wait for server to be ready
+                for _ in range(20):
+                    try:
+                        r = requests.get('http://127.0.0.1:5000/health', timeout=1)
+                        if r.status_code == 200:
+                            break
+                    except Exception:
+                        pass
+                    time.sleep(0.25)
                 try:
-                    r = requests.get('http://127.0.0.1:5000/health', timeout=1)
-                    if r.status_code == 200:
-                        break
-                except Exception:
-                    pass
-                time.sleep(0.25)
+                    webbrowser.open('http://localhost:5000')
+                    print("[UNIFIED] [WEB] 🌐 Browser launched automatically")
+                except Exception as e:
+                    print(f"[UNIFIED] [WEB] Could not auto-launch browser: {e}")
             
-            # Auto-launch browser
-            try:
-                webbrowser.open('http://localhost:5000')
-                print("[UNIFIED] [WEB] 🌐 Browser launched automatically")
-            except Exception as e:
-                print(f"[UNIFIED] [WEB] Could not auto-launch browser: {e}")
+            import threading as threading_module
+            browser_thread = threading_module.Thread(target=launch_browser, daemon=True)
+            browser_thread.start()
             
         except Exception as e:
             print(f"[UNIFIED] [WEB] ❌ Web UI integration failed: {e}")
@@ -1398,11 +1402,30 @@ class UnifiedSystem:
             competition_intensity = config.get('competition_intensity', 0.5)
             rounds_per_cycle = config.get('rounds_per_cycle', 1)
             
+            # Create event emitter for Highlander events
+            def highlander_event_emitter(event_data):
+                """Emit Highlander events to causation explorer"""
+                if self.causation_explorer:
+                    try:
+                        from causation_explorer import Event
+                        event = Event(
+                            timestamp=event_data.get('timestamp', time.time()),
+                            component=event_data.get('component', 'highlander'),
+                            event_type=event_data.get('event_type', 'highlander_event'),
+                            data=event_data.get('data', {})
+                        )
+                        self.causation_explorer.add_event(event, is_historical=False)
+                    except Exception:
+                        pass
+            
             # Initialize Battle Arena (combat resolution)
+            arena_config = {
+                'max_rounds': config.get('max_battle_rounds', 10),
+                'chaos_factor': config.get('chaos_factor', 0.15)
+            }
             self.battle_arena = BattleArena(
-                causation_explorer=self.causation_explorer,
-                max_rounds=config.get('max_battle_rounds', 10),
-                chaos_factor=config.get('chaos_factor', 0.15)
+                config=arena_config,
+                event_emitter=highlander_event_emitter
             )
             print("[UNIFIED] [HIGHLANDER] [PASS] Battle Arena initialized")
             
@@ -1426,12 +1449,20 @@ class UnifiedSystem:
             print("[UNIFIED] [HIGHLANDER] [PASS] 🌱 Germination Pool initialized")
             
             # Initialize Highlander Protocol (tournament orchestration)
+            highlander_config = {
+                'survival_threshold': survival_threshold,
+                'competition_intensity': competition_intensity,
+                'predation_enabled': config.get('predation_enabled', False),
+                'germination_rate': config.get('germination_rate', 0.1),
+                'max_population': config.get('max_population', 100),
+                'min_population': config.get('min_population', 10),
+                'battle_randomness': config.get('chaos_factor', 0.15)
+            }
             self.highlander_protocol = HighlanderProtocol(
-                causation_explorer=self.causation_explorer,
+                config=highlander_config,
+                event_emitter=highlander_event_emitter,
                 capsule_manager=self.capsule_manager,
-                battle_arena=self.battle_arena,
-                survival_threshold=survival_threshold,
-                competition_intensity=competition_intensity
+                battle_arena=self.battle_arena
             )
             print("[UNIFIED] [HIGHLANDER] [PASS] Tournament Protocol initialized")
             
@@ -2248,17 +2279,38 @@ def main():
     # Build Highlander config if enabled
     highlander_config = None
     if args.highlander:
+        # Load config from config.json if available
+        config_highlander = {}
+        try:
+            import json
+            config_path = Path('config.json')
+            if config_path.exists():
+                with open(config_path, 'r') as f:
+                    full_config = json.load(f)
+                    config_highlander = full_config.get('highlander', {})
+        except Exception:
+            pass  # Use defaults if config loading fails
+        
+        # Command line args override config file settings
         highlander_config = {
             'enabled': True,
             'survival_threshold': args.survival_threshold,
             'competition_intensity': args.competition_intensity,
             'predation_enabled': args.predation,
-            'germination_rate': 0.1,
-            'min_population': 10,
-            'max_population': 100
+            # Use config file values as defaults, override with command line if specified
+            'germination_rate': config_highlander.get('germination_rate', 0.1),
+            'min_population': config_highlander.get('min_population', 10),
+            'max_population': config_highlander.get('max_population', 100),
+            'population_size': config_highlander.get('population_size', 10),
+            'max_battle_rounds': config_highlander.get('max_battle_rounds', 10),
+            'chaos_factor': config_highlander.get('chaos_factor', 0.15),
+            'max_capsules': config_highlander.get('max_capsules', 5),
+            'max_genetic_samples': config_highlander.get('max_genetic_samples', 100),
+            'mutation_rate': config_highlander.get('mutation_rate', 0.05),
+            'rounds_per_cycle': config_highlander.get('rounds_per_cycle', 1)
         }
         print("⚔️  HIGHLANDER MODE ACTIVATED - There can be only one!")
-        if args.predation:
+        if args.predation or config_highlander.get('predation_enabled', False):
             print("🦁 Predation enabled - the strong will hunt the weak")
     
     # Create and run unified system

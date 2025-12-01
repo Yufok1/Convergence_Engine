@@ -21,6 +21,9 @@ from datetime import datetime
 from enum import Enum
 import uuid
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 from uuid_anchor_mechanism import UUIDanchor, EventPublisher
 from violation_pressure_calculation import ViolationMonitor
@@ -155,7 +158,7 @@ class DjinnAgent:
             elif instruction.operation == "ARBITRATE":
                 success = self._execute_arbitrate(instruction)
             else:
-                print(f"Unknown operation: {instruction.operation}")
+                logger.warning(f"Unknown operation: {instruction.operation}")
                 success = False
             
             # Record execution
@@ -175,7 +178,7 @@ class DjinnAgent:
             return success
             
         except Exception as e:
-            print(f"Error executing instruction {instruction.instruction_id}: {e}")
+            logger.error(f"Error executing instruction {instruction.instruction_id}: {e}")
             self.state = AgentState.IDLE
             return False
     
@@ -197,11 +200,11 @@ class DjinnAgent:
                 
                 return True
             else:
-                print(f"No content at position {instruction.target_position}")
+                logger.debug(f"No content at position {instruction.target_position}")
                 return False
                 
         except Exception as e:
-            print(f"Error in read operation: {e}")
+            logger.error(f"Error in read operation: {e}")
             return False
     
     def _execute_write(self, instruction: AgentInstruction) -> bool:
@@ -262,13 +265,13 @@ class DjinnAgent:
             return False
             
         except Exception as e:
-            print(f"Error in compute operation: {e}")
+            logger.error(f"Error in compute operation: {e}")
             return False
     
     def _execute_arbitrate(self, instruction: AgentInstruction) -> bool:
         """Execute arbitration operation"""
         if not self.capabilities["arbitrate"]:
-            print("Agent does not have arbitration capability")
+            logger.warning("Agent does not have arbitration capability")
             return False
         
         try:
@@ -297,7 +300,7 @@ class DjinnAgent:
             return False
             
         except Exception as e:
-            print(f"Error in arbitrate operation: {e}")
+            logger.error(f"Error in arbitrate operation: {e}")
             return False
     
     def _process_read_content(self, content: Dict[str, Any], symbol: TapeSymbol):
@@ -491,7 +494,7 @@ class AkashicLedger:
                 return True
                 
             except Exception as e:
-                print(f"Error writing cell at position {position}: {e}")
+                logger.error(f"Error writing cell at position {position}: {e}")
                 return False
     
     def get_ledger_summary(self) -> Dict[str, Any]:
@@ -588,11 +591,11 @@ class UTMKernel:
                 
                 return success
             else:
-                print(f"No suitable agent found for instruction: {instruction.operation}")
+                logger.warning(f"No suitable agent found for instruction: {instruction.operation}")
                 return False
                 
         except Exception as e:
-            print(f"Error executing instruction: {e}")
+            logger.error(f"Error executing instruction: {e}")
             return False
     
     def _select_agent_for_instruction(self, instruction: AgentInstruction) -> Optional[DjinnAgent]:

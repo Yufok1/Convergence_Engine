@@ -12,8 +12,10 @@ from enum import Enum
 import json
 import uuid
 import hashlib
+import logging
 from datetime import datetime
-import numpy as np
+
+logger = logging.getLogger(__name__)
 
 from core_trait_framework import CoreTraitFramework, TraitDefinition, TraitCategory, StabilityEnvelope
 from trait_registration_system import TraitRegistrationSystem
@@ -114,16 +116,16 @@ class TraitValidationSystem:
         validation_start = datetime.utcnow()
         all_issues = []
         
-        print(f"Starting comprehensive trait validation at {validation_start}")
+        logger.info(f"Starting comprehensive trait validation at {validation_start}")
         
         # Run all validators
         for validator in self.validators + self.custom_validators:
             try:
                 validator_name = validator.__name__
-                print(f"  Running {validator_name}...")
+                logger.debug(f"Running {validator_name}...")
                 issues = validator()
                 all_issues.extend(issues)
-                print(f"    Found {len(issues)} issues")
+                logger.debug(f"  Found {len(issues)} issues")
             except Exception as e:
                 all_issues.append(ValidationIssue(
                     severity=ValidationSeverity.CRITICAL,
@@ -166,8 +168,8 @@ class TraitValidationSystem:
         # Store in history
         self.validation_history.append(report)
         
-        print(f"Validation completed. Integrity score: {integrity_score:.2f}")
-        print(f"Issues found: {len(all_issues)} ({len([i for i in all_issues if i.severity == ValidationSeverity.CRITICAL])} critical)")
+        logger.info(f"Validation completed. Integrity score: {integrity_score:.2f}")
+        logger.info(f"Issues found: {len(all_issues)} ({len([i for i in all_issues if i.severity == ValidationSeverity.CRITICAL])} critical)")
         
         return report
     

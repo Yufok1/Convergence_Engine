@@ -419,5 +419,22 @@
       "smoothing_factor": 0.25
     },
     "stabilization_enabled": true
+  },
+  "highlander": {
+    "description": "Highlander Protocol - Survival of the fittest tournament system",
+    "enabled": true,
+    "predation_enabled": true,
+    "survival_threshold": 0.5,
+    "competition_intensity": 0.8,
+    "population_size": 10,
+    "max_battle_rounds": 10,
+    "chaos_factor": 0.15,
+    "max_capsules": 5,
+    "max_genetic_samples": 100,
+    "min_population": 5,
+    "max_population": 50,
+    "germination_rate": 0.1,
+    "mutation_rate": 0.05,
+    "rounds_per_cycle": 1
   }
 }

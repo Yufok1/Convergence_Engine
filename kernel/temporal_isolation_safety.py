@@ -81,10 +81,11 @@ class TemporalIsolationManager:
     Prevents system-wide instability through time-based containment.
     """
     
-    def __init__(self, event_publisher=None):
+    def __init__(self, event_publisher=None, max_history_size: int = 500):
         self.event_publisher = event_publisher
         self.isolation_state = IsolationState.INACTIVE
         self.isolation_history = []
+        self.max_history_size = max_history_size  # Bound history to prevent memory leaks
         self.current_isolation = None
         self.release_scheduler = None
         self.isolation_lock = threading.Lock()
@@ -156,6 +157,9 @@ class TemporalIsolationManager:
             
             # Record in history
             self.isolation_history.append(isolation_result)
+            # Bound history size to prevent memory leaks
+            if len(self.isolation_history) > self.max_history_size:
+                self.isolation_history = self.isolation_history[-self.max_history_size:]
             
             return isolation_result
     

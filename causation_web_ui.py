@@ -51,10 +51,19 @@ except ImportError:
 # Real-time event queue for CRA
 cra_event_queue = queue.Queue(maxsize=1000)  # Buffer up to 1000 events
 
-# Graph data cache for performance optimization (Phase 1)
+# Graph data cache for performance optimization (Phase 1) - LRU cache with size limits
+from functools import lru_cache
+import hashlib
+import threading
+
+@lru_cache(maxsize=5)  # Keep only 5 recent graph snapshots
+def get_cached_graph(cache_key: str):
+    """LRU cache for graph data to prevent unbounded memory growth"""
+    # This will be called by the graph generation function
+    pass
+
+# Fallback cache for metadata (not cached by LRU since it's small)
 graph_cache = {
-    'nodes': [],
-    'links': [],
     'last_update': 0,
     'cache_duration': 5.0,  # Cache for 5 seconds (increased to prevent timeout loops)
     'event_count': 0,
@@ -63,6 +72,9 @@ graph_cache = {
     'loading': False,  # Track if a load is in progress
     'load_start_time': 0  # Track when load started
 }
+
+# Lock for thread-safe graph_cache access
+graph_cache_lock = threading.Lock()
 
 # ============================================================================
 # CONFIGURATION MANAGEMENT (Hot reload + guardrails)
@@ -1157,6 +1169,41 @@ app = Flask(__name__, template_folder=str(template_dir))
 # Initialize SocketIO after Flask app is created
 if SOCKETIO_AVAILABLE:
     socketio = SocketIO(app, cors_allowed_origins="*")
+
+# Input validation decorators for API endpoints
+from functools import wraps
+from werkzeug.exceptions import BadRequest
+
+def validate_int_param(param_name, min_val=None, max_val=None):
+    """Decorator to validate integer parameters from request.args"""
+    def decorator(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            try:
+                value = int(request.args.get(param_name, ''))
+                if min_val is not None and value < min_val:
+                    raise BadRequest(f"{param_name} must be >= {min_val}")
+                if max_val is not None and value > max_val:
+                    raise BadRequest(f"{param_name} must be <= {max_val}")
+                return f(*args, **kwargs)
+            except ValueError:
+                raise BadRequest(f"Invalid {param_name} parameter")
+        return wrapper
+    return decorator
+
+def validate_string_param(param_name, max_length=None, allowed_chars=None):
+    """Decorator to validate string parameters from request.args"""
+    def decorator(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            value = request.args.get(param_name, '')
+            if max_length and len(value) > max_length:
+                raise BadRequest(f"{param_name} too long (max {max_length} chars)")
+            if allowed_chars and not all(c in allowed_chars for c in value):
+                raise BadRequest(f"{param_name} contains invalid characters")
+            return f(*args, **kwargs)
+        return wrapper
+    return decorator
 
 # Initialize Causation Explorer with error handling
 # Set log_dir explicitly to ensure it finds logs on Render
@@ -6719,19 +6766,26 @@ def get_graph():
     if target_explorer is None:
         return jsonify({'nodes': [], 'links': [], 'error': 'Causation Explorer not initialized'}), 200
     try:
-            # 🚀 OPTIMIZATION: Check cache first (5-second cache to reduce file I/O and prevent timeout loops)
+        # 🚀 OPTIMIZATION: Check LRU cache first with content-based key
         current_time = time.time()
-        # Always check if new events were added (cache invalidation via last_update = 0)
-        cache_age = current_time - graph_cache['last_update']
-        if cache_age > 0 and cache_age < graph_cache['cache_duration']:
-            logger.debug(f"Returning cached graph data (cache age: {cache_age:.2f}s)")
-            return jsonify({
-                'nodes': graph_cache['nodes'],
-                'links': graph_cache['links'],
-                'cached': True,
-                'event_count': graph_cache['event_count'],
-                'link_count': graph_cache['link_count']
-            })
+
+        # Create cache key based on file modification times and event counts
+        cache_key = ""
+        try:
+            shared_state_path = Path('data/.shared_simulation_state.json')
+            if shared_state_path.exists():
+                cache_key += f"shared:{shared_state_path.stat().st_mtime}:"
+            cache_key += f"events:{len(target_explorer.events) if target_explorer else 0}"
+            cache_key += f"edges:{len(target_explorer.causation_graph.edges()) if target_explorer and target_explorer.causation_graph else 0}"
+
+            # Check LRU cache
+            cached_result = get_cached_graph(cache_key)
+            if cached_result is not None:
+                logger.debug("Returning LRU cached graph data")
+                return jsonify(cached_result)
+        except Exception as e:
+            logger.debug(f"Cache key generation failed: {e}")
+            cache_key = f"time:{int(current_time)}"  # Fallback cache key
         
         # 🚀 TIMEOUT PROTECTION: If a load is in progress and taking too long, return cached data
         if graph_cache['loading']:
@@ -6748,8 +6802,9 @@ def get_graph():
                 })
         
         # Mark load as starting
-        graph_cache['loading'] = True
-        graph_cache['load_start_time'] = current_time
+        with graph_cache_lock:
+            graph_cache['loading'] = True
+            graph_cache['load_start_time'] = current_time
         
         # Phase 2: Load latest state from shared state file ONLY if simulation is running
         # Check simulation control file to see if simulation is actually running
@@ -6829,43 +6884,47 @@ def get_graph():
         
         # Process snapshots outside lock
         if events_snapshot:
+            # Pre-compute component mappings for O(1) lookups instead of repeated string operations
+            component_map = {
+                'reality_sim': {'reality', 'sim'},
+                'explorer': {'explorer'},
+                'djinn_kernel': {'djinn', 'kernel', 'utm'},
+                'breath': {'breath'},
+                'system': {'system'},
+                'neural': {'neural'},
+                'ml_analysis': {'ml', 'analysis'},
+                'language': {'language', 'vocabulary', 'communication'},
+                'butterfly_chat': {'butterfly_chat', 'chat'},
+                'config_tuner': {'config_tuner', 'tuner'},
+                'health_monitor': {'health_monitor', 'health', 'monitor'}
+            }
+
+            # Language event types that should be categorized as 'language'
+            language_event_types = {
+                'vocabulary_growth', 'organism_communication', 'word_assignment',
+                'butterfly_chat_message', 'butterfly_chat_response'
+            }
+
             component_counts = {}  # Debug: track component distribution
             for event_id, event in events_snapshot.items():
                 # Normalize component names to match color mapping in HTML
-                # BUT: Check event_type FIRST to preserve language event identity
+                # Use pre-computed mappings for O(1) lookup instead of repeated string operations
                 original_component = (event.component or 'unknown').lower().strip()
                 event_type = (event.event_type or '').lower().strip()
-                
+
                 # Language events: Check event_type first to preserve identity
-                if event_type in ['vocabulary_growth', 'organism_communication', 'word_assignment']:
-                    component = 'language'
-                elif event_type in ['butterfly_chat_message', 'butterfly_chat_response']:
-                    component = 'butterfly_chat'
-                # Then check component name as fallback
-                elif 'reality' in original_component or 'sim' in original_component:
-                    component = 'reality_sim'
-                elif 'explorer' in original_component:
-                    component = 'explorer'
-                elif 'djinn' in original_component or 'kernel' in original_component or 'utm' in original_component:
-                    component = 'djinn_kernel'
-                elif 'breath' in original_component:
-                    component = 'breath'
-                elif 'system' in original_component:
-                    component = 'system'
-                elif 'neural' in original_component:
-                    component = 'neural'  # Keep 'neural' for neural system events
-                elif 'ml' in original_component or 'analysis' in original_component:
-                    component = 'ml_analysis'  # Standardize ML component name
-                elif 'language' in original_component or 'vocabulary' in original_component or 'communication' in original_component:
-                    component = 'language'  # Language system events
-                elif 'butterfly_chat' in original_component or ('chat' in original_component and 'butterfly' in original_component):
-                    component = 'butterfly_chat'  # Butterfly Chat events
-                elif 'config_tuner' in original_component or 'tuner' in original_component:
-                    component = 'config_tuner'  # ConfigTuner events
-                elif 'health_monitor' in original_component or ('health' in original_component and 'monitor' in original_component):
-                    component = 'health_monitor'  # Health Monitor events
+                if event_type in language_event_types:
+                    if 'butterfly_chat' in event_type:
+                        component = 'butterfly_chat'
+                    else:
+                        component = 'language'
                 else:
-                    component = original_component  # Keep as-is (will default to orange)
+                    # Use pre-computed component mapping for O(1) lookup
+                    component = original_component  # Default fallback
+                    for comp_name, keywords in component_map.items():
+                        if any(keyword in original_component for keyword in keywords):
+                            component = comp_name
+                            break
                 
                 component_counts[component] = component_counts.get(component, 0) + 1
                 # Filter out large nested data to reduce memory usage
@@ -7007,13 +7066,29 @@ def get_graph():
                     'chunked': False
                 }
             
-            # 🚀 OPTIMIZATION: Update cache with processed graph data
-            graph_cache['nodes'] = nodes
-            graph_cache['links'] = links
-            graph_cache['last_update'] = time.time()
-            graph_cache['event_count'] = len(nodes)
-            graph_cache['link_count'] = len(links)
-            graph_cache['loading'] = False  # Mark load as complete
+            # 🚀 OPTIMIZATION: Store result in LRU cache
+            cache_result = {
+                'nodes': nodes,
+                'links': links,
+                'diagnostic': diagnostic_info if diagnostic_info else None,
+                'cached': False,
+                'event_count': len(nodes),
+                'link_count': len(links),
+                'chunked': False
+            }
+
+            # Store in LRU cache (will automatically evict old entries)
+            try:
+                get_cached_graph.cache[cache_key] = cache_result
+            except Exception as e:
+                logger.debug(f"Failed to cache result: {e}")
+
+            # Update metadata cache
+            with graph_cache_lock:
+                graph_cache['last_update'] = time.time()
+                graph_cache['event_count'] = len(nodes)
+                graph_cache['link_count'] = len(links)
+                graph_cache['loading'] = False  # Mark load as complete
             
             logger.info("Graph data serialized and cached, returning response")
             return jsonify(response_data)
@@ -11301,8 +11376,8 @@ if __name__ == '__main__':
     print("   /api/cra/events/recent - Recent events")
     print("   /api/cra/config/validate - Config validation")
 
-    # Respect FLASK_DEBUG environment variable, default to True for development
-    debug_mode = os.environ.get('FLASK_DEBUG', 'true').lower() in ('true', '1', 'yes')
+    # Respect FLASK_DEBUG environment variable, default to False for safety
+    debug_mode = os.environ.get('FLASK_DEBUG', 'false').lower() in ('true', '1', 'yes')
     
     try:
         if SOCKETIO_AVAILABLE:

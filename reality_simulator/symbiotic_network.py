@@ -23,7 +23,7 @@ import logging
 
 # Import context memory system
 try:
-    from .memory.context_memory import ContextMemory
+    from reality_simulator.memory.context_memory import ContextMemory
 except ImportError:
     # Fallback for relative import issues
     import sys
@@ -36,21 +36,17 @@ except ImportError:
 
 # Import ML utilities (optional - graceful degradation if unavailable)
 try:
-    from .ml_utils import MLAnalyzer, get_ml_analyzer, is_sklearn_available
+    from reality_simulator.ml_utils import MLAnalyzer, get_ml_analyzer, is_sklearn_available
     ML_UTILS_AVAILABLE = True
 except ImportError:
-    try:
-        from ml_utils import MLAnalyzer, get_ml_analyzer, is_sklearn_available
-        ML_UTILS_AVAILABLE = True
-    except ImportError:
-        ML_UTILS_AVAILABLE = False
-        MLAnalyzer = None
-        get_ml_analyzer = None
-        is_sklearn_available = lambda: False
+    ML_UTILS_AVAILABLE = False
+    MLAnalyzer = None
+    get_ml_analyzer = None
+    is_sklearn_available = lambda: False
 
 # Import Health Monitor (Quick Win #5)
 try:
-    from .health_monitor import HealthMonitor, get_health_monitor
+    from reality_simulator.health_monitor import HealthMonitor, get_health_monitor
     HEALTH_MONITOR_AVAILABLE = True
 except ImportError:
     try:
@@ -353,8 +349,10 @@ class EcosystemEmergenceEngine:
         try:
             communities = list(nx.community.greedy_modularity_communities(network_graph))
             return communities
-        except:
-            # Fallback: connected components
+        except Exception as e:
+            # Log failure and fallback: connected components
+            import logging
+            logging.getLogger(__name__).warning(f"Community detection failed: {e}, using connected components fallback")
             return list(nx.connected_components(network_graph))
 
     def identify_trophic_levels(self, network_graph: nx.Graph,
@@ -711,7 +709,7 @@ class SymbioticNetwork:
         # Language Teacher (Phase 1: Behavior-based word mapping)
         self.language_teacher = None
         try:
-            from .language.language_teacher import create_language_teacher
+            from reality_simulator.language.language_teacher import create_language_teacher
             self.language_teacher = create_language_teacher(self.config)
             if self.language_teacher and self.language_teacher.enabled:
                 print(f"[SYMBIOTIC_NETWORK] Language Teacher enabled (Phase 1: Behavior-based mapping)")

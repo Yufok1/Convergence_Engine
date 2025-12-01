@@ -528,9 +528,11 @@ class ViolationMonitor:
                  stabilization_enabled: bool = False, max_vp_jump: float = 0.1,
                  smoothing_factor: float = 0.3, component_decomposition_enabled: bool = False,
                  component_weights: Optional[Dict[str, float]] = None,
-                 adaptive_thresholds_enabled: bool = False):
+                 adaptive_thresholds_enabled: bool = False,
+                 max_history_size: int = 1000):
         self.event_publisher = event_publisher
         self.vp_history = []
+        self.max_history_size = max_history_size  # Bound history to prevent memory leaks
         self.stability_envelopes = {}
         
         # Initialize diagnostics (disabled by default for backward compatibility)
@@ -693,6 +695,9 @@ class ViolationMonitor:
             "source_identity": source_identity,
             "trait_count": len(trait_payload)
         })
+        # Bound history size to prevent memory leaks
+        if len(self.vp_history) > self.max_history_size:
+            self.vp_history = self.vp_history[-self.max_history_size:]
         
         return total_vp, per_trait_breakdown
     
@@ -770,6 +775,9 @@ class ViolationMonitor:
             "trait_count": len(trait_payload),
             "component_breakdown": component_breakdown
         })
+        # Bound history size to prevent memory leaks
+        if len(self.vp_history) > self.max_history_size:
+            self.vp_history = self.vp_history[-self.max_history_size:]
         
         return total_vp, per_trait_breakdown, component_breakdown
     

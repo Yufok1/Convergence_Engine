@@ -8,12 +8,16 @@ Contains:
 
 from .organism_capsule import (
     OrganismCapsule,
-    CapsuleManager,
+    OrganismCapsuleManager,
     CapsuleVersion
 )
 
+# Alias for backward compatibility
+CapsuleManager = OrganismCapsuleManager
+
 __all__ = [
     'OrganismCapsule',
+    'OrganismCapsuleManager',
     'CapsuleManager',
     'CapsuleVersion'
 ]

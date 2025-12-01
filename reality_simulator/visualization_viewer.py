@@ -97,34 +97,34 @@ def read_visualization_data() -> Optional[Dict[str, Any]]:
         project_root = get_project_root()
         shared_state_file = os.path.join(project_root, "data", ".shared_simulation_state.json")
 
-        print(f"[Viewer] Checking for file at: {shared_state_file}")
+        logger.debug(f"Checking for file at: {shared_state_file}")
 
         if os.path.exists(shared_state_file):
-            print(f"[Viewer] File exists, reading...")
+            logger.debug("File exists, reading...")
             with open(shared_state_file, 'r') as f:
                 shared_state = json.load(f)
 
             timestamp = shared_state.get('timestamp', 0)
             age = time.time() - timestamp
-            print(f"[Viewer] File timestamp: {timestamp}, age: {age:.1f}s")
+            logger.debug(f"File timestamp: {timestamp}, age: {age:.1f}s")
 
             has_viz_data = 'visualization_data' in shared_state
             has_data = 'data' in shared_state
-            print(f"[Viewer] Has visualization_data: {has_viz_data}, has data: {has_data}")
+            logger.debug(f"Has visualization_data: {has_viz_data}, has data: {has_data}")
 
             # Check if data is recent (within last 60 seconds)
             if age < 60.0:  # Accept data up to 60 seconds old
                 result = shared_state.get('visualization_data', shared_state.get('data', {}))
-                print(f"[Viewer] Returning data with {len(result)} keys: {list(result.keys())}")
+                logger.debug(f"Returning data with {len(result)} keys: {list(result.keys())}")
                 return result
             else:
-                print(f"[Viewer] Data too old (age: {age:.1f}s > 60s)")
+                logger.debug(f"Data too old (age: {age:.1f}s > 60s)")
         else:
-            print(f"[Viewer] File does not exist")
+            logger.debug("File does not exist")
 
         return None
     except Exception as e:
-        print(f"[Viewer] Error reading visualization data: {e}")
+        logger.error(f"Error reading visualization data: {e}")
         import traceback
         traceback.print_exc()
         return None
@@ -273,10 +273,10 @@ class LightweightVisualizationViewer:
                 if viz_name == "network_graph":
                     self._create_grid_profile_button(tab_frame)
             
-            print("[Viewer] ✅ Created tabbed visualization window")
-            
+            logger.info("✅ Created tabbed visualization window")
+
         except Exception as e:
-            print(f"[Viewer] ❌ Error creating window: {e}")
+            logger.error(f"❌ Error creating window: {e}")
             import traceback
             traceback.print_exc()
     
