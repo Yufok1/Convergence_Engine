@@ -6108,84 +6108,51 @@
                     .attr('class', 'graph-legend')
                     .attr('transform', 'translate(20, 20)');
 
-                // Component colors (using configurable colors)
+                // Component colors (using configurable colors) - CONSOLIDATED
                 const components = [
-                    { name: 'Reality Simulator', color: componentColors['reality_sim'] },
-                    { name: 'Explorer', color: componentColors['explorer'] },
-                    { name: 'Djinn Kernel', color: componentColors['djinn_kernel'] },
-                    { name: 'Breath Engine', color: componentColors['breath'] },
-                    { name: '🧠 Neural System', color: componentColors['neural'] },
-                    { name: '🔬 ML Analysis', color: componentColors['ml_analysis'] },
-                    { name: '🦋 Language System', color: componentColors['language'] || '#00BCD4' },
-                    { name: '🦋 Butterfly Chat', color: componentColors['butterfly_chat'] || '#8BC34A' },
-                    { name: '🔧 Config Tuner', color: componentColors['config_tuner'] || '#FFD700' },
-                    { name: '⚕️ Health Monitor', color: componentColors['health_monitor'] || '#FF69B4' },
-                    { name: '⚔️ Alliance System', color: componentColors['alliance'] || '#9400D3' },
-                    { name: '⚔️ Combat/Battle', color: componentColors['combat'] || '#DC143C' },
-                    { name: '🗡️ Highlander', color: componentColors['highlander'] || '#FF1493' },
-                    { name: '🌱 Germination', color: componentColors['germination'] || '#32CD32' },
-                    { name: 'System', color: componentColors['system'] }
+                    { name: 'Reality Sim', color: componentColors['reality_sim'], key: 'reality_sim' },
+                    { name: 'Explorer', color: componentColors['explorer'], key: 'explorer' },
+                    { name: 'Djinn/Breath', color: componentColors['breath'], key: 'breath' },
+                    { name: '🧠 Neural', color: componentColors['neural'], key: 'neural' },
+                    { name: '🔬 ML', color: componentColors['ml_analysis'], key: 'ml_analysis' },
+                    { name: '🦋 Language', color: componentColors['language'] || '#00BCD4', key: 'language' },
+                    { name: '⚔️ Alliance', color: componentColors['alliance'] || '#9400D3', key: 'alliance' },
+                    { name: '🗡️ Highlander', color: componentColors['highlander'] || '#FF1493', key: 'highlander' },
+                    { name: '🌱 Germination', color: componentColors['germination'] || '#32CD32', key: 'germination' },
+                    { name: '⚙️ System', color: componentColors['system'], key: 'system' }
                 ];
 
-                // Link/edge colors (using configurable colors)
+                // Link/edge colors (using configurable colors) - CONSOLIDATED
                 const linkTypes = [
                     { name: 'Threshold', color: linkColors['threshold'] || '#FF00FF' },
                     { name: 'Correlation', color: linkColors['correlation'] || '#0000FF' },
                     { name: 'Direct', color: linkColors['direct'] || '#00FF00' },
                     { name: 'Temporal', color: linkColors['temporal'] || '#FFFF00' },
-                    { name: '🧠 Neural', color: linkColors['neural'] || '#00FFFF' },
-                    { name: '🔬 ML', color: linkColors['ml'] || '#FFA500' },
-                    { name: '🦋 Language', color: linkColors['language'] || '#9B59B6' },
-                    { name: 'Unknown', color: linkColors['unknown'] || '#FF8800' }
+                    { name: 'Neural/ML', color: linkColors['neural'] || '#00FFFF' },
+                    { name: 'Language', color: linkColors['language'] || '#9B59B6' }
                 ];
 
-                // Neural/ML/Language/Alliance/Combat icon shapes (for vision model recognition)
-                const neuralMLIcons = [
-                    { name: '🧠 Neural Decision', shape: 'diamond', color: '#00FFFF', eventType: 'neural_decision' },
-                    { name: '🧠 Neural Training', shape: 'square', color: '#BF00FF', eventType: 'neural_training' },
-                    { name: '🧠 Neural-Language Reward', shape: 'diamond', color: '#00CED1', eventType: 'neural_language_reward' },
-                    { name: '🧠 Neural-Language Training', shape: 'square', color: '#7B68EE', eventType: 'neural_language_training' },
-                    { name: '🧠 Curriculum Adjustment', shape: 'square', color: '#20B2AA', eventType: 'neural_curriculum_adjustment' },
-                    { name: '🧠 Chat Training', shape: 'circle', color: '#9370DB', eventType: 'chat_training_complete' },
-                    { name: '🧠 Bootstrap Learning', shape: 'star', color: '#BA55D3', eventType: 'bootstrap_learning_complete' },
-                    { name: '🔬 Phenotype Emergence', shape: 'star', color: '#FF00FF', eventType: 'phenotype_emergence' },
-                    { name: '🔬 Anomaly Spike', shape: 'triangle', color: '#FF8800', eventType: 'anomaly_spike' },
-                    { name: '🔬 Cluster Collapse', shape: 'cross', color: '#FF3333', eventType: 'cluster_collapse' },
-                    { name: '🔬 ML Analysis', shape: 'wye', color: '#FF00FF', eventType: 'ml_analysis' },
-                    { name: '🦋 Vocabulary Growth', shape: 'circle', color: '#00BCD4', eventType: 'vocabulary_growth' },
-                    { name: '🦋 Organism Communication', shape: 'wye', color: '#00BCD4', eventType: 'organism_communication' },
-                    { name: '🦋 Butterfly Chat', shape: 'circle', color: '#8BC34A', eventType: 'butterfly_chat_message' },
-                    { name: '🦋 Diversity Analysis', shape: 'diamond', color: '#FFA500', eventType: 'organism_diversity_analysis' },
-                    { name: '⚔️ Alliance Formed', shape: 'star', color: '#9400D3', eventType: 'alliance_formed' },
-                    { name: '⚔️ Alliance Dissolved', shape: 'cross', color: '#8B008B', eventType: 'alliance_dissolved' },
-                    { name: '⚔️ Battle Concluded', shape: 'triangle', color: '#DC143C', eventType: 'battle_concluded' },
-                    { name: '⚔️ Highlander Battle', shape: 'triangle', color: '#DC143C', eventType: 'highlander_battle_concluded' },
-                    { name: '⚔️ Highlander Alliance', shape: 'star', color: '#9400D3', eventType: 'highlander_alliance_formed' },
-                    { name: '💀 Organism Fallen', shape: 'cross', color: '#8B0000', eventType: 'highlander_organism_fallen' },
-                    { name: '🗡️ Champion Crowned', shape: 'star', color: '#FF1493', eventType: 'champion_crowned' },
-                    { name: '🗡️ Highlander Champion', shape: 'star', color: '#FFD700', eventType: 'highlander_champion_crowned' },
-                    { name: '🗡️ Predation Success', shape: 'triangle', color: '#FF1493', eventType: 'predation_success' },
-                    { name: '🗡️ Highlander Predation', shape: 'triangle', color: '#FF4500', eventType: 'highlander_predation_success' },
-                    { name: '🗡️ Organism Registered', shape: 'circle', color: '#FF69B4', eventType: 'organism_registered' },
-                    { name: '🌱 Organism Germinated', shape: 'star', color: '#32CD32', eventType: 'organism_germinated' },
-                    { name: '🌱 Germination Failed', shape: 'cross', color: '#8B0000', eventType: 'germination_failed' },
-                    { name: '🌱 Essence Collected', shape: 'circle', color: '#7CFC00', eventType: 'essence_collected' },
-                    { name: '🔧 Config Tuned', shape: 'wye', color: '#FFD700', eventType: 'config_tuned' }
+                // Shape key (compact) - shapes indicate event category
+                const shapeKey = [
+                    { shape: 'circle', desc: 'State/Chat' },
+                    { shape: 'diamond', desc: 'Decision' },
+                    { shape: 'square', desc: 'Training' },
+                    { shape: 'star', desc: 'Success/Born' },
+                    { shape: 'triangle', desc: 'Battle/Alert' },
+                    { shape: 'cross', desc: 'Death/Fail' },
+                    { shape: 'wye', desc: 'Analysis' }
                 ];
 
-                // Calculate legend dimensions based on content (components + links + neuralML + info)
-                const titleHeight = 20;
-                const itemHeight = 18;
+                // Calculate legend dimensions - COMPACT
+                const titleHeight = 18;
+                const itemHeight = 14;
                 const componentsHeight = components.length * itemHeight;
                 const linksHeight = linkTypes.length * itemHeight;
-                // Neural/ML icons have descriptions, so they take more vertical space
-                const neuralMLItemHeight = itemHeight + 8; // Extra space for description text
-                const neuralMLHeight = neuralMLIcons.length * neuralMLItemHeight;
-                const sectionSpacing = 10; // Space between sections
-                const infoHeight = 80; // Increased for vision recognition note
-                const padding = 10;
-                const legendWidth = 200; // Reduced by ~33% to bring legend inward (text size unchanged)
-                const legendHeight = titleHeight + componentsHeight + sectionSpacing + linksHeight + sectionSpacing + neuralMLHeight + infoHeight + (padding * 2);
+                const shapeKeyHeight = shapeKey.length * itemHeight;
+                const sectionSpacing = 8;
+                const padding = 8;
+                const legendWidth = 140;
+                const legendHeight = titleHeight + componentsHeight + sectionSpacing + linksHeight + sectionSpacing + shapeKeyHeight + sectionSpacing + 20 + (padding * 2);
 
                 // Legend background with semi-transparent dark background
                 const legendBg = legendGroup.append('rect')
@@ -6332,178 +6299,96 @@
                     .attr('font-weight', 'bold')
                     .text('GRAPH LEGEND');
 
-                // Component colors with labels (store component key for easy updates)
+                // Component colors with labels - COMPACT
                 components.forEach((comp, i) => {
                     const yPos = titleHeight + (i * itemHeight);
-                    // Color dot with data attribute for easy selection
-                    const compKey = comp.name === 'Reality Simulator' ? 'reality_sim' :
-                        comp.name === 'Explorer' ? 'explorer' :
-                            comp.name === 'Djinn Kernel' ? 'djinn_kernel' :
-                                comp.name === 'Breath Engine' ? 'breath' :
-                                    comp.name === '🧠 Neural System' ? 'neural' :
-                                        comp.name === '🔬 ML Analysis' ? 'ml_analysis' :
-                                            comp.name === '🦋 Language System' ? 'language' :
-                                                comp.name === '🦋 Butterfly Chat' ? 'butterfly_chat' : 'system';
                     legendContent.append('circle')
                         .attr('cx', 0)
                         .attr('cy', yPos)
-                        .attr('r', 6)
+                        .attr('r', 5)
                         .attr('fill', comp.color)
                         .attr('stroke', '#fff')
-                        .attr('stroke-width', 1.5)
-                        .attr('data-component', compKey)  // Store component key for easy updates
+                        .attr('stroke-width', 1)
+                        .attr('data-component', comp.key)
                         .attr('class', 'legend-component-circle');
-                    // Label
                     legendContent.append('text')
-                        .attr('x', 15)
-                        .attr('y', yPos + 4)
+                        .attr('x', 12)
+                        .attr('y', yPos + 3)
                         .attr('fill', '#fff')
-                        .attr('font-size', '11px')
+                        .attr('font-size', '10px')
                         .text(comp.name);
                 });
 
-                // Section separator - REMOVED (no horizontal line)
-
-                // Link/edge colors with labels (store link type for easy updates)
+                // Link colors - COMPACT
                 linkTypes.forEach((link, i) => {
                     const yPos = titleHeight + componentsHeight + sectionSpacing + (i * itemHeight);
-                    // Color line (horizontal line to represent edge) with data attribute
-                    const linkKey = link.name.toLowerCase();
+                    const linkKey = link.name.toLowerCase().replace('/', '_');
                     legendContent.append('line')
                         .attr('x1', 0)
                         .attr('y1', yPos)
-                        .attr('x2', 12)
+                        .attr('x2', 10)
                         .attr('y2', yPos)
                         .attr('stroke', link.color)
-                        .attr('stroke-width', 3)
-                        .attr('data-link-type', linkKey)  // Store link type for easy updates
+                        .attr('stroke-width', 2)
+                        .attr('data-link-type', linkKey)
                         .attr('class', 'legend-link-line');
-                    // Label
                     legendContent.append('text')
-                        .attr('x', 18)
-                        .attr('y', yPos + 4)
+                        .attr('x', 14)
+                        .attr('y', yPos + 3)
                         .attr('fill', '#fff')
-                        .attr('font-size', '11px')
+                        .attr('font-size', '10px')
                         .text(link.name);
                 });
 
-                // Neural/ML/Language Icon Shapes Section (for vision model recognition)
-                const neuralMLSectionY = titleHeight + componentsHeight + sectionSpacing + linksHeight + sectionSpacing;
+                // Shape Key Section - COMPACT
+                const shapeSectionY = titleHeight + componentsHeight + sectionSpacing + linksHeight + sectionSpacing;
                 legendContent.append('text')
                     .attr('x', 0)
-                    .attr('y', neuralMLSectionY - 2)
+                    .attr('y', shapeSectionY - 2)
                     .attr('fill', '#0ff')
-                    .attr('font-size', '12px')
+                    .attr('font-size', '10px')
                     .attr('font-weight', 'bold')
-                    .text('🧠 Neural, 🔬 ML & 🦋 Language Icons:');
+                    .text('Shapes:');
                 
-                neuralMLIcons.forEach((icon, i) => {
-                    // Each icon takes more space due to description text
-                    const yPos = neuralMLSectionY + (i * (itemHeight + 8));
-                    const iconSize = 8;
+                shapeKey.forEach((item, i) => {
+                    const yPos = shapeSectionY + 8 + (i * itemHeight);
+                    const iconSize = 6;
                     const shapeElement = legendContent.append('g')
-                        .attr('transform', `translate(${iconSize}, ${yPos})`)
-                        .attr('class', 'legend-neural-ml-icon')
-                        .attr('data-event-type', icon.eventType);
+                        .attr('transform', `translate(${iconSize}, ${yPos})`);
                     
-                    // Create the appropriate shape
                     let shapePath;
-                    switch(icon.shape) {
-                        case 'diamond':
-                            shapePath = d3.symbol().type(d3.symbolDiamond).size(iconSize * iconSize * 4);
-                            break;
-                        case 'square':
-                            shapePath = d3.symbol().type(d3.symbolSquare).size(iconSize * iconSize * 4);
-                            break;
-                        case 'star':
-                            shapePath = d3.symbol().type(d3.symbolStar).size(iconSize * iconSize * 5);
-                            break;
-                        case 'triangle':
-                            shapePath = d3.symbol().type(d3.symbolTriangle).size(iconSize * iconSize * 4);
-                            break;
-                        case 'cross':
-                            shapePath = d3.symbol().type(d3.symbolCross).size(iconSize * iconSize * 4);
-                            break;
-                        case 'wye':
-                            shapePath = d3.symbol().type(d3.symbolWye).size(iconSize * iconSize * 4);
-                            break;
-                        default:
-                            shapePath = d3.symbol().type(d3.symbolCircle).size(iconSize * iconSize * 4);
+                    switch(item.shape) {
+                        case 'diamond': shapePath = d3.symbol().type(d3.symbolDiamond).size(80); break;
+                        case 'square': shapePath = d3.symbol().type(d3.symbolSquare).size(80); break;
+                        case 'star': shapePath = d3.symbol().type(d3.symbolStar).size(100); break;
+                        case 'triangle': shapePath = d3.symbol().type(d3.symbolTriangle).size(80); break;
+                        case 'cross': shapePath = d3.symbol().type(d3.symbolCross).size(80); break;
+                        case 'wye': shapePath = d3.symbol().type(d3.symbolWye).size(80); break;
+                        default: shapePath = d3.symbol().type(d3.symbolCircle).size(80);
                     }
                     
                     shapeElement.append('path')
                         .attr('d', shapePath)
-                        .attr('fill', icon.color)
-                        .attr('fill-opacity', 0.9)
-                        .attr('stroke', '#FFFFFF')
-                        .attr('stroke-width', 1.5)
-                        .style('filter', icon.shape === 'star' || icon.shape === 'triangle' ? 'url(#nodeGlow)' : 'none');
+                        .attr('fill', '#888')
+                        .attr('stroke', '#fff')
+                        .attr('stroke-width', 1);
                     
-                    // Label with description for vision models
                     legendContent.append('text')
-                        .attr('x', iconSize * 2 + 5)
-                        .attr('y', yPos + 4)
-                        .attr('fill', '#fff')
-                        .attr('font-size', '11px')
-                        .text(icon.name);
-                    
-                    // Add descriptive text for vision models (smaller, below icon name)
-                    const description = icon.eventType === 'neural_decision' ? 'Decision-making event' :
-                                      icon.eventType === 'neural_training' ? 'Training/learning event' :
-                                      icon.eventType === 'neural_language_reward' ? 'Language reward signal' :
-                                      icon.eventType === 'neural_curriculum_adjustment' ? 'Learning path change' :
-                                      icon.eventType === 'phenotype_emergence' ? 'New cluster discovered' :
-                                      icon.eventType === 'anomaly_spike' ? 'Outlier detection' :
-                                      icon.eventType === 'cluster_collapse' ? 'Cluster died/extinct' :
-                                      icon.eventType === 'alliance_formed' ? 'Alliance established' :
-                                      icon.eventType === 'alliance_dissolved' ? 'Alliance broken' :
-                                      icon.eventType === 'battle_concluded' ? 'Combat resolved' :
-                                      icon.eventType === 'config_tuned' ? 'Auto-tuning event' :
-                                      'ML analysis state change';
-                    legendContent.append('text')
-                        .attr('x', iconSize * 2 + 5)
-                        .attr('y', yPos + 15)
+                        .attr('x', iconSize * 2 + 4)
+                        .attr('y', yPos + 3)
                         .attr('fill', '#aaa')
                         .attr('font-size', '9px')
-                        .attr('font-style', 'italic')
-                        .text(description);
+                        .text(item.desc);
                 });
 
-                // Graph info (on separate line for clarity)
-                const infoY = titleHeight + componentsHeight + sectionSpacing + linksHeight + sectionSpacing + neuralMLHeight + 5;
+                // Info footer - COMPACT
+                const infoY = titleHeight + componentsHeight + sectionSpacing + linksHeight + sectionSpacing + shapeKeyHeight + sectionSpacing;
                 legendContent.append('text')
                     .attr('x', 0)
                     .attr('y', infoY)
-                    .attr('fill', '#888')
-                    .attr('font-size', '10px')
-                    .text('Nodes = Events');
-                legendContent.append('text')
-                    .attr('x', 0)
-                    .attr('y', infoY + 14)
-                    .attr('fill', '#888')
-                    .attr('font-size', '10px')
-                    .text('Links = Causation');
-                
-                // Vision Model Recognition Note
-                legendContent.append('text')
-                    .attr('x', 0)
-                    .attr('y', infoY + 32)
-                    .attr('fill', '#0aa')
+                    .attr('fill', '#666')
                     .attr('font-size', '9px')
-                    .attr('font-weight', 'bold')
-                    .text('👁️ Vision Recognition:');
-                legendContent.append('text')
-                    .attr('x', 0)
-                    .attr('y', infoY + 46)
-                    .attr('fill', '#aaa')
-                    .attr('font-size', '9px')
-                    .text('Neural/ML shapes indicate system');
-                legendContent.append('text')
-                    .attr('x', 0)
-                    .attr('y', infoY + 60)
-                    .attr('fill', '#aaa')
-                    .attr('font-size', '9px')
-                    .text('positions & causality patterns.');
+                    .text('● Node=Event  ─ Link=Cause');
 
                 updateTransform();
 

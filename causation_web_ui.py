@@ -719,6 +719,71 @@ CONFIG_GUARDRAILS = {
         'type': float,
         'label': 'meta_cognitive.self_tuning.min_confidence_threshold'
     },
+    # ⚔️ Highlander & Alliance Warfare Settings ⭐ NEW
+    '/highlander/enabled': {
+        'type': bool,
+        'label': 'highlander.enabled'
+    },
+    '/highlander/survival_threshold': {
+        'min': 0.1,
+        'max': 0.95,
+        'type': float,
+        'label': 'highlander.survival_threshold'
+    },
+    '/highlander/competition_intensity': {
+        'min': 0.1,
+        'max': 1.0,
+        'type': float,
+        'label': 'highlander.competition_intensity'
+    },
+    '/highlander/alliance_warfare/enabled': {
+        'type': bool,
+        'label': 'highlander.alliance_warfare.enabled'
+    },
+    '/highlander/alliance_warfare/max_alliances': {
+        'min': 2,
+        'max': 20,
+        'type': int,
+        'label': 'highlander.alliance_warfare.max_alliances'
+    },
+    '/highlander/alliance_warfare/max_confederations': {
+        'min': 1,
+        'max': 5,
+        'type': int,
+        'label': 'highlander.alliance_warfare.max_confederations'
+    },
+    '/highlander/alliance_warfare/confederation_war_threshold': {
+        'min': 0.5,
+        'max': 0.9,
+        'type': float,
+        'label': 'highlander.alliance_warfare.confederation_war_threshold'
+    },
+    '/highlander/alliance_warfare/alliance_min_members': {
+        'min': 2,
+        'max': 10,
+        'type': int,
+        'label': 'highlander.alliance_warfare.alliance_min_members'
+    },
+    '/highlander/battle_arena/randomness': {
+        'min': 0.0,
+        'max': 0.5,
+        'type': float,
+        'label': 'highlander.battle_arena.randomness'
+    },
+    '/highlander/germination/enabled': {
+        'type': bool,
+        'label': 'highlander.germination.enabled'
+    },
+    '/highlander/germination/pool_size': {
+        'min': 5,
+        'max': 50,
+        'type': int,
+        'label': 'highlander.germination.pool_size'
+    },
+    '/highlander/capsule/enabled': {
+        'type': bool,
+        'label': 'highlander.capsule.enabled'
+    },
 }
 
 
