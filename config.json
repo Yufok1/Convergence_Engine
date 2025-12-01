@@ -72,13 +72,13 @@
         "step": 0.05
       },
       "mutation_rate": {
-        "initial": 0.034,
+        "initial": 0.035,
         "max": 0.06,
         "min": 0.002,
         "step": 0.001
       },
       "new_edge_rate": {
-        "initial": 3.5,
+        "initial": 5,
         "max": 6.0,
         "min": 0.2,
         "step": 0.1
@@ -225,9 +225,51 @@
         "temperature": 1.0,
         "vp_gate_threshold": 0.5
       },
+      "knowledge_web": {
+        "enabled": true,
+        "quality_control": {
+          "confidence_growth_rate": 0.0005,
+          "enabled": true,
+          "exploration_decay_generations": 1000,
+          "exploration_end": 0.05,
+          "exploration_start": 0.2,
+          "max_discoveries_per_generation": 10,
+          "min_confidence_threshold": 0.3,
+          "min_discovery_count": 3,
+          "pruning_confidence_threshold": 0.2,
+          "pruning_failure_rate": 0.7,
+          "pruning_unused_generations": 100,
+          "review_frequency": 100,
+          "validation_required": true,
+          "vp_boost_exploration": true,
+          "vp_boost_threshold": 0.7
+        }
+      },
+      "relationship_learning": {
+        "enabled": true,
+        "quality_evaluation": {
+          "coherent_threshold": 0.5,
+          "garbled_threshold": 0.2,
+          "max_word_count": 20,
+          "min_word_count": 2,
+          "min_word_count_for_evaluation": 3,
+          "relationship_strength_threshold": 0.5,
+          "unk_ratio_threshold": 0.3
+        },
+        "semantic_guidance": {
+          "enabled": true,
+          "high_strength_boost": 0.1,
+          "max_similar_words": 5,
+          "min_strength_threshold": 0.7,
+          "semantic_boost": 0.2
+        }
+      },
       "sequence": {
         "context_window": 32,
         "max_length": 128
+      },
+      "teacher": {
+        "use_knowledge_web": true
       },
       "training": {
         "alpha": 0.9,
@@ -243,44 +285,6 @@
           "<END>",
           "<VP_GATE>"
         ]
-      },
-      "knowledge_web": {
-        "quality_control": {
-          "enabled": true,
-          "min_discovery_count": 3,
-          "min_confidence_threshold": 0.3,
-          "confidence_growth_rate": 0.0005,
-          "exploration_start": 0.2,
-          "exploration_end": 0.05,
-          "exploration_decay_generations": 1000,
-          "validation_required": true,
-          "max_discoveries_per_generation": 10,
-          "vp_boost_exploration": true,
-          "vp_boost_threshold": 0.7,
-          "review_frequency": 100,
-          "pruning_confidence_threshold": 0.2,
-          "pruning_unused_generations": 100,
-          "pruning_failure_rate": 0.7
-        }
-      },
-      "relationship_learning": {
-        "enabled": true,
-        "quality_evaluation": {
-          "coherent_threshold": 0.5,
-          "garbled_threshold": 0.2,
-          "unk_ratio_threshold": 0.3,
-          "min_word_count": 2,
-          "min_word_count_for_evaluation": 3,
-          "max_word_count": 20,
-          "relationship_strength_threshold": 0.5
-        },
-        "semantic_guidance": {
-          "enabled": true,
-          "min_strength_threshold": 0.7,
-          "semantic_boost": 0.2,
-          "high_strength_boost": 0.1,
-          "max_similar_words": 5
-        }
       }
     },
     "optimization": {
@@ -353,14 +357,14 @@
   "scikit": {
     "anomaly_detection": {
       "algorithm": "isolation_forest",
-      "contamination": 0.22,
+      "contamination": 0.18,
       "enabled": true,
       "n_estimators": 450
     },
     "clustering": {
       "algorithm": "hdbscan",
       "enabled": true,
-      "min_cluster_size": 6,
+      "min_cluster_size": 4,
       "min_samples": 1,
       "use_neural_embeddings": true
     },

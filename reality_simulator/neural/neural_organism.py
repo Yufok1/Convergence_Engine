@@ -414,6 +414,107 @@ class NeuralOrganism(Organism):
         
         return adjusted, adjustments_made
     
+    def _generate_decision_reasoning(self, action: int, vp_components: Dict[str, float], 
+                                      action_probs: np.ndarray, vp_adjustments: List[str]) -> str:
+        """
+        Generate natural language reasoning for why this decision was made.
+        
+        This provides human-readable explanations for the Illumination Engine
+        based on the neural network's decision process and VP-aware adjustments.
+        
+        Args:
+            action: The chosen action index
+            vp_components: VP component values that influenced decision
+            action_probs: The action probability distribution
+            vp_adjustments: List of VP adjustments that were applied
+            
+        Returns:
+            Human-readable reasoning string
+        """
+        action_names = ['move', 'cooperate', 'compete', 'rest', 'reproduce', 'isolate']
+        action_name = action_names[action] if 0 <= action < len(action_names) else 'unknown'
+        
+        # Build reasoning from VP components
+        reasons = []
+        primary_driver = None
+        
+        # Analyze VP components to explain the decision
+        trait_div = vp_components.get('trait_divergence', 0.0)
+        net_coh = vp_components.get('network_coherence', 0.0)
+        q_entropy = vp_components.get('quantum_entropy', 0.0)
+        evo_pressure = vp_components.get('evolution_pressure', 0.0)
+        phase_mis = vp_components.get('phase_mismatch', 0.0)
+        
+        # Determine primary driver based on which VP component is highest
+        vp_values = {
+            'trait_divergence': trait_div,
+            'network_coherence': net_coh,
+            'quantum_entropy': q_entropy,
+            'evolution_pressure': evo_pressure,
+            'phase_mismatch': phase_mis
+        }
+        if vp_values:
+            primary_driver = max(vp_values.items(), key=lambda x: x[1])
+        
+        # Action-specific reasoning
+        if action == 0:  # move
+            if evo_pressure > 0.3:
+                reasons.append(f"evolution pressure is high ({evo_pressure:.2f}), seeking better environment")
+            else:
+                reasons.append("exploring for resources or better positioning")
+                
+        elif action == 1:  # cooperate
+            if net_coh > 0.3:
+                reasons.append(f"network fragmented ({net_coh:.2f}), forming connections to improve coherence")
+            else:
+                reasons.append("building alliances to share resources and increase fitness")
+                
+        elif action == 2:  # compete
+            if self.fitness < 0.5:
+                reasons.append(f"fitness is low ({self.fitness:.2f}), competing for resources")
+            else:
+                reasons.append("asserting dominance to secure resources")
+                
+        elif action == 3:  # rest
+            if q_entropy > 0.3:
+                reasons.append(f"quantum entropy high ({q_entropy:.2f}), stabilizing to reduce chaos")
+            elif phase_mis > 0.3:
+                reasons.append(f"phase mismatch detected ({phase_mis:.2f}), resting to resynchronize")
+            else:
+                reasons.append("conserving energy for future actions")
+                
+        elif action == 4:  # reproduce
+            if trait_div > 0.3:
+                reasons.append(f"trait divergence high ({trait_div:.2f}), reproducing to increase genetic diversity")
+            elif self.fitness > 0.6:
+                reasons.append(f"fitness is high ({self.fitness:.2f}), spreading successful genes")
+            else:
+                reasons.append("attempting to pass on genetic material")
+                
+        elif action == 5:  # isolate
+            if net_coh < 0.2:
+                reasons.append("network too dense, isolating to reduce resource competition")
+            else:
+                reasons.append("protecting resources from competitors")
+        
+        # Add VP adjustment context if any were made
+        if vp_adjustments:
+            adjustment_summary = ", ".join([adj.split("→")[0] for adj in vp_adjustments[:2]])
+            reasons.append(f"VP factors: {adjustment_summary}")
+        
+        # Add confidence context
+        confidence = float(np.max(action_probs)) if action_probs is not None else 0.5
+        if confidence > 0.7:
+            confidence_note = "with high confidence"
+        elif confidence > 0.4:
+            confidence_note = "with moderate confidence"
+        else:
+            confidence_note = "tentatively (exploring)"
+        
+        # Build final reasoning
+        reason_text = " and ".join(reasons) if reasons else "based on neural network evaluation"
+        return f"Chose to {action_name} {confidence_note} because {reason_text}"
+
     def decide_action(self, 
                      local_env: Optional[Dict[str, Any]] = None,
                      network_state: Optional[Dict[str, Any]] = None,
@@ -480,6 +581,14 @@ class NeuralOrganism(Organism):
             action_names = ['move', 'cooperate', 'compete', 'rest', 'reproduce', 'isolate']
             action_name = action_names[action] if 0 <= action < len(action_names) else 'unknown'
             
+            # Get VP components for reasoning
+            vp_components = network_state.get('vp_components', {}) if network_state else {}
+            
+            # Generate human-readable reasoning for Illumination Engine
+            reasoning = self._generate_decision_reasoning(
+                action, vp_components, action_probs, vp_adjustments
+            )
+            
             event_data = {
                 'organism_id': self.species_id,
                 'action': action_name,
@@ -490,7 +599,9 @@ class NeuralOrganism(Organism):
                 'input_features': state.tolist() if isinstance(state, np.ndarray) else state,
                 'action_probs': action_probs.tolist() if action_probs is not None else None,
                 'vp_planning_enabled': vp_planning_enabled,
-                'vp_adjustments': vp_adjustments if vp_adjustments else None
+                'vp_adjustments': vp_adjustments if vp_adjustments else None,
+                # 🧠 NEW: Human-readable reasoning for Illumination Engine
+                'reasoning': reasoning
             }
             
             try:

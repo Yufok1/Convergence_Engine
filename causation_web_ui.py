@@ -6231,43 +6231,15 @@ def get_root_causes(event_id):
     🔍 DEEP ROOT CAUSE ANALYSIS
     Trace ALL the way back to find ultimate origins.
     """
-    # CRITICAL: Use shared explorer if available (from unified_entry.py), otherwise local one
-    target_explorer = app.config.get('explorer') or explorer
-    if target_explorer is None:
-        return jsonify({'error': 'Causation Explorer not initialized'}), 500
+    if explorer is None:
+        return jsonify({'error': 'Causation Explorer not initialized', 'root_causes': []}), 500
     try:
-        # Normalize event ID format (handle both evt_xxx and evt-xxx)
-        if event_id.startswith('evt') and not event_id.startswith('evt_'):
-            # Convert "evt1764508627579022" to "evt_1764508627579022"
-            event_id = 'evt_' + event_id[3:] if len(event_id) > 3 else event_id
-        
         max_depth = int(request.args.get('depth', 20))
-        
-        # CRITICAL: Verify event exists in the CORRECT explorer instance
-        if event_id not in target_explorer.events:
-            logger.warning(f"[ROOT_CAUSES] Event {event_id} not found in target_explorer.events (total events: {len(target_explorer.events)})")
-            logger.warning(f"[ROOT_CAUSES] Using {'shared' if app.config.get('explorer') else 'local'} explorer instance")
-            # Try to find similar event IDs (for debugging)
-            similar_ids = [eid for eid in target_explorer.events.keys() if event_id[:10] in eid][:5]
-            recent_ids = list(target_explorer.events.keys())[-20:]
-            if similar_ids:
-                logger.warning(f"[ROOT_CAUSES] Similar event IDs found: {similar_ids}")
-            logger.warning(f"[ROOT_CAUSES] Recent event IDs (last 20): {recent_ids}")
-            # Return error response immediately instead of calling method
-            return jsonify({
-                'error': f'Event not found: {event_id}',
-                'normalized_id': event_id,
-                'available_event_count': len(target_explorer.events),
-                'recent_event_ids': recent_ids,
-                'similar_event_ids': similar_ids,
-                'root_causes': []
-            }), 404
-        
-        analysis = target_explorer.find_root_causes(event_id, max_depth)
+        analysis = explorer.find_root_causes(event_id, max_depth)
         return jsonify(analysis)
     except Exception as e:
         logger.error(f"Error finding root causes for {event_id}: {e}", exc_info=True)
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': str(e), 'root_causes': []}), 500
 
 
 @app.route('/api/events/<event_id>/impact')
@@ -6276,38 +6248,15 @@ def get_impact_analysis(event_id):
     💥 IMPACT ANALYSIS
     What were ALL downstream effects of this event?
     """
-    # CRITICAL: Use shared explorer if available (from unified_entry.py), otherwise local one
-    target_explorer = app.config.get('explorer') or explorer
-    if target_explorer is None:
-        return jsonify({'error': 'Causation Explorer not initialized'}), 500
+    if explorer is None:
+        return jsonify({'error': 'Causation Explorer not initialized', 'impacts': []}), 500
     try:
-        # Normalize event ID format (handle both evt_xxx and evt-xxx)
-        if event_id.startswith('evt') and not event_id.startswith('evt_'):
-            # Convert "evt1764508627579022" to "evt_1764508627579022"
-            event_id = 'evt_' + event_id[3:] if len(event_id) > 3 else event_id
-        
         max_depth = int(request.args.get('depth', 20))
-        
-        # CRITICAL: Verify event exists in the CORRECT explorer instance
-        if event_id not in target_explorer.events:
-            logger.warning(f"[IMPACT] Event {event_id} not found in target_explorer.events (total events: {len(target_explorer.events)})")
-            logger.warning(f"[IMPACT] Using {'shared' if app.config.get('explorer') else 'local'} explorer instance")
-            recent_ids = list(target_explorer.events.keys())[-20:]
-            logger.warning(f"[IMPACT] Recent event IDs (last 20): {recent_ids}")
-            # Return error response immediately instead of calling method
-            return jsonify({
-                'error': f'Event not found: {event_id}',
-                'normalized_id': event_id,
-                'available_event_count': len(target_explorer.events),
-                'recent_event_ids': recent_ids,
-                'impacts': []
-            }), 404
-        
-        analysis = target_explorer.analyze_impact(event_id, max_depth)
+        analysis = explorer.analyze_impact(event_id, max_depth)
         return jsonify(analysis)
     except Exception as e:
         logger.error(f"Error analyzing impact for {event_id}: {e}", exc_info=True)
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': str(e), 'impacts': []}), 500
 
 
 @app.route('/api/events/<event_id>/explain')
@@ -6316,31 +6265,10 @@ def explain_event(event_id):
     📖 COMPLETE EVENT EXPLANATION
     Why did this happen AND what did it cause?
     """
-    # CRITICAL: Use shared explorer if available (from unified_entry.py), otherwise local one
-    target_explorer = app.config.get('explorer') or explorer
-    if target_explorer is None:
+    if explorer is None:
         return jsonify({'error': 'Causation Explorer not initialized'}), 500
     try:
-        # Normalize event ID format (handle both evt_xxx and evt-xxx)
-        if event_id.startswith('evt') and not event_id.startswith('evt_'):
-            # Convert "evt1764508627579022" to "evt_1764508627579022"
-            event_id = 'evt_' + event_id[3:] if len(event_id) > 3 else event_id
-        
-        # CRITICAL: Verify event exists in the CORRECT explorer instance
-        if event_id not in target_explorer.events:
-            logger.warning(f"[EXPLAIN] Event {event_id} not found in target_explorer.events (total events: {len(target_explorer.events)})")
-            logger.warning(f"[EXPLAIN] Using {'shared' if app.config.get('explorer') else 'local'} explorer instance")
-            recent_ids = list(target_explorer.events.keys())[-20:]
-            logger.warning(f"[EXPLAIN] Recent event IDs (last 20): {recent_ids}")
-            # Return error response immediately instead of calling method
-            return jsonify({
-                'error': f'Event not found: {event_id}',
-                'normalized_id': event_id,
-                'available_event_count': len(target_explorer.events),
-                'recent_event_ids': recent_ids
-            }), 404
-        
-        explanation = target_explorer.explain_event(event_id)
+        explanation = explorer.explain_event(event_id)
         return jsonify(explanation)
     except Exception as e:
         logger.error(f"Error explaining event {event_id}: {e}", exc_info=True)

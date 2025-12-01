@@ -1332,12 +1332,9 @@ class SymbioticNetwork:
                     self.context_memory,
                     self.generation
                 )
-                # Store teaching stats in result for monitoring
-                if teaching_result.get('enabled'):
-                    result['language_teaching'] = {
-                        'organisms_taught': teaching_result.get('organisms_taught', 0),
-                        'words_assigned': teaching_result.get('words_assigned', 0)
-                    }
+                # Log teaching stats for monitoring (don't store in undefined result)
+                if teaching_result.get('enabled') and teaching_result.get('words_assigned', 0) > 0:
+                    logging.debug(f"[LANGUAGE] Taught {teaching_result.get('organisms_taught', 0)} organisms, assigned {teaching_result.get('words_assigned', 0)} words")
             except Exception as e:
                 # Don't let language teaching errors break simulation
                 logging.warning(f"[SYMBIOTIC_NETWORK] Language teaching error: {e}")

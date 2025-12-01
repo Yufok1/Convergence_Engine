@@ -1315,16 +1315,39 @@ class UnifiedSystem:
                 else:
                     self.web_ui.config['event_emitter'] = None
             
-            # Start web UI in separate thread
-            import threading
-            web_thread = threading.Thread(
-                target=lambda: self.web_ui.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False),
-                daemon=True
-            )
-            web_thread.start()
+            # Start web UI in a NEW VISIBLE CMD WINDOW on Windows so backend output is visible
+            import subprocess
+            self._web_ui_proc = None
+            if os.name == 'nt':
+                # Spawn causation_web_ui.py in a new console window
+                script_path = Path(__file__).resolve().parent / 'causation_web_ui.py'
+                self._web_ui_proc = subprocess.Popen(
+                    [sys.executable, str(script_path)],
+                    creationflags=subprocess.CREATE_NEW_CONSOLE
+                )
+                print(f"[UNIFIED] [WEB] ✅ Web UI launched in NEW CONSOLE (PID {self._web_ui_proc.pid})")
+            else:
+                # Fallback for non-Windows: run in background thread
+                import threading
+                web_thread = threading.Thread(
+                    target=lambda: self.web_ui.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False),
+                    daemon=True
+                )
+                web_thread.start()
+                print("[UNIFIED] [WEB] ✅ Web UI started in background thread")
             
-            print("[UNIFIED] [WEB] ✅ Web UI integration complete - Butterfly Chat ready")
             print("[UNIFIED] [WEB] 🌐 Web interface available at http://localhost:5000")
+            
+            # Wait for server to be ready before launching browser
+            import requests
+            for _ in range(20):
+                try:
+                    r = requests.get('http://127.0.0.1:5000/health', timeout=1)
+                    if r.status_code == 200:
+                        break
+                except Exception:
+                    pass
+                time.sleep(0.25)
             
             # Auto-launch browser
             try:
@@ -1812,6 +1835,23 @@ class UnifiedSystem:
                 'explorer': explorer_state,  # Explorer data (phase, vp_calculations, breath_state, etc.)
                 'djinn_kernel': djinn_kernel_state  # Djinn Kernel data (VP, tape cells, etc.)
             }
+
+            # 🗣️ ADD LANGUAGE DATA for CRA/Illumination Engine
+            try:
+                network = self.reality_sim.components.get('network') if hasattr(self.reality_sim, 'components') else None
+                if network and hasattr(network, 'context_memory') and network.context_memory:
+                    cm = network.context_memory
+                    vocab = cm.vocabulary if hasattr(cm, 'vocabulary') else None
+                    language_data = {
+                        'vocab_size': vocab.vocab_size if vocab else 0,
+                        'word_count': len(vocab.word_to_id) if vocab and hasattr(vocab, 'word_to_id') else 0,
+                        'organism_word_assignments': len(cm.organism_words) if hasattr(cm, 'organism_words') else 0,
+                        'language_anchors': len(cm.language_anchors) if hasattr(cm, 'language_anchors') else 0,
+                        'total_associations': sum(len(v) for v in cm.language_anchors.values()) if hasattr(cm, 'language_anchors') else 0
+                    }
+                    unified_data['language'] = language_data
+            except Exception:
+                pass  # Don't break if language data extraction fails
 
             # ✨ ADD PHASE SYNC DATA (collapse prediction, phase proximity, exploration ratio)
             if phase_sync_state:
