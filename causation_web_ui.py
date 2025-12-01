@@ -11301,16 +11301,19 @@ if __name__ == '__main__':
     print("   /api/cra/events/recent - Recent events")
     print("   /api/cra/config/validate - Config validation")
 
+    # Respect FLASK_DEBUG environment variable, default to True for development
+    debug_mode = os.environ.get('FLASK_DEBUG', 'true').lower() in ('true', '1', 'yes')
+    
     try:
         if SOCKETIO_AVAILABLE:
             print("🔌 WebSocket support enabled for CRA real-time streaming")
             # Use_reloader=False to avoid threading issues on Windows during development
             # Set to True if you want auto-reload (may show socket errors on Windows)
-            socketio.run(app, debug=True, port=5000, use_reloader=False)
+            socketio.run(app, debug=debug_mode, port=5000, use_reloader=False)
         else:
             print("📡 WebSocket not available - using HTTP polling for CRA")
             # Use_reloader=False to avoid threading issues on Windows during development
-            app.run(debug=True, port=5000, use_reloader=False)
+            app.run(debug=debug_mode, port=5000, use_reloader=False)
     except KeyboardInterrupt:
         print("\n🛑 Shutting down gracefully...")
     finally:
