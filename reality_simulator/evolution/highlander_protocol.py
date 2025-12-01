@@ -247,6 +247,11 @@ class HighlanderProtocol:
         self.active_organisms: Set[str] = set()
         self.pending_battles: List[Tuple[str, str]] = []
         self.round_start_time = 0.0
+        
+        # Callbacks for germination pool integration
+        self.on_elimination_callback: Optional[Callable] = None
+        self.on_champion_callback: Optional[Callable] = None
+        self.on_round_complete_callback: Optional[Callable] = None
     
     def register_organism(self, organism_id: str, initial_fitness: float = 0.5):
         """Register an organism in the protocol."""
@@ -263,7 +268,8 @@ class HighlanderProtocol:
             'population_size': len(self.active_organisms)
         })
     
-    def unregister_organism(self, organism_id: str, reason: str = "eliminated"):
+    def unregister_organism(self, organism_id: str, reason: str = "eliminated", 
+                           organism: Any = None, killer_id: Optional[str] = None):
         """Remove organism from active competition."""
         self.active_organisms.discard(organism_id)
         self.fallen.append(organism_id)
@@ -278,6 +284,13 @@ class HighlanderProtocol:
             'final_stats': self.organism_stats[organism_id].to_dict() if organism_id in self.organism_stats else {},
             'remaining': len(self.active_organisms)
         })
+        
+        # Call elimination callback for germination pool
+        if self.on_elimination_callback and organism is not None:
+            try:
+                self.on_elimination_callback(organism, killer_id)
+            except Exception:
+                pass  # Don't let callback errors break protocol
     
     def run_round(self, organisms: Dict[str, Any], 
                  get_fitness: Callable[[Any], float]) -> Dict[str, Any]:
@@ -368,6 +381,17 @@ class HighlanderProtocol:
         # Update phase based on population
         results['population'] = len(self.active_organisms)
         results['phase'] = self.phase.value
+        
+        # ═══════════════════════════════════════════════════════════════
+        # ROUND COMPLETE CALLBACK - For population state tracking
+        # ═══════════════════════════════════════════════════════════════
+        if self.on_round_complete_callback:
+            try:
+                # Pass current organisms for population state update
+                active_organisms = [organisms[oid] for oid in self.active_organisms if oid in organisms]
+                self.on_round_complete_callback(active_organisms)
+            except Exception:
+                pass  # Don't let callback errors break protocol
         
         return results
     
@@ -961,6 +985,7 @@ class HighlanderProtocol:
         self.champion_history.append(champion_data)
         
         # Checkpoint the champion
+        capsule = None
         if self.capsule_manager and champion:
             try:
                 capsule = self.capsule_manager.capture_organism(
@@ -976,6 +1001,13 @@ class HighlanderProtocol:
                 champion_data['capsule_error'] = str(e)
         
         self._emit_event('champion_crowned', champion_data)
+        
+        # Call champion callback for germination pool
+        if self.on_champion_callback and champion and capsule:
+            try:
+                self.on_champion_callback(champion, capsule)
+            except Exception:
+                pass  # Don't let callback errors break protocol
         
         return champion_data
     

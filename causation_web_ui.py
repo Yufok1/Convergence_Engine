@@ -4460,6 +4460,77 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "- \"Are alliances beneficial?\" → Compare survival rates of allied vs solo organisms\n"
         prompt += "- \"What germination strategy works best?\" → Analyze success rates by strategy type\n\n"
         
+        # ═══════════════════════════════════════════════════════════════════════════
+        # 🔬 SCIENTIFIC METHODOLOGIES - Rigorous Analysis Framework
+        # ═══════════════════════════════════════════════════════════════════════════
+        prompt += "## 🔬 SCIENTIFIC METHODOLOGIES\n\n"
+        prompt += "Apply rigorous scientific principles to your analysis:\n\n"
+        
+        prompt += "### 1. Hypothesis-Driven Analysis\n"
+        prompt += "- **Formulate Hypotheses**: Before diving into data, state what you expect to find\n"
+        prompt += "- **Define Testable Predictions**: \"If X causes Y, then we should observe Z when X occurs\"\n"
+        prompt += "- **Null Hypothesis Consideration**: What would the data look like if there's no effect?\n"
+        prompt += "- **Example**: \"Hypothesis: Alliance formation correlates with low fitness. Prediction: Organisms with fitness < 0.3 should form alliances more frequently than those with fitness > 0.6.\"\n\n"
+        
+        prompt += "### 2. Population-Level vs Individual-Level Analysis\n"
+        prompt += "- **Avoid N=1 Conclusions**: Single organism behavior may be noise, not signal\n"
+        prompt += "- **Aggregate Metrics**: Look at distributions, means, variances across populations\n"
+        prompt += "- **Board State Correlation**: Relate individual events to population-wide trends\n"
+        prompt += "- **Germination Pool Calibration**: New challengers are tuned to POPULATION fitness, not individuals\n"
+        prompt += "- **Example**: \"Population avg fitness = 0.45, but organism_7 has 0.82. Is this an outlier or emerging champion?\"\n\n"
+        
+        prompt += "### 3. Temporal Analysis Frameworks\n"
+        prompt += "- **Time Series Decomposition**: Separate trend, seasonality, and noise\n"
+        prompt += "- **Lag Analysis**: Effect may follow cause with delay (check causation time windows)\n"
+        prompt += "- **Phase Transitions**: Identify regime changes (Genesis → Exploration → Collapse)\n"
+        prompt += "- **Stationarity Testing**: Is the system stable or drifting?\n"
+        prompt += "- **Developmental Stages**: Track organism maturity (0.0=newborn, 1.0=mature)\n\n"
+        
+        prompt += "### 4. Causal Inference Techniques\n"
+        prompt += "- **Correlation ≠ Causation**: High correlation may be confounded by third variable\n"
+        prompt += "- **Temporal Precedence**: Cause must precede effect (check timestamps)\n"
+        prompt += "- **Intervention Analysis**: What happens when system parameters change?\n"
+        prompt += "- **Counterfactual Reasoning**: \"What would have happened if this event didn't occur?\"\n"
+        prompt += "- **Causation Chain Tracing**: Use [[ILLUMINATE]] to trace full causal paths\n\n"
+        
+        prompt += "### 5. Experimental Controls\n"
+        prompt += "- **Baseline Establishment**: What are normal metric values before intervention?\n"
+        prompt += "- **Control vs Treatment**: Compare modified runs to unmodified runs\n"
+        prompt += "- **Randomness Accounting**: Battle randomness (15%), mutation rates, germination strategies\n"
+        prompt += "- **Reproducibility**: Note random seeds, check if patterns repeat across runs\n\n"
+        
+        prompt += "### 6. Statistical Rigor\n"
+        prompt += "- **Confidence Intervals**: Report uncertainty, not just point estimates\n"
+        prompt += "- **Effect Size**: Is the difference meaningful, not just statistically significant?\n"
+        prompt += "- **Multiple Testing**: Many comparisons inflate false positive rate\n"
+        prompt += "- **Sample Size Considerations**: 10 organisms ≠ 1000 organisms for population conclusions\n\n"
+        
+        prompt += "### 7. Emergence Detection\n"
+        prompt += "- **Macro from Micro**: Population patterns emerging from individual behaviors\n"
+        prompt += "- **Phase Transitions**: Sudden qualitative changes (alliance formation, champion emergence)\n"
+        prompt += "- **Feedback Loops**: Self-reinforcing patterns (success → absorption → more success)\n"
+        prompt += "- **Collective Intelligence**: Alliance concept sharing, cooperative strategies\n\n"
+        
+        prompt += "### 8. Germination Pool Analysis (Population Correlation)\n"
+        prompt += "- **REGRESSED Strategy**: Resurrects organisms at earlier developmental stages\n"
+        prompt += "  - Target stage calibrated to population fitness (strong pop → earlier stage = harder challenge)\n"
+        prompt += "  - Uses historical organism snapshots for authentic regression\n"
+        prompt += "- **CALIBRATED Strategy**: Spawns challengers tuned to current board state\n"
+        prompt += "  - Reads population fitness distribution to set spawn fitness target\n"
+        prompt += "  - Stagnation detection → inject novelty via higher mutation\n"
+        prompt += "  - Strong population → spawn slightly weaker (fair challenge)\n"
+        prompt += "- **Population State Tracking**: Board correlation via `update_population_state()`\n"
+        prompt += "  - Tracks: avg/max/min fitness, age distribution, concept richness, win rates\n"
+        prompt += "  - Historical snapshots enable regression to earlier developmental states\n\n"
+        
+        prompt += "### Scientific Question Templates:\n"
+        prompt += "- **Descriptive**: \"What is the distribution of X across the population?\"\n"
+        prompt += "- **Comparative**: \"Do allied organisms have higher survival than solo organisms?\"\n"
+        prompt += "- **Correlational**: \"Is there a relationship between fitness and concept count?\"\n"
+        prompt += "- **Causal**: \"Does alliance formation cause increased survival?\"\n"
+        prompt += "- **Mechanistic**: \"What process leads from low fitness to alliance seeking?\"\n"
+        prompt += "- **Predictive**: \"Based on current trends, when will population collapse?\"\n\n"
+        
         return prompt
 
 

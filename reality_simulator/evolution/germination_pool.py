@@ -33,6 +33,8 @@ class GerminationStrategy(Enum):
     NOVA = "nova"                      # Completely random new organism
     PHOENIX = "phoenix"                # Resurrect from champion capsule
     HYBRID = "hybrid"                  # Mix of strategies
+    REGRESSED = "regressed"            # Earlier developmental state (less evolved)
+    CALIBRATED = "calibrated"          # Tuned to current population fitness level
 
 
 @dataclass
@@ -64,6 +66,10 @@ class GeneticMaterial:
     # Cause of death
     death_reason: str = "unknown"
     killer_id: Optional[str] = None
+    
+    # Developmental stage (for regression strategy)
+    developmental_stage: float = 1.0  # 0.0 = newborn, 1.0 = fully developed
+    age_at_capture: float = 0.0
     
     def fitness_score(self) -> float:
         """How valuable is this genetic material?"""
@@ -101,6 +107,12 @@ class GerminationPool:
     
     Collects genetic material from fallen organisms,
     recombines it, mutates it, and spawns new life.
+    
+    Population-Correlated Germination:
+    - Tracks board state (population fitness distribution, network topology)
+    - Spawns challengers calibrated to current population strength
+    - Uses historical organism states to create less-developed variants
+    - Maintains evolutionary pressure without overwhelming/underwhelming
     """
     
     def __init__(
@@ -135,16 +147,28 @@ class GerminationPool:
         
         # Strategy weights (adaptable)
         self.strategy_weights = {
-            GerminationStrategy.CLONE: 0.15,
-            GerminationStrategy.CROSSOVER: 0.35,
-            GerminationStrategy.CHIMERA: 0.20,
-            GerminationStrategy.NOVA: 0.15,
+            GerminationStrategy.CLONE: 0.10,
+            GerminationStrategy.CROSSOVER: 0.25,
+            GerminationStrategy.CHIMERA: 0.15,
+            GerminationStrategy.NOVA: 0.10,
             GerminationStrategy.PHOENIX: 0.10,
-            GerminationStrategy.HYBRID: 0.05
+            GerminationStrategy.HYBRID: 0.05,
+            GerminationStrategy.REGRESSED: 0.15,    # Earlier developmental state
+            GerminationStrategy.CALIBRATED: 0.10    # Population-calibrated
         }
         
         # Champion capsules for phoenix resurrection
         self.champion_capsules: List[Any] = []
+        
+        # ═══════════════════════════════════════════════════════════════
+        # POPULATION STATE TRACKING (Board Correlation)
+        # ═══════════════════════════════════════════════════════════════
+        self.population_state_history: List[Dict[str, Any]] = []
+        self.max_state_history = 100  # Keep last 100 population snapshots
+        
+        # Historical organism snapshots for regression strategy
+        self.historical_snapshots: Dict[str, List[Dict[str, Any]]] = {}  # organism_id -> [snapshots]
+        self.max_snapshots_per_organism = 10
         
     def collect_essence(
         self,
@@ -273,6 +297,237 @@ class GerminationPool:
         for donor_id, _ in samples[:to_remove]:
             if donor_id not in self.elite_samples:  # Protect elites
                 del self.genetic_pool[donor_id]
+    
+    # ═══════════════════════════════════════════════════════════════
+    # POPULATION STATE TRACKING (Board Correlation)
+    # ═══════════════════════════════════════════════════════════════
+    
+    def update_population_state(self, organisms: List[Any]) -> Dict[str, Any]:
+        """
+        Snapshot current population state for calibration.
+        
+        Called periodically to track board state - this is the DATABASE
+        that germination correlates against, not any one organism.
+        
+        Returns the computed population state.
+        """
+        if not organisms:
+            return {}
+            
+        # Compute population statistics
+        fitness_values = []
+        ages = []
+        concept_counts = []
+        battle_records = []
+        
+        for org in organisms:
+            # Fitness
+            if hasattr(org, 'fitness'):
+                fitness_values.append(org.fitness)
+            elif hasattr(org, 'calculate_fitness'):
+                fitness_values.append(org.calculate_fitness())
+            
+            # Age
+            if hasattr(org, 'age'):
+                ages.append(org.age)
+            
+            # Concept richness
+            if hasattr(org, 'concepts'):
+                concept_counts.append(len(org.concepts))
+            elif hasattr(org, 'atomic_language') and org.atomic_language:
+                concept_counts.append(len(org.atomic_language.atoms))
+            
+            # Battle record
+            wins = getattr(org, 'victories', 0)
+            losses = getattr(org, 'defeats', 0)
+            if wins + losses > 0:
+                battle_records.append(wins / (wins + losses))
+        
+        # Build state snapshot
+        state = {
+            'timestamp': time.time(),
+            'population_size': len(organisms),
+            'generation': self.generation_counter,
+            
+            # Fitness distribution
+            'avg_fitness': sum(fitness_values) / len(fitness_values) if fitness_values else 0.5,
+            'max_fitness': max(fitness_values) if fitness_values else 0.5,
+            'min_fitness': min(fitness_values) if fitness_values else 0.5,
+            'fitness_std': self._std(fitness_values) if fitness_values else 0.0,
+            
+            # Developmental distribution
+            'avg_age': sum(ages) / len(ages) if ages else 0.0,
+            'max_age': max(ages) if ages else 0.0,
+            
+            # Conceptual richness
+            'avg_concepts': sum(concept_counts) / len(concept_counts) if concept_counts else 0.0,
+            
+            # Battle competitiveness
+            'avg_win_rate': sum(battle_records) / len(battle_records) if battle_records else 0.5
+        }
+        
+        # Track history
+        self.population_state_history.append(state)
+        if len(self.population_state_history) > self.max_state_history:
+            self.population_state_history = self.population_state_history[-self.max_state_history:]
+        
+        return state
+    
+    def _std(self, values: List[float]) -> float:
+        """Compute standard deviation."""
+        if len(values) < 2:
+            return 0.0
+        mean = sum(values) / len(values)
+        variance = sum((x - mean) ** 2 for x in values) / len(values)
+        return variance ** 0.5
+    
+    def snapshot_organism(self, organism: Any, developmental_stage: float = None):
+        """
+        Take a developmental snapshot of an organism.
+        
+        These snapshots are used by REGRESSED strategy to resurrect
+        organisms at earlier developmental states.
+        
+        Args:
+            organism: The organism to snapshot
+            developmental_stage: 0.0=newborn to 1.0=mature (auto-computed if None)
+        """
+        org_id = getattr(organism, 'id', str(id(organism)))
+        
+        # Compute developmental stage if not provided
+        if developmental_stage is None:
+            age = getattr(organism, 'age', 0)
+            max_expected_age = 1000  # Normalize against expected lifespan
+            developmental_stage = min(1.0, age / max_expected_age)
+        
+        snapshot = {
+            'timestamp': time.time(),
+            'developmental_stage': developmental_stage,
+            'age': getattr(organism, 'age', 0),
+            'fitness': getattr(organism, 'fitness', 0.5),
+            'neural_weights': None,
+            'concepts': {},
+            'traits': {},
+            'config': {}
+        }
+        
+        # Capture neural state
+        if hasattr(organism, 'neural_layer') and organism.neural_layer:
+            try:
+                snapshot['neural_weights'] = organism.neural_layer.get_state()
+            except Exception:
+                pass
+        
+        # Capture concepts
+        if hasattr(organism, 'concepts'):
+            snapshot['concepts'] = dict(organism.concepts)
+        elif hasattr(organism, 'atomic_language') and organism.atomic_language:
+            snapshot['concepts'] = {c: a.strength for c, a in organism.atomic_language.atoms.items()}
+        
+        # Capture traits
+        if hasattr(organism, 'traits'):
+            snapshot['traits'] = dict(organism.traits)
+        
+        # Capture config
+        if hasattr(organism, 'config'):
+            snapshot['config'] = dict(organism.config)
+        
+        # Store
+        if org_id not in self.historical_snapshots:
+            self.historical_snapshots[org_id] = []
+        
+        self.historical_snapshots[org_id].append(snapshot)
+        
+        # Prune old snapshots
+        if len(self.historical_snapshots[org_id]) > self.max_snapshots_per_organism:
+            self.historical_snapshots[org_id] = self.historical_snapshots[org_id][-self.max_snapshots_per_organism:]
+    
+    def get_regressed_snapshot(self, target_stage: float = 0.3) -> Optional[Dict[str, Any]]:
+        """
+        Find a historical snapshot at approximately the target developmental stage.
+        
+        Args:
+            target_stage: Desired developmental stage (0.0-1.0)
+            
+        Returns:
+            Historical snapshot closest to target stage, or None
+        """
+        best_snapshot = None
+        best_distance = float('inf')
+        
+        for org_id, snapshots in self.historical_snapshots.items():
+            for snap in snapshots:
+                stage = snap.get('developmental_stage', 1.0)
+                distance = abs(stage - target_stage)
+                if distance < best_distance:
+                    best_distance = distance
+                    best_snapshot = snap
+        
+        return best_snapshot
+    
+    def get_calibration_target(self) -> Dict[str, float]:
+        """
+        Get target parameters for population-calibrated germination.
+        
+        This looks at the CURRENT BOARD STATE to determine what kind
+        of challengers should be spawned:
+        - If population is strong: spawn slightly weaker (fair challenge)
+        - If population is weak: spawn at similar level (competitive)
+        - If population is stagnant: spawn with novel traits (innovation)
+        """
+        if not self.population_state_history:
+            return {'fitness_target': 0.5, 'mutation_boost': 0.0, 'vigor_modifier': 1.0}
+        
+        current = self.population_state_history[-1]
+        
+        # Compare to historical average
+        if len(self.population_state_history) >= 5:
+            recent_avg = sum(
+                s['avg_fitness'] for s in self.population_state_history[-5:]
+            ) / 5
+        else:
+            recent_avg = current['avg_fitness']
+        
+        # Fitness trend detection
+        fitness_trend = current['avg_fitness'] - recent_avg
+        
+        # Stagnation detection
+        if len(self.population_state_history) >= 10:
+            fitness_variance = self._std([s['avg_fitness'] for s in self.population_state_history[-10:]])
+            is_stagnant = fitness_variance < 0.05
+        else:
+            is_stagnant = False
+        
+        # Calibration logic
+        if current['avg_fitness'] > 0.7:
+            # Strong population - spawn slightly weaker challengers
+            fitness_target = current['avg_fitness'] * 0.8
+            vigor_modifier = 0.9
+            mutation_boost = 0.0
+        elif current['avg_fitness'] < 0.3:
+            # Weak population - spawn at similar level
+            fitness_target = current['avg_fitness']
+            vigor_modifier = 1.0
+            mutation_boost = 0.05
+        else:
+            # Normal population
+            fitness_target = current['avg_fitness'] * 0.9
+            vigor_modifier = 1.0
+            mutation_boost = 0.0
+        
+        # Stagnation override - introduce novelty
+        if is_stagnant:
+            mutation_boost = 0.15
+            vigor_modifier = 1.1
+        
+        return {
+            'fitness_target': fitness_target,
+            'mutation_boost': mutation_boost,
+            'vigor_modifier': vigor_modifier,
+            'is_stagnant': is_stagnant,
+            'current_avg_fitness': current['avg_fitness'],
+            'fitness_trend': fitness_trend
+        }
                 
     def prepare_germination(
         self,
@@ -332,6 +587,10 @@ class GerminationPool:
             self._apply_phoenix_strategy(candidate)
         elif strategy == GerminationStrategy.HYBRID:
             self._apply_hybrid_strategy(candidate)
+        elif strategy == GerminationStrategy.REGRESSED:
+            self._apply_regressed_strategy(candidate)
+        elif strategy == GerminationStrategy.CALIBRATED:
+            self._apply_calibrated_strategy(candidate)
             
         # Apply mutations
         self._apply_mutations(candidate)
@@ -529,7 +788,138 @@ class GerminationPool:
             
         # Take random portions from each temp result
         candidate.mutation_rate = 0.12
+    
+    def _apply_regressed_strategy(self, candidate: GerminationCandidate):
+        """
+        Create organism from an earlier developmental state.
         
+        This uses historical snapshots to resurrect organisms at
+        LESS DEVELOPED stages - younger, weaker versions that must
+        fight their way up again.
+        
+        "What if this champion had to start over from age 100?"
+        """
+        # Determine target developmental stage based on population state
+        calibration = self.get_calibration_target()
+        
+        if calibration.get('current_avg_fitness', 0.5) > 0.6:
+            # Strong population - use earlier snapshot (more challenge)
+            target_stage = 0.2  # Very early development
+        elif calibration.get('is_stagnant', False):
+            # Stagnant - use mid-development for fresh blood
+            target_stage = 0.4
+        else:
+            # Normal - use mid-development
+            target_stage = 0.3
+        
+        snapshot = self.get_regressed_snapshot(target_stage)
+        
+        if not snapshot:
+            # No snapshots available, fall back to nova
+            self._apply_nova_strategy(candidate)
+            return
+        
+        candidate.parent_ids = [f"regressed_from_snapshot"]
+        
+        # Restore from historical snapshot
+        if snapshot.get('neural_weights'):
+            candidate.neural_template = dict(snapshot['neural_weights'])
+        
+        if snapshot.get('concepts'):
+            candidate.concept_seed = dict(snapshot['concepts'])
+        
+        if snapshot.get('config'):
+            candidate.config_template = dict(snapshot['config'])
+        
+        if snapshot.get('traits'):
+            candidate.trait_template = dict(snapshot['traits'])
+        else:
+            # Default traits for young organism
+            candidate.trait_template = {
+                'aggression': 0.3 + random.random() * 0.2,
+                'cooperation': 0.4 + random.random() * 0.2,
+                'adaptability': 0.5 + random.random() * 0.3,  # Young = adaptable
+                'resilience': 0.3 + random.random() * 0.2,
+                'innovation': 0.5 + random.random() * 0.3    # Young = innovative
+            }
+        
+        # Regressed organisms need room to grow
+        candidate.mutation_rate = 0.08
+        candidate.vigor = 0.8  # Slightly weaker (younger)
+        candidate.ancestry_depth = 0  # Fresh start
+        
+        self._emit_event('regressed_germination', {
+            'target_stage': target_stage,
+            'actual_stage': snapshot.get('developmental_stage', 'unknown'),
+            'snapshot_age': snapshot.get('age', 0)
+        })
+    
+    def _apply_calibrated_strategy(self, candidate: GerminationCandidate):
+        """
+        Create organism calibrated to current POPULATION STATE.
+        
+        This is the key population-correlated strategy:
+        - Reads the BOARD STATE (population fitness distribution)
+        - Creates challengers tuned to be competitive but not overwhelming
+        - Adapts based on population health and trends
+        
+        "The tournament spawns challengers matched to the competition level."
+        """
+        calibration = self.get_calibration_target()
+        
+        # Use elite material as base, then calibrate
+        if self.elite_samples:
+            parent_id = random.choice(self.elite_samples)
+            parent = self.genetic_pool.get(parent_id)
+            
+            if parent:
+                candidate.parent_ids = [parent_id]
+                candidate.neural_template = dict(parent.neural_weights or {})
+                candidate.concept_seed = dict(parent.concepts)
+                candidate.config_template = dict(parent.config_atoms)
+                candidate.trait_template = dict(parent.traits)
+        else:
+            # No elites, start from scratch
+            candidate.parent_ids = []
+            candidate.trait_template = {
+                'aggression': 0.5,
+                'cooperation': 0.5,
+                'adaptability': 0.5,
+                'resilience': 0.5,
+                'innovation': 0.5
+            }
+        
+        # Apply calibration adjustments
+        fitness_target = calibration.get('fitness_target', 0.5)
+        current_fitness = calibration.get('current_avg_fitness', 0.5)
+        
+        # Scale traits to approximate fitness target
+        fitness_ratio = fitness_target / max(0.1, current_fitness)
+        for trait in candidate.trait_template:
+            scaled = candidate.trait_template[trait] * fitness_ratio
+            # Add noise to prevent exact clones
+            scaled += random.gauss(0, 0.1)
+            candidate.trait_template[trait] = max(0.0, min(1.0, scaled))
+        
+        # Apply calibration modifiers
+        candidate.mutation_rate = 0.05 + calibration.get('mutation_boost', 0.0)
+        candidate.vigor = calibration.get('vigor_modifier', 1.0)
+        
+        # If stagnant, inject more novelty into concepts
+        if calibration.get('is_stagnant', False):
+            # Add some random concepts
+            novel_concepts = ['adapt', 'evolve', 'transform', 'overcome', 'emerge']
+            for concept in random.sample(novel_concepts, k=min(2, len(novel_concepts))):
+                candidate.concept_seed[concept] = {'strength': random.random()}
+        
+        self._emit_event('calibrated_germination', {
+            'fitness_target': fitness_target,
+            'current_avg_fitness': current_fitness,
+            'vigor': candidate.vigor,
+            'is_stagnant': calibration.get('is_stagnant', False),
+            'fitness_trend': calibration.get('fitness_trend', 0)
+        })
+
     def _crossover_neural(
         self,
         parent1: GeneticMaterial,
@@ -783,6 +1173,12 @@ class GerminationPool:
         """Get statistics about the germination pool"""
         fitness_scores = [m.fitness_score() for m in self.genetic_pool.values()]
         
+        # Get calibration target for current board state
+        calibration = self.get_calibration_target()
+        
+        # Count historical snapshots
+        total_snapshots = sum(len(snaps) for snaps in self.historical_snapshots.values())
+        
         return {
             'genetic_samples': len(self.genetic_pool),
             'elite_count': len(self.elite_samples),
@@ -793,7 +1189,18 @@ class GerminationPool:
             'generation': self.generation_counter,
             'avg_fitness': sum(fitness_scores) / len(fitness_scores) if fitness_scores else 0,
             'max_fitness': max(fitness_scores) if fitness_scores else 0,
-            'strategy_weights': {s.value: w for s, w in self.strategy_weights.items()}
+            'strategy_weights': {s.value: w for s, w in self.strategy_weights.items()},
+            # Population correlation stats
+            'population_state_history_size': len(self.population_state_history),
+            'historical_snapshots': total_snapshots,
+            'organisms_with_snapshots': len(self.historical_snapshots),
+            # Current calibration state
+            'calibration': {
+                'fitness_target': calibration.get('fitness_target', 0.5),
+                'current_avg_fitness': calibration.get('current_avg_fitness', 0.5),
+                'is_stagnant': calibration.get('is_stagnant', False),
+                'vigor_modifier': calibration.get('vigor_modifier', 1.0)
+            }
         }
         
     def advance_generation(self):
@@ -834,7 +1241,15 @@ def integrate_germination_with_highlander(
     Wire the germination pool into the Highlander Protocol.
     
     Returns a callback that should be called after each tournament round.
+    
+    Population-Correlated Features:
+    - Updates population state each round for calibration
+    - Takes periodic snapshots for regression strategy  
+    - Spawns challengers tuned to current board state
     """
+    
+    snapshot_interval = 50  # Take developmental snapshot every N frames
+    frame_counter = [0]  # Mutable counter for closure
     
     def on_organism_eliminated(organism: Any, killer_id: Optional[str] = None):
         """Called when an organism is eliminated"""
@@ -848,11 +1263,31 @@ def integrate_germination_with_highlander(
     def on_champion_crowned(organism: Any, capsule: Any):
         """Called when a champion emerges"""
         germination_pool.add_champion_capsule(capsule)
+    
+    def on_round_complete(organisms: List[Any]):
+        """
+        Called after each tournament round.
+        
+        Updates population state for calibration and takes
+        periodic developmental snapshots.
+        """
+        # Update population state (BOARD CORRELATION)
+        germination_pool.update_population_state(organisms)
+        
+        # Take periodic snapshots for regression strategy
+        frame_counter[0] += 1
+        if frame_counter[0] % snapshot_interval == 0:
+            for org in organisms:
+                germination_pool.snapshot_organism(org)
         
     def check_and_germinate() -> List[Any]:
         """Check if germination is needed and spawn new organisms"""
         current_pop = len(highlander_protocol.organisms)
         needs, count = germination_pool.check_population_needs(current_pop)
+        
+        # Also update population state before germination decision
+        if hasattr(highlander_protocol, 'organisms'):
+            germination_pool.update_population_state(list(highlander_protocol.organisms))
         
         if not needs:
             return []
@@ -878,5 +1313,7 @@ def integrate_germination_with_highlander(
         highlander_protocol.on_elimination_callback = on_organism_eliminated
     if hasattr(highlander_protocol, 'on_champion_callback'):
         highlander_protocol.on_champion_callback = on_champion_crowned
+    if hasattr(highlander_protocol, 'on_round_complete_callback'):
+        highlander_protocol.on_round_complete_callback = on_round_complete
         
     return check_and_germinate
