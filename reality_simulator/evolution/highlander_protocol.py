@@ -488,6 +488,10 @@ class HighlanderProtocol:
                 battles.append(result.to_dict())
                 self.battle_history.append(result)
                 
+                # Limit battle history to prevent memory growth
+                if len(self.battle_history) > 1000:
+                    self.battle_history = self.battle_history[-1000:]
+                
                 # Winner absorbs loser's best traits
                 self._absorb_loser(
                     result.winner_id, organisms.get(result.winner_id),
@@ -983,6 +987,10 @@ class HighlanderProtocol:
         }
         
         self.champion_history.append(champion_data)
+        
+        # Limit champion history
+        if len(self.champion_history) > 100:
+            self.champion_history = self.champion_history[-100:]
         
         # Checkpoint the champion
         capsule = None

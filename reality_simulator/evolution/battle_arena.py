@@ -515,6 +515,11 @@ class BattleArena:
         )
         
         self.battle_history.append(outcome)
+        
+        # Limit history to prevent memory growth
+        if len(self.battle_history) > 500:
+            self.battle_history = self.battle_history[-500:]
+        
         self._emit_battle_event(outcome)
         
         return outcome
