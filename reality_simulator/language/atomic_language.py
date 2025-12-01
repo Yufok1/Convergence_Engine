@@ -727,6 +727,213 @@ class AtomicLanguageSystem:
             if action == 4 and outcome > 0:  # ATTACK
                 self.form_association('strong', 'attack', outcome * 0.2, 'successful_attack')
     
+    # =========================================================================
+    # 🆕 CONCEPT TRADING - Knowledge propagation between organisms
+    # Organisms can teach/learn concepts from each other
+    # This is memetic evolution - useful concepts spread through population
+    # =========================================================================
+    
+    def teach_concept(self, concept_id: str, learner: 'AtomicLanguageSystem', 
+                     teaching_strength: float = 0.5) -> Dict[str, Any]:
+        """
+        Teach a concept to another organism.
+        
+        The TEACHER retains the concept (knowledge is not depleted).
+        The LEARNER acquires or reinforces the concept.
+        
+        This mirrors human knowledge transfer - I can teach you something
+        without losing that knowledge myself.
+        
+        Args:
+            concept_id: The concept to teach
+            learner: The AtomicLanguageSystem of the learning organism
+            teaching_strength: How effectively the concept is transferred (0-1)
+            
+        Returns:
+            Dictionary with teaching results
+        """
+        if concept_id not in self.atoms:
+            return {'success': False, 'reason': 'teacher_lacks_concept'}
+        
+        teacher_atom = self.atoms[concept_id]
+        
+        # Teaching effectiveness depends on:
+        # 1. Teacher's concept strength (can't teach what you barely know)
+        # 2. Teaching strength parameter (relationship quality)
+        # 3. Teacher's usage count (experience with concept)
+        teacher_expertise = min(1.0, teacher_atom.strength * (1 + teacher_atom.usage_count * 0.01))
+        effective_strength = teaching_strength * teacher_expertise * 0.5
+        
+        current_time = time.time()
+        result = {
+            'concept': concept_id,
+            'teacher_id': self.organism_id,
+            'learner_id': learner.organism_id,
+            'teacher_strength': teacher_atom.strength,
+            'effective_transfer': effective_strength
+        }
+        
+        if concept_id in learner.atoms:
+            # Learner already has concept - reinforce it
+            old_strength = learner.atoms[concept_id].strength
+            learner.strengthen_concept(
+                concept_id, 
+                effective_strength * 0.3,  # Smaller boost for reinforcement
+                f"taught_by_{self.organism_id}"
+            )
+            result['action'] = 'reinforced'
+            result['old_strength'] = old_strength
+            result['new_strength'] = learner.atoms[concept_id].strength
+        else:
+            # Learner doesn't have concept - they acquire it
+            learner.acquire_concept(
+                concept_id,
+                source='taught',
+                semantic_frame=teacher_atom.semantic_frame,
+                initial_strength=effective_strength,
+                reason=f"learned_from_{self.organism_id}"
+            )
+            result['action'] = 'acquired'
+            result['new_strength'] = effective_strength
+        
+        # Also transfer top associations (teaching the context, not just the word)
+        top_associations = teacher_atom.get_top_associations(n=3)
+        transferred_associations = []
+        for assoc_concept, assoc_strength in top_associations:
+            if assoc_concept in self.atoms:  # Only transfer if teacher knows target
+                learner.form_association(
+                    concept_id, assoc_concept,
+                    assoc_strength * teaching_strength * 0.3,  # Weaker than direct learning
+                    f"association_from_{self.organism_id}"
+                )
+                transferred_associations.append(assoc_concept)
+        
+        result['transferred_associations'] = transferred_associations
+        
+        # Emit teaching event for causation tracking
+        self._emit_teaching_event(result)
+        
+        # Strengthen teacher's own concept (teaching reinforces knowledge)
+        self.strengthen_concept(concept_id, 0.02, "taught_concept")
+        
+        return result
+    
+    def _emit_teaching_event(self, result: Dict[str, Any]):
+        """Emit event for concept teaching."""
+        if not self.event_emitter:
+            return
+            
+        try:
+            from causation_explorer import Event
+            event = Event(
+                timestamp=time.time(),
+                component='language',
+                event_type='concept_taught',
+                data={
+                    'teacher_id': result['teacher_id'],
+                    'learner_id': result['learner_id'],
+                    'concept': result['concept'],
+                    'action': result['action'],
+                    'teacher_strength': result['teacher_strength'],
+                    'effective_transfer': result['effective_transfer'],
+                    'transferred_associations': result.get('transferred_associations', [])
+                }
+            )
+            self.event_emitter(event)
+        except ImportError:
+            pass
+    
+    def learn_from_observation(self, observed_organism: 'AtomicLanguageSystem',
+                               observed_action: int, observed_outcome: float) -> List[str]:
+        """
+        Learn concepts by observing another organism's behavior.
+        
+        This is social learning - watching what works for others.
+        
+        Args:
+            observed_organism: The organism being observed
+            observed_action: What action they took
+            observed_outcome: What happened (positive/negative)
+            
+        Returns:
+            List of concepts learned/reinforced
+        """
+        learned = []
+        action_concepts = ['rest', 'move', 'eat', 'reproduce', 'attack', 'cooperate']
+        
+        if 0 <= observed_action < len(action_concepts):
+            action_concept = action_concepts[observed_action]
+            
+            # Only learn from successful observations
+            if observed_outcome > 0.3:
+                # Check what concepts the observed organism has strong
+                for concept_id, atom in observed_organism.atoms.items():
+                    if atom.strength > 0.6:  # Strong concepts worth learning
+                        if concept_id not in self.atoms:
+                            # Acquire new concept through observation
+                            self.acquire_concept(
+                                concept_id, 'observed',
+                                semantic_frame=atom.semantic_frame,
+                                initial_strength=0.2,  # Weaker than direct teaching
+                                reason=f"observed_{observed_organism.organism_id}_{action_concept}"
+                            )
+                            learned.append(concept_id)
+                        else:
+                            # Reinforce existing concept
+                            self.strengthen_concept(
+                                concept_id, 0.05,
+                                f"observed_{observed_organism.organism_id}"
+                            )
+                
+                # Learn association between action and outcome
+                self.form_association(
+                    action_concept, 'success',
+                    observed_outcome * 0.2,
+                    f"observed_{observed_organism.organism_id}"
+                )
+        
+        return learned
+    
+    def get_teachable_concepts(self, min_strength: float = 0.6) -> List[Tuple[str, float]]:
+        """
+        Get concepts this organism can effectively teach.
+        
+        Args:
+            min_strength: Minimum concept strength to be teachable
+            
+        Returns:
+            List of (concept_id, strength) tuples for teachable concepts
+        """
+        teachable = []
+        for concept_id, atom in self.atoms.items():
+            if atom.strength >= min_strength and atom.usage_count > 0:
+                # Teachability score: strength * usage experience
+                score = atom.strength * min(1.0, 1 + atom.usage_count * 0.05)
+                teachable.append((concept_id, score))
+        
+        return sorted(teachable, key=lambda x: x[1], reverse=True)
+    
+    def get_learning_priorities(self, population_concepts: Dict[str, float]) -> List[str]:
+        """
+        Get concepts this organism should prioritize learning.
+        
+        Args:
+            population_concepts: Dict of concept_id -> avg_strength in population
+            
+        Returns:
+            List of concept_ids this organism lacks but population values
+        """
+        priorities = []
+        for concept_id, pop_strength in population_concepts.items():
+            if concept_id not in self.atoms:
+                # Don't have it at all
+                priorities.append((concept_id, pop_strength))
+            elif self.atoms[concept_id].strength < pop_strength * 0.5:
+                # Have it but much weaker than population average
+                priorities.append((concept_id, pop_strength - self.atoms[concept_id].strength))
+        
+        return [c for c, _ in sorted(priorities, key=lambda x: x[1], reverse=True)]
+    
     def decay_unused(self, decay_rate: float = 0.01):
         """Apply decay to unused concepts."""
         for atom in self.atoms.values():

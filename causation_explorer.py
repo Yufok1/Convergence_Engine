@@ -1966,14 +1966,17 @@ class CausationExplorer:
                                'butterfly_chat_response',
                                # 🆕 Atomic language events
                                'linguistic_atom_update', 'association_formed', 
-                               'association_updated', 'concept_acquired'}
+                               'association_updated', 'concept_acquired',
+                               # 🆕 Concept trading events
+                               'concept_taught'}
         language_components = {'language', 'butterfly_chat', 'vocabulary', 'communication', 'chat'}
         is_language_event = (event.component.lower() in language_components or 
                            event.event_type in language_event_types)
         
         # Atomic language event detection
         is_atomic_language = event.event_type in {'linguistic_atom_update', 'association_formed', 
-                                                   'association_updated', 'concept_acquired'}
+                                                   'association_updated', 'concept_acquired',
+                                                   'concept_taught'}
         
         # Neural decision event with reasoning
         is_neural_decision = event.event_type == 'neural_decision'
@@ -2051,6 +2054,28 @@ class CausationExplorer:
                 total = event.data.get('total_concepts', 0)
                 parts.append(f"🌱 NEW concept learned: '{concept}' (via {source})")
                 parts.append(f"📚 Total concepts: {total} | Reason: {reason}")
+            
+            # 🆕 Concept trading events
+            elif event.event_type == 'concept_taught':
+                concept = event.data.get('concept', 'unknown')
+                teacher_id = event.data.get('teacher_id', 'unknown')
+                learner_id = event.data.get('learner_id', 'unknown')
+                success = event.data.get('success', False)
+                teaching_strength = event.data.get('teaching_strength', 0)
+                learned_strength = event.data.get('learned_strength', 0)
+                
+                if success:
+                    parts.append(f"📤 Concept TRADED: '{concept}'")
+                    parts.append(f"👨‍🏫 Teacher: {teacher_id} (str={teaching_strength:.2f}) → Learner: {learner_id} (str={learned_strength:.2f})")
+                    
+                    # Track association transfer if present
+                    associations_transferred = event.data.get('associations_transferred', 0)
+                    if associations_transferred > 0:
+                        parts.append(f"🔗 {associations_transferred} associations also transferred")
+                else:
+                    reason = event.data.get('reason', 'unknown')
+                    parts.append(f"❌ Concept teaching FAILED: '{concept}'")
+                    parts.append(f"📝 Reason: {reason}")
             
             elif event.event_type == 'organism_communication':
                 num_orgs = event.data.get('num_organisms', event.data.get('organism_count', 0))
@@ -2133,7 +2158,9 @@ class CausationExplorer:
                                'butterfly_chat_response',
                                # 🆕 Atomic language events
                                'linguistic_atom_update', 'association_formed',
-                               'association_updated', 'concept_acquired'}
+                               'association_updated', 'concept_acquired',
+                               # 🆕 Concept trading events
+                               'concept_taught'}
         language_components = {'language', 'butterfly_chat', 'vocabulary', 'communication', 'chat'}
         
         for event_id, event in self.events.items():
