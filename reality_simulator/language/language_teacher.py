@@ -607,6 +607,48 @@ class LanguageTeacher:
                     except Exception as e:
                         logger.warning(f"[LANGUAGE_TEACHER] Failed to link word '{word}': {e}")
         
+        # ============================================================
+        # 🆕 ATOMIC LANGUAGE INTEGRATION
+        # Update organism's atomic language system with taught concepts
+        # ============================================================
+        if hasattr(organism, 'atomic_language') and organism.atomic_language is not None:
+            try:
+                # Get all words that were assigned in this teaching session
+                assigned_words = []
+                
+                # Strengthen concepts based on situational words
+                if 'situational_words' in dir() and situational_words:
+                    for word in situational_words[:8]:
+                        if word in organism.atomic_language.atoms:
+                            organism.atomic_language.strengthen_concept(
+                                word, 0.05, f"taught_situational_gen{generation}"
+                            )
+                        else:
+                            # Acquire new concept from teaching
+                            organism.atomic_language.acquire_concept(
+                                word, 'taught', 
+                                semantic_frame='situational',
+                                reason=f"language_teacher_gen{generation}"
+                            )
+                        assigned_words.append(word)
+                
+                # Form associations between co-taught concepts
+                if len(assigned_words) >= 2:
+                    for i, word1 in enumerate(assigned_words[:4]):
+                        for word2 in assigned_words[i+1:5]:
+                            if word1 != word2:
+                                organism.atomic_language.form_association(
+                                    word1, word2, 0.3,
+                                    f"co_occurrence_gen{generation}"
+                                )
+                
+                # Decay unused concepts periodically
+                if generation % 10 == 0:
+                    organism.atomic_language.decay_unused(0.005)
+                    
+            except Exception as e:
+                logger.debug(f"[LANGUAGE_TEACHER] Atomic language update failed: {e}")
+        
         # Update statistics
         if words_assigned > 0:
             self.stats['organisms_taught'] += 1
@@ -675,6 +717,30 @@ class LanguageTeacher:
             'discoveries_this_generation': self.discoveries_this_generation,
             'stats': dict(self.stats)
         }
+        
+        # 🆕 DIALECT ANALYSIS: Analyze population-level linguistic patterns
+        if generation % 50 == 0:  # Every 50 generations
+            try:
+                from .atomic_language import DialectAnalyzer
+                
+                # Collect atomic language systems from organisms
+                language_systems = {}
+                for org_id, organism in organisms.items():
+                    if hasattr(organism, 'atomic_language') and organism.atomic_language is not None:
+                        language_systems[org_id] = organism.atomic_language
+                
+                if len(language_systems) >= 3:
+                    analyzer = DialectAnalyzer()
+                    dialect_analysis = analyzer.analyze_dialects(language_systems)
+                    result['dialect_analysis'] = dialect_analysis
+                    
+                    if dialect_analysis.get('num_clusters', 0) > 1:
+                        logger.info(
+                            f"[LANGUAGE_TEACHER] Dialect emergence: {dialect_analysis['num_clusters']} distinct dialects, "
+                            f"diversity={dialect_analysis['diversity']:.2%}"
+                        )
+            except Exception as e:
+                logger.debug(f"[LANGUAGE_TEACHER] Dialect analysis failed: {e}")
         
         # Log periodically
         if generation % 10 == 0:

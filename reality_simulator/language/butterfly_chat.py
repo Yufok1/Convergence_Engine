@@ -699,3 +699,150 @@ class ButterflyChatRouter:
             })
         
         return event_ids
+
+    # =========================================================================
+    # 🆕 ATOMIC LANGUAGE INTEGRATION
+    # Query organisms' linguistic atoms for deeper understanding
+    # =========================================================================
+    
+    def get_organism_concepts(self, organism_id: str, top_k: int = 10) -> Dict[str, Any]:
+        """
+        Get the top concepts for a specific organism.
+        
+        Args:
+            organism_id: ID of the organism to query
+            top_k: Number of top concepts to return
+            
+        Returns:
+            Dictionary with concept information
+        """
+        if organism_id not in self.organisms:
+            return {'error': f'Organism {organism_id} not found'}
+        
+        organism = self.organisms[organism_id]
+        
+        if not hasattr(organism, 'atomic_language') or organism.atomic_language is None:
+            return {'error': f'Organism {organism_id} has no atomic language system'}
+        
+        # Get activated concepts with default VP state
+        concepts = organism.get_activated_concepts((0.5, 0.5), top_k=top_k)
+        
+        return {
+            'organism_id': organism_id,
+            'total_concepts': len(organism.atomic_language.atoms),
+            'top_concepts': [{'concept': c, 'activation': float(a)} for c, a in concepts],
+            'dialect_signature': organism.get_dialect_signature().tolist()
+        }
+    
+    def get_population_linguistic_stats(self) -> Dict[str, Any]:
+        """
+        Get linguistic statistics across the population.
+        
+        Returns:
+            Dictionary with population-level language stats
+        """
+        stats = {
+            'total_organisms': len(self.organisms),
+            'organisms_with_atomic_language': 0,
+            'avg_concepts_per_organism': 0,
+            'total_unique_concepts': set(),
+            'concept_frequency': defaultdict(int)
+        }
+        
+        concept_counts = []
+        
+        for org_id, organism in self.organisms.items():
+            if hasattr(organism, 'atomic_language') and organism.atomic_language is not None:
+                stats['organisms_with_atomic_language'] += 1
+                concept_counts.append(len(organism.atomic_language.atoms))
+                
+                for concept_id in organism.atomic_language.atoms.keys():
+                    stats['total_unique_concepts'].add(concept_id)
+                    stats['concept_frequency'][concept_id] += 1
+        
+        if concept_counts:
+            stats['avg_concepts_per_organism'] = sum(concept_counts) / len(concept_counts)
+        
+        stats['total_unique_concepts'] = len(stats['total_unique_concepts'])
+        
+        # Convert defaultdict to regular dict and get top 20
+        freq_sorted = sorted(stats['concept_frequency'].items(), key=lambda x: x[1], reverse=True)
+        stats['top_concepts'] = freq_sorted[:20]
+        del stats['concept_frequency']  # Too large
+        
+        return stats
+    
+    def explain_organism_dialect(self, organism_id: str) -> Dict[str, Any]:
+        """
+        Get a detailed explanation of an organism's linguistic development.
+        
+        This is what Butterfly Chat uses to explain WHY an organism
+        developed its particular "dialect".
+        
+        Args:
+            organism_id: ID of the organism
+            
+        Returns:
+            Detailed dialect explanation
+        """
+        if organism_id not in self.organisms:
+            return {'error': f'Organism {organism_id} not found'}
+        
+        organism = self.organisms[organism_id]
+        
+        if not hasattr(organism, 'atomic_language') or organism.atomic_language is None:
+            return {'error': f'Organism {organism_id} has no atomic language system'}
+        
+        als = organism.atomic_language
+        
+        # Get concept graph
+        graph = organism.get_concept_graph()
+        
+        # Find strongest associations
+        strongest_associations = []
+        for edge in graph['edges']:
+            strongest_associations.append({
+                'from': edge['source'],
+                'to': edge['target'],
+                'strength': edge['strength'],
+                'reason': edge['reason']
+            })
+        strongest_associations.sort(key=lambda x: abs(x['strength']), reverse=True)
+        
+        # Get concepts by source (innate vs learned)
+        concepts_by_source = defaultdict(list)
+        for concept_id, atom in als.atoms.items():
+            concepts_by_source[atom.source].append({
+                'concept': concept_id,
+                'strength': atom.strength,
+                'usage_count': atom.usage_count
+            })
+        
+        # Get VP affinities
+        vp_profile = {
+            'high_vitality': [],
+            'low_vitality': [],
+            'high_pleasure': [],
+            'low_pleasure': []
+        }
+        for concept_id, atom in als.atoms.items():
+            if atom.vp_vitality_affinity > 0.7:
+                vp_profile['high_vitality'].append(concept_id)
+            elif atom.vp_vitality_affinity < 0.3:
+                vp_profile['low_vitality'].append(concept_id)
+            if atom.vp_pleasure_affinity > 0.7:
+                vp_profile['high_pleasure'].append(concept_id)
+            elif atom.vp_pleasure_affinity < 0.3:
+                vp_profile['low_pleasure'].append(concept_id)
+        
+        return {
+            'organism_id': organism_id,
+            'total_concepts': len(als.atoms),
+            'total_associations': len(graph['edges']),
+            'concepts_by_source': dict(concepts_by_source),
+            'strongest_associations': strongest_associations[:10],
+            'vp_profile': vp_profile,
+            'dialect_signature': organism.get_dialect_signature().tolist(),
+            'creation_time': als.creation_time
+        }
+
