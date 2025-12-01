@@ -45,7 +45,10 @@ The CRA's system prompt now includes comprehensive documentation of:
 
 ### 2. Configuration Guardrails
 
-Added **13 new config settings** to `CONFIG_GUARDRAILS` for CRA control:
+Added **40+ new config settings** to `CONFIG_GUARDRAILS` for CRA control:
+- **13 original** language teacher + knowledge web settings
+- **14 quality control** settings
+- **13 relationship learning** settings ⭐ NEW
 
 #### Language Teacher Settings (10 settings):
 - `/neural/language_model/teacher/enabled` (bool)
@@ -64,6 +67,37 @@ Added **13 new config settings** to `CONFIG_GUARDRAILS` for CRA control:
 - `/neural/language_model/knowledge_web/embedding_dim` (16-256, default: 64)
 - `/neural/language_model/knowledge_web/max_concepts` (100-1000, default: 500)
 
+#### Quality Control Settings ⭐ NEW (14 settings):
+- `/neural/language_model/knowledge_web/quality_control/enabled` (bool, default: true)
+- `/neural/language_model/knowledge_web/quality_control/min_discovery_count` (1-10, default: 3)
+- `/neural/language_model/knowledge_web/quality_control/min_confidence_threshold` (0.0-1.0, default: 0.3)
+- `/neural/language_model/knowledge_web/quality_control/confidence_growth_rate` (0.0-0.01, default: 0.0005)
+- `/neural/language_model/knowledge_web/quality_control/exploration_start` (0.0-1.0, default: 0.2)
+- `/neural/language_model/knowledge_web/quality_control/exploration_end` (0.0-1.0, default: 0.05)
+- `/neural/language_model/knowledge_web/quality_control/exploration_decay_generations` (100-5000, default: 1000)
+- `/neural/language_model/knowledge_web/quality_control/max_discoveries_per_generation` (1-50, default: 10)
+- `/neural/language_model/knowledge_web/quality_control/vp_boost_exploration` (bool, default: true)
+- `/neural/language_model/knowledge_web/quality_control/vp_boost_threshold` (0.0-1.0, default: 0.7)
+- `/neural/language_model/knowledge_web/quality_control/review_frequency` (10-500, default: 100)
+- `/neural/language_model/knowledge_web/quality_control/pruning_confidence_threshold` (0.0-1.0, default: 0.2)
+- `/neural/language_model/knowledge_web/quality_control/pruning_unused_generations` (10-500, default: 100)
+- `/neural/language_model/knowledge_web/quality_control/pruning_failure_rate` (0.0-1.0, default: 0.7)
+
+#### Relationship Learning Settings (13 settings) ⭐ NEW:
+- `/neural/language_model/relationship_learning/enabled` (true/false, default: true)
+- `/neural/language_model/relationship_learning/quality_evaluation/coherent_threshold` (0.0-1.0, default: 0.5)
+- `/neural/language_model/relationship_learning/quality_evaluation/garbled_threshold` (0.0-1.0, default: 0.2)
+- `/neural/language_model/relationship_learning/quality_evaluation/unk_ratio_threshold` (0.0-1.0, default: 0.3)
+- `/neural/language_model/relationship_learning/quality_evaluation/min_word_count` (1-10, default: 2)
+- `/neural/language_model/relationship_learning/quality_evaluation/min_word_count_for_evaluation` (2-10, default: 3)
+- `/neural/language_model/relationship_learning/quality_evaluation/max_word_count` (10-50, default: 20)
+- `/neural/language_model/relationship_learning/quality_evaluation/relationship_strength_threshold` (0.0-1.0, default: 0.5)
+- `/neural/language_model/relationship_learning/semantic_guidance/enabled` (true/false, default: true)
+- `/neural/language_model/relationship_learning/semantic_guidance/min_strength_threshold` (0.0-1.0, default: 0.7)
+- `/neural/language_model/relationship_learning/semantic_guidance/semantic_boost` (0.0-1.0, default: 0.2)
+- `/neural/language_model/relationship_learning/semantic_guidance/high_strength_boost` (0.0-1.0, default: 0.1)
+- `/neural/language_model/relationship_learning/semantic_guidance/max_similar_words` (1-10, default: 5)
+
 ### 3. Configuration Control Section
 
 Added comprehensive configuration control documentation in the CRA prompt:
@@ -79,7 +113,7 @@ The CRA can now:
 
 1. **Understand the System**: Knows about all 14 dimensions of situational awareness, how words are scored, and how the system adapts
 
-2. **Control Configuration**: Can manipulate all 13 new language teacher and knowledge web settings via `[[CONFIG_UPDATE: {...}]]`
+2. **Control Configuration**: Can manipulate all 40+ language teacher, knowledge web, quality control, and relationship learning settings via `[[CONFIG_UPDATE: {...}]]`
 
 3. **Monitor Performance**: Knows what metrics to track after config changes:
    - Vocabulary growth rate
@@ -141,12 +175,40 @@ The CRA can now execute commands like:
 
 ## Summary
 
-The CRA is now fully integrated with the Dynamic Multi-Dimensional Linguistic Awareness System. It has:
+The CRA is now fully integrated with the Dynamic Multi-Dimensional Linguistic Awareness System and Quality-Controlled Recursive Expansion. It has:
 - ✅ Complete knowledge of all 14 dimensions
-- ✅ Full control over all 13 config settings
-- ✅ Understanding of how the system works
+- ✅ Full control over all 27 config settings (13 original + 14 quality control)
+- ✅ Understanding of how the system works, including three-phase learning curve
 - ✅ Ability to monitor and recommend adjustments
 - ✅ Examples and guidelines for effective use
+- ✅ Quality control system awareness (prevents "yarn ball", enables causation expansion)
 
-The CRA can now help users understand, configure, and optimize the linguistic awareness system for better organism language learning and communication.
+The CRA can now help users understand, configure, and optimize the linguistic awareness system for better organism language learning and communication, with full control over relationship discovery, validation, and convergence mechanisms.
+
+## Quality Control System Integration ⭐ NEW
+
+The CRA now has complete awareness of the Quality-Controlled Recursive Expansion System:
+
+### What CRA Knows
+- **Three-Phase Learning Curve**: Early exploration → Mid validation → Late convergence
+- **Validation Mechanisms**: Semantic frame compatibility + context coherence
+- **Quality Feedback**: Success/failure tracking strengthens/weakens relationships
+- **Convergence Mechanisms**: Periodic quality review, pruning criteria
+- **Seeded Protection**: Base concepts never pruned
+
+### What CRA Can Control
+- All 14 quality control parameters via `[[CONFIG_UPDATE: {...}]]`
+- Exploration rates (start, end, decay speed)
+- Confidence thresholds (initial, growth rate)
+- Discovery caps and validation requirements
+- VP-aware exploration boost
+- Pruning criteria and review frequency
+
+### Example Use Cases
+- **Increase Exploration**: Boost `exploration_start` to 0.3 for more relationship discovery
+- **Stricter Validation**: Raise `min_confidence_threshold` to 0.5 for higher quality
+- **Faster Convergence**: Reduce `exploration_decay_generations` to 500
+- **More Discoveries**: Increase `max_discoveries_per_generation` to 20
+
+See `QUALITY_CONTROL_SYSTEM.md` for complete documentation.
 

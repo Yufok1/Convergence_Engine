@@ -199,6 +199,14 @@
       },
       "curriculum": {
         "enabled": true,
+        "ml_quality": {
+          "enabled": true,
+          "high_quality_threshold": 0.6,
+          "low_quality_threshold": 0.3,
+          "max_sequence_length": 64,
+          "min_sequence_length": 8,
+          "sequence_length_step": 2
+        },
         "sequence_lengths": {
           "stage_0": 8,
           "stage_1": 16,
@@ -235,6 +243,44 @@
           "<END>",
           "<VP_GATE>"
         ]
+      },
+      "knowledge_web": {
+        "quality_control": {
+          "enabled": true,
+          "min_discovery_count": 3,
+          "min_confidence_threshold": 0.3,
+          "confidence_growth_rate": 0.0005,
+          "exploration_start": 0.2,
+          "exploration_end": 0.05,
+          "exploration_decay_generations": 1000,
+          "validation_required": true,
+          "max_discoveries_per_generation": 10,
+          "vp_boost_exploration": true,
+          "vp_boost_threshold": 0.7,
+          "review_frequency": 100,
+          "pruning_confidence_threshold": 0.2,
+          "pruning_unused_generations": 100,
+          "pruning_failure_rate": 0.7
+        }
+      },
+      "relationship_learning": {
+        "enabled": true,
+        "quality_evaluation": {
+          "coherent_threshold": 0.5,
+          "garbled_threshold": 0.2,
+          "unk_ratio_threshold": 0.3,
+          "min_word_count": 2,
+          "min_word_count_for_evaluation": 3,
+          "max_word_count": 20,
+          "relationship_strength_threshold": 0.5
+        },
+        "semantic_guidance": {
+          "enabled": true,
+          "min_strength_threshold": 0.7,
+          "semantic_boost": 0.2,
+          "high_strength_boost": 0.1,
+          "max_similar_words": 5
+        }
       }
     },
     "optimization": {
@@ -252,13 +298,14 @@
       "survival": 0.8
     },
     "training": {
-      "batch_size": 96,
+      "batch_size": 32,
       "enabled": true,
       "epsilon": 0.95,
       "epsilon_decay": 0.99,
       "epsilon_end": 0.01,
       "epsilon_start": 0.95,
       "gamma": 0.995,
+      "language_reward_scaling": 0.2,
       "learning_rate": 0.005,
       "memory_size": 20000,
       "update_frequency": 1
@@ -314,7 +361,8 @@
       "algorithm": "hdbscan",
       "enabled": true,
       "min_cluster_size": 6,
-      "min_samples": 1
+      "min_samples": 1,
+      "use_neural_embeddings": true
     },
     "concept_tracking": {
       "enabled": true,

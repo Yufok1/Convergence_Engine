@@ -107,7 +107,7 @@ class ButterflyChatRouter:
             prompt_tokens = []
             self._log_error("TOKENIZATION_WARNING", "Vocabulary not available", {
                 "words": words,
-                "fallback": "Empty token list"
+                "result": "Empty token list (no vocabulary to encode)"
             })
 
         # Select organisms based on strategy
@@ -143,16 +143,32 @@ class ButterflyChatRouter:
             try:
                 # Prefer a generate_tokens method, otherwise try a 'respond' callable
                 if hasattr(organism, 'generate_tokens'):
+                    # Calculate adaptive max_length based on organism experience
+                    experience_count = len(organism.experience_buffer) if hasattr(organism, 'experience_buffer') else 0
+                    vocab_size = self.vocabulary.vocab_size if self.vocabulary else 100
+                    
+                    # Adaptive max_length: shorter sequences early, scale up as network learns
+                    if experience_count < 10:
+                        adaptive_max_length = min(5, max(3, vocab_size // 8))
+                    elif experience_count < 50:
+                        adaptive_max_length = min(10, max(5, vocab_size // 5))
+                    elif experience_count < 100:
+                        adaptive_max_length = min(20, max(10, vocab_size // 3))
+                    else:
+                        adaptive_max_length = 50  # Full length when experienced
+                    
                     self._log_debug("STEP_4", f"Generating tokens for organism {org_id}", {
                         "method": "generate_tokens",
                         "has_context_memory": context_memory is not None,
                         "vp_value": vp_value,
-                        "organism_fitness": float(getattr(organism, 'fitness', 0.0))
+                        "organism_fitness": float(getattr(organism, 'fitness', 0.0)),
+                        "experience_count": experience_count,
+                        "adaptive_max_length": adaptive_max_length
                     })
                     # FIXED: Pass context_memory as first argument (required), then optional params
                     response_tokens = organism.generate_tokens(
                         context_memory=context_memory,
-                        max_length=50,
+                        max_length=adaptive_max_length,
                         vp_value=vp_value,
                         temperature=1.0
                     )
@@ -162,8 +178,7 @@ class ButterflyChatRouter:
                     })
                 elif hasattr(organism, 'respond'):
                     self._log_debug("STEP_4", f"Using respond method for {org_id}", {
-                        "method": "respond",
-                        "fallback": True
+                        "method": "respond"
                     })
                     # respond may accept text
                     response_text = organism.respond(message)
@@ -179,37 +194,26 @@ class ButterflyChatRouter:
                 response_words = self.vocabulary.decode(response_tokens, skip_special=True) if self.vocabulary else [str(t) for t in response_tokens]
                 response_text = ' '.join(response_words) if isinstance(response_words, list) else str(response_words)
                 
-                # If response is empty, try to learn from the interaction and use fallback words
+                # Learn new words from user message (vocabulary expansion)
+                # NO FALLBACKS - organisms must generate their own responses
+                if self.vocabulary and words:
+                    for word in words:
+                        if word not in self.vocabulary.word_to_id:
+                            self.vocabulary.add_word(word)
+                            self._log_debug("STEP_4", f"Learned new word: {word}", {
+                                "organism_id": org_id,
+                                "word": word,
+                                "vocab_size": self.vocabulary.vocab_size
+                            })
+                
+                # If response is empty, that's fine - organism couldn't generate yet
+                # NO FALLBACKS - we want real organism responses, not automated fake ones
                 if not response_text or response_text.strip() == '':
-                    # Extract words from user message to add to vocabulary
-                    if self.vocabulary and words:
-                        for word in words:
-                            if word not in self.vocabulary.word_to_id:
-                                self.vocabulary.add_word(word)
-                                self._log_debug("STEP_4", f"Learned new word: {word}", {
-                                    "organism_id": org_id,
-                                    "word": word,
-                                    "vocab_size": self.vocabulary.vocab_size
-                                })
-                    
-                    # If still empty, use a fallback response based on organism state
-                    if not response_text or response_text.strip() == '':
-                        # Generate a simple fallback response using vocabulary words
-                        fallback_words = []
-                        if self.vocabulary:
-                            # Try to use words that exist in vocabulary
-                            available_words = [w for w in self.vocabulary.word_to_id.keys() 
-                                             if w not in ['<PAD>', '<UNK>', '<START>', '<END>', '<VP_GATE>']]
-                            if available_words:
-                                # Use a few random words from vocabulary as fallback
-                                import random
-                                fallback_words = random.sample(available_words, min(3, len(available_words)))
-                                response_text = ' '.join(fallback_words)
-                                self._log_debug("STEP_4", f"Using fallback response for {org_id}", {
-                                    "organism_id": org_id,
-                                    "fallback_words": fallback_words,
-                                    "vocab_size": self.vocabulary.vocab_size
-                                })
+                    self._log_debug("STEP_4", f"Empty response from {org_id} (organism learning)", {
+                        "organism_id": org_id,
+                        "token_count": len(response_tokens),
+                        "note": "Organism will learn to generate responses as it gains experience"
+                    })
                 
                 confidence = self._calculate_confidence(response_tokens)
                 fitness = float(getattr(organism, 'fitness', 0.0))
@@ -445,7 +449,7 @@ class ButterflyChatRouter:
     def _aggregate_responses(self, organism_responses: List[Dict[str, Any]]) -> str:
         if not organism_responses:
             self._log_error("AGGREGATION_ERROR", "No organism responses to aggregate", {})
-            return "<no response>"
+            return ""  # Empty response - organisms couldn't generate yet
 
         weighted_responses = []
         total_weight = 0.0
@@ -658,28 +662,33 @@ class ButterflyChatRouter:
                 "event_type": "butterfly_chat_message"
             })
 
-            # Response events
+            # Only emit response events for very high-quality responses (quality over quantity)
+            # Match neural decision event selectivity - only significant responses
             for resp in organism_responses:
-                response_event = Event(
-                    timestamp=time.time(),
-                    component='butterfly_chat',
-                    event_type='butterfly_chat_response',
-                    data={
-                        'organism_id': resp.get('organism_id'), 
-                        'response': resp.get('response'), 
-                        'tokens': resp.get('tokens'), 
-                        'confidence': resp.get('confidence'), 
-                        'fitness': resp.get('fitness')
-                    }
-                )
-                self.event_emitter(response_event)
-                event_ids.append(response_event.event_id)
-                
-                self._log_debug("STEP_6", f"Response Event Emitted for {resp.get('organism_id')}", {
-                    "event_id": response_event.event_id,
-                    "event_type": "butterfly_chat_response",
-                    "organism_id": resp.get('organism_id')
-                })
+                confidence = resp.get('confidence', 0.0)
+                fitness = resp.get('fitness', 0.0)
+                # Much higher threshold - only emit for very high quality (both must be high)
+                if confidence > 0.7 and fitness > 0.7:
+                    response_event = Event(
+                        timestamp=time.time(),
+                        component='butterfly_chat',
+                        event_type='butterfly_chat_response',
+                        data={
+                            'organism_id': resp.get('organism_id'), 
+                            'response': resp.get('response'), 
+                            'tokens': resp.get('tokens'), 
+                            'confidence': confidence,
+                            'fitness': fitness
+                        }
+                    )
+                    self.event_emitter(response_event)
+                    event_ids.append(response_event.event_id)
+                    
+                    self._log_debug("STEP_6", f"Response Event Emitted for {resp.get('organism_id')}", {
+                        "event_id": response_event.event_id,
+                        "event_type": "butterfly_chat_response",
+                        "organism_id": resp.get('organism_id')
+                    })
         except ImportError:
             logger.warning("CausationExplorer not available, skipping event emission")
         except Exception as e:

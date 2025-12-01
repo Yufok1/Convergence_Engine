@@ -30,10 +30,16 @@ SKLEARN_AVAILABLE = False
 try:
     from sklearn.cluster import KMeans, DBSCAN
     from sklearn.ensemble import IsolationForest
-    from sklearn.neighbors import LocalOutlierFactor
+    from sklearn.neighbors import LocalOutlierFactor, NearestNeighbors, KNeighborsClassifier
     from sklearn.decomposition import PCA
     from sklearn.manifold import TSNE
     from sklearn.preprocessing import StandardScaler
+    from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
+    from sklearn.feature_selection import SelectKBest, mutual_info_classif, f_classif
+    from sklearn.metrics import (
+        silhouette_score, adjusted_rand_score, mutual_info_score,
+        accuracy_score, precision_score, recall_score
+    )
     SKLEARN_AVAILABLE = True
     
     # HDBSCAN is a separate package but commonly used with sklearn
@@ -138,13 +144,17 @@ class PopulationClusterer:
         self.n_clusters = self.config.get('n_clusters', 5)  # For KMeans
         self.scaler = StandardScaler() if SKLEARN_AVAILABLE else None
         self._last_result: Optional[ClusteringResult] = None
+        # Integration 1: Neural-ML Symbiosis - use neural embeddings for clustering
+        self.use_neural_embeddings = self.config.get('use_neural_embeddings', False)
     
     def extract_features(self, organisms: Dict[str, Any], 
                         context_memory: Optional[Any] = None) -> Tuple[np.ndarray, List[str]]:
         """
         Extract feature vectors from organisms.
         
-        Features include:
+        Integration 1: Neural-ML Symbiosis - can use neural embeddings instead of behavioral features.
+        
+        Features include (if use_neural_embeddings=False):
         - Phenotype traits (trait_0 through trait_9)
         - Fitness value
         - Resources (if available)
@@ -153,12 +163,27 @@ class PopulationClusterer:
           - Vocabulary size (normalized)
           - Communication activity (normalized)
           - Linguistic connections (normalized)
+        
+        If use_neural_embeddings=True and organism is NeuralOrganism:
+        - 64-dim semantic embedding from fc2 hidden state
         """
         organism_ids = list(organisms.keys())
         features = []
         
         for org_id in organism_ids:
             org = organisms[org_id]
+            
+            # Integration 1: Try neural embedding first if enabled
+            if self.use_neural_embeddings:
+                # Check if organism is NeuralOrganism and has embedding method
+                if hasattr(org, 'get_language_embedding'):
+                    embedding = org.get_language_embedding(context_memory)
+                    if embedding is not None and len(embedding) > 0:
+                        # Use neural embedding (64-dim)
+                        features.append(embedding)
+                        continue
+            
+            # Fallback to behavioral features (original implementation)
             feature_vec = []
             
             # Extract phenotype traits
@@ -596,6 +621,58 @@ class MLAnalyzer:
         self.reduction_enabled = reduction_config.get('enabled', True)
         self.concept_tracking_enabled = concept_config.get('enabled', True)
         
+        # NEW: Language analysis configuration
+        language_config = self.config.get('language_analysis', {})
+        self.language_analysis_enabled = language_config.get('enabled', True)
+        self.tfidf_enabled = language_config.get('tfidf', {}).get('enabled', True)
+        self.nearest_neighbors_enabled = language_config.get('nearest_neighbors', {}).get('enabled', True)
+        self.feature_selection_enabled = language_config.get('feature_selection', {}).get('enabled', False)
+        self.metrics_enabled = language_config.get('metrics', {}).get('enabled', True)
+        
+        # Initialize language analysis components
+        if SKLEARN_AVAILABLE and self.language_analysis_enabled:
+            # TF-IDF vectorizer for vocabulary analysis
+            if self.tfidf_enabled:
+                self.tfidf_vectorizer = TfidfVectorizer(
+                    max_features=language_config.get('tfidf', {}).get('max_features', 1000),
+                    ngram_range=tuple(language_config.get('tfidf', {}).get('ngram_range', [1, 2])),
+                    min_df=language_config.get('tfidf', {}).get('min_df', 1),
+                    max_df=language_config.get('tfidf', {}).get('max_df', 0.95)
+                )
+                self.count_vectorizer = CountVectorizer(
+                    max_features=language_config.get('tfidf', {}).get('max_features', 1000),
+                    ngram_range=tuple(language_config.get('tfidf', {}).get('ngram_range', [1, 2]))
+                )
+            else:
+                self.tfidf_vectorizer = None
+                self.count_vectorizer = None
+            
+            # Nearest Neighbors for semantic similarity
+            if self.nearest_neighbors_enabled:
+                nn_config = language_config.get('nearest_neighbors', {})
+                self.nearest_neighbors = NearestNeighbors(
+                    n_neighbors=nn_config.get('n_neighbors', 5),
+                    metric=nn_config.get('metric', 'cosine'),
+                    algorithm=nn_config.get('algorithm', 'auto')
+                )
+            else:
+                self.nearest_neighbors = None
+            
+            # Feature selection
+            if self.feature_selection_enabled:
+                fs_config = language_config.get('feature_selection', {})
+                self.feature_selector = SelectKBest(
+                    score_func=mutual_info_classif if fs_config.get('method', 'mutual_info') == 'mutual_info' else f_classif,
+                    k=fs_config.get('k', 10)
+                )
+            else:
+                self.feature_selector = None
+        else:
+            self.tfidf_vectorizer = None
+            self.count_vectorizer = None
+            self.nearest_neighbors = None
+            self.feature_selector = None
+        
         # Last analysis results
         self._last_analysis: Dict[str, Any] = {}
         self._last_analysis_time: float = 0
@@ -714,10 +791,250 @@ class MLAnalyzer:
         else:
             results['reduction'] = None
         
+        # NEW: Semantic Analysis - Analyze language patterns, word co-occurrence, semantic clusters
+        if context_memory and hasattr(context_memory, 'node_word_associations'):
+            semantic_analysis = self._analyze_semantic_patterns(organisms, context_memory)
+            results['semantic_analysis'] = semantic_analysis
+        else:
+            results['semantic_analysis'] = None
+        
         self._last_analysis = results
         self._last_analysis_time = current_time
         
         return results
+    
+    def _analyze_semantic_patterns(self, organisms: Dict[str, Any], context_memory: Any) -> Dict[str, Any]:
+        """
+        Analyze semantic patterns: word co-occurrence, semantic clusters, concept formation.
+        
+        Enhanced with TF-IDF, Nearest Neighbors, and quality metrics.
+        """
+        if not context_memory or not hasattr(context_memory, 'node_word_associations'):
+            return None
+        
+        # Get Linguistic Knowledge Web if available
+        knowledge_web = None
+        if hasattr(context_memory, 'knowledge_web'):
+            knowledge_web = context_memory.knowledge_web
+        elif hasattr(context_memory, 'language_teacher') and hasattr(context_memory.language_teacher, 'knowledge_web'):
+            knowledge_web = context_memory.language_teacher.knowledge_web
+        
+        if not knowledge_web:
+            return None
+        
+        # Build word-organism matrix and vocabulary strings for TF-IDF
+        organism_ids = list(organisms.keys())
+        word_organism_matrix = {}  # word -> set of organism_ids
+        organism_vocabularies = []  # List of space-separated word strings for each organism
+        
+        for org_id in organism_ids:
+            org_id_int = hash(org_id) if isinstance(org_id, str) else org_id
+            words = list(context_memory.node_word_associations.get(org_id_int, set()))
+            organism_vocabularies.append(' '.join(words))
+            
+            for word in words:
+                if word not in word_organism_matrix:
+                    word_organism_matrix[word] = set()
+                word_organism_matrix[word].add(org_id)
+        
+        # NEW: TF-IDF Analysis (if enabled and sklearn available)
+        tfidf_results = None
+        important_words = []
+        if SKLEARN_AVAILABLE and self.tfidf_enabled and self.tfidf_vectorizer and len(organism_vocabularies) > 0:
+            try:
+                # Fit TF-IDF on organism vocabularies
+                tfidf_matrix = self.tfidf_vectorizer.fit_transform(organism_vocabularies)
+                feature_names = self.tfidf_vectorizer.get_feature_names_out()
+                
+                # Get mean TF-IDF scores across all organisms (word importance)
+                mean_tfidf = np.array(tfidf_matrix.mean(axis=0)).flatten()
+                word_importance = list(zip(feature_names, mean_tfidf))
+                word_importance.sort(key=lambda x: x[1], reverse=True)
+                important_words = [{'word': word, 'tfidf_score': float(score)} for word, score in word_importance[:20]]
+                
+                # Count vectorizer for raw frequencies
+                count_matrix = self.count_vectorizer.fit_transform(organism_vocabularies)
+                total_counts = np.array(count_matrix.sum(axis=0)).flatten()
+                count_feature_names = self.count_vectorizer.get_feature_names_out()
+                word_counts = dict(zip(count_feature_names, total_counts))
+                
+                tfidf_results = {
+                    'vocabulary_size': len(feature_names),
+                    'top_important_words': important_words[:10],
+                    'word_frequencies': {k: int(v) for k, v in list(word_counts.items())[:20]},
+                    'ngram_range': self.tfidf_vectorizer.ngram_range
+                }
+            except Exception as e:
+                logger.warning(f"[ML] TF-IDF analysis failed: {e}")
+                tfidf_results = None
+        
+        # Analyze word co-occurrence (words that appear together) - keep basic version
+        word_cooccurrence = {}
+        for org_id in organism_ids:
+            org_id_int = hash(org_id) if isinstance(org_id, str) else org_id
+            words = list(context_memory.node_word_associations.get(org_id_int, set()))
+            # Count co-occurrences
+            for i, word1 in enumerate(words):
+                for word2 in words[i+1:]:
+                    pair = tuple(sorted([word1, word2]))
+                    word_cooccurrence[pair] = word_cooccurrence.get(pair, 0) + 1
+        
+        # NEW: Nearest Neighbors for semantic similarity (if enabled)
+        similarity_results = None
+        if SKLEARN_AVAILABLE and self.nearest_neighbors_enabled and self.nearest_neighbors and tfidf_results:
+            try:
+                # Use TF-IDF vectors for similarity search
+                if 'tfidf_matrix' in locals() and tfidf_matrix.shape[0] > 1:
+                    self.nearest_neighbors.fit(tfidf_matrix)
+                    
+                    # Find similar organisms for each organism
+                    similar_organisms = {}
+                    for i, org_id in enumerate(organism_ids[:min(10, len(organism_ids))]):  # Limit to first 10 for performance
+                        distances, indices = self.nearest_neighbors.kneighbors(tfidf_matrix[i:i+1], return_distance=True)
+                        similar_orgs = [
+                            {
+                                'organism_id': organism_ids[idx],
+                                'similarity': float(1.0 - dist) if self.nearest_neighbors.metric == 'cosine' else float(1.0 / (1.0 + dist))
+                            }
+                            for dist, idx in zip(distances[0][1:], indices[0][1:])  # Skip self (first result)
+                        ]
+                        similar_organisms[org_id] = similar_orgs[:5]  # Top 5 similar
+                    
+                    similarity_results = {
+                        'similarity_metric': self.nearest_neighbors.metric,
+                        'n_neighbors': self.nearest_neighbors.n_neighbors,
+                        'similar_organisms': similar_organisms
+                    }
+            except Exception as e:
+                logger.warning(f"[ML] Nearest Neighbors analysis failed: {e}")
+                similarity_results = None
+        
+        # Find semantic clusters (words with strong semantic relationships)
+        semantic_clusters = []
+        if knowledge_web:
+            # Group words by semantic similarity
+            processed_words = set()
+            for word in word_organism_matrix.keys():
+                if word in processed_words:
+                    continue
+                # Find semantically related words
+                similar_words = knowledge_web.get_similar_words(word, min_strength=0.6)
+                cluster_words = [w for w in similar_words if w in word_organism_matrix]
+                if len(cluster_words) > 1:
+                    semantic_clusters.append({
+                        'words': cluster_words,
+                        'size': len(cluster_words),
+                        'organism_count': len(set.union(*[word_organism_matrix[w] for w in cluster_words]))
+                    })
+                    processed_words.update(cluster_words)
+        
+        # Analyze concept formation (words that form meaningful concepts)
+        # ML system teaches and strengthens word formations through pattern recognition
+        concept_formation = []
+        top_cooccurrences = sorted(word_cooccurrence.items(), key=lambda x: x[1], reverse=True)[:20]
+        for (word1, word2), count in top_cooccurrences:
+            # Check if words have semantic relationship
+            if knowledge_web:
+                relations = knowledge_web.get_relations(word1)
+                has_semantic_link = any(r.target == word2 or r.source == word2 for r in relations)
+                if has_semantic_link:
+                    # Get relationship strength to assess formation quality
+                    relation_strength = 0.0
+                    for r in relations:
+                        if (r.target == word2 or r.source == word2) and hasattr(r, 'strength'):
+                            relation_strength = max(relation_strength, r.strength)
+                    
+                    concept_formation.append({
+                        'word1': word1,
+                        'word2': word2,
+                        'cooccurrence_count': count,
+                        'semantic_relationship': True,
+                        'relationship_strength': relation_strength,
+                        'formation_quality': 'strong' if relation_strength >= 0.7 and count >= 3 else 'moderate'
+                    })
+                    
+                    # STRENGTHEN FORMATIONS: If ML detects strong co-occurrence with semantic link,
+                    # strengthen the relationship in knowledge web (ML teaching the system)
+                    if count >= 5 and relation_strength >= 0.6:
+                        # Find and strengthen the relationship
+                        for r in relations:
+                            if (r.target == word2 or r.source == word2) and hasattr(r, 'record_relationship_success'):
+                                # ML detected pattern - strengthen it
+                                knowledge_web.record_relationship_success(word1, word2, r.relation_type)
+        
+        # NEW: Feature Selection (if enabled)
+        feature_importance = None
+        if SKLEARN_AVAILABLE and self.feature_selection_enabled and self.feature_selector and tfidf_results:
+            try:
+                # Get organism fitness values for feature selection
+                organism_fitnesses = []
+                for org_id in organism_ids:
+                    org = organisms.get(org_id)
+                    fitness = getattr(org, 'fitness', 0.5) if org else 0.5
+                    organism_fitnesses.append(fitness)
+                
+                if len(organism_fitnesses) > 5 and 'tfidf_matrix' in locals():
+                    # Use TF-IDF features to predict fitness
+                    # Convert fitness to binary classes (high/low) for classification
+                    fitness_median = np.median(organism_fitnesses)
+                    fitness_classes = np.array([1 if f > fitness_median else 0 for f in organism_fitnesses])
+                    
+                    # Fit feature selector
+                    selected_features = self.feature_selector.fit_transform(tfidf_matrix, fitness_classes)
+                    feature_scores = self.feature_selector.scores_
+                    feature_names = self.tfidf_vectorizer.get_feature_names_out()
+                    
+                    # Get top important words (words that predict fitness)
+                    word_importance = list(zip(feature_names, feature_scores))
+                    word_importance.sort(key=lambda x: x[1], reverse=True)
+                    important_words = [{'word': word, 'importance_score': float(score)} for word, score in word_importance[:20]]
+                    
+                    feature_importance = {
+                        'top_predictive_words': important_words[:10],
+                        'n_features_selected': int(selected_features.shape[1]),
+                        'n_features_total': int(tfidf_matrix.shape[1])
+                    }
+            except Exception as e:
+                logger.warning(f"[ML] Feature selection failed: {e}")
+                feature_importance = None
+        
+        # NEW: Quality Metrics (if enabled and clustering results available)
+        quality_metrics = None
+        if SKLEARN_AVAILABLE and self.metrics_enabled and self._last_analysis:
+            try:
+                cluster_result = self._last_analysis.get('clustering')
+                if cluster_result and 'labels' in cluster_result and cluster_result['labels']:
+                    labels = np.array(cluster_result['labels'])
+                    if len(labels) > 0 and len(set(labels)) > 1:
+                        # Get features for silhouette score
+                        features, _ = self.clusterer.extract_features(organisms, context_memory=context_memory)
+                        if features.shape[0] == len(labels) and features.shape[0] > 1:
+                            features_scaled = self.clusterer.scaler.fit_transform(features)
+                            silhouette = silhouette_score(features_scaled, labels)
+                            
+                            quality_metrics = {
+                                'silhouette_score': float(silhouette),
+                                'n_clusters': int(len(set(labels))),
+                                'n_samples': int(len(labels))
+                            }
+            except Exception as e:
+                logger.warning(f"[ML] Quality metrics calculation failed: {e}")
+                quality_metrics = None
+        
+        return {
+            'word_organism_matrix_size': len(word_organism_matrix),
+            'total_word_organism_links': sum(len(orgs) for orgs in word_organism_matrix.values()),
+            'word_cooccurrence_pairs': len(word_cooccurrence),
+            'top_cooccurrences': dict(top_cooccurrences[:10]),
+            'semantic_clusters': semantic_clusters[:10],  # Top 10 clusters
+            'concept_formation': concept_formation[:10],  # Top 10 concepts
+            'tfidf_analysis': tfidf_results,  # NEW: TF-IDF results
+            'similarity_analysis': similarity_results,  # NEW: Nearest Neighbors results
+            'feature_importance': feature_importance,  # NEW: Feature selection results
+            'quality_metrics': quality_metrics,  # NEW: Quality metrics
+            'semantic_analysis_enabled': True,
+            'ml_teaching': True  # ML is teaching/strengthening formations
+        }
     
     def get_status(self) -> Dict[str, Any]:
         """Get current ML analyzer status"""

@@ -321,6 +321,12 @@ CONFIG_GUARDRAILS = {
         'type': float,
         'label': 'neural.training.epsilon_decay'
     },
+    '/neural/training/language_reward_scaling': {
+        'min': 0.0,
+        'max': 1.0,
+        'type': float,
+        'label': 'neural.training.language_reward_scaling'
+    },
     '/neural/training/memory_size': {
         'min': 1000,
         'max': 50000,
@@ -401,6 +407,40 @@ CONFIG_GUARDRAILS = {
     '/neural/language_model/curriculum/enabled': {
         'type': bool,
         'label': 'neural.language_model.curriculum.enabled'
+    },
+    '/neural/language_model/curriculum/ml_quality/enabled': {
+        'type': bool,
+        'label': 'neural.language_model.curriculum.ml_quality.enabled'
+    },
+    '/neural/language_model/curriculum/ml_quality/high_quality_threshold': {
+        'min': 0.0,
+        'max': 1.0,
+        'type': float,
+        'label': 'neural.language_model.curriculum.ml_quality.high_quality_threshold'
+    },
+    '/neural/language_model/curriculum/ml_quality/low_quality_threshold': {
+        'min': 0.0,
+        'max': 1.0,
+        'type': float,
+        'label': 'neural.language_model.curriculum.ml_quality.low_quality_threshold'
+    },
+    '/neural/language_model/curriculum/ml_quality/max_sequence_length': {
+        'min': 8,
+        'max': 128,
+        'type': int,
+        'label': 'neural.language_model.curriculum.ml_quality.max_sequence_length'
+    },
+    '/neural/language_model/curriculum/ml_quality/min_sequence_length': {
+        'min': 4,
+        'max': 64,
+        'type': int,
+        'label': 'neural.language_model.curriculum.ml_quality.min_sequence_length'
+    },
+    '/neural/language_model/curriculum/ml_quality/sequence_length_step': {
+        'min': 1,
+        'max': 16,
+        'type': int,
+        'label': 'neural.language_model.curriculum.ml_quality.sequence_length_step'
     },
     '/neural/language_model/generation/max_length': {
         'min': 8,
@@ -492,6 +532,87 @@ CONFIG_GUARDRAILS = {
         'type': int,
         'label': 'neural.language_model.knowledge_web.max_concepts'
     },
+    # Quality Control Settings ⭐ NEW (Recursive Expansion)
+    '/neural/language_model/knowledge_web/quality_control/enabled': {
+        'type': bool,
+        'label': 'neural.language_model.knowledge_web.quality_control.enabled'
+    },
+    '/neural/language_model/knowledge_web/quality_control/min_discovery_count': {
+        'min': 1,
+        'max': 10,
+        'type': int,
+        'label': 'neural.language_model.knowledge_web.quality_control.min_discovery_count'
+    },
+    '/neural/language_model/knowledge_web/quality_control/min_confidence_threshold': {
+        'min': 0.0,
+        'max': 1.0,
+        'type': float,
+        'label': 'neural.language_model.knowledge_web.quality_control.min_confidence_threshold'
+    },
+    '/neural/language_model/knowledge_web/quality_control/confidence_growth_rate': {
+        'min': 0.0,
+        'max': 0.01,
+        'type': float,
+        'label': 'neural.language_model.knowledge_web.quality_control.confidence_growth_rate'
+    },
+    '/neural/language_model/knowledge_web/quality_control/exploration_start': {
+        'min': 0.0,
+        'max': 1.0,
+        'type': float,
+        'label': 'neural.language_model.knowledge_web.quality_control.exploration_start'
+    },
+    '/neural/language_model/knowledge_web/quality_control/exploration_end': {
+        'min': 0.0,
+        'max': 1.0,
+        'type': float,
+        'label': 'neural.language_model.knowledge_web.quality_control.exploration_end'
+    },
+    '/neural/language_model/knowledge_web/quality_control/exploration_decay_generations': {
+        'min': 100,
+        'max': 5000,
+        'type': int,
+        'label': 'neural.language_model.knowledge_web.quality_control.exploration_decay_generations'
+    },
+    '/neural/language_model/knowledge_web/quality_control/max_discoveries_per_generation': {
+        'min': 1,
+        'max': 50,
+        'type': int,
+        'label': 'neural.language_model.knowledge_web.quality_control.max_discoveries_per_generation'
+    },
+    '/neural/language_model/knowledge_web/quality_control/vp_boost_exploration': {
+        'type': bool,
+        'label': 'neural.language_model.knowledge_web.quality_control.vp_boost_exploration'
+    },
+    '/neural/language_model/knowledge_web/quality_control/vp_boost_threshold': {
+        'min': 0.0,
+        'max': 1.0,
+        'type': float,
+        'label': 'neural.language_model.knowledge_web.quality_control.vp_boost_threshold'
+    },
+    '/neural/language_model/knowledge_web/quality_control/review_frequency': {
+        'min': 10,
+        'max': 500,
+        'type': int,
+        'label': 'neural.language_model.knowledge_web.quality_control.review_frequency'
+    },
+    '/neural/language_model/knowledge_web/quality_control/pruning_confidence_threshold': {
+        'min': 0.0,
+        'max': 1.0,
+        'type': float,
+        'label': 'neural.language_model.knowledge_web.quality_control.pruning_confidence_threshold'
+    },
+    '/neural/language_model/knowledge_web/quality_control/pruning_unused_generations': {
+        'min': 10,
+        'max': 500,
+        'type': int,
+        'label': 'neural.language_model.knowledge_web.quality_control.pruning_unused_generations'
+    },
+    '/neural/language_model/knowledge_web/quality_control/pruning_failure_rate': {
+        'min': 0.0,
+        'max': 1.0,
+        'type': float,
+        'label': 'neural.language_model.knowledge_web.quality_control.pruning_failure_rate'
+    },
     # Scikit-learn ML Enhancement Settings
     '/scikit/enabled': {
         'type': bool,
@@ -517,6 +638,10 @@ CONFIG_GUARDRAILS = {
         'max': 20,
         'type': int,
         'label': 'scikit.clustering.min_samples'
+    },
+    '/scikit/clustering/use_neural_embeddings': {
+        'type': bool,
+        'label': 'scikit.clustering.use_neural_embeddings'
     },
     '/scikit/anomaly_detection/enabled': {
         'type': bool,
@@ -2369,6 +2494,14 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "**Endpoint**: Check via `/api/diagnostic/unified_health` or in shared_state.json\n"
         prompt += "**Config**: `health_monitor.enabled`, `weight_*` for each component, threshold values\n\n"
         
+        prompt += "## 🔧 RECENT SYSTEM IMPROVEMENTS (2025-12-01):\n\n"
+        prompt += "### Backend Output Cleanup:\n"
+        prompt += "- **Font Warning Suppression**: Matplotlib emoji glyph warnings suppressed in unified_entry.py (cleaner console output, no more UserWarning messages)\n"
+        prompt += "- **Context Memory Debug Cleanup**: Verbose debug prints removed from context_memory.py (metrics still logged via StateLogger, cleaner console)\n"
+        prompt += "- **Neural Training Optimization**: Batch size reduced from 96 to 32 in config.json for faster initial training (3x faster startup, training begins after ~2-3 frames instead of ~7-10 frames)\n"
+        prompt += "- **Impact**: Cleaner console output, faster neural learning, all metrics still logged via StateLogger\n"
+        prompt += "- **Language System Verification**: All language systems confirmed wired and operational (Language Teacher, Knowledge Web, Context Memory, Event Emitters)\n\n"
+        
         prompt += "## 🔬 CRITICAL GRAPH UNDERSTANDING:\n\n"
         prompt += "**YOU MUST UNDERSTAND THE GRAPH STRUCTURE:**\n"
         prompt += "- **NODES = EVENTS**: Each node represents a system event (state change, threshold crossing, phase transition, etc.)\n"
@@ -2409,6 +2542,8 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "    - **Event Types**:\n"
         prompt += "      * `neural_decision`: High-confidence organism decisions (confidence, action, epsilon, fitness, input features, action probabilities)\n"
         prompt += "      * `neural_training`: Training steps (loss, organisms trained, training step count, breath cycle info)\n"
+        prompt += "      * `neural_language_reward`: Language rewards from ML feature importance (Integration 2) - rewards organisms for using important words ⭐ NEW\n"
+        prompt += "      * `neural_curriculum_adjustment`: Curriculum adjustments based on ML quality metrics (Integration 3) - sequence length changes ⭐ NEW\n"
         prompt += "    - **Visualization**:\n"
         prompt += "      * Neural Decision nodes: Diamonds with pulsing animation\n"
         prompt += "      * Neural Training nodes: Squares with pulsing animation\n"
@@ -2418,6 +2553,11 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "    - **Autonomous Control**: You can adjust `componentColor_neural` and `linkColor_neural` via [[VIZ_SETTINGS_UPDATE: {...}]] to change colors dynamically\n"
         prompt += "    - **Causation Links**: Neural decisions connect to actions showing thought → action causality on the graph\n"
         prompt += "    - **Configuration Control**: You can manipulate ALL neural parameters via CONFIG_UPDATE (see section 7 below)\n"
+        prompt += "    - **Neural-ML Symbiosis** ⭐ NEW - Three bidirectional integrations creating emergent language comprehension:\n"
+        prompt += "      * **Integration 1: Neural Embeddings → ML Features**: Neural semantic embeddings (64-dim from fc2 hidden state) replace behavioral features for clustering when `use_neural_embeddings=true`. Enables semantic population clustering (organisms grouped by understanding, not just behavior). Config: `/scikit/clustering/use_neural_embeddings` (true/false, default: false).\n"
+        prompt += "      * **Integration 2: ML Feature Importance → Neural Rewards**: ML identifies words that predict fitness (via feature selection), neural organisms rewarded for using these words. Creates functional vocabulary emergence. Events: `neural_language_reward` (when organisms receive language rewards). Config: `/neural/training/language_reward_scaling` (0.0-1.0, default: 0.2).\n"
+        prompt += "      * **Integration 3: ML Quality Metrics → Neural Curriculum**: ML-measured language quality (silhouette score) adjusts neural training sequence length. High quality → increase complexity, low quality → decrease complexity. Self-regulating learning pace. Events: `neural_curriculum_adjustment` (when sequence length changes). Config: `/neural/language_model/curriculum/ml_quality/*`.\n"
+        prompt += "      * **Visualization**: All symbiosis events appear on causation graph with `component='neural'` and specialized event types. Filter with `components: {\"neural\": true}`.\n"
         prompt += "  * **ML Analysis** (ml_analysis): 🔬 **NEW** - Scikit-learn population-level machine learning\n"
         prompt += "    - **Architecture**: HDBSCAN clustering, Isolation Forest anomaly detection, PCA/t-SNE dimensionality reduction\n"
         prompt += "    - **Event Types**:\n"
@@ -2442,19 +2582,35 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "      * If links=0 but events exist, check `/causation_detection/enable_ml_causations` toggle status\n"
         prompt += "    - **Configuration Control**: You can manipulate ALL scikit parameters AND ML causation toggle via CONFIG_UPDATE (see section 7 below)\n"
         prompt += "  * **Config Tuner** (config_tuner): 🧠🔧 **NEW** - Meta-cognitive autonomous parameter optimization\n"
-        prompt += "    - **Architecture**: Analyzes ML/Neural/Evolution metrics and autonomously tunes 33 parameters across all systems\n"
+        prompt += "    - **Architecture**: Analyzes ML/Neural/Evolution metrics and autonomously tunes 40+ parameters across all systems\n"
         prompt += "    - **Capabilities**:\n"
         prompt += "      * Tunes Evolution (mutation rate, diversity guard, population size, adaptation sensitivity)\n"
         prompt += "      * Tunes Neural Learning (learning rate, gamma, epsilon decay, batch size, rewards, inheritance)\n"
         prompt += "      * Tunes Network Dynamics (max organisms, max connections, resource pool)\n"
         prompt += "      * Tunes Feedback Knobs (mutation rate, new edge rate, clustering bias, quantum pruning)\n"
         prompt += "      * Tunes ML Analysis (clustering min size, anomaly contamination, n_estimators)\n"
+        prompt += "      * **Tunes Neural-ML Symbiosis** ⭐ NEW - All 3 integrations:\n"
+        prompt += "        - Integration 1: `scikit.clustering.use_neural_embeddings` (enable/disable semantic clustering based on embedding quality)\n"
+        prompt += "        - Integration 2: `neural.training.language_reward_scaling` (adjust language reward influence based on effectiveness)\n"
+        prompt += "        - Integration 3: `neural.language_model.curriculum.ml_quality.*` (6 curriculum parameters: enabled, thresholds, sequence lengths, step size)\n"
+        prompt += "        - **Analysis**: Monitors embedding quality (silhouette scores), language reward totals, curriculum stability (sequence length variance)\n"
+        prompt += "        - **Auto-tuning**: Automatically enables/disables embeddings, adjusts reward scaling, stabilizes curriculum based on metrics\n"
         prompt += "      * Tunes Quantum Substrate (initial states, entanglement sensitivity, prune interval)\n"
         prompt += "      * Tunes VP Monitoring (adaptive response, stabilization, correlation threshold)\n"
         prompt += "      * **Meta-Meta Tuning**: Tunes ITSELF (tuning interval, confidence threshold)\n"
         prompt += "    - **Event Types**:\n"
-        prompt += "      * `config_tuning`: Parameter adjustment event with full details (parameter, old/new value, reason, confidence)\n"
-        prompt += "    - **Intelligence**: 9 tuning rules based on cluster diversity, anomaly ratio, fitness trends, neural loss, network density, ML effectiveness, VP stability, meta-tuning performance\n"
+        prompt += "      * `tuning_action`: Parameter adjustment event with full details (parameter_path, current_value, proposed_value, reason, confidence, causation_event_id)\n"
+        prompt += "      * **Causation Links**: ConfigTuner events create bidirectional links to ALL systems (neural, ml_analysis, language, reality_sim, explorer, djinn_kernel, health_monitor)\n"
+        prompt += "      * Links to Neural-ML Symbiosis events: `neural_language_reward`, `neural_curriculum_adjustment` (tracks what triggered tuning)\n"
+        prompt += "      * **Time Window**: 4x normal (8 seconds) - tuning happens periodically, needs longer window for causation detection\n"
+        prompt += "      * **Link Strength**: 0.9 (high - meta-management is important)\n"
+        prompt += "      * **Explanations**: Detailed explanations show parameter path, value changes (current → proposed), and reason\n"
+        prompt += "    - **Visualization**: Node color controlled by `componentColor_config_tuner` setting, link color by `linkColor_direct` (tuning links use 'direct' causation type)\n"
+        prompt += "    - **Intelligence**: 10 tuning rules based on cluster diversity, anomaly ratio, fitness trends, neural loss, network density, ML effectiveness, language quality, Neural-ML Symbiosis effectiveness, VP stability, meta-tuning performance\n"
+        prompt += "      * **Neural-ML Symbiosis Analysis** ⭐ NEW: `_analyze_neural_ml_symbiosis()` monitors:\n"
+        prompt += "        - Embedding quality (silhouette scores) → tunes `use_neural_embeddings` (enables if quality > 0.4, disables if < 0.2)\n"
+        prompt += "        - Language reward totals → tunes `language_reward_scaling` (increases if rewards < 0.1, decreases if > 2.0)\n"
+        prompt += "        - Curriculum stability (sequence length variance) → tunes `sequence_length_step` (reduces if variance > 100)\n"
         prompt += "    - **Safety**: Bounded parameters, confidence thresholds (>0.6), rate limiting, meta-learning tracks success rates\n"
         prompt += "    - **Modes**: off / observing / learning / autonomous\n"
         prompt += "    - **Diagnostic Endpoint**: `/api/cra/diagnostics/config_tuner` - Get tuning stats, success rates, recent actions\n"
@@ -2464,18 +2620,33 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "      * Report findings: \"Tuner status: ACTIVE, Actions: X, Success rate: Y%\"\n"
         prompt += "      * If you recommend a diagnostic call, execute it immediately and report results\n"
         prompt += "    - **Configuration Control**: Toggle via `meta_cognitive.self_tuning.enabled`, adjust mode/interval/confidence threshold\n"
-        prompt += "    - **Full Documentation**: See SELF_TUNING_GUIDE.md for complete details on all 33 tunable parameters and 9 intelligent rules\n"
+        prompt += "    - **Full Documentation**: See SELF_TUNING_GUIDE.md for complete details on all 40+ tunable parameters and 10 intelligent rules (including Neural-ML Symbiosis)\n"
         prompt += "  * **NEURAL TRAINING METRICS CLARIFICATION** (CRITICAL):\n"
         prompt += "    - `training_step_count`: Number of times trainer was called (increments EVERY breath cycle, always increases)\n"
-        prompt += "    - `training_loss`: Actual DQN loss value (ONLY set when training occurs - organisms have ≥128 experiences + update_frequency met)\n"
+        prompt += "    - `training_loss`: Actual DQN loss value (ONLY set when training occurs - organisms have ≥batch_size experiences (default: 32, recently optimized from 96) + update_frequency met)\n"
         prompt += "    - `training_occurred_this_step`: Boolean flag indicating if training happened this cycle\n"
         prompt += "    - **NORMAL BEHAVIOR**: training_step_count = 169, training_loss = null → System is collecting experiences, NOT a failure\n"
-        prompt += "    - **TRAINING CONDITIONS**: Training only occurs when (step_count % update_frequency == 0) AND organisms have batch_size experiences\n"
+        prompt += "    - **TRAINING CONDITIONS**: Training only occurs when (step_count % update_frequency == 0) AND organisms have batch_size experiences (check config for current value, default: 32)\n"
         prompt += "    - **YOUR ANALYSIS**: Do NOT flag \"training not working\" if training_loss is null - check organism experience buffer size first\n"
+        prompt += "    - **RECENT OPTIMIZATION (2025-12-01)**: Batch size reduced from 96 to 32 for faster initial training (3x faster startup)\n"
         prompt += "  * **Explorer** (explorer): Phase transitions, VP calculations, sovereign IDs, mathematical capability\n"
         prompt += "  * **Djinn Kernel** (djinn_kernel): Violation pressure calculations, VP classifications (VP0-VP4), trait counts\n"
         prompt += "  * **Breath Engine** (breath): Breath cycles, depth, phase, pulse (the central rhythm driving the system)\n"
         prompt += "  * **Lawfold Field Architecture** (lawfold): Civilization-wide governance metrics, meta-sovereign reflection, reflection index, collapse risk, prosocial factors\n"
+        prompt += "  * **Health Monitor** (health_monitor): ⚕️ **NEW** - System health tracking and state monitoring\n"
+        prompt += "    - **Architecture**: Monitors health across all system components (reality_sim, neural, ml_analysis, language, explorer, djinn_kernel)\n"
+        prompt += "    - **Event Types**:\n"
+        prompt += "      * `health_state_change`: Emitted when health crosses thresholds (critical < 0.3, warning < 0.5, healthy < 0.7, optimal >= 0.7)\n"
+        prompt += "      * Links to all systems: Health issues trigger responses in neural, ML, language, network, explorer, config_tuner\n"
+        prompt += "    - **Health Score**: Weighted composite of all component health (0.0-1.0)\n"
+        prompt += "    - **State Classification**: critical → warning → healthy → optimal (based on thresholds)\n"
+        prompt += "    - **Causation Links**: Health Monitor events create bidirectional links to ALL systems (neural, ml_analysis, language, reality_sim, explorer, djinn_kernel, config_tuner)\n"
+        prompt += "      * **Time Window**: 3x normal (6 seconds) - health changes gradually, needs longer window for causation detection\n"
+        prompt += "      * **Link Strength**: 0.88 (high - system monitoring is important)\n"
+        prompt += "      * **Explanations**: Detailed explanations show state transitions (previous_state → new_state) and health scores\n"
+        prompt += "    - **Visualization**: Node color controlled by `componentColor_health_monitor` setting, link color by `linkColor_direct` (health links use 'direct' causation type)\n"
+        prompt += "    - **Configuration Control**: Toggle via `health_monitor.enabled`, adjust weights via `weight_*` for each component, threshold values\n"
+        prompt += "    - **Diagnostic Endpoint**: `/api/diagnostic/unified_health` - Get current health state, scores, component breakdown\n"
         prompt += "  * **System** (system): Initialization, shutdown, errors, lifecycle events\n"
         prompt += "- **Causation Types** (link types):\n"
         prompt += "  * **Threshold**: Event caused by crossing a threshold (e.g., VP crossing VP3 threshold)\n"
@@ -2746,8 +2917,8 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "     * NO COMMENTS in JSON - JSON does not support // or /* */ comments\n"
         prompt += "     * Property names MUST use underscores: componentColor_reality_sim (NOT componentColorrealitysim)\n"
         prompt += "     * Link colors: linkColor_threshold (NOT linkColorthreshold)\n"
-        prompt += "     * All component colors: componentColor_reality_sim, componentColor_explorer, componentColor_djinn_kernel, componentColor_breath, componentColor_neural, componentColor_ml_analysis, componentColor_system\n"
-        prompt += "     * All link colors: linkColor_threshold, linkColor_correlation, linkColor_direct, linkColor_temporal, linkColor_neural, linkColor_ml, linkColor_unknown\n"
+        prompt += "     * All component colors: componentColor_reality_sim, componentColor_explorer, componentColor_djinn_kernel, componentColor_breath, componentColor_neural, componentColor_ml_analysis, componentColor_language, componentColor_butterfly_chat, componentColor_config_tuner, componentColor_health_monitor, componentColor_system\n"
+        prompt += "     * All link colors: linkColor_threshold, linkColor_correlation, linkColor_direct, linkColor_temporal, linkColor_neural, linkColor_ml, linkColor_language, linkColor_linguistic, linkColor_unknown\n"
         prompt += "     * Use valid JSON only - no trailing commas, proper quotes, etc.\n"
         prompt += "   - Examples of autonomous adjustments:\n"
         prompt += "     * When you detect a critical pattern: Make links thicker: [[VIZ_SETTINGS_UPDATE: {\"linkBaseWidth\": 4.0, \"linkMaxWidth\": 20}]]\n"
@@ -2760,6 +2931,24 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "   - You can also adjust settings when user explicitly requests it\n\n"
 
         prompt += "7. **Real-Time Configuration Control (Hot Reload Service)**:\n"
+        prompt += "   - **ConfigTuner Configuration** (🧠🔧 Meta-Cognitive Self-Tuning):\n"
+        prompt += "     * `/meta_cognitive/self_tuning/enabled` (true/false) - Master toggle for ConfigTuner\n"
+        prompt += "     * `/meta_cognitive/self_tuning/mode` (off/observing/learning/autonomous) - Tuning mode\n"
+        prompt += "     * `/meta_cognitive/self_tuning/tuning_interval_frames` (10-200, default: 50) - Frames between tuning actions\n"
+        prompt += "     * `/meta_cognitive/self_tuning/min_confidence_threshold` (0.3-0.95, default: 0.6) - Minimum confidence for tuning actions\n"
+        prompt += "     * **Example**: Enable autonomous tuning: [[CONFIG_UPDATE: {\"reason\": \"Activate ConfigTuner\", \"correlation_id\": \"tuner-on\", \"patch\": [{\"op\": \"replace\", \"path\": \"/meta_cognitive/self_tuning/enabled\", \"value\": true}, {\"op\": \"replace\", \"path\": \"/meta_cognitive/self_tuning/mode\", \"value\": \"autonomous\"}]}]]\n"
+        prompt += "   - **Health Monitor Configuration** (⚕️ System Health Tracking):\n"
+        prompt += "     * `/health_monitor/enabled` (true/false) - Master toggle for Health Monitor\n"
+        prompt += "     * `/health_monitor/weight_reality_sim` (0.0-1.0) - Weight for reality_sim component health\n"
+        prompt += "     * `/health_monitor/weight_neural` (0.0-1.0) - Weight for neural component health\n"
+        prompt += "     * `/health_monitor/weight_ml_analysis` (0.0-1.0) - Weight for ml_analysis component health\n"
+        prompt += "     * `/health_monitor/weight_language` (0.0-1.0) - Weight for language component health\n"
+        prompt += "     * `/health_monitor/weight_explorer` (0.0-1.0) - Weight for explorer component health\n"
+        prompt += "     * `/health_monitor/weight_djinn_kernel` (0.0-1.0) - Weight for djinn_kernel component health\n"
+        prompt += "     * `/health_monitor/thresholds/critical` (0.0-1.0, default: 0.3) - Critical health threshold\n"
+        prompt += "     * `/health_monitor/thresholds/warning` (0.0-1.0, default: 0.5) - Warning health threshold\n"
+        prompt += "     * `/health_monitor/thresholds/healthy` (0.0-1.0, default: 0.7) - Healthy health threshold\n"
+        prompt += "     * **Example**: Adjust health weights: [[CONFIG_UPDATE: {\"reason\": \"Emphasize neural health\", \"correlation_id\": \"health-weights\", \"patch\": [{\"op\": \"replace\", \"path\": \"/health_monitor/weight_neural\", \"value\": 0.3}]}]]\n"
         prompt += "   - You can modify `config.json` without restarting the Butterfly System via the guarded ConfigManager API.\n"
         prompt += "   - Use marker: [[CONFIG_UPDATE: {\"reason\": \"VP mitigation\", \"correlation_id\": \"plan-alpha\", \"patch\": [{\"op\": \"replace\", \"path\": \"/feedback/knobs/mutation_rate/initial\", \"value\": 0.024}]}]].\n"
         prompt += "   - **IMPORTANT**: Before suggesting config changes, verify current values via `/api/config/current` or check shared_state.json to avoid no-op updates.\n"
@@ -2790,7 +2979,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "       - `/neural/brain/dropout` (0.0-0.5) - Dropout rate for regularization\n"
         prompt += "     * **Training Parameters**:\n"
         prompt += "       - `/neural/training/enabled` (true/false) - Enable/disable training\n"
-        prompt += "       - `/neural/training/batch_size` (8-128) - Batch size for experience replay\n"
+        prompt += "       - `/neural/training/batch_size` (8-128, default: 32) - Batch size for experience replay (optimized from 96 to 32 for faster initial training)\n"
         prompt += "       - `/neural/training/memory_size` (100-10000) - Experience buffer capacity\n"
         prompt += "       - `/neural/training/learning_rate` (0.0001-0.01) - Learning rate for optimizer\n"
         prompt += "       - `/neural/training/gamma` (0.9-0.999) - Discount factor for future rewards\n"
@@ -2798,6 +2987,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "       - `/neural/training/epsilon_end` (0.0-0.1) - Final exploration rate\n"
         prompt += "       - `/neural/training/epsilon_decay` (0.99-0.9999) - Exploration decay rate\n"
         prompt += "       - `/neural/training/update_frequency` (1-10) - Training steps per breath cycle\n"
+        prompt += "       - `/neural/training/language_reward_scaling` (0.0-1.0, default: 0.2) - Scale factor for language rewards from ML feature importance (Integration 2) ⭐ NEW\n"
         prompt += "     * **Reward Weights** (adjust to shape learning behavior):\n"
         prompt += "       - `/neural/rewards/fitness_improvement` (0.0-2.0) - Reward for fitness gains\n"
         prompt += "       - `/neural/rewards/survival` (0.0-1.0) - Reward for staying alive\n"
@@ -3191,8 +3381,8 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "   - **Depth Effects**: depthStrength, depthOpacityRange, depthSizeRange, depthParallaxAmount\n"
         prompt += "   - **Visual Effects**: enableShadows, enableGlow, shadowOffset, shadowBlur, glowIntensity\n"
         prompt += "   - **Color Settings**: frontColorBrightness, backColorBrightness, colorSaturation\n"
-        prompt += "   - **Component Colors**: componentColor_reality_sim, componentColor_explorer, componentColor_djinn_kernel, componentColor_breath, componentColor_neural (🧠 **NEW** - check current value), componentColor_ml_analysis (🔬 **NEW** - check current value), componentColor_system (hex colors)\n"
-        prompt += "   - **Link Colors**: linkColor_threshold, linkColor_correlation, linkColor_direct, linkColor_temporal, linkColor_neural (🧠 Neural links - check current value), linkColor_ml (🔬 ML links - check current value), linkColor_unknown (hex colors)\n"
+        prompt += "   - **Component Colors**: componentColor_reality_sim, componentColor_explorer, componentColor_djinn_kernel, componentColor_breath, componentColor_neural (🧠 **NEW** - check current value), componentColor_ml_analysis (🔬 **NEW** - check current value), componentColor_language (🦋 Language - check current value), componentColor_butterfly_chat (🦋 Butterfly Chat - check current value), componentColor_config_tuner (🧠🔧 ConfigTuner - check current value), componentColor_health_monitor (⚕️ Health Monitor - check current value), componentColor_system (hex colors)\n"
+        prompt += "   - **Link Colors**: linkColor_threshold, linkColor_correlation, linkColor_direct, linkColor_temporal, linkColor_neural (🧠 Neural links - check current value), linkColor_ml (🔬 ML links - check current value), linkColor_language (🦋 Language links - check current value), linkColor_linguistic (🦋 Linguistic edges - check current value), linkColor_unknown (hex colors)\n"
         prompt += "   - **Performance**: maxVisibleLinks, maxVisibleNodes, renderQuality (\"low\"/\"medium\"/\"high\")\n"
         prompt += "   - **Animation/Transitions**: enableTransitions, transitionDuration, animationSpeed\n"
         prompt += "   - **Format**: [[VIZ_SETTINGS_UPDATE: {...}]] - You can include ANY combination of these settings\n"
@@ -3989,7 +4179,14 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "  * `/neural/language_model/teacher/training_frequency` (1-50, default: 10) - Train every N generations (Phase 2)\n"
         prompt += "  * `/neural/language_model/teacher/min_confidence` (0.0-1.0, default: 0.3) - Confidence threshold for using learned embeddings (Phase 2)\n"
         prompt += "  * `/neural/language_model/teacher/teaching_frequency` (1-10, default: 1) - Teach organisms every N generations\n"
-        prompt += "  * `/neural/language_model/teacher/min_action_history` (1-20, default: 3) - Minimum action history before teaching\n\n"
+        prompt += "  * `/neural/language_model/teacher/min_action_history` (1-20, default: 3) - Minimum action history before teaching\n"
+        prompt += "  * **Neural-ML Symbiosis Curriculum Settings** ⭐ NEW:\n"
+        prompt += "  *   - `/neural/language_model/curriculum/ml_quality/enabled` (true/false, default: false) - Enable ML quality-based curriculum adjustment (Integration 3)\n"
+        prompt += "  *   - `/neural/language_model/curriculum/ml_quality/high_quality_threshold` (0.0-1.0, default: 0.6) - Silhouette score threshold for increasing sequence length\n"
+        prompt += "  *   - `/neural/language_model/curriculum/ml_quality/low_quality_threshold` (0.0-1.0, default: 0.3) - Silhouette score threshold for decreasing sequence length\n"
+        prompt += "  *   - `/neural/language_model/curriculum/ml_quality/max_sequence_length` (8-128, default: 64) - Maximum sequence length\n"
+        prompt += "  *   - `/neural/language_model/curriculum/ml_quality/min_sequence_length` (4-64, default: 8) - Minimum sequence length\n"
+        prompt += "  *   - `/neural/language_model/curriculum/ml_quality/sequence_length_step` (1-16, default: 2) - Step size for adjustments\n\n"
         
         prompt += "### Linguistic Knowledge Web:\n"
         prompt += "- **Purpose**: Comprehensive semantic network for linguistic understanding and situational awareness\n"
@@ -4038,7 +4235,74 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "- **Configuration** (all controllable via CRA):\n"
         prompt += "  * `/neural/language_model/knowledge_web/enabled` (true/false) - Enable/disable knowledge web\n"
         prompt += "  * `/neural/language_model/knowledge_web/embedding_dim` (16-256, default: 64) - Future embedding dimension\n"
-        prompt += "  * `/neural/language_model/knowledge_web/max_concepts` (100-1000, default: 500) - Maximum concepts in web\n\n"
+        prompt += "  * `/neural/language_model/knowledge_web/max_concepts` (100-1000, default: 500) - Maximum concepts in web\n"
+        prompt += "- **Quality Control System** ⭐ NEW (Prevents \"Yarn Ball\", Enables Causation Expansion):\n"
+        prompt += "  * **Purpose**: Quality-controlled recursive expansion prevents random word associations from creating a \"yarn ball\" while enabling meaningful relationship discovery and growth.\n"
+        prompt += "  * **Key Mechanism**: Three-phase learning curve (exploration → validation → convergence) with adaptive thresholds.\n"
+        prompt += "  * **Core Features**:\n"
+        prompt += "    - **Relationship Discovery**: Organisms discover new semantic relationships through co-occurrence patterns\n"
+        prompt += "    - **Validation Gates**: Semantic frame compatibility (40%) + context coherence (60%) before accepting new relationships\n"
+        prompt += "    - **Time-Based Learning**: Exploration rate decays from 20% to 5% over 1000 generations; confidence threshold grows from 0.3 to 0.8\n"
+        prompt += "    - **Quality Feedback**: Success/failure tracking strengthens good relationships, weakens poor ones\n"
+        prompt += "    - **Convergence Mechanisms**: Periodic quality review (every 100 generations) strengthens high-quality, weakens low-quality, prunes very weak\n"
+        prompt += "    - **Seeded Protection**: Base 326 concepts and JSON-loaded relationships are marked `is_seeded=True` and NEVER pruned\n"
+        prompt += "  * **Quality Control Parameters** (all controllable via CRA):\n"
+        prompt += "    * `/neural/language_model/knowledge_web/quality_control/enabled` (true/false, default: true) - Master toggle\n"
+        prompt += "    * `/neural/language_model/knowledge_web/quality_control/min_discovery_count` (1-10, default: 3) - Minimum co-occurrences before accepting relationship\n"
+        prompt += "    * `/neural/language_model/knowledge_web/quality_control/min_confidence_threshold` (0.0-1.0, default: 0.3) - Starting confidence threshold\n"
+        prompt += "    * `/neural/language_model/knowledge_web/quality_control/confidence_growth_rate` (0.0-0.01, default: 0.0005) - Confidence growth per generation\n"
+        prompt += "    * `/neural/language_model/knowledge_web/quality_control/exploration_start` (0.0-1.0, default: 0.2) - Initial exploration rate (20%)\n"
+        prompt += "    * `/neural/language_model/knowledge_web/quality_control/exploration_end` (0.0-1.0, default: 0.05) - Final exploration rate (5%)\n"
+        prompt += "    * `/neural/language_model/knowledge_web/quality_control/exploration_decay_generations` (100-5000, default: 1000) - Generations to decay from start to end\n"
+        prompt += "    * `/neural/language_model/knowledge_web/quality_control/max_discoveries_per_generation` (1-50, default: 10) - Cap on new relationships per generation\n"
+        prompt += "    * `/neural/language_model/knowledge_web/quality_control/vp_boost_exploration` (true/false, default: true) - Boost exploration when VP > threshold\n"
+        prompt += "    * `/neural/language_model/knowledge_web/quality_control/vp_boost_threshold` (0.0-1.0, default: 0.7) - VP threshold for exploration boost\n"
+        prompt += "    * `/neural/language_model/knowledge_web/quality_control/review_frequency` (10-500, default: 100) - Quality review every N generations\n"
+        prompt += "    * `/neural/language_model/knowledge_web/quality_control/pruning_confidence_threshold` (0.0-1.0, default: 0.2) - Prune below this confidence\n"
+        prompt += "    * `/neural/language_model/knowledge_web/quality_control/pruning_unused_generations` (10-500, default: 100) - Prune if unused for N generations\n"
+        prompt += "    * `/neural/language_model/knowledge_web/quality_control/pruning_failure_rate` (0.0-1.0, default: 0.7) - Prune if failure rate > threshold\n"
+        prompt += "  * **Learning Phases**:\n"
+        prompt += "    - **Early Exploration (Gen 0-500)**: High exploration (20%), low confidence bar (0.3) - \"Find ANY relationships, learn broadly\"\n"
+        prompt += "    - **Mid Validation (Gen 500-1500)**: Moderate exploration (10-15%), rising confidence (0.5-0.6) - \"Validate what you found\"\n"
+        prompt += "    - **Late Convergence (Gen 1500+)**: Low exploration (5%), high confidence (0.7-0.8) - \"Use only what works\"\n"
+        prompt += "  * **Example Quality Control Config Updates**:\n"
+        prompt += "    * Increase exploration: [[CONFIG_UPDATE: {\"reason\": \"More relationship discovery\", \"correlation_id\": \"explore-more\", \"patch\": [{\"op\": \"replace\", \"path\": \"/neural/language_model/knowledge_web/quality_control/exploration_start\", \"value\": 0.3}]}]]\n"
+        prompt += "    * Stricter validation: [[CONFIG_UPDATE: {\"reason\": \"Higher quality relationships\", \"correlation_id\": \"stricter\", \"patch\": [{\"op\": \"replace\", \"path\": \"/neural/language_model/knowledge_web/quality_control/min_confidence_threshold\", \"value\": 0.5}]}]]\n"
+        prompt += "    * Faster convergence: [[CONFIG_UPDATE: {\"reason\": \"Converge sooner\", \"correlation_id\": \"fast-converge\", \"patch\": [{\"op\": \"replace\", \"path\": \"/neural/language_model/knowledge_web/quality_control/exploration_decay_generations\", \"value\": 500}]}]]\n"
+        prompt += "    * More discoveries: [[CONFIG_UPDATE: {\"reason\": \"Allow more relationship discovery\", \"correlation_id\": \"more-discovery\", \"patch\": [{\"op\": \"replace\", \"path\": \"/neural/language_model/knowledge_web/quality_control/max_discoveries_per_generation\", \"value\": 20}]}]]\n"
+        prompt += "  * **Quality Control Monitoring**: After quality control config changes, monitor:\n"
+        prompt += "    * Discovery rate (how many new relationships per generation)\n"
+        prompt += "    * Relationship quality (success vs failure rates)\n"
+        prompt += "    * Pruning rate (how many low-quality relationships removed)\n"
+        prompt += "    * Exploration vs exploitation balance\n"
+        prompt += "    * Convergence trajectory (is system moving toward stable patterns?)\n\n"
+        prompt += "  * **Relationship Learning Parameters** (neural system learns from generation quality):\n"
+        prompt += "    * `/neural/language_model/relationship_learning/enabled` (true/false, default: true) - Enable/disable relationship learning\n"
+        prompt += "    * **Quality Evaluation Thresholds**:\n"
+        prompt += "      * `coherent_threshold` (0.0-1.0, default: 0.5) - Minimum coherence score for success (>50% semantic pairs)\n"
+        prompt += "      * `garbled_threshold` (0.0-1.0, default: 0.2) - Maximum coherence score for failure (<20% semantic pairs)\n"
+        prompt += "      * `unk_ratio_threshold` (0.0-1.0, default: 0.3) - Maximum UNK token ratio (>30% = garbled)\n"
+        prompt += "      * `min_word_count` (1-10, default: 2) - Minimum words for evaluation\n"
+        prompt += "      * `min_word_count_for_evaluation` (2-10, default: 3) - Minimum words for full evaluation\n"
+        prompt += "      * `max_word_count` (10-50, default: 20) - Maximum words (beyond = rambling)\n"
+        prompt += "      * `relationship_strength_threshold` (0.0-1.0, default: 0.5) - Minimum relationship strength for coherence check\n"
+        prompt += "    * **Semantic Guidance Parameters**:\n"
+        prompt += "      * `semantic_guidance/enabled` (true/false, default: true) - Enable semantic word boosting during generation\n"
+        prompt += "      * `semantic_guidance/min_strength_threshold` (0.0-1.0, default: 0.7) - Minimum relationship strength for semantic guidance\n"
+        prompt += "      * `semantic_guidance/semantic_boost` (0.0-1.0, default: 0.2) - Logit boost for semantically related words\n"
+        prompt += "      * `semantic_guidance/high_strength_boost` (0.0-1.0, default: 0.1) - Logit boost for high-strength relationships (0.8+)\n"
+        prompt += "      * `semantic_guidance/max_similar_words` (1-10, default: 5) - Maximum similar words to consider\n"
+        prompt += "  * **Example Relationship Learning Config Updates**:\n"
+        prompt += "    * Stricter coherence: [[CONFIG_UPDATE: {\"reason\": \"Require higher quality\", \"correlation_id\": \"stricter-coherence\", \"patch\": [{\"op\": \"replace\", \"path\": \"/neural/language_model/relationship_learning/quality_evaluation/coherent_threshold\", \"value\": 0.6}]}]]\n"
+        prompt += "    * More lenient garbled detection: [[CONFIG_UPDATE: {\"reason\": \"Allow more variation\", \"correlation_id\": \"lenient-garbled\", \"patch\": [{\"op\": \"replace\", \"path\": \"/neural/language_model/relationship_learning/quality_evaluation/garbled_threshold\", \"value\": 0.15}]}]]\n"
+        prompt += "    * Stronger semantic guidance: [[CONFIG_UPDATE: {\"reason\": \"More semantic influence\", \"correlation_id\": \"stronger-guidance\", \"patch\": [{\"op\": \"replace\", \"path\": \"/neural/language_model/relationship_learning/semantic_guidance/semantic_boost\", \"value\": 0.3}]}]]\n"
+        prompt += "    * Disable relationship learning: [[CONFIG_UPDATE: {\"reason\": \"Disable learning from generation\", \"correlation_id\": \"no-learning\", \"patch\": [{\"op\": \"replace\", \"path\": \"/neural/language_model/relationship_learning/enabled\", \"value\": false}]}]]\n"
+        prompt += "  * **Relationship Learning Monitoring**: After relationship learning config changes, monitor:\n"
+        prompt += "    * Generation coherence scores (should improve with better thresholds)\n"
+        prompt += "    * Relationship success/failure rates (which relationships work?)\n"
+        prompt += "    * Semantic network evolution (relationships strengthening/weakening)\n"
+        prompt += "    * Language generation quality (coherent vs garbled ratio)\n"
+        prompt += "    * Word combination patterns (which combinations are learned?)\n\n"
         
         prompt += "### Language Events (NEW Component):\n"
         prompt += "- **vocabulary_growth**: New words discovered and added to vocabulary\n"
@@ -5873,8 +6137,20 @@ def get_event(event_id):
         if event_id not in target_explorer.events:
             logger.warning(f"[GET_EVENT] Event {event_id} not found in target_explorer.events (total: {len(target_explorer.events)})")
             logger.warning(f"[GET_EVENT] Using {'shared' if app.config.get('explorer') else 'local'} explorer instance")
+            recent_ids = list(target_explorer.events.keys())[-20:]
+            similar_ids = [eid for eid in target_explorer.events.keys() if event_id[:10] in eid][:5]
+            return jsonify({
+                'error': f'Event not found: {event_id}',
+                'normalized_id': event_id,
+                'available_event_count': len(target_explorer.events),
+                'recent_event_ids': recent_ids,
+                'similar_event_ids': similar_ids
+            }), 404
         
         summary = target_explorer.get_event_summary(event_id)
+        # Check if summary contains an error (from get_event_summary)
+        if isinstance(summary, dict) and 'error' in summary:
+            return jsonify(summary), 404
         return jsonify(summary)
     except Exception as e:
         logger.error(f"Error getting event {event_id}: {e}", exc_info=True)
@@ -5977,6 +6253,15 @@ def get_root_causes(event_id):
             if similar_ids:
                 logger.warning(f"[ROOT_CAUSES] Similar event IDs found: {similar_ids}")
             logger.warning(f"[ROOT_CAUSES] Recent event IDs (last 20): {recent_ids}")
+            # Return error response immediately instead of calling method
+            return jsonify({
+                'error': f'Event not found: {event_id}',
+                'normalized_id': event_id,
+                'available_event_count': len(target_explorer.events),
+                'recent_event_ids': recent_ids,
+                'similar_event_ids': similar_ids,
+                'root_causes': []
+            }), 404
         
         analysis = target_explorer.find_root_causes(event_id, max_depth)
         return jsonify(analysis)
@@ -6009,6 +6294,14 @@ def get_impact_analysis(event_id):
             logger.warning(f"[IMPACT] Using {'shared' if app.config.get('explorer') else 'local'} explorer instance")
             recent_ids = list(target_explorer.events.keys())[-20:]
             logger.warning(f"[IMPACT] Recent event IDs (last 20): {recent_ids}")
+            # Return error response immediately instead of calling method
+            return jsonify({
+                'error': f'Event not found: {event_id}',
+                'normalized_id': event_id,
+                'available_event_count': len(target_explorer.events),
+                'recent_event_ids': recent_ids,
+                'impacts': []
+            }), 404
         
         analysis = target_explorer.analyze_impact(event_id, max_depth)
         return jsonify(analysis)
@@ -6039,6 +6332,13 @@ def explain_event(event_id):
             logger.warning(f"[EXPLAIN] Using {'shared' if app.config.get('explorer') else 'local'} explorer instance")
             recent_ids = list(target_explorer.events.keys())[-20:]
             logger.warning(f"[EXPLAIN] Recent event IDs (last 20): {recent_ids}")
+            # Return error response immediately instead of calling method
+            return jsonify({
+                'error': f'Event not found: {event_id}',
+                'normalized_id': event_id,
+                'available_event_count': len(target_explorer.events),
+                'recent_event_ids': recent_ids
+            }), 404
         
         explanation = target_explorer.explain_event(event_id)
         return jsonify(explanation)
@@ -6480,6 +6780,10 @@ def get_graph():
                     component = 'language'  # Language system events
                 elif 'butterfly_chat' in original_component or ('chat' in original_component and 'butterfly' in original_component):
                     component = 'butterfly_chat'  # Butterfly Chat events
+                elif 'config_tuner' in original_component or 'tuner' in original_component:
+                    component = 'config_tuner'  # ConfigTuner events
+                elif 'health_monitor' in original_component or ('health' in original_component and 'monitor' in original_component):
+                    component = 'health_monitor'  # Health Monitor events
                 else:
                     component = original_component  # Keep as-is (will default to orange)
                 
@@ -10775,7 +11079,8 @@ def cra_set_viz_settings():
         # Component colors
         component_color_keys = ['componentColor_reality_sim', 'componentColor_explorer', 'componentColor_djinn_kernel', 
                                'componentColor_breath', 'componentColor_neural', 'componentColor_ml_analysis', 
-                               'componentColor_language', 'componentColor_butterfly_chat', 'componentColor_system']
+                               'componentColor_language', 'componentColor_butterfly_chat', 'componentColor_config_tuner',
+                               'componentColor_health_monitor', 'componentColor_system']
         for key in component_color_keys:
             if key in data:
                 viz_settings[key] = str(data[key])

@@ -95,6 +95,16 @@ class ConfigTuner:
             'scikit.clustering.min_cluster_size': (2, 20),
             'scikit.anomaly_detection.contamination': (0.01, 0.3),
             'scikit.anomaly_detection.n_estimators': (50, 500),
+            
+            # Neural-ML Symbiosis (Integration 1-3) ⭐ NEW
+            'scikit.clustering.use_neural_embeddings': (0, 1),  # Boolean as 0/1
+            'neural.training.language_reward_scaling': (0.0, 1.0),
+            'neural.language_model.curriculum.ml_quality.enabled': (0, 1),  # Boolean
+            'neural.language_model.curriculum.ml_quality.high_quality_threshold': (0.5, 0.9),
+            'neural.language_model.curriculum.ml_quality.low_quality_threshold': (0.1, 0.4),
+            'neural.language_model.curriculum.ml_quality.max_sequence_length': (8, 128),
+            'neural.language_model.curriculum.ml_quality.min_sequence_length': (4, 32),
+            'neural.language_model.curriculum.ml_quality.sequence_length_step': (1, 8),
 
             # Quantum Substrate (Phase 5)
             'quantum.initial_states': (20, 200),
@@ -147,6 +157,16 @@ class ConfigTuner:
             'scikit.clustering.min_cluster_size': 2,
             'scikit.anomaly_detection.contamination': 0.02,
             'scikit.anomaly_detection.n_estimators': 50,
+            
+            # Neural-ML Symbiosis ⭐ NEW
+            'scikit.clustering.use_neural_embeddings': 1,  # Toggle
+            'neural.training.language_reward_scaling': 0.05,
+            'neural.language_model.curriculum.ml_quality.enabled': 1,  # Toggle
+            'neural.language_model.curriculum.ml_quality.high_quality_threshold': 0.05,
+            'neural.language_model.curriculum.ml_quality.low_quality_threshold': 0.05,
+            'neural.language_model.curriculum.ml_quality.max_sequence_length': 4,
+            'neural.language_model.curriculum.ml_quality.min_sequence_length': 2,
+            'neural.language_model.curriculum.ml_quality.sequence_length_step': 1,
 
             # Quantum
             'quantum.initial_states': 10,
@@ -175,6 +195,12 @@ class ConfigTuner:
         self.neural_loss_history: List[float] = []
         self.network_density_history: List[float] = []
         self.vp_history: List[float] = []
+        
+        # Neural-ML Symbiosis tracking ⭐ NEW
+        self.embedding_quality_history: List[float] = []  # Silhouette scores with embeddings
+        self.language_reward_history: List[float] = []  # Total language rewards per training step
+        self.curriculum_adjustment_history: List[int] = []  # Sequence length adjustments
+        self.vocabulary_growth_history: List[int] = []  # Vocabulary size over time
 
         # Meta-learning: track which actions work
         self.action_success_rates: Dict[str, Tuple[int, int]] = {}  # param -> (successes, total)
@@ -242,6 +268,16 @@ class ConfigTuner:
         ml_action = self._analyze_ml_effectiveness(ml_metrics)
         if ml_action:
             actions.append(ml_action)
+
+        # Phase 4 - Language-Aware Tuning ⭐ NEW
+        language_action = self._analyze_language_quality(ml_metrics, neural_metrics)
+        if language_action:
+            actions.append(language_action)
+        
+        # Phase 4.5 - Neural-ML Symbiosis Effectiveness ⭐ NEW
+        symbiosis_action = self._analyze_neural_ml_symbiosis(ml_metrics, neural_metrics)
+        if symbiosis_action:
+            actions.append(symbiosis_action)
 
         # Phase 5 - Quantum (placeholder for now)
         # quantum_action = self._analyze_quantum_stability(quantum_metrics)
@@ -633,6 +669,305 @@ class ConfigTuner:
                         expected_impact=f"Should reduce tiny clusters and improve cluster quality within 5-10 ML analysis cycles"
                     )
 
+        return None
+
+    def _analyze_language_quality(self, ml_metrics: Dict[str, Any], neural_metrics: Dict[str, Any]) -> Optional[TuningAction]:
+        """
+        Analyze language quality metrics and tune language learning parameters.
+        
+        Uses TF-IDF, vocabulary diversity, and language-behavior alignment to optimize
+        language learning and generation.
+        """
+        if not ml_metrics or not ml_metrics.get('enabled'):
+            return None
+        
+        semantic_analysis = ml_metrics.get('semantic_analysis', {})
+        if not semantic_analysis:
+            return None
+        
+        tfidf_results = semantic_analysis.get('tfidf_analysis', {})
+        quality_metrics = semantic_analysis.get('quality_metrics', {})
+        
+        # Track vocabulary size for convergence detection
+        if tfidf_results:
+            vocab_size = tfidf_results.get('vocabulary_size', 0)
+            if not hasattr(self, 'vocabulary_size_history'):
+                self.vocabulary_size_history = []
+            self.vocabulary_size_history.append(vocab_size)
+            if len(self.vocabulary_size_history) > 50:
+                self.vocabulary_size_history.pop(0)
+        
+        # 1. Vocabulary too small → increase language exploration
+        if tfidf_results and len(self.vocabulary_size_history) >= 10:
+            avg_vocab_size = sum(self.vocabulary_size_history[-10:]) / 10
+            if avg_vocab_size < 30:  # Too small vocabulary
+                param = 'neural.language_model.teacher.exploration_rate'
+                current = self._get_param_value(param)
+                if current is None:
+                    # Try alternative path
+                    param = 'neural.language_model.relationship_learning.semantic_guidance.semantic_boost'
+                    current = self._get_param_value(param) or 0.2
+                
+                proposed = min(current + 0.05, 0.5) if current else 0.25
+                
+                if proposed > (current or 0):
+                    causation_event_id = self._find_recent_event('ml_analysis', 'semantic_analysis')
+                    
+                    return TuningAction(
+                        parameter_path=param,
+                        current_value=current or 0.2,
+                        proposed_value=proposed,
+                        reason=f"Vocabulary too small ({avg_vocab_size:.1f} < 30 words) - increasing language exploration",
+                        confidence=0.75,
+                        trigger_metrics={
+                            'vocabulary_size': float(avg_vocab_size),
+                            'target_size': 30.0,
+                            'top_words': len(tfidf_results.get('top_important_words', []))
+                        },
+                        causation_event_id=causation_event_id,
+                        expected_impact="Should increase vocabulary diversity and word discovery within 10-20 generations"
+                    )
+        
+        # 2. Vocabulary converging too fast → slow down learning (prevent premature convergence)
+        if tfidf_results and len(self.vocabulary_size_history) >= 20:
+            recent_vocab = self.vocabulary_size_history[-10:]
+            older_vocab = self.vocabulary_size_history[-20:-10]
+            
+            if len(recent_vocab) > 0 and len(older_vocab) > 0:
+                recent_avg = sum(recent_vocab) / len(recent_vocab)
+                older_avg = sum(older_vocab) / len(older_vocab)
+                
+                # If vocabulary is growing very fast, might be premature convergence
+                growth_rate = (recent_avg - older_avg) / older_avg if older_avg > 0 else 0
+                
+                if growth_rate > 0.5:  # 50% growth in 10 cycles = very fast
+                    param = 'neural.language_model.relationship_learning.semantic_guidance.semantic_boost'
+                    current = self._get_param_value(param) or 0.2
+                    proposed = max(current - 0.05, 0.1)  # Reduce semantic guidance
+                    
+                    if proposed < current:
+                        causation_event_id = self._find_recent_event('ml_analysis', 'semantic_analysis')
+                        
+                        return TuningAction(
+                            parameter_path=param,
+                            current_value=current,
+                            proposed_value=proposed,
+                            reason=f"Vocabulary growing too fast ({growth_rate*100:.1f}% > 50% threshold) - reducing semantic guidance to prevent premature convergence",
+                            confidence=0.7,
+                            trigger_metrics={
+                                'vocabulary_growth_rate': float(growth_rate),
+                                'recent_vocab_size': float(recent_avg),
+                                'older_vocab_size': float(older_avg),
+                                'growth_threshold': 0.5
+                            },
+                            causation_event_id=causation_event_id,
+                            expected_impact="Should slow vocabulary convergence and allow more exploration within 15-25 generations"
+                        )
+        
+        # 3. Low language quality (silhouette score) → improve language learning
+        if quality_metrics:
+            silhouette = quality_metrics.get('silhouette_score', None)
+            if silhouette is not None and silhouette < 0.3:  # Low quality clusters
+                param = 'neural.language_model.relationship_learning.quality_evaluation.coherent_threshold'
+                current = self._get_param_value(param) or 0.5
+                proposed = max(current - 0.1, 0.3)  # Lower threshold = more lenient
+                
+                if proposed < current:
+                    causation_event_id = self._find_recent_event('ml_analysis', 'semantic_analysis')
+                    
+                    return TuningAction(
+                        parameter_path=param,
+                        current_value=current,
+                        proposed_value=proposed,
+                        reason=f"Low language cluster quality (silhouette={silhouette:.3f} < 0.3) - relaxing quality threshold to allow more learning",
+                        confidence=0.65,
+                        trigger_metrics={
+                            'silhouette_score': float(silhouette),
+                            'n_clusters': quality_metrics.get('n_clusters', 0),
+                            'quality_threshold': 0.3
+                        },
+                        causation_event_id=causation_event_id,
+                        expected_impact="Should improve language cluster formation and communication quality within 20-30 generations"
+                    )
+        
+        return None
+
+    def _analyze_neural_ml_symbiosis(self, ml_metrics: Dict[str, Any], neural_metrics: Dict[str, Any]) -> Optional[TuningAction]:
+        """
+        Analyze Neural-ML Symbiosis effectiveness and tune integration parameters.
+        
+        Integration 1: Neural Embeddings → ML Features
+        Integration 2: ML Feature Importance → Neural Rewards
+        Integration 3: ML Quality Metrics → Neural Curriculum
+        """
+        if not ml_metrics or not ml_metrics.get('enabled'):
+            return None
+        
+        semantic_analysis = ml_metrics.get('semantic_analysis', {})
+        if not semantic_analysis:
+            return None
+        
+        quality_metrics = semantic_analysis.get('quality_metrics', {})
+        clustering = ml_metrics.get('clustering', {})
+        
+        # Track embedding quality (silhouette score when embeddings are used)
+        use_embeddings = self._get_param_value('scikit.clustering.use_neural_embeddings')
+        if use_embeddings > 0.5:  # Enabled
+            silhouette = quality_metrics.get('silhouette_score', None)
+            if silhouette is not None:
+                self.embedding_quality_history.append(silhouette)
+                if len(self.embedding_quality_history) > 50:
+                    self.embedding_quality_history.pop(0)
+        
+        # Track language rewards from neural_metrics
+        if neural_metrics and 'language_reward_total' in neural_metrics:
+            lang_reward = neural_metrics.get('language_reward_total', 0.0)
+            self.language_reward_history.append(lang_reward)
+            if len(self.language_reward_history) > 50:
+                self.language_reward_history.pop(0)
+        
+        # Track curriculum adjustments
+        if neural_metrics and 'curriculum_sequence_length' in neural_metrics:
+            seq_len = neural_metrics.get('curriculum_sequence_length', 0)
+            self.curriculum_adjustment_history.append(seq_len)
+            if len(self.curriculum_adjustment_history) > 50:
+                self.curriculum_adjustment_history.pop(0)
+        
+        # 1. Integration 1: Embedding quality analysis
+        if len(self.embedding_quality_history) >= 10:
+            avg_embedding_quality = sum(self.embedding_quality_history[-10:]) / 10
+            use_embeddings = self._get_param_value('scikit.clustering.use_neural_embeddings')
+            
+            # If embeddings enabled but quality is low, might need to disable or improve
+            if use_embeddings > 0.5 and avg_embedding_quality < 0.2:
+                # Try disabling embeddings to see if behavioral features work better
+                param = 'scikit.clustering.use_neural_embeddings'
+                current = use_embeddings
+                proposed = 0.0  # Disable
+                
+                causation_event_id = self._find_recent_event('ml_analysis', 'semantic_analysis')
+                
+                return TuningAction(
+                    parameter_path=param,
+                    current_value=current,
+                    proposed_value=proposed,
+                    reason=f"Neural embeddings quality low (silhouette={avg_embedding_quality:.3f} < 0.2) - disabling to use behavioral features",
+                    confidence=0.7,
+                    trigger_metrics={
+                        'embedding_quality': float(avg_embedding_quality),
+                        'quality_threshold': 0.2,
+                        'n_clusters': clustering.get('n_clusters', 0)
+                    },
+                    causation_event_id=causation_event_id,
+                    expected_impact="Should improve clustering quality by using behavioral features instead of low-quality embeddings"
+                )
+            
+            # If embeddings disabled but we have good neural organisms, try enabling
+            elif use_embeddings < 0.5 and avg_embedding_quality > 0.4:
+                param = 'scikit.clustering.use_neural_embeddings'
+                current = use_embeddings
+                proposed = 1.0  # Enable
+                
+                causation_event_id = self._find_recent_event('neural', 'neural_training')
+                
+                return TuningAction(
+                    parameter_path=param,
+                    current_value=current,
+                    proposed_value=proposed,
+                    reason=f"Neural embeddings available and quality good (silhouette={avg_embedding_quality:.3f} > 0.4) - enabling semantic clustering",
+                    confidence=0.75,
+                    trigger_metrics={
+                        'embedding_quality': float(avg_embedding_quality),
+                        'quality_threshold': 0.4
+                    },
+                    causation_event_id=causation_event_id,
+                    expected_impact="Should improve clustering by using semantic embeddings instead of behavioral features"
+                )
+        
+        # 2. Integration 2: Language reward scaling analysis
+        if len(self.language_reward_history) >= 10:
+            avg_reward = sum(self.language_reward_history[-10:]) / 10
+            current_scaling = self._get_param_value('neural.training.language_reward_scaling')
+            
+            # If rewards are too low, increase scaling
+            if avg_reward < 0.1 and current_scaling < 0.5:
+                param = 'neural.training.language_reward_scaling'
+                proposed = min(current_scaling + 0.1, 1.0)
+                
+                causation_event_id = self._find_recent_event('neural', 'neural_language_reward')
+                
+                return TuningAction(
+                    parameter_path=param,
+                    current_value=current_scaling,
+                    proposed_value=proposed,
+                    reason=f"Language rewards too low (avg={avg_reward:.3f} < 0.1) - increasing scaling to {proposed:.2f}",
+                    confidence=0.7,
+                    trigger_metrics={
+                        'avg_language_reward': float(avg_reward),
+                        'current_scaling': float(current_scaling),
+                        'target_reward': 0.1
+                    },
+                    causation_event_id=causation_event_id,
+                    expected_impact="Should increase language reward influence and improve vocabulary learning"
+                )
+            
+            # If rewards are too high, decrease scaling (might be overwhelming base rewards)
+            elif avg_reward > 2.0 and current_scaling > 0.1:
+                param = 'neural.training.language_reward_scaling'
+                proposed = max(current_scaling - 0.1, 0.0)
+                
+                causation_event_id = self._find_recent_event('neural', 'neural_language_reward')
+                
+                return TuningAction(
+                    parameter_path=param,
+                    current_value=current_scaling,
+                    proposed_value=proposed,
+                    reason=f"Language rewards too high (avg={avg_reward:.3f} > 2.0) - reducing scaling to {proposed:.2f} to balance with base rewards",
+                    confidence=0.65,
+                    trigger_metrics={
+                        'avg_language_reward': float(avg_reward),
+                        'current_scaling': float(current_scaling),
+                        'target_reward': 2.0
+                    },
+                    causation_event_id=causation_event_id,
+                    expected_impact="Should balance language rewards with base rewards for more stable learning"
+                )
+        
+        # 3. Integration 3: Curriculum adjustment analysis
+        if len(self.curriculum_adjustment_history) >= 10:
+            recent_seq = self.curriculum_adjustment_history[-10:]
+            older_seq = self.curriculum_adjustment_history[-20:-10] if len(self.curriculum_adjustment_history) >= 20 else []
+            
+            if len(recent_seq) > 0 and len(older_seq) > 0:
+                recent_avg = sum(recent_seq) / len(recent_seq)
+                older_avg = sum(older_seq) / len(older_seq)
+                
+                # If sequence length is oscillating wildly, adjust step size
+                seq_variance = sum((s - recent_avg) ** 2 for s in recent_seq) / len(recent_seq)
+                
+                if seq_variance > 100:  # High variance = oscillating
+                    param = 'neural.language_model.curriculum.ml_quality.sequence_length_step'
+                    current = self._get_param_value(param)
+                    proposed = max(current - 1, 1)  # Reduce step size
+                    
+                    causation_event_id = self._find_recent_event('neural', 'neural_curriculum_adjustment')
+                    
+                    return TuningAction(
+                        parameter_path=param,
+                        current_value=current,
+                        proposed_value=proposed,
+                        reason=f"Curriculum sequence length oscillating (variance={seq_variance:.1f} > 100) - reducing step size to {proposed} for stability",
+                        confidence=0.7,
+                        trigger_metrics={
+                            'sequence_variance': float(seq_variance),
+                            'recent_avg_length': float(recent_avg),
+                            'older_avg_length': float(older_avg),
+                            'stability_threshold': 100.0
+                        },
+                        causation_event_id=causation_event_id,
+                        expected_impact="Should stabilize curriculum adjustments and prevent oscillation"
+                    )
+        
         return None
 
     def _analyze_quantum_stability(self, quantum_metrics) -> Optional[TuningAction]:

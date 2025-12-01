@@ -301,6 +301,32 @@ The Neural System provides deep Q-learning for organism decision-making. Each or
 - `neural_decision` events in causation graph
 - Organism fitness correlation with neural updates
 
+#### Neural Relationship Learning ⭐ NEW
+
+The neural system now learns from language generation quality to strengthen/weaken semantic relationships.
+
+**Key Config Paths:**
+| Path | Safe Range | Description |
+| --- | --- | --- |
+| `/neural/language_model/relationship_learning/enabled` | true/false | Enable/disable relationship learning |
+| `/neural/language_model/relationship_learning/quality_evaluation/coherent_threshold` | 0.0-1.0 | Minimum coherence score for success (default: 0.5) |
+| `/neural/language_model/relationship_learning/quality_evaluation/garbled_threshold` | 0.0-1.0 | Maximum coherence score for failure (default: 0.2) |
+| `/neural/language_model/relationship_learning/quality_evaluation/unk_ratio_threshold` | 0.0-1.0 | Maximum UNK token ratio (default: 0.3) |
+| `/neural/language_model/relationship_learning/semantic_guidance/enabled` | true/false | Enable semantic word boosting |
+| `/neural/language_model/relationship_learning/semantic_guidance/semantic_boost` | 0.0-1.0 | Logit boost for semantically related words (default: 0.2) |
+
+**Example Commands:**
+```
+[[CONFIG_UPDATE: {"reason": "Stricter quality requirements", "correlation_id": "stricter-coherence", "patch": [{"op": "replace", "path": "/neural/language_model/relationship_learning/quality_evaluation/coherent_threshold", "value": 0.6}]}]]
+[[CONFIG_UPDATE: {"reason": "Stronger semantic guidance", "correlation_id": "stronger-guidance", "patch": [{"op": "replace", "path": "/neural/language_model/relationship_learning/semantic_guidance/semantic_boost", "value": 0.3}]}]]
+```
+
+**What to Monitor:**
+- Generation coherence scores (should improve over time)
+- Relationship success/failure rates
+- Semantic network evolution (relationships strengthening/weakening)
+- Language generation quality (coherent vs garbled ratio)
+
 ### Scikit-learn ML System (Classical ML)
 
 The Scikit-learn system provides classical machine learning algorithms for population-level analysis: clustering, anomaly detection, and dimensionality reduction.
@@ -331,6 +357,11 @@ The Scikit-learn system provides classical machine learning algorithms for popul
 - **Clustering**: Identify behavioral phenotype groups in organism population
 - **Anomaly Detection**: Flag unusual organisms or system states for investigation
 - **Dimensionality Reduction**: Visualize high-dimensional trait/behavior space
+- **Semantic Analysis** ⭐ NEW: Analyze word co-occurrence patterns and semantic relationships
+  - Word co-occurrence analysis across organisms
+  - Semantic cluster identification
+  - Concept formation tracking
+  - Relationship strength validation (ML teaches the system by strengthening strong co-occurrences)
 
 ---
 

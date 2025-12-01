@@ -1351,6 +1351,11 @@ class SymbioticNetwork:
         ml_analysis = None
         if self.ml_analyzer is not None:
             ml_analysis = self.run_ml_analysis()
+        
+        # NEW: Store ML analysis in context_memory for neural system access (AFTER analysis runs)
+        # This ensures neural system gets the latest ML analysis, not stale data
+        if self.context_memory and ml_analysis and ml_analysis.get('enabled'):
+            self.context_memory._ml_analysis_cache = ml_analysis
             
         # Record generation state in context memory for episodic tracking
         self.context_memory.record_generation_state(self.generation, {
@@ -1767,27 +1772,32 @@ class SymbioticNetwork:
                     'edge_strength': edge_data.get('strength', 0.5)
                 })
                 
-                # Emit organism_communication event for causation graph
+                # Only emit organism_communication event for very significant exchanges (quality over quantity)
+                # Match ML event selectivity - only meaningful communications
                 if self.ml_event_emitter and tokens_exchanged > 0:
-                    try:
-                        from causation_explorer import Event
-                        event = Event(
-                            timestamp=time.time(),
-                            component='language',  # FIXED: Changed from 'network' to 'language' for proper causation linking
-                            event_type='organism_communication',
-                            data={
-                                'organism_a_id': a_id,
-                                'organism_b_id': b_id,
-                                'tokens_exchanged': tokens_exchanged,
-                                'num_organisms': 2,  # Added for causation explanation
-                                'connection_strength': edge_data.get('strength', 0.5),
-                                'vp_value': vp_value,
-                                'is_linguistic_edge': edge_data.get('min_lifetime_generations', 0) >= 10
-                            }
-                        )
-                        self.ml_event_emitter(event)
-                    except ImportError:
-                        pass  # CausationExplorer not available
+                    connection_strength = edge_data.get('strength', 0.5)
+                    is_linguistic_edge = edge_data.get('min_lifetime_generations', 0) >= 10
+                    # Much higher threshold - only emit for very strong linguistic edges with large exchanges
+                    if is_linguistic_edge and connection_strength > 0.8 and tokens_exchanged >= 10:
+                        try:
+                            from causation_explorer import Event
+                            event = Event(
+                                timestamp=time.time(),
+                                component='language',  # FIXED: Changed from 'network' to 'language' for proper causation linking
+                                event_type='organism_communication',
+                                data={
+                                    'organism_a_id': a_id,
+                                    'organism_b_id': b_id,
+                                    'tokens_exchanged': tokens_exchanged,
+                                    'num_organisms': 2,  # Added for causation explanation
+                                    'connection_strength': connection_strength,
+                                    'vp_value': vp_value,
+                                    'is_linguistic_edge': is_linguistic_edge
+                                }
+                            )
+                            self.ml_event_emitter(event)
+                        except ImportError:
+                            pass  # CausationExplorer not available
         
         return {
             'exchanges_performed': len(exchanges),

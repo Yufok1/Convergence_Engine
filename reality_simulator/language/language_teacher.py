@@ -269,10 +269,46 @@ class LanguageTeacher:
         self.use_knowledge_web = teacher_config.get('use_knowledge_web', True)
         if self.use_knowledge_web:
             self.knowledge_web = LinguisticKnowledgeWeb(config)
+            
+            # Load comprehensive knowledge base from JSON files
+            try:
+                from .import_knowledge_base import KnowledgeBaseImporter
+                from pathlib import Path
+                
+                data_dir = Path(__file__).parent.parent.parent / "data"
+                if data_dir.exists():
+                    importer = KnowledgeBaseImporter(data_dir=str(data_dir))
+                    import_results = importer.import_all(self.knowledge_web, grammar_learner=None)
+                    logger.info(f"[LANGUAGE_TEACHER] Knowledge base loaded: {import_results['concepts']} concepts, "
+                               f"{import_results['relations']} relations, {import_results['patterns']} patterns")
+                    logger.info(f"[LANGUAGE_TEACHER] Total in web: {import_results['total_concepts']} concepts, "
+                               f"{import_results['total_relations']} relations")
+                else:
+                    logger.warning(f"[LANGUAGE_TEACHER] Data directory not found: {data_dir}. Skipping knowledge base import.")
+            except ImportError as e:
+                logger.warning(f"[LANGUAGE_TEACHER] Could not import knowledge base: {e}. Using base knowledge only.")
+            except Exception as e:
+                logger.warning(f"[LANGUAGE_TEACHER] Error loading knowledge base: {e}. Using base knowledge only.")
+            
             logger.info(f"[LANGUAGE_TEACHER] Linguistic Knowledge Web enabled ({len(self.knowledge_web.concepts)} concepts)")
+            
+            # Quality control configuration
+            quality_config = language_config.get('knowledge_web', {}).get('quality_control', {})
+            self.review_frequency = quality_config.get('review_frequency', 100)  # Every 100 generations
+            self.last_review_generation = 0
+            self.current_generation = 0
+            self.discoveries_this_generation = 0
+            self.discovery_cooldown = teacher_config.get('discovery_cooldown', 5)  # Generations
+            self.decay_frequency = teacher_config.get('decay_frequency', 50)  # Generations
         else:
             self.knowledge_web = None
             logger.warning("[LANGUAGE_TEACHER] Knowledge web disabled in config")
+            self.review_frequency = 100
+            self.last_review_generation = 0
+            self.current_generation = 0
+            self.discoveries_this_generation = 0
+            self.discovery_cooldown = 5
+            self.decay_frequency = 50
         
         if self.use_semantic_embeddings:
             try:
@@ -417,6 +453,32 @@ class LanguageTeacher:
                             words_assigned += 1
                             self.stats['words_by_type']['associative'] += 1
                             self.stats['associative_words'] += 1
+                            
+                            # 🔄 RECURSIVE EXPANSION: Discover relationship between words used together
+                            if hasattr(self.knowledge_web, 'discover_relationship'):
+                                # Get VP value for VP-aware exploration
+                                vp_value = 0.0
+                                if network_state:
+                                    vp_value = float(network_state.get('vp_value', 0.0))
+                                
+                                # Check discovery cooldown and cap
+                                if (generation - self.last_review_generation >= self.discovery_cooldown and
+                                    self.discoveries_this_generation < self.knowledge_web.max_discoveries_per_generation):
+                                    discovered = self.knowledge_web.discover_relationship(
+                                        word1=base_word,
+                                        word2=word,
+                                        context={
+                                            'organism_id': organism_id,
+                                            'generation': generation,
+                                            'organism_state': organism_state.tolist() if hasattr(organism_state, 'tolist') else None,
+                                            'discovery_type': 'co_occurrence'
+                                        },
+                                        strength=0.6,
+                                        generation=generation,
+                                        vp_value=vp_value
+                                    )
+                                    if discovered:
+                                        self.discoveries_this_generation += 1
                         except Exception as e:
                             logger.warning(f"[LANGUAGE_TEACHER] Failed to link associative word '{word}': {e}")
             
@@ -571,6 +633,14 @@ class LanguageTeacher:
         if generation % self.teaching_frequency != 0:
             return {'skipped': True, 'reason': 'teaching_frequency'}
         
+        # Update generation for time-based learning curve
+        self.current_generation = generation
+        if self.knowledge_web:
+            self.knowledge_web.update_generation(generation)
+        
+        # Reset discoveries counter for new generation
+        self.discoveries_this_generation = 0
+        
         self.stats['total_teachings'] += 1
         organisms_taught = 0
         total_words = 0
@@ -581,12 +651,28 @@ class LanguageTeacher:
                 organisms_taught += 1
                 total_words += words_assigned
         
+        # Periodic quality review (every N generations)
+        if generation - self.last_review_generation >= self.review_frequency:
+            self._perform_quality_review(generation)
+            self.last_review_generation = generation
+        
+        # Periodic decay (every N generations, more frequent than review)
+        if self.knowledge_web and generation % self.decay_frequency == 0:
+            quality_config = self.config.get('neural', {}).get('language_model', {}).get('knowledge_web', {}).get('quality_control', {})
+            self.knowledge_web.decay_relationships(
+                generation=generation,
+                pruning_confidence_threshold=quality_config.get('pruning_confidence_threshold', 0.2),
+                pruning_unused_generations=quality_config.get('pruning_unused_generations', 100),
+                pruning_failure_rate=quality_config.get('pruning_failure_rate', 0.7)
+            )
+        
         result = {
             'enabled': True,
             'generation': generation,
             'organisms_taught': organisms_taught,
             'total_organisms': len(organisms),
             'words_assigned': total_words,
+            'discoveries_this_generation': self.discoveries_this_generation,
             'stats': dict(self.stats)
         }
         
@@ -594,10 +680,52 @@ class LanguageTeacher:
         if generation % 10 == 0:
             logger.info(
                 f"[LANGUAGE_TEACHER] Gen {generation}: Taught {organisms_taught}/{len(organisms)} organisms, "
-                f"{total_words} words assigned"
+                f"{total_words} words assigned, {self.discoveries_this_generation} discoveries"
             )
         
         return result
+    
+    def _perform_quality_review(self, generation: int):
+        """
+        Perform system-wide quality review of discovered relationships.
+        
+        Strengthens high-quality ones, weakens low-quality ones, prunes very weak ones.
+        """
+        if not self.knowledge_web:
+            return
+        
+        logger.info(f"[LANGUAGE_TEACHER] Performing quality review at generation {generation}")
+        
+        strengthened = 0
+        weakened = 0
+        pruned = 0
+        
+        for relation in self.knowledge_web.discovered_relations:
+            if relation.is_seeded:
+                continue  # Skip seeded relationships
+            
+            total_uses = relation.success_count + relation.failure_count
+            if total_uses == 0:
+                continue  # Skip unused relationships
+            
+            success_rate = relation.success_count / total_uses
+            failure_rate = relation.failure_count / total_uses
+            
+            # Strengthen high-quality relationships
+            if success_rate > 0.6:
+                relation.strength = min(1.0, relation.strength + 0.05 * success_rate)
+                relation.confidence = min(1.0, relation.confidence + 0.1 * success_rate)
+                strengthened += 1
+            
+            # Weaken low-quality relationships
+            if failure_rate > 0.4:
+                relation.strength = max(0.1, relation.strength - 0.1 * failure_rate)
+                relation.confidence = max(0.0, relation.confidence - 0.15 * failure_rate)
+                weakened += 1
+        
+        # Pruning is handled by decay_relationships, but we log the review
+        logger.info(f"[LANGUAGE_TEACHER] Quality review complete: {strengthened} strengthened, "
+                   f"{weakened} weakened")
     
     def get_stats(self) -> Dict[str, Any]:
         """Get teaching statistics."""

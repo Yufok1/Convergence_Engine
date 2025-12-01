@@ -847,6 +847,9 @@ class CausationExplorer:
             ('neural', 'ml_analysis'): 'Neural decisions affect population patterns analyzed by ML',
             ('ml_analysis', 'explorer'): 'ML analysis influences Explorer state',
             ('explorer', 'ml_analysis'): 'Explorer phase affects ML analysis context',
+            # ML ↔ Language causations (Neural-ML Symbiosis Integration)
+            ('ml_analysis', 'language'): 'ML feature importance guides language rewards',
+            ('language', 'ml_analysis'): 'Language patterns provide data for ML clustering',
             # Language model causations (Phase 1)
             ('language', 'language'): 'Vocabulary growth enables organism communication',
             ('language', 'neural'): 'Language learning influences neural training',
@@ -855,6 +858,36 @@ class CausationExplorer:
             ('reality_sim', 'language'): 'Organism behavior creates language associations',
             ('butterfly_chat', 'language'): 'User chat interactions trigger language events',
             ('language', 'butterfly_chat'): 'Language events enable chat responses',
+            # ConfigTuner causations (Autonomous Configuration Tuning)
+            ('config_tuner', 'neural'): 'Config tuning adjusts neural parameters',
+            ('neural', 'config_tuner'): 'Neural metrics trigger config tuning',
+            ('config_tuner', 'ml_analysis'): 'Config tuning adjusts ML parameters',
+            ('ml_analysis', 'config_tuner'): 'ML metrics trigger config tuning',
+            ('config_tuner', 'language'): 'Config tuning adjusts language parameters',
+            ('language', 'config_tuner'): 'Language metrics trigger config tuning',
+            ('config_tuner', 'reality_sim'): 'Config tuning adjusts network parameters',
+            ('reality_sim', 'config_tuner'): 'Network metrics trigger config tuning',
+            ('config_tuner', 'explorer'): 'Config tuning adjusts explorer parameters',
+            ('explorer', 'config_tuner'): 'Explorer metrics trigger config tuning',
+            ('config_tuner', 'djinn_kernel'): 'Config tuning adjusts VP calculation parameters',
+            ('djinn_kernel', 'config_tuner'): 'VP metrics trigger config tuning',
+            ('config_tuner', 'config_tuner'): 'Config tuning influences future tuning decisions',
+            # Health Monitor causations (System Health Tracking)
+            ('health_monitor', 'neural'): 'Health issues affect neural training',
+            ('neural', 'health_monitor'): 'Neural training impacts system health',
+            ('health_monitor', 'ml_analysis'): 'Health patterns affect ML clustering',
+            ('ml_analysis', 'health_monitor'): 'ML analysis detects health issues',
+            ('health_monitor', 'language'): 'Health issues affect language learning',
+            ('language', 'health_monitor'): 'Language patterns indicate system health',
+            ('health_monitor', 'reality_sim'): 'Health issues affect network behavior',
+            ('reality_sim', 'health_monitor'): 'Network state impacts system health',
+            ('health_monitor', 'explorer'): 'Health issues affect explorer phase',
+            ('explorer', 'health_monitor'): 'Explorer phase impacts system health',
+            ('health_monitor', 'config_tuner'): 'Health issues trigger config tuning',
+            ('config_tuner', 'health_monitor'): 'Config tuning affects system health',
+            ('health_monitor', 'djinn_kernel'): 'Health issues affect VP calculation',
+            ('djinn_kernel', 'health_monitor'): 'VP changes impact system health',
+            ('health_monitor', 'health_monitor'): 'Health state changes influence future health',
         }
         
         # Special handling for phase transitions - they should link to what caused them
@@ -902,6 +935,68 @@ class CausationExplorer:
                 )
         
         key = (prev_event.component, new_event.component)
+        
+        # Special handling for ConfigTuner events - use longer time window (tuning happens periodically)
+        if (prev_event.component == 'config_tuner' or new_event.component == 'config_tuner') and key in direct_causations:
+            # ConfigTuner events can have longer time windows since tuning happens periodically
+            # Use a more lenient time window (4x normal) for ConfigTuner causations
+            tuner_time_window = self.direct_causation_time_window * 4.0
+            if time_diff > tuner_time_window:
+                return None
+            
+            # ConfigTuner links get specific explanations based on event type and parameter
+            explanation = direct_causations[key]
+            if prev_event.event_type == 'tuning_action':
+                param_path = prev_event.data.get('parameter_path', 'unknown')
+                current_val = prev_event.data.get('current_value', '?')
+                proposed_val = prev_event.data.get('proposed_value', '?')
+                reason = prev_event.data.get('reason', 'optimization')
+                explanation = f'Config tuning: {param_path} ({current_val} → {proposed_val}) - {reason}'
+            elif new_event.event_type == 'tuning_action':
+                param_path = new_event.data.get('parameter_path', 'unknown')
+                current_val = new_event.data.get('current_value', '?')
+                proposed_val = new_event.data.get('proposed_value', '?')
+                reason = new_event.data.get('reason', 'optimization')
+                explanation = f'System state triggers config tuning: {param_path} ({current_val} → {proposed_val}) - {reason}'
+            
+            return CausationLink(
+                from_event=prev_event.event_id,
+                to_event=new_event.event_id,
+                causation_type='direct',
+                strength=0.9,  # High strength for tuning links (meta-management is important)
+                explanation=explanation,
+                metrics_involved=list(set(prev_event.data.keys()) | set(new_event.data.keys()))
+            )
+        
+        # Special handling for Health Monitor events - use longer time window (health changes gradually)
+        if (prev_event.component == 'health_monitor' or new_event.component == 'health_monitor') and key in direct_causations:
+            # Health Monitor events can have longer time windows since health changes gradually
+            # Use a more lenient time window (3x normal) for Health Monitor causations
+            health_time_window = self.direct_causation_time_window * 3.0
+            if time_diff > health_time_window:
+                return None
+            
+            # Health Monitor links get specific explanations based on event type and health state
+            explanation = direct_causations[key]
+            if prev_event.event_type == 'health_state_change':
+                prev_state = prev_event.data.get('previous_state', 'unknown')
+                new_state = prev_event.data.get('new_state', 'unknown')
+                health_score = prev_event.data.get('health_score', 0.0)
+                explanation = f'Health state change: {prev_state} → {new_state} (score: {health_score:.2f})'
+            elif new_event.event_type == 'health_state_change':
+                prev_state = new_event.data.get('previous_state', 'unknown')
+                new_state = new_event.data.get('new_state', 'unknown')
+                health_score = new_event.data.get('health_score', 0.0)
+                explanation = f'System changes trigger health state change: {prev_state} → {new_state} (score: {health_score:.2f})'
+            
+            return CausationLink(
+                from_event=prev_event.event_id,
+                to_event=new_event.event_id,
+                causation_type='direct',
+                strength=0.88,  # High strength for health links (system monitoring is important)
+                explanation=explanation,
+                metrics_involved=list(set(prev_event.data.keys()) | set(new_event.data.keys()))
+            )
         
         # Special handling for ML Analysis events - use longer time window
         if (prev_event.component == 'ml_analysis' or new_event.component == 'ml_analysis') and key in direct_causations:
@@ -955,6 +1050,16 @@ class CausationExplorer:
             # Check if language causations are enabled
             if not self.enable_language_causations and (prev_event.component in ['language', 'butterfly_chat'] or new_event.component in ['language', 'butterfly_chat']):
                 return None
+            
+            # Check if ConfigTuner causations are enabled (if component involved)
+            if (prev_event.component == 'config_tuner' or new_event.component == 'config_tuner'):
+                # ConfigTuner causations are always enabled (no toggle needed - it's meta-management)
+                pass
+            
+            # Check if Health Monitor causations are enabled (if component involved)
+            if (prev_event.component == 'health_monitor' or new_event.component == 'health_monitor'):
+                # Health Monitor causations are always enabled (no toggle needed - it's system monitoring)
+                pass
             
             # Check if bidirectional causations are enabled
             if not self.enable_bidirectional_causations:
@@ -1097,41 +1202,79 @@ class CausationExplorer:
                 
                 # Language links get specific explanations based on event type
                 explanation = direct_causations.get(key, 'Language event affects system')
-                if prev_event.event_type == 'word_assignment':
-                    word = prev_event.data.get('word', 'unknown')
-                    org_id = prev_event.data.get('organism_id', 'unknown')
-                    explanation = f"Word '{word}' assigned to organism {org_id}"
-                elif new_event.event_type == 'word_assignment':
-                    word = new_event.data.get('word', 'unknown')
-                    org_id = new_event.data.get('organism_id', 'unknown')
-                    explanation = f"System state triggers word assignment: '{word}' to organism {org_id}"
-                elif prev_event.event_type == 'vocabulary_growth':
-                    vocab_size = prev_event.data.get('vocab_size', 0)
-                    word = prev_event.data.get('word', 'unknown')
-                    explanation = f"Vocabulary growth: word '{word}' added (vocab size: {vocab_size})"
-                elif new_event.event_type == 'vocabulary_growth':
-                    vocab_size = new_event.data.get('vocab_size', 0)
-                    word = new_event.data.get('word', 'unknown')
-                    explanation = f"System state triggers vocabulary growth: '{word}' added (vocab size: {vocab_size})"
-                elif prev_event.event_type == 'organism_communication':
-                    num_organisms = prev_event.data.get('num_organisms', 0)
-                    explanation = f'Organism communication ({num_organisms} organisms) affects network'
-                elif new_event.event_type == 'organism_communication':
-                    num_organisms = new_event.data.get('num_organisms', 0)
-                    explanation = f'Network state triggers organism communication ({num_organisms} organisms)'
-                elif prev_event.event_type == 'neural_language_training':
-                    explanation = 'Language training improves communication'
-                elif new_event.event_type == 'neural_language_training':
-                    explanation = 'Communication patterns trigger language training'
-                elif prev_event.event_type == 'butterfly_chat_message':
-                    explanation = 'User chat message triggers organism responses'
-                elif new_event.event_type == 'butterfly_chat_response':
-                    explanation = 'Organism responds to user message'
+                
+                # Language ↔ Neural: Neural-ML Symbiosis Integration 2 & 3
+                if (prev_event.component == 'language' and new_event.component == 'neural') or \
+                   (prev_event.component == 'neural' and new_event.component == 'language'):
+                    if new_event.event_type == 'neural_language_reward':
+                        explanation = 'Language patterns trigger neural language rewards'
+                    elif new_event.event_type == 'neural_curriculum_adjustment':
+                        explanation = 'Language quality metrics adjust neural curriculum'
+                    elif prev_event.event_type == 'neural_language_reward':
+                        explanation = 'Neural language rewards improve language generation'
+                    elif prev_event.event_type == 'neural_curriculum_adjustment':
+                        explanation = 'Neural curriculum adjustments optimize language learning'
+                    elif prev_event.event_type == 'vocabulary_growth':
+                        vocab_size = prev_event.data.get('vocab_size', 0)
+                        explanation = f'Vocabulary growth ({vocab_size} words) influences neural training'
+                    elif new_event.event_type == 'vocabulary_growth':
+                        vocab_size = new_event.data.get('vocab_size', 0)
+                        explanation = f'Neural training enables vocabulary growth ({vocab_size} words)'
+                
+                # Language ↔ ML: Neural-ML Symbiosis Integration 1 & 2
+                elif (prev_event.component == 'language' and new_event.component == 'ml_analysis') or \
+                     (prev_event.component == 'ml_analysis' and new_event.component == 'language'):
+                    if prev_event.component == 'ml_analysis' and new_event.event_type == 'neural_language_reward':
+                        explanation = 'ML feature importance guides language rewards'
+                    elif prev_event.component == 'language' and new_event.component == 'ml_analysis':
+                        if prev_event.event_type == 'vocabulary_growth':
+                            vocab_size = prev_event.data.get('vocab_size', 0)
+                            explanation = f'Vocabulary growth ({vocab_size} words) provides embeddings for ML clustering'
+                        elif prev_event.event_type == 'organism_communication':
+                            tokens = prev_event.data.get('tokens_exchanged', 0)
+                            explanation = f'Organism communication ({tokens} tokens) provides patterns for ML analysis'
+                
+                # Language → Language (pure language links)
+                elif prev_event.component in ['language', 'butterfly_chat'] and new_event.component in ['language', 'butterfly_chat']:
+                    if prev_event.event_type == 'word_assignment':
+                        word = prev_event.data.get('word', 'unknown')
+                        org_id = prev_event.data.get('organism_id', 'unknown')
+                        explanation = f"Word '{word}' assigned to organism {org_id}"
+                    elif new_event.event_type == 'word_assignment':
+                        word = new_event.data.get('word', 'unknown')
+                        org_id = new_event.data.get('organism_id', 'unknown')
+                        explanation = f"System state triggers word assignment: '{word}' to organism {org_id}"
+                    elif prev_event.event_type == 'vocabulary_growth':
+                        vocab_size = prev_event.data.get('vocab_size', 0)
+                        word = prev_event.data.get('word', 'unknown')
+                        explanation = f"Vocabulary growth: word '{word}' added (vocab size: {vocab_size})"
+                    elif new_event.event_type == 'vocabulary_growth':
+                        vocab_size = new_event.data.get('vocab_size', 0)
+                        word = new_event.data.get('word', 'unknown')
+                        explanation = f"System state triggers vocabulary growth: '{word}' added (vocab size: {vocab_size})"
+                    elif prev_event.event_type == 'organism_communication':
+                        num_organisms = prev_event.data.get('num_organisms', 0)
+                        explanation = f'Organism communication ({num_organisms} organisms) affects network'
+                    elif new_event.event_type == 'organism_communication':
+                        num_organisms = new_event.data.get('num_organisms', 0)
+                        explanation = f'Network state triggers organism communication ({num_organisms} organisms)'
+                    elif prev_event.event_type == 'neural_language_training':
+                        explanation = 'Language training improves communication'
+                    elif new_event.event_type == 'neural_language_training':
+                        explanation = 'Communication patterns trigger language training'
+                    elif prev_event.event_type == 'butterfly_chat_message':
+                        explanation = 'User chat message triggers organism responses'
+                    elif new_event.event_type == 'butterfly_chat_response':
+                        explanation = 'Organism responds to user message'
+                
+                # Determine causation type: 'language' for pure language links, 'direct' for cross-component links
+                causation_type = 'language' if (prev_event.component in ['language', 'butterfly_chat'] and 
+                                                new_event.component in ['language', 'butterfly_chat']) else 'direct'
                 
                 return CausationLink(
                     from_event=prev_event.event_id,
                     to_event=new_event.event_id,
-                    causation_type='language',  # ✅ Use 'language' type for language links
+                    causation_type=causation_type,
                     strength=0.8,  # Language links strength
                     explanation=explanation,
                     metrics_involved=list(set(prev_event.data.keys()) | set(new_event.data.keys()))
@@ -1313,28 +1456,28 @@ class CausationExplorer:
             
             event = self.events[event_id]
             logger.debug(f"[EVENT_LOOKUP] ✅ Found event: {event_id} (type={event.event_type}, component={event.component})")
-        
-        # Get causation info
-        predecessors = list(self.causation_graph.predecessors(event_id))
-        successors = list(self.causation_graph.successors(event_id))
-        
-        return {
-            'event': event.to_dict(),
-            'caused_by': len(predecessors),
-            'caused': len(successors),
-            'predecessor_events': [self.events[p].to_dict() for p in predecessors[:5]],
-            'successor_events': [self.events[s].to_dict() for s in successors[:5]],
-            'causation_links': [
-                {
-                    'from': self.causation_graph.nodes[p]['event'] if 'event' in self.causation_graph.nodes[p] else {},
-                    'to': event.to_dict(),
-                    'type': self.causation_graph[p][event_id].get('causation_type', 'unknown'),
-                    'strength': self.causation_graph[p][event_id].get('strength', 0.0),
-                    'explanation': self.causation_graph[p][event_id].get('explanation', '')
-                }
-                for p in predecessors[:5]
-            ]
-        }
+            
+            # Get causation info (must be inside lock for thread safety)
+            predecessors = list(self.causation_graph.predecessors(event_id))
+            successors = list(self.causation_graph.successors(event_id))
+            
+            return {
+                'event': event.to_dict(),
+                'caused_by': len(predecessors),
+                'caused': len(successors),
+                'predecessor_events': [self.events[p].to_dict() for p in predecessors[:5] if p in self.events],
+                'successor_events': [self.events[s].to_dict() for s in successors[:5] if s in self.events],
+                'causation_links': [
+                    {
+                        'from': self.causation_graph.nodes[p]['event'] if p in self.causation_graph.nodes and 'event' in self.causation_graph.nodes[p] else {},
+                        'to': event.to_dict(),
+                        'type': self.causation_graph[p][event_id].get('causation_type', 'unknown') if self.causation_graph.has_edge(p, event_id) else 'unknown',
+                        'strength': self.causation_graph[p][event_id].get('strength', 0.0) if self.causation_graph.has_edge(p, event_id) else 0.0,
+                        'explanation': self.causation_graph[p][event_id].get('explanation', '') if self.causation_graph.has_edge(p, event_id) else ''
+                    }
+                    for p in predecessors[:5] if p in self.events
+                ]
+            }
     
     def search_events(self, query: str) -> List[Dict[str, Any]]:
         """Search events by component, type, or metric"""
@@ -1428,11 +1571,13 @@ class CausationExplorer:
                 
                 event_id = normalized_id
             
+            # Use same simple approach as explore_backwards (which works)
             root_causes = []
             visited = set()
-            paths_to_roots = {}  # root_id -> list of paths to it
+            root_events = {}  # root_id -> path info
             
             def trace_to_roots(current_id: str, path: List[str], depth: int):
+                # Same checks as working explore_backwards
                 if depth > max_depth or current_id in visited:
                     return
                 
@@ -1443,9 +1588,11 @@ class CausationExplorer:
                 
                 if not predecessors:
                     # Found a root cause!
-                    if current_id not in paths_to_roots:
-                        paths_to_roots[current_id] = []
-                    paths_to_roots[current_id].append(path)
+                    if current_id not in root_events:
+                        root_events[current_id] = {
+                            'path': path,
+                            'depth': depth
+                        }
                 else:
                     for pred_id in predecessors:
                         trace_to_roots(pred_id, path, depth + 1)
@@ -1453,49 +1600,49 @@ class CausationExplorer:
             trace_to_roots(event_id, [], 0)
             
             # Build rich root cause analysis
-            for root_id, paths in paths_to_roots.items():
+            for root_id, path_info in root_events.items():
                 if root_id not in self.events:
                     continue
                 
                 root_event = self.events[root_id]
-            shortest_path = min(paths, key=len)
+                shortest_path = path_info['path']
+                
+                # Calculate total causal strength along path
+                total_strength = 0.0
+                chain_explanations = []
+                for i in range(len(shortest_path) - 1):
+                    from_id, to_id = shortest_path[i], shortest_path[i + 1]
+                    if self.causation_graph.has_edge(from_id, to_id):
+                        edge_data = self.causation_graph[from_id][to_id]
+                        total_strength += edge_data.get('strength', 0.5)
+                        chain_explanations.append(edge_data.get('explanation', 'Unknown causation'))
+                
+                avg_strength = total_strength / max(1, len(shortest_path) - 1)
+                
+                # Enhanced narrative for language events
+                narrative = self._build_causation_narrative(shortest_path, chain_explanations)
+                
+                # Add language-specific context to narrative
+                if root_event.component in ['language', 'butterfly_chat']:
+                    if root_event.event_type == 'vocabulary_growth':
+                        vocab_size = root_event.data.get('vocab_size', 0)
+                        narrative = f"🦋 Language Root: Vocabulary growth ({vocab_size} words) → " + narrative
+                    elif root_event.event_type == 'organism_communication':
+                        num_orgs = root_event.data.get('num_organisms', root_event.data.get('tokens_exchanged', 0))
+                        narrative = f"💬 Language Root: Organism communication ({num_orgs} tokens) → " + narrative
+                    elif root_event.event_type in ['butterfly_chat_message', 'butterfly_chat_response']:
+                        narrative = f"💭 Language Root: User-organism interaction → " + narrative
+                
+                root_causes.append({
+                    'root_event': root_event.to_dict(),
+                    'depth': len(shortest_path) - 1,
+                    'causal_chain': [self.events[eid].to_dict() for eid in shortest_path if eid in self.events],
+                    'chain_explanations': chain_explanations,
+                    'avg_strength': round(avg_strength, 3),
+                    'num_paths': len(paths),
+                    'narrative': narrative
+                })
             
-            # Calculate total causal strength along path
-            total_strength = 0.0
-            chain_explanations = []
-            for i in range(len(shortest_path) - 1):
-                from_id, to_id = shortest_path[i], shortest_path[i + 1]
-                if self.causation_graph.has_edge(from_id, to_id):
-                    edge_data = self.causation_graph[from_id][to_id]
-                    total_strength += edge_data.get('strength', 0.5)
-                    chain_explanations.append(edge_data.get('explanation', 'Unknown causation'))
-            
-            avg_strength = total_strength / max(1, len(shortest_path) - 1)
-            
-            # Enhanced narrative for language events
-            narrative = self._build_causation_narrative(shortest_path, chain_explanations)
-            
-            # Add language-specific context to narrative
-            if root_event.component in ['language', 'butterfly_chat']:
-                if root_event.event_type == 'vocabulary_growth':
-                    vocab_size = root_event.data.get('vocab_size', 0)
-                    narrative = f"🦋 Language Root: Vocabulary growth ({vocab_size} words) → " + narrative
-                elif root_event.event_type == 'organism_communication':
-                    num_orgs = root_event.data.get('num_organisms', root_event.data.get('tokens_exchanged', 0))
-                    narrative = f"💬 Language Root: Organism communication ({num_orgs} tokens) → " + narrative
-                elif root_event.event_type in ['butterfly_chat_message', 'butterfly_chat_response']:
-                    narrative = f"💭 Language Root: User-organism interaction → " + narrative
-            
-            root_causes.append({
-                'root_event': root_event.to_dict(),
-                'depth': len(shortest_path) - 1,
-                'causal_chain': [self.events[eid].to_dict() for eid in shortest_path if eid in self.events],
-                'chain_explanations': chain_explanations,
-                'avg_strength': round(avg_strength, 3),
-                'num_paths': len(paths),
-                'narrative': narrative
-            })
-        
             # Sort by relevance: higher strength and shorter depth = more relevant
             root_causes.sort(key=lambda x: (x['avg_strength'] * 2 - x['depth'] * 0.1), reverse=True)
             
@@ -1515,117 +1662,123 @@ class CausationExplorer:
         
         This is the "what did this set in motion?" query.
         """
-        # Try exact match first
-        if event_id not in self.events:
-            # Try normalizing event ID
-            normalized_id = event_id
-            if event_id.startswith('evt') and not event_id.startswith('evt_'):
-                normalized_id = 'evt_' + event_id[3:] if len(event_id) > 3 else event_id
-            
-            if normalized_id not in self.events:
-                available_ids = list(self.events.keys())[:20]
-                logger.warning(f"[EVENT_LOOKUP] Event not found in analyze_impact: {event_id} (normalized: {normalized_id}). Available events: {len(self.events)} total. Sample IDs: {available_ids}")
-                return {
-                    'error': f'Event not found: {event_id}',
-                    'normalized_id': normalized_id,
-                    'available_event_count': len(self.events),
-                    'sample_event_ids': available_ids,
-                    'impacts': []
-                }
-            
+        # CRITICAL: Use lock to ensure thread-safe access
+        with self.graph_lock:
+            # Try exact match first
+            if event_id not in self.events:
+                # Try normalizing event ID
+                normalized_id = event_id
+                if event_id.startswith('evt') and not event_id.startswith('evt_'):
+                    normalized_id = 'evt_' + event_id[3:] if len(event_id) > 3 else event_id
+                
+                if normalized_id not in self.events:
+                    available_ids = list(self.events.keys())[:20]
+                    logger.warning(f"[EVENT_LOOKUP] Event not found in analyze_impact: {event_id} (normalized: {normalized_id}). Available events: {len(self.events)} total. Sample IDs: {available_ids}")
+                    return {
+                        'error': f'Event not found: {event_id}',
+                        'normalized_id': normalized_id,
+                        'available_event_count': len(self.events),
+                        'sample_event_ids': available_ids,
+                        'impacts': []
+                    }
+                
                 event_id = normalized_id
                 logger.debug(f"[EVENT_LOOKUP] Event ID normalized in analyze_impact: {normalized_id} -> {event_id}")
             
+            # Use same simple approach as explore_forwards (which works)
             impacts = []
-        visited = set()
-        leaf_effects = {}  # leaf_id -> list of paths to it
-        
-        def trace_effects(current_id: str, path: List[str], depth: int):
-            if depth > max_depth or current_id in visited:
-                return
+            visited = set()
+            leaf_events = {}  # leaf_id -> path info
             
-            visited.add(current_id)
-            path = path + [current_id]
+            def trace_effects(current_id: str, path: List[str], depth: int):
+                # Same checks as working explore_forwards
+                if depth > max_depth or current_id in visited:
+                    return
+                
+                visited.add(current_id)
+                path = path + [current_id]
+                
+                successors = list(self.causation_graph.successors(current_id))
+                
+                if not successors and current_id != event_id:
+                    # Found a leaf effect!
+                    if current_id not in leaf_events:
+                        leaf_events[current_id] = {
+                            'path': path,
+                            'depth': depth
+                        }
+                else:
+                    for succ_id in successors:
+                        trace_effects(succ_id, path, depth + 1)
             
-            successors = list(self.causation_graph.successors(current_id))
+            trace_effects(event_id, [], 0)
             
-            if not successors and current_id != event_id:
-                # Found a leaf effect!
-                if current_id not in leaf_effects:
-                    leaf_effects[current_id] = []
-                leaf_effects[current_id].append(path)
-            else:
-                for succ_id in successors:
-                    trace_effects(succ_id, path, depth + 1)
-        
-        trace_effects(event_id, [], 0)
-        
-        # Also count total affected events
-        all_affected = set()
-        def count_all_effects(current_id: str, depth: int):
-            if depth > max_depth or current_id in all_affected:
-                return
-            all_affected.add(current_id)
-            for succ_id in self.causation_graph.successors(current_id):
-                count_all_effects(succ_id, depth + 1)
-        
-        count_all_effects(event_id, 0)
-        all_affected.discard(event_id)  # Don't count the source event
-        
-        # Build impact analysis
-        for leaf_id, paths in leaf_effects.items():
-            if leaf_id not in self.events:
-                continue
+            # Also count total affected events
+            all_affected = set()
+            def count_all_effects(current_id: str, depth: int):
+                if depth > max_depth or current_id in all_affected:
+                    return
+                all_affected.add(current_id)
+                for succ_id in self.causation_graph.successors(current_id):
+                    count_all_effects(succ_id, depth + 1)
             
-            leaf_event = self.events[leaf_id]
-            shortest_path = min(paths, key=len)
+            count_all_effects(event_id, 0)
+            all_affected.discard(event_id)  # Don't count the source event
             
-            # Calculate propagation strength
-            total_strength = 0.0
-            chain_explanations = []
-            for i in range(len(shortest_path) - 1):
-                from_id, to_id = shortest_path[i], shortest_path[i + 1]
-                if self.causation_graph.has_edge(from_id, to_id):
-                    edge_data = self.causation_graph[from_id][to_id]
-                    total_strength += edge_data.get('strength', 0.5)
-                    chain_explanations.append(edge_data.get('explanation', 'Unknown effect'))
+            # Build impact analysis
+            for leaf_id, path_info in leaf_events.items():
+                if leaf_id not in self.events:
+                    continue
+                
+                leaf_event = self.events[leaf_id]
+                shortest_path = path_info['path']
+                
+                # Calculate propagation strength
+                total_strength = 0.0
+                chain_explanations = []
+                for i in range(len(shortest_path) - 1):
+                    from_id, to_id = shortest_path[i], shortest_path[i + 1]
+                    if self.causation_graph.has_edge(from_id, to_id):
+                        edge_data = self.causation_graph[from_id][to_id]
+                        total_strength += edge_data.get('strength', 0.5)
+                        chain_explanations.append(edge_data.get('explanation', 'Unknown effect'))
+                
+                avg_strength = total_strength / max(1, len(shortest_path) - 1)
+                
+                # Enhanced propagation narrative for language events
+                propagation_narrative = self._build_propagation_narrative(shortest_path, chain_explanations)
+                
+                # Add language-specific context
+                if leaf_event.component in ['language', 'butterfly_chat']:
+                    if leaf_event.event_type == 'vocabulary_growth':
+                        vocab_size = leaf_event.data.get('vocab_size', 0)
+                        propagation_narrative = f"🦋 Language Impact: {propagation_narrative} → Vocabulary growth ({vocab_size} words)"
+                    elif leaf_event.event_type == 'organism_communication':
+                        tokens = leaf_event.data.get('tokens_exchanged', leaf_event.data.get('num_organisms', 0))
+                        propagation_narrative = f"💬 Language Impact: {propagation_narrative} → Organism communication ({tokens} tokens)"
+                    elif leaf_event.event_type in ['butterfly_chat_message', 'butterfly_chat_response']:
+                        propagation_narrative = f"💭 Language Impact: {propagation_narrative} → User-organism interaction"
+                
+                impacts.append({
+                    'effect_event': leaf_event.to_dict(),
+                    'propagation_depth': len(shortest_path) - 1,
+                    'effect_chain': [self.events[eid].to_dict() for eid in shortest_path if eid in self.events],
+                    'chain_explanations': chain_explanations,
+                    'propagation_strength': round(avg_strength, 3),
+                    'num_paths': 1,  # Simplified - just track one path per leaf
+                    'severity': self._calculate_severity(leaf_event),
+                    'propagation_narrative': propagation_narrative
+                })
             
-            avg_strength = total_strength / max(1, len(shortest_path) - 1)
+            # Sort by severity and propagation strength
+            impacts.sort(key=lambda x: (x['severity'] * 2 + x['propagation_strength']), reverse=True)
             
-            # Enhanced propagation narrative for language events
-            propagation_narrative = self._build_propagation_narrative(shortest_path, chain_explanations)
+            # Categorize affected events by component
+            affected_by_component = defaultdict(int)
+            for eid in all_affected:
+                if eid in self.events:
+                    affected_by_component[self.events[eid].component] += 1
             
-            # Add language-specific context
-            if leaf_event.component in ['language', 'butterfly_chat']:
-                if leaf_event.event_type == 'vocabulary_growth':
-                    vocab_size = leaf_event.data.get('vocab_size', 0)
-                    propagation_narrative = f"🦋 Language Impact: {propagation_narrative} → Vocabulary growth ({vocab_size} words)"
-                elif leaf_event.event_type == 'organism_communication':
-                    tokens = leaf_event.data.get('tokens_exchanged', leaf_event.data.get('num_organisms', 0))
-                    propagation_narrative = f"💬 Language Impact: {propagation_narrative} → Organism communication ({tokens} tokens)"
-                elif leaf_event.event_type in ['butterfly_chat_message', 'butterfly_chat_response']:
-                    propagation_narrative = f"💭 Language Impact: {propagation_narrative} → User-organism interaction"
-            
-            impacts.append({
-                'effect_event': leaf_event.to_dict(),
-                'propagation_depth': len(shortest_path) - 1,
-                'effect_chain': [self.events[eid].to_dict() for eid in shortest_path if eid in self.events],
-                'chain_explanations': chain_explanations,
-                'propagation_strength': round(avg_strength, 3),
-                'num_paths': len(paths),
-                'severity': self._calculate_severity(leaf_event),
-                'propagation_narrative': propagation_narrative
-            })
-        
-        # Sort by severity and propagation strength
-        impacts.sort(key=lambda x: (x['severity'] * 2 + x['propagation_strength']), reverse=True)
-        
-        # Categorize affected events by component
-        affected_by_component = defaultdict(int)
-        for eid in all_affected:
-            if eid in self.events:
-                affected_by_component[self.events[eid].component] += 1
-        
             return {
                 'source_event': self.events[event_id].to_dict(),
                 'total_affected_events': len(all_affected),

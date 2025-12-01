@@ -65,6 +65,7 @@ pip install pywin32
 - **[NEURAL_SYSTEM_README.md](./NEURAL_SYSTEM_README.md)** - Neural system quick reference
 - **[NEURAL_FRAMEWORK_ALTERNATIVES.md](./NEURAL_FRAMEWORK_ALTERNATIVES.md)** - Alternative deep learning frameworks (JAX, TensorFlow, Flax, etc.)
 - **[SIMPLE_PYTORCH_OPTIMIZATIONS.md](./SIMPLE_PYTORCH_OPTIMIZATIONS.md)** - Get 5-10x speedup with simple code changes
+- **[docs/NEURAL_RELATIONSHIP_LEARNING.md](./docs/NEURAL_RELATIONSHIP_LEARNING.md)** - ⭐ NEW - Neural system learns from generation quality to strengthen/weaken semantic relationships
 
 ### 🦋 Language Model System ⭐ NEW
 
@@ -115,6 +116,12 @@ pip install pywin32
 ---
 
 ## 🔬 Technical Deep Dives
+
+### Machine Learning & Neural Systems
+
+- **[docs/SKLEARN_ENHANCEMENT_OPPORTUNITIES.md](./docs/SKLEARN_ENHANCEMENT_OPPORTUNITIES.md)** - ⭐ NEW - Additional scikit-learn tools for language learning (TF-IDF, Nearest Neighbors, Feature Selection, etc.)
+- **[docs/NEURAL_RELATIONSHIP_LEARNING.md](./docs/NEURAL_RELATIONSHIP_LEARNING.md)** - ⭐ NEW - Neural system learns from generation quality to strengthen/weaken semantic relationships
+- **[docs/CONFIG_EXPOSURE_SUMMARY.md](./docs/CONFIG_EXPOSURE_SUMMARY.md)** - ⭐ NEW - Configuration exposure guide for new systems (CRA control)
 
 ### Violation Pressure (VP) System
 

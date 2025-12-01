@@ -131,6 +131,15 @@ class NeuralOrganism(Organism):
             max_seq_len = language_config.get('max_sequence_length', 128)
             self.action_history = deque(maxlen=max_seq_len)  # Recent actions
             self.state_history = deque(maxlen=max_seq_len)   # Recent states
+        
+        # Cache for language embeddings (Integration 1: Neural-ML Symbiosis)
+        self._cached_embedding = None
+        self._embedding_cache_state_hash = None
+        
+        if PYTORCH_AVAILABLE and neural_config.get('enabled', False):
+            # Sequence tracking for language model (deque auto-truncates)
+            language_config = neural_config.get('language_model', {})
+            max_seq_len = language_config.get('max_sequence_length', 128)
             self.token_sequence = deque(maxlen=max_seq_len)  # Token IDs for LM training
             
             # Track previous state for experience recording
@@ -723,12 +732,36 @@ class NeuralOrganism(Organism):
             except ImportError:
                 SPECIAL_TOKENS = {'<PAD>': 0, '<UNK>': 1, '<START>': 2, '<END>': 3, '<VP_GATE>': 4}
         
+        # ═══════════════════════════════════════════════════════════════════════════
+        # 🎯 ADAPTIVE MAX_LENGTH: Adjust generation length based on experience
+        # ═══════════════════════════════════════════════════════════════════════════
+        experience_count = len(self.experience_buffer) if hasattr(self, 'experience_buffer') else 0
+        vocab_size = vocab.vocab_size
+        
+        # Start with shorter sequences early, scale up as network learns
+        if experience_count < 10:
+            adaptive_max_length = min(5, max(3, vocab_size // 8))
+        elif experience_count < 50:
+            adaptive_max_length = min(10, max(5, vocab_size // 5))
+        elif experience_count < 100:
+            adaptive_max_length = min(20, max(10, vocab_size // 3))
+        else:
+            adaptive_max_length = max_length  # Use provided max_length when experienced
+        
+        # Don't exceed provided max_length
+        effective_max_length = min(adaptive_max_length, max_length)
+        
         generated = [vocab.get_id('<START>')]
         # Get device from brain model (CPU or CUDA)
         device = next(self.brain.parameters()).device
         # Get correct input dimension from config
         input_dim = self.config.get('neural', {}).get('brain', {}).get('input_dim', 18)
         self.brain.eval()
+        
+        # Early stopping for UNK sequences
+        unk_count = 0
+        max_unk_before_stop = 3
+        
         with torch.no_grad():
             # Start with current state as context
             if len(self.state_history) > 0:
@@ -740,7 +773,7 @@ class NeuralOrganism(Organism):
             else:
                 state_tensor = torch.zeros(1, input_dim, device=device)
             
-            for _ in range(max_length - 1):
+            for _ in range(effective_max_length - 1):
                 # Get language logits from brain
                 output = self.brain.forward(state_tensor, vp_value=vp_value)
                 
@@ -759,6 +792,94 @@ class NeuralOrganism(Organism):
                     
                     # Apply temperature
                     logits = language_logits[0] / temperature
+                    
+                    # 🔄 SEMANTIC REASONING: Quality-controlled semantic guidance
+                    # Only strengthens coherent formations, prevents garbled chains
+                    if context_memory and hasattr(context_memory, 'vocabulary'):
+                        # Get Linguistic Knowledge Web if available
+                        knowledge_web = None
+                        if hasattr(context_memory, 'knowledge_web'):
+                            knowledge_web = context_memory.knowledge_web
+                        elif hasattr(context_memory, 'language_teacher') and hasattr(context_memory.language_teacher, 'knowledge_web'):
+                            knowledge_web = context_memory.language_teacher.knowledge_web
+                        
+                        if knowledge_web and len(generated) > 1:
+                            # Get last generated word for semantic reasoning
+                            last_token = generated[-1]
+                            last_word = vocab.get_word(last_token)
+                            
+                            if last_word and last_word not in ['<START>', '<END>', '<PAD>', '<UNK>', '<VP_GATE>']:
+                                # Get semantic guidance config
+                                semantic_config = self.config.get('neural', {}).get('language_model', {}).get('relationship_learning', {}).get('semantic_guidance', {})
+                                semantic_enabled = semantic_config.get('enabled', True)
+                                min_strength = semantic_config.get('min_strength_threshold', 0.7)
+                                semantic_boost = semantic_config.get('semantic_boost', 0.2)
+                                high_strength_boost = semantic_config.get('high_strength_boost', 0.1)
+                                max_similar_words = semantic_config.get('max_similar_words', 5)
+                                
+                                if semantic_enabled:
+                                    # QUALITY-CONTROLLED CASCADING: Only use high-confidence semantic relationships
+                                    # Use higher strength threshold to prevent garbled chains
+                                    similar_words = knowledge_web.get_similar_words(last_word, min_strength=min_strength)
+                                    
+                                    # Track which relationships we're using for success/failure recording
+                                    used_relationships = []
+                                    
+                                    # Only boost if neural network already has some confidence (coherent reasoning)
+                                    # Get current top predictions
+                                    current_probs = torch.softmax(logits, dim=-1)
+                                    top_probs, top_indices = torch.topk(current_probs, 10)
+                                    
+                                    # Boost logits for semantically related words that are ALREADY in top predictions
+                                    # This ensures coherence - we strengthen existing good predictions, not random words
+                                    for similar_word in similar_words[:max_similar_words]:
+                                        try:
+                                            similar_token = vocab.get_id(similar_word)
+                                            if similar_token < vocab_size and similar_token >= 0:
+                                                # Find the relationship we're using
+                                                relations = knowledge_web.get_relations(last_word)
+                                                for r in relations:
+                                                    if (r.target == similar_word or r.source == similar_word) and r not in used_relationships:
+                                                        used_relationships.append(r)
+                                                        break
+                                                
+                                                # Only boost if word is already in top predictions (coherent)
+                                                if similar_token in top_indices:
+                                                    logits[similar_token] += semantic_boost
+                                                # Or if it has very high semantic strength (strong formation)
+                                                elif any(r.strength >= 0.8 and (r.target == similar_word or r.source == similar_word) 
+                                                        for r in knowledge_web.get_relations(last_word)):
+                                                    logits[similar_token] += high_strength_boost  # Smaller boost for high-strength
+                                        except:
+                                            pass
+                                    
+                                    # NEW: TF-IDF Importance Bias (if ML analysis available)
+                                    # Boost words that are important across the population
+                                    if hasattr(context_memory, '_ml_analysis_cache'):
+                                        ml_analysis = context_memory._ml_analysis_cache
+                                        if ml_analysis:
+                                            semantic_analysis = ml_analysis.get('semantic_analysis', {})
+                                            tfidf_results = semantic_analysis.get('tfidf_analysis', {})
+                                            if tfidf_results:
+                                                important_words = tfidf_results.get('top_important_words', [])
+                                                # Create word -> TF-IDF score mapping
+                                                tfidf_scores = {item['word']: item['tfidf_score'] for item in important_words}
+                                                
+                                                # Boost important words in logits
+                                                for word, score in tfidf_scores.items():
+                                                    try:
+                                                        word_token = vocab.get_id(word)
+                                                        if word_token < vocab_size and word_token >= 0:
+                                                            # Boost by TF-IDF score (scaled)
+                                                            logits[word_token] += score * 0.1  # Small boost for important words
+                                                    except:
+                                                        pass
+                                    
+                                    # Store used relationships for later success/failure recording
+                                    if not hasattr(self, '_generation_relationships'):
+                                        self._generation_relationships = []
+                                    self._generation_relationships.extend(used_relationships)
+                    
                     probs = torch.softmax(logits, dim=-1)
                     
                     # Sample next token, ensuring it's within vocabulary range
@@ -771,6 +892,7 @@ class NeuralOrganism(Organism):
                     if word == '<UNK>' and vocab_size > len(SPECIAL_TOKENS):
                         # Try nearby tokens to find a valid word
                         non_special_size = vocab_size - len(SPECIAL_TOKENS)
+                        found_valid = False
                         for offset in range(1, min(10, non_special_size)):
                             # Try both directions
                             for direction in [-1, 1]:
@@ -779,9 +901,23 @@ class NeuralOrganism(Organism):
                                     candidate_word = vocab.get_word(candidate)
                                     if candidate_word and candidate_word != '<UNK>':
                                         next_token = candidate
+                                        word = candidate_word
+                                        found_valid = True
                                         break
-                            if vocab.get_word(next_token) != '<UNK>':
+                            if found_valid:
                                 break
+                        
+                        # Track UNK count for early stopping
+                        if not found_valid:
+                            unk_count += 1
+                        else:
+                            unk_count = 0  # Reset on valid token
+                    else:
+                        unk_count = 0  # Reset on valid token
+                    
+                    # Early stopping: if too many consecutive UNKs, stop generation
+                    if unk_count >= max_unk_before_stop:
+                        break
                 else:
                     # No language head, use action as pseudo-token
                     # Map action to a valid vocabulary token (use modulo to keep in range)
@@ -814,7 +950,261 @@ class NeuralOrganism(Organism):
                 if next_token == vocab.get_id('<END>'):
                     break
         
+        # 🎓 LEARNING FROM GENERATION: Record relationship success/failure
+        # Evaluate generation quality and strengthen/weaken semantic relationships
+        relationship_learning_enabled = self.config.get('neural', {}).get('language_model', {}).get('relationship_learning', {}).get('enabled', True)
+        
+        if relationship_learning_enabled and context_memory and hasattr(context_memory, 'vocabulary'):
+            knowledge_web = None
+            if hasattr(context_memory, 'knowledge_web'):
+                knowledge_web = context_memory.knowledge_web
+            elif hasattr(context_memory, 'language_teacher') and hasattr(context_memory.language_teacher, 'knowledge_web'):
+                knowledge_web = context_memory.language_teacher.knowledge_web
+            
+            if knowledge_web and hasattr(self, '_generation_relationships') and self._generation_relationships:
+                # Evaluate generation quality
+                generation_quality = self._evaluate_generation_quality(generated, vocab, knowledge_web)
+                
+                # Record success/failure for each relationship used
+                for relation in self._generation_relationships:
+                    if generation_quality['is_coherent']:
+                        # Successful use - strengthen relationship
+                        try:
+                            knowledge_web.record_relationship_success(
+                                relation.source, relation.target, relation.relation_type
+                            )
+                        except Exception as e:
+                            logger.debug(f"[NEURAL] Failed to record relationship success: {e}")
+                    elif generation_quality['is_garbled']:
+                        # Failed use - weaken relationship
+                        try:
+                            knowledge_web.record_relationship_failure(
+                                relation.source, relation.target, relation.relation_type
+                            )
+                        except Exception as e:
+                            logger.debug(f"[NEURAL] Failed to record relationship failure: {e}")
+                
+                # Clear tracked relationships for next generation
+                self._generation_relationships = []
+        
         return generated
+    
+    def _evaluate_generation_quality(self, generated: List[int], vocab: Any, knowledge_web: Any) -> Dict[str, Any]:
+        """
+        Evaluate quality of generated token sequence.
+        
+        Assesses:
+        - Coherence: Do words form semantically meaningful sequences?
+        - Garbled: Are words randomly combined without semantic relationships?
+        - Length: Is sequence appropriate length?
+        - Special tokens: Too many UNK tokens indicates poor generation
+        
+        Args:
+            generated: List of generated token IDs
+            vocab: LanguageVocabulary instance
+            knowledge_web: LinguisticKnowledgeWeb instance
+            
+        Returns:
+            Dict with quality metrics:
+            - is_coherent: bool - Words form meaningful semantic sequences
+            - is_garbled: bool - Words are randomly combined
+            - coherence_score: float - 0.0-1.0 semantic coherence
+            - length_score: float - 0.0-1.0 appropriate length
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        # Get config for quality evaluation thresholds
+        quality_config = self.config.get('neural', {}).get('language_model', {}).get('relationship_learning', {}).get('quality_evaluation', {})
+        coherent_threshold = quality_config.get('coherent_threshold', 0.5)
+        garbled_threshold = quality_config.get('garbled_threshold', 0.2)
+        unk_ratio_threshold = quality_config.get('unk_ratio_threshold', 0.3)
+        min_word_count = quality_config.get('min_word_count', 2)
+        min_word_count_for_eval = quality_config.get('min_word_count_for_evaluation', 3)
+        max_word_count = quality_config.get('max_word_count', 20)
+        relationship_strength_threshold = quality_config.get('relationship_strength_threshold', 0.5)
+        
+        if not generated or len(generated) < 2:
+            return {
+                'is_coherent': False,
+                'is_garbled': True,
+                'coherence_score': 0.0,
+                'length_score': 0.0
+            }
+        
+        # Convert tokens to words
+        words = []
+        unk_count = 0
+        special_tokens = {'<START>', '<END>', '<PAD>', '<UNK>', '<VP_GATE>'}
+        
+        for token in generated:
+            word = vocab.get_word(token)
+            if word:
+                if word in special_tokens:
+                    if word == '<UNK>':
+                        unk_count += 1
+                else:
+                    words.append(word)
+        
+        # Too many UNK tokens = garbled
+        unk_ratio = unk_count / len(generated) if generated else 0.0
+        if unk_ratio > unk_ratio_threshold:
+            return {
+                'is_coherent': False,
+                'is_garbled': True,
+                'coherence_score': 0.0,
+                'length_score': 0.0
+            }
+        
+        # Too short = incomplete, too long = rambling
+        word_count = len(words)
+        if word_count < min_word_count:
+            return {
+                'is_coherent': False,
+                'is_garbled': True,
+                'coherence_score': 0.0,
+                'length_score': 0.0
+            }
+        
+        length_score = 1.0
+        if word_count < min_word_count_for_eval:
+            length_score = 0.5  # Too short
+        elif word_count > max_word_count:
+            length_score = 0.7  # Too long, might be rambling
+        
+        # Check semantic coherence: do consecutive words have semantic relationships?
+        if not knowledge_web or word_count < min_word_count:
+            return {
+                'is_coherent': False,
+                'is_garbled': True,
+                'coherence_score': 0.0,
+                'length_score': length_score
+            }
+        
+        # Evaluate semantic relationships between consecutive words
+        coherent_pairs = 0
+        total_pairs = word_count - 1
+        
+        for i in range(len(words) - 1):
+            word1 = words[i]
+            word2 = words[i + 1]
+            
+            # Check if words have semantic relationship
+            try:
+                relations = knowledge_web.get_relations(word1)
+                has_relationship = any(
+                    (r.target == word2 or r.source == word2) and r.strength >= relationship_strength_threshold
+                    for r in relations
+                )
+                
+                # Also check reverse (word2 -> word1)
+                if not has_relationship:
+                    relations2 = knowledge_web.get_relations(word2)
+                    has_relationship = any(
+                        (r.target == word1 or r.source == word1) and r.strength >= relationship_strength_threshold
+                        for r in relations2
+                    )
+                
+                if has_relationship:
+                    coherent_pairs += 1
+            except Exception as e:
+                logger.debug(f"[NEURAL] Error checking semantic relationship: {e}")
+        
+        coherence_score = coherent_pairs / total_pairs if total_pairs > 0 else 0.0
+        
+        # Determine if coherent or garbled (using config thresholds)
+        is_coherent = coherence_score >= coherent_threshold
+        is_garbled = coherence_score < garbled_threshold
+        
+        return {
+            'is_coherent': is_coherent,
+            'is_garbled': is_garbled,
+            'coherence_score': coherence_score,
+            'length_score': length_score,
+            'word_count': word_count,
+            'unk_ratio': unk_ratio
+        }
+    
+    def get_language_embedding(self, context_memory: Any = None) -> Optional[np.ndarray]:
+        """
+        Extract semantic embedding from fc2 hidden state (post-attention, pre-language-head).
+        
+        Integration 1: Neural-ML Symbiosis - provides semantic representation for ML clustering.
+        
+        Args:
+            context_memory: Optional context memory (not used but kept for API consistency)
+            
+        Returns:
+            64-dim numpy array representing semantic embedding, or None if not available
+        """
+        if not PYTORCH_AVAILABLE or self.brain is None:
+            return None
+        
+        if not hasattr(self.brain, 'use_language_head') or not self.brain.use_language_head:
+            return None
+        
+        # Check cache - use cached embedding if state hasn't changed
+        if len(self.state_history) > 0:
+            current_state = self.state_history[-1]
+            state_hash = hash(current_state.tobytes() if isinstance(current_state, np.ndarray) else str(current_state))
+            
+            if (self._cached_embedding is not None and 
+                self._embedding_cache_state_hash == state_hash):
+                return self._cached_embedding
+        
+        # Extract embedding from most recent state
+        if len(self.state_history) == 0:
+            return None
+        
+        state = self.state_history[-1]
+        if not isinstance(state, np.ndarray):
+            return None
+        
+        try:
+            import torch
+            
+            # Get device from brain
+            device = next(self.brain.parameters()).device
+            
+            # Convert state to tensor
+            state_tensor = torch.FloatTensor(state).unsqueeze(0).to(device)
+            
+            # Forward pass through fc1 and fc2 (extract fc2 output)
+            self.brain.eval()
+            with torch.no_grad():
+                # Forward through fc1
+                x = self.brain.fc1(state_tensor)
+                x = self.brain._get_activation(x)
+                x = self.brain.dropout(x)
+                
+                # Apply attention if enabled
+                if self.brain.use_attention:
+                    # Reshape for attention: (batch, 1, hidden_dim)
+                    x = x.unsqueeze(1)
+                    x = self.brain.attention(x, vp_value=None)
+                    x = self.brain.attention_norm(x)
+                    x = x.squeeze(1)  # Back to (batch, hidden_dim)
+                
+                # Forward through fc2 (THIS IS THE EMBEDDING)
+                embedding = self.brain.fc2(x)
+                # Don't apply activation - keep raw 64-dim vector
+                
+                # Convert to numpy
+                embedding_np = embedding.cpu().numpy().flatten()  # Shape: (64,)
+            
+            # Cache the embedding
+            state_hash = hash(state.tobytes())
+            self._cached_embedding = embedding_np
+            self._embedding_cache_state_hash = state_hash
+            
+            return embedding_np
+            
+        except Exception as e:
+            # Fallback: return zeros if extraction fails
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"[NeuralOrganism] Failed to extract embedding: {e}")
+            return np.zeros(64)  # Return zero vector as fallback
     
     def inherit_brain(self, parent_brain: OrganismBrain, 
                      mutation_rate: float = 0.1,

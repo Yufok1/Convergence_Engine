@@ -2384,11 +2384,13 @@
                             <option value="quantum">quantum</option>
                             <option value="neural">neural</option>
                             <option value="ml_analysis">ml_analysis</option>
+                            <option value="language">language</option>
+                            <option value="butterfly_chat">butterfly_chat</option>
                         </select>
                     </div>
                     <div style="flex: 1; min-width: 120px;">
                         <label style="color: #888; font-size: 0.75em; display: block; margin-bottom: 3px;">Event Type</label>
-                        <input type="text" id="illuminationEventType" placeholder="e.g., config_update" 
+                        <input type="text" id="illuminationEventType" placeholder="e.g., config_update, vocabulary_growth, organism_communication, butterfly_chat_message" 
                             style="width: 100%; background: #111; color: #0f0; border: 1px solid #0aa; padding: 5px; font-family: 'Courier New', monospace; font-size: 0.85em; box-sizing: border-box;">
                     </div>
                     <div style="flex: 0.7; min-width: 80px;">
@@ -5346,6 +5348,8 @@
                             'breath': 'filter-breath',
                             'neural': 'filter-neural',
                             'ml_analysis': 'filter-ml_analysis',
+                            'language': 'filter-language',
+                            'butterfly_chat': 'filter-butterfly_chat',
                             'system': 'filter-system'
                         };
 
@@ -8077,6 +8081,11 @@
 
             // 🔍 Load root cause analysis
             function loadRootCauses(eventId) {
+                // Normalize event ID format: ensure it has underscore (evt_xxx not evtxxx)
+                if (eventId && typeof eventId === 'string' && eventId.startsWith('evt') && !eventId.includes('_')) {
+                    eventId = 'evt_' + eventId.substring(3);
+                }
+                
                 const panel = document.getElementById('rootCausesPanel');
                 panel.innerHTML = '<div style="color: #888;">Loading root causes...</div>';
                 
@@ -11791,10 +11800,15 @@
 
             // Root causes analysis
             async function illuminationRootCauses() {
-                const eventId = document.getElementById('illuminationEventId').value.trim();
+                let eventId = document.getElementById('illuminationEventId').value.trim();
                 if (!eventId) {
                     showIlluminationError('Please enter an Event ID or click an event in the graph/search results');
                     return null;
+                }
+
+                // Normalize event ID format: ensure it has underscore (evt_xxx not evtxxx)
+                if (eventId.startsWith('evt') && !eventId.includes('_')) {
+                    eventId = 'evt_' + eventId.substring(3);
                 }
 
                 showIlluminationLoading(`Finding root causes of ${eventId}...`);
@@ -11802,6 +11816,13 @@
                 try {
                     const response = await fetch(`/api/events/${eventId}/root-causes`);
                     const data = await response.json();
+                    
+                    // Check for error response (404 or error in data)
+                    if (!response.ok || (data.error && !data.root_causes?.length)) {
+                        showIlluminationError(data.error || `Event not found: ${eventId}`, data);
+                        return null;
+                    }
+                    
                     storeIlluminationResult('root_causes', data);
                     renderRootCausesResults(data);
                     return data;
@@ -11868,10 +11889,15 @@
 
             // Impact analysis
             async function illuminationImpact() {
-                const eventId = document.getElementById('illuminationEventId').value.trim();
+                let eventId = document.getElementById('illuminationEventId').value.trim();
                 if (!eventId) {
                     showIlluminationError('Please enter an Event ID or click an event in the graph/search results');
                     return null;
+                }
+
+                // Normalize event ID format: ensure it has underscore (evt_xxx not evtxxx)
+                if (eventId.startsWith('evt') && !eventId.includes('_')) {
+                    eventId = 'evt_' + eventId.substring(3);
                 }
 
                 showIlluminationLoading(`Analyzing impact of ${eventId}...`);
@@ -11879,6 +11905,13 @@
                 try {
                     const response = await fetch(`/api/events/${eventId}/impact`);
                     const data = await response.json();
+                    
+                    // Check for error response (404 or error in data)
+                    if (!response.ok || (data.error && !data.leaf_effects?.length)) {
+                        showIlluminationError(data.error || `Event not found: ${eventId}`, data);
+                        return null;
+                    }
+                    
                     storeIlluminationResult('impact', data);
                     renderImpactResults(data);
                     return data;
@@ -11958,10 +11991,15 @@
 
             // Explain event
             async function illuminationExplain() {
-                const eventId = document.getElementById('illuminationEventId').value.trim();
+                let eventId = document.getElementById('illuminationEventId').value.trim();
                 if (!eventId) {
                     showIlluminationError('Please enter an Event ID or click an event in the graph/search results');
                     return null;
+                }
+
+                // Normalize event ID format: ensure it has underscore (evt_xxx not evtxxx)
+                if (eventId.startsWith('evt') && !eventId.includes('_')) {
+                    eventId = 'evt_' + eventId.substring(3);
                 }
 
                 showIlluminationLoading(`Generating explanation for ${eventId}...`);
@@ -11969,6 +12007,13 @@
                 try {
                     const response = await fetch(`/api/events/${eventId}/explain`);
                     const data = await response.json();
+                    
+                    // Check for error response (404 or error in data)
+                    if (!response.ok || data.error) {
+                        showIlluminationError(data.error || `Event not found: ${eventId}`, data);
+                        return null;
+                    }
+                    
                     storeIlluminationResult('explain', data);
                     renderExplainResults(data);
                     return data;
@@ -13636,6 +13681,81 @@
                 document.getElementById('butterflyChatStatus').textContent = status;
             }
             
+            // Handle Butterfly Chat illumination button clicks
+            async function handleButterflyIllumination(eventId, action) {
+                console.log('[Butterfly Chat] Illumination button clicked:', { eventId, action });
+                
+                if (!eventId) {
+                    console.error('[Butterfly Chat] No event ID provided');
+                    alert('No event ID available for this step.');
+                    return;
+                }
+                
+                try {
+                    // Set the event ID in the Illumination Engine input
+                    const illuminationEventId = document.getElementById('illuminationEventId');
+                    if (!illuminationEventId) {
+                        console.error('[Butterfly Chat] Illumination Engine event ID input not found');
+                        alert('Illumination Engine panel not found. Please ensure the Illumination Engine is visible.');
+                        return;
+                    }
+                    
+                    console.log('[Butterfly Chat] Setting event ID:', eventId);
+                    illuminationEventId.value = eventId;
+                    illuminationEventId.style.background = '#220022';
+                    setTimeout(() => {
+                        illuminationEventId.style.background = '#111';
+                    }, 500);
+                    
+                    // Scroll to and highlight the Illumination Engine panel
+                    const illuminationPanel = document.getElementById('illuminationPanel');
+                    if (illuminationPanel) {
+                        console.log('[Butterfly Chat] Scrolling to Illumination Engine panel');
+                        illuminationPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        illuminationPanel.style.border = '2px solid #0ff';
+                        setTimeout(() => {
+                            illuminationPanel.style.border = '';
+                        }, 2000);
+                    } else {
+                        console.warn('[Butterfly Chat] Illumination Engine panel not found');
+                    }
+                    
+                    // Call the appropriate async function
+                    console.log('[Butterfly Chat] Calling illumination function:', action);
+                    switch (action) {
+                        case 'root_causes':
+                            if (typeof illuminationRootCauses === 'function') {
+                                await illuminationRootCauses();
+                            } else {
+                                throw new Error('illuminationRootCauses function not found');
+                            }
+                            break;
+                        case 'impact':
+                            if (typeof illuminationImpact === 'function') {
+                                await illuminationImpact();
+                            } else {
+                                throw new Error('illuminationImpact function not found');
+                            }
+                            break;
+                        case 'explain':
+                            if (typeof illuminationExplain === 'function') {
+                                await illuminationExplain();
+                            } else {
+                                throw new Error('illuminationExplain function not found');
+                            }
+                            break;
+                        default:
+                            console.error('[Butterfly Chat] Unknown illumination action:', action);
+                            alert(`Unknown action: ${action}`);
+                    }
+                    console.log('[Butterfly Chat] Illumination function completed');
+                } catch (err) {
+                    console.error('[Butterfly Chat] Error in illumination handler:', err);
+                    console.error('[Butterfly Chat] Error stack:', err.stack);
+                    alert(`Error analyzing event: ${err.message}\n\nCheck console for details.`);
+                }
+            }
+            
             // Debug panel tab switching
             function switchDebugTab(tab) {
                 const logsTab = document.getElementById('debugTabLogs');
@@ -13737,30 +13857,37 @@
                     const orgId = step.organism_id;
                     const stepData = step.step_data || {};
                     const response = responseMap[orgId] || {};
-                    const eventId = step.event_id || stepData.event_id;
+                    const eventId = step.event_id || stepData.event_id || step.eventId || stepData.eventId;
                     
                     const time = new Date(step.timestamp * 1000).toLocaleTimeString();
                     const fitness = stepData.fitness || response.fitness || 0;
                     const confidence = stepData.confidence || response.confidence || 0;
                     const weight = stepData.weight || (fitness * confidence);
                     
+                    // Debug: Log event ID extraction
+                    if (!eventId) {
+                        console.warn('[Butterfly Chat] No event ID found for step:', { step, stepData, response });
+                    }
+                    
                     // Illumination buttons (only show if event_id exists)
-                    // DIRECT: Just set the input field and call the function
+                    // Use proper async handlers with error handling
                     let illuminationButtons = '';
                     if (eventId) {
+                        // Escape event ID for use in HTML attributes
+                        const escapedEventId = String(eventId).replace(/'/g, "\\'").replace(/"/g, '&quot;');
                         illuminationButtons = `
                             <div style="margin-top: 8px; display: flex; gap: 5px; flex-wrap: wrap;">
-                                <button onclick="document.getElementById('illuminationEventId').value='${eventId}'; illuminationRootCauses();" 
+                                <button onclick="handleButterflyIllumination('${escapedEventId}', 'root_causes')" 
                                     style="padding: 4px 8px; background: #0aa; color: #000; border: 1px solid #0ff; cursor: pointer; font-size: 0.75em; font-weight: bold; border-radius: 3px;"
                                     title="Trace root causes of this event">
                                     🔍 Root Causes
                                 </button>
-                                <button onclick="document.getElementById('illuminationEventId').value='${eventId}'; illuminationImpact();" 
+                                <button onclick="handleButterflyIllumination('${escapedEventId}', 'impact')" 
                                     style="padding: 4px 8px; background: #0a0; color: #000; border: 1px solid #0f0; cursor: pointer; font-size: 0.75em; font-weight: bold; border-radius: 3px;"
                                     title="See what this event caused">
                                     💥 Impact
                                 </button>
-                                <button onclick="document.getElementById('illuminationEventId').value='${eventId}'; illuminationExplain();" 
+                                <button onclick="handleButterflyIllumination('${escapedEventId}', 'explain')" 
                                     style="padding: 4px 8px; background: #aa0; color: #000; border: 1px solid #ff0; cursor: pointer; font-size: 0.75em; font-weight: bold; border-radius: 3px;"
                                     title="Get full explanation">
                                     📖 Explain

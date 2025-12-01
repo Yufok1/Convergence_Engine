@@ -18,6 +18,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 import json
 import numpy as np
+import random
 
 logger = logging.getLogger(__name__)
 
@@ -27,10 +28,18 @@ class SemanticRelation:
     """A semantic relationship between words/concepts."""
     source: str
     target: str
-    relation_type: str  # 'synonym', 'antonym', 'causes', 'enables', 'prevents', 'similar_to', 'part_of', 'related_to'
-    strength: float = 1.0  # 0.0-1.0, confidence/strength of relationship
+    relation_type: str  # 'synonym', 'antonym', 'causes', 'enables', 'prevents', 'similar_to', 'part_of', 'related_to', 'discovered'
+    strength: float = 1.0  # 0.0-1.0, semantic connection strength of relationship
     context: Optional[str] = None  # Optional context for relationship
     metadata: Dict[str, Any] = field(default_factory=dict)
+    # Quality control fields
+    confidence: float = 0.9  # 0.0-1.0, validation level (separate from strength)
+    is_seeded: bool = True  # True for base 326 concepts, false for discovered
+    discovery_count: int = 0  # How many times relationship was discovered
+    generation_discovered: int = 0  # When first discovered (generation number)
+    last_used: int = 0  # Last generation used
+    success_count: int = 0  # Times relationship led to good responses
+    failure_count: int = 0  # Times relationship led to poor responses
 
 
 @dataclass
@@ -80,6 +89,34 @@ class LinguisticKnowledgeWeb:
         
         # Semantic clusters (for associative reasoning)
         self.semantic_clusters: Dict[str, Set[str]] = defaultdict(set)
+        
+        # Recursive expansion mechanisms (prevent yarn ball, enable growth)
+        self.word_usage_counts: Dict[str, int] = defaultdict(int)  # Track word usage for diversity
+        self.relation_usage_counts: Dict[Tuple[str, str, str], int] = defaultdict(int)  # Track relation usage
+        self.discovered_relations: List[SemanticRelation] = []  # Organism-discovered relationships
+        self.diversity_boost: float = self.config.get('diversity_boost', 0.2)  # Boost for less-used words
+        self.decay_rate: float = self.config.get('decay_rate', 0.01)  # Relationship decay rate
+        
+        # Quality control configuration
+        quality_config = self.config.get('neural', {}).get('language_model', {}).get('knowledge_web', {}).get('quality_control', {})
+        self.exploration_start: float = quality_config.get('exploration_start', 0.2)  # Start at 20%
+        self.exploration_end: float = quality_config.get('exploration_end', 0.05)  # End at 5%
+        self.exploration_rate: float = self.exploration_start  # Current exploration rate (starts at start value)
+        self.exploration_decay_generations: int = quality_config.get('exploration_decay_generations', 1000)
+        self.confidence_threshold: float = quality_config.get('min_confidence_threshold', 0.3)  # Start at 0.3
+        self.confidence_growth_rate: float = quality_config.get('confidence_growth_rate', 0.0005)
+        self.min_discovery_count: int = quality_config.get('min_discovery_count', 3)
+        self.max_discoveries_per_generation: int = quality_config.get('max_discoveries_per_generation', 10)
+        self.vp_boost_exploration: bool = quality_config.get('vp_boost_exploration', True)
+        self.vp_boost_threshold: float = quality_config.get('vp_boost_threshold', 0.7)
+        self.current_generation: int = 0  # Track current generation for time-based learning
+        
+        # Discovery tracking
+        self.discovery_attempts: Dict[Tuple[str, str], int] = defaultdict(int)  # Track discovery attempts per word pair
+        self.successful_validations: Dict[Tuple[str, str], int] = defaultdict(int)  # Track successful validations
+        
+        # Context tracking for coherence validation
+        self.word_context_history: Dict[str, List[Dict[str, Any]]] = defaultdict(list)  # Track contexts where words appear
         
         # Load base knowledge
         self._initialize_base_knowledge()
@@ -908,18 +945,238 @@ class LinguisticKnowledgeWeb:
         logger.info(f"[LINGUISTIC_WEB] Initialized: {len(self.concepts)} concepts, {len(self.relations)} relations, {len(self.semantic_clusters)} clusters")
     
     def _add_relation(self, source: str, target: str, relation_type: str, 
-                     strength: float = 1.0, context: Optional[str] = None):
+                     strength: float = 1.0, context: Optional[str] = None,
+                     confidence: float = 0.9, is_seeded: bool = True,
+                     generation: int = 0):
         """Add a semantic relation."""
         relation = SemanticRelation(
             source=source,
             target=target,
             relation_type=relation_type,
             strength=strength,
-            context=context
+            context=context,
+            confidence=confidence,
+            is_seeded=is_seeded,
+            generation_discovered=generation,
+            last_used=generation
         )
         self.relations.append(relation)
         self.relation_index[source].append(relation)
         self.relation_index[target].append(relation)
+    
+    def discover_relationship(self, 
+                            word1: str, 
+                            word2: str, 
+                            context: Optional[Dict[str, Any]] = None,
+                            strength: float = 0.5,
+                            generation: int = 0,
+                            vp_value: float = 0.0) -> bool:
+        """
+        Discover new relationship from organism behavior (recursive expansion).
+        
+        Called when organisms use words together in similar contexts.
+        Enables infinite possibility from finite structure.
+        
+        Args:
+            word1: First word
+            word2: Second word
+            context: Contextual information about the discovery
+            strength: Initial strength of discovered relationship
+            generation: Current generation number
+            vp_value: Current violation pressure value
+            
+        Returns:
+            True if relationship was discovered/strengthened, False otherwise
+        """
+        # Check discovery cap
+        discovered_this_gen = sum(1 for r in self.discovered_relations 
+                                 if r.generation_discovered == generation)
+        if discovered_this_gen >= self.max_discoveries_per_generation:
+            return False  # Cap reached
+        
+        # VP-aware exploration boost
+        effective_exploration = self.exploration_rate
+        if self.vp_boost_exploration and vp_value > self.vp_boost_threshold:
+            effective_exploration = min(1.0, self.exploration_rate * 1.5)  # Boost by 50%
+        
+        # Check if relationship already exists
+        existing = [r for r in self.get_relations(word1)
+                   if r.target == word2 or (r.source == word2 and r.target == word1)]
+        
+        if existing:
+            # Strengthen existing relationship (recursive reinforcement)
+            for rel in existing:
+                rel.strength = min(1.0, rel.strength + 0.05)  # Small increment
+                rel.discovery_count += 1
+                rel.last_used = generation
+            return True
+        
+        # Track discovery attempt
+        word_pair = (min(word1, word2), max(word1, word2))  # Normalize order
+        self.discovery_attempts[word_pair] += 1
+        
+        # Validate relationship before accepting
+        if context is None:
+            context = {}
+        is_valid, confidence_score = self.validate_relationship(word1, word2, context)
+        
+        # Frequency-based validation: require minimum co-occurrence count
+        if self.discovery_attempts[word_pair] < self.min_discovery_count:
+            return False  # Not enough co-occurrences yet
+        
+        # Check confidence threshold (adaptive based on generation)
+        if confidence_score < self.confidence_threshold:
+            return False  # Doesn't meet quality bar
+        
+        # Accept discovery
+        self.successful_validations[word_pair] += 1
+        
+        # Create new discovered relationship (recursive expansion)
+        self._add_relation(
+            source=word1,
+            target=word2,
+            relation_type='discovered',  # New type for organism-discovered relationships
+            strength=strength,
+            context=str(context) if context else None,
+            confidence=confidence_score,  # Initial confidence from validation
+            is_seeded=False,  # Mark as discovered, not seeded
+            generation=generation
+        )
+        # Mark as discovered
+        relation = self.relations[-1]
+        relation.metadata['discovered'] = True
+        relation.metadata['discovery_context'] = context
+        self.discovered_relations.append(relation)
+        
+        # Track context for coherence validation
+        if context and 'organism_state' in context:
+            self.word_context_history[word1].append(context)
+            self.word_context_history[word2].append(context)
+            # Keep only last 50 contexts per word
+            if len(self.word_context_history[word1]) > 50:
+                self.word_context_history[word1] = self.word_context_history[word1][-50:]
+            if len(self.word_context_history[word2]) > 50:
+                self.word_context_history[word2] = self.word_context_history[word2][-50:]
+        
+        logger.info(f"[LINGUISTIC_WEB] Discovered relationship: {word1} → {word2} "
+                   f"(strength={strength:.2f}, confidence={confidence_score:.2f}, gen={generation})")
+        return True
+    
+    def decay_relationships(self, generation: int, pruning_confidence_threshold: float = 0.2,
+                           pruning_unused_generations: int = 100, pruning_failure_rate: float = 0.7):
+        """
+        Weaken unused relationships to prevent yarn ball (recursive pruning).
+        
+        Prevents over-stimulation by allowing weak connections to fade.
+        Enables system to forget and rediscover.
+        
+        NEVER prunes seeded relationships (is_seeded=True).
+        Only prunes discovered relationships that fail quality checks.
+        
+        Args:
+            generation: Current generation number
+            pruning_confidence_threshold: Minimum confidence to keep (default: 0.2)
+            pruning_unused_generations: Remove if unused for N generations (default: 100)
+            pruning_failure_rate: Remove if failure rate > threshold (default: 0.7)
+        """
+        relations_to_remove = []
+        
+        for relation in self.relations:
+            # NEVER prune seeded relationships
+            if relation.is_seeded:
+                continue
+            
+            # Only process discovered relationships
+            if relation.relation_type != 'discovered':
+                continue
+            
+            # Get usage count
+            usage = self.relation_usage_counts.get(
+                (relation.source, relation.target, relation.relation_type), 0
+            )
+            
+            # Calculate failure rate
+            total_uses = relation.success_count + relation.failure_count
+            failure_rate = relation.failure_count / total_uses if total_uses > 0 else 0.0
+            
+            # Check pruning criteria
+            should_prune = False
+            prune_reason = ""
+            
+            # 1. Very low confidence
+            if relation.confidence < pruning_confidence_threshold:
+                should_prune = True
+                prune_reason = f"low_confidence({relation.confidence:.2f})"
+            
+            # 2. Unused for many generations
+            generations_unused = generation - relation.last_used
+            if generations_unused > pruning_unused_generations:
+                should_prune = True
+                prune_reason = f"unused({generations_unused}gens)"
+            
+            # 3. High failure rate
+            if failure_rate > pruning_failure_rate:
+                should_prune = True
+                prune_reason = f"high_failure_rate({failure_rate:.2f})"
+            
+            if should_prune:
+                relations_to_remove.append((relation, prune_reason))
+            elif usage == 0:
+                # Decay unused discovered relationships gradually
+                relation.strength *= (1.0 - self.decay_rate)
+                relation.confidence = max(0.0, relation.confidence - 0.01)  # Gradual confidence decay
+        
+        # Remove weak relationships
+        for relation, reason in relations_to_remove:
+            self.relations.remove(relation)
+            if relation in self.relation_index[relation.source]:
+                self.relation_index[relation.source].remove(relation)
+            if relation in self.relation_index[relation.target]:
+                self.relation_index[relation.target].remove(relation)
+            if relation in self.discovered_relations:
+                self.discovered_relations.remove(relation)
+        
+        if relations_to_remove:
+            logger.info(f"[LINGUISTIC_WEB] Pruned {len(relations_to_remove)} low-quality relationships "
+                       f"(reasons: {', '.join(set(r[1] for r in relations_to_remove))})")
+    
+    def record_relationship_usage(self, word1: str, word2: str, relation_type: str, generation: int):
+        """Record that a relationship was used."""
+        relation_key = (word1, word2, relation_type)
+        self.relation_usage_counts[relation_key] += 1
+        
+        # Update last_used for matching relations
+        for relation in self.get_relations(word1):
+            if (relation.target == word2 or relation.source == word2) and relation.relation_type == relation_type:
+                relation.last_used = generation
+    
+    def record_relationship_success(self, word1: str, word2: str, relation_type: str):
+        """
+        Record that a relationship led to a successful/good response.
+        
+        Updates confidence and strength positively.
+        """
+        for relation in self.get_relations(word1):
+            if (relation.target == word2 or relation.source == word2) and relation.relation_type == relation_type:
+                relation.success_count += 1
+                # Asymmetric: success increases confidence more than strength
+                relation.confidence = min(1.0, relation.confidence + 0.1)
+                relation.strength = min(1.0, relation.strength + 0.05)
+                break
+    
+    def record_relationship_failure(self, word1: str, word2: str, relation_type: str):
+        """
+        Record that a relationship led to a poor/failed response.
+        
+        Updates confidence and strength negatively (asymmetric - failure costs more).
+        """
+        for relation in self.get_relations(word1):
+            if (relation.target == word2 or relation.source == word2) and relation.relation_type == relation_type:
+                relation.failure_count += 1
+                # Asymmetric: failure decreases confidence more than strength
+                relation.confidence = max(0.0, relation.confidence - 0.15)
+                relation.strength = max(0.1, relation.strength - 0.1)
+                break
     
     def _build_semantic_clusters(self):
         """Build semantic clusters for associative reasoning."""
@@ -1298,6 +1555,34 @@ class LinguisticKnowledgeWeb:
                         word_scores[sim_word] = word_scores.get(sim_word, 0.0) + score * 0.5
         
         # ============================================================
+        # DIVERSITY MECHANISM (Prevent Over-Stimulation)
+        # ============================================================
+        
+        # Boost less-used words to prevent yarn ball
+        for word in word_scores.keys():
+            usage = self.word_usage_counts[word]
+            # Less-used words get diversity boost (inverse usage weighting)
+            diversity_factor = 1.0 / (1.0 + usage * 0.1)
+            word_scores[word] = word_scores[word] * (1.0 + self.diversity_boost * diversity_factor)
+        
+        # ============================================================
+        # EXPLORATION MECHANISM (Enable Discovery)
+        # ============================================================
+        
+        # Random exploration of less-used words
+        import random
+        if random.random() < self.exploration_rate:
+            all_words = list(self.concepts.keys())
+            if all_words:
+                # Weight by inverse usage (explore less-used words)
+                word_weights = [1.0 / (1.0 + self.word_usage_counts.get(w, 0)) for w in all_words]
+                try:
+                    exploration_word = random.choices(all_words, weights=word_weights, k=1)[0]
+                    word_scores[exploration_word] = word_scores.get(exploration_word, 0.0) + 0.5
+                except (ValueError, IndexError):
+                    pass  # Fallback if weights are invalid
+        
+        # ============================================================
         # PRIORITIZED WORD SELECTION
         # ============================================================
         
@@ -1306,6 +1591,10 @@ class LinguisticKnowledgeWeb:
         
         # Return words with score > 0.3, up to 15 words
         relevant_words = [word for word, score in final_words if score > 0.3][:15]
+        
+        # Track usage for diversity mechanism
+        for word in relevant_words[:10]:  # Track top 10
+            self.word_usage_counts[word] += 1
         
         # Ensure we have at least some words (fallback)
         if not relevant_words:
@@ -1342,6 +1631,103 @@ class LinguisticKnowledgeWeb:
                 relevant_words.extend(self.get_words_for_state('no_connections'))
         
         return relevant_words[:10] if relevant_words else ['exist', 'be', 'act']
+    
+    def validate_relationship(self, word1: str, word2: str, context: Dict[str, Any]) -> Tuple[bool, float]:
+        """
+        Validate if discovered relationship makes semantic sense.
+        
+        Returns:
+            (is_valid, confidence_score)
+        """
+        # Check if words exist
+        concept1 = self.get_concept(word1)
+        concept2 = self.get_concept(word2)
+        if not concept1 or not concept2:
+            return False, 0.0
+        
+        # Check if already related (strengthen existing)
+        existing = self.get_relations(word1, word2)
+        if existing:
+            return True, 0.9  # Strengthen existing
+        
+        # Semantic frame compatibility (40% weight)
+        frame_match = concept1.semantic_frame == concept2.semantic_frame
+        frame_score = 0.8 if frame_match else 0.5
+        
+        # Context coherence (60% weight - more important)
+        context_score = self._check_context_coherence(word1, word2, context)
+        
+        # Combined validation score
+        confidence = (frame_score * 0.4 + context_score * 0.6)
+        
+        return confidence > 0.5, confidence
+    
+    def _check_context_coherence(self, word1: str, word2: str, context: Dict[str, Any]) -> float:
+        """
+        Check if words appear together in similar organism states/contexts.
+        
+        Returns coherence score (0.0-1.0).
+        """
+        # Extract organism state from context
+        organism_state = context.get('organism_state')
+        if organism_state is None:
+            return 0.5  # Neutral if no state available
+        
+        # Check if words have been used in similar contexts
+        word1_contexts = self.word_context_history.get(word1, [])
+        word2_contexts = self.word_context_history.get(word2, [])
+        
+        if not word1_contexts or not word2_contexts:
+            return 0.4  # Low coherence if no history
+        
+        # Compare context vectors (simplified: compare organism state features)
+        if isinstance(organism_state, list):
+            organism_state = np.array(organism_state)
+        
+        coherence_scores = []
+        for ctx1 in word1_contexts[-10:]:  # Last 10 contexts
+            state1 = ctx1.get('organism_state')
+            if state1 is not None:
+                if isinstance(state1, list):
+                    state1 = np.array(state1)
+                # Calculate similarity (cosine similarity or euclidean distance)
+                try:
+                    if len(state1) == len(organism_state):
+                        # Cosine similarity
+                        dot_product = np.dot(state1, organism_state)
+                        norm1 = np.linalg.norm(state1)
+                        norm2 = np.linalg.norm(organism_state)
+                        if norm1 > 0 and norm2 > 0:
+                            similarity = dot_product / (norm1 * norm2)
+                            coherence_scores.append(similarity)
+                except Exception:
+                    pass
+        
+        if coherence_scores:
+            avg_coherence = np.mean(coherence_scores)
+            return float(np.clip(avg_coherence, 0.0, 1.0))
+        
+        return 0.5  # Default neutral coherence
+    
+    def update_generation(self, generation: int):
+        """Update current generation for time-based learning curve."""
+        self.current_generation = generation
+        
+        # Update exploration rate (decay over time)
+        if generation < self.exploration_decay_generations:
+            decay_factor = generation / self.exploration_decay_generations
+            self.exploration_rate = max(
+                self.exploration_end,
+                self.exploration_start - (self.exploration_start - self.exploration_end) * decay_factor
+            )
+        else:
+            self.exploration_rate = self.exploration_end
+        
+        # Update confidence threshold (grow over time)
+        self.confidence_threshold = min(
+            0.8,
+            self.confidence_threshold + self.confidence_growth_rate
+        )
     
     def get_reflexive_thought(self, word: str) -> Dict[str, Any]:
         """
@@ -1444,7 +1830,10 @@ class LinguisticKnowledgeWeb:
                 target=rel_data['target'],
                 relation_type=rel_data['relation_type'],
                 strength=rel_data['strength'],
-                context=rel_data.get('context')
+                context=rel_data.get('context'),
+                confidence=0.9,  # High confidence for seeded relationships
+                is_seeded=True,  # Mark as seeded (from file)
+                generation=0  # Loaded at initialization
             )
         
         # Rebuild indices

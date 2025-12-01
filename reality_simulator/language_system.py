@@ -170,25 +170,29 @@ class LanguageVocabulary:
         self.id_to_word[new_id] = word
         self.word_frequencies[word] = 1
         
-        # Emit vocabulary_growth event if event_emitter is available
+        # Only emit vocabulary_growth event for milestone sizes (quality over quantity)
+        # Match neural training event frequency - only significant vocabulary growth
         if hasattr(self, 'event_emitter') and self.event_emitter:
-            try:
-                import time
-                from causation_explorer import Event
-                event = Event(
-                    timestamp=time.time(),
-                    component='language',
-                    event_type='vocabulary_growth',
-                    data={
-                        'word': word,
-                        'word_id': new_id,
-                        'vocab_size': self.vocab_size,
-                        'word_frequency': 1
-                    }
-                )
-                self.event_emitter(event)
-            except ImportError:
-                pass  # CausationExplorer not available
+            # Much less frequent - only emit at major vocabulary milestones (every 50 words)
+            if self.vocab_size % 50 == 0:
+                try:
+                    import time
+                    from causation_explorer import Event
+                    event = Event(
+                        timestamp=time.time(),
+                        component='language',
+                        event_type='vocabulary_growth',
+                        data={
+                            'word': word,
+                            'word_id': new_id,
+                            'vocab_size': self.vocab_size,
+                            'word_frequency': 1,
+                            'milestone': True  # Indicates this is a milestone event
+                        }
+                    )
+                    self.event_emitter(event)
+                except ImportError:
+                    pass  # CausationExplorer not available
         
         return new_id
     

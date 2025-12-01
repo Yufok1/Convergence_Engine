@@ -211,6 +211,40 @@ Vocabulary grows with semantic relationships
 
 ---
 
+## 🎓 Learning Systems Integration ⭐ NEW
+
+The Linguistic Knowledge Web now learns from both **Neural System** and **ML System** usage:
+
+### Neural Relationship Learning
+
+The neural system learns from generation quality to strengthen/weaken semantic relationships:
+
+1. **During Generation**: Tracks which semantic relationships are used
+2. **After Generation**: Evaluates quality (coherent vs garbled)
+3. **Learning**: Records success/failure back to knowledge web
+   - **Coherent generation** (>50% semantic pairs) → `record_relationship_success()`
+   - **Garbled generation** (<20% semantic pairs) → `record_relationship_failure()`
+
+**Result**: Relationships that lead to coherent generation are strengthened, while garbled combinations are weakened.
+
+See **[docs/NEURAL_RELATIONSHIP_LEARNING.md](./docs/NEURAL_RELATIONSHIP_LEARNING.md)** for complete details.
+
+### ML System Teaching
+
+The ML system (scikit-learn) analyzes word co-occurrence patterns and strengthens relationships:
+
+1. **Pattern Detection**: ML detects strong word co-occurrences (≥5 occurrences)
+2. **Semantic Validation**: Checks if words have semantic relationships (strength ≥0.6)
+3. **Teaching**: Records relationship success to strengthen formations
+
+**Result**: ML "teaches" the system which word combinations work well together.
+
+**Configuration**: All learning parameters are configurable via `config.json` and CRA.
+
+See **[docs/CONFIG_EXPOSURE_SUMMARY.md](./docs/CONFIG_EXPOSURE_SUMMARY.md)** for configuration details.
+
+---
+
 ## 📊 Statistics
 
 - **Concepts**: 50+ core concepts

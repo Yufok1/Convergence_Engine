@@ -1535,6 +1535,11 @@ class RealitySimulator:
                     if self.neural_trainer.training_times:
                         training_time_ms = self.neural_trainer.training_times[-1] * 1000
                 
+                # Get Neural-ML Symbiosis metrics
+                symbiosis_metrics = {}
+                if hasattr(self.neural_trainer, 'get_neural_ml_symbiosis_metrics'):
+                    symbiosis_metrics = self.neural_trainer.get_neural_ml_symbiosis_metrics()
+                
                 neural_metrics = {
                     'enabled': True,
                     'training_loss': loss,
@@ -1547,7 +1552,10 @@ class RealitySimulator:
                     'optimizations': {
                         'reuse_optimizers': getattr(self.neural_trainer, 'reuse_optimizers', False),
                         'compiled_brains': self._check_torch_compile_available() if hasattr(self, '_check_torch_compile_available') else False
-                    }
+                    },
+                    # Neural-ML Symbiosis metrics ⭐ NEW
+                    'language_reward_total': symbiosis_metrics.get('language_reward_total', 0.0),
+                    'curriculum_sequence_length': symbiosis_metrics.get('curriculum_sequence_length', 8)
                 }
                 
                 # Log training occasionally (every 100 steps to avoid spam)
@@ -1630,6 +1638,10 @@ class RealitySimulator:
                             'algorithm': clustering.get('algorithm', 'unknown'),
                             'noise_count': clustering.get('noise_count', 0)
                         }
+                    
+                    # NEW: Add semantic analysis results (TF-IDF, Nearest Neighbors, Feature Selection)
+                    if analysis_results.get('semantic_analysis'):
+                        ml_metrics['semantic_analysis'] = analysis_results['semantic_analysis']
 
                         # Emit phenotype emergence events if significant clusters detected
                         # Note: This is a fallback - network._emit_ml_events() handles the main emission
@@ -1743,6 +1755,26 @@ class RealitySimulator:
                         'clustering_coefficient': network.metrics.clustering_coefficient
                     }
 
+                # NEW: Pass full ML analysis to evolution engine for language fitness bonuses
+                evolution = self.components.get('evolution')
+                if evolution and hasattr(network, '_last_ml_analysis') and network._last_ml_analysis:
+                    evolution._ml_analysis = network._last_ml_analysis
+                
+                # Integration 2: Pass ML analysis to neural trainer for language rewards
+                if self.neural_trainer and hasattr(network, '_last_ml_analysis') and network._last_ml_analysis:
+                    # Extract semantic_analysis from ML results
+                    semantic_analysis = network._last_ml_analysis.get('semantic_analysis', {})
+                    if semantic_analysis:
+                        self.neural_trainer.ml_analysis = network._last_ml_analysis
+                
+                # Integration 2: Pass context_memory to neural trainer for vocabulary access
+                if self.neural_trainer and hasattr(network, 'context_memory') and network.context_memory:
+                    self.neural_trainer.context_memory = network.context_memory
+                
+                # Integration 3: Adjust curriculum based on ML quality metrics
+                if self.neural_trainer and hasattr(network, '_last_ml_analysis') and network._last_ml_analysis:
+                    self.neural_trainer.adjust_curriculum_from_ml_quality(network._last_ml_analysis)
+                
                 # Analyze and get tuning recommendation
                 tuning_action = self.config_tuner.analyze_and_tune(
                     ml_metrics=ml_metrics or {},

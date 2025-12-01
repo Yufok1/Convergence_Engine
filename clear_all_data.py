@@ -6,6 +6,17 @@ Clears all logs, checkpoints, shared state, and runtime data
 for a completely fresh run of the Butterfly System.
 
 ⚠️ WARNING: This will permanently delete all runtime data!
+
+PRESERVED (Not Deleted):
+- data/config.json - System configuration
+- data/causation_explorer/ollama_config.json - Ollama settings
+- data/linguistic_concepts.json - Linguistic knowledge base
+- data/semantic_relations.json - Semantic relations knowledge base
+- data/ngram_patterns.json - N-gram patterns knowledge base
+- Directory structure - All directories maintained
+
+NOTE: Neural-ML Symbiosis, ConfigTuner, and Health Monitor data is stored in-memory only
+(no persistent files to clear - history resets on restart)
 """
 
 import shutil
@@ -36,13 +47,17 @@ def clear_all_data():
     # 1. Clear all log files
     logs_dir = data_dir / 'logs'
     if logs_dir.exists():
-        for log_file in logs_dir.glob('*.log'):
+        log_files = list(logs_dir.glob('*.log'))
+        log_count = 0
+        for log_file in log_files:
             if log_file.exists():
                 size = log_file.stat().st_size
                 total_size += size
                 log_file.unlink()
                 cleared_items.append(f"  ✅ Log: {log_file.name} ({size / 1024:.1f} KB)")
-        print(f"📋 Cleared {len([f for f in logs_dir.glob('*.log')])} log files")
+                log_count += 1
+        if log_count > 0:
+            print(f"📋 Cleared {log_count} log files")
     
     # 2. Clear all checkpoints
     checkpoints_dir = data_dir / 'checkpoints'
@@ -152,6 +167,52 @@ def clear_all_data():
         if log_count > 0:
             cleared_items.append(f"  ✅ Decision logs: {log_count} files")
             print(f"📝 Cleared {log_count} decision log files")
+    
+    # 12. Clear neural model checkpoints (PyTorch .pt/.pth files)
+    neural_models_dir = data_dir / 'neural_models'
+    if neural_models_dir.exists():
+        model_count = 0
+        for model_file in neural_models_dir.glob('*.pt'):
+            if model_file.exists():
+                size = model_file.stat().st_size
+                total_size += size
+                model_file.unlink()
+                model_count += 1
+        for model_file in neural_models_dir.glob('*.pth'):
+            if model_file.exists():
+                size = model_file.stat().st_size
+                total_size += size
+                model_file.unlink()
+                model_count += 1
+        if model_count > 0:
+            cleared_items.append(f"  ✅ Neural models: {model_count} files")
+            print(f"🧠 Cleared {model_count} neural model checkpoint files")
+    
+    # Also check checkpoints directory for neural models
+    if checkpoints_dir.exists():
+        neural_checkpoint_count = 0
+        for checkpoint in checkpoints_dir.glob('*.pt'):
+            if checkpoint.exists():
+                size = checkpoint.stat().st_size
+                total_size += size
+                checkpoint.unlink()
+                neural_checkpoint_count += 1
+        for checkpoint in checkpoints_dir.glob('*.pth'):
+            if checkpoint.exists():
+                size = checkpoint.stat().st_size
+                total_size += size
+                checkpoint.unlink()
+                neural_checkpoint_count += 1
+        if neural_checkpoint_count > 0:
+            cleared_items.append(f"  ✅ Neural checkpoints: {neural_checkpoint_count} files")
+            print(f"🧠 Cleared {neural_checkpoint_count} neural model files from checkpoints")
+    
+    # Note: Knowledge base files are PRESERVED (not runtime data):
+    # - linguistic_concepts.json
+    # - semantic_relations.json
+    # - ngram_patterns.json
+    # - config.json
+    # - causation_explorer/ollama_config.json
     
     # Summary
     print("\n" + "="*60)

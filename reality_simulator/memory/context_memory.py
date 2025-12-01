@@ -314,9 +314,13 @@ class ContextMemory:
         # Create/update embedding for this node
         self._update_node_embedding(organism_id, word)
         
-        # Emit word_assignment event if this is a new word for this organism
+        # Only emit word_assignment event for significant milestones (quality over quantity)
+        # Match neural/ML event frequency - only emit when word reaches meaningful adoption
         if was_new_word:
-            if self.event_emitter:
+            # Only emit if word is adopted by many organisms (significant language emergence)
+            num_organisms_with_word = len(self.language_anchors[word])
+            # Much higher threshold - only when 10+ organisms use it (major language pattern)
+            if self.event_emitter and num_organisms_with_word >= 10:
                 try:
                     import time
                     from causation_explorer import Event
@@ -329,7 +333,7 @@ class ContextMemory:
                             'organism_id': organism_id,
                             'generation': generation,
                             'total_words_for_organism': len(self.node_word_associations[organism_id]),
-                            'total_organisms_with_word': len(self.language_anchors[word]),
+                            'total_organisms_with_word': num_organisms_with_word,
                             'word_frequency': self.word_frequencies[word]
                         }
                     )
@@ -462,8 +466,7 @@ class ContextMemory:
         # Friendly debug: when empty, make it clear it's a normal initial state
         if len(self.language_anchors) == 0 and len(self.node_word_associations) == 0:
             print("[Context Memory] No anchors yet – metrics default to 0 (will populate as the system runs)")
-        else:
-            print(f"[CONTEXT_MEMORY_DEBUG] get_stability_metrics called: language_anchors={len(self.language_anchors)}, node_word_associations={len(self.node_word_associations)}")
+        # Removed verbose debug prints - metrics are already logged via StateLogger
         metrics = {}
 
         # Anchor density: how many nodes have language anchors
@@ -472,8 +475,7 @@ class ContextMemory:
         metrics['anchor_density'] = anchored_nodes / max(total_nodes, 1)
         if total_nodes == 0:
             print("[Context Memory] Anchor density: 0.0 (no nodes yet)")
-        else:
-            print(f"[CONTEXT_MEMORY_DEBUG] anchor_density calculation: anchored_nodes={anchored_nodes}, total_nodes={total_nodes}, density={metrics['anchor_density']}")
+        # Removed verbose debug print - anchor_density is already logged via StateLogger
 
         # Language coherence: average words per anchored node
         if anchored_nodes > 0:

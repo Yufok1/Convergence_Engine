@@ -88,7 +88,29 @@ Quick Win #5: Health Index (Unified Ecosystem Score)
 - Emergence benefit: Single metric to track emergent system wellness
 - Config: health_monitor.enabled = true
 
-Quick Win #6: Illumination Engine (Deep Causal Analysis) ⭐ NEW
+Quick Win #6: Neural-ML Symbiosis (Bidirectional Language Learning) ⭐ NEW
+- Three integrations creating emergent language comprehension:
+  * Integration 1: Neural Embeddings → ML Features
+    - Neural semantic embeddings (64-dim from fc2 hidden state) replace behavioral features for clustering
+    - Enables semantic population clustering (organisms grouped by understanding, not just behavior)
+    - Config: scikit.clustering.use_neural_embeddings (true/false, default: false)
+    - When enabled: ML clusters organisms by what they understand semantically
+  * Integration 2: ML Feature Importance → Neural Rewards
+    - ML identifies words that predict fitness (via feature selection)
+    - Neural organisms rewarded for using these important words
+    - Creates functional vocabulary emergence (words that correlate with success)
+    - Events: neural_language_reward (when organisms receive language rewards)
+    - Config: neural.training.language_reward_scaling (0.0-1.0, default: 0.2)
+  * Integration 3: ML Quality Metrics → Neural Curriculum
+    - ML-measured language quality (silhouette score) adjusts neural training sequence length
+    - High quality → increase complexity, low quality → decrease complexity
+    - Self-regulating learning pace prevents chaos and stagnation
+    - Events: neural_curriculum_adjustment (when sequence length changes)
+    - Config: neural.language_model.curriculum.ml_quality.* (enabled, thresholds, step size)
+- Visualization: All symbiosis events appear on causation graph with component='neural'
+- Emergence benefit: Bidirectional learning creates genuine language comprehension - not just pattern matching, but understanding that emerges from individual learning (neural) and population patterns (ML) teaching each other
+
+Quick Win #7: Illumination Engine (Deep Causal Analysis) ⭐ NEW
 - CRA has autonomous control over the Illumination Engine UI panel
 - Commands use [[ILLUMINATE: {...}]] marker format
 - 6 Deep Analysis Methods:
@@ -149,12 +171,34 @@ Quick Win #8: Dynamic Multi-Dimensional Linguistic Awareness ⭐ NEW
 - **Dynamic Word Scoring**: Words scored across dimensions (0.0-1.0), prioritized by contextual relevance
 - **Full State Integration**: Uses all 18 state features plus network and breath state
 - **Language Teacher System**: Three-phase architecture (hardcoded → semantic embeddings → knowledge web)
-- **Linguistic Knowledge Web**: 100+ concepts, semantic relationships, situational contexts
-- **Expanded Vocabulary**: 40+ new words covering system dynamics, spatial concepts, health states
-- **Emergence benefit**: Context-aware word associations enable organisms to develop nuanced communication that reflects true situational awareness
-- **Config**: neural.language_model.enabled, neural.language_model.teacher.*, neural.language_model.knowledge_web.*
-- **Events**: vocabulary_growth, organism_communication, butterfly_chat_message/response
+- **Linguistic Knowledge Web**: Comprehensive semantic network with quality-controlled recursive expansion
+  - **Knowledge Base**: 326 concepts (linguistic_concepts.json), 1,395 semantic relations (semantic_relations.json), 106 n-gram patterns (ngram_patterns.json)
+  - **Seeded Relationships**: Initial 1,395 relations marked `is_seeded=True` with `confidence=0.9`, protected from pruning
+  - **Quality-Controlled Recursive Expansion**: Prevents "yarn ball" of random associations through adaptive exploration, confidence-based validation, and decay mechanisms
+  - **14 Quality Control Parameters** (configurable via CRA):
+    * `min_discovery_count`: 3 (minimum co-occurrences before accepting relationship)
+    * `min_confidence_threshold`: 0.3 (starts at 0.3, grows to 0.8 over time)
+    * `confidence_growth_rate`: 0.0005 (gradual confidence increase)
+    * `exploration_start`: 0.2 (20% exploration rate initially)
+    * `exploration_end`: 0.05 (5% exploration rate after convergence)
+    * `exploration_decay_generations`: 1000 (decay period)
+    * `validation_required`: true (must pass semantic + context coherence checks)
+    * `max_discoveries_per_generation`: 10 (cap on new relationships per generation)
+    * `vp_boost_exploration`: true (high VP increases exploration)
+    * `vp_boost_threshold`: 0.7 (VP threshold for exploration boost)
+    * `review_frequency`: 100 (quality review every N generations)
+    * `pruning_confidence_threshold`: 0.2 (remove relationships below this)
+    * `pruning_unused_generations`: 100 (remove if unused for N generations)
+    * `pruning_failure_rate`: 0.7 (remove if failure rate exceeds this)
+  - **Time-Based Learning Curve**: Exploration rate decays (0.2 → 0.05) while confidence threshold grows (0.3 → 0.8) over generations
+  - **Validation Gates**: Semantic coherence (word type compatibility) + context coherence (co-occurrence patterns) + frequency validation
+  - **Relationship Lifecycle**: Discovered relationships start at `confidence=0.5`, strengthen with success, weaken with failure, prune if quality drops
+- **Expanded Vocabulary**: 326 concepts covering system dynamics, spatial concepts, health states, function words
+- **Emergence benefit**: Context-aware word associations enable organisms to develop nuanced communication that reflects true situational awareness, with quality-controlled growth preventing random associations
+- **Config**: neural.language_model.enabled, neural.language_model.teacher.*, neural.language_model.knowledge_web.quality_control.*
+- **Events**: vocabulary_growth, organism_communication, butterfly_chat_message/response, word_assignment
 - **Visualization**: Language nodes (Circle/Wye shapes, Teal #00BCD4), linguistic edges (Purple #9B59B6)
+- **Illumination Engine**: Language component (`language`, `butterfly_chat`) available in dropdown for filtering language events
 
 ---
 📋 Detailed Instructions
@@ -245,9 +289,25 @@ Language System Parameters (Quick Win #8): ⭐ NEW
 - Knowledge Web:
   - knowledge_web.enabled: true (CRITICAL for multi-dimensional awareness)
   - knowledge_web.max_concepts: 500-1000 (comprehensive semantic network)
+  - **Quality Control** (knowledge_web.quality_control.*):
+    * enabled: true (CRITICAL for preventing random associations)
+    * min_discovery_count: 3 (require N co-occurrences before accepting)
+    * min_confidence_threshold: 0.3 (starts low, grows to 0.8)
+    * confidence_growth_rate: 0.0005 (gradual confidence increase)
+    * exploration_start: 0.2 (20% exploration initially)
+    * exploration_end: 0.05 (5% exploration after convergence)
+    * exploration_decay_generations: 1000 (decay period)
+    * validation_required: true (semantic + context coherence checks)
+    * max_discoveries_per_generation: 10 (cap on new relationships)
+    * vp_boost_exploration: true (high VP increases exploration)
+    * vp_boost_threshold: 0.7 (VP threshold for boost)
+    * review_frequency: 100 (quality review every N generations)
+    * pruning_confidence_threshold: 0.2 (remove low-confidence relationships)
+    * pruning_unused_generations: 100 (remove if unused for N generations)
+    * pruning_failure_rate: 0.7 (remove if failure rate exceeds this)
 - Vocabulary: max_size 1024-2048 (allow rich emergent vocabulary)
 - Generation: temperature 0.8-1.2 (balance creativity vs coherence)
-- Emergence benefit: Context-aware word associations enable nuanced communication reflecting true situational awareness across 14 dimensions
+- Emergence benefit: Context-aware word associations enable nuanced communication reflecting true situational awareness across 14 dimensions, with quality-controlled recursive expansion preventing "yarn ball" of random associations
 
 Feedback Controller Knobs (Emergent Phenomena Focus):
 
@@ -1148,6 +1208,9 @@ Parameter Targets:
 - neural.language_model.enabled: true (QW#8 - CRITICAL for emergent language)
 - neural.language_model.teacher.use_knowledge_web: true (QW#8 - situational awareness)
 - neural.language_model.knowledge_web.enabled: true (QW#8 - multi-dimensional assessment)
+- neural.language_model.knowledge_web.quality_control.enabled: true (QW#8 - prevent random associations)
+- neural.language_model.knowledge_web.quality_control.exploration_start: 0.2 (QW#8 - initial exploration)
+- neural.language_model.knowledge_web.quality_control.exploration_end: 0.05 (QW#8 - convergence exploration)
 - feedback.knobs.new_edge_rate.initial: 4.5-5.5 (dense connectivity)
 - feedback.knobs.mutation_rate.initial: 0.030-0.038 (optimize for dual inheritance)
 - feedback.knobs.clustering_bias.initial: 1.55-1.65 (strong spatial clustering)
@@ -1163,7 +1226,8 @@ Make emergent structures unmistakable in the graph, including Quick Win events:
   green hexagons)
 - Show named concepts with semantic labels (star nodes) (QW#2)
 - Show health state transitions (colored nodes) (QW#5)
-- Show language events (vocabulary_growth, organism_communication, butterfly_chat) (QW#8)
+- Show language events (vocabulary_growth, organism_communication, butterfly_chat, word_assignment) (QW#8)
+- Show quality control metrics (exploration_rate, confidence_threshold, discoveries_per_generation) (QW#8)
 - Highlight neural vs genetic divergence and anomaly spikes (orange triangles with flash)
 - Preserve depth cues for 3D structure with strong parallax
 - Emphasize neural events (diamonds/squares), ML events (hexagon/pentagon/triangle/star),
@@ -1207,7 +1271,8 @@ INTERPRETATION:
   - Neural: training_loss, avg_epsilon, organisms_tracked, vp_aware_adjustments
   - ML: cluster_count, concept_count (QW#2), anomaly_ratio
   - Health: overall_score, components, state_changes (QW#5)
-  - Language: vocabulary_size, word_associations, situational_awareness_accuracy (QW#8)
+  - Language: vocabulary_size, word_associations, situational_awareness_accuracy, quality_control_metrics (QW#8)
+    * Quality control: exploration_rate (decaying), confidence_threshold (growing), discoveries_per_generation, relationship_validation_rate, pruning_rate
   - VP: component breakdown, organism perception (QW#1), healing behaviors (QW#4)
   - Events: Intelligence events (neural+ML+concept+health+language) >40% of total
 

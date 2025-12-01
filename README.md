@@ -59,9 +59,15 @@ python causation_web_ui.py
 **📚 [DOCUMENTATION_HUB.md](./DOCUMENTATION_HUB.md)** - Central documentation hub with links to all guides
 
 Recent updates:
+- ⚡ **Butterfly Chat Optimizations** (Dec 1, 2025): ⭐ NEW - Adaptive generation length, early stopping, 5-10x faster early-stage performance
+- 🔗 **System Integration Fixes** (Dec 1, 2025): ⭐ NEW - Fixed ML analysis cache timing, verified all system integrations
+- 🚫 **Fallback Removal** (Dec 1, 2025): ⭐ NEW - Removed all automated fallback responses - pure organism communication only
 - 🧠 **Dynamic Multi-Dimensional Linguistic Awareness**: Context-aware word association framework with 14-dimensional situational assessment
 - 🧠 **Language Teacher System**: Three-phase architecture (hardcoded → semantic embeddings → knowledge web)
 - 🧠 **Linguistic Knowledge Web**: Comprehensive semantic network with 100+ concepts and relationships
+- 🎓 **Neural Relationship Learning**: Neural system learns from generation quality to strengthen/weaken semantic relationships
+- 🔬 **Scikit-Learn Enhancements**: Additional ML tools for language pattern analysis (TF-IDF, Nearest Neighbors, Feature Selection)
+- ⚙️ **Configuration Exposure**: All new systems fully configurable via config.json and CRA
 - 🦋 **Butterfly Chat Debug Panel**: Comprehensive debug/analysis panel with step-by-step logging, causation trail, and error detection
 - 🦋 **Illumination Engine Integration**: Direct linking between chat interactions and deep causal analysis
 - 🦋 **Learning from Interactions**: Organisms learn from every chat interaction with automatic experience storage
@@ -103,6 +109,12 @@ A multi-layered artificial life simulation system that creates evolving populati
   - Dual inheritance (genetic + learned neural weights)
   - Breath-synchronized training cycles
   - Configurable reward system and exploration/exploitation balance
+  - **🎓 Relationship Learning**: ⭐ NEW - Neural system learns from generation quality to strengthen/weaken semantic relationships
+    - Tracks which semantic relationships are used during token generation
+    - Evaluates generation quality (coherent vs garbled)
+    - Records success/failure back to Linguistic Knowledge Web
+    - Strengthens relationships that lead to coherent generation
+    - Weakens relationships that lead to garbled generation
 - **🦋 Language Model System**: ⭐ NEW - Emergent language through neural organisms
   - Multi-head self-attention mechanism with VP-aware temperature scaling
   - Dual-head architecture: action head (RL) + language head (next-token prediction)
@@ -131,6 +143,14 @@ A multi-layered artificial life simulation system that creates evolving populati
     - Debug panel with step-by-step logging, causation trail, and error analysis
     - Learning integration: chat interactions stored as learning experiences
 - **🔬 ML Analysis System**: Scikit-learn population analytics
+  - Clustering (HDBSCAN, KMeans, DBSCAN) for behavioral phenotype identification
+  - Anomaly detection (Isolation Forest, Local Outlier Factor) for unusual organisms
+  - Dimensionality reduction (PCA, t-SNE) for visualization
+  - **🔬 Semantic Analysis**: ⭐ NEW - ML analyzes word co-occurrence and semantic patterns
+    - Word co-occurrence analysis across organisms
+    - Semantic cluster identification
+    - Concept formation tracking
+    - Relationship strength validation (ML teaches the system)
   - HDBSCAN/KMeans clustering (behavioral phenotype detection)
   - Isolation Forest anomaly detection
   - Automatic event emission to causation graph (phenotype_emergence, cluster_collapse, anomaly_spike)

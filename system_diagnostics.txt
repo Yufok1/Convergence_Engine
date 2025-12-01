@@ -75,7 +75,37 @@ Quick Win #5: Health Index
 - Endpoint: /api/diagnostic/unified_health
 - Verification: health_monitor.get_health() returns 0.0-1.0 score
 
-Quick Win #6: Illumination Engine ⭐ NEW
+Quick Win #6: Neural-ML Symbiosis (Bidirectional Language Learning) ⭐ NEW
+- Status: ENABLED / DISABLED
+- Three bidirectional integrations creating emergent language comprehension:
+  * Integration 1: Neural Embeddings → ML Features
+    - Status: ENABLED / DISABLED (via scikit.clustering.use_neural_embeddings)
+    - Neural semantic embeddings (64-dim from fc2 hidden state) replace behavioral features for clustering
+    - Enables semantic population clustering (organisms grouped by understanding, not just behavior)
+    - Config: scikit.clustering.use_neural_embeddings (true/false, default: false)
+    - Verification: Check if PopulationClusterer.extract_features() uses get_language_embedding()
+  * Integration 2: ML Feature Importance → Neural Rewards
+    - Status: ENABLED / DISABLED (via neural.training.language_reward_scaling > 0)
+    - ML identifies words that predict fitness (via feature selection in _analyze_semantic_patterns)
+    - Neural organisms rewarded for using these important words
+    - Creates functional vocabulary emergence
+    - Events: neural_language_reward (when organisms receive language rewards)
+    - Config: neural.training.language_reward_scaling (0.0-1.0, default: 0.2)
+    - Verification: Check if NeuralTrainer._calculate_language_reward() is called and returns > 0
+  * Integration 3: ML Quality Metrics → Neural Curriculum
+    - Status: ENABLED / DISABLED (via neural.language_model.curriculum.ml_quality.enabled)
+    - ML-measured language quality (silhouette score) adjusts neural training sequence length
+    - High quality (silhouette > high_threshold) → increase sequence length
+    - Low quality (silhouette < low_threshold) → decrease sequence length
+    - Self-regulating learning pace
+    - Events: neural_curriculum_adjustment (when sequence length changes)
+    - Config: neural.language_model.curriculum.ml_quality.* (enabled, high_quality_threshold, low_quality_threshold, max_sequence_length, min_sequence_length, sequence_length_step)
+    - Verification: Check if NeuralTrainer.adjust_curriculum_from_ml_quality() is called and returns new length
+- Visualization: All symbiosis events appear on causation graph with component='neural'
+- Endpoints: Check neural_language_reward and neural_curriculum_adjustment events in causation graph
+- Verification: All three integrations wired in main.py (ML analysis passed to trainer, context_memory passed to trainer, curriculum adjustment called after ML analysis)
+
+Quick Win #7: Illumination Engine ⭐ NEW
 - Status: ENABLED / DISABLED
 - CRA has autonomous control over Illumination Engine UI panel
 - Marker format: [[ILLUMINATE: {"action": "...", ...}]]
@@ -92,7 +122,7 @@ Quick Win #6: Illumination Engine ⭐ NEW
 - Verification: CRA can issue [[ILLUMINATE: ...]] and UI panel updates
 - **Recent Fix (2025-11-30)**: Robust JSON parsing - handles invisible Unicode characters, smart quotes (", ", ', '), non-breaking spaces, zero-width characters. Fallback regex parsing when standard JSON.parse fails. CRA research features now work reliably with all LLM response formats.
 
-Quick Win #7: Research Notepad ⭐ NEW
+Quick Win #8: Research Notepad ⭐ NEW
 - Status: ENABLED / DISABLED
 - CRA has access to persistent research notepad
 - Marker format: [[NOTEPAD: {"action": "...", ...}]]
@@ -258,9 +288,30 @@ Language Teacher (Three-Phase Architecture):
 Linguistic Knowledge Web (Multi-Dimensional Awareness):
 - knowledge_web.enabled: true/false (CRITICAL for 14-dimensional assessment)
 - knowledge_web.max_concepts: 100-1000 (default: 500)
+- **Knowledge Base**: 326 concepts (linguistic_concepts.json), 1,395 semantic relations (semantic_relations.json), 106 n-gram patterns (ngram_patterns.json)
+- **Seeded Relationships**: 1,395 initial relations marked `is_seeded=True` with `confidence=0.9`, protected from pruning
 - concepts: count, semantic frames (action, state, quality, relationship, temporal, spatial, meta, system)
-- relationships: count, types (synonym, antonym, causes, enables, similar_to, etc.)
+- relationships: count, types (synonym, antonym, causes, enables, similar_to, discovered, etc.)
 - situational_contexts: count, coverage
+- **Quality-Controlled Recursive Expansion** (prevents "yarn ball" of random associations):
+  * quality_control.enabled: true/false (CRITICAL for preventing random associations)
+  * quality_control.min_discovery_count: 3 (minimum co-occurrences before accepting)
+  * quality_control.min_confidence_threshold: 0.3 (starts at 0.3, grows to 0.8)
+  * quality_control.confidence_growth_rate: 0.0005 (gradual confidence increase)
+  * quality_control.exploration_start: 0.2 (20% exploration initially)
+  * quality_control.exploration_end: 0.05 (5% exploration after convergence)
+  * quality_control.exploration_decay_generations: 1000 (decay period)
+  * quality_control.validation_required: true (semantic + context coherence checks)
+  * quality_control.max_discoveries_per_generation: 10 (cap on new relationships)
+  * quality_control.vp_boost_exploration: true (high VP increases exploration)
+  * quality_control.vp_boost_threshold: 0.7 (VP threshold for boost)
+  * quality_control.review_frequency: 100 (quality review every N generations)
+  * quality_control.pruning_confidence_threshold: 0.2 (remove low-confidence relationships)
+  * quality_control.pruning_unused_generations: 100 (remove if unused for N generations)
+  * quality_control.pruning_failure_rate: 0.7 (remove if failure rate exceeds this)
+- **Time-Based Learning**: Exploration rate decays (0.2 → 0.05) while confidence threshold grows (0.3 → 0.8) over generations
+- **Validation**: Semantic coherence (word type compatibility) + context coherence (co-occurrence patterns) + frequency validation
+- **Relationship Lifecycle**: Discovered relationships start at `confidence=0.5`, strengthen with success, weaken with failure, prune if quality drops
 
 14-Dimensional Assessment:
 - Action-Based: words from organism actions (move, cooperate, compete, etc.)
@@ -289,8 +340,10 @@ Events:
 - organism_communication: count/frequency/token_count/word_count
 - butterfly_chat_message: count/frequency/user_message/routing_strategy
 - butterfly_chat_response: count/frequency/organism_id/response_text/confidence
+- word_assignment: count/frequency/word/organism_id/context (word-to-organism linking)
 - Event emission: wired, appearing in graph
 - Component filter: Language checkbox works
+- **Illumination Engine**: Language component (`language`, `butterfly_chat`) available in dropdown for filtering language events
 
 Butterfly Chat:
 - Debug panel: comprehensive logging, causation trail, error analysis (1/3 of chat window)
@@ -314,6 +367,21 @@ Config Paths:
 - /neural/language_model/teacher/min_experiences (50-500), training_frequency (1-50)
 - /neural/language_model/teacher/min_confidence (0.0-1.0), teaching_frequency (1-10)
 - /neural/language_model/knowledge_web/enabled, max_concepts (100-1000)
+- /neural/language_model/knowledge_web/quality_control/enabled (CRITICAL for preventing random associations)
+- /neural/language_model/knowledge_web/quality_control/min_discovery_count (3)
+- /neural/language_model/knowledge_web/quality_control/min_confidence_threshold (0.3)
+- /neural/language_model/knowledge_web/quality_control/confidence_growth_rate (0.0005)
+- /neural/language_model/knowledge_web/quality_control/exploration_start (0.2)
+- /neural/language_model/knowledge_web/quality_control/exploration_end (0.05)
+- /neural/language_model/knowledge_web/quality_control/exploration_decay_generations (1000)
+- /neural/language_model/knowledge_web/quality_control/validation_required (true)
+- /neural/language_model/knowledge_web/quality_control/max_discoveries_per_generation (10)
+- /neural/language_model/knowledge_web/quality_control/vp_boost_exploration (true)
+- /neural/language_model/knowledge_web/quality_control/vp_boost_threshold (0.7)
+- /neural/language_model/knowledge_web/quality_control/review_frequency (100)
+- /neural/language_model/knowledge_web/quality_control/pruning_confidence_threshold (0.2)
+- /neural/language_model/knowledge_web/quality_control/pruning_unused_generations (100)
+- /neural/language_model/knowledge_web/quality_control/pruning_failure_rate (0.7)
 
 ---
 4. Meta-Cognitive Self-Tuning System Audit
@@ -1272,18 +1340,25 @@ Quick Win #8: Dynamic Multi-Dimensional Linguistic Awareness ⭐ NEW
   - teacher.embedding_dim: 16-256 (default: 64)
   - teacher.min_confidence: 0.0-1.0 (default: 0.3) - confidence threshold for using learned embeddings
   - teacher.training_frequency: 1-50 (default: 10) - train semantic teacher every N generations
-- Linguistic Knowledge Web: Comprehensive semantic network
+- Linguistic Knowledge Web: Comprehensive semantic network with quality-controlled recursive expansion
   - knowledge_web.enabled: true/false (CRITICAL for multi-dimensional assessment)
   - knowledge_web.max_concepts: 100-1000 (default: 500)
-  - 100+ concepts organized by semantic frames
-  - Semantic relationships (synonym, antonym, causes, enables, etc.)
+  - **Knowledge Base**: 326 concepts (linguistic_concepts.json), 1,395 semantic relations (semantic_relations.json), 106 n-gram patterns (ngram_patterns.json)
+  - **Seeded Relationships**: 1,395 initial relations marked `is_seeded=True` with `confidence=0.9`, protected from pruning
+  - **Quality-Controlled Recursive Expansion**: Prevents "yarn ball" of random associations
+    * quality_control.enabled: true/false (CRITICAL for preventing random associations)
+    * 14 quality control parameters (all configurable via CRA)
+    * Time-based learning curve: exploration decays (0.2 → 0.05), confidence grows (0.3 → 0.8)
+    * Validation gates: semantic coherence + context coherence + frequency validation
+    * Relationship lifecycle: discovered relationships start at confidence=0.5, strengthen/weaken with use, prune if quality drops
 - 14-Dimensional Assessment: Evaluates simultaneously across action, fitness, resources, connections, positional, density, VP, coherence, evolution, phase, health, breath, success, age
 - Dynamic Word Scoring: Words scored across dimensions (0.0-1.0), prioritized by contextual relevance
 - Full State Integration: Uses all 18 state features plus network and breath state
-- Expanded Vocabulary: 40+ new words covering system dynamics, spatial concepts, health states
-- Events: vocabulary_growth, organism_communication, butterfly_chat_message/response
+- Expanded Vocabulary: 326 concepts covering system dynamics, spatial concepts, health states, function words
+- Events: vocabulary_growth, organism_communication, butterfly_chat_message/response, word_assignment
 - Visualization: Language nodes (Circle/Wye shapes), linguistic edges (Purple #9B59B6)
-- Verification: Organisms receive contextually appropriate words based on comprehensive situational assessment
+- **Illumination Engine**: Language component (`language`, `butterfly_chat`) available in dropdown for filtering language events
+- Verification: Organisms receive contextually appropriate words based on comprehensive situational assessment, with quality-controlled growth preventing random associations
 
 - Section 6: Health Monitor System
 - Section 15: Illumination Engine System (NEW)
@@ -1308,5 +1383,11 @@ Quick Win #8: Dynamic Multi-Dimensional Linguistic Awareness ⭐ NEW
   - ML causation links: Time window extended to 6s, better coverage and connections
   - Dynamic color system: All colors dynamic, CRA receives current values in graph context
   - Headless backend: `--no-viz` flag makes tkinter optional
+- **Recent Improvements (2025-01-30)**:
+  - Quality-Controlled Recursive Expansion: Comprehensive system to prevent "yarn ball" of random language associations
+  - Knowledge Base Integration: 326 concepts, 1,395 relations, 106 patterns loaded from JSON files
+  - Seeded Relationship Protection: Initial relations marked `is_seeded=True` and protected from pruning
+  - Illumination Engine Language Components: `language` and `butterfly_chat` components added to dropdown
+  - CRA Quality Control Tuning: All 14 quality control parameters available in CONFIG_GUARDRAILS
 
 ---

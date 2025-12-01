@@ -141,6 +141,88 @@ class NeuralTrainer:
         
         # Optional event emitter for causation graph visualization
         self.event_emitter = None  # Set by main.py or unified_entry.py
+        
+        # Integration 2: Neural-ML Symbiosis - ML analysis for language rewards
+        self.ml_analysis = None  # Set by main.py when ML analysis is available
+        self.context_memory = None  # Set by main.py for vocabulary access
+        self.language_reward_scaling = training_config.get('language_reward_scaling', 0.2)
+        
+        # Track language rewards for ConfigTuner analysis
+        self.language_reward_total = 0.0  # Cumulative language rewards per training step
+        self.language_reward_count = 0  # Number of language rewards given
+        self._last_step_language_reward_total = 0.0  # Store last step's total for metrics
+    
+    def _calculate_language_reward(self, organism: NeuralOrganism) -> float:
+        """
+        Calculate language reward based on ML feature importance.
+        
+        Integration 2: Neural-ML Symbiosis - rewards organisms for using words
+        that predict fitness (identified by ML feature selection).
+        
+        Args:
+            organism: Neural organism with token sequence
+            
+        Returns:
+            Language reward (0.0 if no ML analysis or no important words used)
+        """
+        if not self.ml_analysis:
+            return 0.0
+        
+        # Extract feature importance from ML analysis
+        semantic_analysis = self.ml_analysis.get('semantic_analysis', {})
+        feature_importance = semantic_analysis.get('feature_importance', {})
+        
+        if not feature_importance:
+            return 0.0
+        
+        top_predictive_words = feature_importance.get('top_predictive_words', [])
+        if not top_predictive_words:
+            return 0.0
+        
+        # Get organism's generated tokens
+        if not hasattr(organism, 'get_token_sequence'):
+            return 0.0
+        
+        token_sequence = organism.get_token_sequence()
+        if not token_sequence or len(token_sequence) == 0:
+            return 0.0
+        
+        # Decode tokens to words using vocabulary from context_memory
+        if not self.context_memory or not hasattr(self.context_memory, 'vocabulary'):
+            return 0.0
+        
+        vocab = self.context_memory.vocabulary
+        if vocab is None:
+            return 0.0
+        
+        # Decode tokens to words (skip special tokens)
+        try:
+            words = vocab.decode(token_sequence, skip_special=True)
+        except Exception:
+            # Fallback: try to decode manually
+            words = []
+            for token_id in token_sequence:
+                try:
+                    word = vocab.get_word(token_id)
+                    # Skip special tokens
+                    if word and not (word.startswith('<') and word.endswith('>')):
+                        words.append(word)
+                except Exception:
+                    continue
+        
+        if not words:
+            return 0.0
+        
+        # Calculate reward: sum importance scores for matching words
+        reward = 0.0
+        important_word_dict = {item['word']: item['importance_score'] for item in top_predictive_words}
+        
+        for word in words:
+            if word in important_word_dict:
+                # Reward proportional to importance, scaled by config
+                reward += important_word_dict[word] * self.language_reward_scaling
+        
+        return reward
     
     def calculate_reward(self, 
                         organism: NeuralOrganism,
@@ -152,6 +234,8 @@ class NeuralTrainer:
         """
         Calculate reward for an organism based on various factors.
         
+        Integration 2: Now includes language reward from ML feature importance.
+        
         Args:
             organism: Neural organism
             prev_fitness: Previous fitness value
@@ -161,7 +245,7 @@ class NeuralTrainer:
             resource_delta: Change in resources
             
         Returns:
-            Calculated reward
+            Calculated reward (base + language)
         """
         reward = 0.0
         
@@ -184,6 +268,35 @@ class NeuralTrainer:
             reward += resource_delta * self.reward_weights['resource_gain']
         elif resource_delta < 0:
             reward += abs(resource_delta) * self.reward_weights['resource_loss']
+        
+        # Integration 2: Add language reward (if ML analysis available)
+        language_reward = self._calculate_language_reward(organism)
+        reward += language_reward
+        
+        # Track language rewards for ConfigTuner
+        if language_reward > 0.0:
+            self.language_reward_total += language_reward
+            self.language_reward_count += 1
+        
+        # Emit event for language reward (Integration 2: Neural-ML Symbiosis)
+        if language_reward > 0.0 and self.event_emitter:
+            try:
+                from causation_explorer import Event
+                event = Event(
+                    timestamp=time.time(),
+                    component='neural',
+                    event_type='neural_language_reward',
+                    data={
+                        'organism_id': str(id(organism)),
+                        'language_reward': float(language_reward),
+                        'total_reward': float(reward),
+                        'reward_scaling': self.language_reward_scaling,
+                        'has_ml_analysis': self.ml_analysis is not None
+                    }
+                )
+                self.event_emitter(event)
+            except Exception:
+                pass  # Event emission is optional
         
         return reward
     
@@ -400,9 +513,25 @@ class NeuralTrainer:
                 except ImportError:
                     pass  # CausationExplorer not available
             
+            # Store language reward total for this step (before resetting for next step)
+            self._last_step_language_reward_total = self.language_reward_total
+            
+            # Reset language reward tracking for next step (ConfigTuner tracks per-step totals)
+            self.language_reward_total = 0.0
+            self.language_reward_count = 0
+            
             return avg_loss
         
         return None
+    
+    def get_neural_ml_symbiosis_metrics(self) -> Dict[str, Any]:
+        """Get Neural-ML Symbiosis metrics for ConfigTuner"""
+        return {
+            'language_reward_total': self._last_step_language_reward_total,  # Use stored value from last step
+            'language_reward_count': self.language_reward_count,
+            'curriculum_sequence_length': self.current_sequence_length,
+            'language_reward_scaling': self.language_reward_scaling
+        }
     
     def get_training_stats(self) -> Dict[str, Any]:
         """
@@ -481,6 +610,96 @@ class NeuralTrainer:
                 pass  # CausationExplorer not available
         
         return loss
+    
+    def adjust_curriculum_from_ml_quality(self, ml_analysis: Optional[Dict[str, Any]]) -> Optional[int]:
+        """
+        Adjust curriculum (sequence length) based on ML-measured language quality.
+        
+        Integration 3: Neural-ML Symbiosis - uses population language quality metrics
+        to adjust training complexity.
+        
+        Args:
+            ml_analysis: ML analysis results containing quality metrics
+            
+        Returns:
+            New sequence length if adjusted, None otherwise
+        """
+        if not ml_analysis:
+            return None
+        
+        # Extract quality metrics
+        semantic_analysis = ml_analysis.get('semantic_analysis', {})
+        if not semantic_analysis:
+            return None
+        
+        quality_metrics = semantic_analysis.get('quality_metrics', {})
+        
+        if not quality_metrics:
+            return None
+        
+        silhouette_score = quality_metrics.get('silhouette_score', None)
+        if silhouette_score is None:
+            return None
+        
+        # Get curriculum config
+        language_config = self.config.get('language_model', {})
+        curriculum_config = language_config.get('curriculum', {})
+        ml_quality_config = curriculum_config.get('ml_quality', {})
+        
+        if not ml_quality_config.get('enabled', False):
+            return None
+        
+        high_threshold = ml_quality_config.get('high_quality_threshold', 0.6)
+        low_threshold = ml_quality_config.get('low_quality_threshold', 0.3)
+        step_size = ml_quality_config.get('sequence_length_step', 2)
+        min_length = ml_quality_config.get('min_sequence_length', 8)
+        max_length = ml_quality_config.get('max_sequence_length', 64)
+        
+        old_length = self.current_sequence_length
+        new_length = old_length
+        
+        # Adjust based on quality
+        if silhouette_score > high_threshold:
+            # High quality: increase sequence length
+            new_length = min(max_length, old_length + step_size)
+        elif silhouette_score < low_threshold:
+            # Low quality: decrease sequence length
+            new_length = max(min_length, old_length - step_size)
+        
+        # Only update if changed significantly (prevent oscillation)
+        if abs(new_length - old_length) >= step_size:
+            self.current_sequence_length = new_length
+            
+            # Log curriculum change
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"[CURRICULUM] Adjusted sequence length: {old_length} → {new_length} "
+                       f"(silhouette={silhouette_score:.3f})")
+            
+            # Emit event for curriculum adjustment (Integration 3: Neural-ML Symbiosis)
+            if self.event_emitter:
+                try:
+                    from causation_explorer import Event
+                    event = Event(
+                        timestamp=time.time(),
+                        component='neural',
+                        event_type='neural_curriculum_adjustment',
+                        data={
+                            'old_sequence_length': int(old_length),
+                            'new_sequence_length': int(new_length),
+                            'silhouette_score': float(silhouette_score),
+                            'adjustment_reason': 'high_quality' if silhouette_score > high_threshold else 'low_quality',
+                            'high_threshold': high_threshold,
+                            'low_threshold': low_threshold
+                        }
+                    )
+                    self.event_emitter(event)
+                except Exception:
+                    pass  # Event emission is optional
+            
+            return new_length
+        
+        return None
     
     def update_curriculum(self, vp_value: float) -> bool:
         """

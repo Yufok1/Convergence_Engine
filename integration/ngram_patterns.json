@@ -1,0 +1,2371 @@
+{
+  "patterns": [
+    {
+      "pattern": [
+        "I",
+        "thrive"
+      ],
+      "pattern_type": "subject_verb",
+      "frequency_weight": 0.95,
+      "semantic_meaning": "Self expressing thriving state",
+      "variations": [
+        [
+          "I",
+          "flourish"
+        ],
+        [
+          "I",
+          "prosper"
+        ],
+        [
+          "I",
+          "survive"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "struggle"
+      ],
+      "pattern_type": "subject_verb",
+      "frequency_weight": 0.9,
+      "semantic_meaning": "Self expressing struggle",
+      "variations": [
+        [
+          "I",
+          "suffer"
+        ],
+        [
+          "I",
+          "decline"
+        ],
+        [
+          "I",
+          "endure"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "move"
+      ],
+      "pattern_type": "subject_verb",
+      "frequency_weight": 0.9,
+      "semantic_meaning": "Self expressing movement",
+      "variations": [
+        [
+          "I",
+          "explore"
+        ],
+        [
+          "I",
+          "travel"
+        ],
+        [
+          "I",
+          "wander"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "cooperate"
+      ],
+      "pattern_type": "subject_verb",
+      "frequency_weight": 0.9,
+      "semantic_meaning": "Self expressing cooperation",
+      "variations": [
+        [
+          "I",
+          "collaborate"
+        ],
+        [
+          "I",
+          "help"
+        ],
+        [
+          "I",
+          "share"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "compete"
+      ],
+      "pattern_type": "subject_verb",
+      "frequency_weight": 0.85,
+      "semantic_meaning": "Self expressing competition",
+      "variations": [
+        [
+          "I",
+          "fight"
+        ],
+        [
+          "I",
+          "challenge"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "rest"
+      ],
+      "pattern_type": "subject_verb",
+      "frequency_weight": 0.85,
+      "semantic_meaning": "Self expressing rest",
+      "variations": [
+        [
+          "I",
+          "pause"
+        ],
+        [
+          "I",
+          "recover"
+        ],
+        [
+          "I",
+          "wait"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "we",
+        "thrive"
+      ],
+      "pattern_type": "subject_verb",
+      "frequency_weight": 0.9,
+      "semantic_meaning": "Group expressing thriving",
+      "variations": [
+        [
+          "we",
+          "flourish"
+        ],
+        [
+          "we",
+          "prosper"
+        ],
+        [
+          "we",
+          "grow"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "we",
+        "cooperate"
+      ],
+      "pattern_type": "subject_verb",
+      "frequency_weight": 0.9,
+      "semantic_meaning": "Group expressing cooperation",
+      "variations": [
+        [
+          "we",
+          "collaborate"
+        ],
+        [
+          "we",
+          "share"
+        ],
+        [
+          "we",
+          "help"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "they",
+        "move"
+      ],
+      "pattern_type": "subject_verb",
+      "frequency_weight": 0.85,
+      "semantic_meaning": "Others expressing movement",
+      "variations": [
+        [
+          "they",
+          "travel"
+        ],
+        [
+          "they",
+          "wander"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "they",
+        "compete"
+      ],
+      "pattern_type": "subject_verb",
+      "frequency_weight": 0.85,
+      "semantic_meaning": "Others expressing competition",
+      "variations": [
+        [
+          "they",
+          "fight"
+        ],
+        [
+          "they",
+          "struggle"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "am",
+        "strong"
+      ],
+      "pattern_type": "subject_verb_adjective",
+      "frequency_weight": 0.95,
+      "semantic_meaning": "Self-description of strength",
+      "variations": [
+        [
+          "I",
+          "am",
+          "powerful"
+        ],
+        [
+          "I",
+          "am",
+          "robust"
+        ],
+        [
+          "I",
+          "am",
+          "capable"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "am",
+        "weak"
+      ],
+      "pattern_type": "subject_verb_adjective",
+      "frequency_weight": 0.9,
+      "semantic_meaning": "Self-description of weakness",
+      "variations": [
+        [
+          "I",
+          "am",
+          "fragile"
+        ],
+        [
+          "I",
+          "am",
+          "tired"
+        ],
+        [
+          "I",
+          "am",
+          "vulnerable"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "am",
+        "alone"
+      ],
+      "pattern_type": "subject_verb_adjective",
+      "frequency_weight": 0.9,
+      "semantic_meaning": "Self-description of isolation",
+      "variations": [
+        [
+          "I",
+          "am",
+          "isolated"
+        ],
+        [
+          "I",
+          "am",
+          "solitary"
+        ],
+        [
+          "I",
+          "am",
+          "lonely"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "am",
+        "social"
+      ],
+      "pattern_type": "subject_verb_adjective",
+      "frequency_weight": 0.9,
+      "semantic_meaning": "Self-description of social state",
+      "variations": [
+        [
+          "I",
+          "am",
+          "connected"
+        ],
+        [
+          "I",
+          "am",
+          "networked"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "am",
+        "here"
+      ],
+      "pattern_type": "subject_verb_location",
+      "frequency_weight": 0.9,
+      "semantic_meaning": "Self expressing location",
+      "variations": [
+        [
+          "I",
+          "am",
+          "near"
+        ],
+        [
+          "I",
+          "am",
+          "far"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "we",
+        "are",
+        "strong"
+      ],
+      "pattern_type": "subject_verb_adjective",
+      "frequency_weight": 0.9,
+      "semantic_meaning": "Group description of strength",
+      "variations": [
+        [
+          "we",
+          "are",
+          "united"
+        ],
+        [
+          "we",
+          "are",
+          "connected"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "we",
+        "are",
+        "together"
+      ],
+      "pattern_type": "subject_verb_adjective",
+      "frequency_weight": 0.9,
+      "semantic_meaning": "Group description of togetherness",
+      "variations": [
+        [
+          "we",
+          "are",
+          "united"
+        ],
+        [
+          "we",
+          "are",
+          "allied"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "they",
+        "are",
+        "near"
+      ],
+      "pattern_type": "subject_verb_adjective",
+      "frequency_weight": 0.85,
+      "semantic_meaning": "Others description of proximity",
+      "variations": [
+        [
+          "they",
+          "are",
+          "close"
+        ],
+        [
+          "they",
+          "are",
+          "far"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "it",
+        "is",
+        "good"
+      ],
+      "pattern_type": "subject_verb_adjective",
+      "frequency_weight": 0.85,
+      "semantic_meaning": "Situation evaluation",
+      "variations": [
+        [
+          "it",
+          "is",
+          "bad"
+        ],
+        [
+          "it",
+          "is",
+          "safe"
+        ],
+        [
+          "it",
+          "is",
+          "dangerous"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "it",
+        "is",
+        "stable"
+      ],
+      "pattern_type": "subject_verb_adjective",
+      "frequency_weight": 0.85,
+      "semantic_meaning": "System state evaluation",
+      "variations": [
+        [
+          "it",
+          "is",
+          "calm"
+        ],
+        [
+          "it",
+          "is",
+          "chaotic"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "thrive",
+        "with",
+        "others"
+      ],
+      "pattern_type": "subject_verb_prep_object",
+      "frequency_weight": 0.9,
+      "semantic_meaning": "Social thriving",
+      "variations": [
+        [
+          "I",
+          "grow",
+          "with",
+          "others"
+        ],
+        [
+          "we",
+          "thrive",
+          "with",
+          "neighbors"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "cooperate",
+        "with",
+        "you"
+      ],
+      "pattern_type": "subject_verb_prep_object",
+      "frequency_weight": 0.9,
+      "semantic_meaning": "Cooperation with specific entity",
+      "variations": [
+        [
+          "I",
+          "share",
+          "with",
+          "you"
+        ],
+        [
+          "I",
+          "help",
+          "you"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "move",
+        "to",
+        "center"
+      ],
+      "pattern_type": "subject_verb_prep_location",
+      "frequency_weight": 0.85,
+      "semantic_meaning": "Movement toward center",
+      "variations": [
+        [
+          "I",
+          "move",
+          "to",
+          "edge"
+        ],
+        [
+          "I",
+          "go",
+          "to",
+          "there"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "move",
+        "from",
+        "here"
+      ],
+      "pattern_type": "subject_verb_prep_location",
+      "frequency_weight": 0.85,
+      "semantic_meaning": "Movement from location",
+      "variations": [
+        [
+          "I",
+          "move",
+          "from",
+          "edge"
+        ],
+        [
+          "I",
+          "come",
+          "from",
+          "there"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "they",
+        "are",
+        "near",
+        "me"
+      ],
+      "pattern_type": "subject_verb_prep_object",
+      "frequency_weight": 0.85,
+      "semantic_meaning": "Others' proximity to self",
+      "variations": [
+        [
+          "they",
+          "are",
+          "far",
+          "from",
+          "me"
+        ],
+        [
+          "you",
+          "are",
+          "near",
+          "me"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "live",
+        "in",
+        "center"
+      ],
+      "pattern_type": "subject_verb_prep_location",
+      "frequency_weight": 0.8,
+      "semantic_meaning": "Location of existence",
+      "variations": [
+        [
+          "I",
+          "live",
+          "at",
+          "edge"
+        ],
+        [
+          "we",
+          "live",
+          "in",
+          "area"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "compete",
+        "for",
+        "resources"
+      ],
+      "pattern_type": "subject_verb_prep_object",
+      "frequency_weight": 0.85,
+      "semantic_meaning": "Competition purpose",
+      "variations": [
+        [
+          "we",
+          "compete",
+          "for",
+          "survival"
+        ],
+        [
+          "they",
+          "fight",
+          "for",
+          "resources"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "with",
+        "many",
+        "neighbors"
+      ],
+      "pattern_type": "prepositional_phrase",
+      "frequency_weight": 0.8,
+      "semantic_meaning": "Social context modifier",
+      "variations": [
+        [
+          "with",
+          "few",
+          "neighbors"
+        ],
+        [
+          "with",
+          "no",
+          "help"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "among",
+        "many",
+        "others"
+      ],
+      "pattern_type": "prepositional_phrase",
+      "frequency_weight": 0.8,
+      "semantic_meaning": "Group context",
+      "variations": [
+        [
+          "among",
+          "neighbors"
+        ],
+        [
+          "among",
+          "friends"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "at",
+        "the",
+        "center"
+      ],
+      "pattern_type": "prepositional_phrase",
+      "frequency_weight": 0.8,
+      "semantic_meaning": "Central position",
+      "variations": [
+        [
+          "at",
+          "the",
+          "edge"
+        ],
+        [
+          "in",
+          "the",
+          "middle"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "if",
+        "I",
+        "cooperate"
+      ],
+      "pattern_type": "conditional_start",
+      "frequency_weight": 0.9,
+      "semantic_meaning": "Conditional premise with cooperation",
+      "variations": [
+        [
+          "if",
+          "we",
+          "cooperate"
+        ],
+        [
+          "if",
+          "they",
+          "help"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "then",
+        "I",
+        "thrive"
+      ],
+      "pattern_type": "conditional_result",
+      "frequency_weight": 0.9,
+      "semantic_meaning": "Conditional result of thriving",
+      "variations": [
+        [
+          "then",
+          "we",
+          "thrive"
+        ],
+        [
+          "then",
+          "I",
+          "grow"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "if",
+        "I",
+        "rest",
+        "then",
+        "I",
+        "recover"
+      ],
+      "pattern_type": "full_conditional",
+      "frequency_weight": 0.85,
+      "semantic_meaning": "Rest leads to recovery",
+      "variations": [
+        [
+          "if",
+          "I",
+          "cooperate",
+          "then",
+          "we",
+          "thrive"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "if",
+        "we",
+        "share",
+        "then",
+        "all",
+        "thrive"
+      ],
+      "pattern_type": "full_conditional",
+      "frequency_weight": 0.85,
+      "semantic_meaning": "Sharing leads to group success",
+      "variations": [
+        [
+          "if",
+          "we",
+          "cooperate",
+          "then",
+          "all",
+          "flourish"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "if",
+        "resources",
+        "are",
+        "scarce"
+      ],
+      "pattern_type": "conditional_start",
+      "frequency_weight": 0.8,
+      "semantic_meaning": "Conditional premise with scarcity",
+      "variations": [
+        [
+          "if",
+          "resources",
+          "are",
+          "abundant"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "unless",
+        "we",
+        "cooperate"
+      ],
+      "pattern_type": "conditional_start",
+      "frequency_weight": 0.8,
+      "semantic_meaning": "Negative conditional",
+      "variations": [
+        [
+          "unless",
+          "I",
+          "rest"
+        ],
+        [
+          "unless",
+          "they",
+          "help"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "thrive",
+        "and",
+        "grow"
+      ],
+      "pattern_type": "conjunction",
+      "frequency_weight": 0.9,
+      "semantic_meaning": "Combined positive states",
+      "variations": [
+        [
+          "I",
+          "flourish",
+          "and",
+          "prosper"
+        ],
+        [
+          "we",
+          "thrive",
+          "and",
+          "multiply"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "strong",
+        "but",
+        "tired"
+      ],
+      "pattern_type": "contrast",
+      "frequency_weight": 0.85,
+      "semantic_meaning": "Contrasting states",
+      "variations": [
+        [
+          "weak",
+          "but",
+          "alive"
+        ],
+        [
+          "isolated",
+          "but",
+          "safe"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "struggle",
+        "but",
+        "survive"
+      ],
+      "pattern_type": "contrast",
+      "frequency_weight": 0.85,
+      "semantic_meaning": "Struggle with survival",
+      "variations": [
+        [
+          "I",
+          "suffer",
+          "but",
+          "endure"
+        ],
+        [
+          "we",
+          "struggle",
+          "but",
+          "persist"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "fight",
+        "or",
+        "flee"
+      ],
+      "pattern_type": "alternative",
+      "frequency_weight": 0.85,
+      "semantic_meaning": "Behavioral choice",
+      "variations": [
+        [
+          "cooperate",
+          "or",
+          "compete"
+        ],
+        [
+          "rest",
+          "or",
+          "move"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "and",
+        "you"
+      ],
+      "pattern_type": "subject_conjunction",
+      "frequency_weight": 0.9,
+      "semantic_meaning": "Self and other combined",
+      "variations": [
+        [
+          "you",
+          "and",
+          "I"
+        ],
+        [
+          "we",
+          "and",
+          "they"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "both",
+        "I",
+        "and",
+        "you"
+      ],
+      "pattern_type": "subject_conjunction",
+      "frequency_weight": 0.85,
+      "semantic_meaning": "Inclusive subject combination",
+      "variations": [
+        [
+          "both",
+          "we",
+          "and",
+          "they"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "thrive",
+        "because",
+        "I",
+        "cooperate"
+      ],
+      "pattern_type": "causal",
+      "frequency_weight": 0.9,
+      "semantic_meaning": "Causal link cooperation-thriving",
+      "variations": [
+        [
+          "we",
+          "thrive",
+          "because",
+          "we",
+          "share"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "struggle",
+        "because",
+        "resources",
+        "are",
+        "scarce"
+      ],
+      "pattern_type": "causal",
+      "frequency_weight": 0.85,
+      "semantic_meaning": "Causal link scarcity-struggle",
+      "variations": [
+        [
+          "I",
+          "suffer",
+          "because",
+          "I",
+          "am",
+          "alone"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "because",
+        "I",
+        "am",
+        "strong"
+      ],
+      "pattern_type": "causal_clause",
+      "frequency_weight": 0.85,
+      "semantic_meaning": "Reason clause with strength",
+      "variations": [
+        [
+          "because",
+          "we",
+          "cooperate"
+        ],
+        [
+          "because",
+          "resources",
+          "are",
+          "abundant"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "so",
+        "I",
+        "thrive"
+      ],
+      "pattern_type": "result_clause",
+      "frequency_weight": 0.85,
+      "semantic_meaning": "Result statement",
+      "variations": [
+        [
+          "so",
+          "we",
+          "grow"
+        ],
+        [
+          "so",
+          "I",
+          "survive"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "before",
+        "I",
+        "was",
+        "weak"
+      ],
+      "pattern_type": "temporal_past",
+      "frequency_weight": 0.85,
+      "semantic_meaning": "Past state reference",
+      "variations": [
+        [
+          "before",
+          "I",
+          "was",
+          "alone"
+        ],
+        [
+          "before",
+          "we",
+          "struggled"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "now",
+        "I",
+        "am",
+        "strong"
+      ],
+      "pattern_type": "temporal_present",
+      "frequency_weight": 0.9,
+      "semantic_meaning": "Current state reference",
+      "variations": [
+        [
+          "now",
+          "I",
+          "thrive"
+        ],
+        [
+          "now",
+          "we",
+          "are",
+          "together"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "after",
+        "rest",
+        "I",
+        "recover"
+      ],
+      "pattern_type": "temporal_sequence",
+      "frequency_weight": 0.8,
+      "semantic_meaning": "Sequential action-result",
+      "variations": [
+        [
+          "after",
+          "cooperation",
+          "we",
+          "thrive"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "when",
+        "I",
+        "cooperate"
+      ],
+      "pattern_type": "temporal_condition",
+      "frequency_weight": 0.85,
+      "semantic_meaning": "Temporal conditional",
+      "variations": [
+        [
+          "when",
+          "we",
+          "rest"
+        ],
+        [
+          "when",
+          "they",
+          "help"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "while",
+        "I",
+        "rest"
+      ],
+      "pattern_type": "temporal_simultaneous",
+      "frequency_weight": 0.8,
+      "semantic_meaning": "Simultaneous action",
+      "variations": [
+        [
+          "while",
+          "we",
+          "wait"
+        ],
+        [
+          "while",
+          "they",
+          "move"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "am",
+        "stronger",
+        "than",
+        "before"
+      ],
+      "pattern_type": "comparative",
+      "frequency_weight": 0.85,
+      "semantic_meaning": "Comparison with past self",
+      "variations": [
+        [
+          "I",
+          "am",
+          "weaker",
+          "than",
+          "before"
+        ],
+        [
+          "we",
+          "are",
+          "better",
+          "than",
+          "before"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "more",
+        "resources",
+        "than",
+        "others"
+      ],
+      "pattern_type": "comparative",
+      "frequency_weight": 0.8,
+      "semantic_meaning": "Resource comparison",
+      "variations": [
+        [
+          "fewer",
+          "resources",
+          "than",
+          "others"
+        ],
+        [
+          "more",
+          "connections",
+          "than",
+          "before"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "as",
+        "strong",
+        "as",
+        "you"
+      ],
+      "pattern_type": "equative",
+      "frequency_weight": 0.8,
+      "semantic_meaning": "Equality comparison",
+      "variations": [
+        [
+          "as",
+          "weak",
+          "as",
+          "before"
+        ],
+        [
+          "as",
+          "many",
+          "as",
+          "others"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "do",
+        "I",
+        "thrive"
+      ],
+      "pattern_type": "question",
+      "frequency_weight": 0.8,
+      "semantic_meaning": "Self-query about state",
+      "variations": [
+        [
+          "do",
+          "we",
+          "cooperate"
+        ],
+        [
+          "do",
+          "they",
+          "help"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "can",
+        "I",
+        "survive"
+      ],
+      "pattern_type": "question",
+      "frequency_weight": 0.8,
+      "semantic_meaning": "Ability query",
+      "variations": [
+        [
+          "can",
+          "we",
+          "thrive"
+        ],
+        [
+          "can",
+          "I",
+          "compete"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "where",
+        "are",
+        "resources"
+      ],
+      "pattern_type": "question",
+      "frequency_weight": 0.75,
+      "semantic_meaning": "Location query",
+      "variations": [
+        [
+          "where",
+          "are",
+          "others"
+        ],
+        [
+          "where",
+          "is",
+          "center"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "why",
+        "do",
+        "I",
+        "struggle"
+      ],
+      "pattern_type": "question",
+      "frequency_weight": 0.75,
+      "semantic_meaning": "Reason query",
+      "variations": [
+        [
+          "why",
+          "do",
+          "we",
+          "compete"
+        ],
+        [
+          "why",
+          "am",
+          "I",
+          "alone"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "do",
+        "not",
+        "thrive"
+      ],
+      "pattern_type": "negation",
+      "frequency_weight": 0.85,
+      "semantic_meaning": "Negated state",
+      "variations": [
+        [
+          "I",
+          "do",
+          "not",
+          "rest"
+        ],
+        [
+          "we",
+          "do",
+          "not",
+          "cooperate"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "am",
+        "not",
+        "alone"
+      ],
+      "pattern_type": "negation",
+      "frequency_weight": 0.85,
+      "semantic_meaning": "Negated isolation",
+      "variations": [
+        [
+          "I",
+          "am",
+          "not",
+          "weak"
+        ],
+        [
+          "we",
+          "are",
+          "not",
+          "safe"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "cannot",
+        "survive"
+      ],
+      "pattern_type": "negation",
+      "frequency_weight": 0.8,
+      "semantic_meaning": "Inability",
+      "variations": [
+        [
+          "I",
+          "cannot",
+          "rest"
+        ],
+        [
+          "we",
+          "cannot",
+          "compete"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "never",
+        "alone"
+      ],
+      "pattern_type": "negation_modifier",
+      "frequency_weight": 0.8,
+      "semantic_meaning": "Temporal negation",
+      "variations": [
+        [
+          "never",
+          "rest"
+        ],
+        [
+          "never",
+          "stop"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "no",
+        "resources",
+        "here"
+      ],
+      "pattern_type": "existence_negation",
+      "frequency_weight": 0.8,
+      "semantic_meaning": "Absence statement",
+      "variations": [
+        [
+          "no",
+          "help",
+          "available"
+        ],
+        [
+          "no",
+          "one",
+          "near"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "will",
+        "thrive"
+      ],
+      "pattern_type": "future",
+      "frequency_weight": 0.9,
+      "semantic_meaning": "Future thriving intention",
+      "variations": [
+        [
+          "I",
+          "will",
+          "grow"
+        ],
+        [
+          "we",
+          "will",
+          "cooperate"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "should",
+        "rest"
+      ],
+      "pattern_type": "obligation",
+      "frequency_weight": 0.85,
+      "semantic_meaning": "Recommended action",
+      "variations": [
+        [
+          "I",
+          "should",
+          "cooperate"
+        ],
+        [
+          "we",
+          "should",
+          "share"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "must",
+        "survive"
+      ],
+      "pattern_type": "necessity",
+      "frequency_weight": 0.9,
+      "semantic_meaning": "Survival necessity",
+      "variations": [
+        [
+          "I",
+          "must",
+          "move"
+        ],
+        [
+          "we",
+          "must",
+          "cooperate"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "can",
+        "thrive"
+      ],
+      "pattern_type": "ability",
+      "frequency_weight": 0.9,
+      "semantic_meaning": "Ability to thrive",
+      "variations": [
+        [
+          "I",
+          "can",
+          "cooperate"
+        ],
+        [
+          "we",
+          "can",
+          "grow"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "may",
+        "struggle"
+      ],
+      "pattern_type": "possibility",
+      "frequency_weight": 0.8,
+      "semantic_meaning": "Possible struggle",
+      "variations": [
+        [
+          "I",
+          "may",
+          "rest"
+        ],
+        [
+          "we",
+          "may",
+          "move"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "might",
+        "fail"
+      ],
+      "pattern_type": "uncertainty",
+      "frequency_weight": 0.8,
+      "semantic_meaning": "Uncertain outcome",
+      "variations": [
+        [
+          "I",
+          "might",
+          "succeed"
+        ],
+        [
+          "we",
+          "might",
+          "survive"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "could",
+        "help"
+      ],
+      "pattern_type": "conditional_ability",
+      "frequency_weight": 0.8,
+      "semantic_meaning": "Potential assistance",
+      "variations": [
+        [
+          "I",
+          "could",
+          "cooperate"
+        ],
+        [
+          "we",
+          "could",
+          "share"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "would",
+        "cooperate"
+      ],
+      "pattern_type": "conditional",
+      "frequency_weight": 0.8,
+      "semantic_meaning": "Conditional cooperation",
+      "variations": [
+        [
+          "I",
+          "would",
+          "help"
+        ],
+        [
+          "we",
+          "would",
+          "thrive"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "my",
+        "resources",
+        "are",
+        "abundant"
+      ],
+      "pattern_type": "possessive_state",
+      "frequency_weight": 0.85,
+      "semantic_meaning": "Possession state",
+      "variations": [
+        [
+          "my",
+          "resources",
+          "are",
+          "scarce"
+        ],
+        [
+          "my",
+          "fitness",
+          "is",
+          "high"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "my",
+        "neighbors",
+        "help",
+        "me"
+      ],
+      "pattern_type": "possessive_action",
+      "frequency_weight": 0.85,
+      "semantic_meaning": "Social possession action",
+      "variations": [
+        [
+          "my",
+          "allies",
+          "support",
+          "me"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "our",
+        "network",
+        "is",
+        "strong"
+      ],
+      "pattern_type": "group_possession",
+      "frequency_weight": 0.85,
+      "semantic_meaning": "Group possession state",
+      "variations": [
+        [
+          "our",
+          "area",
+          "is",
+          "safe"
+        ],
+        [
+          "our",
+          "resources",
+          "are",
+          "shared"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "their",
+        "resources",
+        "are",
+        "near"
+      ],
+      "pattern_type": "other_possession",
+      "frequency_weight": 0.8,
+      "semantic_meaning": "Others' possession location",
+      "variations": [
+        [
+          "their",
+          "area",
+          "is",
+          "crowded"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "this",
+        "is",
+        "mine"
+      ],
+      "pattern_type": "ownership",
+      "frequency_weight": 0.75,
+      "semantic_meaning": "Ownership assertion",
+      "variations": [
+        [
+          "this",
+          "is",
+          "ours"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "there",
+        "are",
+        "many",
+        "others"
+      ],
+      "pattern_type": "existence",
+      "frequency_weight": 0.85,
+      "semantic_meaning": "Existence of others",
+      "variations": [
+        [
+          "there",
+          "are",
+          "few",
+          "resources"
+        ],
+        [
+          "there",
+          "are",
+          "no",
+          "neighbors"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "there",
+        "is",
+        "danger",
+        "here"
+      ],
+      "pattern_type": "existence",
+      "frequency_weight": 0.8,
+      "semantic_meaning": "Danger existence",
+      "variations": [
+        [
+          "there",
+          "is",
+          "safety",
+          "here"
+        ],
+        [
+          "there",
+          "is",
+          "no",
+          "help"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "exist"
+      ],
+      "pattern_type": "basic_existence",
+      "frequency_weight": 0.9,
+      "semantic_meaning": "Self existence",
+      "variations": [
+        [
+          "I",
+          "live"
+        ],
+        [
+          "I",
+          "persist"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "we",
+        "exist",
+        "together"
+      ],
+      "pattern_type": "group_existence",
+      "frequency_weight": 0.85,
+      "semantic_meaning": "Group existence",
+      "variations": [
+        [
+          "we",
+          "live",
+          "together"
+        ],
+        [
+          "we",
+          "survive",
+          "together"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "want",
+        "to",
+        "thrive"
+      ],
+      "pattern_type": "desire",
+      "frequency_weight": 0.9,
+      "semantic_meaning": "Desire to thrive",
+      "variations": [
+        [
+          "I",
+          "want",
+          "to",
+          "grow"
+        ],
+        [
+          "I",
+          "want",
+          "to",
+          "cooperate"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "need",
+        "resources"
+      ],
+      "pattern_type": "need",
+      "frequency_weight": 0.9,
+      "semantic_meaning": "Resource need",
+      "variations": [
+        [
+          "I",
+          "need",
+          "help"
+        ],
+        [
+          "I",
+          "need",
+          "rest"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "try",
+        "to",
+        "survive"
+      ],
+      "pattern_type": "attempt",
+      "frequency_weight": 0.85,
+      "semantic_meaning": "Survival attempt",
+      "variations": [
+        [
+          "I",
+          "try",
+          "to",
+          "cooperate"
+        ],
+        [
+          "I",
+          "try",
+          "to",
+          "adapt"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "hope",
+        "to",
+        "thrive"
+      ],
+      "pattern_type": "hope",
+      "frequency_weight": 0.8,
+      "semantic_meaning": "Hope for thriving",
+      "variations": [
+        [
+          "I",
+          "hope",
+          "to",
+          "survive"
+        ],
+        [
+          "we",
+          "hope",
+          "to",
+          "grow"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "decide",
+        "to",
+        "move"
+      ],
+      "pattern_type": "decision",
+      "frequency_weight": 0.85,
+      "semantic_meaning": "Movement decision",
+      "variations": [
+        [
+          "I",
+          "decide",
+          "to",
+          "rest"
+        ],
+        [
+          "I",
+          "decide",
+          "to",
+          "cooperate"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "choose",
+        "to",
+        "cooperate"
+      ],
+      "pattern_type": "choice",
+      "frequency_weight": 0.85,
+      "semantic_meaning": "Cooperation choice",
+      "variations": [
+        [
+          "I",
+          "choose",
+          "to",
+          "compete"
+        ],
+        [
+          "I",
+          "choose",
+          "to",
+          "isolate"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "know",
+        "that",
+        "I",
+        "thrive"
+      ],
+      "pattern_type": "knowledge",
+      "frequency_weight": 0.85,
+      "semantic_meaning": "Self-knowledge",
+      "variations": [
+        [
+          "I",
+          "know",
+          "that",
+          "we",
+          "are",
+          "strong"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "think",
+        "I",
+        "am",
+        "safe"
+      ],
+      "pattern_type": "belief",
+      "frequency_weight": 0.8,
+      "semantic_meaning": "Safety belief",
+      "variations": [
+        [
+          "I",
+          "think",
+          "we",
+          "are",
+          "together"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "understand",
+        "now"
+      ],
+      "pattern_type": "comprehension",
+      "frequency_weight": 0.8,
+      "semantic_meaning": "Current understanding",
+      "variations": [
+        [
+          "I",
+          "realize",
+          "now"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "remember",
+        "before"
+      ],
+      "pattern_type": "memory",
+      "frequency_weight": 0.8,
+      "semantic_meaning": "Past memory",
+      "variations": [
+        [
+          "I",
+          "remember",
+          "when"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "notice",
+        "others",
+        "near"
+      ],
+      "pattern_type": "observation",
+      "frequency_weight": 0.8,
+      "semantic_meaning": "Awareness of others",
+      "variations": [
+        [
+          "I",
+          "see",
+          "danger"
+        ],
+        [
+          "I",
+          "sense",
+          "pressure"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "feel",
+        "strong"
+      ],
+      "pattern_type": "sensation",
+      "frequency_weight": 0.85,
+      "semantic_meaning": "Feeling of strength",
+      "variations": [
+        [
+          "I",
+          "feel",
+          "weak"
+        ],
+        [
+          "I",
+          "feel",
+          "safe"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "the",
+        "area",
+        "is",
+        "crowded"
+      ],
+      "pattern_type": "description",
+      "frequency_weight": 0.8,
+      "semantic_meaning": "Area description",
+      "variations": [
+        [
+          "the",
+          "area",
+          "is",
+          "sparse"
+        ],
+        [
+          "the",
+          "center",
+          "is",
+          "safe"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "resources",
+        "are",
+        "abundant",
+        "here"
+      ],
+      "pattern_type": "resource_description",
+      "frequency_weight": 0.85,
+      "semantic_meaning": "Resource availability",
+      "variations": [
+        [
+          "resources",
+          "are",
+          "scarce",
+          "here"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "neighbors",
+        "are",
+        "friendly"
+      ],
+      "pattern_type": "social_description",
+      "frequency_weight": 0.8,
+      "semantic_meaning": "Social environment",
+      "variations": [
+        [
+          "neighbors",
+          "are",
+          "hostile"
+        ],
+        [
+          "others",
+          "are",
+          "cooperative"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "pressure",
+        "is",
+        "high"
+      ],
+      "pattern_type": "system_description",
+      "frequency_weight": 0.85,
+      "semantic_meaning": "System pressure state",
+      "variations": [
+        [
+          "pressure",
+          "is",
+          "low"
+        ],
+        [
+          "stress",
+          "is",
+          "intense"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "this",
+        "place",
+        "is",
+        "safe"
+      ],
+      "pattern_type": "location_description",
+      "frequency_weight": 0.8,
+      "semantic_meaning": "Location evaluation",
+      "variations": [
+        [
+          "this",
+          "area",
+          "is",
+          "dangerous"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "help",
+        "me"
+      ],
+      "pattern_type": "imperative",
+      "frequency_weight": 0.85,
+      "semantic_meaning": "Request for help",
+      "variations": [
+        [
+          "help",
+          "us"
+        ],
+        [
+          "assist",
+          "me"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "share",
+        "resources"
+      ],
+      "pattern_type": "imperative",
+      "frequency_weight": 0.8,
+      "semantic_meaning": "Sharing command",
+      "variations": [
+        [
+          "share",
+          "with",
+          "me"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "cooperate",
+        "with",
+        "me"
+      ],
+      "pattern_type": "imperative",
+      "frequency_weight": 0.85,
+      "semantic_meaning": "Cooperation request",
+      "variations": [
+        [
+          "collaborate",
+          "with",
+          "us"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "stay",
+        "near"
+      ],
+      "pattern_type": "imperative",
+      "frequency_weight": 0.8,
+      "semantic_meaning": "Proximity command",
+      "variations": [
+        [
+          "stay",
+          "close"
+        ],
+        [
+          "come",
+          "near"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "do",
+        "not",
+        "compete"
+      ],
+      "pattern_type": "negative_imperative",
+      "frequency_weight": 0.8,
+      "semantic_meaning": "Competition prohibition",
+      "variations": [
+        [
+          "do",
+          "not",
+          "fight"
+        ],
+        [
+          "do",
+          "not",
+          "isolate"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "although",
+        "I",
+        "struggle",
+        "I",
+        "survive"
+      ],
+      "pattern_type": "concession",
+      "frequency_weight": 0.8,
+      "semantic_meaning": "Struggle with survival",
+      "variations": [
+        [
+          "although",
+          "we",
+          "are",
+          "weak",
+          "we",
+          "endure"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "thrive",
+        "while",
+        "others",
+        "struggle"
+      ],
+      "pattern_type": "simultaneous_contrast",
+      "frequency_weight": 0.75,
+      "semantic_meaning": "Contrasting simultaneous states",
+      "variations": [
+        [
+          "I",
+          "rest",
+          "while",
+          "they",
+          "move"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "I",
+        "grow",
+        "as",
+        "I",
+        "cooperate"
+      ],
+      "pattern_type": "correlation",
+      "frequency_weight": 0.8,
+      "semantic_meaning": "Growth-cooperation correlation",
+      "variations": [
+        [
+          "I",
+          "thrive",
+          "as",
+          "we",
+          "share"
+        ]
+      ]
+    },
+    {
+      "pattern": [
+        "the",
+        "more",
+        "I",
+        "cooperate",
+        "the",
+        "more",
+        "I",
+        "thrive"
+      ],
+      "pattern_type": "proportional",
+      "frequency_weight": 0.75,
+      "semantic_meaning": "Proportional relationship",
+      "variations": []
+    }
+  ]
+}

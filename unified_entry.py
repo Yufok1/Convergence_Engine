@@ -640,7 +640,10 @@ class UnifiedVisualization:
 
         try:
             import matplotlib.pyplot as plt
-            # Prefer a Windows font that supports emojis (no suppression; allow warnings to surface)
+            # Prefer a Windows font that supports emojis
+            # Suppress font warnings for missing emoji glyphs (expected behavior)
+            import warnings
+            warnings.filterwarnings('ignore', category=UserWarning, message='.*Glyph.*missing from font.*')
             try:
                 import matplotlib as mpl
                 mpl.rcParams['font.family'] = ['Segoe UI Emoji', 'Segoe UI Symbol', 'DejaVu Sans']
