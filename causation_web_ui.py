@@ -3086,12 +3086,13 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "       - `/neural/brain/input_dim` (integer, default: 24) - Input feature dimensions (18 base + 6 integration features)\n"
         prompt += "       - `/neural/brain/hidden_dim` (integer, typically 64) - Hidden layer size\n"
         prompt += "       - `/neural/brain/output_dim` (integer, typically 6) - Action space size\n"
+        prompt += "       - `/neural/brain/vocab_size` (integer, default: 12288) - Vocabulary size for language head token generation\n"
         prompt += "       - `/neural/brain/activation` (\"relu\", \"tanh\", \"sigmoid\") - Activation function\n"
         prompt += "       - `/neural/brain/dropout` (0.0-0.5) - Dropout rate for regularization\n"
         prompt += "     * **Training Parameters**:\n"
         prompt += "       - `/neural/training/enabled` (true/false) - Enable/disable training\n"
         prompt += "       - `/neural/training/batch_size` (8-128, default: 32) - Batch size for experience replay (optimized from 96 to 32 for faster initial training)\n"
-        prompt += "       - `/neural/training/memory_size` (100-10000) - Experience buffer capacity\n"
+        prompt += "       - `/neural/training/memory_size` (0 for unlimited, or 100-10000) - Experience buffer capacity (0 = unlimited)\n"
         prompt += "       - `/neural/training/learning_rate` (0.0001-0.01) - Learning rate for optimizer\n"
         prompt += "       - `/neural/training/gamma` (0.9-0.999) - Discount factor for future rewards\n"
         prompt += "       - `/neural/training/epsilon_start` (0.5-1.0) - Initial exploration rate\n"
@@ -4500,6 +4501,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "- **'There Can Be Only One'**: Organisms battle for survival, winners absorb losers\n"
         prompt += "- **Alliances**: Weaker organisms band together - cooperation emerges from competition!\n"
         prompt += "- **Absorption**: Winners inherit neural weights, concepts, configs from defeated\n"
+        prompt += "- **Unlimited Knowledge Transfer**: No limits on absorption - full neural weights, all experiences, complete vocabulary\n"
         prompt += "- **Germination**: New challengers spawn from genetic material of the fallen\n"
         prompt += "- **Champion**: Last survivor becomes the template for immortality\n\n"
         
@@ -4529,6 +4531,74 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "- \"What made the champion strong?\" → Trace absorption lineage + inherited concepts\n"
         prompt += "- \"Are alliances beneficial?\" → Compare survival rates of allied vs solo organisms\n"
         prompt += "- \"What germination strategy works best?\" → Analyze success rates by strategy type\n\n"
+        
+        # ═══════════════════════════════════════════════════════════════════════════
+        # ⚔️ ALLIANCE WARFARE SYSTEM - Cooperative Combat
+        # ═══════════════════════════════════════════════════════════════════════════
+        prompt += "## ⚔️ ALLIANCE WARFARE SYSTEM\n\n"
+        prompt += "Organisms can form alliances for mutual benefit. Alliances can battle other alliances.\n\n"
+        
+        prompt += "### Alliance Lifecycle:\n"
+        prompt += "- **Formation**: Organisms with shared enemies or complementary strengths ally\n"
+        prompt += "- **Growth**: Alliances recruit members, build collective strength\n"
+        prompt += "- **Combat**: Alliance-vs-alliance battles with combined forces\n"
+        prompt += "- **Dissolution**: Betrayal, defeat, or internal conflict breaks alliances\n\n"
+        
+        prompt += "### Alliance Events:\n"
+        prompt += "| Event | Description |\n"
+        prompt += "|-------|-------------|\n"
+        prompt += "| `alliance_founded` | New alliance created by founding organisms |\n"
+        prompt += "| `alliance_member_joined` | Organism joins existing alliance |\n"
+        prompt += "| `alliance_war_declared` | Alliance declares war on another alliance |\n"
+        prompt += "| `alliance_battle_concluded` | Alliance vs alliance battle result |\n"
+        prompt += "| `alliance_dissolved` | Alliance breaks apart |\n\n"
+        
+        prompt += "### Alliance Analysis Queries:\n"
+        prompt += "- [[ILLUMINATE: {\"action\": \"search\", \"event_type\": \"alliance_founded\"}]]\n"
+        prompt += "- [[ILLUMINATE: {\"action\": \"search\", \"event_type\": \"alliance_war_declared\"}]]\n"
+        prompt += "- [[ILLUMINATE: {\"action\": \"search\", \"event_type\": \"alliance_battle_concluded\"}]]\n\n"
+        
+        # ═══════════════════════════════════════════════════════════════════════════
+        # 🏰 CONFEDERATION SYSTEM - Super-Alliances (NEW!)
+        # ═══════════════════════════════════════════════════════════════════════════
+        prompt += "## 🏰 CONFEDERATION SYSTEM (Super-Alliances)\n\n"
+        prompt += "Alliances can unite into Confederations, which can merge into Empires, then Hegemonies.\n\n"
+        
+        prompt += "### Hierarchy Tiers:\n"
+        prompt += "| Tier | Name | Requirements |\n"
+        prompt += "|------|------|-------------|\n"
+        prompt += "| 1 | **CONFEDERATION** | 2+ alliances, 5+ combined members |\n"
+        prompt += "| 2 | **EMPIRE** | 4+ alliances, 15+ members, 2+ wars won |\n"
+        prompt += "| 3 | **HEGEMONY** | 6+ alliances, 30+ members, 5+ wars won, influence ≥ 1000 |\n\n"
+        
+        prompt += "### Mega-Wars:\n"
+        prompt += "- Confederations wage **mega-wars** against other confederations\n"
+        prompt += "- All member alliances participate in mega-war battles\n"
+        prompt += "- **Victory**: +500 influence, can absorb enemy confederation\n"
+        prompt += "- **Defeat**: Confederation dissolves, alliances become independent\n\n"
+        
+        prompt += "### Confederation Events:\n"
+        prompt += "| Event | Description |\n"
+        prompt += "|-------|-------------|\n"
+        prompt += "| `confederation_founded` | New confederation created from alliances |\n"
+        prompt += "| `alliance_joined_confederation` | Alliance joins existing confederation |\n"
+        prompt += "| `confederation_war_declared` | Mega-war between confederations |\n"
+        prompt += "| `mega_confederation_formed` | Confederations merge (EMPIRE/HEGEMONY formed) |\n"
+        prompt += "| `confederation_dissolved` | Confederation breaks apart after defeat |\n\n"
+        
+        prompt += "### Confederation Analysis Queries:\n"
+        prompt += "- [[ILLUMINATE: {\"action\": \"search\", \"event_type\": \"confederation_founded\"}]]\n"
+        prompt += "- [[ILLUMINATE: {\"action\": \"search\", \"event_type\": \"confederation_war_declared\"}]]\n"
+        prompt += "- [[ILLUMINATE: {\"action\": \"search\", \"component\": \"confederation\"}]]\n\n"
+        
+        prompt += "### ML Features for Confederations:\n"
+        prompt += "- `confederation_level`: 0=none, 0.33=confederation, 0.66=empire, 1.0=hegemony\n"
+        prompt += "- `confederation_wars`: Count of mega-wars participated in\n"
+        prompt += "- `cross_alliance_influence`: Connections to organisms in other alliances\n\n"
+        
+        prompt += "### Key Config Paths:\n"
+        prompt += "- `/highlander/alliance_warfare/max_confederations`: Maximum concurrent confederations (1-5)\n"
+        prompt += "- `/highlander/alliance_warfare/confederation_war_threshold`: Vote ratio for mega-war (0.5-0.9)\n\n"
         
         # ═══════════════════════════════════════════════════════════════════════════
         # 🔬 SCIENTIFIC METHODOLOGIES - Rigorous Analysis Framework
