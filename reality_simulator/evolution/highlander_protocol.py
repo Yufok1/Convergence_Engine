@@ -85,12 +85,26 @@ class BattleResult:
 
 @dataclass
 class Alliance:
-    """An alliance between organisms."""
+    """
+    An alliance between organisms.
+    
+    In real life, weaker units that group together become stronger.
+    This models emergent cooperation - organisms can achieve through
+    unity what they cannot achieve alone.
+    
+    Alliance benefits:
+    - Survival bonus: Allied organisms less likely to be culled
+    - Combat bonus: Alliance size provides strength multiplier
+    - Concept sharing: Members share knowledge freely
+    - Collective defense: Allies avoid fighting each other
+    """
     members: Set[str]
     formation_time: float
     strength: float = 1.0  # Alliance cohesion
     shared_concepts: Set[str] = field(default_factory=set)
     betrayal_count: int = 0
+    collective_fitness: float = 0.0  # Sum of member fitness
+    total_battles_won: int = 0  # Collective victories
     
     def add_member(self, organism_id: str):
         self.members.add(organism_id)
@@ -106,6 +120,25 @@ class Alliance:
     
     def strengthen(self, amount: float = 0.1):
         self.strength = min(1.0, self.strength + amount)
+    
+    def get_collective_strength_bonus(self) -> float:
+        """
+        Weaker units together become stronger.
+        
+        Bonus scales with:
+        - Number of members (more = stronger)
+        - Alliance cohesion (strength)
+        - Shared concepts (knowledge synergy)
+        """
+        size_bonus = min(1.0, len(self.members) * 0.15)  # Up to 100% at 7 members
+        cohesion_bonus = self.strength * 0.2  # Up to 20%
+        knowledge_bonus = min(0.15, len(self.shared_concepts) * 0.01)  # Up to 15%
+        
+        return size_bonus + cohesion_bonus + knowledge_bonus
+    
+    def share_concept(self, concept: str):
+        """Add a concept to the alliance's shared knowledge pool."""
+        self.shared_concepts.add(concept)
 
 
 @dataclass 
@@ -532,6 +565,27 @@ class HighlanderProtocol:
             streak2 = self.organism_stats[org2_id].survival_streak
             effective2 *= (1 + streak2 * 0.02)
         
+        # ═══════════════════════════════════════════════════════════════
+        # ALLIANCE COLLECTIVE STRENGTH BONUS
+        # Weaker units together become stronger!
+        # ═══════════════════════════════════════════════════════════════
+        alliance_bonus_1 = 0.0
+        alliance_bonus_2 = 0.0
+        
+        if org1_id in self.organism_stats:
+            alliance1_id = self.organism_stats[org1_id].alliance_id
+            if alliance1_id and alliance1_id in self.alliances:
+                alliance = self.alliances[alliance1_id]
+                alliance_bonus_1 = alliance.get_collective_strength_bonus()
+                effective1 *= (1 + alliance_bonus_1)
+        
+        if org2_id in self.organism_stats:
+            alliance2_id = self.organism_stats[org2_id].alliance_id
+            if alliance2_id and alliance2_id in self.alliances:
+                alliance = self.alliances[alliance2_id]
+                alliance_bonus_2 = alliance.get_collective_strength_bonus()
+                effective2 *= (1 + alliance_bonus_2)
+        
         if effective1 > effective2:
             winner_id, loser_id = org1_id, org2_id
             winner_fitness, loser_fitness = fitness1, fitness2
@@ -548,6 +602,12 @@ class HighlanderProtocol:
         # Update stats
         if winner_id in self.organism_stats:
             self.organism_stats[winner_id].record_win(loser_id, concepts_to_transfer, configs_to_transfer)
+            # Strengthen winner's alliance
+            alliance_id = self.organism_stats[winner_id].alliance_id
+            if alliance_id and alliance_id in self.alliances:
+                self.alliances[alliance_id].strengthen(0.1)
+                self.alliances[alliance_id].total_battles_won += 1
+        
         if loser_id in self.organism_stats:
             self.organism_stats[loser_id].record_loss()
         
@@ -556,7 +616,9 @@ class HighlanderProtocol:
             'loser': loser_id,
             'battle_type': 'fitness_fallback',
             'margin': margin,
-            'concepts_transferred': concepts_to_transfer
+            'concepts_transferred': concepts_to_transfer,
+            'alliance_bonus_winner': alliance_bonus_1 if winner_id == org1_id else alliance_bonus_2,
+            'alliance_bonus_loser': alliance_bonus_2 if winner_id == org1_id else alliance_bonus_1
         })
         
         return BattleResult(
@@ -624,13 +686,29 @@ class HighlanderProtocol:
     
     def _run_cooperation(self, organisms: Dict[str, Any],
                         get_fitness: Callable[[Any], float]) -> List[Dict[str, Any]]:
-        """Run cooperation phase - form and maintain alliances."""
+        """
+        Run cooperation phase - form and maintain alliances.
+        
+        Key insight: Weaker organisms actively seek alliances for survival.
+        This models real-world cooperation where smaller units band together.
+        """
         alliances_formed = []
         
         # Decay existing alliances
         for alliance_id in list(self.alliances.keys()):
             alliance = self.alliances[alliance_id]
             alliance.weaken(0.05)
+            
+            # Strengthen alliances where members share concepts
+            if len(alliance.shared_concepts) > 3:
+                alliance.strengthen(0.02)
+            
+            # Update collective fitness
+            alliance.collective_fitness = sum(
+                get_fitness(organisms[mid]) 
+                for mid in alliance.members 
+                if mid in organisms
+            )
             
             # Remove dead alliances
             if alliance.strength <= 0 or len(alliance.members) < 2:
@@ -639,52 +717,151 @@ class HighlanderProtocol:
                         self.organism_stats[member].alliance_id = None
                 del self.alliances[alliance_id]
         
-        # Probability of forming new alliance
-        if np.random.random() < self.cooperation_bonus:
-            # Select two unallied organisms with similar fitness
-            unallied = [
-                oid for oid in self.active_organisms
-                if oid in organisms and (
-                    oid not in self.organism_stats or 
-                    self.organism_stats[oid].alliance_id is None
-                )
-            ]
+        # ═══════════════════════════════════════════════════════════════
+        # STRATEGIC ALLIANCE FORMATION
+        # Weaker organisms are MORE LIKELY to seek alliances
+        # ═══════════════════════════════════════════════════════════════
+        
+        # Get fitness values for all unallied organisms
+        unallied = [
+            oid for oid in self.active_organisms
+            if oid in organisms and (
+                oid not in self.organism_stats or 
+                self.organism_stats[oid].alliance_id is None
+            )
+        ]
+        
+        if len(unallied) < 2:
+            return alliances_formed
+        
+        # Calculate average fitness
+        fitness_values = {oid: get_fitness(organisms[oid]) for oid in unallied}
+        avg_fitness = np.mean(list(fitness_values.values())) if fitness_values else 0.5
+        
+        # Weaker organisms are more motivated to ally
+        # Probability scales inversely with fitness
+        for org_id in unallied:
+            org_fitness = fitness_values.get(org_id, 0.5)
             
-            if len(unallied) >= 2:
-                # Sort by fitness
-                sorted_unallied = sorted(
-                    unallied,
-                    key=lambda oid: get_fitness(organisms[oid])
-                )
+            # Weakness factor: how far below average
+            weakness_factor = max(0, (avg_fitness - org_fitness) / avg_fitness)
+            
+            # Base probability + weakness bonus (weak organisms 3x more likely to seek allies)
+            alliance_probability = self.cooperation_bonus + (weakness_factor * 0.3)
+            
+            if np.random.random() < alliance_probability:
+                # This organism seeks an alliance!
+                # Find compatible partner (similar weakness OR complementary strengths)
+                candidates = [
+                    cid for cid in unallied 
+                    if cid != org_id and not self._are_allied(org_id, cid)
+                ]
                 
-                # Pair similar fitness organisms
-                idx = np.random.randint(max(1, len(sorted_unallied) - 1))
-                org1_id = sorted_unallied[idx]
-                org2_id = sorted_unallied[idx + 1] if idx + 1 < len(sorted_unallied) else sorted_unallied[idx - 1]
+                if not candidates:
+                    continue
                 
-                alliance_id = f"alliance_{self.round_number}_{org1_id[:4]}_{org2_id[:4]}"
+                # Score candidates: prefer similar fitness (solidarity) or slightly stronger (protection)
+                def alliance_score(candidate_id):
+                    c_fitness = fitness_values.get(candidate_id, 0.5)
+                    fitness_diff = abs(org_fitness - c_fitness)
+                    
+                    # Prefer similar fitness (solidarity of the weak)
+                    similarity_score = 1.0 - fitness_diff
+                    
+                    # Small bonus for slightly stronger partner (protection)
+                    protection_bonus = 0.1 if c_fitness > org_fitness else 0
+                    
+                    return similarity_score + protection_bonus
+                
+                best_partner = max(candidates, key=alliance_score)
+                
+                # Form alliance
+                alliance_id = f"alliance_{self.round_number}_{org_id[:4]}_{best_partner[:4]}"
                 alliance = Alliance(
-                    members={org1_id, org2_id},
+                    members={org_id, best_partner},
                     formation_time=time.time()
                 )
+                alliance.collective_fitness = org_fitness + fitness_values.get(best_partner, 0)
                 
                 self.alliances[alliance_id] = alliance
                 
-                for oid in [org1_id, org2_id]:
+                for oid in [org_id, best_partner]:
                     if oid not in self.organism_stats:
                         self.organism_stats[oid] = OrganismStats()
                     self.organism_stats[oid].alliance_id = alliance_id
                 
+                # Share concepts immediately
+                self._share_alliance_concepts(alliance, organisms, org_id, best_partner)
+                
                 alliances_formed.append({
                     'alliance_id': alliance_id,
-                    'members': [org1_id, org2_id],
-                    'round': self.round_number
+                    'members': [org_id, best_partner],
+                    'round': self.round_number,
+                    'initiator_fitness': org_fitness,
+                    'partner_fitness': fitness_values.get(best_partner, 0),
+                    'weakness_factor': weakness_factor
                 })
                 
                 self._emit_event('alliance_formed', {
                     'alliance_id': alliance_id,
-                    'members': [org1_id, org2_id]
+                    'members': [org_id, best_partner],
+                    'initiator': org_id,
+                    'reason': 'weakness_cooperation' if weakness_factor > 0.2 else 'strategic',
+                    'collective_strength': alliance.get_collective_strength_bonus()
                 })
+                
+                # Remove from unallied to prevent double-allying
+                unallied = [uid for uid in unallied if uid not in [org_id, best_partner]]
+        
+        return alliances_formed
+    
+    def _share_alliance_concepts(self, alliance: Alliance, organisms: Dict[str, Any],
+                                 org1_id: str, org2_id: str):
+        """Share concepts between newly allied organisms."""
+        try:
+            org1 = organisms.get(org1_id)
+            org2 = organisms.get(org2_id)
+            
+            if not org1 or not org2:
+                return
+            
+            # Get concepts from both organisms
+            concepts1 = set()
+            concepts2 = set()
+            
+            if hasattr(org1, 'atomic_language') and org1.atomic_language:
+                concepts1 = set(org1.atomic_language.atoms.keys())
+            if hasattr(org2, 'atomic_language') and org2.atomic_language:
+                concepts2 = set(org2.atomic_language.atoms.keys())
+            
+            # Alliance shares all concepts
+            alliance.shared_concepts = concepts1 | concepts2
+            
+            # Each organism learns concepts from the other
+            new_concepts_1 = concepts2 - concepts1
+            new_concepts_2 = concepts1 - concepts2
+            
+            # Teach concepts (simplified - just strengthen)
+            for concept in new_concepts_1:
+                if hasattr(org1, 'atomic_language') and org1.atomic_language:
+                    try:
+                        org1.atomic_language.acquire_concept(
+                            concept, source='alliance', strength=0.3
+                        )
+                    except Exception:
+                        pass
+                        
+            for concept in new_concepts_2:
+                if hasattr(org2, 'atomic_language') and org2.atomic_language:
+                    try:
+                        org2.atomic_language.acquire_concept(
+                            concept, source='alliance', strength=0.3
+                        )
+                    except Exception:
+                        pass
+                        
+        except Exception:
+            pass  # Don't break on concept sharing failure
         
         return alliances_formed
     

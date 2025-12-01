@@ -1389,6 +1389,7 @@ class UnifiedSystem:
             from reality_simulator.evolution.highlander_protocol import HighlanderProtocol
             from reality_simulator.evolution.battle_arena import BattleArena
             from reality_simulator.checkpointing.organism_capsule import OrganismCapsuleManager
+            from reality_simulator.evolution.germination_pool import GerminationPool, integrate_germination_with_highlander
             
             # Parse config
             config = self.highlander_config or {}
@@ -1413,6 +1414,17 @@ class UnifiedSystem:
             )
             print(f"[UNIFIED] [HIGHLANDER] [PASS] Capsule Manager initialized (dir: {capsule_dir})")
             
+            # Initialize Germination Pool (new life from the fallen)
+            self.germination_pool = GerminationPool(
+                causation_explorer=self.causation_explorer,
+                max_genetic_samples=config.get('max_genetic_samples', 100),
+                min_population=config.get('min_population', 5),
+                max_population=config.get('max_population', 50),
+                germination_rate=config.get('germination_rate', 0.1),
+                mutation_base_rate=config.get('mutation_rate', 0.05)
+            )
+            print("[UNIFIED] [HIGHLANDER] [PASS] 🌱 Germination Pool initialized")
+            
             # Initialize Highlander Protocol (tournament orchestration)
             self.highlander_protocol = HighlanderProtocol(
                 causation_explorer=self.causation_explorer,
@@ -1432,6 +1444,25 @@ class UnifiedSystem:
                         print(f"[UNIFIED] [HIGHLANDER] Registered organism: {org_id}")
                     except Exception as e:
                         print(f"[UNIFIED] [HIGHLANDER] Failed to register {org_id}: {e}")
+            
+            # Wire Germination Pool to Highlander Protocol
+            # This creates organism_factory callback for spawning new warriors
+            def organism_factory(organism_id, initial_traits=None, initial_config=None):
+                """Factory function to create new organisms for the tournament"""
+                if network and hasattr(network, 'create_organism'):
+                    return network.create_organism(
+                        organism_id=organism_id,
+                        traits=initial_traits,
+                        config=initial_config
+                    )
+                return None
+                
+            self._germination_callback = integrate_germination_with_highlander(
+                self.highlander_protocol,
+                self.germination_pool,
+                organism_factory
+            )
+            print("[UNIFIED] [HIGHLANDER] [PASS] 🔗 Germination Pool wired to tournament")
             
             # Store config for runtime access
             self._highlander_rounds_per_cycle = rounds_per_cycle
@@ -1509,6 +1540,21 @@ class UnifiedSystem:
                           f"💀 {results.get('eliminations', 0)} eliminated, "
                           f"🤝 {results.get('alliances_formed', 0)} alliances, "
                           f"👥 {len(self.highlander_protocol.organisms)} remaining")
+            
+            # 🌱 GERMINATION - Spawn new organisms if population too low
+            if hasattr(self, '_germination_callback') and self._germination_callback:
+                new_organisms = self._germination_callback()
+                if new_organisms:
+                    print(f"[HIGHLANDER] 🌱 Germinated {len(new_organisms)} new warriors from the genetic pool")
+                    
+                    # Log germination
+                    self.logger.log_state('highlander', {
+                        'event': 'germination',
+                        'cycle': cycle_count,
+                        'count': len(new_organisms),
+                        'ids': [getattr(o, 'id', str(id(o))) for o in new_organisms],
+                        'pool_stats': self.germination_pool.get_pool_stats() if self.germination_pool else {}
+                    })
                           
         except Exception as e:
             print(f"[HIGHLANDER] Round error: {e}")

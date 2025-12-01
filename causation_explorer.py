@@ -2173,6 +2173,38 @@ class CausationExplorer:
                 current = event.data.get('current_population', 0)
                 parts.append(f"🌱 GERMINATION: {needed} new challengers needed (pop: {current})")
         
+        # ═══════════════════════════════════════════════════════════════
+        # GERMINATION POOL EVENTS
+        # ═══════════════════════════════════════════════════════════════
+        if event.component == 'germination_pool':
+            if event.event_type == 'essence_collected':
+                donor = event.data.get('donor_id', 'unknown')
+                reason = event.data.get('death_reason', 'unknown')
+                killer = event.data.get('killer_id', None)
+                fitness = event.data.get('fitness_score', 0)
+                pool_size = event.data.get('pool_size', 0)
+                killer_str = f" by {killer}" if killer else ""
+                parts.append(f"💀→🧬 Collected essence from {donor} ({reason}{killer_str})")
+                parts.append(f"📊 Fitness: {fitness:.2f} | Pool: {pool_size} samples")
+            
+            elif event.event_type == 'organism_germinated':
+                org_id = event.data.get('organism_id', 'unknown')
+                strategy = event.data.get('strategy', 'unknown')
+                parents = event.data.get('parent_ids', [])
+                generation = event.data.get('generation', 0)
+                vigor = event.data.get('vigor', 1.0)
+                parts.append(f"🌱 BORN: {org_id} (Strategy: {strategy.upper()})")
+                if parents:
+                    parts.append(f"👨‍👩‍👧 Parents: {', '.join(parents[:3])}")
+                parts.append(f"🧬 Gen {generation} | Vigor: {vigor:.1f}")
+            
+            elif event.event_type == 'germination_failed':
+                candidate_id = event.data.get('candidate_id', 'unknown')
+                strategy = event.data.get('strategy', 'unknown')
+                error = event.data.get('error', 'unknown')
+                parts.append(f"❌ Germination failed: {candidate_id} ({strategy})")
+                parts.append(f"⚠️ Error: {error}")
+        
         # ML events with cluster/anomaly context
         if event.component == 'ml_analysis':
             if event.event_type == 'phenotype_emergence':
