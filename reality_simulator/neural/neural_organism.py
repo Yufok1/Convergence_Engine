@@ -1089,10 +1089,14 @@ class NeuralOrganism(Organism):
         import torch
         
         # Get vocabulary from context memory
-        if context_memory is None or not hasattr(context_memory, 'vocabulary'):
+        if context_memory is None or not hasattr(context_memory, 'vocabulary') or context_memory.vocabulary is None:
             return []
         
         vocab = context_memory.vocabulary
+        
+        # Verify vocab has required properties
+        if not hasattr(vocab, 'vocab_size') or vocab.vocab_size is None:
+            return []
         
         # Import special tokens for range checking
         try:
