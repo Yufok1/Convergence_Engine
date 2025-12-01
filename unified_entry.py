@@ -1440,7 +1440,14 @@ class UnifiedSystem:
             if network and hasattr(network, 'organisms'):
                 for org_id, organism in network.organisms.items():
                     try:
-                        self.highlander_protocol.register_organism(organism)
+                        # Get fitness from organism
+                        fitness = 0.5  # Default
+                        if hasattr(organism, 'fitness'):
+                            fitness = organism.fitness
+                        elif hasattr(organism, 'get_fitness'):
+                            fitness = organism.get_fitness()
+                        
+                        self.highlander_protocol.register_organism(org_id, initial_fitness=fitness)
                         print(f"[UNIFIED] [HIGHLANDER] Registered organism: {org_id}")
                     except Exception as e:
                         print(f"[UNIFIED] [HIGHLANDER] Failed to register {org_id}: {e}")
@@ -1468,11 +1475,14 @@ class UnifiedSystem:
             self._highlander_rounds_per_cycle = rounds_per_cycle
             self._highlander_enabled = True
             
-            print(f"[UNIFIED] [HIGHLANDER] ✅ Protocol active with {len(self.highlander_protocol.organisms)} organisms")
+            # Store reference to network for organism access
+            self._highlander_network = network
+            
+            print(f"[UNIFIED] [HIGHLANDER] ✅ Protocol active with {self.highlander_protocol.get_population_count()} organisms")
             print(f"[UNIFIED] [HIGHLANDER] 📊 Config: survival={survival_threshold}, intensity={competition_intensity}")
             self.logger.log_state('system', {
                 'event': 'highlander_initialized',
-                'population': len(self.highlander_protocol.organisms),
+                'population': self.highlander_protocol.get_population_count(),
                 'config': config
             })
             
@@ -1503,19 +1513,48 @@ class UnifiedSystem:
             if cycle_count % max(1, rounds_per_cycle) != 0:
                 return
             
-            # Run one tournament round
-            results = self.highlander_protocol.run_round()
+            # Get organisms from network component
+            network = getattr(self, '_highlander_network', None)
+            if not network or not hasattr(network, 'organisms'):
+                # Try to get network from reality_sim
+                if self.reality_sim and hasattr(self.reality_sim, 'components'):
+                    network = self.reality_sim.components.get('network')
+                    self._highlander_network = network
+            
+            if not network or not hasattr(network, 'organisms'):
+                return  # No organisms to battle
+            
+            organisms = network.organisms
+            if not organisms:
+                return  # Empty population
+            
+            # Convert to dict if needed
+            if not isinstance(organisms, dict):
+                organisms = {getattr(o, 'id', str(id(o))): o for o in organisms}
+            
+            # Define fitness getter
+            def get_fitness(organism) -> float:
+                if hasattr(organism, 'fitness'):
+                    return organism.fitness
+                if hasattr(organism, 'get_fitness'):
+                    return organism.get_fitness()
+                return 0.5  # Default fitness
+            
+            # Run one tournament round with proper arguments
+            results = self.highlander_protocol.run_round(organisms, get_fitness)
             
             # Check for champion emergence
             champion = self.highlander_protocol.get_current_champion()
             if champion and self.highlander_protocol.phase.name == 'CHAMPION':
-                print(f"\n⚔️ [HIGHLANDER] THE CHAMPION EMERGES: {champion.id}")
-                print(f"   Victories: {self.highlander_protocol.organisms.get(champion.id, {})}")
+                champion_id = champion.get('id', 'unknown')
+                print(f"\n⚔️ [HIGHLANDER] THE CHAMPION EMERGES: {champion_id}")
+                print(f"   Stats: {champion.get('stats', {})}")
                 
-                # Checkpoint the champion
-                if self.capsule_manager:
+                # Checkpoint the champion organism
+                if self.capsule_manager and champion_id in organisms:
+                    champion_org = organisms[champion_id]
                     capsule = self.capsule_manager.capture_organism(
-                        champion, 
+                        champion_org, 
                         reason='HIGHLANDER_CHAMPION'
                     )
                     if capsule:
@@ -1523,23 +1562,28 @@ class UnifiedSystem:
             
             # Log round results
             if results:
+                population = self.highlander_protocol.get_population_count()
                 self.logger.log_state('highlander', {
                     'event': 'round_complete',
                     'cycle': cycle_count,
                     'phase': self.highlander_protocol.phase.name,
-                    'population': len(self.highlander_protocol.organisms),
-                    'battles': results.get('battles', 0),
-                    'eliminations': results.get('eliminations', 0),
-                    'alliances': results.get('alliances_formed', 0)
+                    'population': population,
+                    'battles': len(results.get('battles', [])),
+                    'eliminations': len(results.get('eliminations', [])),
+                    'alliances': len(results.get('alliances_formed', []))
                 })
                 
                 # Print status update
-                if results.get('battles', 0) > 0 or results.get('eliminations', 0) > 0:
+                battles_count = len(results.get('battles', []))
+                eliminations_count = len(results.get('eliminations', []))
+                alliances_count = len(results.get('alliances_formed', []))
+                
+                if battles_count > 0 or eliminations_count > 0:
                     print(f"[HIGHLANDER] Round {cycle_count}: "
-                          f"⚔️ {results.get('battles', 0)} battles, "
-                          f"💀 {results.get('eliminations', 0)} eliminated, "
-                          f"🤝 {results.get('alliances_formed', 0)} alliances, "
-                          f"👥 {len(self.highlander_protocol.organisms)} remaining")
+                          f"⚔️ {battles_count} battles, "
+                          f"💀 {eliminations_count} eliminated, "
+                          f"🤝 {alliances_count} alliances, "
+                          f"👥 {population} remaining")
             
             # 🌱 GERMINATION - Spawn new organisms if population too low
             if hasattr(self, '_germination_callback') and self._germination_callback:
@@ -1558,6 +1602,8 @@ class UnifiedSystem:
                           
         except Exception as e:
             print(f"[HIGHLANDER] Round error: {e}")
+            import traceback
+            traceback.print_exc()
             import traceback
             traceback.print_exc()
     

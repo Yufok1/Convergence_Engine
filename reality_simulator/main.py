@@ -1020,55 +1020,25 @@ class RealitySimulator:
                 self.ml_analyzer = None
 
             # 11. Config Tuner (autonomous parameter optimization)
+            # Using AtomicConfigSystem - the advanced config system with per-parameter
+            # tracking, causation links, associations, and Thompson Sampling suggestions
             meta_config = self.config.get('meta_cognitive', {})
             tuner_enabled = meta_config.get('self_tuning', {}).get('enabled', False)
             if tuner_enabled:
                 try:
                     try:
-                        from .config_tuner import ConfigTuner
+                        from .tuning.atomic_config import AtomicConfigSystem
                     except (ImportError, ValueError):
-                        from reality_simulator.config_tuner import ConfigTuner
+                        from reality_simulator.tuning.atomic_config import AtomicConfigSystem
 
-                    self.config_tuner = ConfigTuner(config=self.config, enabled=True)
-                    # Wire event emitter for structured explanations (Quick Win #3)
-                    if self.event_emitter:
-                        self.config_tuner.event_emitter = self.event_emitter
-                        # Wrap event emitter to track events for causation linking
-                        original_emitter = self.event_emitter
-                        def tracking_emitter(event):
-                            # Track event for ConfigTuner causation linking
-                            if self.config_tuner:
-                                # Extract event_id if available (from Event object or dict)
-                                event_id = None
-                                if hasattr(event, 'event_id'):
-                                    event_id = event.event_id
-                                elif isinstance(event, dict):
-                                    event_id = event.get('event_id') or event.get('data', {}).get('event_id')
-                                
-                                # Convert to dict format for tracking
-                                if hasattr(event, '__dict__'):
-                                    event_dict = {
-                                        'component': getattr(event, 'component', 'unknown'),
-                                        'event_type': getattr(event, 'event_type', 'unknown'),
-                                        'event_id': event_id or f"evt_{int(time.time() * 1000)}",
-                                        'timestamp': getattr(event, 'timestamp', time.time())
-                                    }
-                                else:
-                                    event_dict = {
-                                        'component': event.get('component', 'unknown'),
-                                        'event_type': event.get('event_type', 'unknown'),
-                                        'event_id': event_id or f"evt_{int(time.time() * 1000)}",
-                                        'timestamp': event.get('timestamp', time.time())
-                                    }
-                                self.config_tuner.track_event(event_dict)
-                            
-                            # Forward to original emitter
-                            original_emitter(event)
-                        
-                        self.config_tuner.event_emitter = tracking_emitter
-                    print(ColorScheme.log_component("tuner", "Config tuner initialized (AUTONOMOUS MODE)"))
+                    self.config_tuner = AtomicConfigSystem(
+                        system_id="reality_sim",
+                        event_emitter=self.event_emitter,
+                        initial_config=self.config
+                    )
+                    print(ColorScheme.log_component("tuner", "AtomicConfigSystem initialized (AUTONOMOUS MODE)"))
                 except Exception as e:
-                    print(f"[WARN] Config tuner initialization failed: {e}")
+                    print(f"[WARN] AtomicConfigSystem initialization failed: {e}")
                     import traceback
                     traceback.print_exc()
                     self.config_tuner = None

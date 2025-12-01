@@ -1140,6 +1140,142 @@ class AtomicConfigSystem:
         
         return report
     
+    # ═══════════════════════════════════════════════════════════════════════
+    # CONFIGTUNER COMPATIBILITY LAYER
+    # These methods provide drop-in replacement for the legacy ConfigTuner
+    # ═══════════════════════════════════════════════════════════════════════
+    
+    def get_stats(self) -> Dict[str, Any]:
+        """
+        Get tuning statistics - ConfigTuner compatible interface.
+        
+        This method provides the same interface as the legacy ConfigTuner.get_stats()
+        so AtomicConfigSystem can be used as a drop-in replacement.
+        """
+        # Calculate success metrics from atoms
+        total_updates = self.total_updates
+        successful_updates = sum(
+            sum(a.success_with_value.values()) 
+            for a in self.atoms.values()
+        )
+        total_outcomes = successful_updates + sum(
+            sum(a.failure_with_value.values()) 
+            for a in self.atoms.values()
+        )
+        
+        # Per-parameter success rates
+        param_success_rates = {}
+        for param_name, atom in self.atoms.items():
+            successes = sum(atom.success_with_value.values())
+            failures = sum(atom.failure_with_value.values())
+            total = successes + failures
+            param_success_rates[param_name] = successes / total if total > 0 else 0.0
+        
+        # Get recent actions from atoms with updates
+        recent_actions = []
+        for param_name, atom in sorted(
+            self.atoms.items(), 
+            key=lambda x: x[1].value_history[-1][0] if x[1].value_history else 0,
+            reverse=True
+        )[:5]:
+            if atom.value_history:
+                timestamp, value, reason = atom.value_history[-1]
+                old_value = atom.value_history[-2][1] if len(atom.value_history) > 1 else value
+                recent_actions.append({
+                    'param': param_name,
+                    'change': f"{old_value} → {value}",
+                    'reason': reason,
+                    'success': atom.get_value_performance() > 0.5,
+                    'trigger_metrics': {'strength': atom.strength, 'stability': atom.stability},
+                    'expected_impact': f"Improve {atom.domain.value} performance",
+                    'actual_impact': f"Performance: {atom.get_value_performance():.2%}"
+                })
+        
+        return {
+            'enabled': True,  # AtomicConfigSystem is always enabled
+            'total_actions': total_updates,
+            'successful_actions': successful_updates,
+            'success_rate': successful_updates / total_outcomes if total_outcomes > 0 else 0.0,
+            'param_success_rates': param_success_rates,
+            'recent_actions': recent_actions,
+            # Extended stats from AtomicConfigSystem
+            'system_id': self.system_id,
+            'total_atoms': len(self.atoms),
+            'domains': {d.value: len(params) for d, params in self.domains.items() if params},
+            'avg_stability': np.mean([a.stability for a in self.atoms.values()]) if self.atoms else 0.0,
+            'avg_strength': np.mean([a.strength for a in self.atoms.values()]) if self.atoms else 0.0
+        }
+    
+    def tune(self, metrics: Dict[str, Any], frame_count: int = 0) -> List[Dict[str, Any]]:
+        """
+        Tune configuration based on metrics - ConfigTuner compatible interface.
+        
+        Args:
+            metrics: Dict with keys like 'fitness', 'cluster_count', 'anomaly_ratio', etc.
+            frame_count: Current simulation frame
+            
+        Returns:
+            List of tuning actions taken
+        """
+        actions = []
+        
+        # Extract key metrics
+        fitness = metrics.get('avg_fitness', metrics.get('fitness', 0.5))
+        is_improving = metrics.get('fitness_improving', fitness > 0.5)
+        
+        # Record outcomes for atoms based on metrics
+        for param_name, atom in self.atoms.items():
+            # Use domain-specific metrics to judge success
+            domain_success = self._evaluate_domain_success(atom.domain, metrics)
+            atom.record_outcome(domain_success, f"frame_{frame_count}")
+        
+        # Suggest improvements for underperforming params
+        for param_name, atom in self.atoms.items():
+            if atom.get_value_performance() < 0.4 and atom.update_count > 5:
+                suggested = atom.suggest_value()
+                if suggested != atom.value:
+                    old_value = atom.value
+                    if atom.update_value(suggested, f"auto_tune_frame_{frame_count}"):
+                        actions.append({
+                            'param': param_name,
+                            'old_value': old_value,
+                            'new_value': suggested,
+                            'reason': 'Poor performance - trying historically better value',
+                            'confidence': atom.strength
+                        })
+        
+        return actions
+    
+    def _evaluate_domain_success(self, domain: ConfigDomain, metrics: Dict[str, Any]) -> bool:
+        """Evaluate if a domain's metrics indicate success."""
+        if domain == ConfigDomain.NEURAL:
+            loss = metrics.get('neural_loss', metrics.get('loss', 1.0))
+            return loss < 0.5 or metrics.get('neural_improving', False)
+        
+        elif domain == ConfigDomain.EVOLUTION:
+            fitness = metrics.get('avg_fitness', 0.5)
+            diversity = metrics.get('diversity', 0.5)
+            return fitness > 0.4 and diversity > 0.3
+        
+        elif domain == ConfigDomain.LEARNING:
+            return metrics.get('learning_progress', 0.5) > 0.4
+        
+        elif domain == ConfigDomain.SIMULATION:
+            vp = metrics.get('vp', metrics.get('violation_pressure', 0.5))
+            return 0.2 < vp < 0.8  # VP in healthy range
+        
+        elif domain == ConfigDomain.LANGUAGE:
+            vocab_size = metrics.get('vocabulary_size', 0)
+            return vocab_size > 10 or metrics.get('language_learning', False)
+        
+        elif domain == ConfigDomain.ILLUMINATION:
+            coverage = metrics.get('archive_coverage', 0)
+            return coverage > 0.1
+        
+        else:
+            # Default: use overall fitness
+            return metrics.get('avg_fitness', 0.5) > 0.4
+    
     def __repr__(self) -> str:
         return f"AtomicConfigSystem(id={self.system_id}, atoms={len(self.atoms)}, updates={self.total_updates})"
 

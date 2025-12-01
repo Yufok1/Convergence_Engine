@@ -2,7 +2,7 @@
 import sys
 sys.path.append('.')
 
-from reality_simulator.agency.network_decision_agent import LanguageVocabulary
+from reality_simulator.language_system import LanguageVocabulary
 
 # Test the language vocabulary mapping
 vocab = LanguageVocabulary()

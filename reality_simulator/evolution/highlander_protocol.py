@@ -1011,6 +1011,28 @@ class HighlanderProtocol:
         
         return champion_data
     
+    def get_current_champion(self) -> Optional[Dict[str, Any]]:
+        """
+        Get the current champion if one exists.
+        
+        Returns:
+            Champion data dict if in CHAMPION phase with single survivor,
+            None otherwise.
+        """
+        if self.phase == HighlanderPhase.CHAMPION and len(self.active_organisms) == 1:
+            champion_id = list(self.active_organisms)[0]
+            stats = self.organism_stats.get(champion_id, OrganismStats())
+            return {
+                'id': champion_id,
+                'stats': stats.to_dict(),
+                'is_champion': True
+            }
+        return None
+    
+    def get_population_count(self) -> int:
+        """Get the current active population count."""
+        return len(self.active_organisms)
+    
     def reset_arena(self):
         """Reset the arena for a new tournament."""
         self.round_number = 0
