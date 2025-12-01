@@ -161,7 +161,8 @@ class HighlanderProtocol:
     def __init__(self, 
                  config: Optional[Dict[str, Any]] = None,
                  event_emitter: Optional[Callable] = None,
-                 capsule_manager: Optional[Any] = None):
+                 capsule_manager: Optional[Any] = None,
+                 battle_arena: Optional[Any] = None):
         """
         Initialize the Highlander Protocol.
         
@@ -169,10 +170,25 @@ class HighlanderProtocol:
             config: Protocol configuration
             event_emitter: Callback for causation events
             capsule_manager: OrganismCapsuleManager for checkpointing
+            battle_arena: BattleArena for multi-dimensional combat
         """
         self.config = config or {}
         self.event_emitter = event_emitter
         self.capsule_manager = capsule_manager
+        
+        # Initialize Battle Arena for real combat
+        if battle_arena:
+            self.battle_arena = battle_arena
+        else:
+            try:
+                from reality_simulator.evolution.battle_arena import BattleArena
+                arena_config = {
+                    'chaos_factor': self.config.get('battle_randomness', 0.15),
+                    'max_rounds': self.config.get('max_battle_rounds', 10)
+                }
+                self.battle_arena = BattleArena(config=arena_config, event_emitter=event_emitter)
+            except ImportError:
+                self.battle_arena = None
         
         # Protocol parameters (from atomic config if available)
         self.survival_threshold = self.config.get('survival_threshold', 0.3)
@@ -430,7 +446,77 @@ class HighlanderProtocol:
     def _conduct_battle(self, org1_id: str, org1: Any,
                        org2_id: str, org2: Any,
                        get_fitness: Callable[[Any], float]) -> Optional[BattleResult]:
-        """Conduct a battle between two organisms."""
+        """
+        Conduct a battle between two organisms.
+        
+        Uses the Battle Arena for multi-dimensional combat if available,
+        otherwise falls back to fitness-based comparison.
+        """
+        
+        # ═══════════════════════════════════════════════════════════════
+        # USE BATTLE ARENA FOR REAL COMBAT
+        # ═══════════════════════════════════════════════════════════════
+        if self.battle_arena is not None:
+            try:
+                from reality_simulator.evolution.battle_arena import BattleType
+                
+                # Run full multi-dimensional combat!
+                arena_outcome = self.battle_arena.resolve_battle(
+                    org1, org2, 
+                    battle_type=BattleType.FULL_COMBAT
+                )
+                
+                # Convert arena outcome to our BattleResult format
+                winner_id = arena_outcome.winner_id
+                loser_id = arena_outcome.loser_id
+                winner_fitness = get_fitness(org1 if winner_id == org1_id else org2)
+                loser_fitness = get_fitness(org2 if winner_id == org1_id else org1)
+                
+                # Update stats with arena results
+                if winner_id in self.organism_stats:
+                    self.organism_stats[winner_id].record_win(
+                        loser_id, 
+                        arena_outcome.concepts_transferred,
+                        arena_outcome.config_changes
+                    )
+                if loser_id in self.organism_stats:
+                    self.organism_stats[loser_id].record_loss()
+                
+                # Execute actual absorption in the arena
+                winner_org = org1 if winner_id == org1_id else org2
+                loser_org = org2 if winner_id == org1_id else org1
+                self.battle_arena.execute_absorption(winner_org, loser_org, arena_outcome)
+                
+                self._emit_event('battle_concluded', {
+                    'winner': winner_id,
+                    'loser': loser_id,
+                    'battle_type': 'arena_full_combat',
+                    'margin': arena_outcome.margin_of_victory,
+                    'rounds': arena_outcome.total_rounds,
+                    'concepts_transferred': arena_outcome.concepts_transferred,
+                    'traits_transferred': arena_outcome.traits_transferred,
+                    'neural_transfer': arena_outcome.neural_transfer_rate,
+                    'narrative': arena_outcome.narrative_summary
+                })
+                
+                return BattleResult(
+                    winner_id=winner_id,
+                    loser_id=loser_id,
+                    winner_fitness=winner_fitness,
+                    loser_fitness=loser_fitness,
+                    battle_type='arena_combat',
+                    margin=arena_outcome.margin_of_victory,
+                    concepts_transferred=arena_outcome.concepts_transferred,
+                    configs_transferred=arena_outcome.config_changes
+                )
+                
+            except Exception as e:
+                # Fall back to fitness-based if arena fails
+                print(f"Arena battle failed, using fitness fallback: {e}")
+        
+        # ═══════════════════════════════════════════════════════════════
+        # FALLBACK: FITNESS-BASED COMPARISON
+        # ═══════════════════════════════════════════════════════════════
         fitness1 = get_fitness(org1)
         fitness2 = get_fitness(org2)
         
@@ -468,6 +554,7 @@ class HighlanderProtocol:
         self._emit_event('battle_concluded', {
             'winner': winner_id,
             'loser': loser_id,
+            'battle_type': 'fitness_fallback',
             'margin': margin,
             'concepts_transferred': concepts_to_transfer
         })

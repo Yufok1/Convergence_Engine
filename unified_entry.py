@@ -977,13 +977,21 @@ Status: ACTIVE"""
 class UnifiedSystem:
     """The unified butterfly system - one cohesive unit"""
     
-    def __init__(self, enable_visualization: bool = True, max_cycles: int = 0):
+    def __init__(self, enable_visualization: bool = True, max_cycles: int = 0,
+                 highlander_config: Optional[Dict] = None):
         # Pre-flight checks (tkinter optional for headless runs)
         checker = PreFlightChecker()
         check_results = checker.run_all_checks(require_visualization=enable_visualization)
         
         if not check_results['can_start']:
             raise RuntimeError("Pre-flight checks failed. Cannot start system.")
+        
+        # Store Highlander config
+        self.highlander_config = highlander_config
+        self.highlander_protocol = None
+        self.battle_arena = None
+        self.capsule_manager = None
+        self.germination_pool = None
         
         # Initialize logging
         self.logger = StateLogger()
@@ -1214,6 +1222,10 @@ class UnifiedSystem:
         self.web_ui = None
         self._initialize_web_ui()
         
+        # Initialize Highlander Protocol (if enabled)
+        if self.highlander_config:
+            self._initialize_highlander_protocol()
+        
         self.logger.log_state('system', {'event': 'initialization_complete'})
         print("[UNIFIED] [PASS] All systems initialized\n")
         # Max cycles (0 means run indefinitely)
@@ -1361,6 +1373,147 @@ class UnifiedSystem:
             import traceback
             traceback.print_exc()
             self.web_ui = None
+    
+    def _initialize_highlander_protocol(self):
+        """Initialize the Highlander Protocol tournament system.
+        
+        There can be only one. Organisms compete for survival,
+        absorbing the traits, knowledge, and very essence of the fallen.
+        The last butterfly standing becomes the template for immortality.
+        """
+        try:
+            print("\n[UNIFIED] [HIGHLANDER] ⚔️ Initializing Highlander Protocol...")
+            print("[UNIFIED] [HIGHLANDER] 'There can be only one.'")
+            
+            # Import Highlander systems
+            from reality_simulator.evolution.highlander_protocol import HighlanderProtocol
+            from reality_simulator.evolution.battle_arena import BattleArena
+            from reality_simulator.checkpointing.organism_capsule import OrganismCapsuleManager
+            
+            # Parse config
+            config = self.highlander_config or {}
+            population_size = config.get('population_size', 10)
+            survival_threshold = config.get('survival_threshold', 0.3)
+            competition_intensity = config.get('competition_intensity', 0.5)
+            rounds_per_cycle = config.get('rounds_per_cycle', 1)
+            
+            # Initialize Battle Arena (combat resolution)
+            self.battle_arena = BattleArena(
+                causation_explorer=self.causation_explorer,
+                max_rounds=config.get('max_battle_rounds', 10),
+                chaos_factor=config.get('chaos_factor', 0.15)
+            )
+            print("[UNIFIED] [HIGHLANDER] [PASS] Battle Arena initialized")
+            
+            # Initialize Organism Capsule Manager (checkpointing)
+            capsule_dir = Path('highlander_capsules')
+            self.capsule_manager = OrganismCapsuleManager(
+                storage_dir=capsule_dir,
+                max_capsules_per_organism=config.get('max_capsules', 5)
+            )
+            print(f"[UNIFIED] [HIGHLANDER] [PASS] Capsule Manager initialized (dir: {capsule_dir})")
+            
+            # Initialize Highlander Protocol (tournament orchestration)
+            self.highlander_protocol = HighlanderProtocol(
+                causation_explorer=self.causation_explorer,
+                capsule_manager=self.capsule_manager,
+                battle_arena=self.battle_arena,
+                survival_threshold=survival_threshold,
+                competition_intensity=competition_intensity
+            )
+            print("[UNIFIED] [HIGHLANDER] [PASS] Tournament Protocol initialized")
+            
+            # Register existing organisms
+            network = self.reality_sim.components.get('network') if self.reality_sim else None
+            if network and hasattr(network, 'organisms'):
+                for org_id, organism in network.organisms.items():
+                    try:
+                        self.highlander_protocol.register_organism(organism)
+                        print(f"[UNIFIED] [HIGHLANDER] Registered organism: {org_id}")
+                    except Exception as e:
+                        print(f"[UNIFIED] [HIGHLANDER] Failed to register {org_id}: {e}")
+            
+            # Store config for runtime access
+            self._highlander_rounds_per_cycle = rounds_per_cycle
+            self._highlander_enabled = True
+            
+            print(f"[UNIFIED] [HIGHLANDER] ✅ Protocol active with {len(self.highlander_protocol.organisms)} organisms")
+            print(f"[UNIFIED] [HIGHLANDER] 📊 Config: survival={survival_threshold}, intensity={competition_intensity}")
+            self.logger.log_state('system', {
+                'event': 'highlander_initialized',
+                'population': len(self.highlander_protocol.organisms),
+                'config': config
+            })
+            
+        except ImportError as e:
+            print(f"[UNIFIED] [HIGHLANDER] ❌ Import failed: {e}")
+            print("[UNIFIED] [HIGHLANDER] Highlander Protocol not available")
+            self._highlander_enabled = False
+            import traceback
+            traceback.print_exc()
+        except Exception as e:
+            print(f"[UNIFIED] [HIGHLANDER] ❌ Initialization failed: {e}")
+            self._highlander_enabled = False
+            import traceback
+            traceback.print_exc()
+    
+    def _run_highlander_round(self, cycle_count: int):
+        """Run a Highlander Protocol tournament round.
+        
+        Each round may involve:
+        - Battles between organisms (winner absorbs loser)
+        - Alliance formation and betrayal
+        - Predation of weak by strong
+        - Champion checkpointing
+        """
+        try:
+            # Only run tournament every N cycles
+            rounds_per_cycle = getattr(self, '_highlander_rounds_per_cycle', 1)
+            if cycle_count % max(1, rounds_per_cycle) != 0:
+                return
+            
+            # Run one tournament round
+            results = self.highlander_protocol.run_round()
+            
+            # Check for champion emergence
+            champion = self.highlander_protocol.get_current_champion()
+            if champion and self.highlander_protocol.phase.name == 'CHAMPION':
+                print(f"\n⚔️ [HIGHLANDER] THE CHAMPION EMERGES: {champion.id}")
+                print(f"   Victories: {self.highlander_protocol.organisms.get(champion.id, {})}")
+                
+                # Checkpoint the champion
+                if self.capsule_manager:
+                    capsule = self.capsule_manager.capture_organism(
+                        champion, 
+                        reason='HIGHLANDER_CHAMPION'
+                    )
+                    if capsule:
+                        print(f"   📦 Champion capsule saved: {capsule.capsule_id}")
+            
+            # Log round results
+            if results:
+                self.logger.log_state('highlander', {
+                    'event': 'round_complete',
+                    'cycle': cycle_count,
+                    'phase': self.highlander_protocol.phase.name,
+                    'population': len(self.highlander_protocol.organisms),
+                    'battles': results.get('battles', 0),
+                    'eliminations': results.get('eliminations', 0),
+                    'alliances': results.get('alliances_formed', 0)
+                })
+                
+                # Print status update
+                if results.get('battles', 0) > 0 or results.get('eliminations', 0) > 0:
+                    print(f"[HIGHLANDER] Round {cycle_count}: "
+                          f"⚔️ {results.get('battles', 0)} battles, "
+                          f"💀 {results.get('eliminations', 0)} eliminated, "
+                          f"🤝 {results.get('alliances_formed', 0)} alliances, "
+                          f"👥 {len(self.highlander_protocol.organisms)} remaining")
+                          
+        except Exception as e:
+            print(f"[HIGHLANDER] Round error: {e}")
+            import traceback
+            traceback.print_exc()
     
     def run(self):
         """Run the unified system"""
@@ -1519,6 +1672,10 @@ class UnifiedSystem:
                     self.controller.run_genesis_phase()
                 elif hasattr(self.controller, 'run_sovereign_phase'):
                     self.controller.run_sovereign_phase()
+                
+                # 🗡️ HIGHLANDER PROTOCOL - Run tournament round
+                if getattr(self, '_highlander_enabled', False) and self.highlander_protocol:
+                    self._run_highlander_round(cycle_count)
                 
                 # Small delay
                 time.sleep(0.1)
@@ -1978,6 +2135,16 @@ def main():
     parser.add_argument('--check-only', action='store_true', help='Run pre-flight checks only')
     parser.add_argument('--max-cycles', type=int, default=0, help='Number of breath cycles to run (0 = unlimited)')
     
+    # 🆕 Highlander Mode - Survival of the fittest
+    parser.add_argument('--highlander', action='store_true', 
+                       help='Enable Highlander Protocol - perpetual survival tournament')
+    parser.add_argument('--predation', action='store_true',
+                       help='Enable predator/prey mechanics in Highlander mode')
+    parser.add_argument('--survival-threshold', type=float, default=0.3,
+                       help='Fitness threshold for survival (default: 0.3)')
+    parser.add_argument('--competition-intensity', type=float, default=0.5,
+                       help='How many organisms battle per round (default: 0.5)')
+    
     args = parser.parse_args()
     
     if args.check_only:
@@ -1986,8 +2153,28 @@ def main():
         checker.run_all_checks(require_visualization=not args.no_viz)
         return
     
+    # Build Highlander config if enabled
+    highlander_config = None
+    if args.highlander:
+        highlander_config = {
+            'enabled': True,
+            'survival_threshold': args.survival_threshold,
+            'competition_intensity': args.competition_intensity,
+            'predation_enabled': args.predation,
+            'germination_rate': 0.1,
+            'min_population': 10,
+            'max_population': 100
+        }
+        print("⚔️  HIGHLANDER MODE ACTIVATED - There can be only one!")
+        if args.predation:
+            print("🦁 Predation enabled - the strong will hunt the weak")
+    
     # Create and run unified system
-    system = UnifiedSystem(enable_visualization=not args.no_viz, max_cycles=args.max_cycles)
+    system = UnifiedSystem(
+        enable_visualization=not args.no_viz, 
+        max_cycles=args.max_cycles,
+        highlander_config=highlander_config
+    )
     system.run()
 
 
