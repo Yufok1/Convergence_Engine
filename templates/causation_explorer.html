@@ -1448,6 +1448,14 @@
                             <span>⚔️ Combat/Battle</span></label>
                     </div>
                     <div class="filter-item">
+                        <label><input type="checkbox" id="filter-highlander" checked onchange="applyFilters()">
+                            <span>🗡️ Highlander</span></label>
+                    </div>
+                    <div class="filter-item">
+                        <label><input type="checkbox" id="filter-germination" checked onchange="applyFilters()">
+                            <span>🌱 Germination</span></label>
+                    </div>
+                    <div class="filter-item">
                         <label><input type="checkbox" id="filter-system" checked onchange="applyFilters()">
                             <span>System</span></label>
                     </div>
@@ -1618,6 +1626,26 @@
                                 <span style="min-width: 120px;">⚔️ Combat/Battle:</span>
                                 <input type="color" id="color-combat" value="#DC143C"
                                     onchange="updateComponentColor('combat', this.value)"
+                                    style="width: 60px; height: 25px; cursor: pointer;">
+                            </label>
+                        </div>
+
+                        <div class="filter-item" style="margin-bottom: 8px;">
+                            <label
+                                style="display: flex; align-items: center; gap: 8px; color: #0ff; font-size: 0.85em;">
+                                <span style="min-width: 120px;">🗡️ Highlander:</span>
+                                <input type="color" id="color-highlander" value="#FF1493"
+                                    onchange="updateComponentColor('highlander', this.value)"
+                                    style="width: 60px; height: 25px; cursor: pointer;">
+                            </label>
+                        </div>
+
+                        <div class="filter-item" style="margin-bottom: 8px;">
+                            <label
+                                style="display: flex; align-items: center; gap: 8px; color: #0ff; font-size: 0.85em;">
+                                <span style="min-width: 120px;">🌱 Germination:</span>
+                                <input type="color" id="color-germination" value="#32CD32"
+                                    onchange="updateComponentColor('germination', this.value)"
                                     style="width: 60px; height: 25px; cursor: pointer;">
                             </label>
                         </div>
@@ -4138,7 +4166,9 @@
                 'health_monitor': '#FF69B4',    // ⚕️ Hot Pink (Health Monitor - system health)
                 'alliance': '#9400D3',          // ⚔️ Dark Violet (Alliance Warfare System)
                 'combat': '#DC143C',            // ⚔️ Crimson (Combat/Battle Events)
+                'battle_arena': '#DC143C',      // ⚔️ Crimson (Battle Arena - same as combat)
                 'germination': '#32CD32',       // 🌱 Lime Green (Germination Pool - new life)
+                'germination_pool': '#32CD32',  // 🌱 Lime Green (Germination Pool alias)
                 'highlander': '#FF1493',        // 🗡️ Deep Pink (Highlander Protocol)
                 'system': '#FFFF00'             // Pure Yellow
             };
@@ -4673,6 +4703,10 @@
                 filters.components.health_monitor = document.getElementById('filter-health_monitor') ? document.getElementById('filter-health_monitor').checked : true;
                 filters.components.alliance = document.getElementById('filter-alliance') ? document.getElementById('filter-alliance').checked : true;
                 filters.components.combat = document.getElementById('filter-combat') ? document.getElementById('filter-combat').checked : true;
+                filters.components.highlander = document.getElementById('filter-highlander') ? document.getElementById('filter-highlander').checked : true;
+                filters.components.battle_arena = document.getElementById('filter-highlander') ? document.getElementById('filter-highlander').checked : true;
+                filters.components.germination = document.getElementById('filter-germination') ? document.getElementById('filter-germination').checked : true;
+                filters.components.germination_pool = document.getElementById('filter-germination') ? document.getElementById('filter-germination').checked : true;
                 filters.components.system = document.getElementById('filter-system').checked;
 
                 filters.causationTypes.threshold = document.getElementById('filter-threshold').checked;
@@ -5274,6 +5308,8 @@
                     'health_monitor': 'color-health_monitor',
                     'alliance': 'color-alliance',
                     'combat': 'color-combat',
+                    'highlander': 'color-highlander',
+                    'germination': 'color-germination',
                     'system': 'color-system'
                 };
                 Object.keys(componentColorMap).forEach(comp => {
@@ -5475,6 +5511,10 @@
                             'health_monitor': 'filter-health_monitor',
                             'alliance': 'filter-alliance',
                             'combat': 'filter-combat',
+                            'highlander': 'filter-highlander',
+                            'battle_arena': 'filter-highlander',
+                            'germination': 'filter-germination',
+                            'germination_pool': 'filter-germination',
                             'system': 'filter-system'
                         };
 
@@ -6067,6 +6107,7 @@
                     { name: '⚕️ Health Monitor', color: componentColors['health_monitor'] || '#FF69B4' },
                     { name: '⚔️ Alliance System', color: componentColors['alliance'] || '#9400D3' },
                     { name: '⚔️ Combat/Battle', color: componentColors['combat'] || '#DC143C' },
+                    { name: '🗡️ Highlander', color: componentColors['highlander'] || '#FF1493' },
                     { name: '🌱 Germination', color: componentColors['germination'] || '#32CD32' },
                     { name: 'System', color: componentColors['system'] }
                 ];
@@ -6100,6 +6141,9 @@
                     { name: '⚔️ Alliance Formed', shape: 'star', color: '#9400D3', eventType: 'alliance_formed' },
                     { name: '⚔️ Alliance Dissolved', shape: 'cross', color: '#8B008B', eventType: 'alliance_dissolved' },
                     { name: '⚔️ Battle Concluded', shape: 'triangle', color: '#DC143C', eventType: 'battle_concluded' },
+                    { name: '🗡️ Champion Crowned', shape: 'star', color: '#FF1493', eventType: 'champion_crowned' },
+                    { name: '🗡️ Predation Success', shape: 'triangle', color: '#FF1493', eventType: 'predation_success' },
+                    { name: '🗡️ Organism Registered', shape: 'circle', color: '#FF69B4', eventType: 'organism_registered' },
                     { name: '🌱 Organism Germinated', shape: 'star', color: '#32CD32', eventType: 'organism_germinated' },
                     { name: '🌱 Germination Failed', shape: 'cross', color: '#8B0000', eventType: 'germination_failed' },
                     { name: '🌱 Essence Collected', shape: 'circle', color: '#7CFC00', eventType: 'essence_collected' },
