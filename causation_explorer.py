@@ -2125,6 +2125,54 @@ class CausationExplorer:
                 parts.append(f"⚔️ HIGHLANDER: {winner} absorbed configs from {loser}")
                 parts.append(f"🏆 Absorbed {len(absorbed)} parameters: {list(absorbed.keys())[:3]}")
         
+        # ═══════════════════════════════════════════════════════════════
+        # HIGHLANDER PROTOCOL EVENTS
+        # ═══════════════════════════════════════════════════════════════
+        if event.component == 'highlander':
+            round_num = event.data.get('round', 0)
+            phase = event.data.get('phase', 'unknown')
+            
+            if event.event_type == 'highlander_battle_concluded':
+                winner = event.data.get('winner', 'unknown')
+                loser = event.data.get('loser', 'unknown')
+                margin = event.data.get('margin', 0)
+                concepts = event.data.get('concepts_transferred', [])
+                parts.append(f"⚔️ BATTLE: {winner} defeated {loser} (margin: {margin:.1%})")
+                if concepts:
+                    parts.append(f"📚 Absorbed concepts: {concepts[:3]}")
+            
+            elif event.event_type == 'highlander_organism_fallen':
+                org_id = event.data.get('organism_id', 'unknown')
+                reason = event.data.get('reason', 'unknown')
+                remaining = event.data.get('remaining', 0)
+                parts.append(f"💀 FALLEN: {org_id} ({reason})")
+                parts.append(f"🏟️ {remaining} organisms remain")
+            
+            elif event.event_type == 'highlander_alliance_formed':
+                members = event.data.get('members', [])
+                parts.append(f"🤝 ALLIANCE FORMED: {' + '.join(members)}")
+            
+            elif event.event_type == 'highlander_predation_success':
+                predator = event.data.get('predator', 'unknown')
+                prey = event.data.get('prey', 'unknown')
+                parts.append(f"🦁 HUNT: {predator} consumed {prey}")
+            
+            elif event.event_type == 'highlander_champion_crowned':
+                champion = event.data.get('champion_id', 'unknown')
+                lineage = event.data.get('lineage_length', 0)
+                concepts = event.data.get('concepts_accumulated', 0)
+                parts.append(f"👑 CHAMPION: {champion}")
+                parts.append(f"⚔️ Lineage: {lineage} absorbed | 📚 Concepts: {concepts}")
+            
+            elif event.event_type == 'highlander_arena_reset':
+                prev_champions = event.data.get('previous_champions', 0)
+                parts.append(f"🏟️ ARENA RESET - Previous champions: {prev_champions}")
+            
+            elif event.event_type == 'highlander_germination_needed':
+                needed = event.data.get('needed', 0)
+                current = event.data.get('current_population', 0)
+                parts.append(f"🌱 GERMINATION: {needed} new challengers needed (pop: {current})")
+        
         # ML events with cluster/anomaly context
         if event.component == 'ml_analysis':
             if event.event_type == 'phenotype_emergence':
