@@ -1333,6 +1333,121 @@ Verification:
 - Confirm champion declaration at tournament end
 
 ---
+18. Alliance Warfare System ⭐ NEW (Quick Win #10) (2025-12-01)
+
+Status: SUCCESS / FAILED / PARTIAL
+- AllianceWarfareSystem initialized
+- Alliance formation active
+- War events emitting
+- Collective fitness tracking active
+
+Core Concept:
+- Beyond individual battles, organisms form planetary alliances
+- Collective warfare for control of evolutionary existence
+- Requires Highlander Protocol enabled (Quick Win #9)
+
+Core Components:
+
+1. AllianceWarfareSystem:
+   - Main alliance orchestration engine
+   - Manages alliance lifecycle (formation, wars, dissolution)
+   - Coordinates collective battles
+   - Tracks alliance membership and fitness
+   - API: process_round(organisms, get_fitness)
+
+2. Alliance Formation:
+   - Solidarity-based (mutual protection)
+   - Strategic (resource sharing)
+   - Defensive (against dominant organisms)
+   - Minimum size requirement enforced
+
+3. War Resolution:
+   - Collective fitness comparison
+   - Casualty calculation
+   - Territory/resource transfer
+   - Alliance absorption (existential wars)
+
+Alliance Configuration:
+- alliance_warfare.enabled: true/false (master toggle)
+- alliance_warfare.min_alliance_size: 3 (minimum members)
+- alliance_warfare.max_alliances: 10 (concurrent limit)
+- alliance_warfare.war_frequency: 0.3 (war probability per round)
+- alliance_warfare.existential_war_threshold: 0.8 (threshold for existential wars)
+
+Alliance Events:
+- alliance_formed: New alliance created
+  - Contains: alliance_id, member_ids, collective_fitness, formation_reason
+- alliance_disbanded: Alliance dissolved
+  - Contains: alliance_id, final_members, dissolution_reason (insufficient_members, war_lost, etc.)
+- alliance_war_declared: War between alliances
+  - Contains: attacker_alliance, defender_alliance, war_type
+- alliance_war_resolved: War concluded
+  - Contains: winner_alliance, loser_alliance, casualties, territory_gained
+- alliance_member_joined: Organism joins alliance
+- alliance_member_left: Organism leaves or expelled
+- alliance_betrayal: Organism betrays alliance (rare emergent event)
+
+War Types:
+- territorial: Control of network regions
+- resource: Competition for resource pools
+- existential: Winner absorbs/eliminates loser (high stakes)
+- ideological: Based on trait/phenotype differences
+
+Emergence Benefits:
+- Meta-level evolutionary pressure on group behavior
+- Individual vs collective fitness balancing
+- Emergent political structures from alliance dynamics
+- Game-theoretic complexity via betrayal mechanics
+- Collective defense enables cooperative survival strategies
+
+Neural Integration:
+- Neural organisms learn alliance strategies
+- VP-Aware Planning (QW#4) optimizes collective behaviors
+- Prediction of betrayals and alliance stability
+- Alliance membership affects training priorities
+
+Health Impact (QW#5):
+- Alliance stability affects coherence component
+- Wars impact population sustainability
+- Collective fitness tracked in health metrics
+
+Causation Mapping (22 new pairs):
+- alliance_formed → organism_fitness_change
+- highlander_battle → alliance_disbanded
+- organism_germinated → alliance_formed
+- alliance_war_resolved → essence_collected
+- (See causation_explorer.py for full list)
+
+Config Paths:
+- /highlander/alliance_warfare/enabled
+- /highlander/alliance_warfare/min_alliance_size
+- /highlander/alliance_warfare/max_alliances
+- /highlander/alliance_warfare/war_frequency
+- /highlander/alliance_warfare/existential_war_threshold
+
+Visualization:
+- Alliance events appear in causation graph
+- Component: alliance_warfare (filterable)
+- Alliance membership shown via 🤝 connections
+- War events highlighted with combat styling
+- New legend entries: Germination (🌱), Highlander (🗡️)
+
+Priority:
+- Alliance warfare enabled but not processing = HIGH
+- Alliance formation failing = MEDIUM
+- War events not emitting = MEDIUM
+- Collective fitness miscalculation = MEDIUM
+- Dissolution not triggering = LOW
+
+Verification:
+- Run Highlander mode with alliance_warfare.enabled = true
+- Check for "ALLIANCE FORMED" messages in logs
+- Verify alliance events appearing in causation graph
+- Confirm alliance dissolution on member loss
+
+**Bug Fix (2025-12-01)**: process_round() now correctly receives get_fitness callback - fixed missing argument error in unified_entry.py line 1719.
+
+---
 Response Format
 
 Structure: Headings for each category
@@ -1389,6 +1504,8 @@ Special Instructions
     read/search/summary working, notepad panel visible ⭐ NEW
   - QW#9 (Highlander Protocol): Tournament mode starts, battles occur, champions emerge,
     events emitting (highlander_battle, highlander_victory, highlander_elimination) ⭐ NEW
+  - QW#10 (Alliance Warfare): Alliance formation active, wars occurring, dissolution on
+    member loss, 22 causation mappings, process_round receives get_fitness callback ⭐ NEW
 
 - Neural Priority: Enabled but trainer unavailable = CRITICAL
 - Neural Expected Behavior:
@@ -1492,6 +1609,8 @@ Key Updates for 2025 (Quick Wins Edition):
 - Quick Win #9: Highlander Protocol - Tournament-based survival system with BattleArena,
   GerminationPool, OrganismCapsuleManager, predation mechanics, champion preservation,
   launcher scripts (run_highlander.bat, run_highlander.ps1) ⭐ NEW
+- Quick Win #10: Alliance Warfare - Collective survival system with alliance formation,
+  wars, dissolution, collective fitness, betrayal mechanics, 22 new causation mappings ⭐ NEW
 
 Quick Win #8: Dynamic Multi-Dimensional Linguistic Awareness ⭐ NEW
 - Status: ENABLED / DISABLED
@@ -1527,6 +1646,7 @@ Quick Win #8: Dynamic Multi-Dimensional Linguistic Awareness ⭐ NEW
 - Section 15: Illumination Engine System (NEW)
 - Section 16: Research Notepad System (NEW)
 - Section 17: Highlander Protocol System (NEW - Quick Win #9)
+- Section 18: Alliance Warfare System (NEW - Quick Win #10)
 - Section 3b: Language System Audit (NEW - Quick Win #8)
 - Neural field names: organisms_tracked (not organisms_trained)
 - Neural input_dim: 18 (was 12)
@@ -1558,5 +1678,11 @@ Quick Win #8: Dynamic Multi-Dimensional Linguistic Awareness ⭐ NEW
   - Predation Mechanics: Stronger organisms can eliminate weaker ones based on survival threshold
   - Champion Preservation: Elite organism checkpointing for replay and analysis
   - Launcher Scripts: `run_highlander.bat` and `run_highlander.ps1` for easy activation
+  - **Alliance Warfare System**: Collective survival with alliance formation, wars, dissolution, betrayal mechanics
+  - **22 New Causation Mappings**: Germination, alliance, combat, highlander interaction causation pairs
+  - **Legend Updates**: Added Germination (🌱) and Highlander (🗡️) components, 4 new event icons
+  - **Language Loss Integration**: VP-gated language loss calculation in trainer.py
+  - **Curriculum Learning**: ML quality-driven curriculum updates at end of train_step
+  - **Alliance Warfare Bug Fix**: process_round() now correctly receives get_fitness callback
 
 ---

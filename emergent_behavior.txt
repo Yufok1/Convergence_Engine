@@ -246,6 +246,49 @@ Quick Win #9: Highlander Protocol (Tournament-Based Survival) ⭐ NEW
   - PowerShell: `.\run_highlander.ps1`
 - **Visualization**: Battle events appear in causation graph with combat component; champion organisms highlighted
 
+Quick Win #10: Alliance Warfare System (Collective Survival) ⭐ NEW (2025-12-01)
+- **Core Concept**: Beyond individual battles, organisms form planetary alliances that wage collective warfare for control of evolutionary existence itself
+- **Status**: ENABLED / DISABLED (requires Highlander Protocol enabled)
+- **Activation**: Config.json under highlander.alliance_warfare section
+- **AllianceWarfareSystem**: Main alliance orchestration engine
+  - Alliance formation based on solidarity, mutual protection, or strategic advantage
+  - Collective fitness calculation (sum of member fitness)
+  - Alliance dissolution when members fall below minimum
+  - War declaration between opposing alliances
+- **Alliance Configuration**:
+  - alliance_warfare.enabled: true/false (master toggle)
+  - alliance_warfare.min_alliance_size: 3 (minimum members for alliance)
+  - alliance_warfare.max_alliances: 10 (maximum concurrent alliances)
+  - alliance_warfare.war_frequency: 0.3 (probability of war per round)
+  - alliance_warfare.existential_war_threshold: 0.8 (collective fitness threshold for existential wars)
+- **Alliance Events**:
+  - alliance_formed: New alliance created
+    - Contains: alliance_id, member_ids, collective_fitness, formation_reason
+  - alliance_disbanded: Alliance dissolved
+    - Contains: alliance_id, final_members, dissolution_reason
+  - alliance_war_declared: War between alliances
+    - Contains: attacker_alliance, defender_alliance, war_type
+  - alliance_war_resolved: War concluded
+    - Contains: winner_alliance, loser_alliance, casualties, territory_gained
+  - alliance_member_joined: Organism joins alliance
+  - alliance_member_left: Organism leaves/expelled
+  - alliance_betrayal: Organism betrays alliance
+- **War Types**:
+  - territorial: Control of network regions
+  - resource: Competition for resource pools
+  - existential: Winner absorbs/eliminates loser alliance
+  - ideological: Based on trait/phenotype differences
+- **Emergence Benefits**:
+  - Creates meta-level evolutionary pressure on group behavior
+  - Organisms must balance individual vs collective fitness
+  - Alliance dynamics create emergent political structures
+  - Betrayal mechanics add game-theoretic complexity
+  - Collective defense enables weaker organisms to survive via cooperation
+- **Neural Integration**: Neural organisms learn alliance strategies, predict betrayals, optimize collective behaviors through VP-Aware Planning (QW#4)
+- **Health Impact (QW#5)**: Alliance stability affects ecosystem coherence; wars impact population sustainability
+- **Causation Mapping**: 22 new causation pairs added for alliance/germination/combat interactions
+- **Visualization**: Alliance events appear in causation graph with 🤝 alliance component; alliance membership shown via edge connections
+
 ---
 📋 Detailed Instructions
 

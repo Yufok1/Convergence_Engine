@@ -1716,7 +1716,7 @@ class UnifiedSystem:
             # ⚔️🪐 ALLIANCE WARFARE - Collective battles for existential dominance
             if hasattr(self, 'alliance_warfare') and self.alliance_warfare:
                 # Process alliance round (cleanup, proposal timeouts, alliance dissolution)
-                war_results = self.alliance_warfare.process_round(organisms)
+                war_results = self.alliance_warfare.process_round(organisms, get_fitness)
                 
                 # Log alliance warfare activity
                 if war_results:

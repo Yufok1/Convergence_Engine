@@ -74,7 +74,7 @@ The system is now configured in `config.json` under the `highlander` section:
 
 ### Method 1: Direct Command
 ```bash
-python unified_entry.py --highlander --predation --survival-threshold 0.5 --competition-intensity 0.8
+python unified_entry.py --highlander --predation --survival-threshold 0.8 --competition-intensity 0.95
 ```
 
 ### Method 2: Batch File (Windows)
