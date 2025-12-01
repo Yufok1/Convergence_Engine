@@ -1960,13 +1960,20 @@ class CausationExplorer:
         """Generate a human-readable summary of an event with AI-powered reasoning"""
         parts = []
         
-        # Language event types
+        # Language event types (including atomic language events)
         language_event_types = {'vocabulary_growth', 'organism_communication', 
                                'neural_language_training', 'butterfly_chat_message', 
-                               'butterfly_chat_response'}
+                               'butterfly_chat_response',
+                               # 🆕 Atomic language events
+                               'linguistic_atom_update', 'association_formed', 
+                               'association_updated', 'concept_acquired'}
         language_components = {'language', 'butterfly_chat', 'vocabulary', 'communication', 'chat'}
         is_language_event = (event.component.lower() in language_components or 
                            event.event_type in language_event_types)
+        
+        # Atomic language event detection
+        is_atomic_language = event.event_type in {'linguistic_atom_update', 'association_formed', 
+                                                   'association_updated', 'concept_acquired'}
         
         # Neural decision event with reasoning
         is_neural_decision = event.event_type == 'neural_decision'
@@ -2006,6 +2013,45 @@ class CausationExplorer:
                         if relations:
                             related = [f"{r.target}" for r in relations[:3]]
                             parts.append(f"📖 Related: {', '.join(related)}")
+            
+            # 🆕 Atomic language events - fully trackable linguistic changes
+            elif event.event_type == 'linguistic_atom_update':
+                concept = event.data.get('concept', 'unknown')
+                old_str = event.data.get('old_strength', 0)
+                new_str = event.data.get('new_strength', 0)
+                reason = event.data.get('reason', 'unknown')
+                delta = new_str - old_str
+                direction = "↑" if delta > 0 else "↓"
+                parts.append(f"🧬 Concept '{concept}' {direction} {abs(delta):.2f} ({reason})")
+                org_id = event.data.get('organism_id', '')
+                if org_id:
+                    parts.append(f"🦠 Organism: {org_id[:8]}...")
+            
+            elif event.event_type == 'association_formed':
+                source = event.data.get('source_concept', 'unknown')
+                target = event.data.get('target_concept', 'unknown')
+                strength = event.data.get('new_strength', 0)
+                reason = event.data.get('reason', 'unknown')
+                parts.append(f"🔗 NEW association: '{source}' → '{target}' (strength: {strength:.2f})")
+                parts.append(f"💡 Reason: {reason}")
+            
+            elif event.event_type == 'association_updated':
+                source = event.data.get('source_concept', 'unknown')
+                target = event.data.get('target_concept', 'unknown')
+                old_str = event.data.get('old_strength', 0)
+                new_str = event.data.get('new_strength', 0)
+                delta = new_str - old_str
+                direction = "strengthened" if delta > 0 else "weakened"
+                parts.append(f"🔗 Association '{source}' → '{target}' {direction} ({delta:+.2f})")
+            
+            elif event.event_type == 'concept_acquired':
+                concept = event.data.get('concept', 'unknown')
+                source = event.data.get('source', 'unknown')
+                reason = event.data.get('reason', 'unknown')
+                total = event.data.get('total_concepts', 0)
+                parts.append(f"🌱 NEW concept learned: '{concept}' (via {source})")
+                parts.append(f"📚 Total concepts: {total} | Reason: {reason}")
+            
             elif event.event_type == 'organism_communication':
                 num_orgs = event.data.get('num_organisms', event.data.get('organism_count', 0))
                 tokens = event.data.get('tokens_exchanged', event.data.get('token_count', 0))
@@ -2077,13 +2123,17 @@ class CausationExplorer:
         NEW: Language support:
         - component='language' or component='butterfly_chat' for language events
         - word='<word>' to find events related to specific words
+        - concept='<concept>' to find events related to specific linguistic atoms
         """
         results = []
         
-        # Language event types
+        # Language event types (including atomic language events)
         language_event_types = {'vocabulary_growth', 'organism_communication', 
                                'neural_language_training', 'butterfly_chat_message', 
-                               'butterfly_chat_response'}
+                               'butterfly_chat_response',
+                               # 🆕 Atomic language events
+                               'linguistic_atom_update', 'association_formed',
+                               'association_updated', 'concept_acquired'}
         language_components = {'language', 'butterfly_chat', 'vocabulary', 'communication', 'chat'}
         
         for event_id, event in self.events.items():

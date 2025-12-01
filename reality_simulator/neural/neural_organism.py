@@ -41,6 +41,18 @@ except ImportError:
         PYTORCH_AVAILABLE = False
         OrganismBrain = None
 
+# Import Atomic Language System
+try:
+    from ..language.atomic_language import AtomicLanguageSystem
+    ATOMIC_LANGUAGE_AVAILABLE = True
+except ImportError:
+    try:
+        from reality_simulator.language.atomic_language import AtomicLanguageSystem
+        ATOMIC_LANGUAGE_AVAILABLE = True
+    except ImportError:
+        ATOMIC_LANGUAGE_AVAILABLE = False
+        AtomicLanguageSystem = None
+
 
 class NeuralOrganism(Organism):
     """
@@ -135,6 +147,17 @@ class NeuralOrganism(Organism):
         # Cache for language embeddings (Integration 1: Neural-ML Symbiosis)
         self._cached_embedding = None
         self._embedding_cache_state_hash = None
+        
+        # 🆕 ATOMIC LANGUAGE SYSTEM - Trackable linguistic units for Butterfly Engine
+        self.atomic_language = None
+        if ATOMIC_LANGUAGE_AVAILABLE:
+            language_config = neural_config.get('language_model', {})
+            if language_config.get('use_atomic_language', True):
+                self.atomic_language = AtomicLanguageSystem(
+                    organism_id=self.species_id,
+                    event_emitter=self.event_emitter,
+                    config=self.config
+                )
         
         if PYTORCH_AVAILABLE and neural_config.get('enabled', False):
             # Sequence tracking for language model (deque auto-truncates)
@@ -762,6 +785,25 @@ class NeuralOrganism(Organism):
             done=done
         )
         
+        # 🆕 Update atomic language system with experience
+        if self.atomic_language is not None:
+            # Get VP state from current state if available
+            vp_state = (0.5, 0.5)  # Default
+            if len(self.prev_state) >= 12:
+                # VP components are typically in state features 10-11
+                vp_state = (float(self.prev_state[10]), float(self.prev_state[11]))
+            
+            context = {
+                'vp_state': vp_state,
+                'fitness': self.fitness,
+                'reward': reward
+            }
+            self.atomic_language.apply_experience(
+                action=self.prev_action,
+                outcome=reward,
+                context=context
+            )
+        
         # Update previous fitness
         self.prev_fitness = self.fitness
     
@@ -1356,4 +1398,106 @@ class NeuralOrganism(Organism):
         new_brain.mutate(mutation_rate)
         
         return new_brain
+    
+    # ==========================================
+    # 🆕 ATOMIC LANGUAGE SYSTEM METHODS
+    # ==========================================
+    
+    def get_linguistic_atoms(self) -> Dict[str, Any]:
+        """
+        Get all linguistic atoms for this organism.
+        
+        Returns:
+            Dictionary of concept_id -> atom data
+        """
+        if self.atomic_language is None:
+            return {}
+        return {cid: atom.to_dict() for cid, atom in self.atomic_language.atoms.items()}
+    
+    def get_activated_concepts(self, vp_state: tuple = None, top_k: int = 10) -> List[tuple]:
+        """
+        Get concepts most activated by current VP state.
+        
+        Args:
+            vp_state: (vitality, pleasure) tuple
+            top_k: Number of top concepts to return
+            
+        Returns:
+            List of (concept_id, activation_score) tuples
+        """
+        if self.atomic_language is None:
+            return []
+        if vp_state is None:
+            vp_state = (0.5, 0.5)
+        return self.atomic_language.get_activated_concepts(vp_state, top_k=top_k)
+    
+    def acquire_concept(self, concept_id: str, source: str = 'observed', 
+                       reason: str = 'unknown') -> bool:
+        """
+        Have the organism learn a new concept.
+        
+        Args:
+            concept_id: The concept to learn
+            source: How it was learned ('observed', 'taught', 'discovered')
+            reason: Why it was learned
+            
+        Returns:
+            True if concept was newly acquired, False if already known
+        """
+        if self.atomic_language is None:
+            return False
+        was_new = concept_id not in self.atomic_language.atoms
+        self.atomic_language.acquire_concept(concept_id, source, reason=reason)
+        return was_new
+    
+    def form_concept_association(self, source: str, target: str, 
+                                strength: float, reason: str) -> None:
+        """
+        Form an association between two concepts.
+        
+        Args:
+            source: Source concept
+            target: Target concept  
+            strength: Association strength (-1 to 1)
+            reason: Why the association formed
+        """
+        if self.atomic_language is not None:
+            self.atomic_language.form_association(source, target, strength, reason)
+    
+    def get_dialect_signature(self) -> np.ndarray:
+        """
+        Get this organism's linguistic signature for dialect analysis.
+        
+        Returns:
+            Signature vector representing this organism's "dialect"
+        """
+        if self.atomic_language is None:
+            return np.zeros(10)
+        return self.atomic_language.compute_dialect_signature()
+    
+    def get_concept_graph(self) -> Dict[str, Any]:
+        """
+        Get the organism's concept graph for visualization.
+        
+        Returns:
+            Dictionary with 'nodes' and 'edges' for graph visualization
+        """
+        if self.atomic_language is None:
+            return {'nodes': [], 'edges': []}
+        return self.atomic_language.get_concept_graph()
+    
+    def get_linguistic_embedding(self, dim: int = 64) -> np.ndarray:
+        """
+        Get dense embedding from atomic language for neural network input.
+        
+        Args:
+            dim: Desired embedding dimension
+            
+        Returns:
+            Dense numpy array representing linguistic state
+        """
+        if self.atomic_language is None:
+            return np.zeros(dim)
+        return self.atomic_language.to_embedding(dim)
+
 
