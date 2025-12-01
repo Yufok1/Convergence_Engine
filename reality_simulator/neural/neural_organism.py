@@ -1111,8 +1111,9 @@ class NeuralOrganism(Organism):
         generated = [vocab.get_id('<START>')]
         # Get device from brain model (CPU or CUDA)
         device = next(self.brain.parameters()).device
-        # Get correct input dimension from config
-        input_dim = self.config.get('neural', {}).get('brain', {}).get('input_dim', 18)
+        # Get correct input dimension from the brain's actual layer (not config - may be stale)
+        # This handles organisms created with different input_dim than current config
+        brain_input_dim = self.brain.fc1.in_features
         self.brain.eval()
         
         # Early stopping for UNK sequences
@@ -1124,11 +1125,21 @@ class NeuralOrganism(Organism):
             if len(self.state_history) > 0:
                 state = self.state_history[-1]
                 if isinstance(state, np.ndarray):
-                    state_tensor = torch.FloatTensor(state).unsqueeze(0).to(device)
+                    # Pad or truncate state to match brain's expected input dimension
+                    if len(state) < brain_input_dim:
+                        # Pad with zeros if state is smaller than brain expects
+                        padded_state = np.zeros(brain_input_dim, dtype=np.float32)
+                        padded_state[:len(state)] = state
+                        state_tensor = torch.FloatTensor(padded_state).unsqueeze(0).to(device)
+                    elif len(state) > brain_input_dim:
+                        # Truncate if state is larger than brain expects
+                        state_tensor = torch.FloatTensor(state[:brain_input_dim]).unsqueeze(0).to(device)
+                    else:
+                        state_tensor = torch.FloatTensor(state).unsqueeze(0).to(device)
                 else:
-                    state_tensor = torch.zeros(1, input_dim, device=device)  # Default input dim
+                    state_tensor = torch.zeros(1, brain_input_dim, device=device)  # Default input dim
             else:
-                state_tensor = torch.zeros(1, input_dim, device=device)
+                state_tensor = torch.zeros(1, brain_input_dim, device=device)
             
             for _ in range(effective_max_length - 1):
                 # Get language logits from brain
