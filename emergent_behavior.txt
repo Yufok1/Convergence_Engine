@@ -200,6 +200,52 @@ Quick Win #8: Dynamic Multi-Dimensional Linguistic Awareness ⭐ NEW
 - **Visualization**: Language nodes (Circle/Wye shapes, Teal #00BCD4), linguistic edges (Purple #9B59B6)
 - **Illumination Engine**: Language component (`language`, `butterfly_chat`) available in dropdown for filtering language events
 
+Quick Win #9: Highlander Protocol (Tournament-Based Survival) ⭐ NEW
+- **Core Concept**: "There can be only one" - Tournament-based survival system where organisms compete for dominance
+- **Status**: ENABLED / DISABLED
+- **Activation**: Command-line or config.json:
+  * CLI: `python unified_entry.py --highlander --predation --survival-threshold 0.5 --competition-intensity 0.8`
+  * Config: `highlander.enabled`, `highlander.predation_enabled`, `highlander.survival_threshold`, `highlander.competition_intensity`
+- **BattleArena System**: Combat resolution engine with configurable intensity
+  - battle_rounds: 3 (fights per encounter)
+  - energy_cost_per_battle: 0.1 (resource drain from combat)
+  - victory_bonus: 0.2 (fitness boost for winners)
+  - defeat_penalty: 0.15 (fitness reduction for losers)
+- **Predation Mechanics**: When enabled, stronger organisms can eliminate weaker ones
+  - predation_enabled: true/false
+  - survival_threshold: 0.5 (organisms below this fitness are vulnerable)
+  - competition_intensity: 0.8 (scales combat frequency and stakes)
+- **GerminationPool**: Champion organisms can spawn offspring from genetic material
+  - Preserved elite genes for population recovery
+  - Champions pass traits to next generation
+- **OrganismCapsuleManager**: Checkpointing system for elite organisms
+  - Preserves champion state for replay/analysis
+  - Tracks lineage through tournament rounds
+- **Tournament Events**:
+  - highlander_battle: Combat between organisms
+  - highlander_victory: Winner crowned
+  - highlander_elimination: Organism removed from population
+  - highlander_champion: Top organism declared
+- **Emergence benefit**: Creates intense evolutionary pressure driving rapid adaptation; organisms must develop survival strategies under existential threat; accelerates natural selection
+- **Neural Integration**: Neural organisms can learn combat strategies, predict threats, and optimize survival behaviors through VP-Aware Planning (QW#4)
+- **Health Impact (QW#5)**: Tournament pressure affects lawfulness and sustainability components; champions boost ecosystem diversity
+- **Config**:
+  - highlander.enabled: true/false (master toggle)
+  - highlander.predation_enabled: true/false
+  - highlander.survival_threshold: 0.0-1.0 (default: 0.5)
+  - highlander.competition_intensity: 0.0-1.0 (default: 0.8)
+  - highlander.battle_rounds: 1-10 (default: 3)
+  - highlander.energy_cost_per_battle: 0.0-0.5 (default: 0.1)
+  - highlander.victory_bonus: 0.0-0.5 (default: 0.2)
+  - highlander.defeat_penalty: 0.0-0.5 (default: 0.15)
+  - highlander.population_size: 10-1000 (default: 100)
+  - highlander.tournament_rounds: 1-50 (default: 10)
+  - highlander.champion_preservation: true/false (default: true)
+- **Launcher Scripts**:
+  - Windows: `run_highlander.bat`
+  - PowerShell: `.\run_highlander.ps1`
+- **Visualization**: Battle events appear in causation graph with combat component; champion organisms highlighted
+
 ---
 📋 Detailed Instructions
 
@@ -1052,6 +1098,12 @@ Emergent Phenomena Indicators:
 - Quantitative: VP trait_divergence decreasing, health.lawfulness increasing, negative
   feedback loop established
 - Timeline: Visible by cycle 60-100
+
+11. Tournament Dominance (QW#9 - Highlander Mode): ⭐ NEW
+- Visual: Battle events in causation graph, champion organisms highlighted, elimination chains
+- Quantitative: Champion fitness >0.8, elimination rate matching survival_threshold
+- Timeline: Champions emerge by tournament round 5-10
+- Activation: Requires --highlander flag or highlander.enabled=true
 
 11. Anomaly Detection:
 - Visual: Orange triangle nodes with flash animation

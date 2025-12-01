@@ -31,6 +31,7 @@ Created: 2024
 import numpy as np
 import time
 import random
+import logging
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any, Tuple, Callable, Set
 from enum import Enum
@@ -187,10 +188,10 @@ class OrganismStats:
 class HighlanderProtocol:
     """
     The Highlander Protocol - perpetual evolutionary tournament.
-    
+
     "There can be only one... but there never will be."
     """
-    
+
     def __init__(self, 
                  config: Optional[Dict[str, Any]] = None,
                  event_emitter: Optional[Callable] = None,
@@ -208,6 +209,19 @@ class HighlanderProtocol:
         self.config = config or {}
         self.event_emitter = event_emitter
         self.capsule_manager = capsule_manager
+
+        # Set up logger with console output for battle debugging
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.INFO)
+
+        # Add console handler if not already present
+        if not any(isinstance(h, logging.StreamHandler) for h in self.logger.handlers):
+            console_handler = logging.StreamHandler()
+            console_handler.setLevel(logging.INFO)
+            formatter = logging.Formatter('[HIGHLANDER] %(message)s')
+            console_handler.setFormatter(formatter)
+            self.logger.addHandler(console_handler)
+            self.logger.propagate = False  # Don't propagate to root logger
         
         # Initialize Battle Arena for real combat
         if battle_arena:
@@ -392,7 +406,23 @@ class HighlanderProtocol:
                 self.on_round_complete_callback(active_organisms)
             except Exception:
                 pass  # Don't let callback errors break protocol
-        
+
+        # DEBUG: Round summary
+        battles_count = len(results.get('battles', []))
+        eliminations_count = len(results.get('eliminations', []))
+        alliances_count = len(self.alliances)
+        active_count = len(self.active_organisms)
+
+        self.logger.info(f"🎯 ROUND {self.round_number} COMPLETE:")
+        self.logger.info(f"   ⚔️  Battles fought: {battles_count}")
+        self.logger.info(f"   💀 Eliminations: {eliminations_count}")
+        self.logger.info(f"   🤝 Active alliances: {alliances_count}")
+        self.logger.info(f"   👥 Population: {active_count}")
+        self.logger.info(f"   📊 Phase: {self.phase.value}")
+
+        if results.get('champion'):
+            self.logger.info(f"   👑 CHAMPION CROWNED: {results['champion']['champion_id']}")
+
         return results
     
     def _run_culling(self, organisms: Dict[str, Any],
@@ -499,8 +529,22 @@ class HighlanderProtocol:
                 )
                 
                 # Loser is eliminated
+                # DEBUG: Elimination logging
+                loser_org = organisms.get(result.loser_id)
+                if loser_org:
+                    concepts_had = 0
+                    if hasattr(loser_org, 'atomic_language') and loser_org.atomic_language:
+                        concepts_had = len(loser_org.atomic_language.atoms) if hasattr(loser_org.atomic_language, 'atoms') else 0
+
+                    self.logger.info(f"💀 ELIMINATED: {result.loser_id}")
+                    self.logger.info(f"   Final fitness: {result.loser_fitness:.3f}")
+                    self.logger.info(f"   Concepts lost: {concepts_had}")
+                    self.logger.info(f"   Winner: {result.winner_id} (fitness: {result.winner_fitness:.3f})")
+                    self.logger.info(f"   Will reincarnate via germination pool")
+
                 self.unregister_organism(result.loser_id, reason="defeated_in_battle")
-                active_list.remove(result.loser_id)
+                if result.loser_id in active_list:
+                    active_list.remove(result.loser_id)
         
         return battles
     
@@ -509,11 +553,24 @@ class HighlanderProtocol:
                        get_fitness: Callable[[Any], float]) -> Optional[BattleResult]:
         """
         Conduct a battle between two organisms.
-        
+
         Uses the Battle Arena for multi-dimensional combat if available,
         otherwise falls back to fitness-based comparison.
         """
-        
+
+        # Get initial fitness scores for logging
+        org1_fitness = get_fitness(org1)
+        org2_fitness = get_fitness(org2)
+
+        # DEBUG: Battle initiation
+        self.logger.info(f"⚔️  BATTLE: {org1_id} (fitness: {org1_fitness:.3f}) vs {org2_id} (fitness: {org2_fitness:.3f})")
+        if hasattr(org1, 'atomic_language') and org1.atomic_language:
+            concepts1 = len(org1.atomic_language.atoms) if hasattr(org1.atomic_language, 'atoms') else 0
+            self.logger.info(f"   {org1_id} has {concepts1} concepts")
+        if hasattr(org2, 'atomic_language') and org2.atomic_language:
+            concepts2 = len(org2.atomic_language.atoms) if hasattr(org2.atomic_language, 'atoms') else 0
+            self.logger.info(f"   {org2_id} has {concepts2} concepts")
+
         # ═══════════════════════════════════════════════════════════════
         # USE BATTLE ARENA FOR REAL COMBAT
         # ═══════════════════════════════════════════════════════════════
@@ -532,6 +589,15 @@ class HighlanderProtocol:
                 loser_id = arena_outcome.loser_id
                 winner_fitness = get_fitness(org1 if winner_id == org1_id else org2)
                 loser_fitness = get_fitness(org2 if winner_id == org1_id else org1)
+
+                # DEBUG: Battle result
+                self.logger.info(f"🏆 WINNER: {winner_id} (fitness: {winner_fitness:.3f}) defeated {loser_id} (fitness: {loser_fitness:.3f})")
+                if hasattr(arena_outcome, 'concepts_transferred'):
+                    self.logger.info(f"   📚 {arena_outcome.concepts_transferred} concepts transferred")
+                if hasattr(arena_outcome, 'damage_dealt'):
+                    self.logger.info(f"   💥 Damage: {arena_outcome.damage_dealt:.1f}")
+                if hasattr(arena_outcome, 'rounds_survived'):
+                    self.logger.info(f"   ⏱️  Rounds survived: {arena_outcome.rounds_survived}")
                 
                 # Update stats with arena results
                 if winner_id in self.organism_stats:
@@ -546,6 +612,13 @@ class HighlanderProtocol:
                 # Execute actual absorption in the arena
                 winner_org = org1 if winner_id == org1_id else org2
                 loser_org = org2 if winner_id == org1_id else org1
+
+                # DEBUG: Show what will be absorbed
+                transferable_concepts = self._get_transferable_concepts(loser_id, loser_org)
+                self.logger.info(f"🧬 ABSORPTION: {winner_id} inheriting {len(transferable_concepts)} concepts from {loser_id}")
+                if transferable_concepts:
+                    self.logger.info(f"   Concepts: {', '.join(transferable_concepts[:3])}{'...' if len(transferable_concepts) > 3 else ''}")
+
                 self.battle_arena.execute_absorption(winner_org, loser_org, arena_outcome)
                 
                 self._emit_event('battle_concluded', {
@@ -810,7 +883,14 @@ class HighlanderProtocol:
                     formation_time=time.time()
                 )
                 alliance.collective_fitness = org_fitness + fitness_values.get(best_partner, 0)
-                
+
+                # DEBUG: Alliance formation
+                partner_fitness = fitness_values.get(best_partner, 0)
+                self.logger.info(f"🤝 ALLIANCE FORMED: {alliance_id}")
+                self.logger.info(f"   Members: {org_id} (fitness: {org_fitness:.3f}) + {best_partner} (fitness: {partner_fitness:.3f})")
+                self.logger.info(f"   Collective fitness: {alliance.collective_fitness:.3f}")
+                self.logger.info(f"   Reason: {'solidarity' if abs(org_fitness - partner_fitness) < 0.2 else 'protection'}")
+
                 self.alliances[alliance_id] = alliance
                 
                 for oid in [org_id, best_partner]:
@@ -890,8 +970,6 @@ class HighlanderProtocol:
                         
         except Exception:
             pass  # Don't break on concept sharing failure
-        
-        return alliances_formed
     
     def _are_allied(self, org1_id: str, org2_id: str) -> bool:
         """Check if two organisms are allies."""

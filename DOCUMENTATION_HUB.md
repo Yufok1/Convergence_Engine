@@ -45,6 +45,7 @@ pip install pywin32
 
 - **[BUTTERFLY_SYSTEM.md](./BUTTERFLY_SYSTEM.md)** - The butterfly architecture metaphor
 - **[UNIFIED_SYSTEM_GUIDE.md](./UNIFIED_SYSTEM_GUIDE.md)** - Unified system operation guide
+- **[HIGHLANDER_README.md](./HIGHLANDER_README.md)** - AI survival tournament system ⚔️ **UPDATED**
 
 ---
 
@@ -58,6 +59,8 @@ pip install pywin32
 - **[HOW_TO_USE_CAUSATION_EXPLORER.md](./HOW_TO_USE_CAUSATION_EXPLORER.md)** - Usage instructions
 - **[SCIENTIFIC_DATA_INTERFACE.md](./SCIENTIFIC_DATA_INTERFACE.md)** - Data interface documentation
 - **[LIVE_MODE_DATA_SOURCES.md](./LIVE_MODE_DATA_SOURCES.md)** - Live mode documentation
+- **[HIGHLANDER_README.md](./HIGHLANDER_README.md)** - AI survival tournament system ⚔️ **UPDATED**
+- **Capsule System**: Consciousness preservation API (`/api/capsule/*`, `/api/capsules`) 🧊 **NEW**
 
 ### 🧠 Neural System
 

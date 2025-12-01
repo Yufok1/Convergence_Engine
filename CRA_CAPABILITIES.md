@@ -94,8 +94,8 @@ The Convergence Research Assistant (CRA) is an AI-powered research assistant tha
 
 ### Graph Filter Control (Autonomous)
 The CRA can autonomously adjust:
-- **Component Visibility:** Reality Simulator, Explorer, Djinn Kernel, Breath, 🧠 Neural, 🔬 ML Analysis, System
-- **Causation Type Filters:** Threshold, Correlation, Direct, Temporal
+- **Component Visibility:** Reality Simulator, Explorer, Djinn Kernel, Breath, 🧠 Neural, 🔬 ML Analysis, ⚔️ Highlander, 🌌 Alliance Warfare, System
+- **Causation Type Filters:** Threshold, Correlation, Direct, Temporal, Battle, Alliance
 - **Display Toggles:** Node labels, links, temporal paths
 
 **Format:** `[[GRAPH_FILTER_UPDATE: {...}]]`
@@ -362,6 +362,122 @@ The Scikit-learn system provides classical machine learning algorithms for popul
   - Semantic cluster identification
   - Concept formation tracking
   - Relationship strength validation (ML teaches the system by strengthening strong co-occurrences)
+
+---
+
+## ⚔️ Highlander Protocol - Survival Tournament System ⭐ NEW
+
+The Highlander Protocol is an evolutionary pressure system where organisms compete in survival battles. "There can be only one" - the ultimate survivor becomes the immortal template for future generations.
+
+### Core Components
+
+| Component | Purpose | Key Metrics |
+|-----------|---------|-------------|
+| **Tournament System** | Organizes survival battles | Rounds completed, eliminations |
+| **Battle Arena** | Resolves combat between organisms | Winner ID, margin, battle duration |
+| **Capsule Manager** | Checkpoints champion organisms | Capsule count, restoration events |
+| **Germination Pool** | Spawns warriors from genetic material | Spawn rate, genetic diversity |
+| **Champion Emergence** | Ultimate survivor selection | Champion ID, dominance score |
+
+### Key Config Paths
+
+| Path | Safe Range | Description |
+|------|------------|-------------|
+| `/highlander/enabled` | true/false | Master toggle for Highlander mode |
+| `/highlander/survival_threshold` | 0.0-1.0 | Minimum fitness to survive elimination |
+| `/highlander/competition_intensity` | 0.0-1.0 | Frequency and intensity of battles |
+| `/highlander/chaos_factor` | 0.0-1.0 | Random event probability |
+| `/highlander/mutation_rate` | 0.0-1.0 | Mutation rate for offspring |
+| `/highlander/population_size` | 1-100 | Initial population size |
+| `/highlander/max_population` | 10-500 | Maximum population cap |
+| `/highlander/min_population` | 1-20 | Minimum before germination triggers |
+| `/highlander/germination_rate` | 0.0-1.0 | Rate of new organism spawning |
+| `/highlander/predation_enabled` | true/false | Enable predator-prey dynamics |
+| `/highlander/rounds_per_cycle` | 1-10 | Battle rounds per simulation cycle |
+| `/highlander/max_battle_rounds` | 1-20 | Maximum rounds per battle |
+| `/highlander/max_capsules` | 1-20 | Maximum checkpoint capsules |
+| `/highlander/max_genetic_samples` | 10-500 | Maximum genetic samples for germination |
+
+### Example Commands
+```
+[[CONFIG_UPDATE: {"reason": "Enable Highlander mode", "correlation_id": "highlander-on", "patch": [{"op": "replace", "path": "/highlander/enabled", "value": true}]}]]
+[[CONFIG_UPDATE: {"reason": "Increase survival pressure", "correlation_id": "harder-survival", "patch": [{"op": "replace", "path": "/highlander/survival_threshold", "value": 0.7}]}]]
+[[CONFIG_UPDATE: {"reason": "Maximum evolutionary pressure", "correlation_id": "extreme-mode", "patch": [{"op": "replace", "path": "/highlander/survival_threshold", "value": 0.8}, {"op": "replace", "path": "/highlander/competition_intensity", "value": 0.95}, {"op": "replace", "path": "/highlander/chaos_factor", "value": 0.4}]}]]
+```
+
+### What to Monitor
+- Battle outcomes and elimination patterns
+- Champion emergence events
+- Genetic pool diversity
+- Germination rates vs extinction
+- Capsule creation and restoration
+
+---
+
+## 🌌 Alliance Warfare System ⭐ NEW
+
+Beyond individual battles - collective warfare for existential dominance. Organisms form planetary alliances and wage wars across territorial domains for galactic control.
+
+### Core Architecture
+
+| Component | Purpose | Description |
+|-----------|---------|-------------|
+| **PlanetaryAlliance** | Alliance dataclass | Tracks members, war power, territories, formation time |
+| **AllianceWarfareSystem** | War orchestration | Detects formations, triggers clashes, determines outcomes |
+| **TerritorialDomain** | War objectives | 6 domains organisms fight to control |
+| **AllianceWarPhase** | War progression | FORMATION → TENSION → CLASH → AFTERMATH |
+
+### Territorial Domains
+
+| Domain | Control Grants | Strategic Value |
+|--------|----------------|----------------|
+| `FITNESS_LANDSCAPE` | Organism fitness scoring | High - affects survival |
+| `KNOWLEDGE_DOMAIN` | Language/knowledge systems | Medium - affects learning |
+| `GERMINATION_TERRITORY` | Offspring spawning | High - affects reproduction |
+| `ORBITAL_ZONE` | Network positioning | Medium - affects connections |
+| `EMERGENCE_MOMENTUM` | Evolution pressure | High - affects adaptation |
+| `EXISTENTIAL_OWNERSHIP` | Ultimate galactic dominance | Critical - total control |
+
+### Key Config Paths
+
+| Path | Safe Range | Description |
+|------|------------|-------------|
+| `/highlander/alliance_warfare/enabled` | true/false | Enable alliance warfare |
+| `/highlander/alliance_warfare/min_alliance_size` | 2-10 | Minimum organisms for alliance |
+| `/highlander/alliance_warfare/max_alliances` | 2-20 | Maximum concurrent alliances |
+| `/highlander/alliance_warfare/war_frequency` | 0.0-1.0 | War probability each cycle |
+| `/highlander/alliance_warfare/existential_war_threshold` | 0.0-1.0 | Threshold for total annihilation |
+
+### Example Commands
+```
+[[CONFIG_UPDATE: {"reason": "Enable alliance warfare", "correlation_id": "alliance-on", "patch": [{"op": "replace", "path": "/highlander/alliance_warfare/enabled", "value": true}]}]]
+[[CONFIG_UPDATE: {"reason": "More frequent galactic wars", "correlation_id": "war-freq", "patch": [{"op": "replace", "path": "/highlander/alliance_warfare/war_frequency", "value": 0.5}]}]]
+[[CONFIG_UPDATE: {"reason": "Require larger alliances", "correlation_id": "bigger-alliances", "patch": [{"op": "replace", "path": "/highlander/alliance_warfare/min_alliance_size", "value": 5}]}]]
+[[CONFIG_UPDATE: {"reason": "Enable existential wars", "correlation_id": "existential-wars", "patch": [{"op": "replace", "path": "/highlander/alliance_warfare/existential_war_threshold", "value": 0.7}]}]]
+```
+
+### War Outcomes
+
+| Outcome | Description | Effect |
+|---------|-------------|--------|
+| `DECISIVE_VICTORY` | One alliance dominates | Victor gains territory, loser loses members |
+| `PYRRHIC_VICTORY` | Win with heavy losses | Victor gains territory but weakened |
+| `STALEMATE` | No clear winner | Both alliances survive, no territory change |
+| `MUTUAL_DESTRUCTION` | Both alliances collapse | All members released, territories contested |
+| `EXISTENTIAL_ANNIHILATION` | Total defeat | Losing alliance completely eliminated |
+
+### What to Monitor
+- Alliance formation events (size, members, initial power)
+- War declarations and outcomes
+- Territory control changes
+- Galactic dominance events (one alliance controls all domains)
+- Existential war triggers and outcomes
+
+### Integration with Highlander
+- Alliance Warfare runs ON TOP of individual Highlander battles
+- Champions from individual battles can form alliances
+- Alliances compete for territorial domains
+- Ultimate goal: one alliance achieves EXISTENTIAL_OWNERSHIP
 
 ---
 
@@ -1203,6 +1319,21 @@ The CRA acts as a **System Custodian** with:
 - `/api/diagnostic/transition_status` - Transition readiness status
 - `/api/diagnostic/collapse_prediction` - Network collapse prediction
 
+### Highlander Protocol ⭐ NEW
+- `/api/highlander/status` - Current Highlander status (enabled, population, champions)
+- `/api/highlander/tournament` - Tournament state (round, eliminations, survivors)
+- `/api/highlander/battles` - Recent battle results
+- `/api/highlander/capsules` - Champion capsule checkpoint status
+- `/api/highlander/germination` - Germination pool status (genetic samples, spawn rate)
+- `/api/highlander/champion` - Current champion details (if emerged)
+
+### Alliance Warfare ⭐ NEW
+- `/api/alliance/status` - Alliance warfare system status
+- `/api/alliance/alliances` - List of current alliances (members, power, territories)
+- `/api/alliance/wars` - Active and recent wars
+- `/api/alliance/territories` - Territory control map (domain → controlling alliance)
+- `/api/alliance/galactic_dominance` - Galactic dominance status (if any alliance controls all)
+
 ### Health & Status
 - `/api/cra/status` - Custodian status
 - `/api/cra/health/check` - Health check
@@ -1296,8 +1427,8 @@ The CRA receives rich context including:
 
 ---
 
-**Last Updated:** 2025-11-29  
-**Status:** ✅ Complete and fully functional (includes Illumination Engine + Research Notepad)
+**Last Updated:** 2025-12-01  
+**Status:** ✅ Complete and fully functional (includes Illumination Engine + Research Notepad + Highlander Protocol + Alliance Warfare)
 
 ---
 

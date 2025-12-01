@@ -148,7 +148,7 @@ class NeuralOrganism(Organism):
         self._cached_embedding = None
         self._embedding_cache_state_hash = None
         
-        # 🆕 ATOMIC LANGUAGE SYSTEM - Trackable linguistic units for Butterfly Engine
+        # ?? ATOMIC LANGUAGE SYSTEM - Trackable linguistic units for Butterfly Engine
         self.atomic_language = None
         if ATOMIC_LANGUAGE_AVAILABLE:
             language_config = neural_config.get('language_model', {})
@@ -175,6 +175,14 @@ class NeuralOrganism(Organism):
             self.epsilon = training_config.get('epsilon_start', 1.0)
             self.epsilon_end = training_config.get('epsilon_end', 0.01)
             self.epsilon_decay = training_config.get('epsilon_decay', 0.995)
+            
+            # Battle outcome tracking for learning (Integration: Neural-Alliance)
+            self.battle_wins = 0
+            self.battle_losses = 0
+            
+            # Alliance/social tracking for extended features (Integration: Features 19-24)
+            self.alliance_reputation = 0.5  # Neutral start
+            self.fitness_history = []  # Track fitness over time for trend analysis
         else:
             self.brain = None
             self.experience_buffer = None
@@ -185,6 +193,13 @@ class NeuralOrganism(Organism):
             self.prev_action = None
             self.prev_fitness = self.fitness
             self.epsilon = 0.0
+            # Battle outcome tracking for learning
+            self.battle_wins = 0
+            self.battle_losses = 0
+            
+            # Alliance/social tracking for extended features (Integration: Features 19-24)
+            self.alliance_reputation = 0.5  # Neutral start
+            self.fitness_history = []  # Track fitness over time for trend analysis
     
     def get_state_features(self, 
                           local_env: Optional[Dict[str, Any]] = None,
@@ -316,6 +331,54 @@ class NeuralOrganism(Organism):
             system_health = float(network_state.get('system_health', 0.5))
         features.append(np.clip(system_health, 0.0, 1.0))
         
+        # === FEATURES 19-24: Extended Integration Features (Neural-ML-Alliance) ===
+        
+        # 19. Battle history (win ratio, normalized)
+        total_battles = self.battle_wins + self.battle_losses
+        battle_ratio = self.battle_wins / total_battles if total_battles > 0 else 0.5
+        features.append(np.clip(battle_ratio, 0.0, 1.0))
+        
+        # 20. Alliance reputation (social standing)
+        features.append(np.clip(getattr(self, 'alliance_reputation', 0.5), 0.0, 1.0))
+        
+        # 21. Language fluency (vocabulary richness proxy)
+        vocab_size = 0
+        if hasattr(self, 'atomic_language') and self.atomic_language:
+            vocab_size = len(getattr(self.atomic_language, 'vocabulary', set()))
+        elif hasattr(self, 'token_sequence'):
+            vocab_size = len(set(self.token_sequence))
+        language_fluency = np.clip(vocab_size / 100.0, 0.0, 1.0)  # Normalize to max 100 words
+        features.append(language_fluency)
+        
+        # 22. Environmental density (local crowding)
+        environmental_density = 0.5  # Default moderate
+        if network_state:
+            neighbors = network_state.get('neighbors', {}).get(self.species_id, [])
+            # More neighbors = higher density, normalize to max 20
+            environmental_density = np.clip(len(neighbors) / 20.0, 0.0, 1.0)
+        features.append(environmental_density)
+        
+        # 23. Learning progress (experience accumulation)
+        learning_progress = 0.0
+        if hasattr(self, 'experience_buffer') and self.experience_buffer:
+            # Normalize by buffer capacity
+            buffer_len = len(self.experience_buffer)
+            buffer_cap = getattr(self.experience_buffer, 'capacity', 1000)
+            learning_progress = np.clip(buffer_len / buffer_cap, 0.0, 1.0)
+        features.append(learning_progress)
+        
+        # 24. Health trend (fitness trajectory)
+        health_trend = 0.5  # Neutral default
+        fitness_history = getattr(self, 'fitness_history', [])
+        if len(fitness_history) >= 3:
+            # Compare recent fitness to older fitness
+            recent_avg = np.mean(fitness_history[-3:])
+            older_avg = np.mean(fitness_history[:-3]) if len(fitness_history) > 3 else fitness_history[0]
+            # Trend: >0.5 = improving, <0.5 = declining
+            if older_avg > 0:
+                health_trend = np.clip(0.5 + (recent_avg - older_avg) / older_avg, 0.0, 1.0)
+        features.append(health_trend)
+        
         # Ensure we have exactly input_dim features
         input_dim = self.config.get('neural', {}).get('brain', {}).get('input_dim', 12)
         feature_array = np.array(features[:input_dim], dtype=np.float32)
@@ -347,11 +410,11 @@ class NeuralOrganism(Organism):
             5 = isolate (reduce connections)
         
         VP Component Mappings:
-            - High trait_divergence → boost reproduce (increase genetic diversity)
-            - Low network_coherence → boost cooperate (improve connectivity)
-            - High quantum_entropy → boost rest (stabilization)
-            - High evolution_pressure → boost move (seek better environment)
-            - High phase_mismatch → boost rest (synchronization)
+            - High trait_divergence ? boost reproduce (increase genetic diversity)
+            - Low network_coherence ? boost cooperate (improve connectivity)
+            - High quantum_entropy ? boost rest (stabilization)
+            - High evolution_pressure ? boost move (seek better environment)
+            - High phase_mismatch ? boost rest (synchronization)
         
         Args:
             action_probs: Base action probabilities from neural network
@@ -376,58 +439,58 @@ class NeuralOrganism(Organism):
         # Track adjustments for logging
         adjustments_made = []
         
-        # Rule 1: High trait_divergence → boost reproduce (action 4)
+        # Rule 1: High trait_divergence ? boost reproduce (action 4)
         # When genetic diversity is causing VP issues, encourage reproduction
         trait_div = vp_components.get('trait_divergence', 0.0)
         if trait_div > high_threshold:
             adjusted[4] += strong_boost  # reproduce
-            adjustments_made.append(f"trait_div({trait_div:.2f})→reproduce+{strong_boost}")
+            adjustments_made.append(f"trait_div({trait_div:.2f})?reproduce+{strong_boost}")
         elif trait_div > low_threshold:
             adjusted[4] += base_boost
-            adjustments_made.append(f"trait_div({trait_div:.2f})→reproduce+{base_boost}")
+            adjustments_made.append(f"trait_div({trait_div:.2f})?reproduce+{base_boost}")
         
-        # Rule 2: Low network_coherence → boost cooperate (action 1)
+        # Rule 2: Low network_coherence ? boost cooperate (action 1)
         # When network is fragmented, encourage connection formation
         net_coh = vp_components.get('network_coherence', 0.0)
         if net_coh > high_threshold:  # High VP means LOW coherence
             adjusted[1] += strong_boost  # cooperate
             adjusted[5] -= base_boost   # reduce isolate tendency
-            adjustments_made.append(f"net_coh({net_coh:.2f})→cooperate+{strong_boost}")
+            adjustments_made.append(f"net_coh({net_coh:.2f})?cooperate+{strong_boost}")
         elif net_coh > low_threshold:
             adjusted[1] += base_boost
-            adjustments_made.append(f"net_coh({net_coh:.2f})→cooperate+{base_boost}")
+            adjustments_made.append(f"net_coh({net_coh:.2f})?cooperate+{base_boost}")
         
-        # Rule 3: High quantum_entropy → boost rest (action 3)
+        # Rule 3: High quantum_entropy ? boost rest (action 3)
         # When quantum layer is chaotic, encourage stabilization
         q_entropy = vp_components.get('quantum_entropy', 0.0)
         if q_entropy > high_threshold:
             adjusted[3] += strong_boost  # rest
             adjusted[0] -= base_boost   # reduce move (less chaos)
-            adjustments_made.append(f"q_entropy({q_entropy:.2f})→rest+{strong_boost}")
+            adjustments_made.append(f"q_entropy({q_entropy:.2f})?rest+{strong_boost}")
         elif q_entropy > low_threshold:
             adjusted[3] += base_boost
-            adjustments_made.append(f"q_entropy({q_entropy:.2f})→rest+{base_boost}")
+            adjustments_made.append(f"q_entropy({q_entropy:.2f})?rest+{base_boost}")
         
-        # Rule 4: High evolution_pressure → boost move (action 0)
+        # Rule 4: High evolution_pressure ? boost move (action 0)
         # When evolution is stressed, encourage exploration for better niches
         evo_pressure = vp_components.get('evolution_pressure', 0.0)
         if evo_pressure > high_threshold:
             adjusted[0] += strong_boost  # move
             adjusted[3] -= base_boost   # reduce rest (be active)
-            adjustments_made.append(f"evo_pressure({evo_pressure:.2f})→move+{strong_boost}")
+            adjustments_made.append(f"evo_pressure({evo_pressure:.2f})?move+{strong_boost}")
         elif evo_pressure > low_threshold:
             adjusted[0] += base_boost
-            adjustments_made.append(f"evo_pressure({evo_pressure:.2f})→move+{base_boost}")
+            adjustments_made.append(f"evo_pressure({evo_pressure:.2f})?move+{base_boost}")
         
-        # Rule 5: High phase_mismatch → boost rest (action 3)
+        # Rule 5: High phase_mismatch ? boost rest (action 3)
         # When phase sync is off, encourage settling to resync
         phase_mis = vp_components.get('phase_mismatch', 0.0)
         if phase_mis > high_threshold:
             adjusted[3] += strong_boost  # rest
-            adjustments_made.append(f"phase_mis({phase_mis:.2f})→rest+{strong_boost}")
+            adjustments_made.append(f"phase_mis({phase_mis:.2f})?rest+{strong_boost}")
         elif phase_mis > low_threshold:
             adjusted[3] += base_boost
-            adjustments_made.append(f"phase_mis({phase_mis:.2f})→rest+{base_boost}")
+            adjustments_made.append(f"phase_mis({phase_mis:.2f})?rest+{base_boost}")
         
         # Ensure no negative probabilities
         adjusted = np.maximum(adjusted, 0.01)
@@ -522,7 +585,7 @@ class NeuralOrganism(Organism):
         
         # Add VP adjustment context if any were made
         if vp_adjustments:
-            adjustment_summary = ", ".join([adj.split("→")[0] for adj in vp_adjustments[:2]])
+            adjustment_summary = ", ".join([adj.split("?")[0] for adj in vp_adjustments[:2]])
             reasons.append(f"VP factors: {adjustment_summary}")
         
         # Add confidence context
@@ -623,7 +686,7 @@ class NeuralOrganism(Organism):
                 'action_probs': action_probs.tolist() if action_probs is not None else None,
                 'vp_planning_enabled': vp_planning_enabled,
                 'vp_adjustments': vp_adjustments if vp_adjustments else None,
-                # 🧠 NEW: Human-readable reasoning for Illumination Engine
+                # ?? NEW: Human-readable reasoning for Illumination Engine
                 'reasoning': reasoning
             }
             
@@ -785,7 +848,7 @@ class NeuralOrganism(Organism):
             done=done
         )
         
-        # 🆕 Update atomic language system with experience
+        # ?? Update atomic language system with experience
         if self.atomic_language is not None:
             # Get VP state from current state if available
             vp_state = (0.5, 0.5)  # Default
@@ -804,9 +867,150 @@ class NeuralOrganism(Organism):
                 context=context
             )
         
-        # Update previous fitness
+        # Update previous fitness and track fitness history (for health_trend feature)
         self.prev_fitness = self.fitness
-    
+        if hasattr(self, 'fitness_history'):
+            self.fitness_history.append(self.fitness)
+            # Keep only last 20 fitness values for trend analysis
+            if len(self.fitness_history) > 20:
+                self.fitness_history = self.fitness_history[-20:]
+
+    def record_battle_outcome(self, won: bool, margin: float):
+        """
+        Record battle outcome as training reward.
+
+        Args:
+            won: True if organism won the battle
+            margin: Victory margin (0.0-1.0, higher = more decisive)
+        """
+        # Base reward
+        reward = 1.0 if won else -0.5
+
+        # Scale by victory margin
+        reward *= (1.0 + margin)
+
+        # Track battle statistics
+        if won:
+            self.battle_wins += 1
+        else:
+            self.battle_losses += 1
+
+        # Record experience
+        self.record_experience(reward=reward)
+
+        # Emit event for Butterfly Engine tracking
+        if self.event_emitter:
+            event_data = {
+                "event_type": "battle_outcome_recorded",
+                "won": won,
+                "margin": margin,
+                "reward": reward,
+                "battle_wins": self.battle_wins,
+                "battle_losses": self.battle_losses,
+                "fitness": self.fitness
+            }
+            self.event_emitter(event_data)
+
+    def record_alliance_event(self, event_type: str, success: bool):
+        """
+        Record alliance-related events as training rewards.
+
+        Args:
+            event_type: Type of alliance event ("joined", "betrayed", "war_won", "war_lost")
+            success: True if the event was successful for this organism
+        """
+        # Reward mapping for different alliance events
+        rewards = {
+            "joined": 0.3,      # Positive for forming alliances
+            "betrayed": -0.8,   # Negative for betrayal
+            "war_won": 0.5,     # Positive for winning wars
+            "war_lost": -0.3    # Negative for losing wars
+        }
+        
+        # Reputation adjustments for alliance events (Integration: Feature 20)
+        reputation_deltas = {
+            "joined": 0.05,     # Joining alliance builds reputation
+            "betrayed": -0.2,   # Betrayal damages reputation significantly
+            "war_won": 0.1,     # Victory improves standing
+            "war_lost": -0.05   # Loss slightly reduces reputation
+        }
+
+        # Get base reward
+        base_reward = rewards.get(event_type, 0.0)
+        
+        # Update alliance reputation
+        rep_delta = reputation_deltas.get(event_type, 0.0)
+        if not success:
+            rep_delta *= -1  # Invert for unsuccessful events
+        if hasattr(self, 'alliance_reputation'):
+            self.alliance_reputation = max(0.0, min(1.0, self.alliance_reputation + rep_delta))
+
+        # Invert if event was unsuccessful for this organism
+        if not success:
+            base_reward *= -1
+
+        # Record experience
+        self.record_experience(reward=base_reward)
+
+        # Emit event for Butterfly Engine tracking
+        if self.event_emitter:
+            event_data = {
+                "event_type": "alliance_event_recorded",
+                "alliance_event_type": event_type,
+                "success": success,
+                "reward": base_reward,
+                "fitness": self.fitness
+            }
+            self.event_emitter(event_data)
+
+    def record_language_outcome(self, quality_score: float):
+        """
+        Record language generation quality as training reward.
+
+        Args:
+            quality_score: Quality score from _evaluate_generation_quality() (0.0-1.0)
+        """
+        # Center reward around 0, scale to reasonable range
+        reward = (quality_score - 0.5) * 0.5
+
+        # Record experience
+        self.record_experience(reward=reward)
+
+        # Emit event for Butterfly Engine tracking
+        if self.event_emitter:
+            event_data = {
+                "event_type": "language_outcome_recorded",
+                "quality_score": quality_score,
+                "reward": reward,
+                "fitness": self.fitness
+            }
+            self.event_emitter(event_data)
+
+    def record_vp_contribution(self, vp_delta: float):
+        """
+        Record violation pressure change as training reward.
+
+        Args:
+            vp_delta: Change in VP (negative = improvement/stabilization)
+        """
+        # Negative VP change = stabilization = good
+        # Scale reward appropriately
+        reward = -vp_delta * 0.3
+
+        # Record experience
+        self.record_experience(reward=reward)
+
+        # Emit event for Butterfly Engine tracking
+        if self.event_emitter:
+            event_data = {
+                "event_type": "vp_contribution_recorded",
+                "vp_delta": vp_delta,
+                "reward": reward,
+                "fitness": self.fitness
+            }
+            self.event_emitter(event_data)
+
+
     def should_connect(self, 
                       other_organism: 'NeuralOrganism',
                       network_state: Optional[Dict[str, Any]] = None,
@@ -885,9 +1089,9 @@ class NeuralOrganism(Organism):
             except ImportError:
                 SPECIAL_TOKENS = {'<PAD>': 0, '<UNK>': 1, '<START>': 2, '<END>': 3, '<VP_GATE>': 4}
         
-        # ═══════════════════════════════════════════════════════════════════════════
-        # 🎯 ADAPTIVE MAX_LENGTH: Adjust generation length based on experience
-        # ═══════════════════════════════════════════════════════════════════════════
+        # ---------------------------------------------------------------------------
+        # ?? ADAPTIVE MAX_LENGTH: Adjust generation length based on experience
+        # ---------------------------------------------------------------------------
         experience_count = len(self.experience_buffer) if hasattr(self, 'experience_buffer') else 0
         vocab_size = vocab.vocab_size
         
@@ -946,7 +1150,7 @@ class NeuralOrganism(Organism):
                     # Apply temperature
                     logits = language_logits[0] / temperature
                     
-                    # 🔄 SEMANTIC REASONING: Quality-controlled semantic guidance
+                    # ?? SEMANTIC REASONING: Quality-controlled semantic guidance
                     # Only strengthens coherent formations, prevents garbled chains
                     if context_memory and hasattr(context_memory, 'vocabulary'):
                         # Get Linguistic Knowledge Web if available
@@ -1103,7 +1307,7 @@ class NeuralOrganism(Organism):
                 if next_token == vocab.get_id('<END>'):
                     break
         
-        # 🎓 LEARNING FROM GENERATION: Record relationship success/failure
+        # ?? LEARNING FROM GENERATION: Record relationship success/failure
         # Evaluate generation quality and strengthen/weaken semantic relationships
         relationship_learning_enabled = self.config.get('neural', {}).get('language_model', {}).get('relationship_learning', {}).get('enabled', True)
         
@@ -1400,7 +1604,7 @@ class NeuralOrganism(Organism):
         return new_brain
     
     # ==========================================
-    # 🆕 ATOMIC LANGUAGE SYSTEM METHODS
+    # ?? ATOMIC LANGUAGE SYSTEM METHODS
     # ==========================================
     
     def get_linguistic_atoms(self) -> Dict[str, Any]:
@@ -1499,5 +1703,299 @@ class NeuralOrganism(Organism):
         if self.atomic_language is None:
             return np.zeros(dim)
         return self.atomic_language.to_embedding(dim)
+    
+    # ==========================================
+    # ?? ALLIANCE DECISION METHODS
+    # Alliance decisions use the organism's neural 
+    # network to evaluate social situations
+    # ==========================================
+    
+    def evaluate_alliance_decision(self, 
+                                   decision_type: str,
+                                   context: Dict[str, Any],
+                                   network_state: Optional[Dict[str, Any]] = None) -> Tuple[bool, float, str]:
+        """
+        Neural decision for alliance-related choices.
+        
+        This is the CORE method for organism agency in alliances.
+        The organism's brain evaluates the situation and decides.
+        
+        Decision types:
+            'propose_alliance' - Should I propose an alliance to this organism?
+            'accept_alliance' - Should I accept this alliance proposal?
+            'betray_alliance' - Should I betray my alliance?
+            'vote_war' - Should I vote for war against this target?
+            'challenge_leader' - Should I challenge for leadership?
+            'leave_alliance' - Should I leave my current alliance?
+        
+        Args:
+            decision_type: Type of alliance decision
+            context: Context dict with relevant info:
+                - target_id: ID of organism/alliance involved
+                - target_fitness: Fitness of target organism
+                - alliance_size: Current/proposed alliance size
+                - my_reputation: My reputation in alliance
+                - target_reputation: Target's reputation
+                - trust_history: Dict of past interactions
+                - war_target_threat: How threatening is war target
+                - alliance_strength: Combined alliance strength
+                - betrayal_count: How many times I've been betrayed
+            network_state: Current network state
+            
+        Returns:
+            Tuple of (decision: bool, confidence: float, reasoning: str)
+        """
+        # Build alliance-specific features from context
+        alliance_features = self._extract_alliance_features(context)
+        
+        # Get base state features
+        base_state = self.get_state_features(
+            local_env={'alliance_context': context},
+            network_state=network_state
+        )
+        
+        # If brain not available, use heuristic decision
+        if self.brain is None:
+            return self._heuristic_alliance_decision(decision_type, context)
+        
+        import torch
+        
+        # Get action probabilities from brain
+        self.brain.eval()
+        with torch.no_grad():
+            state_tensor = torch.FloatTensor(base_state).unsqueeze(0)
+            action_probs = self.brain.forward(state_tensor).cpu().numpy()[0]
+        
+        # Map brain outputs to alliance decision
+        # Actions: 0=move, 1=cooperate, 2=compete, 3=rest, 4=reproduce, 5=isolate
+        # Alliance mapping:
+        #   cooperate (1) + compete (2) = social engagement
+        #   isolate (5) = avoid/reject
+        #   rest (3) = wait/uncertain
+        
+        cooperate_weight = action_probs[1]  # Cooperation tendency
+        compete_weight = action_probs[2]    # Competition tendency
+        isolate_weight = action_probs[5]    # Isolation tendency
+        
+        # Add alliance feature modifiers
+        trust_mod = alliance_features.get('trust_level', 0.5)
+        threat_mod = alliance_features.get('threat_level', 0.5)
+        opportunity_mod = alliance_features.get('opportunity_score', 0.5)
+        
+        # Calculate decision score based on type
+        if decision_type == 'propose_alliance':
+            # Propose if: high cooperation, good trust, good opportunity
+            score = (cooperate_weight * 0.4 + 
+                    trust_mod * 0.3 + 
+                    opportunity_mod * 0.3 -
+                    isolate_weight * 0.2)
+            threshold = 0.45
+            
+        elif decision_type == 'accept_alliance':
+            # Accept if: high cooperation, proposer seems trustworthy
+            score = (cooperate_weight * 0.5 + 
+                    trust_mod * 0.3 +
+                    (1 - threat_mod) * 0.2 -
+                    isolate_weight * 0.2)
+            threshold = 0.4
+            
+        elif decision_type == 'betray_alliance':
+            # Betray if: high competition, low trust, high threat
+            score = (compete_weight * 0.4 + 
+                    threat_mod * 0.3 +
+                    (1 - trust_mod) * 0.3 -
+                    cooperate_weight * 0.3)
+            threshold = 0.55  # Higher threshold - betrayal is serious
+            
+        elif decision_type == 'vote_war':
+            # Vote war if: high competition, target is threat
+            score = (compete_weight * 0.4 + 
+                    threat_mod * 0.4 +
+                    (1 - alliance_features.get('war_risk', 0.5)) * 0.2)
+            threshold = 0.5
+            
+        elif decision_type == 'challenge_leader':
+            # Challenge if: high competition, I'm strong, leader is weak
+            my_fitness = self.fitness
+            leader_fitness = context.get('leader_fitness', 0.5)
+            fitness_advantage = my_fitness - leader_fitness
+            
+            score = (compete_weight * 0.4 + 
+                    max(0, fitness_advantage) * 0.4 +
+                    (1 - trust_mod) * 0.2)  # Distrust current leadership
+            threshold = 0.55
+            
+        elif decision_type == 'leave_alliance':
+            # Leave if: high isolation tendency, low trust, being exploited
+            score = (isolate_weight * 0.4 + 
+                    (1 - trust_mod) * 0.3 +
+                    threat_mod * 0.3 -
+                    cooperate_weight * 0.2)
+            threshold = 0.5
+            
+        else:
+            # Unknown decision type - default to cautious
+            score = 0.3
+            threshold = 0.5
+        
+        # Make decision
+        decision = score > threshold
+        confidence = abs(score - threshold) / (1.0 - threshold) if decision else abs(score - threshold) / threshold
+        confidence = min(confidence, 1.0)
+        
+        # Generate reasoning
+        reasoning = self._generate_alliance_reasoning(
+            decision_type, decision, score, context, action_probs
+        )
+        
+        # Emit event for Butterfly Engine tracking
+        if self.event_emitter:
+            import time
+            try:
+                from causation_explorer import Event
+                event = Event(
+                    timestamp=time.time(),
+                    component='alliance',
+                    event_type='alliance_decision',
+                    data={
+                        'organism_id': self.species_id,
+                        'decision_type': decision_type,
+                        'decision': decision,
+                        'confidence': confidence,
+                        'score': float(score),
+                        'reasoning': reasoning,
+                        'context': {k: v for k, v in context.items() 
+                                   if isinstance(v, (int, float, str, bool))}
+                    }
+                )
+                self.event_emitter(event)
+            except ImportError:
+                pass
+        
+        return decision, confidence, reasoning
+    
+    def _extract_alliance_features(self, context: Dict[str, Any]) -> Dict[str, float]:
+        """Extract normalized alliance features from context."""
+        features = {}
+        
+        # Trust level (0-1, based on history)
+        trust_history = context.get('trust_history', {})
+        if trust_history:
+            target_id = context.get('target_id')
+            if target_id and target_id in trust_history:
+                features['trust_level'] = trust_history[target_id].get('trust_score', 0.5)
+            else:
+                features['trust_level'] = 0.5  # Unknown = neutral
+        else:
+            features['trust_level'] = 0.5
+        
+        # Threat level (from context)
+        features['threat_level'] = context.get('threat_level', 0.5)
+        
+        # Opportunity score (fitness differential, alliance benefits)
+        target_fitness = context.get('target_fitness', 0.5)
+        alliance_strength = context.get('alliance_strength', 0.5)
+        features['opportunity_score'] = (target_fitness * 0.5 + alliance_strength * 0.5)
+        
+        # War risk (how risky is war declaration)
+        features['war_risk'] = context.get('war_risk', 0.5)
+        
+        # Betrayal trauma (how many times betrayed)
+        betrayal_count = context.get('betrayal_count', 0)
+        features['betrayal_trauma'] = min(betrayal_count / 3.0, 1.0)  # Caps at 3 betrayals
+        
+        return features
+    
+    def _heuristic_alliance_decision(self, 
+                                     decision_type: str, 
+                                     context: Dict[str, Any]) -> Tuple[bool, float, str]:
+        """Fallback heuristic when neural network unavailable."""
+        import random
+        
+        # Extract key context
+        target_fitness = context.get('target_fitness', 0.5)
+        trust = context.get('trust_history', {}).get(context.get('target_id', ''), {}).get('trust_score', 0.5)
+        threat = context.get('threat_level', 0.5)
+        
+        if decision_type == 'propose_alliance':
+            # Propose to similar-fitness, trustworthy organisms
+            fitness_diff = abs(self.fitness - target_fitness)
+            score = 0.7 - fitness_diff * 0.5 + trust * 0.3
+            decision = score > 0.5
+            
+        elif decision_type == 'accept_alliance':
+            # Accept from trustworthy organisms
+            score = trust * 0.6 + (1 - threat) * 0.4
+            decision = score > 0.4
+            
+        elif decision_type == 'betray_alliance':
+            # Betray rarely, based on distrust
+            score = (1 - trust) * 0.5 + threat * 0.3
+            decision = score > 0.6 and random.random() < 0.3
+            
+        elif decision_type == 'vote_war':
+            # Vote for war if threat is high
+            decision = threat > 0.6 and random.random() < 0.5
+            
+        elif decision_type == 'challenge_leader':
+            # Challenge if significantly stronger
+            leader_fitness = context.get('leader_fitness', 0.5)
+            decision = self.fitness > leader_fitness + 0.2 and random.random() < 0.3
+            
+        else:
+            decision = random.random() < 0.3
+        
+        reasoning = f"Heuristic {decision_type} decision (neural network unavailable)"
+        return decision, 0.5, reasoning
+    
+    def _generate_alliance_reasoning(self, 
+                                     decision_type: str, 
+                                     decision: bool, 
+                                     score: float,
+                                     context: Dict[str, Any],
+                                     action_probs: np.ndarray) -> str:
+        """Generate human-readable reasoning for alliance decision."""
+        action_names = ['move', 'cooperate', 'compete', 'rest', 'reproduce', 'isolate']
+        dominant_action = action_names[np.argmax(action_probs)]
+        
+        target_id = context.get('target_id', 'unknown')
+        trust = context.get('trust_history', {}).get(target_id, {}).get('trust_score', 0.5)
+        
+        if decision_type == 'propose_alliance':
+            if decision:
+                return f"Proposing alliance to {target_id}: trust={trust:.2f}, tendency={dominant_action}, opportunity looks good"
+            else:
+                return f"Declining to propose alliance to {target_id}: trust too low or isolation preferred"
+                
+        elif decision_type == 'accept_alliance':
+            if decision:
+                return f"Accepting alliance proposal: cooperation tendency high, {target_id} seems trustworthy"
+            else:
+                return f"Rejecting alliance proposal: isolation preferred or {target_id} not trusted"
+                
+        elif decision_type == 'betray_alliance':
+            if decision:
+                return f"Choosing betrayal: competition drive high, trust has eroded, self-preservation"
+            else:
+                return f"Remaining loyal: cooperation outweighs competition, trust still holds"
+                
+        elif decision_type == 'vote_war':
+            if decision:
+                threat = context.get('threat_level', 0.5)
+                return f"Voting FOR war: threat level {threat:.2f}, competition drive active"
+            else:
+                return f"Voting AGAINST war: risk too high or cooperation preferred"
+                
+        elif decision_type == 'challenge_leader':
+            if decision:
+                return f"Challenging leadership: fitness advantage detected, competition drive high"
+            else:
+                return f"Respecting current leader: not strong enough or cooperation preferred"
+                
+        else:
+            return f"Alliance decision ({decision_type}): {'yes' if decision else 'no'} (score={score:.2f})"
+
+
+
 
 

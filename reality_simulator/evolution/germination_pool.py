@@ -19,6 +19,7 @@ generation of warriors is stronger than the last.
 import time
 import random
 import hashlib
+import logging
 from typing import Dict, List, Optional, Any, Tuple, Set, Callable
 from dataclasses import dataclass, field
 from enum import Enum
@@ -1282,12 +1283,31 @@ def integrate_germination_with_highlander(
         
     def check_and_germinate() -> List[Any]:
         """Check if germination is needed and spawn new organisms"""
-        current_pop = len(highlander_protocol.organisms)
+        current_pop = len(highlander_protocol.active_organisms)
         needs, count = germination_pool.check_population_needs(current_pop)
-        
+
+        # DEBUG: Germination check
+        logger = logging.getLogger(__name__)
+        # Ensure console output for germination logs
+        if not any(isinstance(h, logging.StreamHandler) for h in logger.handlers):
+            console_handler = logging.StreamHandler()
+            console_handler.setLevel(logging.INFO)
+            console_formatter = logging.Formatter('[GERMINATION] %(message)s')
+            console_handler.setFormatter(console_formatter)
+            logger.addHandler(console_handler)
+            logger.setLevel(logging.INFO)
+            logger.propagate = False
+
+        if needs:
+            logger.info(f"🌱 GERMINATION TRIGGERED: Population {current_pop} -> need {count} new organisms")
+            logger.info(f"   Generation: {germination_pool.generation}")
+            logger.info(f"   Strategy weights: {germination_pool.strategy_weights}")
+        else:
+            logger.debug(f"Population stable: {current_pop} organisms")
+
         # Also update population state before germination decision
-        if hasattr(highlander_protocol, 'organisms'):
-            germination_pool.update_population_state(list(highlander_protocol.organisms))
+        if hasattr(highlander_protocol, 'active_organisms'):
+            germination_pool.update_population_state(list(highlander_protocol.active_organisms))
         
         if not needs:
             return []
@@ -1302,6 +1322,16 @@ def integrate_germination_with_highlander(
                 # Register with highlander protocol
                 highlander_protocol.register_organism(organism)
                 new_organisms.append(organism)
+
+                # DEBUG: Reincarnation logging
+                reincarnation_logger = logging.getLogger(__name__)
+                reincarnation_logger.info(f"🌱 REINCARNATION: New organism {organism.id}")
+                reincarnation_logger.info(f"   Strategy: {candidate.strategy}")
+                reincarnation_logger.info(f"   Parent lineage: {', '.join(candidate.parent_ids[:2])}{'...' if len(candidate.parent_ids) > 2 else ''}")
+                if hasattr(organism, 'atomic_language') and organism.atomic_language:
+                    inherited_concepts = len(organism.atomic_language.atoms) if hasattr(organism.atomic_language, 'atoms') else 0
+                    reincarnation_logger.info(f"   Inherited concepts: {inherited_concepts}")
+                reincarnation_logger.info(f"   Ready for battle round {highlander_protocol.round_number + 1}")
                 
         if new_organisms:
             germination_pool.advance_generation()

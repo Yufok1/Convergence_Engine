@@ -1242,7 +1242,10 @@ class UnifiedSystem:
             
             # Get the Flask app from the module
             self.web_ui = causation_web_ui.app
-            
+
+            # Share unified system with web UI for capsule management
+            self.web_ui.unified_system = self
+
             # CRITICAL: Share CausationExplorer instance with web UI
             # This ensures events from unified_entry.py appear in the web UI
             if self.causation_explorer:
@@ -1327,26 +1330,18 @@ class UnifiedSystem:
                 else:
                     self.web_ui.config['event_emitter'] = None
             
-            # Start web UI in a NEW VISIBLE CMD WINDOW on Windows so backend output is visible
-            import subprocess
+            # Start web UI in background thread (same process for app.config sharing)
+            # CRITICAL: Running in same process allows Butterfly Chat to access live organisms
+            import threading
             self._web_ui_proc = None
-            if os.name == 'nt':
-                # Spawn causation_web_ui.py in a new console window
-                script_path = Path(__file__).resolve().parent / 'causation_web_ui.py'
-                self._web_ui_proc = subprocess.Popen(
-                    [sys.executable, str(script_path)],
-                    creationflags=subprocess.CREATE_NEW_CONSOLE
-                )
-                print(f"[UNIFIED] [WEB] ✅ Web UI launched in NEW CONSOLE (PID {self._web_ui_proc.pid})")
-            else:
-                # Fallback for non-Windows: run in background thread
-                import threading
-                web_thread = threading.Thread(
-                    target=lambda: self.web_ui.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False),
-                    daemon=True
-                )
-                web_thread.start()
-                print("[UNIFIED] [WEB] ✅ Web UI started in background thread")
+            
+            # Run Flask in background thread
+            web_thread = threading.Thread(
+                target=lambda: self.web_ui.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False, threaded=True),
+                daemon=True
+            )
+            web_thread.start()
+            print("[UNIFIED] [WEB] ✅ Web UI started in background thread (same process for live organism access)")
             
             print("[UNIFIED] [WEB] 🌐 Web interface available at http://localhost:5000")
             
@@ -1377,6 +1372,57 @@ class UnifiedSystem:
             import traceback
             traceback.print_exc()
             self.web_ui = None
+
+    def get_current_organisms(self) -> Dict[str, Any]:
+        """Get current organisms from the active simulation.
+
+        Returns:
+            Dict mapping organism IDs to organism objects
+        """
+        organisms = {}
+
+        # Get organisms from Reality Simulator
+        if self.reality_sim and hasattr(self.reality_sim, 'organisms'):
+            organisms.update(self.reality_sim.organisms)
+
+        # If using Highlander protocol, get from there instead
+        if hasattr(self, 'highlander_protocol') and self.highlander_protocol:
+            # Get organisms from highlander protocol (which has active_organisms)
+            if hasattr(self.highlander_protocol, 'active_organisms'):
+                active_ids = set(self.highlander_protocol.active_organisms)
+                # Filter to only active organisms
+                organisms = {oid: org for oid, org in organisms.items() if oid in active_ids}
+
+        return organisms
+
+    def _update_web_ui_organisms(self):
+        """Update web UI with current organism networks for Butterfly Chat.
+        
+        This is called every cycle to ensure Butterfly Chat always has access
+        to the latest organism population, even as organisms are created/destroyed.
+        """
+        if not self.web_ui or not self.reality_sim:
+            return
+        
+        try:
+            network = self.reality_sim.components.get('network')
+            if network and hasattr(network, 'organisms'):
+                organism_networks = list(network.organisms.values())
+                # Only update if organisms exist or if we had organisms before
+                current_count = len(organism_networks)
+                previous_count = len(self.web_ui.config.get('organisms', []))
+                
+                if current_count > 0 or previous_count > 0:
+                    self.web_ui.config['organisms'] = organism_networks
+                    # Also update network reference
+                    self.web_ui.config['network'] = network
+                    
+                    # Log significant changes
+                    if current_count != previous_count and current_count > 0:
+                        if previous_count == 0:
+                            print(f"[UNIFIED] [WEB] 🦋 Butterfly Chat now has {current_count} organisms available")
+        except Exception:
+            pass  # Silent fail - don't break main loop for web UI updates
     
     def _initialize_highlander_protocol(self):
         """Initialize the Highlander Protocol tournament system.
@@ -1394,6 +1440,7 @@ class UnifiedSystem:
             from reality_simulator.evolution.battle_arena import BattleArena
             from reality_simulator.checkpointing.organism_capsule import OrganismCapsuleManager
             from reality_simulator.evolution.germination_pool import GerminationPool, integrate_germination_with_highlander
+            from reality_simulator.evolution.alliance_warfare import AllianceWarfareSystem, integrate_alliance_warfare_with_highlander
             
             # Parse config
             config = self.highlander_config or {}
@@ -1432,8 +1479,7 @@ class UnifiedSystem:
             # Initialize Organism Capsule Manager (checkpointing)
             capsule_dir = Path('highlander_capsules')
             self.capsule_manager = OrganismCapsuleManager(
-                storage_dir=capsule_dir,
-                max_capsules_per_organism=config.get('max_capsules', 5)
+                storage_dir=capsule_dir
             )
             print(f"[UNIFIED] [HIGHLANDER] [PASS] Capsule Manager initialized (dir: {capsule_dir})")
             
@@ -1501,6 +1547,28 @@ class UnifiedSystem:
                 organism_factory
             )
             print("[UNIFIED] [HIGHLANDER] [PASS] 🔗 Germination Pool wired to tournament")
+            
+            # ⚔️🪐 INITIALIZE ALLIANCE WARFARE SYSTEM
+            # Beyond individual battles - collective warfare for existential dominance
+            alliance_config = {
+                'min_alliance_size': config.get('min_alliance_size', 3),
+                'max_alliances': config.get('max_alliances', 10),
+                'war_frequency': config.get('war_frequency', 0.3),
+                'war_chaos_factor': config.get('chaos_factor', 0.15),
+                'existential_war_threshold': config.get('existential_war_threshold', 0.8)
+            }
+            self.alliance_warfare = AllianceWarfareSystem(
+                highlander_protocol=self.highlander_protocol,
+                config=alliance_config,
+                event_emitter=highlander_event_emitter
+            )
+            integrate_alliance_warfare_with_highlander(
+                self.highlander_protocol,
+                self.alliance_warfare,
+                alliance_config
+            )
+            print("[UNIFIED] [HIGHLANDER] [PASS] 🪐⚔️ Alliance Warfare System initialized")
+            print("[UNIFIED] [HIGHLANDER] 'Beyond individual battles - collective warfare for existential dominance'")
             
             # Store config for runtime access
             self._highlander_rounds_per_cycle = rounds_per_cycle
@@ -1630,6 +1698,51 @@ class UnifiedSystem:
                         'ids': [getattr(o, 'id', str(id(o))) for o in new_organisms],
                         'pool_stats': self.germination_pool.get_pool_stats() if self.germination_pool else {}
                     })
+            
+            # ⚔️🪐 ALLIANCE WARFARE - Collective battles for existential dominance
+            if hasattr(self, 'alliance_warfare') and self.alliance_warfare:
+                # Define concept getter for knowledge sharing
+                def get_concepts(organism):
+                    if hasattr(organism, 'concepts'):
+                        return list(organism.concepts)
+                    if hasattr(organism, 'knowledge'):
+                        return list(organism.knowledge.keys()) if isinstance(organism.knowledge, dict) else []
+                    return []
+                
+                # Run alliance warfare round
+                war_results = self.alliance_warfare.run_warfare_round(
+                    organisms, get_fitness, get_concepts
+                )
+                
+                # Log alliance warfare activity
+                if war_results:
+                    formations = war_results.get('formations', [])
+                    wars = war_results.get('wars', [])
+                    alliance_count = war_results.get('alliance_count', 0)
+                    
+                    if formations:
+                        print(f"[ALLIANCE WAR] 🪐 {len(formations)} new planetary alliances formed!")
+                    
+                    if wars:
+                        for war in wars:
+                            print(f"[ALLIANCE WAR] ⚔️ {war.get('winner_name', 'Unknown')} defeats "
+                                  f"{war.get('loser_name', 'Unknown')}! "
+                                  f"Margin: {war.get('margin', 0)*100:.1f}%")
+                    
+                    # Check for galactic dominance
+                    dominant = war_results.get('dominant_alliance')
+                    if dominant:
+                        print(f"[ALLIANCE WAR] 🌟🌟🌟 GALACTIC DOMINANCE ACHIEVED! 🌟🌟🌟")
+                    
+                    # Log to state
+                    self.logger.log_state('highlander', {
+                        'event': 'alliance_warfare_round',
+                        'cycle': cycle_count,
+                        'alliance_count': alliance_count,
+                        'formations': len(formations),
+                        'wars': len(wars),
+                        'dominant_alliance': dominant
+                    })
                           
         except Exception as e:
             print(f"[HIGHLANDER] Round error: {e}")
@@ -1679,6 +1792,9 @@ class UnifiedSystem:
                         print(f"[ERROR] Reality sim update failed: {e}")
                         import traceback
                         traceback.print_exc()
+                
+                # 🦋 UPDATE WEB UI ORGANISMS - Keep Butterfly Chat in sync with live organisms
+                self._update_web_ui_organisms()
 
                 # Get states from all systems
                 reality_sim_state = self._get_reality_sim_state()

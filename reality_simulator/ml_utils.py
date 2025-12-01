@@ -228,6 +228,40 @@ class PopulationClusterer:
                 # No language data available - use zeros
                 feature_vec.extend([0.0] * 3)
             
+            # === INTEGRATION: Extended Alliance/Combat/Learning Features ===
+            
+            # Alliance participation (membership + reputation)
+            alliance_participation = 0.0
+            if hasattr(org, 'alliance_id') and org.alliance_id is not None:
+                alliance_participation = 0.5  # Base for being in alliance
+                alliance_participation += getattr(org, 'alliance_reputation', 0.0) * 0.5
+            feature_vec.append(min(1.0, alliance_participation))
+            
+            # Combat performance (battle win ratio)
+            combat_performance = 0.5  # Neutral default
+            battle_wins = getattr(org, 'battle_wins', 0)
+            battle_losses = getattr(org, 'battle_losses', 0)
+            total_battles = battle_wins + battle_losses
+            if total_battles > 0:
+                combat_performance = battle_wins / total_battles
+            feature_vec.append(combat_performance)
+            
+            # Reputation score (social standing in network)
+            reputation_score = getattr(org, 'alliance_reputation', 0.5)
+            feature_vec.append(min(1.0, max(0.0, reputation_score)))
+            
+            # Concept maturity (language/learning sophistication)
+            concept_maturity = 0.0
+            if hasattr(org, 'atomic_language') and org.atomic_language:
+                # Use vocabulary diversity as maturity proxy
+                vocab = getattr(org.atomic_language, 'vocabulary', set())
+                concept_maturity = min(1.0, len(vocab) / 50.0)
+            elif hasattr(org, 'token_sequence'):
+                # Fallback to token diversity
+                unique_tokens = len(set(org.token_sequence))
+                concept_maturity = min(1.0, unique_tokens / 30.0)
+            feature_vec.append(concept_maturity)
+            
             features.append(feature_vec)
         
         return np.array(features), organism_ids

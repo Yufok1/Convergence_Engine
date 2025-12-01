@@ -16,6 +16,9 @@ python unified_entry.py --check-only
 # Without visualization
 python unified_entry.py --no-viz
 
+# ⚔️ Highlander Mode - AI Survival Tournament
+python unified_entry.py --highlander --predation --survival-threshold 0.8 --competition-intensity 0.95
+
 # Integration test
 cd explorer && python test_integration.py
 ```
@@ -169,6 +172,54 @@ python archive_logs.py --list     # List archives
 - Centralized logging configuration
 - Comprehensive test coverage
 - Production-ready standards
+
+---
+
+## ⚔️ Advanced Features
+
+### Highlander Protocol
+**Survival tournament with trait inheritance**
+```bash
+# Extreme difficulty
+python unified_entry.py --highlander --predation --survival-threshold 0.8 --competition-intensity 0.95
+```
+- Battle arenas with multi-dimensional combat
+- Winners absorb loser's strongest concepts
+- Alliance formation and betrayal mechanics
+- Automatic champion preservation
+
+### Consciousness Capsules
+**AI mind preservation system**
+```bash
+# Create capsule
+POST /api/capsule/{organism_id}
+
+# List capsules
+GET /api/capsules
+```
+- Complete neural state snapshots
+- Genetic trait preservation
+- Behavioral pattern archives
+- Research data collection
+
+### Adaptive Visualization
+**Smart graph rendering for massive networks**
+```javascript
+// Console optimization commands
+vizDebug.setMaxVisibleLinks(5000);
+vizDebug.setLinkMinOpacity(0.7);
+vizDebug.updateDisplay();
+```
+- Automatic link filtering for performance
+- Progressive loading for large graphs
+- Real-time rendering adjustments
+
+### ML Analysis Engine
+**Automated population intelligence analysis**
+- HDBSCAN clustering for behavioral patterns
+- Concept evolution tracking
+- Neural-ML symbiosis (AI analyzing AI)
+- Anomaly detection and convergence metrics
 
 ---
 

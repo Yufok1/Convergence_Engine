@@ -185,6 +185,55 @@ if self.context_memory and ml_analysis:
 
 ---
 
+## 🆕 New Integration Points (Dec 1, 2025)
+
+### Neural System Expansion (18 → 24 dimensions)
+
+**New Features Added to `get_state_features()`:**
+
+| Feature # | Name | Source |
+|-----------|------|--------|
+| 19 | Alliance Reputation | `alliance_reputation` from organism |
+| 20 | Battle Win Rate | `battle_wins / (battle_wins + battle_losses)` |
+| 21 | Vocabulary Size | Normalized from context_memory |
+| 22 | Communication Activity | Normalized message count |
+| 23 | Linguistic Connections | Knowledge web density |
+| 24 | Concept Maturity | Average semantic relationship strength |
+
+### ML Clustering Features Expansion
+
+**New Features in `extract_features()`:**
+- `alliance_participation`: Member count / total organisms
+- `combat_performance`: Weighted win/loss ratio
+- `reputation_score`: Normalized alliance reputation
+- `concept_maturity`: Linguistic relationship strength
+
+### ConfigTuner Cross-System Correlation
+
+**4 New Correlation Analyzers:**
+1. `_analyze_quantum_language_correlation()` - Quantum coherence ↔ vocabulary growth
+2. `_analyze_network_alliance_correlation()` - Network density ↔ alliance formation
+3. `_analyze_neural_battle_correlation()` - Training success ↔ combat outcomes
+4. `_analyze_vocabulary_fitness_correlation()` - Linguistic complexity ↔ survival
+
+### Visualization Updates
+
+**New Graph Components:**
+- `config_tuner` - Gold (#FFD700)
+- `health_monitor` - Hot Pink (#FF69B4)
+- `alliance` - Dark Violet (#9400D3)
+- `combat` - Crimson (#DC143C)
+
+**New Event Shapes in Legend:**
+- `neural_language_reward` - Diamond (Dark Cyan)
+- `neural_curriculum_adjustment` - Square (Light Sea Green)
+- `alliance_formed` - Star (Dark Violet)
+- `alliance_dissolved` - Cross (Dark Magenta)
+- `battle_concluded` - Triangle (Crimson)
+- `config_tuned` - Wye (Gold)
+
+---
+
 ## 📊 Integration Status Summary
 
 | Integration | Status | Notes |
@@ -196,14 +245,22 @@ if self.context_memory and ml_analysis:
 | ML → Neural | ✅ Connected | ML analysis passed to trainer |
 | Neural → ML | ✅ Connected | Neural generates language for ML analysis |
 | Cache Timing | ✅ Fixed | Cache now set AFTER analysis (fresh data) |
+| Neural → Alliance | ✅ **NEW** | Battle wins/losses, reputation tracking |
+| Alliance → Neural | ✅ **NEW** | Alliance events recorded in neural state |
+| ML → Alliance | ✅ **NEW** | Alliance/combat features in clustering |
+| ConfigTuner → Cross-System | ✅ **NEW** | 4 correlation analyzers |
+| Visualization → All | ✅ **NEW** | Full legend, filters, colors for new components |
 
 ---
 
 ## 🎯 Next Steps
 
 1. ✅ **Cache timing issue FIXED** - Neural system now gets fresh ML analysis
-2. **Verify at runtime** that ML analysis is fresh when neural system accesses it
-3. **Monitor** that TF-IDF scores are being used correctly in token generation
+2. ✅ **Neural dimensions expanded** - 24 features including alliance/combat/language
+3. ✅ **ML features expanded** - Alliance/combat clustering features
+4. ✅ **ConfigTuner enhanced** - Cross-system correlation analysis
+5. ✅ **Visualization complete** - All new events have shapes/colors in graph
+6. **Monitor at runtime** that new features are being used correctly
 
 ---
 
@@ -215,6 +272,10 @@ if self.context_memory and ml_analysis:
 - Data flows are **properly connected**
 - Cache timing issue **FIXED** - neural system gets fresh data
 - All systems are **properly associating** with language system
+- **NEW:** Neural system expanded to 24 dimensions with alliance/combat/language features
+- **NEW:** ML clustering includes alliance/combat features
+- **NEW:** ConfigTuner has cross-system correlation analysis
+- **NEW:** Visualization fully supports all new event types
 
-**Recommendation:** System is ready. Monitor runtime to verify ML analysis is being used correctly.
+**Recommendation:** System is ready. All integrations complete and visualized.
 

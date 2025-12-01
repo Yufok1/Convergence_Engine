@@ -5,6 +5,7 @@ Contains:
 - HighlanderProtocol: "There can be only one" tournament orchestration
 - BattleArena: Organism combat and trait battles
 - GerminationPool: New organism spawning with genetic strategies
+- AllianceWarfareSystem: Collective warfare for existential dominance
 """
 
 from .highlander_protocol import (
@@ -31,6 +32,17 @@ from .germination_pool import (
     integrate_germination_with_highlander
 )
 
+from .alliance_warfare import (
+    AllianceWarfareSystem,
+    PlanetaryAlliance,
+    OrganismReputation,
+    AllianceProposal,
+    TerritorialDomain,
+    AllianceRole,
+    ProposalType,
+    integrate_alliance_warfare_with_highlander
+)
+
 __all__ = [
     # Highlander Protocol
     'HighlanderProtocol',
@@ -49,5 +61,14 @@ __all__ = [
     'GerminationStrategy',
     'GeneticMaterial',
     'GerminationCandidate',
-    'integrate_germination_with_highlander'
+    'integrate_germination_with_highlander',
+    # Alliance Warfare
+    'AllianceWarfareSystem',
+    'PlanetaryAlliance',
+    'OrganismReputation',
+    'AllianceProposal',
+    'TerritorialDomain',
+    'AllianceRole',
+    'ProposalType',
+    'integrate_alliance_warfare_with_highlander'
 ]

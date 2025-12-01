@@ -19,6 +19,15 @@ python unified_entry.py --check-only
 
 # Without visualization
 python unified_entry.py --no-viz
+
+# ⚔️ Highlander Mode - Extreme Evolutionary Combat
+python unified_entry.py --highlander --predation --survival-threshold 0.8 --competition-intensity 0.95
+
+# 🏆 Highlander Mode - Survival of the Fittest Tournament
+# Only the strongest AI minds survive in this perpetual combat system
+# Features: Battle arenas, trait inheritance, alliance formation, consciousness capsules
+# EXTREME: 80% survival threshold, 95% battle participation, predator mechanics
+
 ### Reset Logs & Checkpoints (Fresh Start)
 
 For a completely fresh run, use the cleanup script:
@@ -59,9 +68,13 @@ python causation_web_ui.py
 **📚 [DOCUMENTATION_HUB.md](./DOCUMENTATION_HUB.md)** - Central documentation hub with links to all guides
 
 Recent updates:
-- ⚡ **Butterfly Chat Optimizations** (Dec 1, 2025): ⭐ NEW - Adaptive generation length, early stopping, 5-10x faster early-stage performance
-- 🔗 **System Integration Fixes** (Dec 1, 2025): ⭐ NEW - Fixed ML analysis cache timing, verified all system integrations
-- 🚫 **Fallback Removal** (Dec 1, 2025): ⭐ NEW - Removed all automated fallback responses - pure organism communication only
+- ⚔️ **Alliance Warfare Visualization** (Dec 1, 2025): ⭐ NEW - Full graph visualization for alliance/combat events with shapes, colors, and legend
+- 🧠 **Neural System Expansion** (Dec 1, 2025): ⭐ NEW - 24-dimensional input (was 18), alliance/combat/language integration features
+- 🔧 **Config Tuner Cross-System Correlation** (Dec 1, 2025): ⭐ NEW - 4 new correlation analyzers (quantum-language, network-alliance, neural-battle, vocabulary-fitness)
+- 📊 **CRA Documentation Update** (Dec 1, 2025): ⭐ NEW - Updated prompts for all new integration features and visualization controls
+- ⚡ **Butterfly Chat Optimizations** (Dec 1, 2025): Adaptive generation length, early stopping, 5-10x faster early-stage performance
+- 🔗 **System Integration Fixes** (Dec 1, 2025): Fixed ML analysis cache timing, verified all system integrations
+- 🚫 **Fallback Removal** (Dec 1, 2025): Removed all automated fallback responses - pure organism communication only
 - 🧠 **Dynamic Multi-Dimensional Linguistic Awareness**: Context-aware word association framework with 14-dimensional situational assessment
 - 🧠 **Language Teacher System**: Three-phase architecture (hardcoded → semantic embeddings → knowledge web)
 - 🧠 **Linguistic Knowledge Web**: Comprehensive semantic network with 100+ concepts and relationships
@@ -105,10 +118,12 @@ A multi-layered artificial life simulation system that creates evolving populati
 - **Subatomic Lattice**: Particle interactions with entropy pruning
 - **Genetic Evolution Engine**: Darwinian natural selection with fitness-based selection
 - **🧠 Neural System**: PyTorch-based neural networks for organisms (DQN reinforcement learning)
-  - Deep Q-Network (DQN) with experience replay
+  - Deep Q-Network (DQN) with **24-dimensional input** (expanded from 18)
   - Dual inheritance (genetic + learned neural weights)
   - Breath-synchronized training cycles
   - Configurable reward system and exploration/exploitation balance
+  - **⚔️ Alliance Warfare Integration**: Battle wins/losses, alliance reputation tracking
+  - **🦋 Language Integration**: Vocabulary size, communication activity, linguistic connections
   - **🎓 Relationship Learning**: ⭐ NEW - Neural system learns from generation quality to strengthen/weaken semantic relationships
     - Tracks which semantic relationships are used during token generation
     - Evaluates generation quality (coherent vs garbled)
@@ -146,6 +161,8 @@ A multi-layered artificial life simulation system that creates evolving populati
   - Clustering (HDBSCAN, KMeans, DBSCAN) for behavioral phenotype identification
   - Anomaly detection (Isolation Forest, Local Outlier Factor) for unusual organisms
   - Dimensionality reduction (PCA, t-SNE) for visualization
+  - **⚔️ Alliance/Combat Features**: alliance_participation, combat_performance, reputation_score
+  - **🦋 Language Features**: concept_maturity from vocabulary/linguistic analysis
   - **🔬 Semantic Analysis**: ⭐ NEW - ML analyzes word co-occurrence and semantic patterns
     - Word co-occurrence analysis across organisms
     - Semantic cluster identification
@@ -159,7 +176,12 @@ A multi-layered artificial life simulation system that creates evolving populati
   - Real-time insights emitted to causation graph
 - **🤖 Meta-Cognitive Layer**: Autonomous self-tuning based on ML/Neural insights
   - **33 tunable parameters** across Evolution, Neural, Network, ML, Quantum, VP systems
-  - **9 intelligent tuning rules** (cluster diversity, neural loss, network density, etc.)
+  - **13 intelligent tuning rules** (cluster diversity, neural loss, network density, etc.)
+  - **4 Cross-System Correlation Analyzers**: ⭐ NEW
+    - Quantum-Language correlation (coherence → vocabulary)
+    - Network-Alliance correlation (density → formation rate)
+    - Neural-Battle correlation (training success → combat outcomes)
+    - Vocabulary-Fitness correlation (linguistic complexity → survival)
   - **Meta-meta-learning**: The tuner can tune itself!
   - Safety bounds, confidence thresholds, meta-learning tracking
   - See [SELF_TUNING_GUIDE.md](./SELF_TUNING_GUIDE.md) for full details
@@ -750,6 +772,90 @@ This is a research platform for exploring consciousness, emergence, and AI-assis
 - Follow existing code patterns and style
 - Add tests for new features
 - Update documentation as needed
+
+---
+
+## 🧊 Advanced Features
+
+### ⚔️ Highlander Protocol - AI Survival Tournament
+**"There can be only one... but there never will be."**
+
+A perpetual evolutionary combat system where AI organisms battle for dominance:
+
+#### Quick Launch:
+```bash
+# Standard difficulty
+python unified_entry.py --highlander --predation
+
+# EXTREME DIFFICULTY (80% survival threshold, 95% battle participation)
+python unified_entry.py --highlander --predation --survival-threshold 0.8 --competition-intensity 0.95
+```
+
+#### Features:
+- **Battle Arenas**: Multi-dimensional combat resolution
+- **Trait Inheritance**: Winners absorb loser's strongest concepts
+- **Alliance Formation**: Cooperation between similar organisms
+- **Predator Mechanics**: Strong hunt weak for bonus evolution
+- **Consciousness Capsules**: Automatic preservation of champions
+- **Germination Pools**: Fallen warriors reincarnate as new challengers
+
+#### Real-time Monitoring:
+```
+[HIGHLANDER] Round 3: ⚔️ 17 battles, 💀 5 eliminated, 🤝 6 alliances, 👥 28 remaining
+[HIGHLANDER] ⚔️ BATTLE: org_42 (fitness: 0.89) vs org_17 (fitness: 0.67)
+[HIGHLANDER] 🏆 WINNER: org_42 (fitness: 0.89) defeated org_17 (fitness: 0.67)
+[HIGHLANDER] 🧬 ABSORPTION: org_42 inheriting 3 concepts from org_17
+[GERMINATION] 🌱 REINCARNATION: New organism reborn_001
+```
+
+### 🧊 Consciousness Capsules - AI Preservation System
+**Complete organism state snapshots for research and backup.**
+
+#### API Endpoints:
+```bash
+# Create capsule
+POST /api/capsule/{organism_id}
+curl -X POST http://localhost:5000/api/capsule/abc123 \
+  -H "Content-Type: application/json" \
+  -d '{"reason": "peak_performance", "notes": "Exceptional neural development"}'
+
+# List capsules
+GET /api/capsules
+curl http://localhost:5000/api/capsules
+```
+
+#### What Gets Saved:
+- Neural network weights and experiences
+- Genetic traits and evolution history
+- Behavioral patterns and learned strategies
+- Social connections and alliance data
+- Performance metrics and battle statistics
+
+### 🎨 Adaptive Graph Visualization
+**Smart rendering for massive networks (8K+ nodes, 1.3M+ links)**
+
+#### Automatic Optimization:
+- **Large graphs**: Intelligent link filtering (keeps strongest connections)
+- **Progressive loading**: Core structure first, details on demand
+- **Performance advice**: Automatic recommendations via `/api/graph/performance-advice`
+- **Console commands**: Real-time rendering adjustments
+
+#### Performance Tips:
+```javascript
+// For large graphs (run in browser console)
+vizDebug.setMaxVisibleLinks(5000);
+vizDebug.setLinkMinOpacity(0.7);
+vizDebug.setLinkDensityMultiplier(0.5);
+vizDebug.updateDisplay();
+```
+
+### 🧠 ML Analysis & Concept Tracking
+**Automated population analysis with semantic clustering.**
+
+- **HDBSCAN Clustering**: Behavioral phenotype identification
+- **Concept Evolution**: Tracking semantic development over generations
+- **Neural-ML Symbiosis**: AI analyzing AI behavior patterns
+- **Real-time Metrics**: Population diversity, anomaly detection, convergence tracking
 
 ---
 

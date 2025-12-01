@@ -1432,6 +1432,22 @@
                             <span>🦋 Butterfly Chat</span></label>
                     </div>
                     <div class="filter-item">
+                        <label><input type="checkbox" id="filter-config_tuner" checked onchange="applyFilters()">
+                            <span>🔧 Config Tuner</span></label>
+                    </div>
+                    <div class="filter-item">
+                        <label><input type="checkbox" id="filter-health_monitor" checked onchange="applyFilters()">
+                            <span>⚕️ Health Monitor</span></label>
+                    </div>
+                    <div class="filter-item">
+                        <label><input type="checkbox" id="filter-alliance" checked onchange="applyFilters()">
+                            <span>⚔️ Alliance System</span></label>
+                    </div>
+                    <div class="filter-item">
+                        <label><input type="checkbox" id="filter-combat" checked onchange="applyFilters()">
+                            <span>⚔️ Combat/Battle</span></label>
+                    </div>
+                    <div class="filter-item">
                         <label><input type="checkbox" id="filter-system" checked onchange="applyFilters()">
                             <span>System</span></label>
                     </div>
@@ -1562,6 +1578,46 @@
                                 <span style="min-width: 120px;">🦋 Butterfly Chat:</span>
                                 <input type="color" id="color-butterfly_chat" value="#8BC34A"
                                     onchange="updateComponentColor('butterfly_chat', this.value)"
+                                    style="width: 60px; height: 25px; cursor: pointer;">
+                            </label>
+                        </div>
+
+                        <div class="filter-item" style="margin-bottom: 8px;">
+                            <label
+                                style="display: flex; align-items: center; gap: 8px; color: #0ff; font-size: 0.85em;">
+                                <span style="min-width: 120px;">🔧 Config Tuner:</span>
+                                <input type="color" id="color-config_tuner" value="#FFD700"
+                                    onchange="updateComponentColor('config_tuner', this.value)"
+                                    style="width: 60px; height: 25px; cursor: pointer;">
+                            </label>
+                        </div>
+
+                        <div class="filter-item" style="margin-bottom: 8px;">
+                            <label
+                                style="display: flex; align-items: center; gap: 8px; color: #0ff; font-size: 0.85em;">
+                                <span style="min-width: 120px;">⚕️ Health Monitor:</span>
+                                <input type="color" id="color-health_monitor" value="#FF69B4"
+                                    onchange="updateComponentColor('health_monitor', this.value)"
+                                    style="width: 60px; height: 25px; cursor: pointer;">
+                            </label>
+                        </div>
+
+                        <div class="filter-item" style="margin-bottom: 8px;">
+                            <label
+                                style="display: flex; align-items: center; gap: 8px; color: #0ff; font-size: 0.85em;">
+                                <span style="min-width: 120px;">⚔️ Alliance System:</span>
+                                <input type="color" id="color-alliance" value="#9400D3"
+                                    onchange="updateComponentColor('alliance', this.value)"
+                                    style="width: 60px; height: 25px; cursor: pointer;">
+                            </label>
+                        </div>
+
+                        <div class="filter-item" style="margin-bottom: 8px;">
+                            <label
+                                style="display: flex; align-items: center; gap: 8px; color: #0ff; font-size: 0.85em;">
+                                <span style="min-width: 120px;">⚔️ Combat/Battle:</span>
+                                <input type="color" id="color-combat" value="#DC143C"
+                                    onchange="updateComponentColor('combat', this.value)"
                                     style="width: 60px; height: 25px; cursor: pointer;">
                             </label>
                         </div>
@@ -4078,6 +4134,10 @@
                 'ml_analysis': '#32CD32',       // 🔬 Lime Green (ML Analysis) - doc consistency
                 'language': '#00BCD4',          // 🦋 Teal (Language System)
                 'butterfly_chat': '#8BC34A',    // 🦋 Light Green (Chat Interactions)
+                'config_tuner': '#FFD700',      // 🔧 Gold (Config Tuner - autonomous tuning)
+                'health_monitor': '#FF69B4',    // ⚕️ Hot Pink (Health Monitor - system health)
+                'alliance': '#9400D3',          // ⚔️ Dark Violet (Alliance Warfare System)
+                'combat': '#DC143C',            // ⚔️ Crimson (Combat/Battle Events)
                 'system': '#FFFF00'             // Pure Yellow
             };
 
@@ -4404,6 +4464,49 @@
                         links: data.links?.length || 0,
                         chunked: data.chunked || false
                     });
+
+                    // 🚨 EMERGENCY FILTERING WARNING
+                    if (data.event_count && data.link_count &&
+                        (data.event_count > 5000 || data.link_count > 10000)) {
+                        console.warn('🚨 EMERGENCY GRAPH FILTERING APPLIED!');
+                        console.warn(`Original graph: ${data.event_count} nodes, ${data.link_count} links`);
+                        console.warn(`Filtered to: ${data.nodes?.length || 0} nodes, ${data.links?.length || 0} links`);
+                        console.warn('Only strongest connections and recent events shown.');
+                        console.warn('For full data analysis, use filtered queries or data export.');
+
+                        // Show user warning
+                        const warningDiv = document.createElement('div');
+                        warningDiv.id = 'emergencyFilteringWarning';
+                        warningDiv.style.cssText = `
+                            position: fixed;
+                            top: 20px;
+                            right: 20px;
+                            background: #ff4444;
+                            color: white;
+                            padding: 15px;
+                            border-radius: 5px;
+                            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+                            z-index: 10000;
+                            max-width: 400px;
+                            font-family: monospace;
+                            font-size: 12px;
+                        `;
+                        warningDiv.innerHTML = `
+                            <strong>🚨 GRAPH FILTERED FOR PERFORMANCE</strong><br>
+                            Original: ${data.event_count} nodes, ${data.link_count} links<br>
+                            Showing: ${data.nodes?.length || 0} nodes, ${data.links?.length || 0} links<br>
+                            <em>Only strongest connections & recent events displayed</em><br>
+                            <button onclick="this.parentElement.remove()" style="margin-top: 10px; background: #333; color: white; border: none; padding: 5px 10px; cursor: pointer;">Dismiss</button>
+                        `;
+                        document.body.appendChild(warningDiv);
+
+                        // Auto-remove after 10 seconds
+                        setTimeout(() => {
+                            if (warningDiv.parentElement) {
+                                warningDiv.remove();
+                            }
+                        }, 10000);
+                    }
                     
                     // Double-check simulation status before applying updates (but allow initial load)
                     const isInitialLoad = allNodes.length === 0 && allLinks.length === 0;
@@ -4564,6 +4667,10 @@
                 filters.components.ml_analysis = document.getElementById('filter-ml_analysis').checked;
                 filters.components.language = document.getElementById('filter-language') ? document.getElementById('filter-language').checked : true;
                 filters.components.butterfly_chat = document.getElementById('filter-butterfly_chat') ? document.getElementById('filter-butterfly_chat').checked : true;
+                filters.components.config_tuner = document.getElementById('filter-config_tuner') ? document.getElementById('filter-config_tuner').checked : true;
+                filters.components.health_monitor = document.getElementById('filter-health_monitor') ? document.getElementById('filter-health_monitor').checked : true;
+                filters.components.alliance = document.getElementById('filter-alliance') ? document.getElementById('filter-alliance').checked : true;
+                filters.components.combat = document.getElementById('filter-combat') ? document.getElementById('filter-combat').checked : true;
                 filters.components.system = document.getElementById('filter-system').checked;
 
                 filters.causationTypes.threshold = document.getElementById('filter-threshold').checked;
@@ -5116,6 +5223,12 @@
                     'breath': '#FF00FF',
                     'neural': '#00FFFF',
                     'ml_analysis': '#32CD32',
+                    'language': '#00BCD4',
+                    'butterfly_chat': '#8BC34A',
+                    'config_tuner': '#FFD700',
+                    'health_monitor': '#FF69B4',
+                    'alliance': '#9400D3',
+                    'combat': '#DC143C',
                     'system': '#FFFF00'
                 };
 
@@ -5153,6 +5266,12 @@
                     'breath': 'color-breath',
                     'neural': 'color-neural',
                     'ml_analysis': 'color-ml_analysis',
+                    'language': 'color-language',
+                    'butterfly_chat': 'color-butterfly_chat',
+                    'config_tuner': 'color-config_tuner',
+                    'health_monitor': 'color-health_monitor',
+                    'alliance': 'color-alliance',
+                    'combat': 'color-combat',
                     'system': 'color-system'
                 };
                 Object.keys(componentColorMap).forEach(comp => {
@@ -5350,6 +5469,10 @@
                             'ml_analysis': 'filter-ml_analysis',
                             'language': 'filter-language',
                             'butterfly_chat': 'filter-butterfly_chat',
+                            'config_tuner': 'filter-config_tuner',
+                            'health_monitor': 'filter-health_monitor',
+                            'alliance': 'filter-alliance',
+                            'combat': 'filter-combat',
                             'system': 'filter-system'
                         };
 
@@ -5938,6 +6061,10 @@
                     { name: '🔬 ML Analysis', color: componentColors['ml_analysis'] },
                     { name: '🦋 Language System', color: componentColors['language'] || '#00BCD4' },
                     { name: '🦋 Butterfly Chat', color: componentColors['butterfly_chat'] || '#8BC34A' },
+                    { name: '🔧 Config Tuner', color: componentColors['config_tuner'] || '#FFD700' },
+                    { name: '⚕️ Health Monitor', color: componentColors['health_monitor'] || '#FF69B4' },
+                    { name: '⚔️ Alliance System', color: componentColors['alliance'] || '#9400D3' },
+                    { name: '⚔️ Combat/Battle', color: componentColors['combat'] || '#DC143C' },
                     { name: 'System', color: componentColors['system'] }
                 ];
 
@@ -5953,17 +6080,23 @@
                     { name: 'Unknown', color: linkColors['unknown'] || '#FF8800' }
                 ];
 
-                // Neural/ML/Language icon shapes (for vision model recognition)
+                // Neural/ML/Language/Alliance/Combat icon shapes (for vision model recognition)
                 const neuralMLIcons = [
                     { name: '🧠 Neural Decision', shape: 'diamond', color: '#00FFFF', eventType: 'neural_decision' },
                     { name: '🧠 Neural Training', shape: 'square', color: '#BF00FF', eventType: 'neural_training' },
+                    { name: '🧠 Neural-Language Reward', shape: 'diamond', color: '#00CED1', eventType: 'neural_language_reward' },
+                    { name: '🧠 Curriculum Adjustment', shape: 'square', color: '#20B2AA', eventType: 'neural_curriculum_adjustment' },
                     { name: '🔬 Phenotype Emergence', shape: 'star', color: '#FF00FF', eventType: 'phenotype_emergence' },
                     { name: '🔬 Anomaly Spike', shape: 'triangle', color: '#FF8800', eventType: 'anomaly_spike' },
                     { name: '🔬 Cluster Collapse', shape: 'cross', color: '#FF3333', eventType: 'cluster_collapse' },
                     { name: '🔬 ML Analysis', shape: 'wye', color: '#FF00FF', eventType: 'ml_analysis' },
                     { name: '🦋 Vocabulary Growth', shape: 'circle', color: '#00BCD4', eventType: 'vocabulary_growth' },
                     { name: '🦋 Organism Communication', shape: 'wye', color: '#00BCD4', eventType: 'organism_communication' },
-                    { name: '🦋 Butterfly Chat', shape: 'circle', color: '#8BC34A', eventType: 'butterfly_chat_message' }
+                    { name: '🦋 Butterfly Chat', shape: 'circle', color: '#8BC34A', eventType: 'butterfly_chat_message' },
+                    { name: '⚔️ Alliance Formed', shape: 'star', color: '#9400D3', eventType: 'alliance_formed' },
+                    { name: '⚔️ Alliance Dissolved', shape: 'cross', color: '#8B008B', eventType: 'alliance_dissolved' },
+                    { name: '⚔️ Battle Concluded', shape: 'triangle', color: '#DC143C', eventType: 'battle_concluded' },
+                    { name: '🔧 Config Tuned', shape: 'wye', color: '#FFD700', eventType: 'config_tuned' }
                 ];
 
                 // Calculate legend dimensions based on content (components + links + neuralML + info)
@@ -6243,9 +6376,15 @@
                     // Add descriptive text for vision models (smaller, below icon name)
                     const description = icon.eventType === 'neural_decision' ? 'Decision-making event' :
                                       icon.eventType === 'neural_training' ? 'Training/learning event' :
+                                      icon.eventType === 'neural_language_reward' ? 'Language reward signal' :
+                                      icon.eventType === 'neural_curriculum_adjustment' ? 'Learning path change' :
                                       icon.eventType === 'phenotype_emergence' ? 'New cluster discovered' :
                                       icon.eventType === 'anomaly_spike' ? 'Outlier detection' :
                                       icon.eventType === 'cluster_collapse' ? 'Cluster died/extinct' :
+                                      icon.eventType === 'alliance_formed' ? 'Alliance established' :
+                                      icon.eventType === 'alliance_dissolved' ? 'Alliance broken' :
+                                      icon.eventType === 'battle_concluded' ? 'Combat resolved' :
+                                      icon.eventType === 'config_tuned' ? 'Auto-tuning event' :
                                       'ML analysis state change';
                     legendContent.append('text')
                         .attr('x', iconSize * 2 + 5)
@@ -6527,6 +6666,7 @@
                 // Main node shape with depth-based styling
                 // Neural events get special shapes: diamond for decisions, square for training
                 // ML events get special shapes: star for phenotype emergence, triangle for anomaly, hexagon for cluster collapse
+                // Alliance/Combat events get special shapes: star for alliance formed, cross for dissolved, triangle for battle
                 node.each(function(d) {
                     const eventType = (d.type || '').toLowerCase();
                     const comp = d.component || 'unknown';
@@ -6534,11 +6674,21 @@
                     const isML = comp === 'ml_analysis';
                     const isLanguage = comp === 'language';
                     const isButterflyChat = comp === 'butterfly_chat';
+                    const isAlliance = comp === 'alliance';
+                    const isCombat = comp === 'combat';
+                    const isConfigTuner = comp === 'config_tuner';
+                    const isHealthMonitor = comp === 'health_monitor';
                     const isNeuralDecision = isNeural && eventType === 'neural_decision';
                     const isNeuralTraining = isNeural && eventType === 'neural_training';
+                    const isNeuralLanguageReward = isNeural && eventType === 'neural_language_reward';
+                    const isNeuralCurriculumAdjust = isNeural && eventType === 'neural_curriculum_adjustment';
                     const isPhenotypeEmergence = isML && eventType === 'phenotype_emergence';
                     const isClusterCollapse = isML && eventType === 'cluster_collapse';
                     const isAnomalySpike = isML && eventType === 'anomaly_spike';
+                    const isAllianceFormed = (isAlliance || eventType === 'alliance_formed');
+                    const isAllianceDissolved = (isAlliance || eventType === 'alliance_dissolved');
+                    const isBattleConcluded = (isCombat || eventType === 'battle_concluded');
+                    const isConfigTuned = (isConfigTuner || eventType === 'config_tuned');
                     const isLanguageEvent = isLanguage || isButterflyChat || eventType === 'vocabulary_growth' || eventType === 'organism_communication' || eventType === 'butterfly_chat_message' || eventType === 'butterfly_chat_response';
                     
                     const baseRadius = vizSettings.nodeBaseSize + (d.type ? 2 : 0);
@@ -6648,6 +6798,100 @@
                             .attr('class', 'node-circle ml-node')
                             .attr('d', wye)
                             .attr('fill', '#FF00FF') // Magenta
+                            .attr('fill-opacity', fillOpacity)
+                            .attr('stroke', strokeColor)
+                            .attr('stroke-width', vizSettings.nodeStrokeWidth)
+                            .attr('stroke-opacity', vizSettings.nodeStrokeOpacity)
+                            .style('filter', filterValue);
+                    } else if (isNeuralLanguageReward) {
+                        // Diamond shape for neural-language reward (Dark Cyan - reward signal from language)
+                        const diamond = d3.symbol().type(d3.symbolDiamond).size(radius * radius * 4);
+                        shapeElement = nodeElement.append('path')
+                            .attr('class', 'node-circle neural-node neural-language-reward')
+                            .attr('d', diamond)
+                            .attr('fill', '#00CED1') // Dark Cyan
+                            .attr('fill-opacity', fillOpacity)
+                            .attr('stroke', '#FFFFFF')
+                            .attr('stroke-width', vizSettings.nodeStrokeWidth)
+                            .attr('stroke-opacity', vizSettings.nodeStrokeOpacity)
+                            .style('filter', 'url(#nodeGlow)');
+                    } else if (isNeuralCurriculumAdjust) {
+                        // Square shape for curriculum adjustment (Light Sea Green - learning path change)
+                        const square = d3.symbol().type(d3.symbolSquare).size(radius * radius * 4);
+                        shapeElement = nodeElement.append('path')
+                            .attr('class', 'node-circle neural-node neural-curriculum')
+                            .attr('d', square)
+                            .attr('fill', '#20B2AA') // Light Sea Green
+                            .attr('fill-opacity', fillOpacity)
+                            .attr('stroke', '#FFFFFF')
+                            .attr('stroke-width', vizSettings.nodeStrokeWidth)
+                            .attr('stroke-opacity', vizSettings.nodeStrokeOpacity)
+                            .style('filter', filterValue);
+                    } else if (isAllianceFormed) {
+                        // Star shape for alliance formed (Dark Violet - alliance celebration)
+                        const star = d3.symbol().type(d3.symbolStar).size(radius * radius * 5);
+                        shapeElement = nodeElement.append('path')
+                            .attr('class', 'node-circle alliance-node alliance-formed')
+                            .attr('d', star)
+                            .attr('fill', '#9400D3') // Dark Violet
+                            .attr('fill-opacity', fillOpacity)
+                            .attr('stroke', '#FFFFFF')
+                            .attr('stroke-width', vizSettings.nodeStrokeWidth + 1)
+                            .attr('stroke-opacity', vizSettings.nodeStrokeOpacity)
+                            .style('filter', 'url(#nodeGlow)');
+                    } else if (isAllianceDissolved) {
+                        // Cross shape for alliance dissolved (Dark Magenta - alliance death)
+                        const cross = d3.symbol().type(d3.symbolCross).size(radius * radius * 4);
+                        shapeElement = nodeElement.append('path')
+                            .attr('class', 'node-circle alliance-node alliance-dissolved')
+                            .attr('d', cross)
+                            .attr('fill', '#8B008B') // Dark Magenta
+                            .attr('fill-opacity', fillOpacity)
+                            .attr('stroke', '#FFFFFF')
+                            .attr('stroke-width', vizSettings.nodeStrokeWidth)
+                            .attr('stroke-opacity', vizSettings.nodeStrokeOpacity)
+                            .style('filter', filterValue);
+                    } else if (isBattleConcluded) {
+                        // Triangle shape for battle concluded (Crimson - combat result)
+                        const triangle = d3.symbol().type(d3.symbolTriangle).size(radius * radius * 4);
+                        shapeElement = nodeElement.append('path')
+                            .attr('class', 'node-circle combat-node battle-concluded')
+                            .attr('d', triangle)
+                            .attr('fill', '#DC143C') // Crimson
+                            .attr('fill-opacity', fillOpacity)
+                            .attr('stroke', '#FFFF00')
+                            .attr('stroke-width', vizSettings.nodeStrokeWidth + 1)
+                            .attr('stroke-opacity', vizSettings.nodeStrokeOpacity)
+                            .style('filter', 'url(#nodeGlow)');
+                    } else if (isConfigTuned) {
+                        // Wye shape for config tuning (Gold - autonomous adjustment)
+                        const wye = d3.symbol().type(d3.symbolWye).size(radius * radius * 4);
+                        shapeElement = nodeElement.append('path')
+                            .attr('class', 'node-circle config-tuner-node')
+                            .attr('d', wye)
+                            .attr('fill', '#FFD700') // Gold
+                            .attr('fill-opacity', fillOpacity)
+                            .attr('stroke', strokeColor)
+                            .attr('stroke-width', vizSettings.nodeStrokeWidth)
+                            .attr('stroke-opacity', vizSettings.nodeStrokeOpacity)
+                            .style('filter', filterValue);
+                    } else if (isHealthMonitor) {
+                        // Circle with special color for health monitor (Hot Pink - health status)
+                        shapeElement = nodeElement.append('circle')
+                            .attr('class', 'node-circle health-monitor-node')
+                            .attr('r', radius)
+                            .attr('fill', '#FF69B4') // Hot Pink
+                            .attr('fill-opacity', fillOpacity)
+                            .attr('stroke', strokeColor)
+                            .attr('stroke-width', vizSettings.nodeStrokeWidth)
+                            .attr('stroke-opacity', vizSettings.nodeStrokeOpacity)
+                            .style('filter', filterValue);
+                    } else if (isConfigTuner) {
+                        // Circle with gold color for config tuner component
+                        shapeElement = nodeElement.append('circle')
+                            .attr('class', 'node-circle config-tuner-node')
+                            .attr('r', radius)
+                            .attr('fill', '#FFD700') // Gold
                             .attr('fill-opacity', fillOpacity)
                             .attr('stroke', strokeColor)
                             .attr('stroke-width', vizSettings.nodeStrokeWidth)

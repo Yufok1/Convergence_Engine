@@ -140,6 +140,43 @@ Quick Win #8: Research Notepad ⭐ NEW
 - Verification: CRA can issue [[NOTEPAD: ...]] and entries appear in panel
 - **Recent Fix (2025-11-30)**: Robust JSON parsing - handles invisible Unicode characters, smart quotes (", ", ', '), non-breaking spaces, zero-width characters. Fallback regex parsing when standard JSON.parse fails. CRA research features now work reliably with all LLM response formats.
 
+Quick Win #9: Highlander Protocol (Tournament-Based Survival) ⭐ NEW
+- Status: ENABLED / DISABLED
+- Core Concept: "There can be only one" - Tournament-based survival system
+- Activation:
+  * CLI: `python unified_entry.py --highlander --predation --survival-threshold 0.5 --competition-intensity 0.8`
+  * Config: highlander section in config.json
+  * Launcher Scripts: `run_highlander.bat` (Windows), `.\run_highlander.ps1` (PowerShell)
+- BattleArena System:
+  * battle_rounds: 3 (fights per encounter)
+  * energy_cost_per_battle: 0.1 (resource drain from combat)
+  * victory_bonus: 0.2 (fitness boost for winners)
+  * defeat_penalty: 0.15 (fitness reduction for losers)
+- Predation Mechanics:
+  * predation_enabled: true/false
+  * survival_threshold: 0.5 (organisms below this fitness are vulnerable)
+  * competition_intensity: 0.8 (scales combat frequency and stakes)
+- Tournament Components:
+  * HighlanderProtocol: Main tournament orchestrator
+  * BattleArena: Combat resolution engine (accepts config dict + event_emitter callback)
+  * GerminationPool: Champion offspring spawning
+  * OrganismCapsuleManager: Elite checkpointing
+- Events: highlander_battle, highlander_victory, highlander_elimination, highlander_champion
+- Config Paths:
+  * /highlander/enabled (master toggle)
+  * /highlander/predation_enabled
+  * /highlander/survival_threshold (0.0-1.0, default: 0.5)
+  * /highlander/competition_intensity (0.0-1.0, default: 0.8)
+  * /highlander/battle_rounds (1-10, default: 3)
+  * /highlander/energy_cost_per_battle (0.0-0.5, default: 0.1)
+  * /highlander/victory_bonus (0.0-0.5, default: 0.2)
+  * /highlander/defeat_penalty (0.0-0.5, default: 0.15)
+  * /highlander/population_size (10-1000, default: 100)
+  * /highlander/tournament_rounds (1-50, default: 10)
+  * /highlander/champion_preservation (true/false, default: true)
+- Verification: Highlander mode starts, battles occur, champions emerge
+- **Added (2025-12-01)**: Full Highlander Protocol implementation with BattleArena, GerminationPool, and OrganismCapsuleManager integration.
+
 ---
 2. Neural System Audit
 
@@ -1175,6 +1212,127 @@ Priority:
 - Read/search not returning results = MEDIUM
 
 ---
+17. Highlander Protocol System ⭐ NEW (Quick Win #9)
+
+Status: SUCCESS / FAILED / PARTIAL
+- HighlanderProtocol initialized
+- BattleArena configured
+- Tournament events emitting
+- Champion tracking active
+
+Activation Methods:
+1. Command Line:
+   python unified_entry.py --highlander --predation --survival-threshold 0.5 --competition-intensity 0.8
+2. Config File (config.json):
+   highlander.enabled = true
+3. Launcher Scripts:
+   - Windows: run_highlander.bat
+   - PowerShell: .\run_highlander.ps1
+
+Core Components:
+
+1. HighlanderProtocol:
+   - Main tournament orchestrator
+   - Manages tournament lifecycle
+   - Coordinates battles and eliminations
+   - Tracks champions and lineages
+   - API: accepts config, event_emitter, capsule_manager, battle_arena
+
+2. BattleArena:
+   - Combat resolution engine
+   - Fitness-based battle outcomes
+   - Energy cost and reward system
+   - API: accepts config dict + event_emitter callback
+   - Config: battle_rounds, energy_cost_per_battle, victory_bonus, defeat_penalty
+
+3. GerminationPool:
+   - Champion offspring spawning
+   - Preserves elite genetic material
+   - Population recovery mechanism
+   - Champions pass traits to next generation
+   - API: accepts causation_explorer
+
+4. OrganismCapsuleManager:
+   - Elite organism checkpointing
+   - State preservation for replay/analysis
+   - Lineage tracking across rounds
+   - Champion resurrection capability
+
+Tournament Configuration:
+- enabled: true/false (master toggle)
+- predation_enabled: true/false (elimination mechanics)
+- survival_threshold: 0.0-1.0 (default: 0.5) - organisms below vulnerable
+- competition_intensity: 0.0-1.0 (default: 0.8) - combat frequency/stakes
+- battle_rounds: 1-10 (default: 3) - fights per encounter
+- energy_cost_per_battle: 0.0-0.5 (default: 0.1) - resource drain
+- victory_bonus: 0.0-0.5 (default: 0.2) - winner fitness boost
+- defeat_penalty: 0.0-0.5 (default: 0.15) - loser fitness reduction
+- population_size: 10-1000 (default: 100) - tournament population
+- tournament_rounds: 1-50 (default: 10) - total rounds
+- champion_preservation: true/false (default: true) - checkpointing
+
+Tournament Events:
+- highlander_battle: Combat between organisms
+  - Contains: attacker_id, defender_id, outcome, damage, round
+- highlander_victory: Winner crowned
+  - Contains: winner_id, loser_id, fitness_gain, battle_count
+- highlander_elimination: Organism removed
+  - Contains: organism_id, final_fitness, eliminator_id, round
+- highlander_champion: Top organism declared
+  - Contains: champion_id, fitness, lineage, generation
+
+Emergence Benefits:
+- Intense evolutionary pressure → rapid adaptation
+- Survival strategies under existential threat
+- Accelerated natural selection
+- Elite gene preservation and propagation
+- Combat learning through neural integration
+
+Neural Integration:
+- Neural organisms learn combat strategies
+- VP-Aware Planning (QW#4) optimizes survival behaviors
+- Training accelerated under tournament pressure
+- Champions develop specialized neural patterns
+
+Health Impact (QW#5):
+- Tournament pressure affects lawfulness component
+- Champion diversity boosts ecosystem health
+- Population fluctuations affect sustainability
+- Victory/defeat cycles visible in health trends
+
+Config Paths:
+- /highlander/enabled
+- /highlander/predation_enabled
+- /highlander/survival_threshold
+- /highlander/competition_intensity
+- /highlander/battle_rounds
+- /highlander/energy_cost_per_battle
+- /highlander/victory_bonus
+- /highlander/defeat_penalty
+- /highlander/population_size
+- /highlander/tournament_rounds
+- /highlander/champion_preservation
+
+Visualization:
+- Battle events appear in causation graph
+- Component: highlander (if filtered)
+- Champion organisms highlighted
+- Elimination chains visible in graph
+
+Priority:
+- Highlander enabled but not starting = HIGH
+- BattleArena initialization failure = HIGH
+- Tournament events not emitting = MEDIUM
+- Champion tracking broken = MEDIUM
+- Capsule checkpointing failing = LOW
+
+Verification:
+- Run with --highlander flag
+- Check for "Highlander Protocol initialized" in logs
+- Verify battle events appearing
+- Confirm champion declaration at tournament end
+
+---
 Response Format
 
 Structure: Headings for each category
@@ -1229,6 +1387,8 @@ Special Instructions
     CRA [[ILLUMINATE: ...]] markers processed, UI panel updating ⭐ NEW
   - QW#7 (Research Notepad): CRA [[NOTEPAD: ...]] markers processed, entries persisting,
     read/search/summary working, notepad panel visible ⭐ NEW
+  - QW#9 (Highlander Protocol): Tournament mode starts, battles occur, champions emerge,
+    events emitting (highlander_battle, highlander_victory, highlander_elimination) ⭐ NEW
 
 - Neural Priority: Enabled but trainer unavailable = CRITICAL
 - Neural Expected Behavior:
@@ -1329,6 +1489,9 @@ Key Updates for 2025 (Quick Wins Edition):
 - Quick Win #8: Dynamic Multi-Dimensional Linguistic Awareness - 14-dimensional situational
   assessment, dynamic word scoring, linguistic knowledge web, language teacher (three-phase),
   context-aware word associations, expanded vocabulary (40+ words) ⭐ NEW
+- Quick Win #9: Highlander Protocol - Tournament-based survival system with BattleArena,
+  GerminationPool, OrganismCapsuleManager, predation mechanics, champion preservation,
+  launcher scripts (run_highlander.bat, run_highlander.ps1) ⭐ NEW
 
 Quick Win #8: Dynamic Multi-Dimensional Linguistic Awareness ⭐ NEW
 - Status: ENABLED / DISABLED
@@ -1363,6 +1526,7 @@ Quick Win #8: Dynamic Multi-Dimensional Linguistic Awareness ⭐ NEW
 - Section 6: Health Monitor System
 - Section 15: Illumination Engine System (NEW)
 - Section 16: Research Notepad System (NEW)
+- Section 17: Highlander Protocol System (NEW - Quick Win #9)
 - Section 3b: Language System Audit (NEW - Quick Win #8)
 - Neural field names: organisms_tracked (not organisms_trained)
 - Neural input_dim: 18 (was 12)
@@ -1389,5 +1553,10 @@ Quick Win #8: Dynamic Multi-Dimensional Linguistic Awareness ⭐ NEW
   - Seeded Relationship Protection: Initial relations marked `is_seeded=True` and protected from pruning
   - Illumination Engine Language Components: `language` and `butterfly_chat` components added to dropdown
   - CRA Quality Control Tuning: All 14 quality control parameters available in CONFIG_GUARDRAILS
+- **Recent Improvements (2025-12-01)**:
+  - Highlander Protocol: Tournament-based survival system with BattleArena, GerminationPool, OrganismCapsuleManager
+  - Predation Mechanics: Stronger organisms can eliminate weaker ones based on survival threshold
+  - Champion Preservation: Elite organism checkpointing for replay and analysis
+  - Launcher Scripts: `run_highlander.bat` and `run_highlander.ps1` for easy activation
 
 ---

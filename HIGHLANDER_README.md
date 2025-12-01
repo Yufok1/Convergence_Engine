@@ -3,11 +3,14 @@
 ## Overview
 Highlander mode enables a survival-of-the-fittest tournament system where organisms compete for dominance. Only the strongest survive, with the ultimate champion becoming the template for immortality.
 
+**NEW: Alliance Warfare System** - Beyond individual battles, organisms now form planetary alliances that wage collective warfare for control of evolutionary existence itself!
+
 ## Configuration
 
 ### Config File (config.json)
 The system is now configured in `config.json` under the `highlander` section:
 
+#### Standard Configuration:
 ```json
 {
   "highlander": {
@@ -25,7 +28,37 @@ The system is now configured in `config.json` under the `highlander` section:
     "max_population": 50,
     "germination_rate": 0.1,
     "mutation_rate": 0.05,
-    "rounds_per_cycle": 1
+    "rounds_per_cycle": 1,
+    "alliance_warfare": {
+      "description": "Alliance Warfare - Collective battles for existential dominance",
+      "enabled": true,
+      "min_alliance_size": 3,
+      "max_alliances": 10,
+      "war_frequency": 0.3,
+      "existential_war_threshold": 0.8
+    }
+  }
+}
+```
+
+#### ⚔️ EXTREME DIFFICULTY Mode:
+```json
+{
+  "highlander": {
+    "extreme_mode": {
+      "description": "EXTREME DIFFICULTY - Maximum evolutionary pressure",
+      "survival_threshold": 0.8,    // 80% fitness required (vs 50%)
+      "competition_intensity": 0.95, // 95% battle participation (vs 80%)
+      "chaos_factor": 0.4,           // High randomness (vs 15%)
+      "population_size": 5,          // Tiny populations (vs 10)
+      "max_population": 20,          // Limited growth (vs 50)
+      "min_population": 2,           // Minimum survivors (vs 5)
+      "germination_rate": 0.05,      // Slow rebirth (vs 10%)
+      "mutation_rate": 0.15,         // Chaotic evolution (vs 5%)
+      "predation_enabled": true,     // Predator/prey hunting
+      "rounds_per_cycle": 2,         // Double battle rounds
+      "max_battle_rounds": 15        // Extended battles (vs 10)
+    }
   }
 }
 ```

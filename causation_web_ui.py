@@ -2497,9 +2497,18 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         
         prompt += "### Quick Win #1: VP-Aware Perception\n"
         prompt += "**What it does**: Neural organisms now perceive Violation Pressure (VP) components as input features.\n"
-        prompt += "**Technical**: Extended neural input from 12 to 17 dimensions. New features:\n"
-        prompt += "  - trait_divergence, network_coherence, quantum_entropy, evolution_pressure, phase_mismatch\n"
-        prompt += "**What you see**: Neural decisions now account for VP state - organisms 'feel' ecosystem stress.\n"
+        prompt += "**Technical**: Extended neural input from 12 to 24 dimensions. Features 1-18 (original + VP + health):\n"
+        prompt += "  - 1-12: fitness, resources, connections, neighbor_fitness, flow_in/out, clustering, distance, age, parent_fitness, breath_features\n"
+        prompt += "  - 13-17: trait_divergence, network_coherence, quantum_entropy, evolution_pressure, phase_mismatch\n"
+        prompt += "  - 18: system_health (Quick Win #5)\n"
+        prompt += "**Features 19-24 (NEW - Alliance/Combat/Learning Integration)**:\n"
+        prompt += "  - 19: battle_history (win ratio from Highlander/Alliance battles)\n"
+        prompt += "  - 20: alliance_reputation (social standing, updated by alliance events)\n"
+        prompt += "  - 21: language_fluency (vocabulary richness proxy)\n"
+        prompt += "  - 22: environmental_density (local crowding/neighbor count)\n"
+        prompt += "  - 23: learning_progress (experience buffer fill ratio)\n"
+        prompt += "  - 24: health_trend (fitness trajectory - improving/declining/stable)\n"
+        prompt += "**What you see**: Neural decisions account for VP state, battle history, alliances, and learning - organisms 'feel' ecosystem stress AND social dynamics.\n"
         prompt += "**Endpoint**: Check VP components via `/api/diagnostic/vp_components`\n\n"
         
         prompt += "### Quick Win #2: Concept Tracking\n"
@@ -2537,7 +2546,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "**State Classification Logic**: Check thresholds in order - if health < 0.3 = critical, else if < 0.5 = warning, else if < 0.7 = healthy, else = optimal\n"
         prompt += "**Example**: health_score=0.289 → 0.289 < 0.3 → state=\"critical\" (NOT warning!)\n"
         prompt += "**Events**: `health_state_change` emitted when crossing thresholds\n"
-        prompt += "**Neural integration**: System health is now the 18th neural input feature - organisms perceive ecosystem wellness\n"
+        prompt += "**Neural integration**: System health is the 18th neural input feature (of 24 total) - organisms perceive ecosystem wellness\n"
         prompt += "**Endpoint**: Check via `/api/diagnostic/unified_health` or in shared_state.json\n"
         prompt += "**Config**: `health_monitor.enabled`, `weight_*` for each component, threshold values\n\n"
         
@@ -2607,6 +2616,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "      * **Visualization**: All symbiosis events appear on causation graph with `component='neural'` and specialized event types. Filter with `components: {\"neural\": true}`.\n"
         prompt += "  * **ML Analysis** (ml_analysis): 🔬 **NEW** - Scikit-learn population-level machine learning\n"
         prompt += "    - **Architecture**: HDBSCAN clustering, Isolation Forest anomaly detection, PCA/t-SNE dimensionality reduction\n"
+        prompt += "    - **Clustering Features** (20 total): Phenotype traits (10), fitness, resources, age, language features (3), alliance_participation, combat_performance, reputation_score, concept_maturity\n"
         prompt += "    - **Event Types**:\n"
         prompt += "      * `phenotype_emergence`: New behavioral phenotype cluster detected (hexagon shape, cyan/magenta pulse)\n"
         prompt += "      * `cluster_collapse`: Phenotype cluster dissolved/merged (pentagon shape, shrink animation)\n"
@@ -2653,11 +2663,16 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "      * **Link Strength**: 0.9 (high - meta-management is important)\n"
         prompt += "      * **Explanations**: Detailed explanations show parameter path, value changes (current → proposed), and reason\n"
         prompt += "    - **Visualization**: Node color controlled by `componentColor_config_tuner` setting, link color by `linkColor_direct` (tuning links use 'direct' causation type)\n"
-        prompt += "    - **Intelligence**: 10 tuning rules based on cluster diversity, anomaly ratio, fitness trends, neural loss, network density, ML effectiveness, language quality, Neural-ML Symbiosis effectiveness, VP stability, meta-tuning performance\n"
-        prompt += "      * **Neural-ML Symbiosis Analysis** ⭐ NEW: `_analyze_neural_ml_symbiosis()` monitors:\n"
+        prompt += "    - **Intelligence**: 10+ tuning rules based on cluster diversity, anomaly ratio, fitness trends, neural loss, network density, ML effectiveness, language quality, Neural-ML Symbiosis effectiveness, VP stability, meta-tuning performance\n"
+        prompt += "      * **Neural-ML Symbiosis Analysis**: `_analyze_neural_ml_symbiosis()` monitors:\n"
         prompt += "        - Embedding quality (silhouette scores) → tunes `use_neural_embeddings` (enables if quality > 0.4, disables if < 0.2)\n"
         prompt += "        - Language reward totals → tunes `language_reward_scaling` (increases if rewards < 0.1, decreases if > 2.0)\n"
         prompt += "        - Curriculum stability (sequence length variance) → tunes `sequence_length_step` (reduces if variance > 100)\n"
+        prompt += "      * **Cross-System Correlation Analysis** ⭐ NEW (4 methods):\n"
+        prompt += "        - `_analyze_quantum_language_correlation()`: Balances quantum entropy with language coherence/creativity\n"
+        prompt += "        - `_analyze_network_alliance_correlation()`: Links network topology (clustering coefficient) to alliance formation success\n"
+        prompt += "        - `_analyze_neural_battle_correlation()`: Connects neural learning quality to Highlander/Alliance battle success\n"
+        prompt += "        - `_analyze_vocabulary_fitness_correlation()`: Ensures vocabulary richness contributes to organism fitness\n"
         prompt += "    - **Safety**: Bounded parameters, confidence thresholds (>0.6), rate limiting, meta-learning tracks success rates\n"
         prompt += "    - **Modes**: off / observing / learning / autonomous\n"
         prompt += "    - **Diagnostic Endpoint**: `/api/cra/diagnostics/config_tuner` - Get tuning stats, success rates, recent actions\n"
@@ -3060,7 +3075,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "     * **Enable/Disable**: `/neural/enabled` (true/false) - Turn neural system on/off\n"
         prompt += "     * **Device**: `/neural/device` (\"cpu\" or \"cuda\") - Select computation device\n"
         prompt += "     * **Brain Architecture**:\n"
-        prompt += "       - `/neural/brain/input_dim` (integer, typically 12) - Input feature dimensions\n"
+        prompt += "       - `/neural/brain/input_dim` (integer, default: 24) - Input feature dimensions (18 base + 6 integration features)\n"
         prompt += "       - `/neural/brain/hidden_dim` (integer, typically 64) - Hidden layer size\n"
         prompt += "       - `/neural/brain/output_dim` (integer, typically 6) - Action space size\n"
         prompt += "       - `/neural/brain/activation` (\"relu\", \"tanh\", \"sigmoid\") - Activation function\n"
@@ -4224,7 +4239,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "  13. **Action Success**: Behavioral feedback context (success, effective, failure, ineffective)\n"
         prompt += "  14. **Generation Age**: Temporal/evolutionary context (mature, experienced, young, new)\n"
         prompt += "- **Dynamic Word Scoring**: Words are scored across dimensions (0.0-1.0) and prioritized by contextual relevance\n"
-        prompt += "- **Full State Integration**: Uses all 18 state features plus network and breath state for comprehensive context\n"
+        prompt += "- **Full State Integration**: Uses all 24 state features (18 base + 6 integration) plus network and breath state for comprehensive context\n"
         prompt += "- **Associative Complexity**: Semantic relationships expand high-scoring words for rich word networks\n"
         prompt += "- **Precision**: Context-aware word selection based on comprehensive data\n"
         prompt += "- **Responsiveness**: Real-time adaptation to changing conditions\n"
@@ -4236,7 +4251,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "- **Phase 3**: Linguistic Knowledge Web for situational awareness and associative complexity (PRIMARY METHOD)\n"
         prompt += "- **Hybrid Approach**: Currently uses Knowledge Web exclusively. Semantic embeddings are collected but not yet primary.\n"
         prompt += "- **Teaching Process** (`teach_organism` method):\n"
-        prompt += "  1. Get organism's full 18-feature state vector (via `get_state_features()`)\n"
+        prompt += "  1. Get organism's full 24-feature state vector (via `get_state_features()`)\n"
         prompt += "  2. Get current/recent action from organism\n"
         prompt += "  3. Call `knowledge_web.get_situational_awareness()` with full state, action, network_state, breath_state\n"
         prompt += "  4. Knowledge web evaluates all 14 dimensions and returns prioritized word list\n"
@@ -6288,6 +6303,196 @@ def favicon():
     return '', 204  # No content
 
 
+@app.route('/api/graph/performance-advice')
+def get_performance_advice():
+    """Get performance advice based on current graph size"""
+    try:
+        target_explorer = app.config.get('explorer') or explorer
+        if not target_explorer or not target_explorer.causation_graph:
+            return jsonify({'error': 'No graph data available'}), 400
+
+        node_count = len(target_explorer.causation_graph.nodes())
+        link_count = len(target_explorer.causation_graph.edges())
+
+        advice = {
+            'node_count': node_count,
+            'link_count': link_count,
+            'performance_level': 'good',
+            'recommendations': [],
+            'console_commands': []
+        }
+
+        if link_count > 100000:
+            advice['performance_level'] = 'critical'
+            advice['recommendations'] = [
+                "🚨 EMERGENCY: Graph has millions of links - server-side filtering applied",
+                "Only strongest connections and recent events are shown",
+                "For full analysis, use filtered queries or export data",
+                "Consider reducing simulation complexity or event logging"
+            ]
+            advice['console_commands'] = [
+                "vizDebug.setMaxVisibleLinks(2000)",  # Even more aggressive
+                "vizDebug.setLinkMinOpacity(0.8)",
+                "vizDebug.setLinkDensityMultiplier(0.1)",
+                "vizDebug.setMaxVisibleNodes(2000)",
+                "vizDebug.updateDisplay()"
+            ]
+        elif link_count > 50000:
+            advice['performance_level'] = 'fair'
+            advice['recommendations'] = [
+                "Reduce visible links to improve performance",
+                "Filter out weaker connections",
+                "Monitor frame rate during interaction"
+            ]
+            advice['console_commands'] = [
+                "vizDebug.setMaxVisibleLinks(8000)",
+                "vizDebug.setLinkMinOpacity(0.5)",
+                "vizDebug.setLinkDensityMultiplier(0.7)",
+                "vizDebug.updateDisplay()"
+            ]
+        elif link_count > 10000:
+            advice['performance_level'] = 'good'
+            advice['recommendations'] = [
+                "Current settings should work well",
+                "Optional: reduce link count for even better performance"
+            ]
+            advice['console_commands'] = [
+                "vizDebug.setMaxVisibleLinks(15000)",
+                "vizDebug.setLinkMinOpacity(0.3)",
+                "vizDebug.updateDisplay()"
+            ]
+
+        # Suggest optimal settings
+        if link_count > 50000:
+            advice['suggested_settings'] = {
+                'maxVisibleLinks': min(8000, link_count // 20),
+                'linkMinOpacity': 0.6,
+                'linkDensityMultiplier': 0.5,
+                'linkMaxOpacity': 1.0,
+                'nodeBaseSize': 6,
+                'nodeMaxSize': 10
+            }
+        elif link_count > 10000:
+            advice['suggested_settings'] = {
+                'maxVisibleLinks': min(15000, link_count // 10),
+                'linkMinOpacity': 0.3,
+                'linkDensityMultiplier': 1.0,
+                'linkMaxOpacity': 1.0,
+                'nodeBaseSize': 8,
+                'nodeMaxSize': 12
+            }
+
+        return jsonify(advice)
+
+    except Exception as e:
+        logger.error(f"Error getting performance advice: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/capsule/<organism_id>', methods=['POST'])
+def capsule_organism(organism_id):
+    """Capsule a specific organism for preservation"""
+    try:
+        # Get capsule manager from unified system
+        if not hasattr(app, 'unified_system') or not app.unified_system:
+            return jsonify({'error': 'Unified system not available'}), 500
+
+        unified_system = app.unified_system
+
+        # Check if highlander protocol has capsule manager
+        if not hasattr(unified_system, 'highlander_protocol') or not unified_system.highlander_protocol:
+            return jsonify({'error': 'Highlander protocol not active'}), 400
+
+        highlander = unified_system.highlander_protocol
+        if not hasattr(highlander, 'capsule_manager') or not highlander.capsule_manager:
+            return jsonify({'error': 'Capsule manager not initialized'}), 400
+
+        # Get organisms from current simulation
+        if hasattr(unified_system, 'get_current_organisms'):
+            organisms = unified_system.get_current_organisms()
+        else:
+            return jsonify({'error': 'Cannot access current organisms'}), 500
+
+        if organism_id not in organisms:
+            return jsonify({'error': f'Organism {organism_id} not found'}), 404
+
+        organism = organisms[organism_id]
+
+        # Get request data
+        data = request.get_json() or {}
+        reason = data.get('reason', 'manual_capsule')
+        notes = data.get('notes', '')
+        tags = data.get('tags', [])
+
+        # Create capsule
+        capsule = highlander.capsule_manager.capture_organism(
+            organism=organism,
+            reason=reason,
+            notes=notes,
+            tags=tags,
+            include_causation=True,
+            causation_explorer=getattr(unified_system, 'causation_explorer', None)
+        )
+
+        if capsule:
+            return jsonify({
+                'success': True,
+                'capsule_id': capsule.capsule_id,
+                'organism_id': organism_id,
+                'reason': reason,
+                'notes': notes,
+                'tags': tags,
+                'capture_time': capsule.capture_time,
+                'file_path': str(capsule.file_path) if hasattr(capsule, 'file_path') else None
+            })
+        else:
+            return jsonify({'error': 'Failed to create capsule'}), 500
+
+    except Exception as e:
+        logger.error(f"Error capsulating organism {organism_id}: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/capsules')
+def list_capsules():
+    """List all available capsules"""
+    try:
+        if not hasattr(app, 'unified_system') or not app.unified_system:
+            return jsonify({'error': 'Unified system not available'}), 500
+
+        unified_system = app.unified_system
+
+        if not hasattr(unified_system, 'highlander_protocol') or not unified_system.highlander_protocol:
+            return jsonify({'error': 'Highlander protocol not active'}), 400
+
+        highlander = unified_system.highlander_protocol
+        if not hasattr(highlander, 'capsule_manager') or not highlander.capsule_manager:
+            return jsonify({'error': 'Capsule manager not initialized'}), 400
+
+        # Get capsule index
+        capsule_index = highlander.capsule_manager.capsule_index
+
+        capsules = []
+        for capsule_id, info in capsule_index.items():
+            capsules.append({
+                'capsule_id': capsule_id,
+                'organism_id': info.get('organism_id'),
+                'capture_time': info.get('capture_time'),
+                'reason': info.get('reason'),
+                'notes': info.get('notes', ''),
+                'tags': info.get('tags', [])
+            })
+
+        return jsonify({
+            'capsules': capsules,
+            'total': len(capsules)
+        })
+
+    except Exception as e:
+        logger.error(f"Error listing capsules: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/')
 def index():
     """Main interface"""
@@ -7018,9 +7223,50 @@ def get_graph():
         
         logger.info(f"Serializing graph response: {len(nodes)} nodes, {len(links)} links")
         try:
-            # Note: Large graphs are handled via viewport culling in the browser
-            # No server-side limiting - send all data for full analysis capability
-            
+            # 🚀 AGGRESSIVE ADAPTIVE FILTERING FOR MASSIVE GRAPHS
+            # The browser limits are 10k links and 5k nodes, but we're sending millions!
+            # Apply server-side filtering to prevent browser crashes
+
+            # Emergency filtering for extremely large graphs
+            EMERGENCY_NODE_LIMIT = 5000  # Browser max visible nodes
+            EMERGENCY_LINK_LIMIT = 10000  # Browser max visible links
+
+            if len(nodes) > EMERGENCY_NODE_LIMIT or len(links) > EMERGENCY_LINK_LIMIT:
+                logger.warning(f"EMERGENCY FILTERING: Graph too large ({len(nodes)} nodes, {len(links)} links)")
+
+                # Strategy 1: Keep only strongest links (sort by strength, take top N)
+                if len(links) > EMERGENCY_LINK_LIMIT:
+                    # Sort links by strength (highest first)
+                    sorted_links = sorted(links, key=lambda x: x.get('strength', 0), reverse=True)
+                    # Take only the strongest links
+                    links = sorted_links[:EMERGENCY_LINK_LIMIT]
+                    logger.warning(f"Reduced links from {len(sorted_links)} to {len(links)} (kept strongest)")
+
+                    # Strategy 2: Keep only nodes that are connected by these links
+                    connected_node_ids = set()
+                    for link in links:
+                        connected_node_ids.add(link['source'])
+                        connected_node_ids.add(link['target'])
+
+                    # Filter nodes to only include connected ones
+                    original_node_count = len(nodes)
+                    nodes = [node for node in nodes if node['id'] in connected_node_ids]
+                    logger.warning(f"Reduced nodes from {original_node_count} to {len(nodes)} (kept connected)")
+
+                    # Strategy 3: If still too many nodes, take most recent
+                    if len(nodes) > EMERGENCY_NODE_LIMIT:
+                        # Sort by timestamp (most recent first)
+                        nodes.sort(key=lambda x: x.get('timestamp', 0), reverse=True)
+                        nodes = nodes[:EMERGENCY_NODE_LIMIT]
+                        logger.warning(f"Further reduced nodes to {len(nodes)} (kept most recent)")
+
+                        # Re-filter links to only include remaining nodes
+                        remaining_node_ids = {node['id'] for node in nodes}
+                        links = [link for link in links
+                                if link['source'] in remaining_node_ids and link['target'] in remaining_node_ids]
+
+                logger.warning(f"EMERGENCY FILTERING COMPLETE: {len(nodes)} nodes, {len(links)} links")
+
             # 🚀 OPTIMIZATION: For large graphs, send metadata first, then chunked data
             # Check if graph is large enough to warrant chunked loading
             # Note: Modern browsers with viewport culling can handle 20k+ nodes easily
@@ -7055,6 +7301,62 @@ def get_graph():
                 graph_cache['chunk_index'] = 0
                 graph_cache['chunk_size'] = chunk_size
             else:
+                # 🚀 ADAPTIVE RENDERING: Filter links intelligently for large graphs
+                original_link_count = len(links)
+
+                if len(links) > 100000:  # Extremely large graph - use chunked loading
+                    logger.info(f"📊 Extremely large graph detected ({len(nodes)} nodes, {len(links)} links) - enabling chunked loading")
+
+                    chunk_size = 2000  # Smaller chunks for very large graphs
+                    response_data = {
+                        'nodes': nodes[:chunk_size],
+                        'links': links[:chunk_size*2],  # More links per chunk
+                        'diagnostic': diagnostic_info if diagnostic_info else None,
+                        'cached': False,
+                        'event_count': len(nodes),
+                        'link_count': len(links),
+                        'chunked': True,
+                        'chunk_index': 0,
+                        'total_chunks': (max(len(nodes), len(links)) + chunk_size - 1) // chunk_size,
+                        'chunk_size': chunk_size,
+                        'performance_advice': 'Use chunked loading for optimal performance with this large graph'
+                    }
+
+                    # Store remaining data for subsequent chunk requests
+                    graph_cache['remaining_nodes'] = nodes[chunk_size:]
+                    graph_cache['remaining_links'] = links[chunk_size*2:]
+                    graph_cache['chunk_index'] = 0
+                    graph_cache['chunk_size'] = chunk_size
+
+                elif len(links) > 50000:  # Large graph threshold
+                    logger.info(f"📊 Large graph detected ({len(nodes)} nodes, {len(links)} links) - applying aggressive filtering")
+
+                    # Strategy 1: Keep only strongest connections
+                    sorted_links = sorted(links, key=lambda x: x.get('strength', 0), reverse=True)
+
+                    # Keep top 5% of strongest links, but at least 3000 and at most 8000
+                    max_links = min(8000, max(3000, len(links) // 20))
+                    links = sorted_links[:max_links]
+
+                    logger.info(f"   Filtered to {len(links)}/{original_link_count} links (kept strongest connections)")
+
+                elif len(links) > 10000:  # Medium graph threshold
+                    # Strategy 2: Filter by link strength and type
+                    filtered_links = []
+                    for link in links:
+                        strength = link.get('strength', 0)
+                        link_type = link.get('type', '')
+
+                        # Keep strong links or important types
+                        if strength > 0.4 or link_type in ['direct', 'temporal', 'correlation']:
+                            filtered_links.append(link)
+
+                    if len(filtered_links) < 2000:  # Don't filter too aggressively
+                        filtered_links = links[:8000]  # Fallback to top 8000
+
+                    links = filtered_links
+                    logger.info(f"   Filtered to {len(links)}/{original_link_count} links (kept strong + important connections)")
+
                 # Small graph - send everything at once
                 response_data = {
                     'nodes': nodes,
@@ -7062,7 +7364,8 @@ def get_graph():
                     'diagnostic': diagnostic_info if diagnostic_info else None,
                     'cached': False,
                     'event_count': len(nodes),
-                    'link_count': len(links),
+                    'original_link_count': original_link_count,
+                    'filtered_link_count': len(links),
                     'chunked': False
                 }
             

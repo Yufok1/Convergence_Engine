@@ -8,24 +8,32 @@
 
 ## 📋 What's Exposed in the Settings Panel (All CRA-Controllable)
 
-### 🎨 **Component Colors** (6 Color Pickers)
+### 🎨 **Component Colors** (8 Color Pickers)
 - ✅ Reality Simulator (default: #FF0000 - Red)
 - ✅ Explorer (default: #0000FF - Blue)
 - ✅ Djinn Kernel (default: #FF8800 - Orange)
 - ✅ Breath Engine (default: #FF00FF - Magenta)
-- ✅ **🧠 Neural System** (default: #00FFFF - Electric Cyan) ⭐ **NEWLY ADDED**
+- ✅ **🧠 Neural System** (default: #00FFFF - Electric Cyan)
+- ✅ **⚔️ Highlander** (default: #DC143C - Crimson) ⭐ **NEW**
+- ✅ **🌌 Alliance Warfare** (default: #9400D3 - Dark Violet) ⭐ **NEW**
 - ✅ System (default: #FFFF00 - Yellow)
 
 **CRA Format:** `[[VIZ_SETTINGS_UPDATE: {"componentColor_neural": "#BF00FF"}]]`
+**Highlander Format:** `[[VIZ_SETTINGS_UPDATE: {"componentColor_highlander": "#FF0000"}]]`
+**Alliance Format:** `[[VIZ_SETTINGS_UPDATE: {"componentColor_alliance": "#8B00FF"}]]`
 
-### 🔗 **Link Colors** (5 Color Pickers)
+### 🔗 **Link Colors** (7 Color Pickers)
 - ✅ Threshold (default: #FF00FF - Magenta)
 - ✅ Correlation (default: #0000FF - Blue)
 - ✅ Direct (default: #00FF00 - Green)
 - ✅ Temporal (default: #FFFF00 - Yellow)
+- ✅ **Battle** (default: #DC143C - Crimson) ⭐ **NEW** - Highlander battle causations
+- ✅ **Alliance** (default: #9400D3 - Dark Violet) ⭐ **NEW** - Alliance warfare causations
 - ✅ Unknown (default: #FF8800 - Orange)
 
 **CRA Format:** `[[VIZ_SETTINGS_UPDATE: {"linkColor_threshold": "#FF0000"}]]`
+**Battle Format:** `[[VIZ_SETTINGS_UPDATE: {"linkColor_battle": "#FF4500"}]]`
+**Alliance Format:** `[[VIZ_SETTINGS_UPDATE: {"linkColor_alliance": "#9932CC"}]]`
 
 ### 🔗 **Link Appearance** (6 Sliders)
 1. **Base Width** (1-5px, default: 2.5px)
@@ -91,25 +99,31 @@
 
 ## 🎛️ **Graph Filters** (CRA Can Control)
 
-### Component Filters (7 Checkboxes)
+### Component Filters (10 Checkboxes)
 - ✅ Reality Simulator
 - ✅ Explorer
 - ✅ Djinn Kernel
 - ✅ Breath
-- ✅ 🧠 Neural System ⭐ NEW
-- ✅ 🦋 Language System ⭐ NEW (vocabulary growth, organism communication, language teacher)
-- ✅ 🦋 Butterfly Chat ⭐ NEW (user chat interactions)
+- ✅ 🧠 Neural System
+- ✅ 🦋 Language System (vocabulary growth, organism communication, language teacher)
+- ✅ 🦋 Butterfly Chat (user chat interactions)
+- ✅ ⚔️ Highlander ⭐ NEW (tournament battles, eliminations, champion emergence)
+- ✅ 🌌 Alliance Warfare ⭐ NEW (alliance formation, galactic wars, territory control)
 - ✅ System
 
 **CRA Format:** `[[GRAPH_FILTER_UPDATE: {"components": {"explorer": true, "djinn_kernel": false, "language": true}}]]`
+**Highlander Format:** `[[GRAPH_FILTER_UPDATE: {"components": {"highlander": true, "alliance_warfare": true}}]]`
 
-### Causation Type Filters (4 Checkboxes)
+### Causation Type Filters (6 Checkboxes)
 - ✅ Threshold
 - ✅ Correlation
 - ✅ Direct
 - ✅ Temporal
+- ✅ Battle ⭐ NEW (Highlander battle causations)
+- ✅ Alliance ⭐ NEW (Alliance warfare causations)
 
 **CRA Format:** `[[GRAPH_FILTER_UPDATE: {"causation_types": {"threshold": true, "direct": false}}]]`
+**Battle Format:** `[[GRAPH_FILTER_UPDATE: {"causation_types": {"battle": true, "alliance": true}}]]`
 
 ### Display Toggles (3 Checkboxes)
 - ✅ Node Labels
@@ -216,6 +230,52 @@ The CRA can modify `config.json` while the system is running using:
 
 **Rollback:** `[[CONFIG_ROLLBACK: {"steps": 1, "reason": "Undo last change"}]]`
 
+#### Highlander Protocol ⭐ NEW
+The Highlander Protocol is a survival tournament system where organisms compete for dominance. "There can be only one" - the ultimate survivor becomes the immortal template.
+
+- `highlander.enabled` (true/false, default: true) - Master toggle for Highlander mode
+- `highlander.survival_threshold` (0.0-1.0, default: 0.5) - Minimum fitness to survive elimination
+- `highlander.competition_intensity` (0.0-1.0, default: 0.8) - Frequency and intensity of battles
+- `highlander.chaos_factor` (0.0-1.0, default: 0.15) - Random event probability
+- `highlander.mutation_rate` (0.0-1.0, default: 0.05) - Mutation rate for offspring
+- `highlander.population_size` (1-100, default: 10) - Initial population size
+- `highlander.max_population` (10-500, default: 50) - Maximum population cap
+- `highlander.min_population` (1-20, default: 5) - Minimum before germination triggers
+- `highlander.germination_rate` (0.0-1.0, default: 0.1) - Rate of new organism spawning
+- `highlander.predation_enabled` (true/false, default: true) - Enable predator-prey dynamics
+- `highlander.rounds_per_cycle` (1-10, default: 1) - Battle rounds per simulation cycle
+- `highlander.max_battle_rounds` (1-20, default: 10) - Maximum rounds per battle
+- `highlander.max_capsules` (1-20, default: 5) - Maximum checkpoint capsules for champions
+- `highlander.max_genetic_samples` (10-500, default: 100) - Maximum genetic samples for germination
+
+**Examples:**
+- `[[CONFIG_UPDATE: {"reason": "Enable Highlander mode", "patch": [{"op": "replace", "path": "/highlander/enabled", "value": true}]}]]`
+- `[[CONFIG_UPDATE: {"reason": "Increase survival pressure", "patch": [{"op": "replace", "path": "/highlander/survival_threshold", "value": 0.7}]}]]`
+- `[[CONFIG_UPDATE: {"reason": "More intense battles", "patch": [{"op": "replace", "path": "/highlander/competition_intensity", "value": 0.95}]}]]`
+- `[[CONFIG_UPDATE: {"reason": "Enable extreme mode", "patch": [{"op": "replace", "path": "/highlander/chaos_factor", "value": 0.4}, {"op": "replace", "path": "/highlander/survival_threshold", "value": 0.8}]}]]`
+
+#### Alliance Warfare System ⭐ NEW
+Galactic-scale alliance warfare for collective existential dominance. Organisms form planetary alliances and wage wars across territorial domains.
+
+- `highlander.alliance_warfare.enabled` (true/false, default: true) - Enable alliance warfare
+- `highlander.alliance_warfare.min_alliance_size` (2-10, default: 3) - Minimum organisms for alliance formation
+- `highlander.alliance_warfare.max_alliances` (2-20, default: 10) - Maximum concurrent alliances
+- `highlander.alliance_warfare.war_frequency` (0.0-1.0, default: 0.3) - Probability of war each cycle
+- `highlander.alliance_warfare.existential_war_threshold` (0.0-1.0, default: 0.8) - Threshold for total annihilation wars
+
+**Territorial Domains (War Objectives):**
+- `FITNESS_LANDSCAPE` - Control over organism fitness scoring
+- `KNOWLEDGE_DOMAIN` - Control over language/knowledge systems  
+- `GERMINATION_TERRITORY` - Control over offspring spawning
+- `ORBITAL_ZONE` - Control over network positioning
+- `EMERGENCE_MOMENTUM` - Control over evolution pressure
+- `EXISTENTIAL_OWNERSHIP` - Ultimate galactic dominance
+
+**Examples:**
+- `[[CONFIG_UPDATE: {"reason": "Enable alliance warfare", "patch": [{"op": "replace", "path": "/highlander/alliance_warfare/enabled", "value": true}]}]]`
+- `[[CONFIG_UPDATE: {"reason": "More frequent wars", "patch": [{"op": "replace", "path": "/highlander/alliance_warfare/war_frequency", "value": 0.5}]}]]`
+- `[[CONFIG_UPDATE: {"reason": "Larger alliances required", "patch": [{"op": "replace", "path": "/highlander/alliance_warfare/min_alliance_size", "value": 5}]}]]`
+
 ---
 
 ## 📊 **What CRA CANNOT Control** (User-Only)
@@ -232,9 +292,9 @@ The CRA can modify `config.json` while the system is running using:
 
 ## 🎯 **Complete CRA Control Summary**
 
-### ✅ **FULLY CONTROLLABLE** (40+ Settings)
+### ✅ **FULLY CONTROLLABLE** (175+ Settings)
 
-1. **All Visualization Settings** (40+ settings)
+1. **All Visualization Settings** (45+ settings)
    - Link appearance (7 settings)
    - Node appearance (6 settings)
    - Depth effects (4 settings)
@@ -242,12 +302,12 @@ The CRA can modify `config.json` while the system is running using:
    - Color settings (3 settings)
    - Performance (4 settings)
    - Animation (3 settings)
-   - Component colors (6 colors)
-   - Link colors (5 colors)
+   - Component colors (8 colors - including Highlander & Alliance)
+   - Link colors (7 colors - including Battle & Alliance causations)
 
-2. **Graph Filters** (13 settings)
-   - Component visibility (6) ⭐ Neural System filter added
-   - Causation type filters (4)
+2. **Graph Filters** (19 settings)
+   - Component visibility (10) - includes Highlander & Alliance Warfare
+   - Causation type filters (6) - includes Battle & Alliance
    - Display toggles (3)
 
 3. **System Configuration** (100+ settings)
@@ -255,13 +315,34 @@ The CRA can modify `config.json` while the system is running using:
    - Feedback controller knobs
    - Network settings
    - Evolution parameters
-   - **🧬 Diversity Guard Settings** ⭐ NEW
+   - **🧬 Diversity Guard Settings**
      - `evolution.diversity_guard.enabled` (bool) - Enable/disable diversity guard
      - `evolution.diversity_guard.hash_similarity_threshold` (0.5-1.0) - Genotype similarity threshold
      - `evolution.diversity_guard.penalty` (0.0-0.2) - Fitness penalty for over-represented genotypes
      - `evolution.diversity_guard.frequency_threshold` (0.05-0.5) - Frequency above which penalty applies
    - Quantum settings
    - VP monitoring options
+
+4. **⚔️ Highlander Protocol** (15+ settings) ⭐ NEW
+   - `highlander.enabled` - Master toggle
+   - `highlander.survival_threshold` - Minimum fitness to survive
+   - `highlander.competition_intensity` - Battle intensity
+   - `highlander.chaos_factor` - Random event probability
+   - `highlander.mutation_rate` - Offspring mutation rate
+   - `highlander.population_size` - Initial population
+   - `highlander.max_population` / `min_population` - Population bounds
+   - `highlander.germination_rate` - New organism spawn rate
+   - `highlander.predation_enabled` - Predator-prey dynamics
+   - `highlander.rounds_per_cycle` / `max_battle_rounds` - Battle configuration
+   - `highlander.max_capsules` - Champion checkpoint limit
+   - `highlander.max_genetic_samples` - Germination pool size
+
+5. **🌌 Alliance Warfare** (5 settings) ⭐ NEW
+   - `highlander.alliance_warfare.enabled` - Enable galactic warfare
+   - `highlander.alliance_warfare.min_alliance_size` - Minimum alliance members
+   - `highlander.alliance_warfare.max_alliances` - Maximum concurrent alliances
+   - `highlander.alliance_warfare.war_frequency` - War probability per cycle
+   - `highlander.alliance_warfare.existential_war_threshold` - Total annihilation threshold
 
 ### ❌ **NOT CONTROLLABLE** (User Manual Only)
 
@@ -299,6 +380,22 @@ The CRA can modify `config.json` while the system is running using:
 **You:** "Increase diversity penalty to 0.08"
 **CRA Response:** `[[CONFIG_UPDATE: {"reason": "Increase diversity penalty to prevent genotype clustering", "correlation_id": "diversity-penalty", "patch": [{"op": "replace", "path": "/evolution/diversity_guard/penalty", "value": 0.08}]}]]`
 
+### Example 7: Enable Highlander Mode ⭐ NEW
+**You:** "Enable Highlander survival tournament"
+**CRA Response:** `[[CONFIG_UPDATE: {"reason": "Enable Highlander survival tournament mode", "correlation_id": "highlander-enable", "patch": [{"op": "replace", "path": "/highlander/enabled", "value": true}]}]]`
+
+### Example 8: Increase Battle Intensity ⭐ NEW
+**You:** "Make battles more intense"
+**CRA Response:** `[[CONFIG_UPDATE: {"reason": "Increase competition intensity for harder battles", "correlation_id": "battle-intensity", "patch": [{"op": "replace", "path": "/highlander/competition_intensity", "value": 0.95}]}]]`
+
+### Example 9: Enable Alliance Warfare ⭐ NEW
+**You:** "Enable galactic alliance wars"
+**CRA Response:** `[[CONFIG_UPDATE: {"reason": "Enable alliance warfare for collective battles", "correlation_id": "alliance-enable", "patch": [{"op": "replace", "path": "/highlander/alliance_warfare/enabled", "value": true}]}]]`
+
+### Example 10: More Frequent Wars ⭐ NEW
+**You:** "Trigger wars more often"
+**CRA Response:** `[[CONFIG_UPDATE: {"reason": "Increase war frequency for more galactic conflict", "correlation_id": "war-freq", "patch": [{"op": "replace", "path": "/highlander/alliance_warfare/war_frequency", "value": 0.5}]}]]`
+
 ---
 
 ## 📝 **Notes**
@@ -311,5 +408,8 @@ The CRA can modify `config.json` while the system is running using:
 
 ---
 
-**Total CRA-Controllable Settings: 150+ settings** across visualization, filters, and system configuration!
+**Total CRA-Controllable Settings: 175+ settings** across visualization, filters, Highlander Protocol, Alliance Warfare, and system configuration!
+
+
+**Last Updated:** 2025-12-01
 

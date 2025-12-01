@@ -72,13 +72,13 @@
         "step": 0.05
       },
       "mutation_rate": {
-        "initial": 0.035,
+        "initial": 0.036,
         "max": 0.06,
         "min": 0.002,
         "step": 0.001
       },
       "new_edge_rate": {
-        "initial": 5,
+        "initial": 5.2,
         "max": 6.0,
         "min": 0.2,
         "step": 0.1
@@ -104,6 +104,37 @@
     "weight_lawfulness": 0.15,
     "weight_sustainability": 0.1
   },
+  "highlander": {
+    "chaos_factor": 0.15,
+    "competition_intensity": 0.8,
+    "description": "Highlander Protocol - Survival of the fittest tournament system",
+    "enabled": true,
+    "extreme_mode": {
+      "chaos_factor": 0.4,
+      "competition_intensity": 0.95,
+      "description": "EXTREME DIFFICULTY - Maximum evolutionary pressure",
+      "germination_rate": 0.05,
+      "max_battle_rounds": 15,
+      "max_population": 20,
+      "min_population": 2,
+      "mutation_rate": 0.15,
+      "population_size": 5,
+      "predation_enabled": true,
+      "rounds_per_cycle": 2,
+      "survival_threshold": 0.8
+    },
+    "germination_rate": 0.1,
+    "max_battle_rounds": 10,
+    "max_capsules": 5,
+    "max_genetic_samples": 100,
+    "max_population": 50,
+    "min_population": 5,
+    "mutation_rate": 0.05,
+    "population_size": 10,
+    "predation_enabled": true,
+    "rounds_per_cycle": 1,
+    "survival_threshold": 0.5
+  },
   "lattice": {
     "entropy_sensitivity": 5e-05,
     "interaction_precision": 0.0001,
@@ -119,7 +150,7 @@
     "self_tuning": {
       "enabled": true,
       "min_confidence_threshold": 0.6,
-      "mode": "autonomous",
+      "mode": "observing",
       "performance_targets": {
         "max_anomaly_ratio": 0.2,
         "min_cluster_diversity": 3,
@@ -169,7 +200,7 @@
     "max_connections": 19000,
     "max_organisms": 2000,
     "resource_flow_precision": 0.0001,
-    "resource_pool": 525,
+    "resource_pool": 550,
     "stability_precision": 1e-07
   },
   "neural": {
@@ -177,7 +208,7 @@
       "activation": "relu",
       "dropout": 0.1,
       "hidden_dim": 64,
-      "input_dim": 18,
+      "input_dim": 24,
       "output_dim": 6
     },
     "device": "cuda",
@@ -302,7 +333,7 @@
       "survival": 0.8
     },
     "training": {
-      "batch_size": 32,
+      "batch_size": 64,
       "enabled": true,
       "epsilon": 0.95,
       "epsilon_decay": 0.99,
@@ -315,9 +346,9 @@
       "update_frequency": 1
     },
     "vp_aware_planning": {
-      "base_boost": 0.18,
+      "base_boost": 0.2,
       "enabled": true,
-      "high_threshold": 0.45,
+      "high_threshold": 0.4,
       "low_threshold": 0.25,
       "strong_boost": 0.3
     }
@@ -338,7 +369,7 @@
       "min_fitness_to_keep": 0.1
     },
     "probability_precision": 1e-06,
-    "prune_check_interval": 50,
+    "prune_check_interval": 40,
     "superposition_tolerance": 0.0005
   },
   "rendering": {
@@ -357,9 +388,9 @@
   "scikit": {
     "anomaly_detection": {
       "algorithm": "isolation_forest",
-      "contamination": 0.18,
+      "contamination": 0.15,
       "enabled": true,
-      "n_estimators": 450
+      "n_estimators": 500
     },
     "clustering": {
       "algorithm": "hdbscan",
@@ -419,22 +450,5 @@
       "smoothing_factor": 0.25
     },
     "stabilization_enabled": true
-  },
-  "highlander": {
-    "description": "Highlander Protocol - Survival of the fittest tournament system",
-    "enabled": true,
-    "predation_enabled": true,
-    "survival_threshold": 0.5,
-    "competition_intensity": 0.8,
-    "population_size": 10,
-    "max_battle_rounds": 10,
-    "chaos_factor": 0.15,
-    "max_capsules": 5,
-    "max_genetic_samples": 100,
-    "min_population": 5,
-    "max_population": 50,
-    "germination_rate": 0.1,
-    "mutation_rate": 0.05,
-    "rounds_per_cycle": 1
   }
 }

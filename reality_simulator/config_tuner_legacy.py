@@ -279,6 +279,31 @@ class ConfigTuner:
         if symbiosis_action:
             actions.append(symbiosis_action)
 
+        # Phase 4.6 - Cross-System Correlation Analysis ⭐ INTEGRATION
+        # Quantum-Language correlation
+        quantum_metrics = network_metrics.get('quantum', {}) if network_metrics else {}
+        quantum_lang_action = self._analyze_quantum_language_correlation(quantum_metrics, ml_metrics)
+        if quantum_lang_action:
+            actions.append(quantum_lang_action)
+        
+        # Network-Alliance correlation
+        alliance_metrics = network_metrics.get('alliances', {}) if network_metrics else {}
+        network_alliance_action = self._analyze_network_alliance_correlation(network_metrics, alliance_metrics)
+        if network_alliance_action:
+            actions.append(network_alliance_action)
+        
+        # Neural-Battle correlation
+        battle_metrics = network_metrics.get('battles', {}) if network_metrics else {}
+        neural_battle_action = self._analyze_neural_battle_correlation(neural_metrics, battle_metrics)
+        if neural_battle_action:
+            actions.append(neural_battle_action)
+        
+        # Vocabulary-Fitness correlation
+        language_metrics = ml_metrics.get('language', {}) if ml_metrics else {}
+        vocab_fitness_action = self._analyze_vocabulary_fitness_correlation(language_metrics, evolution_metrics)
+        if vocab_fitness_action:
+            actions.append(vocab_fitness_action)
+
         # Phase 5 - Quantum (placeholder for now)
         # quantum_action = self._analyze_quantum_stability(quantum_metrics)
         # if quantum_action:
@@ -1071,6 +1096,286 @@ class ConfigTuner:
                     expected_impact=f"Should enable more frequent optimization opportunities while maintaining quality"
                 )
 
+        return None
+
+    # === CROSS-SYSTEM CORRELATION ANALYSIS METHODS (Integration: Neural-ML-Alliance) ===
+    
+    def _analyze_quantum_language_correlation(self, 
+                                              quantum_metrics: Dict[str, Any],
+                                              ml_metrics: Dict[str, Any]) -> Optional[TuningAction]:
+        """
+        Analyze correlation between quantum state coherence and language generation quality.
+        
+        When quantum entropy is high, language generation tends to be more creative but
+        less coherent. When entropy is low, language is more structured but potentially
+        repetitive. Find the optimal balance.
+        """
+        if not quantum_metrics or not ml_metrics:
+            return None
+            
+        # Get quantum entropy from metrics
+        quantum_entropy = quantum_metrics.get('entropy', 0.5)
+        
+        # Get language quality from ML metrics (if available)
+        language_quality = ml_metrics.get('language_quality', {})
+        coherence = language_quality.get('coherence', 0.5)
+        creativity = language_quality.get('creativity', 0.5)
+        
+        # Detect imbalance: high entropy + low coherence = too chaotic
+        if quantum_entropy > 0.7 and coherence < 0.3:
+            param = 'quantum.entanglement_sensitivity'
+            current = self._get_param_value(param)
+            proposed = max(current - self.step_sizes[param], self.param_bounds[param][0])
+            
+            if proposed < current:
+                return TuningAction(
+                    parameter_path=param,
+                    current_value=current,
+                    proposed_value=proposed,
+                    reason=f"High quantum entropy ({quantum_entropy:.2f}) + low coherence ({coherence:.2f}) - reducing sensitivity for more stable language",
+                    confidence=0.65,
+                    trigger_metrics={
+                        'quantum_entropy': float(quantum_entropy),
+                        'language_coherence': float(coherence),
+                        'language_creativity': float(creativity)
+                    },
+                    causation_event_id=self._find_recent_event('quantum_substrate', 'entropy_calculated'),
+                    expected_impact="Should improve language coherence by reducing quantum chaos influence"
+                )
+        
+        # Detect imbalance: low entropy + low creativity = too rigid
+        if quantum_entropy < 0.3 and creativity < 0.3:
+            param = 'quantum.entanglement_sensitivity'
+            current = self._get_param_value(param)
+            proposed = min(current + self.step_sizes[param], self.param_bounds[param][1])
+            
+            if proposed > current:
+                return TuningAction(
+                    parameter_path=param,
+                    current_value=current,
+                    proposed_value=proposed,
+                    reason=f"Low quantum entropy ({quantum_entropy:.2f}) + low creativity ({creativity:.2f}) - increasing sensitivity for more varied language",
+                    confidence=0.6,
+                    trigger_metrics={
+                        'quantum_entropy': float(quantum_entropy),
+                        'language_coherence': float(coherence),
+                        'language_creativity': float(creativity)
+                    },
+                    causation_event_id=self._find_recent_event('quantum_substrate', 'entropy_calculated'),
+                    expected_impact="Should improve language creativity by allowing more quantum influence"
+                )
+        
+        return None
+    
+    def _analyze_network_alliance_correlation(self, 
+                                               network_metrics: Dict[str, Any],
+                                               alliance_metrics: Dict[str, Any]) -> Optional[TuningAction]:
+        """
+        Analyze correlation between network topology and alliance formation success.
+        
+        Networks with high clustering coefficients tend to form stronger alliances.
+        Networks with low density may need connection incentives.
+        """
+        if not network_metrics:
+            return None
+            
+        # Get network topology metrics
+        clustering_coef = network_metrics.get('clustering_coefficient', 0.5)
+        network_density = network_metrics.get('density', 0.5)
+        
+        # Get alliance metrics (if available)
+        alliance_metrics = alliance_metrics or {}
+        alliance_count = alliance_metrics.get('active_alliances', 0)
+        avg_alliance_size = alliance_metrics.get('avg_size', 0)
+        formation_rate = alliance_metrics.get('formation_rate', 0)
+        
+        # Low clustering + low alliance formation = need more edge creation
+        if clustering_coef < 0.3 and formation_rate < 0.1:
+            param = 'feedback.knobs.new_edge_rate.initial'
+            current = self._get_param_value(param)
+            proposed = min(current + self.step_sizes[param], self.param_bounds[param][1])
+            
+            if proposed > current:
+                return TuningAction(
+                    parameter_path=param,
+                    current_value=current,
+                    proposed_value=proposed,
+                    reason=f"Low clustering ({clustering_coef:.2f}) + low alliance formation ({formation_rate:.2f}) - increasing edge rate to promote social structure",
+                    confidence=0.6,
+                    trigger_metrics={
+                        'clustering_coefficient': float(clustering_coef),
+                        'network_density': float(network_density),
+                        'alliance_formation_rate': float(formation_rate),
+                        'active_alliances': int(alliance_count)
+                    },
+                    causation_event_id=self._find_recent_event('network', 'topology_updated'),
+                    expected_impact="Should improve alliance formation by creating more connection opportunities"
+                )
+        
+        # High density but few alliances = organisms are connected but not cooperating
+        if network_density > 0.6 and alliance_count < 3:
+            param = 'feedback.knobs.clustering_bias.initial'
+            current = self._get_param_value(param)
+            proposed = min(current + self.step_sizes[param], self.param_bounds[param][1])
+            
+            if proposed > current:
+                return TuningAction(
+                    parameter_path=param,
+                    current_value=current,
+                    proposed_value=proposed,
+                    reason=f"High network density ({network_density:.2f}) but few alliances ({alliance_count}) - increasing clustering bias to encourage local cooperation",
+                    confidence=0.55,
+                    trigger_metrics={
+                        'clustering_coefficient': float(clustering_coef),
+                        'network_density': float(network_density),
+                        'active_alliances': int(alliance_count),
+                        'avg_alliance_size': float(avg_alliance_size)
+                    },
+                    causation_event_id=self._find_recent_event('alliance_warfare', 'alliance_formed'),
+                    expected_impact="Should promote alliance formation among already-connected organisms"
+                )
+        
+        return None
+    
+    def _analyze_neural_battle_correlation(self, 
+                                           neural_metrics: Dict[str, Any],
+                                           battle_metrics: Dict[str, Any]) -> Optional[TuningAction]:
+        """
+        Analyze correlation between neural learning and battle success.
+        
+        Organisms that learn well should perform better in battles.
+        If battle success doesn't correlate with learning, adjust rewards.
+        """
+        if not neural_metrics or not battle_metrics:
+            return None
+            
+        # Get neural training metrics
+        avg_loss = neural_metrics.get('avg_loss', 1.0)
+        learning_rate_effective = neural_metrics.get('effective_lr', 0.001)
+        
+        # Get battle metrics
+        avg_win_rate = battle_metrics.get('avg_win_rate', 0.5)
+        battle_count = battle_metrics.get('total_battles', 0)
+        
+        if battle_count < 10:
+            return None  # Not enough data
+        
+        # Low loss (good learning) but low win rate = reward signal may be wrong
+        if avg_loss < 0.3 and avg_win_rate < 0.3:
+            param = 'neural.rewards.fitness_improvement'
+            current = self._get_param_value(param)
+            proposed = min(current + self.step_sizes[param], self.param_bounds[param][1])
+            
+            if proposed > current:
+                return TuningAction(
+                    parameter_path=param,
+                    current_value=current,
+                    proposed_value=proposed,
+                    reason=f"Good learning (loss={avg_loss:.3f}) but poor battle performance ({avg_win_rate:.1%}) - increasing fitness reward to better align learning with survival",
+                    confidence=0.7,
+                    trigger_metrics={
+                        'avg_loss': float(avg_loss),
+                        'avg_win_rate': float(avg_win_rate),
+                        'total_battles': int(battle_count)
+                    },
+                    causation_event_id=self._find_recent_event('neural', 'training_step'),
+                    expected_impact="Should improve correlation between neural learning and battle success"
+                )
+        
+        # High loss (poor learning) but high win rate = may be over-relying on fitness
+        if avg_loss > 0.7 and avg_win_rate > 0.7:
+            param = 'neural.training.learning_rate'
+            current = self._get_param_value(param)
+            proposed = min(current + self.step_sizes[param], self.param_bounds[param][1])
+            
+            if proposed > current:
+                return TuningAction(
+                    parameter_path=param,
+                    current_value=current,
+                    proposed_value=proposed,
+                    reason=f"Poor learning (loss={avg_loss:.3f}) but high win rate ({avg_win_rate:.1%}) - increasing learning rate so neural decisions matter more",
+                    confidence=0.6,
+                    trigger_metrics={
+                        'avg_loss': float(avg_loss),
+                        'avg_win_rate': float(avg_win_rate),
+                        'total_battles': int(battle_count)
+                    },
+                    causation_event_id=self._find_recent_event('neural', 'training_step'),
+                    expected_impact="Should make neural decisions more relevant to battle outcomes"
+                )
+        
+        return None
+    
+    def _analyze_vocabulary_fitness_correlation(self, 
+                                                 language_metrics: Dict[str, Any],
+                                                 evolution_metrics: Dict[str, Any]) -> Optional[TuningAction]:
+        """
+        Analyze correlation between vocabulary richness and organism fitness.
+        
+        Organisms with larger vocabularies should have fitness advantages
+        if language is contributing to survival. If not, adjust language rewards.
+        """
+        if not language_metrics or not evolution_metrics:
+            return None
+            
+        # Get language metrics
+        avg_vocab_size = language_metrics.get('avg_vocabulary_size', 0)
+        vocab_diversity = language_metrics.get('vocabulary_diversity', 0)
+        
+        # Get fitness metrics
+        avg_fitness = evolution_metrics.get('avg_fitness', 0.5)
+        fitness_variance = evolution_metrics.get('fitness_variance', 0.1)
+        
+        # Calculate if vocabulary correlates with fitness (simplified heuristic)
+        vocab_fitness_alignment = language_metrics.get('vocab_fitness_correlation', None)
+        
+        # If we have explicit correlation data
+        if vocab_fitness_alignment is not None:
+            if vocab_fitness_alignment < 0.2:
+                # Low correlation - language isn't helping fitness
+                param = 'neural.training.language_reward_scaling'
+                current = self._get_param_value(param)
+                proposed = min(current + self.step_sizes[param], self.param_bounds[param][1])
+                
+                if proposed > current:
+                    return TuningAction(
+                        parameter_path=param,
+                        current_value=current,
+                        proposed_value=proposed,
+                        reason=f"Low vocab-fitness correlation ({vocab_fitness_alignment:.2f}) - increasing language reward to make vocabulary matter more",
+                        confidence=0.65,
+                        trigger_metrics={
+                            'vocab_fitness_correlation': float(vocab_fitness_alignment),
+                            'avg_vocab_size': float(avg_vocab_size),
+                            'avg_fitness': float(avg_fitness)
+                        },
+                        causation_event_id=self._find_recent_event('language', 'generation_evaluated'),
+                        expected_impact="Should increase fitness benefits for organisms with rich vocabularies"
+                    )
+        
+        # Heuristic: high vocab diversity but low average fitness = language costs too much
+        if vocab_diversity > 0.7 and avg_fitness < 0.3:
+            param = 'neural.rewards.survival'
+            current = self._get_param_value(param)
+            proposed = min(current + self.step_sizes[param], self.param_bounds[param][1])
+            
+            if proposed > current:
+                return TuningAction(
+                    parameter_path=param,
+                    current_value=current,
+                    proposed_value=proposed,
+                    reason=f"High vocabulary diversity ({vocab_diversity:.2f}) but low fitness ({avg_fitness:.2f}) - increasing survival reward to balance language investment",
+                    confidence=0.55,
+                    trigger_metrics={
+                        'vocabulary_diversity': float(vocab_diversity),
+                        'avg_vocab_size': float(avg_vocab_size),
+                        'avg_fitness': float(avg_fitness),
+                        'fitness_variance': float(fitness_variance)
+                    },
+                    causation_event_id=self._find_recent_event('evolution', 'fitness_evaluated'),
+                    expected_impact="Should help organisms survive while developing language capabilities"
+                )
+        
         return None
 
     def _get_param_value(self, path: str) -> float:
