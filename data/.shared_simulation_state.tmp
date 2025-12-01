@@ -1,15 +1,15 @@
 {
-  "frame_count": 3,
+  "frame_count": 11,
   "simulation_fps": 0.0,
-  "simulation_time": 1764632408.057985,
+  "simulation_time": 1764632677.705008,
   "data": {
     "quantum": {
       "states": 0
     },
     "lattice": {
       "particles": 1200,
-      "cpu_usage": 58.9,
-      "ram_usage": 10.097885131835938,
+      "cpu_usage": 60.7,
+      "ram_usage": 10.847515106201172,
       "particle_positions": [
         [
           -9.90803886337293,
@@ -4814,20 +4814,20 @@
       ]
     },
     "evolution": {
-      "generation": 3,
+      "generation": 11,
       "population_size": 1400,
-      "best_fitness": 0.8965628287390865,
-      "avg_fitness": 0.5947449628340199,
-      "unique_genotypes": 1375,
+      "best_fitness": 0.9653826086956522,
+      "avg_fitness": 0.5969914440074511,
+      "unique_genotypes": 1371,
       "max_genotype_frequency": 0.002142857142857143,
-      "diversity_index": 10.414418415400954,
-      "unique_genotypes_ratio": 0.9821428571428571
+      "diversity_index": 10.408704129686669,
+      "unique_genotypes_ratio": 0.9792857142857143
     },
     "network": {
-      "organisms": 25,
-      "connections": 18,
-      "stability": 0.27018359125289515,
-      "connectivity": 1.8,
+      "organisms": 65,
+      "connections": 85,
+      "stability": 0.2592913333199369,
+      "connectivity": 2.8666666666666667,
       "graph_edges": [
         [
           0,
@@ -4842,40 +4842,24 @@
           3
         ],
         [
-          4,
+          0,
+          4
+        ],
+        [
+          0,
           5
         ],
         [
-          4,
+          0,
           6
         ],
         [
-          4,
-          3
+          0,
+          7
         ],
         [
-          6,
-          1
-        ],
-        [
-          6,
-          2
-        ],
-        [
-          7,
-          5
-        ],
-        [
-          8,
-          2
-        ],
-        [
-          8,
-          1
-        ],
-        [
-          1,
-          2
+          0,
+          8
         ],
         [
           9,
@@ -4883,23 +4867,307 @@
         ],
         [
           9,
-          11
+          8
         ],
         [
           9,
+          2
+        ],
+        [
+          9,
+          11
+        ],
+        [
+          8,
+          1
+        ],
+        [
+          8,
           12
         ],
         [
-          5,
+          8,
           13
         ],
         [
-          10,
+          8,
           14
         ],
         [
-          15,
+          11,
+          10
+        ],
+        [
+          11,
+          12
+        ],
+        [
+          11,
+          15
+        ],
+        [
+          11,
+          16
+        ],
+        [
+          4,
+          1
+        ],
+        [
+          4,
+          17
+        ],
+        [
+          4,
+          7
+        ],
+        [
+          4,
+          18
+        ],
+        [
+          1,
+          12
+        ],
+        [
+          1,
+          19
+        ],
+        [
+          1,
+          20
+        ],
+        [
+          1,
+          21
+        ],
+        [
+          22,
+          23
+        ],
+        [
+          22,
           13
+        ],
+        [
+          22,
+          24
+        ],
+        [
+          22,
+          25
+        ],
+        [
+          22,
+          26
+        ],
+        [
+          22,
+          27
+        ],
+        [
+          10,
+          18
+        ],
+        [
+          10,
+          2
+        ],
+        [
+          10,
+          28
+        ],
+        [
+          12,
+          13
+        ],
+        [
+          23,
+          13
+        ],
+        [
+          23,
+          26
+        ],
+        [
+          23,
+          25
+        ],
+        [
+          23,
+          24
+        ],
+        [
+          23,
+          29
+        ],
+        [
+          2,
+          18
+        ],
+        [
+          30,
+          18
+        ],
+        [
+          30,
+          17
+        ],
+        [
+          30,
+          31
+        ],
+        [
+          30,
+          32
+        ],
+        [
+          33,
+          34
+        ],
+        [
+          3,
+          35
+        ],
+        [
+          3,
+          36
+        ],
+        [
+          3,
+          18
+        ],
+        [
+          3,
+          37
+        ],
+        [
+          18,
+          36
+        ],
+        [
+          18,
+          32
+        ],
+        [
+          18,
+          28
+        ],
+        [
+          18,
+          17
+        ],
+        [
+          18,
+          38
+        ],
+        [
+          25,
+          13
+        ],
+        [
+          28,
+          15
+        ],
+        [
+          28,
+          39
+        ],
+        [
+          24,
+          13
+        ],
+        [
+          24,
+          17
+        ],
+        [
+          24,
+          40
+        ],
+        [
+          41,
+          20
+        ],
+        [
+          41,
+          38
+        ],
+        [
+          13,
+          19
+        ],
+        [
+          13,
+          42
+        ],
+        [
+          13,
+          43
+        ],
+        [
+          36,
+          44
+        ],
+        [
+          36,
+          17
+        ],
+        [
+          20,
+          44
+        ],
+        [
+          20,
+          45
+        ],
+        [
+          20,
+          46
+        ],
+        [
+          20,
+          38
+        ],
+        [
+          35,
+          38
+        ],
+        [
+          31,
+          46
+        ],
+        [
+          19,
+          5
+        ],
+        [
+          17,
+          40
+        ],
+        [
+          38,
+          47
+        ],
+        [
+          21,
+          48
+        ],
+        [
+          21,
+          26
+        ],
+        [
+          47,
+          39
+        ],
+        [
+          7,
+          49
+        ],
+        [
+          50,
+          51
         ]
       ],
       "language_connections": 0,
@@ -4908,20 +5176,20 @@
     "agency": {
       "mode": "manual_only",
       "performance": {
-        "total_decisions": 30,
+        "total_decisions": 110,
         "ai_adoption_rate": 0.0,
         "deferred_rate": 0.0,
         "manual_rate": 0.0,
-        "avg_response_time": 0.0,
+        "avg_response_time": 4.538622769442471e-06,
         "user_satisfaction": 0.0
       }
     },
     "neural": {
       "enabled": true,
       "training_loss": null,
-      "avg_epsilon": 0.93135042422,
-      "organisms_tracked": 25,
-      "training_steps": 3,
+      "avg_epsilon": 0.8904724699139472,
+      "organisms_tracked": 65,
+      "training_steps": 11,
       "avg_loss": 0.0,
       "training_time_ms": null,
       "avg_training_time_ms": null,
@@ -4934,21 +5202,21 @@
     },
     "ml": {
       "enabled": true,
-      "organism_count": 20,
-      "timestamp": 1764632407.5153248,
+      "organism_count": 60,
+      "timestamp": 1764632676.9213467,
       "clustering": {
         "n_clusters": 2,
         "cluster_sizes": {
-          "0": 4,
-          "1": 10,
-          "-1": 6
+          "0": 12,
+          "1": 45,
+          "-1": 3
         },
         "algorithm": "hdbscan",
-        "noise_count": 6
+        "noise_count": 3
       },
       "semantic_analysis": {
-        "word_organism_matrix_size": 41,
-        "total_word_organism_links": 376,
-        "word_cooccurrence_pairs": 730,
+        "word_organism_matrix_size": 46,
+        "total_word_organism_links": 1739,
+        "word_cooccurrence_pairs": 1005,
         "top_cooccurrences": {
           

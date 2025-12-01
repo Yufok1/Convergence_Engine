@@ -2333,7 +2333,17 @@ class UnifiedSystem:
             def make_json_serializable(obj):
                 """Recursively make object JSON serializable"""
                 if isinstance(obj, dict):
-                    return {k: make_json_serializable(v) for k, v in obj.items()}
+                    # Convert tuple keys to strings (e.g., (1, 2) -> "1,2")
+                    result = {}
+                    for k, v in obj.items():
+                        if isinstance(k, tuple):
+                            key = ",".join(str(x) for x in k)
+                        elif isinstance(k, (str, int, float, bool, type(None))):
+                            key = k
+                        else:
+                            key = str(k)
+                        result[key] = make_json_serializable(v)
+                    return result
                 elif isinstance(obj, (list, tuple)):
                     return [make_json_serializable(item) for item in obj]
                 elif isinstance(obj, (int, float, str, bool, type(None))):

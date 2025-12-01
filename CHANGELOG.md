@@ -6,6 +6,20 @@
 
 ## [Unreleased] - 2025-12-01
 
+### 🔧 Runtime Fixes (2025-12-01)
+
+#### Fixed
+- **Memory Envelope Limit** - Increased Sentinel memory envelope from 1500MB to 8000MB in `explorer/main.py`
+  - Previous limit was too restrictive for ML workloads causing all functions to fail certification
+  - New limit accommodates realistic PyTorch/scikit-learn memory usage (observed ~4500MB)
+
+- **JSON Serialization with Tuple Keys** - Fixed `make_json_serializable()` in `unified_entry.py`
+  - Tuple dict keys (e.g., `(1, 2)`) are now converted to string format (`"1,2"`)
+  - Fixes `"keys must be str, int, float, bool or None, not tuple"` error during shared state write
+  - Tuple keys originate from `symbiotic_network.py` connection dicts
+
+---
+
 ### 🔧 Code Quality & Safety Improvements (2025-12-01)
 
 #### Fixed

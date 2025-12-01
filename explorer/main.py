@@ -322,7 +322,7 @@ class BiphasicController:
         """Initialize stability envelope with realistic ranges"""
         return {
             'speed_ms': (10.0, 1000.0),    # 10ms to 1 second
-            'memory_mb': (1.0, 1500.0),    # 1MB to 1500MB
+            'memory_mb': (1.0, 8000.0),    # 1MB to 8GB - increased for realistic ML workloads
             'reliability': (1.0, 1.0)      # Must be reliable
         }
 
