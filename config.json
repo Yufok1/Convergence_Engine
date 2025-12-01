@@ -7,7 +7,7 @@
     "performance_tracking_precision": 0.0001
   },
   "causation_detection": {
-    "correlation_threshold": 0.5,
+    "correlation_threshold": 0.52,
     "direct_causation_time_window": 2,
     "enable_bidirectional_causations": true,
     "enable_language_causations": true,
@@ -78,13 +78,13 @@
         "step": 0.001
       },
       "new_edge_rate": {
-        "initial": 5,
+        "initial": 4.8,
         "max": 6.0,
         "min": 0.2,
         "step": 0.1
       },
       "quantum_pruning": {
-        "initial": 0.45,
+        "initial": 0.48,
         "max": 1.0,
         "min": 0.0,
         "step": 0.05
@@ -97,6 +97,10 @@
     "enabled": true,
     "healthy_threshold": 0.65,
     "history_size": 100,
+    "thresholds": {
+      "critical": 0.25,
+      "warning": 0.45
+    },
     "warning_threshold": 0.45,
     "weight_adaptability": 0.2,
     "weight_coherence": 0.3,
@@ -105,37 +109,20 @@
     "weight_sustainability": 0.1
   },
   "highlander": {
-    "enabled": true,
-    "description": "Highlander Protocol - Survival of the fittest tournament system",
-    
-    "population_size": 15,
-    "min_population": 5,
-    "max_population": 30,
-    
-    "survival_threshold": 0.4,
-    "competition_intensity": 0.7,
-    "chaos_factor": 0.2,
-    
-    "predation_enabled": true,
-    "rounds_per_cycle": 1,
-    "max_battle_rounds": 10,
-    
-    "germination_rate": 0.15,
-    "mutation_rate": 0.08,
-    "max_genetic_samples": 100,
-    "max_capsules": 10,
-    
     "alliance_warfare": {
+      "betrayal_chance": 0.1,
       "enabled": true,
       "max_alliance_size": 5,
-      "betrayal_chance": 0.1,
       "war_declaration_threshold": 0.6
     },
-    
+    "chaos_factor": 0.2,
+    "competition_intensity": 0.7,
+    "description": "Highlander Protocol - Survival of the fittest tournament system",
+    "enabled": true,
     "extreme_mode": {
-      "description": "EXTREME DIFFICULTY - Maximum evolutionary pressure",
       "chaos_factor": 0.4,
       "competition_intensity": 0.95,
+      "description": "EXTREME DIFFICULTY - Maximum evolutionary pressure",
       "germination_rate": 0.05,
       "max_battle_rounds": 15,
       "max_population": 20,
@@ -145,7 +132,18 @@
       "predation_enabled": true,
       "rounds_per_cycle": 2,
       "survival_threshold": 0.8
-    }
+    },
+    "germination_rate": 0.15,
+    "max_battle_rounds": 10,
+    "max_capsules": 10,
+    "max_genetic_samples": 100,
+    "max_population": 30,
+    "min_population": 5,
+    "mutation_rate": 0.08,
+    "population_size": 15,
+    "predation_enabled": true,
+    "rounds_per_cycle": 1,
+    "survival_threshold": 0.4
   },
   "lattice": {
     "entropy_sensitivity": 5e-05,
@@ -162,7 +160,7 @@
     "self_tuning": {
       "enabled": true,
       "min_confidence_threshold": 0.6,
-      "mode": "observing",
+      "mode": "autonomous",
       "performance_targets": {
         "max_anomaly_ratio": 0.2,
         "min_cluster_diversity": 3,
@@ -209,7 +207,7 @@
   "network": {
     "connection_strength_resolution": 5e-06,
     "emergence_sensitivity": 1e-06,
-    "max_connections": 19000,
+    "max_connections": 18500,
     "max_organisms": 2000,
     "resource_flow_precision": 0.0001,
     "resource_pool": 525,
@@ -244,7 +242,7 @@
         "enabled": true,
         "ml_quality": {
           "enabled": true,
-          "high_quality_threshold": 0.6,
+          "high_quality_threshold": 0.55,
           "low_quality_threshold": 0.3,
           "max_sequence_length": 64,
           "min_sequence_length": 8,
@@ -275,7 +273,7 @@
           "enabled": true,
           "exploration_decay_generations": 1000,
           "exploration_end": 0.05,
-          "exploration_start": 0.2,
+          "exploration_start": 0.25,
           "max_discoveries_per_generation": 10,
           "min_confidence_threshold": 0.3,
           "min_discovery_count": 3,
@@ -320,7 +318,7 @@
         "vp_temperature_scale": true
       },
       "vocabulary": {
-        "max_size": 12288,
+        "max_size": 10000,
         "special_tokens": [
           "<PAD>",
           "<UNK>",
@@ -348,13 +346,13 @@
       "batch_size": 64,
       "enabled": true,
       "epsilon": 0.95,
-      "epsilon_decay": 0.99,
+      "epsilon_decay": 0.989,
       "epsilon_end": 0.01,
       "epsilon_start": 0.95,
       "gamma": 0.995,
-      "language_reward_scaling": 0.2,
+      "language_reward_scaling": 0.25,
       "learning_rate": 0.005,
-      "memory_size": 0,
+      "memory_size": 1000,
       "update_frequency": 1
     },
     "vp_aware_planning": {

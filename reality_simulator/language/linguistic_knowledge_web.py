@@ -1700,8 +1700,8 @@ class LinguisticKnowledgeWeb:
                         if norm1 > 0 and norm2 > 0:
                             similarity = dot_product / (norm1 * norm2)
                             coherence_scores.append(similarity)
-                except Exception:
-                    pass
+                except (ValueError, TypeError, AttributeError) as e:
+                    logger.debug(f"Coherence calculation skipped for concept: {e}")
         
         if coherence_scores:
             avg_coherence = np.mean(coherence_scores)

@@ -55,7 +55,9 @@ class MultiHeadAttention(nn.Module if PYTORCH_AVAILABLE else object):
             
         super().__init__()
         
-        assert embed_dim % num_heads == 0, f"embed_dim ({embed_dim}) must be divisible by num_heads ({num_heads})"
+        # Runtime validation instead of assert (asserts disabled with -O flag)
+        if embed_dim % num_heads != 0:
+            raise ValueError(f"embed_dim ({embed_dim}) must be divisible by num_heads ({num_heads})")
         
         self.embed_dim = embed_dim
         self.num_heads = num_heads

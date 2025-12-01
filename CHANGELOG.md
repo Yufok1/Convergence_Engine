@@ -6,6 +6,28 @@
 
 ## [Unreleased] - 2025-12-01
 
+### 🔧 Code Quality & Safety Improvements (2025-12-01)
+
+#### Fixed
+- **Exception Handling Hardening** - Replaced 25+ bare `except:` clauses with specific exception types across neural, language, and UI modules
+  - `reality_simulator/neural/neural_organism.py` - Semantic guidance and TF-IDF boost error handling
+  - `reality_simulator/neural/trainer.py` - Event emission and language loss calculation
+  - `reality_simulator/language/linguistic_knowledge_web.py` - Coherence calculation
+  - `reality_simulator/language/language_teacher.py` - Connection word assignment
+  - `unified_entry.py` - Tkinter and matplotlib operations
+  - `causation_web_ui.py` - 17 instances of JSON parsing, file I/O, and system monitoring
+
+- **Silent Exception Logging** - Added `logger.debug()` calls to previously silent `except: pass` blocks for better error visibility during debugging
+
+- **Production Safety** - Converted `assert` statement in `MultiHeadAttention.__init__()` to `raise ValueError()` (asserts are disabled with Python `-O` flag)
+
+#### Technical Details
+- Bare `except:` catches `KeyboardInterrupt` and `SystemExit`, preventing graceful shutdown
+- Specific exception types used: `ValueError`, `KeyError`, `TypeError`, `AttributeError`, `IOError`, `json.JSONDecodeError`, `psutil.NoSuchProcess`, `tk.TclError`
+- No behavioral changes - purely code hygiene and debugging improvements
+
+---
+
 ### 🏰 Confederation System - Super-Alliances (2025-12-01)
 
 #### Added

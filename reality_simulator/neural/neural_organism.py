@@ -1235,8 +1235,8 @@ class NeuralOrganism(Organism):
                                                 elif any(r.strength >= 0.8 and (r.target == similar_word or r.source == similar_word) 
                                                         for r in knowledge_web.get_relations(last_word)):
                                                     logits[similar_token] += high_strength_boost  # Smaller boost for high-strength
-                                        except:
-                                            pass
+                                        except (KeyError, AttributeError, TypeError) as e:
+                                            logger.debug(f"Semantic guidance lookup failed: {e}")
                                     
                                     # NEW: TF-IDF Importance Bias (if ML analysis available)
                                     # Boost words that are important across the population
@@ -1257,8 +1257,8 @@ class NeuralOrganism(Organism):
                                                         if word_token < vocab_size and word_token >= 0:
                                                             # Boost by TF-IDF score (scaled)
                                                             logits[word_token] += score * 0.1  # Small boost for important words
-                                                    except:
-                                                        pass
+                                                    except (KeyError, AttributeError, TypeError) as e:
+                                                        logger.debug(f"TF-IDF boost failed for word: {e}")
                                     
                                     # Store used relationships for later success/failure recording
                                     if not hasattr(self, '_generation_relationships'):

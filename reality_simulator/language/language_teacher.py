@@ -584,8 +584,8 @@ class LanguageTeacher:
                         context_memory.link_word_to_node(word, organism_id, generation)
                         words_assigned += 1
                         self.stats['words_by_type']['connections'] += 1
-                except Exception:
-                    pass  # Skip if connections not available
+                except (AttributeError, KeyError, TypeError) as e:
+                    logger.debug(f"Connection word assignment skipped: {e}")
             
             # Resource-based words (if available)
             if hasattr(organism, 'resources'):

@@ -1969,7 +1969,7 @@ class OllamaBridge:
                         try:
                             error_body = response.json()
                             logger.error(f"401 Response Body: {error_body}")
-                        except:
+                        except (ValueError, json.JSONDecodeError):
                             logger.error(f"401 Response Text: {response.text[:500]}")
                     
                     # Log 404 errors with details
@@ -1987,7 +1987,7 @@ class OllamaBridge:
                             error_body = e.response.json()
                             logger.error(f"401 Response Body: {error_body}")
                             error_detail = error_body.get('error', str(error_body))
-                        except:
+                        except (ValueError, json.JSONDecodeError):
                             error_detail = e.response.text[:500]
                             logger.error(f"401 Response Text: {error_detail}")
                         
@@ -2113,7 +2113,7 @@ class OllamaBridge:
                         error_detail = e.response.text[:500]
                         error_message = f"Ollama API error ({status_code}): {error_detail}"
                     logger.error(f"API response: {error_message}")
-                except:
+                except (ValueError, json.JSONDecodeError, AttributeError):
                     if status_code == 401:
                         # Provide detailed 401 error message
                         if not self.api_key:
@@ -5262,7 +5262,7 @@ class SystemContextBuilder:
                     with open(control_file, 'r') as f:
                         control = json.load(f)
                         simulation_running = bool(control.get('running', False))
-                except:
+                except (IOError, json.JSONDecodeError, KeyError):
                     simulation_running = False
             
             # Calculate data age
@@ -8495,7 +8495,7 @@ Use this context to understand what the graph structure means. Match the visual 
                                                             annotations = parsed
                                                             logger.info(f"✓ Extracted {len(annotations.get('annotations', []))} annotations using line-by-line parsing")
                                                             break
-                                                    except:
+                                                    except (json.JSONDecodeError, ValueError, KeyError):
                                                         json_start = None
                                                         json_end = None
                                                         brace_count = 0
@@ -8881,7 +8881,7 @@ def annotate_image():
             # Try to load a font, fallback to default if not available
             try:
                 font = ImageFont.truetype("arial.ttf", 16)
-            except:
+            except (IOError, OSError):
                 font = ImageFont.load_default()
             
             for ann in annotations:
@@ -9417,8 +9417,8 @@ def start_custodian_monitoring():
 
         try:
             print("Custodian health monitoring activated")
-        except:
-            pass  # Fallback if print doesn't work
+        except (IOError, OSError):
+            pass  # Fallback if print doesn't work (e.g., no stdout)
 
         while event_streaming_active:
             try:
@@ -9452,8 +9452,8 @@ def start_custodian_monitoring():
             except Exception as e:
                 try:
                     print(f"Custodian monitoring error: {e}")
-                except:
-                    pass  # Silent fallback
+                except (IOError, OSError):
+                    pass  # Silent fallback if no stdout
                 time.sleep(30)  # Wait before retrying
 
     # Start monitoring thread
@@ -9461,7 +9461,7 @@ def start_custodian_monitoring():
     monitor_thread.start()
     try:
         logger.info("Custodian continuous monitoring started")
-    except:
+    except (AttributeError, NameError):
         print("Custodian continuous monitoring started")
 
 def stop_event_streaming():
@@ -9484,13 +9484,13 @@ def publish_cra_event(event_type: str, data: Dict[str, Any]):
     except queue.Full:
         try:
             print("CRA event queue full - dropping event")
-        except:
-            pass  # Silent fallback
+        except (IOError, OSError):
+            pass  # Silent fallback if no stdout
     except Exception as e:
         try:
             print(f"CRA event publishing error: {e}")
-        except:
-            pass  # Silent fallback
+        except (IOError, OSError):
+            pass  # Silent fallback if no stdout
 
 # WebSocket event handlers
 if SOCKETIO_AVAILABLE:
@@ -10285,7 +10285,7 @@ def cra_get_vp_history():
                     # Check if VP history is embedded in state
                     if 'vp_history' in state.get('data', {}).get('djinn_kernel', {}):
                         vp_history = state['data']['djinn_kernel']['vp_history'][-breaths:]
-            except:
+            except (IOError, json.JSONDecodeError, KeyError, TypeError):
                 pass
         
         # Method 2: Parse from logs if available
@@ -10427,7 +10427,7 @@ def cra_get_memory_breakdown():
         try:
             current_process = psutil.Process(os.getpid())
             breakdown['process_memory_mb'] = round(current_process.memory_info().rss / (1024**2), 2)
-        except:
+        except (psutil.NoSuchProcess, psutil.AccessDenied, AttributeError):
             pass
         
         # Parse component memory from logs if available
@@ -10448,7 +10448,7 @@ def cra_get_memory_breakdown():
                                         'memory_mb': float(ram_match.group(1)),
                                         'last_seen': re.search(r'(\d{2}:\d{2}:\d{2})', line).group(1) if re.search(r'(\d{2}:\d{2}:\d{2})', line) else None
                                     }
-                except:
+                except (IOError, UnicodeDecodeError, AttributeError):
                     pass
         
         return jsonify({
@@ -10566,7 +10566,7 @@ def cra_get_breath_cycles():
                                     t1_sec = float(t1_parts[0])*3600 + float(t1_parts[1])*60 + float(t1_parts[2])
                                     t2_sec = float(t2_parts[0])*3600 + float(t2_parts[1])*60 + float(t2_parts[2])
                                     intervals.append(abs(t2_sec - t1_sec))
-                            except:
+                            except (ValueError, IndexError, KeyError, AttributeError):
                                 pass
                         
                         if intervals:
@@ -10583,7 +10583,7 @@ def cra_get_breath_cycles():
                     explorer_data = state.get('data', {}).get('explorer', {})
                     if 'breath_cycle' in explorer_data:
                         cycles['total_cycles'] = explorer_data['breath_cycle']
-            except:
+            except (IOError, json.JSONDecodeError, KeyError, TypeError):
                 pass
         
         return jsonify({
@@ -11449,7 +11449,7 @@ def get_vp_diagnostics():
                                 try:
                                     vp_diagnostics = json.loads(line[json_start:])
                                     break
-                                except:
+                                except (json.JSONDecodeError, ValueError):
                                     pass
         except Exception as e:
             logger.debug(f"Error reading VP diagnostics log: {e}")

@@ -683,8 +683,8 @@ class UnifiedVisualization:
                 try:
                     self.root.update_idletasks()  # Process pending idle events
                     self.root.update()            # Process all pending events
-                except:
-                    pass  # Window might be closed
+                except (tk.TclError, RuntimeError):
+                    pass  # Window might be closed or destroyed
 
         except Exception as e:
             print(f"[VISUALIZATION] [WARN] Update error: {e}")
@@ -816,8 +816,8 @@ class UnifiedVisualization:
                     fig = ax.figure
                     try:
                         fig.delaxes(ax)
-                    except:
-                        pass
+                    except (AttributeError, ValueError):
+                        pass  # Axes already removed or invalid
                     ax = fig.add_subplot(131, projection='3d')
                     self.axes['left'] = ax
 
@@ -926,8 +926,8 @@ class UnifiedVisualization:
             ax.set_xlim(0, 1)
             ax.set_ylim(0, 1)
             ax.axis('off')
-        except:
-            pass
+        except (AttributeError, ValueError, TypeError):
+            pass  # Visualization update failed - non-critical
 
     def _update_explorer_panel(self, ax, state: Dict):
         """Update Explorer panel"""

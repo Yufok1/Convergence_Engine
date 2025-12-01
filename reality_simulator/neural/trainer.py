@@ -295,8 +295,8 @@ class NeuralTrainer:
                     }
                 )
                 self.event_emitter(event)
-            except Exception:
-                pass  # Event emission is optional
+            except Exception as e:
+                logger.debug(f"Event emission failed (non-critical): {e}")
         
         return reward
     
@@ -522,8 +522,8 @@ class NeuralTrainer:
                                 language_logits, target_tokens, vp_value
                             )
                             self.total_language_loss += language_loss.item()
-                    except Exception:
-                        pass  # Skip language loss on error
+                    except Exception as e:
+                        logger.debug(f"Language loss calculation skipped: {e}")
             
             # Combine losses with weighting
             if language_loss is not None:
@@ -784,8 +784,8 @@ class NeuralTrainer:
                         }
                     )
                     self.event_emitter(event)
-                except Exception:
-                    pass  # Event emission is optional
+                except Exception as e:
+                    logger.debug(f"Curriculum event emission failed: {e}")
             
             return new_length
         
@@ -990,8 +990,8 @@ class NeuralTrainer:
                             }
                         )
                         self.event_emitter(event)
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug(f"Chat training event emission failed: {e}")
                 
                 logger.debug(f"[NEURAL] Chat training loss: {loss.item():.4f}")
                 return loss.item()
@@ -1108,8 +1108,8 @@ class NeuralTrainer:
                             }
                         )
                         self.event_emitter(event)
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug(f"Bootstrap learning event emission failed: {e}")
                 
                 logger.debug(f"[NEURAL] Bootstrap learning complete: loss={loss.item():.4f}")
                 return True
