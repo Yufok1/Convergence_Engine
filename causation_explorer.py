@@ -2086,6 +2086,45 @@ class CausationExplorer:
                 if message:
                     parts.append(f"💭 Message: {message[:50]}...")
         
+        # ═══════════════════════════════════════════════════════════════
+        # CONFIG EVENTS (Atomic Config System)
+        # ═══════════════════════════════════════════════════════════════
+        if event.component == 'config':
+            if event.event_type == 'config_atom_update':
+                param = event.data.get('param_name', 'unknown')
+                domain = event.data.get('domain', 'unknown')
+                old_val = event.data.get('old_value', '?')
+                new_val = event.data.get('new_value', '?')
+                reason = event.data.get('reason', 'unknown')
+                strength = event.data.get('strength', 0)
+                parts.append(f"⚙️ Config [{domain}] {param}: {old_val} → {new_val}")
+                parts.append(f"📊 Confidence: {strength:.1%} | Reason: {reason}")
+            
+            elif event.event_type == 'config_outcome':
+                success = event.data.get('success', False)
+                domain = event.data.get('domain', 'all')
+                context = event.data.get('context', '')
+                emoji = "✅" if success else "❌"
+                parts.append(f"{emoji} Config outcome [{domain}]: {'SUCCESS' if success else 'FAILURE'}")
+                if context:
+                    parts.append(f"📝 Context: {context}")
+            
+            elif event.event_type == 'pytorch_training_update':
+                epoch = event.data.get('epoch', 0)
+                metrics = event.data.get('metrics', {})
+                improved = event.data.get('is_improvement', False)
+                loss = metrics.get('loss', 0)
+                emoji = "📈" if improved else "📉"
+                parts.append(f"{emoji} PyTorch Epoch {epoch}: loss={loss:.4f}")
+                parts.append(f"🔧 LR={event.data.get('current_lr', '?')}, Batch={event.data.get('current_batch', '?')}")
+            
+            elif event.event_type == 'highlander_config_absorption':
+                winner = event.data.get('winner_id', 'unknown')
+                loser = event.data.get('loser_id', 'unknown')
+                absorbed = event.data.get('absorbed_params', {})
+                parts.append(f"⚔️ HIGHLANDER: {winner} absorbed configs from {loser}")
+                parts.append(f"🏆 Absorbed {len(absorbed)} parameters: {list(absorbed.keys())[:3]}")
+        
         # ML events with cluster/anomaly context
         if event.component == 'ml_analysis':
             if event.event_type == 'phenotype_emergence':
