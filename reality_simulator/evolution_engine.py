@@ -826,16 +826,70 @@ class EvolutionEngine:
                             if len(parent_brains) >= 2:
                                 break
                 
-                return NeuralOrganism(
+                organism = NeuralOrganism(
                     genotype=genotype,
                     config=self.config,
                     parent_brains=parent_brains if parent_brains else None
                 )
             except ImportError:
                 # PyTorch not available, fall back to standard Organism
-                return Organism(genotype=genotype)
+                organism = Organism(genotype=genotype)
         else:
-            return Organism(genotype=genotype)
+            organism = Organism(genotype=genotype)
+        
+        # ✅ FIX: Calculate initial fitness from genotype diversity
+        # This creates differentiation from birth, preventing convergence
+        initial_fitness = self._calculate_initial_fitness(genotype, parents)
+        organism.fitness = initial_fitness
+        if hasattr(organism, 'genotype'):
+            organism.genotype.fitness = initial_fitness
+        
+        return organism
+    
+    def _calculate_initial_fitness(self, genotype: Genotype, parents: Optional[List[Organism]] = None) -> float:
+        """
+        Calculate initial fitness based on genetic diversity and parent fitness.
+        
+        Creates meaningful differentiation from organism creation.
+        Prevents all organisms from starting at fitness = 0.0.
+        
+        Args:
+            genotype: Organism genotype
+            parents: Parent organisms (if any)
+            
+        Returns:
+            Initial fitness value (0.0-1.0)
+        """
+        # Base fitness from genetic diversity (more diverse = slightly higher)
+        gene_variance = np.var(genotype.genes) if len(genotype.genes) > 0 else 0.0
+        diversity_bonus = min(gene_variance / 10000.0, 0.1)  # Max 0.1 bonus for high diversity
+        
+        # Parent fitness inheritance (if parents exist)
+        parent_fitness_bonus = 0.0
+        if parents and len(parents) > 0:
+            parent_fitnesses = [p.fitness for p in parents if hasattr(p, 'fitness')]
+            if parent_fitnesses:
+                avg_parent_fitness = np.mean(parent_fitnesses)
+                # Inherit 30% of parent fitness (Lamarckian inheritance)
+                parent_fitness_bonus = avg_parent_fitness * 0.3
+        
+        # Genetic uniqueness bonus (hash-based, ensures different organisms get different values)
+        genotype_hash = genotype.get_hash()
+        # Use hash to create deterministic but varied initial fitness
+        try:
+            hash_int = int(genotype_hash[:8], 16) if len(genotype_hash) >= 8 else hash(genotype_hash)
+        except (ValueError, TypeError):
+            hash_int = hash(genotype_hash) % 1000000
+        uniqueness_bonus = (hash_int % 1000) / 10000.0  # 0.0-0.1 range
+        
+        # Base fitness: 0.3-0.5 range (prevents starting at 0.0)
+        base_fitness = 0.3 + uniqueness_bonus
+        
+        # Total initial fitness
+        initial_fitness = base_fitness + diversity_bonus + parent_fitness_bonus
+        
+        # Clamp to valid range
+        return np.clip(initial_fitness, 0.0, 1.0)
 
 
 # Utility functions for easy use

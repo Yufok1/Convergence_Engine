@@ -162,7 +162,7 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
                  num_attention_heads: int = 4,
                  attention_dim: int = 64,
                  max_sequence_length: int = 32,
-                 vocab_size: int = 1000,
+                 vocab_size: int = 12288,
                  use_language_head: bool = False):
         """
         Initialize the organism brain.
@@ -298,22 +298,26 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
             x = self.attention_norm(x + attn_out)
         
         # Reshape back to 2D for remaining layers if we added a sequence dim
-        if is_sequence and x.shape[1] == 1:
+        if is_sequence and len(x.shape) == 3 and x.shape[1] == 1:
             x = x.squeeze(1)
-        elif is_sequence:
+            is_sequence = False  # No longer treating as sequence after squeezing
+        elif is_sequence and len(x.shape) == 3:
             # For actual sequences, use the last position for action prediction
             x_for_action = x[:, -1, :]  # (batch, hidden)
         else:
             x_for_action = x
+            is_sequence = False  # Ensure flag matches tensor shape
         
         # Apply fc2
-        if is_sequence and x.shape[1] > 1:
+        if is_sequence and len(x.shape) == 3 and x.shape[1] > 1:
             # For language modeling, process all positions
             x = self._get_activation(self.fc2(x))
             x = self.dropout(x)
             x_for_action = x[:, -1, :]  # Last position for action
         else:
-            x = self._get_activation(self.fc2(x if not is_sequence or x.shape[1] == 1 else x_for_action))
+            # 2D tensor or single-position sequence
+            x_2d = x if len(x.shape) == 2 else x_for_action
+            x = self._get_activation(self.fc2(x_2d))
             x = self.dropout(x)
             x_for_action = x
         

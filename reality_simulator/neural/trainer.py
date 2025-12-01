@@ -412,7 +412,51 @@ class NeuralTrainer:
         # Track training time
         training_start_time = time.time()
         
-        # Train each organism's brain
+        # ═══════════════════════════════════════════════════════════════════════════
+        # LANGUAGE-ONLY TRAINING: Train organisms with tokens but not enough RL experiences
+        # This fixes the bug where language training was blocked by RL batch requirements
+        # ═══════════════════════════════════════════════════════════════════════════
+        language_only_organisms = [
+            org for org in organisms 
+            if (hasattr(org, 'token_sequence') and len(org.token_sequence) >= 2 and
+                hasattr(org, 'brain') and hasattr(org.brain, 'use_language_head') and 
+                org.brain.use_language_head and
+                (not hasattr(org, 'experience_buffer') or 
+                 org.experience_buffer is None or 
+                 len(org.experience_buffer) < self.batch_size))
+        ]
+        
+        for organism in language_only_organisms:
+            try:
+                token_seq = list(organism.token_sequence)[-self.current_sequence_length:]
+                if len(token_seq) >= 2:
+                    input_tokens = torch.LongTensor([token_seq[:-1]]).to(self.device)
+                    target_tokens = torch.LongTensor([token_seq[1:]]).to(self.device)
+                    
+                    # Get a dummy state for language logits
+                    dummy_state = torch.zeros(1, organism.brain.input_dim).to(self.device)
+                    
+                    organism.brain.train()
+                    _, language_logits = organism.brain(dummy_state, return_language_logits=True)
+                    
+                    if language_logits is not None:
+                        if language_logits.dim() == 2:
+                            language_logits = language_logits.unsqueeze(1).expand(-1, len(token_seq)-1, -1)
+                        
+                        vp_value = network_state.get('vp_value', 0.0) if network_state else 0.0
+                        language_loss = self.calculate_language_loss(language_logits, target_tokens, vp_value)
+                        
+                        # Backprop for language-only training
+                        optimizer = optim.Adam(organism.brain.parameters(), lr=self.learning_rate * 0.5)
+                        optimizer.zero_grad()
+                        language_loss.backward()
+                        optimizer.step()
+                        
+                        self.total_language_loss += language_loss.item()
+            except Exception as e:
+                pass  # Skip on error, don't break training loop
+        
+        # Train each organism's brain (RL + Language for organisms with enough experiences)
         total_loss = 0.0
         num_trained = 0
         
@@ -828,4 +872,251 @@ class NeuralTrainer:
         temperature = 1.0 / (1.0 + vp_value)
         
         return logits / temperature
+
+    # =========================================================================
+    # 🆕 CHAT-TRIGGERED LEARNING METHODS
+    # Close the experience→training→generation loop for Butterfly Chat
+    # =========================================================================
+    
+    def train_from_chat_experiences(self, 
+                                    organism: 'NeuralOrganism',
+                                    network_state: Optional[Dict[str, Any]] = None) -> Optional[float]:
+        """
+        Train organism from accumulated chat experiences.
+        
+        Uses token sequences stored in experience buffer for language model training.
+        Called periodically by ButterflyChatRouter to close the learning loop.
+        
+        Args:
+            organism: Neural organism to train
+            network_state: Network state for context
+            
+        Returns:
+            Training loss if training occurred, None otherwise
+        """
+        if not PYTORCH_AVAILABLE:
+            return None
+        
+        # Check if organism has required components
+        if not hasattr(organism, 'brain') or organism.brain is None:
+            return None
+        if not hasattr(organism, 'experience_buffer') or organism.experience_buffer is None:
+            return None
+        if len(organism.experience_buffer) < 2:
+            return None
+        
+        # Get token sequences from organism
+        if not hasattr(organism, 'token_sequence') or len(organism.token_sequence) < 4:
+            return None
+        
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        try:
+            # Get token sequence for training
+            token_seq = list(organism.token_sequence)
+            
+            # Need at least 4 tokens for meaningful training
+            if len(token_seq) < 4:
+                return None
+            
+            # Use last N tokens (curriculum-based length)
+            seq_len = min(len(token_seq), self.current_sequence_length)
+            token_seq = token_seq[-seq_len:]
+            
+            # Prepare input/target pairs for next-token prediction
+            input_tokens = torch.LongTensor([token_seq[:-1]]).to(self.device)
+            target_tokens = torch.LongTensor([token_seq[1:]]).to(self.device)
+            
+            # Get VP value for temperature scaling
+            vp_value = network_state.get('vp_value', 0.0) if network_state else 0.0
+            
+            # Get state features for brain input
+            if hasattr(organism, 'get_state_features'):
+                state = organism.get_state_features(
+                    local_env=None,
+                    network_state=network_state,
+                    breath_state=None
+                )
+                state_tensor = torch.FloatTensor(state).unsqueeze(0).to(self.device)
+            else:
+                brain_input_dim = organism.brain.fc1.in_features
+                state_tensor = torch.zeros(1, brain_input_dim, device=self.device)
+            
+            # Forward pass to get language logits
+            organism.brain.train()
+            
+            if hasattr(organism.brain, 'fc_language'):
+                # Get language head output
+                hidden = torch.relu(organism.brain.fc1(state_tensor))
+                hidden = torch.relu(organism.brain.fc2(hidden))
+                language_logits = organism.brain.fc_language(hidden)
+                
+                # Expand to sequence length
+                language_logits = language_logits.unsqueeze(1).expand(-1, len(token_seq)-1, -1)
+                
+                # Calculate loss
+                loss = self.calculate_language_loss(language_logits, target_tokens, vp_value)
+                
+                # Backpropagation
+                organism_id = id(organism.brain)
+                if self.reuse_optimizers:
+                    if organism_id not in self.optimizers:
+                        self.optimizers[organism_id] = optim.Adam(
+                            organism.brain.parameters(), 
+                            lr=self.learning_rate
+                        )
+                    optimizer = self.optimizers[organism_id]
+                else:
+                    optimizer = optim.Adam(organism.brain.parameters(), lr=self.learning_rate)
+                
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+                
+                # Emit training event
+                if self.event_emitter:
+                    try:
+                        from causation_explorer import Event
+                        event = Event(
+                            timestamp=time.time(),
+                            component='neural',
+                            event_type='chat_training_complete',
+                            data={
+                                'organism_id': getattr(organism, 'species_id', str(organism_id)),
+                                'loss': float(loss.item()),
+                                'sequence_length': len(token_seq),
+                                'vp_value': vp_value
+                            }
+                        )
+                        self.event_emitter(event)
+                    except Exception:
+                        pass
+                
+                logger.debug(f"[NEURAL] Chat training loss: {loss.item():.4f}")
+                return loss.item()
+            
+            return None
+            
+        except Exception as e:
+            logger.debug(f"[NEURAL] Chat training failed: {e}")
+            return None
+    
+    def bootstrap_language_learning(self,
+                                    organism: 'NeuralOrganism',
+                                    user_tokens: List[int],
+                                    network_state: Optional[Dict[str, Any]] = None) -> bool:
+        """
+        Bootstrap learning for organisms that generated empty responses.
+        
+        Uses teacher forcing: organism learns to predict user tokens.
+        This helps new organisms develop language capability.
+        
+        Args:
+            organism: Neural organism to bootstrap
+            user_tokens: User input tokens to learn from
+            network_state: Network state for context
+            
+        Returns:
+            True if bootstrap training occurred
+        """
+        if not PYTORCH_AVAILABLE:
+            return False
+        
+        if not user_tokens or len(user_tokens) < 2:
+            return False
+        
+        if not hasattr(organism, 'brain') or organism.brain is None:
+            return False
+        
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        try:
+            # Add user tokens to organism's sequence (teacher forcing)
+            if hasattr(organism, 'token_sequence'):
+                for token in user_tokens:
+                    organism.token_sequence.append(token)
+            
+            # Prepare input/target for teacher forcing
+            input_tokens = torch.LongTensor([user_tokens[:-1]]).to(self.device)
+            target_tokens = torch.LongTensor([user_tokens[1:]]).to(self.device)
+            
+            # Get state for brain input
+            if hasattr(organism, 'get_state_features'):
+                state = organism.get_state_features(
+                    local_env=None,
+                    network_state=network_state,
+                    breath_state=None
+                )
+                state_tensor = torch.FloatTensor(state).unsqueeze(0).to(self.device)
+            else:
+                brain_input_dim = organism.brain.fc1.in_features
+                state_tensor = torch.zeros(1, brain_input_dim, device=self.device)
+            
+            # Forward pass
+            organism.brain.train()
+            
+            if hasattr(organism.brain, 'fc_language'):
+                hidden = torch.relu(organism.brain.fc1(state_tensor))
+                hidden = torch.relu(organism.brain.fc2(hidden))
+                language_logits = organism.brain.fc_language(hidden)
+                
+                # Expand to sequence length
+                language_logits = language_logits.unsqueeze(1).expand(-1, len(user_tokens)-1, -1)
+                
+                # Use higher learning rate for bootstrap (faster learning)
+                bootstrap_lr = self.learning_rate * 2.0
+                
+                # Calculate loss with positive reward bias
+                loss = self.calculate_language_loss(language_logits, target_tokens, vp_value=0.0)
+                
+                # Backpropagation
+                optimizer = optim.Adam(organism.brain.parameters(), lr=bootstrap_lr)
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+                
+                # Store positive experience for reinforcement with token sequence
+                if hasattr(organism, 'experience_buffer') and organism.experience_buffer is not None:
+                    state_np = state_tensor.cpu().numpy().flatten()
+                    # Get VP value from network state if available
+                    vp_val = network_state.get('vp_value') if network_state else None
+                    organism.experience_buffer.add(
+                        state=state_np,
+                        action=0,
+                        reward=0.3,  # Positive reward for learning
+                        next_state=state_np,
+                        done=False,
+                        token_sequence=user_tokens,
+                        vp_value=vp_val
+                    )
+                
+                # Emit bootstrap event
+                if self.event_emitter:
+                    try:
+                        from causation_explorer import Event
+                        event = Event(
+                            timestamp=time.time(),
+                            component='neural',
+                            event_type='bootstrap_learning_complete',
+                            data={
+                                'organism_id': getattr(organism, 'species_id', str(id(organism))),
+                                'loss': float(loss.item()),
+                                'tokens_learned': len(user_tokens),
+                                'method': 'teacher_forcing'
+                            }
+                        )
+                        self.event_emitter(event)
+                    except Exception:
+                        pass
+                
+                logger.debug(f"[NEURAL] Bootstrap learning complete: loss={loss.item():.4f}")
+                return True
+            
+            return False
+            
+        except Exception as e:
+            logger.debug(f"[NEURAL] Bootstrap learning failed: {e}")
+            return False
 

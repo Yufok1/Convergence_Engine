@@ -38,7 +38,8 @@ class ButterflyChatRouter:
     def __init__(self, 
                  organisms: Dict[str, Any],
                  vocabulary: Optional[LanguageVocabulary] = None,
-                 event_emitter: Optional[callable] = None):
+                 event_emitter: Optional[callable] = None,
+                 trainer: Optional[Any] = None):
         """
         Initialize router.
 
@@ -46,15 +47,20 @@ class ButterflyChatRouter:
             organisms: Dictionary of organism_id -> NeuralOrganism-like objects
             vocabulary: LanguageVocabulary for tokenization (optional)
             event_emitter: Optional function to emit causation events
+            trainer: Optional NeuralTrainer for chat-triggered training
         """
         self.organisms = organisms or {}
         self.vocabulary = vocabulary
         self.event_emitter = event_emitter
+        self.trainer = trainer  # For chat-triggered learning
         self.conversation_history: List[Dict[str, Any]] = []
         # Debug logging system
         self.debug_logs: List[Dict[str, Any]] = []
         self.causation_trail: List[Dict[str, Any]] = []
         self.errors: List[Dict[str, Any]] = []
+        # Learning tracking
+        self.total_chat_experiences = 0
+        self.chat_training_triggered = 0
 
     def route_message(self,
                      message: str,
@@ -215,9 +221,17 @@ class ButterflyChatRouter:
                         "note": "Organism will learn to generate responses as it gains experience"
                     })
                 
-                confidence = self._calculate_confidence(response_tokens)
+                confidence = self._calculate_confidence(response_tokens, organism=organism)
                 fitness = float(getattr(organism, 'fitness', 0.0))
-                weight = fitness * confidence
+                
+                # ✅ FIX: Add genetic/trait-based weight modifier
+                genetic_weight_modifier = 1.0
+                if hasattr(organism, 'genotype') and hasattr(organism.genotype, 'genes'):
+                    # Genetic diversity contributes to weight
+                    gene_variance = np.var(organism.genotype.genes) if len(organism.genotype.genes) > 0 else 0.0
+                    genetic_weight_modifier = 1.0 + min(gene_variance / 50000.0, 0.2)  # Max 20% bonus
+                
+                weight = fitness * confidence * genetic_weight_modifier
                 
                 self._log_debug("STEP_4", f"Response decoded for {org_id}", {
                     "response_text": response_text[:50],  # First 50 chars
@@ -473,14 +487,92 @@ class ButterflyChatRouter:
         })
         return best_response[1]
 
-    def _calculate_confidence(self, tokens: List[int]) -> float:
+    def _calculate_confidence(self, tokens: List[int], organism: Any = None) -> float:
+        """
+        Calculate confidence score for organism response.
+        
+        Now includes organism-specific factors:
+        - Token statistics (diversity, length)
+        - Genetic fitness contribution
+        - Neural capability (if neural organism)
+        - Trait-based quality indicators
+        
+        Args:
+            tokens: Generated token sequence
+            organism: Organism instance (optional, for organism-specific factors)
+            
+        Returns:
+            Confidence score (0.0-1.0)
+        """
         if not tokens:
             return 0.0
+        
+        # Token-based confidence (original method)
         unique_tokens = len(set(tokens))
         total_tokens = len(tokens)
         diversity = unique_tokens / max(total_tokens, 1)
         length_score = min(total_tokens / 20.0, 1.0)
-        return (diversity * 0.6 + length_score * 0.4)
+        token_confidence = (diversity * 0.6 + length_score * 0.4)
+        
+        # ✅ FIX: Organism-specific confidence factors
+        organism_confidence = 0.5  # Default neutral
+        
+        if organism is not None:
+            organism_factors = []
+            
+            # 1. Genetic fitness contribution (0.0-0.2 weight)
+            if hasattr(organism, 'fitness'):
+                # Normalize fitness to confidence contribution
+                # Higher fitness = higher confidence (but cap at 0.2)
+                fitness_contribution = min(organism.fitness * 0.2, 0.2)
+                organism_factors.append(fitness_contribution)
+            
+            # 2. Genetic diversity bonus (0.0-0.15 weight)
+            if hasattr(organism, 'genotype') and hasattr(organism.genotype, 'genes'):
+                gene_variance = np.var(organism.genotype.genes) if len(organism.genotype.genes) > 0 else 0.0
+                # More diverse genes = slightly higher confidence (genetic richness)
+                diversity_bonus = min(gene_variance / 20000.0, 0.15)
+                organism_factors.append(diversity_bonus)
+            
+            # 3. Neural capability (if neural organism) (0.0-0.15 weight)
+            if hasattr(organism, 'brain') and organism.brain is not None:
+                # Neural organisms get confidence boost
+                neural_bonus = 0.1
+                # Additional bonus if brain has language head
+                if hasattr(organism.brain, 'use_language_head') and organism.brain.use_language_head:
+                    neural_bonus = 0.15
+                organism_factors.append(neural_bonus)
+            
+            # 4. Experience/learning progress (0.0-0.1 weight)
+            if hasattr(organism, 'experience_buffer') and organism.experience_buffer is not None:
+                buffer_len = len(organism.experience_buffer)
+                buffer_cap = getattr(organism.experience_buffer, 'capacity', 1000)
+                # More experience = higher confidence
+                experience_contribution = min((buffer_len / buffer_cap) * 0.1, 0.1) if buffer_cap > 0 else 0.0
+                organism_factors.append(experience_contribution)
+            
+            # 5. Trait-based quality (0.0-0.1 weight)
+            if hasattr(organism, 'phenotype') and hasattr(organism.phenotype, 'traits'):
+                traits = organism.phenotype.traits
+                if traits:
+                    # Trait balance (low variance = more balanced = higher confidence)
+                    trait_values = list(traits.values())
+                    if len(trait_values) > 1:
+                        trait_variance = np.var(trait_values)
+                        trait_balance = (1.0 - min(trait_variance, 1.0)) * 0.1
+                        organism_factors.append(trait_balance)
+            
+            # Sum organism-specific factors
+            if organism_factors:
+                organism_confidence = sum(organism_factors)
+                # Cap organism contribution at 0.5 (50% of total confidence)
+                organism_confidence = min(organism_confidence, 0.5)
+        
+        # Combined confidence: 50% token-based, 50% organism-based
+        total_confidence = (token_confidence * 0.5) + (organism_confidence * 0.5)
+        
+        # Clamp to valid range
+        return np.clip(total_confidence, 0.0, 1.0)
     
     def _log_debug(self, step: str, action: str, data: Dict[str, Any]):
         """Add debug log entry"""
@@ -597,13 +689,15 @@ class ButterflyChatRouter:
                 vp_value=vp_val
             )
             
-            # Add to experience buffer
+            # Add to experience buffer with token sequence for language training
             organism.experience_buffer.add(
                 state=prev_state,
                 action=0,
                 reward=reward,
                 next_state=state,
-                done=False
+                done=False,
+                token_sequence=full_token_sequence,
+                vp_value=vp_val
             )
             
             # Also store token sequence in organism's token_sequence deque if available
@@ -622,6 +716,17 @@ class ButterflyChatRouter:
                 "experience_buffer_size": len(organism.experience_buffer) if hasattr(organism.experience_buffer, '__len__') else 'unknown'
             })
             
+            # Track chat experiences
+            self.total_chat_experiences += 1
+            
+            # Trigger bootstrap learning for empty responses
+            if (not organism_response or len(organism_response.strip()) == 0) and self.trainer:
+                self._trigger_bootstrap_learning(organism, user_tokens, network_state)
+            
+            # Trigger periodic training from chat experiences (every 10 experiences)
+            if self.total_chat_experiences % 10 == 0 and self.trainer:
+                self._trigger_chat_training(organism, network_state)
+            
         except Exception as e:
             # Don't fail chat if experience storage fails
             self._log_error("EXPERIENCE_STORAGE_ERROR", f"Failed to store chat experience: {e}", {
@@ -631,6 +736,68 @@ class ButterflyChatRouter:
             })
             logger.warning(f"Failed to store chat experience for organism: {e}")
 
+    def _trigger_bootstrap_learning(self, organism: Any, user_tokens: List[int], 
+                                      network_state: Optional[Dict[str, Any]] = None):
+        """
+        Trigger bootstrap learning for organisms that generated empty responses.
+        Uses teacher forcing with user tokens to help organism learn.
+        """
+        if not self.trainer or not hasattr(self.trainer, 'bootstrap_language_learning'):
+            # Fallback: manual bootstrap if trainer doesn't have the method
+            try:
+                if hasattr(organism, 'token_sequence') and user_tokens:
+                    # Add user tokens to organism's sequence for learning
+                    for token in user_tokens:
+                        organism.token_sequence.append(token)
+                    
+                    self._log_debug("STEP_4", f"Bootstrap tokens added for {getattr(organism, 'species_id', 'unknown')}", {
+                        "tokens_added": len(user_tokens),
+                        "method": "direct_token_injection"
+                    })
+            except Exception as e:
+                logger.debug(f"Bootstrap learning fallback failed: {e}")
+            return
+        
+        try:
+            # Use trainer's bootstrap method if available
+            self.trainer.bootstrap_language_learning(organism, user_tokens, network_state)
+            self.chat_training_triggered += 1
+            
+            self._log_debug("STEP_4", f"Bootstrap learning triggered for {getattr(organism, 'species_id', 'unknown')}", {
+                "tokens_used": len(user_tokens),
+                "method": "trainer_bootstrap"
+            })
+        except Exception as e:
+            logger.debug(f"Bootstrap learning failed: {e}")
+    
+    def _trigger_chat_training(self, organism: Any, network_state: Optional[Dict[str, Any]] = None):
+        """
+        Trigger training from accumulated chat experiences.
+        Called periodically to close the experience→training→generation loop.
+        """
+        if not self.trainer:
+            return
+        
+        try:
+            # Use trainer's chat training method if available
+            if hasattr(self.trainer, 'train_from_chat_experiences'):
+                loss = self.trainer.train_from_chat_experiences(organism, network_state)
+                if loss is not None:
+                    self.chat_training_triggered += 1
+                    self._log_debug("STEP_4", f"Chat training completed for {getattr(organism, 'species_id', 'unknown')}", {
+                        "loss": loss,
+                        "total_experiences": self.total_chat_experiences
+                    })
+            else:
+                # Fallback: use regular train_step if available
+                if hasattr(self.trainer, 'train_step'):
+                    organisms = {getattr(organism, 'species_id', 'unknown'): organism}
+                    loss = self.trainer.train_step(organisms, network_state or {})
+                    if loss is not None:
+                        self.chat_training_triggered += 1
+        except Exception as e:
+            logger.debug(f"Chat training failed: {e}")
+
     def _emit_chat_events(self,
                           user_message: str,
                           prompt_tokens: List[int],
@@ -638,6 +805,7 @@ class ButterflyChatRouter:
                           aggregated_response: str) -> List[str]:
         """
         Emit causation events and return list of event IDs.
+        Uses adaptive thresholds based on population statistics.
         
         Returns:
             List of event IDs in order: [message_event_id, ...response_event_ids...]
@@ -647,28 +815,78 @@ class ButterflyChatRouter:
             return event_ids
         try:
             from causation_explorer import Event
-            # User message event
+            
+            # Calculate population statistics for adaptive thresholds
+            confidences = [r.get('confidence', 0.0) for r in organism_responses]
+            fitnesses = [r.get('fitness', 0.0) for r in organism_responses]
+            
+            # Adaptive thresholds: use percentile-based (top 25%) or minimum floor
+            if confidences:
+                confidence_threshold = max(0.3, np.percentile(confidences, 75))
+                fitness_threshold = max(0.3, np.percentile(fitnesses, 75))
+            else:
+                confidence_threshold = 0.3
+                fitness_threshold = 0.3
+            
+            # Calculate diversity metrics
+            fitness_variance = np.var(fitnesses) if fitnesses else 0.0
+            confidence_variance = np.var(confidences) if confidences else 0.0
+            unique_responses = len(set(r.get('response', '') for r in organism_responses))
+            
+            # User message event with diversity metrics
             message_event = Event(
                 timestamp=time.time(),
                 component='butterfly_chat',
                 event_type='butterfly_chat_message',
-                data={'message': user_message, 'tokens': prompt_tokens, 'num_organisms_queried': len(organism_responses)}
+                data={
+                    'message': user_message, 
+                    'tokens': prompt_tokens, 
+                    'num_organisms_queried': len(organism_responses),
+                    'fitness_variance': float(fitness_variance),
+                    'confidence_variance': float(confidence_variance),
+                    'unique_responses': unique_responses,
+                    'adaptive_confidence_threshold': float(confidence_threshold),
+                    'adaptive_fitness_threshold': float(fitness_threshold)
+                }
             )
             self.event_emitter(message_event)
             event_ids.append(message_event.event_id)
             
             self._log_debug("STEP_6", "Message Event Emitted", {
                 "event_id": message_event.event_id,
-                "event_type": "butterfly_chat_message"
+                "event_type": "butterfly_chat_message",
+                "adaptive_thresholds": {
+                    "confidence": confidence_threshold,
+                    "fitness": fitness_threshold
+                }
             })
+            
+            # Emit diversity analysis event if variance is low
+            if fitness_variance < 0.01 and len(organism_responses) > 5:
+                diversity_event = Event(
+                    timestamp=time.time(),
+                    component='butterfly_chat',
+                    event_type='organism_diversity_analysis',
+                    data={
+                        'fitness_variance': float(fitness_variance),
+                        'confidence_variance': float(confidence_variance),
+                        'population_size': len(organism_responses),
+                        'unique_responses': unique_responses,
+                        'is_converged': fitness_variance < 0.001,
+                        'recommendation': 'Population may need diversity injection' if fitness_variance < 0.001 else 'Low diversity detected'
+                    }
+                )
+                self.event_emitter(diversity_event)
+                event_ids.append(diversity_event.event_id)
 
-            # Only emit response events for very high-quality responses (quality over quantity)
-            # Match neural decision event selectivity - only significant responses
+            # Emit response events using ADAPTIVE thresholds (not hardcoded 0.7)
+            responses_emitted = 0
             for resp in organism_responses:
                 confidence = resp.get('confidence', 0.0)
                 fitness = resp.get('fitness', 0.0)
-                # Much higher threshold - only emit for very high quality (both must be high)
-                if confidence > 0.7 and fitness > 0.7:
+                
+                # Use adaptive thresholds based on population statistics
+                if confidence >= confidence_threshold and fitness >= fitness_threshold:
                     response_event = Event(
                         timestamp=time.time(),
                         component='butterfly_chat',
@@ -683,6 +901,7 @@ class ButterflyChatRouter:
                     )
                     self.event_emitter(response_event)
                     event_ids.append(response_event.event_id)
+                    responses_emitted += 1
                     
                     self._log_debug("STEP_6", f"Response Event Emitted for {resp.get('organism_id')}", {
                         "event_id": response_event.event_id,

@@ -645,17 +645,16 @@ class BattleArena:
         if not hasattr(lang, 'atoms'):
             return concepts
         
-        # More decisive victory = more concepts absorbed
-        num_to_take = min(10, max(1, int(margin * 10)))
-        
-        # Sort by strength and take top concepts
+        # NO LIMIT - Winner takes ALL! The fallen's knowledge becomes yours
+        # Sort by strength so strongest concepts are first
         sorted_concepts = sorted(
             lang.atoms.items(),
             key=lambda x: x[1].strength,
             reverse=True
         )
         
-        concepts = [c for c, _ in sorted_concepts[:num_to_take]]
+        # Transfer ALL concepts - no cap
+        concepts = [c for c, _ in sorted_concepts]
         
         return concepts
     
@@ -666,18 +665,16 @@ class BattleArena:
         if not hasattr(loser, 'traits') or not loser.traits:
             return traits
         
-        # Only transfer if decisive victory
-        if margin > 0.3:
-            # Take strongest traits
-            if isinstance(loser.traits, dict):
-                sorted_traits = sorted(
-                    loser.traits.items(),
-                    key=lambda x: x[1] if isinstance(x[1], (int, float)) else 1,
-                    reverse=True
-                )
-                traits = [t for t, _ in sorted_traits[:2]]
-            else:
-                traits = list(loser.traits)[:2]
+        # Transfer ALL traits - no limit! Winner absorbs everything
+        if isinstance(loser.traits, dict):
+            sorted_traits = sorted(
+                loser.traits.items(),
+                key=lambda x: x[1] if isinstance(x[1], (int, float)) else 1,
+                reverse=True
+            )
+            traits = [t for t, _ in sorted_traits]  # ALL traits
+        else:
+            traits = list(loser.traits)  # ALL traits
         
         return traits
     
@@ -692,17 +689,16 @@ class BattleArena:
         if not hasattr(config_sys, 'atoms'):
             return configs
         
-        # Transfer best-performing configs
-        if margin > 0.2:
-            best_configs = sorted(
-                config_sys.atoms.items(),
-                key=lambda x: x[1].get_value_performance(),
-                reverse=True
-            )
-            
-            for param_name, atom in best_configs[:3]:
-                if atom.get_value_performance() > 0.5:
-                    configs[param_name] = atom.value
+        # Transfer ALL configs - no limit! Winner absorbs everything
+        best_configs = sorted(
+            config_sys.atoms.items(),
+            key=lambda x: x[1].get_value_performance(),
+            reverse=True
+        )
+        
+        # NO LIMIT - absorb ALL configs from the fallen
+        for param_name, atom in best_configs:
+            configs[param_name] = atom.value
         
         return configs
     

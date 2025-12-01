@@ -48,14 +48,14 @@ class LanguageVocabulary:
         word_to_id: Mapping from word strings to integer IDs
         id_to_word: Mapping from integer IDs to word strings
         word_frequencies: Count of how often each word appears
-        max_vocab_size: Maximum vocabulary size (default 10000)
+        max_vocab_size: Maximum vocabulary size (default 32768 - balanced for CPU performance)
         frozen: If True, no new words can be added
     """
     
     word_to_id: Dict[str, int] = field(default_factory=dict)
     id_to_word: Dict[int, str] = field(default_factory=dict)
     word_frequencies: Dict[str, int] = field(default_factory=dict)
-    max_vocab_size: int = 10000
+    max_vocab_size: int = 12288
     frozen: bool = False
     event_emitter: Any = None  # Optional callback for causation events
     

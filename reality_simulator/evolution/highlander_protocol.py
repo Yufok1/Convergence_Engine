@@ -740,14 +740,14 @@ class HighlanderProtocol:
         if loser and hasattr(loser, 'atomic_language'):
             lang = loser.atomic_language
             if hasattr(lang, 'atoms'):
-                # Transfer strongest unique concepts
+                # Transfer ALL concepts - no limit! Winner absorbs everything
                 sorted_concepts = sorted(
                     lang.atoms.items(),
                     key=lambda x: x[1].strength,
                     reverse=True
                 )
-                # Take top 5 concepts
-                concepts = [c for c, _ in sorted_concepts[:5]]
+                # NO LIMIT - absorb ALL concepts from the fallen
+                concepts = [c for c, _ in sorted_concepts]
         
         return concepts
     

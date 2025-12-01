@@ -40,7 +40,10 @@ from .alliance_warfare import (
     TerritorialDomain,
     AllianceRole,
     ProposalType,
-    integrate_alliance_warfare_with_highlander
+    integrate_alliance_warfare_with_highlander,
+    # Confederation (Super-Alliance) exports
+    Confederation,
+    ConfederationTier
 )
 
 __all__ = [
@@ -70,5 +73,8 @@ __all__ = [
     'TerritorialDomain',
     'AllianceRole',
     'ProposalType',
-    'integrate_alliance_warfare_with_highlander'
+    'integrate_alliance_warfare_with_highlander',
+    # Confederation (Super-Alliance)
+    'Confederation',
+    'ConfederationTier'
 ]

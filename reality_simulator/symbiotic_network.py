@@ -253,9 +253,32 @@ class ResourceFlowEngine:
         """Update organism fitness based on resource allocation"""
         for org_id, resources in resource_distribution.items():
             if org_id in organisms:
+                organism = organisms[org_id]
+                
+                # ✅ FIX: Base resource bonus on organism's current fitness
+                # This prevents convergence - organisms with different base fitness
+                # get proportionally different bonuses
+                
                 # Resource bonus (diminishing returns)
-                resource_bonus = np.log(1 + resources) * 0.1
-                organisms[org_id].fitness = min(1.0, organisms[org_id].fitness + resource_bonus)
+                base_bonus = np.log(1 + resources) * 0.1
+                
+                # ✅ FIX: Fitness-dependent scaling (prevents convergence)
+                # Lower fitness organisms get slightly larger relative bonus (catch-up mechanism)
+                # Higher fitness organisms get slightly smaller relative bonus (prevents runaway)
+                fitness_factor = 1.0 - (organism.fitness * 0.2)  # 1.0 at fitness=0, 0.8 at fitness=1.0
+                scaled_bonus = base_bonus * fitness_factor
+                
+                # ✅ FIX: Genetic uniqueness modifier (ensures differentiation)
+                if hasattr(organism, 'genotype') and hasattr(organism.genotype, 'get_hash'):
+                    genotype_hash = organism.genotype.get_hash()
+                    try:
+                        hash_int = int(genotype_hash[:4], 16) if len(genotype_hash) >= 4 else hash(genotype_hash)
+                    except (ValueError, TypeError):
+                        hash_int = hash(genotype_hash) % 10000
+                    uniqueness_modifier = 0.95 + ((hash_int % 100) / 1000.0)  # 0.95-1.05 range
+                    scaled_bonus *= uniqueness_modifier
+                
+                organisms[org_id].fitness = min(1.0, organisms[org_id].fitness + scaled_bonus)
 
 
 class CooperationCompetitionEngine:
@@ -710,14 +733,34 @@ class SymbioticNetwork:
         self.language_teacher = None
         try:
             from reality_simulator.language.language_teacher import create_language_teacher
+            print(f"[SYMBIOTIC_NETWORK] Creating language teacher...")
             self.language_teacher = create_language_teacher(self.config)
-            if self.language_teacher and self.language_teacher.enabled:
+            
+            if self.language_teacher is None:
+                print(f"[SYMBIOTIC_NETWORK] WARNING: create_language_teacher returned None")
+            elif not self.language_teacher.enabled:
+                print(f"[SYMBIOTIC_NETWORK] Language Teacher created but NOT enabled")
+            else:
                 print(f"[SYMBIOTIC_NETWORK] Language Teacher enabled (Phase 1: Behavior-based mapping)")
-        except ImportError:
-            # Language teacher module not available - continue without it
-            pass
+                # Attach language_teacher to context_memory so organisms can access knowledge_web
+                # during token generation (fixes semantic guidance not being applied)
+                self.context_memory.language_teacher = self.language_teacher
+                print(f"[SYMBIOTIC_NETWORK] ✅ language_teacher attached to context_memory")
+                
+                if hasattr(self.language_teacher, 'knowledge_web') and self.language_teacher.knowledge_web is not None:
+                    self.context_memory.knowledge_web = self.language_teacher.knowledge_web
+                    concept_count = len(self.language_teacher.knowledge_web.concepts) if hasattr(self.language_teacher.knowledge_web, 'concepts') else 'unknown'
+                    print(f"[SYMBIOTIC_NETWORK] ✅ Knowledge web attached to context_memory ({concept_count} concepts)")
+                else:
+                    print(f"[SYMBIOTIC_NETWORK] ⚠️ language_teacher has no knowledge_web or it is None")
+                    if hasattr(self.language_teacher, '__dict__'):
+                        print(f"[SYMBIOTIC_NETWORK]    language_teacher attrs: {list(self.language_teacher.__dict__.keys())}")
+        except ImportError as e:
+            print(f"[SYMBIOTIC_NETWORK] ImportError for language_teacher: {e}")
         except Exception as e:
             print(f"[SYMBIOTIC_NETWORK] Warning: Could not initialize Language Teacher: {e}")
+            import traceback
+            traceback.print_exc()
 
         # Component engines
         self.resource_engine = ResourceFlowEngine(resource_pool_size)
@@ -1311,6 +1354,10 @@ class SymbioticNetwork:
                 org_a.fitness = np.clip(org_a.fitness + fitness_change_a, 0.0, 1.0)
                 org_b.fitness = np.clip(org_b.fitness + fitness_change_b, 0.0, 1.0)
 
+        # ✅ FIX: Fitness diversity preservation
+        # Prevent all organisms from converging to same value
+        self._preserve_fitness_diversity()
+
         # Update network metrics
         self.metrics.update_from_network(self.network_graph, self.organisms)
 
@@ -1339,7 +1386,9 @@ class SymbioticNetwork:
         
         # Log memory stability metrics every 10 generations
         if self.generation % 10 == 0:
-            self.log_memory_stability_metrics(self.context_memory)
+            stability_metrics = self.context_memory.get_stability_metrics() if self.context_memory else {}
+            logging.debug(f"[SYMBIOTIC_NETWORK] Generation {self.generation}: "
+                         f"stability={stability_metrics.get('stability', 0.0):.3f}")
         
         # Run ML analysis (clustering, anomaly detection, dimensionality reduction)
         # Only runs if ML analyzer is configured and enabled
@@ -1347,8 +1396,7 @@ class SymbioticNetwork:
         if self.ml_analyzer is not None:
             ml_analysis = self.run_ml_analysis()
         
-        # NEW: Store ML analysis in context_memory for neural system access (AFTER analysis runs)
-        # This ensures neural system gets the latest ML analysis, not stale data
+        # Store ML analysis in context_memory for neural system access
         if self.context_memory and ml_analysis and ml_analysis.get('enabled'):
             self.context_memory._ml_analysis_cache = ml_analysis
             
@@ -1394,6 +1442,37 @@ class SymbioticNetwork:
             }
         
         return result
+    
+    def _preserve_fitness_diversity(self):
+        """
+        Prevent fitness convergence by maintaining genetic-based differentiation.
+        
+        If all organisms have very similar fitness, add small genetic-based variations.
+        This ensures meaningful selection pressure even after many cycles.
+        """
+        if len(self.organisms) < 2:
+            return
+        
+        # Calculate fitness variance
+        fitnesses = [org.fitness for org in self.organisms.values()]
+        fitness_variance = np.var(fitnesses)
+        fitness_mean = np.mean(fitnesses)
+        
+        # If variance is too low (< 0.01), add genetic-based differentiation
+        if fitness_variance < 0.01:
+            for org_id, organism in self.organisms.items():
+                # Get genetic uniqueness factor
+                if hasattr(organism, 'genotype') and hasattr(organism.genotype, 'get_hash'):
+                    genotype_hash = organism.genotype.get_hash()
+                    try:
+                        hash_int = int(genotype_hash[:6], 16) if len(genotype_hash) >= 6 else hash(genotype_hash)
+                    except (ValueError, TypeError):
+                        hash_int = hash(genotype_hash) % 1000000
+                    # Create small variation (-0.05 to +0.05) based on genetics
+                    genetic_variation = ((hash_int % 1000) / 10000.0) - 0.05
+                    
+                    # Apply variation (small enough to not disrupt evolution, large enough to differentiate)
+                    organism.fitness = np.clip(organism.fitness + genetic_variation, 0.0, 1.0)
 
     def _execute_organism_actions(self, organism_actions: Dict[str, int], network_state: Dict[str, Any]):
         """

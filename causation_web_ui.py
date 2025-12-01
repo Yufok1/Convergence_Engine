@@ -3028,7 +3028,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "     * NO COMMENTS in JSON - JSON does not support // or /* */ comments\n"
         prompt += "     * Property names MUST use underscores: componentColor_reality_sim (NOT componentColorrealitysim)\n"
         prompt += "     * Link colors: linkColor_threshold (NOT linkColorthreshold)\n"
-        prompt += "     * All component colors: componentColor_reality_sim, componentColor_explorer, componentColor_djinn_kernel, componentColor_breath, componentColor_neural, componentColor_ml_analysis, componentColor_language, componentColor_butterfly_chat, componentColor_config_tuner, componentColor_health_monitor, componentColor_system\n"
+        prompt += "     * All component colors: componentColor_reality_sim, componentColor_explorer, componentColor_djinn_kernel, componentColor_breath, componentColor_neural, componentColor_ml_analysis, componentColor_language, componentColor_butterfly_chat, componentColor_config_tuner, componentColor_health_monitor, componentColor_highlander, componentColor_alliance, componentColor_confederation, componentColor_system\n"
         prompt += "     * All link colors: linkColor_threshold, linkColor_correlation, linkColor_direct, linkColor_temporal, linkColor_neural, linkColor_ml, linkColor_language, linkColor_linguistic, linkColor_unknown\n"
         prompt += "     * Use valid JSON only - no trailing commas, proper quotes, etc.\n"
         prompt += "   - Examples of autonomous adjustments:\n"
@@ -5534,7 +5534,7 @@ class SystemContextBuilder:
         
         # Component colors
         component_colors = []
-        for comp in ['reality_sim', 'explorer', 'djinn_kernel', 'breath', 'neural', 'ml_analysis', 'language', 'butterfly_chat', 'system']:
+        for comp in ['reality_sim', 'explorer', 'djinn_kernel', 'breath', 'neural', 'ml_analysis', 'language', 'butterfly_chat', 'system', 'highlander', 'alliance', 'confederation']:
             color_key = f'componentColor_{comp}'
             color = viz_settings.get(color_key, 'N/A')
             if color != 'N/A':
@@ -5546,7 +5546,7 @@ class SystemContextBuilder:
         
         # Link colors
         link_colors = []
-        for link_type in ['threshold', 'correlation', 'direct', 'temporal', 'neural', 'ml', 'language', 'linguistic', 'unknown']:
+        for link_type in ['threshold', 'correlation', 'direct', 'temporal', 'neural', 'ml', 'language', 'linguistic', 'battle', 'alliance', 'confederation', 'unknown']:
             color_key = f'linkColor_{link_type}'
             color = viz_settings.get(color_key, 'N/A')
             if color != 'N/A':
@@ -6975,9 +6975,16 @@ def get_graph():
     """
     # Use shared explorer if available, otherwise use local one
     target_explorer = app.config.get('explorer') or explorer
+    explorer_source = 'shared' if app.config.get('explorer') else 'local'
     
     if target_explorer is None:
         return jsonify({'nodes': [], 'links': [], 'error': 'Causation Explorer not initialized'}), 200
+    
+    # Debug: Log which explorer and event counts
+    event_types = set(ev.event_type for ev in target_explorer.events.values()) if target_explorer.events else set()
+    highlander_events = [ev for ev in target_explorer.events.values() if 'highlander' in ev.event_type.lower()]
+    logger.info(f"[GRAPH] Using {explorer_source} explorer: {len(target_explorer.events)} events, {len(highlander_events)} highlander events, types: {sorted(event_types)[:10]}")
+    
     try:
         # 🚀 OPTIMIZATION: Check LRU cache first with content-based key
         current_time = time.time()
@@ -7109,7 +7116,14 @@ def get_graph():
                 'language': {'language', 'vocabulary', 'communication'},
                 'butterfly_chat': {'butterfly_chat', 'chat'},
                 'config_tuner': {'config_tuner', 'tuner'},
-                'health_monitor': {'health_monitor', 'health', 'monitor'}
+                'health_monitor': {'health_monitor', 'health', 'monitor'},
+                'highlander': {'highlander'},
+                'battle_arena': {'battle_arena', 'battle', 'arena'},
+                'alliance': {'alliance'},
+                'alliance_warfare': {'alliance_warfare'},
+                'confederation': {'confederation', 'empire', 'hegemony'},
+                'combat': {'combat'},
+                'germination': {'germination', 'germination_pool'}
             }
 
             # Language event types that should be categorized as 'language'
@@ -7231,49 +7245,145 @@ def get_graph():
         
         logger.info(f"Serializing graph response: {len(nodes)} nodes, {len(links)} links")
         try:
-            # 🚀 AGGRESSIVE ADAPTIVE FILTERING FOR MASSIVE GRAPHS
-            # The browser limits are 10k links and 5k nodes, but we're sending millions!
-            # Apply server-side filtering to prevent browser crashes
-
-            # Emergency filtering for extremely large graphs
-            EMERGENCY_NODE_LIMIT = 5000  # Browser max visible nodes
-            EMERGENCY_LINK_LIMIT = 10000  # Browser max visible links
+            # 🚀 OPTIMIZED FILTERING FOR MAXIMUM REPRESENTATION
+            # Frontend supports up to 20k nodes and 50k links with viewport culling
+            # We'll send more data and let the frontend handle rendering optimization
+            
+            # Tiered limits based on total data size
+            total_events = len(nodes)
+            if total_events > 100000:
+                # Massive graph - send 15k nodes (frontend can handle with culling)
+                EMERGENCY_NODE_LIMIT = 15000
+                EMERGENCY_LINK_LIMIT = 30000
+            elif total_events > 50000:
+                # Large graph - send 12k nodes
+                EMERGENCY_NODE_LIMIT = 12000
+                EMERGENCY_LINK_LIMIT = 25000
+            elif total_events > 20000:
+                # Medium-large graph - send 10k nodes
+                EMERGENCY_NODE_LIMIT = 10000
+                EMERGENCY_LINK_LIMIT = 20000
+            else:
+                # Smaller graph - send 8k nodes
+                EMERGENCY_NODE_LIMIT = 8000
+                EMERGENCY_LINK_LIMIT = 15000
 
             if len(nodes) > EMERGENCY_NODE_LIMIT or len(links) > EMERGENCY_LINK_LIMIT:
-                logger.warning(f"EMERGENCY FILTERING: Graph too large ({len(nodes)} nodes, {len(links)} links)")
+                logger.warning(f"SMART FILTERING: Graph has {len(nodes)} nodes, {len(links)} links -> targeting {EMERGENCY_NODE_LIMIT} nodes")
 
-                # Strategy 1: Keep only strongest links (sort by strength, take top N)
-                if len(links) > EMERGENCY_LINK_LIMIT:
-                    # Sort links by strength (highest first)
-                    sorted_links = sorted(links, key=lambda x: x.get('strength', 0), reverse=True)
-                    # Take only the strongest links
+                # 🎯 STRATEGY: Multi-dimensional balanced sampling for MAX representation
+                # 1. Component diversity (highlander, language, neural, etc.)
+                # 2. Temporal diversity (recent + historical)
+                # 3. Event type diversity (within components)
+                
+                nodes_by_component = {}
+                for node in nodes:
+                    comp = node.get('component', 'unknown')
+                    if comp not in nodes_by_component:
+                        nodes_by_component[comp] = []
+                    nodes_by_component[comp].append(node)
+                
+                # Log component distribution
+                comp_counts = {c: len(n) for c, n in nodes_by_component.items()}
+                logger.warning(f"Component distribution: {comp_counts}")
+                
+                num_components = len(nodes_by_component)
+                
+                # 🎯 SMART QUOTA: Guarantee minimum representation + proportional extra
+                # Small components get at least 100 nodes, large ones get proportional share
+                MIN_GUARANTEED = min(100, EMERGENCY_NODE_LIMIT // max(1, num_components * 2))
+                
+                # First pass: calculate ideal quotas
+                quotas = {}
+                total_allocated = 0
+                for comp, comp_nodes in nodes_by_component.items():
+                    # Base quota proportional to component size
+                    proportion = len(comp_nodes) / len(nodes)
+                    ideal_quota = int(EMERGENCY_NODE_LIMIT * proportion)
+                    
+                    # Ensure minimum guaranteed
+                    quota = max(MIN_GUARANTEED, ideal_quota)
+                    # But don't exceed what's available
+                    quota = min(quota, len(comp_nodes))
+                    
+                    quotas[comp] = quota
+                    total_allocated += quota
+                
+                # Redistribute if over/under budget
+                if total_allocated > EMERGENCY_NODE_LIMIT:
+                    # Scale down proportionally
+                    scale = EMERGENCY_NODE_LIMIT / total_allocated
+                    for comp in quotas:
+                        quotas[comp] = max(MIN_GUARANTEED, int(quotas[comp] * scale))
+                elif total_allocated < EMERGENCY_NODE_LIMIT:
+                    # Give extra to largest components
+                    extra = EMERGENCY_NODE_LIMIT - total_allocated
+                    sorted_comps = sorted(nodes_by_component.keys(), 
+                                         key=lambda c: len(nodes_by_component[c]), reverse=True)
+                    for comp in sorted_comps:
+                        available = len(nodes_by_component[comp]) - quotas[comp]
+                        if available > 0:
+                            give = min(extra, available)
+                            quotas[comp] += give
+                            extra -= give
+                            if extra <= 0:
+                                break
+                
+                # 🎯 BUILD BALANCED NODE LIST with temporal diversity
+                balanced_nodes = []
+                for comp, comp_nodes in nodes_by_component.items():
+                    quota = quotas[comp]
+                    
+                    if len(comp_nodes) <= quota:
+                        # Take all
+                        balanced_nodes.extend(comp_nodes)
+                    else:
+                        # Smart sampling: 70% recent, 30% distributed across time
+                        recent_count = int(quota * 0.7)
+                        historical_count = quota - recent_count
+                        
+                        # Sort by timestamp
+                        comp_nodes.sort(key=lambda x: x.get('timestamp', 0), reverse=True)
+                        
+                        # Take most recent
+                        recent_nodes = comp_nodes[:recent_count]
+                        
+                        # Sample historical nodes evenly across time
+                        remaining = comp_nodes[recent_count:]
+                        if remaining and historical_count > 0:
+                            step = max(1, len(remaining) // historical_count)
+                            historical_nodes = remaining[::step][:historical_count]
+                        else:
+                            historical_nodes = []
+                        
+                        balanced_nodes.extend(recent_nodes)
+                        balanced_nodes.extend(historical_nodes)
+                
+                nodes = balanced_nodes
+                
+                # Log final distribution
+                final_by_comp = {}
+                for node in nodes:
+                    comp = node.get('component', 'unknown')
+                    final_by_comp[comp] = final_by_comp.get(comp, 0) + 1
+                logger.warning(f"Final distribution ({len(nodes)} nodes): {final_by_comp}")
+                
+                # Rebuild node ID set for link filtering
+                remaining_node_ids = {node['id'] for node in nodes}
+
+                # Filter links to remaining nodes, keeping strongest
+                relevant_links = [link for link in links
+                                 if link['source'] in remaining_node_ids and link['target'] in remaining_node_ids]
+                
+                if len(relevant_links) > EMERGENCY_LINK_LIMIT:
+                    # Sort by strength and take top N
+                    sorted_links = sorted(relevant_links, key=lambda x: x.get('strength', 0), reverse=True)
                     links = sorted_links[:EMERGENCY_LINK_LIMIT]
-                    logger.warning(f"Reduced links from {len(sorted_links)} to {len(links)} (kept strongest)")
+                    logger.warning(f"Reduced links: {len(relevant_links)} -> {len(links)} (kept strongest)")
+                else:
+                    links = relevant_links
 
-                    # Strategy 2: Keep only nodes that are connected by these links
-                    connected_node_ids = set()
-                    for link in links:
-                        connected_node_ids.add(link['source'])
-                        connected_node_ids.add(link['target'])
-
-                    # Filter nodes to only include connected ones
-                    original_node_count = len(nodes)
-                    nodes = [node for node in nodes if node['id'] in connected_node_ids]
-                    logger.warning(f"Reduced nodes from {original_node_count} to {len(nodes)} (kept connected)")
-
-                    # Strategy 3: If still too many nodes, take most recent
-                    if len(nodes) > EMERGENCY_NODE_LIMIT:
-                        # Sort by timestamp (most recent first)
-                        nodes.sort(key=lambda x: x.get('timestamp', 0), reverse=True)
-                        nodes = nodes[:EMERGENCY_NODE_LIMIT]
-                        logger.warning(f"Further reduced nodes to {len(nodes)} (kept most recent)")
-
-                        # Re-filter links to only include remaining nodes
-                        remaining_node_ids = {node['id'] for node in nodes}
-                        links = [link for link in links
-                                if link['source'] in remaining_node_ids and link['target'] in remaining_node_ids]
-
-                logger.warning(f"EMERGENCY FILTERING COMPLETE: {len(nodes)} nodes, {len(links)} links")
+                logger.warning(f"FILTERING COMPLETE: {len(nodes)} nodes, {len(links)} links (max representation mode)")
 
             # 🚀 OPTIMIZATION: For large graphs, send metadata first, then chunked data
             # Check if graph is large enough to warrant chunked loading
@@ -8468,6 +8578,11 @@ def butterfly_chat():
             organisms_dict[str(org_id)] = org
         
         router = ButterflyChatRouter(organisms_dict, vocabulary, event_emitter)
+        
+        # Wire trainer for chat-triggered learning
+        neural_trainer = app.config.get('neural_trainer')
+        if neural_trainer:
+            router.trainer = neural_trainer
         
         # Get network state for routing strategies that need it
         network = app.config.get('network')
@@ -11546,14 +11661,17 @@ def cra_set_viz_settings():
         component_color_keys = ['componentColor_reality_sim', 'componentColor_explorer', 'componentColor_djinn_kernel', 
                                'componentColor_breath', 'componentColor_neural', 'componentColor_ml_analysis', 
                                'componentColor_language', 'componentColor_butterfly_chat', 'componentColor_config_tuner',
-                               'componentColor_health_monitor', 'componentColor_system']
+                               'componentColor_health_monitor', 'componentColor_system', 'componentColor_highlander',
+                               'componentColor_alliance', 'componentColor_confederation', 'componentColor_combat',
+                               'componentColor_germination', 'componentColor_alliance_warfare']
         for key in component_color_keys:
             if key in data:
                 viz_settings[key] = str(data[key])
         
         # Link colors
         link_color_keys = ['linkColor_threshold', 'linkColor_correlation', 'linkColor_direct', 'linkColor_temporal', 
-                          'linkColor_neural', 'linkColor_ml', 'linkColor_language', 'linkColor_linguistic', 'linkColor_unknown']
+                          'linkColor_neural', 'linkColor_ml', 'linkColor_language', 'linkColor_linguistic', 
+                          'linkColor_battle', 'linkColor_alliance', 'linkColor_confederation', 'linkColor_unknown']
         for key in link_color_keys:
             if key in data:
                 viz_settings[key] = str(data[key])

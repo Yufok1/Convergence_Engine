@@ -1979,27 +1979,27 @@
 
                         <div class="filter-item" style="margin-bottom: 8px;">
                             <label style="display: block; margin-bottom: 3px; color: #0ff; font-size: 0.85em;">
-                                <input type="checkbox" id="viewportCullingEnabled">
+                                <input type="checkbox" id="viewportCullingEnabled" checked>
                                 <span>🪟 Viewport Culling (Performance Mode)</span>
                             </label>
                             <div style="font-size: 0.75em; color: #0aa; margin-top: 3px; margin-left: 20px;">
-                                OFF = See everything (default). ON = Only show visible nodes/links for better performance with large graphs.
+                                ON = Optimized rendering for large graphs (recommended). OFF = Render all at once.
                             </div>
                         </div>
 
                         <div class="filter-item" style="margin-bottom: 8px;">
                             <label style="display: block; margin-bottom: 3px; color: #0ff; font-size: 0.85em;">
-                                Max Visible Links: <span id="maxVisibleLinksValue">10000</span>
+                                Max Visible Links: <span id="maxVisibleLinksValue">30000</span>
                             </label>
-                            <input type="range" id="maxVisibleLinks" min="1000" max="50000" step="1000" value="10000"
+                            <input type="range" id="maxVisibleLinks" min="5000" max="100000" step="5000" value="30000"
                                 oninput="updateVizSetting('maxVisibleLinks', parseInt(this.value))" style="width: 80%;">
                         </div>
 
                         <div class="filter-item" style="margin-bottom: 8px;">
                             <label style="display: block; margin-bottom: 3px; color: #0ff; font-size: 0.85em;">
-                                Max Visible Nodes: <span id="maxVisibleNodesValue">5000</span>
+                                Max Visible Nodes: <span id="maxVisibleNodesValue">15000</span>
                             </label>
-                            <input type="range" id="maxVisibleNodes" min="500" max="20000" step="500" value="5000"
+                            <input type="range" id="maxVisibleNodes" min="1000" max="50000" step="1000" value="15000"
                                 oninput="updateVizSetting('maxVisibleNodes', parseInt(this.value))" style="width: 80%;">
                         </div>
 
@@ -2276,6 +2276,21 @@
                                     </div>
                                 </div>
                                 <div id="butterflyChatHistory" style="flex: 1; overflow-y: auto; background: #000; border: 1px solid #ff0; padding: 10px; margin-bottom: 10px; font-family: 'Courier New', monospace; font-size: 0.9em; min-height: 0;"></div>
+                                
+                                <!-- 🔬 Recon Message Quick Buttons -->
+                                <div style="display: flex; gap: 4px; margin-bottom: 8px; flex-wrap: wrap;">
+                                    <button onclick="sendReconMessage(1)" title="Probe vocabulary and token generation" 
+                                        style="padding: 4px 8px; background: #220; color: #0f0; border: 1px solid #0f0; cursor: pointer; font-size: 0.7em; font-family: 'Courier New', monospace;">🔬 Vocab</button>
+                                    <button onclick="sendReconMessage(2)" title="Probe experience buffer and learning"
+                                        style="padding: 4px 8px; background: #220; color: #0ff; border: 1px solid #0ff; cursor: pointer; font-size: 0.7em; font-family: 'Courier New', monospace;">🧠 Learn</button>
+                                    <button onclick="sendReconMessage(3)" title="Probe semantic relationships"
+                                        style="padding: 4px 8px; background: #220; color: #f0f; border: 1px solid #f0f; cursor: pointer; font-size: 0.7em; font-family: 'Courier New', monospace;">🌐 Semantic</button>
+                                    <button onclick="sendReconMessage(4)" title="Probe neural language head"
+                                        style="padding: 4px 8px; background: #220; color: #f80; border: 1px solid #f80; cursor: pointer; font-size: 0.7em; font-family: 'Courier New', monospace;">🔥 Neural</button>
+                                    <button onclick="sendAllReconMessages()" title="Run all 4 recon probes sequentially"
+                                        style="padding: 4px 8px; background: #400; color: #ff0; border: 1px solid #ff0; cursor: pointer; font-size: 0.7em; font-family: 'Courier New', monospace; font-weight: bold;">⚡ ALL</button>
+                                </div>
+                                
                                 <div style="display: flex; gap: 10px;">
                                     <input type="text" id="butterflyChatInput" placeholder="Chat with organism networks..."
                                         style="flex: 1; padding: 8px; background: #111; color: #ff0; border: 1px solid #ff0; font-family: 'Courier New', monospace;">
@@ -5233,16 +5248,16 @@
                     depthOpacityRange: 0.5,
                     depthSizeRange: 0.4,
                     depthParallaxAmount: 0.5,
-                    enableShadows: true,
-                    enableGlow: true,
+                    enableShadows: false,
+                    enableGlow: false,
                     shadowOffset: 2,
                     shadowBlur: 3,
                     glowIntensity: 2,
                     frontColorBrightness: 1.0,
                     backColorBrightness: 0.7,
                     colorSaturation: 1.0,
-                    maxVisibleLinks: 10000,
-                    maxVisibleNodes: 5000,
+                    maxVisibleLinks: 30000,
+                    maxVisibleNodes: 15000,
                     renderQuality: 'high',
                     enableTransitions: true,
                     transitionDuration: 300,
@@ -6131,6 +6146,8 @@
                     { name: '🧠 Neural-Language Reward', shape: 'diamond', color: '#00CED1', eventType: 'neural_language_reward' },
                     { name: '🧠 Neural-Language Training', shape: 'square', color: '#7B68EE', eventType: 'neural_language_training' },
                     { name: '🧠 Curriculum Adjustment', shape: 'square', color: '#20B2AA', eventType: 'neural_curriculum_adjustment' },
+                    { name: '🧠 Chat Training', shape: 'circle', color: '#9370DB', eventType: 'chat_training_complete' },
+                    { name: '🧠 Bootstrap Learning', shape: 'star', color: '#BA55D3', eventType: 'bootstrap_learning_complete' },
                     { name: '🔬 Phenotype Emergence', shape: 'star', color: '#FF00FF', eventType: 'phenotype_emergence' },
                     { name: '🔬 Anomaly Spike', shape: 'triangle', color: '#FF8800', eventType: 'anomaly_spike' },
                     { name: '🔬 Cluster Collapse', shape: 'cross', color: '#FF3333', eventType: 'cluster_collapse' },
@@ -6138,11 +6155,17 @@
                     { name: '🦋 Vocabulary Growth', shape: 'circle', color: '#00BCD4', eventType: 'vocabulary_growth' },
                     { name: '🦋 Organism Communication', shape: 'wye', color: '#00BCD4', eventType: 'organism_communication' },
                     { name: '🦋 Butterfly Chat', shape: 'circle', color: '#8BC34A', eventType: 'butterfly_chat_message' },
+                    { name: '🦋 Diversity Analysis', shape: 'diamond', color: '#FFA500', eventType: 'organism_diversity_analysis' },
                     { name: '⚔️ Alliance Formed', shape: 'star', color: '#9400D3', eventType: 'alliance_formed' },
                     { name: '⚔️ Alliance Dissolved', shape: 'cross', color: '#8B008B', eventType: 'alliance_dissolved' },
                     { name: '⚔️ Battle Concluded', shape: 'triangle', color: '#DC143C', eventType: 'battle_concluded' },
+                    { name: '⚔️ Highlander Battle', shape: 'triangle', color: '#DC143C', eventType: 'highlander_battle_concluded' },
+                    { name: '⚔️ Highlander Alliance', shape: 'star', color: '#9400D3', eventType: 'highlander_alliance_formed' },
+                    { name: '💀 Organism Fallen', shape: 'cross', color: '#8B0000', eventType: 'highlander_organism_fallen' },
                     { name: '🗡️ Champion Crowned', shape: 'star', color: '#FF1493', eventType: 'champion_crowned' },
+                    { name: '🗡️ Highlander Champion', shape: 'star', color: '#FFD700', eventType: 'highlander_champion_crowned' },
                     { name: '🗡️ Predation Success', shape: 'triangle', color: '#FF1493', eventType: 'predation_success' },
+                    { name: '🗡️ Highlander Predation', shape: 'triangle', color: '#FF4500', eventType: 'highlander_predation_success' },
                     { name: '🗡️ Organism Registered', shape: 'circle', color: '#FF69B4', eventType: 'organism_registered' },
                     { name: '🌱 Organism Germinated', shape: 'star', color: '#32CD32', eventType: 'organism_germinated' },
                     { name: '🌱 Germination Failed', shape: 'cross', color: '#8B0000', eventType: 'germination_failed' },
@@ -6497,24 +6520,38 @@
                 });
                 const nodes = filteredNodes.map(d => ({ ...d }));
                 
-                // 🚀 PERF: For massive graphs, limit initial DOM creation
-                // Use user-configured limits from vizSettings
+                // 🚀 PERF: For massive graphs, use STRATIFIED PROPORTIONAL SAMPLING
+                // This preserves the visual structure by sampling proportionally from each component/region
                 const maxNodes = vizSettings.maxVisibleNodes || 5000;
                 const maxLinks = vizSettings.maxVisibleLinks || 10000;
                 
                 let renderNodes = nodes;
                 let renderLinks = links;
                 let isLargeGraph = false;
+                let samplingRatio = 1.0;
                 
                 if (nodes.length > maxNodes || links.length > maxLinks) {
                     isLargeGraph = true;
-                    console.log(`[RenderGraph] Large graph detected: ${nodes.length} nodes, ${links.length} links`);
-                    console.log(`[RenderGraph] Limiting render to ${maxNodes} nodes, ${maxLinks} links (user setting)`);
                     
-                    // Sort nodes by importance (priority components first, then by connection count)
-                    const priorityComponents = new Set(['neural', 'ml_analysis', 'reality_sim', 'explorer', 'djinn_kernel', 'breath']);
+                    // Calculate the sampling ratio to maintain proportional representation
+                    const nodeRatio = maxNodes / nodes.length;
+                    const linkRatio = maxLinks / links.length;
+                    samplingRatio = Math.min(nodeRatio, linkRatio, 1.0);
                     
-                    // Quick node connection count
+                    console.log(`[RenderGraph] 📊 STRATIFIED SAMPLING: ${nodes.length} nodes → ${maxNodes}, ${links.length} links → ${maxLinks}`);
+                    console.log(`[RenderGraph] 📊 Sampling ratio: ${(samplingRatio * 100).toFixed(1)}% (1:${Math.round(1/samplingRatio)})`);
+                    
+                    // ═══════════════════════════════════════════════════════════════
+                    // STEP 1: Group nodes by component (preserves component proportions)
+                    // ═══════════════════════════════════════════════════════════════
+                    const nodesByComponent = new Map();
+                    nodes.forEach(n => {
+                        const comp = n.component || 'unknown';
+                        if (!nodesByComponent.has(comp)) nodesByComponent.set(comp, []);
+                        nodesByComponent.get(comp).push(n);
+                    });
+                    
+                    // Calculate connection count for importance ranking within each component
                     const nodeConnCount = new Map();
                     links.forEach(l => {
                         const srcId = typeof l.source === 'object' ? l.source.id : l.source;
@@ -6523,27 +6560,91 @@
                         nodeConnCount.set(tgtId, (nodeConnCount.get(tgtId) || 0) + 1);
                     });
                     
-                    // Score and sort nodes
-                    const scoredNodes = nodes.map(n => ({
-                        node: n,
-                        score: (priorityComponents.has(n.component) ? 1000 : 0) + (nodeConnCount.get(n.id) || 0)
-                    }));
-                    scoredNodes.sort((a, b) => b.score - a.score);
+                    // ═══════════════════════════════════════════════════════════════
+                    // STEP 2: Stratified sampling - take proportional slice from each component
+                    // ═══════════════════════════════════════════════════════════════
+                    renderNodes = [];
+                    const componentSampleCounts = {};
                     
-                    renderNodes = scoredNodes.slice(0, maxNodes).map(s => s.node);
+                    nodesByComponent.forEach((compNodes, comp) => {
+                        // Calculate how many nodes to sample from this component (proportional)
+                        const targetCount = Math.max(1, Math.ceil(compNodes.length * samplingRatio));
+                        componentSampleCounts[comp] = { total: compNodes.length, sampled: targetCount };
+                        
+                        // Sort by connection count (most connected first) for importance
+                        compNodes.sort((a, b) => (nodeConnCount.get(b.id) || 0) - (nodeConnCount.get(a.id) || 0));
+                        
+                        // Use stratified selection: take evenly spaced samples to preserve distribution
+                        const step = compNodes.length / targetCount;
+                        for (let i = 0; i < targetCount && i * step < compNodes.length; i++) {
+                            const idx = Math.floor(i * step);
+                            renderNodes.push(compNodes[idx]);
+                        }
+                    });
+                    
+                    console.log(`[RenderGraph] 📊 Component sampling:`, componentSampleCounts);
+                    
+                    // ═══════════════════════════════════════════════════════════════
+                    // STEP 3: Filter links to sampled nodes, then stratified sample links
+                    // ═══════════════════════════════════════════════════════════════
                     const renderNodeIds = new Set(renderNodes.map(n => n.id));
                     
                     // Filter links to only those connecting rendered nodes
-                    renderLinks = links.filter(l => {
+                    let eligibleLinks = links.filter(l => {
                         const srcId = typeof l.source === 'object' ? l.source.id : l.source;
                         const tgtId = typeof l.target === 'object' ? l.target.id : l.target;
                         return renderNodeIds.has(srcId) && renderNodeIds.has(tgtId);
                     });
-                    if (renderLinks.length > maxLinks) {
-                        renderLinks = renderLinks.slice(0, maxLinks);
+                    
+                    if (eligibleLinks.length > maxLinks) {
+                        // Group links by causation type for proportional sampling
+                        const linksByType = new Map();
+                        eligibleLinks.forEach(l => {
+                            const type = l.type || 'unknown';
+                            if (!linksByType.has(type)) linksByType.set(type, []);
+                            linksByType.get(type).push(l);
+                        });
+                        
+                        const linkSampleRatio = maxLinks / eligibleLinks.length;
+                        renderLinks = [];
+                        const linkTypeSampleCounts = {};
+                        
+                        linksByType.forEach((typeLinks, type) => {
+                            const targetCount = Math.max(1, Math.ceil(typeLinks.length * linkSampleRatio));
+                            linkTypeSampleCounts[type] = { total: typeLinks.length, sampled: targetCount };
+                            
+                            // Sort by strength for importance ranking
+                            typeLinks.sort((a, b) => (b.strength || 0.5) - (a.strength || 0.5));
+                            
+                            // Stratified selection
+                            const step = typeLinks.length / targetCount;
+                            for (let i = 0; i < targetCount && i * step < typeLinks.length; i++) {
+                                const idx = Math.floor(i * step);
+                                renderLinks.push(typeLinks[idx]);
+                            }
+                        });
+                        
+                        console.log(`[RenderGraph] 📊 Link type sampling:`, linkTypeSampleCounts);
+                    } else {
+                        renderLinks = eligibleLinks;
                     }
                     
-                    console.log(`[RenderGraph] Rendering ${renderNodes.length} nodes, ${renderLinks.length} links`);
+                    console.log(`[RenderGraph] ✅ Final render: ${renderNodes.length} nodes (${(renderNodes.length/nodes.length*100).toFixed(1)}%), ${renderLinks.length} links (${(renderLinks.length/links.length*100).toFixed(1)}%)`);
+                    
+                    // Store sampling info for UI display
+                    window._graphSamplingInfo = {
+                        totalNodes: nodes.length,
+                        totalLinks: links.length,
+                        renderedNodes: renderNodes.length,
+                        renderedLinks: renderLinks.length,
+                        samplingRatio: samplingRatio,
+                        nodeRatio: renderNodes.length / nodes.length,
+                        linkRatio: renderLinks.length / links.length,
+                        componentBreakdown: componentSampleCounts
+                    };
+                } else {
+                    // Clear sampling info when not sampling
+                    window._graphSamplingInfo = null;
                 }
 
                 // Calculate link density for visual depth (safely, without circular refs)
@@ -6725,22 +6826,25 @@
                     const isML = comp === 'ml_analysis';
                     const isLanguage = comp === 'language';
                     const isButterflyChat = comp === 'butterfly_chat';
-                    const isAlliance = comp === 'alliance';
-                    const isCombat = comp === 'combat';
+                    const isAlliance = comp === 'alliance' || comp === 'alliance_warfare';
+                    const isCombat = comp === 'combat' || comp === 'battle_arena' || comp === 'highlander';
                     const isConfigTuner = comp === 'config_tuner';
                     const isHealthMonitor = comp === 'health_monitor';
                     const isNeuralDecision = isNeural && eventType === 'neural_decision';
                     const isNeuralTraining = isNeural && eventType === 'neural_training';
                     const isNeuralLanguageReward = isNeural && eventType === 'neural_language_reward';
                     const isNeuralCurriculumAdjust = isNeural && eventType === 'neural_curriculum_adjustment';
+                    const isChatTraining = isNeural && eventType === 'chat_training_complete';
+                    const isBootstrapLearning = isNeural && eventType === 'bootstrap_learning_complete';
                     const isPhenotypeEmergence = isML && eventType === 'phenotype_emergence';
                     const isClusterCollapse = isML && eventType === 'cluster_collapse';
                     const isAnomalySpike = isML && eventType === 'anomaly_spike';
-                    const isAllianceFormed = (isAlliance || eventType === 'alliance_formed');
-                    const isAllianceDissolved = (isAlliance || eventType === 'alliance_dissolved');
-                    const isBattleConcluded = (isCombat || eventType === 'battle_concluded');
+                    const isAllianceFormed = (isAlliance || eventType === 'alliance_formed' || eventType === 'highlander_alliance_formed' || eventType === 'alliance_founded' || eventType === 'alliance_member_joined');
+                    const isAllianceDissolved = (isAlliance || eventType === 'alliance_dissolved' || eventType === 'highlander_alliance_dissolved' || eventType === 'alliance_betrayal' || eventType === 'alliance_member_left');
+                    const isBattleConcluded = (isCombat || eventType === 'battle_concluded' || eventType === 'highlander_battle_concluded' || eventType === 'alliance_war_declared' || eventType === 'alliance_war_ended');
                     const isConfigTuned = (isConfigTuner || eventType === 'config_tuned');
-                    const isLanguageEvent = isLanguage || isButterflyChat || eventType === 'vocabulary_growth' || eventType === 'organism_communication' || eventType === 'butterfly_chat_message' || eventType === 'butterfly_chat_response';
+                    const isDiversityAnalysis = eventType === 'organism_diversity_analysis';
+                    const isLanguageEvent = isLanguage || isButterflyChat || eventType === 'vocabulary_growth' || eventType === 'organism_communication' || eventType === 'butterfly_chat_message' || eventType === 'butterfly_chat_response' || isDiversityAnalysis;
                     
                     const baseRadius = vizSettings.nodeBaseSize + (d.type ? 2 : 0);
                     const depthScore = d._depthScore || 0.5;
@@ -13699,6 +13803,13 @@
                         if (data.performance) {
                             displayPerformanceMetrics(data.performance);
                         }
+                        
+                        // Store for recon analysis
+                        if (!window._butterflyDebugResponses) window._butterflyDebugResponses = [];
+                        window._butterflyDebugResponses.push(data);
+                        if (window._butterflyDebugResponses.length > 50) {
+                            window._butterflyDebugResponses.shift(); // Keep last 50
+                        }
                     })
                     .catch(err => {
                         console.error('Error sending butterfly chat message:', err);
@@ -13706,6 +13817,120 @@
                         addButterflyChatMessage('assistant', `Error: ${err.message}`, true);
                     });
             }
+            
+            // ═══════════════════════════════════════════════════════════════════════════
+            // 🔬 SWARM RECON MESSAGES - Diagnostic probes for system health
+            // ═══════════════════════════════════════════════════════════════════════════
+            
+            const RECON_MESSAGES = {
+                1: {
+                    name: '🔬 VOCAB PROBE',
+                    message: 'What words do you know? Tell me about move, rest, eat, cooperate. How many words exist in your vocabulary? Can you count from one to five using only words you have learned?',
+                    diagnoses: 'vocabulary size, token generation, word availability'
+                },
+                2: {
+                    name: '🧠 LEARNING PROBE', 
+                    message: 'Have you learned anything from our conversations? What was the last thing you remembered? How many experiences do you have stored? Tell me something you learned recently.',
+                    diagnoses: 'experience buffer, learning status, memory storage'
+                },
+                3: {
+                    name: '🌐 SEMANTIC PROBE',
+                    message: 'What is the opposite of danger? What causes hunger? What enables cooperation? Tell me words that are similar to strong or move.',
+                    diagnoses: 'knowledge web access, semantic relationships, linguistic guidance'
+                },
+                4: {
+                    name: '🔥 NEURAL PROBE',
+                    message: 'Generate a sequence of thoughts. What action would you take if you were hungry and saw food nearby? Describe your decision process step by step.',
+                    diagnoses: 'language head, neural training, decision reasoning'
+                }
+            };
+            
+            function sendReconMessage(probeNumber) {
+                const probe = RECON_MESSAGES[probeNumber];
+                if (!probe) {
+                    console.error(`[RECON] Unknown probe number: ${probeNumber}`);
+                    return;
+                }
+                
+                console.log(`[RECON] Sending ${probe.name} - Diagnosing: ${probe.diagnoses}`);
+                addButterflyChatMessage('system', `${probe.name}: Diagnosing ${probe.diagnoses}...`);
+                
+                // Set the input and send
+                const input = document.getElementById('butterflyChatInput');
+                input.value = probe.message;
+                sendButterflyChatMessage();
+            }
+            
+            async function sendAllReconMessages() {
+                console.log('[RECON] ⚡ Running all 4 diagnostic probes...');
+                addButterflyChatMessage('system', '⚡ FULL RECON: Running all 4 diagnostic probes sequentially...');
+                
+                for (let i = 1; i <= 4; i++) {
+                    await new Promise(resolve => setTimeout(resolve, 1500)); // Wait between probes
+                    sendReconMessage(i);
+                    await new Promise(resolve => setTimeout(resolve, 3000)); // Wait for response
+                }
+                
+                // Analyze results after all probes
+                setTimeout(() => {
+                    analyzeReconResults();
+                }, 5000);
+            }
+            
+            function analyzeReconResults() {
+                const responses = window._butterflyDebugResponses || [];
+                const recentResponses = responses.slice(-4); // Last 4 responses
+                
+                console.log('═══════════════════════════════════════════════════');
+                console.log('📊 SWARM RECON ANALYSIS');
+                console.log('═══════════════════════════════════════════════════');
+                
+                let issues = [];
+                let healthy = [];
+                
+                recentResponses.forEach((r, idx) => {
+                    const probeNum = idx + 1;
+                    const probe = RECON_MESSAGES[probeNum];
+                    const isEmpty = !r.response || r.response === '<no response>' || r.response.trim() === '';
+                    const confidence = r.confidence || 0;
+                    const orgCount = r.organism_count || 0;
+                    
+                    console.log(`\nProbe ${probeNum} (${probe?.name || 'Unknown'}):`);
+                    console.log(`  Response: ${isEmpty ? '❌ EMPTY' : '✅ ' + r.response.substring(0, 50) + '...'}`);
+                    console.log(`  Confidence: ${(confidence * 100).toFixed(1)}%`);
+                    console.log(`  Organisms: ${orgCount}`);
+                    
+                    if (isEmpty) {
+                        issues.push(`Probe ${probeNum} (${probe?.diagnoses || 'unknown'}): Empty response`);
+                    } else if (confidence < 0.3) {
+                        issues.push(`Probe ${probeNum}: Low confidence (${(confidence * 100).toFixed(1)}%)`);
+                    } else {
+                        healthy.push(`Probe ${probeNum}: OK`);
+                    }
+                });
+                
+                console.log('\n───────────────────────────────────────────────────');
+                console.log('SUMMARY:');
+                console.log(`  ✅ Healthy: ${healthy.length}/4`);
+                console.log(`  ❌ Issues: ${issues.length}/4`);
+                if (issues.length > 0) {
+                    console.log('\nISSUES DETECTED:');
+                    issues.forEach(i => console.log(`  - ${i}`));
+                }
+                console.log('═══════════════════════════════════════════════════');
+                
+                // Add summary to chat
+                const summaryMsg = `📊 RECON COMPLETE: ${healthy.length}/4 probes healthy. ${issues.length > 0 ? 'Issues: ' + issues.join('; ') : 'All systems nominal.'}`;
+                addButterflyChatMessage('system', summaryMsg);
+                
+                return { healthy, issues };
+            }
+            
+            // Expose for console access
+            window.sendReconMessage = sendReconMessage;
+            window.sendAllReconMessages = sendAllReconMessages;
+            window.analyzeReconResults = analyzeReconResults;
+            window.RECON_MESSAGES = RECON_MESSAGES;
 
             // Simple markdown renderer for chat messages
             function renderMarkdown(text) {
@@ -17381,6 +17606,7 @@
 
             // Diagnostic function for debugging visualization state
             window.vizDebug = function() {
+                const samplingInfo = window._graphSamplingInfo || null;
                 const state = {
                     hasSvg: !!svg,
                     hasSimulation: !!simulation,
@@ -17394,7 +17620,12 @@
                     batchMode: batchUpdateMode,
                     pendingBatchUpdates: pendingBatchUpdates.length,
                     componentColorsCount: Object.keys(componentColors).length,
-                    linkColorsCount: Object.keys(linkColors).length
+                    linkColorsCount: Object.keys(linkColors).length,
+                    // Sampling info
+                    samplingActive: !!samplingInfo,
+                    samplingRatio: samplingInfo ? (samplingInfo.samplingRatio * 100).toFixed(1) + '%' : '100%',
+                    renderedNodes: samplingInfo ? samplingInfo.renderedNodes : allNodes.length,
+                    renderedLinks: samplingInfo ? samplingInfo.renderedLinks : allLinks.length
                 };
 
                 console.log('=== VISUALIZATION DEBUG STATE ===');
@@ -17403,11 +17634,68 @@
                 console.log('componentColors:', componentColors);
                 console.log('linkColors:', linkColors);
                 console.log('filters:', filters);
+                if (samplingInfo) {
+                    console.log('📊 SAMPLING INFO:', samplingInfo);
+                    console.log('📊 Component breakdown:', samplingInfo.componentBreakdown);
+                }
                 console.log('================================');
                 return state;
             };
+            
+            // Sampling control functions
+            window.vizDebug.getSamplingInfo = function() {
+                const info = window._graphSamplingInfo;
+                if (!info) {
+                    console.log('📊 No sampling active - graph is within render limits');
+                    return null;
+                }
+                console.log('═══════════════════════════════════════════════════');
+                console.log('📊 GRAPH SAMPLING STATUS');
+                console.log('═══════════════════════════════════════════════════');
+                console.log(`Total nodes: ${info.totalNodes.toLocaleString()}`);
+                console.log(`Total links: ${info.totalLinks.toLocaleString()}`);
+                console.log(`Rendered nodes: ${info.renderedNodes.toLocaleString()} (${(info.nodeRatio * 100).toFixed(1)}%)`);
+                console.log(`Rendered links: ${info.renderedLinks.toLocaleString()} (${(info.linkRatio * 100).toFixed(1)}%)`);
+                console.log(`Sampling ratio: 1:${Math.round(1/info.samplingRatio)} (${(info.samplingRatio * 100).toFixed(1)}%)`);
+                console.log('───────────────────────────────────────────────────');
+                console.log('Component breakdown:');
+                Object.entries(info.componentBreakdown).forEach(([comp, data]) => {
+                    const pct = (data.sampled / data.total * 100).toFixed(1);
+                    console.log(`  ${comp}: ${data.sampled}/${data.total} (${pct}%)`);
+                });
+                console.log('═══════════════════════════════════════════════════');
+                return info;
+            };
+            
+            window.vizDebug.setMaxNodes = function(max) {
+                updateVizSetting('maxVisibleNodes', max);
+                console.log(`📊 Max visible nodes set to ${max.toLocaleString()}. Call renderGraph() to apply.`);
+            };
+            
+            window.vizDebug.setMaxLinks = function(max) {
+                updateVizSetting('maxVisibleLinks', max);
+                console.log(`📊 Max visible links set to ${max.toLocaleString()}. Call renderGraph() to apply.`);
+            };
+            
+            window.vizDebug.setSamplingLimits = function(maxNodes, maxLinks) {
+                updateVizSetting('maxVisibleNodes', maxNodes);
+                updateVizSetting('maxVisibleLinks', maxLinks);
+                console.log(`📊 Sampling limits: ${maxNodes.toLocaleString()} nodes, ${maxLinks.toLocaleString()} links`);
+                renderGraph();
+            };
+            
+            // Quick presets for different graph sizes
+            window.vizDebug.presets = {
+                minimal: () => { window.vizDebug.setSamplingLimits(500, 1000); console.log('📊 Preset: MINIMAL (fastest)'); },
+                light: () => { window.vizDebug.setSamplingLimits(2000, 5000); console.log('📊 Preset: LIGHT'); },
+                medium: () => { window.vizDebug.setSamplingLimits(5000, 15000); console.log('📊 Preset: MEDIUM'); },
+                heavy: () => { window.vizDebug.setSamplingLimits(10000, 30000); console.log('📊 Preset: HEAVY'); },
+                full: () => { window.vizDebug.setSamplingLimits(200000, 500000); console.log('📊 Preset: FULL (may be slow)'); }
+            };
 
             console.log('[VizDebug] Diagnostic function loaded. Type vizDebug() in console to view state.');
+            console.log('[VizDebug] Sampling commands: vizDebug.getSamplingInfo(), vizDebug.setSamplingLimits(nodes, links)');
+            console.log('[VizDebug] Presets: vizDebug.presets.minimal(), .light(), .medium(), .heavy(), .full()');
 
     </script>
 

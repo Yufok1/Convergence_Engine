@@ -481,6 +481,63 @@ Beyond individual battles - collective warfare for existential dominance. Organi
 
 ---
 
+## 🏛️ Confederation (Super-Alliance) System ⭐ NEW
+
+Alliances can ally with each other to form Confederations, which can merge into Empires, which can merge into Hegemonies. This is the ultimate expression of collective intelligence emergence.
+
+### Hierarchy Tiers
+
+| Tier | Name | What Determines Formation |
+|------|------|--------------------------|
+| 1 | **CONFEDERATION** | Alliances with: shared enemies, knowledge domain overlap, trustworthy track records, mutual power benefit |
+| 2 | **EMPIRE** | Confederations with: territorial control together, war victories together, semantic alignment |
+| 3 | **HEGEMONY** | Empires with: 2+ child confederations, 4+ controlled domains, 3+ war victories |
+
+### Elevation Requirements
+
+**CONFEDERATION → EMPIRE:**
+- 3+ member alliances
+- Control 2+ different territory types
+- Won at least 1 confederation war
+
+**EMPIRE → HEGEMONY:**
+- 2+ child confederations
+- Control 4+ different territories  
+- Won 3+ confederation wars
+
+### Key Events
+
+| Event Type | Description |
+|------------|-------------|
+| `confederation_founded` | Alliance warchief creates new confederation |
+| `alliance_joined_confederation` | Alliance accepts confederation invite |
+| `confederation_war_proposed` | Mega-war proposal between confederations |
+| `confederation_war_declared` | Confederation goes to war (majority vote passed) |
+| `mega_confederation_formed` | Two confederations merge into EMPIRE/HEGEMONY |
+
+### ML Feature Integration (Features 25-27)
+
+| Feature | Index | Description |
+|---------|-------|-------------|
+| `confederation_level` | 25 | 0=none, 0.33=confederation, 0.66=empire, 1.0=hegemony |
+| `confederation_wars` | 26 | Normalized count of mega-wars participated in |
+| `cross_alliance_influence` | 27 | Connections to organisms in other alliances |
+
+### Key Config Paths
+
+| Path | Safe Range | Description |
+|------|------------|-------------|
+| `/highlander/alliance_warfare/max_confederations` | 1-5 | Maximum concurrent confederations |
+| `/highlander/alliance_warfare/confederation_war_threshold` | 0.5-0.9 | Vote ratio needed to declare mega-war |
+
+### What to Monitor
+- Confederation tier progressions (CONFEDERATION → EMPIRE → HEGEMONY)
+- Cross-alliance connection density (indicates emergence of super-structures)
+- Confederation war outcomes and territory changes
+- Organism confederation_tier distribution in ML clusters
+
+---
+
 ## 🔬 ML Analysis Visualization System
 
 The ML Analysis component has its own visual representation on the causation graph, distinct from the Neural System (PyTorch). This provides visual differentiation for scikit-learn ML events.

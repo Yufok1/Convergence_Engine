@@ -126,12 +126,12 @@ class NeuralOrganism(Organism):
                 # Add mutation
                 self.brain.mutate(mutation_rate)
             else:
-                # Create new brain
+                # Create new brain - pass FULL config so language_model section is accessible
                 try:
                     from .utils import create_brain
                 except ImportError:
                     from reality_simulator.neural.utils import create_brain
-                self.brain = create_brain(neural_config)
+                self.brain = create_brain(self.config)  # Pass full config, not just neural_config
             
             # Experience storage
             self.experience_buffer = ExperienceBuffer(
@@ -183,6 +183,12 @@ class NeuralOrganism(Organism):
             # Alliance/social tracking for extended features (Integration: Features 19-24)
             self.alliance_reputation = 0.5  # Neutral start
             self.fitness_history = []  # Track fitness over time for trend analysis
+            
+            # Confederation (Super-Alliance) tracking (Integration: Features 25-27)
+            self.alliance_id = None  # Current alliance membership
+            self.confederation_tier = 0  # 0=none, 1=confederation, 2=empire, 3=hegemony
+            self.confederation_wars_participated = 0
+            self.cross_alliance_connections = 0  # Connections to organisms in other alliances
         else:
             self.brain = None
             self.experience_buffer = None
@@ -200,6 +206,12 @@ class NeuralOrganism(Organism):
             # Alliance/social tracking for extended features (Integration: Features 19-24)
             self.alliance_reputation = 0.5  # Neutral start
             self.fitness_history = []  # Track fitness over time for trend analysis
+            
+            # Confederation (Super-Alliance) tracking (Integration: Features 25-27)
+            self.alliance_id = None  # Current alliance membership
+            self.confederation_tier = 0  # 0=none, 1=confederation, 2=empire, 3=hegemony
+            self.confederation_wars_participated = 0
+            self.cross_alliance_connections = 0  # Connections to organisms in other alliances
     
     def get_state_features(self, 
                           local_env: Optional[Dict[str, Any]] = None,
@@ -347,7 +359,9 @@ class NeuralOrganism(Organism):
             vocab_size = len(getattr(self.atomic_language, 'vocabulary', set()))
         elif hasattr(self, 'token_sequence'):
             vocab_size = len(set(self.token_sequence))
-        language_fluency = np.clip(vocab_size / 100.0, 0.0, 1.0)  # Normalize to max 100 words
+        # Normalize language fluency - scale to expected max vocab (65536)
+        # Use log scale for better discrimination across large vocab range
+        language_fluency = np.clip(np.log1p(vocab_size) / np.log1p(65536), 0.0, 1.0)
         features.append(language_fluency)
         
         # 22. Environmental density (local crowding)
@@ -1111,9 +1125,8 @@ class NeuralOrganism(Organism):
         generated = [vocab.get_id('<START>')]
         # Get device from brain model (CPU or CUDA)
         device = next(self.brain.parameters()).device
-        # Get correct input dimension from the brain's actual layer (not config - may be stale)
-        # This handles organisms created with different input_dim than current config
-        brain_input_dim = self.brain.fc1.in_features
+        # Get correct input dimension from config
+        input_dim = self.config.get('neural', {}).get('brain', {}).get('input_dim', 18)
         self.brain.eval()
         
         # Early stopping for UNK sequences
@@ -1125,32 +1138,20 @@ class NeuralOrganism(Organism):
             if len(self.state_history) > 0:
                 state = self.state_history[-1]
                 if isinstance(state, np.ndarray):
-                    # Pad or truncate state to match brain's expected input dimension
-                    if len(state) < brain_input_dim:
-                        # Pad with zeros if state is smaller than brain expects
-                        padded_state = np.zeros(brain_input_dim, dtype=np.float32)
-                        padded_state[:len(state)] = state
-                        state_tensor = torch.FloatTensor(padded_state).unsqueeze(0).to(device)
-                    elif len(state) > brain_input_dim:
-                        # Truncate if state is larger than brain expects
-                        state_tensor = torch.FloatTensor(state[:brain_input_dim]).unsqueeze(0).to(device)
-                    else:
-                        state_tensor = torch.FloatTensor(state).unsqueeze(0).to(device)
+                    state_tensor = torch.FloatTensor(state).unsqueeze(0).to(device)
                 else:
-                    state_tensor = torch.zeros(1, brain_input_dim, device=device)  # Default input dim
+                    state_tensor = torch.zeros(1, input_dim, device=device)  # Default input dim
             else:
-                state_tensor = torch.zeros(1, brain_input_dim, device=device)
+                state_tensor = torch.zeros(1, input_dim, device=device)
             
             for _ in range(effective_max_length - 1):
-                # Get language logits from brain
-                output = self.brain.forward(state_tensor, vp_value=vp_value)
-                
-                # If brain has language head, use it
-                if hasattr(self.brain, 'fc_language'):
-                    language_logits = self.brain.fc_language(
-                        torch.relu(self.brain.fc2(
-                            torch.relu(self.brain.fc1(state_tensor))
-                        ))
+                # If brain has language head, use proper forward path with attention
+                if hasattr(self.brain, 'fc_language') and self.brain.use_language_head:
+                    # Use brain's forward method to properly handle attention
+                    output, language_logits = self.brain.forward(
+                        state_tensor, 
+                        vp_value=vp_value,
+                        return_language_logits=True
                     )
                     
                     # Clamp logits to vocabulary size to avoid out-of-range tokens
@@ -1158,8 +1159,20 @@ class NeuralOrganism(Organism):
                     if language_logits.shape[-1] > vocab_size:
                         language_logits = language_logits[..., :vocab_size]
                     
-                    # Apply temperature
-                    logits = language_logits[0] / temperature
+                    # Handle both 2D (batch, vocab) and 3D (batch, seq, vocab) outputs
+                    if len(language_logits.shape) == 3:
+                        # Use last sequence position for generation
+                        logits = language_logits[0, -1, :] / temperature
+                    else:
+                        # Standard 2D: (batch, vocab)
+                        logits = language_logits[0] / temperature
+                else:
+                    # Fallback: No language head, just get output
+                    output = self.brain.forward(state_tensor, vp_value=vp_value)
+                    language_logits = None
+                
+                # If brain has language head, process logits
+                if language_logits is not None:
                     
                     # ?? SEMANTIC REASONING: Quality-controlled semantic guidance
                     # Only strengthens coherent formations, prevents garbled chains
@@ -1248,24 +1261,34 @@ class NeuralOrganism(Organism):
                                         self._generation_relationships = []
                                     self._generation_relationships.extend(used_relationships)
                     
+                    # CRITICAL FIX: Mask logits to only sample from ACTUAL vocabulary words
+                    # Brain outputs 1000 logits but vocabulary may only have 5-50 actual words
+                    # Without masking, most samples hit non-existent tokens → <UNK> → empty output
+                    actual_vocab_size = len(vocab.word_to_id)  # Real vocab size including only actual words
+                    
+                    if actual_vocab_size < len(logits):
+                        # Create mask: -inf for tokens beyond actual vocabulary
+                        mask = torch.full_like(logits, float('-inf'))
+                        mask[:actual_vocab_size] = 0  # Keep actual vocabulary tokens
+                        logits = logits + mask  # Apply mask (softmax will make -inf → 0 probability)
+                    
                     probs = torch.softmax(logits, dim=-1)
                     
-                    # Sample next token, ensuring it's within vocabulary range
+                    # Sample next token - now constrained to actual vocabulary
                     next_token = torch.multinomial(probs, 1).item()
-                    next_token = min(next_token, vocab_size - 1)  # Clamp to valid range
+                    next_token = min(next_token, actual_vocab_size - 1)  # Clamp to valid range
                     
-                    # Ensure token maps to an actual word (not UNK)
-                    # If token is UNK, try to find a valid word token nearby
+                    # Verify token maps to an actual word
                     word = vocab.get_word(next_token)
-                    if word == '<UNK>' and vocab_size > len(SPECIAL_TOKENS):
+                    if word == '<UNK>' and actual_vocab_size > len(SPECIAL_TOKENS):
                         # Try nearby tokens to find a valid word
-                        non_special_size = vocab_size - len(SPECIAL_TOKENS)
+                        non_special_size = actual_vocab_size - len(SPECIAL_TOKENS)
                         found_valid = False
                         for offset in range(1, min(10, non_special_size)):
                             # Try both directions
                             for direction in [-1, 1]:
                                 candidate = next_token + (offset * direction)
-                                if candidate >= len(SPECIAL_TOKENS) and candidate < vocab_size:
+                                if candidate >= len(SPECIAL_TOKENS) and candidate < actual_vocab_size:
                                     candidate_word = vocab.get_word(candidate)
                                     if candidate_word and candidate_word != '<UNK>':
                                         next_token = candidate
@@ -1290,19 +1313,19 @@ class NeuralOrganism(Organism):
                     # No language head, use action as pseudo-token
                     # Map action to a valid vocabulary token (use modulo to keep in range)
                     action_token = torch.argmax(output, dim=-1).item()
-                    vocab_size = vocab.vocab_size
+                    actual_vocab_size = len(vocab.word_to_id)  # Use actual vocabulary size
                     # Map action to vocabulary range (skip special tokens)
                     # Prevent division by zero if vocab only has special tokens
-                    non_special_size = max(1, vocab_size - len(SPECIAL_TOKENS))
+                    non_special_size = max(1, actual_vocab_size - len(SPECIAL_TOKENS))
                     if non_special_size > 0:
                         # Map to valid word token range (after special tokens)
                         next_token = (action_token % non_special_size) + len(SPECIAL_TOKENS)
-                        next_token = min(next_token, vocab_size - 1)
+                        next_token = min(next_token, actual_vocab_size - 1)
                         # Ensure token maps to an actual word (not just any ID)
                         # Try to find a valid word token by checking if it exists in vocabulary
                         max_attempts = min(10, non_special_size)
                         for attempt in range(max_attempts):
-                            if next_token < vocab_size:
+                            if next_token < actual_vocab_size:
                                 word = vocab.get_word(next_token)
                                 if word and word != '<UNK>':
                                     break  # Found a valid word

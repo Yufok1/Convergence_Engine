@@ -63,6 +63,12 @@ class ClusteringResult:
     timestamp: float = field(default_factory=time.time)
     # NEW: Concept tracking fields (Quick Win #2)
     concept_tags: Dict[int, str] = field(default_factory=dict)  # cluster_id → concept_id
+    # NEW: Confederation/Alliance analysis fields
+    alliance_composition: Dict[int, Dict[str, int]] = field(default_factory=dict)  # cluster_id → {alliance_id: count}
+    confederation_tiers: Dict[int, Dict[str, int]] = field(default_factory=dict)  # cluster_id → {tier: count}
+    avg_alliance_participation: Dict[int, float] = field(default_factory=dict)  # cluster_id → avg score
+    avg_combat_performance: Dict[int, float] = field(default_factory=dict)  # cluster_id → avg win ratio
+    avg_reputation: Dict[int, float] = field(default_factory=dict)  # cluster_id → avg reputation
     
     def get_cluster_organisms(self, cluster_id: int, organism_ids: List[str]) -> List[str]:
         """Get organism IDs belonging to a specific cluster"""
@@ -173,15 +179,10 @@ class PopulationClusterer:
         for org_id in organism_ids:
             org = organisms[org_id]
             
-            # Integration 1: Try neural embedding first if enabled
-            if self.use_neural_embeddings:
-                # Check if organism is NeuralOrganism and has embedding method
-                if hasattr(org, 'get_language_embedding'):
-                    embedding = org.get_language_embedding(context_memory)
-                    if embedding is not None and len(embedding) > 0:
-                        # Use neural embedding (64-dim)
-                        features.append(embedding)
-                        continue
+            # Integration 1: Neural embedding feature extraction disabled for consistency
+            # All organisms must have the same feature vector length for clustering.
+            # Neural embeddings (64-dim) would conflict with behavioral features (20-dim).
+            # TODO: Enable neural embeddings when all organisms consistently provide them.
             
             # Fallback to behavioral features (original implementation)
             feature_vec = []
@@ -213,9 +214,9 @@ class PopulationClusterer:
                 # Convert org_id to int for lookup
                 org_id_int = hash(org_id) if isinstance(org_id, str) else org_id
                 
-                # Vocabulary size (normalized to 0-1, assuming max 100 words)
+                # Vocabulary size (normalized using log scale for 65K vocab)
                 vocab_size = len(context_memory.node_word_associations.get(org_id_int, set()))
-                feature_vec.append(min(1.0, vocab_size / 100.0))
+                feature_vec.append(min(1.0, np.log1p(vocab_size) / np.log1p(65536)))
                 
                 # Communication activity (normalized, assuming max 50 communications)
                 comm_activity = getattr(org, 'communication_count', 0)
@@ -261,6 +262,24 @@ class PopulationClusterer:
                 unique_tokens = len(set(org.token_sequence))
                 concept_maturity = min(1.0, unique_tokens / 30.0)
             feature_vec.append(concept_maturity)
+            
+            # === CONFEDERATION (Super-Alliance) Features ===
+            
+            # Confederation membership level (0=none, 0.33=confederation, 0.66=empire, 1.0=hegemony)
+            confederation_level = 0.0
+            if hasattr(org, 'confederation_tier'):
+                confederation_level = getattr(org, 'confederation_tier', 0) / 3.0
+            elif hasattr(org, 'alliance_id') and org.alliance_id:
+                confederation_level = 0.1  # In alliance but not confederation
+            feature_vec.append(min(1.0, confederation_level))
+            
+            # Super-alliance war participation
+            confed_wars = getattr(org, 'confederation_wars_participated', 0)
+            feature_vec.append(min(1.0, confed_wars / 5.0))
+            
+            # Cross-alliance influence (how many alliances organism has connections with)
+            cross_alliance_influence = getattr(org, 'cross_alliance_connections', 0)
+            feature_vec.append(min(1.0, cross_alliance_influence / 10.0))
             
             features.append(feature_vec)
         
@@ -389,17 +408,63 @@ class AnomalyDetector:
             else:
                 feature_vec.append(0.0)
             
-            # NEW: Language features (if context_memory available)
+            # Language features (if context_memory available)
             if context_memory and hasattr(context_memory, 'node_word_associations'):
                 org_id_int = hash(org_id) if isinstance(org_id, str) else org_id
                 vocab_size = len(context_memory.node_word_associations.get(org_id_int, set()))
-                feature_vec.append(min(1.0, vocab_size / 100.0))
+                feature_vec.append(min(1.0, np.log1p(vocab_size) / np.log1p(65536)))  # Log scale for 65K vocab
                 comm_activity = getattr(org, 'communication_count', 0)
                 feature_vec.append(min(1.0, comm_activity / 50.0))
                 linguistic_conns = getattr(org, 'linguistic_connection_count', 0)
                 feature_vec.append(min(1.0, linguistic_conns / 10.0))
             else:
                 feature_vec.extend([0.0] * 3)
+            
+            # === ALLIANCE/CONFEDERATION FEATURES (match PopulationClusterer) ===
+            
+            # Alliance participation
+            alliance_participation = 0.0
+            if hasattr(org, 'alliance_id') and org.alliance_id is not None:
+                alliance_participation = 0.5
+                alliance_participation += getattr(org, 'alliance_reputation', 0.0) * 0.5
+            feature_vec.append(min(1.0, alliance_participation))
+            
+            # Combat performance
+            combat_performance = 0.5
+            battle_wins = getattr(org, 'battle_wins', 0)
+            battle_losses = getattr(org, 'battle_losses', 0)
+            total_battles = battle_wins + battle_losses
+            if total_battles > 0:
+                combat_performance = battle_wins / total_battles
+            feature_vec.append(combat_performance)
+            
+            # Reputation score
+            reputation_score = getattr(org, 'alliance_reputation', 0.5)
+            feature_vec.append(min(1.0, max(0.0, reputation_score)))
+            
+            # Concept maturity
+            concept_maturity = 0.0
+            if hasattr(org, 'atomic_language') and org.atomic_language:
+                vocab = getattr(org.atomic_language, 'vocabulary', set())
+                concept_maturity = min(1.0, len(vocab) / 50.0)
+            elif hasattr(org, 'token_sequence'):
+                unique_tokens = len(set(org.token_sequence))
+                concept_maturity = min(1.0, unique_tokens / 30.0)
+            feature_vec.append(concept_maturity)
+            
+            # Confederation features
+            confederation_level = 0.0
+            if hasattr(org, 'confederation_tier'):
+                confederation_level = getattr(org, 'confederation_tier', 0) / 3.0
+            elif hasattr(org, 'alliance_id') and org.alliance_id:
+                confederation_level = 0.1
+            feature_vec.append(min(1.0, confederation_level))
+            
+            confed_wars = getattr(org, 'confederation_wars_participated', 0)
+            feature_vec.append(min(1.0, confed_wars / 5.0))
+            
+            cross_alliance_influence = getattr(org, 'cross_alliance_connections', 0)
+            feature_vec.append(min(1.0, cross_alliance_influence / 10.0))
             
             features.append(feature_vec)
         
@@ -529,7 +594,7 @@ class TraitReducer:
             if context_memory and hasattr(context_memory, 'node_word_associations'):
                 org_id_int = hash(org_id) if isinstance(org_id, str) else org_id
                 vocab_size = len(context_memory.node_word_associations.get(org_id_int, set()))
-                feature_vec.append(min(1.0, vocab_size / 100.0))
+                feature_vec.append(min(1.0, np.log1p(vocab_size) / np.log1p(65536)))  # Log scale for 65K vocab
                 comm_activity = getattr(org, 'communication_count', 0)
                 feature_vec.append(min(1.0, comm_activity / 50.0))
                 linguistic_conns = getattr(org, 'linguistic_connection_count', 0)

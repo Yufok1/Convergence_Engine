@@ -134,17 +134,53 @@ def create_brain(config: Dict[str, Any]):
                 sys.path.insert(0, neural_path)
             from brain import OrganismBrain
     
-    brain_config = config.get('brain', {})
+    # Handle both full config and neural-only config being passed
+    # Full config has: {'neural': {'brain': {...}, 'language_model': {...}}}
+    # Neural-only config has: {'brain': {...}, 'language_model': {...}}
+    if 'neural' in config:
+        # Full config passed - extract neural section which contains both brain and language_model
+        neural_section = config.get('neural', {})
+        brain_config = neural_section.get('brain', {})
+        language_config = neural_section.get('language_model', {})  # language_model is INSIDE neural
+    else:
+        # Neural-only config passed (neural section already extracted)
+        brain_config = config.get('brain', {})
+        language_config = config.get('language_model', {})
+    
+    # Extract language head settings
+    use_language_head = language_config.get('enabled', False)
+    vocab_size = language_config.get('vocabulary', {}).get('max_size', 12288)
+    use_attention = language_config.get('attention', {}).get('enabled', False)
+    num_attention_heads = language_config.get('attention', {}).get('num_heads', 4)
+    attention_dim = language_config.get('attention', {}).get('attention_dim', 64)
+    max_sequence_length = language_config.get('sequence', {}).get('max_length', 128)
+    
+    # Debug log for language head creation
+    if use_language_head:
+        print(f"[CREATE_BRAIN] ✅ Language head ENABLED (vocab_size={vocab_size}, attention={use_attention})")
+    else:
+        print(f"[CREATE_BRAIN] ⚠️ Language head DISABLED (language_model.enabled={language_config.get('enabled', 'not set')})")
+    
     brain = OrganismBrain(
         input_dim=brain_config.get('input_dim', 12),
         hidden_dim=brain_config.get('hidden_dim', 64),
         output_dim=brain_config.get('output_dim', 6),
         activation=brain_config.get('activation', 'relu'),
-        dropout=brain_config.get('dropout', 0.1)
+        dropout=brain_config.get('dropout', 0.1),
+        use_language_head=use_language_head,
+        vocab_size=vocab_size,
+        use_attention=use_attention,
+        num_attention_heads=num_attention_heads,
+        attention_dim=attention_dim,
+        max_sequence_length=max_sequence_length
     )
     
-    # Move to GPU if available
-    device = get_device("cuda")
+    # Get device from config (default to cpu for larger vocab support)
+    if 'neural' in config:
+        device_preference = config.get('neural', {}).get('device', 'cpu')
+    else:
+        device_preference = config.get('device', 'cpu')
+    device = get_device(device_preference)
     brain = brain.to(device)
     
     # Optimization: Compile brain for faster training/inference (PyTorch 2.0+)

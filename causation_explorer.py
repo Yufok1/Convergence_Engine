@@ -713,7 +713,7 @@ class CausationExplorer:
                 self.causation_graph.add_node(event_id, **event.to_dict())
             
             # Verify storage (debug logging for language events)
-            if event.event_type in ['butterfly_chat_message', 'butterfly_chat_response', 'vocabulary_growth', 'organism_communication', 'word_assignment']:
+            if event.event_type in ['butterfly_chat_message', 'butterfly_chat_response', 'vocabulary_growth', 'organism_communication', 'word_assignment', 'organism_diversity_analysis', 'chat_training_complete', 'bootstrap_learning_complete']:
                 logger.info(f"[EVENT_STORAGE] ✅ Stored language event: {event_id} (type={event.event_type}, component={event.component}) in events dict (total: {len(self.events)})")
                 # Verify it's actually in the dict
                 if event_id not in self.events:
@@ -984,6 +984,16 @@ class CausationExplorer:
             ('highlander', 'germination'): 'Highlander controls germination timing',
             ('highlander', 'alliance'): 'Highlander influences alliance opportunities',
             ('highlander', 'reality_sim'): 'Highlander affects population management',
+            # Confederation (Super-Alliance) causations
+            ('confederation', 'alliance'): 'Confederations coordinate member alliances',
+            ('alliance', 'confederation'): 'Alliance actions affect confederation power',
+            ('confederation', 'confederation'): 'Confederation wars affect other confederations',
+            ('confederation', 'reality_sim'): 'Mega-structures affect population dynamics',
+            ('confederation', 'neural'): 'Confederation membership influences neural decisions',
+            ('neural', 'confederation'): 'Neural decisions affect confederation voting',
+            ('confederation', 'combat'): 'Confederation wars trigger mass combat',
+            ('combat', 'confederation'): 'Mass combat outcomes affect confederation power',
+            ('confederation', 'ml_analysis'): 'Confederation structure affects clustering',
         }
         
         # Special handling for phase transitions - they should link to what caused them
@@ -2200,6 +2210,95 @@ class CausationExplorer:
                 needed = event.data.get('needed', 0)
                 current = event.data.get('current_population', 0)
                 parts.append(f"🌱 GERMINATION: {needed} new challengers needed (pop: {current})")
+        
+        # ═══════════════════════════════════════════════════════════════
+        # ALLIANCE WARFARE EVENTS
+        # ═══════════════════════════════════════════════════════════════
+        if event.component == 'alliance_warfare' or event.event_type.startswith('alliance_'):
+            if event.event_type == 'alliance_founded':
+                founder = event.data.get('founder', 'unknown')
+                name = event.data.get('name', 'unknown')
+                parts.append(f"🪐 ALLIANCE FOUNDED: '{name}' by {founder}")
+            
+            elif event.event_type == 'alliance_invite_proposed':
+                proposer = event.data.get('proposer_alliance', 'unknown')
+                target = event.data.get('target_alliance', 'unknown')
+                parts.append(f"📨 INVITE: {proposer} → {target}")
+            
+            elif event.event_type == 'alliance_member_joined':
+                org = event.data.get('organism', 'unknown')
+                alliance = event.data.get('alliance', 'unknown')
+                parts.append(f"✅ JOINED: {org} → '{alliance}'")
+            
+            elif event.event_type == 'alliance_war_declared':
+                attacker = event.data.get('attacker', 'unknown')
+                defender = event.data.get('defender', 'unknown')
+                parts.append(f"⚔️ WAR DECLARED: '{attacker}' vs '{defender}'")
+            
+            elif event.event_type == 'alliance_war_ended':
+                victor = event.data.get('victor', 'unknown')
+                result = event.data.get('result', 'unknown')
+                parts.append(f"🏆 WAR ENDED: '{victor}' ({result})")
+            
+            elif event.event_type == 'alliance_betrayal':
+                betrayer = event.data.get('betrayer', 'unknown')
+                alliance = event.data.get('alliance', 'unknown')
+                parts.append(f"🗡️ BETRAYAL: {betrayer} left '{alliance}'")
+            
+            elif event.event_type == 'alliance_territory_claimed':
+                alliance = event.data.get('alliance', 'unknown')
+                territory = event.data.get('territory', 'unknown')
+                parts.append(f"🌍 TERRITORY: '{alliance}' claimed {territory}")
+            
+            elif event.event_type == 'alliance_dissolved':
+                name = event.data.get('alliance_name', 'unknown')
+                reason = event.data.get('reason', 'unknown')
+                parts.append(f"💔 DISSOLVED: '{name}' ({reason})")
+            
+            elif event.event_type == 'alliance_new_warchief':
+                warchief = event.data.get('new_warchief', 'unknown')
+                alliance = event.data.get('alliance', 'unknown')
+                parts.append(f"👑 NEW WARCHIEF: {warchief} leads '{alliance}'")
+        
+        # ═══════════════════════════════════════════════════════════════
+        # CONFEDERATION (SUPER-ALLIANCE) EVENTS
+        # ═══════════════════════════════════════════════════════════════
+        if event.event_type.startswith('confederation_') or event.event_type.startswith('mega_'):
+            if event.event_type == 'confederation_founded':
+                alliance = event.data.get('alliance', 'unknown')
+                name = event.data.get('confederation', 'unknown')
+                parts.append(f"🏛️ CONFEDERATION FOUNDED: '{name}' by alliance '{alliance}'")
+            
+            elif event.event_type == 'alliance_joined_confederation':
+                alliance = event.data.get('alliance', 'unknown')
+                confed = event.data.get('confederation', 'unknown')
+                total = event.data.get('total_alliances', 0)
+                parts.append(f"🏛️ JOINED CONFEDERATION: '{alliance}' → '{confed}' ({total} alliances)")
+            
+            elif event.event_type == 'confederation_invite_proposed':
+                proposer = event.data.get('proposer_alliance', 'unknown')
+                target = event.data.get('target_alliance', 'unknown')
+                confed = event.data.get('confederation', 'unknown')
+                parts.append(f"📨 CONFEDERATION INVITE: '{proposer}' invites '{target}' to '{confed}'")
+            
+            elif event.event_type == 'confederation_war_proposed':
+                attacker = event.data.get('attacker_confederation', 'unknown')
+                defender = event.data.get('defender_confederation', 'unknown')
+                parts.append(f"⚔️🌍 MEGA-WAR PROPOSED: '{attacker}' vs '{defender}'")
+            
+            elif event.event_type == 'confederation_war_declared':
+                attacker = event.data.get('attacker', 'unknown')
+                defender = event.data.get('defender', 'unknown')
+                vote_ratio = event.data.get('vote_ratio', 0)
+                parts.append(f"⚔️🌍 MEGA-WAR DECLARED: '{attacker}' vs '{defender}' (vote: {vote_ratio:.0%})")
+            
+            elif event.event_type == 'mega_confederation_formed':
+                name = event.data.get('name', 'unknown')
+                tier = event.data.get('tier', 'unknown')
+                members = event.data.get('member_count', 0)
+                children = event.data.get('child_confederations', [])
+                parts.append(f"👑🏛️ {tier} FORMED: '{name}'")
+                parts.append(f"📊 {members} alliances | Children: {', '.join(children)}")
         
         # ═══════════════════════════════════════════════════════════════
         # GERMINATION POOL EVENTS

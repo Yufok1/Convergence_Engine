@@ -1431,6 +1431,10 @@ class UnifiedSystem:
                     # Also update network reference
                     self.web_ui.config['network'] = network
                     
+                    # Also update trainer reference for chat-triggered learning
+                    if self.reality_sim.neural_trainer:
+                        self.web_ui.config['neural_trainer'] = self.reality_sim.neural_trainer
+                    
                     # Log significant changes
                     if current_count != previous_count and current_count > 0:
                         if previous_count == 0:
@@ -1469,15 +1473,23 @@ class UnifiedSystem:
                 if self.causation_explorer:
                     try:
                         from causation_explorer import Event
-                        event = Event(
-                            timestamp=event_data.get('timestamp', time.time()),
-                            component=event_data.get('component', 'highlander'),
-                            event_type=event_data.get('event_type', 'highlander_event'),
-                            data=event_data.get('data', {})
-                        )
-                        self.causation_explorer.add_event(event, is_historical=False)
-                    except Exception:
-                        pass
+                        # Handle both Event objects and dicts
+                        if isinstance(event_data, Event):
+                            # Already an Event object, add directly
+                            self.causation_explorer.add_event(event_data, is_historical=False)
+                            print(f"[HIGHLANDER] ⚔️ Event emitted: {event_data.event_type} (total: {len(self.causation_explorer.events)})")
+                        else:
+                            # Dict format - create Event
+                            event = Event(
+                                timestamp=event_data.get('timestamp', time.time()),
+                                component=event_data.get('component', 'highlander'),
+                                event_type=event_data.get('event_type', 'highlander_event'),
+                                data=event_data.get('data', {})
+                            )
+                            self.causation_explorer.add_event(event, is_historical=False)
+                            print(f"[HIGHLANDER] ⚔️ Event emitted: {event.event_type} (total: {len(self.causation_explorer.events)})")
+                    except Exception as e:
+                        print(f"[HIGHLANDER] ❌ Event emission failed: {e}")
             
             # Initialize Battle Arena (combat resolution)
             arena_config = {
@@ -1583,6 +1595,9 @@ class UnifiedSystem:
             )
             print("[UNIFIED] [HIGHLANDER] [PASS] 🪐⚔️ Alliance Warfare System initialized")
             print("[UNIFIED] [HIGHLANDER] 'Beyond individual battles - collective warfare for existential dominance'")
+            
+            # 🏛️ CONFEDERATION (Super-Alliance) logging
+            print("[UNIFIED] [HIGHLANDER] [PASS] 🏛️ Confederation System enabled (CONFEDERATION → EMPIRE → HEGEMONY)")
             
             # Store config for runtime access
             self._highlander_rounds_per_cycle = rounds_per_cycle
@@ -2387,27 +2402,31 @@ def main():
         checker.run_all_checks(require_visualization=not args.no_viz)
         return
     
-    # Build Highlander config if enabled
+    # Build Highlander config if enabled (via command line OR config.json)
     highlander_config = None
-    if args.highlander:
-        # Load config from config.json if available
-        config_highlander = {}
-        try:
-            import json
-            config_path = Path('config.json')
-            if config_path.exists():
-                with open(config_path, 'r') as f:
-                    full_config = json.load(f)
-                    config_highlander = full_config.get('highlander', {})
-        except Exception:
-            pass  # Use defaults if config loading fails
-        
+    
+    # Load config from config.json first
+    config_highlander = {}
+    try:
+        import json
+        config_path = Path('config.json')
+        if config_path.exists():
+            with open(config_path, 'r') as f:
+                full_config = json.load(f)
+                config_highlander = full_config.get('highlander', {})
+    except Exception:
+        pass  # Use defaults if config loading fails
+    
+    # Enable Highlander if command line flag OR config.json has enabled=True
+    highlander_enabled = args.highlander or config_highlander.get('enabled', False)
+    
+    if highlander_enabled:
         # Command line args override config file settings
         highlander_config = {
             'enabled': True,
             'survival_threshold': args.survival_threshold,
             'competition_intensity': args.competition_intensity,
-            'predation_enabled': args.predation,
+            'predation_enabled': args.predation or config_highlander.get('predation_enabled', False),
             # Use config file values as defaults, override with command line if specified
             'germination_rate': config_highlander.get('germination_rate', 0.1),
             'min_population': config_highlander.get('min_population', 10),
@@ -2421,7 +2440,7 @@ def main():
             'rounds_per_cycle': config_highlander.get('rounds_per_cycle', 1)
         }
         print("⚔️  HIGHLANDER MODE ACTIVATED - There can be only one!")
-        if args.predation or config_highlander.get('predation_enabled', False):
+        if highlander_config.get('predation_enabled', False):
             print("🦁 Predation enabled - the strong will hunt the weak")
     
     # Create and run unified system

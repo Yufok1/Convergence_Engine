@@ -53,6 +53,11 @@ class ProposalType(Enum):
     BETRAY_ALLIANCE = "betray_alliance"      # Leave/sabotage current alliance
     LEADERSHIP_CHALLENGE = "leadership_challenge"  # Challenge for warchief
     TERRITORY_CLAIM = "territory_claim"      # Claim unclaimed territory
+    # CONFEDERATION (Super-Alliance) proposal types
+    CONFEDERATION_CREATE = "confederation_create"  # Create a super-alliance
+    CONFEDERATION_INVITE = "confederation_invite"  # Invite alliance to confederation
+    CONFEDERATION_WAR = "confederation_war"        # Mega-war between confederations
+    CONFEDERATION_MERGE = "confederation_merge"    # Merge confederations into mega-confederation
 
 
 @dataclass
@@ -219,6 +224,159 @@ class PlanetaryAlliance:
         }
 
 
+class ConfederationTier(Enum):
+    """
+    Tiers of super-alliances - emergent hierarchy.
+    
+    What determines each tier:
+    - CONFEDERATION: Alliances with compatible IDEOLOGIES (similar knowledge domains)
+    - EMPIRE: Confederations that control TERRITORY together
+    - HEGEMONY: Empires that dominate through CULTURAL consensus (shared vocabulary)
+    """
+    CONFEDERATION = 1  # Alliance of Alliances - ideological alignment
+    EMPIRE = 2         # Confederation of Confederations - territorial dominance
+    HEGEMONY = 3       # Empire of Empires - cultural/linguistic supremacy
+
+
+@dataclass
+class Confederation:
+    """
+    A Super-Alliance: Alliances that ally with each other.
+    
+    WHAT DETERMINES CONFEDERATION FORMATION:
+    1. Shared Enemies - alliances at war with same target
+    2. Knowledge Domain Overlap - similar concepts in their territories  
+    3. Reputation Trust - alliances with honorable track records
+    4. Mutual Benefit - combined war power > individual
+    
+    WHAT DETERMINES MEGA-CONFEDERATIONS (EMPIRES):
+    1. Territorial Control - confederations controlling complementary domains
+    2. War Victory - confederations that won wars together
+    3. Semantic Alignment - shared vocabulary/concepts across all members
+    4. Economic Interdependence - resource flow between confederations
+    
+    No automation. Alliance warchiefs must PROPOSE and VOTE.
+    """
+    # Required fields (no defaults) - must come first
+    confederation_id: str
+    name: str  # Named by founding alliance warchief
+    founding_alliance_id: str  # The alliance that created this
+    
+    # Optional/default fields
+    tier: ConfederationTier = ConfederationTier.CONFEDERATION
+    
+    # Member alliances - each CHOSE to join via warchief vote
+    member_alliances: Dict[str, float] = field(default_factory=dict)  # alliance_id -> join_time
+    
+    # Leadership - the alliance whose warchief leads the confederation
+    supreme_alliance_id: Optional[str] = None
+    
+    # Shared ideology/knowledge
+    shared_knowledge_domains: Set[TerritorialDomain] = field(default_factory=set)
+    
+    # Higher-tier membership
+    parent_confederation_id: Optional[str] = None  # If part of Empire/Hegemony
+    child_confederations: Set[str] = field(default_factory=set)  # If this IS an Empire/Hegemony
+    
+    # Confederation-level wars
+    at_war_with_confederations: Set[str] = field(default_factory=set)
+    confederation_wars_won: int = 0
+    confederation_wars_lost: int = 0
+    
+    # Alliance betrayals at confederation level
+    betrayer_alliances: Set[str] = field(default_factory=set)
+    
+    formation_time: float = field(default_factory=time.time)
+    
+    def get_total_organisms(self, get_alliance: Callable) -> int:
+        """Count all organisms across all member alliances."""
+        total = 0
+        for alliance_id in self.member_alliances:
+            try:
+                alliance = get_alliance(alliance_id)
+                if alliance:
+                    total += len(alliance.members)
+            except:
+                pass
+        return total
+    
+    def get_confederation_power(self, get_alliance: Callable, 
+                                 get_organism_fitness: Callable) -> float:
+        """Calculate combined power of all member alliances."""
+        total_power = 0.0
+        for alliance_id in self.member_alliances:
+            try:
+                alliance = get_alliance(alliance_id)
+                if alliance:
+                    total_power += alliance.get_war_power(get_organism_fitness)
+            except:
+                pass
+        
+        # Tier bonus - higher tiers are stronger
+        tier_multiplier = 1.0 + (self.tier.value * 0.2)
+        
+        # Cohesion bonus - shared domains strengthen bonds
+        cohesion_bonus = len(self.shared_knowledge_domains) * 0.1
+        
+        # Child confederation bonus (for Empires/Hegemonies)
+        hierarchy_bonus = len(self.child_confederations) * 0.15
+        
+        return total_power * tier_multiplier + cohesion_bonus + hierarchy_bonus
+    
+    def can_elevate_tier(self, get_alliance: Callable) -> Tuple[bool, str]:
+        """
+        Check if this confederation can become higher tier.
+        
+        CONFEDERATION -> EMPIRE requires:
+        - 3+ member alliances
+        - Control 2+ different territory types
+        - Won at least 1 confederation war
+        
+        EMPIRE -> HEGEMONY requires:
+        - 2+ child confederations
+        - Control 4+ different territories
+        - Won 3+ confederation wars
+        """
+        if self.tier == ConfederationTier.CONFEDERATION:
+            if len(self.member_alliances) < 3:
+                return False, "Need 3+ alliances"
+            if len(self.shared_knowledge_domains) < 2:
+                return False, "Need 2+ shared knowledge domains"
+            if self.confederation_wars_won < 1:
+                return False, "Need 1+ confederation war victory"
+            return True, "Ready to become EMPIRE"
+            
+        elif self.tier == ConfederationTier.EMPIRE:
+            if len(self.child_confederations) < 2:
+                return False, "Need 2+ child confederations"
+            if len(self.shared_knowledge_domains) < 4:
+                return False, "Need 4+ shared knowledge domains"
+            if self.confederation_wars_won < 3:
+                return False, "Need 3+ confederation war victories"
+            return True, "Ready to become HEGEMONY"
+            
+        else:
+            return False, "Already at maximum tier (HEGEMONY)"
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'confederation_id': self.confederation_id,
+            'name': self.name,
+            'tier': self.tier.name,
+            'founding_alliance_id': self.founding_alliance_id,
+            'supreme_alliance_id': self.supreme_alliance_id,
+            'member_alliances': list(self.member_alliances.keys()),
+            'member_count': len(self.member_alliances),
+            'shared_knowledge_domains': [d.value for d in self.shared_knowledge_domains],
+            'parent_confederation': self.parent_confederation_id,
+            'child_confederations': list(self.child_confederations),
+            'at_war_with': list(self.at_war_with_confederations),
+            'wars_won': self.confederation_wars_won,
+            'wars_lost': self.confederation_wars_lost,
+            'betrayer_alliances': list(self.betrayer_alliances)
+        }
+
+
 class AllianceWarfareSystem:
     """
     Alliance Warfare with FULL ORGANISM AGENCY.
@@ -255,6 +413,10 @@ class AllianceWarfareSystem:
         self.organism_reputations: Dict[str, OrganismReputation] = {}
         self.pending_global_proposals: List[AllianceProposal] = []  # Cross-alliance proposals
         
+        # CONFEDERATION (Super-Alliance) State
+        self.confederations: Dict[str, Confederation] = {}  # confederation_id -> Confederation
+        self.alliance_to_confederation: Dict[str, str] = {}  # alliance_id -> confederation_id
+        
         # Territory control - starts EMPTY, must be claimed
         self.uncontrolled_territories: Set[TerritorialDomain] = set(TerritorialDomain)
         self.territory_control: Dict[TerritorialDomain, str] = {}  # territory -> alliance_id
@@ -277,11 +439,11 @@ class AllianceWarfareSystem:
         if not self.event_emitter:
             return
         try:
-            from kernel.causation_explorer import CausationEvent
-            event = CausationEvent(
+            from causation_explorer import Event
+            event = Event(
+                timestamp=time.time(),
                 event_type=f"alliance_{event_type}",
                 component='alliance_warfare',
-                severity=0.6,
                 data={'round': self.round_number, **data}
             )
             self.event_emitter(event)
@@ -687,6 +849,408 @@ class AllianceWarfareSystem:
         
         return proposal_id
     
+    # ═══════════════════════════════════════════════════════════════════════
+    # CONFEDERATION (SUPER-ALLIANCE) INTERFACE
+    # Alliances of Alliances - decided by alliance warchiefs
+    # ═══════════════════════════════════════════════════════════════════════
+    
+    def alliance_create_confederation(self, alliance_id: str, 
+                                      confederation_name: str) -> Optional[str]:
+        """
+        Alliance warchief CHOOSES to create a confederation (super-alliance).
+        
+        WHAT DETERMINES IF AN ALLIANCE CAN CREATE A CONFEDERATION:
+        1. Must have a warchief (earned leadership)
+        2. Must not already be in a confederation
+        3. Must have won at least 1 war (proven strength)
+        
+        Returns:
+            Confederation ID if created
+        """
+        if alliance_id not in self.alliances:
+            return None
+            
+        alliance = self.alliances[alliance_id]
+        
+        # Must have a warchief
+        if not alliance.warchief_id:
+            self.logger.info(f"⚠️ Alliance '{alliance.name}' needs a warchief to create confederation")
+            return None
+        
+        # Must not already be in a confederation
+        if alliance_id in self.alliance_to_confederation:
+            self.logger.info(f"⚠️ Alliance '{alliance.name}' already in a confederation")
+            return None
+        
+        # Must have proven themselves (optional but recommended)
+        if alliance.wars_won < 1:
+            self.logger.info(f"⚠️ Alliance '{alliance.name}' should win a war first (earned, not given)")
+        
+        # Create confederation
+        confederation_id = f"confed_{alliance_id}_{int(time.time())}"
+        
+        confederation = Confederation(
+            confederation_id=confederation_id,
+            name=confederation_name,
+            founding_alliance_id=alliance_id,
+            supreme_alliance_id=alliance_id
+        )
+        confederation.member_alliances[alliance_id] = time.time()
+        
+        # Copy alliance's territories as shared domains
+        confederation.shared_knowledge_domains = set(alliance.controlled_territories)
+        
+        self.confederations[confederation_id] = confederation
+        self.alliance_to_confederation[alliance_id] = confederation_id
+        
+        self.logger.info(f"🏛️ Alliance '{alliance.name}' FOUNDED confederation '{confederation_name}'")
+        self._emit_event('confederation_founded', {
+            'alliance': alliance.name,
+            'confederation': confederation_name,
+            'founder_warchief': alliance.warchief_id
+        })
+        
+        return confederation_id
+    
+    def alliance_propose_confederation_invite(self, proposer_alliance_id: str,
+                                               target_alliance_id: str) -> Optional[str]:
+        """
+        Alliance warchief proposes inviting another alliance to their confederation.
+        
+        WHAT MAKES AN ALLIANCE A GOOD CONFEDERATION CANDIDATE:
+        1. Shared enemies (at war with same targets)
+        2. Compatible territories (non-overlapping for synergy)
+        3. Good reputation (trustworthy history)
+        4. Similar power level (no parasites)
+        
+        The target alliance's warchief must VOTE to accept.
+        """
+        if proposer_alliance_id not in self.alliances:
+            return None
+        if target_alliance_id not in self.alliances:
+            return None
+            
+        proposer = self.alliances[proposer_alliance_id]
+        target = self.alliances[target_alliance_id]
+        
+        # Must be in a confederation
+        if proposer_alliance_id not in self.alliance_to_confederation:
+            return None
+        
+        # Target must NOT already be in a confederation
+        if target_alliance_id in self.alliance_to_confederation:
+            self.logger.info(f"⚠️ Alliance '{target.name}' already in a confederation")
+            return None
+        
+        # Only warchief can invite
+        if not proposer.warchief_id:
+            return None
+        
+        confederation_id = self.alliance_to_confederation[proposer_alliance_id]
+        confederation = self.confederations[confederation_id]
+        
+        # Create proposal
+        proposal_id = f"confed_invite_{target_alliance_id}_{int(time.time())}"
+        proposal = AllianceProposal(
+            proposal_id=proposal_id,
+            proposal_type=ProposalType.CONFEDERATION_INVITE,
+            proposer_id=proposer.warchief_id,
+            target_id=target_alliance_id,
+            context={
+                'confederation_id': confederation_id,
+                'confederation_name': confederation.name,
+                'proposer_alliance': proposer.name,
+                'target_alliance': target.name
+            }
+        )
+        
+        self.pending_global_proposals.append(proposal)
+        
+        self.logger.info(f"📨 Alliance '{proposer.name}' invited '{target.name}' to confederation '{confederation.name}'")
+        self._emit_event('confederation_invite_proposed', {
+            'proposer_alliance': proposer.name,
+            'target_alliance': target.name,
+            'confederation': confederation.name
+        })
+        
+        return proposal_id
+    
+    def alliance_respond_to_confederation_invite(self, alliance_id: str, 
+                                                  proposal_id: str,
+                                                  accept: bool) -> bool:
+        """
+        Alliance warchief CHOOSES to accept or reject confederation invitation.
+        
+        FACTORS THAT SHOULD INFLUENCE THIS DECISION:
+        1. Is the confederation trustworthy? (betrayal history)
+        2. Are we at war with any of their members?
+        3. Will joining make us stronger or weaker?
+        4. Do they control territories we want?
+        """
+        # Find proposal
+        proposal = None
+        for p in self.pending_global_proposals:
+            if p.proposal_id == proposal_id and p.target_id == alliance_id:
+                proposal = p
+                break
+        
+        if not proposal or proposal.resolved:
+            return False
+        
+        alliance = self.alliances.get(alliance_id)
+        if not alliance or not alliance.warchief_id:
+            return False
+        
+        proposal.resolved = True
+        proposal.accepted = accept
+        proposal.resolution_time = time.time()
+        
+        if accept:
+            confederation_id = proposal.context.get('confederation_id')
+            if confederation_id in self.confederations:
+                confederation = self.confederations[confederation_id]
+                confederation.member_alliances[alliance_id] = time.time()
+                self.alliance_to_confederation[alliance_id] = confederation_id
+                
+                # Merge knowledge domains
+                confederation.shared_knowledge_domains.update(alliance.controlled_territories)
+                
+                self.logger.info(f"✅ Alliance '{alliance.name}' JOINED confederation '{confederation.name}'")
+                self._emit_event('alliance_joined_confederation', {
+                    'alliance': alliance.name,
+                    'confederation': confederation.name,
+                    'total_alliances': len(confederation.member_alliances)
+                })
+        else:
+            self.logger.info(f"❌ Alliance '{alliance.name}' REJECTED confederation invite")
+        
+        return True
+    
+    def confederation_propose_war(self, confederation_id: str,
+                                   target_confederation_id: str,
+                                   proposer_alliance_id: str) -> Optional[str]:
+        """
+        An alliance warchief proposes confederation-level war (MEGA WAR).
+        
+        WHAT JUSTIFIES CONFEDERATION WAR:
+        1. Territory disputes (overlapping domain claims)
+        2. Ideology conflict (incompatible knowledge bases)
+        3. Defensive pact (ally confederation was attacked)
+        4. Dominance push (attempting to become EMPIRE tier)
+        
+        ALL member alliance warchiefs must vote.
+        """
+        if confederation_id not in self.confederations:
+            return None
+        if target_confederation_id not in self.confederations:
+            return None
+        if proposer_alliance_id not in self.alliances:
+            return None
+            
+        confederation = self.confederations[confederation_id]
+        target = self.confederations[target_confederation_id]
+        proposer = self.alliances[proposer_alliance_id]
+        
+        # Proposer must be in this confederation
+        if proposer_alliance_id not in confederation.member_alliances:
+            return None
+        
+        # Must be warchief
+        if not proposer.warchief_id:
+            return None
+        
+        # Already at war?
+        if target_confederation_id in confederation.at_war_with_confederations:
+            return None
+        
+        # Create mega-war proposal
+        proposal_id = f"confed_war_{confederation_id}_{target_confederation_id}_{int(time.time())}"
+        proposal = AllianceProposal(
+            proposal_id=proposal_id,
+            proposal_type=ProposalType.CONFEDERATION_WAR,
+            proposer_id=proposer.warchief_id,
+            target_id=target_confederation_id,
+            context={
+                'our_confederation': confederation.name,
+                'target_confederation': target.name,
+                'proposer_alliance': proposer.name
+            }
+        )
+        
+        # Proposer votes yes
+        proposal.votes_for.add(proposer_alliance_id)
+        
+        self.pending_global_proposals.append(proposal)
+        
+        self.logger.info(f"⚔️🌍 MEGA-WAR PROPOSED: '{confederation.name}' vs '{target.name}'")
+        self._emit_event('confederation_war_proposed', {
+            'attacker_confederation': confederation.name,
+            'defender_confederation': target.name,
+            'proposer_alliance': proposer.name
+        })
+        
+        return proposal_id
+    
+    def alliance_vote_confederation_war(self, alliance_id: str, proposal_id: str,
+                                         vote_yes: bool) -> bool:
+        """Alliance warchief votes on confederation war proposal."""
+        proposal = None
+        for p in self.pending_global_proposals:
+            if p.proposal_id == proposal_id and p.proposal_type == ProposalType.CONFEDERATION_WAR:
+                proposal = p
+                break
+        
+        if not proposal or proposal.resolved:
+            return False
+        
+        alliance = self.alliances.get(alliance_id)
+        if not alliance or not alliance.warchief_id:
+            return False
+        
+        # Must be member of the proposing confederation
+        confederation_id = self.alliance_to_confederation.get(alliance_id)
+        if not confederation_id:
+            return False
+        
+        if vote_yes:
+            proposal.votes_for.add(alliance_id)
+            proposal.votes_against.discard(alliance_id)
+        else:
+            proposal.votes_against.add(alliance_id)
+            proposal.votes_for.discard(alliance_id)
+        
+        # Check if vote is complete (all member alliances voted)
+        confederation = self.confederations.get(confederation_id)
+        if confederation:
+            total_members = len(confederation.member_alliances)
+            total_votes = len(proposal.votes_for) + len(proposal.votes_against)
+            
+            if total_votes >= total_members:
+                # Resolve the vote
+                vote_ratio = proposal.get_vote_ratio()
+                proposal.resolved = True
+                proposal.accepted = vote_ratio > 0.5  # Simple majority
+                proposal.resolution_time = time.time()
+                
+                if proposal.accepted:
+                    target_id = proposal.target_id
+                    confederation.at_war_with_confederations.add(target_id)
+                    
+                    # Target confederation is also at war with us
+                    if target_id in self.confederations:
+                        self.confederations[target_id].at_war_with_confederations.add(confederation_id)
+                    
+                    self.logger.info(f"⚔️🌍 MEGA-WAR DECLARED: '{confederation.name}' vs '{self.confederations.get(target_id, {}).name}'")
+                    self._emit_event('confederation_war_declared', {
+                        'attacker': confederation.name,
+                        'defender': self.confederations.get(target_id, Confederation("","","")).name,
+                        'vote_ratio': vote_ratio
+                    })
+                else:
+                    self.logger.info(f"🕊️ Confederation war proposal REJECTED (vote ratio: {vote_ratio:.2f})")
+        
+        return True
+    
+    def confederation_merge(self, confederation_id: str, target_confederation_id: str,
+                            new_tier_name: str) -> Optional[str]:
+        """
+        Merge two confederations into a higher tier (EMPIRE or HEGEMONY).
+        
+        WHAT DETERMINES MEGA-ALLIANCE FORMATION:
+        1. Victory Together - won confederation war as allies
+        2. Complementary Domains - non-overlapping territories
+        3. Mutual Trust - no betrayal history between them
+        4. Combined Dominance - together control majority of a domain
+        
+        Both confederation supreme alliances must agree.
+        """
+        if confederation_id not in self.confederations:
+            return None
+        if target_confederation_id not in self.confederations:
+            return None
+            
+        c1 = self.confederations[confederation_id]
+        c2 = self.confederations[target_confederation_id]
+        
+        # Cannot merge if at war
+        if target_confederation_id in c1.at_war_with_confederations:
+            return None
+        
+        # Determine new tier
+        max_tier = max(c1.tier.value, c2.tier.value)
+        new_tier = ConfederationTier(min(max_tier + 1, 3))  # Cap at HEGEMONY
+        
+        # Create the mega-confederation
+        mega_id = f"mega_{new_tier.name.lower()}_{int(time.time())}"
+        
+        mega = Confederation(
+            confederation_id=mega_id,
+            name=new_tier_name,
+            tier=new_tier,
+            founding_alliance_id=c1.founding_alliance_id,
+            supreme_alliance_id=c1.supreme_alliance_id  # Original founder leads
+        )
+        
+        # Add both as children
+        mega.child_confederations.add(confederation_id)
+        mega.child_confederations.add(target_confederation_id)
+        
+        # Set parent references
+        c1.parent_confederation_id = mega_id
+        c2.parent_confederation_id = mega_id
+        
+        # Merge all member alliances
+        for alliance_id in c1.member_alliances:
+            mega.member_alliances[alliance_id] = time.time()
+        for alliance_id in c2.member_alliances:
+            mega.member_alliances[alliance_id] = time.time()
+        
+        # Combine knowledge domains
+        mega.shared_knowledge_domains = c1.shared_knowledge_domains | c2.shared_knowledge_domains
+        
+        # Combine war records
+        mega.confederation_wars_won = c1.confederation_wars_won + c2.confederation_wars_won
+        mega.confederation_wars_lost = c1.confederation_wars_lost + c2.confederation_wars_lost
+        
+        self.confederations[mega_id] = mega
+        
+        self.logger.info(f"🏛️👑 {new_tier.name} FORMED: '{new_tier_name}' ({len(mega.member_alliances)} alliances)")
+        self._emit_event('mega_confederation_formed', {
+            'name': new_tier_name,
+            'tier': new_tier.name,
+            'member_count': len(mega.member_alliances),
+            'child_confederations': [c1.name, c2.name]
+        })
+        
+        return mega_id
+    
+    def get_confederation_status(self, confederation_id: str) -> Optional[Dict[str, Any]]:
+        """Get detailed status of a confederation."""
+        if confederation_id not in self.confederations:
+            return None
+            
+        c = self.confederations[confederation_id]
+        
+        # Calculate combined power
+        def get_alliance(aid):
+            return self.alliances.get(aid)
+        
+        def get_fitness(oid):
+            for alliance in self.alliances.values():
+                if oid in alliance.members:
+                    return self._get_or_create_reputation(oid).get_trust_score()
+            return 0.5
+        
+        status = c.to_dict()
+        status['total_organisms'] = c.get_total_organisms(get_alliance)
+        status['combined_power'] = c.get_confederation_power(get_alliance, get_fitness)
+        
+        can_elevate, reason = c.can_elevate_tier(get_alliance)
+        status['can_elevate'] = can_elevate
+        status['elevation_status'] = reason
+        
+        return status
+
     # ═══════════════════════════════════════════════════════════════════════
     # NEURAL ORGANISM DECISION INTEGRATION
     # These methods ask organisms to make decisions using their brains
@@ -1240,7 +1804,11 @@ class AllianceWarfareSystem:
             if not p.resolved and (current_time - p.timestamp) < self.proposal_timeout * 60
         ]
         
+        # Sync confederation state to organisms for ML feature extraction
+        self.sync_organism_confederation_state(organisms)
+        
         results['alliances'] = len(self.alliances)
+        results['confederations'] = len(self.confederations)
         return results
     
     def get_status(self) -> Dict[str, Any]:
@@ -1251,8 +1819,61 @@ class AllianceWarfareSystem:
             'alliances': [a.to_dict() for a in self.alliances.values()],
             'uncontrolled_territories': [t.value for t in self.uncontrolled_territories],
             'territory_control': {t.value: aid for t, aid in self.territory_control.items()},
-            'pending_proposals': len(self.pending_global_proposals)
+            'pending_proposals': len(self.pending_global_proposals),
+            # Confederation (Super-Alliance) status
+            'confederation_count': len(self.confederations),
+            'confederations': [c.to_dict() for c in self.confederations.values()],
+            'confederation_tiers': {
+                'CONFEDERATION': sum(1 for c in self.confederations.values() if c.tier == ConfederationTier.CONFEDERATION),
+                'EMPIRE': sum(1 for c in self.confederations.values() if c.tier == ConfederationTier.EMPIRE),
+                'HEGEMONY': sum(1 for c in self.confederations.values() if c.tier == ConfederationTier.HEGEMONY)
+            }
         }
+    
+    def sync_organism_confederation_state(self, organisms: Dict[str, Any]):
+        """
+        Sync confederation state to organism attributes for ML feature extraction.
+        
+        Updates each organism with:
+        - alliance_id: Their current alliance
+        - confederation_tier: 0=none, 1=confederation, 2=empire, 3=hegemony
+        - confederation_wars_participated: Count of mega-wars they've been in
+        - cross_alliance_connections: Connections to organisms in other alliances
+        """
+        for org_id, org in organisms.items():
+            # Find organism's alliance
+            alliance_id = self.get_organism_alliance(org_id)
+            
+            if hasattr(org, 'alliance_id'):
+                org.alliance_id = alliance_id
+            
+            # Determine confederation tier
+            tier = 0
+            if alliance_id and alliance_id in self.alliance_to_confederation:
+                confed_id = self.alliance_to_confederation[alliance_id]
+                if confed_id in self.confederations:
+                    confed = self.confederations[confed_id]
+                    tier = confed.tier.value
+                    
+                    # Check if part of higher tier (parent confederation)
+                    if confed.parent_confederation_id:
+                        parent = self.confederations.get(confed.parent_confederation_id)
+                        if parent:
+                            tier = max(tier, parent.tier.value)
+            
+            if hasattr(org, 'confederation_tier'):
+                org.confederation_tier = tier
+            
+            # Count cross-alliance connections (organisms in other alliances this one connects to)
+            cross_connections = 0
+            if hasattr(org, 'connections'):
+                for conn_id in org.connections:
+                    conn_alliance = self.get_organism_alliance(conn_id)
+                    if conn_alliance and conn_alliance != alliance_id:
+                        cross_connections += 1
+            
+            if hasattr(org, 'cross_alliance_connections'):
+                org.cross_alliance_connections = cross_connections
 
 
 # ═══════════════════════════════════════════════════════════════════════

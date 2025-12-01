@@ -105,14 +105,37 @@
     "weight_sustainability": 0.1
   },
   "highlander": {
-    "chaos_factor": 0.15,
-    "competition_intensity": 0.8,
-    "description": "Highlander Protocol - Survival of the fittest tournament system",
     "enabled": true,
+    "description": "Highlander Protocol - Survival of the fittest tournament system",
+    
+    "population_size": 15,
+    "min_population": 5,
+    "max_population": 30,
+    
+    "survival_threshold": 0.4,
+    "competition_intensity": 0.7,
+    "chaos_factor": 0.2,
+    
+    "predation_enabled": true,
+    "rounds_per_cycle": 1,
+    "max_battle_rounds": 10,
+    
+    "germination_rate": 0.15,
+    "mutation_rate": 0.08,
+    "max_genetic_samples": 100,
+    "max_capsules": 10,
+    
+    "alliance_warfare": {
+      "enabled": true,
+      "max_alliance_size": 5,
+      "betrayal_chance": 0.1,
+      "war_declaration_threshold": 0.6
+    },
+    
     "extreme_mode": {
+      "description": "EXTREME DIFFICULTY - Maximum evolutionary pressure",
       "chaos_factor": 0.4,
       "competition_intensity": 0.95,
-      "description": "EXTREME DIFFICULTY - Maximum evolutionary pressure",
       "germination_rate": 0.05,
       "max_battle_rounds": 15,
       "max_population": 20,
@@ -122,18 +145,7 @@
       "predation_enabled": true,
       "rounds_per_cycle": 2,
       "survival_threshold": 0.8
-    },
-    "germination_rate": 0.1,
-    "max_battle_rounds": 10,
-    "max_capsules": 5,
-    "max_genetic_samples": 100,
-    "max_population": 50,
-    "min_population": 5,
-    "mutation_rate": 0.05,
-    "population_size": 10,
-    "predation_enabled": true,
-    "rounds_per_cycle": 1,
-    "survival_threshold": 0.5
+    }
   },
   "lattice": {
     "entropy_sensitivity": 5e-05,
@@ -211,7 +223,7 @@
       "input_dim": 18,
       "output_dim": 6
     },
-    "device": "cuda",
+    "device": "cpu",
     "enabled": true,
     "inheritance": {
       "crossover_rate": 0.9,
@@ -308,7 +320,7 @@
         "vp_temperature_scale": true
       },
       "vocabulary": {
-        "max_size": 1024,
+        "max_size": 12288,
         "special_tokens": [
           "<PAD>",
           "<UNK>",
@@ -342,7 +354,7 @@
       "gamma": 0.995,
       "language_reward_scaling": 0.2,
       "learning_rate": 0.005,
-      "memory_size": 20000,
+      "memory_size": 0,
       "update_frequency": 1
     },
     "vp_aware_planning": {

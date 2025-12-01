@@ -6,6 +6,58 @@
 
 ## [Unreleased] - 2025-12-01
 
+### 🏰 Confederation System - Super-Alliances (2025-12-01)
+
+#### Added
+- **Confederation Hierarchy** (`reality_simulator/evolution/alliance_warfare.py`)
+  - Three-tier confederation system: CONFEDERATION → EMPIRE → HEGEMONY
+  - `ConfederationTier` enum with tier values and elevation requirements
+  - `Confederation` dataclass with full hierarchy tracking (alliances, leader, wars, influence)
+  - Confederations can wage "mega-wars" against other confederations
+  - Victory grants massive influence bonuses; defeat causes confederation dissolution
+
+- **Confederation Methods** (`reality_simulator/evolution/alliance_warfare.py`)
+  - `alliance_create_confederation()` - Create new confederation from founding alliances
+  - `alliance_propose_confederation_invite()` - Invite alliance to join confederation
+  - `confederation_propose_war()` - Initiate mega-war between confederations
+  - `confederation_merge()` - Merge two confederations (higher tier absorbs lower)
+  - `sync_organism_confederation_state()` - Sync confederation state to member organisms
+  - Enhanced `get_status()` with confederation tier breakdown
+
+- **ML Integration** (`reality_simulator/ml_utils.py`)
+  - 5 new fields in `ClusteringResult`: `alliance_composition`, `confederation_tiers`, `avg_alliance_participation`, `avg_combat_performance`, `avg_reputation`
+  - 10 new features in `AnomalyDetector.extract_features()`: `confederation_level`, `confed_wars`, `cross_alliance_influence`, etc.
+
+- **Causation Integration** (`causation_explorer.py`)
+  - 20+ new event display handlers for alliance/confederation events
+  - 9 confederation causation link types (confederation→alliance, confederation→neural, etc.)
+  - Events: `alliance_founded`, `confederation_founded`, `mega_confederation_formed`, `MEGA-WAR`, etc.
+
+- **Web UI Integration** (`causation_web_ui.py`)
+  - Confederation component mapping and colors
+  - `componentColor_confederation` and `linkColor_confederation` settings
+  - Alliance/confederation node shapes in graph visualization
+
+- **Neural Organism Integration** (`reality_simulator/neural/neural_organism.py`)
+  - 4 new attributes: `alliance_id`, `confederation_tier`, `confederation_wars_participated`, `cross_alliance_connections`
+
+- **Documentation** (`CRA_CAPABILITIES.md`)
+  - Full confederation system documentation section
+  - Hierarchy tier requirements, events, ML features, config paths
+
+#### Technical Details
+- **Tier Requirements**:
+  - CONFEDERATION: 2+ alliances, combined members ≥ 5
+  - EMPIRE: 4+ alliances, combined members ≥ 15, 2+ confederation wars won
+  - HEGEMONY: 6+ alliances, combined members ≥ 30, 5+ wars won, influence ≥ 1000
+
+- **Mega-War Mechanics**:
+  - Wars between confederations involve all member alliances
+  - Victory: +500 influence, can absorb enemy confederation
+  - Defeat: Confederation dissolves, alliances become independent
+
+---
+
 ### 🧠 Dynamic Multi-Dimensional Linguistic Awareness System (2025-12-01)
 
 #### Added

@@ -40,17 +40,21 @@ class ExperienceBuffer:
     
     Uses a circular buffer to store experiences and provides
     efficient batch sampling.
+    
+    Set capacity=0 or None for UNLIMITED growth (no experience loss).
     """
     
-    def __init__(self, capacity: int = 1000):
+    def __init__(self, capacity: int = 0):
         """
         Initialize experience buffer.
         
         Args:
-            capacity: Maximum number of experiences to store
+            capacity: Maximum number of experiences to store.
+                      0 or None = UNLIMITED (recommended for maximum learning)
         """
-        self.capacity = capacity
-        self.buffer: deque = deque(maxlen=capacity)
+        self.capacity = capacity if capacity and capacity > 0 else None
+        # None maxlen = unlimited growth, no experience is ever lost
+        self.buffer: deque = deque(maxlen=self.capacity)
         self.size = 0
     
     def add(self, state: np.ndarray, action: int, reward: float,

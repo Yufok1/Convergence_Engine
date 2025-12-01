@@ -68,29 +68,17 @@ python causation_web_ui.py
 **📚 [DOCUMENTATION_HUB.md](./DOCUMENTATION_HUB.md)** - Central documentation hub with links to all guides
 
 Recent updates:
-- ⚔️ **Alliance Warfare Visualization** (Dec 1, 2025): ⭐ NEW - Full graph visualization for alliance/combat events with shapes, colors, and legend
-- 🧠 **Neural System Expansion** (Dec 1, 2025): ⭐ NEW - 24-dimensional input (was 18), alliance/combat/language integration features
-- 🔧 **Config Tuner Cross-System Correlation** (Dec 1, 2025): ⭐ NEW - 4 new correlation analyzers (quantum-language, network-alliance, neural-battle, vocabulary-fitness)
-- 📊 **CRA Documentation Update** (Dec 1, 2025): ⭐ NEW - Updated prompts for all new integration features and visualization controls
+- 🏰 **Confederation System** (Dec 1, 2025): ⭐ NEW - Super-alliances with 3-tier hierarchy (Confederation → Empire → Hegemony), mega-wars, full ML/CRA/neural integration
+- ⚔️ **Alliance Warfare Visualization** (Dec 1, 2025): Full graph visualization for alliance/combat events with shapes, colors, and legend
+- 🧠 **Neural System Expansion** (Dec 1, 2025): 24-dimensional input (was 18), alliance/combat/language integration features
+- 🔧 **Config Tuner Cross-System Correlation** (Dec 1, 2025): 4 new correlation analyzers (quantum-language, network-alliance, neural-battle, vocabulary-fitness)
+- 📊 **CRA Documentation Update** (Dec 1, 2025): Updated prompts for all new integration features and visualization controls
 - ⚡ **Butterfly Chat Optimizations** (Dec 1, 2025): Adaptive generation length, early stopping, 5-10x faster early-stage performance
-- 🔗 **System Integration Fixes** (Dec 1, 2025): Fixed ML analysis cache timing, verified all system integrations
-- 🚫 **Fallback Removal** (Dec 1, 2025): Removed all automated fallback responses - pure organism communication only
 - 🧠 **Dynamic Multi-Dimensional Linguistic Awareness**: Context-aware word association framework with 14-dimensional situational assessment
-- 🧠 **Language Teacher System**: Three-phase architecture (hardcoded → semantic embeddings → knowledge web)
 - 🧠 **Linguistic Knowledge Web**: Comprehensive semantic network with 100+ concepts and relationships
-- 🎓 **Neural Relationship Learning**: Neural system learns from generation quality to strengthen/weaken semantic relationships
-- 🔬 **Scikit-Learn Enhancements**: Additional ML tools for language pattern analysis (TF-IDF, Nearest Neighbors, Feature Selection)
-- ⚙️ **Configuration Exposure**: All new systems fully configurable via config.json and CRA
 - 🦋 **Butterfly Chat Debug Panel**: Comprehensive debug/analysis panel with step-by-step logging, causation trail, and error detection
-- 🦋 **Illumination Engine Integration**: Direct linking between chat interactions and deep causal analysis
-- 🦋 **Learning from Interactions**: Organisms learn from every chat interaction with automatic experience storage
-- 🦋 **Language Visualization**: Complete language system representation in graph legend with distinct icons and link colors
 - 🦋 **Vocabulary Learning**: Automatic vocabulary growth from user messages when responses are empty
-- 🤖 **CRA Integration**: Complete knowledge and control over all language system settings
 - 🐛 **Bug Fixes**: Event ID collision, division by zero errors, token ID clamping, empty response handling
-- Visualization filters: component deselection now correctly excludes nodes before first render
-- Graph view auto-fit after filtering to keep remaining nodes visible
-- CRA logs and snapshots can be safely wiped; they will regenerate automatically
 ---
 
 ## 🦋 The Butterfly Architecture
