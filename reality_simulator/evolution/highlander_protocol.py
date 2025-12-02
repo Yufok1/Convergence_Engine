@@ -342,8 +342,18 @@ class HighlanderProtocol:
             'champion': None
         }
         
-        # Update active organisms
-        self.active_organisms = set(organisms.keys())
+        # Update active organisms - FILTER OUT FALLEN (don't resurrect the dead!)
+        incoming_ids = set(organisms.keys())
+        
+        # If this is the first round, initialize active_organisms
+        if not self.active_organisms:
+            self.active_organisms = incoming_ids - set(self.fallen)
+        else:
+            # Only add NEW organisms (not previously fallen)
+            new_organisms = incoming_ids - self.active_organisms - set(self.fallen)
+            self.active_organisms.update(new_organisms)
+            # Remove any that were eliminated but somehow still passed in
+            self.active_organisms -= set(self.fallen)
         
         # Update fitness peaks
         for org_id, org in organisms.items():

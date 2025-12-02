@@ -1718,6 +1718,17 @@ class UnifiedSystem:
                           f"💀 {eliminations_count} eliminated, "
                           f"🤝 {alliances_count} alliances, "
                           f"👥 {population} remaining")
+                
+                # 💀 ACTUALLY REMOVE ELIMINATED ORGANISMS FROM NETWORK
+                fallen = self.highlander_protocol.fallen
+                if fallen and network and hasattr(network, 'organisms'):
+                    removed_count = 0
+                    for fallen_id in fallen:
+                        if fallen_id in network.organisms:
+                            del network.organisms[fallen_id]
+                            removed_count += 1
+                    if removed_count > 0:
+                        print(f"[HIGHLANDER] 🪦 {removed_count} organisms permanently removed from network")
             
             # 🌱 GERMINATION - Spawn new organisms if population too low
             if hasattr(self, '_germination_callback') and self._germination_callback:
