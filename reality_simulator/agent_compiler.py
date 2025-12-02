@@ -392,7 +392,7 @@ class AgentRunner:
 
     def decide_action(self, state_vector):
         if len(state_vector) != self.input_dim:
-            raise ValueError(f"State vector must have {self.input_dim} dimensions, got {len(state_vector)}")
+            raise ValueError(f"State vector must have {{self.input_dim}} dimensions, got {{len(state_vector)}}")
         
         if "{export_format}" == "onnx":
             state_array = np.array(state_vector, dtype=np.float32).reshape(1, -1)
