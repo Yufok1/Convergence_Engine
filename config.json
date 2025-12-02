@@ -58,7 +58,7 @@
       "initial": 0.04
     },
     "mutation_rate_precision": 0.001,
-    "population_size": 1400
+    "population_size": 600
   },
   "feedback": {
     "enabled": true,
@@ -148,7 +148,7 @@
   "lattice": {
     "entropy_sensitivity": 5e-05,
     "interaction_precision": 0.0001,
-    "particles": 1200,
+    "particles": 800,
     "prune_threshold": 0,
     "stability_tolerance": 0.0005
   },
@@ -208,7 +208,7 @@
     "connection_strength_resolution": 5e-06,
     "emergence_sensitivity": 1e-06,
     "max_connections": 18000,
-    "max_organisms": 2000,
+    "max_organisms": 800,
     "resource_flow_precision": 0.0001,
     "resource_pool": 500,
     "stability_precision": 1e-07
@@ -228,7 +228,7 @@
       "num_key_compositions": 15,
       "utility_update_alpha": 0.1
     },
-    "device": "cpu",
+    "device": "cuda",
     "enabled": true,
     "inheritance": {
       "crossover_rate": 0.9,
@@ -242,7 +242,7 @@
     "language_model": {
       "attention": {
         "attention_dim": 32,
-        "enabled": true,
+        "enabled": false,
         "num_heads": 4
       },
       "curriculum": {
@@ -352,7 +352,7 @@
       "survival": 1.5
     },
     "training": {
-      "batch_size": 32,
+      "batch_size": 16,
       "enabled": true,
       "epsilon": 0.95,
       "epsilon_decay": 0.989,
@@ -403,8 +403,8 @@
       "cleanup_on_organism_death": true,
       "max_object_refs": 100
     },
-    "num_cpus": null,
-    "num_gpus": null,
+    "num_cpus": 4,
+    "num_gpus": 1,
     "object_store_memory": null,
     "parallelization_threshold": 50,
     "state_synchronization": {

@@ -289,6 +289,44 @@ def clear_all_data():
             cleared_items.append(f"  ✅ Neural checkpoints: {neural_checkpoint_count} files")
             print(f"🧠 Cleared {neural_checkpoint_count} neural model files from checkpoints")
     
+    # 13. Clear organism capsules (highlander and test capsules)
+    highlander_capsules_dir = base_dir / 'highlander_capsules'
+    if highlander_capsules_dir.exists():
+        capsule_count = 0
+        for capsule in highlander_capsules_dir.glob('*.json'):
+            success, size, msg = safe_delete_file(capsule)
+            if success:
+                total_size += size
+                capsule_count += 1
+            else:
+                skipped_items.append(f"  ⚠️  Highlander capsule: {capsule.name} - {msg}")
+        if capsule_count > 0:
+            cleared_items.append(f"  ✅ Highlander capsules: {capsule_count} files")
+            print(f"🥷 Cleared {capsule_count} highlander capsule files")
+    
+    test_capsules_dir = base_dir / 'test_capsules_temp'
+    if test_capsules_dir.exists():
+        success, msg = safe_delete_dir(test_capsules_dir)
+        if success:
+            cleared_items.append("  ✅ Test capsules directory")
+            print("🧪 Cleared test capsules directory")
+        else:
+            skipped_items.append(f"  ⚠️  Test capsules directory - {msg}")
+    
+    capsules_dir = data_dir / 'capsules'
+    if capsules_dir.exists():
+        capsule_count = 0
+        for capsule in capsules_dir.glob('*.json'):
+            success, size, msg = safe_delete_file(capsule)
+            if success:
+                total_size += size
+                capsule_count += 1
+            else:
+                skipped_items.append(f"  ⚠️  Capsule: {capsule.name} - {msg}")
+        if capsule_count > 0:
+            cleared_items.append(f"  ✅ Capsules: {capsule_count} files")
+            print(f"💊 Cleared {capsule_count} capsule files")
+    
     # Note: Knowledge base files are PRESERVED (not runtime data):
     # - linguistic_concepts.json
     # - semantic_relations.json

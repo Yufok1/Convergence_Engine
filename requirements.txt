@@ -27,6 +27,8 @@ pywin32>=306; sys_platform == 'win32'  # For Explorer process isolation (Windows
 torch>=2.5.0        # Core Neural Engine - DQN reinforcement learning for organisms
 scikit-learn>=1.5.0 # ML utilities - clustering, anomaly detection, PCA/t-SNE visualization
 hdbscan>=0.8.38     # HDBSCAN density-based clustering for phenotype detection
+onnx>=1.15.0        # ONNX format for neural model export (agent compilation)
+onnxscript>=0.1.0   # Required by PyTorch 2.5+ for ONNX export
 onnxruntime>=1.15.0 # For running exported ONNX models (agent compilation)
 
 # Language & Vocabulary (REQUIRED for curated vocabulary pipeline)
