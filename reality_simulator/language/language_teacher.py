@@ -278,7 +278,7 @@ class LanguageTeacher:
             if expanded_web_path.exists():
                 logger.info(f"[LANGUAGE_TEACHER] Loading expanded knowledge web from {expanded_web_path}")
                 try:
-                    self.knowledge_web.load_from_json(str(expanded_web_path))
+                    self.knowledge_web.load_from_file(str(expanded_web_path))
                     logger.info(f"[LANGUAGE_TEACHER] Successfully loaded expanded knowledge web with {len(self.knowledge_web.concepts)} concepts")
                 except Exception as e:
                     logger.error(f"[LANGUAGE_TEACHER] Failed to load expanded knowledge web: {e}")
@@ -293,17 +293,17 @@ class LanguageTeacher:
                     
                     if data_dir.exists():
                         importer = KnowledgeBaseImporter(data_dir=str(data_dir))
-                    import_results = importer.import_all(self.knowledge_web, grammar_learner=None)
-                    logger.info(f"[LANGUAGE_TEACHER] Knowledge base loaded: {import_results['concepts']} concepts, "
-                               f"{import_results['relations']} relations, {import_results['patterns']} patterns")
-                    logger.info(f"[LANGUAGE_TEACHER] Total in web: {import_results['total_concepts']} concepts, "
-                               f"{import_results['total_relations']} relations")
-                else:
-                    logger.warning(f"[LANGUAGE_TEACHER] Data directory not found: {data_dir}. Skipping knowledge base import.")
-            except ImportError as e:
-                logger.warning(f"[LANGUAGE_TEACHER] Could not import knowledge base: {e}. Using base knowledge only.")
-            except Exception as e:
-                logger.warning(f"[LANGUAGE_TEACHER] Error loading knowledge base: {e}. Using base knowledge only.")
+                        import_results = importer.import_all(self.knowledge_web, grammar_learner=None)
+                        logger.info(f"[LANGUAGE_TEACHER] Knowledge base loaded: {import_results['concepts']} concepts, "
+                                   f"{import_results['relations']} relations, {import_results['patterns']} patterns")
+                        logger.info(f"[LANGUAGE_TEACHER] Total in web: {import_results['total_concepts']} concepts, "
+                                   f"{import_results['total_relations']} relations")
+                    else:
+                        logger.warning(f"[LANGUAGE_TEACHER] Data directory not found: {data_dir}. Skipping knowledge base import.")
+                except ImportError as e:
+                    logger.warning(f"[LANGUAGE_TEACHER] Could not import knowledge base: {e}. Using base knowledge only.")
+                except Exception as e:
+                    logger.warning(f"[LANGUAGE_TEACHER] Error loading knowledge base: {e}. Using base knowledge only.")
             
             logger.info(f"[LANGUAGE_TEACHER] Linguistic Knowledge Web enabled ({len(self.knowledge_web.concepts)} concepts)")
             

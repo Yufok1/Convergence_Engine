@@ -435,7 +435,7 @@ class OrganismCapsuleManager:
         current_time = time.time()
         
         capsule = OrganismCapsule(
-            organism_id=organism.id,
+            organism_id=organism.species_id,
             capsule_id="",  # Will be generated
             organism_birth_time=getattr(organism, 'birth_time', current_time),
             organism_age=getattr(organism, 'age', 0),
@@ -490,7 +490,7 @@ class OrganismCapsuleManager:
         # CAUSATION DIGEST
         # ═══════════════════════════════════════════════════════════════
         if include_causation and causation_explorer:
-            capsule.causation = self._capture_causation(organism.id, causation_explorer)
+            capsule.causation = self._capture_causation(organism.species_id, causation_explorer)
         
         # Compute checksum
         capsule.checksum = capsule.compute_checksum()
