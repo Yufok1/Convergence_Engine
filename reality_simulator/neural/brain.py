@@ -467,8 +467,12 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
         
         try:
             # Use trace instead of script - script fails on complex control flow in Python 3.12
+            was_training = self.training
+            self.eval()  # Disable dropout for deterministic tracing
             dummy_input = torch.randn(1, self.input_dim, dtype=torch.float32)
             self._forward_scripted = torch.jit.trace(self, (dummy_input,))
+            if was_training:
+                self.train()  # Restore training mode if it was active
             self._use_scripted_inference = True
         except Exception:
             # Fallback if tracing fails

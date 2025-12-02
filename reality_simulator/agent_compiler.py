@@ -223,6 +223,7 @@ class AgentCompiler:
             # trace captures the execution path dynamically, which works with
             # OrganismBrain's complex control flow (conditional attention, etc.)
             # script analyzes code statically and fails on Python 3.12 + PyTorch 2.5
+            brain.eval()  # Disable dropout for deterministic tracing
             dummy_input = torch.randn(1, brain.input_dim, dtype=torch.float32)
             traced_brain = torch.jit.trace(brain, (dummy_input,))
             
@@ -1058,6 +1059,7 @@ if __name__ == '__main__':
             raise ValueError("No capsules provided for ensemble export.")
 
         wrapper = self.MultiOrganismWrapper(brains, names)
+        wrapper.eval()  # Disable dropout for deterministic tracing
 
         # Prepare deterministic input
         if example_state is not None:
