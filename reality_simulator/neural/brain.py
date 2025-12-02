@@ -466,11 +466,12 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
             return
         
         try:
-            if hasattr(torch.jit, 'script'):
-                self._forward_scripted = torch.jit.script(self.forward)
-                self._use_scripted_inference = True
+            # Use trace instead of script - script fails on complex control flow in Python 3.12
+            dummy_input = torch.randn(1, self.input_dim, dtype=torch.float32)
+            self._forward_scripted = torch.jit.trace(self, (dummy_input,))
+            self._use_scripted_inference = True
         except Exception:
-            # Fallback if scripting fails
+            # Fallback if tracing fails
             self._use_scripted_inference = False
     
     def mutate(self, mutation_rate: float = 0.1):

@@ -1093,16 +1093,19 @@ if __name__ == '__main__':
             except Exception as e:
                 msg = str(e)
                 if 'onnxscript' in msg.lower() or 'onnx' in msg.lower():
-                    # Fallback to TorchScript
+                    # Fallback to TorchScript trace (not script - script fails on OrganismBrain)
                     model_buffer = BytesIO()
-                    scripted = torch.jit.script(wrapper)
-                    scripted.save(model_buffer)
+                    traced = torch.jit.trace(wrapper, (dummy_input,))
+                    torch.jit.save(traced, model_buffer)
+                    model_buffer.seek(0)
                     chosen_format = 'torchscript'
                 else:
                     raise
         else:
-            scripted = torch.jit.script(wrapper)
-            scripted.save(model_buffer)
+            # Use trace instead of script - script fails on OrganismBrain's complex control flow
+            traced = torch.jit.trace(wrapper, (dummy_input,))
+            torch.jit.save(traced, model_buffer)
+            model_buffer.seek(0)
 
         # Metadata
         metadata = {
