@@ -1,0 +1,5 @@
+# Requirements for Knowledge Web Expansion
+# Install with: pip install -r knowledge_expansion_requirements.txt
+
+nltk>=3.8.1
+requests>=2.31.0
