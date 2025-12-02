@@ -801,108 +801,108 @@ class ButterflyChatRouter:
         """
         try:
             reward = 0.0
-        
-        # Handle empty response case
-        if not organism_response or len(organism_response.strip()) == 0:
-            return -0.1  # Small penalty for empty responses
-        
-        # Normalize text for comparison
-        user_words = set(user_message.lower().split())
-        response_words = organism_response.lower().split()
-        response_words_set = set(response_words)
-        
-        # 1. WORD OVERLAP SCORE (0.0 - 0.25)
-        # Measures semantic relevance to user message
-        # Filter out very common words for meaningful overlap
-        stopwords = {'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been',
-                     'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would',
-                     'could', 'should', 'may', 'might', 'must', 'shall', 'can',
-                     'i', 'you', 'he', 'she', 'it', 'we', 'they', 'what', 'who',
-                     'this', 'that', 'to', 'of', 'in', 'for', 'on', 'with', 'at'}
-        
-        user_content_words = user_words - stopwords
-        response_content_words = response_words_set - stopwords
-        
-        if user_content_words and response_content_words:
-            overlap = len(user_content_words & response_content_words)
-            max_possible = min(len(user_content_words), len(response_content_words))
-            overlap_score = (overlap / max_possible) * 0.25 if max_possible > 0 else 0.0
-        else:
-            overlap_score = 0.05  # Small base for having any response
-        
-        reward += overlap_score
-        
-        # 2. COHERENCE SCORE (0.0 - 0.25)
-        # Measures structural quality of the response
-        coherence_score = 0.0
-        
-        # Check for basic sentence structure (starts capital, has some length)
-        if organism_response[0].isupper():
-            coherence_score += 0.05
-        
-        # Check for sentence ending punctuation
-        if organism_response.rstrip()[-1] in '.!?':
-            coherence_score += 0.05
-        
-        # Penalize pure echoing (just repeating user input)
-        if organism_response.strip().lower() == user_message.strip().lower():
-            coherence_score -= 0.1  # Penalty for pure echoing
-        
-        # Check word variety (not just repeating same word)
-        if len(response_words) > 1:
-            unique_ratio = len(response_words_set) / len(response_words)
-            coherence_score += unique_ratio * 0.1
-        
-        # Check for multiple words (indicates more than just noise)
-        if len(response_words) >= 2:
-            coherence_score += 0.05
-        
-        reward += max(0.0, coherence_score)  # Don't let coherence go negative
-        
-        # 3. LENGTH APPROPRIATENESS (0.0 - 0.2)
-        # Goldilocks zone: neither too short nor too long
-        response_length = len(response_words)
-        if response_length == 0:
-            length_score = 0.0
-        elif response_length <= 2:
-            length_score = 0.05  # Very short
-        elif response_length <= 10:
-            length_score = 0.2   # Good range
-        elif response_length <= 20:
-            length_score = 0.15  # Slightly verbose
-        else:
-            length_score = 0.1   # Too long, slight penalty
-        
-        reward += length_score
-        
-        # 4. CONFIDENCE SCALING (0.0 - 0.2)
-        # Model's own confidence in the response
-        reward += confidence * 0.2
-        
-        # 5. VP-AWARE ADJUSTMENT (±0.1)
-        # Higher VP = more resources = higher standards
-        vp_adjustment = 0.0
-        if network_state:
-            vp_value = network_state.get('vp_value', 0.5)
             
-            # High VP: reward quality more, penalize poor responses
-            if vp_value > 0.7:
-                # At high VP, expect better responses
-                if reward > 0.5:
-                    vp_adjustment = 0.1  # Bonus for quality at high VP
-                    reward += vp_adjustment
-                elif reward < 0.2:
-                    vp_adjustment = -0.05  # Slight penalty for poor at high VP
-                    reward += vp_adjustment
-            elif vp_value < 0.3:
-                # At low VP, be more forgiving
-                reward = max(reward, 0.0)  # No negative rewards when struggling
-        
-        final_reward = max(-0.2, min(1.0, reward))  # Clamp to reasonable range
-        
-        # ═══════════════════════════════════════════════════════════════
-        # MISSION 1: Track semantic reward components for CRA/AutoTune
-        # ═══════════════════════════════════════════════════════════════
+            # Handle empty response case
+            if not organism_response or len(organism_response.strip()) == 0:
+                return -0.1  # Small penalty for empty responses
+            
+            # Normalize text for comparison
+            user_words = set(user_message.lower().split())
+            response_words = organism_response.lower().split()
+            response_words_set = set(response_words)
+            
+            # 1. WORD OVERLAP SCORE (0.0 - 0.25)
+            # Measures semantic relevance to user message
+            # Filter out very common words for meaningful overlap
+            stopwords = {'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been',
+                         'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would',
+                         'could', 'should', 'may', 'might', 'must', 'shall', 'can',
+                         'i', 'you', 'he', 'she', 'it', 'we', 'they', 'what', 'who',
+                         'this', 'that', 'to', 'of', 'in', 'for', 'on', 'with', 'at'}
+            
+            user_content_words = user_words - stopwords
+            response_content_words = response_words_set - stopwords
+            
+            if user_content_words and response_content_words:
+                overlap = len(user_content_words & response_content_words)
+                max_possible = min(len(user_content_words), len(response_content_words))
+                overlap_score = (overlap / max_possible) * 0.25 if max_possible > 0 else 0.0
+            else:
+                overlap_score = 0.05  # Small base for having any response
+            
+            reward += overlap_score
+            
+            # 2. COHERENCE SCORE (0.0 - 0.25)
+            # Measures structural quality of the response
+            coherence_score = 0.0
+            
+            # Check for basic sentence structure (starts capital, has some length)
+            if organism_response[0].isupper():
+                coherence_score += 0.05
+            
+            # Check for sentence ending punctuation
+            if organism_response.rstrip()[-1] in '.!?':
+                coherence_score += 0.05
+            
+            # Penalize pure echoing (just repeating user input)
+            if organism_response.strip().lower() == user_message.strip().lower():
+                coherence_score -= 0.1  # Penalty for pure echoing
+            
+            # Check word variety (not just repeating same word)
+            if len(response_words) > 1:
+                unique_ratio = len(response_words_set) / len(response_words)
+                coherence_score += unique_ratio * 0.1
+            
+            # Check for multiple words (indicates more than just noise)
+            if len(response_words) >= 2:
+                coherence_score += 0.05
+            
+            reward += max(0.0, coherence_score)  # Don't let coherence go negative
+            
+            # 3. LENGTH APPROPRIATENESS (0.0 - 0.2)
+            # Goldilocks zone: neither too short nor too long
+            response_length = len(response_words)
+            if response_length == 0:
+                length_score = 0.0
+            elif response_length <= 2:
+                length_score = 0.05  # Very short
+            elif response_length <= 10:
+                length_score = 0.2   # Good range
+            elif response_length <= 20:
+                length_score = 0.15  # Slightly verbose
+            else:
+                length_score = 0.1   # Too long, slight penalty
+            
+            reward += length_score
+            
+            # 4. CONFIDENCE SCALING (0.0 - 0.2)
+            # Model's own confidence in the response
+            reward += confidence * 0.2
+            
+            # 5. VP-AWARE ADJUSTMENT (±0.1)
+            # Higher VP = more resources = higher standards
+            vp_adjustment = 0.0
+            if network_state:
+                vp_value = network_state.get('vp_value', 0.5)
+                
+                # High VP: reward quality more, penalize poor responses
+                if vp_value > 0.7:
+                    # At high VP, expect better responses
+                    if reward > 0.5:
+                        vp_adjustment = 0.1  # Bonus for quality at high VP
+                        reward += vp_adjustment
+                    elif reward < 0.2:
+                        vp_adjustment = -0.05  # Slight penalty for poor at high VP
+                        reward += vp_adjustment
+                elif vp_value < 0.3:
+                    # At low VP, be more forgiving
+                    reward = max(reward, 0.0)  # No negative rewards when struggling
+            
+            final_reward = max(-0.2, min(1.0, reward))  # Clamp to reasonable range
+            
+            # ═══════════════════════════════════════════════════════════════
+            # MISSION 1: Track semantic reward components for CRA/AutoTune
+            # ═══════════════════════════════════════════════════════════════
             self.semantic_reward_totals['word_overlap'] += overlap_score
             self.semantic_reward_totals['coherence'] += max(0.0, coherence_score)
             self.semantic_reward_totals['length_score'] += length_score
