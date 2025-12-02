@@ -110,13 +110,13 @@
   },
   "highlander": {
     "alliance_warfare": {
-      "betrayal_chance": 0.05,
+      "betrayal_chance": 0.15,
       "enabled": true,
       "max_alliance_size": 30,
-      "war_declaration_threshold": 0.6
+      "war_declaration_threshold": 0.4
     },
-    "chaos_factor": 0.2,
-    "competition_intensity": 0.7,
+    "chaos_factor": 0.4,
+    "competition_intensity": 0.95,
     "description": "Highlander Protocol - Survival of the fittest tournament system",
     "enabled": true,
     "extreme_mode": {
@@ -133,17 +133,17 @@
       "rounds_per_cycle": 2,
       "survival_threshold": 0.8
     },
-    "germination_rate": 0.15,
-    "max_battle_rounds": 10,
+    "germination_rate": 0.05,
+    "max_battle_rounds": 15,
     "max_capsules": 10,
     "max_genetic_samples": 100,
     "max_population": 30,
     "min_population": 5,
-    "mutation_rate": 0.08,
+    "mutation_rate": 0.15,
     "population_size": 15,
     "predation_enabled": true,
-    "rounds_per_cycle": 1,
-    "survival_threshold": 0.4
+    "rounds_per_cycle": 2,
+    "survival_threshold": 0.85
   },
   "lattice": {
     "entropy_sensitivity": 5e-05,
@@ -201,7 +201,7 @@
         "meta_cognitive.self_tuning.tuning_interval_frames",
         "meta_cognitive.self_tuning.min_confidence_threshold"
       ],
-      "tuning_interval_frames": 5
+      "tuning_interval_frames": 10
     }
   },
   "network": {
@@ -270,7 +270,7 @@
       "enabled": true,
       "generation": {
         "max_length": 32,
-        "temperature": 1.0,
+        "temperature": 1.2,
         "vp_gate_threshold": 0.5
       },
       "knowledge_web": {
@@ -280,7 +280,7 @@
           "enabled": true,
           "exploration_decay_generations": 1000,
           "exploration_end": 0.05,
-          "exploration_start": 0.25,
+          "exploration_start": 0.3,
           "max_discoveries_per_generation": 10,
           "min_confidence_threshold": 0.3,
           "min_discovery_count": 3,
@@ -344,22 +344,22 @@
     },
     "rewards": {
       "connection_failure": -0.2,
-      "connection_success": 1.8,
-      "fitness_improvement": 2.5,
+      "connection_success": 2.5,
+      "fitness_improvement": 3.5,
       "resource_gain": 1,
       "resource_loss": -0.3,
-      "survival": 0.8
+      "survival": 1.5
     },
     "training": {
-      "batch_size": 64,
+      "batch_size": 32,
       "enabled": true,
       "epsilon": 0.95,
       "epsilon_decay": 0.989,
       "epsilon_end": 0.01,
-      "epsilon_start": 0.95,
+      "epsilon_start": 0.8,
       "gamma": 0.995,
       "language_reward_scaling": 0.25,
-      "learning_rate": 0.005,
+      "learning_rate": 0.002,
       "memory_size": 1000,
       "update_frequency": 1
     },
@@ -369,29 +369,6 @@
       "high_threshold": 0.45,
       "low_threshold": 0.25,
       "strong_boost": 0.3
-    }
-  },
-  "ray": {
-    "description": "Ray distributed computing - parallel organism decisions, training, and analysis",
-    "enabled": true,
-    "num_cpus": null,
-    "num_gpus": null,
-    "object_store_memory": null,
-    "parallelization_threshold": 50,
-    "training_threshold": 8,
-    "actor_pool_size": 4,
-    "batch_inference_size": 32,
-    "fallback_on_error": true,
-    "logging_level": "warning",
-    "state_synchronization": {
-      "snapshot_strategy": "breath_cycle",
-      "consistency_model": "sequential",
-      "max_state_age_ms": 100
-    },
-    "memory_management": {
-      "max_object_refs": 100,
-      "cleanup_on_organism_death": true,
-      "actor_pool_lru_eviction": true
     }
   },
   "quantum": {
@@ -412,6 +389,29 @@
     "probability_precision": 1e-06,
     "prune_check_interval": 40,
     "superposition_tolerance": 0.0005
+  },
+  "ray": {
+    "actor_pool_size": 4,
+    "batch_inference_size": 32,
+    "description": "Ray distributed computing - parallel organism decisions, training, and analysis",
+    "enabled": true,
+    "fallback_on_error": true,
+    "logging_level": "warning",
+    "memory_management": {
+      "actor_pool_lru_eviction": true,
+      "cleanup_on_organism_death": true,
+      "max_object_refs": 100
+    },
+    "num_cpus": null,
+    "num_gpus": null,
+    "object_store_memory": null,
+    "parallelization_threshold": 50,
+    "state_synchronization": {
+      "consistency_model": "sequential",
+      "max_state_age_ms": 100,
+      "snapshot_strategy": "breath_cycle"
+    },
+    "training_threshold": 8
   },
   "rendering": {
     "enable_visualizations": true,

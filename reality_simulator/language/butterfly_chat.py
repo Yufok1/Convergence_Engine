@@ -663,6 +663,10 @@ class ButterflyChatRouter:
                 network_state=network_state
             )
             
+            # Defensive: Ensure reward is a valid float (prevent NoneType comparison errors)
+            if reward is None:
+                reward = 0.0
+            
             # Get organism state features for experience storage
             if hasattr(organism, 'get_state_features'):
                 try:
@@ -795,7 +799,8 @@ class ButterflyChatRouter:
         4. Confidence scaling: Model confidence adjustment (0.0-0.2)
         5. VP awareness: Network vitality influence (±0.1)
         """
-        reward = 0.0
+        try:
+            reward = 0.0
         
         # Handle empty response case
         if not organism_response or len(organism_response.strip()) == 0:
@@ -898,15 +903,20 @@ class ButterflyChatRouter:
         # ═══════════════════════════════════════════════════════════════
         # MISSION 1: Track semantic reward components for CRA/AutoTune
         # ═══════════════════════════════════════════════════════════════
-        self.semantic_reward_totals['word_overlap'] += overlap_score
-        self.semantic_reward_totals['coherence'] += max(0.0, coherence_score)
-        self.semantic_reward_totals['length_score'] += length_score
-        self.semantic_reward_totals['confidence'] += confidence * 0.2
-        self.semantic_reward_totals['vp_adjustment'] += vp_adjustment
-        self.semantic_reward_totals['total_reward'] += final_reward
-        self.semantic_reward_totals['calculation_count'] += 1
-        
-        return final_reward
+            self.semantic_reward_totals['word_overlap'] += overlap_score
+            self.semantic_reward_totals['coherence'] += max(0.0, coherence_score)
+            self.semantic_reward_totals['length_score'] += length_score
+            self.semantic_reward_totals['confidence'] += confidence * 0.2
+            self.semantic_reward_totals['vp_adjustment'] += vp_adjustment
+            self.semantic_reward_totals['total_reward'] += final_reward
+            self.semantic_reward_totals['calculation_count'] += 1
+            
+            return final_reward
+            
+        except Exception as e:
+            # Fallback: Return safe default if reward calculation fails
+            logger.debug(f"Semantic reward calculation failed: {e}, returning 0.0")
+            return 0.0
 
     def _trigger_bootstrap_learning(self, organism: Any, user_tokens: List[int], 
                                       network_state: Optional[Dict[str, Any]] = None):
