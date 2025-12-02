@@ -895,6 +895,9 @@ class ButterflyChatRouter:
             vp_adjustment = 0.0
             if network_state:
                 vp_value = network_state.get('vp_value', 0.5)
+                # Defensive: ensure vp_value is not None
+                if vp_value is None:
+                    vp_value = 0.5
                 
                 # High VP: reward quality more, penalize poor responses
                 if vp_value > 0.7:
