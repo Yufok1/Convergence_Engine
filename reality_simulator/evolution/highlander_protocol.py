@@ -986,7 +986,8 @@ class HighlanderProtocol:
         # Absorb configs
         if hasattr(winner, 'config_system') and hasattr(loser, 'config_system'):
             try:
-                winner.config_system.absorb_config(loser.config_system, absorption_rate=0.3)
+                # FULL ABSORPTION - 50% rate for dramatic power swings!
+                winner.config_system.absorb_config(loser.config_system, absorption_rate=0.5)
             except Exception as e:
                 self.logger.debug(f"Config absorption failed: {e}")
         
@@ -1026,9 +1027,7 @@ class HighlanderProtocol:
                 winner_tokens = set(getattr(winner, 'token_sequence', []))
                 new_tokens = [t for t in loser_tokens if t not in winner_tokens]
                 
-                # Limit transfer to prevent overwhelming
-                new_tokens = new_tokens[:50]  # Max 50 new tokens
-                
+                # NO LIMIT - absorb ALL tokens! Big power fluctuations!
                 if new_tokens and hasattr(winner, 'token_sequence'):
                     if isinstance(winner.token_sequence, list):
                         winner.token_sequence.extend(new_tokens)
@@ -1081,8 +1080,8 @@ class HighlanderProtocol:
                     loser_weights = loser.brain.language_head.state_dict()
                     winner_weights = winner.brain.language_head.state_dict()
                     
-                    # Blend with 20% of loser's knowledge
-                    blend_ratio = 0.2
+                    # FULL BLEND - 50/50 redistribution! Dramatic power swings!
+                    blend_ratio = 0.5
                     for key in loser_weights:
                         if key in winner_weights:
                             winner_weights[key] = (
@@ -1094,7 +1093,7 @@ class HighlanderProtocol:
                     result['neural_transfer'] = True
                     result['traits_inherited'] += 1
                     
-                    self.logger.info(f"🧠 Neural language inheritance: {loser_id} → {winner_id} (20% blend)")
+                    self.logger.info(f"🧠 Neural language inheritance: {loser_id} → {winner_id} (50% blend - FULL REDISTRIBUTION)")
                     
             except Exception as e:
                 self.logger.debug(f"Neural weight transfer failed: {e}")

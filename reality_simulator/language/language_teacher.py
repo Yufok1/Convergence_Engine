@@ -270,14 +270,29 @@ class LanguageTeacher:
         if self.use_knowledge_web:
             self.knowledge_web = LinguisticKnowledgeWeb(config)
             
-            # Load comprehensive knowledge base from JSON files
-            try:
-                from .import_knowledge_base import KnowledgeBaseImporter
-                from pathlib import Path
-                
-                data_dir = Path(__file__).parent.parent.parent / "data"
-                if data_dir.exists():
-                    importer = KnowledgeBaseImporter(data_dir=str(data_dir))
+            # Try to load expanded knowledge web first
+            from pathlib import Path
+            data_dir = Path(__file__).parent.parent.parent / "data"
+            expanded_web_path = data_dir / "expanded_knowledge_web.json"
+            
+            if expanded_web_path.exists():
+                logger.info(f"[LANGUAGE_TEACHER] Loading expanded knowledge web from {expanded_web_path}")
+                try:
+                    self.knowledge_web.load_from_json(str(expanded_web_path))
+                    logger.info(f"[LANGUAGE_TEACHER] Successfully loaded expanded knowledge web with {len(self.knowledge_web.concepts)} concepts")
+                except Exception as e:
+                    logger.error(f"[LANGUAGE_TEACHER] Failed to load expanded knowledge web: {e}")
+                    logger.info("[LANGUAGE_TEACHER] Falling back to base knowledge initialization")
+            else:
+                logger.info("[LANGUAGE_TEACHER] Expanded knowledge web not found, using base initialization")
+            
+            # Load comprehensive knowledge base from JSON files (if expanded web wasn't loaded)
+            if len(self.knowledge_web.concepts) < 10000:  # Only load if we don't have expanded web
+                try:
+                    from .import_knowledge_base import KnowledgeBaseImporter
+                    
+                    if data_dir.exists():
+                        importer = KnowledgeBaseImporter(data_dir=str(data_dir))
                     import_results = importer.import_all(self.knowledge_web, grammar_learner=None)
                     logger.info(f"[LANGUAGE_TEACHER] Knowledge base loaded: {import_results['concepts']} concepts, "
                                f"{import_results['relations']} relations, {import_results['patterns']} patterns")

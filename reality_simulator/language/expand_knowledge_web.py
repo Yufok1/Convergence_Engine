@@ -16,6 +16,7 @@ import logging
 import argparse
 import requests
 import gzip
+import sys
 from pathlib import Path
 from typing import Dict, List, Set, Tuple, Any
 from collections import defaultdict
@@ -24,12 +25,17 @@ import time
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+# Add project root to path
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
+
 try:
     from reality_simulator.language.linguistic_knowledge_web import (
         LinguisticKnowledgeWeb, LinguisticConcept, SemanticRelation
     )
-except ImportError:
-    logger.error("Could not import LinguisticKnowledgeWeb. Make sure you're in the correct directory.")
+except ImportError as e:
+    logger.error(f"Could not import LinguisticKnowledgeWeb: {e}")
+    logger.error("Make sure you're running from the project root directory")
     exit(1)
 
 # Try importing NLTK WordNet
@@ -239,10 +245,24 @@ class KnowledgeWebExpander:
                 if len(parts) < 5:
                     continue
                 
-                rel_uri = parts[0]
-                start_uri = parts[1]
-                end_uri = parts[2]
-                info = json.loads(parts[3])
+                # ConceptNet CSV format (no header): assertion_uri, relation, start, end, metadata, ...
+                # Example: /a/[id], /r/RelatedTo, /c/en/dog, /c/en/animal, {...}
+                if i == 0:
+                    logger.info(f"First line has {len(parts)} columns")
+                    for idx in range(min(5, len(parts))):
+                        preview = parts[idx][:60] if len(parts[idx]) > 60 else parts[idx]
+                        logger.info(f"  Column {idx}: {preview}")
+                
+                # Correct format: assertion_uri (col 0), relation (col 1), start (col 2), end (col 3), metadata (col 4)
+                assertion_uri = parts[0]
+                rel_uri = parts[1]
+                start_uri = parts[2]
+                end_uri = parts[3]
+                
+                try:
+                    info = json.loads(parts[4]) if len(parts) > 4 and parts[4] else {}
+                except json.JSONDecodeError:
+                    info = {}
                 
                 weight = info.get('weight', 1.0)
                 
@@ -254,6 +274,10 @@ class KnowledgeWebExpander:
                 # Parse URIs
                 start_lang, start_term = self.parse_conceptnet_uri(start_uri)
                 end_lang, end_term = self.parse_conceptnet_uri(end_uri)
+                
+                # Debug first 10 English matches
+                if i < 100000 and start_lang == 'en' and end_lang == 'en' and i % 10000 == 0:
+                    logger.info(f"English match example: {start_term} -> {end_term} (weight={weight:.2f})")
                 
                 # Only English
                 if start_lang != 'en' or end_lang != 'en':
