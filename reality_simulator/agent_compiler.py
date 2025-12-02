@@ -518,9 +518,9 @@ This archive contains a compiled AI agent exported from The Butterfly System.
 
 ## Agent Details:
 - **Organism ID**: {capsule.organism_id}
-- **Fitness**: {metadata['organism_core']['fitness']:.3f}
-- **Input Dimensions**: {metadata['neural_network']['architecture']['input_dim']}
-- **Output Actions**: {metadata['neural_network']['architecture']['output_dim']} actions ({', '.join([ACTION_MAP[i] for i in range(metadata['neural_network']['architecture']['output_dim'])])})
+- **Fitness**: {metadata['organism_core']['fitness'] if metadata['organism_core']['fitness'] is not None else 'N/A'}
+- **Input Size**: {metadata['neural_network']['architecture'].get('input_size', 'unknown')}
+- **Output Size**: {metadata['neural_network']['architecture'].get('output_size', 'unknown')} actions
 - **Export Format**: {metadata['export_format'].upper()}
 - **Exported On**: {metadata['export_timestamp']}
 
@@ -587,22 +587,22 @@ class EnsembleRunner:
         self.model_filename = model_filename
         self.metadata_filename = metadata_filename
         if not os.path.exists(self.model_filename):
-            raise FileNotFoundError(f"Model file not found: {self.model_filename}")
+            raise FileNotFoundError(f"Model file not found: {{self.model_filename}}")
         if not os.path.exists(self.metadata_filename):
-            raise FileNotFoundError(f"Metadata file not found: {self.metadata_filename}")
+            raise FileNotFoundError(f"Metadata file not found: {{self.metadata_filename}}")
 
         with open(self.metadata_filename, "r") as f:
             self.metadata = json.load(f)
 
-        ensemble = self.metadata.get('ensemble', {})
+        ensemble = self.metadata.get('ensemble', {{}})
         members = ensemble.get('members', [])
         self.member_names = [m['name'] for m in members]
         self.input_dim = ensemble.get('max_input_dim', 0)
 
         print("\n--- Ensemble Loaded ---")
-        print(f"Members: {', '.join(self.member_names)}")
-        print(f"Input Dim: {self.input_dim}")
-        print(f"Exported: {self.metadata['export_timestamp']}")
+        print(f"Members: {{', '.join(self.member_names)}}")
+        print(f"Input Dim: {{self.input_dim}}")
+        print(f"Exported: {{self.metadata['export_timestamp']}}")
         print("-----------------------\n")
 
         self.session = None
@@ -622,14 +622,14 @@ class EnsembleRunner:
 
     def decide_actions(self, state_vector):
         if len(state_vector) != self.input_dim:
-            raise ValueError(f"State vector must have {self.input_dim} dimensions, got {len(state_vector)}")
+            raise ValueError(f"State vector must have {{self.input_dim}} dimensions, got {{len(state_vector)}}")
 
         if "{export_format}" == "onnx":
             state_array = np.array(state_vector, dtype=np.float32).reshape(1, -1)
-            inputs = {self.session.get_inputs()[0].name: state_array}
+            inputs = {{self.session.get_inputs()[0].name: state_array}}
             outputs = self.session.run(None, inputs)
             # outputs is a list; align to member order
-            decisions = {}
+            decisions = {{}}
             for name, out in zip(self.member_names, outputs):
                 idx = int(np.argmax(out))
                 decisions[name] = ACTION_MAP.get(idx, str(idx))
@@ -639,13 +639,13 @@ class EnsembleRunner:
             state_tensor = torch.tensor(state_vector, dtype=torch.float32).unsqueeze(0)
             with torch.no_grad():
                 outs = self.model(state_tensor)
-            decisions = {}
+            decisions = {{}}
             for name, out in zip(self.member_names, outs):
                 idx = int(torch.argmax(out).item())
                 decisions[name] = ACTION_MAP.get(idx, str(idx))
             return decisions
         else:
-            raise ValueError(f"Unsupported export format: {self.metadata['export_format']}")
+            raise ValueError(f"Unsupported export format: {{self.metadata['export_format']}}")
 
 if __name__ == '__main__':
     runner = EnsembleRunner()
