@@ -72,13 +72,13 @@
         "step": 0.05
       },
       "mutation_rate": {
-        "initial": 0.032,
+        "initial": 0.035,
         "max": 0.06,
         "min": 0.002,
         "step": 0.001
       },
       "new_edge_rate": {
-        "initial": 5.2,
+        "initial": 5,
         "max": 6.0,
         "min": 0.2,
         "step": 0.1
@@ -207,10 +207,10 @@
   "network": {
     "connection_strength_resolution": 5e-06,
     "emergence_sensitivity": 1e-06,
-    "max_connections": 18500,
+    "max_connections": 18000,
     "max_organisms": 2000,
     "resource_flow_precision": 0.0001,
-    "resource_pool": 525,
+    "resource_pool": 500,
     "stability_precision": 1e-07
   },
   "neural": {
@@ -218,7 +218,7 @@
       "activation": "relu",
       "dropout": 0.1,
       "hidden_dim": 64,
-      "input_dim": 18,
+      "input_dim": 24,
       "output_dim": 6
     },
     "concept_system": {
@@ -317,6 +317,7 @@
         "max_length": 128
       },
       "teacher": {
+        "enabled": true,
         "use_knowledge_web": true
       },
       "training": {
@@ -326,7 +327,7 @@
         "vp_temperature_scale": true
       },
       "vocabulary": {
-        "max_size": 10000,
+        "max_size": 50000,
         "special_tokens": [
           "<PAD>",
           "<UNK>",
@@ -359,12 +360,12 @@
       "epsilon_start": 0.8,
       "gamma": 0.995,
       "language_reward_scaling": 0.25,
-      "learning_rate": 0.002,
+      "learning_rate": 0.005,
       "memory_size": 1000,
       "update_frequency": 1
     },
     "vp_aware_planning": {
-      "base_boost": 0.18,
+      "base_boost": 0.2,
       "enabled": true,
       "high_threshold": 0.45,
       "low_threshold": 0.25,
@@ -427,35 +428,11 @@
     "visualization_update_precision": 0.001
   },
   "scikit": {
-    "anomaly_detection": {
-      "algorithm": "isolation_forest",
-      "contamination": 0.18,
-      "enabled": true,
-      "n_estimators": 450
-    },
-    "clustering": {
-      "algorithm": "hdbscan",
-      "enabled": true,
-      "min_cluster_size": 4,
-      "min_samples": 1,
-      "use_neural_embeddings": true
-    },
     "concept_tracking": {
       "enabled": true,
       "persistence_threshold": 3,
-      "semantic_mapping": {
-        "cooperators": "Team Builders",
-        "lone_wolves": "Lone Hunters"
-      },
       "stale_threshold": 10
-    },
-    "dimensionality_reduction": {
-      "algorithm": "tsne",
-      "enabled": true,
-      "n_components": 3,
-      "tsne_perplexity": 45
-    },
-    "enabled": true
+    }
   },
   "simulation": {
     "log_level": "INFO",
