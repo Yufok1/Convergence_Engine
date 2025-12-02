@@ -110,9 +110,9 @@
   },
   "highlander": {
     "alliance_warfare": {
-      "betrayal_chance": 0.1,
+      "betrayal_chance": 0.05,
       "enabled": true,
-      "max_alliance_size": 5,
+      "max_alliance_size": 30,
       "war_declaration_threshold": 0.6
     },
     "chaos_factor": 0.2,
@@ -201,7 +201,7 @@
         "meta_cognitive.self_tuning.tuning_interval_frames",
         "meta_cognitive.self_tuning.min_confidence_threshold"
       ],
-      "tuning_interval_frames": 10
+      "tuning_interval_frames": 5
     }
   },
   "network": {
@@ -369,6 +369,28 @@
       "high_threshold": 0.45,
       "low_threshold": 0.25,
       "strong_boost": 0.3
+    }
+  },
+  "ray": {
+    "description": "Ray distributed computing - parallel organism decisions, training, and analysis",
+    "enabled": true,
+    "num_cpus": null,
+    "num_gpus": null,
+    "object_store_memory": null,
+    "parallelization_threshold": 50,
+    "actor_pool_size": 4,
+    "batch_inference_size": 32,
+    "fallback_on_error": true,
+    "logging_level": "warning",
+    "state_synchronization": {
+      "snapshot_strategy": "breath_cycle",
+      "consistency_model": "sequential",
+      "max_state_age_ms": 100
+    },
+    "memory_management": {
+      "max_object_refs": 100,
+      "cleanup_on_organism_death": true,
+      "actor_pool_lru_eviction": true
     }
   },
   "quantum": {
