@@ -1031,6 +1031,18 @@ class RealitySimulator:
                         initial_config=self.config
                     )
                     print(ColorScheme.log_component("tuner", "AtomicConfigSystem initialized (AUTONOMOUS MODE)"))
+                    
+                    # ═══════════════════════════════════════════════════════════════
+                    # MISSION 2-4: Wire up AutoTune to Neural Trainer and ML Analyzer
+                    # This enables closed-loop optimization feedback
+                    # ═══════════════════════════════════════════════════════════════
+                    if hasattr(self, 'neural_trainer') and self.neural_trainer:
+                        self.neural_trainer.atomic_config_system = self.config_tuner
+                        print(ColorScheme.log_component("tuner", "Neural Trainer → AutoTune bridge connected"))
+                    if hasattr(self, 'ml_analyzer') and self.ml_analyzer:
+                        self.ml_analyzer.atomic_config_system = self.config_tuner
+                        print(ColorScheme.log_component("tuner", "ML Analyzer → AutoTune bridge connected"))
+                        
                 except Exception as e:
                     print(f"[WARN] AtomicConfigSystem initialization failed: {e}")
                     import traceback
@@ -2024,6 +2036,25 @@ class RealitySimulator:
             data['config_tuner'] = {
                 'enabled': False
             }
+        
+        # ═══════════════════════════════════════════════════════════════════════════
+        # MISSION 1-4: Export AutoTune integration metrics for CRA diagnostics
+        # ═══════════════════════════════════════════════════════════════════════════
+        
+        # Neural Trainer AutoTune metrics
+        if hasattr(self, 'neural_trainer') and self.neural_trainer and hasattr(self.neural_trainer, 'get_autotune_metrics'):
+            data['neural_trainer'] = data.get('neural_trainer', {})
+            data['neural_trainer']['autotune_metrics'] = self.neural_trainer.get_autotune_metrics()
+        
+        # ML Analyzer AutoTune metrics
+        if hasattr(self, 'ml_analyzer') and self.ml_analyzer and hasattr(self.ml_analyzer, 'get_autotune_metrics'):
+            data['ml_analyzer'] = data.get('ml_analyzer', {})
+            data['ml_analyzer']['autotune_metrics'] = self.ml_analyzer.get_autotune_metrics()
+        
+        # Butterfly Chat Agent Swarm stats
+        if hasattr(self, 'butterfly_chat_router') and self.butterfly_chat_router and hasattr(self.butterfly_chat_router, 'get_agent_swarm_stats'):
+            data['butterfly_chat'] = data.get('butterfly_chat', {})
+            data['butterfly_chat']['swarm_stats'] = self.butterfly_chat_router.get_agent_swarm_stats()
 
         return data
 
