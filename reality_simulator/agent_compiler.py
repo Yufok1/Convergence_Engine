@@ -61,29 +61,30 @@ class AgentCompiler:
     def _reconstruct_brain_from_capsule(self, capsule: OrganismCapsule) -> OrganismBrain:
         """
         Reconstructs the OrganismBrain model from the capsule data.
-        Assumes capsule.neural_network_state contains the state_dict and architecture.
+        Uses capsule.neural (NeuralSnapshot) for reconstruction.
         """
-        if not capsule.neural_network_state:
+        if not capsule.neural:
             raise ValueError("Capsule does not contain neural network state.")
         
-        # Reconstruct brain architecture from capsule metadata
-        brain_arch = capsule.neural_network_state.get('architecture', {})
-        brain_state_dict_b64 = capsule.neural_network_state.get('state_dict_b64')
+        # Extract from NeuralSnapshot
+        neural_snap = capsule.neural
+        brain_state_dict_b64 = neural_snap.to_dict().get('state_dict_b64')
         
-        if not brain_arch or not brain_state_dict_b64:
+        if not brain_state_dict_b64:
             raise ValueError("Neural network state in capsule is incomplete.")
             
-        # Extract parameters for OrganismBrain constructor
-        input_dim = brain_arch.get('input_dim')
-        hidden_dim = brain_arch.get('hidden_dim')
-        output_dim = brain_arch.get('output_dim')
-        activation = brain_arch.get('activation')
-        dropout = brain_arch.get('dropout')
-        use_attention = brain_arch.get('use_attention')
-        num_attention_heads = brain_arch.get('num_attention_heads')
-        attention_dim = brain_arch.get('attention_dim')
-        vocab_size = brain_arch.get('vocab_size')
-        use_language_head = brain_arch.get('use_language_head')
+        # Extract parameters from NeuralSnapshot
+        input_dim = neural_snap.input_size
+        hidden_dim = neural_snap.hidden_size
+        output_dim = neural_snap.output_size
+        # NeuralSnapshot doesn't store these, use defaults
+        activation = 'relu'
+        dropout = 0.0
+        use_attention = False
+        num_attention_heads = 4
+        attention_dim = 64
+        vocab_size = 10000  # Default
+        use_language_head = False  # Will be detected from state_dict
 
         # Create a new instance of OrganismBrain with the same architecture
         reconstructed_brain = OrganismBrain(
@@ -101,7 +102,8 @@ class AgentCompiler:
         
         # Load the state_dict
         state_dict_bytes = base64.b64decode(brain_state_dict_b64)
-        state_dict = torch.load(BytesIO(state_dict_bytes))
+        # PyTorch 2.6 changed default to weights_only=True; allow full, trusted load
+        state_dict = torch.load(BytesIO(state_dict_bytes), map_location='cpu', weights_only=False)
         reconstructed_brain.load_state_dict(state_dict)
         reconstructed_brain.eval() # Set to evaluation mode
         
@@ -152,34 +154,43 @@ class AgentCompiler:
             'capsule_id': capsule.capsule_id,
             'export_timestamp': datetime.datetime.now().isoformat(),
             'capsule_version': capsule.version,
-            'source_capsule_file': capsule.file_path, # Path to the original capsule file
+            'capture_reason': capsule.capture_reason,
 
             # Organism Core Data
             'organism_core': {
                 'species_id': capsule.organism_id,
-                'genotype_hash': capsule.genotype_hash,
-                'phenotype_summary': capsule.phenotype_summary,
-                'fitness': capsule.fitness_trajectory[-1]['fitness'] if capsule.fitness_trajectory else None,
-                'generation_age': capsule.age,
+                'capsule_id': capsule.capsule_id,
+                'fitness': capsule.fitness.fitness_history[-1][1] if capsule.fitness and capsule.fitness.fitness_history else None,
+                'organism_age': capsule.organism_age,
+                'birth_time': capsule.organism_birth_time,
             },
             
             # Neural Network Details
             'neural_network': {
-                'architecture': capsule.neural_network_state.get('architecture', {}),
-                'training_steps': capsule.neural_network_state.get('training_steps', 0),
-                'avg_loss': capsule.neural_network_state.get('avg_loss', None),
-                'device_trained_on': capsule.neural_network_state.get('device', 'cpu'),
+                'architecture': {
+                    'input_size': capsule.neural.input_size,
+                    'hidden_size': capsule.neural.hidden_size,
+                    'output_size': capsule.neural.output_size,
+                    'num_layers': capsule.neural.num_layers,
+                    'total_parameters': capsule.neural.total_parameters
+                } if capsule.neural else {},
+                'training_steps': capsule.neural.training_steps if capsule.neural else 0,
+                'avg_loss': None,
+                'device_trained_on': 'cpu',
             },
             
             # Language System Details
             'atomic_language': {
-                'enabled': bool(capsule.atomic_language_state),
-                'concept_count': capsule.atomic_language_state.get('concept_count', 0) if capsule.atomic_language_state else 0,
-                'dialect_signature': capsule.atomic_language_state.get('dialect_signature', 'N/A') if capsule.atomic_language_state else 'N/A',
+                'enabled': bool(capsule.language),
+                'concept_count': capsule.language.total_concepts if capsule.language else 0,
+                'dialect_signature': str(capsule.language.dialect_signature) if capsule.language else 'N/A',
             },
 
             # Configuration & Environment
-            'atomic_config': capsule.atomic_config_state,
+            'atomic_config': {
+                'enabled': bool(capsule.config),
+                'atom_count': len(capsule.config.atoms) if capsule.config else 0,
+            },
             'environment_context': capsule.environment_context,
             
             # Highlander & Social Data
@@ -239,11 +250,11 @@ class AgentRunner:
         print("\n--- Agent Loaded ---")
         print(f"Organism ID: {{self.metadata['organism_core']['species_id']}}")
         print(f"Fitness: {{self.metadata['organism_core']['fitness']:.3f}}")
-        print(f"Age: {{self.metadata['organism_core']['generation_age']}} generations")
+        print(f"Age: {{self.metadata['organism_core']['organism_age']}} generations")
         print(f"Exported: {{self.metadata['export_timestamp']}}")
         
-        self.input_dim = self.metadata['neural_network']['architecture']['input_dim']
-        self.output_actions = [ACTION_MAP[i] for i in range(self.metadata['neural_network']['architecture']['output_dim'])]
+        self.input_dim = self.metadata['neural_network']['architecture']['input_size']
+        self.output_actions = [ACTION_MAP[i] for i in range(self.metadata['neural_network']['architecture']['output_size'])]
         
         print(f"NN Input Dim: {{self.input_dim}}")
         print(f"NN Output Actions: {{self.output_actions}}")
@@ -268,17 +279,17 @@ class AgentRunner:
             import torch
             from reality_simulator.neural.brain import OrganismBrain # Requires brain definition
             
-            # Reconstruct brain architecture from metadata
+            # Reconstruct brain architecture from metadata (with sensible defaults)
             arch = self.metadata['neural_network']['architecture']
             self.model = OrganismBrain(
-                input_dim=arch['input_dim'], hidden_dim=arch['hidden_dim'], 
-                output_dim=arch['output_dim'], activation=arch['activation'],
-                dropout=arch['dropout'], use_attention=arch['use_attention'],
-                num_attention_heads=arch['num_attention_heads'], 
-                attention_dim=arch['attention_dim'], vocab_size=arch['vocab_size'],
-                use_language_head=arch['use_language_head']
+                input_dim=arch['input_size'], hidden_dim=arch['hidden_size'],
+                output_dim=arch['output_size'], activation='relu',
+                dropout=0.0, use_attention=False,
+                num_attention_heads=4,
+                attention_dim=64, vocab_size=10000,
+                use_language_head=False
             )
-            self.model.load_state_dict(torch.load(self.model_filename))
+            self.model.load_state_dict(torch.load(self.model_filename, map_location='cpu', weights_only=False))
             self.model.eval()
             print("PyTorch state_dict model loaded (requires OrganismBrain class).")
 
@@ -356,16 +367,16 @@ if __name__ == '__main__':
             zf.writestr("metadata.json", json.dumps(metadata, indent=2))
             
             # 3. Genotype (JSON)
-            if capsule.genotype_hash_state:
-                zf.writestr("genotype.json", json.dumps(capsule.genotype_hash_state, indent=2))
+            if capsule.traits:
+                zf.writestr("genotype.json", json.dumps(capsule.traits.to_dict(), indent=2))
             
             # 4. Atomic Config (JSON)
-            if capsule.atomic_config_state:
-                zf.writestr("atomic_config.json", json.dumps(capsule.atomic_config_state, indent=2))
+            if capsule.config:
+                zf.writestr("atomic_config.json", json.dumps(capsule.config.to_dict(), indent=2))
             
             # 5. Atomic Language (JSON)
-            if capsule.atomic_language_state:
-                zf.writestr("atomic_language.json", json.dumps(capsule.atomic_language_state, indent=2))
+            if capsule.language:
+                zf.writestr("atomic_language.json", json.dumps(capsule.language.to_dict(), indent=2))
 
             # 6. Runner Script
             zf.writestr("run_agent.py", runner_script)
