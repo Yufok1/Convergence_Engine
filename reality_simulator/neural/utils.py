@@ -149,7 +149,7 @@ def create_brain(config: Dict[str, Any]):
     
     # Extract language head settings
     use_language_head = language_config.get('enabled', False)
-    vocab_size = language_config.get('vocabulary', {}).get('max_size', 12288)
+    vocab_size = language_config.get('vocabulary', {}).get('max_size', 50000)
     use_attention = language_config.get('attention', {}).get('enabled', False)
     num_attention_heads = language_config.get('attention', {}).get('num_heads', 4)
     attention_dim = language_config.get('attention', {}).get('attention_dim', 64)

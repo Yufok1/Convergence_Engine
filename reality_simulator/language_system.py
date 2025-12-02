@@ -55,7 +55,7 @@ class LanguageVocabulary:
     word_to_id: Dict[str, int] = field(default_factory=dict)
     id_to_word: Dict[int, str] = field(default_factory=dict)
     word_frequencies: Dict[str, int] = field(default_factory=dict)
-    max_vocab_size: int = 12288
+    max_vocab_size: int = 50000
     frozen: bool = False
     event_emitter: Any = None  # Optional callback for causation events
     

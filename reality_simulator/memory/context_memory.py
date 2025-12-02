@@ -53,7 +53,7 @@ class ContextMemory:
     def __init__(self, persistence_path: str = "data/context_memory.json",
                  use_learned_embeddings: bool = False,
                  embedding_dim: int = 64,
-                 max_vocab_size: int = 10000):
+                 max_vocab_size: int = 50000):
         """
         Initialize context memory.
         

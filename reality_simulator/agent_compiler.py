@@ -83,7 +83,7 @@ class AgentCompiler:
         use_attention = False
         num_attention_heads = 4
         attention_dim = 64
-        vocab_size = 10000  # Default
+        vocab_size = 50000  # Default
         use_language_head = False  # Will be detected from state_dict
 
         # Create a new instance of OrganismBrain with the same architecture
@@ -142,7 +142,7 @@ class AgentCompiler:
         use_language_head = 'fc_language.weight' in sd_keys
         use_concept_head = any(k.startswith('concept_head.') for k in sd_keys)
 
-        vocab_size = state_dict['fc_language.weight'].shape[0] if use_language_head else 10000
+        vocab_size = state_dict['fc_language.weight'].shape[0] if use_language_head else 50000
 
         # Create a new instance of OrganismBrain matching the checkpoint
         reconstructed_brain = OrganismBrain(
@@ -353,7 +353,7 @@ class AgentRunner:
             use_attn = any(k.startswith('attention.') for k in keys) or 'attention_norm.weight' in keys
             use_lang = 'fc_language.weight' in keys
             use_concept = any(k.startswith('concept_head.') for k in keys)
-            vocab = sd['fc_language.weight'].shape[0] if use_lang and 'fc_language.weight' in sd else 10000
+            vocab = sd['fc_language.weight'].shape[0] if use_lang and 'fc_language.weight' in sd else 50000
 
             self.model = OrganismBrain(
                 input_dim=int(in_dim), hidden_dim=int(hid_dim),
@@ -595,7 +595,7 @@ if __name__ == '__main__':
         'use_attention': False,
         'num_attention_heads': 4,
         'attention_dim': 64,
-        'vocab_size': 1000,
+        'vocab_size': 50000,
         'use_language_head': False
     }
     dummy_brain = OrganismBrain(**dummy_brain_arch)
