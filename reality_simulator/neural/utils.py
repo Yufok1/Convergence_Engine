@@ -161,7 +161,7 @@ def create_brain(config: Dict[str, Any]):
     else:
         concept_config = config.get('concept_system', {})
     use_concept_head = concept_config.get('enabled', False)
-    num_key_compositions = concept_config.get('num_key_compositions', 5)
+    num_key_compositions = concept_config.get('num_key_compositions', 15)
     
     # Debug log for language head creation
     if use_language_head:
