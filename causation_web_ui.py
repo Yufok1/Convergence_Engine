@@ -6621,6 +6621,71 @@ def capsule_organism(organism_id):
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/organisms', methods=['GET'])
+def list_organisms():
+    """
+    List all available organisms from live simulation or saved capsules.
+    Returns:
+        A list of dictionaries, each representing an organism with 'id', 'fitness', and 'age'.
+    """
+    try:
+        organisms_data = []
+        organism_ids = set() # To store unique organism IDs
+
+        # 1. Get organisms from current live simulation if available
+        if hasattr(app, 'unified_system') and app.unified_system:
+            unified_system = app.unified_system
+            if hasattr(unified_system, 'get_current_organisms'):
+                live_organisms = unified_system.get_current_organisms()
+                for org_id, organism in live_organisms.items():
+                    if org_id not in organism_ids:
+                        organisms_data.append({
+                            'id': org_id,
+                            'fitness': getattr(organism, 'fitness', 0.0),
+                            'age': getattr(organism, 'age', 0),
+                            'source': 'live_simulation'
+                        })
+                        organism_ids.add(org_id)
+            else:
+                logger.warning("Unified system does not have 'get_current_organisms' method.")
+
+        # 2. Get organisms from saved capsules
+        # Assuming OrganismCapsuleManager is initialized in unified_system or can be initialized here
+        capsule_manager = None
+        if hasattr(app, 'unified_system') and app.unified_system and \
+           hasattr(app.unified_system, 'highlander_protocol') and app.unified_system.highlander_protocol and \
+           hasattr(app.unified_system.highlander_protocol, 'capsule_manager'):
+            capsule_manager = app.unified_system.highlander_protocol.capsule_manager
+        
+        if not capsule_manager:
+            # Fallback: Initialize capsule manager locally if not available through unified system
+            # Assuming 'highlander_capsules' is the directory for capsules
+            capsule_manager = OrganismCapsuleManager(storage_dir=Path('highlander_capsules'))
+
+        if capsule_manager:
+            capsule_index = capsule_manager.capsule_index
+            for capsule_id, info in capsule_index.items():
+                org_id = info.get('organism_id')
+                if org_id and org_id not in organism_ids:
+                    organisms_data.append({
+                        'id': org_id,
+                        'fitness': info.get('fitness', 0.0), # Assuming fitness is stored in capsule index
+                        'age': info.get('age', 0),           # Assuming age is stored in capsule index
+                        'source': 'saved_capsule'
+                    })
+                    organism_ids.add(org_id)
+        else:
+            logger.warning("Capsule manager not available to load saved capsules.")
+
+        organisms_data.sort(key=lambda x: x['fitness'], reverse=True) # Sort by fitness
+        
+        return jsonify(organisms_data)
+
+    except Exception as e:
+        logger.error(f"Error listing organisms: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/capsules')
 def list_capsules():
     """List all available capsules"""
@@ -6658,6 +6723,109 @@ def list_capsules():
 
     except Exception as e:
         logger.error(f"Error listing capsules: {e}")
+        return jsonify({'error': str(e)}), 500
+def list_capsules():
+    """List all available capsules"""
+    try:
+        if not hasattr(app, 'unified_system') or not app.unified_system:
+            return jsonify({'error': 'Unified system not available'}), 500
+
+        unified_system = app.unified_system
+
+        if not hasattr(unified_system, 'highlander_protocol') or not unified_system.highlander_protocol:
+            return jsonify({'error': 'Highlander protocol not active'}), 400
+
+        highlander = unified_system.highlander_protocol
+        if not hasattr(highlander, 'capsule_manager') or not highlander.capsule_manager:
+            return jsonify({'error': 'Capsule manager not initialized'}), 400
+
+        # Get capsule index
+        capsule_index = highlander.capsule_manager.capsule_index
+
+        capsules = []
+        for capsule_id, info in capsule_index.items():
+            capsules.append({
+                'capsule_id': capsule_id,
+                'organism_id': info.get('organism_id'),
+                'capture_time': info.get('capture_time'),
+                'reason': info.get('reason'),
+                'notes': info.get('notes', ''),
+                'tags': info.get('tags', [])
+            })
+
+        return jsonify({
+            'capsules': capsules,
+            'total': len(capsules)
+        })
+
+    except Exception as e:
+        logger.error(f"Error listing capsules: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+from reality_simulator.agent_compiler import AgentCompiler
+from reality_simulator.checkpointing.organism_capsule import OrganismCapsuleManager # Assuming this is the correct path for CapsuleManager
+from flask import send_file
+
+@app.route('/api/capsule/<organism_id>/compile', methods=['POST'])
+def compile_organism_to_agent(organism_id):
+    """
+    Compiles a specific organism's capsule into a downloadable agent archive.
+    """
+    try:
+        # Ensure unified system is available to access organisms
+        if not hasattr(app, 'unified_system') or not app.unified_system:
+            return jsonify({'error': 'Unified system not available to compile agent'}), 500
+
+        unified_system = app.unified_system
+
+        # Get the organism from the currently running simulation
+        # unified_system.get_current_organisms() will return a dict of live organisms
+        organisms = unified_system.get_current_organisms()
+        if organism_id not in organisms:
+            # Fallback: try to load from a capsule file if not a live organism
+            capsule_manager = OrganismCapsuleManager(storage_dir=Path('highlander_capsules')) # Assuming storage dir
+            capsule = capsule_manager.load_capsule_by_organism_id(organism_id)
+            if not capsule:
+                return jsonify({'error': f'Organism {organism_id} not found in live simulation or capsules'}), 404
+            # If loaded from capsule, use that for compilation
+            organism_for_compilation = capsule # AgentCompiler is designed to work with OrganismCapsule directly
+        else:
+            # Use the live organism for compilation
+            organism_for_compilation = organisms[organism_id]
+            # Create a capsule from the live organism for compilation
+            capsule_manager = OrganismCapsuleManager(storage_dir=Path('highlander_capsules'))
+            capsule = capsule_manager.capture_organism(
+                organism=organism_for_compilation,
+                reason=f'compile_request_{datetime.now().isoformat()}',
+                notes=f'Capsule created for compilation of agent {organism_id}',
+                include_causation=True, # Include full history for rich metadata
+                causation_explorer=getattr(unified_system, 'causation_explorer', None)
+            )
+            if not capsule:
+                return jsonify({'error': f'Failed to create capsule for live organism {organism_id}'}), 500
+
+
+        # Get compilation options from request
+        data = request.get_json() or {}
+        export_format = data.get('format', 'onnx')  # Default to ONNX
+        
+        # Instantiate the AgentCompiler
+        compiler = AgentCompiler()
+        
+        # Compile the capsule into an agent archive
+        archive_buffer = compiler.compile_capsule_to_agent(capsule, export_format=export_format)
+        
+        # Return the archive as a downloadable file
+        return send_file(
+            archive_buffer,
+            as_attachment=True,
+            download_name=f"agent_{organism_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.zip",
+            mimetype='application/zip'
+        )
+
+    except Exception as e:
+        logger.error(f"Error compiling organism {organism_id} capsule: {e}")
         return jsonify({'error': str(e)}), 500
 
 

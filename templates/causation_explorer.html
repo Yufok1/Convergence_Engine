@@ -1253,6 +1253,11 @@
             /* White for general emphasis */
         }
 
+        /* Agent Exporter Tab Styles */
+        #agentExporterTabContent {
+            display: none;
+        }
+
         pre {
             background: #0a0a0a;
             border: 1px solid #0aa;
@@ -1301,7 +1306,7 @@
                 <div style="color: #0ff; margin-bottom: 8px; font-weight: bold;">📸 Snapshot Capture</div>
                 <div style="display: flex; gap: 5px; justify-content: center; align-items: center; flex-wrap: wrap; margin-bottom: 5px;">
                     <label style="color: #0f0; font-size: 0.85em;">
-                        <input type="checkbox" id="snapshotEnabledToggle" checked
+                        <input type="checkbox" id="snapshotEnabledToggle"
                             onchange="toggleSnapshotCapture(this.checked)"
                             style="margin-right: 5px;">
                         <span>Enabled</span>
@@ -2108,17 +2113,23 @@
                                 style="margin-left: 5px; font-size: 0.8em; padding: 2px 5px;">✎</button>
                         </div>
                         <div class="graph-controls-row"
-                            style="gap: 3px; flex-wrap: wrap; justify-content: center; margin-top: 5px;">
+                            style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; margin-top: 5px;">
                             <button class="nav-button" onclick="setZoomPreset(0.01)" title="1% - Maximum overview"
-                                style="font-size: 0.75em; padding: 2px 5px;">1%</button>
+                                style="font-size: 0.75em; padding: 3px 0; min-width: 0; text-align: center;">1%</button>
                             <button class="nav-button" onclick="setZoomPreset(0.05)" title="5% - Standard overview"
-                                style="font-size: 0.75em; padding: 2px 5px;">5%</button>
+                                style="font-size: 0.75em; padding: 3px 0; min-width: 0; text-align: center;">5%</button>
+                            <button class="nav-button" onclick="setZoomPreset(0.10)" title="10% - Large overview"
+                                style="font-size: 0.75em; padding: 3px 0; min-width: 0; text-align: center;">10%</button>
                             <button class="nav-button" onclick="setZoomPreset(0.25)" title="25% - Medium overview"
-                                style="font-size: 0.75em; padding: 2px 5px;">25%</button>
+                                style="font-size: 0.75em; padding: 3px 0; min-width: 0; text-align: center;">25%</button>
                             <button class="nav-button" onclick="setZoomPreset(0.5)" title="50% - Detailed view"
-                                style="font-size: 0.75em; padding: 2px 5px;">50%</button>
+                                style="font-size: 0.75em; padding: 3px 0; min-width: 0; text-align: center;">50%</button>
+                            <button class="nav-button" onclick="setZoomPreset(1.0)" title="100% - Actual size"
+                                style="font-size: 0.75em; padding: 3px 0; min-width: 0; text-align: center;">100%</button>
+                            <button class="nav-button" onclick="setZoomPreset(2.5)" title="250% - High detail"
+                                style="font-size: 0.75em; padding: 3px 0; min-width: 0; text-align: center;">250%</button>
                             <button class="nav-button" onclick="setZoomPreset(5.0)" title="500% - Maximum detail"
-                                style="font-size: 0.75em; padding: 2px 5px;">500%</button>
+                                style="font-size: 0.75em; padding: 3px 0; min-width: 0; text-align: center;">500%</button>
                         </div>
                         <div class="graph-controls-row">
                             <button class="nav-button" onclick="zoomToFit()" title="Zoom to fit all nodes">⛶</button>
@@ -2194,6 +2205,10 @@
                         <button id="tabNotepad" onclick="switchCRATab('notepad')" class="cra-tab"
                             style="flex: 1; padding: 8px 15px; background: #111; color: #f90; border: 1px solid #f90; border-bottom: none; cursor: pointer; font-family: 'Courier New', monospace; font-weight: bold; border-radius: 5px 5px 0 0; transition: all 0.2s;">
                             📓 Research Notepad <span id="notepadCount" style="background: #f90; color: #000; padding: 1px 6px; border-radius: 10px; font-size: 0.8em; margin-left: 5px;">0</span>
+                        </button>
+                        <button id="tabAgentExporter" onclick="switchCRATab('agent_exporter')" class="cra-tab"
+                            style="flex: 1; padding: 8px 15px; background: #111; color: #f0f; border: 1px solid #f0f; border-bottom: none; cursor: pointer; font-family: 'Courier New', monospace; font-weight: bold; border-radius: 5px 5px 0 0; transition: all 0.2s;">
+                            📦 Agent Exporter
                         </button>
                     </div>
                     
@@ -2425,6 +2440,36 @@
                                 <span id="notepadHypothesesCount" style="color: #f90;">0</span> hypotheses |
                                 <span id="notepadConclusionsCount" style="color: #0f0;">0</span> conclusions
                             </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Agent Exporter Tab Content -->
+                    <div id="agentExporterTabContent" style="display: none; padding: 15px; border: 1px solid #f0f; background: linear-gradient(135deg, #1a0a1a 0%, #0a050a 100%); border-radius: 5px;">
+                        <h4 style="color: #f0f; margin-top: 0; margin-bottom: 15px;">📦 Agent Exporter</h4>
+                        <p style="color: #aaa; font-size: 0.9em; margin-bottom: 20px;">Compile and download a selected organism as a portable AI agent.</p>
+                        
+                        <div style="margin-bottom: 15px;">
+                            <label for="agentExporterOrganismSelect" style="display: block; color: #0f0; margin-bottom: 5px;">Select Organism:</label>
+                            <select id="agentExporterOrganismSelect" onchange="updateCompileAgentStatus()" style="width: 100%; padding: 8px; background: #111; color: #0f0; border: 1px solid #0ff; font-family: 'Courier New', monospace;">
+                                <option value="">Loading organisms...</option>
+                            </select>
+                        </div>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <label for="agentExporterFormat" style="display: block; color: #0f0; margin-bottom: 5px;">Export Format:</label>
+                            <select id="agentExporterFormat" style="width: 100%; padding: 8px; background: #111; color: #0f0; border: 1px solid #0ff; font-family: 'Courier New', monospace;">
+                                <option value="onnx">ONNX (.onnx)</option>
+                                <option value="torchscript">TorchScript (.pt)</option>
+                                <option value="statedict">State Dict (.pth)</option>
+                            </select>
+                        </div>
+                        
+                        <button onclick="compileAgentFromExporter()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #f0f 0%, #a0a 100%); color: #000; border: 1px solid #f0f; font-weight: bold; cursor: pointer; font-family: 'Courier New', monospace; font-size: 1em; border-radius: 4px; transition: all 0.2s;" onmouseover="this.style.boxShadow='0 0 15px #f0f'" onmouseout="this.style.boxShadow='none'">
+                            🚀 Compile Agent
+                        </button>
+                        
+                        <div id="agentExporterStatus" style="margin-top: 15px; padding: 12px; background: #0a0a0a; border: 1px solid #333; color: #0ff; min-height: 40px; text-align: center; border-radius: 4px;">
+                            Ready to compile.
                         </div>
                     </div>
                 </div>
@@ -3013,7 +3058,7 @@
                 global: {
                     minSpacing: 200,      // Absolute minimum time between captures (ms)
                     maxSnapshots: 1000,   // Maximum snapshots to keep
-                    enabled: true,        // Master enable/disable
+                    enabled: false,       // Master enable/disable (disabled by default for performance)
                 }
             };
 
@@ -11235,46 +11280,150 @@
                 }
             }
 
-            // Switch between Chat, Butterfly Chat and Notepad tabs
+            // ============================================
+            // 📦 AGENT EXPORTER FUNCTIONS
+            // ============================================
+            
+            // Populate the organism selector dropdown
+            async function populateOrganismSelector() {
+                const selector = document.getElementById('agentExporterOrganismSelect');
+                if (!selector) return;
+                
+                selector.innerHTML = '<option value="">Loading organisms...</option>';
+                selector.disabled = true;
+                
+                try {
+                    const response = await fetch('/api/organisms');
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const organisms = await response.json();
+                    
+                    if (organisms && organisms.length > 0) {
+                        selector.innerHTML = '<option value="">-- Select an Organism --</option>';
+                        organisms.forEach(org => {
+                            const option = document.createElement('option');
+                            option.value = org.id;
+                            option.textContent = `${org.id} (Fitness: ${(org.fitness || 0).toFixed(2)}, Age: ${org.age || 0})`;
+                            selector.appendChild(option);
+                        });
+                        selector.disabled = false;
+                        updateCompileAgentStatus('Ready to compile.', '#0ff');
+                    } else {
+                        selector.innerHTML = '<option value="">No organisms found</option>';
+                        updateCompileAgentStatus('No organisms available for export.', '#f66');
+                    }
+                } catch (error) {
+                    console.error('Error populating organism selector:', error);
+                    selector.innerHTML = '<option value="">Error loading organisms</option>';
+                    updateCompileAgentStatus(`Error: ${error.message}`, '#f66');
+                }
+            }
+            
+            // Update status message
+            function updateCompileAgentStatus(message = 'Ready to compile.', color = '#0ff') {
+                const statusDiv = document.getElementById('agentExporterStatus');
+                if (statusDiv) {
+                    statusDiv.innerHTML = `<span style="color: ${color};">${message}</span>`;
+                }
+            }
+            
+            // Compile agent from exporter tab
+            async function compileAgentFromExporter() {
+                const organismId = document.getElementById('agentExporterOrganismSelect').value;
+                const formatSelect = document.getElementById('agentExporterFormat');
+                const format = formatSelect ? formatSelect.value : 'onnx';
+                
+                if (!organismId) {
+                    updateCompileAgentStatus('Please select an organism first.', '#f66');
+                    return;
+                }
+                
+                updateCompileAgentStatus(`Compiling ${organismId} to ${format.toUpperCase()}...`, '#ff0');
+                
+                try {
+                    const response = await fetch(`/api/capsule/${organismId}/compile`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ format: format })
+                    });
+                    
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Compilation failed');
+                    }
+                    
+                    // Get filename from Content-Disposition header
+                    const contentDisposition = response.headers.get('Content-Disposition');
+                    let filename = `agent_${organismId}.zip`;
+                    if (contentDisposition) {
+                        const match = contentDisposition.match(/filename="([^"]+)"/);
+                        if (match && match[1]) filename = match[1];
+                    }
+                    
+                    // Download the file
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    updateCompileAgentStatus(`✅ Agent compiled! Download started.`, '#0f0');
+                } catch (error) {
+                    console.error('Error compiling agent:', error);
+                    updateCompileAgentStatus(`❌ Error: ${error.message}`, '#f66');
+                }
+            }
+
+            // Switch between Chat, Butterfly Chat, Notepad, and Agent Exporter tabs
             function switchCRATab(tab) {
                 const chatTab = document.getElementById('tabChat');
                 const butterflyTab = document.getElementById('tabButterfly');
                 const notepadTab = document.getElementById('tabNotepad');
+                const agentExporterTab = document.getElementById('tabAgentExporter');
                 const chatContent = document.getElementById('chatTabContent');
                 const butterflyContent = document.getElementById('butterflyTabContent');
                 const notepadContent = document.getElementById('notepadTabContent');
+                const agentExporterContent = document.getElementById('agentExporterTabContent');
+                
+                // Reset all tabs
+                chatTab.style.background = '#111';
+                chatTab.style.color = '#0ff';
+                butterflyTab.style.background = '#111';
+                butterflyTab.style.color = '#ff0';
+                notepadTab.style.background = '#111';
+                notepadTab.style.color = '#f90';
+                agentExporterTab.style.background = '#111';
+                agentExporterTab.style.color = '#f0f';
+                
+                // Hide all content
+                chatContent.style.display = 'none';
+                butterflyContent.style.display = 'none';
+                notepadContent.style.display = 'none';
+                agentExporterContent.style.display = 'none';
                 
                 if (tab === 'chat') {
                     chatTab.style.background = '#0aa';
                     chatTab.style.color = '#000';
-                    butterflyTab.style.background = '#111';
-                    butterflyTab.style.color = '#ff0';
-                    notepadTab.style.background = '#111';
-                    notepadTab.style.color = '#f90';
                     chatContent.style.display = 'block';
-                    butterflyContent.style.display = 'none';
-                    notepadContent.style.display = 'none';
                 } else if (tab === 'butterfly') {
-                    chatTab.style.background = '#111';
-                    chatTab.style.color = '#0ff';
                     butterflyTab.style.background = '#ff0';
                     butterflyTab.style.color = '#000';
-                    notepadTab.style.background = '#111';
-                    notepadTab.style.color = '#f90';
-                    chatContent.style.display = 'none';
                     butterflyContent.style.display = 'block';
-                    notepadContent.style.display = 'none';
-                } else {
-                    chatTab.style.background = '#111';
-                    chatTab.style.color = '#0ff';
-                    butterflyTab.style.background = '#111';
-                    butterflyTab.style.color = '#ff0';
+                } else if (tab === 'notepad') {
                     notepadTab.style.background = '#f90';
                     notepadTab.style.color = '#000';
-                    chatContent.style.display = 'none';
-                    butterflyContent.style.display = 'none';
                     notepadContent.style.display = 'block';
                     updateNotepadDisplay();
+                } else if (tab === 'agent_exporter') {
+                    agentExporterTab.style.background = '#f0f';
+                    agentExporterTab.style.color = '#000';
+                    agentExporterContent.style.display = 'block';
+                    populateOrganismSelector();
                 }
             }
 

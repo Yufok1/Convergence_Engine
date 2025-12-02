@@ -27,6 +27,19 @@ except ImportError:
     F = None
     torch = None
 
+# Import concept system (optional)
+try:
+    from .concept_system import ConceptHead, ConceptSystem
+    CONCEPT_SYSTEM_AVAILABLE = True
+except ImportError:
+    try:
+        from reality_simulator.neural.concept_system import ConceptHead, ConceptSystem
+        CONCEPT_SYSTEM_AVAILABLE = True
+    except ImportError:
+        CONCEPT_SYSTEM_AVAILABLE = False
+        ConceptHead = None
+        ConceptSystem = None
+
 
 class MultiHeadAttention(nn.Module if PYTORCH_AVAILABLE else object):
     """
@@ -165,7 +178,9 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
                  attention_dim: int = 64,
                  max_sequence_length: int = 32,
                  vocab_size: int = 12288,
-                 use_language_head: bool = False):
+                 use_language_head: bool = False,
+                 use_concept_head: bool = False,
+                 num_key_compositions: int = 5):
         """
         Initialize the organism brain.
         
@@ -181,6 +196,8 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
             max_sequence_length: Maximum sequence length for attention
             vocab_size: Vocabulary size for language head
             use_language_head: Enable language prediction head
+            use_concept_head: Enable concept understanding head (RCUS)
+            num_key_compositions: Number of key concept compositions to track
         """
         if not PYTORCH_AVAILABLE:
             raise ImportError("PyTorch is required for OrganismBrain")
@@ -224,6 +241,16 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
         if self.use_language_head:
             self.fc_language = nn.Linear(hidden_dim, vocab_size)
         
+        # Concept head (for compositional understanding - RCUS)
+        self.use_concept_head = use_concept_head and CONCEPT_SYSTEM_AVAILABLE
+        self.num_key_compositions = num_key_compositions
+        if self.use_concept_head:
+            self.concept_head = ConceptHead(
+                hidden_dim=hidden_dim,
+                num_axioms=18,  # 18 primitive axioms
+                num_compositions=num_key_compositions
+            )
+        
         self.dropout = nn.Dropout(dropout)
         
         # Initialize weights
@@ -259,7 +286,8 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
     
     def forward(self, x: 'torch.Tensor', 
                 vp_value: Optional[float] = None,
-                return_language_logits: bool = False) -> 'torch.Tensor':
+                return_language_logits: bool = False,
+                return_concept_outputs: bool = False) -> 'torch.Tensor':
         """
         Forward pass through the network.
         
@@ -268,12 +296,13 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
                (batch_size, seq_len, input_dim) for sequence modeling
             vp_value: Optional VP value for attention temperature scaling
             return_language_logits: If True, also return language head logits
+            return_concept_outputs: If True, also return concept head outputs
             
         Returns:
-            If return_language_logits=False:
-                Action probabilities of shape (batch_size, output_dim)
-            If return_language_logits=True:
-                Tuple of (action_probs, language_logits)
+            If only action output: Action probabilities of shape (batch_size, output_dim)
+            If return_language_logits: Tuple of (action_probs, language_logits)
+            If return_concept_outputs: Tuple includes concept_outputs dict
+            If both: Tuple of (action_probs, language_logits, concept_outputs)
         """
         # Handle both 2D (batch, input) and 3D (batch, seq, input) inputs
         is_sequence = len(x.shape) == 3
@@ -327,6 +356,12 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
         action_logits = self.fc3(x_for_action)
         action_probs = action_logits.softmax(dim=-1)
         
+        # Concept head (for compositional understanding)
+        concept_outputs = None
+        if return_concept_outputs and self.use_concept_head:
+            concept_outputs = self.concept_head(x_for_action)
+        
+        # Build return value based on requested outputs
         if return_language_logits and self.use_language_head:
             # Language head (for next-token prediction)
             # Apply to all sequence positions
@@ -335,7 +370,12 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
             else:
                 language_logits = self.fc_language(x_for_action)  # (batch, vocab)
             
+            if return_concept_outputs and concept_outputs is not None:
+                return action_probs, language_logits, concept_outputs
             return action_probs, language_logits
+        
+        if return_concept_outputs and concept_outputs is not None:
+            return action_probs, concept_outputs
         
         return action_probs
     
@@ -467,7 +507,9 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
             attention_dim=self.attention_dim,
             max_sequence_length=self.max_sequence_length,
             vocab_size=self.vocab_size,
-            use_language_head=self.use_language_head
+            use_language_head=self.use_language_head,
+            use_concept_head=self.use_concept_head,
+            num_key_compositions=self.num_key_compositions
         )
         
         # Move child to same device as parent

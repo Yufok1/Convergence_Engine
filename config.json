@@ -218,8 +218,15 @@
       "activation": "relu",
       "dropout": 0.1,
       "hidden_dim": 64,
-      "input_dim": 18,
+      "input_dim": 24,
       "output_dim": 6
+    },
+    "concept_system": {
+      "enabled": true,
+      "embed_dim": 64,
+      "concept_loss_weight": 0.1,
+      "num_key_compositions": 5,
+      "utility_update_alpha": 0.1
     },
     "device": "cpu",
     "enabled": true,
@@ -313,8 +320,9 @@
         "use_knowledge_web": true
       },
       "training": {
-        "alpha": 0.9,
+        "alpha": 0.8,
         "beta": 0.1,
+        "gamma": 0.1,
         "vp_temperature_scale": true
       },
       "vocabulary": {

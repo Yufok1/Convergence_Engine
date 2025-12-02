@@ -1,0 +1,8 @@
+Please perform a comprehensive, multi-step analysis of this project workspace or codebase.
+
+Initial Analysis: Read all available documentation (README, structure guides, cheatsheets, architecture docs) to understand the intended design, requirements, and goals.
+File-by-File Inspection: Systematically review every file and folder, comparing them to the documentation. Note missing, extra, or mismatched files. 
+Recursive Structure Review: Analyze subfolders, modules, and libraries recursively. Identify issues with dependencies, configurations, or integrations.
+Implementation Adaptation: Adapt your analysis to the project’s language, size, and complexity. Use creative, recursive, and dynamic strategies to optimize your approach.
+
+

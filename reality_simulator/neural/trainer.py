@@ -5,14 +5,18 @@ Manages DQN training for neural organisms, synchronized with the Breath Engine.
 
 Extended with:
 - VP-aware language model training
-- Dual-loss system: DQN (action) + Next-token prediction (language)
+- Triple-loss system: DQN (action) + Next-token prediction (language) + Concept understanding (RCUS)
 - VP temperature scaling for stable training
 - Curriculum learning based on VP thresholds
+- Compositional concept grounding
 """
 
 import numpy as np
 from typing import Dict, Any, Optional, List, Tuple
 import time
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Try importing PyTorch
 try:
@@ -49,6 +53,21 @@ except ImportError:
         from experience import ExperienceBuffer
         from neural_organism import NeuralOrganism
         from utils import get_device
+
+# Import concept system (optional - graceful degradation)
+try:
+    from .concept_system import ConceptSystem, compute_concept_loss, KEY_COMPOSITIONS, create_concept_system
+    CONCEPT_SYSTEM_AVAILABLE = True
+except ImportError:
+    try:
+        from reality_simulator.neural.concept_system import ConceptSystem, compute_concept_loss, KEY_COMPOSITIONS, create_concept_system
+        CONCEPT_SYSTEM_AVAILABLE = True
+    except ImportError:
+        CONCEPT_SYSTEM_AVAILABLE = False
+        ConceptSystem = None
+        compute_concept_loss = None
+        KEY_COMPOSITIONS = None
+        create_concept_system = None
 
 
 class NeuralTrainer:
@@ -96,11 +115,13 @@ class NeuralTrainer:
         
         # Language model configuration
         language_config = config.get('language_model', {})
+        training_config = language_config.get('training', {})
         self.language_model_enabled = language_config.get('enabled', False)
-        self.rl_loss_weight = language_config.get('rl_loss_weight', 0.9)  # alpha
-        self.language_loss_weight = language_config.get('language_loss_weight', 0.1)  # beta (conservative start)
+        # AUDIT FIX: Read from training config, ensure alpha+beta+gamma=1.0
+        self.rl_loss_weight = training_config.get('alpha', language_config.get('rl_loss_weight', 0.8))  # alpha
+        self.language_loss_weight = training_config.get('beta', language_config.get('language_loss_weight', 0.1))  # beta
         self.vp_gate_threshold = language_config.get('vp_gate_threshold', 0.75)
-        self.vp_temperature_scaling = language_config.get('vp_temperature_scaling', True)
+        self.vp_temperature_scaling = training_config.get('vp_temperature_scale', language_config.get('vp_temperature_scaling', True))
         
         # Curriculum learning configuration
         self.curriculum_learning = language_config.get('curriculum_learning', True)
@@ -167,10 +188,62 @@ class NeuralTrainer:
             'improvement_rate': 0.0,
             'language_loss_total': 0.0,
             'rl_loss_total': 0.0,
+            'concept_loss_total': 0.0,  # RCUS concept learning loss
             'avg_training_time_ms': 0.0
         }
         self.autotune_loss_window = 50  # Window size for moving average
         self.atomic_config_system = None  # Set by main.py when available
+        
+        # ═══════════════════════════════════════════════════════════════════════════
+        # RCUS: Concept System Integration
+        # Compositional understanding through primitive axioms
+        # ═══════════════════════════════════════════════════════════════════════════
+        concept_config = config.get('concept_system', {})
+        self.concept_system_enabled = concept_config.get('enabled', False) and CONCEPT_SYSTEM_AVAILABLE
+        self.concept_loss_weight = concept_config.get('concept_loss_weight', 0.1)  # gamma in triple-loss
+        self.concept_system = None  # Shared concept system for all organisms
+        self.concept_bridge = None  # GAP FIX C3: Language bridge
+        
+        if self.concept_system_enabled and CONCEPT_SYSTEM_AVAILABLE:
+            try:
+                self.concept_system = ConceptSystem(
+                    state_dim=config.get('brain', {}).get('input_dim', 24),
+                    embed_dim=concept_config.get('embed_dim', 64),
+                    device=str(self.device)
+                )
+                logger.info(f"[NEURAL] Concept system enabled with {len(KEY_COMPOSITIONS)} key compositions")
+            except Exception as e:
+                logger.warning(f"[NEURAL] Failed to initialize concept system: {e}")
+                self.concept_system_enabled = False
+        
+        # Track concept learning metrics
+        self.total_concept_loss = 0.0
+        self.concept_compositions_evaluated = 0
+    
+    def activate_language_bridge(self, vocabulary: Any) -> int:
+        """
+        GAP FIX C3: Activate the concept-language bridge.
+        
+        Call this after vocabulary is initialized to seed axiom words.
+        
+        Args:
+            vocabulary: Vocabulary object with add_word method
+            
+        Returns:
+            Number of words seeded
+        """
+        if not self.concept_system_enabled or not self.concept_system:
+            return 0
+        
+        try:
+            from .concept_system import ConceptLanguageBridge
+            self.concept_bridge = ConceptLanguageBridge(self.concept_system, vocabulary)
+            seeded = self.concept_bridge.seed_vocabulary_with_axioms(vocabulary)
+            logger.info(f"[NEURAL] Language bridge activated, seeded {seeded} axiom words")
+            return seeded
+        except Exception as e:
+            logger.warning(f"[NEURAL] Failed to activate language bridge: {e}")
+            return 0
     
     def _calculate_language_reward(self, organism: NeuralOrganism) -> float:
         """
@@ -545,11 +618,32 @@ class NeuralTrainer:
                     except Exception as e:
                         logger.debug(f"Language loss calculation skipped: {e}")
             
-            # Combine losses with weighting
+            # Calculate concept loss if enabled (RCUS - compositional understanding)
+            concept_loss = None
+            if (self.concept_system_enabled and 
+                self.concept_system is not None and
+                hasattr(organism.brain, 'use_concept_head') and 
+                organism.brain.use_concept_head):
+                try:
+                    # Compute concept loss: concepts should predict rewards
+                    concept_loss = compute_concept_loss(
+                        self.concept_system,
+                        states_tensor,
+                        rewards_tensor,
+                        KEY_COMPOSITIONS
+                    )
+                    self.total_concept_loss += concept_loss.item()
+                    self.concept_compositions_evaluated += len(KEY_COMPOSITIONS) * len(states_tensor)
+                except Exception as e:
+                    logger.debug(f"Concept loss calculation skipped: {e}")
+            
+            # Combine losses with weighting (triple-loss system)
+            # loss = alpha * rl_loss + beta * language_loss + gamma * concept_loss
+            loss = self.rl_loss_weight * rl_loss
             if language_loss is not None:
-                loss = (self.rl_loss_weight * rl_loss) + (self.language_loss_weight * language_loss)
-            else:
-                loss = rl_loss
+                loss = loss + self.language_loss_weight * language_loss
+            if concept_loss is not None:
+                loss = loss + self.concept_loss_weight * concept_loss
             
             # Backpropagation
             organism.brain.train()
@@ -750,7 +844,7 @@ class NeuralTrainer:
         Returns:
             Dictionary of training statistics
         """
-        return {
+        stats = {
             'training_steps': self.training_step_count,
             'average_loss': self.total_loss / max(1, self.training_step_count),
             'average_language_loss': self.total_language_loss / max(1, self.training_step_count) if self.language_model_enabled else None,
@@ -758,8 +852,22 @@ class NeuralTrainer:
             'organisms_tracked': len(self.organism_fitness_history),
             'language_model_enabled': self.language_model_enabled,
             'current_sequence_length': self.current_sequence_length,
-            'vp_stable_steps': self.vp_stable_steps
+            'vp_stable_steps': self.vp_stable_steps,
+            # RCUS concept system stats
+            'concept_system_enabled': self.concept_system_enabled,
+            'average_concept_loss': self.total_concept_loss / max(1, self.training_step_count) if self.concept_system_enabled else None,
+            'concept_compositions_evaluated': self.concept_compositions_evaluated if self.concept_system_enabled else 0,
         }
+        
+        # Add useful concept stats if concept system is active
+        if self.concept_system_enabled and self.concept_system is not None:
+            useful_concepts = self.concept_system.get_useful_concepts(top_k=5)
+            stats['top_useful_concepts'] = [
+                {'name': name, 'utility': utility, 'use_count': count}
+                for name, utility, count in useful_concepts
+            ]
+        
+        return stats
     
     def calculate_language_loss(self,
                                 language_logits: 'torch.Tensor',
@@ -1346,4 +1454,60 @@ class NeuralTrainer:
             logger.debug(f"Template tokenization failed: {e}")
             # Fallback: return a simple known token sequence
             return [1, 2, 3]  # Will depend on vocab, but better than empty
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # CONCEPT SYSTEM PERSISTENCE
+    # ═══════════════════════════════════════════════════════════════════════════
+    
+    def save_concept_system(self, path: str):
+        """
+        Save the concept system state.
+        
+        Args:
+            path: File path to save concept system (e.g., 'saves/concept_system.pt')
+        """
+        if not self.concept_system_enabled or self.concept_system is None:
+            logger.debug("No concept system to save")
+            return
+        
+        try:
+            self.concept_system.save_state(path)
+            logger.info(f"[NEURAL] Concept system saved to {path}")
+        except Exception as e:
+            logger.error(f"[NEURAL] Failed to save concept system: {e}")
+    
+    def load_concept_system(self, path: str):
+        """
+        Load the concept system state.
+        
+        Args:
+            path: File path to load concept system from
+        """
+        if not self.concept_system_enabled or self.concept_system is None:
+            logger.warning("Concept system not enabled, cannot load")
+            return
+        
+        try:
+            self.concept_system.load_state(path)
+            logger.info(f"[NEURAL] Concept system loaded from {path}")
+        except Exception as e:
+            logger.error(f"[NEURAL] Failed to load concept system: {e}")
+    
+    def get_concept_system_state(self) -> Optional[Dict[str, Any]]:
+        """
+        Get serializable concept system state for saving.
+        
+        Returns:
+            Dictionary with concept system state, or None if not enabled
+        """
+        if not self.concept_system_enabled or self.concept_system is None:
+            return None
+        
+        return {
+            'concept_utility': dict(self.concept_system.concept_utility),
+            'concept_use_count': dict(self.concept_system.concept_use_count),
+            'total_concept_loss': self.total_concept_loss,
+            'concept_compositions_evaluated': self.concept_compositions_evaluated,
+        }
+
 

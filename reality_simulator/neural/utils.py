@@ -155,11 +155,23 @@ def create_brain(config: Dict[str, Any]):
     attention_dim = language_config.get('attention', {}).get('attention_dim', 64)
     max_sequence_length = language_config.get('sequence', {}).get('max_length', 128)
     
+    # Extract concept head settings (RCUS)
+    if 'neural' in config:
+        concept_config = config.get('neural', {}).get('concept_system', {})
+    else:
+        concept_config = config.get('concept_system', {})
+    use_concept_head = concept_config.get('enabled', False)
+    num_key_compositions = concept_config.get('num_key_compositions', 5)
+    
     # Debug log for language head creation
     if use_language_head:
         print(f"[CREATE_BRAIN] ✅ Language head ENABLED (vocab_size={vocab_size}, attention={use_attention})")
     else:
         print(f"[CREATE_BRAIN] ⚠️ Language head DISABLED (language_model.enabled={language_config.get('enabled', 'not set')})")
+    
+    # Debug log for concept head creation
+    if use_concept_head:
+        print(f"[CREATE_BRAIN] ✅ Concept head ENABLED (RCUS - {num_key_compositions} key compositions)")
     
     brain = OrganismBrain(
         input_dim=brain_config.get('input_dim', 12),
@@ -172,7 +184,9 @@ def create_brain(config: Dict[str, Any]):
         use_attention=use_attention,
         num_attention_heads=num_attention_heads,
         attention_dim=attention_dim,
-        max_sequence_length=max_sequence_length
+        max_sequence_length=max_sequence_length,
+        use_concept_head=use_concept_head,
+        num_key_compositions=num_key_compositions
     )
     
     # Get device from config (default to cpu for larger vocab support)

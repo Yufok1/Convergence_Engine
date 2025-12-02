@@ -2140,6 +2140,16 @@ class RealitySimulator:
         with open(filepath, 'w') as f:
             json.dump(state, f, indent=2)
 
+        # AUDIT FIX: Save concept system state if available
+        if hasattr(self, 'neural_trainer') and self.neural_trainer:
+            if hasattr(self.neural_trainer, 'concept_system') and self.neural_trainer.concept_system:
+                concept_path = filepath.replace('.json', '_concept_system.pt')
+                try:
+                    self.neural_trainer.concept_system.save_state(concept_path)
+                    print(f"[SAVE] Concept system saved to {concept_path}")
+                except Exception as e:
+                    print(f"[SAVE] Warning: Could not save concept system: {e}")
+
         print(f"[SAVE] Simulation state saved to {filepath}")
 
     def load_state(self, filepath: str = "reality_simulator_save.json"):
@@ -2151,6 +2161,18 @@ class RealitySimulator:
             self.config = state.get('config', self.config)
             self.simulation_time = state.get('simulation_time', 0)
             self.frame_count = state.get('frame_count', 0)
+
+            # AUDIT FIX: Load concept system state if available
+            if hasattr(self, 'neural_trainer') and self.neural_trainer:
+                if hasattr(self.neural_trainer, 'concept_system') and self.neural_trainer.concept_system:
+                    concept_path = filepath.replace('.json', '_concept_system.pt')
+                    try:
+                        self.neural_trainer.concept_system.load_state(concept_path)
+                        print(f"[LOAD] Concept system loaded from {concept_path}")
+                    except FileNotFoundError:
+                        print(f"[LOAD] No concept system save found at {concept_path}")
+                    except Exception as e:
+                        print(f"[LOAD] Warning: Could not load concept system: {e}")
 
             print(f"[FOLDER] Simulation state loaded from {filepath}")
             return True

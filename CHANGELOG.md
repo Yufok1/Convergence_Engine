@@ -4,6 +4,38 @@
 
 ---
 
+## [Unreleased] - 2025-12-02
+
+### 📦 Agent Exporter / Capsule System (2025-12-02)
+
+#### Fixed
+- **Duplicate UI Elements** (causation_explorer.html) - Cleanup from Gemini's work
+  - Removed duplicate "📦 Agent Exporter" tab button (tabExporter duplicate of tabAgentExporter)
+  - Removed duplicate `agentExporterTabContent` div (kept first one with `onchange` handler)
+  - Added missing `compileAgentFromExporter()` function alias to fix button onclick
+
+#### Verified
+- `/api/organisms` endpoint - Single endpoint, properly implemented
+- `/api/capsule/<organism_id>/compile` endpoint - Exists and functional
+- `switchCRATab('agent_exporter')` - Properly handles Agent Exporter tab switching
+- `populateOrganismSelector()` - Populates organism dropdown from API
+
+### 🧹 Maintenance (2025-12-02)
+
+#### Improved
+- **clear_all_data.py** - Robust locked file handling for Windows
+  - Added `safe_delete_file()` with retry logic and truncation fallback
+  - Added `safe_delete_dir()` for safe directory removal
+  - Script now continues on locked files instead of crashing
+  - Reports skipped files at end with helpful tip
+
+#### Archived
+- Moved 28 dated/completed work documents to `docs/archive/2025-12-02/`
+- Root markdown count reduced from 65 to 37 (essential docs only)
+- Archived: RCUS analysis reports, Grok swarm docs, verification reports, dated analyses
+
+---
+
 ## [Unreleased] - 2025-12-01
 
 ### 🧠 Agent Swarm Language Learning Fixes (2025-12-01)
