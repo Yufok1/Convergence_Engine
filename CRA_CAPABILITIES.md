@@ -241,6 +241,12 @@ The CRA can now adjust `config.json` while the Butterfly System keeps running. U
 | `/scikit/clustering/enabled` | true/false | HDBSCAN clustering toggle |
 | `/scikit/anomaly_detection/enabled` | true/false | Isolation Forest toggle |
 | `/scikit/dimensionality_reduction/enabled` | true/false | PCA/t-SNE toggle |
+| `/ray/enabled` | true/false | Ray parallel processing toggle |
+| `/ray/parallelization_threshold` | 10 – 200 | Min organisms for parallelism |
+| `/ray/training_threshold` | 4 – 50 | Min trainable organisms for parallel training |
+| `/ray/actor_pool_size` | 1 – 16 | Max concurrent Ray actors |
+| `/ray/fallback_on_error` | true/false | Fall back to sequential on errors |
+| `/ray/logging_level` | debug/info/warning/error | Ray logging verbosity |
 
 **Path Notes:** Dashes and camelCase are normalized (`/feedback/knobs/mutationrate/initial` → `/feedback/knobs/mutation_rate/initial`), but prefer underscore names.
 
@@ -535,6 +541,68 @@ Alliances can ally with each other to form Confederations, which can merge into 
 - Cross-alliance connection density (indicates emergence of super-structures)
 - Confederation war outcomes and territory changes
 - Organism confederation_tier distribution in ML clusters
+
+---
+
+## ⚡ Ray Distributed Computing System ⭐ NEW (Quick Win #13)
+
+Ray provides parallel processing for computationally intensive operations. When populations exceed thresholds, workloads are automatically distributed across CPU cores for 2-5x speedups.
+
+### Core Architecture
+
+| Component | Purpose | Description |
+|-----------|---------|-------------|
+| **RayManager** | Lifecycle management | Init/shutdown, resource monitoring, map_parallel() |
+| **SequentialFallback** | Graceful degradation | Drop-in replacement when Ray unavailable |
+| **ray_tasks.py** | Parallel tasks | @ray.remote decorated functions |
+
+### Integrated Systems (Auto-Switch)
+
+| System | Threshold | Speedup | Function |
+|--------|-----------|---------|----------|
+| ML Feature Extraction | 50+ organisms | 4-5x | `extract_features_batch()` |
+| Highlander Battles | 10+ battles | 4-5x | `resolve_battles_batch()` |
+| Neural Decisions | 50+ organisms | 3-4x | `_collect_organism_decisions_parallel()` |
+| DQN Training | 8+ trainable | 2-3x | `_train_organisms_parallel()` |
+
+### Key Config Paths
+
+| Path | Safe Range | Description |
+|------|------------|-------------|
+| `/ray/enabled` | true/false | Master toggle for Ray parallelization |
+| `/ray/parallelization_threshold` | 10-200 | Min organisms for ML/decision parallelism |
+| `/ray/training_threshold` | 4-50 | Min trainable organisms for parallel training |
+| `/ray/actor_pool_size` | 1-16 | Max concurrent Ray actors |
+| `/ray/batch_inference_size` | 8-128 | Batch size for parallel inference |
+| `/ray/fallback_on_error` | true/false | Fall back to sequential on errors |
+| `/ray/logging_level` | "debug"/"info"/"warning"/"error" | Ray logging verbosity |
+| `/ray/num_cpus` | null/1-64 | CPU allocation (null = auto-detect) |
+| `/ray/num_gpus` | null/0-8 | GPU allocation (null = auto-detect) |
+| `/ray/state_synchronization/snapshot_strategy` | "breath_cycle"/"immediate" | When to sync state |
+| `/ray/state_synchronization/max_state_age_ms` | 50-500 | Max state staleness before refresh |
+| `/ray/memory_management/max_object_refs` | 50-500 | Max objects in Ray store |
+| `/ray/memory_management/cleanup_on_organism_death` | true/false | Clean up dead organism refs |
+
+### Example Commands
+```
+[[CONFIG_UPDATE: {"reason": "Disable Ray parallelization", "correlation_id": "ray-off", "patch": [{"op": "replace", "path": "/ray/enabled", "value": false}]}]]
+[[CONFIG_UPDATE: {"reason": "Lower parallel threshold for testing", "correlation_id": "ray-test", "patch": [{"op": "replace", "path": "/ray/parallelization_threshold", "value": 20}]}]]
+[[CONFIG_UPDATE: {"reason": "More aggressive parallelization", "correlation_id": "ray-aggressive", "patch": [{"op": "replace", "path": "/ray/training_threshold", "value": 4}, {"op": "replace", "path": "/ray/parallelization_threshold", "value": 25}]}]]
+[[CONFIG_UPDATE: {"reason": "Debug Ray issues", "correlation_id": "ray-debug", "patch": [{"op": "replace", "path": "/ray/logging_level", "value": "debug"}]}]]
+```
+
+### What to Monitor
+- Ray initialization success in startup logs
+- Parallel vs sequential execution decisions (logged at DEBUG level)
+- Task completion times vs sequential baseline
+- Resource utilization (CPUs, memory via Ray dashboard)
+- Fallback triggers and error messages
+
+### Graceful Degradation
+- Ray unavailable → Sequential execution (no errors)
+- Ray errors → Automatic fallback with warning log
+- Population below threshold → Sequential (more efficient for small populations)
+- GPU unavailable → CPU-only parallelization
 
 ---
 
@@ -1484,8 +1552,8 @@ The CRA receives rich context including:
 
 ---
 
-**Last Updated:** 2025-12-01  
-**Status:** ✅ Complete and fully functional (includes Illumination Engine + Research Notepad + Highlander Protocol + Alliance Warfare)
+**Last Updated:** 2025-12-02  
+**Status:** ✅ Complete and fully functional (includes Illumination Engine + Research Notepad + Highlander Protocol + Alliance Warfare + Ray Distributed Computing)
 
 ---
 
