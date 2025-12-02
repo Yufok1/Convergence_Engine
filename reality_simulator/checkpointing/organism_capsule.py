@@ -471,19 +471,19 @@ class OrganismCapsuleManager:
         # ═══════════════════════════════════════════════════════════════
         # TRAITS
         # ═══════════════════════════════════════════════════════════════
-        if hasattr(organism, 'traits'):
+        if hasattr(organism, 'traits') and organism.traits is not None:
             capsule.traits = self._capture_traits(organism)
         
         # ═══════════════════════════════════════════════════════════════
         # FITNESS
         # ═══════════════════════════════════════════════════════════════
-        if hasattr(organism, 'fitness'):
+        if hasattr(organism, 'fitness') and organism.fitness is not None:
             capsule.fitness = self._capture_fitness(organism)
         
         # ═══════════════════════════════════════════════════════════════
         # HIGHLANDER METADATA
         # ═══════════════════════════════════════════════════════════════
-        if hasattr(organism, 'highlander_stats'):
+        if hasattr(organism, 'highlander_stats') and organism.highlander_stats is not None:
             capsule.highlander = self._capture_highlander(organism)
         
         # ═══════════════════════════════════════════════════════════════

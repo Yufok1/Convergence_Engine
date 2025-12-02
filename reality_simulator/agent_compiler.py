@@ -588,10 +588,10 @@ The agent will load its neural network and demonstrate decision-making using dum
 - **Concept Head**: {'✅ Enabled' if metadata['neural_network']['architecture'].get('use_concept_head') else '❌ Disabled'}
 - **Attention Mechanism**: {'✅ Enabled' if metadata['neural_network']['architecture'].get('use_attention') else '❌ Disabled'}
 
-### Genetic Traits
-- **Gene Length**: `{len(capsule.traits.genotype.genes) if capsule.traits else 'unknown'}` bits
-- **Development Stage**: `{capsule.traits.phenotype.development_stage if capsule.traits else 'unknown'}`
-- **Trait Count**: `{len(capsule.traits.phenotype.traits) if capsule.traits else 0}` expressed traits
+### Behavioral Traits
+- **Trait Count**: `{len(capsule.traits.traits) if capsule.traits and hasattr(capsule.traits, 'traits') else 0}` expressed traits
+- **Phenotype Cluster**: `{capsule.traits.phenotype_cluster if capsule.traits and hasattr(capsule.traits, 'phenotype_cluster') else 'unknown'}`
+- **Behavioral Signature**: `{len(capsule.traits.behavioral_signature) if capsule.traits and hasattr(capsule.traits, 'behavioral_signature') else 0}` dimensions
 
 ---
 
