@@ -214,9 +214,14 @@ class AgentCompiler:
     def _export_torchscript(self, brain: OrganismBrain, model_path: str) -> None: 
         """Exports the PyTorch brain to TorchScript format."""
         try:
-            scripted_brain = torch.jit.script(brain)
-            scripted_brain.save(model_path)
-            logger.info(f"Successfully exported brain to TorchScript: {model_path}")
+            # Use torch.jit.trace instead of torch.jit.script
+            # trace captures the execution path dynamically, which works with
+            # OrganismBrain's complex control flow (conditional attention, etc.)
+            # script analyzes code statically and fails on Python 3.12 + PyTorch 2.5
+            dummy_input = torch.randn(1, brain.input_dim, dtype=torch.float32)
+            traced_brain = torch.jit.trace(brain, (dummy_input,))
+            traced_brain.save(model_path)
+            logger.info(f"Successfully exported brain to TorchScript (traced): {model_path}")
         except Exception as e:
             logger.error(f"Failed to export brain to TorchScript at {model_path}: {e}")
             raise
