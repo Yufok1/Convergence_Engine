@@ -378,6 +378,7 @@
     "num_gpus": null,
     "object_store_memory": null,
     "parallelization_threshold": 50,
+    "training_threshold": 8,
     "actor_pool_size": 4,
     "batch_inference_size": 32,
     "fallback_on_error": true,

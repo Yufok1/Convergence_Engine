@@ -337,3 +337,221 @@ def evaluate_connections_batch(connections: List[Tuple[str, str]],
     except Exception as e:
         logger.warning(f"[RayTasks] Connection evaluation failed, falling back: {e}")
         return [evaluate_connection_local(conn, network_state) for conn in connections]
+
+
+# ==================== NEURAL TRAINING ====================
+# MEDIUM-HIGH RISK - Per-organism gradient computation
+# State sync handled by returning updated weights
+
+def train_organism_local(
+    brain_weights: dict,
+    experience_batch: dict,
+    training_config: dict,
+    language_config: dict = None
+) -> dict:
+    """
+    Train a single organism's brain on a batch of experiences.
+    
+    This performs one gradient update on the brain weights.
+    State is passed in/out as serializable dicts.
+    
+    Args:
+        brain_weights: Serialized brain state_dict
+        experience_batch: Dict with states, actions, rewards, next_states, dones
+        training_config: Training hyperparameters
+        language_config: Optional language training config
+        
+    Returns:
+        Dict with updated weights, loss, and training stats
+    """
+    try:
+        import torch
+        import torch.nn.functional as F
+        import torch.optim as optim
+    except ImportError:
+        return {'success': False, 'error': 'PyTorch not available'}
+    
+    try:
+        # Extract config
+        learning_rate = training_config.get('learning_rate', 0.001)
+        gamma = training_config.get('gamma', 0.99)
+        rl_loss_weight = training_config.get('rl_loss_weight', 0.8)
+        language_loss_weight = training_config.get('language_loss_weight', 0.1)
+        device = training_config.get('device', 'cpu')
+        
+        # Import brain class for reconstruction
+        from reality_simulator.neural.organism_brain import OrganismBrain
+        
+        # Reconstruct brain from weights
+        input_dim = training_config.get('input_dim', 24)
+        hidden_dim = training_config.get('hidden_dim', 64)
+        output_dim = training_config.get('output_dim', 5)
+        vocab_size = training_config.get('vocab_size', 128)
+        use_language_head = training_config.get('use_language_head', False)
+        
+        brain = OrganismBrain(
+            input_dim=input_dim,
+            hidden_dim=hidden_dim,
+            output_dim=output_dim,
+            vocab_size=vocab_size,
+            use_language_head=use_language_head,
+            device=device
+        )
+        
+        # Load weights
+        brain.load_state_dict(brain_weights)
+        brain.to(device)
+        
+        # Convert experiences to tensors
+        states_tensor = torch.FloatTensor(experience_batch['states']).to(device)
+        actions_tensor = torch.LongTensor(experience_batch['actions']).to(device)
+        rewards_tensor = torch.FloatTensor(experience_batch['rewards']).to(device)
+        next_states_tensor = torch.FloatTensor(experience_batch['next_states']).to(device)
+        dones_tensor = torch.BoolTensor(experience_batch['dones']).to(device)
+        
+        # Get current Q values
+        brain.train()
+        q_values = brain(states_tensor)
+        q_value = q_values.gather(1, actions_tensor.unsqueeze(1)).squeeze(1)
+        
+        # Get next Q values (no gradient)
+        brain.eval()
+        with torch.no_grad():
+            next_q_values = brain(next_states_tensor)
+            next_q_value = next_q_values.max(1)[0]
+        
+        # Calculate target Q values
+        target_q_value = rewards_tensor + (gamma * next_q_value * ~dones_tensor)
+        
+        # Calculate RL loss
+        rl_loss = F.mse_loss(q_value, target_q_value)
+        loss = rl_loss_weight * rl_loss
+        
+        # Language loss if applicable
+        language_loss_value = 0.0
+        if language_config and language_config.get('enabled'):
+            token_seq = language_config.get('token_sequence', [])
+            if len(token_seq) >= 2:
+                try:
+                    input_tokens = torch.LongTensor([token_seq[:-1]]).to(device)
+                    target_tokens = torch.LongTensor([token_seq[1:]]).to(device)
+                    
+                    brain.train()
+                    _, language_logits = brain(states_tensor[:1], return_language_logits=True)
+                    
+                    if language_logits is not None:
+                        if language_logits.dim() == 2:
+                            language_logits = language_logits.unsqueeze(1).expand(-1, len(token_seq)-1, -1)
+                        
+                        # Simple cross-entropy loss
+                        lang_loss = F.cross_entropy(
+                            language_logits.view(-1, language_logits.size(-1)),
+                            target_tokens.view(-1)
+                        )
+                        loss = loss + language_loss_weight * lang_loss
+                        language_loss_value = lang_loss.item()
+                except Exception:
+                    pass  # Skip language loss on error
+        
+        # Backpropagation
+        brain.train()
+        optimizer = optim.Adam(brain.parameters(), lr=learning_rate)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        
+        # Extract updated weights
+        updated_weights = {k: v.cpu().detach() for k, v in brain.state_dict().items()}
+        
+        return {
+            'success': True,
+            'updated_weights': updated_weights,
+            'loss': loss.item(),
+            'rl_loss': rl_loss.item(),
+            'language_loss': language_loss_value,
+            'batch_size': len(states_tensor)
+        }
+        
+    except Exception as e:
+        return {
+            'success': False,
+            'error': str(e)
+        }
+
+
+if RAY_AVAILABLE:
+    @ray.remote(num_cpus=1)
+    def train_organism_remote(
+        brain_weights: dict,
+        experience_batch: dict,
+        training_config_ref,
+        language_config: dict = None
+    ) -> dict:
+        """
+        Ray remote task for organism training.
+        
+        Wraps the local function for parallel execution.
+        """
+        # Resolve config ref if needed
+        training_config = ray.get(training_config_ref) if hasattr(training_config_ref, '__class__') and 'ObjectRef' in training_config_ref.__class__.__name__ else training_config_ref
+        return train_organism_local(brain_weights, experience_batch, training_config, language_config)
+
+
+def train_organisms_batch(
+    training_tasks: List[dict],
+    training_config: dict,
+    use_ray: bool = True
+) -> List[dict]:
+    """
+    Train multiple organisms in parallel.
+    
+    Args:
+        training_tasks: List of dicts with 'brain_weights', 'experience_batch', 'language_config'
+        training_config: Shared training configuration
+        use_ray: Whether to use Ray parallelization
+        
+    Returns:
+        List of training results
+    """
+    if not use_ray or not RAY_AVAILABLE or len(training_tasks) < 4:
+        # Sequential training
+        return [
+            train_organism_local(
+                task['brain_weights'],
+                task['experience_batch'],
+                training_config,
+                task.get('language_config')
+            )
+            for task in training_tasks
+        ]
+    
+    # Parallel training with Ray
+    try:
+        # Put config in object store (shared across all tasks)
+        config_ref = ray.put(training_config)
+        
+        # Submit all tasks
+        futures = [
+            train_organism_remote.remote(
+                task['brain_weights'],
+                task['experience_batch'],
+                config_ref,
+                task.get('language_config')
+            )
+            for task in training_tasks
+        ]
+        
+        # Wait for results
+        return ray.get(futures)
+        
+    except Exception as e:
+        logger.warning(f"[RayTasks] Organism training failed, falling back: {e}")
+        return [
+            train_organism_local(
+                task['brain_weights'],
+                task['experience_batch'],
+                training_config,
+                task.get('language_config')
+            )
+            for task in training_tasks
+        ]

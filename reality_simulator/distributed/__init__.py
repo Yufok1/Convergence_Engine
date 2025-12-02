@@ -92,6 +92,8 @@ from .ray_tasks import (
     resolve_battles_batch,
     evaluate_connection_local,
     evaluate_connections_batch,
+    train_organism_local,
+    train_organisms_batch,
 )
 
 __all__.extend([
@@ -101,4 +103,6 @@ __all__.extend([
     'resolve_battles_batch',
     'evaluate_connection_local',
     'evaluate_connections_batch',
+    'train_organism_local',
+    'train_organisms_batch',
 ])
