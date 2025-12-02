@@ -1703,13 +1703,14 @@ class UnifiedSystem:
                     'phase': self.highlander_protocol.phase.name,
                     'population': population,
                     'battles': len(results.get('battles', [])),
-                    'eliminations': len(results.get('eliminations', [])),
+                    'eliminations': results.get('total_eliminations', len(results.get('battles', []))),
                     'alliances': len(results.get('alliances_formed', []))
                 })
                 
                 # Print status update
                 battles_count = len(results.get('battles', []))
-                eliminations_count = len(results.get('eliminations', []))
+                # Total eliminations = battles (1 death each) + culling + predation
+                eliminations_count = results.get('total_eliminations', battles_count)
                 alliances_count = len(results.get('alliances_formed', []))
                 
                 if battles_count > 0 or eliminations_count > 0:

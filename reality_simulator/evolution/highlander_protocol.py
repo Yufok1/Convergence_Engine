@@ -296,7 +296,13 @@ class HighlanderProtocol:
                            organism: Any = None, killer_id: Optional[str] = None):
         """Remove organism from active competition."""
         self.active_organisms.discard(organism_id)
-        self.fallen.append(organism_id)
+        
+        # Add to fallen list (avoid duplicates, limit memory growth)
+        if organism_id not in self.fallen:
+            self.fallen.append(organism_id)
+            # Keep fallen list bounded (last 10000 deaths)
+            if len(self.fallen) > 10000:
+                self.fallen = self.fallen[-10000:]
         
         # Remove from any alliances
         for alliance in self.alliances.values():
@@ -435,16 +441,22 @@ class HighlanderProtocol:
 
         # DEBUG: Round summary
         battles_count = len(results.get('battles', []))
-        eliminations_count = len(results.get('eliminations', []))
+        culling_count = len(results.get('eliminations', []))
+        predation_count = len(results.get('predation_events', []))
+        # Total eliminations = battles (each has 1 loser) + culling + predation
+        total_eliminations = battles_count + culling_count + predation_count
         alliances_count = len(self.alliances)
         active_count = len(self.active_organisms)
 
         self.logger.info(f"🎯 ROUND {self.round_number} COMPLETE:")
         self.logger.info(f"   ⚔️  Battles fought: {battles_count}")
-        self.logger.info(f"   💀 Eliminations: {eliminations_count}")
+        self.logger.info(f"   💀 Eliminations: {total_eliminations} (battles: {battles_count}, culled: {culling_count}, hunted: {predation_count})")
         self.logger.info(f"   🤝 Active alliances: {alliances_count}")
         self.logger.info(f"   👥 Population: {active_count}")
         self.logger.info(f"   📊 Phase: {self.phase.value}")
+        
+        # Update results with accurate elimination count
+        results['total_eliminations'] = total_eliminations
 
         if results.get('champion'):
             self.logger.info(f"   👑 CHAMPION CROWNED: {results['champion']['champion_id']}")
