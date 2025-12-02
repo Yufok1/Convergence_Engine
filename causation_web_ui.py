@@ -6841,6 +6841,65 @@ def compile_organism_to_agent(organism_id):
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/capsules/compile-ensemble', methods=['POST'])
+def compile_ensemble_to_agent():
+    """Compile multiple organisms into a single ensemble agent archive."""
+    try:
+        from reality_simulator.agent_compiler import AgentCompiler
+        from reality_simulator.checkpointing.organism_capsule import OrganismCapsuleManager
+    except ImportError as e:
+        return jsonify({'error': f'Agent compilation requires onnxruntime: {e}. Install with: pip install onnxruntime'}), 500
+
+    try:
+        data = request.get_json() or {}
+        organism_ids = data.get('organism_ids', [])
+        export_format = data.get('format', 'onnx')
+        if not organism_ids or not isinstance(organism_ids, list):
+            return jsonify({'error': 'organism_ids (list) is required'}), 400
+
+        if not hasattr(app, 'unified_system') or not app.unified_system:
+            return jsonify({'error': 'Unified system not available to compile agent'}), 500
+
+        unified_system = app.unified_system
+        live_organisms = unified_system.get_current_organisms()
+        capsule_manager = OrganismCapsuleManager(storage_dir=Path('highlander_capsules'))
+
+        capsules = []
+        for oid in organism_ids:
+            if oid in live_organisms:
+                org = live_organisms[oid]
+                cap = capsule_manager.capture_organism(
+                    organism=org,
+                    reason=f'compile_ensemble_{datetime.now().isoformat()}',
+                    notes=f'Ensemble capture for {oid}',
+                    include_causation=True,
+                    causation_explorer=getattr(unified_system, 'causation_explorer', None)
+                )
+                if cap:
+                    capsules.append(cap)
+            else:
+                cap = capsule_manager.load_capsule_by_organism_id(oid)
+                if cap:
+                    capsules.append(cap)
+
+        if not capsules:
+            return jsonify({'error': 'No valid capsules found for provided organism_ids'}), 404
+
+        compiler = AgentCompiler()
+        archive_buffer = compiler.compile_capsules_to_ensemble(capsules, export_format=export_format)
+
+        return send_file(
+            archive_buffer,
+            as_attachment=True,
+            download_name=f"agent_ensemble_{datetime.now().strftime('%Y%m%d%H%M%S')}.zip",
+            mimetype='application/zip'
+        )
+
+    except Exception as e:
+        logger.error(f"Error compiling ensemble capsules: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/')
 def index():
     """Main interface"""

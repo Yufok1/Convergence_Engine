@@ -343,6 +343,43 @@ pip install ray>=2.10.0   # For parallel processing (2-5x speedup, graceful fall
 pip install pywin32
 ```
 
+### Curated Vocabulary Pipeline (WordNet-based)
+
+The system includes a **curated vocabulary pipeline** that generates a clean 50k word vocabulary for organism language:
+
+**Generate curated vocabulary (one command):**
+```bash
+python build_curated_dataset.py
+```
+
+This pipeline:
+1. **Extracts ~141k words from WordNet** - Princeton's lexical database (100% proper English, ZERO proper nouns)
+2. **Filters to 50k domain-aligned words** - Removes jargon, focuses on behavior/communication/comprehension
+3. **Seeds knowledge web** - Creates semantic associations for "infinite variety from finite words"
+
+**Output files** (gitignored, ~50MB total):
+- `data/butterfly_vocabulary_200k_raw.json` - Raw WordNet extraction (~141k words)
+- `data/butterfly_vocabulary_50k_curated.json` - Filtered 50k vocabulary
+- `data/seeded_knowledge_web_50k.json` - Knowledge web with concepts + relations
+
+**Why WordNet?**
+- 141k+ unique English words (lemmas)
+- Zero proper nouns, brand names, or personal names
+- Morphologically complete (all word forms)
+- Curated by linguists at Princeton University
+
+**Requirements:**
+```bash
+pip install nltk
+```
+
+The first run auto-downloads WordNet (~10MB). Subsequent runs use cached data.
+
+**Optional expansion** (adds ConceptNet semantic relations):
+```bash
+python reality_simulator/language/expand_knowledge_web.py --concepts 50000 --min-weight 0.5
+```
+
 ### Optional: AI Features (Ollama)
 
 For AI-assisted features (CRA, vision analysis):
@@ -441,6 +478,26 @@ python reality_simulator/main.py --config config.json
 python causation_web_ui.py
 # Open http://localhost:5000 in your browser
 ```
+
+### Agent Exporter (Build Portable Agents)
+
+Use the Web UI Exporter or programmatic API to compile an organism capsule into a portable agent archive (ONNX, TorchScript, or state_dict):
+
+```bash
+# Programmatic example
+python -c "from reality_simulator.agent_compiler import AgentCompiler; print('AgentCompiler ready')"
+```
+
+Output archive contents:
+- `brain.<format>`: The model (ONNX/TorchScript/torch state_dict)
+- `metadata.json`: Architecture and organism metadata
+- `atomic_language.json`, `atomic_config.json`, `genotype.json` (if available)
+- `run_agent.py`: Simple runner that demonstrates inference
+
+Tips:
+- ONNX can be visualized with Netron: https://netron.app
+- PyTorch 2.6 changed `torch.load` defaults. Our tooling explicitly sets `weights_only=False` and loads on CPU for compatibility.
+- If you hit errors like “invalid load key, '\x1f'”, it usually indicates compressed state dicts; the exporter handles gzip/zip.
 
 ### Configuration
 

@@ -2446,10 +2446,16 @@
                     <!-- Agent Exporter Tab Content -->
                     <div id="agentExporterTabContent" style="display: none; padding: 15px; border: 1px solid #f0f; background: linear-gradient(135deg, #1a0a1a 0%, #0a050a 100%); border-radius: 5px;">
                         <h4 style="color: #f0f; margin-top: 0; margin-bottom: 15px;">📦 Agent Exporter</h4>
-                        <p style="color: #aaa; font-size: 0.9em; margin-bottom: 20px;">Compile and download a selected organism as a portable AI agent.</p>
+                        <p style="color: #aaa; font-size: 0.9em; margin-bottom: 20px;">Compile and download a selected organism as a portable AI agent. Toggle multi-select to build an ensemble.</p>
                         
                         <div style="margin-bottom: 15px;">
-                            <label for="agentExporterOrganismSelect" style="display: block; color: #0f0; margin-bottom: 5px;">Select Organism:</label>
+                            <div style="display: flex; align-items: center; gap: 10px; justify-content: space-between;">
+                                <label for="agentExporterOrganismSelect" style="display: block; color: #0f0; margin-bottom: 5px;">Select Organism:</label>
+                                <label style="color:#0ff; font-size: 0.85em; display:flex; align-items:center; gap:6px;">
+                                    <input type="checkbox" id="agentExporterMulti" onchange="document.getElementById('agentExporterOrganismSelect').multiple=this.checked; populateOrganismSelector();" />
+                                    Multi-select
+                                </label>
+                            </div>
                             <select id="agentExporterOrganismSelect" onchange="updateCompileAgentStatus()" style="width: 100%; padding: 8px; background: #111; color: #0f0; border: 1px solid #0ff; font-family: 'Courier New', monospace;">
                                 <option value="">Loading organisms...</option>
                             </select>
@@ -2466,6 +2472,10 @@
                         
                         <button onclick="compileAgentFromExporter()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #f0f 0%, #a0a 100%); color: #000; border: 1px solid #f0f; font-weight: bold; cursor: pointer; font-family: 'Courier New', monospace; font-size: 1em; border-radius: 4px; transition: all 0.2s;" onmouseover="this.style.boxShadow='0 0 15px #f0f'" onmouseout="this.style.boxShadow='none'">
                             🚀 Compile Agent
+                        </button>
+
+                        <button onclick="compileEnsembleFromExporter()" style="width: 100%; margin-top: 10px; padding: 12px; background: linear-gradient(135deg, #0ff 0%, #0aa 100%); color: #000; border: 1px solid #0ff; font-weight: bold; cursor: pointer; font-family: 'Courier New', monospace; font-size: 1em; border-radius: 4px; transition: all 0.2s;" onmouseover="this.style.boxShadow='0 0 15px #0ff'" onmouseout="this.style.boxShadow='none'">
+                            🤝 Compile Ensemble
                         </button>
                         
                         <div id="agentExporterStatus" style="margin-top: 15px; padding: 12px; background: #0a0a0a; border: 1px solid #333; color: #0ff; min-height: 40px; text-align: center; border-radius: 4px;">
@@ -11396,7 +11406,8 @@
                     const organisms = await response.json();
                     
                     if (organisms && organisms.length > 0) {
-                        selector.innerHTML = '<option value="">-- Select an Organism --</option>';
+                        const multi = document.getElementById('agentExporterMulti')?.checked;
+                        selector.innerHTML = multi ? '' : '<option value="">-- Select an Organism --</option>';
                         organisms.forEach(org => {
                             const option = document.createElement('option');
                             option.value = org.id;
@@ -11471,6 +11482,49 @@
                     updateCompileAgentStatus(`✅ Agent compiled! Download started.`, '#0f0');
                 } catch (error) {
                     console.error('Error compiling agent:', error);
+                    updateCompileAgentStatus(`❌ Error: ${error.message}`, '#f66');
+                }
+            }
+
+            // Compile ensemble from exporter tab
+            async function compileEnsembleFromExporter() {
+                const selector = document.getElementById('agentExporterOrganismSelect');
+                const formatSelect = document.getElementById('agentExporterFormat');
+                const format = formatSelect ? formatSelect.value : 'onnx';
+                const selected = Array.from(selector.selectedOptions).map(o => o.value).filter(Boolean);
+                if (selected.length < 2) {
+                    updateCompileAgentStatus('Select 2+ organisms for ensemble.', '#f66');
+                    return;
+                }
+                updateCompileAgentStatus(`Compiling ensemble (${selected.length}) to ${format.toUpperCase()}...`, '#ff0');
+                try {
+                    const response = await fetch(`/api/capsules/compile-ensemble`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ organism_ids: selected, format })
+                    });
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Compilation failed');
+                    }
+                    const contentDisposition = response.headers.get('Content-Disposition');
+                    let filename = `agent_ensemble.zip`;
+                    if (contentDisposition) {
+                        const match = contentDisposition.match(/filename="([^"]+)"/);
+                        if (match && match[1]) filename = match[1];
+                    }
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    updateCompileAgentStatus('✅ Ensemble compiled! Download started.', '#0f0');
+                } catch (error) {
+                    console.error('Error compiling ensemble:', error);
                     updateCompileAgentStatus(`❌ Error: ${error.message}`, '#f66');
                 }
             }

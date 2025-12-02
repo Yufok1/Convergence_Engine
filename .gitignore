@@ -2,6 +2,11 @@
 data/knowledge/**
 data/expanded_knowledge_web.json
 
+# Vocabulary datasets (user-generated, ~50MB+ total)
+data/butterfly_vocabulary_*.json
+data/seeded_knowledge_web_*.json
+data/glove.*.txt
+
 # Common large artifacts
 *.csv.gz
 *.onnx

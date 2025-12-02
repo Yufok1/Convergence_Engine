@@ -1320,7 +1320,6 @@ class UnifiedSystem:
                 # Fallback: Create empty vocabulary if no context_memory
                 if vocabulary is None:
                     vocabulary = LanguageVocabulary()
-                    # FIXED: Seed vocabulary with basic words to prevent empty vocabulary on first use
                     seed_words = [
                         'hello', 'hi', 'yes', 'no', 'thrive', 'struggle',
                         'connect', 'move', 'rest', 'grow', 'alone', 'together',
