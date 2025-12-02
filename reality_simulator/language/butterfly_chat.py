@@ -61,6 +61,31 @@ class ButterflyChatRouter:
         # Learning tracking
         self.total_chat_experiences = 0
         self.chat_training_triggered = 0
+        
+        # ═══════════════════════════════════════════════════════════════
+        # MISSION 1: Language Metrics Tracking for CRA/AutoTune Integration
+        # ═══════════════════════════════════════════════════════════════
+        self.semantic_reward_totals = {
+            'word_overlap': 0.0,
+            'coherence': 0.0,
+            'length_score': 0.0,
+            'confidence': 0.0,
+            'vp_adjustment': 0.0,
+            'total_reward': 0.0,
+            'calculation_count': 0
+        }
+        self.knowledge_transfer_stats = {
+            'total_broadcasts': 0,
+            'total_recipients': 0,
+            'total_reward_transferred': 0.0,
+            'successful_transfers': 0
+        }
+        self.creative_vocab_stats = {
+            'expansions': 0,
+            'phrases_generated': 0,
+            'compounds_created': 0,
+            'neologisms': 0
+        }
 
     def route_message(self,
                      message: str,
@@ -851,6 +876,7 @@ class ButterflyChatRouter:
         
         # 5. VP-AWARE ADJUSTMENT (±0.1)
         # Higher VP = more resources = higher standards
+        vp_adjustment = 0.0
         if network_state:
             vp_value = network_state.get('vp_value', 0.5)
             
@@ -858,14 +884,29 @@ class ButterflyChatRouter:
             if vp_value > 0.7:
                 # At high VP, expect better responses
                 if reward > 0.5:
-                    reward += 0.1  # Bonus for quality at high VP
+                    vp_adjustment = 0.1  # Bonus for quality at high VP
+                    reward += vp_adjustment
                 elif reward < 0.2:
-                    reward -= 0.05  # Slight penalty for poor at high VP
+                    vp_adjustment = -0.05  # Slight penalty for poor at high VP
+                    reward += vp_adjustment
             elif vp_value < 0.3:
                 # At low VP, be more forgiving
                 reward = max(reward, 0.0)  # No negative rewards when struggling
         
-        return max(-0.2, min(1.0, reward))  # Clamp to reasonable range
+        final_reward = max(-0.2, min(1.0, reward))  # Clamp to reasonable range
+        
+        # ═══════════════════════════════════════════════════════════════
+        # MISSION 1: Track semantic reward components for CRA/AutoTune
+        # ═══════════════════════════════════════════════════════════════
+        self.semantic_reward_totals['word_overlap'] += overlap_score
+        self.semantic_reward_totals['coherence'] += max(0.0, coherence_score)
+        self.semantic_reward_totals['length_score'] += length_score
+        self.semantic_reward_totals['confidence'] += confidence * 0.2
+        self.semantic_reward_totals['vp_adjustment'] += vp_adjustment
+        self.semantic_reward_totals['total_reward'] += final_reward
+        self.semantic_reward_totals['calculation_count'] += 1
+        
+        return final_reward
 
     def _trigger_bootstrap_learning(self, organism: Any, user_tokens: List[int], 
                                       network_state: Optional[Dict[str, Any]] = None):
@@ -953,16 +994,30 @@ class ButterflyChatRouter:
         try:
             source_id = getattr(source_organism, 'species_id', str(id(source_organism)))
             
-            # Get network graph if available
-            network_graph = network_state.get('network_graph')
-            if network_graph is None:
-                return
+            # ═══════════════════════════════════════════════════════════════
+            # MISSION 5: Use NetworkGraphAccessor for null-safe graph access
+            # ═══════════════════════════════════════════════════════════════
+            try:
+                from reality_simulator.symbiotic_network import NetworkGraphAccessor
+                graph_accessor = NetworkGraphAccessor(network_state)
+            except ImportError:
+                # Fallback: use direct access if accessor not available
+                graph_accessor = None
             
-            # Get connected organisms
-            if source_id not in network_graph:
-                return
+            if graph_accessor is not None and graph_accessor.is_valid:
+                # Use safe accessor
+                if not graph_accessor.has_node(source_id):
+                    return
+                neighbors = graph_accessor.get_neighbors(source_id)
+            else:
+                # Fallback: direct access (legacy behavior)
+                network_graph = network_state.get('network_graph')
+                if network_graph is None:
+                    return
+                if source_id not in network_graph:
+                    return
+                neighbors = list(network_graph.neighbors(source_id))
             
-            neighbors = list(network_graph.neighbors(source_id))
             if not neighbors:
                 return
             
@@ -976,8 +1031,11 @@ class ButterflyChatRouter:
                 if not hasattr(neighbor_organism, 'experience_buffer') or neighbor_organism.experience_buffer is None:
                     continue
                 
-                # Get connection strength from network graph
-                edge_data = network_graph.get_edge_data(source_id, neighbor_id, {})
+                # Get connection strength from network graph (using accessor if available)
+                if graph_accessor is not None and graph_accessor.is_valid:
+                    edge_data = graph_accessor.get_edge_data(source_id, neighbor_id)
+                else:
+                    edge_data = network_graph.get_edge_data(source_id, neighbor_id, {})
                 connection_strength = edge_data.get('strength', 0.5)
                 
                 # Calculate discounted reward for knowledge transfer
@@ -1020,6 +1078,14 @@ class ButterflyChatRouter:
                     "original_reward": reward,
                     "neighbor_ids": neighbors[:5]  # Log first 5
                 })
+                
+                # ═══════════════════════════════════════════════════════════════
+                # MISSION 1: Track knowledge transfer stats for CRA/AutoTune
+                # ═══════════════════════════════════════════════════════════════
+                self.knowledge_transfer_stats['total_broadcasts'] += 1
+                self.knowledge_transfer_stats['total_recipients'] += transfer_count
+                self.knowledge_transfer_stats['total_reward_transferred'] += reward * transfer_count * 0.25  # Approx
+                self.knowledge_transfer_stats['successful_transfers'] += transfer_count
                 
                 # Emit knowledge transfer event
                 if self.event_emitter:
@@ -1237,6 +1303,108 @@ class ButterflyChatRouter:
         del stats['concept_frequency']  # Too large
         
         return stats
+    
+    # =========================================================================
+    # 🆕 MISSION 1: CRA DIAGNOSTIC STATS - Agent Swarm Learning Metrics
+    # Exposes all language learning metrics for CRA and AutoTune integration
+    # =========================================================================
+    
+    def get_agent_swarm_stats(self) -> Dict[str, Any]:
+        """
+        Get comprehensive agent swarm statistics for CRA diagnostics.
+        
+        This method exposes all language learning metrics that the CRA
+        needs to display and that AutoTune needs for closed-loop optimization.
+        
+        Returns:
+            Dictionary with all swarm learning metrics including:
+            - semantic_reward_stats: Breakdown of reward components
+            - knowledge_transfer_stats: Broadcast/recipient counts
+            - creative_vocab_stats: Vocabulary expansion metrics
+            - population_stats: Overall organism language health
+        """
+        # Calculate averages from totals
+        count = max(1, self.semantic_reward_totals.get('calculation_count', 1))
+        
+        semantic_stats = {
+            'total_calculations': self.semantic_reward_totals.get('calculation_count', 0),
+            'avg_word_overlap': self.semantic_reward_totals.get('word_overlap', 0) / count,
+            'avg_coherence': self.semantic_reward_totals.get('coherence', 0) / count,
+            'avg_length_score': self.semantic_reward_totals.get('length_score', 0) / count,
+            'avg_confidence': self.semantic_reward_totals.get('confidence', 0) / count,
+            'avg_vp_adjustment': self.semantic_reward_totals.get('vp_adjustment', 0) / count,
+            'avg_total_reward': self.semantic_reward_totals.get('total_reward', 0) / count,
+            'total_word_overlap': self.semantic_reward_totals.get('word_overlap', 0),
+            'total_coherence': self.semantic_reward_totals.get('coherence', 0),
+            'total_length_score': self.semantic_reward_totals.get('length_score', 0),
+            'total_reward_sum': self.semantic_reward_totals.get('total_reward', 0)
+        }
+        
+        # Calculate transfer efficiency
+        broadcasts = max(1, self.knowledge_transfer_stats.get('total_broadcasts', 1))
+        transfer_stats = {
+            'total_broadcasts': self.knowledge_transfer_stats.get('total_broadcasts', 0),
+            'total_recipients': self.knowledge_transfer_stats.get('total_recipients', 0),
+            'total_reward_transferred': self.knowledge_transfer_stats.get('total_reward_transferred', 0),
+            'successful_transfers': self.knowledge_transfer_stats.get('successful_transfers', 0),
+            'avg_recipients_per_broadcast': self.knowledge_transfer_stats.get('total_recipients', 0) / broadcasts,
+            'transfer_efficiency': self.knowledge_transfer_stats.get('successful_transfers', 0) / broadcasts
+        }
+        
+        # Creative vocabulary stats
+        vocab_stats = {
+            'total_expansions': self.creative_vocab_stats.get('expansions', 0),
+            'phrases_generated': self.creative_vocab_stats.get('phrases_generated', 0),
+            'compounds_created': self.creative_vocab_stats.get('compounds_created', 0),
+            'neologisms_minted': self.creative_vocab_stats.get('neologisms', 0)
+        }
+        
+        # Population-level stats
+        organisms_with_language = sum(
+            1 for org in self.organisms.values()
+            if hasattr(org, 'atomic_language') and org.atomic_language is not None
+        )
+        
+        population_stats = {
+            'total_organisms': len(self.organisms),
+            'organisms_with_language': organisms_with_language,
+            'language_adoption_rate': organisms_with_language / max(1, len(self.organisms)),
+            'total_chat_experiences': self.total_chat_experiences,
+            'chat_training_triggered': self.chat_training_triggered
+        }
+        
+        return {
+            'semantic_reward_stats': semantic_stats,
+            'knowledge_transfer_stats': transfer_stats,
+            'creative_vocab_stats': vocab_stats,
+            'population_stats': population_stats,
+            'timestamp': time.time(),
+            'version': '1.0.0'  # For API versioning
+        }
+    
+    def reset_swarm_stats(self) -> None:
+        """Reset all tracking statistics. Useful for benchmarking."""
+        self.semantic_reward_totals = {
+            'word_overlap': 0.0,
+            'coherence': 0.0,
+            'length_score': 0.0,
+            'confidence': 0.0,
+            'vp_adjustment': 0.0,
+            'total_reward': 0.0,
+            'calculation_count': 0
+        }
+        self.knowledge_transfer_stats = {
+            'total_broadcasts': 0,
+            'total_recipients': 0,
+            'total_reward_transferred': 0.0,
+            'successful_transfers': 0
+        }
+        self.creative_vocab_stats = {
+            'expansions': 0,
+            'phrases_generated': 0,
+            'compounds_created': 0,
+            'neologisms': 0
+        }
     
     def explain_organism_dialect(self, organism_id: str) -> Dict[str, Any]:
         """

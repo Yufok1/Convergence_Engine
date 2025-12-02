@@ -779,6 +779,23 @@ class MLAnalyzer:
 
         # Optional event emitter for causation graph visualization
         self.event_emitter = None  # Set by main.py or unified_entry.py
+        
+        # ═══════════════════════════════════════════════════════════════════════════
+        # MISSION 3: AutoTune Integration Buffer
+        # Track ML analysis metrics for AtomicConfigSystem feedback loop
+        # ═══════════════════════════════════════════════════════════════════════════
+        self.autotune_metrics_buffer = {
+            'cluster_count_history': [],
+            'anomaly_ratio_history': [],
+            'silhouette_score_history': [],
+            'avg_cluster_count': 0.0,
+            'avg_anomaly_ratio': 0.0,
+            'avg_silhouette_score': 0.0,
+            'cluster_stability': 0.0,  # How often cluster count changes
+            'analysis_count': 0
+        }
+        self.autotune_window = 20  # Window size for moving averages
+        self.atomic_config_system = None  # Set by main.py when available
     
     def update_config(self, config: Dict[str, Any]):
         """Update configuration dynamically (for hot reload)"""
@@ -900,7 +917,126 @@ class MLAnalyzer:
         self._last_analysis = results
         self._last_analysis_time = current_time
         
+        # ═══════════════════════════════════════════════════════════════════════════
+        # MISSION 3: Update AutoTune metrics and emit to AtomicConfigSystem
+        # ═══════════════════════════════════════════════════════════════════════════
+        self._update_autotune_metrics(results)
+        
         return results
+    
+    # ═══════════════════════════════════════════════════════════════════════════
+    # MISSION 3: AutoTune Integration Methods
+    # ═══════════════════════════════════════════════════════════════════════════
+    
+    def _update_autotune_metrics(self, results: Dict[str, Any]):
+        """
+        Update AutoTune metrics buffer and emit to AtomicConfigSystem.
+        
+        This enables closed-loop optimization where scikit-learn analysis outcomes
+        inform config parameter adjustments.
+        
+        Args:
+            results: Analysis results from analyze() method
+        """
+        # Extract metrics from results
+        clustering = results.get('clustering', {})
+        anomalies = results.get('anomalies', {})
+        
+        # Get cluster count
+        cluster_count = 0
+        if clustering:
+            cluster_count = clustering.get('n_clusters', 0)
+            self.autotune_metrics_buffer['cluster_count_history'].append(cluster_count)
+            if len(self.autotune_metrics_buffer['cluster_count_history']) > self.autotune_window:
+                self.autotune_metrics_buffer['cluster_count_history'] = \
+                    self.autotune_metrics_buffer['cluster_count_history'][-self.autotune_window:]
+        
+        # Get anomaly ratio
+        anomaly_ratio = 0.0
+        if anomalies:
+            n_anomalies = anomalies.get('n_anomalies', 0)
+            n_samples = anomalies.get('n_samples', 1)
+            anomaly_ratio = n_anomalies / max(1, n_samples)
+            self.autotune_metrics_buffer['anomaly_ratio_history'].append(anomaly_ratio)
+            if len(self.autotune_metrics_buffer['anomaly_ratio_history']) > self.autotune_window:
+                self.autotune_metrics_buffer['anomaly_ratio_history'] = \
+                    self.autotune_metrics_buffer['anomaly_ratio_history'][-self.autotune_window:]
+        
+        # Get silhouette score if available
+        silhouette_score = 0.0
+        if clustering and 'silhouette_score' in clustering:
+            silhouette_score = clustering.get('silhouette_score', 0.0)
+            self.autotune_metrics_buffer['silhouette_score_history'].append(silhouette_score)
+            if len(self.autotune_metrics_buffer['silhouette_score_history']) > self.autotune_window:
+                self.autotune_metrics_buffer['silhouette_score_history'] = \
+                    self.autotune_metrics_buffer['silhouette_score_history'][-self.autotune_window:]
+        
+        # Calculate averages
+        if self.autotune_metrics_buffer['cluster_count_history']:
+            self.autotune_metrics_buffer['avg_cluster_count'] = np.mean(self.autotune_metrics_buffer['cluster_count_history'])
+        if self.autotune_metrics_buffer['anomaly_ratio_history']:
+            self.autotune_metrics_buffer['avg_anomaly_ratio'] = np.mean(self.autotune_metrics_buffer['anomaly_ratio_history'])
+        if self.autotune_metrics_buffer['silhouette_score_history']:
+            self.autotune_metrics_buffer['avg_silhouette_score'] = np.mean(self.autotune_metrics_buffer['silhouette_score_history'])
+        
+        # Calculate cluster stability (how often count changes)
+        cluster_history = self.autotune_metrics_buffer['cluster_count_history']
+        if len(cluster_history) >= 2:
+            changes = sum(1 for i in range(1, len(cluster_history)) if cluster_history[i] != cluster_history[i-1])
+            self.autotune_metrics_buffer['cluster_stability'] = 1.0 - (changes / (len(cluster_history) - 1))
+        
+        self.autotune_metrics_buffer['analysis_count'] += 1
+        
+        # Emit to AtomicConfigSystem if available
+        if self.atomic_config_system is not None:
+            try:
+                ml_metrics = {
+                    'cluster_count': cluster_count,
+                    'anomaly_ratio': anomaly_ratio,
+                    'silhouette_score': silhouette_score,
+                    'cluster_stability': self.autotune_metrics_buffer['cluster_stability'],
+                    'avg_cluster_count': self.autotune_metrics_buffer['avg_cluster_count']
+                }
+                # Call tune() method to inform atomic configs
+                actions = self.atomic_config_system.tune(ml_metrics, self.autotune_metrics_buffer['analysis_count'])
+                if actions:
+                    logger.debug(f"[ML→AUTOTUNE] Applied {len(actions)} config adjustments based on ML analysis")
+            except Exception as e:
+                logger.debug(f"ML AutoTune integration error: {e}")
+        
+        # Emit event for CRA visualization
+        if self.event_emitter:
+            try:
+                from causation_explorer import Event
+                event = Event(
+                    timestamp=time.time(),
+                    component='ml_analysis',
+                    event_type='ml_autotune_metrics',
+                    data={
+                        'cluster_count': cluster_count,
+                        'anomaly_ratio': anomaly_ratio,
+                        'silhouette_score': silhouette_score,
+                        'cluster_stability': self.autotune_metrics_buffer['cluster_stability'],
+                        'analysis_count': self.autotune_metrics_buffer['analysis_count']
+                    }
+                )
+                self.event_emitter(event)
+            except Exception as e:
+                logger.debug(f"ML AutoTune event emission failed: {e}")
+    
+    def get_autotune_metrics(self) -> Dict[str, Any]:
+        """
+        Get current AutoTune metrics buffer for CRA diagnostics.
+        
+        Returns:
+            Dictionary of ML analysis metrics for AutoTune integration
+        """
+        return {
+            **self.autotune_metrics_buffer,
+            'buffer_size': len(self.autotune_metrics_buffer['cluster_count_history']),
+            'window_size': self.autotune_window,
+            'atomic_config_connected': self.atomic_config_system is not None
+        }
     
     def _analyze_semantic_patterns(self, organisms: Dict[str, Any], context_memory: Any) -> Dict[str, Any]:
         """

@@ -11017,6 +11017,228 @@ def cra_get_config_tuner():
             'config_tuner': {}
         }), 500
 
+
+# ============================================================================
+# MISSION 1: AGENT SWARM LEARNING DIAGNOSTICS
+# Exposes butterfly_chat language learning metrics for CRA and AutoTune
+# ============================================================================
+
+@app.route('/api/cra/diagnostics/agent_swarm', methods=['GET'])
+def cra_get_agent_swarm_stats():
+    """Get Agent Swarm language learning statistics
+    
+    Returns comprehensive metrics about agent language learning:
+    - semantic_reward_stats: Breakdown of semantic reward components (overlap, coherence, length)
+    - knowledge_transfer_stats: Broadcast counts, recipients, reward transferred
+    - creative_vocab_stats: Vocabulary expansion, phrases generated, compounds created
+    - population_stats: Organism language adoption, chat experiences, training triggers
+    
+    These metrics enable:
+    1. CRA to display real-time language learning health
+    2. AutoTune to optimize language-related parameters based on learning outcomes
+    """
+    try:
+        result = {
+            'available': False,
+            'semantic_reward_stats': {},
+            'knowledge_transfer_stats': {},
+            'creative_vocab_stats': {},
+            'population_stats': {},
+            'source': 'none'
+        }
+        
+        # Try to get from shared state first
+        if shared_state_path.exists():
+            try:
+                with open(shared_state_path, 'r') as f:
+                    state = json.load(f)
+                    reality_sim = state.get('data', {}).get('reality_sim', {})
+                    
+                    # Check for butterfly_chat agent swarm data
+                    butterfly_data = reality_sim.get('butterfly_chat', {})
+                    swarm_stats = butterfly_data.get('swarm_stats', {})
+                    
+                    if swarm_stats:
+                        result.update({
+                            'available': True,
+                            'semantic_reward_stats': swarm_stats.get('semantic_reward_stats', {}),
+                            'knowledge_transfer_stats': swarm_stats.get('knowledge_transfer_stats', {}),
+                            'creative_vocab_stats': swarm_stats.get('creative_vocab_stats', {}),
+                            'population_stats': swarm_stats.get('population_stats', {}),
+                            'timestamp': swarm_stats.get('timestamp', 0),
+                            'version': swarm_stats.get('version', '1.0.0'),
+                            'source': 'shared_state'
+                        })
+            except Exception as e:
+                logger.debug(f"Could not read butterfly_chat from shared state: {e}")
+        
+        # Calculate derived metrics for AutoTune integration
+        semantic = result.get('semantic_reward_stats', {})
+        transfer = result.get('knowledge_transfer_stats', {})
+        population = result.get('population_stats', {})
+        
+        # Language learning health score (0-1)
+        health_factors = []
+        if semantic.get('avg_total_reward', 0) > 0:
+            health_factors.append(min(1.0, semantic.get('avg_total_reward', 0)))
+        if transfer.get('transfer_efficiency', 0) > 0:
+            health_factors.append(min(1.0, transfer.get('transfer_efficiency', 0)))
+        if population.get('language_adoption_rate', 0) > 0:
+            health_factors.append(min(1.0, population.get('language_adoption_rate', 0)))
+        
+        learning_health = sum(health_factors) / max(1, len(health_factors)) if health_factors else 0.0
+        
+        result['derived_metrics'] = {
+            'learning_health_score': learning_health,
+            'total_interactions': population.get('total_chat_experiences', 0),
+            'training_ratio': population.get('chat_training_triggered', 0) / max(1, population.get('total_chat_experiences', 1)),
+            'recommendation': _get_language_recommendation(result)
+        }
+        
+        return jsonify({
+            'success': True,
+            'agent_swarm': result,
+            'message': 'Agent Swarm language learning statistics - semantic rewards, knowledge transfer, vocabulary expansion'
+        })
+    except Exception as e:
+        logger.error(f"Error getting agent swarm stats: {e}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'agent_swarm': {}
+        }), 500
+
+
+def _get_language_recommendation(stats: dict) -> str:
+    """Generate a recommendation based on language learning stats."""
+    semantic = stats.get('semantic_reward_stats', {})
+    transfer = stats.get('knowledge_transfer_stats', {})
+    population = stats.get('population_stats', {})
+    
+    issues = []
+    
+    # Check semantic reward health
+    if semantic.get('avg_total_reward', 0) < 0.3:
+        issues.append('Low semantic reward - consider reducing coherence threshold')
+    if semantic.get('avg_word_overlap', 0) < 0.1:
+        issues.append('Poor word overlap - vocabulary may need expansion')
+    
+    # Check knowledge transfer health
+    if transfer.get('total_broadcasts', 0) > 0 and transfer.get('transfer_efficiency', 0) < 0.3:
+        issues.append('Low transfer efficiency - network connectivity may be sparse')
+    
+    # Check population health
+    if population.get('language_adoption_rate', 0) < 0.5:
+        issues.append('Low language adoption - bootstrap learning may need tuning')
+    
+    if not issues:
+        return 'Language learning metrics are healthy'
+    return '; '.join(issues)
+
+
+@app.route('/api/cra/diagnostics/neural_autotune', methods=['GET'])
+def cra_get_neural_autotune():
+    """Get Neural → AutoTune integration metrics
+    
+    Returns metrics about neural training feedback to the config system:
+    - avg_loss: Moving average of training loss
+    - improvement_rate: Positive = loss decreasing (learning)
+    - loss_variance: Stability of training
+    - organisms_trained_total: Total organisms that have been trained
+    - training_steps_completed: Number of completed training steps
+    - atomic_config_connected: Whether AutoTune integration is active
+    """
+    try:
+        result = {
+            'available': False,
+            'avg_loss': 0.0,
+            'improvement_rate': 0.0,
+            'loss_variance': 0.0,
+            'organisms_trained_total': 0,
+            'training_steps_completed': 0,
+            'language_loss_total': 0.0,
+            'rl_loss_total': 0.0,
+            'atomic_config_connected': False,
+            'source': 'none'
+        }
+        
+        # Try to get from shared state
+        if shared_state_path.exists():
+            try:
+                with open(shared_state_path, 'r') as f:
+                    state = json.load(f)
+                    reality_sim = state.get('data', {}).get('reality_sim', {})
+                    
+                    # Check for neural trainer autotune metrics
+                    neural_data = reality_sim.get('neural_trainer', {})
+                    autotune_metrics = neural_data.get('autotune_metrics', {})
+                    
+                    if autotune_metrics:
+                        result.update({
+                            'available': True,
+                            'avg_loss': autotune_metrics.get('avg_loss', 0.0),
+                            'improvement_rate': autotune_metrics.get('improvement_rate', 0.0),
+                            'loss_variance': autotune_metrics.get('loss_variance', 0.0),
+                            'min_loss': autotune_metrics.get('min_loss', float('inf')),
+                            'max_loss': autotune_metrics.get('max_loss', 0.0),
+                            'organisms_trained_total': autotune_metrics.get('organisms_trained_total', 0),
+                            'training_steps_completed': autotune_metrics.get('training_steps_completed', 0),
+                            'language_loss_total': autotune_metrics.get('language_loss_total', 0.0),
+                            'rl_loss_total': autotune_metrics.get('rl_loss_total', 0.0),
+                            'avg_training_time_ms': autotune_metrics.get('avg_training_time_ms', 0.0),
+                            'atomic_config_connected': autotune_metrics.get('atomic_config_connected', False),
+                            'buffer_size': autotune_metrics.get('buffer_size', 0),
+                            'window_size': autotune_metrics.get('window_size', 50),
+                            'source': 'shared_state'
+                        })
+            except Exception as e:
+                logger.debug(f"Could not read neural autotune from shared state: {e}")
+        
+        # Calculate health indicators
+        result['health'] = {
+            'is_learning': result.get('improvement_rate', 0) > 0,
+            'is_stable': result.get('loss_variance', 1.0) < 0.1,
+            'has_trained': result.get('training_steps_completed', 0) > 0,
+            'recommendation': _get_neural_recommendation(result)
+        }
+        
+        return jsonify({
+            'success': True,
+            'neural_autotune': result,
+            'message': 'Neural → AutoTune integration metrics - training feedback to config system'
+        })
+    except Exception as e:
+        logger.error(f"Error getting neural autotune metrics: {e}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'neural_autotune': {}
+        }), 500
+
+
+def _get_neural_recommendation(metrics: dict) -> str:
+    """Generate recommendation based on neural training metrics."""
+    issues = []
+    
+    improvement_rate = metrics.get('improvement_rate', 0)
+    loss_variance = metrics.get('loss_variance', 0)
+    training_steps = metrics.get('training_steps_completed', 0)
+    
+    if training_steps < 10:
+        return 'Not enough training steps for analysis'
+    
+    if improvement_rate <= 0:
+        issues.append('Training is stagnating - consider adjusting learning rate')
+    if loss_variance > 0.5:
+        issues.append('High loss variance - training may be unstable')
+    if metrics.get('avg_loss', 0) > 1.0:
+        issues.append('High average loss - model may need architecture changes')
+    
+    if not issues:
+        return 'Neural training metrics are healthy - model is learning'
+    return '; '.join(issues)
+
+
 # ============================================================================
 # SCIKIT-LEARN ML ANALYSIS ENDPOINTS
 # ============================================================================
@@ -11130,6 +11352,103 @@ def ml_get_analysis():
             'success': False,
             'error': str(e)
         }), 500
+
+
+@app.route('/api/cra/diagnostics/ml_autotune', methods=['GET'])
+def cra_get_ml_autotune():
+    """Get Scikit-learn → AutoTune integration metrics
+    
+    Returns metrics about ML analysis feedback to the config system:
+    - avg_cluster_count: Moving average of cluster count
+    - avg_anomaly_ratio: Moving average of anomaly proportion
+    - avg_silhouette_score: Moving average of clustering quality
+    - cluster_stability: How consistent cluster count is over time (0-1)
+    - analysis_count: Total ML analysis runs
+    - atomic_config_connected: Whether AutoTune integration is active
+    """
+    try:
+        result = {
+            'available': False,
+            'avg_cluster_count': 0.0,
+            'avg_anomaly_ratio': 0.0,
+            'avg_silhouette_score': 0.0,
+            'cluster_stability': 0.0,
+            'analysis_count': 0,
+            'atomic_config_connected': False,
+            'source': 'none'
+        }
+        
+        # Try to get from shared state
+        if shared_state_path.exists():
+            try:
+                with open(shared_state_path, 'r') as f:
+                    state = json.load(f)
+                    reality_sim = state.get('data', {}).get('reality_sim', {})
+                    
+                    # Check for ML analyzer autotune metrics
+                    ml_data = reality_sim.get('ml_analyzer', {})
+                    autotune_metrics = ml_data.get('autotune_metrics', {})
+                    
+                    if autotune_metrics:
+                        result.update({
+                            'available': True,
+                            'avg_cluster_count': autotune_metrics.get('avg_cluster_count', 0.0),
+                            'avg_anomaly_ratio': autotune_metrics.get('avg_anomaly_ratio', 0.0),
+                            'avg_silhouette_score': autotune_metrics.get('avg_silhouette_score', 0.0),
+                            'cluster_stability': autotune_metrics.get('cluster_stability', 0.0),
+                            'analysis_count': autotune_metrics.get('analysis_count', 0),
+                            'buffer_size': autotune_metrics.get('buffer_size', 0),
+                            'window_size': autotune_metrics.get('window_size', 20),
+                            'atomic_config_connected': autotune_metrics.get('atomic_config_connected', False),
+                            'source': 'shared_state'
+                        })
+            except Exception as e:
+                logger.debug(f"Could not read ML autotune from shared state: {e}")
+        
+        # Calculate health indicators
+        result['health'] = {
+            'clusters_stable': result.get('cluster_stability', 0) > 0.7,
+            'anomaly_ratio_healthy': result.get('avg_anomaly_ratio', 1.0) < 0.3,
+            'clustering_quality': 'good' if result.get('avg_silhouette_score', 0) > 0.5 else ('fair' if result.get('avg_silhouette_score', 0) > 0.25 else 'poor'),
+            'recommendation': _get_ml_recommendation(result)
+        }
+        
+        return jsonify({
+            'success': True,
+            'ml_autotune': result,
+            'message': 'Scikit-learn → AutoTune integration metrics - ML analysis feedback to config system'
+        })
+    except Exception as e:
+        logger.error(f"Error getting ML autotune metrics: {e}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'ml_autotune': {}
+        }), 500
+
+
+def _get_ml_recommendation(metrics: dict) -> str:
+    """Generate recommendation based on ML analysis metrics."""
+    issues = []
+    
+    cluster_stability = metrics.get('cluster_stability', 0)
+    anomaly_ratio = metrics.get('avg_anomaly_ratio', 0)
+    silhouette = metrics.get('avg_silhouette_score', 0)
+    analysis_count = metrics.get('analysis_count', 0)
+    
+    if analysis_count < 5:
+        return 'Not enough analyses for recommendations'
+    
+    if cluster_stability < 0.5:
+        issues.append('Unstable cluster count - population may be highly dynamic')
+    if anomaly_ratio > 0.3:
+        issues.append('High anomaly ratio - many organisms behaving unusually')
+    if silhouette < 0.25:
+        issues.append('Poor clustering quality - phenotypes may be overlapping')
+    
+    if not issues:
+        return 'ML analysis metrics are healthy - population structure is stable'
+    return '; '.join(issues)
 
 
 @app.route('/api/ml/clusters', methods=['GET'])

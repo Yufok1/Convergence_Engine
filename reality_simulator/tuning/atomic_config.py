@@ -592,6 +592,40 @@ class AtomicConfigSystem:
         ))
         
         # ═══════════════════════════════════════════════════════════════
+        # MISSION 4: Additional Language Learning Atoms
+        # Tunable parameters based on swarm stats from butterfly_chat
+        # ═══════════════════════════════════════════════════════════════
+        self._add_atom(ConfigAtom(
+            param_name='semantic_reward_threshold',
+            value=0.3,
+            bounds=(0.1, 0.7),
+            domain=ConfigDomain.LANGUAGE,
+            config_type=ConfigType.FLOAT,
+            sensitivity=0.7,
+            description='Minimum semantic reward to trigger learning'
+        ))
+        
+        self._add_atom(ConfigAtom(
+            param_name='knowledge_transfer_radius',
+            value=3,
+            bounds=(1, 10),
+            domain=ConfigDomain.LANGUAGE,
+            config_type=ConfigType.INT,
+            sensitivity=0.5,
+            description='Network distance for knowledge broadcast'
+        ))
+        
+        self._add_atom(ConfigAtom(
+            param_name='bootstrap_learning_rate',
+            value=0.1,
+            bounds=(0.01, 0.5),
+            domain=ConfigDomain.LANGUAGE,
+            config_type=ConfigType.FLOAT,
+            sensitivity=0.6,
+            description='Learning rate for template-based bootstrapping'
+        ))
+        
+        # ═══════════════════════════════════════════════════════════════
         # ILLUMINATION DOMAIN
         # ═══════════════════════════════════════════════════════════════
         self._add_atom(ConfigAtom(
@@ -1265,8 +1299,29 @@ class AtomicConfigSystem:
             return 0.2 < vp < 0.8  # VP in healthy range
         
         elif domain == ConfigDomain.LANGUAGE:
+            # ═══════════════════════════════════════════════════════════════
+            # MISSION 4: Enhanced Language Domain Evaluation
+            # Use swarm learning metrics for nuanced success determination
+            # ═══════════════════════════════════════════════════════════════
             vocab_size = metrics.get('vocabulary_size', 0)
-            return vocab_size > 10 or metrics.get('language_learning', False)
+            
+            # Check language learning metrics from butterfly_chat
+            semantic_reward = metrics.get('avg_semantic_reward', 0.0)
+            knowledge_transfer_rate = metrics.get('knowledge_transfer_rate', 0.0)
+            language_adoption = metrics.get('language_adoption_rate', 0.0)
+            
+            # Multiple success criteria
+            vocab_success = vocab_size > 10
+            semantic_success = semantic_reward > 0.3
+            transfer_success = knowledge_transfer_rate > 0.0
+            adoption_success = language_adoption > 0.5
+            
+            # Success if vocab is good OR semantic learning is happening
+            # OR knowledge is being transferred effectively
+            return (vocab_success or 
+                    semantic_success or 
+                    (transfer_success and adoption_success) or
+                    metrics.get('language_learning', False))
         
         elif domain == ConfigDomain.ILLUMINATION:
             coverage = metrics.get('archive_coverage', 0)

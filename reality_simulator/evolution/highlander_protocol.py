@@ -764,26 +764,156 @@ class HighlanderProtocol:
     
     def _absorb_loser(self, winner_id: str, winner: Any,
                      loser_id: str, loser: Any):
-        """Winner absorbs loser's best traits."""
+        """
+        Winner absorbs loser's best traits.
+        
+        MISSION 5: Enhanced with linguistic trait inheritance.
+        Battle winners now inherit valuable linguistic properties from losers,
+        not just concepts but also communication patterns and vocabulary.
+        """
         if not winner or not loser:
             return
         
-        # Absorb concepts
+        concepts_absorbed = 0
+        linguistic_traits_inherited = 0
+        
+        # ═══════════════════════════════════════════════════════════════
+        # MISSION 5: Absorb atomic language concepts
+        # ═══════════════════════════════════════════════════════════════
         if hasattr(winner, 'atomic_language') and hasattr(loser, 'atomic_language'):
             concepts = self._get_transferable_concepts(loser_id, loser)
             for concept in concepts:
-                if hasattr(winner.atomic_language, 'learn_concept_from'):
-                    loser.atomic_language.teach_concept(concept, winner.atomic_language)
+                if hasattr(loser.atomic_language, 'teach_concept'):
+                    try:
+                        loser.atomic_language.teach_concept(concept, winner.atomic_language)
+                        concepts_absorbed += 1
+                    except Exception as e:
+                        self.logger.debug(f"Concept transfer failed: {e}")
+        
+        # ═══════════════════════════════════════════════════════════════
+        # MISSION 5: Inherit linguistic traits (NEW)
+        # Transfer vocabulary, communication patterns, and language stats
+        # ═══════════════════════════════════════════════════════════════
+        linguistic_inheritance = self._inherit_linguistic_traits(winner, loser)
+        linguistic_traits_inherited = linguistic_inheritance.get('traits_inherited', 0)
         
         # Absorb configs
         if hasattr(winner, 'config_system') and hasattr(loser, 'config_system'):
-            winner.config_system.absorb_config(loser.config_system, absorption_rate=0.3)
+            try:
+                winner.config_system.absorb_config(loser.config_system, absorption_rate=0.3)
+            except Exception as e:
+                self.logger.debug(f"Config absorption failed: {e}")
         
         self._emit_event('absorption_complete', {
             'winner': winner_id,
             'loser': loser_id,
-            'concepts_absorbed': len(self._get_transferable_concepts(loser_id, loser))
+            'concepts_absorbed': concepts_absorbed,
+            'linguistic_traits_inherited': linguistic_traits_inherited,
+            'inheritance_details': linguistic_inheritance
         })
+    
+    def _inherit_linguistic_traits(self, winner: Any, loser: Any) -> Dict[str, Any]:
+        """
+        MISSION 5: Inherit linguistic traits from loser to winner.
+        
+        Transfers:
+        - Token sequences (vocabulary exposure)
+        - Communication success patterns
+        - Language model weights (if neural)
+        - Word associations
+        
+        Returns:
+            Dictionary of inheritance results
+        """
+        result = {
+            'traits_inherited': 0,
+            'tokens_transferred': 0,
+            'patterns_inherited': 0,
+            'neural_transfer': False
+        }
+        
+        # Transfer token sequences (vocabulary exposure)
+        if hasattr(loser, 'token_sequence') and hasattr(winner, 'token_sequence'):
+            loser_tokens = list(getattr(loser, 'token_sequence', []))
+            if loser_tokens:
+                # Add unique tokens from loser to winner's exposure
+                winner_tokens = set(getattr(winner, 'token_sequence', []))
+                new_tokens = [t for t in loser_tokens if t not in winner_tokens]
+                
+                # Limit transfer to prevent overwhelming
+                new_tokens = new_tokens[:50]  # Max 50 new tokens
+                
+                if new_tokens and hasattr(winner, 'token_sequence'):
+                    if isinstance(winner.token_sequence, list):
+                        winner.token_sequence.extend(new_tokens)
+                    elif hasattr(winner.token_sequence, 'extend'):
+                        winner.token_sequence.extend(new_tokens)
+                    
+                    result['tokens_transferred'] = len(new_tokens)
+                    result['traits_inherited'] += 1
+        
+        # Transfer word associations (if context memory available)
+        try:
+            winner_id = getattr(winner, 'species_id', str(id(winner)))
+            loser_id = getattr(loser, 'species_id', str(id(loser)))
+            
+            # Try to access symbiotic network's context memory
+            if hasattr(winner, 'symbiotic_network') and winner.symbiotic_network:
+                context_memory = getattr(winner.symbiotic_network, 'context_memory', None)
+                if context_memory and hasattr(context_memory, 'node_word_associations'):
+                    # Get loser's word associations
+                    loser_id_hash = hash(loser_id) if isinstance(loser_id, str) else loser_id
+                    loser_words = context_memory.node_word_associations.get(loser_id_hash, set())
+                    
+                    if loser_words:
+                        # Transfer word associations to winner
+                        winner_id_hash = hash(winner_id) if isinstance(winner_id, str) else winner_id
+                        if winner_id_hash not in context_memory.node_word_associations:
+                            context_memory.node_word_associations[winner_id_hash] = set()
+                        
+                        # Inherit loser's words
+                        inherited_words = loser_words.copy()
+                        context_memory.node_word_associations[winner_id_hash].update(inherited_words)
+                        
+                        result['patterns_inherited'] = len(inherited_words)
+                        result['traits_inherited'] += 1
+        except Exception as e:
+            self.logger.debug(f"Word association transfer failed: {e}")
+        
+        # Transfer neural language weights (if neural organisms)
+        if (hasattr(loser, 'brain') and hasattr(winner, 'brain') and
+            hasattr(loser.brain, 'use_language_head') and loser.brain.use_language_head and
+            hasattr(winner.brain, 'use_language_head') and winner.brain.use_language_head):
+            try:
+                # Soft inheritance: blend language head weights
+                import torch
+                
+                if (hasattr(loser.brain, 'language_head') and 
+                    hasattr(winner.brain, 'language_head')):
+                    
+                    # Get loser's language head weights
+                    loser_weights = loser.brain.language_head.state_dict()
+                    winner_weights = winner.brain.language_head.state_dict()
+                    
+                    # Blend with 20% of loser's knowledge
+                    blend_ratio = 0.2
+                    for key in loser_weights:
+                        if key in winner_weights:
+                            winner_weights[key] = (
+                                (1 - blend_ratio) * winner_weights[key] + 
+                                blend_ratio * loser_weights[key]
+                            )
+                    
+                    winner.brain.language_head.load_state_dict(winner_weights)
+                    result['neural_transfer'] = True
+                    result['traits_inherited'] += 1
+                    
+                    self.logger.info(f"🧠 Neural language inheritance: {loser_id} → {winner_id} (20% blend)")
+                    
+            except Exception as e:
+                self.logger.debug(f"Neural weight transfer failed: {e}")
+        
+        return result
     
     def _run_cooperation(self, organisms: Dict[str, Any],
                         get_fitness: Callable[[Any], float]) -> List[Dict[str, Any]]:

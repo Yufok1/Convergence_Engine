@@ -65,6 +65,138 @@ except ImportError:
         pass
 
 
+# ═══════════════════════════════════════════════════════════════════════════
+# MISSION 5: NetworkGraphAccessor - Null-Safe Graph Access
+# Provides thread-safe, null-checked access to network graph operations
+# ═══════════════════════════════════════════════════════════════════════════
+
+class NetworkGraphAccessor:
+    """
+    Null-safe accessor for network graph operations.
+    
+    Prevents AttributeError and KeyError when accessing potentially
+    None or inconsistent graph state during concurrent operations.
+    
+    Usage:
+        accessor = NetworkGraphAccessor(network_state)
+        neighbors = accessor.get_neighbors(organism_id)
+        if accessor.is_valid:
+            edge_data = accessor.get_edge_data(org_a, org_b)
+    """
+    
+    def __init__(self, network_state: Optional[Dict[str, Any]] = None):
+        """
+        Initialize accessor with network state.
+        
+        Args:
+            network_state: Dictionary containing 'network_graph' key
+        """
+        self._graph = None
+        self._is_valid = False
+        
+        if network_state is not None:
+            graph = network_state.get('network_graph')
+            if graph is not None and hasattr(graph, 'neighbors'):
+                self._graph = graph
+                self._is_valid = True
+    
+    @property
+    def is_valid(self) -> bool:
+        """Check if the graph accessor has a valid graph."""
+        return self._is_valid
+    
+    @property
+    def graph(self) -> Optional[nx.Graph]:
+        """Get the underlying graph (may be None)."""
+        return self._graph
+    
+    def has_node(self, node_id: str) -> bool:
+        """Safely check if node exists in graph."""
+        if not self._is_valid:
+            return False
+        try:
+            return node_id in self._graph
+        except Exception:
+            return False
+    
+    def get_neighbors(self, node_id: str, default: List[str] = None) -> List[str]:
+        """
+        Safely get neighbors of a node.
+        
+        Args:
+            node_id: ID of the node
+            default: Default value if not found (empty list if None)
+            
+        Returns:
+            List of neighbor IDs, or default if not found
+        """
+        if default is None:
+            default = []
+        
+        if not self._is_valid:
+            return default
+        
+        try:
+            if node_id not in self._graph:
+                return default
+            return list(self._graph.neighbors(node_id))
+        except Exception:
+            return default
+    
+    def get_edge_data(self, node_a: str, node_b: str, default: Dict = None) -> Dict[str, Any]:
+        """
+        Safely get edge data between two nodes.
+        
+        Args:
+            node_a: First node ID
+            node_b: Second node ID
+            default: Default value if not found (empty dict if None)
+            
+        Returns:
+            Edge data dictionary, or default if not found
+        """
+        if default is None:
+            default = {}
+        
+        if not self._is_valid:
+            return default
+        
+        try:
+            edge_data = self._graph.get_edge_data(node_a, node_b)
+            return edge_data if edge_data is not None else default
+        except Exception:
+            return default
+    
+    def get_node_count(self) -> int:
+        """Get number of nodes in graph."""
+        if not self._is_valid:
+            return 0
+        try:
+            return len(self._graph)
+        except Exception:
+            return 0
+    
+    def get_edge_count(self) -> int:
+        """Get number of edges in graph."""
+        if not self._is_valid:
+            return 0
+        try:
+            return self._graph.number_of_edges()
+        except Exception:
+            return 0
+    
+    def get_degree(self, node_id: str, default: int = 0) -> int:
+        """Get degree of a node."""
+        if not self._is_valid:
+            return default
+        try:
+            if node_id not in self._graph:
+                return default
+            return self._graph.degree(node_id)
+        except Exception:
+            return default
+
+
 class ConnectionType(Enum):
     """Types of symbiotic connections"""
     COOPERATIVE = "cooperative"      # Mutual benefit

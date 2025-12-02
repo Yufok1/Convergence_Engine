@@ -151,6 +151,26 @@ class NeuralTrainer:
         self.language_reward_total = 0.0  # Cumulative language rewards per training step
         self.language_reward_count = 0  # Number of language rewards given
         self._last_step_language_reward_total = 0.0  # Store last step's total for metrics
+        
+        # ═══════════════════════════════════════════════════════════════════════════
+        # MISSION 2: AutoTune Integration Buffer
+        # Track neural training metrics for AtomicConfigSystem feedback loop
+        # ═══════════════════════════════════════════════════════════════════════════
+        self.autotune_metrics_buffer = {
+            'avg_loss': 0.0,
+            'min_loss': float('inf'),
+            'max_loss': 0.0,
+            'loss_variance': 0.0,
+            'loss_history': [],  # Last N losses for trend analysis
+            'organisms_trained_total': 0,
+            'training_steps_completed': 0,
+            'improvement_rate': 0.0,
+            'language_loss_total': 0.0,
+            'rl_loss_total': 0.0,
+            'avg_training_time_ms': 0.0
+        }
+        self.autotune_loss_window = 50  # Window size for moving average
+        self.atomic_config_system = None  # Set by main.py when available
     
     def _calculate_language_reward(self, organism: NeuralOrganism) -> float:
         """
@@ -605,6 +625,11 @@ class NeuralTrainer:
             self.language_reward_total = 0.0
             self.language_reward_count = 0
             
+            # ═══════════════════════════════════════════════════════════════════════════
+            # MISSION 2: Update AutoTune metrics buffer and emit to AtomicConfigSystem
+            # ═══════════════════════════════════════════════════════════════════════════
+            self._update_autotune_metrics(avg_loss, num_trained, training_duration)
+            
             # Curriculum learning: adjust sequence length based on VP stability
             if self.curriculum_learning and self.language_model_enabled:
                 vp_value = network_state.get('vp_value', 0.0) if network_state else 0.0
@@ -621,6 +646,101 @@ class NeuralTrainer:
             'language_reward_count': self.language_reward_count,
             'curriculum_sequence_length': self.current_sequence_length,
             'language_reward_scaling': self.language_reward_scaling
+        }
+    
+    # ═══════════════════════════════════════════════════════════════════════════
+    # MISSION 2: AutoTune Integration Methods
+    # ═══════════════════════════════════════════════════════════════════════════
+    
+    def _update_autotune_metrics(self, avg_loss: float, num_trained: int, training_duration: float):
+        """
+        Update AutoTune metrics buffer and emit to AtomicConfigSystem.
+        
+        This enables closed-loop optimization where neural training outcomes
+        inform config parameter adjustments.
+        
+        Args:
+            avg_loss: Average loss from this training step
+            num_trained: Number of organisms trained
+            training_duration: Time taken for training step
+        """
+        # Update loss history (rolling window)
+        self.autotune_metrics_buffer['loss_history'].append(avg_loss)
+        if len(self.autotune_metrics_buffer['loss_history']) > self.autotune_loss_window:
+            self.autotune_metrics_buffer['loss_history'] = \
+                self.autotune_metrics_buffer['loss_history'][-self.autotune_loss_window:]
+        
+        # Calculate statistics from history
+        loss_history = self.autotune_metrics_buffer['loss_history']
+        if len(loss_history) >= 2:
+            self.autotune_metrics_buffer['avg_loss'] = np.mean(loss_history)
+            self.autotune_metrics_buffer['min_loss'] = min(loss_history)
+            self.autotune_metrics_buffer['max_loss'] = max(loss_history)
+            self.autotune_metrics_buffer['loss_variance'] = float(np.var(loss_history))
+            
+            # Calculate improvement rate (negative slope = improving)
+            recent = loss_history[-10:] if len(loss_history) >= 10 else loss_history
+            if len(recent) >= 2:
+                x = np.arange(len(recent))
+                slope = np.polyfit(x, recent, 1)[0]
+                self.autotune_metrics_buffer['improvement_rate'] = -slope  # Positive = improving
+        
+        # Update counters
+        self.autotune_metrics_buffer['organisms_trained_total'] += num_trained
+        self.autotune_metrics_buffer['training_steps_completed'] += 1
+        self.autotune_metrics_buffer['language_loss_total'] = self.total_language_loss
+        self.autotune_metrics_buffer['rl_loss_total'] = self.total_loss
+        self.autotune_metrics_buffer['avg_training_time_ms'] = np.mean(self.training_times) * 1000 if self.training_times else 0.0
+        
+        # Emit to AtomicConfigSystem if available
+        if self.atomic_config_system is not None:
+            try:
+                neural_metrics = {
+                    'neural_loss': self.autotune_metrics_buffer['avg_loss'],
+                    'neural_improving': self.autotune_metrics_buffer['improvement_rate'] > 0,
+                    'loss_variance': self.autotune_metrics_buffer['loss_variance'],
+                    'training_step': self.training_step_count,
+                    'organisms_trained': num_trained
+                }
+                # Call tune() method to inform atomic configs
+                actions = self.atomic_config_system.tune(neural_metrics, self.training_step_count)
+                if actions:
+                    logger.debug(f"[NEURAL→AUTOTUNE] Applied {len(actions)} config adjustments based on training metrics")
+            except Exception as e:
+                logger.debug(f"AutoTune integration error: {e}")
+        
+        # Emit event for CRA visualization
+        if self.event_emitter:
+            try:
+                from causation_explorer import Event
+                event = Event(
+                    timestamp=time.time(),
+                    component='neural',
+                    event_type='neural_autotune_metrics',
+                    data={
+                        'avg_loss': self.autotune_metrics_buffer['avg_loss'],
+                        'improvement_rate': self.autotune_metrics_buffer['improvement_rate'],
+                        'loss_variance': self.autotune_metrics_buffer['loss_variance'],
+                        'training_steps': self.autotune_metrics_buffer['training_steps_completed'],
+                        'organisms_trained_total': self.autotune_metrics_buffer['organisms_trained_total']
+                    }
+                )
+                self.event_emitter(event)
+            except Exception as e:
+                logger.debug(f"AutoTune event emission failed: {e}")
+    
+    def get_autotune_metrics(self) -> Dict[str, Any]:
+        """
+        Get current AutoTune metrics buffer for CRA diagnostics.
+        
+        Returns:
+            Dictionary of neural training metrics for AutoTune integration
+        """
+        return {
+            **self.autotune_metrics_buffer,
+            'buffer_size': len(self.autotune_metrics_buffer['loss_history']),
+            'window_size': self.autotune_loss_window,
+            'atomic_config_connected': self.atomic_config_system is not None
         }
     
     def get_training_stats(self) -> Dict[str, Any]:
