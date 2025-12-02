@@ -1082,9 +1082,26 @@ class NeuralOrganism(Organism):
         if self.brain is None:
             return []
         
-        # VP gating - don't generate during high uncertainty
-        if vp_value is not None and vp_value > 0.5:
-            return []  # System too unstable for language generation
+        # ---------------------------------------------------------------------------
+        # VP-AWARE SCALING: Adaptive generation length based on VP (replaces binary gate)
+        # Instead of blocking generation entirely at VP > 0.5, we scale response length
+        # This allows learning during unstable phases while maintaining caution
+        # ---------------------------------------------------------------------------
+        vp_length_multiplier = 1.0
+        if vp_value is not None:
+            if vp_value > 0.85:
+                # VP4/Critical: Very short, cautious responses (but still generate!)
+                vp_length_multiplier = 0.2
+            elif vp_value > 0.7:
+                # VP3/High: Short responses
+                vp_length_multiplier = 0.4
+            elif vp_value > 0.5:
+                # VP2/Moderate: Reduced length
+                vp_length_multiplier = 0.6
+            elif vp_value > 0.3:
+                # VP1/Low: Slightly reduced
+                vp_length_multiplier = 0.8
+            # VP0/Stable: Full length (multiplier = 1.0)
         
         import torch
         

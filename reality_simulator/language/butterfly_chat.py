@@ -627,26 +627,16 @@ class ButterflyChatRouter:
             return
         
         try:
-            # Calculate reward based on response quality
-            # Positive reward for:
-            # - Non-empty responses
-            # - Higher confidence
-            # - Responses that match user intent (simple heuristic: length > 0)
-            reward = 0.0
-            
-            if organism_response and len(organism_response.strip()) > 0:
-                # Base reward for generating a response
-                reward += 0.5
-                
-                # Bonus for confidence
-                reward += confidence * 0.3
-                
-                # Bonus for response length (encourages more complete responses)
-                response_length = len(organism_response.split())
-                reward += min(response_length / 10.0, 0.2)  # Max 0.2 for length
-            else:
-                # Small negative reward for empty responses
-                reward -= 0.1
+            # Calculate reward based on response quality with SEMANTIC AWARENESS
+            # This replaces simple length-based reward with meaning-aware scoring
+            reward = self._calculate_semantic_reward(
+                user_message=user_message,
+                user_tokens=user_tokens,
+                organism_response=organism_response,
+                organism_tokens=organism_tokens,
+                confidence=confidence,
+                network_state=network_state
+            )
             
             # Get organism state features for experience storage
             if hasattr(organism, 'get_state_features'):
@@ -677,7 +667,8 @@ class ButterflyChatRouter:
             if network_state:
                 vp_val = network_state.get('vp_value')
             
-            # Create experience with language model extensions
+            # Create experience with EXPLICIT input/target separation for proper seq2seq learning
+            # This fixes the supervised learning gap where concatenated sequences caused echoing
             from reality_simulator.neural.experience import Experience
             experience = Experience(
                 state=prev_state,
@@ -685,22 +676,27 @@ class ButterflyChatRouter:
                 reward=reward,
                 next_state=state,
                 done=False,
-                token_sequence=full_token_sequence,
+                input_tokens=user_tokens,       # User input (context)
+                target_tokens=organism_tokens,  # Desired response (target)
                 vp_value=vp_val
             )
             
-            # Add to experience buffer with token sequence for language training
+            # Add to experience buffer with EXPLICIT input/target separation
+            # This enables proper "given input X, generate response Y" learning
             organism.experience_buffer.add(
                 state=prev_state,
                 action=0,
                 reward=reward,
                 next_state=state,
                 done=False,
-                token_sequence=full_token_sequence,
+                input_tokens=user_tokens,       # User input tokens
+                target_tokens=organism_tokens,  # Organism response tokens
                 vp_value=vp_val
             )
             
             # Also store token sequence in organism's token_sequence deque if available
+            # Use both for backward compatibility with existing training code
+            full_token_sequence = user_tokens + organism_tokens
             if hasattr(organism, 'token_sequence'):
                 for token in full_token_sequence:
                     organism.token_sequence.append(token)
@@ -712,7 +708,8 @@ class ButterflyChatRouter:
                 "organism_id": getattr(organism, 'species_id', 'unknown'),
                 "reward": reward,
                 "response_length": len(organism_response),
-                "token_sequence_length": len(full_token_sequence),
+                "input_tokens_length": len(user_tokens),
+                "target_tokens_length": len(organism_tokens),
                 "experience_buffer_size": len(organism.experience_buffer) if hasattr(organism.experience_buffer, '__len__') else 'unknown'
             })
             
@@ -735,6 +732,123 @@ class ButterflyChatRouter:
                 "organism_id": getattr(organism, 'species_id', 'unknown')
             })
             logger.warning(f"Failed to store chat experience for organism: {e}")
+
+    def _calculate_semantic_reward(self,
+                                     user_message: str,
+                                     user_tokens: List[int],
+                                     organism_response: str,
+                                     organism_tokens: List[int],
+                                     confidence: float,
+                                     network_state: Optional[Dict[str, Any]] = None) -> float:
+        """
+        Calculate reward with SEMANTIC AWARENESS based on Grok-1's reward shaping design.
+        
+        This replaces the naive length-based reward with meaning-aware scoring that
+        teaches organisms semantic coherence rather than just rewarding any output.
+        
+        Components:
+        1. Word overlap: Relevance to user message (0.0-0.25)
+        2. Coherence: Structural quality indicators (0.0-0.25)
+        3. Length appropriateness: Neither too short nor too long (0.0-0.2)
+        4. Confidence scaling: Model confidence adjustment (0.0-0.2)
+        5. VP awareness: Network vitality influence (±0.1)
+        """
+        reward = 0.0
+        
+        # Handle empty response case
+        if not organism_response or len(organism_response.strip()) == 0:
+            return -0.1  # Small penalty for empty responses
+        
+        # Normalize text for comparison
+        user_words = set(user_message.lower().split())
+        response_words = organism_response.lower().split()
+        response_words_set = set(response_words)
+        
+        # 1. WORD OVERLAP SCORE (0.0 - 0.25)
+        # Measures semantic relevance to user message
+        # Filter out very common words for meaningful overlap
+        stopwords = {'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been',
+                     'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would',
+                     'could', 'should', 'may', 'might', 'must', 'shall', 'can',
+                     'i', 'you', 'he', 'she', 'it', 'we', 'they', 'what', 'who',
+                     'this', 'that', 'to', 'of', 'in', 'for', 'on', 'with', 'at'}
+        
+        user_content_words = user_words - stopwords
+        response_content_words = response_words_set - stopwords
+        
+        if user_content_words and response_content_words:
+            overlap = len(user_content_words & response_content_words)
+            max_possible = min(len(user_content_words), len(response_content_words))
+            overlap_score = (overlap / max_possible) * 0.25 if max_possible > 0 else 0.0
+        else:
+            overlap_score = 0.05  # Small base for having any response
+        
+        reward += overlap_score
+        
+        # 2. COHERENCE SCORE (0.0 - 0.25)
+        # Measures structural quality of the response
+        coherence_score = 0.0
+        
+        # Check for basic sentence structure (starts capital, has some length)
+        if organism_response[0].isupper():
+            coherence_score += 0.05
+        
+        # Check for sentence ending punctuation
+        if organism_response.rstrip()[-1] in '.!?':
+            coherence_score += 0.05
+        
+        # Penalize pure echoing (just repeating user input)
+        if organism_response.strip().lower() == user_message.strip().lower():
+            coherence_score -= 0.1  # Penalty for pure echoing
+        
+        # Check word variety (not just repeating same word)
+        if len(response_words) > 1:
+            unique_ratio = len(response_words_set) / len(response_words)
+            coherence_score += unique_ratio * 0.1
+        
+        # Check for multiple words (indicates more than just noise)
+        if len(response_words) >= 2:
+            coherence_score += 0.05
+        
+        reward += max(0.0, coherence_score)  # Don't let coherence go negative
+        
+        # 3. LENGTH APPROPRIATENESS (0.0 - 0.2)
+        # Goldilocks zone: neither too short nor too long
+        response_length = len(response_words)
+        if response_length == 0:
+            length_score = 0.0
+        elif response_length <= 2:
+            length_score = 0.05  # Very short
+        elif response_length <= 10:
+            length_score = 0.2   # Good range
+        elif response_length <= 20:
+            length_score = 0.15  # Slightly verbose
+        else:
+            length_score = 0.1   # Too long, slight penalty
+        
+        reward += length_score
+        
+        # 4. CONFIDENCE SCALING (0.0 - 0.2)
+        # Model's own confidence in the response
+        reward += confidence * 0.2
+        
+        # 5. VP-AWARE ADJUSTMENT (±0.1)
+        # Higher VP = more resources = higher standards
+        if network_state:
+            vp_value = network_state.get('vp_value', 0.5)
+            
+            # High VP: reward quality more, penalize poor responses
+            if vp_value > 0.7:
+                # At high VP, expect better responses
+                if reward > 0.5:
+                    reward += 0.1  # Bonus for quality at high VP
+                elif reward < 0.2:
+                    reward -= 0.05  # Slight penalty for poor at high VP
+            elif vp_value < 0.3:
+                # At low VP, be more forgiving
+                reward = max(reward, 0.0)  # No negative rewards when struggling
+        
+        return max(-0.2, min(1.0, reward))  # Clamp to reasonable range
 
     def _trigger_bootstrap_learning(self, organism: Any, user_tokens: List[int], 
                                       network_state: Optional[Dict[str, Any]] = None):

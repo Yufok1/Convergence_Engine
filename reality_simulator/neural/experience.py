@@ -16,22 +16,40 @@ class Experience:
     Single experience tuple for DQN + Language Model training.
     
     Extended fields:
-    - token_sequence: Token IDs for language model training (optional)
+    - token_sequence: Token IDs for language model training (optional, backward compat)
+    - input_tokens: User input tokens for seq2seq training (optional)
+    - target_tokens: Desired response tokens for seq2seq training (optional)
     - vp_value: VP state at experience time (optional)
+    
+    For proper supervised learning, use input_tokens/target_tokens separation.
+    token_sequence is maintained for backward compatibility and represents
+    input_tokens + target_tokens concatenated.
     """
     
     def __init__(self, state: np.ndarray, action: int, reward: float,
                  next_state: np.ndarray, done: bool,
                  token_sequence: Optional[List[int]] = None,
+                 input_tokens: Optional[List[int]] = None,
+                 target_tokens: Optional[List[int]] = None,
                  vp_value: Optional[float] = None):
         self.state = state
         self.action = action
         self.reward = reward
         self.next_state = next_state
         self.done = done
-        # Language model extensions
-        self.token_sequence = token_sequence if token_sequence is not None else []
+        # Language model extensions - explicit input/target separation
+        self.input_tokens = input_tokens if input_tokens is not None else []
+        self.target_tokens = target_tokens if target_tokens is not None else []
+        # Backward compatibility: token_sequence = input + target if not explicitly provided
+        if token_sequence is not None:
+            self.token_sequence = token_sequence
+        else:
+            self.token_sequence = self.input_tokens + self.target_tokens
         self.vp_value = vp_value
+    
+    def has_seq2seq_data(self) -> bool:
+        """Check if experience has proper input/target separation for seq2seq training."""
+        return len(self.input_tokens) > 0 and len(self.target_tokens) > 0
 
 
 class ExperienceBuffer:
@@ -60,6 +78,8 @@ class ExperienceBuffer:
     def add(self, state: np.ndarray, action: int, reward: float,
             next_state: np.ndarray, done: bool,
             token_sequence: Optional[List[int]] = None,
+            input_tokens: Optional[List[int]] = None,
+            target_tokens: Optional[List[int]] = None,
             vp_value: Optional[float] = None):
         """
         Add experience to buffer.
@@ -70,11 +90,16 @@ class ExperienceBuffer:
             reward: Reward received
             next_state: Next state
             done: Whether episode is done
-            token_sequence: Token IDs for language model (optional)
+            token_sequence: Token IDs for language model (optional, backward compat)
+            input_tokens: User input tokens for seq2seq training (optional)
+            target_tokens: Desired response tokens for seq2seq training (optional)
             vp_value: VP value at experience time (optional)
         """
         experience = Experience(state, action, reward, next_state, done,
-                               token_sequence=token_sequence, vp_value=vp_value)
+                               token_sequence=token_sequence,
+                               input_tokens=input_tokens,
+                               target_tokens=target_tokens,
+                               vp_value=vp_value)
         self.buffer.append(experience)
         self.size = len(self.buffer)
     

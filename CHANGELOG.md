@@ -6,6 +6,27 @@
 
 ## [Unreleased] - 2025-12-01
 
+### 🧠 Agent Swarm Language Learning Fixes (2025-12-01)
+
+Based on comprehensive analysis from Claude (Sonnet 4.5) and Grok-1/2/3/4 research agents:
+
+#### Fixed
+- **Semantic Reward Shaping** (butterfly_chat.py) - Grok-1 Design
+  - Previous: Simple length-based reward (`base 0.5 + confidence*0.3 + length bonus`)
+  - New: Multi-component semantic reward with word overlap, coherence, length appropriateness, VP-awareness
+  - Penalizes pure echoing (response == input), rewards semantic relevance
+  - VP-aware: Higher standards at high VP, more forgiving at low VP
+
+- **VP Gating Deadlock** (neural_organism.py) - Grok-3 Analysis
+  - Previous: Binary gate `if vp_value > 0.5: return []` blocked ALL generation
+  - New: Adaptive VP-aware scaling - VP>0.8 → 3 tokens, VP>0.6 → 8 tokens, VP<0.4 → full length
+  - Organisms always generate something, just shorter under resource pressure
+
+- **Supervised Learning Gap** (experience.py, butterfly_chat.py) - Claude Critical Finding
+  - Previous: Concatenated `token_sequence = user_tokens + organism_tokens` caused echoing
+  - New: Explicit `input_tokens` and `target_tokens` fields in Experience class
+  - Enables proper seq2seq "given X, generate Y" training instead of pattern repetition
+
 ### 🔧 Critical Fix - Modularity Calculation (2025-12-01)
 
 #### Fixed
