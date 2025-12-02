@@ -6,6 +6,16 @@
 
 ## [Unreleased] - 2025-12-01
 
+### 🔧 Critical Fix - Modularity Calculation (2025-12-01)
+
+#### Fixed
+- **Incorrect Modularity Calculation** - Fixed `EcosystemMetrics.update_from_network()` in `symbiotic_network.py`
+  - Previous calculation: `len(communities) / len(network_graph)` ❌ (wrong - ratio of community count to node count)
+  - New calculation: `nx.algorithms.community.modularity(network_graph, communities)` ✅ (proper NetworkX modularity)
+  - Modularity measures quality of community structure (0 = random, 1 = perfect separation)
+  - This was causing "Modularity = 0.000" to persist, preventing cluster detection and emergent behavior tracking
+  - Now properly calculates community structure strength for VP component tracking
+
 ### 🔧 Runtime Fixes (2025-12-01)
 
 #### Fixed

@@ -135,14 +135,21 @@ class EcosystemMetrics:
             else:
                 self.average_path_length = 0.0
 
-        # Community detection (simplified modularity)
+        # Community detection and proper modularity calculation
         try:
             communities = list(nx.community.greedy_modularity_communities(network_graph))
-            self.modularity = len(communities) / len(network_graph)  # Rough approximation
-        except (ValueError, ZeroDivisionError, AttributeError) as e:
+            # Use NetworkX's proper modularity calculation instead of len(communities)/len(graph)
+            # Modularity measures quality of community structure (0 = random, 1 = perfect separation)
+            if len(communities) > 0 and len(network_graph.edges()) > 0:
+                self.modularity = nx.algorithms.community.modularity(network_graph, communities)
+            else:
+                # No edges or no communities - default to 0
+                self.modularity = 0.0
+        except (ValueError, ZeroDivisionError, AttributeError, nx.NetworkXError) as e:
             # NetworkX may raise ValueError for empty graphs or graphs without communities
             # ZeroDivisionError if network_graph is empty
             # AttributeError if networkx.community is not available
+            # NetworkXError for other graph-related issues
             self.modularity = 0.0
             # Log the error for debugging (if logging is available)
             if hasattr(self, '_logger') and self._logger:
