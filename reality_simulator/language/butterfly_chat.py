@@ -665,7 +665,11 @@ class ButterflyChatRouter:
             
             # Defensive: Ensure reward is a valid float (prevent NoneType comparison errors)
             if reward is None:
-                reward = 0.0
+                reward = 0.3
+                self._log_debug("REWARD_NONE_FALLBACK", "Reward was None, using fallback", {"fallback": 0.3})
+            elif reward == 0.0:
+                reward = 0.2
+                self._log_debug("REWARD_ZERO_ADJUST", "Reward was 0.0, adjusted to 0.2", {})
             
             # Get organism state features for experience storage
             if hasattr(organism, 'get_state_features'):
@@ -745,6 +749,11 @@ class ButterflyChatRouter:
             # Track chat experiences
             self.total_chat_experiences += 1
             
+            # Trigger training more frequently (every 5 experiences instead of waiting for buffer to fill)
+            buffer_size = len(organism.experience_buffer) if hasattr(organism.experience_buffer, '__len__') else 0
+            if buffer_size >= 5 and buffer_size % 5 == 0:
+                self._trigger_chat_training(organism, network_state)
+            
             # Trigger bootstrap learning for empty responses
             if (not organism_response or len(organism_response.strip()) == 0) and self.trainer:
                 self._trigger_bootstrap_learning(organism, user_tokens, network_state)
@@ -800,10 +809,12 @@ class ButterflyChatRouter:
         5. VP awareness: Network vitality influence (±0.1)
         """
         try:
-            reward = 0.0
+            # Base reward for generating any response (changed from 0.0 to ensure non-zero)
+            reward = 0.3  # Baseline reward for participation
             
             # Handle empty response case
             if not organism_response or len(organism_response.strip()) == 0:
+                self._log_debug("REWARD_CALC", "Empty response penalty", {"reward": -0.1})
                 return -0.1  # Small penalty for empty responses
             
             # Normalize text for comparison
@@ -828,7 +839,7 @@ class ButterflyChatRouter:
                 max_possible = min(len(user_content_words), len(response_content_words))
                 overlap_score = (overlap / max_possible) * 0.25 if max_possible > 0 else 0.0
             else:
-                overlap_score = 0.05  # Small base for having any response
+                overlap_score = 0.1  # Increased base for having any response
             
             reward += overlap_score
             
@@ -898,7 +909,7 @@ class ButterflyChatRouter:
                     # At low VP, be more forgiving
                     reward = max(reward, 0.0)  # No negative rewards when struggling
             
-            final_reward = max(-0.2, min(1.0, reward))  # Clamp to reasonable range
+            final_reward = max(0.2, min(1.0, reward))  # Clamp to reasonable range, minimum 0.2
             
             # ═══════════════════════════════════════════════════════════════
             # MISSION 1: Track semantic reward components for CRA/AutoTune
@@ -911,12 +922,26 @@ class ButterflyChatRouter:
             self.semantic_reward_totals['total_reward'] += final_reward
             self.semantic_reward_totals['calculation_count'] += 1
             
+            # Log reward components for debugging
+            self._log_debug("REWARD_CALC_COMPLETE", "Semantic reward calculated", {
+                "components": {
+                    "overlap": overlap_score,
+                    "coherence": max(0.0, coherence_score),
+                    "length": length_score,
+                    "confidence": confidence * 0.2,
+                    "vp_adjustment": vp_adjustment
+                },
+                "final_reward": final_reward,
+                "response_preview": organism_response[:50] if organism_response else ""
+            })
+            
             return final_reward
             
         except Exception as e:
             # Fallback: Return safe default if reward calculation fails
-            logger.debug(f"Semantic reward calculation failed: {e}, returning 0.0")
-            return 0.0
+            logger.warning(f"Semantic reward calculation failed: {e}, returning 0.3")
+            self._log_debug("REWARD_CALC_ERROR", f"Exception in reward calculation: {e}", {"fallback_reward": 0.3})
+            return 0.3  # Changed from 0.0 to 0.3 for safe non-zero fallback
 
     def _trigger_bootstrap_learning(self, organism: Any, user_tokens: List[int], 
                                       network_state: Optional[Dict[str, Any]] = None):
