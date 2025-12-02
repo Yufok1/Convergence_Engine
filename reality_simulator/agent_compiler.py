@@ -181,7 +181,12 @@ class AgentCompiler:
             )
             logger.info(f"Successfully exported brain to ONNX: {model_path}")
         except Exception as e:
-            logger.error(f"Failed to export brain to ONNX at {model_path}: {e}")
+            # Provide clearer guidance when onnx/onnxscript is missing (PyTorch 2.6+)
+            msg = str(e)
+            hint = ""
+            if 'onnxscript' in msg.lower():
+                hint = " (install with: pip install onnx onnxscript)"
+            logger.error(f"Failed to export brain to ONNX at {model_path}: {e}{hint}")
             raise
 
     def _export_torchscript(self, brain: OrganismBrain, model_path: str) -> None: 
@@ -507,7 +512,8 @@ This compiled agent is ready for deployment, integration into other systems, or 
     def compile_capsule_to_agent(self, 
                                  capsule: OrganismCapsule, 
                                  export_format: str = 'onnx',
-                                 include_history: bool = True) -> BytesIO:
+                                 include_history: bool = True,
+                                 example_state: Any = None) -> BytesIO:
         """
         Compiles an OrganismCapsule into a deployable agent archive (ZIP file).
         
@@ -527,13 +533,38 @@ This compiled agent is ready for deployment, integration into other systems, or 
         # 1. Reconstruct the neural brain
         brain = self._reconstruct_brain_from_capsule(capsule)
         
-        # 2. Prepare dummy input for ONNX/TorchScript export
-        dummy_input = torch.randn(1, brain.input_dim)
+        # 2. Prepare deterministic input for ONNX export (and TorchScript tracing if used)
+        if example_state is not None:
+            try:
+                arr = np.asarray(example_state, dtype=np.float32)
+                arr = arr.reshape(1, -1)
+                # Pad or truncate to match expected input_dim
+                if arr.shape[1] < brain.input_dim:
+                    pad = np.zeros((1, brain.input_dim - arr.shape[1]), dtype=np.float32)
+                    arr = np.concatenate([arr, pad], axis=1)
+                elif arr.shape[1] > brain.input_dim:
+                    arr = arr[:, :brain.input_dim]
+                dummy_input = torch.from_numpy(arr)
+            except Exception:
+                dummy_input = torch.zeros(1, brain.input_dim, dtype=torch.float32)
+        else:
+            dummy_input = torch.zeros(1, brain.input_dim, dtype=torch.float32)
         
         # 3. Export the brain to the specified format
         model_buffer = BytesIO()
+        chosen_format = export_format
         if export_format == 'onnx':
-            self._export_onnx(brain, dummy_input, model_buffer)
+            try:
+                self._export_onnx(brain, dummy_input, model_buffer)
+            except Exception as e:
+                # Graceful fallback: if ONNX dependencies missing, fallback to TorchScript
+                if 'onnxscript' in str(e).lower() or 'onnx' in str(e).lower():
+                    logger.warning("ONNX export failed due to missing dependencies; falling back to TorchScript export.")
+                    model_buffer = BytesIO()
+                    self._export_torchscript(brain, model_buffer)
+                    chosen_format = 'torchscript'
+                else:
+                    raise
         elif export_format == 'torchscript':
             self._export_torchscript(brain, model_buffer)
         elif export_format == 'statedict':
@@ -541,10 +572,10 @@ This compiled agent is ready for deployment, integration into other systems, or 
         
         # 4. Create rich metadata
         metadata = self._create_rich_metadata(capsule)
-        metadata['export_format'] = export_format # Add export format to metadata
+        metadata['export_format'] = chosen_format # Add (possibly updated) export format to metadata
         
         # 5. Generate runner script
-        runner_script = self._generate_runner_script(export_format, metadata)
+        runner_script = self._generate_runner_script(chosen_format, metadata)
         
         # 6. Package into ZIP archive
         return self._create_agent_archive(model_buffer, metadata, runner_script, capsule)
