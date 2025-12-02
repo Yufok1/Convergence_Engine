@@ -211,8 +211,13 @@ class AgentCompiler:
             logger.error(f"Failed to export brain to ONNX at {model_path}: {e}{hint}")
             raise
 
-    def _export_torchscript(self, brain: OrganismBrain, model_path: str) -> None: 
-        """Exports the PyTorch brain to TorchScript format."""
+    def _export_torchscript(self, brain: OrganismBrain, model_path) -> None: 
+        """Exports the PyTorch brain to TorchScript format.
+        
+        Args:
+            brain: The OrganismBrain to export
+            model_path: Either a file path string or a BytesIO buffer
+        """
         try:
             # Use torch.jit.trace instead of torch.jit.script
             # trace captures the execution path dynamically, which works with
@@ -220,10 +225,17 @@ class AgentCompiler:
             # script analyzes code statically and fails on Python 3.12 + PyTorch 2.5
             dummy_input = torch.randn(1, brain.input_dim, dtype=torch.float32)
             traced_brain = torch.jit.trace(brain, (dummy_input,))
-            traced_brain.save(model_path)
-            logger.info(f"Successfully exported brain to TorchScript (traced): {model_path}")
+            
+            # Handle both file path (str) and BytesIO buffer
+            if isinstance(model_path, BytesIO):
+                torch.jit.save(traced_brain, model_path)
+                model_path.seek(0)  # Reset buffer position for reading
+                logger.info("Successfully exported brain to TorchScript (traced) in memory buffer")
+            else:
+                traced_brain.save(model_path)
+                logger.info(f"Successfully exported brain to TorchScript (traced): {model_path}")
         except Exception as e:
-            logger.error(f"Failed to export brain to TorchScript at {model_path}: {e}")
+            logger.error(f"Failed to export brain to TorchScript: {e}")
             raise
 
     def _export_statedict(self, brain: OrganismBrain, model_path: str) -> None: 
