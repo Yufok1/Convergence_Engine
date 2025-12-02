@@ -180,7 +180,7 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
                  vocab_size: int = 12288,
                  use_language_head: bool = False,
                  use_concept_head: bool = False,
-                 num_key_compositions: int = 5):
+                 num_key_compositions: int = 15):
         """
         Initialize the organism brain.
         
@@ -197,7 +197,7 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
             vocab_size: Vocabulary size for language head
             use_language_head: Enable language prediction head
             use_concept_head: Enable concept understanding head (RCUS)
-            num_key_compositions: Number of key concept compositions to track
+            num_key_compositions: Number of key concept compositions to track (default 15)
         """
         if not PYTORCH_AVAILABLE:
             raise ImportError("PyTorch is required for OrganismBrain")

@@ -588,7 +588,7 @@ class ConceptHead(nn.Module):
     def __init__(self,
                  hidden_dim: int = 64,
                  num_axioms: int = 18,
-                 num_compositions: int = 5):
+                 num_compositions: int = 15):
         super().__init__()
         self.hidden_dim = hidden_dim
         self.num_axioms = num_axioms
@@ -635,12 +635,36 @@ class ConceptHead(nn.Module):
 # =============================================================================
 
 # These are the compositions that organisms use for understanding their situation
+# Expanded from 5 to 15 to cover comprehensive situational awareness
 KEY_COMPOSITIONS = [
-    ('SELF', 'WITH', 'OTHER'),     # Social situation
-    ('DO', 'CAUSE', 'GOOD'),        # Purposeful action → reward
-    ('DO', 'CAUSE', 'BAD'),         # Action → harm (to avoid)
-    ('MORE', 'MODIFY', 'GOOD'),     # Better outcomes
-    ('SELF', 'WITH', 'GOOD'),       # Self-benefit
+    # SURVIVAL & EXISTENCE (2)
+    ('SELF', 'WITH', 'EXIST'),      # Basic self-awareness of being alive
+    ('EXIST', 'CAUSE', 'GOOD'),     # Survival instinct - living is valuable
+    
+    # SOCIAL DYNAMICS (4)
+    ('SELF', 'WITH', 'OTHER'),      # Social connection awareness
+    ('OTHER', 'CAUSE', 'GOOD'),     # Others can benefit me (cooperation)
+    ('OTHER', 'CAUSE', 'BAD'),      # Others can harm me (threat detection)
+    ('MANY', 'WITH', 'SELF'),       # Crowd/density awareness (alliances)
+    
+    # ACTION-CONSEQUENCE (3)
+    ('DO', 'CAUSE', 'GOOD'),        # Actions lead to rewards
+    ('DO', 'CAUSE', 'BAD'),         # Actions can backfire
+    ('DO', 'SEQUENCE', 'GOOD'),     # Sequential planning leads to rewards
+    
+    # RESOURCE & VALUE (2)
+    ('MORE', 'MODIFY', 'GOOD'),     # More resources = better
+    ('SELF', 'WITH', 'BAD'),        # I'm struggling (triggers rest/isolate)
+    
+    # TEMPORAL AWARENESS (2)
+    ('NOW', 'CAUSE', 'AFTER'),      # Present shapes future (delayed gratification)
+    ('BEFORE', 'CAUSE', 'NOW'),     # Past shapes present (learning from history)
+    
+    # SPATIAL/ENVIRONMENTAL (1)
+    ('THERE', 'MODIFY', 'GOOD'),    # Better opportunities elsewhere (move motivation)
+    
+    # COMPETITIVE (1)
+    ('SELF', 'WITH', 'MORE'),       # I'm stronger (compete confidence)
 ]
 
 
@@ -652,6 +676,7 @@ def get_concept_config_defaults() -> Dict[str, Any]:
         'concept_loss_weight': 0.1,  # Weight in triple-loss
         'utility_update_alpha': 0.1,
         'key_compositions': KEY_COMPOSITIONS,
+        'num_key_compositions': 15,  # Updated from 5 to 15
     }
 
 
