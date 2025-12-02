@@ -138,6 +138,9 @@ class ConfigAtom:
     sensitivity: float = 1.0  # How readily this param should change
     stability: float = 0.0    # How stable the value has been (0=volatile, 1=stable)
     
+    # Documentation
+    description: str = ""  # Human-readable description of this parameter
+    
     # Event emitter (set by AtomicConfigSystem)
     _event_emitter: Optional[Callable] = field(default=None, repr=False)
     _system_id: Optional[str] = field(default=None, repr=False)

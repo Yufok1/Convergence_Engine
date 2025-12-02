@@ -289,6 +289,59 @@ Quick Win #10: Alliance Warfare System (Collective Survival) ⭐ NEW (2025-12-01
 - **Causation Mapping**: 22 new causation pairs added for alliance/germination/combat interactions
 - **Visualization**: Alliance events appear in causation graph with 🤝 alliance component; alliance membership shown via edge connections
 
+Quick Win #11: Confederation System (Super-Alliance Hierarchy) ⭐ NEW (2025-12-01)
+- **Core Concept**: Alliances can ally with each other to form Confederations, which merge into Empires, then Hegemonies - the ultimate expression of collective intelligence emergence
+- **Status**: ENABLED (requires Alliance Warfare enabled)
+- **Hierarchy Tiers**:
+  - Tier 1: **CONFEDERATION** - Alliances with shared enemies, knowledge domain overlap, trustworthy track records
+  - Tier 2: **EMPIRE** - Confederations with territorial control together, war victories, semantic alignment
+  - Tier 3: **HEGEMONY** - Empires with 2+ child confederations, 4+ controlled domains, 3+ war victories
+- **Elevation Requirements**:
+  - CONFEDERATION → EMPIRE: 3+ member alliances, 2+ territory types, 1+ confederation war won
+  - EMPIRE → HEGEMONY: 2+ child confederations, 4+ territories, 3+ confederation wars won
+- **Key Events**:
+  - confederation_founded: Alliance warchief creates new confederation
+  - alliance_joined_confederation: Alliance accepts confederation invite
+  - confederation_war_proposed: Mega-war proposal between confederations
+  - confederation_war_declared: Confederation goes to war (majority vote passed)
+  - mega_confederation_formed: Two confederations merge into EMPIRE/HEGEMONY
+- **ML Feature Integration** (Features 25-27):
+  - Feature 25: confederation_level (0=none, 0.33=confederation, 0.66=empire, 1.0=hegemony)
+  - Feature 26: confederation_wars (normalized count of mega-wars participated in)
+  - Feature 27: cross_alliance_influence (connections to organisms in other alliances)
+- **Config**: /highlander/alliance_warfare/max_confederations, /highlander/alliance_warfare/confederation_war_threshold
+- **Emergence benefit**: Creates multi-level hierarchy of emergent political structures; organisms must balance alliance vs confederation loyalty; mega-wars shape galactic dominance
+- **Visualization**: Confederation events appear in causation graph with hierarchy indicators
+
+Quick Win #12: Neural Relationship Learning (Language Quality Feedback) ⭐ NEW (2025-12-01)
+- **Core Concept**: Neural system learns from language generation quality to strengthen/weaken semantic relationships in the Knowledge Web
+- **Status**: ENABLED / DISABLED
+- **Mechanism**:
+  - Language generation evaluated for coherence (threshold: 0.5)
+  - Coherent generations strengthen used relationships (+confidence)
+  - Garbled generations (coherence < 0.2, UNK ratio > 0.3) weaken relationships (-confidence)
+  - Semantic guidance: semantically related words get logit boost during generation
+- **Quality Evaluation**:
+  - coherent_threshold: 0.5 (minimum coherence score for success)
+  - garbled_threshold: 0.2 (maximum coherence score for failure)
+  - unk_ratio_threshold: 0.3 (maximum UNK token ratio before marking as failure)
+- **Semantic Guidance**:
+  - enabled: true/false
+  - semantic_boost: 0.2 (logit boost for semantically related words during generation)
+- **Config Paths**:
+  - /neural/language_model/relationship_learning/enabled
+  - /neural/language_model/relationship_learning/quality_evaluation/coherent_threshold
+  - /neural/language_model/relationship_learning/quality_evaluation/garbled_threshold
+  - /neural/language_model/relationship_learning/quality_evaluation/unk_ratio_threshold
+  - /neural/language_model/relationship_learning/semantic_guidance/enabled
+  - /neural/language_model/relationship_learning/semantic_guidance/semantic_boost
+- **What to Monitor**:
+  - Generation coherence scores (should improve over time)
+  - Relationship success/failure rates
+  - Semantic network evolution (relationships strengthening/weakening)
+  - Language generation quality (coherent vs garbled ratio)
+- **Emergence benefit**: Creates feedback loop where good language use reinforces semantic knowledge; organisms that communicate coherently develop richer semantic networks
+
 ---
 📋 Detailed Instructions
 

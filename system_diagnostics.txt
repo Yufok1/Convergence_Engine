@@ -1448,6 +1448,146 @@ Verification:
 **Bug Fix (2025-12-01)**: process_round() now correctly receives get_fitness callback - fixed missing argument error in unified_entry.py line 1719.
 
 ---
+19. Confederation System (Super-Alliance Hierarchy) ⭐ NEW (Quick Win #11)
+
+Status: SUCCESS / FAILED / PARTIAL
+- Confederation formation active
+- Tier progression tracking
+- Mega-war coordination working
+
+Core Concept:
+- Alliances can ally to form Confederations
+- Confederations merge into Empires
+- Empires merge into Hegemonies
+- Ultimate expression of collective intelligence emergence
+
+Hierarchy Tiers:
+
+| Tier | Name | Formation Requirements |
+|------|------|----------------------|
+| 1 | CONFEDERATION | Shared enemies, knowledge domain overlap, trustworthy track records, mutual power benefit |
+| 2 | EMPIRE | 3+ member alliances, 2+ territory types, 1+ confederation war won |
+| 3 | HEGEMONY | 2+ child confederations, 4+ territories, 3+ confederation wars won |
+
+Key Events:
+- confederation_founded: Alliance warchief creates new confederation
+  - Contains: confederation_id, founding_alliance, initial_power, formation_reason
+- alliance_joined_confederation: Alliance accepts confederation invite
+  - Contains: confederation_id, alliance_id, new_tier_power
+- confederation_war_proposed: Mega-war proposal between confederations
+  - Contains: proposer_confederation, target_confederation, war_stakes
+- confederation_war_declared: Confederation goes to war (majority vote passed)
+  - Contains: attacker_confederation, defender_confederation, war_type
+- mega_confederation_formed: Two confederations merge into EMPIRE/HEGEMONY
+  - Contains: new_tier, merged_confederations, resulting_power
+
+ML Feature Integration (Features 25-27):
+- Feature 25: confederation_level (0=none, 0.33=confederation, 0.66=empire, 1.0=hegemony)
+- Feature 26: confederation_wars (normalized count of mega-wars participated in)
+- Feature 27: cross_alliance_influence (connections to organisms in other alliances)
+
+Config Paths:
+- /highlander/alliance_warfare/max_confederations (1-5)
+- /highlander/alliance_warfare/confederation_war_threshold (0.5-0.9, vote ratio for mega-war)
+
+What to Monitor:
+- Confederation tier progressions (CONFEDERATION → EMPIRE → HEGEMONY)
+- Cross-alliance connection density (indicates super-structure emergence)
+- Confederation war outcomes and territory changes
+- Organism confederation_tier distribution in ML clusters
+
+Priority:
+- Confederation formation failing = HIGH
+- Tier progression broken = MEDIUM
+- Mega-war coordination failing = MEDIUM
+- ML features 25-27 not populating = MEDIUM
+
+Verification:
+- Run with Highlander + Alliance Warfare enabled
+- Check for "CONFEDERATION FOUNDED" messages in logs
+- Verify tier progression events appearing
+- Confirm ML features 25-27 populated
+
+---
+20. Neural Relationship Learning (Language Quality Feedback) ⭐ NEW (Quick Win #12)
+
+Status: SUCCESS / FAILED / PARTIAL
+- Quality evaluation active
+- Relationship strengthening/weakening working
+- Semantic guidance active
+
+Core Concept:
+- Neural system learns from language generation quality
+- Coherent generations strengthen semantic relationships
+- Garbled generations weaken relationships
+- Creates feedback loop for emergent language quality
+
+Quality Evaluation:
+- coherent_threshold: 0.5 (minimum coherence for success)
+- garbled_threshold: 0.2 (maximum coherence for failure)
+- unk_ratio_threshold: 0.3 (maximum UNK token ratio)
+
+Semantic Guidance:
+- enabled: true/false
+- semantic_boost: 0.2 (logit boost for related words during generation)
+
+Config Paths:
+- /neural/language_model/relationship_learning/enabled
+- /neural/language_model/relationship_learning/quality_evaluation/coherent_threshold
+- /neural/language_model/relationship_learning/quality_evaluation/garbled_threshold
+- /neural/language_model/relationship_learning/quality_evaluation/unk_ratio_threshold
+- /neural/language_model/relationship_learning/semantic_guidance/enabled
+- /neural/language_model/relationship_learning/semantic_guidance/semantic_boost
+
+What to Monitor:
+- Generation coherence scores (should improve over time)
+- Relationship success/failure rates
+- Semantic network evolution (relationships strengthening/weakening)
+- Language generation quality (coherent vs garbled ratio)
+
+Priority:
+- Quality evaluation not running = MEDIUM
+- Relationships not updating = MEDIUM
+- Semantic guidance not applying = LOW
+
+Verification:
+- Check generation coherence in language logs
+- Verify relationship confidence changes in Knowledge Web
+- Confirm semantic boost affecting word selection
+
+---
+21. Agent Compiler System (Optional ONNX Export)
+
+Status: SUCCESS / PARTIAL / UNAVAILABLE
+- AgentCompiler available for organism brain export
+- ONNX export: AVAILABLE / UNAVAILABLE (onnxruntime optional)
+- TorchScript export: AVAILABLE
+
+Core Concept:
+- Compiles neural organism brains to portable agent archives
+- Supports ONNX format (requires onnxruntime)
+- Supports TorchScript format (built-in PyTorch)
+
+Import Behavior:
+- onnxruntime import is optional (lazy import)
+- ONNX_AVAILABLE flag exported from agent_compiler module
+- System runs without onnxruntime installed
+- causation_web_ui uses lazy import inside compile_organism_to_agent()
+
+**Bug Fix (2025-01-XX)**: Made onnxruntime import optional with ONNX_AVAILABLE flag.
+Previous issue: ModuleNotFoundError when onnxruntime not installed prevented system launch.
+
+Priority:
+- onnxruntime not found = INFO (optional dependency)
+- AgentCompiler init failing = LOW
+- TorchScript export failing = LOW
+
+Verification:
+- System launches without onnxruntime installed
+- ONNX export shows "ONNX_AVAILABLE: False" if library missing
+- TorchScript export works regardless of onnxruntime
+
+---
 Response Format
 
 Structure: Headings for each category
@@ -1506,6 +1646,10 @@ Special Instructions
     events emitting (highlander_battle, highlander_victory, highlander_elimination) ⭐ NEW
   - QW#10 (Alliance Warfare): Alliance formation active, wars occurring, dissolution on
     member loss, 22 causation mappings, process_round receives get_fitness callback ⭐ NEW
+  - QW#11 (Confederation System): Super-alliance hierarchy, tier progressions, mega-wars,
+    ML features 25-27 integrated ⭐ NEW
+  - QW#12 (Neural Relationship Learning): Language quality feedback, coherence evaluation,
+    semantic guidance, relationship strengthening/weakening ⭐ NEW
 
 - Neural Priority: Enabled but trainer unavailable = CRITICAL
 - Neural Expected Behavior:
@@ -1611,6 +1755,10 @@ Key Updates for 2025 (Quick Wins Edition):
   launcher scripts (run_highlander.bat, run_highlander.ps1) ⭐ NEW
 - Quick Win #10: Alliance Warfare - Collective survival system with alliance formation,
   wars, dissolution, collective fitness, betrayal mechanics, 22 new causation mappings ⭐ NEW
+- Quick Win #11: Confederation System - Super-alliance hierarchy (Confederation → Empire →
+  Hegemony), mega-wars, ML features 25-27, cross-alliance influence tracking ⭐ NEW
+- Quick Win #12: Neural Relationship Learning - Language quality feedback loop, coherence
+  evaluation, semantic guidance, relationship strengthening/weakening based on generation quality ⭐ NEW
 
 Quick Win #8: Dynamic Multi-Dimensional Linguistic Awareness ⭐ NEW
 - Status: ENABLED / DISABLED
@@ -1647,6 +1795,9 @@ Quick Win #8: Dynamic Multi-Dimensional Linguistic Awareness ⭐ NEW
 - Section 16: Research Notepad System (NEW)
 - Section 17: Highlander Protocol System (NEW - Quick Win #9)
 - Section 18: Alliance Warfare System (NEW - Quick Win #10)
+- Section 19: Confederation System (NEW - Quick Win #11)
+- Section 20: Neural Relationship Learning (NEW - Quick Win #12)
+- Section 21: Agent Compiler System (Optional ONNX Export)
 - Section 3b: Language System Audit (NEW - Quick Win #8)
 - Neural field names: organisms_tracked (not organisms_trained)
 - Neural input_dim: 18 (was 12)
@@ -1684,5 +1835,11 @@ Quick Win #8: Dynamic Multi-Dimensional Linguistic Awareness ⭐ NEW
   - **Language Loss Integration**: VP-gated language loss calculation in trainer.py
   - **Curriculum Learning**: ML quality-driven curriculum updates at end of train_step
   - **Alliance Warfare Bug Fix**: process_round() now correctly receives get_fitness callback
+  - **Confederation System**: Super-alliance hierarchy with mega-wars and ML feature integration
+  - **Neural Relationship Learning**: Quality feedback loop for semantic relationship evolution
+- **Recent Bug Fixes (Fresh Clone Compatibility)**:
+  - ConfigAtom description field: Added missing `description: str = ""` field to ConfigAtom dataclass
+  - onnxruntime optional: Made onnxruntime import optional with ONNX_AVAILABLE flag
+  - causation_web_ui lazy import: AgentCompiler import moved inside function to prevent startup errors
 
 ---

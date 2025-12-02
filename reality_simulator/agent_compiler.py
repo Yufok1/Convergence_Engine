@@ -2,13 +2,21 @@ import torch
 import json
 import zipfile
 from io import BytesIO
-import onnxruntime
 import numpy as np
 import datetime
 import os
+import sys
 from typing import Dict, Any
 import base64
 import uuid
+
+# Optional ONNX runtime - graceful degradation if not installed
+try:
+    import onnxruntime
+    ONNX_AVAILABLE = True
+except ImportError:
+    onnxruntime = None
+    ONNX_AVAILABLE = False
 
 # Assuming Organism and OrganismBrain are importable from their respective paths
 # Using relative imports suitable for agent_compiler.py in reality_simulator/
@@ -188,7 +196,7 @@ class AgentCompiler:
             # Export Options (to be added by the compiler)
             'export_format': None, 
             'runtime_dependencies': {
-                'onnxruntime': onnxruntime.__version__,
+                'onnxruntime': onnxruntime.__version__ if ONNX_AVAILABLE else 'not installed',
                 'numpy': np.__version__,
                 'python': sys.version.split(' ')[0]
             },

@@ -6763,8 +6763,8 @@ def list_capsules():
         return jsonify({'error': str(e)}), 500
 
 
-from reality_simulator.agent_compiler import AgentCompiler
-from reality_simulator.checkpointing.organism_capsule import OrganismCapsuleManager # Assuming this is the correct path for CapsuleManager
+# Lazy imports for optional agent compilation (requires onnxruntime)
+# These are imported inside functions to avoid startup failures
 from flask import send_file
 
 @app.route('/api/capsule/<organism_id>/compile', methods=['POST'])
@@ -6772,6 +6772,13 @@ def compile_organism_to_agent(organism_id):
     """
     Compiles a specific organism's capsule into a downloadable agent archive.
     """
+    # Lazy import to avoid startup failure if onnxruntime not installed
+    try:
+        from reality_simulator.agent_compiler import AgentCompiler
+        from reality_simulator.checkpointing.organism_capsule import OrganismCapsuleManager
+    except ImportError as e:
+        return jsonify({'error': f'Agent compilation requires onnxruntime: {e}. Install with: pip install onnxruntime'}), 500
+    
     try:
         # Ensure unified system is available to access organisms
         if not hasattr(app, 'unified_system') or not app.unified_system:
