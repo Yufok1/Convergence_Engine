@@ -7,7 +7,7 @@
     "performance_tracking_precision": 0.0001
   },
   "causation_detection": {
-    "correlation_threshold": 0.5,
+    "correlation_threshold": 0.45,
     "direct_causation_time_window": 2,
     "enable_bidirectional_causations": true,
     "enable_language_causations": true,
@@ -16,8 +16,9 @@
     "enable_neural_decision_causations": true,
     "enable_neural_training_causations": true,
     "enable_phase_transition_causations": true,
-    "phase_transition_time_window": 3,
-    "recent_events_window": 300,
+    "enabled": true,
+    "phase_transition_time_window": 2.5,
+    "recent_events_window": 150,
     "thresholds": {
       "clustering_coefficient": {
         "collapse": 0.5,
@@ -55,15 +56,15 @@
     "genotype_length": 48,
     "max_generations": 1500,
     "mutation_rate": {
-      "initial": 0.04
+      "initial": 0.045
     },
     "mutation_rate_precision": 0.001,
-    "population_size": 600
+    "population_size": 200
   },
   "feedback": {
     "enabled": true,
-    "hysteresis_checks": 6,
-    "interval_frames": 5,
+    "hysteresis_checks": 3,
+    "interval_frames": 10,
     "knobs": {
       "clustering_bias": {
         "initial": 1.5,
@@ -72,25 +73,25 @@
         "step": 0.05
       },
       "mutation_rate": {
-        "initial": 0.035,
+        "initial": 0.04,
         "max": 0.06,
         "min": 0.002,
         "step": 0.001
       },
       "new_edge_rate": {
-        "initial": 5,
-        "max": 6.0,
+        "initial": 2.5,
+        "max": 6,
         "min": 0.2,
         "step": 0.1
       },
       "quantum_pruning": {
         "initial": 0.45,
-        "max": 1.0,
-        "min": 0.0,
+        "max": 1,
+        "min": 0,
         "step": 0.05
       }
     },
-    "rate_limit_frames": 30
+    "rate_limit_frames": 60
   },
   "health_monitor": {
     "critical_threshold": 0.25,
@@ -99,6 +100,7 @@
     "history_size": 100,
     "thresholds": {
       "critical": 0.25,
+      "healthy": 0.65,
       "warning": 0.45
     },
     "warning_threshold": 0.45,
@@ -110,18 +112,24 @@
   },
   "highlander": {
     "alliance_warfare": {
-      "betrayal_chance": 0.15,
+      "betrayal_chance": 0.05,
+      "confederation_war_threshold": 0.7,
       "enabled": true,
-      "max_alliance_size": 30,
-      "war_declaration_threshold": 0.4
+      "existential_war_threshold": 0.8,
+      "max_alliance_size": 10,
+      "max_alliances": 1000,
+      "max_confederations": 50,
+      "min_alliance_size": 3,
+      "war_declaration_threshold": 0.4,
+      "war_frequency": 0.3
     },
     "chaos_factor": 0.4,
-    "competition_intensity": 0.95,
+    "competition_intensity": 0.8,
     "description": "Highlander Protocol - Survival of the fittest tournament system",
     "enabled": true,
     "extreme_mode": {
       "chaos_factor": 0.4,
-      "competition_intensity": 0.95,
+      "competition_intensity": 1.0,
       "description": "EXTREME DIFFICULTY - Maximum evolutionary pressure",
       "germination_rate": 0.05,
       "max_battle_rounds": 15,
@@ -133,27 +141,27 @@
       "rounds_per_cycle": 2,
       "survival_threshold": 0.8
     },
-    "germination_rate": 0.05,
-    "max_battle_rounds": 15,
+    "germination_rate": 0.1,
+    "max_battle_rounds": 50,
     "max_capsules": 10,
     "max_genetic_samples": 100,
     "max_population": 30,
     "min_population": 5,
     "mutation_rate": 0.15,
-    "population_size": 15,
+    "population_size": 100,
     "predation_enabled": true,
     "rounds_per_cycle": 2,
-    "survival_threshold": 0.85
+    "survival_threshold": 0.5
   },
   "lattice": {
     "entropy_sensitivity": 5e-05,
     "interaction_precision": 0.0001,
-    "particles": 800,
+    "particles": 500,
     "prune_threshold": 0,
     "stability_tolerance": 0.0005
   },
   "logging": {
-    "shared_state_dump_interval": 0
+    "shared_state_dump_interval": 300
   },
   "meta_cognitive": {
     "description": "Meta-cognitive systems: self-awareness, self-tuning, autonomous optimization",
@@ -201,16 +209,16 @@
         "meta_cognitive.self_tuning.tuning_interval_frames",
         "meta_cognitive.self_tuning.min_confidence_threshold"
       ],
-      "tuning_interval_frames": 10
+      "tuning_interval_frames": 20
     }
   },
   "network": {
     "connection_strength_resolution": 5e-06,
     "emergence_sensitivity": 1e-06,
-    "max_connections": 18000,
-    "max_organisms": 800,
+    "max_connections": 1000000,
+    "max_organisms": 500,
     "resource_flow_precision": 0.0001,
-    "resource_pool": 500,
+    "resource_pool": 550,
     "stability_precision": 1e-07
   },
   "neural": {
@@ -219,7 +227,8 @@
       "dropout": 0.1,
       "hidden_dim": 64,
       "input_dim": 24,
-      "output_dim": 6
+      "output_dim": 6,
+      "vocab_size": 50000
     },
     "concept_system": {
       "concept_loss_weight": 0.1,
@@ -242,7 +251,7 @@
     "language_model": {
       "attention": {
         "attention_dim": 32,
-        "enabled": false,
+        "enabled": true,
         "num_heads": 4
       },
       "curriculum": {
@@ -274,13 +283,15 @@
         "vp_gate_threshold": 0.5
       },
       "knowledge_web": {
+        "embedding_dim": 64,
         "enabled": true,
+        "max_concepts": 500,
         "quality_control": {
           "confidence_growth_rate": 0.0005,
           "enabled": true,
           "exploration_decay_generations": 1000,
           "exploration_end": 0.05,
-          "exploration_start": 0.3,
+          "exploration_start": 0.2,
           "max_discoveries_per_generation": 10,
           "min_confidence_threshold": 0.3,
           "min_discovery_count": 3,
@@ -317,8 +328,14 @@
         "max_length": 128
       },
       "teacher": {
+        "embedding_dim": 64,
         "enabled": true,
-        "use_knowledge_web": true
+        "min_action_history": 3,
+        "min_confidence": 0.3,
+        "teaching_frequency": 1,
+        "use_knowledge_web": true,
+        "use_semantic_embeddings": true,
+        "vocab_size": 50000
       },
       "training": {
         "alpha": 0.8,
@@ -340,7 +357,7 @@
     "optimization": {
       "compile_mode": "reduce-overhead",
       "reuse_optimizers": true,
-      "use_compile": true,
+      "use_compile": false,
       "use_scripted_inference": false
     },
     "rewards": {
@@ -352,16 +369,16 @@
       "survival": 1.5
     },
     "training": {
-      "batch_size": 16,
+      "batch_size": 64,
       "enabled": true,
       "epsilon": 0.95,
-      "epsilon_decay": 0.989,
+      "epsilon_decay": 0.985,
       "epsilon_end": 0.01,
       "epsilon_start": 0.8,
       "gamma": 0.995,
       "language_reward_scaling": 0.25,
-      "learning_rate": 0.005,
-      "memory_size": 1000,
+      "learning_rate": 0.008,
+      "memory_size": 20000,
       "update_frequency": 1
     },
     "vp_aware_planning": {
@@ -383,7 +400,7 @@
     "initial_states": 80,
     "performance_thresholds": {
       "fitness_std_threshold": 0.3,
-      "iteration_time_ms": 10.0,
+      "iteration_time_ms": 10,
       "memory_percentage": 5.0,
       "min_fitness_to_keep": 0.1
     },
@@ -392,7 +409,7 @@
     "superposition_tolerance": 0.0005
   },
   "ray": {
-    "actor_pool_size": 4,
+    "actor_pool_size": 2,
     "batch_inference_size": 32,
     "description": "Ray distributed computing - parallel organism decisions, training, and analysis",
     "enabled": true,
@@ -406,20 +423,21 @@
     "num_cpus": 4,
     "num_gpus": 1,
     "object_store_memory": null,
-    "parallelization_threshold": 50,
+    "parallelization_threshold": 100,
     "state_synchronization": {
       "consistency_model": "sequential",
       "max_state_age_ms": 100,
       "snapshot_strategy": "breath_cycle"
     },
-    "training_threshold": 8
+    "training_threshold": 16
   },
   "rendering": {
     "enable_visualizations": true,
-    "frame_rate": 30.0,
+    "frame_rate": 15,
     "metric_display_precision": 6,
-    "mode": "observer",
-    "performance_monitoring": true,
+    "mode": "god",
+    "performance_monitoring": false,
+    "render_quality": "low",
     "resolution": [
       1280,
       720
@@ -428,19 +446,38 @@
     "visualization_update_precision": 0.001
   },
   "scikit": {
+    "anomaly_detection": {
+      "algorithm": "isolation_forest",
+      "contamination": 0.15,
+      "enabled": true,
+      "n_estimators": 400
+    },
+    "clustering": {
+      "algorithm": "hdbscan",
+      "enabled": true,
+      "min_cluster_size": 3,
+      "min_samples": 1,
+      "use_neural_embeddings": true
+    },
     "concept_tracking": {
       "enabled": true,
       "persistence_threshold": 3,
       "stale_threshold": 10
-    }
+    },
+    "dimensionality_reduction": {
+      "algorithm": "pca",
+      "enabled": true,
+      "n_components": 3
+    },
+    "enabled": true
   },
   "simulation": {
     "log_level": "INFO",
     "max_runtime": 3600.0,
-    "measurement_precision": 6,
-    "performance_sampling_rate": 100,
+    "measurement_precision": 4,
+    "performance_sampling_rate": 200,
     "save_interval": 60.0,
-    "target_fps": 5.0,
+    "target_fps": 3,
     "time_resolution_ms": 1.0
   },
   "vp_monitoring": {
@@ -454,11 +491,11 @@
     "adaptive_thresholds_enabled": true,
     "component_decomposition_enabled": true,
     "component_weights": {
-      "evolution_pressure": 0.2,
-      "network_coherence": 0.2,
-      "phase_mismatch": 0.15,
-      "quantum_entropy": 0.2,
-      "trait_divergence": 0.25
+      "evolution_pressure": 0.15,
+      "network_coherence": 0.15,
+      "phase_mismatch": 0.1,
+      "quantum_entropy": 0.15,
+      "trait_divergence": 0.15
     },
     "diagnostics_enabled": true,
     "stabilization": {

@@ -6878,9 +6878,12 @@ def compile_ensemble_to_agent():
                 if cap:
                     capsules.append(cap)
             else:
-                cap = capsule_manager.load_capsule_by_organism_id(oid)
-                if cap:
-                    capsules.append(cap)
+                existing_capsules = capsule_manager.list_capsules(organism_id=oid)
+                if existing_capsules:
+                    cap_id = existing_capsules[0]['capsule_id']
+                    cap = capsule_manager.load_capsule(cap_id)
+                    if cap:
+                        capsules.append(cap)
 
         if not capsules:
             return jsonify({'error': 'No valid capsules found for provided organism_ids'}), 404

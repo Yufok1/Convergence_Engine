@@ -12,6 +12,7 @@ Extended with:
 
 import json
 import os
+import shutil
 from typing import Dict, List, Set, Any, Optional, Tuple
 from collections import defaultdict
 from datetime import datetime
@@ -246,25 +247,49 @@ class ContextMemory:
             del self.organism_sequences[organism_id]
 
     def _load_persistence(self) -> None:
-        """Load context memory from disk if it exists."""
+        """Load context memory from disk if it exists, falling back to backup on corruption."""
+
+        def _load_from_path(path: str) -> Optional[dict]:
+            if not os.path.exists(path):
+                return None
+            with open(path, 'r') as f:
+                return json.load(f)
+
+        data = None
         try:
-            if os.path.exists(self.persistence_path):
-                with open(self.persistence_path, 'r') as f:
-                    data = json.load(f)
-                    self.node_embeddings = {int(k): v for k, v in data.get('node_embeddings', {}).items()}
-                    # Convert back to defaultdict to maintain auto-creation behavior
-                    self.language_anchors = defaultdict(set, {k: set(v) for k, v in data.get('language_anchors', {}).items()})
-                    self.episodic_events = {int(k): v for k, v in data.get('episodic_events', {}).items()}
-                    self.word_frequencies = defaultdict(int, data.get('word_frequencies', {}))
-                    # Convert back to defaultdict to maintain auto-creation behavior
-                    self.node_word_associations = defaultdict(set, {int(k): set(v) for k, v in data.get('node_word_associations', {}).items()})
+            data = _load_from_path(self.persistence_path)
         except Exception as e:
-            print(f"[CONTEXT_MEMORY] Warning: Could not load persistence data: {e}")
+            print(f"[CONTEXT_MEMORY] Warning: Could not load persistence data ({self.persistence_path}): {e}")
+
+        if data is None:
+            backup_path = f"{self.persistence_path}.backup"
+            try:
+                data = _load_from_path(backup_path)
+                if data is not None:
+                    print("[CONTEXT_MEMORY] Restored context memory from backup copy")
+                    shutil.copy2(backup_path, self.persistence_path)
+            except Exception as e:
+                print(f"[CONTEXT_MEMORY] Warning: Could not load backup context memory: {e}")
+
+        if not data:
+            return
+
+        self.node_embeddings = {int(k): v for k, v in data.get('node_embeddings', {}).items()}
+        # Convert back to defaultdict to maintain auto-creation behavior
+        self.language_anchors = defaultdict(set, {k: set(v) for k, v in data.get('language_anchors', {}).items()})
+        self.episodic_events = {int(k): v for k, v in data.get('episodic_events', {}).items()}
+        self.word_frequencies = defaultdict(int, data.get('word_frequencies', {}))
+        # Convert back to defaultdict to maintain auto-creation behavior
+        self.node_word_associations = defaultdict(set, {int(k): set(v) for k, v in data.get('node_word_associations', {}).items()})
 
     def _save_persistence(self) -> None:
-        """Save context memory to disk."""
+        """Save context memory to disk using atomic writes and a backup copy."""
+        directory = os.path.dirname(self.persistence_path) or '.'
+        tmp_path = f"{self.persistence_path}.tmp"
+        backup_path = f"{self.persistence_path}.backup"
+
         try:
-            os.makedirs(os.path.dirname(self.persistence_path), exist_ok=True)
+            os.makedirs(directory, exist_ok=True)
             data = {
                 'node_embeddings': self.node_embeddings,
                 'language_anchors': {k: list(v) for k, v in self.language_anchors.items()},
@@ -273,10 +298,21 @@ class ContextMemory:
                 'node_word_associations': {k: list(v) for k, v in self.node_word_associations.items()},
                 'last_updated': datetime.now().isoformat()
             }
-            with open(self.persistence_path, 'w') as f:
-                json.dump(data, f, indent=2)
+
+            with open(tmp_path, 'w') as tmp_file:
+                json.dump(data, tmp_file, indent=2)
+                tmp_file.flush()
+                os.fsync(tmp_file.fileno())
+
+            os.replace(tmp_path, self.persistence_path)
+            shutil.copy2(self.persistence_path, backup_path)
         except Exception as e:
             print(f"[CONTEXT_MEMORY] Warning: Could not save persistence data: {e}")
+            if os.path.exists(tmp_path):
+                try:
+                    os.remove(tmp_path)
+                except OSError:
+                    pass
 
     def record_generation_state(self, generation: int, metrics: Dict[str, Any]) -> None:
         """
