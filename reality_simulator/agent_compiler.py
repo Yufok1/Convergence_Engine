@@ -285,8 +285,9 @@ class AgentCompiler:
             # Causation Trace
             'causation_trace': {
                 'enabled': bool(capsule.causation),
-                'event_count': len(capsule.causation.get('events', [])) if capsule.causation else 0,
-                'link_count': len(capsule.causation.get('links', [])) if capsule.causation else 0,
+                'key_event_count': len(capsule.causation.key_events) if capsule.causation else 0,
+                'turning_point_count': len(capsule.causation.turning_points) if capsule.causation else 0,
+                'causal_chain_count': len(capsule.causation.causal_chains) if capsule.causation else 0,
             },
             
             # Export Options (to be added by the compiler)
