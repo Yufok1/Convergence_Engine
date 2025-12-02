@@ -276,17 +276,17 @@ class AgentCompiler:
                 'enabled': bool(capsule.config),
                 'atom_count': len(capsule.config.atoms) if capsule.config else 0,
             },
-            'environment_context': capsule.environment_context,
+            'environment_context': capsule.environment.to_dict() if capsule.environment else {},
             
             # Highlander & Social Data
-            'highlander_data': capsule.highlander_metadata,
-            'social_connections': capsule.social_connections, # Summarized
+            'highlander_data': capsule.highlander.to_dict() if capsule.highlander else {},
+            'social_connections': {},  # Not stored in capsule directly
             
             # Causation Trace
             'causation_trace': {
-                'enabled': bool(capsule.causation_digest),
-                'event_count': len(capsule.causation_digest.get('events', [])) if capsule.causation_digest else 0,
-                'link_count': len(capsule.causation_digest.get('links', [])) if capsule.causation_digest else 0,
+                'enabled': bool(capsule.causation),
+                'event_count': len(capsule.causation.get('events', [])) if capsule.causation else 0,
+                'link_count': len(capsule.causation.get('links', [])) if capsule.causation else 0,
             },
             
             # Export Options (to be added by the compiler)
