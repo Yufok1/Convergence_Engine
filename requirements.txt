@@ -29,6 +29,9 @@ scikit-learn>=1.5.0 # ML utilities - clustering, anomaly detection, PCA/t-SNE vi
 hdbscan>=0.8.38     # HDBSCAN density-based clustering for phenotype detection
 onnxruntime>=1.15.0 # For running exported ONNX models (agent compilation)
 
+# Distributed Computing (OPTIONAL - graceful fallback to sequential)
+ray>=2.10.0         # Parallel processing for ML features, battles, neural decisions, training (2-5x speedup)
+
 # Kernel Dependencies (required if using Djinn Kernel features)
 cryptography>=42.0.0  # Used in kernel/security_compliance.py for security features
 

@@ -333,6 +333,9 @@ pip install numpy scipy networkx psutil matplotlib flask flask-socketio requests
 # Optional: Neural System (PyTorch)
 pip install torch>=2.0.0  # For neural organism learning (system works without it)
 
+# Optional: Distributed Computing (Ray)
+pip install ray>=2.10.0   # For parallel processing (2-5x speedup, graceful fallback)
+
 # Alternative: JAX/Flax (2-10x faster, see NEURAL_FRAMEWORK_ALTERNATIVES.md)
 # pip install jax jaxlib flax optax
 
