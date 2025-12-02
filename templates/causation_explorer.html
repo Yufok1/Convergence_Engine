@@ -4295,6 +4295,90 @@
                 animationSpeed: 1.0,               // Multiplier (0.5-2.0)
             };
 
+            // ==================== VIZ SETTINGS PERSISTENCE ====================
+            // Save vizSettings to localStorage whenever changed
+            function saveVizSettingsToStorage() {
+                try {
+                    localStorage.setItem('causationExplorer_vizSettings', JSON.stringify(vizSettings));
+                    localStorage.setItem('causationExplorer_componentColors', JSON.stringify(componentColors));
+                    localStorage.setItem('causationExplorer_linkColors', JSON.stringify(linkColors));
+                    console.log('[VizSettings] Saved to localStorage');
+                } catch (e) {
+                    console.warn('[VizSettings] Failed to save to localStorage:', e);
+                }
+            }
+
+            // Load vizSettings from localStorage
+            function loadVizSettingsFromStorage() {
+                try {
+                    const savedViz = localStorage.getItem('causationExplorer_vizSettings');
+                    if (savedViz) {
+                        const parsed = JSON.parse(savedViz);
+                        Object.assign(vizSettings, parsed);
+                        console.log('[VizSettings] Loaded from localStorage:', Object.keys(parsed).length, 'settings');
+                    }
+                    const savedComponentColors = localStorage.getItem('causationExplorer_componentColors');
+                    if (savedComponentColors) {
+                        Object.assign(componentColors, JSON.parse(savedComponentColors));
+                        console.log('[VizSettings] Loaded component colors from localStorage');
+                    }
+                    const savedLinkColors = localStorage.getItem('causationExplorer_linkColors');
+                    if (savedLinkColors) {
+                        Object.assign(linkColors, JSON.parse(savedLinkColors));
+                        console.log('[VizSettings] Loaded link colors from localStorage');
+                    }
+                    return true;
+                } catch (e) {
+                    console.warn('[VizSettings] Failed to load from localStorage:', e);
+                    return false;
+                }
+            }
+
+            // Sync UI controls FROM vizSettings (not the other way around)
+            function syncUIFromVizSettings() {
+                console.log('[VizSettings] Syncing UI controls from vizSettings...');
+                
+                // Sync vizSettings sliders and checkboxes
+                Object.keys(vizSettings).forEach(key => {
+                    const element = document.getElementById(key);
+                    if (element) {
+                        if (element.type === 'checkbox') {
+                            element.checked = vizSettings[key];
+                        } else if (element.type === 'range' || element.type === 'number') {
+                            element.value = vizSettings[key];
+                        } else if (element.tagName === 'SELECT') {
+                            element.value = vizSettings[key];
+                        }
+                        // Update display value if exists
+                        const displayElement = document.getElementById(key + 'Value');
+                        if (displayElement) {
+                            displayElement.textContent = typeof vizSettings[key] === 'boolean' 
+                                ? (vizSettings[key] ? 'On' : 'Off') 
+                                : vizSettings[key];
+                        }
+                    }
+                });
+
+                // Sync component color pickers
+                Object.keys(componentColors).forEach(component => {
+                    const colorPicker = document.getElementById('componentColor_' + component);
+                    if (colorPicker) {
+                        colorPicker.value = componentColors[component];
+                    }
+                });
+
+                // Sync link color pickers
+                Object.keys(linkColors).forEach(linkType => {
+                    const colorPicker = document.getElementById('linkColor_' + linkType);
+                    if (colorPicker) {
+                        colorPicker.value = linkColors[linkType];
+                    }
+                });
+
+                console.log('[VizSettings] UI sync complete');
+            }
+            // ==================== END VIZ SETTINGS PERSISTENCE ====================
+
             // Filter state
             let filters = {
                 components: {
@@ -5061,6 +5145,10 @@
             function updateVizSetting(key, value) {
                 vizSettings[key] = value;
                 console.log(`[VizSettings] Updated ${key} = ${value}`);
+                
+                // PERSIST TO LOCALSTORAGE
+                saveVizSettingsToStorage();
+                
                 // Update display value if it exists
                 const displayElement = document.getElementById(key + 'Value');
                 if (displayElement) {
@@ -8021,6 +8109,10 @@
                 if (component === 'djinn_kernel') {
                     componentColors['utm_kernel'] = color;
                 }
+                
+                // PERSIST TO LOCALSTORAGE
+                saveVizSettingsToStorage();
+                
                 // REAL-TIME UPDATE: Use real-time update if simulation is running, otherwise full re-render
                 if (svg && allNodes.length > 0 && simulation) {
                     // Update colors in real-time without recreating simulation
@@ -8104,6 +8196,10 @@
             function updateLinkColor(linkType, color) {
                 const normalizedType = linkType.toLowerCase().trim();
                 linkColors[normalizedType] = color;
+                
+                // PERSIST TO LOCALSTORAGE
+                saveVizSettingsToStorage();
+                
                 // REAL-TIME UPDATE: Use real-time update if simulation is running, otherwise full re-render
                 if (svg && allNodes.length > 0 && simulation) {
                     // Update link colors in real-time without recreating simulation
@@ -17599,11 +17695,14 @@
                 // Initialize minimap
                 initMinimap();
                 
-                // Sync all sliders to vizSettings on page load
-                document.querySelectorAll('input[type="range"]').forEach(slider => {
-                    const event = new Event('input', { bubbles: true });
-                    slider.dispatchEvent(event);
-                });
+                // ==================== FIXED: VIZ SETTINGS PERSISTENCE ====================
+                // FIRST: Load saved settings from localStorage (before syncing UI)
+                loadVizSettingsFromStorage();
+                
+                // THEN: Sync UI controls FROM vizSettings (not the other way around!)
+                // This ensures user's saved settings are reflected in sliders
+                syncUIFromVizSettings();
+                // ==================== END FIX ====================
                 
                 // Set up viewport culling toggle event listener
                 const viewportCullingCheckbox = document.getElementById('viewportCullingEnabled');
