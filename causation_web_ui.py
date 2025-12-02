@@ -6637,6 +6637,7 @@ def list_organisms():
             unified_system = app.unified_system
             if hasattr(unified_system, 'get_current_organisms'):
                 live_organisms = unified_system.get_current_organisms()
+                logger.info(f"Found {len(live_organisms)} live organisms from simulation")
                 for org_id, organism in live_organisms.items():
                     if org_id not in organism_ids:
                         organisms_data.append({
@@ -6648,6 +6649,8 @@ def list_organisms():
                         organism_ids.add(org_id)
             else:
                 logger.warning("Unified system does not have 'get_current_organisms' method.")
+        else:
+            logger.warning("Unified system not available for organism listing")
 
         # 2. Get organisms from saved capsules
         # Assuming OrganismCapsuleManager is initialized in unified_system or can be initialized here
@@ -6664,6 +6667,7 @@ def list_organisms():
 
         if capsule_manager:
             capsule_index = capsule_manager.capsule_index
+            logger.info(f"Found {len(capsule_index)} capsules in storage")
             for capsule_id, info in capsule_index.items():
                 org_id = info.get('organism_id')
                 if org_id and org_id not in organism_ids:
@@ -6679,6 +6683,7 @@ def list_organisms():
 
         organisms_data.sort(key=lambda x: x['fitness'], reverse=True) # Sort by fitness
         
+        logger.info(f"Returning {len(organisms_data)} total organisms for export list")
         return jsonify(organisms_data)
 
     except Exception as e:

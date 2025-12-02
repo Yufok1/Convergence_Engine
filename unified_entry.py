@@ -1401,11 +1401,17 @@ class UnifiedSystem:
         """
         organisms = {}
 
-        # Get organisms from Reality Simulator
-        if self.reality_sim and hasattr(self.reality_sim, 'organisms'):
+        # Get organisms from Reality Simulator's network component
+        if self.reality_sim and hasattr(self.reality_sim, 'components'):
+            network = self.reality_sim.components.get('network')
+            if network and hasattr(network, 'organisms'):
+                organisms.update(network.organisms)
+        
+        # Fallback: Check if reality_sim has organisms directly
+        elif self.reality_sim and hasattr(self.reality_sim, 'organisms'):
             organisms.update(self.reality_sim.organisms)
 
-        # If using Highlander protocol, get from there instead
+        # If using Highlander protocol, filter to only active organisms
         if hasattr(self, 'highlander_protocol') and self.highlander_protocol:
             # Get organisms from highlander protocol (which has active_organisms)
             if hasattr(self.highlander_protocol, 'active_organisms'):
