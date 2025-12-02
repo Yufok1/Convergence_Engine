@@ -100,9 +100,33 @@ class AgentCompiler:
             use_language_head=use_language_head
         )
         
-        # Load the state_dict
+        # Load the state_dict (handle possible compression)
         state_dict_bytes = base64.b64decode(brain_state_dict_b64)
-        # PyTorch 2.6 changed default to weights_only=True; allow full, trusted load
+        # Some snapshots may be gzip or zip compressed before base64 encoding
+        try:
+            if len(state_dict_bytes) >= 2 and state_dict_bytes[:2] == b"\x1f\x8b":
+                import gzip
+                state_dict_bytes = gzip.decompress(state_dict_bytes)
+            elif len(state_dict_bytes) >= 2 and state_dict_bytes[:2] == b"PK":
+                # ZIP archive; read first plausible tensor file
+                with zipfile.ZipFile(BytesIO(state_dict_bytes)) as zf:
+                    names = zf.namelist()
+                    candidate = None
+                    for ext in ('.pt', '.pth', '.pkl', '.bin', '.tensors'):
+                        for n in names:
+                            if n.lower().endswith(ext):
+                                candidate = n
+                                break
+                        if candidate:
+                            break
+                    if not candidate and names:
+                        candidate = names[0]
+                    state_dict_bytes = zf.read(candidate)
+        except Exception:
+            # If decompression fails, fall back to raw bytes
+            pass
+
+        # PyTorch 2.6 defaults weights_only=True; allow full, trusted load
         state_dict = torch.load(BytesIO(state_dict_bytes), map_location='cpu', weights_only=False)
         reconstructed_brain.load_state_dict(state_dict)
         reconstructed_brain.eval() # Set to evaluation mode
