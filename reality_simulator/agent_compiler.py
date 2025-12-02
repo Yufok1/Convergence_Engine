@@ -128,7 +128,41 @@ class AgentCompiler:
 
         # PyTorch 2.6 defaults weights_only=True; allow full, trusted load
         state_dict = torch.load(BytesIO(state_dict_bytes), map_location='cpu', weights_only=False)
-        reconstructed_brain.load_state_dict(state_dict)
+
+        # Infer architecture from state_dict to avoid shape/key mismatches
+        sd_keys = set(state_dict.keys())
+        def _shape(name, dim):
+            return state_dict[name].shape[dim] if name in state_dict else None
+
+        inferred_input = _shape('fc1.weight', 1) or getattr(capsule.neural, 'input_size', None) or 18
+        inferred_hidden = _shape('fc1.weight', 0) or getattr(capsule.neural, 'hidden_size', None) or 64
+        inferred_output = _shape('fc3.weight', 0) or getattr(capsule.neural, 'output_size', None) or 6
+
+        use_attention = any(k.startswith('attention.') for k in sd_keys) or 'attention_norm.weight' in sd_keys
+        use_language_head = 'fc_language.weight' in sd_keys
+        use_concept_head = any(k.startswith('concept_head.') for k in sd_keys)
+
+        vocab_size = state_dict['fc_language.weight'].shape[0] if use_language_head else 10000
+
+        # Create a new instance of OrganismBrain matching the checkpoint
+        reconstructed_brain = OrganismBrain(
+            input_dim=int(inferred_input),
+            hidden_dim=int(inferred_hidden),
+            output_dim=int(inferred_output),
+            activation='relu',
+            dropout=0.0,
+            use_attention=bool(use_attention),
+            num_attention_heads=4,
+            attention_dim=int(inferred_hidden),
+            vocab_size=int(vocab_size),
+            use_language_head=bool(use_language_head),
+            use_concept_head=bool(use_concept_head)
+        )
+
+        # Load state dict allowing extra/missing keys (robust to optional heads)
+        missing, unexpected = reconstructed_brain.load_state_dict(state_dict, strict=False)
+        if unexpected:
+            logger.debug(f"AgentCompiler: Ignored unexpected keys during load: {sorted(list(unexpected))[:5]}...")
         reconstructed_brain.eval() # Set to evaluation mode
         
         return reconstructed_brain
@@ -303,17 +337,28 @@ class AgentRunner:
             import torch
             from reality_simulator.neural.brain import OrganismBrain # Requires brain definition
             
-            # Reconstruct brain architecture from metadata (with sensible defaults)
-            arch = self.metadata['neural_network']['architecture']
+            # Load state_dict first and infer architecture
+            sd = torch.load(self.model_filename, map_location='cpu', weights_only=False)
+            keys = set(sd.keys())
+            def _shape(name, dim):
+                return sd[name].shape[dim] if name in sd else None
+            in_dim = _shape('fc1.weight', 1) or 18
+            hid_dim = _shape('fc1.weight', 0) or 64
+            out_dim = _shape('fc3.weight', 0) or 6
+            use_attn = any(k.startswith('attention.') for k in keys) or 'attention_norm.weight' in keys
+            use_lang = 'fc_language.weight' in keys
+            use_concept = any(k.startswith('concept_head.') for k in keys)
+            vocab = sd['fc_language.weight'].shape[0] if use_lang and 'fc_language.weight' in sd else 10000
+
             self.model = OrganismBrain(
-                input_dim=arch['input_size'], hidden_dim=arch['hidden_size'],
-                output_dim=arch['output_size'], activation='relu',
-                dropout=0.0, use_attention=False,
-                num_attention_heads=4,
-                attention_dim=64, vocab_size=10000,
-                use_language_head=False
+                input_dim=int(in_dim), hidden_dim=int(hid_dim),
+                output_dim=int(out_dim), activation='relu',
+                dropout=0.0, use_attention=bool(use_attn),
+                num_attention_heads=4, attention_dim=int(hid_dim),
+                vocab_size=int(vocab), use_language_head=bool(use_lang),
+                use_concept_head=bool(use_concept)
             )
-            self.model.load_state_dict(torch.load(self.model_filename, map_location='cpu', weights_only=False))
+            self.model.load_state_dict(sd, strict=False)
             self.model.eval()
             print("PyTorch state_dict model loaded (requires OrganismBrain class).")
 
@@ -483,7 +528,7 @@ This compiled agent is ready for deployment, integration into other systems, or 
         brain = self._reconstruct_brain_from_capsule(capsule)
         
         # 2. Prepare dummy input for ONNX/TorchScript export
-        dummy_input = torch.randn(1, brain.input_dim, device=brain.device)
+        dummy_input = torch.randn(1, brain.input_dim)
         
         # 3. Export the brain to the specified format
         model_buffer = BytesIO()
