@@ -1233,7 +1233,7 @@ app = Flask(__name__, template_folder=str(template_dir))
 
 # Initialize SocketIO after Flask app is created
 if SOCKETIO_AVAILABLE:
-    socketio = SocketIO(app, cors_allowed_origins="*")
+    socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
 # Input validation decorators for API endpoints
 from functools import wraps
@@ -9557,9 +9557,6 @@ def create_video_from_frames():
         return jsonify({'error': str(e)}), 500
 
 
-if __name__ == '__main__':
-    # Create templates directory if needed
-    templates_dir = Path(__file__).parent / 'templates'
 # ============================================================================
 # CONVERGENCE RESEARCH ASSISTANT - REAL-TIME EVENT STREAMING
 # ============================================================================
@@ -12432,6 +12429,8 @@ def cra_validate_config():
 # ============================================================================
 
 if __name__ == '__main__':
+    # Create templates directory if needed
+    templates_dir = Path(__file__).parent / 'templates'
     templates_dir.mkdir(exist_ok=True)
 
     # Initialize CRA event streaming on startup
