@@ -6,7 +6,7 @@ import numpy as np
 import datetime
 import os
 import sys
-from typing import Dict, Any
+from typing import Dict, Any, List
 import base64
 import uuid
 
@@ -57,6 +57,28 @@ class AgentCompiler:
 
     def __init__(self):
         self.supported_formats = ['onnx', 'torchscript', 'statedict']
+
+    class MultiOrganismWrapper(torch.nn.Module):
+        def __init__(self, brains: List['OrganismBrain'], names: List[str]):
+            super().__init__()
+            self.brains = torch.nn.ModuleList(brains)
+            self.names = names
+            self.input_dims = [b.input_dim for b in brains]
+            self.output_dims = [b.output_dim for b in brains]
+            self.max_input_dim = max(self.input_dims) if self.input_dims else 0
+
+        def forward(self, x: torch.Tensor):
+            # x shape: [B, max_input_dim] (we will slice/pad per brain)
+            outputs = []
+            for brain, in_dim in zip(self.brains, self.input_dims):
+                if x.shape[1] < in_dim:
+                    pad = torch.zeros(x.shape[0], in_dim - x.shape[1], dtype=x.dtype, device=x.device)
+                    x_i = torch.cat([x, pad], dim=1)
+                else:
+                    x_i = x[:, :in_dim]
+                out = brain(x_i)
+                outputs.append(out)
+            return tuple(outputs)
         
     def _reconstruct_brain_from_capsule(self, capsule: OrganismCapsule) -> OrganismBrain:
         """
@@ -508,6 +530,231 @@ This compiled agent is ready for deployment, integration into other systems, or 
 
         archive_buffer.seek(0)
         return archive_buffer
+
+    def _create_ensemble_archive(self,
+                                 model_buffer: BytesIO,
+                                 metadata: Dict[str, Any],
+                                 runner_script: str) -> BytesIO:
+        """Package ensemble components into a ZIP archive (no single capsule).
+        """
+        archive_buffer = BytesIO()
+        with zipfile.ZipFile(archive_buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
+            # Neural model
+            model_buffer.seek(0)
+            zf.writestr(f"brain.{metadata['export_format']}", model_buffer.read())
+
+            # Metadata
+            zf.writestr("metadata.json", json.dumps(metadata, indent=2))
+
+            # Runner
+            zf.writestr("run_agent.py", runner_script)
+
+            # Requirements
+            requirements = ""
+            if metadata['export_format'] == 'onnx':
+                requirements = "onnxruntime>=1.15.0\nnumpy>=1.21.0\n"
+            elif metadata['export_format'] == 'torchscript':
+                requirements = "torch\nnumpy>=1.21.0\n"
+            zf.writestr("requirements.txt", requirements)
+
+            readme = f"""# Compiled Ensemble Agent
+
+This archive contains multiple organisms exported as a single model.
+
+Members: {', '.join([m['organism_id'] for m in metadata.get('ensemble', {}).get('members', [])])}
+
+Run with:
+    python run_agent.py
+"""
+            zf.writestr("README.md", readme)
+
+        archive_buffer.seek(0)
+        return archive_buffer
+
+    def _generate_ensemble_runner_script(self, export_format: str, metadata: Dict[str, Any]) -> str:
+        action_map_str = json.dumps(ACTION_MAP)
+        script = """
+import onnxruntime
+import numpy as np
+import json
+import os
+import time
+
+ACTION_MAP = {action_map_str}
+
+class EnsembleRunner:
+    def __init__(self, model_filename="{model_filename}", metadata_filename="metadata.json"):
+        self.model_filename = model_filename
+        self.metadata_filename = metadata_filename
+        if not os.path.exists(self.model_filename):
+            raise FileNotFoundError(f"Model file not found: {self.model_filename}")
+        if not os.path.exists(self.metadata_filename):
+            raise FileNotFoundError(f"Metadata file not found: {self.metadata_filename}")
+
+        with open(self.metadata_filename, "r") as f:
+            self.metadata = json.load(f)
+
+        ensemble = self.metadata.get('ensemble', {})
+        members = ensemble.get('members', [])
+        self.member_names = [m['name'] for m in members]
+        self.input_dim = ensemble.get('max_input_dim', 0)
+
+        print("\n--- Ensemble Loaded ---")
+        print(f"Members: {', '.join(self.member_names)}")
+        print(f"Input Dim: {self.input_dim}")
+        print(f"Exported: {self.metadata['export_timestamp']}")
+        print("-----------------------\n")
+
+        self.session = None
+        if "{export_format}" == "onnx":
+            providers = onnxruntime.get_available_providers()
+            if 'CUDAExecutionProvider' in providers:
+                self.session = onnxruntime.InferenceSession(self.model_filename, providers=['CUDAExecutionProvider'])
+                print("Using CUDAExecutionProvider for ONNX inference.")
+            else:
+                self.session = onnxruntime.InferenceSession(self.model_filename, providers=['CPUExecutionProvider'])
+                print("Using CPUExecutionProvider for ONNX inference.")
+        elif "{export_format}" == "torchscript":
+            import torch
+            self.model = torch.jit.load(self.model_filename)
+            self.model.eval()
+            print("TorchScript ensemble loaded.")
+
+    def decide_actions(self, state_vector):
+        if len(state_vector) != self.input_dim:
+            raise ValueError(f"State vector must have {self.input_dim} dimensions, got {len(state_vector)}")
+
+        if "{export_format}" == "onnx":
+            state_array = np.array(state_vector, dtype=np.float32).reshape(1, -1)
+            inputs = {self.session.get_inputs()[0].name: state_array}
+            outputs = self.session.run(None, inputs)
+            # outputs is a list; align to member order
+            decisions = {}
+            for name, out in zip(self.member_names, outputs):
+                idx = int(np.argmax(out))
+                decisions[name] = ACTION_MAP.get(idx, str(idx))
+            return decisions
+        elif "{export_format}" == "torchscript":
+            import torch
+            state_tensor = torch.tensor(state_vector, dtype=torch.float32).unsqueeze(0)
+            with torch.no_grad():
+                outs = self.model(state_tensor)
+            decisions = {}
+            for name, out in zip(self.member_names, outs):
+                idx = int(torch.argmax(out).item())
+                decisions[name] = ACTION_MAP.get(idx, str(idx))
+            return decisions
+        else:
+            raise ValueError(f"Unsupported export format: {self.metadata['export_format']}")
+
+if __name__ == '__main__':
+    runner = EnsembleRunner()
+    dummy_state = np.random.rand(runner.input_dim)
+    decisions = runner.decide_actions(dummy_state)
+    print("Decisions:", decisions)
+"""
+        return script.format(action_map_str=action_map_str,
+                             model_filename=f"brain.{export_format}",
+                             export_format=export_format)
+
+    def compile_capsules_to_ensemble(self,
+                                     capsules: List['OrganismCapsule'],
+                                     export_format: str = 'onnx',
+                                     example_state: Any = None) -> BytesIO:
+        """Compile multiple capsules into a single ensemble model archive.
+
+        All brains receive the same state vector (max input dim); per-brain
+        slicing/padding is handled inside the wrapper for compatibility.
+        """
+        if export_format not in ['onnx', 'torchscript']:
+            raise ValueError("Ensemble export supports 'onnx' and 'torchscript' only.")
+
+        # Reconstruct brains
+        brains = []
+        names = []
+        members_meta = []
+        for cap in capsules:
+            b = self._reconstruct_brain_from_capsule(cap)
+            brains.append(b)
+            name = str(cap.organism_id)
+            names.append(name)
+            members_meta.append({
+                'organism_id': name,
+                'name': name,
+                'input_dim': b.input_dim,
+                'output_dim': b.output_dim
+            })
+
+        if not brains:
+            raise ValueError("No capsules provided for ensemble export.")
+
+        wrapper = self.MultiOrganismWrapper(brains, names)
+
+        # Prepare deterministic input
+        if example_state is not None:
+            try:
+                arr = np.asarray(example_state, dtype=np.float32).reshape(1, -1)
+                if arr.shape[1] < wrapper.max_input_dim:
+                    pad = np.zeros((1, wrapper.max_input_dim - arr.shape[1]), dtype=np.float32)
+                    arr = np.concatenate([arr, pad], axis=1)
+                elif arr.shape[1] > wrapper.max_input_dim:
+                    arr = arr[:, :wrapper.max_input_dim]
+                dummy_input = torch.from_numpy(arr)
+            except Exception:
+                dummy_input = torch.zeros(1, wrapper.max_input_dim, dtype=torch.float32)
+        else:
+            dummy_input = torch.zeros(1, wrapper.max_input_dim, dtype=torch.float32)
+
+        # Export
+        model_buffer = BytesIO()
+        chosen_format = export_format
+        if export_format == 'onnx':
+            try:
+                # Multiple outputs with names per member
+                output_names = [f"out_{n}" for n in names]
+                torch.onnx.export(
+                    wrapper,
+                    dummy_input,
+                    model_buffer,
+                    input_names=['input'],
+                    output_names=output_names,
+                    dynamic_axes={'input': {0: 'batch_size'}},
+                    opset_version=11
+                )
+            except Exception as e:
+                msg = str(e)
+                if 'onnxscript' in msg.lower() or 'onnx' in msg.lower():
+                    # Fallback to TorchScript
+                    model_buffer = BytesIO()
+                    scripted = torch.jit.script(wrapper)
+                    scripted.save(model_buffer)
+                    chosen_format = 'torchscript'
+                else:
+                    raise
+        else:
+            scripted = torch.jit.script(wrapper)
+            scripted.save(model_buffer)
+
+        # Metadata
+        metadata = {
+            'export_timestamp': datetime.datetime.now().isoformat(),
+            'export_format': chosen_format,
+            'ensemble': {
+                'members': members_meta,
+                'max_input_dim': wrapper.max_input_dim
+            },
+            'runtime_dependencies': {
+                'onnxruntime': onnxruntime.__version__ if ONNX_AVAILABLE else 'not installed',
+                'numpy': np.__version__,
+                'python': sys.version.split(' ')[0]
+            }
+        }
+
+        # Runner
+        runner_script = self._generate_ensemble_runner_script(chosen_format, metadata)
+
+        # Package
+        return self._create_ensemble_archive(model_buffer, metadata, runner_script)
 
     def compile_capsule_to_agent(self, 
                                  capsule: OrganismCapsule, 
