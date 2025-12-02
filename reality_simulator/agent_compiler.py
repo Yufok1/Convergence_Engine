@@ -333,7 +333,7 @@ class AgentRunner:
         with open(self.metadata_filename, "r") as f:
             self.metadata = json.load(f)
             
-        print("\n--- Agent Loaded ---")
+        print("\\n--- Agent Loaded ---")
         print(f"Organism ID: {{self.metadata['organism_core']['species_id']}}")
         print(f"Fitness: {{self.metadata['organism_core']['fitness']:.3f}}")
         print(f"Age: {{self.metadata['organism_core']['organism_age']}} generations")
@@ -344,7 +344,7 @@ class AgentRunner:
         
         print(f"NN Input Dim: {{self.input_dim}}")
         print(f"NN Output Actions: {{self.output_actions}}")
-        print("--------------------\n")
+        print("--------------------\\n")
 
         self.session = None
         if "{export_format}" == "onnx":
@@ -432,7 +432,7 @@ if __name__ == '__main__':
     
     print(f"Agent decision for dummy state: {{action}}")
     
-    print("\n--- Simulating 5 decisions ---")
+    print("\\n--- Simulating 5 decisions ---")
     for i in range(5):
         # Simulate a slightly changing state
         simulated_state = np.random.rand(runner.input_dim) + (np.random.randn(runner.input_dim) * 0.1)
@@ -440,7 +440,7 @@ if __name__ == '__main__':
         print(f"Step {{i+1}}: State={{simulated_state[:3]}}..., Decision={{decision}}")
         time.sleep(0.5)
 
-    print("\n--- Agent Example Complete ---")
+    print("\\n--- Agent Example Complete ---")
 """
         return script_template.format(
             action_map_str=action_map_str,
@@ -600,11 +600,11 @@ class EnsembleRunner:
         self.member_names = [m['name'] for m in members]
         self.input_dim = ensemble.get('max_input_dim', 0)
 
-        print("\n--- Ensemble Loaded ---")
+        print("\\n--- Ensemble Loaded ---")
         print(f"Members: {{', '.join(self.member_names)}}")
         print(f"Input Dim: {{self.input_dim}}")
         print(f"Exported: {{self.metadata['export_timestamp']}}")
-        print("-----------------------\n")
+        print("-----------------------\\n")
 
         self.session = None
         if "{export_format}" == "onnx":
