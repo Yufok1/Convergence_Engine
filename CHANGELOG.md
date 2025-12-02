@@ -27,6 +27,22 @@ Based on comprehensive analysis from Claude (Sonnet 4.5) and Grok-1/2/3/4 resear
   - New: Explicit `input_tokens` and `target_tokens` fields in Experience class
   - Enables proper seq2seq "given X, generate Y" training instead of pattern repetition
 
+- **Template Bootstrap Learning** (trainer.py) - Claude Recommendation
+  - Previous: Teacher forcing on user tokens caused organisms to learn echoing pattern
+  - New: Template response system with categorized patterns (greeting/question/generic)
+  - Teaches organisms proper conversational responses instead of mirroring input
+
+- **Knowledge Transfer System** (butterfly_chat.py) - Grok-2 Design
+  - New: Successful responses (reward > 0.6) broadcast to connected organisms
+  - Neighbors learn from successful patterns with discounted rewards (50% + connection strength)
+  - Accelerates ecosystem-level language learning through symbiotic network
+
+- **Creative Vocabulary Expansion** (language_system.py) - Grok-4 Design
+  - New: `get_creative_tokens()` - creativity-level-based token combinations
+  - New: `expand_vocabulary_from_pattern()` - successful multi-token patterns become compound entries
+  - New: `get_phrase_suggestions()` - context-aware phrase recommendations
+  - Enables vocabulary growth through successful expression experimentation
+
 ### 🔧 Critical Fix - Modularity Calculation (2025-12-01)
 
 #### Fixed

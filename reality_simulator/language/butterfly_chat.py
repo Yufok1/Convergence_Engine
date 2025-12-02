@@ -724,6 +724,23 @@ class ButterflyChatRouter:
             if self.total_chat_experiences % 10 == 0 and self.trainer:
                 self._trigger_chat_training(organism, network_state)
             
+            # KNOWLEDGE TRANSFER: Broadcast successful responses to connected organisms
+            # Based on Grok-2's inter-organism knowledge transfer design
+            # High-reward responses (reward > 0.6) are shared with network neighbors
+            if reward > 0.6 and network_state:
+                self._broadcast_successful_response(
+                    source_organism=organism,
+                    user_tokens=user_tokens,
+                    response_tokens=organism_tokens,
+                    reward=reward,
+                    network_state=network_state
+                )
+                
+                # CREATIVE VOCABULARY EXPANSION: Grok-4's vocabulary expansion
+                # Successful multi-token patterns become compound vocabulary entries
+                if self.vocabulary and hasattr(self.vocabulary, 'expand_vocabulary_from_pattern'):
+                    self.vocabulary.expand_vocabulary_from_pattern(organism_tokens, reward)
+            
         except Exception as e:
             # Don't fail chat if experience storage fails
             self._log_error("EXPERIENCE_STORAGE_ERROR", f"Failed to store chat experience: {e}", {
@@ -911,6 +928,122 @@ class ButterflyChatRouter:
                         self.chat_training_triggered += 1
         except Exception as e:
             logger.debug(f"Chat training failed: {e}")
+    
+    def _broadcast_successful_response(self,
+                                        source_organism: Any,
+                                        user_tokens: List[int],
+                                        response_tokens: List[int],
+                                        reward: float,
+                                        network_state: Dict[str, Any]):
+        """
+        Broadcast successful response to connected organisms for knowledge transfer.
+        
+        Based on Grok-2's inter-organism knowledge transfer design:
+        - Successful responses (high reward) are shared with network neighbors
+        - Connected organisms learn from the success without direct experience
+        - This accelerates ecosystem-level language learning
+        
+        Args:
+            source_organism: The organism that generated the successful response
+            user_tokens: Input tokens (user message)
+            response_tokens: Output tokens (successful response)
+            reward: The reward score (should be > 0.6 to broadcast)
+            network_state: Network state containing connection information
+        """
+        try:
+            source_id = getattr(source_organism, 'species_id', str(id(source_organism)))
+            
+            # Get network graph if available
+            network_graph = network_state.get('network_graph')
+            if network_graph is None:
+                return
+            
+            # Get connected organisms
+            if source_id not in network_graph:
+                return
+            
+            neighbors = list(network_graph.neighbors(source_id))
+            if not neighbors:
+                return
+            
+            # Calculate distillation strength based on connection strength and reward
+            transfer_count = 0
+            for neighbor_id in neighbors:
+                neighbor_organism = self.organisms.get(neighbor_id)
+                if neighbor_organism is None:
+                    continue
+                
+                if not hasattr(neighbor_organism, 'experience_buffer') or neighbor_organism.experience_buffer is None:
+                    continue
+                
+                # Get connection strength from network graph
+                edge_data = network_graph.get_edge_data(source_id, neighbor_id, {})
+                connection_strength = edge_data.get('strength', 0.5)
+                
+                # Calculate discounted reward for knowledge transfer
+                # Neighbors learn from success but at reduced reward (avoid free-riding)
+                transfer_reward = reward * connection_strength * 0.5  # 50% discount + strength scaling
+                
+                # Only transfer if reward is still meaningful
+                if transfer_reward < 0.15:
+                    continue
+                
+                # Get VP value
+                vp_val = network_state.get('vp_value')
+                
+                # Create state for neighbor (use minimal state since we don't have their exact context)
+                neighbor_state = np.array([
+                    getattr(neighbor_organism, 'fitness', 0.5),
+                    transfer_reward,
+                    len(response_tokens)
+                ])
+                
+                # Store transferred experience in neighbor's buffer
+                # Mark with distillation_metadata to distinguish from direct experience
+                neighbor_organism.experience_buffer.add(
+                    state=neighbor_state,
+                    action=0,
+                    reward=transfer_reward,
+                    next_state=neighbor_state,
+                    done=False,
+                    input_tokens=user_tokens,
+                    target_tokens=response_tokens,
+                    vp_value=vp_val
+                )
+                
+                transfer_count += 1
+            
+            if transfer_count > 0:
+                self._log_debug("STEP_4", f"Knowledge transfer from {source_id}", {
+                    "source_organism": source_id,
+                    "recipients": transfer_count,
+                    "original_reward": reward,
+                    "neighbor_ids": neighbors[:5]  # Log first 5
+                })
+                
+                # Emit knowledge transfer event
+                if self.event_emitter:
+                    try:
+                        from causation_explorer import Event
+                        event = Event(
+                            timestamp=time.time(),
+                            component='butterfly_chat',
+                            event_type='knowledge_transfer',
+                            data={
+                                'source_organism': source_id,
+                                'recipients': transfer_count,
+                                'total_neighbors': len(neighbors),
+                                'original_reward': reward,
+                                'input_tokens_count': len(user_tokens),
+                                'response_tokens_count': len(response_tokens)
+                            }
+                        )
+                        self.event_emitter(event)
+                    except Exception as e:
+                        logger.debug(f"Knowledge transfer event emission failed: {e}")
+        
+        except Exception as e:
+            logger.debug(f"Knowledge transfer failed: {e}")
 
     def _emit_chat_events(self,
                           user_message: str,

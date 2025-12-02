@@ -1009,12 +1009,17 @@ class NeuralTrainer:
         """
         Bootstrap learning for organisms that generated empty responses.
         
-        Uses teacher forcing: organism learns to predict user tokens.
-        This helps new organisms develop language capability.
+        Uses TEMPLATE RESPONSES instead of teacher forcing on user input.
+        This teaches organisms proper response patterns rather than echoing.
+        
+        Based on Claude's supervised learning gap analysis:
+        - Problem: Teaching organism to predict user_tokens[i+1] from user_tokens[i]
+          causes organism to learn to echo/repeat user input
+        - Solution: Use template response patterns that teach appropriate responses
         
         Args:
             organism: Neural organism to bootstrap
-            user_tokens: User input tokens to learn from
+            user_tokens: User input tokens (used for context classification)
             network_state: Network state for context
             
         Returns:
@@ -1023,7 +1028,7 @@ class NeuralTrainer:
         if not PYTORCH_AVAILABLE:
             return False
         
-        if not user_tokens or len(user_tokens) < 2:
+        if not user_tokens or len(user_tokens) < 1:
             return False
         
         if not hasattr(organism, 'brain') or organism.brain is None:
@@ -1033,14 +1038,29 @@ class NeuralTrainer:
         logger = logging.getLogger(__name__)
         
         try:
-            # Add user tokens to organism's sequence (teacher forcing)
-            if hasattr(organism, 'token_sequence'):
-                for token in user_tokens:
-                    organism.token_sequence.append(token)
+            # Get vocabulary for template tokenization
+            vocab = getattr(organism, 'vocabulary', None)
+            if vocab is None:
+                # Try to get from butterfly chat or use fallback
+                if hasattr(organism, 'chat_interface') and organism.chat_interface:
+                    vocab = getattr(organism.chat_interface, 'vocabulary', None)
             
-            # Prepare input/target for teacher forcing
-            input_tokens = torch.LongTensor([user_tokens[:-1]]).to(self.device)
-            target_tokens = torch.LongTensor([user_tokens[1:]]).to(self.device)
+            if vocab is None:
+                logger.debug("[NEURAL] Bootstrap learning skipped: no vocabulary")
+                return False
+            
+            # Generate template response based on input context
+            template_response = self._get_bootstrap_template_response(user_tokens, vocab)
+            
+            if not template_response or len(template_response) < 2:
+                logger.debug("[NEURAL] Bootstrap learning skipped: no valid template")
+                return False
+            
+            # Create proper seq2seq training data:
+            # INPUT: user_tokens (what user said)
+            # TARGET: template_response (proper response pattern)
+            input_tokens = torch.LongTensor([user_tokens]).to(self.device)
+            target_tokens = torch.LongTensor([template_response]).to(self.device)
             
             # Get state for brain input
             if hasattr(organism, 'get_state_features'):
@@ -1062,13 +1082,14 @@ class NeuralTrainer:
                 hidden = torch.relu(organism.brain.fc2(hidden))
                 language_logits = organism.brain.fc_language(hidden)
                 
-                # Expand to sequence length
-                language_logits = language_logits.unsqueeze(1).expand(-1, len(user_tokens)-1, -1)
+                # Expand to target sequence length
+                target_len = len(template_response)
+                language_logits = language_logits.unsqueeze(1).expand(-1, target_len, -1)
                 
                 # Use higher learning rate for bootstrap (faster learning)
                 bootstrap_lr = self.learning_rate * 2.0
                 
-                # Calculate loss with positive reward bias
+                # Calculate loss against TEMPLATE response, not user echo
                 loss = self.calculate_language_loss(language_logits, target_tokens, vp_value=0.0)
                 
                 # Backpropagation
@@ -1077,20 +1098,26 @@ class NeuralTrainer:
                 loss.backward()
                 optimizer.step()
                 
-                # Store positive experience for reinforcement with token sequence
+                # Store experience with proper input/target separation
+                # This creates a learning signal: "when you see X, say Y"
                 if hasattr(organism, 'experience_buffer') and organism.experience_buffer is not None:
                     state_np = state_tensor.cpu().numpy().flatten()
-                    # Get VP value from network state if available
                     vp_val = network_state.get('vp_value') if network_state else None
                     organism.experience_buffer.add(
                         state=state_np,
                         action=0,
-                        reward=0.3,  # Positive reward for learning
+                        reward=0.5,  # Good reward for learning proper response
                         next_state=state_np,
                         done=False,
-                        token_sequence=user_tokens,
+                        input_tokens=user_tokens,          # What user said
+                        target_tokens=template_response,   # Proper response
                         vp_value=vp_val
                     )
+                
+                # Add template to organism's token sequence for vocabulary exposure
+                if hasattr(organism, 'token_sequence'):
+                    for token in template_response:
+                        organism.token_sequence.append(token)
                 
                 # Emit bootstrap event
                 if self.event_emitter:
@@ -1103,15 +1130,16 @@ class NeuralTrainer:
                             data={
                                 'organism_id': getattr(organism, 'species_id', str(id(organism))),
                                 'loss': float(loss.item()),
-                                'tokens_learned': len(user_tokens),
-                                'method': 'teacher_forcing'
+                                'input_tokens': len(user_tokens),
+                                'template_tokens': len(template_response),
+                                'method': 'template_response'
                             }
                         )
                         self.event_emitter(event)
                     except Exception as e:
                         logger.debug(f"Bootstrap learning event emission failed: {e}")
                 
-                logger.debug(f"[NEURAL] Bootstrap learning complete: loss={loss.item():.4f}")
+                logger.debug(f"[NEURAL] Bootstrap with template: loss={loss.item():.4f}, template_len={len(template_response)}")
                 return True
             
             return False
@@ -1119,4 +1147,83 @@ class NeuralTrainer:
         except Exception as e:
             logger.debug(f"[NEURAL] Bootstrap learning failed: {e}")
             return False
+    
+    def _get_bootstrap_template_response(self, user_tokens: List[int], vocab) -> List[int]:
+        """
+        Generate appropriate template response tokens based on input context.
+        
+        Templates teach organisms proper response patterns instead of echoing.
+        This implements Claude's recommendation for structured bootstrap learning.
+        
+        Categories:
+        - Greetings → Greeting responses
+        - Questions → Thinking/acknowledgment responses
+        - Unknown → Safe generic responses
+        """
+        import random
+        
+        # Decode user tokens to analyze intent
+        try:
+            user_words = []
+            for token in user_tokens:
+                word = vocab.id_to_token.get(token, '')
+                if word:
+                    user_words.append(word.lower())
+            user_text = ' '.join(user_words)
+        except Exception:
+            user_text = ""
+        
+        # Classify intent and select template category
+        greeting_words = {'hello', 'hi', 'hey', 'greetings', 'howdy'}
+        question_words = {'what', 'how', 'why', 'when', 'where', 'who', 'which', 'could', 'would', 'can'}
+        
+        is_greeting = any(word in user_words for word in greeting_words)
+        is_question = any(word in user_words for word in question_words)
+        
+        # Template responses by category
+        # These teach proper conversational patterns
+        templates = {
+            'greeting': [
+                "Hello there.",
+                "Hi! Nice to meet you.",
+                "Hello, how are you?",
+                "Hey! Welcome.",
+                "Greetings friend.",
+            ],
+            'question': [
+                "That is interesting.",
+                "I think about that.",
+                "Let me consider...",
+                "Good question.",
+                "I wonder about that too.",
+            ],
+            'generic': [
+                "I understand.",
+                "Tell me more.",
+                "I see.",
+                "That makes sense.",
+                "Please continue.",
+                "Interesting.",
+            ]
+        }
+        
+        # Select appropriate template category
+        if is_greeting:
+            category = 'greeting'
+        elif is_question:
+            category = 'question'
+        else:
+            category = 'generic'
+        
+        # Pick random template from category
+        template_text = random.choice(templates[category])
+        
+        # Tokenize template
+        try:
+            template_tokens = vocab.encode(template_text)
+            return template_tokens
+        except Exception as e:
+            logger.debug(f"Template tokenization failed: {e}")
+            # Fallback: return a simple known token sequence
+            return [1, 2, 3]  # Will depend on vocab, but better than empty
 

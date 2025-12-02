@@ -376,6 +376,184 @@ class LanguageVocabulary:
         vocab = cls.from_dict(data)
         logger.info(f"Loaded vocabulary ({vocab.vocab_size} words) from {filepath}")
         return vocab
+    
+    # ===================== CREATIVE EXPRESSION SYSTEM =====================
+    # Based on Grok-4's vocabulary creative expression design
+    # Enables multi-token combinations and vocabulary expansion
+    
+    def get_creative_tokens(self, seed_tokens: List[int], creativity_level: float = 0.5) -> List[int]:
+        """
+        Generate creative token combinations for expression.
+        
+        Based on Grok-4's creative expression design:
+        - creativity_level < 0.3: Use common word combinations
+        - creativity_level 0.3-0.7: Mix common and experimental
+        - creativity_level > 0.7: More experimental combinations
+        
+        Args:
+            seed_tokens: Starting tokens for creative generation
+            creativity_level: 0.0 = conservative, 1.0 = experimental
+            
+        Returns:
+            List of tokens forming a creative expression
+        """
+        import random
+        
+        if not seed_tokens:
+            return []
+        
+        # Get word associations for seed tokens
+        seed_words = []
+        for token in seed_tokens:
+            word = self.id_to_word.get(token)
+            if word and word not in SPECIAL_TOKEN_IDS.values():
+                seed_words.append(word)
+        
+        if not seed_words:
+            return seed_tokens
+        
+        # Build word association map from frequencies
+        # Higher frequency words are more "related" in the vocabulary
+        high_freq_words = self.get_most_frequent(50)
+        freq_tokens = [self.word_to_id[w] for w, _ in high_freq_words if w in self.word_to_id]
+        
+        # Generate creative combination
+        result_tokens = []
+        
+        if creativity_level < 0.3:
+            # Conservative: use seed + common words
+            result_tokens.extend(seed_tokens[:2])
+            if freq_tokens:
+                result_tokens.append(random.choice(freq_tokens))
+        
+        elif creativity_level < 0.7:
+            # Mixed: seed + some variation
+            result_tokens.append(random.choice(seed_tokens))
+            if freq_tokens and len(freq_tokens) > 2:
+                # Pick 2 different common words
+                choices = random.sample(freq_tokens[:20], min(2, len(freq_tokens)))
+                result_tokens.extend(choices)
+        
+        else:
+            # Experimental: more random combinations
+            all_tokens = list(self.id_to_word.keys())
+            valid_tokens = [t for t in all_tokens if t >= 5]  # Skip special tokens
+            
+            if valid_tokens:
+                result_tokens.append(random.choice(seed_tokens))
+                # Add 2-3 random tokens for experimentation
+                num_random = random.randint(2, 3)
+                for _ in range(num_random):
+                    result_tokens.append(random.choice(valid_tokens))
+        
+        return result_tokens
+    
+    def expand_vocabulary_from_pattern(self, pattern_tokens: List[int], 
+                                        success_reward: float) -> bool:
+        """
+        Expand vocabulary based on successful multi-token patterns.
+        
+        When organisms create successful multi-token expressions (high reward),
+        this creates new compound vocabulary entries for future use.
+        
+        Args:
+            pattern_tokens: Token sequence that was successful
+            success_reward: Reward received (higher = more successful)
+            
+        Returns:
+            True if vocabulary was expanded
+        """
+        # Only expand for highly successful patterns
+        if success_reward < 0.7:
+            return False
+        
+        if len(pattern_tokens) < 2:
+            return False
+        
+        if self.frozen:
+            return False
+        
+        # Decode pattern to words
+        pattern_words = []
+        for token in pattern_tokens[:4]:  # Max 4-word compounds
+            word = self.id_to_word.get(token)
+            if word and word not in SPECIAL_TOKEN_IDS.values():
+                pattern_words.append(word)
+        
+        if len(pattern_words) < 2:
+            return False
+        
+        # Create compound word entry (e.g., "hello_there" or "good_morning")
+        compound = '_'.join(pattern_words[:3])  # Max 3 words
+        
+        # Check if already exists
+        if compound in self.word_to_id:
+            # Just increase frequency
+            self.word_frequencies[compound] = self.word_frequencies.get(compound, 0) + 1
+            return False
+        
+        # Add new compound to vocabulary
+        new_id = self.add_word(compound)
+        
+        if new_id != SPECIAL_TOKENS['<UNK>']:
+            # Boost frequency based on success
+            self.word_frequencies[compound] = int(success_reward * 5) + 1
+            
+            logger.debug(f"[VOCAB] Creative expansion: '{compound}' (reward={success_reward:.2f})")
+            return True
+        
+        return False
+    
+    def get_phrase_suggestions(self, context_tokens: List[int], 
+                               num_suggestions: int = 3) -> List[List[int]]:
+        """
+        Suggest multi-token phrases based on context.
+        
+        Implements Grok-4's phrase-based expression system.
+        
+        Args:
+            context_tokens: Current context tokens
+            num_suggestions: Number of phrase suggestions to return
+            
+        Returns:
+            List of suggested token sequences (each is a phrase)
+        """
+        import random
+        
+        suggestions = []
+        
+        # Get context words for semantic matching
+        context_words = set()
+        for token in context_tokens:
+            word = self.id_to_word.get(token, '')
+            if word and word not in SPECIAL_TOKEN_IDS.values():
+                context_words.add(word.lower())
+        
+        # Look for compound words that relate to context
+        compound_matches = []
+        for word, word_id in self.word_to_id.items():
+            if '_' in word:  # Compound word
+                parts = word.split('_')
+                if any(part.lower() in context_words for part in parts):
+                    compound_matches.append(word_id)
+        
+        # Suggest compound matches first
+        for compound_id in compound_matches[:num_suggestions]:
+            suggestions.append([compound_id])
+        
+        # Fill remaining with frequent word combinations
+        if len(suggestions) < num_suggestions:
+            frequent = self.get_most_frequent(30)
+            freq_ids = [self.word_to_id[w] for w, _ in frequent if w in self.word_to_id]
+            
+            while len(suggestions) < num_suggestions and len(freq_ids) >= 2:
+                # Create random 2-3 word phrase from frequent words
+                phrase_len = random.randint(2, 3)
+                phrase = random.sample(freq_ids, min(phrase_len, len(freq_ids)))
+                if phrase not in suggestions:
+                    suggestions.append(phrase)
+        
+        return suggestions
 
 
 class CharacterTokenizer:
