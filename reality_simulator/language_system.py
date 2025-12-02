@@ -343,7 +343,7 @@ class LanguageVocabulary:
             word_to_id=data.get('word_to_id', {}),
             id_to_word={int(k): v for k, v in data.get('id_to_word', {}).items()},
             word_frequencies=data.get('word_frequencies', {}),
-            max_vocab_size=data.get('max_vocab_size', 10000),
+            max_vocab_size=data.get('max_vocab_size', 50000),
             frozen=data.get('frozen', False)
         )
         
