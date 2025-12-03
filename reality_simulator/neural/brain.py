@@ -167,7 +167,7 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
     """
     
     def __init__(self, 
-                 input_dim: int = 18,
+                 input_dim: int = 24,
                  hidden_dim: int = 64,
                  output_dim: int = 6,
                  activation: str = 'relu',
@@ -185,7 +185,7 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
         Initialize the organism brain.
         
         Args:
-            input_dim: Number of input features (default 18 with VP components)
+            input_dim: Number of input features (24 with VP + extended features)
             hidden_dim: Hidden layer dimension
             output_dim: Number of output actions
             activation: Activation function ('relu', 'tanh', 'sigmoid')
@@ -549,7 +549,8 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
             path: File path to load weights from
         """
         if os.path.exists(path):
-            self.load_state_dict(torch.load(path))
+            # Use strict=False to handle architecture changes gracefully
+            self.load_state_dict(torch.load(path), strict=False)
         else:
             raise FileNotFoundError(f"Brain weights not found at {path}")
 

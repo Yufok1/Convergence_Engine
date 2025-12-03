@@ -808,7 +808,8 @@ class OrganismCapsuleManager:
         state_dict = torch.load(buffer, weights_only=True)
         
         try:
-            target_brain.load_state_dict(state_dict)
+            # Use strict=False to handle architecture changes (e.g., num_key_compositions)
+            target_brain.load_state_dict(state_dict, strict=False)
             return True
         except Exception as e:
             print(f"❌ Failed to restore neural state: {e}")

@@ -200,6 +200,10 @@ class HealthMonitor:
         self._update_history(snapshot)
         self._check_state_transitions(snapshot)
         
+        # Log periodic health status (every 10 snapshots)
+        if len(self.health_history) % 10 == 0:
+            logger.info(f"[HEALTH] Computed: {health_score:.3f} (coh={coherence_score:.2f}, div={diversity_score:.2f}, adapt={adaptability_score:.2f}, law={lawfulness_score:.2f}, sust={sustainability_score:.2f})")
+        
         return snapshot
     
     def _compute_coherence(self,

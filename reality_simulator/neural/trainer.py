@@ -718,7 +718,8 @@ class NeuralTrainer:
                 # Load updated weights back into brain
                 try:
                     updated_weights = result['updated_weights']
-                    organism.brain.load_state_dict(updated_weights)
+                    # Use strict=False to handle architecture changes gracefully
+                    organism.brain.load_state_dict(updated_weights, strict=False)
                     
                     total_loss += result.get('loss', 0.0)
                     self.total_language_loss += result.get('language_loss', 0.0)

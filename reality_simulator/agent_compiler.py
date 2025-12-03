@@ -802,7 +802,7 @@ if __name__ == "__main__":
                 zf.writestr("atomic_config.json", json.dumps(capsule.config.to_dict(), indent=2))
             
             # 5. Bridge Config (JSON) - Critical for AgentBridge to know state dimensions
-            input_dim = metadata.get('neural_network', {}).get('architecture', {}).get('input_size', 18)
+            input_dim = metadata.get('neural_network', {}).get('architecture', {}).get('input_size', 24)
             bridge_config = {
                 'state_dim': input_dim,
                 'num_actions': 6,

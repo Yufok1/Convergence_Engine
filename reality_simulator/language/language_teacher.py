@@ -250,7 +250,7 @@ class LanguageTeacher:
         self.semantic_teacher = None
         self.vocab_size = teacher_config.get('vocab_size', 1000)
         self.embedding_dim = teacher_config.get('embedding_dim', 64)
-        self.state_dim = self.config.get('neural', {}).get('brain', {}).get('input_dim', 18)
+        self.state_dim = self.config.get('neural', {}).get('brain', {}).get('input_dim', 24)
         
         # Training configuration
         self.min_experiences_for_training = teacher_config.get('min_experiences', 100)

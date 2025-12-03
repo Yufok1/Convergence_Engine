@@ -10,7 +10,7 @@ Visualization, Causation Detection, Health Monitor, Concept Tracking
 Check:
 - All data sources, APIs, endpoints, logs, config files
 - Neural: training metrics, optimization status, trainer health, event streams, field names
-  (organisms_tracked vs organisms_trained), VP-aware perception (18 input dims)
+  (organisms_tracked vs organisms_trained), VP-aware perception (24 input dims)
 - ML Analysis: clustering status, anomaly detection, dimensionality reduction, concept tracking
 - Meta-Cognitive: config_tuner status, autonomous/learning/observing modes, action history,
   safe parameters
@@ -28,11 +28,14 @@ Gaps: Missing/blocked access, stale data, unavailable endpoints, field name mism
 
 Quick Win #1: VP-Aware Perception
 - Status: ENABLED / DISABLED
-- Neural input_dim: 18 (verify in config neural.brain.input_dim)
-- Features 1-12: Base organism features
+- Neural input_dim: 24 (verify in config neural.brain.input_dim)
+- Features 1-10: Base organism features (fitness, resources, connections, neighbor fitness, flow in/out, clustering, distance, age, parent fitness)
+- Features 11-12: Breath features (depth, phase)
 - Features 13-17: VP components (trait_divergence, network_coherence, quantum_entropy,
   evolution_pressure, phase_mismatch)
 - Feature 18: System health (from Health Monitor)
+- Features 19-24: Extended features (battle_history, alliance_reputation, language_fluency,
+  environmental_density, learning_progress, health_trend)
 - Verification: Organisms receiving VP state in network_state['vp_components']
 
 Quick Win #2: Concept Tracking
@@ -71,7 +74,7 @@ Quick Win #5: Health Index
   * Sustainability (0.10): Resource pool ratio, population stability
 - Thresholds: critical (<0.3), warning (<0.5), healthy (<0.7), optimal (≥0.7)
 - Events: health_state_change emitted on threshold crossings
-- Neural integration: Health is 18th input feature
+- Neural integration: Health is feature 18 (of 24 total input features)
 - Endpoint: /api/diagnostic/unified_health
 - Verification: health_monitor.get_health() returns 0.0-1.0 score
 
@@ -187,11 +190,14 @@ Trainer: SUCCESS / FAILED / PARTIAL
   (default: 96, check config.json neural.training.batch_size)
 
 Input Dimensions (Quick Win #1):
-- input_dim: 18 (was 12)
-- Features 1-12: Base (fitness, resources, connections, local metrics, position)
+- input_dim: 24 (was 12, then 18)
+- Features 1-10: Base (fitness, resources, connections, neighbor fitness, flow in/out, clustering, distance, age, parent fitness)
+- Features 11-12: Breath features (depth, phase)
 - Features 13-17: VP components (trait_divergence, network_coherence, quantum_entropy,
   evolution_pressure, phase_mismatch)
 - Feature 18: System health (0.0-1.0 from Health Monitor)
+- Features 19-24: Extended (battle_history, alliance_reputation, language_fluency,
+  environmental_density, learning_progress, health_trend)
 
 VP-Aware Planning (Quick Win #4):
 - _apply_vp_aware_adjustments() active
@@ -225,7 +231,7 @@ Events:
 - Event emission: wired, appearing in graph
 - Component filter: Neural checkbox works
 
-Brain: Config (input_dim: 18, hidden_dim: 64, output_dim: 6, activation: relu, dropout: 0.1),
+Brain: Config (input_dim: 24, hidden_dim: 128, output_dim: 8, activation: relu, dropout: 0.15),
 compilation status, inheritance rates
 
 Experience Replay: Buffer capacity/size/fill rate (memory_size: 20000), quality, readiness
@@ -554,7 +560,7 @@ Status: SUCCESS / FAILED / PARTIAL
 - HealthMonitor initialized
 - 5 components calculating
 - Events emitting on state changes
-- Neural integration (18th input feature)
+- Neural integration (feature 18 of 24 input dimensions)
 
 Formula:
 health = 0.30*coherence + 0.20*diversity + 0.20*adaptability + 0.20*lawfulness + 0.10*sustainability
@@ -601,7 +607,7 @@ Events:
 
 Neural Integration:
 - System health passed to organisms via network_state['system_health']
-- Feature 18 in neural input (input_dim: 18)
+- Feature 18 in neural input (input_dim: 24)
 - Organisms perceive ecosystem wellness
 
 Endpoint:
@@ -823,7 +829,7 @@ Network metrics + ML metrics + Neural metrics + VP → HealthMonitor → 5 compo
 weighted average → health score → state classification → events → neural input (feature 18)
 
 Language Flow:
-Organism state (18 features) + network state + breath state → Linguistic Knowledge Web →
+Organism state (24 features) + network state + breath state → Linguistic Knowledge Web →
 14-dimensional assessment → dynamic word scoring → top 15 words → Language Teacher →
 word assignment → vocabulary growth → organism communication → events → graph
 
@@ -845,7 +851,7 @@ Events (neural, ML, concept, health, VP, language) → CausationExplorer → det
 graph
 
 Language Flow:
-Organism state (18 features) + network state + breath state → Linguistic Knowledge Web →
+Organism state (24 features) + network state + breath state → Linguistic Knowledge Web →
 14-dimensional assessment → dynamic word scoring → top 15 words → Language Teacher →
 word assignment → vocabulary growth → organism communication → events → graph
 
@@ -951,7 +957,7 @@ Access:
 
 Neural Config:
 - enabled (true), device (cuda/cpu)
-- brain (input_dim: 18, hidden_dim: 128, output_dim: 6, activation: relu, dropout: 0.1)
+- brain (input_dim: 24, hidden_dim: 128, output_dim: 8, activation: relu, dropout: 0.15)
 - training (batch_size: 128, learning_rate: 0.0035, gamma: 0.995, epsilon_start/end/decay,
   memory_size: 20000, update_frequency: 1)
 - training.lr_scheduler (enabled: true, type: cosine, warmup_steps: 100, min_lr: 0.0001) ⭐ NEW
@@ -1874,7 +1880,7 @@ Data to Include
 Special Instructions
 
 - Quick Wins Priority:
-  - QW#1 (VP-Aware Perception): input_dim must be 18, verify features 13-18 populated
+  - QW#1 (VP-Aware Perception): input_dim must be 24, verify features 13-18 populated
   - QW#2 (Concept Tracking): Check concept_emergence/extinction events in graph
   - QW#3 (Structured Explanations): CRA responses follow OBSERVATION→PATTERN→INTERPRETATION→
     RECOMMENDATION format
@@ -1902,7 +1908,7 @@ Special Instructions
   - loss=None and organisms_tracked=0 is NORMAL until organisms collect batch_size (128, check config) experiences
   - Panel shows "N/A" for loss until first training
   - training_steps=0 is normal early-game
-  - input_dim=18 (was 12) for VP-aware perception
+  - input_dim=24 (was 12, then 18) for VP-aware perception + extended features
 
 - ML Priority: Enabled but analyzer unavailable = HIGH, sklearn import failure = HIGH
 - Concept Tracking: Clusters need 3+ cycles to become concepts (persistence_threshold)
@@ -1977,8 +1983,8 @@ Special Instructions
 ---
 Key Updates for 2025 (Quick Wins Edition):
 
-- Quick Win #1: VP-Aware Perception - neural input_dim: 18, features 13-17 = VP components,
-  feature 18 = system health
+- Quick Win #1: VP-Aware Perception - neural input_dim: 24, features 13-17 = VP components,
+  feature 18 = system health, features 19-24 = extended features
 - Quick Win #2: Concept Tracking - ConceptTracker, semantic cluster naming, concept_emergence/
   concept_extinction events
 - Quick Win #3: Structured Explanations - CRA follows OBSERVATION→PATTERN→INTERPRETATION→
@@ -2035,7 +2041,7 @@ Quick Win #8: Dynamic Multi-Dimensional Linguistic Awareness ⭐ NEW
     * Relationship lifecycle: discovered relationships start at confidence=0.5, strengthen/weaken with use, prune if quality drops
 - 14-Dimensional Assessment: Evaluates simultaneously across action, fitness, resources, connections, positional, density, VP, coherence, evolution, phase, health, breath, success, age
 - Dynamic Word Scoring: Words scored across dimensions (0.0-1.0), prioritized by contextual relevance
-- Full State Integration: Uses all 18 state features plus network and breath state
+- Full State Integration: Uses all 24 state features plus network and breath state
 - Expanded Vocabulary: 326 concepts covering system dynamics, spatial concepts, health states, function words
 - Events: vocabulary_growth, organism_communication, butterfly_chat_message/response, word_assignment
 - Visualization: Language nodes (Circle/Wye shapes), linguistic edges (Purple #9B59B6)
@@ -2055,7 +2061,7 @@ Quick Win #8: Dynamic Multi-Dimensional Linguistic Awareness ⭐ NEW
 - Section 24: Expanded CRA Control (NEW - Quick Win #15) ⭐ 2025-12-03
 - Section 3b: Language System Audit (NEW - Quick Win #8)
 - Neural field names: organisms_tracked (not organisms_trained)
-- Neural input_dim: 18 (was 12)
+- Neural input_dim: 24 (was 12, then 18 - now includes extended features 19-24)
 - batch_size: 128 (check config.json neural.training.batch_size for actual value)
 - hidden_dim: 128 (check config.json neural.brain.hidden_dim for actual value)
 - Expected behaviors: loss=None, actions=0 before thresholds
@@ -2108,6 +2114,11 @@ Quick Win #8: Dynamic Multi-Dimensional Linguistic Awareness ⭐ NEW
   - **Alliance Wisdom Fix**: Corrected List[str] vs dict type mismatch in neural_organism.py
   - **LR Scheduler Integration**: Cosine learning rate scheduler with warmup and min_lr
   - **Early Stopping Integration**: Patience-based convergence detection with min_delta threshold
+  - **Neural input_dim corrected**: Changed from 32 → 24 to match actual feature count
+  - **load_state_dict strict=False**: Applied to 5 files to handle architecture changes gracefully
+    (neural_organism.py, trainer.py, brain.py, organism_capsule.py, ray_tasks.py)
+  - **PhaseSyncBridge wiring**: Now uses controller's live Explorer components instead of fresh instances
+  - **Health Monitor periodic logging**: Added INFO log every 10 snapshots to confirm active calculation
 - **Recent Bug Fixes (Fresh Clone Compatibility)**:
   - ConfigAtom description field: Added missing `description: str = ""` field to ConfigAtom dataclass
   - onnxruntime optional: Made onnxruntime import optional with ONNX_AVAILABLE flag

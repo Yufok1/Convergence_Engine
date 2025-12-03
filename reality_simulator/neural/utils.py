@@ -180,7 +180,7 @@ def create_brain(config: Dict[str, Any], silent: bool = False):
         _brain_creation_counter['logged_config'] = True
     
     brain = OrganismBrain(
-        input_dim=brain_config.get('input_dim', 12),
+        input_dim=brain_config.get('input_dim', 24),
         hidden_dim=brain_config.get('hidden_dim', 64),
         output_dim=brain_config.get('output_dim', 6),
         activation=brain_config.get('activation', 'relu'),

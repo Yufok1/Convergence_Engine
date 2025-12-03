@@ -398,8 +398,8 @@ def train_organism_local(
             device=device
         )
         
-        # Load weights
-        brain.load_state_dict(brain_weights)
+        # Load weights (strict=False handles architecture changes)
+        brain.load_state_dict(brain_weights, strict=False)
         brain.to(device)
         
         # Convert experiences to tensors

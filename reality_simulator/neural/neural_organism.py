@@ -122,7 +122,7 @@ class NeuralOrganism(Organism):
                     # Single parent: copy weights directly
                     from .brain import OrganismBrain
                     self.brain = OrganismBrain(
-                        input_dim=brain_config.get('input_dim', 12),
+                        input_dim=brain_config.get('input_dim', 24),
                         hidden_dim=brain_config.get('hidden_dim', 64),
                         output_dim=brain_config.get('output_dim', 6),
                         activation=brain_config.get('activation', 'relu'),
@@ -131,7 +131,8 @@ class NeuralOrganism(Organism):
                     # Move to same device as parent
                     device = next(parent_brains[0].parameters()).device
                     self.brain = self.brain.to(device)
-                    self.brain.load_state_dict(parent_brains[0].state_dict())
+                    # Use strict=False to handle architecture changes (e.g., num_key_compositions)
+                    self.brain.load_state_dict(parent_brains[0].state_dict(), strict=False)
                 
                 # Add mutation
                 self.brain.mutate(mutation_rate)
@@ -441,7 +442,7 @@ class NeuralOrganism(Organism):
         features.append(health_trend)
         
         # Ensure we have exactly input_dim features
-        input_dim = self.config.get('neural', {}).get('brain', {}).get('input_dim', 12)
+        input_dim = self.config.get('neural', {}).get('brain', {}).get('input_dim', 24)
         feature_array = np.array(features[:input_dim], dtype=np.float32)
         
         # Pad or truncate to match input_dim
@@ -1417,7 +1418,7 @@ class NeuralOrganism(Organism):
         # Get device from brain model (CPU or CUDA)
         device = next(self.brain.parameters()).device
         # Get correct input dimension from config
-        input_dim = self.config.get('neural', {}).get('brain', {}).get('input_dim', 18)
+        input_dim = self.config.get('neural', {}).get('brain', {}).get('input_dim', 24)
         self.brain.eval()
         
         # Early stopping for UNK sequences
@@ -1914,14 +1915,14 @@ class NeuralOrganism(Organism):
             neural_config = self.config.get('neural', {})
             brain_config = neural_config.get('brain', {})
             new_brain = OrganismBrain(
-                input_dim=brain_config.get('input_dim', 12),
+                input_dim=brain_config.get('input_dim', 24),
                 hidden_dim=brain_config.get('hidden_dim', 64),
                 output_dim=brain_config.get('output_dim', 6),
                 activation=brain_config.get('activation', 'relu'),
                 dropout=brain_config.get('dropout', 0.1)
             )
-            # Copy parent weights
-            new_brain.load_state_dict(parent_brain.state_dict())
+            # Copy parent weights (strict=False handles architecture changes)
+            new_brain.load_state_dict(parent_brain.state_dict(), strict=False)
         
         # Add mutation
         new_brain.mutate(mutation_rate)

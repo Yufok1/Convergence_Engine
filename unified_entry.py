@@ -1234,6 +1234,17 @@ class UnifiedSystem:
                     collapse_threshold=500,
                     max_connections_per_organism=5
                 )
+                # Wire up the ACTUAL Explorer components from the controller (not fresh instances!)
+                if self.controller:
+                    self.phase_sync_bridge.explorer_sentinel = self.controller.sentinel if hasattr(self.controller, 'sentinel') else self.phase_sync_bridge.explorer_sentinel
+                    self.phase_sync_bridge.explorer_kernel = self.controller.kernel if hasattr(self.controller, 'kernel') else self.phase_sync_bridge.explorer_kernel
+                    self.phase_sync_bridge.explorer_breath = self.controller.breath_engine if hasattr(self.controller, 'breath_engine') else self.phase_sync_bridge.explorer_breath
+                    # MirrorOfInsight may be in mirror_systems
+                    if hasattr(self.controller, 'mirror_of_insight'):
+                        self.phase_sync_bridge.explorer_insight = self.controller.mirror_of_insight
+                    # BloomSystem may be in bloom_curvature or similar
+                    if hasattr(self.controller, 'bloom_system'):
+                        self.phase_sync_bridge.explorer_bloom = self.controller.bloom_system
                 print("[UNIFIED] [PASS] ✨ Phase Sync Bridge initialized - COLLAPSE PREDICTION ACTIVE")
                 self.logger.log_state('system', {'event': 'phase_sync_bridge_initialized', 'status': 'active'})
             except Exception as e:

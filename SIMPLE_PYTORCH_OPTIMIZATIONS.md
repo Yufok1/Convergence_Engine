@@ -26,9 +26,9 @@ def create_brain(config: Dict[str, Any]):
     brain_config = config.get('brain', {})
     
     brain = OrganismBrain(
-        input_dim=brain_config.get('input_dim', 12),
-        hidden_dim=brain_config.get('hidden_dim', 64),
-        output_dim=brain_config.get('output_dim', 6),
+        input_dim=brain_config.get('input_dim', 24),
+        hidden_dim=brain_config.get('hidden_dim', 128),
+        output_dim=brain_config.get('output_dim', 8),
         activation=brain_config.get('activation', 'relu'),
         dropout=brain_config.get('dropout', 0.1)
     )
@@ -205,9 +205,9 @@ def create_brain(config: Dict[str, Any]):
     brain_config = config.get('brain', {})
     
     brain = OrganismBrain(
-        input_dim=brain_config.get('input_dim', 12),
-        hidden_dim=brain_config.get('hidden_dim', 64),
-        output_dim=brain_config.get('output_dim', 6),
+        input_dim=brain_config.get('input_dim', 24),
+        hidden_dim=brain_config.get('hidden_dim', 128),
+        output_dim=brain_config.get('output_dim', 8),
         activation=brain_config.get('activation', 'relu'),
         dropout=brain_config.get('dropout', 0.1)
     )

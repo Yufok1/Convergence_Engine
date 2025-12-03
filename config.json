@@ -247,8 +247,8 @@
       "activation": "relu",
       "dropout": 0.15,
       "hidden_dim": 128,
-      "input_dim": 32,
-      "output_dim": 8,
+      "input_dim": 24,
+      "output_dim": 6,
       "vocab_size": 50000
     },
     "concept_system": {
