@@ -651,7 +651,8 @@ class UnifiedVisualization:
         # Redraw the reality sim panel with new grid state
         if self._last_reality_sim_state:
             djinn_state = getattr(self, '_last_djinn_kernel_state', {})
-            self._update_reality_sim_panel(self.axes['left'], self._last_reality_sim_state, djinn_state)
+            explorer_state = getattr(self, '_last_explorer_state', {})
+            self._update_reality_sim_panel(self.axes['left'], self._last_reality_sim_state, djinn_state, explorer_state)
             if self.canvas:
                 self.canvas.draw()
 
@@ -676,7 +677,8 @@ class UnifiedVisualization:
             # Left panel: Reality Simulator 3D Network
             self._last_reality_sim_state = reality_sim_state  # Store for grid toggle redraw
             self._last_djinn_kernel_state = djinn_kernel_state  # Store for grid toggle redraw
-            self._update_reality_sim_panel(self.axes['left'], reality_sim_state, djinn_kernel_state)
+            self._last_explorer_state = explorer_state  # Store for grid toggle redraw
+            self._update_reality_sim_panel(self.axes['left'], reality_sim_state, djinn_kernel_state, explorer_state)
 
             # Middle panel: Explorer
             self._update_explorer_panel(self.axes['middle'], explorer_state)
@@ -698,7 +700,7 @@ class UnifiedVisualization:
         except Exception as e:
             print(f"[VISUALIZATION] [WARN] Update error: {e}")
     
-    def _update_reality_sim_panel(self, ax, state: Dict, djinn_kernel_state: Dict = None):
+    def _update_reality_sim_panel(self, ax, state: Dict, djinn_kernel_state: Dict = None, explorer_state: Dict = None):
         """Update Reality Simulator panel using 3D network visualization"""
         try:
             import sys
@@ -809,6 +811,9 @@ class UnifiedVisualization:
                             'states': len(quantum.states) if hasattr(quantum, 'states') else 0
                         }
 
+                # Get explorer data from parameter (for Panel 6: EXPLORER Body)
+                explorer_data = explorer_state if explorer_state else {}
+
                 viz_data = {
                     'network': network_data,
                     'neural': neural_data,
@@ -816,7 +821,8 @@ class UnifiedVisualization:
                     'evolution': evolution_data,
                     'config_tuner': config_tuner_data,
                     'djinn_kernel': djinn_kernel_data,
-                    'quantum': quantum_data
+                    'quantum': quantum_data,
+                    'explorer': explorer_data  # Add explorer data for Panel 6
                 }
 
                 # Ensure 3D axes

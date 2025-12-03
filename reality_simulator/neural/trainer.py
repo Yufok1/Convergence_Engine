@@ -787,7 +787,7 @@ class NeuralTrainer:
         # This fixes the bug where language training was blocked by RL batch requirements
         # ═══════════════════════════════════════════════════════════════════════════
         language_only_organisms = [
-            org for org in organisms 
+            org for org in organisms.values()  # FIX: iterate over values(), not keys
             if (hasattr(org, 'token_sequence') and len(org.token_sequence) >= 2 and
                 hasattr(org, 'brain') and hasattr(org.brain, 'use_language_head') and 
                 org.brain.use_language_head and
