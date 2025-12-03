@@ -635,30 +635,117 @@ class LightweightVisualizationViewer:
                               bbox=dict(facecolor='black', alpha=0.7, edgecolor='magenta', linewidth=1),
                               family='monospace')
 
-                    # Panel 3: BOTTOM-LEFT - Evolution & VP Metrics
+                    # Panel 3: BOTTOM-LEFT - Evolution Metrics (compact)
                     evolution_data = data.get('evolution', {})
                     generation = evolution_data.get('generation', 0)
                     best_fitness = evolution_data.get('best_fitness', 0.0)
                     avg_fitness = evolution_data.get('avg_fitness', 0.0)
                     population_size = evolution_data.get('population_size', 0)
 
-                    # Get VP data from djinn_kernel (correct location in unified_entry structure)
-                    djinn_kernel_data = data.get('djinn_kernel', {})
-                    vp_value = djinn_kernel_data.get('violation_pressure', 0.0)
-                    vp_classification = djinn_kernel_data.get('vp_classification', 'VP0')
-
                     panel3_text = (
-                        f"━━━ EVOLUTION & VP ━━━\n"
-                        f"Generation: {generation}\n"
-                        f"Population: {population_size}\n"
-                        f"Best Fitness: {best_fitness:.4f}\n"
-                        f"Avg Fitness: {avg_fitness:.4f}\n"
-                        f"VP: {vp_value:.4f}\n"
-                        f"Class: {vp_classification}"
+                        f"━━━ EVOLUTION ━━━\n"
+                        f"Gen: {generation} | Pop: {population_size}\n"
+                        f"Best: {best_fitness:.4f}\n"
+                        f"Avg: {avg_fitness:.4f}"
                     )
                     ax.text2D(0.10, 0.10, panel3_text, transform=ax.transAxes,
-                              ha='left', va='bottom', fontsize=8, color='lime',
+                              ha='left', va='bottom', fontsize=7, color='lime',
                               bbox=dict(facecolor='black', alpha=0.7, edgecolor='lime', linewidth=1),
+                              family='monospace')
+
+                    # ==================================================================
+                    # Panel 6: LEFT-CENTER - EXPLORER (Body) - Comprehensive
+                    # ==================================================================
+                    explorer_data = data.get('explorer', {})
+                    phase_sync = data.get('phase_sync', {})
+                    explorer_sync = phase_sync.get('explorer', {})
+                    
+                    explorer_phase = explorer_data.get('phase', explorer_sync.get('phase', 'unknown'))
+                    breath_cycle = explorer_data.get('breath_cycle', 0)
+                    breath_depth = explorer_data.get('breath_depth', 0)
+                    vp_calcs = explorer_data.get('vp_calculations', explorer_sync.get('vp_calculations', 0))
+                    sovereign_ids = explorer_data.get('sovereign_ids_count', explorer_sync.get('sovereign_ids', 0))
+                    stability_score = explorer_sync.get('stability_score', 0.0)
+                    genesis_proximity = explorer_sync.get('genesis_proximity', 0.0)
+                    is_ready = explorer_sync.get('is_ready', False)
+                    breath_cycles = explorer_sync.get('breath_cycles', breath_cycle)
+                    
+                    # Phase icon mapping
+                    phase_icons = {'genesis': '🌱', 'sovereign': '👑', 'unknown': '❓', 'transition': '🌉'}
+                    phase_icon = phase_icons.get(explorer_phase.lower(), '🦋')
+                    
+                    # Ready status
+                    ready_status = "✅ READY" if is_ready else "⏳ Building..."
+                    
+                    panel6_lines = [
+                        "━━━ EXPLORER (Body) ━━━",
+                        f"{phase_icon} Phase: {explorer_phase.upper()}",
+                        f"🌬️ Breath: {breath_cycles} cycles",
+                        f"📊 VP Calcs: {vp_calcs}",
+                        f"👤 Sovereigns: {sovereign_ids}",
+                        f"📈 Stability: {stability_score:.3f}",
+                        f"🎯 Genesis→: {genesis_proximity:.1%}",
+                        f"Status: {ready_status}"
+                    ]
+                    
+                    panel6_text = "\n".join(panel6_lines)
+                    ax.text2D(0.02, 0.50, panel6_text, transform=ax.transAxes,
+                              ha='left', va='center', fontsize=7, color='#00FFAA',
+                              bbox=dict(facecolor='black', alpha=0.8, edgecolor='#00FFAA', linewidth=1),
+                              family='monospace')
+
+                    # ==================================================================
+                    # Panel 7: RIGHT-CENTER - DJINN KERNEL (Right Wing) - Comprehensive
+                    # ==================================================================
+                    djinn_kernel_data = data.get('djinn_kernel', {})
+                    sync_data = phase_sync.get('synchronization', {})
+                    network_sync = phase_sync.get('network', {})
+                    
+                    vp_value = djinn_kernel_data.get('violation_pressure', 0.0)
+                    vp_classification = djinn_kernel_data.get('vp_classification', 'VP0')
+                    tape_cells = djinn_kernel_data.get('tape_cells', 0)
+                    tape_position = djinn_kernel_data.get('tape_position', 0)
+                    trait_count = djinn_kernel_data.get('trait_count', 0)
+                    vp_calculations = djinn_kernel_data.get('vp_calculations', 0)
+                    
+                    # Phase sync metrics
+                    collapse_proximity = network_sync.get('collapse_proximity', 0.0)
+                    is_collapsed = network_sync.get('is_collapsed', False)
+                    phase_aligned = sync_data.get('aligned', False)
+                    proximity_diff = sync_data.get('proximity_difference', 0.0)
+                    
+                    # VP classification icons and colors
+                    vp_icons = {'VP0': '🟢', 'VP1': '🟡', 'VP2': '🟠', 'VP3': '🔴', 'VP4': '💀'}
+                    vp_icon = vp_icons.get(vp_classification, '⚪')
+                    
+                    # Collapse status
+                    collapse_status = "💥 COLLAPSED" if is_collapsed else f"📉 {collapse_proximity:.1%}"
+                    
+                    # Alignment status
+                    align_status = "🔗 ALIGNED" if phase_aligned else f"⚡ Δ{proximity_diff:.2f}"
+                    
+                    panel7_lines = [
+                        "━━━ DJINN KERNEL (Wing) ━━━",
+                        f"{vp_icon} VP: {vp_value:.4f} [{vp_classification}]",
+                        f"📝 Traits: {trait_count}",
+                        f"📼 Tape: {tape_position}/{tape_cells} cells",
+                        f"🔢 Calcs: {vp_calculations}",
+                        f"🌀 Collapse: {collapse_status}",
+                        f"⚖️ Sync: {align_status}"
+                    ]
+                    
+                    # Add component breakdown if available
+                    breakdown = djinn_kernel_data.get('component_breakdown', {})
+                    if breakdown:
+                        top_components = sorted(breakdown.items(), key=lambda x: abs(x[1]), reverse=True)[:2]
+                        for comp_name, comp_val in top_components:
+                            short_name = comp_name[:8]
+                            panel7_lines.append(f"  {short_name}: {comp_val:.3f}")
+                    
+                    panel7_text = "\n".join(panel7_lines)
+                    ax.text2D(0.98, 0.50, panel7_text, transform=ax.transAxes,
+                              ha='right', va='center', fontsize=7, color='#FF6B6B',
+                              bbox=dict(facecolor='black', alpha=0.8, edgecolor='#FF6B6B', linewidth=1),
                               family='monospace')
 
                     # Panel 4: BOTTOM-RIGHT - ConfigTuner & Meta-Cognitive
@@ -710,29 +797,53 @@ class LightweightVisualizationViewer:
 
                     panel4_text = "\n".join(panel4_lines)
                     ax.text2D(0.90, 0.10, panel4_text, transform=ax.transAxes,
-                              ha='right', va='bottom', fontsize=8, color='yellow',
+                              ha='right', va='bottom', fontsize=7, color='yellow',
                               bbox=dict(facecolor='black', alpha=0.7, edgecolor='yellow', linewidth=1),
                               family='monospace')
 
-                    # Panel 5: CENTER-BOTTOM - Real-Time Event Stream
-                    # Show last significant event from causation graph
-                    events_text = "━━━ RECENT EVENTS ━━━"
-
-                    # Try to get recent tuning action
-                    if tuner_enabled and recent_actions and len(recent_actions) > 0:
-                        last = recent_actions[-1]
-                        param = last.get('param', 'unknown')
-                        change = last.get('change', '')
-                        success_icon = "✅" if last.get('success', False) else "❌"
-                        events_text += f"\n{success_icon} {param}: {change}"
-                    elif tuner_enabled:
-                        events_text += "\nMonitoring..."
+                    # Panel 5: CENTER-BOTTOM - Phase Transition / System Harmony
+                    # Show synchronization status between all systems
+                    exploration_tracking = data.get('exploration_tracking', {})
+                    language_data = data.get('language', {})
+                    
+                    # Calculate overall system harmony
+                    harmony_score = 1.0 - proximity_diff if proximity_diff < 1.0 else 0.0
+                    
+                    # Determine system status
+                    if is_collapsed and is_ready:
+                        system_status = "🌉 TRANSITION ACHIEVED"
+                        status_color = '#00FF00'
+                    elif phase_aligned:
+                        system_status = "🔄 PHASES ALIGNED"
+                        status_color = '#00FFFF'
+                    elif harmony_score > 0.8:
+                        system_status = "🎵 HARMONIZING"
+                        status_color = '#FFFF00'
                     else:
-                        events_text += "\nNo tuner active"
-
-                    ax.text2D(0.50, 0.10, events_text, transform=ax.transAxes,
-                              ha='center', va='bottom', fontsize=7, color='orange',
-                              bbox=dict(facecolor='black', alpha=0.7, edgecolor='orange', linewidth=1),
+                        system_status = "⚡ DIVERGENT"
+                        status_color = '#FF6600'
+                    
+                    # Language metrics
+                    vocab_size = language_data.get('vocab_size', 0)
+                    word_count = language_data.get('word_count', 0)
+                    org_words = language_data.get('organism_word_assignments', 0)
+                    
+                    # Build status text
+                    transition_lines = [
+                        f"━━━ SYSTEM HARMONY ━━━",
+                        f"{system_status}",
+                        f"🎯 Harmony: {harmony_score:.1%}",
+                        f"📊 Ratio: {exploration_tracking.get('current_ratio', 'N/A')}",
+                    ]
+                    
+                    # Add language info if available
+                    if vocab_size > 0:
+                        transition_lines.append(f"🗣️ Vocab: {vocab_size} ({org_words} assigned)")
+                    
+                    transition_text = "\n".join(transition_lines)
+                    ax.text2D(0.50, 0.10, transition_text, transform=ax.transAxes,
+                              ha='center', va='bottom', fontsize=7, color=status_color,
+                              bbox=dict(facecolor='black', alpha=0.7, edgecolor=status_color, linewidth=1),
                               family='monospace')
 
                     profile = self.grid_profiles[self.current_grid_profile_index] if self.grid_profiles else {}
