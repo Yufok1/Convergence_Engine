@@ -889,7 +889,7 @@ python -m portable_agent.bridge --mode gym --gym-env CartPole-v1
 python run_agent.py --episodes 5
 ```
 
-### Option 2: Custom Gym Environment
+### Option 3: Custom Gym Environment
 ```bash
 pip install gymnasium
 python run_agent.py --gym-env CartPole-v1 --episodes 10
@@ -1175,7 +1175,7 @@ If you use this agent in research or production:
 @software{{butterfly_agent_{capsule.organism_id[:8]},
   title = {{Butterfly System - Evolved Neural Agent}},
   author = {{The Butterfly System}},
-  year = {{2024}},
+  year = {{2025}},
   url = {{https://github.com/Yufok1/Convergence_Engine}},
   note = {{Organism ID: {capsule.organism_id}, Exported: {metadata['export_timestamp']}}}
 }}
@@ -1545,7 +1545,7 @@ These organisms evolved together in **The Butterfly System** - a consciousness s
 @software{{butterfly_ensemble,
   title = {{Butterfly System - Ensemble Neural Agents}},
   author = {{The Butterfly System}},
-  year = {{2024}},
+  year = {{2025}},
   url = {{https://github.com/Yufok1/Convergence_Engine}},
   note = {{{member_count} organisms, Exported: {metadata['export_timestamp']}}}
 }}
