@@ -246,6 +246,27 @@ Quick Win #9: Highlander Protocol (Tournament-Based Survival) ⭐ NEW
   - PowerShell: `.\run_highlander.ps1`
 - **Visualization**: Battle events appear in causation graph with combat component; champion organisms highlighted
 
+Quick Win #10 Visualization Enhancement ⭐ NEW (2025-12-03):
+- **6 New Event Types Added to Causation Graph**:
+  1. **Confederation Events** (confederationGlow animation):
+     - Shape: Hexagon, Color: Purple (#800080)
+     - Events: confederation_founded, alliance_joined_confederation
+  2. **Illumination Events** (illuminationPulse animation):
+     - Shape: Star/Asterisk, Color: Cyan (#00FFFF)
+     - Events: System illumination/insight events
+  3. **Betrayal Events** (betrayalFlash animation):
+     - Shape: Cross/X, Color: Crimson (#DC143C)
+     - Events: alliance_betrayal
+  4. **Diplomacy Events** (diplomacyPulse animation):
+     - Shape: Diamond, Color: Olive (#808000)
+     - Events: alliance_formed, alliance_member_joined
+  5. **Training Events** (trainingPulse animation):
+     - Shape: Triangle/Inverted Triangle, Colors: Teal (#008080) / Tomato (#FF6347)
+     - Events: lr_adjusted, early_stopping_triggered
+  6. **Hegemony Events** (hegemonySurge animation):
+     - Shape: Large Hexagon, Color: Deep Purple (#4B0082)
+     - Events: mega_confederation_formed
+
 Quick Win #10: Alliance Warfare System (Collective Survival) ⭐ NEW (2025-12-01)
 - **Core Concept**: Beyond individual battles, organisms form planetary alliances that wage collective warfare for control of evolutionary existence itself
 - **Status**: ENABLED / DISABLED (requires Highlander Protocol enabled)
@@ -287,7 +308,18 @@ Quick Win #10: Alliance Warfare System (Collective Survival) ⭐ NEW (2025-12-01
 - **Neural Integration**: Neural organisms learn alliance strategies, predict betrayals, optimize collective behaviors through VP-Aware Planning (QW#4)
 - **Health Impact (QW#5)**: Alliance stability affects ecosystem coherence; wars impact population sustainability
 - **Causation Mapping**: 22 new causation pairs added for alliance/germination/combat interactions
-- **Visualization**: Alliance events appear in causation graph with 🤝 alliance component; alliance membership shown via edge connections
+- **Visualization** ⭐ UPDATED (2025-12-03):
+  - Alliance events appear in causation graph with 🤝 alliance component
+  - Alliance membership shown via edge connections
+  - **New Event Shapes**:
+    - **alliance_formed**: Diamond (Olive #808000) with diplomacyPulse animation
+    - **alliance_disbanded**: Pentagon (Dark Red #8B0000)
+    - **alliance_war_declared**: Star (Orange Red #FF4500) with battlePulse animation
+    - **alliance_war_resolved**: Hexagon (Gold #FFD700)
+    - **alliance_betrayal**: Cross/X (Crimson #DC143C) with betrayalFlash animation
+  - **Confederation Events** (QW#11):
+    - **confederation_founded**: Hexagon (Purple #800080) with confederationGlow animation
+    - **mega_confederation_formed**: Large Hexagon (Deep Purple #4B0082) with hegemonySurge animation
 
 Quick Win #11: Confederation System (Super-Alliance Hierarchy) ⭐ NEW (2025-12-01)
 - **Core Concept**: Alliances can ally with each other to form Confederations, which merge into Empires, then Hegemonies - the ultimate expression of collective intelligence emergence
@@ -341,6 +373,79 @@ Quick Win #12: Neural Relationship Learning (Language Quality Feedback) ⭐ NEW 
   - Semantic network evolution (relationships strengthening/weakening)
   - Language generation quality (coherent vs garbled ratio)
 - **Emergence benefit**: Creates feedback loop where good language use reinforces semantic knowledge; organisms that communicate coherently develop richer semantic networks
+
+Quick Win #13: Training System Events (LR Scheduler + Early Stopping) ⭐ NEW (2025-12-03)
+- **Core Concept**: Neural trainer emits causation events for learning rate adjustments and early stopping triggers
+- **Status**: ENABLED (automatic when neural training active)
+- **New Events**:
+  - **lr_adjusted**: Emitted when cosine LR scheduler steps
+    - Contains: old_lr, new_lr, step_count, scheduler_type
+    - Frequency: Every training step (when LR scheduler enabled)
+    - Component: neural
+  - **early_stopping_triggered**: Emitted when training halts due to convergence
+    - Contains: reason, final_loss, patience_counter, best_loss, epochs_since_improvement
+    - Frequency: Once per early stopping event
+    - Component: neural
+- **Config Paths**:
+  - /neural/training/lr_scheduler/enabled (true)
+  - /neural/training/lr_scheduler/type ("cosine")
+  - /neural/training/lr_scheduler/warmup_steps (100)
+  - /neural/training/lr_scheduler/min_lr (0.0001)
+  - /neural/training/early_stopping/enabled (true)
+  - /neural/training/early_stopping/patience (10)
+  - /neural/training/early_stopping/min_delta (0.0001)
+- **Causation Detection**: Both events participate in causation graph
+  - enable_neural_training_causations must be true
+  - Links form with neural_training, neural_decision, phenotype_emergence events
+- **Visualization**: 
+  - lr_adjusted: Triangle nodes (Teal #008080) - shows training progression
+  - early_stopping_triggered: Inverted Triangle nodes (Tomato #FF6347) - shows convergence
+  - Both have dedicated animations (trainingPulse)
+- **What to Monitor**:
+  - LR decay curve via lr_adjusted events
+  - Early stopping triggers for convergence detection
+  - Correlation between LR changes and loss improvements
+- **Emergence benefit**: Provides visibility into training dynamics; helps identify optimal learning rate schedules for emergent behaviors
+
+Quick Win #14: Expanded CRA Control (54 Safe Parameters) ⭐ NEW (2025-12-03)
+- **Core Concept**: CRA can now tune 54 parameters autonomously (up from 32)
+- **Status**: ENABLED
+- **New Safe Parameters Added**:
+  - **Neural Training**:
+    - neural.training.lr_scheduler.enabled
+    - neural.training.lr_scheduler.warmup_steps
+    - neural.training.lr_scheduler.min_lr
+    - neural.training.early_stopping.enabled
+    - neural.training.early_stopping.patience
+    - neural.training.early_stopping.min_delta
+    - neural.optimization.gradient_checkpointing
+    - neural.optimization.mixed_precision
+  - **Highlander/Alliance**:
+    - highlander.enabled
+    - highlander.predation_enabled
+    - highlander.survival_threshold
+    - highlander.competition_intensity
+    - highlander.battle_rounds
+    - highlander.alliance_warfare.enabled
+    - highlander.alliance_warfare.war_frequency
+  - **Language System**:
+    - neural.language_model.enabled
+    - neural.language_model.teacher.enabled
+    - neural.language_model.teacher.use_knowledge_web
+    - neural.language_model.knowledge_web.enabled
+    - neural.language_model.knowledge_web.quality_control.enabled
+  - **Ray Distributed**:
+    - ray.enabled
+    - ray.parallelization_threshold
+- **CRA Capabilities**:
+  - Autonomous mode: Full self-tuning of all 54 parameters
+  - Learning mode: Proposes changes, learns from outcomes
+  - Safe guardrails: All parameters have min/max bounds
+- **Config Path**: /meta_cognitive/self_tuning/safe_parameters (array of 54)
+- **What to Monitor**:
+  - Tuner actions in Panel 4 (Bottom-Right)
+  - Parameter change success rates
+  - Emergence metrics correlation with tuner adjustments
 
 ---
 📋 Detailed Instructions

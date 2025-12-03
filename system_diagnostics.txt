@@ -220,6 +220,8 @@ Optimization:
 Events:
 - neural_decision: count/frequency/confidence/action distribution
 - neural_training: count/frequency/loss/organisms per event
+- lr_adjusted: LR scheduler step events (cosine decay) ⭐ NEW (2025-12-03)
+- early_stopping_triggered: Training convergence events ⭐ NEW (2025-12-03)
 - Event emission: wired, appearing in graph
 - Component filter: Neural checkbox works
 
@@ -447,19 +449,27 @@ Performance Targets:
 - max_anomaly_ratio: 0.2
 - min_fitness_std: 0.05
 
-Safe Parameters (can be tuned - 30+):
+Safe Parameters (can be tuned - 54): ⭐ EXPANDED (2025-12-03)
 - evolution.mutation_rate.initial, evolution.population_size, evolution.adaptation_sensitivity
 - evolution.diversity_guard.penalty, frequency_threshold, hash_similarity_threshold
 - feedback.knobs.* (mutation_rate, new_edge_rate, clustering_bias, quantum_pruning)
 - neural.training.learning_rate, gamma, epsilon_decay, batch_size
+- neural.training.lr_scheduler.enabled, warmup_steps, min_lr
+- neural.training.early_stopping.enabled, patience, min_delta
 - neural.rewards.* (fitness_improvement, connection_success, survival)
 - neural.inheritance.crossover_rate, mutation_rate
+- neural.optimization.gradient_checkpointing, mixed_precision
 - network.max_organisms, max_connections, resource_pool
 - scikit.clustering.min_cluster_size, scikit.anomaly_detection.contamination, n_estimators
 - quantum.initial_states, entanglement_sensitivity, prune_check_interval
 - vp_monitoring.adaptive_response.high_vp_threshold, stabilization.smoothing_factor
 - causation_detection.correlation_threshold
 - meta_cognitive.self_tuning.tuning_interval_frames, min_confidence_threshold
+- highlander.enabled, predation_enabled, survival_threshold, competition_intensity, battle_rounds
+- highlander.alliance_warfare.enabled, war_frequency
+- neural.language_model.enabled, teacher.enabled, teacher.use_knowledge_web
+- neural.language_model.knowledge_web.enabled, quality_control.enabled
+- ray.enabled, parallelization_threshold
 
 Panel Display (Bottom-Right):
 - Shows: Mode (AUTONOMOUS/LEARNING/OBSERVING), Actions count, Success rate (%), Last action
@@ -941,11 +951,13 @@ Access:
 
 Neural Config:
 - enabled (true), device (cuda/cpu)
-- brain (input_dim: 18, hidden_dim: 64, output_dim: 6, activation: relu, dropout: 0.1)
-- training (batch_size: 96, learning_rate: 0.0035, gamma: 0.995, epsilon_start/end/decay,
+- brain (input_dim: 18, hidden_dim: 128, output_dim: 6, activation: relu, dropout: 0.1)
+- training (batch_size: 128, learning_rate: 0.0035, gamma: 0.995, epsilon_start/end/decay,
   memory_size: 20000, update_frequency: 1)
+- training.lr_scheduler (enabled: true, type: cosine, warmup_steps: 100, min_lr: 0.0001) ⭐ NEW
+- training.early_stopping (enabled: true, patience: 10, min_delta: 0.0001) ⭐ NEW
 - optimization (use_compile: true, compile_mode: reduce-overhead, reuse_optimizers: true,
-  use_scripted_inference: false)
+  use_scripted_inference: false, gradient_checkpointing: false, mixed_precision: false)
 - vp_aware_planning (enabled: true, base_boost: 0.15, strong_boost: 0.25, thresholds) ⭐ QW#4
 
 ML Config:
@@ -1024,6 +1036,28 @@ Health Viz: ⭐ NEW (Quick Win #5)
 - health_state_change nodes appear on threshold crossings
 - Color indicates state (red=critical, yellow=warning, green=healthy, blue=optimal)
 
+Alliance/Confederation Viz: ⭐ NEW (2025-12-03)
+- **6 New Event Type Visualizations Added**:
+  1. **Confederation Events** (confederationGlow animation):
+     - Shape: Hexagon, Color: Purple (#800080)
+     - Events: confederation_founded, alliance_joined_confederation
+  2. **Illumination Events** (illuminationPulse animation):
+     - Shape: Star/Asterisk, Color: Cyan (#00FFFF)
+     - Events: System illumination/insight events
+  3. **Betrayal Events** (betrayalFlash animation):
+     - Shape: Cross/X, Color: Crimson (#DC143C)
+     - Events: alliance_betrayal
+  4. **Diplomacy Events** (diplomacyPulse animation):
+     - Shape: Diamond, Color: Olive (#808000)
+     - Events: alliance_formed, alliance_member_joined
+  5. **Training Events** (trainingPulse animation):
+     - Shape: Triangle/Inverted Triangle
+     - Colors: Teal (#008080) for lr_adjusted, Tomato (#FF6347) for early_stopping
+     - Events: lr_adjusted, early_stopping_triggered
+  6. **Hegemony Events** (hegemonySurge animation):
+     - Shape: Large Hexagon, Color: Deep Purple (#4B0082)
+     - Events: mega_confederation_formed
+
 Unified Viz:
 - 5 diagnostic panels all visible
 - Stats box showing full labels (including HEALTH)
@@ -1042,18 +1076,21 @@ Capture:
 - Includes ML nodes/links
 - Includes concept nodes (Quick Win #2)
 - Includes health nodes (Quick Win #5)
+- Includes alliance/confederation nodes (Quick Win #10/11) ⭐ NEW
+- Includes training events (Quick Win #14) ⭐ NEW
 - Includes diagnostic panels in 3D view
 
 Context:
 - CRA generates summaries
 - Includes neural state (trainer status, loss, organisms_tracked, training_steps, VP-aware
-  planning status)
+  planning status, lr_scheduler state, early_stopping state)
 - Includes ML state (clusters, anomalies, algorithm, concepts)
 - Includes health state (score, components, classification) ⭐ NEW
 - Includes meta-cognitive state (tuner mode, actions, success_rate)
 - Includes VP state (value, classification, component breakdown)
 - Includes causation state (toggles, time windows)
 - Includes visualization state (5 panels, stats box)
+- Includes alliance/confederation state (alliances formed, wars, tiers) ⭐ NEW
 
 Analysis:
 - Vision receives images + context
@@ -1318,6 +1355,16 @@ Visualization:
 - Component: highlander (if filtered)
 - Champion organisms highlighted
 - Elimination chains visible in graph
+- **Alliance/Confederation Events** ⭐ NEW (2025-12-03):
+  - confederation_founded: Hexagon (Purple #800080) with confederationGlow
+  - alliance_formed: Diamond (Olive #808000) with diplomacyPulse
+  - alliance_betrayal: Cross/X (Crimson #DC143C) with betrayalFlash
+  - mega_confederation_formed: Large Hexagon (Deep Purple #4B0082) with hegemonySurge
+  - alliance_war_declared: Star (Orange Red #FF4500) with battlePulse
+- **Training Events** ⭐ NEW (2025-12-03):
+  - lr_adjusted: Triangle (Teal #008080) with trainingPulse
+  - early_stopping_triggered: Inverted Triangle (Tomato #FF6347)
+- **Illumination Events**: Star/Asterisk (Cyan #00FFFF) with illuminationPulse
 
 Priority:
 - Highlander enabled but not starting = HIGH
@@ -1425,12 +1472,18 @@ Config Paths:
 - /highlander/alliance_warfare/war_frequency
 - /highlander/alliance_warfare/existential_war_threshold
 
-Visualization:
+Visualization: ⭐ UPDATED (2025-12-03)
 - Alliance events appear in causation graph
 - Component: alliance_warfare (filterable)
 - Alliance membership shown via 🤝 connections
 - War events highlighted with combat styling
 - New legend entries: Germination (🌱), Highlander (🗡️)
+- **New Event Shapes**:
+  - alliance_formed: Diamond (Olive #808000) with diplomacyPulse animation
+  - alliance_disbanded: Pentagon (Dark Red #8B0000)
+  - alliance_war_declared: Star (Orange Red #FF4500) with battlePulse animation
+  - alliance_war_resolved: Hexagon (Gold #FFD700)
+  - alliance_betrayal: Cross/X (Crimson #DC143C) with betrayalFlash animation
 
 Priority:
 - Alliance warfare enabled but not processing = HIGH
@@ -1658,6 +1711,125 @@ Verification:
 - TorchScript export works regardless of onnxruntime
 
 ---
+22. Training System Events (LR Scheduler + Early Stopping) ⭐ NEW (2025-12-03)
+
+Status: SUCCESS / FAILED / PARTIAL
+- LR scheduler events emitting
+- Early stopping events emitting
+- Causation graph integration active
+
+Core Concept:
+- Neural trainer emits causation events for learning rate adjustments and early stopping triggers
+- Provides visibility into training dynamics for CRA analysis
+
+New Events:
+
+1. lr_adjusted:
+   - Emitted when cosine LR scheduler steps
+   - Contains: old_lr, new_lr, step_count, scheduler_type
+   - Frequency: Every training step (when LR scheduler enabled)
+   - Component: neural
+   - Visualization: Triangle (Teal #008080) with trainingPulse animation
+
+2. early_stopping_triggered:
+   - Emitted when training halts due to convergence
+   - Contains: reason, final_loss, patience_counter, best_loss, epochs_since_improvement
+   - Frequency: Once per early stopping event
+   - Component: neural
+   - Visualization: Inverted Triangle (Tomato #FF6347)
+
+Config Paths:
+- /neural/training/lr_scheduler/enabled (true)
+- /neural/training/lr_scheduler/type ("cosine")
+- /neural/training/lr_scheduler/warmup_steps (100)
+- /neural/training/lr_scheduler/min_lr (0.0001)
+- /neural/training/early_stopping/enabled (true)
+- /neural/training/early_stopping/patience (10)
+- /neural/training/early_stopping/min_delta (0.0001)
+
+What to Monitor:
+- LR decay curve via lr_adjusted events
+- Early stopping triggers for convergence detection
+- Correlation between LR changes and loss improvements
+- Training efficiency over time
+
+Priority:
+- Events not emitting = MEDIUM
+- Scheduler not stepping = MEDIUM
+- Early stopping not triggering when expected = LOW
+
+Verification:
+- Check for "lr_adjusted" events in causation graph after training starts
+- Verify LR decreases according to cosine schedule
+- Confirm early_stopping_triggered fires when loss plateaus
+
+---
+23. Expanded CRA Control (54 Safe Parameters) ⭐ NEW (2025-12-03)
+
+Status: SUCCESS / FAILED / PARTIAL
+- 54 safe parameters available for CRA tuning
+- All guardrails enforced
+- New parameter categories integrated
+
+Core Concept:
+- CRA can now tune 54 parameters autonomously (up from 32)
+- Expanded coverage includes training dynamics, Highlander, alliance warfare, language, Ray
+
+New Safe Parameters (22 added):
+
+Neural Training:
+- neural.training.lr_scheduler.enabled
+- neural.training.lr_scheduler.warmup_steps
+- neural.training.lr_scheduler.min_lr
+- neural.training.early_stopping.enabled
+- neural.training.early_stopping.patience
+- neural.training.early_stopping.min_delta
+- neural.optimization.gradient_checkpointing
+- neural.optimization.mixed_precision
+
+Highlander/Alliance:
+- highlander.enabled
+- highlander.predation_enabled
+- highlander.survival_threshold
+- highlander.competition_intensity
+- highlander.battle_rounds
+- highlander.alliance_warfare.enabled
+- highlander.alliance_warfare.war_frequency
+
+Language System:
+- neural.language_model.enabled
+- neural.language_model.teacher.enabled
+- neural.language_model.teacher.use_knowledge_web
+- neural.language_model.knowledge_web.enabled
+- neural.language_model.knowledge_web.quality_control.enabled
+
+Ray Distributed:
+- ray.enabled
+- ray.parallelization_threshold
+
+CRA Capabilities:
+- Autonomous mode: Full self-tuning of all 54 parameters
+- Learning mode: Proposes changes, learns from outcomes
+- Safe guardrails: All parameters have min/max bounds
+
+Config Path: /meta_cognitive/self_tuning/safe_parameters (array of 54)
+
+What to Monitor:
+- Tuner actions in Panel 4 (Bottom-Right)
+- Parameter change success rates
+- Emergence metrics correlation with tuner adjustments
+
+Priority:
+- New parameters not recognized = HIGH
+- Guardrails not enforcing = MEDIUM
+- Tuner ignoring new parameters = LOW
+
+Verification:
+- Check safe_parameters array in config.json has 54 entries
+- Verify CRA can modify new parameters via CONFIG_UPDATE
+- Confirm guardrails enforce bounds on new parameters
+
+---
 Response Format
 
 Structure: Headings for each category
@@ -1720,10 +1892,14 @@ Special Instructions
     ML features 25-27 integrated ⭐ NEW
   - QW#12 (Neural Relationship Learning): Language quality feedback, coherence evaluation,
     semantic guidance, relationship strengthening/weakening ⭐ NEW
+  - QW#14 (Training Events): lr_adjusted and early_stopping_triggered events in causation graph,
+    visible training dynamics, convergence detection ⭐ NEW (2025-12-03)
+  - QW#15 (Expanded CRA Control): 54 safe parameters for autonomous tuning including LR scheduler,
+    early stopping, Highlander, alliance warfare, language, Ray ⭐ NEW (2025-12-03)
 
 - Neural Priority: Enabled but trainer unavailable = CRITICAL
 - Neural Expected Behavior:
-  - loss=None and organisms_tracked=0 is NORMAL until organisms collect batch_size (96, check config) experiences
+  - loss=None and organisms_tracked=0 is NORMAL until organisms collect batch_size (128, check config) experiences
   - Panel shows "N/A" for loss until first training
   - training_steps=0 is normal early-game
   - input_dim=18 (was 12) for VP-aware perception
@@ -1831,6 +2007,10 @@ Key Updates for 2025 (Quick Wins Edition):
   evaluation, semantic guidance, relationship strengthening/weakening based on generation quality ⭐ NEW
 - Quick Win #13: Ray Distributed Computing - Parallel processing for ML features (4-5x), battles (4-5x),
   neural decisions (3-4x), DQN training (2-3x), graceful fallback when Ray unavailable ⭐ NEW
+- Quick Win #14: Training System Events - lr_adjusted (LR scheduler) and early_stopping_triggered
+  (convergence) causation events for training visibility ⭐ NEW (2025-12-03)
+- Quick Win #15: Expanded CRA Control - 54 safe parameters (up from 32) for autonomous tuning,
+  including LR scheduler, early stopping, Highlander, alliance warfare, language, Ray ⭐ NEW (2025-12-03)
 
 Quick Win #8: Dynamic Multi-Dimensional Linguistic Awareness ⭐ NEW
 - Status: ENABLED / DISABLED
@@ -1871,16 +2051,19 @@ Quick Win #8: Dynamic Multi-Dimensional Linguistic Awareness ⭐ NEW
 - Section 20: Neural Relationship Learning (NEW - Quick Win #12)
 - Section 21: Ray Distributed Computing (NEW - Quick Win #13)
 - Section 22: Agent Compiler System (Optional ONNX Export)
+- Section 23: Training System Events (NEW - Quick Win #14) ⭐ 2025-12-03
+- Section 24: Expanded CRA Control (NEW - Quick Win #15) ⭐ 2025-12-03
 - Section 3b: Language System Audit (NEW - Quick Win #8)
 - Neural field names: organisms_tracked (not organisms_trained)
 - Neural input_dim: 18 (was 12)
-- batch_size: 96 (check config.json neural.training.batch_size for actual value)
+- batch_size: 128 (check config.json neural.training.batch_size for actual value)
+- hidden_dim: 128 (check config.json neural.brain.hidden_dim for actual value)
 - Expected behaviors: loss=None, actions=0 before thresholds
 - Stats box: full labels, no overflow, includes HEALTH
 - Bottom profile menu: removed
 - Panel positions and colors documented
 - Data flow: includes health_monitor, concept_tracker
-- Safe parameters: 30+ tunable by meta-cognitive system
+- Safe parameters: 54 tunable by meta-cognitive system ⭐ UPDATED (2025-12-03)
 - Config paths updated for all Quick Wins
 - **Recent Bug Fixes (2025-11-30)**:
   - ILLUMINATE/NOTEPAD JSON parsing: Robust character cleanup for invisible Unicode, smart quotes, non-breaking spaces
@@ -1917,6 +2100,14 @@ Quick Win #8: Dynamic Multi-Dimensional Linguistic Awareness ⭐ NEW
   - **Symbiotic Decisions**: 3-4x speedup via parallel neural decisions (threshold: 50+)
   - **DQN Training**: 2-3x speedup via parallel organism training (threshold: 8+)
   - **Graceful Fallback**: Sequential execution when Ray unavailable or errors occur
+- **Recent Improvements (2025-12-03)**:
+  - **Training System Events**: lr_adjusted and early_stopping_triggered causation events added to trainer.py
+  - **Expanded CRA Control**: 54 safe parameters (up from 32) for comprehensive autonomous tuning
+  - **6 New Graph Visualizations**: Confederation, Illumination, Betrayal, Diplomacy, Training, Hegemony event types
+  - **Config Optimization**: Hardware-optimized for i5-7400 + GTX 1660 SUPER + 32GB RAM
+  - **Alliance Wisdom Fix**: Corrected List[str] vs dict type mismatch in neural_organism.py
+  - **LR Scheduler Integration**: Cosine learning rate scheduler with warmup and min_lr
+  - **Early Stopping Integration**: Patience-based convergence detection with min_delta threshold
 - **Recent Bug Fixes (Fresh Clone Compatibility)**:
   - ConfigAtom description field: Added missing `description: str = ""` field to ConfigAtom dataclass
   - onnxruntime optional: Made onnxruntime import optional with ONNX_AVAILABLE flag
