@@ -10,6 +10,7 @@ Components:
 - GymAdapter: Integration with OpenAI Gym/Gymnasium environments
 - Perception: State feature extraction and normalization
 - Training: Continued learning capability for adaptation
+- Visualize: Neural activation visualization tool (run as `python -m portable_agent.visualize`)
 
 Usage:
     from portable_agent import AgentRuntime, MiniEnvironment
@@ -24,6 +25,9 @@ Usage:
             next_state, reward, done, info = env.step(action)
             agent.learn(state, action, reward, next_state, done)
             state = next_state
+    
+    # Visualize the agent's neural activations
+    # Run: python portable_agent/visualize.py
 """
 
 from .agent_runtime import AgentRuntime
@@ -40,4 +44,4 @@ __all__ = [
     'TrainingLoop'
 ]
 
-__version__ = '1.0.0'
+__version__ = '1.1.0'  # Added neural activation visualizer

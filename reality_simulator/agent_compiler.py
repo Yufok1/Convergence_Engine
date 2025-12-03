@@ -722,6 +722,8 @@ if __name__ == "__main__":
             elif metadata['export_format'] == 'statedict':
                 requirements = "torch\nnumpy>=1.21.0\n" # Will also require organism_brain class definition
 
+            # Add visualizer dependencies
+            requirements += "flask>=2.0.0\n"
             requirements += "# optional: pip install gymnasium for --gym-env support\n"
 
             zf.writestr("requirements.txt", requirements)
@@ -852,7 +854,8 @@ This organism emerged through **neuroevolution** - a process combining:
 │   ├── agent_runtime.py      # Core AgentRuntime class
 │   ├── mini_environment.py   # Built-in test environment
 │   ├── gym_adapter.py        # Gymnasium/Gym bridge
-│   └── training.py           # TrainingLoop helper
+│   ├── training.py           # TrainingLoop helper
+│   └── visualize.py          # 🔬 Neural activation visualizer
 ├── 🐍 run_agent.py            # CLI runner script
 ├── 📦 requirements.txt        # Python dependencies
 └── 📖 README.md               # This file
@@ -876,7 +879,30 @@ pip install gymnasium
 python run_agent.py --gym-env CartPole-v1 --episodes 10
 ```
 
-### Option 3: Python Integration
+### Option 3: 🔬 Neural Activation Visualizer
+Launch an interactive web UI to explore how this agent's neural network processes information:
+
+```bash
+# Start the visualizer (opens browser automatically)
+python portable_agent/visualize.py
+
+# Or specify a custom port
+python portable_agent/visualize.py --port 8080
+
+# Run without auto-opening browser
+python portable_agent/visualize.py --no-browser
+```
+
+The visualizer provides:
+- **Live Neural Heatmaps**: See layer-by-layer activations in real-time
+- **Input Experimentation**: Adjust inputs via sliders and observe changes
+- **Preset Scenarios**: Test "low energy", "high threat", "social opportunity" situations
+- **Behavioral Fingerprint**: View this organism's personality profile
+- **Decision Analysis**: Track action probabilities and confidence
+
+*Requires: Flask, onnxruntime (included in requirements.txt)*
+
+### Option 4: Python Integration
 ```python
 from portable_agent import AgentRuntime, MiniEnvironment
 
@@ -1109,6 +1135,9 @@ If you use this agent in research or production:
                 requirements = "onnxruntime>=1.15.0\nnumpy>=1.21.0\n"
             elif metadata['export_format'] == 'torchscript':
                 requirements = "torch\nnumpy>=1.21.0\n"
+            # Add visualizer dependencies
+            requirements += "flask>=2.0.0\n"
+            requirements += "# optional: pip install gymnasium for --gym-env support\n"
             zf.writestr("requirements.txt", requirements)
 
             member_count = len(metadata.get('ensemble', {}).get('members', []))
@@ -1204,6 +1233,12 @@ The ensemble uses a `MultiOrganismWrapper` that:
 ensemble_{metadata['export_timestamp'][:10]}/
 ├── 🧠 brain.{metadata['export_format']}           # Combined ensemble model
 ├── 📋 metadata.json           # Ensemble configuration + member details
+├── 🧩 portable_agent/         # Runtime code (with visualizer!)
+│   ├── agent_runtime.py      # Core runtime class
+│   ├── mini_environment.py   # Built-in test environment
+│   ├── gym_adapter.py        # Gymnasium/Gym bridge
+│   ├── training.py           # TrainingLoop helper
+│   └── visualize.py          # 🔬 Neural activation visualizer
 ├── 🐍 run_agent.py            # CLI runner for ensemble inference
 ├── 📦 requirements.txt        # Python dependencies
 └── 📖 README.md               # This file
@@ -1220,7 +1255,18 @@ pip install -r requirements.txt
 python run_agent.py
 ```
 
-### Option 2: Python Integration
+### Option 2: 🔬 Neural Activation Visualizer
+Launch an interactive web UI to explore the ensemble's neural network:
+
+```bash
+# Start the visualizer (opens browser automatically)
+python portable_agent/visualize.py
+
+# Custom port / no auto-browser
+python portable_agent/visualize.py --port 8080 --no-browser
+```
+
+### Option 3: Python Integration
 ```python
 from run_agent import EnsembleRunner
 import numpy as np
@@ -1419,6 +1465,9 @@ These organisms evolved together in **The Butterfly System** - a consciousness s
 *{member_count} minds evolved together. Now they think as one.* 🦋🦋
 """
             zf.writestr("README.md", readme)
+            
+            # Include portable_agent sources (for visualizer, etc.)
+            self._write_portable_agent_sources(zf)
 
         archive_buffer.seek(0)
         return archive_buffer
