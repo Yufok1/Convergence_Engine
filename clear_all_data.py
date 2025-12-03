@@ -7,16 +7,36 @@ for a completely fresh run of the Butterfly System.
 
 ⚠️ WARNING: This will permanently delete all runtime data!
 
+WHAT GETS CLEARED:
+- data/logs/*.log - All log files (breath, state, neural, etc.)
+- data/checkpoints/*.json - All checkpoint files
+- data/checkpoints/*.pt, *.pth - Neural model checkpoints
+- data/.shared_simulation_state.json - Current simulation state
+- data/.simulation_control.json - Simulation control state
+- data/.simulation_paused - Pause flag
+- data/context_memory.json - Context memory
+- data/context_memory.json.backup - Context memory backup
+- data/causation_explorer/snapshots/* - Graph snapshots
+- data/causation_explorer/chat_history.json - CRA chat history
+- data/kernel/versions/*.json - Kernel version files
+- data/kernel/latest.link - Kernel latest link
+- data/decision_logs/* - Decision log files
+- data/neural_models/*.pt, *.pth - Neural models
+- data/capsules/*.json - Organism capsules
+- highlander_capsules/*.json - Highlander champion capsules
+- test_capsules_temp/ - Test capsule directory
+
 PRESERVED (Not Deleted):
 - data/config.json - System configuration
 - data/causation_explorer/ollama_config.json - Ollama settings
-- data/linguistic_concepts.json - Linguistic knowledge base
-- data/semantic_relations.json - Semantic relations knowledge base
-- data/ngram_patterns.json - N-gram patterns knowledge base
+- data/butterfly_vocabulary_*.json - Vocabulary datasets
+- data/seeded_knowledge_web_*.json - Knowledge web
 - Directory structure - All directories maintained
 
 NOTE: Neural-ML Symbiosis, ConfigTuner, and Health Monitor data is stored in-memory only
 (no persistent files to clear - history resets on restart)
+
+NOTE: Research Notepad is stored in browser localStorage (not cleared by this script)
 """
 
 import shutil
@@ -140,7 +160,7 @@ def clear_all_data():
         else:
             skipped_items.append(f"  ⚠️  Shared state - {msg}")
     
-    # 4. Clear context memory
+    # 4. Clear context memory (including backup)
     context_memory = data_dir / 'context_memory.json'
     if context_memory.exists():
         success, size, msg = safe_delete_file(context_memory)
@@ -150,6 +170,17 @@ def clear_all_data():
             print("🧠 Cleared context memory")
         else:
             skipped_items.append(f"  ⚠️  Context memory - {msg}")
+    
+    # 4b. Clear context memory backup
+    context_memory_backup = data_dir / 'context_memory.json.backup'
+    if context_memory_backup.exists():
+        success, size, msg = safe_delete_file(context_memory_backup)
+        if success:
+            total_size += size
+            cleared_items.append(f"  ✅ Context memory backup: {size / 1024:.1f} KB")
+            print("🧠 Cleared context memory backup")
+        else:
+            skipped_items.append(f"  ⚠️  Context memory backup - {msg}")
     
     # 5. Clear simulation control
     sim_control = data_dir / '.simulation_control.json'

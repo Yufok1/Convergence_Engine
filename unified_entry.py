@@ -9,6 +9,15 @@ Features:
 - Extensive state logging (granular, terse, information-saturated)
 - Unified visualization (Left: Reality Sim, Middle: Explorer, Right: Djinn Kernel)
 - All systems wired as one machine
+- Neural organism decision-making with Illumination Engine
+- Alliance Warfare system with collective wisdom
+- Highlander survival tournament protocol
+- Memory leak prevention with automatic cleanup
+
+Usage:
+    python unified_entry.py                    # Run with visualization
+    python unified_entry.py --headless         # Run without visualization (server mode)
+    python unified_entry.py --web-only         # Run web UI only (no simulation)
 """
 
 import sys
