@@ -1624,63 +1624,6 @@ while true; do
 done
 """
             zf.writestr("start.sh", start_sh)
-            
-            # HTTP server launcher (Windows)
-            serve_bat = """@echo off
-echo.
-echo  ========================================
-echo   Butterfly Agent - HTTP API Server
-echo  ========================================
-echo.
-
-set PORT=8080
-if not "%1"=="" set PORT=%1
-
-python -c "import flask" 2>nul
-if errorlevel 1 (
-    echo Installing dependencies...
-    pip install -r requirements.txt
-    echo.
-)
-
-echo Starting HTTP server on port %PORT%...
-echo.
-echo Endpoints:
-echo   POST http://localhost:%PORT%/act    - Get action
-echo   POST http://localhost:%PORT%/chat   - Chat with agent
-echo   GET  http://localhost:%PORT%/state  - Agent state
-echo.
-python -m portable_agent.bridge --mode serve --port %PORT%
-"""
-            zf.writestr("serve.bat", serve_bat)
-            
-            # HTTP server launcher (Unix)
-            serve_sh = """#!/bin/bash
-echo ""
-echo "  ========================================"
-echo "   Butterfly Agent - HTTP API Server"
-echo "  ========================================"
-echo ""
-
-PORT=${1:-8080}
-
-python3 -c "import flask" 2>/dev/null
-if [ $? -ne 0 ]; then
-    echo "Installing dependencies..."
-    pip install -r requirements.txt
-    echo ""
-fi
-
-echo "Starting HTTP server on port $PORT..."
-echo ""
-echo "Endpoints:"
-echo "  POST http://localhost:$PORT/act    - Get action"
-echo "  POST http://localhost:$PORT/chat   - Chat with agent"
-echo "  GET  http://localhost:$PORT/state  - Agent state"
-echo ""
-python3 -m portable_agent.bridge --mode serve --port $PORT
-"""
-            zf.writestr("serve.sh", serve_sh)
 
             # 10. Living agent runtime bundle
             self._write_agent_state_bundle(zf, agent_state_payload)
@@ -2242,61 +2185,6 @@ done
 """
             zf.writestr("start.sh", start_sh)
             
-            # HTTP server launcher (Windows)
-            serve_bat = """@echo off
-echo.
-echo  ========================================
-echo   Butterfly Ensemble - HTTP API Server
-echo  ========================================
-echo.
-
-set PORT=8080
-if not "%1"=="" set PORT=%1
-
-python -c "import flask" 2>nul
-if errorlevel 1 (
-    echo Installing dependencies...
-    pip install -r requirements.txt
-    echo.
-)
-
-echo Starting HTTP server on port %PORT%...
-echo Endpoints:
-echo   POST http://localhost:%PORT%/act    - Get action
-echo   POST http://localhost:%PORT%/chat   - Chat with ensemble
-echo   GET  http://localhost:%PORT%/state  - Agent state
-echo.
-python -m portable_agent.bridge --mode serve --port %PORT%
-"""
-            zf.writestr("serve.bat", serve_bat)
-            
-            # HTTP server launcher (Unix)
-            serve_sh = """#!/bin/bash
-echo ""
-echo "  ========================================"
-echo "   Butterfly Ensemble - HTTP API Server"
-echo "  ========================================"
-echo ""
-
-PORT=${1:-8080}
-
-python3 -c "import flask" 2>/dev/null
-if [ $? -ne 0 ]; then
-    echo "Installing dependencies..."
-    pip install -r requirements.txt
-    echo ""
-fi
-
-echo "Starting HTTP server on port $PORT..."
-echo "Endpoints:"
-echo "  POST http://localhost:$PORT/act    - Get action"
-echo "  POST http://localhost:$PORT/chat   - Chat with ensemble"
-echo "  GET  http://localhost:$PORT/state  - Agent state"
-echo ""
-python3 -m portable_agent.bridge --mode serve --port $PORT
-"""
-            zf.writestr("serve.sh", serve_sh)
-            
             # Include portable_agent sources (for visualizer, etc.)
             self._write_portable_agent_sources(zf)
 
@@ -2454,17 +2342,15 @@ if __name__ == '__main__':
                     dynamic_axes={'input': {0: 'batch_size'}},
                     opset_version=11
                 )
+                logger.info(f"✓ Successfully exported ensemble to ONNX format ({model_buffer.tell()} bytes)")
             except Exception as e:
-                msg = str(e)
-                if 'onnxscript' in msg.lower() or 'onnx' in msg.lower():
-                    # Fallback to TorchScript trace (not script - script fails on OrganismBrain)
-                    model_buffer = BytesIO()
-                    traced = torch.jit.trace(wrapper, (dummy_input,))
-                    torch.jit.save(traced, model_buffer)
-                    model_buffer.seek(0)
-                    chosen_format = 'torchscript'
-                else:
-                    raise
+                logger.warning(f"✗ ONNX export failed: {type(e).__name__}: {e}")
+                logger.warning("Falling back to TorchScript export.")
+                model_buffer = BytesIO()
+                traced = torch.jit.trace(wrapper, (dummy_input,))
+                torch.jit.save(traced, model_buffer)
+                model_buffer.seek(0)
+                chosen_format = 'torchscript'
         else:
             # Use trace instead of script - script fails on OrganismBrain's complex control flow
             traced = torch.jit.trace(wrapper, (dummy_input,))
@@ -2587,17 +2473,14 @@ if __name__ == '__main__':
         if export_format == 'onnx':
             try:
                 self._export_onnx(brain, dummy_input, model_buffer)
-                logger.info(f"Successfully exported to ONNX format")
+                logger.info(f"✓ Successfully exported to ONNX format ({model_buffer.tell()} bytes)")
             except Exception as e:
                 # Graceful fallback: if ONNX dependencies missing, fallback to TorchScript
-                logger.warning(f"ONNX export failed: {e}")
-                if 'onnxscript' in str(e).lower() or 'onnx' in str(e).lower() or 'trace' in str(e).lower():
-                    logger.warning("Falling back to TorchScript export.")
-                    model_buffer = BytesIO()
-                    self._export_torchscript(brain, model_buffer)
-                    chosen_format = 'torchscript'
-                else:
-                    raise
+                logger.warning(f"✗ ONNX export failed: {type(e).__name__}: {e}")
+                logger.warning("Falling back to TorchScript export.")
+                model_buffer = BytesIO()
+                self._export_torchscript(brain, model_buffer)
+                chosen_format = 'torchscript'
         elif export_format == 'torchscript':
             self._export_torchscript(brain, model_buffer)
         elif export_format == 'statedict':
