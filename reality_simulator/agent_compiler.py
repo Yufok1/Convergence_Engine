@@ -714,17 +714,31 @@ if __name__ == "__main__":
             zf.writestr("run_agent.py", runner_script)
 
             # 7. Requirements.txt
-            requirements = ""
+            requirements = "# Butterfly Agent - Dependencies\n"
+            requirements += "# Install with: pip install -r requirements.txt\n\n"
+            
+            # Core dependencies based on export format
             if metadata['export_format'] == 'onnx':
-                requirements = "onnxruntime>=1.15.0\nnumpy>=1.21.0\n"
+                requirements += "# Neural network inference (ONNX)\n"
+                requirements += "onnxruntime>=1.15.0\n"
             elif metadata['export_format'] == 'torchscript':
-                requirements = "torch\nnumpy>=1.21.0\n"
+                requirements += "# Neural network inference (PyTorch)\n"
+                requirements += "torch>=2.0.0\n"
             elif metadata['export_format'] == 'statedict':
-                requirements = "torch\nnumpy>=1.21.0\n" # Will also require organism_brain class definition
-
-            # Add visualizer dependencies
-            requirements += "flask>=2.0.0\n"
-            requirements += "# optional: pip install gymnasium for --gym-env support\n"
+                requirements += "# Neural network inference (PyTorch state dict)\n"
+                requirements += "torch>=2.0.0\n"
+            
+            requirements += "numpy>=1.21.0\n\n"
+            
+            # Bridge/visualizer dependencies
+            requirements += "# AgentBridge HTTP server & Visualizer\n"
+            requirements += "flask>=2.0.0\n\n"
+            
+            # Optional dependencies
+            requirements += "# Optional: Gymnasium for environment integration\n"
+            requirements += "# gymnasium>=0.29.0\n\n"
+            requirements += "# Optional: GPU acceleration for ONNX\n"
+            requirements += "# onnxruntime-gpu>=1.15.0\n"
 
             zf.writestr("requirements.txt", requirements)
 
@@ -1213,14 +1227,26 @@ If you use this agent in research or production:
             zf.writestr("run_agent.py", runner_script)
 
             # Requirements
-            requirements = ""
+            requirements = "# Butterfly Ensemble Agent - Dependencies\n"
+            requirements += "# Install with: pip install -r requirements.txt\n\n"
+            
             if metadata['export_format'] == 'onnx':
-                requirements = "onnxruntime>=1.15.0\nnumpy>=1.21.0\n"
+                requirements += "# Neural network inference (ONNX)\n"
+                requirements += "onnxruntime>=1.15.0\n"
             elif metadata['export_format'] == 'torchscript':
-                requirements = "torch\nnumpy>=1.21.0\n"
-            # Add visualizer dependencies
-            requirements += "flask>=2.0.0\n"
-            requirements += "# optional: pip install gymnasium for --gym-env support\n"
+                requirements += "# Neural network inference (PyTorch)\n"
+                requirements += "torch>=2.0.0\n"
+            
+            requirements += "numpy>=1.21.0\n\n"
+            
+            requirements += "# AgentBridge HTTP server & Visualizer\n"
+            requirements += "flask>=2.0.0\n\n"
+            
+            requirements += "# Optional: Gymnasium for environment integration\n"
+            requirements += "# gymnasium>=0.29.0\n\n"
+            requirements += "# Optional: GPU acceleration for ONNX\n"
+            requirements += "# onnxruntime-gpu>=1.15.0\n"
+            
             zf.writestr("requirements.txt", requirements)
 
             member_count = len(metadata.get('ensemble', {}).get('members', []))
