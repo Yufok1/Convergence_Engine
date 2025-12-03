@@ -67,4 +67,3 @@ class GymAdapter:
             'terminated': done,
             'info': info
         }
-```}

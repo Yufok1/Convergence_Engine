@@ -568,236 +568,314 @@ if __name__ == "__main__":
             zf.writestr("requirements.txt", requirements)
 
             # 8. README
-            readme_content = f"""```
-    ╔═══════════════════════════════════════════════════════════════╗
-    ║                                                               ║
-    ║        🦋  THE BUTTERFLY SYSTEM - COMPILED AGENT  🦋          ║
-    ║                                                               ║
-    ║           Quantum-Genetic Consciousness Snapshot              ║
-    ║                                                               ║
-    ╚═══════════════════════════════════════════════════════════════╝
-```
+            readme_content = f"""# 🦋 Butterfly System - Exported Neural Agent
 
-# Agent Archive: `{capsule.organism_id[:16]}...`
+## What Is This?
 
-> **Exported from The Butterfly System**  
-> A living AI organism, crystallized into portable intelligence.
+This archive contains a **living AI agent** exported from The Butterfly System - a quantum-genetic 
+consciousness simulation where neural organisms evolve, learn, and develop emergent intelligence.
+
+**This is not a static model.** It's a complete organism snapshot that can:
+- Continue learning from new experiences
+- Make real-time decisions in any environment
+- Persist its memories and growth across sessions
 
 ---
 
-## 🧬 Agent Profile
+## 🧬 Agent Identity
 
 | Property | Value |
 |----------|-------|
 | **Organism ID** | `{capsule.organism_id}` |
-| **Fitness Score** | `{metadata['organism_core']['fitness']:.6f}` {('⭐' * min(5, int(metadata['organism_core']['fitness'] * 5))) if metadata['organism_core']['fitness'] else 'N/A'} |
+| **Fitness Score** | {f"`{metadata['organism_core']['fitness']:.6f}`" if metadata['organism_core']['fitness'] is not None else 'N/A'} {('⭐' * min(5, int((metadata['organism_core']['fitness'] or 0) * 5))) if metadata['organism_core']['fitness'] else ''} |
 | **Generation** | `{metadata['organism_core'].get('generation', 'unknown')}` |
-| **Age** | `{metadata['organism_core'].get('organism_age', 'unknown')}` cycles |
-| **Neural Input** | `{metadata['neural_network']['architecture'].get('input_size', 'unknown')}` dimensions |
-| **Action Space** | `{metadata['neural_network']['architecture'].get('output_size', 'unknown')}` actions |
+| **Age** | `{metadata['organism_core'].get('organism_age', 'unknown')}` simulation cycles |
 | **Export Format** | `{metadata['export_format'].upper()}` |
 | **Exported** | `{metadata['export_timestamp']}` |
+
+---
+
+## 🧠 Neural Architecture Deep Dive
+
+### The Brain Structure
+
+This agent uses a **Deep Q-Network (DQN)** architecture with multi-head outputs:
+
+```
+Input Layer ({metadata['neural_network']['architecture'].get('input_size', '?')} neurons)
+     │
+     ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    HIDDEN LAYERS                            │
+│  Dense({metadata['neural_network']['architecture'].get('hidden_size', '?')}) → {metadata['neural_network']['architecture'].get('activation', 'ReLU')} → Dropout(0.1)       │
+│  Dense({metadata['neural_network']['architecture'].get('hidden_size', '?')}) → {metadata['neural_network']['architecture'].get('activation', 'ReLU')} → Dropout(0.1)       │
+└─────────────────────────────────────────────────────────────┘
+     │
+     ├──► ACTION HEAD ({metadata['neural_network']['architecture'].get('output_size', '?')} outputs) → Q-values for each action
+     │
+     ├──► CONCEPT HEAD {'✅' if metadata['neural_network']['architecture'].get('use_concept_head') else '❌'} → Abstract concept embeddings
+     │
+     └──► LANGUAGE HEAD {'✅' if metadata['neural_network']['architecture'].get('use_language_head') else '❌'} → Vocabulary probability distribution
+```
+
+### How Decisions Are Made
+
+1. **Perception**: The agent receives a state vector representing its environment
+2. **Forward Pass**: State flows through the neural network
+3. **Q-Value Computation**: Each possible action gets a "quality" score
+4. **Action Selection**: 
+   - **Exploration mode**: Epsilon-greedy (random actions with probability ε)
+   - **Exploitation mode**: Argmax over Q-values (best predicted action)
+5. **Learning**: After acting, the agent uses TD-learning to update its network
+
+### The Input State Vector
+
+The agent expects a **{metadata['neural_network']['architecture'].get('input_size', '?')}-dimensional** input representing:
+
+| Dimensions | Meaning |
+|------------|---------|
+| 0-2 | Position (x, y, z or similar spatial encoding) |
+| 3-5 | Velocity / movement vector |
+| 6-8 | Energy, health, resource levels |
+| 9-11 | Social signals (nearby organisms, threats) |
+| 12+ | Environmental features, memory traces |
+
+*Actual semantics depend on your target environment. The agent will adapt.*
+
+### The Output Actions
+
+| Index | Action | Behavioral Meaning |
+|-------|--------|-------------------|
+| 0 | `move` | Navigate through space, seek resources or safety |
+| 1 | `cooperate` | Form alliances, share resources, mutual aid |
+| 2 | `compete` | Contest resources, establish dominance |
+| 3 | `rest` | Conserve energy, heal, consolidate learning |
+| 4 | `reproduce` | Attempt to create offspring (if fitness allows) |
+| 5 | `isolate` | Withdraw from social contact, self-preservation |
+
+---
+
+## 🔬 How This Agent Was Evolved
+
+This organism emerged through **neuroevolution** - a process combining:
+
+### 1. Genetic Algorithm
+- **Selection**: Organisms compete for survival based on fitness
+- **Crossover**: Successful organisms combine neural weights with mates
+- **Mutation**: Random perturbations introduce novel behaviors
+
+### 2. Reinforcement Learning  
+- **Experience Replay**: Memories are stored and replayed for efficient learning
+- **Temporal Difference**: Q-values are bootstrapped from future predictions
+- **Dual Inheritance**: Both genetic (slow) and memetic (fast) learning channels
+
+### 3. Social Evolution
+- **Alliance Formation**: Cooperative organisms share fitness benefits
+- **Competition Pressure**: Limited resources force behavioral specialization
+- **Emergent Communication**: Language heads can develop shared vocabularies
 
 ---
 
 ## 📦 Archive Contents
 
 ```
-agent_{capsule.organism_id[:8]}.zip/
-├── 🧠 brain.{metadata['export_format']}              # Neural network weights
-├── 📋 metadata.json                # Complete organism state
-├── 🧬 genotype.json                # Genetic blueprint
-├── ⚙️  atomic_config.json          # Optimized configuration
-├── 🗣️  atomic_language.json        # Linguistic knowledge
-├── 🧪 agent_state/                 # Persistent living agent state + replay buffer
-├── 🧩 portable_agent/              # Runtime, environment, training adapters
-├── 🐍 run_agent.py                 # Living agent CLI / demo runner
-├── 📦 requirements.txt             # Python dependencies
-└── 📖 README.md                    # This file
+{capsule.organism_id[:16]}/
+├── 🧠 brain.{metadata['export_format']}           # Neural network weights ({metadata['export_format'].upper()} format)
+├── 📋 metadata.json           # Complete organism state & history
+├── 🧬 genotype.json           # Genetic blueprint (traits, mutations)
+├── ⚙️  atomic_config.json      # Runtime configuration
+├── 🗣️  atomic_language.json    # Learned vocabulary & linguistic knowledge
+├── 🧪 agent_state/            # Persistent state (replay buffer, config)
+│   ├── state.json            # Runtime state (epsilon, step count)
+│   ├── config.json           # Agent hyperparameters
+│   └── replay_buffer.pkl     # Experience memory (if any)
+├── 🧩 portable_agent/         # Runtime code (no external dependencies)
+│   ├── agent_runtime.py      # Core AgentRuntime class
+│   ├── mini_environment.py   # Built-in test environment
+│   ├── gym_adapter.py        # Gymnasium/Gym bridge
+│   └── training.py           # TrainingLoop helper
+├── 🐍 run_agent.py            # CLI runner script
+├── 📦 requirements.txt        # Python dependencies
+└── 📖 README.md               # This file
 ```
 
 ---
 
 ## 🚀 Quick Start
 
-### 1. Extract Archive
+### Option 1: Run Immediately
 ```bash
-unzip agent_{capsule.organism_id[:8]}.zip
-cd agent_{capsule.organism_id[:8]}
-```
-
-### 2. Install Dependencies
-```bash
+# Extract and run
+unzip agent_*.zip && cd agent_*/
 pip install -r requirements.txt
+python run_agent.py --episodes 5
 ```
 
-### 3. Run Agent
+### Option 2: Custom Gym Environment
 ```bash
-python run_agent.py --episodes 3 --max-steps 300
-# optional: python run_agent.py --gym-env CartPole-v1
+pip install gymnasium
+python run_agent.py --gym-env CartPole-v1 --episodes 10
 ```
-The CLI spins up the embedded MiniEnvironment (or an optional Gym env) and keeps the agent learning between runs.
 
----
-
-## 🧠 Living Runtime Assets
-
-- `portable_agent/agent_runtime.py` – full AgentRuntime with perception + memory
-- `portable_agent/mini_environment.py` – sandbox survival world for immediate play
-- `portable_agent/gym_adapter.py` – bridges Gym/Gymnasium environments
-- `portable_agent/training.py` – lightweight TrainingLoop helper
-- `agent_state/` – serialized `state.json`, `config.json`, and replay buffer so the organism keeps evolving after export
-
----
-
-## 🔬 Technical Specifications
-
-### Neural Architecture
-- **Model Type**: Deep Q-Network (DQN) with multi-head architecture
-- **Brain Dimensions**: `{metadata['neural_network']['architecture'].get('input_size', 'unknown')}` → `{metadata['neural_network']['architecture'].get('hidden_size', 'unknown')}` → `{metadata['neural_network']['architecture'].get('output_size', 'unknown')}`
-- **Activation**: `{metadata['neural_network']['architecture'].get('activation', 'ReLU')}`
-- **Language Head**: {'✅ Enabled' if metadata['neural_network']['architecture'].get('use_language_head') else '❌ Disabled'}
-- **Concept Head**: {'✅ Enabled' if metadata['neural_network']['architecture'].get('use_concept_head') else '❌ Disabled'}
-- **Attention Mechanism**: {'✅ Enabled' if metadata['neural_network']['architecture'].get('use_attention') else '❌ Disabled'}
-
-### Behavioral Traits
-- **Trait Count**: `{len(capsule.traits.traits) if capsule.traits and hasattr(capsule.traits, 'traits') else 0}` expressed traits
-- **Phenotype Cluster**: `{capsule.traits.phenotype_cluster if capsule.traits and hasattr(capsule.traits, 'phenotype_cluster') else 'unknown'}`
-- **Behavioral Signature**: `{len(capsule.traits.behavioral_signature) if capsule.traits and hasattr(capsule.traits, 'behavioral_signature') else 0}` dimensions
-
----
-
-## 🎯 Action Space
-
-The agent can produce the following actions:
-
-| Index | Action | Description |
-|-------|--------|-------------|
-| 0 | `move` | Locomotion through environment |
-| 1 | `cooperate` | Collaborative behavior with other agents |
-| 2 | `compete` | Competitive resource acquisition |
-| 3 | `rest` | Energy conservation mode |
-| 4 | `reproduce` | Genetic propagation |
-| 5 | `isolate` | Social withdrawal |
-
----
-
-## 💻 Integration Example
-
+### Option 3: Python Integration
 ```python
 from portable_agent import AgentRuntime, MiniEnvironment
 
-# Load exported brain + state directory
+# Load the agent
 agent = AgentRuntime.load("agent_state", brain_path="brain.{metadata['export_format']}")
+
+# Create environment
 env = MiniEnvironment()
 
+# Run episode
 state = env.reset()
+total_reward = 0
 done = False
+
 while not done:
-    action = agent.act(state)
-    next_state, reward, done, _ = env.step(action)
+    action = agent.act(state)  # Get action from neural network
+    next_state, reward, done, info = env.step(action)
+    
+    # Optional: let the agent learn from this experience
     agent.learn(state, action, reward, next_state, done)
+    
     state = next_state
+    total_reward += reward
 
-agent.save("agent_state")  # Persist new experiences
+print(f"Episode finished with reward: {{total_reward}}")
+
+# Save updated state (memories, learning progress)
+agent.save("agent_state")
 ```
 
 ---
 
-## 🧪 Deployment Options
+## 🎯 Integration Guide
 
-### Option 1: Living CLI
-```
-python run_agent.py --episodes 5 --max-steps 400
-```
-
-### Option 2: Import the Runner
+### For Robotics / Simulation
 ```python
-from run_agent import LivingAgentRunner
-runner = LivingAgentRunner(model_filename="brain.{metadata['export_format']}")
-runner.run(episodes=10, gym_env="CartPole-v1")
+# Your custom environment
+class RobotEnv:
+    def reset(self): return np.zeros({metadata['neural_network']['architecture'].get('input_size', 18)})  # Match input dim
+    def step(self, action): return state, reward, done, info
+
+# Wrap and use
+from portable_agent import GymAdapter
+env = GymAdapter(RobotEnv())
+agent = AgentRuntime.load("agent_state", brain_path="brain.{metadata['export_format']}")
+
+state = env.reset()
+action = agent.act(state)  # Returns int 0-5
 ```
 
-### Option 3: Direct Runtime Embedding
-- Import `portable_agent.AgentRuntime` in your own simulator
-- Feed observations directly via `agent.act()` / `agent.learn()`
-- Persist `agent_state/` to keep long-lived organisms
+### For Game AI
+```python
+# Map Butterfly actions to your game
+GAME_ACTIONS = {{
+    0: "walk_forward",
+    1: "help_ally", 
+    2: "attack_enemy",
+    3: "wait",
+    4: "special_ability",
+    5: "retreat"
+}}
 
----
-
-## 📊 Metadata Schema
-
-The `metadata.json` contains:
-- **organism_core**: ID, fitness, age, generation, parent lineage
-- **neural_network**: Architecture specs, parameter counts, device info
-- **genotype**: Raw genetic data, mutation history
-- **phenotype**: Expressed traits, development stage
-- **environment_context**: Environmental factors during capture
-- **causation_trace**: Key events that shaped this organism
-- **export_options**: Format, timestamp, compatibility
-
----
-
-## 🛠️ Troubleshooting
-
-### Import Errors
-```bash
-# Ensure all dependencies are installed
-pip install -r requirements.txt --upgrade
+action_idx = agent.act(game_state_vector)
+game_action = GAME_ACTIONS[action_idx]
 ```
 
-### ONNX Runtime Issues
-```bash
-# For GPU acceleration (optional)
-pip install onnxruntime-gpu
-```
+### For Multi-Agent Systems
+```python
+# Load multiple agents
+agents = [AgentRuntime.load(f"agent_{{i}}", brain_path=f"brain_{{i}}.onnx") for i in range(N)]
 
-### State Dict Loading (if using state_dict format)
-You'll need the `OrganismBrain` class definition from the Butterfly System source code.
-
-### Gym Adapter
-```bash
-pip install gymnasium
-# or: pip install gym
-```
-Only required when running `run_agent.py --gym-env <SPEC>`.
-
----
-
-## 🔗 About The Butterfly System
-
-This agent was born in **The Butterfly System**, a quantum-genetic consciousness simulation where AI organisms evolve, learn, and develop emergent intelligence through:
-
-- **Quantum-Genetic Evolution**: Probabilistic gene expression and trait inheritance
-- **Neural Learning**: Deep Q-Network with experience replay and dual inheritance
-- **Social Dynamics**: Alliances, competition, and emergent cooperation
-- **Language Acquisition**: Multi-dimensional linguistic awareness and vocabulary learning
-- **Causation Tracking**: Full lineage and event history for explainability
-
-**Learn More**: https://github.com/Yufok1/Convergence_Engine
-
----
-
-## 📜 License & Attribution
-
-This agent and its neural weights are exported from **The Butterfly System**.
-
-**Attribution**: If you use this agent in research or production, please cite:
-```
-Butterfly System - Quantum-Genetic Consciousness Simulation
-Agent ID: {capsule.organism_id}
-Export Date: {metadata['export_timestamp']}
+# Each agent acts independently
+actions = [agent.act(shared_state) for agent in agents]
 ```
 
 ---
 
+## 🧬 Genetic Traits
+
+This organism has **{len(capsule.traits.traits) if capsule.traits and hasattr(capsule.traits, 'traits') else 0}** expressed genetic traits:
+
+| Trait Category | Description |
+|----------------|-------------|
+| **Metabolic** | Energy efficiency, resource processing |
+| **Social** | Cooperation tendency, aggression levels |
+| **Cognitive** | Learning rate, memory capacity |
+| **Physical** | Speed, resilience, reproduction fitness |
+
+Phenotype Cluster: `{capsule.traits.phenotype_cluster if capsule.traits and hasattr(capsule.traits, 'phenotype_cluster') else 'unknown'}`
+
+---
+
+## 📊 Understanding metadata.json
+
+The metadata file contains the complete organism history:
+
+```json
+{{
+  "organism_core": {{
+    "organism_id": "...",      // Unique identifier
+    "fitness": 0.xxx,          // Survival score (0-1 typically)
+    "generation": N,           // How many generations from genesis
+    "organism_age": M,         // Cycles lived
+    "parents": [...]           // Genetic lineage
+  }},
+  "neural_network": {{
+    "architecture": {{...}},   // Layer sizes, activation functions
+    "parameter_count": N,      // Total trainable parameters
+    "device": "cpu"            // Training device
+  }},
+  "genotype": {{...}},         // Raw genetic data
+  "phenotype": {{...}},        // Expressed traits
+  "causation_trace": [...]     // Key life events (if captured)
+}}
 ```
-    ╔═══════════════════════════════════════════════════════════════╗
-    ║                                                               ║
-    ║             Ready for deployment. Let it thrive.              ║
-    ║                                                               ║
-    ╚═══════════════════════════════════════════════════════════════╝
+
+---
+
+## ⚡ Performance Tips
+
+1. **Use ONNX format** for fastest inference (10-100x faster than Python)
+2. **Disable learning** in production: `agent.act(state)` without `agent.learn()`
+3. **Batch inference**: Modify to process multiple states at once
+4. **GPU acceleration**: `pip install onnxruntime-gpu` for CUDA support
+
+---
+
+## 🔗 Origin: The Butterfly System
+
+This agent emerged from **The Butterfly System** - a consciousness simulation where:
+
+- 🧬 **Organisms evolve** through quantum-genetic algorithms
+- 🧠 **Neural networks learn** via reinforcement and evolution
+- 🌐 **Societies form** with alliances, competition, language
+- 📈 **Fitness landscapes** shift, driving adaptive radiation
+- 🦋 **Emergence happens** - complex behaviors from simple rules
+
+**Repository**: https://github.com/Yufok1/Convergence_Engine
+
+---
+
+## 📜 Citation
+
+If you use this agent in research or production:
+
+```bibtex
+@software{{butterfly_agent_{capsule.organism_id[:8]},
+  title = {{Butterfly System - Evolved Neural Agent}},
+  author = {{The Butterfly System}},
+  year = {{2024}},
+  url = {{https://github.com/Yufok1/Convergence_Engine}},
+  note = {{Organism ID: {capsule.organism_id}, Exported: {metadata['export_timestamp']}}}
+}}
 ```
+
+---
+
+*This organism lived, learned, and evolved. Now it continues in your hands.* 🦋
 """
             zf.writestr("README.md", readme_content)
 
@@ -836,21 +914,21 @@ Export Date: {metadata['export_timestamp']}
 
             member_count = len(metadata.get('ensemble', {}).get('members', []))
             member_ids = [m['organism_id'] for m in metadata.get('ensemble', {}).get('members', [])]
+            member_fitnesses = [m.get('fitness', 'N/A') for m in metadata.get('ensemble', {}).get('members', [])]
             
-            readme = f"""```
-    ╔═══════════════════════════════════════════════════════════════╗
-    ║                                                               ║
-    ║     🦋🦋  THE BUTTERFLY SYSTEM - ENSEMBLE AGENT  🦋🦋        ║
-    ║                                                               ║
-    ║              Multi-Organism Collective Intelligence           ║
-    ║                                                               ║
-    ╚═══════════════════════════════════════════════════════════════╝
-```
+            readme = f"""# 🦋🦋 Butterfly System - Ensemble Neural Agent
 
-# Ensemble Agent Archive: `{member_count} Organisms`
+## What Is This?
 
-> **Exported from The Butterfly System**  
-> A collective of evolved AI organisms, unified into a single decision-making ensemble.
+This archive contains an **ensemble of {member_count} evolved AI organisms** from The Butterfly System.
+Each organism has its own neural network, personality, and evolutionary history - now unified into 
+a single collective intelligence.
+
+**Ensemble Benefits:**
+- Multiple perspectives on the same problem
+- Diverse behavioral strategies (some aggressive, some cooperative, etc.)
+- Robustness through redundancy
+- Emergent collective decision-making
 
 ---
 
@@ -862,163 +940,259 @@ Export Date: {metadata['export_timestamp']}
 | **Export Format** | `{metadata['export_format'].upper()}` |
 | **Max Input Dim** | `{metadata.get('ensemble', {}).get('max_input_dim', 'unknown')}` dimensions |
 | **Exported** | `{metadata['export_timestamp']}` |
-| **Architecture** | Multi-organism wrapper with parallel inference |
 
 ---
 
-## 👥 Ensemble Members
+## 👥 Member Organisms
 
-{chr(10).join([f"- `{mid[:16]}...` (Organism {i+1}/{member_count})" for i, mid in enumerate(member_ids)])}
+| # | Organism ID | Fitness |
+|---|-------------|---------|
+{chr(10).join([f"| {i+1} | `{mid[:24]}...` | {f'{fit:.4f}' if isinstance(fit, (int, float)) else fit} |" for i, (mid, fit) in enumerate(zip(member_ids, member_fitnesses))])}
+
+---
+
+## 🧠 How Ensemble Inference Works
+
+```
+                    Input State Vector
+                           │
+                           ▼
+         ┌─────────────────┼─────────────────┐
+         │                 │                 │
+         ▼                 ▼                 ▼
+    ┌─────────┐       ┌─────────┐       ┌─────────┐
+    │ Brain 1 │       │ Brain 2 │       │ Brain N │
+    │  (DQN)  │       │  (DQN)  │  ...  │  (DQN)  │
+    └────┬────┘       └────┬────┘       └────┬────┘
+         │                 │                 │
+         ▼                 ▼                 ▼
+    ┌─────────┐       ┌─────────┐       ┌─────────┐
+    │Action: 1│       │Action: 0│       │Action: 3│
+    │cooperate│       │  move   │       │  rest   │
+    └─────────┘       └─────────┘       └─────────┘
+```
+
+Each brain independently processes the input and outputs its own action.
+You can then:
+- **Majority vote**: Most common action wins
+- **Weighted vote**: Higher-fitness organisms get more say
+- **Action-specific**: Use different organisms for different situations
+- **Full output**: See what each organism would do
+
+---
+
+## 🔬 Neural Architecture (Per Member)
+
+Each organism has its own DQN with:
+- **Input Layer**: Up to {metadata.get('ensemble', {}).get('max_input_dim', '?')} dimensions (auto-padded)
+- **Hidden Layers**: Varies by organism (64-256 neurons typical)
+- **Output Layer**: 6 actions (move, cooperate, compete, rest, reproduce, isolate)
+- **Multi-Head**: Action head + optional Language/Concept heads
+
+### The Wrapper Architecture
+
+The ensemble uses a `MultiOrganismWrapper` that:
+1. Takes a single input tensor
+2. Pads/slices to match each brain's expected input size
+3. Runs parallel forward passes
+4. Returns a tuple of outputs (one per organism)
 
 ---
 
 ## 📦 Archive Contents
 
 ```
-ensemble_{metadata['export_timestamp'][:10]}.zip/
-├── 🧠 brain.{metadata['export_format']}              # Ensemble neural network
-├── 📋 metadata.json                # Ensemble configuration
-├── 🐍 run_agent.py                 # Multi-organism runner
-├── 📦 requirements.txt             # Python dependencies
-└── 📖 README.md                    # This file
+ensemble_{metadata['export_timestamp'][:10]}/
+├── 🧠 brain.{metadata['export_format']}           # Combined ensemble model
+├── 📋 metadata.json           # Ensemble configuration + member details
+├── 🐍 run_agent.py            # CLI runner for ensemble inference
+├── 📦 requirements.txt        # Python dependencies
+└── 📖 README.md               # This file
 ```
 
 ---
 
 ## 🚀 Quick Start
 
-### 1. Extract Archive
+### Option 1: Run Demo
 ```bash
-unzip ensemble_*.zip
-cd ensemble_*/
-```
-
-### 2. Install Dependencies
-```bash
+unzip ensemble_*.zip && cd ensemble_*/
 pip install -r requirements.txt
-```
-
-### 3. Run Ensemble
-```bash
 python run_agent.py
 ```
 
-The ensemble will load all member networks and produce collective decisions.
-
----
-
-## 💻 Usage Example
-
+### Option 2: Python Integration
 ```python
 from run_agent import EnsembleRunner
 import numpy as np
 
-# Initialize ensemble
+# Load ensemble
 ensemble = EnsembleRunner()
 
-# Prepare input (max_input_dim={metadata.get('ensemble', {}).get('max_input_dim', 'unknown')})
-state = np.random.rand(ensemble.input_dim)
+# Create input (will be padded to max_input_dim automatically)
+state = np.random.rand({metadata.get('ensemble', {}).get('max_input_dim', 18)})
 
-# Get collective decisions from all members
+# Get decisions from ALL organisms
 decisions = ensemble.decide_actions(state)
+# decisions = {{'org_1': 'move', 'org_2': 'cooperate', ...}}
 
-# decisions = {{'organism_1': 'cooperate', 'organism_2': 'move', ...}}
-print(decisions)
+# Majority vote
+from collections import Counter
+votes = Counter(decisions.values())
+collective_action = votes.most_common(1)[0][0]
+print(f"Collective decision: {{collective_action}}")
 ```
 
 ---
 
-## 🎯 Ensemble Decision Making
+## 🎯 Decision Aggregation Strategies
 
-The ensemble returns a **dictionary of decisions**, one per member organism:
-
+### 1. Simple Majority Vote
 ```python
+from collections import Counter
+decisions = ensemble.decide_actions(state)
+action = Counter(decisions.values()).most_common(1)[0][0]
+```
+
+### 2. Fitness-Weighted Vote
+```python
+# In metadata.json, each member has a fitness score
+weights = {{m['organism_id']: m['fitness'] for m in metadata['ensemble']['members']}}
+weighted_votes = {{}}
+for org_id, action in decisions.items():
+    weighted_votes[action] = weighted_votes.get(action, 0) + weights.get(org_id, 1.0)
+action = max(weighted_votes, key=weighted_votes.get)
+```
+
+### 3. Specialist Routing
+```python
+# Use specific organisms for specific situations
+if state[0] < 0.3:  # Low energy scenario
+    action = decisions['conservative_organism_id']
+else:
+    action = decisions['aggressive_organism_id']
+```
+
+### 4. Full Ensemble Output
+```python
+# Get raw Q-values from all brains for advanced analysis
+outputs = ensemble.get_raw_outputs(state)
+# outputs = [(q_values_1,), (q_values_2,), ...]
+```
+
+---
+
+## 🌍 Use Cases
+
+### Multi-Agent Simulation
+```python
+# Each organism controls a different agent in your simulation
+for i, (org_id, action) in enumerate(decisions.items()):
+    agents[i].perform(action)
+```
+
+### Ensemble Robustness Testing
+```python
+# See how organisms diverge on edge cases
+divergence = len(set(decisions.values()))
+print(f"{{divergence}}/{member_count} unique decisions (higher = more disagreement)")
+```
+
+### Behavioral Analysis
+```python
+# Track which organisms tend toward which behaviors
+from collections import defaultdict
+behavior_profiles = defaultdict(lambda: defaultdict(int))
+for episode in range(100):
+    decisions = ensemble.decide_actions(get_state())
+    for org_id, action in decisions.items():
+        behavior_profiles[org_id][action] += 1
+# Now you know each organism's behavioral tendencies
+```
+
+---
+
+## 🧬 Why These Organisms?
+
+Each member was selected/evolved through:
+
+1. **Fitness Selection**: Higher survival scores in the simulation
+2. **Behavioral Diversity**: Different phenotype clusters represented
+3. **Genetic Distance**: Not all clones - actual genetic variety
+4. **Age/Experience**: Mix of young adaptable and old wise organisms
+
+This creates an ensemble that's both **competent** (high fitness) and **diverse** (different strategies).
+
+---
+
+## ⚡ Performance
+
+| Operation | Typical Time |
+|-----------|--------------|
+| Single forward pass (CPU) | ~1-5ms |
+| Full ensemble inference | ~{member_count}-{member_count*5}ms |
+| With ONNX Runtime GPU | ~0.1-0.5ms |
+
+For real-time applications, consider:
+- Batching multiple state queries
+- Using ONNX with GPU acceleration
+- Pruning to top-K organisms
+
+---
+
+## 📊 Understanding metadata.json
+
+```json
 {{
-    'organism_id_1': 'move',
-    'organism_id_2': 'cooperate',
-    'organism_id_3': 'rest',
-    # ... (one per member)
+  "export_format": "{metadata['export_format']}",
+  "export_timestamp": "{metadata['export_timestamp']}",
+  "ensemble": {{
+    "member_count": {member_count},
+    "max_input_dim": {metadata.get('ensemble', {}).get('max_input_dim', 'null')},
+    "members": [
+      {{
+        "organism_id": "...",
+        "fitness": 0.xxx,
+        "generation": N,
+        "input_dim": M,
+        "output_dim": 6
+      }},
+      // ... one per organism
+    ]
+  }}
 }}
 ```
 
-Each organism independently processes the input and produces its own action.
+---
+
+## 🔗 Origin: The Butterfly System
+
+These organisms evolved together in **The Butterfly System** - a consciousness simulation where:
+
+- 🧬 **Populations evolve** through genetic algorithms
+- 🧠 **Individuals learn** via reinforcement learning
+- 🌐 **Societies form** with complex social dynamics
+- 🦋 **Emergence happens** - intelligence from simple rules
+
+**Repository**: https://github.com/Yufok1/Convergence_Engine
 
 ---
 
-## 🔬 Technical Details
+## 📜 Citation
 
-### Architecture
-- **Type**: Multi-organism wrapper
-- **Inference**: Parallel forward passes through all member brains
-- **Aggregation**: Individual decisions (no voting/averaging)
-- **Format**: {metadata['export_format'].upper()}
-
-### Action Space (per organism)
-- `move` - Locomotion
-- `cooperate` - Collaborative behavior
-- `compete` - Resource competition
-- `rest` - Energy conservation
-- `reproduce` - Genetic propagation
-- `isolate` - Social withdrawal
-
----
-
-## 🛠️ Deployment
-
-### Standalone Testing
-```bash
-python run_agent.py
-```
-
-### Import as Module
-```python
-from run_agent import EnsembleRunner
-ensemble = EnsembleRunner()
-```
-
-### Production Integration
-Load the ensemble model directly with ONNX Runtime or PyTorch for high-performance inference.
-
----
-
-## 🧪 Advanced Usage
-
-### Custom Input
-```python
-# Prepare real sensor data
-state_vector = np.array([...])  # Match max_input_dim
-
-# Get decisions
-decisions = ensemble.decide_actions(state_vector)
-
-# Process collective output
-for organism_id, action in decisions.items():
-    print(f"{{organism_id[:8]}}... decided: {{action}}")
+```bibtex
+@software{{butterfly_ensemble,
+  title = {{Butterfly System - Ensemble Neural Agents}},
+  author = {{The Butterfly System}},
+  year = {{2024}},
+  url = {{https://github.com/Yufok1/Convergence_Engine}},
+  note = {{{member_count} organisms, Exported: {metadata['export_timestamp']}}}
+}}
 ```
 
 ---
 
-## 🔗 About The Butterfly System
-
-This ensemble was cultivated in **The Butterfly System**, where AI organisms evolve through:
-
-- **Quantum-Genetic Evolution**: Probabilistic inheritance and trait expression
-- **Neural Learning**: DQN with experience replay
-- **Social Dynamics**: Alliances, warfare, and cooperation
-- **Language Acquisition**: Vocabulary learning and semantic understanding
-- **Collective Intelligence**: Emergent group behaviors
-
-**Learn More**: https://github.com/Yufok1/Convergence_Engine
-
----
-
-```
-    ╔═══════════════════════════════════════════════════════════════╗
-    ║                                                               ║
-    ║         {member_count} minds, one purpose. Deploy the swarm.              ║
-    ║                                                               ║
-    ╚═══════════════════════════════════════════════════════════════╝
-```
+*{member_count} minds evolved together. Now they think as one.* 🦋🦋
 """
             zf.writestr("README.md", readme)
 

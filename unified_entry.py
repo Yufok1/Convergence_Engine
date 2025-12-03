@@ -1354,9 +1354,25 @@ class UnifiedSystem:
             import threading
             self._web_ui_proc = None
             
-            # Run Flask in background thread
+            # Run Flask in background thread with error logging
+            def run_web_ui():
+                try:
+                    # Enable Flask/Werkzeug logging to console
+                    import logging
+                    log = logging.getLogger('werkzeug')
+                    log.setLevel(logging.INFO)
+                    handler = logging.StreamHandler()
+                    handler.setFormatter(logging.Formatter('[WEB] %(message)s'))
+                    log.addHandler(handler)
+                    
+                    self.web_ui.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False, threaded=True)
+                except Exception as e:
+                    print(f"[UNIFIED] [WEB] ❌ Web UI thread crashed: {e}")
+                    import traceback
+                    traceback.print_exc()
+            
             web_thread = threading.Thread(
-                target=lambda: self.web_ui.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False, threaded=True),
+                target=run_web_ui,
                 daemon=True
             )
             web_thread.start()

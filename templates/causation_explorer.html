@@ -11456,30 +11456,30 @@
                     });
                     
                     if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(errorData.error || 'Compilation failed');
+                        let errorMessage = `Server error: ${response.status}`;
+                        try {
+                            const errorData = await response.json();
+                            errorMessage = errorData.error || errorMessage;
+                        } catch (e) { /* use default */ }
+                        throw new Error(errorMessage);
                     }
                     
-                    // Get filename from Content-Disposition header
-                    const contentDisposition = response.headers.get('Content-Disposition');
-                    let filename = `agent_${organismId}.zip`;
-                    if (contentDisposition) {
-                        const match = contentDisposition.match(/filename="([^"]+)"/);
-                        if (match && match[1]) filename = match[1];
+                    // Parse JSON response with download info
+                    const result = await response.json();
+                    if (!result.success || !result.download_url) {
+                        throw new Error(result.error || 'Compilation failed');
                     }
                     
-                    // Download the file
-                    const blob = await response.blob();
-                    const url = URL.createObjectURL(blob);
+                    updateCompileAgentStatus(`✅ Compiled! Starting download (${(result.size / 1024 / 1024).toFixed(1)} MB)...`, '#0f0');
+                    
+                    // Trigger download via the download URL
                     const a = document.createElement('a');
-                    a.href = url;
-                    a.download = filename;
+                    a.href = result.download_url;
+                    a.download = result.filename;
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
                     
-                    updateCompileAgentStatus(`✅ Agent compiled! Download started.`, '#0f0');
                 } catch (error) {
                     console.error('Error compiling agent:', error);
                     updateCompileAgentStatus(`❌ Error: ${error.message}`, '#f66');
@@ -11504,25 +11504,30 @@
                         body: JSON.stringify({ organism_ids: selected, format })
                     });
                     if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(errorData.error || 'Compilation failed');
+                        let errorMessage = `Server error: ${response.status}`;
+                        try {
+                            const errorData = await response.json();
+                            errorMessage = errorData.error || errorMessage;
+                        } catch (e) { /* use default */ }
+                        throw new Error(errorMessage);
                     }
-                    const contentDisposition = response.headers.get('Content-Disposition');
-                    let filename = `agent_ensemble.zip`;
-                    if (contentDisposition) {
-                        const match = contentDisposition.match(/filename="([^"]+)"/);
-                        if (match && match[1]) filename = match[1];
+                    
+                    // Parse JSON response with download info
+                    const result = await response.json();
+                    if (!result.success || !result.download_url) {
+                        throw new Error(result.error || 'Compilation failed');
                     }
-                    const blob = await response.blob();
-                    const url = URL.createObjectURL(blob);
+                    
+                    updateCompileAgentStatus(`✅ Ensemble compiled! Starting download (${(result.size / 1024 / 1024).toFixed(1)} MB)...`, '#0f0');
+                    
+                    // Trigger download via the download URL
                     const a = document.createElement('a');
-                    a.href = url;
-                    a.download = filename;
+                    a.href = result.download_url;
+                    a.download = result.filename;
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                    updateCompileAgentStatus('✅ Ensemble compiled! Download started.', '#0f0');
+                    
                 } catch (error) {
                     console.error('Error compiling ensemble:', error);
                     updateCompileAgentStatus(`❌ Error: ${error.message}`, '#f66');

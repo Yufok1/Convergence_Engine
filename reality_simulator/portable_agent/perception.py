@@ -94,4 +94,3 @@ class PerceptionPipeline:
             features[0] = float(observation)
 
         return np.clip(features, 0.0, 1.0)
-```
