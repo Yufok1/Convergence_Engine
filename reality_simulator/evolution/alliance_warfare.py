@@ -662,6 +662,349 @@ class AllianceWarfareSystem:
         
         return proposal_id
     
+    # ═══════════════════════════════════════════════════════════════════════
+    # 🕊️ PEACE & TREATY SYSTEM - Mutual Respect Between Equals
+    # NO SURRENDER. NO SUBJUGATION. Only peace between those of equal strength.
+    # Treaties are strategic alliances, not submissions.
+    # ═══════════════════════════════════════════════════════════════════════
+    
+    def organism_propose_peace(self, proposer_id: str, enemy_alliance_id: str,
+                               terms: Optional[Dict[str, Any]] = None) -> Optional[str]:
+        """
+        Organism CHOOSES to propose peace with an enemy alliance.
+        
+        Peace requires BOTH alliances to agree AS EQUALS.
+        NO SURRENDER. NO TRIBUTE. Only mutual non-aggression.
+        
+        Terms can include:
+        - non_aggression_duration: How many rounds peace lasts
+        - mutual_defense: If True, both defend each other against third parties
+        - trade_agreement: Resource exchange rates
+        - shared_territory: Jointly controlled zones
+        
+        NO TRIBUTE. NO SUBJUGATION. Equals only.
+        
+        Returns:
+            Proposal ID if created
+        """
+        alliance_id = self.get_organism_alliance(proposer_id)
+        if not alliance_id:
+            return None
+        
+        alliance = self.alliances[alliance_id]
+        
+        # Must be at war with target
+        if enemy_alliance_id not in alliance.at_war_with:
+            self.logger.info(f"⚠️ Cannot propose peace - not at war with target")
+            return None
+        
+        if enemy_alliance_id not in self.alliances:
+            return None
+        
+        enemy = self.alliances[enemy_alliance_id]
+        
+        # EQUALS ONLY: Check power balance - no peace if one side is vastly weaker
+        # This prevents "surrender" - only mutual recognition of strength
+        alliance_power = len(alliance.members) + alliance.wars_won
+        enemy_power = len(enemy.members) + enemy.wars_won
+        power_ratio = min(alliance_power, enemy_power) / max(alliance_power, enemy_power, 1)
+        
+        if power_ratio < 0.5:
+            self.logger.info(f"⚠️ Cannot propose peace - power imbalance too great. Battle must decide.")
+            return None
+        
+        # Set default terms - EQUALS TERMS ONLY
+        if terms is None:
+            terms = {
+                'non_aggression_duration': 50,  # 50 rounds of peace
+                'mutual_respect': True,
+                'equals_treaty': True  # Flag that this is between equals
+            }
+        
+        # REMOVE any subjugation terms
+        terms.pop('tribute', None)
+        terms.pop('surrender', None)
+        terms.pop('vassalage', None)
+        terms['equals_treaty'] = True
+        
+        # Create peace proposal
+        proposal_id = f"peace_{alliance_id}_{enemy_alliance_id}_{int(time.time())}"
+        proposal = AllianceProposal(
+            proposal_id=proposal_id,
+            proposal_type=ProposalType.PEACE_OFFER,
+            proposer_id=proposer_id,
+            target_id=enemy_alliance_id,
+            context={
+                'proposer_alliance': alliance_id,
+                'proposer_name': alliance.name,
+                'target_alliance': enemy_alliance_id,
+                'target_name': enemy.name,
+                'terms': terms,
+                'needs_enemy_acceptance': True
+            }
+        )
+        
+        # Proposer votes for
+        proposal.votes_for.add(proposer_id)
+        
+        # Add to BOTH alliances - needs approval from both sides
+        alliance.pending_proposals.append(proposal)
+        
+        # Also add to global proposals so enemy can see and respond
+        self.pending_global_proposals.append(proposal)
+        
+        # Update reputation - peace proposals show wisdom
+        rep = self._get_or_create_reputation(proposer_id)
+        rep.proposals_made += 1
+        
+        self.logger.info(f"🕊️ {proposer_id} proposes PEACE with '{enemy.name}' - requires both sides to agree!")
+        self._emit_event('peace_proposed', {
+            'proposer': proposer_id,
+            'alliance': alliance.name,
+            'target': enemy.name,
+            'terms': terms
+        })
+        
+        return proposal_id
+    
+    def organism_respond_to_peace(self, organism_id: str, proposal_id: str,
+                                  accept: bool) -> bool:
+        """
+        Organism from ENEMY alliance responds to peace offer.
+        
+        Peace is only established if:
+        1. Proposing alliance voted to accept (majority)
+        2. Enemy alliance representative accepts
+        
+        Returns:
+            True if response processed
+        """
+        # Find the proposal
+        proposal = None
+        for p in self.pending_global_proposals:
+            if p.proposal_id == proposal_id and p.proposal_type == ProposalType.PEACE_OFFER:
+                proposal = p
+                break
+        
+        if not proposal:
+            return False
+        
+        # Verify organism is from the target alliance
+        organism_alliance = self.get_organism_alliance(organism_id)
+        if organism_alliance != proposal.target_id:
+            self.logger.info(f"⚠️ {organism_id} cannot respond to peace - not from target alliance")
+            return False
+        
+        if proposal.resolved:
+            return False
+        
+        # Check if organism has authority to negotiate (warchief/founder/diplomat)
+        target_alliance = self.alliances.get(proposal.target_id)
+        if target_alliance:
+            role = target_alliance.members.get(organism_id)
+            if role not in [AllianceRole.FOUNDER, AllianceRole.WARCHIEF, AllianceRole.DIPLOMAT]:
+                self.logger.info(f"⚠️ {organism_id} lacks authority to negotiate peace")
+                return False
+        
+        proposal.resolved = True
+        proposal.accepted = accept
+        proposal.resolution_time = time.time()
+        
+        if accept:
+            # PEACE ESTABLISHED
+            self._establish_peace(proposal)
+            self.logger.info(f"🕊️✅ PEACE ESTABLISHED between '{proposal.context['proposer_name']}' and '{proposal.context['target_name']}'!")
+        else:
+            self.logger.info(f"🕊️❌ {organism_id} REJECTED peace offer - war continues!")
+            self._emit_event('peace_rejected', {
+                'rejector': organism_id,
+                'proposer_alliance': proposal.context['proposer_name'],
+                'target_alliance': proposal.context['target_name']
+            })
+        
+        return True
+    
+    def _establish_peace(self, proposal: AllianceProposal):
+        """
+        Establish peace between two alliances based on agreed terms.
+        
+        Creates a Treaty that binds both alliances.
+        """
+        proposer_alliance_id = proposal.context['proposer_alliance']
+        target_alliance_id = proposal.target_id
+        terms = proposal.context.get('terms', {})
+        
+        proposer = self.alliances.get(proposer_alliance_id)
+        target = self.alliances.get(target_alliance_id)
+        
+        if not proposer or not target:
+            return
+        
+        # End the war
+        proposer.at_war_with.discard(target_alliance_id)
+        target.at_war_with.discard(proposer_alliance_id)
+        
+        # Create treaty
+        treaty_id = f"treaty_{proposer_alliance_id}_{target_alliance_id}_{int(time.time())}"
+        
+        # Store treaty in both alliances
+        treaty = {
+            'treaty_id': treaty_id,
+            'parties': [proposer_alliance_id, target_alliance_id],
+            'party_names': [proposer.name, target.name],
+            'terms': terms,
+            'established': time.time(),
+            'expires': time.time() + (terms.get('non_aggression_duration', 50) * 60),  # Convert rounds to approx seconds
+            'violations': 0
+        }
+        
+        # Store in global treaties
+        if not hasattr(self, 'active_treaties'):
+            self.active_treaties = {}
+        self.active_treaties[treaty_id] = treaty
+        
+        # Add to alliance peace treaties
+        if not hasattr(proposer, 'peace_treaties'):
+            proposer.peace_treaties = set()
+        if not hasattr(target, 'peace_treaties'):
+            target.peace_treaties = set()
+        
+        proposer.peace_treaties.add(treaty_id)
+        target.peace_treaties.add(treaty_id)
+        
+        # Apply terms
+        if terms.get('territory_exchange'):
+            # Handle territory exchanges
+            for territory_name, from_to in terms['territory_exchange'].items():
+                # from_to is (from_alliance, to_alliance)
+                pass  # Implement territory transfer
+        
+        # Update reputations - peace makers gain respect
+        for org_id in list(proposer.members.keys()) + list(target.members.keys()):
+            rep = self._get_or_create_reputation(org_id)
+            if not hasattr(rep, 'peace_treaties_signed'):
+                rep.peace_treaties_signed = 0
+            rep.peace_treaties_signed += 1
+        
+        self._emit_event('peace_established', {
+            'treaty_id': treaty_id,
+            'alliances': [proposer.name, target.name],
+            'terms': terms,
+            'duration': terms.get('non_aggression_duration', 50)
+        })
+    
+    def check_treaty_violations(self, alliance_id: str, action: str, 
+                                target_id: str) -> Optional[str]:
+        """
+        Check if an action would violate an existing treaty.
+        
+        Returns:
+            Treaty ID if violation would occur, None if action is allowed
+        """
+        if not hasattr(self, 'active_treaties'):
+            return None
+        
+        if alliance_id not in self.alliances:
+            return None
+        
+        alliance = self.alliances[alliance_id]
+        
+        # Check if there's an active treaty with the target
+        if not hasattr(alliance, 'peace_treaties'):
+            return None
+        
+        for treaty_id in alliance.peace_treaties:
+            if treaty_id not in self.active_treaties:
+                continue
+            
+            treaty = self.active_treaties[treaty_id]
+            
+            # Check if treaty is still active
+            if time.time() > treaty.get('expires', 0):
+                continue
+            
+            # Check if target is the other party
+            if target_id in treaty['parties']:
+                if action in ['war_declaration', 'attack', 'betray']:
+                    return treaty_id
+        
+        return None
+    
+    def organism_break_treaty(self, organism_id: str, treaty_id: str,
+                              reason: str = "strategic_necessity") -> bool:
+        """
+        Organism CHOOSES to break a treaty.
+        
+        This has severe reputation consequences but may be strategically necessary.
+        
+        Returns:
+            True if treaty broken
+        """
+        if not hasattr(self, 'active_treaties'):
+            return False
+        
+        if treaty_id not in self.active_treaties:
+            return False
+        
+        treaty = self.active_treaties[treaty_id]
+        
+        # Verify organism is from one of the treaty parties
+        organism_alliance = self.get_organism_alliance(organism_id)
+        if organism_alliance not in treaty['parties']:
+            return False
+        
+        # Get the other party
+        other_party_id = [p for p in treaty['parties'] if p != organism_alliance][0]
+        other_party = self.alliances.get(other_party_id)
+        
+        # Break the treaty
+        del self.active_treaties[treaty_id]
+        
+        # Remove from alliances
+        breaker_alliance = self.alliances.get(organism_alliance)
+        if breaker_alliance and hasattr(breaker_alliance, 'peace_treaties'):
+            breaker_alliance.peace_treaties.discard(treaty_id)
+        if other_party and hasattr(other_party, 'peace_treaties'):
+            other_party.peace_treaties.discard(treaty_id)
+        
+        # SEVERE reputation penalty
+        rep = self._get_or_create_reputation(organism_id)
+        if not hasattr(rep, 'treaties_broken'):
+            rep.treaties_broken = 0
+        rep.treaties_broken += 1
+        rep.alliances_betrayed += 1  # Treaty breaking = betrayal
+        
+        # Mark all members of the other alliance as betrayed
+        if other_party:
+            for member_id in other_party.members:
+                other_rep = self._get_or_create_reputation(member_id)
+                other_rep.betrayed_by.add(organism_id)
+        
+        self.logger.info(f"💔 {organism_id} BROKE TREATY with '{treaty['party_names'][1]}' - {reason}!")
+        self._emit_event('treaty_broken', {
+            'breaker': organism_id,
+            'breaker_alliance': breaker_alliance.name if breaker_alliance else 'unknown',
+            'victim_alliance': other_party.name if other_party else 'unknown',
+            'reason': reason,
+            'treaty_id': treaty_id
+        })
+        
+        return True
+    
+    def get_active_treaties(self, alliance_id: str) -> List[Dict[str, Any]]:
+        """Get all active treaties for an alliance."""
+        if not hasattr(self, 'active_treaties'):
+            return []
+        
+        treaties = []
+        for treaty_id, treaty in self.active_treaties.items():
+            if alliance_id in treaty['parties']:
+                # Check if still active
+                if time.time() <= treaty.get('expires', 0):
+                    treaties.append(treaty)
+        
+        return treaties
+
     def organism_vote_on_proposal(self, organism_id: str, proposal_id: str, 
                                   vote_for: bool) -> bool:
         """

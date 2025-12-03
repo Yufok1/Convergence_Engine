@@ -1,3 +1,11 @@
+# Agent downloads and exports (large zip files)
+agent_downloads/
+*.zip
+*.crdownload
+
+# Backup files
+*.backup
+
 # Semantic datasets and generated knowledge webs (large, user-installed)
 data/knowledge/**
 data/expanded_knowledge_web.json
