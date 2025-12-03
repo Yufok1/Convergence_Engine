@@ -851,6 +851,7 @@ This organism emerged through **neuroevolution** - a process combining:
 │   ├── config.json           # Agent hyperparameters
 │   └── replay_buffer.pkl     # Experience memory (if any)
 ├── 🧩 portable_agent/         # Runtime code (no external dependencies)
+│   ├── bridge.py             # 🌉 Universal interface (Gym, HTTP, CLI)
 │   ├── agent_runtime.py      # Core AgentRuntime class
 │   ├── mini_environment.py   # Built-in test environment
 │   ├── gym_adapter.py        # Gymnasium/Gym bridge
@@ -865,11 +866,26 @@ This organism emerged through **neuroevolution** - a process combining:
 
 ## 🚀 Quick Start
 
-### Option 1: Run Immediately
+### Option 1: AgentBridge (RECOMMENDED)
+The universal interface that connects this agent to anything:
+
 ```bash
-# Extract and run
+# Extract
 unzip agent_*.zip && cd agent_*/
 pip install -r requirements.txt
+
+# Interactive chat mode
+python -m portable_agent.bridge --mode interactive
+
+# HTTP API server (for external applications)
+python -m portable_agent.bridge --mode serve --port 8080
+
+# Run in Gym environment
+python -m portable_agent.bridge --mode gym --gym-env CartPole-v1
+```
+
+### Option 2: Run Classic Demo
+```bash
 python run_agent.py --episodes 5
 ```
 
@@ -879,59 +895,126 @@ pip install gymnasium
 python run_agent.py --gym-env CartPole-v1 --episodes 10
 ```
 
-### Option 3: 🔬 Neural Activation Visualizer
+### Option 4: 🔬 Neural Activation Visualizer
 Launch an interactive web UI to explore how this agent's neural network processes information:
 
 ```bash
-# Start the visualizer (opens browser automatically)
 python portable_agent/visualize.py
-
-# Or specify a custom port
-python portable_agent/visualize.py --port 8080
-
-# Run without auto-opening browser
-python portable_agent/visualize.py --no-browser
 ```
 
-The visualizer provides:
-- **Live Neural Heatmaps**: See layer-by-layer activations in real-time
-- **Input Experimentation**: Adjust inputs via sliders and observe changes
-- **Preset Scenarios**: Test "low energy", "high threat", "social opportunity" situations
-- **Behavioral Fingerprint**: View this organism's personality profile
-- **Decision Analysis**: Track action probabilities and confidence
-
-*Requires: Flask, onnxruntime (included in requirements.txt)*
-
-### Option 4: Python Integration
+### Option 5: Python Integration (Direct)
 ```python
 from portable_agent import AgentRuntime, MiniEnvironment
 
 # Load the agent
 agent = AgentRuntime.load("agent_state", brain_path="brain.{metadata['export_format']}")
-
-# Create environment
 env = MiniEnvironment()
 
-# Run episode
 state = env.reset()
-total_reward = 0
-done = False
-
 while not done:
-    action = agent.act(state)  # Get action from neural network
+    action = agent.act(state)
     next_state, reward, done, info = env.step(action)
-    
-    # Optional: let the agent learn from this experience
     agent.learn(state, action, reward, next_state, done)
-    
     state = next_state
-    total_reward += reward
-
-print(f"Episode finished with reward: {{total_reward}}")
-
-# Save updated state (memories, learning progress)
-agent.save("agent_state")
 ```
+
+---
+
+## 🌉 AgentBridge - Universal Interface
+
+The **AgentBridge** is the recommended way to deploy and interact with this agent.
+It provides a unified interface for all interaction modes:
+
+### HTTP API Server
+Deploy the agent as a REST API that any application can call:
+
+```bash
+python -m portable_agent.bridge --mode serve --port 8080
+```
+
+**Endpoints:**
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/act` | Get action for observation/text/context |
+| POST | `/chat` | Chat with agent (text in, text out) |
+| POST | `/reward` | Provide reward for learning |
+| GET | `/state` | Get current agent state |
+| GET | `/config` | Get configuration |
+| GET | `/health` | Health check |
+
+**Example API Call:**
+```python
+import requests
+
+# Chat with agent
+response = requests.post('http://localhost:8080/chat', json={{
+    'text': 'Enemy approaching from the north!',
+    'context': {{'threat_level': 0.8}}
+}})
+print(response.json())
+# {{'response': 'Isolating for safety.', 'action': 'isolate', 'confidence': 0.73}}
+
+# Get action for structured input
+response = requests.post('http://localhost:8080/act', json={{
+    'context': {{'energy': 0.3, 'threat': 0.8, 'food_available': 0.2}}
+}})
+print(response.json()['action_name'])  # 'rest' or 'isolate'
+```
+
+### Interactive CLI
+Chat with your agent directly:
+
+```bash
+python -m portable_agent.bridge --mode interactive
+```
+
+```
+🦋 AgentBridge Interactive Mode
+   Type messages to chat with the agent
+   Commands: /act, /gym, /state, /config, /quit
+
+You: I'm feeling threatened and low on energy
+Agent [REST]: Resting to conserve energy.
+       (confidence: 67.3%)
+
+You: Now there's food nearby!
+Agent [MOVE]: Moving to explore the environment.
+       (confidence: 81.2%)
+```
+
+### Python Library Integration
+Use the bridge directly in your code:
+
+```python
+from portable_agent import AgentBridge
+
+# Load agent
+bridge = AgentBridge.load("./")
+
+# Text input (semantic parsing)
+result = bridge.process(text="Enemy approaching, low on energy")
+print(f"Action: {{result.action_name}}, Response: {{result.response}}")
+
+# Structured context input
+result = bridge.process(context={{
+    'energy': 0.2,
+    'threat': 0.9,
+    'friend_nearby': 0.1
+}})
+print(f"Decision: {{result.action_name}} ({{result.confidence:.1%}} confident)")
+
+# Gym observation input
+result = bridge.process(obs=gym_env.reset())
+action = result.action
+
+# Provide reward for learning
+bridge.reward(reward_value=1.0, done=False)
+
+# Run full Gym episodes
+stats = bridge.run_gym("CartPole-v1", episodes=100)
+print(f"Mean reward: {{stats['mean_reward']:.2f}}")
+```
+
 
 ---
 
@@ -1233,7 +1316,8 @@ The ensemble uses a `MultiOrganismWrapper` that:
 ensemble_{metadata['export_timestamp'][:10]}/
 ├── 🧠 brain.{metadata['export_format']}           # Combined ensemble model
 ├── 📋 metadata.json           # Ensemble configuration + member details
-├── 🧩 portable_agent/         # Runtime code (with visualizer!)
+├── 🧩 portable_agent/         # Runtime code (with bridge!)
+│   ├── bridge.py             # 🌉 Universal interface (Gym, HTTP, CLI)
 │   ├── agent_runtime.py      # Core runtime class
 │   ├── mini_environment.py   # Built-in test environment
 │   ├── gym_adapter.py        # Gymnasium/Gym bridge
@@ -1248,25 +1332,32 @@ ensemble_{metadata['export_timestamp'][:10]}/
 
 ## 🚀 Quick Start
 
-### Option 1: Run Demo
+### Option 1: AgentBridge (RECOMMENDED)
 ```bash
 unzip ensemble_*.zip && cd ensemble_*/
 pip install -r requirements.txt
+
+# HTTP API server
+python -m portable_agent.bridge --mode serve --port 8080
+
+# Interactive chat
+python -m portable_agent.bridge --mode interactive
+
+# Run in Gym environment
+python -m portable_agent.bridge --mode gym --gym-env CartPole-v1
+```
+
+### Option 2: Run Classic Demo
+```bash
 python run_agent.py
 ```
 
-### Option 2: 🔬 Neural Activation Visualizer
-Launch an interactive web UI to explore the ensemble's neural network:
-
+### Option 3: 🔬 Neural Activation Visualizer
 ```bash
-# Start the visualizer (opens browser automatically)
 python portable_agent/visualize.py
-
-# Custom port / no auto-browser
-python portable_agent/visualize.py --port 8080 --no-browser
 ```
 
-### Option 3: Python Integration
+### Option 4: Python Integration
 ```python
 from run_agent import EnsembleRunner
 import numpy as np
