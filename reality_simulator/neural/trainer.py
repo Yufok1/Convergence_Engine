@@ -267,6 +267,27 @@ class NeuralTrainer:
             if self.early_stopping_counter >= self.early_stopping_patience:
                 logger.info(f"[NEURAL] Early stopping triggered after {self.early_stopping_patience} steps without improvement")
                 self.early_stopped = True
+                
+                # Emit early stopping event for causation graph
+                if self.event_emitter:
+                    try:
+                        from causation_explorer import Event
+                        event = Event(
+                            timestamp=time.time(),
+                            component='neural',
+                            event_type='early_stopping_triggered',
+                            data={
+                                'patience': self.early_stopping_patience,
+                                'best_loss': float(self.best_loss),
+                                'final_loss': float(avg_loss),
+                                'training_step': self.training_step_count,
+                                'min_delta': float(self.early_stopping_min_delta)
+                            }
+                        )
+                        self.event_emitter(event)
+                    except ImportError:
+                        pass
+                
                 return True
 
         return False
@@ -945,6 +966,7 @@ class NeuralTrainer:
                 
                 # 📈 LR SCHEDULER: Step the scheduler after optimizer
                 if scheduler is not None:
+                    old_lr = optimizer.param_groups[0]['lr']
                     if self.lr_scheduler_type == 'plateau':
                         scheduler.step(loss.item())
                     else:
@@ -953,6 +975,28 @@ class NeuralTrainer:
                     for param_group in optimizer.param_groups:
                         if param_group['lr'] < self.lr_min:
                             param_group['lr'] = self.lr_min
+                    new_lr = optimizer.param_groups[0]['lr']
+                    
+                    # Emit LR adjusted event if learning rate changed
+                    if abs(new_lr - old_lr) > 1e-10 and self.event_emitter:
+                        try:
+                            from causation_explorer import Event
+                            event = Event(
+                                timestamp=time.time(),
+                                component='neural',
+                                event_type='lr_adjusted',
+                                data={
+                                    'organism_id': organism_id,
+                                    'old_lr': float(old_lr),
+                                    'new_lr': float(new_lr),
+                                    'scheduler_type': self.lr_scheduler_type,
+                                    'loss': float(loss.item()),
+                                    'training_step': self.training_step_count
+                                }
+                            )
+                            self.event_emitter(event)
+                        except ImportError:
+                            pass
                 
                 total_loss += loss.item()
                 num_trained += 1
