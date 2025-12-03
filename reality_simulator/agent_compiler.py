@@ -328,6 +328,165 @@ class AgentCompiler:
         }
         return metadata
 
+    def _compute_behavioral_fingerprint(self, brain: OrganismBrain, num_samples: int = 100) -> Dict[str, Any]:
+        """
+        Compute a behavioral fingerprint by sampling the brain's decision tendencies.
+        
+        This runs multiple random states through the network and analyzes:
+        - Action distribution (which actions does it prefer?)
+        - Decision confidence (how certain is it?)
+        - Response patterns (how does it react to different input ranges?)
+        
+        Returns a dictionary with behavioral metrics that can be used for:
+        - Clustering organisms by behavior
+        - Filtering populations for specific traits
+        - Visualizing behavioral space
+        """
+        brain.eval()
+        
+        action_counts = {i: 0 for i in range(brain.output_dim)}
+        q_value_sums = {i: 0.0 for i in range(brain.output_dim)}
+        confidence_scores = []
+        
+        # Response patterns for different input scenarios
+        low_energy_actions = []    # When energy-related inputs are low
+        high_threat_actions = []   # When threat signals are high
+        social_actions = []        # When social signals are present
+        
+        with torch.no_grad():
+            for i in range(num_samples):
+                # Generate random state vector
+                state = torch.rand(1, brain.input_dim)
+                
+                # Get Q-values
+                q_values = brain(state)
+                if isinstance(q_values, tuple):
+                    q_values = q_values[0]  # Handle multi-head output
+                
+                q_np = q_values.squeeze().numpy()
+                
+                # Track action selection
+                action = int(np.argmax(q_np))
+                action_counts[action] += 1
+                
+                # Track Q-value magnitudes per action
+                for j, qv in enumerate(q_np):
+                    q_value_sums[j] += float(qv)
+                
+                # Track confidence (max Q minus mean Q)
+                confidence = float(np.max(q_np) - np.mean(q_np))
+                confidence_scores.append(confidence)
+                
+                # Scenario-specific responses
+                # Low energy scenario (dims 6-8 low)
+                low_energy_state = state.clone()
+                low_energy_state[0, 6:9] = 0.1
+                le_q = brain(low_energy_state)
+                if isinstance(le_q, tuple):
+                    le_q = le_q[0]
+                low_energy_actions.append(int(torch.argmax(le_q).item()))
+                
+                # High threat scenario (dims 9-11 high)
+                high_threat_state = state.clone()
+                high_threat_state[0, 9:12] = 0.9
+                ht_q = brain(high_threat_state)
+                if isinstance(ht_q, tuple):
+                    ht_q = ht_q[0]
+                high_threat_actions.append(int(torch.argmax(ht_q).item()))
+                
+                # Social scenario (cooperative signals)
+                social_state = state.clone()
+                social_state[0, 15:18] = 0.8
+                soc_q = brain(social_state)
+                if isinstance(soc_q, tuple):
+                    soc_q = soc_q[0]
+                social_actions.append(int(torch.argmax(soc_q).item()))
+        
+        # Compute action distribution (normalized)
+        total_actions = sum(action_counts.values())
+        action_distribution = {
+            ACTION_MAP.get(k, f'action_{k}'): round(v / total_actions, 4)
+            for k, v in action_counts.items()
+        }
+        
+        # Compute average Q-values per action
+        avg_q_values = {
+            ACTION_MAP.get(k, f'action_{k}'): round(v / num_samples, 4)
+            for k, v in q_value_sums.items()
+        }
+        
+        # Dominant action (most frequently chosen)
+        dominant_action_idx = max(action_counts, key=action_counts.get)
+        dominant_action = ACTION_MAP.get(dominant_action_idx, f'action_{dominant_action_idx}')
+        
+        # Behavioral tendencies (simplified categories)
+        cooperative_score = action_distribution.get('cooperate', 0) + action_distribution.get('reproduce', 0) * 0.5
+        competitive_score = action_distribution.get('compete', 0) + action_distribution.get('move', 0) * 0.3
+        passive_score = action_distribution.get('rest', 0) + action_distribution.get('isolate', 0)
+        
+        # Scenario response analysis
+        def mode_action(actions):
+            if not actions:
+                return 'unknown'
+            counts = {}
+            for a in actions:
+                counts[a] = counts.get(a, 0) + 1
+            mode_idx = max(counts, key=counts.get)
+            return ACTION_MAP.get(mode_idx, f'action_{mode_idx}')
+        
+        return {
+            'action_distribution': action_distribution,
+            'avg_q_values': avg_q_values,
+            'dominant_action': dominant_action,
+            'dominant_action_percentage': round(action_counts[dominant_action_idx] / total_actions * 100, 1),
+            'decision_confidence': {
+                'mean': round(float(np.mean(confidence_scores)), 4),
+                'std': round(float(np.std(confidence_scores)), 4),
+                'min': round(float(np.min(confidence_scores)), 4),
+                'max': round(float(np.max(confidence_scores)), 4)
+            },
+            'behavioral_tendencies': {
+                'cooperative': round(cooperative_score, 4),
+                'competitive': round(competitive_score, 4),
+                'passive': round(passive_score, 4)
+            },
+            'scenario_responses': {
+                'low_energy': mode_action(low_energy_actions),
+                'high_threat': mode_action(high_threat_actions),
+                'social_opportunity': mode_action(social_actions)
+            },
+            'behavioral_vector': [
+                round(cooperative_score, 4),
+                round(competitive_score, 4),
+                round(passive_score, 4),
+                round(float(np.mean(confidence_scores)), 4)
+            ],
+            'personality_label': self._classify_personality(cooperative_score, competitive_score, passive_score)
+        }
+    
+    def _classify_personality(self, coop: float, comp: float, passive: float) -> str:
+        """Classify organism into a personality archetype based on behavioral tendencies."""
+        max_trait = max(coop, comp, passive)
+        
+        if max_trait < 0.2:
+            return "balanced"
+        elif coop == max_trait:
+            if comp > 0.2:
+                return "diplomatic"  # Cooperative but will compete if needed
+            else:
+                return "altruist"    # Strongly cooperative
+        elif comp == max_trait:
+            if coop > 0.2:
+                return "opportunist" # Competitive but can cooperate
+            else:
+                return "aggressor"   # Strongly competitive
+        elif passive == max_trait:
+            if coop > comp:
+                return "pacifist"    # Passive and cooperative
+            else:
+                return "hermit"      # Passive and isolated
+        return "complex"
+
     def _build_agent_state_payload(self,
                                    capsule: OrganismCapsule,
                                    metadata: Dict[str, Any]) -> Dict[str, bytes]:
@@ -810,6 +969,46 @@ Phenotype Cluster: `{capsule.traits.phenotype_cluster if capsule.traits and hasa
 
 ---
 
+## 🎭 Behavioral Fingerprint
+
+This organism's decision-making patterns were analyzed by sampling 100 random states:
+
+### Personality Profile
+| Metric | Value |
+|--------|-------|
+| **Personality Type** | `{metadata.get('behavioral_fingerprint', {}).get('personality_label', 'unknown')}` |
+| **Dominant Action** | `{metadata.get('behavioral_fingerprint', {}).get('dominant_action', 'unknown')}` ({metadata.get('behavioral_fingerprint', {}).get('dominant_action_percentage', 0)}% of decisions) |
+| **Cooperative Score** | {metadata.get('behavioral_fingerprint', {}).get('behavioral_tendencies', {}).get('cooperative', 0):.2%} |
+| **Competitive Score** | {metadata.get('behavioral_fingerprint', {}).get('behavioral_tendencies', {}).get('competitive', 0):.2%} |
+| **Passive Score** | {metadata.get('behavioral_fingerprint', {}).get('behavioral_tendencies', {}).get('passive', 0):.2%} |
+
+### Action Distribution
+```
+{chr(10).join([f"{k:12}: {'█' * int(v * 50):50} {v:.1%}" for k, v in metadata.get('behavioral_fingerprint', {}).get('action_distribution', {}).items()])}
+```
+
+### Scenario Responses
+How this organism typically responds to specific situations:
+
+| Scenario | Typical Response |
+|----------|-----------------|
+| **Low Energy** | `{metadata.get('behavioral_fingerprint', {}).get('scenario_responses', {}).get('low_energy', 'unknown')}` |
+| **High Threat** | `{metadata.get('behavioral_fingerprint', {}).get('scenario_responses', {}).get('high_threat', 'unknown')}` |
+| **Social Opportunity** | `{metadata.get('behavioral_fingerprint', {}).get('scenario_responses', {}).get('social_opportunity', 'unknown')}` |
+
+### Decision Confidence
+- **Mean**: {metadata.get('behavioral_fingerprint', {}).get('decision_confidence', {}).get('mean', 0):.4f}
+- **Std Dev**: {metadata.get('behavioral_fingerprint', {}).get('decision_confidence', {}).get('std', 0):.4f}
+- **Range**: {metadata.get('behavioral_fingerprint', {}).get('decision_confidence', {}).get('min', 0):.4f} - {metadata.get('behavioral_fingerprint', {}).get('decision_confidence', {}).get('max', 0):.4f}
+
+### Behavioral Vector (for clustering/visualization)
+```python
+behavioral_vector = {metadata.get('behavioral_fingerprint', {}).get('behavioral_vector', [0, 0, 0, 0])}
+# [cooperative, competitive, passive, confidence]
+```
+
+---
+
 ## 📊 Understanding metadata.json
 
 The metadata file contains the complete organism history:
@@ -1125,6 +1324,31 @@ This creates an ensemble that's both **competent** (high fitness) and **diverse*
 
 ---
 
+## 🎭 Ensemble Behavioral Profile
+
+### Personality Distribution
+{chr(10).join([f"- **{personality}**: {count} organism(s)" for personality, count in metadata.get('ensemble', {}).get('aggregate_behavioral_profile', {}).get('personality_distribution', {}).items()])}
+
+### Aggregate Action Tendencies
+```
+{chr(10).join([f"{k:12}: {'█' * int(v * 50):50} {v:.1%}" for k, v in metadata.get('ensemble', {}).get('aggregate_behavioral_profile', {}).get('action_distribution', {}).items()])}
+```
+
+### Collective Behavioral Tendencies
+| Tendency | Score |
+|----------|-------|
+| **Cooperative** | {metadata.get('ensemble', {}).get('aggregate_behavioral_profile', {}).get('behavioral_tendencies', {}).get('cooperative', 0):.2%} |
+| **Competitive** | {metadata.get('ensemble', {}).get('aggregate_behavioral_profile', {}).get('behavioral_tendencies', {}).get('competitive', 0):.2%} |
+| **Passive** | {metadata.get('ensemble', {}).get('aggregate_behavioral_profile', {}).get('behavioral_tendencies', {}).get('passive', 0):.2%} |
+
+### Member Personality Breakdown
+
+| # | Organism | Personality | Dominant Action |
+|---|----------|-------------|-----------------|
+{chr(10).join([f"| {i+1} | `{m['organism_id'][:16]}...` | {m.get('behavioral_fingerprint', {}).get('personality_label', 'unknown')} | {m.get('behavioral_fingerprint', {}).get('dominant_action', 'unknown')} |" for i, m in enumerate(metadata.get('ensemble', {}).get('members', []))])}
+
+---
+
 ## ⚡ Performance
 
 | Operation | Typical Time |
@@ -1367,13 +1591,61 @@ if __name__ == '__main__':
             torch.jit.save(traced, model_buffer)
             model_buffer.seek(0)
 
+        # Compute behavioral fingerprints for each member
+        logger.info("Computing behavioral fingerprints for ensemble members...")
+        for i, (brain, cap, member_meta) in enumerate(zip(brains, capsules, members_meta)):
+            try:
+                fingerprint = self._compute_behavioral_fingerprint(brain, num_samples=50)
+                member_meta['behavioral_fingerprint'] = fingerprint
+                member_meta['fitness'] = cap.fitness.fitness_history[-1][1] if cap.fitness and cap.fitness.fitness_history else None
+                member_meta['generation'] = getattr(cap, 'generation', None)
+                logger.info(f"  Member {i+1}/{len(brains)}: {fingerprint['personality_label']} "
+                           f"(dominant: {fingerprint['dominant_action']})")
+            except Exception as e:
+                logger.warning(f"Could not compute fingerprint for member {i}: {e}")
+                member_meta['behavioral_fingerprint'] = {'error': str(e)}
+
+        # Compute aggregate ensemble behavioral profile
+        ensemble_action_dist = {}
+        ensemble_tendencies = {'cooperative': 0, 'competitive': 0, 'passive': 0}
+        personality_counts = {}
+        
+        for member_meta in members_meta:
+            fp = member_meta.get('behavioral_fingerprint', {})
+            if 'error' in fp:
+                continue
+            # Aggregate action distributions
+            for action, prob in fp.get('action_distribution', {}).items():
+                ensemble_action_dist[action] = ensemble_action_dist.get(action, 0) + prob
+            # Aggregate tendencies
+            for tendency, score in fp.get('behavioral_tendencies', {}).items():
+                ensemble_tendencies[tendency] = ensemble_tendencies.get(tendency, 0) + score
+            # Count personalities
+            personality = fp.get('personality_label', 'unknown')
+            personality_counts[personality] = personality_counts.get(personality, 0) + 1
+        
+        # Normalize aggregates
+        n_members = len([m for m in members_meta if 'error' not in m.get('behavioral_fingerprint', {})])
+        if n_members > 0:
+            ensemble_action_dist = {k: round(v / n_members, 4) for k, v in ensemble_action_dist.items()}
+            ensemble_tendencies = {k: round(v / n_members, 4) for k, v in ensemble_tendencies.items()}
+
         # Metadata
         metadata = {
             'export_timestamp': datetime.datetime.now().isoformat(),
             'export_format': chosen_format,
             'ensemble': {
                 'members': members_meta,
-                'max_input_dim': wrapper.max_input_dim
+                'member_count': len(members_meta),
+                'max_input_dim': wrapper.max_input_dim,
+                'aggregate_behavioral_profile': {
+                    'action_distribution': ensemble_action_dist,
+                    'behavioral_tendencies': ensemble_tendencies,
+                    'personality_distribution': personality_counts,
+                    'dominant_personalities': sorted(personality_counts.keys(), 
+                                                     key=lambda x: personality_counts[x], 
+                                                     reverse=True)[:3] if personality_counts else []
+                }
             },
             'runtime_dependencies': {
                 'onnxruntime': onnxruntime.__version__ if ONNX_AVAILABLE else 'not installed',
@@ -1452,6 +1724,18 @@ if __name__ == '__main__':
         # 4. Create rich metadata
         metadata = self._create_rich_metadata(capsule)
         metadata['export_format'] = chosen_format # Add (possibly updated) export format to metadata
+        
+        # 4b. Compute behavioral fingerprint by sampling the brain
+        try:
+            logger.info(f"Computing behavioral fingerprint for {capsule.organism_id}...")
+            behavioral_fingerprint = self._compute_behavioral_fingerprint(brain, num_samples=100)
+            metadata['behavioral_fingerprint'] = behavioral_fingerprint
+            logger.info(f"Behavioral profile: {behavioral_fingerprint['personality_label']} "
+                       f"(cooperative={behavioral_fingerprint['behavioral_tendencies']['cooperative']:.2f}, "
+                       f"competitive={behavioral_fingerprint['behavioral_tendencies']['competitive']:.2f})")
+        except Exception as e:
+            logger.warning(f"Could not compute behavioral fingerprint: {e}")
+            metadata['behavioral_fingerprint'] = {'error': str(e)}
         
         # 5. Generate runner script
         runner_script = self._generate_runner_script(chosen_format, metadata)
