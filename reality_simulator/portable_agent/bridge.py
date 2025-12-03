@@ -1081,11 +1081,19 @@ class AgentBridge:
         
         # Find brain file
         brain_path = None
-        for ext in ['.onnx', '.pt', '.pth']:
+        for ext in ['.onnx', '.pt', '.pth', '.torchscript']:
             candidates = list(directory.glob(f'brain{ext}'))
             if candidates:
                 brain_path = candidates[0]
+                print(f"  ✓ Found brain: {brain_path.name}")
                 break
+        
+        if brain_path is None:
+            print(f"  ⚠ No brain file found in {directory}")
+            print(f"    Looking for: brain.onnx, brain.pt, brain.pth, brain.torchscript")
+            # List what files ARE there
+            files = list(directory.glob('*'))
+            print(f"    Files in directory: {[f.name for f in files[:10]]}")
         
         # Load config
         config = AgentConfig()
@@ -1106,6 +1114,9 @@ class AgentBridge:
             vocab_path = directory / 'atomic_language.json'
         if vocab_path.exists():
             vocab = PortableVocabulary.load(vocab_path)
+            print(f"  ✓ Loaded vocabulary: {vocab.vocab_size} words")
+        else:
+            print(f"  ⚠ No vocabulary file found")
         
         # Create bridge
         bridge = cls(
