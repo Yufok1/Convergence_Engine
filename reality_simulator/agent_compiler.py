@@ -1299,50 +1299,329 @@ If you use this agent in research or production:
             zf.writestr("README.md", readme_content)
 
             # 9. Launcher scripts for easy startup
-            # Windows batch file
+            # Windows batch file - COMPLETE MENU with all capabilities
             start_bat = """@echo off
-echo.
-echo  ========================================
-echo   Butterfly Agent - Interactive Bridge
-echo  ========================================
-echo.
+cd /d "%~dp0"
+title Butterfly Agent - Evolved Intelligence
 
-REM Check if dependencies are installed
-python -c "import flask" 2>nul
+:menu
+cls
+echo.
+echo  ╔════════════════════════════════════════════════════════════╗
+echo  ║         🦋 BUTTERFLY AGENT - EVOLVED INTELLIGENCE 🦋       ║
+echo  ╠════════════════════════════════════════════════════════════╣
+echo  ║                                                            ║
+echo  ║  This agent evolved in The Butterfly System simulation.    ║
+echo  ║  It has learned behaviors through neural reinforcement.    ║
+echo  ║                                                            ║
+echo  ╠════════════════════════════════════════════════════════════╣
+echo  ║  CHOOSE A MODE:                                            ║
+echo  ║                                                            ║
+echo  ║  [1] 💬 CHAT MODE     - Talk to your agent interactively   ║
+echo  ║  [2] 🌐 HTTP SERVER   - REST API on localhost:8080         ║
+echo  ║  [3] 🎮 GYM MODE      - Run in OpenAI Gym environment      ║
+echo  ║  [4] 🔬 VISUALIZER    - See neural network activations     ║
+echo  ║  [5] 📊 AGENT INFO    - View agent stats and history       ║
+echo  ║  [6] 🐍 PYTHON SHELL  - Import and use programmatically    ║
+echo  ║                                                            ║
+echo  ║  [0] ❌ EXIT                                                ║
+echo  ║                                                            ║
+echo  ╚════════════════════════════════════════════════════════════╝
+echo.
+set /p choice="Enter choice [0-6]: "
+
+if "%choice%"=="1" goto chat
+if "%choice%"=="2" goto server
+if "%choice%"=="3" goto gym
+if "%choice%"=="4" goto visualize
+if "%choice%"=="5" goto info
+if "%choice%"=="6" goto python
+if "%choice%"=="0" goto end
+goto menu
+
+:setup
+REM Check Python
+python --version >nul 2>&1
 if errorlevel 1 (
-    echo Installing dependencies...
-    pip install -r requirements.txt
     echo.
+    echo ERROR: Python not found! Please install Python 3.8+
+    pause
+    goto menu
 )
+REM Install deps if needed
+if not exist ".deps_installed" (
+    echo.
+    echo First run - installing dependencies...
+    pip install torch numpy flask onnxruntime 2>nul
+    echo. > .deps_installed
+)
+goto :eof
 
-echo Starting AgentBridge in interactive mode...
-echo Type messages to chat, or use commands: /gym, /state, /quit
+:chat
+call :setup
+cls
 echo.
-python -m portable_agent.bridge --mode interactive
+echo  ════════════════════════════════════════════════════════════
+echo   💬 CHAT MODE - Talk to your evolved agent
+echo  ════════════════════════════════════════════════════════════
+echo.
+echo   Commands while chatting:
+echo     /state  - See agent's internal state vector
+echo     /config - View agent configuration  
+echo     /reward [+/-] - Give positive/negative feedback
+echo     /quit   - Return to menu
+echo.
+echo   The agent responds based on its evolved neural network.
+echo   Try describing situations: "I see danger" or "Resources ahead"
+echo.
+echo  ════════════════════════════════════════════════════════════
+echo.
+python portable_agent/bridge.py . --mode interactive
 pause
+goto menu
+
+:server
+call :setup
+cls
+echo.
+echo  ════════════════════════════════════════════════════════════
+echo   🌐 HTTP SERVER MODE - REST API
+echo  ════════════════════════════════════════════════════════════
+echo.
+echo   Starting server on http://localhost:8080
+echo.
+echo   ENDPOINTS:
+echo     POST /act   {"text": "..."} or {"obs": [...]}
+echo                 → Returns action decision
+echo.
+echo     POST /chat  {"message": "hello"}  
+echo                 → Chat and get response
+echo.
+echo     POST /reward {"reward": 1.0, "done": false}
+echo                 → Provide learning feedback
+echo.
+echo     GET /state  → Current agent state
+echo     GET /config → Agent configuration
+echo     GET /health → Health check
+echo.
+echo   Press Ctrl+C to stop server and return to menu.
+echo.
+echo  ════════════════════════════════════════════════════════════
+echo.
+python portable_agent/bridge.py . --mode serve --port 8080
+pause
+goto menu
+
+:gym
+call :setup
+cls
+echo.
+echo  ════════════════════════════════════════════════════════════
+echo   🎮 GYM MODE - OpenAI Gymnasium Environment
+echo  ════════════════════════════════════════════════════════════
+echo.
+set /p gymenv="Enter Gym environment (default: CartPole-v1): "
+if "%gymenv%"=="" set gymenv=CartPole-v1
+set /p episodes="Number of episodes (default: 10): "
+if "%episodes%"=="" set episodes=10
+echo.
+echo   Running %episodes% episodes in %gymenv%...
+echo.
+python portable_agent/bridge.py . --mode gym --gym-env %gymenv% --episodes %episodes%
+pause
+goto menu
+
+:visualize
+call :setup
+cls
+echo.
+echo  ════════════════════════════════════════════════════════════
+echo   🔬 NEURAL VISUALIZER - See the brain in action
+echo  ════════════════════════════════════════════════════════════
+echo.
+echo   This opens an interactive visualization of the neural network.
+echo   Watch activations flow through the network as it processes inputs.
+echo.
+python portable_agent/visualize.py
+pause
+goto menu
+
+:info
+cls
+echo.
+echo  ════════════════════════════════════════════════════════════
+echo   📊 AGENT INFORMATION
+echo  ════════════════════════════════════════════════════════════
+echo.
+echo   Reading metadata.json...
+echo.
+type metadata.json
+echo.
+echo.
+echo  ════════════════════════════════════════════════════════════
+echo.
+if exist "atomic_language.json" (
+    echo   Language/Vocabulary loaded: YES
+) else (
+    echo   Language/Vocabulary loaded: NO
+)
+if exist "agent_state\\state.json" (
+    echo   Saved state: YES
+) else (
+    echo   Saved state: NO
+)
+echo.
+pause
+goto menu
+
+:python
+cls
+echo.
+echo  ════════════════════════════════════════════════════════════
+echo   🐍 PYTHON INTEGRATION - Use programmatically
+echo  ════════════════════════════════════════════════════════════
+echo.
+echo   Example code to use this agent in your Python projects:
+echo.
+echo   ─────────────────────────────────────────────────────────
+echo   from portable_agent.bridge import AgentBridge
+echo.
+echo   # Load the agent
+echo   agent = AgentBridge.load(".")
+echo.
+echo   # Chat with it
+echo   result = agent.process(text="I see an enemy")
+echo   print(result.action_name, result.confidence)
+echo.
+echo   # Or use with observations
+echo   result = agent.process(obs=[0.5, 0.3, 0.8, ...])
+echo.
+echo   # Give feedback for learning  
+echo   agent.reward(1.0)  # positive
+echo   agent.reward(-1.0) # negative
+echo.
+echo   # Save learned experiences
+echo   agent.save(".")
+echo   ─────────────────────────────────────────────────────────
+echo.
+echo   Opening Python shell with agent pre-loaded...
+echo.
+python -i -c "from portable_agent.bridge import AgentBridge; agent = AgentBridge.load('.'); print('Agent loaded! Use: agent.process(text=\"...\") or agent.process(obs=[...])')"
+pause
+goto menu
+
+:end
+echo.
+echo  Goodbye! 🦋
+echo.
+exit /b 0
 """
             zf.writestr("start.bat", start_bat)
             
-            # Unix shell script
+            # Unix shell script - Same complete menu
             start_sh = """#!/bin/bash
-echo ""
-echo "  ========================================"
-echo "   Butterfly Agent - Interactive Bridge"
-echo "  ========================================"
-echo ""
+cd "$(dirname "$0")"
 
-# Check if dependencies are installed
-python3 -c "import flask" 2>/dev/null
-if [ $? -ne 0 ]; then
-    echo "Installing dependencies..."
-    pip install -r requirements.txt
+show_menu() {
+    clear
     echo ""
-fi
+    echo "  ╔════════════════════════════════════════════════════════════╗"
+    echo "  ║         🦋 BUTTERFLY AGENT - EVOLVED INTELLIGENCE 🦋       ║"
+    echo "  ╠════════════════════════════════════════════════════════════╣"
+    echo "  ║                                                            ║"
+    echo "  ║  This agent evolved in The Butterfly System simulation.    ║"
+    echo "  ║  It has learned behaviors through neural reinforcement.    ║"
+    echo "  ║                                                            ║"
+    echo "  ╠════════════════════════════════════════════════════════════╣"
+    echo "  ║  CHOOSE A MODE:                                            ║"
+    echo "  ║                                                            ║"
+    echo "  ║  [1] 💬 CHAT MODE     - Talk to your agent interactively   ║"
+    echo "  ║  [2] 🌐 HTTP SERVER   - REST API on localhost:8080         ║"
+    echo "  ║  [3] 🎮 GYM MODE      - Run in OpenAI Gym environment      ║"
+    echo "  ║  [4] 🔬 VISUALIZER    - See neural network activations     ║"
+    echo "  ║  [5] 📊 AGENT INFO    - View agent stats and history       ║"
+    echo "  ║  [6] 🐍 PYTHON SHELL  - Import and use programmatically    ║"
+    echo "  ║                                                            ║"
+    echo "  ║  [0] ❌ EXIT                                                ║"
+    echo "  ║                                                            ║"
+    echo "  ╚════════════════════════════════════════════════════════════╝"
+    echo ""
+}
 
-echo "Starting AgentBridge in interactive mode..."
-echo "Type messages to chat, or use commands: /gym, /state, /quit"
-echo ""
-python3 -m portable_agent.bridge --mode interactive
+setup() {
+    if ! command -v python3 &> /dev/null; then
+        echo "ERROR: Python3 not found!"
+        read -p "Press Enter to continue..."
+        return 1
+    fi
+    if [ ! -f ".deps_installed" ]; then
+        echo "First run - installing dependencies..."
+        pip3 install torch numpy flask onnxruntime 2>/dev/null
+        touch .deps_installed
+    fi
+    return 0
+}
+
+while true; do
+    show_menu
+    read -p "Enter choice [0-6]: " choice
+    
+    case $choice in
+        1)
+            setup || continue
+            clear
+            echo ""
+            echo "  💬 CHAT MODE - Talk to your evolved agent"
+            echo "  Commands: /state, /config, /reward, /quit"
+            echo ""
+            python3 portable_agent/bridge.py . --mode interactive
+            read -p "Press Enter to continue..."
+            ;;
+        2)
+            setup || continue
+            clear
+            echo ""
+            echo "  🌐 HTTP SERVER - http://localhost:8080"
+            echo "  POST /act, /chat, /reward | GET /state, /config"
+            echo "  Press Ctrl+C to stop"
+            echo ""
+            python3 portable_agent/bridge.py . --mode serve --port 8080
+            read -p "Press Enter to continue..."
+            ;;
+        3)
+            setup || continue
+            clear
+            read -p "Gym environment (default: CartPole-v1): " gymenv
+            gymenv=${gymenv:-CartPole-v1}
+            read -p "Episodes (default: 10): " episodes
+            episodes=${episodes:-10}
+            python3 portable_agent/bridge.py . --mode gym --gym-env "$gymenv" --episodes "$episodes"
+            read -p "Press Enter to continue..."
+            ;;
+        4)
+            setup || continue
+            python3 portable_agent/visualize.py
+            read -p "Press Enter to continue..."
+            ;;
+        5)
+            clear
+            echo ""
+            echo "  📊 AGENT INFORMATION"
+            echo ""
+            cat metadata.json
+            echo ""
+            read -p "Press Enter to continue..."
+            ;;
+        6)
+            setup || continue
+            python3 -i -c "from portable_agent.bridge import AgentBridge; agent = AgentBridge.load('.'); print('Agent loaded! Use: agent.process(text=\"...\")') "
+            ;;
+        0)
+            echo "Goodbye! 🦋"
+            exit 0
+            ;;
+    esac
+done
 """
             zf.writestr("start.sh", start_sh)
             
@@ -1810,49 +2089,156 @@ These organisms evolved together in **The Butterfly System** - a consciousness s
 """
             zf.writestr("README.md", readme)
             
-            # Launcher scripts for easy startup
+            # Launcher scripts - Full menu (same as single agent)
             # Windows batch file
             start_bat = """@echo off
-echo.
-echo  ========================================
-echo   Butterfly Ensemble - Interactive Bridge
-echo  ========================================
-echo.
+cd /d "%~dp0"
+title Butterfly Ensemble - Collective Intelligence
 
-python -c "import flask" 2>nul
+:menu
+cls
+echo.
+echo  ╔════════════════════════════════════════════════════════════╗
+echo  ║      🦋🦋 BUTTERFLY ENSEMBLE - COLLECTIVE INTELLIGENCE 🦋🦋  ║
+echo  ╠════════════════════════════════════════════════════════════╣
+echo  ║                                                            ║
+echo  ║  This ensemble contains multiple evolved organisms         ║
+echo  ║  working together as a collective intelligence.            ║
+echo  ║                                                            ║
+echo  ╠════════════════════════════════════════════════════════════╣
+echo  ║  CHOOSE A MODE:                                            ║
+echo  ║                                                            ║
+echo  ║  [1] 💬 CHAT MODE     - Talk to the collective             ║
+echo  ║  [2] 🌐 HTTP SERVER   - REST API on localhost:8080         ║
+echo  ║  [3] 🎮 GYM MODE      - Run in OpenAI Gym environment      ║
+echo  ║  [4] 🔬 VISUALIZER    - See neural network activations     ║
+echo  ║  [5] 📊 ENSEMBLE INFO - View member stats and profiles     ║
+echo  ║  [6] 🐍 PYTHON SHELL  - Import and use programmatically    ║
+echo  ║                                                            ║
+echo  ║  [0] ❌ EXIT                                                ║
+echo  ║                                                            ║
+echo  ╚════════════════════════════════════════════════════════════╝
+echo.
+set /p choice="Enter choice [0-6]: "
+
+if "%choice%"=="1" goto chat
+if "%choice%"=="2" goto server
+if "%choice%"=="3" goto gym
+if "%choice%"=="4" goto visualize
+if "%choice%"=="5" goto info
+if "%choice%"=="6" goto python
+if "%choice%"=="0" goto end
+goto menu
+
+:setup
+python --version >nul 2>&1
 if errorlevel 1 (
-    echo Installing dependencies...
-    pip install -r requirements.txt
-    echo.
+    echo ERROR: Python not found!
+    pause
+    goto menu
 )
+if not exist ".deps_installed" (
+    echo First run - installing dependencies...
+    pip install torch numpy flask onnxruntime 2>nul
+    echo. > .deps_installed
+)
+goto :eof
 
-echo Starting AgentBridge in interactive mode...
-echo Type messages to chat, or use commands: /gym, /state, /quit
+:chat
+call :setup
+cls
 echo.
-python -m portable_agent.bridge --mode interactive
+echo  💬 CHAT MODE - Talk to the collective intelligence
+echo  Commands: /state, /config, /reward, /quit
+echo.
+python portable_agent/bridge.py . --mode interactive
 pause
+goto menu
+
+:server
+call :setup
+cls
+echo  🌐 HTTP SERVER on http://localhost:8080
+echo  Endpoints: POST /act, /chat, /reward ^| GET /state, /config
+echo  Press Ctrl+C to stop
+echo.
+python portable_agent/bridge.py . --mode serve --port 8080
+pause
+goto menu
+
+:gym
+call :setup
+set /p gymenv="Gym environment (default: CartPole-v1): "
+if "%gymenv%"=="" set gymenv=CartPole-v1
+set /p episodes="Episodes (default: 10): "
+if "%episodes%"=="" set episodes=10
+python portable_agent/bridge.py . --mode gym --gym-env %gymenv% --episodes %episodes%
+pause
+goto menu
+
+:visualize
+call :setup
+python portable_agent/visualize.py
+pause
+goto menu
+
+:info
+cls
+echo  📊 ENSEMBLE INFORMATION
+echo.
+type metadata.json
+echo.
+pause
+goto menu
+
+:python
+call :setup
+echo.
+echo  Example: agent.process(text="hello")
+echo.
+python -i -c "from portable_agent.bridge import AgentBridge; agent = AgentBridge.load('.'); print('Ensemble loaded!')"
+pause
+goto menu
+
+:end
+exit /b 0
 """
             zf.writestr("start.bat", start_bat)
             
             # Unix shell script
             start_sh = """#!/bin/bash
-echo ""
-echo "  ========================================"
-echo "   Butterfly Ensemble - Interactive Bridge"
-echo "  ========================================"
-echo ""
+cd "$(dirname "$0")"
 
-python3 -c "import flask" 2>/dev/null
-if [ $? -ne 0 ]; then
-    echo "Installing dependencies..."
-    pip install -r requirements.txt
+setup() {
+    if ! command -v python3 &> /dev/null; then
+        echo "ERROR: Python3 not found!"
+        return 1
+    fi
+    if [ ! -f ".deps_installed" ]; then
+        pip3 install torch numpy flask onnxruntime 2>/dev/null
+        touch .deps_installed
+    fi
+}
+
+while true; do
+    clear
+    echo "  🦋🦋 BUTTERFLY ENSEMBLE - COLLECTIVE INTELLIGENCE 🦋🦋"
     echo ""
-fi
-
-echo "Starting AgentBridge in interactive mode..."
-echo "Type messages to chat, or use commands: /gym, /state, /quit"
-echo ""
-python3 -m portable_agent.bridge --mode interactive
+    echo "  [1] 💬 Chat   [2] 🌐 Server   [3] 🎮 Gym"
+    echo "  [4] 🔬 Viz    [5] 📊 Info     [6] 🐍 Python"
+    echo "  [0] Exit"
+    echo ""
+    read -p "Choice: " c
+    case $c in
+        1) setup && python3 portable_agent/bridge.py . --mode interactive; read -p "Enter..." ;;
+        2) setup && python3 portable_agent/bridge.py . --mode serve --port 8080; read -p "Enter..." ;;
+        3) setup && read -p "Env (CartPole-v1): " e; python3 portable_agent/bridge.py . --mode gym --gym-env ${e:-CartPole-v1}; read -p "Enter..." ;;
+        4) setup && python3 portable_agent/visualize.py; read -p "Enter..." ;;
+        5) cat metadata.json; read -p "Enter..." ;;
+        6) setup && python3 -i -c "from portable_agent.bridge import AgentBridge; agent = AgentBridge.load('.')" ;;
+        0) exit 0 ;;
+    esac
+done
 """
             zf.writestr("start.sh", start_sh)
             
