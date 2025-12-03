@@ -657,15 +657,23 @@ class AllianceHistory:
         
         for event_type in self.events_by_type:
             self.events_by_type[event_type] = [
-                eid for eid in self.events_by_type[event_type] 
+                eid for eid in self.events_by_type[event_type]
                 if eid not in removed_ids
             ]
-        
+
         for organism_id in self.events_by_organism:
             self.events_by_organism[organism_id] = [
                 eid for eid in self.events_by_organism[organism_id]
                 if eid not in removed_ids
             ]
+
+        # Clean up empty index entries to prevent stale references
+        self.events_by_type = {
+            k: v for k, v in self.events_by_type.items() if v
+        }
+        self.events_by_organism = {
+            k: v for k, v in self.events_by_organism.items() if v
+        }
         
         return events_to_remove
 
@@ -3545,10 +3553,14 @@ class AllianceWarfareSystem:
             # Wire system references so organisms can access Alliance Wisdom
             if hasattr(org, 'set_system_references'):
                 try:
-                    org.set_system_references(
-                        alliance_warfare=self,
-                        causation_explorer=causation_explorer
-                    )
+                    # Only pass causation_explorer if it's not None to avoid issues
+                    if causation_explorer is not None:
+                        org.set_system_references(
+                            alliance_warfare=self,
+                            causation_explorer=causation_explorer
+                        )
+                    else:
+                        org.set_system_references(alliance_warfare=self)
                 except Exception:
                     pass  # Graceful degradation - not all organisms support this
             

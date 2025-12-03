@@ -1754,7 +1754,13 @@ class UnifiedSystem:
                             if hasattr(network, 'context_memory') and network.context_memory:
                                 try:
                                     # Convert fallen_id to int if needed (context_memory uses int keys)
-                                    org_id_int = int(fallen_id.split('_')[-1]) if isinstance(fallen_id, str) and '_' in fallen_id else hash(fallen_id) % (2**31)
+                                    if isinstance(fallen_id, str) and '_' in fallen_id:
+                                        try:
+                                            org_id_int = int(fallen_id.split('_')[-1])
+                                        except (ValueError, IndexError):
+                                            org_id_int = abs(hash(fallen_id)) % (2**31)
+                                    else:
+                                        org_id_int = abs(hash(fallen_id)) % (2**31)
                                     network.context_memory.cleanup_dead_organism(org_id_int)
                                 except (ValueError, AttributeError):
                                     pass  # Graceful degradation

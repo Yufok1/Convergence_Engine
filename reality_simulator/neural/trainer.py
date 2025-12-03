@@ -197,22 +197,22 @@ class NeuralTrainer:
     def _get_or_create_scheduler(self, organism_id: int, optimizer: optim.Optimizer) -> Any:
         """
         Get or create LR scheduler for an organism.
-        
+
         Part of Phase 3 Training Infrastructure improvements.
         """
         if not self.lr_scheduler_enabled:
             return None
-        
+
         if organism_id not in self.schedulers:
             if self.lr_scheduler_type == 'step':
                 self.schedulers[organism_id] = optim.lr_scheduler.StepLR(
-                    optimizer, 
-                    step_size=self.lr_step_size, 
+                    optimizer,
+                    step_size=self.lr_step_size,
                     gamma=self.lr_gamma
                 )
             elif self.lr_scheduler_type == 'exponential':
                 self.schedulers[organism_id] = optim.lr_scheduler.ExponentialLR(
-                    optimizer, 
+                    optimizer,
                     gamma=self.lr_gamma
                 )
             elif self.lr_scheduler_type == 'plateau':
@@ -223,21 +223,42 @@ class NeuralTrainer:
                     patience=10,
                     min_lr=self.lr_min
                 )
-        
+            else:
+                # FIXED: Validate lr_scheduler_type and warn about invalid values
+                logger.warning(f"[NEURAL] Invalid lr_scheduler_type '{self.lr_scheduler_type}', valid types: 'step', 'exponential', 'plateau'. Using StepLR as fallback.")
+                self.schedulers[organism_id] = optim.lr_scheduler.StepLR(
+                    optimizer,
+                    step_size=self.lr_step_size,
+                    gamma=self.lr_gamma
+                )
+
         return self.schedulers.get(organism_id)
     
     def _check_early_stopping(self, avg_loss: float) -> bool:
         """
         Check if training should stop early due to loss plateau.
-        
+
         Part of Phase 3 Training Infrastructure improvements.
-        
+
         Returns:
             True if training should stop, False otherwise
         """
         if not self.early_stopping_enabled:
             return False
-        
+
+        # FIXED: Add safeguards for invalid loss values and min_delta
+        if not isinstance(avg_loss, (int, float)) or not np.isfinite(avg_loss):
+            logger.warning(f"[NEURAL] Invalid avg_loss value: {avg_loss}, skipping early stopping check")
+            return False
+
+        if self.early_stopping_min_delta < 0:
+            logger.warning(f"[NEURAL] Invalid early_stopping_min_delta: {self.early_stopping_min_delta}, must be >= 0. Using 1e-4 as fallback.")
+            self.early_stopping_min_delta = 1e-4
+
+        # FIXED: Ensure best_loss is initialized properly and handle infinity
+        if not np.isfinite(self.best_loss):
+            self.best_loss = float('inf')
+
         if avg_loss < self.best_loss - self.early_stopping_min_delta:
             self.best_loss = avg_loss
             self.early_stopping_counter = 0
@@ -247,7 +268,7 @@ class NeuralTrainer:
                 logger.info(f"[NEURAL] Early stopping triggered after {self.early_stopping_patience} steps without improvement")
                 self.early_stopped = True
                 return True
-        
+
         return False
     
     def reset_early_stopping(self):

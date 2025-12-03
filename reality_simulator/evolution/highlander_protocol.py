@@ -1562,7 +1562,7 @@ class HighlanderProtocol:
                 stats_features.append({
                     'battles_won': stats.battles_won,
                     'battles_lost': stats.battles_lost,
-                    'concepts_acquired': stats.concepts_acquired,
+                    'concepts_absorbed': len(stats.concepts_absorbed),
                     'peak_fitness': stats.peak_fitness
                 })
             
