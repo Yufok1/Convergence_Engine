@@ -487,6 +487,101 @@ class AgentCompiler:
                 return "hermit"      # Passive and isolated
         return "complex"
 
+    def _merge_capsule_language_data(self, capsules: List['OrganismCapsule']) -> Optional[Dict[str, Any]]:
+        """
+        Merge language data from multiple capsules into a unified vocabulary.
+        
+        This creates a combined vocabulary that includes:
+        - All unique concepts from all capsules
+        - Merged word frequencies (summed)
+        - Aggregated dialect signatures (averaged)
+        - Union of all semantic associations
+        
+        Args:
+            capsules: List of OrganismCapsule objects
+            
+        Returns:
+            Merged language dictionary, or None if no capsules have language data
+        """
+        merged = {
+            'vocabulary': [],
+            'word_frequencies': {},
+            'concepts': {},
+            'semantic_associations': {},
+            'dialect_signatures': [],
+            'total_concepts': 0,
+            'source_organisms': [],
+            'ensemble_merged': True
+        }
+        
+        has_language = False
+        
+        for cap in capsules:
+            if not cap.language:
+                continue
+                
+            has_language = True
+            lang_data = cap.language.to_dict() if hasattr(cap.language, 'to_dict') else cap.language
+            
+            # Track source organism
+            merged['source_organisms'].append(str(cap.organism_id))
+            
+            # Merge vocabulary
+            if 'vocabulary' in lang_data:
+                for word in lang_data['vocabulary']:
+                    if word not in merged['vocabulary']:
+                        merged['vocabulary'].append(word)
+            
+            # Merge word frequencies (sum them)
+            if 'word_frequencies' in lang_data:
+                for word, freq in lang_data['word_frequencies'].items():
+                    merged['word_frequencies'][word] = merged['word_frequencies'].get(word, 0) + freq
+            
+            # Merge concepts
+            if 'concepts' in lang_data:
+                for concept_id, concept_data in lang_data['concepts'].items():
+                    if concept_id not in merged['concepts']:
+                        merged['concepts'][concept_id] = concept_data
+                    # If already exists, could merge activation counts, etc.
+            
+            # Merge semantic associations
+            if 'semantic_associations' in lang_data:
+                for word, associations in lang_data['semantic_associations'].items():
+                    if word not in merged['semantic_associations']:
+                        merged['semantic_associations'][word] = associations
+                    else:
+                        # Merge association lists
+                        existing = set(merged['semantic_associations'][word])
+                        existing.update(associations)
+                        merged['semantic_associations'][word] = list(existing)
+            
+            # Collect dialect signatures for averaging
+            if 'dialect_signature' in lang_data:
+                merged['dialect_signatures'].append(lang_data['dialect_signature'])
+        
+        if not has_language:
+            return None
+        
+        # Finalize merged data
+        merged['total_concepts'] = len(merged['concepts']) + len(merged['vocabulary'])
+        
+        # Average dialect signatures if we have multiple
+        if merged['dialect_signatures']:
+            import numpy as np
+            try:
+                avg_dialect = np.mean(merged['dialect_signatures'], axis=0).tolist()
+                merged['dialect_signature'] = avg_dialect
+            except Exception:
+                merged['dialect_signature'] = merged['dialect_signatures'][0] if merged['dialect_signatures'] else []
+        
+        # Remove the list now that we've computed average
+        del merged['dialect_signatures']
+        
+        logger.info(f"Merged language data from {len(merged['source_organisms'])} organisms: "
+                   f"{merged['total_concepts']} concepts, {len(merged['vocabulary'])} words")
+        
+        return merged
+
     def _build_agent_state_payload(self,
                                    capsule: OrganismCapsule,
                                    metadata: Dict[str, Any]) -> Dict[str, bytes]:
@@ -1318,8 +1413,15 @@ python3 -m portable_agent.bridge --mode serve --port $PORT
     def _create_ensemble_archive(self,
                                  model_buffer: BytesIO,
                                  metadata: Dict[str, Any],
-                                 runner_script: str) -> BytesIO:
-        """Package ensemble components into a ZIP archive (no single capsule).
+                                 runner_script: str,
+                                 capsules: Optional[List['OrganismCapsule']] = None) -> BytesIO:
+        """Package ensemble components into a ZIP archive.
+        
+        Args:
+            model_buffer: The compiled neural network model
+            metadata: Export metadata
+            runner_script: Python runner script
+            capsules: Optional list of capsules for language/config extraction
         """
         archive_buffer = BytesIO()
         with zipfile.ZipFile(archive_buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
@@ -1329,6 +1431,12 @@ python3 -m portable_agent.bridge --mode serve --port $PORT
 
             # Metadata
             zf.writestr("metadata.json", json.dumps(metadata, indent=2))
+            
+            # Merge language data from all capsules
+            if capsules:
+                merged_language = self._merge_capsule_language_data(capsules)
+                if merged_language:
+                    zf.writestr("atomic_language.json", json.dumps(merged_language, indent=2))
 
             # Runner
             zf.writestr("run_agent.py", runner_script)
@@ -1449,6 +1557,7 @@ The ensemble uses a `MultiOrganismWrapper` that:
 ensemble_{metadata['export_timestamp'][:10]}/
 ├── 🧠 brain.{metadata['export_format']}           # Combined ensemble model
 ├── 📋 metadata.json           # Ensemble configuration + member details
+├── 🗣️  atomic_language.json    # Merged vocabulary from all organisms
 ├── 🧩 portable_agent/         # Runtime code
 │   ├── bridge.py             # 🌉 Universal interface (Gym, HTTP, CLI)
 │   ├── agent_runtime.py      # Core runtime class
@@ -2042,8 +2151,8 @@ if __name__ == '__main__':
         # Runner
         runner_script = self._generate_ensemble_runner_script(chosen_format, metadata)
 
-        # Package
-        return self._create_ensemble_archive(model_buffer, metadata, runner_script)
+        # Package (pass capsules for language data extraction)
+        return self._create_ensemble_archive(model_buffer, metadata, runner_script, capsules)
 
     def compile_capsule_to_agent(self, 
                                  capsule: OrganismCapsule, 
