@@ -601,18 +601,28 @@ class AgentBridge:
         path = Path(path)
         
         if path.suffix == '.onnx' and ONNX_AVAILABLE:
-            self.brain = ort.InferenceSession(str(path))
-            self.brain_type = 'onnx'
-            logger.info(f"Loaded ONNX model: {path}")
+            try:
+                self.brain = ort.InferenceSession(str(path))
+                self.brain_type = 'onnx'
+                print(f"  ✓ Loaded ONNX model")
+            except Exception as e:
+                print(f"  ✗ Failed to load ONNX model: {e}")
             
-        elif path.suffix in ('.pt', '.pth') and TORCH_AVAILABLE:
-            self.brain = torch.jit.load(str(path))
-            self.brain.eval()
-            self.brain_type = 'torchscript'
-            logger.info(f"Loaded TorchScript model: {path}")
+        elif path.suffix in ('.pt', '.pth', '.torchscript') and TORCH_AVAILABLE:
+            try:
+                self.brain = torch.jit.load(str(path))
+                self.brain.eval()
+                self.brain_type = 'torchscript'
+                print(f"  ✓ Loaded TorchScript model")
+            except Exception as e:
+                print(f"  ✗ Failed to load TorchScript model: {e}")
+        
+        elif path.suffix in ('.pt', '.pth', '.torchscript') and not TORCH_AVAILABLE:
+            print(f"  ✗ PyTorch not available - cannot load {path.suffix} model")
+            print(f"    Install with: pip install torch")
             
         else:
-            logger.warning(f"Could not load brain from {path}")
+            print(f"  ✗ Unknown model format: {path.suffix}")
     
     def _infer(self, state: np.ndarray) -> Tuple[int, List[float], float]:
         """Run inference on state, return (action, q_values, confidence)."""

@@ -2201,10 +2201,12 @@ if __name__ == '__main__':
         if export_format == 'onnx':
             try:
                 self._export_onnx(brain, dummy_input, model_buffer)
+                logger.info(f"Successfully exported to ONNX format")
             except Exception as e:
                 # Graceful fallback: if ONNX dependencies missing, fallback to TorchScript
-                if 'onnxscript' in str(e).lower() or 'onnx' in str(e).lower():
-                    logger.warning("ONNX export failed due to missing dependencies; falling back to TorchScript export.")
+                logger.warning(f"ONNX export failed: {e}")
+                if 'onnxscript' in str(e).lower() or 'onnx' in str(e).lower() or 'trace' in str(e).lower():
+                    logger.warning("Falling back to TorchScript export.")
                     model_buffer = BytesIO()
                     self._export_torchscript(brain, model_buffer)
                     chosen_format = 'torchscript'
