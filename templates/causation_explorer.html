@@ -105,6 +105,112 @@
             animation: anomalyFlash 0.8s ease-in-out infinite;
         }
         
+        /* 🏛️ Confederation node - imperial pulse */
+        @keyframes confederationPulse {
+            0%, 100% { 
+                opacity: 0.9;
+                transform: scale(1);
+                filter: drop-shadow(0 0 5px #663399);
+            }
+            50% { 
+                opacity: 1;
+                transform: scale(1.15);
+                filter: drop-shadow(0 0 15px #663399) drop-shadow(0 0 25px #FFD700);
+            }
+        }
+        
+        .confederation-node {
+            animation: confederationPulse 2.5s ease-in-out infinite;
+        }
+        
+        /* 📜 Civilization progress - slow glow */
+        @keyframes civilizationGlow {
+            0%, 100% { 
+                filter: brightness(1);
+            }
+            50% { 
+                filter: brightness(1.3) drop-shadow(0 0 8px #DAA520);
+            }
+        }
+        
+        .civilization-node {
+            animation: civilizationGlow 3s ease-in-out infinite;
+        }
+        
+        /* 🔬 Illumination Engine - radiant burst */
+        @keyframes illuminationBurst {
+            0%, 100% { 
+                opacity: 0.9;
+                transform: scale(1) rotate(0deg);
+                filter: drop-shadow(0 0 5px #00FFFF);
+            }
+            25% { 
+                transform: scale(1.1) rotate(15deg);
+            }
+            50% { 
+                opacity: 1;
+                transform: scale(1.2) rotate(0deg);
+                filter: drop-shadow(0 0 20px #00FFFF) drop-shadow(0 0 30px #FFFFFF);
+            }
+            75% { 
+                transform: scale(1.1) rotate(-15deg);
+            }
+        }
+        
+        .illumination-node {
+            animation: illuminationBurst 2s ease-in-out infinite;
+        }
+        
+        /* 🗡️ Betrayal node - sinister flash */
+        @keyframes betrayalFlash {
+            0%, 100% { 
+                opacity: 1;
+                filter: brightness(1);
+            }
+            15%, 45% { 
+                opacity: 0.7;
+                filter: brightness(0.8);
+            }
+            30% { 
+                opacity: 1;
+                filter: brightness(1.5) drop-shadow(0 0 10px #FF0000);
+            }
+        }
+        
+        .betrayal-node {
+            animation: betrayalFlash 1.2s ease-in-out infinite;
+        }
+        
+        /* 🕊️ Diplomacy node - gentle wave */
+        @keyframes diplomacyWave {
+            0%, 100% { 
+                transform: scale(1);
+            }
+            50% { 
+                transform: scale(1.08);
+                filter: drop-shadow(0 0 5px #6B8E23);
+            }
+        }
+        
+        .diplomacy-node {
+            animation: diplomacyWave 2s ease-in-out infinite;
+        }
+        
+        /* 📈 Training system node - optimization pulse */
+        @keyframes trainingPulse {
+            0%, 100% { 
+                opacity: 0.9;
+            }
+            50% { 
+                opacity: 1;
+                filter: brightness(1.2);
+            }
+        }
+        
+        .training-system-node {
+            animation: trainingPulse 1.5s ease-in-out infinite;
+        }
+        
         body {
             font-family: 'Courier New', monospace;
             background: #000;
@@ -1651,6 +1757,36 @@
                                 <span style="min-width: 120px;">🌱 Germination:</span>
                                 <input type="color" id="color-germination" value="#32CD32"
                                     onchange="updateComponentColor('germination', this.value)"
+                                    style="width: 60px; height: 25px; cursor: pointer;">
+                            </label>
+                        </div>
+
+                        <div class="filter-item" style="margin-bottom: 8px;">
+                            <label
+                                style="display: flex; align-items: center; gap: 8px; color: #0ff; font-size: 0.85em;">
+                                <span style="min-width: 120px;">🏛️ Confederation:</span>
+                                <input type="color" id="color-confederation" value="#663399"
+                                    onchange="updateComponentColor('confederation', this.value)"
+                                    style="width: 60px; height: 25px; cursor: pointer;">
+                            </label>
+                        </div>
+
+                        <div class="filter-item" style="margin-bottom: 8px;">
+                            <label
+                                style="display: flex; align-items: center; gap: 8px; color: #0ff; font-size: 0.85em;">
+                                <span style="min-width: 120px;">🔬 Illumination:</span>
+                                <input type="color" id="color-illumination" value="#00FFFF"
+                                    onchange="updateComponentColor('illumination', this.value)"
+                                    style="width: 60px; height: 25px; cursor: pointer;">
+                            </label>
+                        </div>
+
+                        <div class="filter-item" style="margin-bottom: 8px;">
+                            <label
+                                style="display: flex; align-items: center; gap: 8px; color: #0ff; font-size: 0.85em;">
+                                <span style="min-width: 120px;">🗡️ Betrayal:</span>
+                                <input type="color" id="color-betrayal" value="#8B0000"
+                                    onchange="updateComponentColor('betrayal', this.value)"
                                     style="width: 60px; height: 25px; cursor: pointer;">
                             </label>
                         </div>
@@ -6872,6 +7008,17 @@
                     const isBattleConcluded = (isCombat || eventType === 'battle_concluded' || eventType === 'highlander_battle_concluded' || eventType === 'alliance_war_declared' || eventType === 'alliance_war_ended');
                     const isConfigTuned = (isConfigTuner || eventType === 'config_tuned');
                     const isDiversityAnalysis = eventType === 'organism_diversity_analysis';
+                    // 🏛️ Confederation & Civilization Events (Alliance Warfare advanced features)
+                    const isConfederationEvent = eventType === 'confederation_founded' || eventType === 'confederation_war_declared' || eventType === 'mega_confederation_formed' || eventType === 'alliance_joined_confederation' || eventType === 'confederation_war_proposed';
+                    const isCivilizationProgress = eventType === 'civilization_progress' || eventType === 'historical_record';
+                    // 🔬 Illumination Engine Events
+                    const isIlluminationGranted = eventType === 'illumination_granted';
+                    // ⚔️ Alliance Betrayal & Diplomacy Events
+                    const isBetrayal = eventType === 'betrayal' || eventType === 'alliance_betrayal' || eventType === 'treaty_broken';
+                    const isDiplomacyEvent = eventType === 'peace_proposed' || eventType === 'peace_established' || eventType === 'peace_rejected' || eventType === 'war_proposed';
+                    // 📈 Training System Events (LR Scheduler / Early Stopping)
+                    const isLRSchedulerEvent = eventType === 'lr_adjusted' || eventType === 'learning_rate_scheduled';
+                    const isEarlyStoppingEvent = eventType === 'early_stopping_triggered' || eventType === 'training_converged';
                     const isLanguageEvent = isLanguage || isButterflyChat || eventType === 'vocabulary_growth' || eventType === 'organism_communication' || eventType === 'butterfly_chat_message' || eventType === 'butterfly_chat_response' || isDiversityAnalysis;
                     
                     const baseRadius = vizSettings.nodeBaseSize + (d.type ? 2 : 0);
@@ -7055,6 +7202,81 @@
                             .attr('fill', '#FFD700') // Gold
                             .attr('fill-opacity', fillOpacity)
                             .attr('stroke', strokeColor)
+                            .attr('stroke-width', vizSettings.nodeStrokeWidth)
+                            .attr('stroke-opacity', vizSettings.nodeStrokeOpacity)
+                            .style('filter', filterValue);
+                    } else if (isConfederationEvent) {
+                        // 🏛️ Large hexagon for Confederation events (Royal Purple - empire building)
+                        const size = radius * radius * 6; // Larger for importance
+                        shapeElement = nodeElement.append('polygon')
+                            .attr('class', 'node-circle confederation-node')
+                            .attr('points', () => {
+                                const r = Math.sqrt(size / 2.6);
+                                return [0,1, 0.866,0.5, 0.866,-0.5, 0,-1, -0.866,-0.5, -0.866,0.5].map((v,i) => v * r * (i%2 ? 1 : 1)).join(',');
+                            })
+                            .attr('fill', '#663399') // Rebecca Purple
+                            .attr('fill-opacity', fillOpacity)
+                            .attr('stroke', '#FFD700') // Gold border
+                            .attr('stroke-width', vizSettings.nodeStrokeWidth + 2)
+                            .attr('stroke-opacity', vizSettings.nodeStrokeOpacity)
+                            .style('filter', 'url(#nodeGlow)');
+                    } else if (isCivilizationProgress) {
+                        // 📜 Scroll/book shape for civilization progress (Antique Gold - history)
+                        const square = d3.symbol().type(d3.symbolSquare).size(radius * radius * 5);
+                        shapeElement = nodeElement.append('path')
+                            .attr('class', 'node-circle civilization-node')
+                            .attr('d', square)
+                            .attr('fill', '#DAA520') // Goldenrod
+                            .attr('fill-opacity', fillOpacity)
+                            .attr('stroke', '#8B4513') // Saddle Brown
+                            .attr('stroke-width', vizSettings.nodeStrokeWidth + 1)
+                            .attr('stroke-opacity', vizSettings.nodeStrokeOpacity)
+                            .style('filter', filterValue);
+                    } else if (isIlluminationGranted) {
+                        // 🔬 Radiant star for Illumination Engine (Bright Cyan - enlightenment)
+                        const star = d3.symbol().type(d3.symbolStar).size(radius * radius * 6);
+                        shapeElement = nodeElement.append('path')
+                            .attr('class', 'node-circle illumination-node')
+                            .attr('d', star)
+                            .attr('fill', '#00FFFF') // Cyan
+                            .attr('fill-opacity', fillOpacity)
+                            .attr('stroke', '#FFFFFF')
+                            .attr('stroke-width', vizSettings.nodeStrokeWidth + 2)
+                            .attr('stroke-opacity', 1.0)
+                            .style('filter', 'url(#nodeGlow)');
+                    } else if (isBetrayal) {
+                        // 🗡️ Dagger/cross for betrayal (Blood Red - treachery)
+                        const cross = d3.symbol().type(d3.symbolCross).size(radius * radius * 5);
+                        shapeElement = nodeElement.append('path')
+                            .attr('class', 'node-circle betrayal-node')
+                            .attr('d', cross)
+                            .attr('fill', '#8B0000') // Dark Red
+                            .attr('fill-opacity', fillOpacity)
+                            .attr('stroke', '#FF0000') // Bright red border
+                            .attr('stroke-width', vizSettings.nodeStrokeWidth + 1)
+                            .attr('stroke-opacity', vizSettings.nodeStrokeOpacity)
+                            .style('filter', 'url(#nodeGlow)');
+                    } else if (isDiplomacyEvent) {
+                        // 🕊️ Diamond for diplomacy (Olive Green - peace/war proposals)
+                        const diamond = d3.symbol().type(d3.symbolDiamond).size(radius * radius * 4);
+                        shapeElement = nodeElement.append('path')
+                            .attr('class', 'node-circle diplomacy-node')
+                            .attr('d', diamond)
+                            .attr('fill', '#6B8E23') // Olive Drab
+                            .attr('fill-opacity', fillOpacity)
+                            .attr('stroke', '#FFFFFF')
+                            .attr('stroke-width', vizSettings.nodeStrokeWidth)
+                            .attr('stroke-opacity', vizSettings.nodeStrokeOpacity)
+                            .style('filter', filterValue);
+                    } else if (isLRSchedulerEvent || isEarlyStoppingEvent) {
+                        // 📈 Triangle for training system events (Teal - optimization)
+                        const triangle = d3.symbol().type(d3.symbolTriangle).size(radius * radius * 4);
+                        shapeElement = nodeElement.append('path')
+                            .attr('class', 'node-circle training-system-node')
+                            .attr('d', triangle)
+                            .attr('fill', isEarlyStoppingEvent ? '#FF6347' : '#008080') // Tomato for stop, Teal for LR
+                            .attr('fill-opacity', fillOpacity)
+                            .attr('stroke', '#FFFFFF')
                             .attr('stroke-width', vizSettings.nodeStrokeWidth)
                             .attr('stroke-opacity', vizSettings.nodeStrokeOpacity)
                             .style('filter', filterValue);
