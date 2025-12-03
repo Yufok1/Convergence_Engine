@@ -944,25 +944,39 @@ class NeuralOrganism(Organism):
         if illumination.get('can_see_alliance'):
             adjustments.append(f"🔮 Alliance awareness active")
             # Use alliance wisdom if available
-            wisdom = illumination.get('alliance_wisdom', {})
-            if wisdom:
-                recommended = wisdom.get('recommended_action')
-                confidence = wisdom.get('confidence', 0.5)
-                if recommended == 'defend' and confidence > 0.6:
-                    # Boost defensive actions (typically index 0 or last)
-                    if len(adjusted) > 0:
-                        adjusted[0] *= (1.0 + confidence * 0.3)
-                        adjustments.append(f"🔮 Wisdom: DEFEND (conf={confidence:.2f})")
-                elif recommended == 'attack' and confidence > 0.7:
-                    # Boost aggressive actions (typically index 1)
-                    if len(adjusted) > 1:
-                        adjusted[1] *= (1.0 + confidence * 0.25)
-                        adjustments.append(f"🔮 Wisdom: ATTACK (conf={confidence:.2f})")
-                elif recommended == 'expand':
-                    # Boost exploration/expansion (typically index 2)
-                    if len(adjusted) > 2:
-                        adjusted[2] *= (1.0 + confidence * 0.2)
-                        adjustments.append(f"🔮 Wisdom: EXPAND (conf={confidence:.2f})")
+            # NOTE: alliance_wisdom is a List[str] of wisdom text, not a dict
+            wisdom_list = illumination.get('alliance_wisdom', [])
+            if wisdom_list and isinstance(wisdom_list, list):
+                # Parse wisdom strings for action hints
+                # Keywords in wisdom text suggest actions
+                wisdom_text = ' '.join(wisdom_list).lower()
+                
+                # Count action hints in wisdom
+                defend_hints = sum(1 for kw in ['defend', 'protect', 'retreat', 'caution', 'danger'] 
+                                   if kw in wisdom_text)
+                attack_hints = sum(1 for kw in ['attack', 'strike', 'aggressive', 'war', 'fight'] 
+                                   if kw in wisdom_text)
+                expand_hints = sum(1 for kw in ['expand', 'grow', 'explore', 'spread', 'territory'] 
+                                   if kw in wisdom_text)
+                
+                # Confidence based on number of matching hints
+                total_hints = defend_hints + attack_hints + expand_hints
+                if total_hints > 0:
+                    if defend_hints > attack_hints and defend_hints > expand_hints:
+                        confidence = min(0.9, 0.5 + defend_hints * 0.1)
+                        if len(adjusted) > 0:
+                            adjusted[0] *= (1.0 + confidence * 0.3)
+                            adjustments.append(f"🔮 Wisdom: DEFEND (hints={defend_hints})")
+                    elif attack_hints > defend_hints and attack_hints > expand_hints:
+                        confidence = min(0.9, 0.5 + attack_hints * 0.1)
+                        if len(adjusted) > 1:
+                            adjusted[1] *= (1.0 + confidence * 0.25)
+                            adjustments.append(f"🔮 Wisdom: ATTACK (hints={attack_hints})")
+                    elif expand_hints > 0:
+                        confidence = min(0.9, 0.5 + expand_hints * 0.1)
+                        if len(adjusted) > 2:
+                            adjusted[2] *= (1.0 + confidence * 0.2)
+                            adjustments.append(f"🔮 Wisdom: EXPAND (hints={expand_hints})")
         
         # CONFEDERATION illumination: Macro-level strategy
         if illumination.get('can_see_confederation'):

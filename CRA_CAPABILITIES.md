@@ -4,6 +4,37 @@
 
 ---
 
+## ⚡ Quick Reference - Common Commands
+
+### Graph Filter Control
+```json
+[[GRAPH_FILTER_UPDATE: {"components": {"neural": true, "ml_analysis": false}}]]
+```
+
+### Visualization Settings
+```json
+[[VIZ_SETTINGS_UPDATE: {"linkBaseWidth": 4.0, "enableGlow": true}]]
+```
+
+### Config Updates (Hot Reload)
+```json
+[[CONFIG_UPDATE: {"reason": "Increase learning rate", "correlation_id": "lr-boost", "patch": [{"op": "replace", "path": "/neural/training/learning_rate", "value": 0.01}]}]]
+```
+
+### Illumination Engine
+```json
+[[ILLUMINATE: {"action": "root_causes", "event_id": "evt_123"}]]
+[[ILLUMINATE: {"action": "most_consequential", "limit": 10}]]
+```
+
+### Research Notepad
+```json
+[[NOTEPAD: {"action": "observe", "content": "VP spiked to 0.85 #vp_spike"}]]
+[[NOTEPAD: {"action": "hypothesize", "content": "High VP triggers collapse", "confidence": "high"}]]
+```
+
+---
+
 ## 🎯 Core Role
 
 The Convergence Research Assistant (CRA) is an AI-powered research assistant that runs in the **Causation Explorer Web UI** (`causation_web_ui.py`). It monitors and analyzes the **Butterfly System** (`unified_entry.py`) through the web interface.
@@ -311,6 +342,57 @@ The Neural System provides deep Q-learning for organism decision-making. Each or
 - `neural_decision` events in causation graph
 - Organism fitness correlation with neural updates
 
+### NeuralTrainer Deep Dive ⭐ NEW
+
+The `NeuralTrainer` class (`trainer.py`) manages DQN training for all organisms:
+
+**Core Components:**
+| Component | Purpose |
+|-----------|---------|
+| `optimizers` | Dict of Adam optimizers per organism (reused for efficiency) |
+| `schedulers` | Dict of LR schedulers per organism |
+| `training_step_count` | Global training step counter |
+| `best_loss` | Best observed loss for early stopping |
+| `early_stopping_counter` | Steps without improvement |
+
+**Training Flow:**
+```
+train_step(organisms, network_state, breath_state)
+    ├── 1. Filter trainable organisms (has experiences)
+    ├── 2. Sample from experience buffers
+    ├── 3. Compute DQN loss (Q-learning)
+    ├── 4. Get/create optimizer and scheduler
+    ├── 5. optimizer.step()
+    ├── 6. scheduler.step()
+    ├── 7. Enforce min learning rate
+    ├── 8. Check early stopping
+    └── 9. Emit training event
+```
+
+**LR Scheduler Details:**
+| Type | Class | Parameters |
+|------|-------|------------|
+| `step` | `StepLR` | `step_size`, `gamma` |
+| `exponential` | `ExponentialLR` | `gamma` |
+| `plateau` | `ReduceLROnPlateau` | `factor`, `patience`, `min_lr` |
+
+**Early Stopping Logic:**
+```python
+if avg_loss < best_loss - min_delta:
+    best_loss = avg_loss
+    counter = 0
+else:
+    counter += 1
+    if counter >= patience:
+        early_stopped = True
+```
+
+**Safeguards Implemented:**
+- Invalid scheduler type → StepLR fallback with warning
+- NaN/inf loss → Skip early stopping check
+- Negative min_delta → Reset to 1e-4
+- Learning rate below min_lr → Clamp to min_lr
+
 #### Neural Relationship Learning ⭐ NEW
 
 The neural system now learns from language generation quality to strengthen/weaken semantic relationships.
@@ -488,6 +570,42 @@ Beyond individual battles - collective warfare for existential dominance. Organi
 - Champions from individual battles can form alliances
 - Alliances compete for territorial domains
 - Ultimate goal: one alliance achieves EXISTENTIAL_OWNERSHIP
+
+### Alliance History & Wisdom System
+
+Each alliance maintains a historical record that enables collective learning:
+
+**AllianceHistory Components:**
+| Component | Type | Description |
+|-----------|------|-------------|
+| `events` | `List[HistoricalEvent]` | Timestamped events (pruned to 500 max) |
+| `causal_patterns` | `Dict[str, CausalPattern]` | Extracted cause-effect patterns |
+| `wisdom_rules` | `List[str]` | Generalized wisdom from patterns |
+| `legends` | `Dict[str, LegendaryOrganism]` | Legendary members (heroes, betrayers) |
+| `events_by_type` | `Dict[str, List[str]]` | Event index by type |
+| `events_by_organism` | `Dict[str, List[str]]` | Event index by organism |
+
+**Wisdom Generation Flow:**
+```
+Events recorded → Patterns extracted → Wisdom rules generated
+    │                    │                      │
+    ▼                    ▼                      ▼
+"War started"     "Low fitness →    "Avoid war when 
+                   war declared"     members are weak"
+```
+
+**Wisdom Query Methods:**
+- `get_wisdom_for_situation(situation)` → Returns `List[str]` of relevant wisdom text
+- `get_alliance_wisdom(alliance_id, situation)` → Full wisdom package with patterns & legends
+- `get_historical_summary()` → Alliance statistics (wars won/lost, betrayals, etc.)
+
+**What Gets Recorded:**
+- Alliance formations and dissolutions
+- War declarations and outcomes
+- Member joins and departures
+- Betrayals and loyalty events
+- Territory gains and losses
+- Pattern discoveries
 
 ---
 
@@ -913,9 +1031,9 @@ This creates a complete scientific investigation workflow with full audit trail.
 
 ---
 
-## 🛠️ System Integration Updates (December 2025) ⭐ NEW
+## 🛠️ System Integration Updates (December 2025) ⭐ UPDATED
 
-Recent improvements to system integration, memory management, and training infrastructure.
+Recent improvements to system integration, memory management, training infrastructure, and bug fixes.
 
 ### Phase 1: Illumination Engine → Organism Decision Integration
 
@@ -930,8 +1048,31 @@ AllianceWarfare.process_round()
             → organism.decide_action() now calls:
                 → get_illumination_insights() 
                     → alliance_warfare.get_alliance_wisdom()
+                        → history.get_wisdom_for_situation()
                 → enhance_decision_with_illumination()
+                    → parses wisdom strings for action hints
+                    → boosts relevant action probabilities
 ```
+
+**Illumination Levels (Civilization Tiers):**
+| Level | Capability | Unlocked At | What Organisms Can See |
+|-------|------------|-------------|----------------------|
+| `none` | No illumination | Default | Nothing - pure instinct |
+| `basic` | `illumination_basic` | 3+ alliance members | Own causal patterns |
+| `alliance` | `illumination_alliance` | 5+ alliance members | Alliance-wide patterns + wisdom |
+| `confederation` | `illumination_confederation` | Confederation tier 1 | Cross-alliance patterns |
+| `empire` | `illumination_empire` | Empire tier 2 | Root cause analysis |
+| `hegemony` | `illumination_hegemony` | Hegemony tier 3 | Complete causation omniscience |
+
+**Wisdom → Action Mapping:**
+The `enhance_decision_with_illumination()` method parses alliance wisdom text for action keywords:
+- **DEFEND hints**: "defend", "protect", "retreat", "caution", "danger" → Boosts action index 0
+- **ATTACK hints**: "attack", "strike", "aggressive", "war", "fight" → Boosts action index 1
+- **EXPAND hints**: "expand", "grow", "explore", "spread", "territory" → Boosts action index 2
+
+**Key Files:**
+- `reality_simulator/neural/neural_organism.py`: `set_system_references()`, `get_illumination_insights()`, `enhance_decision_with_illumination()`
+- `reality_simulator/evolution/alliance_warfare.py`: `sync_organism_confederation_state()`, `get_alliance_wisdom()`, `get_wisdom_for_situation()`
 
 **Key Config Paths:**
 | Path | Description |
@@ -941,23 +1082,32 @@ AllianceWarfare.process_round()
 **What to Monitor:**
 - Organisms with alliance membership should show improved decision-making
 - Look for `🔮` emoji in logs indicating illumination-enhanced decisions
-- Alliance wisdom recommendations in organism action logs
+- Alliance wisdom recommendations affecting organism action probabilities
+- Higher confederation tiers grant deeper causal insights
 
 ### Phase 2: Memory Leak Fixes
 
 **What Changed:**
-Three unbounded data structures were identified and fixed:
+Four unbounded data structures were identified and fixed:
 - `episodic_events` in context_memory - now pruned to 1000 max entries
-- `alliance_histories.events` - now pruned to 500 max events per alliance
+- `alliance_histories.events` - now pruned to 500 max events per alliance (with empty index cleanup)
 - `node_embeddings` / `node_word_associations` - now cleaned up on organism death
+- `events_by_type` / `events_by_organism` indices - cleaned after pruning to remove stale empty entries
 
 **Cleanup Triggers:**
-| Structure | Trigger | Limit |
-|-----------|---------|-------|
-| `episodic_events` | On new episode | 1000 episodes |
-| `alliance_histories.events` | Every 100 rounds | 500 events/alliance |
-| `node_embeddings` | On organism death | N/A (cleaned) |
-| `node_word_associations` | On organism death | N/A (cleaned) |
+| Structure | Trigger | Limit | File |
+|-----------|---------|-------|------|
+| `episodic_events` | On new episode | 1000 episodes | `context_memory.py` |
+| `alliance_histories.events` | Every 100 rounds | 500 events/alliance | `alliance_warfare.py` |
+| `events_by_type` index | After event pruning | N/A (empty entries removed) | `alliance_warfare.py` |
+| `events_by_organism` index | After event pruning | N/A (empty entries removed) | `alliance_warfare.py` |
+| `node_embeddings` | On organism death | N/A (cleaned) | `context_memory.py` |
+| `node_word_associations` | On organism death | N/A (cleaned) | `context_memory.py` |
+
+**Key Files:**
+- `reality_simulator/memory/context_memory.py`: `cleanup_dead_organism()`, `record_generation_episode()`
+- `reality_simulator/evolution/alliance_warfare.py`: `prune_old_events()` in `AllianceHistory` class
+- `unified_entry.py`: Calls `cleanup_dead_organism()` when organism dies in Highlander
 
 **What to Monitor:**
 - Memory usage should remain stable over long runs
@@ -967,7 +1117,23 @@ Three unbounded data structures were identified and fixed:
 ### Phase 3: Training Infrastructure Improvements
 
 **What Changed:**
-Added LR scheduler and early stopping to neural trainer for improved training stability.
+Added LR scheduler and early stopping to neural trainer for improved training stability, with validation safeguards.
+
+**LR Scheduler Types:**
+| Type | Description | When to Use |
+|------|-------------|-------------|
+| `step` | Decays LR by gamma every step_size steps | Default, general purpose |
+| `exponential` | Decays LR by gamma every step | Smooth continuous decay |
+| `plateau` | Decays LR when loss stops improving | Loss-adaptive training |
+
+**Validation Safeguards:**
+- Invalid `lr_scheduler_type` → Falls back to `step` with warning
+- Invalid `avg_loss` (NaN/inf) → Skips early stopping check with warning
+- Invalid `min_delta` (negative) → Resets to `1e-4` with warning
+- `best_loss` initialized to `inf` and validated before comparison
+
+**Key Files:**
+- `reality_simulator/neural/trainer.py`: `_get_or_create_scheduler()`, `_check_early_stopping()`, `reset_early_stopping()`
 
 **New Config Paths:**
 | Path | Safe Range | Description |
@@ -1013,11 +1179,154 @@ analysis = highlander_protocol.analyze_population(organisms, get_fitness)
 # }
 ```
 
+**Key Files:**
+- `reality_simulator/evolution/highlander_protocol.py`: `analyze_population()` method
+- `reality_simulator/ml_utils.py`: `MLAnalyzer`, `Clusterer`, `AnomalyDetector`
+
 **What to Monitor:**
 - Cluster count should reflect population diversity
 - Anomaly count can identify potential champions
 - Low fitness std indicates evolutionary pressure needed
 - High fitness std indicates diverging strategies
+
+### Phase 5: Bug Fixes (December 3, 2025) ⭐ LATEST
+
+**Critical Bug Fixes Applied:**
+
+| Location | Issue | Fix |
+|----------|-------|-----|
+| `neural_organism.py` | Alliance wisdom was `List[str]` but code called `.get()` on it (AttributeError) | Rewrote to parse wisdom strings for action keywords |
+| `trainer.py` | Invalid LR scheduler type would create no scheduler | Added validation with StepLR fallback |
+| `trainer.py` | NaN/inf loss values could corrupt early stopping | Added `np.isfinite()` checks |
+| `alliance_warfare.py` | Stale empty index entries after event pruning | Added cleanup: `{k: v for k, v in dict.items() if v}` |
+| `alliance_warfare.py` | `causation_explorer=None` could cause issues | Added None check before passing to organism |
+| `highlander_protocol.py` | `concepts_acquired` attribute didn't exist | Changed to `len(concepts_absorbed)` |
+| `unified_entry.py` | `hash()` can return negative values in Python | Added `abs(hash())` for positive organism IDs |
+
+**Files Modified:**
+- `reality_simulator/neural/neural_organism.py`
+- `reality_simulator/neural/trainer.py`
+- `reality_simulator/evolution/alliance_warfare.py`
+- `reality_simulator/evolution/highlander_protocol.py`
+- `unified_entry.py`
+
+---
+
+## 🧬 NeuralOrganism - Core Entity Architecture ⭐ NEW
+
+The `NeuralOrganism` is the fundamental unit of the Butterfly System - a neural network-powered organism that learns, communicates, forms alliances, and evolves.
+
+### Class Hierarchy
+```
+Organism (base class)
+    └── NeuralOrganism (neural.neural_organism.py)
+            ├── brain: OrganismBrain (PyTorch DQN)
+            ├── genotype: Genotype (genetic encoding)
+            ├── phenotype: Phenotype (expressed traits)
+            └── experience_buffer: List[Experience] (RL training data)
+```
+
+### Core Attributes
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `brain` | `OrganismBrain` | PyTorch neural network for decision-making |
+| `genotype` | `Genotype` | Genetic encoding (inherited and mutatable) |
+| `phenotype` | `Phenotype` | Expressed traits (fitness, cooperation, etc.) |
+| `fitness` | `float` | Current fitness score (0.0-1.0) |
+| `alliance_id` | `str` | Current alliance membership (if any) |
+| `alliance_reputation` | `float` | Reputation within alliance |
+| `confederation_tier` | `int` | 0=none, 1=confederation, 2=empire, 3=hegemony |
+| `epsilon` | `float` | Exploration rate for action selection |
+| `action_history` | `deque` | Recent action history for pattern analysis |
+| `token_sequence` | `deque` | Token sequence for language model |
+
+### Illumination System References
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `_alliance_warfare_ref` | `AllianceWarfareSystem` | Reference for querying alliance wisdom |
+| `_causation_explorer_ref` | `CausationExplorer` | Reference for causal chain analysis |
+| `_illumination_level` | `str` | Cached level: 'none', 'basic', 'alliance', 'confederation', 'empire', 'hegemony' |
+| `_illumination_capabilities` | `set` | Cached capability set |
+
+### Key Methods
+
+| Method | Description |
+|--------|-------------|
+| `decide_action(state, context)` | Select action using neural brain + illumination |
+| `get_state_features(neighbors, network_state)` | Extract 28-dim feature vector for brain |
+| `set_system_references(alliance_warfare, causation_explorer)` | Wire illumination system |
+| `get_illumination_insights(alliance_warfare, causation_explorer)` | Query causal patterns and wisdom |
+| `enhance_decision_with_illumination(action_probs, illumination)` | Boost actions based on wisdom |
+| `evaluate_alliance_decision(decision_type, context)` | Evaluate alliance proposals |
+| `add_experience(state, action, reward, next_state, done)` | Store RL experience |
+| `get_action_sequence(length)` | Get recent actions for language training |
+| `get_token_sequence(length)` | Get token sequence for language model |
+
+### State Features (28 Dimensions)
+
+| Index | Feature | Range | Description |
+|-------|---------|-------|-------------|
+| 0 | fitness | 0-1 | Current fitness score |
+| 1 | energy | 0-1 | Current energy level |
+| 2 | age | 0-1 | Normalized age |
+| 3 | reproduction_readiness | 0-1 | Ready to reproduce |
+| 4 | social_score | 0-1 | Social connections quality |
+| 5 | neighbor_count | 0-1 | Normalized neighbor count |
+| 6 | avg_neighbor_fitness | 0-1 | Average fitness of neighbors |
+| 7 | local_density | 0-1 | Local network density |
+| 8 | modularity_contribution | 0-1 | Contribution to network modularity |
+| 9 | vp_value | 0-1 | Violation pressure (system stress) |
+| 10 | quantum_coherence | 0-1 | Quantum state coherence |
+| 11 | breath_depth | 0-1 | Current breath cycle depth |
+| 12-17 | genotype_traits | 0-1 | 6 genetic trait values |
+| 18-23 | phenotype_traits | 0-1 | 6 expressed phenotype traits |
+| 24 | alliance_membership | 0-1 | Part of an alliance (binary) |
+| 25 | confederation_level | 0-1 | 0=none, 0.33=conf, 0.66=empire, 1=hegemony |
+| 26 | confederation_wars | 0-1 | Normalized mega-war count |
+| 27 | cross_alliance_influence | 0-1 | Connections to other alliances |
+
+### Decision Flow
+
+```
+decide_action()
+    ├── 1. Get network state features (28-dim vector)
+    ├── 2. Query brain for action probabilities
+    ├── 3. Check if illumination available
+    │       ├── get_illumination_insights()
+    │       │       ├── Query causation_explorer for self-events
+    │       │       └── Query alliance_warfare for wisdom
+    │       └── enhance_decision_with_illumination()
+    │               ├── Parse wisdom for action hints
+    │               └── Boost relevant action probabilities
+    ├── 4. Apply epsilon-greedy exploration
+    └── 5. Return selected action
+```
+
+### Action Space
+
+| Index | Action | Description |
+|-------|--------|-------------|
+| 0 | `move` | Change position in network |
+| 1 | `cooperate` | Form beneficial connection |
+| 2 | `compete` | Challenge another organism |
+| 3 | `rest` | Recover energy |
+| 4 | `reproduce` | Create offspring |
+| 5 | `isolate` | Reduce connections |
+
+### Config Paths for NeuralOrganism
+
+| Path | Safe Range | Description |
+|------|------------|-------------|
+| `/neural/enabled` | true/false | Enable neural organisms |
+| `/neural/brain/input_dim` | 12-50 | Input feature dimensions |
+| `/neural/brain/hidden_dim` | 32-256 | Hidden layer size |
+| `/neural/brain/output_dim` | 4-10 | Action space size |
+| `/neural/brain/activation` | "relu"/"tanh"/"gelu" | Activation function |
+| `/neural/brain/dropout` | 0.0-0.5 | Dropout rate |
+| `/neural/inheritance/mutation_rate` | 0.0-0.5 | Brain weight mutation |
+| `/neural/inheritance/crossover_rate` | 0.0-1.0 | Two-parent crossover rate |
 
 ---
 
@@ -1628,6 +1937,70 @@ The CRA provides:
 
 ---
 
+## 📁 Butterfly System File Structure
+
+Understanding the codebase structure is essential for the CRA to provide accurate guidance.
+
+### Core Entry Points
+
+| File | Purpose |
+|------|---------|
+| `unified_entry.py` | Main entry point - orchestrates all systems |
+| `causation_web_ui.py` | Web UI where CRA lives - monitoring interface |
+| `causation_explorer.py` | Event tracking and causation graph |
+| `butterfly_system.py` | Alternative entry point (legacy) |
+
+### Reality Simulator (`reality_simulator/`)
+
+| Subdirectory | Purpose | Key Files |
+|--------------|---------|-----------|
+| `neural/` | Neural network system | `neural_organism.py`, `trainer.py`, `brain.py` |
+| `evolution/` | Evolution & alliances | `alliance_warfare.py`, `highlander_protocol.py`, `germination_pool.py`, `battle_arena.py` |
+| `memory/` | Context & memory | `context_memory.py` |
+| `language/` | Language model | `language_model.py`, `linguistic_subgraph.py` |
+| `distributed/` | Ray parallelization | `ray_manager.py`, `ray_tasks.py` |
+| `tuning/` | Config tuning | `config_tuner.py`, `atomic_config.py` |
+| `checkpointing/` | State persistence | `checkpoint_manager.py` |
+| `portable_agent/` | Agent export | `visualize.py` |
+
+### Key Files by System
+
+**Neural System:**
+- `neural_organism.py` - NeuralOrganism class (2300+ lines)
+- `trainer.py` - NeuralTrainer with LR scheduler & early stopping (1800+ lines)
+- `brain.py` - OrganismBrain PyTorch model
+
+**Evolution System:**
+- `alliance_warfare.py` - Alliance, Confederation, Illumination (3600+ lines)
+- `highlander_protocol.py` - Tournament survival system (1700+ lines)
+- `germination_pool.py` - New organism spawning
+- `battle_arena.py` - Combat resolution
+
+**ML System:**
+- `ml_utils.py` - MLAnalyzer, Clusterer, AnomalyDetector
+
+**Memory System:**
+- `context_memory.py` - ContextMemory, language anchors, embeddings
+
+### Configuration Files
+
+| File | Purpose |
+|------|---------|
+| `config.json` | Master configuration (521+ lines) |
+| `runtime_config.py` | Runtime config loading |
+| `logging_config.py` | Logging setup |
+
+### Data Directories
+
+| Directory | Purpose |
+|-----------|---------|
+| `data/logs/` | Log files (breath.log, state.log, etc.) |
+| `data/shared_state.json` | Shared simulation state |
+| `highlander_capsules/` | Champion checkpoints |
+| `context_memory/` | Persistent memory data |
+
+---
+
 ## 🔧 Technical Details
 
 ### System Prompt
@@ -1664,8 +2037,8 @@ The CRA receives rich context including:
 
 ---
 
-**Last Updated:** 2025-12-02  
-**Status:** ✅ Complete and fully functional (includes Illumination Engine + Research Notepad + Highlander Protocol + Alliance Warfare + Ray Distributed Computing)
+**Last Updated:** 2025-12-03  
+**Status:** ✅ Complete and fully functional (includes Illumination Engine + Research Notepad + Highlander Protocol + Alliance Warfare + Ray Distributed Computing + NeuralOrganism Architecture + Phase 5 Bug Fixes)
 
 ---
 
