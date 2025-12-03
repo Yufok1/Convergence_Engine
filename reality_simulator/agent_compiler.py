@@ -801,7 +801,25 @@ if __name__ == "__main__":
             if capsule.config:
                 zf.writestr("atomic_config.json", json.dumps(capsule.config.to_dict(), indent=2))
             
-            # 5. Atomic Language (JSON)
+            # 5. Bridge Config (JSON) - Critical for AgentBridge to know state dimensions
+            input_dim = metadata.get('neural_network', {}).get('architecture', {}).get('input_size', 18)
+            bridge_config = {
+                'state_dim': input_dim,
+                'num_actions': 6,
+                'action_names': ['move', 'cooperate', 'compete', 'rest', 'reproduce', 'isolate'],
+                'epsilon': 0.1,
+                'epsilon_decay': 0.995,
+                'epsilon_min': 0.01,
+                'learning_rate': 0.001,
+                'gamma': 0.99,
+                'batch_size': 32,
+                'max_response_length': 32,
+                'temperature': 1.0,
+                'default_port': 8080
+            }
+            zf.writestr("bridge_config.json", json.dumps(bridge_config, indent=2))
+            
+            # 6. Atomic Language (JSON)
             if capsule.language:
                 zf.writestr("atomic_language.json", json.dumps(capsule.language.to_dict(), indent=2))
 
@@ -1653,6 +1671,24 @@ done
 
             # Metadata
             zf.writestr("metadata.json", json.dumps(metadata, indent=2))
+            
+            # Bridge Config (JSON) - Critical for AgentBridge to know state dimensions
+            max_input_dim = metadata.get('ensemble', {}).get('max_input_dim', 18)
+            bridge_config = {
+                'state_dim': max_input_dim,
+                'num_actions': 6,
+                'action_names': ['move', 'cooperate', 'compete', 'rest', 'reproduce', 'isolate'],
+                'epsilon': 0.1,
+                'epsilon_decay': 0.995,
+                'epsilon_min': 0.01,
+                'learning_rate': 0.001,
+                'gamma': 0.99,
+                'batch_size': 32,
+                'max_response_length': 32,
+                'temperature': 1.0,
+                'default_port': 8080
+            }
+            zf.writestr("bridge_config.json", json.dumps(bridge_config, indent=2))
             
             # Merge language data from all capsules
             if capsules:
