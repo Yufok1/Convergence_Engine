@@ -224,6 +224,414 @@ class PlanetaryAlliance:
         }
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# 📜 ALLIANCE HISTORY - THE COLLECTIVE MEMORY OF CIVILIZATIONS
+# ═══════════════════════════════════════════════════════════════════════════════
+# 
+# This is NOT a recursive causation engine. This is KNOWLEDGE ACCUMULATION.
+# 
+# Individual Organism: action → result → memory (personal experience)
+#                      ↓
+# Alliance:           shared_memory → collective_wisdom → better decisions
+#                      ↓
+# Confederation:      alliance_histories → patterns emerge → civilization strategy
+#                      ↓
+# Empire/Hegemony:    ALL histories → causal laws → predictive power
+#
+# Organisms CONTRIBUTE their experiences. Alliance GRANTS wisdom back.
+# This is literally how human civilization works.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+class HistoricalEventType(Enum):
+    """Types of events worth recording in alliance history."""
+    # Founding moments
+    ALLIANCE_FOUNDED = "alliance_founded"
+    MEMBER_JOINED = "member_joined"
+    MEMBER_LEFT = "member_left"
+    
+    # Leadership
+    WARCHIEF_CHALLENGED = "warchief_challenged"
+    WARCHIEF_CHANGED = "warchief_changed"
+    
+    # Warfare
+    WAR_DECLARED = "war_declared"
+    WAR_WON = "war_won"
+    WAR_LOST = "war_lost"
+    BATTLE_FOUGHT = "battle_fought"
+    
+    # Diplomacy
+    PEACE_PROPOSED = "peace_proposed"
+    PEACE_ACCEPTED = "peace_accepted"
+    PEACE_REJECTED = "peace_rejected"
+    TREATY_EXPIRED = "treaty_expired"
+    
+    # Betrayal
+    MEMBER_BETRAYED = "member_betrayed"
+    ALLIANCE_SABOTAGED = "alliance_sabotaged"
+    
+    # Territory
+    TERRITORY_CLAIMED = "territory_claimed"
+    TERRITORY_LOST = "territory_lost"
+    
+    # Confederation
+    JOINED_CONFEDERATION = "joined_confederation"
+    LEFT_CONFEDERATION = "left_confederation"
+    CONFEDERATION_ELEVATED = "confederation_elevated"
+    
+    # Illumination
+    ILLUMINATION_UNLOCKED = "illumination_unlocked"
+    
+    # Organism legends
+    ORGANISM_HEROIC_ACT = "organism_heroic_act"
+    ORGANISM_CATASTROPHIC_FAILURE = "organism_catastrophic_failure"
+    ORGANISM_DEATH = "organism_death"
+
+
+@dataclass
+class HistoricalEvent:
+    """A single recorded event in alliance history."""
+    event_id: str
+    event_type: HistoricalEventType
+    timestamp: float
+    round_number: int
+    
+    # Who was involved
+    primary_organism_id: Optional[str] = None  # Main actor
+    secondary_organism_id: Optional[str] = None  # Target/opponent
+    alliance_id: Optional[str] = None
+    enemy_alliance_id: Optional[str] = None
+    
+    # What happened
+    description: str = ""  # Human-readable summary
+    outcome: str = ""  # "success", "failure", "neutral"
+    
+    # Metrics at the time
+    alliance_strength: float = 0.0
+    member_count: int = 0
+    vp_at_time: float = 0.0
+    
+    # Causation links - what led to this, what it caused
+    caused_by_event_id: Optional[str] = None
+    resulted_in_event_ids: List[str] = field(default_factory=list)
+    
+    # Extracted lesson (if any)
+    lesson_learned: Optional[str] = None
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'event_id': self.event_id,
+            'event_type': self.event_type.value,
+            'timestamp': self.timestamp,
+            'round': self.round_number,
+            'primary_organism': self.primary_organism_id,
+            'secondary_organism': self.secondary_organism_id,
+            'description': self.description,
+            'outcome': self.outcome,
+            'lesson': self.lesson_learned
+        }
+
+
+@dataclass
+class CausalPattern:
+    """An extracted cause→effect pattern from historical analysis."""
+    pattern_id: str
+    
+    # The pattern itself
+    cause: str  # e.g., "war_during_high_vp"
+    effect: str  # e.g., "member_loss"
+    
+    # Confidence from historical evidence
+    occurrences: int = 0
+    confidence: float = 0.0  # 0.0 to 1.0
+    
+    # When this pattern applies
+    conditions: Dict[str, Any] = field(default_factory=dict)  # e.g., {"vp_threshold": 0.7}
+    
+    # Example events that support this pattern
+    supporting_events: List[str] = field(default_factory=list)  # event_ids
+    
+    # Human-readable wisdom
+    wisdom_text: str = ""  # e.g., "War during high VP leads to 40% member loss"
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'pattern_id': self.pattern_id,
+            'cause': self.cause,
+            'effect': self.effect,
+            'confidence': self.confidence,
+            'occurrences': self.occurrences,
+            'wisdom': self.wisdom_text
+        }
+
+
+@dataclass
+class LegendaryOrganism:
+    """Record of an organism who achieved legendary status."""
+    organism_id: str
+    name: Optional[str] = None  # If they had a name
+    
+    # Their story
+    role: str = ""  # "founder", "warchief", "hero", "betrayer", "martyr"
+    achievements: List[str] = field(default_factory=list)
+    failures: List[str] = field(default_factory=list)
+    
+    # Key stats at peak
+    peak_fitness: float = 0.0
+    battles_won: int = 0
+    battles_lost: int = 0
+    
+    # How they're remembered
+    legacy: str = ""  # "Founded the alliance during darkest hour"
+    lesson: str = ""  # "Trust must be earned, not assumed"
+    
+    # Timeline
+    joined_round: int = 0
+    death_round: Optional[int] = None
+    cause_of_death: Optional[str] = None
+
+
+@dataclass
+class AllianceHistory:
+    """
+    📜 THE COLLECTIVE MEMORY OF A CIVILIZATION
+    
+    This is where organisms CONTRIBUTE their experiences and
+    the alliance EXTRACTS wisdom to share with all members.
+    
+    This is NOT a recursive causation engine - it's knowledge accumulation.
+    Like human civilization's history books, oral traditions, and laws.
+    """
+    alliance_id: str
+    alliance_name: str
+    
+    # ═══════════════════════════════════════════════════════════════════════
+    # RECORDED EVENTS - The raw historical record
+    # ═══════════════════════════════════════════════════════════════════════
+    events: List[HistoricalEvent] = field(default_factory=list)
+    events_by_type: Dict[str, List[str]] = field(default_factory=lambda: defaultdict(list))
+    events_by_organism: Dict[str, List[str]] = field(default_factory=lambda: defaultdict(list))
+    
+    # ═══════════════════════════════════════════════════════════════════════
+    # EXTRACTED PATTERNS - What the alliance LEARNED
+    # ═══════════════════════════════════════════════════════════════════════
+    causal_patterns: Dict[str, CausalPattern] = field(default_factory=dict)
+    
+    # ═══════════════════════════════════════════════════════════════════════
+    # WISDOM RULES - Codified cause→effect knowledge
+    # ═══════════════════════════════════════════════════════════════════════
+    wisdom_rules: List[str] = field(default_factory=list)
+    # e.g., ["When VP > 0.7, prioritize cooperation over war"]
+    #       ["Betrayers should be excluded from future alliances"]
+    #       ["Peace with equals preserves strength for true enemies"]
+    
+    # ═══════════════════════════════════════════════════════════════════════
+    # LEGENDARY ORGANISMS - Heroes, villains, and lessons
+    # ═══════════════════════════════════════════════════════════════════════
+    legends: Dict[str, LegendaryOrganism] = field(default_factory=dict)
+    
+    # ═══════════════════════════════════════════════════════════════════════
+    # AGGREGATE STATISTICS - Summary of alliance journey
+    # ═══════════════════════════════════════════════════════════════════════
+    total_wars: int = 0
+    wars_won: int = 0
+    wars_lost: int = 0
+    total_members_ever: int = 0
+    total_betrayals: int = 0
+    total_peace_treaties: int = 0
+    highest_member_count: int = 0
+    lowest_vp_survived: float = 1.0
+    
+    # When history started
+    founding_round: int = 0
+    founding_timestamp: float = field(default_factory=time.time)
+    
+    def record_event(self, event: HistoricalEvent) -> str:
+        """
+        Record an event in alliance history.
+        
+        Organisms CONTRIBUTE their experiences through this.
+        Returns the event_id.
+        """
+        self.events.append(event)
+        self.events_by_type[event.event_type.value].append(event.event_id)
+        
+        if event.primary_organism_id:
+            self.events_by_organism[event.primary_organism_id].append(event.event_id)
+        if event.secondary_organism_id:
+            self.events_by_organism[event.secondary_organism_id].append(event.event_id)
+        
+        # Update aggregate stats
+        if event.event_type == HistoricalEventType.WAR_DECLARED:
+            self.total_wars += 1
+        elif event.event_type == HistoricalEventType.WAR_WON:
+            self.wars_won += 1
+        elif event.event_type == HistoricalEventType.WAR_LOST:
+            self.wars_lost += 1
+        elif event.event_type == HistoricalEventType.MEMBER_JOINED:
+            self.total_members_ever += 1
+        elif event.event_type == HistoricalEventType.MEMBER_BETRAYED:
+            self.total_betrayals += 1
+        elif event.event_type == HistoricalEventType.PEACE_ACCEPTED:
+            self.total_peace_treaties += 1
+        
+        if event.member_count > self.highest_member_count:
+            self.highest_member_count = event.member_count
+        if event.vp_at_time < self.lowest_vp_survived and event.vp_at_time > 0:
+            self.lowest_vp_survived = event.vp_at_time
+        
+        return event.event_id
+    
+    def get_recent_events(self, limit: int = 20) -> List[HistoricalEvent]:
+        """Get most recent events."""
+        return self.events[-limit:]
+    
+    def get_events_of_type(self, event_type: HistoricalEventType, limit: int = 50) -> List[HistoricalEvent]:
+        """Get events of a specific type."""
+        event_ids = self.events_by_type.get(event_type.value, [])[-limit:]
+        return [e for e in self.events if e.event_id in event_ids]
+    
+    def get_organism_history(self, organism_id: str) -> List[HistoricalEvent]:
+        """Get all events involving a specific organism."""
+        event_ids = self.events_by_organism.get(organism_id, [])
+        return [e for e in self.events if e.event_id in event_ids]
+    
+    def extract_pattern(self, cause: str, effect: str, 
+                        supporting_events: List[str],
+                        conditions: Dict[str, Any] = None) -> CausalPattern:
+        """
+        Extract a causal pattern from historical evidence.
+        
+        This is how alliances LEARN from their history.
+        """
+        pattern_id = f"pattern_{cause}_{effect}_{int(time.time())}"
+        
+        # Calculate confidence based on evidence
+        occurrences = len(supporting_events)
+        confidence = min(0.95, 0.3 + (occurrences * 0.1))
+        
+        # Generate wisdom text
+        wisdom_text = f"{cause.replace('_', ' ').title()} tends to cause {effect.replace('_', ' ')}"
+        if conditions:
+            cond_str = ', '.join(f"{k}={v}" for k, v in conditions.items())
+            wisdom_text += f" (when {cond_str})"
+        
+        pattern = CausalPattern(
+            pattern_id=pattern_id,
+            cause=cause,
+            effect=effect,
+            occurrences=occurrences,
+            confidence=confidence,
+            conditions=conditions or {},
+            supporting_events=supporting_events,
+            wisdom_text=wisdom_text
+        )
+        
+        self.causal_patterns[pattern_id] = pattern
+        
+        # Auto-generate wisdom rule if confidence is high enough
+        if confidence >= 0.7:
+            rule = f"[Confidence {confidence:.0%}] {wisdom_text}"
+            if rule not in self.wisdom_rules:
+                self.wisdom_rules.append(rule)
+        
+        return pattern
+    
+    def add_legend(self, organism_id: str, role: str, 
+                   achievements: List[str], legacy: str) -> LegendaryOrganism:
+        """
+        Record an organism as legendary - for better or worse.
+        
+        Heroes inspire. Villains warn. Both teach.
+        """
+        legend = LegendaryOrganism(
+            organism_id=organism_id,
+            role=role,
+            achievements=achievements,
+            legacy=legacy
+        )
+        self.legends[organism_id] = legend
+        return legend
+    
+    def get_wisdom_for_situation(self, situation: Dict[str, Any]) -> List[str]:
+        """
+        Query alliance wisdom for a given situation.
+        
+        This is how organisms ACCESS collective knowledge.
+        
+        Args:
+            situation: Dict describing current situation
+                       e.g., {"vp": 0.8, "at_war": True, "member_count": 5}
+        
+        Returns:
+            List of relevant wisdom rules
+        """
+        relevant_wisdom = []
+        
+        vp = situation.get('vp', 0.5)
+        at_war = situation.get('at_war', False)
+        member_count = situation.get('member_count', 0)
+        
+        # Check each pattern for relevance
+        for pattern in self.causal_patterns.values():
+            if pattern.confidence < 0.5:
+                continue  # Only share confident patterns
+            
+            conditions = pattern.conditions
+            is_relevant = True
+            
+            # Check if conditions match
+            if 'vp_threshold' in conditions:
+                if vp < conditions['vp_threshold']:
+                    is_relevant = False
+            if 'requires_war' in conditions:
+                if conditions['requires_war'] != at_war:
+                    is_relevant = False
+            if 'min_members' in conditions:
+                if member_count < conditions['min_members']:
+                    is_relevant = False
+            
+            if is_relevant:
+                relevant_wisdom.append(pattern.wisdom_text)
+        
+        # Add general wisdom rules
+        relevant_wisdom.extend(self.wisdom_rules[:5])  # Top 5 general rules
+        
+        return relevant_wisdom
+    
+    def get_historical_summary(self) -> Dict[str, Any]:
+        """Get a summary of alliance history for display/analysis."""
+        return {
+            'alliance_id': self.alliance_id,
+            'alliance_name': self.alliance_name,
+            'total_events': len(self.events),
+            'total_wars': self.total_wars,
+            'wars_won': self.wars_won,
+            'wars_lost': self.wars_lost,
+            'win_rate': self.wars_won / self.total_wars if self.total_wars > 0 else 0,
+            'total_members_ever': self.total_members_ever,
+            'total_betrayals': self.total_betrayals,
+            'betrayal_rate': self.total_betrayals / self.total_members_ever if self.total_members_ever > 0 else 0,
+            'total_peace_treaties': self.total_peace_treaties,
+            'highest_member_count': self.highest_member_count,
+            'lowest_vp_survived': self.lowest_vp_survived,
+            'patterns_extracted': len(self.causal_patterns),
+            'wisdom_rules': len(self.wisdom_rules),
+            'legends_recorded': len(self.legends),
+            'founding_round': self.founding_round
+        }
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Serialize for storage/transmission."""
+        return {
+            **self.get_historical_summary(),
+            'recent_events': [e.to_dict() for e in self.get_recent_events(10)],
+            'top_patterns': [p.to_dict() for p in list(self.causal_patterns.values())[:10]],
+            'wisdom_rules': self.wisdom_rules[:20],
+            'legends': {k: {'role': v.role, 'legacy': v.legacy} for k, v in self.legends.items()}
+        }
+
+
 class ConfederationTier(Enum):
     """
     Tiers of super-alliances - emergent hierarchy.
@@ -452,6 +860,17 @@ class AllianceWarfareSystem:
             'empire': {'tier': 2, 'name': 'Imperial Foresight'},      # Empire tier
             'hegemony': {'tier': 3, 'name': 'Hegemonic Omniscience'}  # Hegemony tier
         }
+        
+        # ═══════════════════════════════════════════════════════════════════════
+        # 📜 ALLIANCE HISTORY - COLLECTIVE MEMORY OF CIVILIZATIONS
+        # ═══════════════════════════════════════════════════════════════════════
+        # This is where organisms CONTRIBUTE their experiences and
+        # the alliance EXTRACTS wisdom to share with all members.
+        # 
+        # NOT recursive causation engines - KNOWLEDGE ACCUMULATION.
+        # Like human civilization's history books, oral traditions, and laws.
+        # ═══════════════════════════════════════════════════════════════════════
+        self.alliance_histories: Dict[str, AllianceHistory] = {}  # alliance_id -> history
     
     def _get_or_create_reputation(self, organism_id: str) -> OrganismReputation:
         """Get reputation, create if doesn't exist."""
@@ -475,6 +894,302 @@ class AllianceWarfareSystem:
         except ImportError:
             pass
     
+    # ═══════════════════════════════════════════════════════════════════════
+    # 📜 ALLIANCE HISTORY - COLLECTIVE MEMORY SYSTEM
+    # ═══════════════════════════════════════════════════════════════════════
+    
+    def _get_or_create_history(self, alliance_id: str) -> Optional[AllianceHistory]:
+        """Get alliance history, create if doesn't exist."""
+        if alliance_id not in self.alliances:
+            return None
+        
+        if alliance_id not in self.alliance_histories:
+            alliance = self.alliances[alliance_id]
+            self.alliance_histories[alliance_id] = AllianceHistory(
+                alliance_id=alliance_id,
+                alliance_name=alliance.name,
+                founding_round=self.round_number
+            )
+        return self.alliance_histories[alliance_id]
+    
+    def record_historical_event(self, 
+                                 alliance_id: str,
+                                 event_type: HistoricalEventType,
+                                 description: str,
+                                 primary_organism_id: Optional[str] = None,
+                                 secondary_organism_id: Optional[str] = None,
+                                 enemy_alliance_id: Optional[str] = None,
+                                 outcome: str = "neutral",
+                                 lesson: Optional[str] = None,
+                                 caused_by: Optional[str] = None,
+                                 vp_value: float = 0.5) -> Optional[str]:
+        """
+        Record an event in alliance history.
+        
+        Organisms CONTRIBUTE their experiences through this method.
+        The alliance accumulates collective knowledge.
+        
+        Args:
+            alliance_id: The alliance to record for
+            event_type: Type of historical event
+            description: Human-readable description
+            primary_organism_id: Main actor in the event
+            secondary_organism_id: Target/opponent
+            enemy_alliance_id: If another alliance was involved
+            outcome: "success", "failure", or "neutral"
+            lesson: Optional lesson learned from this event
+            caused_by: Event ID that caused this (causal chain)
+            vp_value: VP at the time of the event
+            
+        Returns:
+            Event ID if recorded, None if failed
+        """
+        history = self._get_or_create_history(alliance_id)
+        if not history:
+            return None
+        
+        alliance = self.alliances.get(alliance_id)
+        member_count = len(alliance.members) if alliance else 0
+        alliance_strength = alliance.get_war_power(lambda x: 0.5) if alliance else 0.0
+        
+        event_id = f"hist_{alliance_id}_{event_type.value}_{int(time.time()*1000)}"
+        
+        event = HistoricalEvent(
+            event_id=event_id,
+            event_type=event_type,
+            timestamp=time.time(),
+            round_number=self.round_number,
+            primary_organism_id=primary_organism_id,
+            secondary_organism_id=secondary_organism_id,
+            alliance_id=alliance_id,
+            enemy_alliance_id=enemy_alliance_id,
+            description=description,
+            outcome=outcome,
+            alliance_strength=alliance_strength,
+            member_count=member_count,
+            vp_at_time=vp_value,
+            caused_by_event_id=caused_by,
+            lesson_learned=lesson
+        )
+        
+        history.record_event(event)
+        
+        # Also emit to CausationExplorer for global visibility
+        self._emit_event('historical_record', {
+            'event_id': event_id,
+            'event_type': event_type.value,
+            'alliance': history.alliance_name,
+            'description': description,
+            'outcome': outcome,
+            'lesson': lesson
+        })
+        
+        return event_id
+    
+    def analyze_and_extract_patterns(self, alliance_id: str) -> List[CausalPattern]:
+        """
+        Analyze alliance history and extract causal patterns.
+        
+        This is how alliances LEARN from their collective experience.
+        Called periodically or after significant events.
+        
+        Returns:
+            List of newly extracted patterns
+        """
+        history = self._get_or_create_history(alliance_id)
+        if not history or len(history.events) < 5:
+            return []  # Not enough history yet
+        
+        new_patterns = []
+        
+        # Pattern 1: War during high VP → member loss
+        war_events = history.get_events_of_type(HistoricalEventType.WAR_DECLARED)
+        high_vp_wars = [e for e in war_events if e.vp_at_time > 0.6]
+        
+        if len(high_vp_wars) >= 2:
+            # Check if wars during high VP led to member loss
+            member_losses_after_war = []
+            for war in high_vp_wars:
+                loss_events = [e for e in history.events 
+                              if e.event_type == HistoricalEventType.MEMBER_LEFT
+                              and e.round_number > war.round_number
+                              and e.round_number < war.round_number + 20]
+                if loss_events:
+                    member_losses_after_war.append(war.event_id)
+            
+            if len(member_losses_after_war) >= 2:
+                pattern = history.extract_pattern(
+                    cause="war_during_high_vp",
+                    effect="member_loss",
+                    supporting_events=member_losses_after_war,
+                    conditions={"vp_threshold": 0.6}
+                )
+                new_patterns.append(pattern)
+        
+        # Pattern 2: Peace treaties → stability
+        peace_events = history.get_events_of_type(HistoricalEventType.PEACE_ACCEPTED)
+        if len(peace_events) >= 2:
+            stability_after_peace = []
+            for peace in peace_events:
+                # Check if member count stayed stable after peace
+                later_events = [e for e in history.events
+                               if e.round_number > peace.round_number
+                               and e.round_number < peace.round_number + 50]
+                losses = [e for e in later_events if e.event_type == HistoricalEventType.MEMBER_LEFT]
+                if len(losses) < 2:  # Low losses = stability
+                    stability_after_peace.append(peace.event_id)
+            
+            if len(stability_after_peace) >= 2:
+                pattern = history.extract_pattern(
+                    cause="peace_treaty",
+                    effect="member_stability",
+                    supporting_events=stability_after_peace,
+                    conditions={}
+                )
+                new_patterns.append(pattern)
+        
+        # Pattern 3: Betrayal → reputation damage (future recruitment harder)
+        betrayal_events = history.get_events_of_type(HistoricalEventType.MEMBER_BETRAYED)
+        if betrayal_events:
+            pattern = history.extract_pattern(
+                cause="member_betrayal",
+                effect="trust_erosion",
+                supporting_events=[e.event_id for e in betrayal_events],
+                conditions={}
+            )
+            # Add specific wisdom
+            if pattern.confidence > 0.5:
+                history.wisdom_rules.append(
+                    f"⚠️ Betrayal weakens the alliance. {history.total_betrayals} betrayals recorded."
+                )
+            new_patterns.append(pattern)
+        
+        # Pattern 4: Cooperation during crisis → survival
+        # Look for events during low VP that led to survival
+        crisis_events = [e for e in history.events if e.vp_at_time > 0.7]  # High VP = crisis
+        if len(crisis_events) >= 3:
+            # Did alliance survive the crisis?
+            survived_crisis = history.wars_lost < history.total_wars  # Not all wars lost
+            if survived_crisis:
+                pattern = history.extract_pattern(
+                    cause="cooperation_during_crisis",
+                    effect="survival",
+                    supporting_events=[e.event_id for e in crisis_events[:5]],
+                    conditions={"vp_threshold": 0.7}
+                )
+                history.wisdom_rules.append(
+                    "💪 During high VP crises, cooperation is key to survival."
+                )
+                new_patterns.append(pattern)
+        
+        return new_patterns
+    
+    def get_alliance_wisdom(self, alliance_id: str, 
+                            current_situation: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Get wisdom from alliance history relevant to current situation.
+        
+        This is how organisms ACCESS collective knowledge.
+        Higher illumination levels get deeper insights.
+        
+        Args:
+            alliance_id: The alliance to query
+            current_situation: Dict describing the current state
+                              e.g., {"vp": 0.8, "at_war": True, "member_count": 5}
+        
+        Returns:
+            Dict with relevant wisdom, patterns, and recommendations
+        """
+        history = self._get_or_create_history(alliance_id)
+        if not history:
+            return {'error': 'No history found', 'wisdom': []}
+        
+        # Get alliance illumination level
+        capabilities = self.alliance_capabilities.get(alliance_id, set())
+        
+        result = {
+            'alliance': history.alliance_name,
+            'total_events': len(history.events),
+            'wisdom': [],
+            'relevant_patterns': [],
+            'legendary_guidance': [],
+            'historical_summary': {}
+        }
+        
+        # Basic illumination: Get general wisdom rules
+        if 'illumination_basic' in capabilities:
+            result['wisdom'] = history.get_wisdom_for_situation(current_situation)
+        
+        # Alliance illumination: Get relevant patterns
+        if 'illumination_alliance' in capabilities:
+            for pattern in history.causal_patterns.values():
+                if pattern.confidence >= 0.5:
+                    result['relevant_patterns'].append({
+                        'cause': pattern.cause,
+                        'effect': pattern.effect,
+                        'confidence': pattern.confidence,
+                        'wisdom': pattern.wisdom_text
+                    })
+        
+        # Confederation+ illumination: Access legendary guidance
+        if 'illumination_confederation' in capabilities:
+            for legend_id, legend in history.legends.items():
+                if legend.legacy:
+                    result['legendary_guidance'].append({
+                        'organism': legend_id,
+                        'role': legend.role,
+                        'legacy': legend.legacy,
+                        'lesson': legend.lesson
+                    })
+        
+        # Empire+ illumination: Full historical analysis
+        if 'illumination_empire' in capabilities:
+            result['historical_summary'] = history.get_historical_summary()
+            # Also trigger pattern extraction
+            self.analyze_and_extract_patterns(alliance_id)
+        
+        return result
+    
+    def create_legend(self, alliance_id: str, organism_id: str,
+                      role: str, achievements: List[str], 
+                      legacy: str, lesson: str = "") -> Optional[LegendaryOrganism]:
+        """
+        Record an organism as legendary in alliance history.
+        
+        Heroes inspire. Villains warn. Both teach.
+        
+        Args:
+            alliance_id: The alliance to record in
+            organism_id: The legendary organism
+            role: "founder", "warchief", "hero", "betrayer", "martyr"
+            achievements: List of notable achievements
+            legacy: How they're remembered
+            lesson: What their story teaches
+        
+        Returns:
+            LegendaryOrganism if created
+        """
+        history = self._get_or_create_history(alliance_id)
+        if not history:
+            return None
+        
+        legend = history.add_legend(organism_id, role, achievements, legacy)
+        legend.lesson = lesson
+        
+        # Record the legendary event
+        self.record_historical_event(
+            alliance_id=alliance_id,
+            event_type=HistoricalEventType.ORGANISM_HEROIC_ACT,
+            description=f"{organism_id} achieved legendary status as {role}: {legacy}",
+            primary_organism_id=organism_id,
+            outcome="success",
+            lesson=lesson
+        )
+        
+        self.logger.info(f"⭐ LEGEND RECORDED in {history.alliance_name}: {organism_id} - {role}")
+        
+        return legend
+
     # ═══════════════════════════════════════════════════════════════════════
     # 🔮 ILLUMINATION ENGINE - CIVILIZATION CAPABILITY SYSTEM
     # ═══════════════════════════════════════════════════════════════════════
@@ -865,6 +1580,27 @@ class AllianceWarfareSystem:
             'name': alliance_name
         })
         
+        # 📜 Record to Alliance History - FOUNDING EVENT
+        # This is the birth of a civilization - the most important event
+        self.record_historical_event(
+            alliance_id=alliance_id,
+            event_type=HistoricalEventType.ALLIANCE_FOUNDED,
+            description=f"Alliance '{alliance_name}' founded by {organism_id}",
+            primary_organism_id=organism_id,
+            outcome="success",
+            lesson="Every great civilization begins with a single organism's vision"
+        )
+        # Add founder as legendary organism
+        history = self._get_or_create_history(alliance_id)
+        if history:
+            history.add_legend(
+                organism_id=organism_id,
+                title="Founder",
+                achievement=f"Founded {alliance_name}",
+                round_number=self.round_number,
+                impact_score=1.0
+            )
+        
         return alliance_id
     
     def organism_propose_invite(self, proposer_id: str, target_id: str) -> Optional[str]:
@@ -962,6 +1698,17 @@ class AllianceWarfareSystem:
                     'invited_by': proposal.proposer_id
                 })
                 
+                # 📜 Record to Alliance History - New Member
+                self.record_historical_event(
+                    alliance_id=alliance_id,
+                    event_type=HistoricalEventType.MEMBER_JOINED,
+                    description=f"{organism_id} joined the alliance",
+                    primary_organism_id=organism_id,
+                    secondary_organism_id=proposal.proposer_id,
+                    outcome="success",
+                    lesson="The alliance grows stronger through unity"
+                )
+                
                 # 🔮 Check if new member unlocks Illumination Engine capabilities
                 newly_granted = self.check_and_grant_illumination(alliance_id)
                 if newly_granted:
@@ -970,6 +1717,16 @@ class AllianceWarfareSystem:
                         'new_capabilities': newly_granted,
                         'trigger': f'{organism_id} joined (member #{len(alliance.members)})'
                     })
+                    
+                    # 📜 Record civilization progress as historical milestone
+                    self.record_historical_event(
+                        alliance_id=alliance_id,
+                        event_type=HistoricalEventType.MEMBER_JOINED,  # Sub-type - milestone
+                        description=f"Civilization milestone: Gained {', '.join(newly_granted)}",
+                        primary_organism_id=organism_id,
+                        outcome="success",
+                        lesson=f"Growth unlocked new capabilities: {', '.join(newly_granted)}"
+                    )
         else:
             self.logger.info(f"❌ {organism_id} REJECTED invitation to '{proposal.context.get('alliance_name')}'")
             self._emit_event('invite_rejected', {
@@ -1267,6 +2024,26 @@ class AllianceWarfareSystem:
             'terms': terms,
             'duration': terms.get('non_aggression_duration', 50)
         })
+        
+        # 📜 Record to Alliance History - PEACE ESTABLISHED
+        # Both alliances learn from this moment of wisdom
+        self.record_historical_event(
+            alliance_id=proposer_alliance_id,
+            event_type=HistoricalEventType.PEACE_ACCEPTED,
+            description=f"Peace established with {target.name}",
+            primary_organism_id=proposal.proposer_id,
+            enemy_alliance_id=target_alliance_id,
+            outcome="success",
+            lesson=f"Peace brings stability. Treaty terms: {terms.get('non_aggression_duration', 50)} rounds"
+        )
+        self.record_historical_event(
+            alliance_id=target_alliance_id,
+            event_type=HistoricalEventType.PEACE_ACCEPTED,
+            description=f"Peace established with {proposer.name}",
+            enemy_alliance_id=proposer_alliance_id,
+            outcome="success",
+            lesson=f"Former enemies became partners. Strength in diplomacy."
+        )
     
     def check_treaty_violations(self, alliance_id: str, action: str, 
                                 target_id: str) -> Optional[str]:
@@ -1363,6 +2140,35 @@ class AllianceWarfareSystem:
             'reason': reason,
             'treaty_id': treaty_id
         })
+        
+        # 📜 Record to Alliance History - BETRAYAL
+        # This is a dark moment in alliance history
+        if organism_alliance:
+            self.record_historical_event(
+                alliance_id=organism_alliance,
+                event_type=HistoricalEventType.MEMBER_BETRAYED,
+                description=f"Broke treaty with {other_party.name if other_party else 'unknown'}. Reason: {reason}",
+                primary_organism_id=organism_id,
+                enemy_alliance_id=other_party_id,
+                outcome="neutral",  # Strategic but costly
+                lesson="Treaty-breaking has severe consequences. Trust is hard to rebuild."
+            )
+            # Update betrayal counter in history
+            history = self.alliance_histories.get(organism_alliance)
+            if history:
+                history.total_betrayals += 1
+        
+        # Record for the victim alliance too
+        if other_party_id in self.alliances:
+            self.record_historical_event(
+                alliance_id=other_party_id,
+                event_type=HistoricalEventType.MEMBER_BETRAYED,
+                description=f"Treaty broken by {breaker_alliance.name if breaker_alliance else 'unknown'}",
+                primary_organism_id=organism_id,
+                enemy_alliance_id=organism_alliance,
+                outcome="failure",
+                lesson=f"Trust was betrayed by {organism_id}. Remember this."
+            )
         
         return True
     
@@ -2316,6 +3122,27 @@ class AllianceWarfareSystem:
                     'attacker': alliance.name,
                     'defender': target.name
                 })
+                
+                # 📜 Record to Alliance History - War Declared
+                self.record_historical_event(
+                    alliance_id=alliance.alliance_id,
+                    event_type=HistoricalEventType.WAR_DECLARED,
+                    description=f"Declared war against {target.name}",
+                    primary_organism_id=proposal.proposer_id,
+                    enemy_alliance_id=target_id,
+                    outcome="neutral",
+                    lesson=f"Alliance chose aggression. Target: {target.name}"
+                )
+                # Also record for defender's history
+                self.record_historical_event(
+                    alliance_id=target_id,
+                    event_type=HistoricalEventType.WAR_DECLARED,
+                    description=f"War declared by {alliance.name}",
+                    primary_organism_id=proposal.proposer_id,
+                    enemy_alliance_id=alliance.alliance_id,
+                    outcome="neutral",
+                    lesson=f"Alliance was attacked. Aggressor: {alliance.name}"
+                )
         
         elif proposal.proposal_type == ProposalType.LEADERSHIP_CHALLENGE:
             old_leader = alliance.warchief_id
@@ -2330,6 +3157,17 @@ class AllianceWarfareSystem:
                 'old_leader': old_leader,
                 'alliance': alliance.name
             })
+            
+            # 📜 Record to Alliance History - Leadership Change
+            self.record_historical_event(
+                alliance_id=alliance.alliance_id,
+                event_type=HistoricalEventType.LEADERSHIP_CHANGE,
+                description=f"{proposal.proposer_id} became Warchief, replacing {old_leader or 'vacant'}",
+                primary_organism_id=proposal.proposer_id,
+                secondary_organism_id=old_leader,
+                outcome="success",
+                lesson="Leadership transitions shape alliance direction"
+            )
         
         elif proposal.proposal_type == ProposalType.TERRITORY_CLAIM:
             territory_value = proposal.context.get('territory')
@@ -2345,6 +3183,16 @@ class AllianceWarfareSystem:
                         'alliance': alliance.name,
                         'territory': territory.value
                     })
+                    
+                    # 📜 Record to Alliance History - Territory Claimed
+                    self.record_historical_event(
+                        alliance_id=alliance.alliance_id,
+                        event_type=HistoricalEventType.TERRITORY_GAINED,
+                        description=f"Claimed territory: {territory.value}",
+                        primary_organism_id=proposal.proposer_id,
+                        outcome="success",
+                        lesson=f"Expansion into {territory.value} - new resources and responsibilities"
+                    )
             except ValueError:
                 pass
     
@@ -2354,6 +3202,19 @@ class AllianceWarfareSystem:
             return
         
         alliance = self.alliances[alliance_id]
+        alliance_name = alliance.name  # Save before deletion
+        
+        # 📜 Record final entry in Alliance History before dissolution
+        history = self.alliance_histories.get(alliance_id)
+        if history:
+            self.record_historical_event(
+                alliance_id=alliance_id,
+                event_type=HistoricalEventType.DISSOLUTION,
+                description=f"Alliance '{alliance_name}' dissolved. Reason: {reason}",
+                outcome="failure",
+                lesson=f"The end came due to: {reason}. Remember what was learned."
+            )
+            # The history itself is preserved - future organisms might study it
         
         # Release territories
         for territory in alliance.controlled_territories:
@@ -2366,13 +3227,14 @@ class AllianceWarfareSystem:
             if enemy_id in self.alliances:
                 self.alliances[enemy_id].at_war_with.discard(alliance_id)
         
-        self.logger.info(f"💀 '{alliance.name}' DISSOLVED ({reason})")
+        self.logger.info(f"💀 '{alliance_name}' DISSOLVED ({reason})")
         self._emit_event('alliance_dissolved', {
-            'alliance': alliance.name,
+            'alliance': alliance_name,
             'reason': reason
         })
         
         del self.alliances[alliance_id]
+        # NOTE: We keep alliance_histories[alliance_id] - civilizations can study dead empires!
     
     # ═══════════════════════════════════════════════════════════════════════
     # WAR RESOLUTION (based on organism participation)
@@ -2475,6 +3337,55 @@ class AllianceWarfareSystem:
             
             self.logger.info(f"🏆 '{winner.name}' DEFEATS '{loser.name}'! War ends.")
             self._emit_event('war_ended', result)
+            
+            # 📜 Record to Alliance History - WAR ENDED
+            # This is a pivotal moment for both alliances
+            self.record_historical_event(
+                alliance_id=winner.alliance_id,
+                event_type=HistoricalEventType.WAR_WON,
+                description=f"Victory over {loser.name}! Margin: {margin:.1%}",
+                enemy_alliance_id=loser.alliance_id,
+                outcome="success",
+                lesson=f"Victory came through strength ({winner_power:.1f} vs {loser_power:.1f})"
+            )
+            # Update win/loss counters
+            winner_history = self.alliance_histories.get(winner.alliance_id)
+            if winner_history:
+                winner_history.wars_won += 1
+                winner_history.total_wars += 1
+                # Add legendary warriors
+                for fighter_id in (alliance_fighters if winner == alliance else enemy_fighters):
+                    winner_history.add_legend(
+                        organism_id=fighter_id,
+                        title="War Hero",
+                        achievement=f"Fought in decisive victory against {loser.name}",
+                        round_number=self.round_number,
+                        impact_score=margin
+                    )
+            
+            self.record_historical_event(
+                alliance_id=loser.alliance_id,
+                event_type=HistoricalEventType.WAR_LOST,
+                description=f"Defeat by {winner.name}. Margin: {margin:.1%}",
+                enemy_alliance_id=winner.alliance_id,
+                outcome="failure",
+                lesson=f"Defeat teaches humility. Power was {loser_power:.1f} vs {winner_power:.1f}"
+            )
+            loser_history = self.alliance_histories.get(loser.alliance_id)
+            if loser_history:
+                loser_history.wars_lost += 1
+                loser_history.total_wars += 1
+            
+            # Record territory loss
+            if result.get('territory_stolen'):
+                self.record_historical_event(
+                    alliance_id=loser.alliance_id,
+                    event_type=HistoricalEventType.TERRITORY_LOST,
+                    description=f"Lost territory {result['territory_stolen']} to {winner.name}",
+                    enemy_alliance_id=winner.alliance_id,
+                    outcome="failure",
+                    lesson="Territory lost in war. The cost of defeat."
+                )
         else:
             result['war_ended'] = False
             self.logger.info(f"⚔️ War continues: {winner.name} leads by {margin:.1%}")
