@@ -588,13 +588,22 @@ class LightweightVisualizationViewer:
                                 f"{error_msg}"
                             ])
                         else:
-                            training_loss = neural_data.get('training_loss', 0.0)
+                            training_loss = neural_data.get('training_loss')
+                            avg_loss = neural_data.get('avg_loss')
                             epsilon = neural_data.get('avg_epsilon', neural_data.get('epsilon', 0.0))
                             organisms_tracked = neural_data.get('organisms_tracked', 0)
                             training_steps = neural_data.get('training_steps', 0)
 
-                            # Handle None values properly
-                            loss_str = f"{training_loss:.4f}" if training_loss is not None else "N/A"
+                            # Use avg_loss if training_loss is None (early training)
+                            # Show "Warming..." if no loss data yet (collecting experiences)
+                            if training_loss is not None:
+                                loss_str = f"{training_loss:.4f}"
+                            elif avg_loss is not None and avg_loss != 'N/A' and avg_loss != 0.0:
+                                loss_str = f"{float(avg_loss):.4f}"
+                            elif training_steps > 0:
+                                loss_str = "Collecting..."
+                            else:
+                                loss_str = "Warming..."
                             epsilon_val = epsilon if epsilon is not None else 0.0
 
                             panel2_lines.extend([
@@ -663,6 +672,8 @@ class LightweightVisualizationViewer:
                         total_actions = tuner_stats.get('total_actions', 0)
                         success_rate = tuner_stats.get('success_rate', 0.0)
                         recent_actions = tuner_stats.get('recent_actions', [])
+                        total_atoms = tuner_stats.get('total_atoms', 0)
+                        avg_stability = tuner_stats.get('avg_stability', 0.0)
 
                         # Get last action if available
                         last_action = ""
@@ -670,10 +681,19 @@ class LightweightVisualizationViewer:
                             last = recent_actions[-1]
                             param_short = last.get('param', '').split('.')[-1][:10]
                             last_action = f"Last: {param_short}"
+                        elif total_actions == 0 and total_atoms > 0:
+                            # Show learning status when no actions yet
+                            last_action = f"Learning ({total_atoms} params)"
+
+                        # Show status based on actions
+                        if total_actions > 0:
+                            action_str = f"Actions: {total_actions}"
+                        else:
+                            action_str = f"Actions: Evaluating..."
 
                         panel4_lines.extend([
                             f"🧠🔧 Tuner: {tuner_mode.upper()}",
-                            f"Actions: {total_actions}",
+                            action_str,
                             f"Success: {success_rate:.1%}",
                             f"{last_action}"
                         ])
