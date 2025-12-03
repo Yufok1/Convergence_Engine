@@ -427,6 +427,31 @@ class AllianceWarfareSystem:
         
         # Round tracking
         self.round_number = 0
+        
+        # ═══════════════════════════════════════════════════════════════════════
+        # 🔮 ILLUMINATION ENGINE - CIVILIZATION REWARDS
+        # ═══════════════════════════════════════════════════════════════════════
+        # Organisms CANNOT access causation data by default.
+        # They are the STATE itself - they have no external view.
+        # But through CIVILIZATION (alliances, treaties, organization),
+        # they earn access to the ILLUMINATION ENGINE - causation insights!
+        #
+        # Capability Tiers:
+        # - NONE: No causation access (individuals)
+        # - BASIC: See own organism's causal chain (small alliances)
+        # - ALLIANCE: See alliance-wide causation (medium alliances)  
+        # - CONFEDERATION: Full illumination across confederation
+        # - EMPIRE: Deep root cause analysis, impact prediction
+        # - HEGEMONY: Complete omniscience - all causation data
+        # ═══════════════════════════════════════════════════════════════════════
+        self.alliance_capabilities: Dict[str, Set[str]] = {}  # alliance_id -> capabilities
+        self.illumination_thresholds = {
+            'basic': {'members': 3, 'name': 'Basic Causation'},       # 3+ members
+            'alliance': {'members': 5, 'name': 'Alliance Insight'},   # 5+ members  
+            'confederation': {'tier': 1, 'name': 'Confederation Vision'},  # Confederation tier
+            'empire': {'tier': 2, 'name': 'Imperial Foresight'},      # Empire tier
+            'hegemony': {'tier': 3, 'name': 'Hegemonic Omniscience'}  # Hegemony tier
+        }
     
     def _get_or_create_reputation(self, organism_id: str) -> OrganismReputation:
         """Get reputation, create if doesn't exist."""
@@ -450,6 +475,347 @@ class AllianceWarfareSystem:
         except ImportError:
             pass
     
+    # ═══════════════════════════════════════════════════════════════════════
+    # 🔮 ILLUMINATION ENGINE - CIVILIZATION CAPABILITY SYSTEM
+    # ═══════════════════════════════════════════════════════════════════════
+    
+    def check_and_grant_illumination(self, alliance_id: str) -> List[str]:
+        """
+        Check if alliance meets thresholds for Illumination Engine access.
+        
+        The Illumination Engine is the reward for CIVILIZATION.
+        Organisms cannot access causation data alone - they ARE the state.
+        But through organization, they earn the ability to SEE.
+        
+        Returns:
+            List of newly granted capabilities
+        """
+        alliance = self.alliances.get(alliance_id)
+        if not alliance:
+            return []
+        
+        capabilities = self.alliance_capabilities.setdefault(alliance_id, set())
+        newly_granted = []
+        member_count = len(alliance.members)
+        
+        # Check confederation tier
+        confederation_id = self.alliance_to_confederation.get(alliance_id)
+        conf_tier = 0
+        if confederation_id:
+            conf = self.confederations.get(confederation_id)
+            if conf:
+                conf_tier = conf.tier.value
+        
+        # Basic Causation - 3+ members
+        if member_count >= 3 and 'illumination_basic' not in capabilities:
+            capabilities.add('illumination_basic')
+            newly_granted.append('illumination_basic')
+            self._emit_event('illumination_granted', {
+                'alliance': alliance.name,
+                'alliance_id': alliance_id,
+                'capability': 'illumination_basic',
+                'capability_name': 'Basic Causation',
+                'threshold': 'members >= 3',
+                'description': 'Organisms can now see their own causal chain'
+            })
+            self.logger.info(f"🔮 {alliance.name} UNLOCKED: Basic Causation (3+ members)")
+        
+        # Alliance Insight - 5+ members
+        if member_count >= 5 and 'illumination_alliance' not in capabilities:
+            capabilities.add('illumination_alliance')
+            newly_granted.append('illumination_alliance')
+            self._emit_event('illumination_granted', {
+                'alliance': alliance.name,
+                'alliance_id': alliance_id,
+                'capability': 'illumination_alliance',
+                'capability_name': 'Alliance Insight',
+                'threshold': 'members >= 5',
+                'description': 'Organisms can see alliance-wide causation patterns'
+            })
+            self.logger.info(f"🔮 {alliance.name} UNLOCKED: Alliance Insight (5+ members)")
+        
+        # Confederation Vision - Part of confederation
+        if conf_tier >= 1 and 'illumination_confederation' not in capabilities:
+            capabilities.add('illumination_confederation')
+            newly_granted.append('illumination_confederation')
+            self._emit_event('illumination_granted', {
+                'alliance': alliance.name,
+                'alliance_id': alliance_id,
+                'capability': 'illumination_confederation',
+                'capability_name': 'Confederation Vision',
+                'threshold': 'confederation_tier >= 1',
+                'description': 'Organisms gain cross-alliance causation visibility'
+            })
+            self.logger.info(f"🔮 {alliance.name} UNLOCKED: Confederation Vision")
+        
+        # Imperial Foresight - Empire tier
+        if conf_tier >= 2 and 'illumination_empire' not in capabilities:
+            capabilities.add('illumination_empire')
+            newly_granted.append('illumination_empire')
+            self._emit_event('illumination_granted', {
+                'alliance': alliance.name,
+                'alliance_id': alliance_id,
+                'capability': 'illumination_empire',
+                'capability_name': 'Imperial Foresight',
+                'threshold': 'confederation_tier >= 2 (Empire)',
+                'description': 'Deep root cause analysis and impact prediction'
+            })
+            self.logger.info(f"🔮 {alliance.name} UNLOCKED: Imperial Foresight (Empire tier)")
+        
+        # Hegemonic Omniscience - Hegemony tier
+        if conf_tier >= 3 and 'illumination_hegemony' not in capabilities:
+            capabilities.add('illumination_hegemony')
+            newly_granted.append('illumination_hegemony')
+            self._emit_event('illumination_granted', {
+                'alliance': alliance.name,
+                'alliance_id': alliance_id,
+                'capability': 'illumination_hegemony',
+                'capability_name': 'Hegemonic Omniscience',
+                'threshold': 'confederation_tier >= 3 (Hegemony)',
+                'description': 'Complete omniscience - all causation data accessible'
+            })
+            self.logger.info(f"🔮 {alliance.name} UNLOCKED: Hegemonic Omniscience (Hegemony tier)")
+        
+        return newly_granted
+    
+    def get_organism_illumination_level(self, organism_id: str) -> Dict[str, Any]:
+        """
+        Get what level of Illumination an organism has access to.
+        
+        Organisms gain illumination through their alliance's civilization level.
+        Solo organisms have NO illumination - they cannot see beyond themselves.
+        
+        Returns:
+            Dict with level, capabilities, and what they can access
+        """
+        alliance_id = self.get_organism_alliance(organism_id)
+        
+        if not alliance_id:
+            return {
+                'level': 'none',
+                'level_name': 'Isolated',
+                'capabilities': set(),
+                'can_see_self': False,
+                'can_see_alliance': False,
+                'can_see_confederation': False,
+                'can_see_root_causes': False,
+                'can_predict_impact': False,
+                'can_see_all': False,
+                'message': 'Join or form an alliance to access the Illumination Engine'
+            }
+        
+        alliance = self.alliances.get(alliance_id)
+        capabilities = self.alliance_capabilities.get(alliance_id, set())
+        
+        # Check and possibly grant new capabilities
+        self.check_and_grant_illumination(alliance_id)
+        capabilities = self.alliance_capabilities.get(alliance_id, set())
+        
+        # Determine highest level
+        level = 'none'
+        level_name = 'No Illumination'
+        if 'illumination_hegemony' in capabilities:
+            level = 'hegemony'
+            level_name = 'Hegemonic Omniscience'
+        elif 'illumination_empire' in capabilities:
+            level = 'empire'
+            level_name = 'Imperial Foresight'
+        elif 'illumination_confederation' in capabilities:
+            level = 'confederation'
+            level_name = 'Confederation Vision'
+        elif 'illumination_alliance' in capabilities:
+            level = 'alliance'
+            level_name = 'Alliance Insight'
+        elif 'illumination_basic' in capabilities:
+            level = 'basic'
+            level_name = 'Basic Causation'
+        
+        return {
+            'level': level,
+            'level_name': level_name,
+            'alliance_name': alliance.name if alliance else None,
+            'alliance_id': alliance_id,
+            'capabilities': capabilities,
+            'can_see_self': level in ['basic', 'alliance', 'confederation', 'empire', 'hegemony'],
+            'can_see_alliance': level in ['alliance', 'confederation', 'empire', 'hegemony'],
+            'can_see_confederation': level in ['confederation', 'empire', 'hegemony'],
+            'can_see_root_causes': level in ['empire', 'hegemony'],
+            'can_predict_impact': level in ['empire', 'hegemony'],
+            'can_see_all': level == 'hegemony'
+        }
+    
+    def query_illumination(self, organism_id: str, query_type: str, 
+                           target_event_id: Optional[str] = None,
+                           causation_explorer=None) -> Dict[str, Any]:
+        """
+        Query the Illumination Engine with access control.
+        
+        Organisms can only query what their civilization level permits.
+        This is how organisms ACCESS their causation data.
+        
+        Args:
+            organism_id: The organism making the query
+            query_type: Type of query ('self', 'alliance', 'root_causes', 'impact', 'all')
+            target_event_id: Optional specific event to query
+            causation_explorer: The CausationExplorer instance to query
+            
+        Returns:
+            Query results filtered by access level, or error if unauthorized
+        """
+        illumination = self.get_organism_illumination_level(organism_id)
+        
+        # Access control
+        if illumination['level'] == 'none':
+            return {
+                'error': 'No Illumination Access',
+                'message': 'Form or join an alliance with 3+ members to access causation data',
+                'required': 'illumination_basic'
+            }
+        
+        if query_type == 'self' and not illumination['can_see_self']:
+            return {'error': 'Insufficient Access', 'required': 'illumination_basic'}
+        
+        if query_type == 'alliance' and not illumination['can_see_alliance']:
+            return {'error': 'Insufficient Access', 'required': 'illumination_alliance'}
+        
+        if query_type in ['root_causes', 'impact'] and not illumination['can_see_root_causes']:
+            return {'error': 'Insufficient Access', 'required': 'illumination_empire'}
+        
+        if query_type == 'all' and not illumination['can_see_all']:
+            return {'error': 'Insufficient Access', 'required': 'illumination_hegemony'}
+        
+        # Perform query if explorer provided
+        if causation_explorer is None:
+            return {
+                'authorized': True,
+                'level': illumination['level'],
+                'query_type': query_type,
+                'message': 'Query authorized but no CausationExplorer provided'
+            }
+        
+        try:
+            if query_type == 'self':
+                # Get events for this organism only
+                events = causation_explorer.get_events_by_component(f'organism_{organism_id}')
+                return {
+                    'authorized': True,
+                    'level': illumination['level'],
+                    'events': events[:50],  # Limit results
+                    'total_events': len(events)
+                }
+            
+            elif query_type == 'alliance':
+                # Get events for all alliance members
+                alliance_id = illumination['alliance_id']
+                alliance = self.alliances.get(alliance_id)
+                if not alliance:
+                    return {'error': 'Alliance not found'}
+                
+                all_events = []
+                for member_id in alliance.members:
+                    events = causation_explorer.get_events_by_component(f'organism_{member_id}')
+                    all_events.extend(events)
+                
+                return {
+                    'authorized': True,
+                    'level': illumination['level'],
+                    'alliance': alliance.name,
+                    'events': all_events[:100],
+                    'total_events': len(all_events)
+                }
+            
+            elif query_type == 'root_causes' and target_event_id:
+                # Deep root cause analysis (Empire+ only)
+                results = causation_explorer.find_root_causes(target_event_id)
+                return {
+                    'authorized': True,
+                    'level': illumination['level'],
+                    **results
+                }
+            
+            elif query_type == 'impact' and target_event_id:
+                # Impact analysis (Empire+ only)
+                results = causation_explorer.analyze_impact(target_event_id)
+                return {
+                    'authorized': True,
+                    'level': illumination['level'],
+                    **results
+                }
+            
+            elif query_type == 'all':
+                # Full access (Hegemony only)
+                timeline = causation_explorer.get_timeline()
+                consequential = causation_explorer.get_most_consequential(limit=20)
+                return {
+                    'authorized': True,
+                    'level': 'hegemony',
+                    'level_name': 'Hegemonic Omniscience',
+                    'timeline': timeline,
+                    'most_consequential': consequential,
+                    'message': 'Full causation data access granted'
+                }
+            
+            else:
+                return {'error': f'Unknown query type: {query_type}'}
+                
+        except Exception as e:
+            return {'error': str(e), 'query_type': query_type}
+    
+    def get_civilization_status(self) -> Dict[str, Any]:
+        """
+        Get overall civilization status across all organisms.
+        
+        Returns summary of:
+        - Total alliances and confederations
+        - Illumination levels achieved
+        - Civilization milestones
+        """
+        status = {
+            'total_alliances': len(self.alliances),
+            'total_confederations': len(self.confederations),
+            'total_treaties': len(getattr(self, 'active_treaties', {})),
+            'illumination_distribution': {
+                'none': 0,
+                'basic': 0,
+                'alliance': 0,
+                'confederation': 0,
+                'empire': 0,
+                'hegemony': 0
+            },
+            'civilization_milestones': []
+        }
+        
+        # Count illumination levels
+        for alliance_id, caps in self.alliance_capabilities.items():
+            if 'illumination_hegemony' in caps:
+                status['illumination_distribution']['hegemony'] += 1
+            elif 'illumination_empire' in caps:
+                status['illumination_distribution']['empire'] += 1
+            elif 'illumination_confederation' in caps:
+                status['illumination_distribution']['confederation'] += 1
+            elif 'illumination_alliance' in caps:
+                status['illumination_distribution']['alliance'] += 1
+            elif 'illumination_basic' in caps:
+                status['illumination_distribution']['basic'] += 1
+            else:
+                status['illumination_distribution']['none'] += 1
+        
+        # Check milestones
+        if status['total_alliances'] >= 1:
+            status['civilization_milestones'].append('First Alliance Formed')
+        if any('illumination_basic' in caps for caps in self.alliance_capabilities.values()):
+            status['civilization_milestones'].append('First Illumination Unlocked')
+        if status['total_confederations'] >= 1:
+            status['civilization_milestones'].append('First Confederation Established')
+        if status['total_treaties'] >= 1:
+            status['civilization_milestones'].append('First Peace Treaty Signed')
+        if any('illumination_empire' in caps for caps in self.alliance_capabilities.values()):
+            status['civilization_milestones'].append('Empire Level Illumination Achieved')
+        if any('illumination_hegemony' in caps for caps in self.alliance_capabilities.values()):
+            status['civilization_milestones'].append('Hegemonic Omniscience Attained')
+        
+        return status
+
     # ═══════════════════════════════════════════════════════════════════════
     # ORGANISM DECISION INTERFACE
     # These are the actions organisms can CHOOSE to take
@@ -595,6 +961,15 @@ class AllianceWarfareSystem:
                     'alliance': alliance.name,
                     'invited_by': proposal.proposer_id
                 })
+                
+                # 🔮 Check if new member unlocks Illumination Engine capabilities
+                newly_granted = self.check_and_grant_illumination(alliance_id)
+                if newly_granted:
+                    self._emit_event('civilization_progress', {
+                        'alliance': alliance.name,
+                        'new_capabilities': newly_granted,
+                        'trigger': f'{organism_id} joined (member #{len(alliance.members)})'
+                    })
         else:
             self.logger.info(f"❌ {organism_id} REJECTED invitation to '{proposal.context.get('alliance_name')}'")
             self._emit_event('invite_rejected', {
@@ -1364,6 +1739,19 @@ class AllianceWarfareSystem:
                     'confederation': confederation.name,
                     'total_alliances': len(confederation.member_alliances)
                 })
+                
+                # 🔮 Grant Illumination Engine access to ALL member alliances
+                # Joining a confederation unlocks higher-tier causation access!
+                for member_alliance_id in confederation.member_alliances:
+                    newly_granted = self.check_and_grant_illumination(member_alliance_id)
+                    if newly_granted:
+                        member_alliance = self.alliances.get(member_alliance_id)
+                        self._emit_event('civilization_progress', {
+                            'alliance': member_alliance.name if member_alliance else member_alliance_id,
+                            'confederation': confederation.name,
+                            'new_capabilities': newly_granted,
+                            'trigger': f'Confederation membership'
+                        })
         else:
             self.logger.info(f"❌ Alliance '{alliance.name}' REJECTED confederation invite")
         
