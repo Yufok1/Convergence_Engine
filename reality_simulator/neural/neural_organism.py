@@ -729,6 +729,145 @@ class NeuralOrganism(Organism):
         
         return action
     
+    # ═══════════════════════════════════════════════════════════════════════
+    # 🔮 ILLUMINATION ENGINE INTEGRATION
+    # Organisms gain causation awareness through civilization
+    # ═══════════════════════════════════════════════════════════════════════
+    
+    def get_illumination_insights(self, 
+                                   alliance_warfare=None,
+                                   causation_explorer=None) -> Dict[str, Any]:
+        """
+        Query the Illumination Engine for causation insights.
+        
+        Organisms CANNOT see causation data alone - they ARE the state.
+        But through their alliance's civilization level, they earn access.
+        
+        This is the organism's window into understanding WHY things happen.
+        
+        Args:
+            alliance_warfare: The AllianceWarfareSystem instance
+            causation_explorer: The CausationExplorer instance (optional)
+            
+        Returns:
+            Dict with illumination level and any available insights
+        """
+        if alliance_warfare is None:
+            return {
+                'level': 'none',
+                'message': 'No alliance system available - organism is isolated',
+                'can_see_causation': False
+            }
+        
+        # Get illumination level based on alliance membership
+        illumination = alliance_warfare.get_organism_illumination_level(self.species_id)
+        
+        # Store for decision-making enhancement
+        self._illumination_level = illumination['level']
+        self._illumination_capabilities = illumination.get('capabilities', set())
+        
+        # Add organism-specific context
+        illumination['organism_id'] = self.species_id
+        illumination['fitness'] = self.fitness
+        illumination['alliance_reputation'] = self.alliance_reputation
+        
+        # If we have causation access and an explorer, get relevant events
+        if illumination['can_see_self'] and causation_explorer:
+            try:
+                # Get our own recent causal events
+                results = alliance_warfare.query_illumination(
+                    self.species_id, 
+                    'self',
+                    causation_explorer=causation_explorer
+                )
+                if not results.get('error'):
+                    illumination['self_events'] = results.get('events', [])[:10]
+                    illumination['total_self_events'] = results.get('total_events', 0)
+            except Exception as e:
+                illumination['query_error'] = str(e)
+        
+        return illumination
+    
+    def enhance_decision_with_illumination(self,
+                                            action_probs: np.ndarray,
+                                            illumination: Dict[str, Any]) -> Tuple[np.ndarray, List[str]]:
+        """
+        Enhance action probabilities using illumination insights.
+        
+        Higher civilization levels grant more strategic awareness:
+        - Basic: See own causal patterns -> avoid repeating failures
+        - Alliance: See ally patterns -> coordinate strategies  
+        - Confederation: See macro patterns -> long-term planning
+        - Empire: See root causes -> address underlying issues
+        - Hegemony: See everything -> optimal strategies
+        
+        Args:
+            action_probs: Base action probabilities from neural network
+            illumination: Results from get_illumination_insights()
+            
+        Returns:
+            Tuple of (adjusted probabilities, list of adjustments made)
+        """
+        level = illumination.get('level', 'none')
+        adjustments = []
+        
+        if level == 'none':
+            # No illumination - organism acts on instinct alone
+            return action_probs, ['No illumination - pure instinct']
+        
+        adjusted = action_probs.copy()
+        
+        # BASIC illumination: Learn from own history
+        if illumination.get('can_see_self'):
+            self_events = illumination.get('self_events', [])
+            if self_events:
+                # Analyze recent failures and successes
+                recent_actions = {}
+                for event in self_events[:5]:
+                    data = event.get('data', {}) if isinstance(event, dict) else {}
+                    action = data.get('action_index')
+                    reward = data.get('reward', 0)
+                    if action is not None:
+                        if action not in recent_actions:
+                            recent_actions[action] = []
+                        recent_actions[action].append(reward)
+                
+                # Boost actions that worked, reduce actions that failed
+                for action, rewards in recent_actions.items():
+                    avg_reward = np.mean(rewards)
+                    if avg_reward > 0.5:
+                        adjusted[action] *= (1.0 + avg_reward * 0.2)
+                        adjustments.append(f"🔮 Boost {action} (self-history success)")
+                    elif avg_reward < 0.3:
+                        adjusted[action] *= (1.0 - (0.3 - avg_reward) * 0.15)
+                        adjustments.append(f"🔮 Reduce {action} (self-history failure)")
+        
+        # ALLIANCE illumination: Coordinate with allies
+        if illumination.get('can_see_alliance'):
+            adjustments.append(f"🔮 Alliance awareness active")
+            # In future: adjust based on ally strategies
+        
+        # CONFEDERATION illumination: Macro-level strategy
+        if illumination.get('can_see_confederation'):
+            adjustments.append(f"🔮 Confederation vision active")
+            # In future: adjust based on confederation-wide patterns
+        
+        # EMPIRE illumination: Root cause awareness
+        if illumination.get('can_see_root_causes'):
+            adjustments.append(f"🔮 Root cause analysis available")
+            # In future: use deep causal insights
+        
+        # HEGEMONY illumination: Complete awareness
+        if illumination.get('can_see_all'):
+            adjustments.append(f"🔮 HEGEMONIC OMNISCIENCE - Full causation access")
+            # Future: optimal strategy calculation
+        
+        # Normalize
+        adjusted = np.maximum(adjusted, 0.01)
+        adjusted = adjusted / adjusted.sum()
+        
+        return adjusted, adjustments
+
     def get_action_sequence(self, length: Optional[int] = None) -> List[int]:
         """
         Get recent action history for language model training.
