@@ -864,14 +864,16 @@ This organism emerged through **neuroevolution** - a process combining:
 │   ├── state.json            # Runtime state (epsilon, step count)
 │   ├── config.json           # Agent hyperparameters
 │   └── replay_buffer.pkl     # Experience memory (if any)
-├── 🧩 portable_agent/         # Runtime code (no external dependencies)
+├── 🧩 portable_agent/         # Runtime code
 │   ├── bridge.py             # 🌉 Universal interface (Gym, HTTP, CLI)
 │   ├── agent_runtime.py      # Core AgentRuntime class
 │   ├── mini_environment.py   # Built-in test environment
 │   ├── gym_adapter.py        # Gymnasium/Gym bridge
 │   ├── training.py           # TrainingLoop helper
 │   └── visualize.py          # 🔬 Neural activation visualizer
-├── 🐍 run_agent.py            # CLI runner script
+├── 🚀 start.bat / start.sh    # Quick launch: Interactive chat mode
+├── 🌐 serve.bat / serve.sh    # Quick launch: HTTP API server
+├── 🐍 run_agent.py            # Legacy CLI runner script
 ├── 📦 requirements.txt        # Python dependencies
 └── 📖 README.md               # This file
 ```
@@ -880,11 +882,18 @@ This organism emerged through **neuroevolution** - a process combining:
 
 ## 🚀 Quick Start
 
-### Option 1: AgentBridge (RECOMMENDED)
-The universal interface that connects this agent to anything:
+### Option 1: Double-Click Launch (Easiest!)
+```
+Windows: Double-click start.bat     → Interactive chat mode
+         Double-click serve.bat     → HTTP API server on port 8080
 
+Linux/Mac: chmod +x start.sh && ./start.sh    → Interactive chat
+           chmod +x serve.sh && ./serve.sh    → HTTP server
+```
+
+### Option 2: AgentBridge Commands
 ```bash
-# Extract
+# Extract and install
 unzip agent_*.zip && cd agent_*/
 pip install -r requirements.txt
 
@@ -898,20 +907,13 @@ python -m portable_agent.bridge --mode serve --port 8080
 python -m portable_agent.bridge --mode gym --gym-env CartPole-v1
 ```
 
-### Option 2: Run Classic Demo
+### Option 3: Legacy Runner
 ```bash
 python run_agent.py --episodes 5
-```
-
-### Option 3: Custom Gym Environment
-```bash
-pip install gymnasium
 python run_agent.py --gym-env CartPole-v1 --episodes 10
 ```
 
 ### Option 4: 🔬 Neural Activation Visualizer
-Launch an interactive web UI to explore how this agent's neural network processes information:
-
 ```bash
 python portable_agent/visualize.py
 ```
@@ -1201,7 +1203,112 @@ If you use this agent in research or production:
 """
             zf.writestr("README.md", readme_content)
 
-            # 9. Living agent runtime bundle
+            # 9. Launcher scripts for easy startup
+            # Windows batch file
+            start_bat = """@echo off
+echo.
+echo  ========================================
+echo   Butterfly Agent - Interactive Bridge
+echo  ========================================
+echo.
+
+REM Check if dependencies are installed
+python -c "import flask" 2>nul
+if errorlevel 1 (
+    echo Installing dependencies...
+    pip install -r requirements.txt
+    echo.
+)
+
+echo Starting AgentBridge in interactive mode...
+echo Type messages to chat, or use commands: /gym, /state, /quit
+echo.
+python -m portable_agent.bridge --mode interactive
+pause
+"""
+            zf.writestr("start.bat", start_bat)
+            
+            # Unix shell script
+            start_sh = """#!/bin/bash
+echo ""
+echo "  ========================================"
+echo "   Butterfly Agent - Interactive Bridge"
+echo "  ========================================"
+echo ""
+
+# Check if dependencies are installed
+python3 -c "import flask" 2>/dev/null
+if [ $? -ne 0 ]; then
+    echo "Installing dependencies..."
+    pip install -r requirements.txt
+    echo ""
+fi
+
+echo "Starting AgentBridge in interactive mode..."
+echo "Type messages to chat, or use commands: /gym, /state, /quit"
+echo ""
+python3 -m portable_agent.bridge --mode interactive
+"""
+            zf.writestr("start.sh", start_sh)
+            
+            # HTTP server launcher (Windows)
+            serve_bat = """@echo off
+echo.
+echo  ========================================
+echo   Butterfly Agent - HTTP API Server
+echo  ========================================
+echo.
+
+set PORT=8080
+if not "%1"=="" set PORT=%1
+
+python -c "import flask" 2>nul
+if errorlevel 1 (
+    echo Installing dependencies...
+    pip install -r requirements.txt
+    echo.
+)
+
+echo Starting HTTP server on port %PORT%...
+echo.
+echo Endpoints:
+echo   POST http://localhost:%PORT%/act    - Get action
+echo   POST http://localhost:%PORT%/chat   - Chat with agent
+echo   GET  http://localhost:%PORT%/state  - Agent state
+echo.
+python -m portable_agent.bridge --mode serve --port %PORT%
+"""
+            zf.writestr("serve.bat", serve_bat)
+            
+            # HTTP server launcher (Unix)
+            serve_sh = """#!/bin/bash
+echo ""
+echo "  ========================================"
+echo "   Butterfly Agent - HTTP API Server"
+echo "  ========================================"
+echo ""
+
+PORT=${1:-8080}
+
+python3 -c "import flask" 2>/dev/null
+if [ $? -ne 0 ]; then
+    echo "Installing dependencies..."
+    pip install -r requirements.txt
+    echo ""
+fi
+
+echo "Starting HTTP server on port $PORT..."
+echo ""
+echo "Endpoints:"
+echo "  POST http://localhost:$PORT/act    - Get action"
+echo "  POST http://localhost:$PORT/chat   - Chat with agent"
+echo "  GET  http://localhost:$PORT/state  - Agent state"
+echo ""
+python3 -m portable_agent.bridge --mode serve --port $PORT
+"""
+            zf.writestr("serve.sh", serve_sh)
+
+            # 10. Living agent runtime bundle
             self._write_agent_state_bundle(zf, agent_state_payload)
             self._write_portable_agent_sources(zf)
 
@@ -1342,14 +1449,16 @@ The ensemble uses a `MultiOrganismWrapper` that:
 ensemble_{metadata['export_timestamp'][:10]}/
 ├── 🧠 brain.{metadata['export_format']}           # Combined ensemble model
 ├── 📋 metadata.json           # Ensemble configuration + member details
-├── 🧩 portable_agent/         # Runtime code (with bridge!)
+├── 🧩 portable_agent/         # Runtime code
 │   ├── bridge.py             # 🌉 Universal interface (Gym, HTTP, CLI)
 │   ├── agent_runtime.py      # Core runtime class
 │   ├── mini_environment.py   # Built-in test environment
 │   ├── gym_adapter.py        # Gymnasium/Gym bridge
 │   ├── training.py           # TrainingLoop helper
 │   └── visualize.py          # 🔬 Neural activation visualizer
-├── 🐍 run_agent.py            # CLI runner for ensemble inference
+├── 🚀 start.bat / start.sh    # Quick launch: Interactive chat mode
+├── 🌐 serve.bat / serve.sh    # Quick launch: HTTP API server
+├── 🐍 run_agent.py            # Legacy CLI runner
 ├── 📦 requirements.txt        # Python dependencies
 └── 📖 README.md               # This file
 ```
@@ -1358,16 +1467,25 @@ ensemble_{metadata['export_timestamp'][:10]}/
 
 ## 🚀 Quick Start
 
-### Option 1: AgentBridge (RECOMMENDED)
+### Option 1: Double-Click Launch (Easiest!)
+```
+Windows: Double-click start.bat     → Interactive chat mode
+         Double-click serve.bat     → HTTP API server on port 8080
+
+Linux/Mac: chmod +x start.sh && ./start.sh    → Interactive chat
+           chmod +x serve.sh && ./serve.sh    → HTTP server
+```
+
+### Option 2: AgentBridge Commands
 ```bash
 unzip ensemble_*.zip && cd ensemble_*/
 pip install -r requirements.txt
 
-# HTTP API server
-python -m portable_agent.bridge --mode serve --port 8080
-
 # Interactive chat
 python -m portable_agent.bridge --mode interactive
+
+# HTTP API server
+python -m portable_agent.bridge --mode serve --port 8080
 
 # Run in Gym environment
 python -m portable_agent.bridge --mode gym --gym-env CartPole-v1
@@ -1582,6 +1700,107 @@ These organisms evolved together in **The Butterfly System** - a consciousness s
 *{member_count} minds evolved together. Now they think as one.* 🦋🦋
 """
             zf.writestr("README.md", readme)
+            
+            # Launcher scripts for easy startup
+            # Windows batch file
+            start_bat = """@echo off
+echo.
+echo  ========================================
+echo   Butterfly Ensemble - Interactive Bridge
+echo  ========================================
+echo.
+
+python -c "import flask" 2>nul
+if errorlevel 1 (
+    echo Installing dependencies...
+    pip install -r requirements.txt
+    echo.
+)
+
+echo Starting AgentBridge in interactive mode...
+echo Type messages to chat, or use commands: /gym, /state, /quit
+echo.
+python -m portable_agent.bridge --mode interactive
+pause
+"""
+            zf.writestr("start.bat", start_bat)
+            
+            # Unix shell script
+            start_sh = """#!/bin/bash
+echo ""
+echo "  ========================================"
+echo "   Butterfly Ensemble - Interactive Bridge"
+echo "  ========================================"
+echo ""
+
+python3 -c "import flask" 2>/dev/null
+if [ $? -ne 0 ]; then
+    echo "Installing dependencies..."
+    pip install -r requirements.txt
+    echo ""
+fi
+
+echo "Starting AgentBridge in interactive mode..."
+echo "Type messages to chat, or use commands: /gym, /state, /quit"
+echo ""
+python3 -m portable_agent.bridge --mode interactive
+"""
+            zf.writestr("start.sh", start_sh)
+            
+            # HTTP server launcher (Windows)
+            serve_bat = """@echo off
+echo.
+echo  ========================================
+echo   Butterfly Ensemble - HTTP API Server
+echo  ========================================
+echo.
+
+set PORT=8080
+if not "%1"=="" set PORT=%1
+
+python -c "import flask" 2>nul
+if errorlevel 1 (
+    echo Installing dependencies...
+    pip install -r requirements.txt
+    echo.
+)
+
+echo Starting HTTP server on port %PORT%...
+echo Endpoints:
+echo   POST http://localhost:%PORT%/act    - Get action
+echo   POST http://localhost:%PORT%/chat   - Chat with ensemble
+echo   GET  http://localhost:%PORT%/state  - Agent state
+echo.
+python -m portable_agent.bridge --mode serve --port %PORT%
+"""
+            zf.writestr("serve.bat", serve_bat)
+            
+            # HTTP server launcher (Unix)
+            serve_sh = """#!/bin/bash
+echo ""
+echo "  ========================================"
+echo "   Butterfly Ensemble - HTTP API Server"
+echo "  ========================================"
+echo ""
+
+PORT=${1:-8080}
+
+python3 -c "import flask" 2>/dev/null
+if [ $? -ne 0 ]; then
+    echo "Installing dependencies..."
+    pip install -r requirements.txt
+    echo ""
+fi
+
+echo "Starting HTTP server on port $PORT..."
+echo "Endpoints:"
+echo "  POST http://localhost:$PORT/act    - Get action"
+echo "  POST http://localhost:$PORT/chat   - Chat with ensemble"
+echo "  GET  http://localhost:$PORT/state  - Agent state"
+echo ""
+python3 -m portable_agent.bridge --mode serve --port $PORT
+"""
+            zf.writestr("serve.sh", serve_sh)
             
             # Include portable_agent sources (for visualizer, etc.)
             self._write_portable_agent_sources(zf)
