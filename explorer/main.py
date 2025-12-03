@@ -632,7 +632,9 @@ class BiphasicController:
             
             # Update stability center with learned values
             self.stability_center['speed_ms'] = max(10.0, ideal_speed)  # Minimum 10ms
-            self.stability_center['memory_mb'] = max(1.0, ideal_memory)  # Minimum 1MB
+            # Use reasonable memory ideal based on system (avoid unrealistic tiny values)
+            # Typical PyTorch + neural network baseline is 2-4GB
+            self.stability_center['memory_mb'] = max(2000.0, ideal_memory)  # Minimum 2GB for neural systems
             
             # Update envelope based on observed range
             speed_range = max(speeds) - min(speeds)

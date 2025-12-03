@@ -106,16 +106,22 @@ def get_breath_features(breath_state: Optional[Dict[str, Any]]) -> np.ndarray:
     return np.array([0.5, 0.0, 1.0], dtype=np.float32)
 
 
-def create_brain(config: Dict[str, Any]):
+# Global counter for brain creation progress tracking
+_brain_creation_counter = {'count': 0, 'total': 0, 'logged_config': False}
+
+def create_brain(config: Dict[str, Any], silent: bool = False):
     """
     Factory function for brain creation.
     
     Args:
         config: Neural configuration dictionary
+        silent: If True, suppress per-brain logging (for batch creation)
         
     Returns:
         OrganismBrain instance, or None if PyTorch not available
     """
+    global _brain_creation_counter
+    
     if not PYTORCH_AVAILABLE:
         return None
     
@@ -163,15 +169,15 @@ def create_brain(config: Dict[str, Any]):
     use_concept_head = concept_config.get('enabled', False)
     num_key_compositions = concept_config.get('num_key_compositions', 15)
     
-    # Debug log for language head creation
-    if use_language_head:
-        print(f"[CREATE_BRAIN] ✅ Language head ENABLED (vocab_size={vocab_size}, attention={use_attention})")
-    else:
-        print(f"[CREATE_BRAIN] ⚠️ Language head DISABLED (language_model.enabled={language_config.get('enabled', 'not set')})")
-    
-    # Debug log for concept head creation
-    if use_concept_head:
-        print(f"[CREATE_BRAIN] ✅ Concept head ENABLED (RCUS - {num_key_compositions} key compositions)")
+    # Debug log for language/concept head creation (only once per batch, or if not silent)
+    if not silent and not _brain_creation_counter['logged_config']:
+        if use_language_head:
+            print(f"[CREATE_BRAIN] ✅ Language head ENABLED (vocab_size={vocab_size}, attention={use_attention})")
+        else:
+            print(f"[CREATE_BRAIN] ⚠️ Language head DISABLED (language_model.enabled={language_config.get('enabled', 'not set')})")
+        if use_concept_head:
+            print(f"[CREATE_BRAIN] ✅ Concept head ENABLED (RCUS - {num_key_compositions} key compositions)")
+        _brain_creation_counter['logged_config'] = True
     
     brain = OrganismBrain(
         input_dim=brain_config.get('input_dim', 12),

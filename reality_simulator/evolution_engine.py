@@ -560,16 +560,35 @@ class EvolutionEngine:
         self._initialize_population()
 
     def _initialize_population(self):
-        """Create initial random population"""
+        """Create initial random population with loading bar"""
+        import sys
         self.population = []
-
-        for _ in range(self.population_size):
+        
+        # Show loading bar for brain creation
+        neural_enabled = self.config.get('neural', {}).get('enabled', False)
+        if neural_enabled:
+            print(f"[EVOLUTION] 🧠 Creating {self.population_size} neural brains...", end="", flush=True)
+        
+        for i in range(self.population_size):
             # Random binary genotype
             genes = np.random.randint(0, 2, self.genotype_length, dtype=np.uint8)
             genotype = Genotype(genes=genes, generation=0)
 
             organism = self._create_organism(genotype)
             self.population.append(organism)
+            
+            # Progress bar (update every 10% or every organism if small population)
+            if neural_enabled:
+                progress = (i + 1) / self.population_size
+                bar_width = 30
+                filled = int(bar_width * progress)
+                bar = "█" * filled + "░" * (bar_width - filled)
+                sys.stdout.write(f"\r[EVOLUTION] 🧠 Creating brains: [{bar}] {i+1}/{self.population_size}")
+                sys.stdout.flush()
+        
+        if neural_enabled:
+            print()  # Newline after progress bar
+            print(f"[EVOLUTION] ✅ All {self.population_size} brains created successfully")
 
 
 

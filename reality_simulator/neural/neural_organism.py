@@ -141,7 +141,7 @@ class NeuralOrganism(Organism):
                     from .utils import create_brain
                 except ImportError:
                     from reality_simulator.neural.utils import create_brain
-                self.brain = create_brain(self.config)  # Pass full config, not just neural_config
+                self.brain = create_brain(self.config, silent=True)  # Silent mode for batch creation
             
             # Experience storage
             self.experience_buffer = ExperienceBuffer(
