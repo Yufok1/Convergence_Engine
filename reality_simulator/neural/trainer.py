@@ -160,15 +160,107 @@ class NeuralTrainer:
         optimization_config = config.get('optimization', {})
         self.reuse_optimizers = optimization_config.get('reuse_optimizers', True)
         self.optimizers: Dict[int, optim.Optimizer] = {}  # organism_id -> optimizer
+        self.schedulers: Dict[int, Any] = {}  # organism_id -> lr_scheduler
         
         # Track training time for performance monitoring
         self.training_times = []  # List of recent training step durations
+        
+        # ═══════════════════════════════════════════════════════════════════════════
+        # LR SCHEDULER & EARLY STOPPING (Phase 3 Training Infrastructure)
+        # Improves training stability and prevents overfitting
+        # ═══════════════════════════════════════════════════════════════════════════
+        lr_scheduler_config = training_config.get('lr_scheduler', {})
+        self.lr_scheduler_enabled = lr_scheduler_config.get('enabled', True)
+        self.lr_scheduler_type = lr_scheduler_config.get('type', 'step')  # 'step', 'exponential', 'plateau'
+        self.lr_step_size = lr_scheduler_config.get('step_size', 100)  # Steps between LR decay
+        self.lr_gamma = lr_scheduler_config.get('gamma', 0.95)  # LR decay factor
+        self.lr_min = lr_scheduler_config.get('min_lr', 1e-6)  # Minimum learning rate
+        
+        early_stopping_config = training_config.get('early_stopping', {})
+        self.early_stopping_enabled = early_stopping_config.get('enabled', True)
+        self.early_stopping_patience = early_stopping_config.get('patience', 50)  # Steps without improvement
+        self.early_stopping_min_delta = early_stopping_config.get('min_delta', 1e-4)  # Min loss change
+        self.early_stopping_counter = 0
+        self.best_loss = float('inf')
+        self.early_stopped = False
         
         # Log optimization status
         import logging
         logger = logging.getLogger(__name__)
         if self.reuse_optimizers:
             logger.info(f"[NEURAL] Optimizations enabled: optimizer reuse")
+        if self.lr_scheduler_enabled:
+            logger.info(f"[NEURAL] LR scheduler enabled: {self.lr_scheduler_type} (gamma={self.lr_gamma})")
+        if self.early_stopping_enabled:
+            logger.info(f"[NEURAL] Early stopping enabled: patience={self.early_stopping_patience}")
+    
+    def _get_or_create_scheduler(self, organism_id: int, optimizer: optim.Optimizer) -> Any:
+        """
+        Get or create LR scheduler for an organism.
+        
+        Part of Phase 3 Training Infrastructure improvements.
+        """
+        if not self.lr_scheduler_enabled:
+            return None
+        
+        if organism_id not in self.schedulers:
+            if self.lr_scheduler_type == 'step':
+                self.schedulers[organism_id] = optim.lr_scheduler.StepLR(
+                    optimizer, 
+                    step_size=self.lr_step_size, 
+                    gamma=self.lr_gamma
+                )
+            elif self.lr_scheduler_type == 'exponential':
+                self.schedulers[organism_id] = optim.lr_scheduler.ExponentialLR(
+                    optimizer, 
+                    gamma=self.lr_gamma
+                )
+            elif self.lr_scheduler_type == 'plateau':
+                self.schedulers[organism_id] = optim.lr_scheduler.ReduceLROnPlateau(
+                    optimizer,
+                    mode='min',
+                    factor=self.lr_gamma,
+                    patience=10,
+                    min_lr=self.lr_min
+                )
+        
+        return self.schedulers.get(organism_id)
+    
+    def _check_early_stopping(self, avg_loss: float) -> bool:
+        """
+        Check if training should stop early due to loss plateau.
+        
+        Part of Phase 3 Training Infrastructure improvements.
+        
+        Returns:
+            True if training should stop, False otherwise
+        """
+        if not self.early_stopping_enabled:
+            return False
+        
+        if avg_loss < self.best_loss - self.early_stopping_min_delta:
+            self.best_loss = avg_loss
+            self.early_stopping_counter = 0
+        else:
+            self.early_stopping_counter += 1
+            if self.early_stopping_counter >= self.early_stopping_patience:
+                logger.info(f"[NEURAL] Early stopping triggered after {self.early_stopping_patience} steps without improvement")
+                self.early_stopped = True
+                return True
+        
+        return False
+    
+    def reset_early_stopping(self):
+        """
+        Reset early stopping state to continue training.
+        
+        Call this when you want to resume training after early stopping
+        or after significant changes to the model/data.
+        """
+        self.early_stopping_counter = 0
+        self.best_loss = float('inf')
+        self.early_stopped = False
+        logger.info("[NEURAL] Early stopping state reset")
         
         # Optional event emitter for causation graph visualization
         self.event_emitter = None  # Set by main.py or unified_entry.py
@@ -819,12 +911,27 @@ class NeuralTrainer:
                             lr=self.learning_rate
                         )
                     optimizer = self.optimizers[organism_id]
+                    
+                    # 📈 LR SCHEDULER: Get or create scheduler for this organism
+                    scheduler = self._get_or_create_scheduler(organism_id, optimizer)
                 else:
                     optimizer = optim.Adam(organism.brain.parameters(), lr=self.learning_rate)
+                    scheduler = None
                 
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
+                
+                # 📈 LR SCHEDULER: Step the scheduler after optimizer
+                if scheduler is not None:
+                    if self.lr_scheduler_type == 'plateau':
+                        scheduler.step(loss.item())
+                    else:
+                        scheduler.step()
+                    # Enforce minimum learning rate
+                    for param_group in optimizer.param_groups:
+                        if param_group['lr'] < self.lr_min:
+                            param_group['lr'] = self.lr_min
                 
                 total_loss += loss.item()
                 num_trained += 1
@@ -885,6 +992,10 @@ class NeuralTrainer:
             # MISSION 2: Update AutoTune metrics buffer and emit to AtomicConfigSystem
             # ═══════════════════════════════════════════════════════════════════════════
             self._update_autotune_metrics(avg_loss, num_trained, training_duration)
+            
+            # 🛑 EARLY STOPPING: Check if training should stop due to loss plateau
+            if self._check_early_stopping(avg_loss):
+                logger.info(f"[NEURAL] Early stopping at step {self.training_step_count}, best loss: {self.best_loss:.6f}")
             
             # Curriculum learning: adjust sequence length based on VP stability
             if self.curriculum_learning and self.language_model_enabled:

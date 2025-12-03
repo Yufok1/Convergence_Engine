@@ -237,6 +237,10 @@ The CRA can now adjust `config.json` while the Butterfly System keeps running. U
 | `/neural/training/learning_rate` | 0.0001 – 0.1 | DQN learning rate |
 | `/neural/training/epsilon_start` | 0.5 – 1.0 | Initial exploration rate |
 | `/neural/training/epsilon_end` | 0.01 – 0.2 | Final exploration rate |
+| `/neural/training/lr_scheduler/enabled` | true/false | ⭐ NEW: LR scheduler toggle |
+| `/neural/training/lr_scheduler/gamma` | 0.9 – 0.99 | ⭐ NEW: LR decay factor |
+| `/neural/training/early_stopping/enabled` | true/false | ⭐ NEW: Early stopping toggle |
+| `/neural/training/early_stopping/patience` | 10 – 100 | ⭐ NEW: Steps before early stop |
 | `/scikit/enabled` | true/false | Scikit-learn ML system toggle |
 | `/scikit/clustering/enabled` | true/false | HDBSCAN clustering toggle |
 | `/scikit/anomaly_detection/enabled` | true/false | Isolation Forest toggle |
@@ -906,6 +910,114 @@ The two systems work together for comprehensive investigation:
 8. **TODO** → Notepad: Note follow-up actions
 
 This creates a complete scientific investigation workflow with full audit trail.
+
+---
+
+## 🛠️ System Integration Updates (December 2025) ⭐ NEW
+
+Recent improvements to system integration, memory management, and training infrastructure.
+
+### Phase 1: Illumination Engine → Organism Decision Integration
+
+**What Changed:**
+Organisms now have access to Alliance Wisdom when making decisions. The `get_illumination_insights()` and `enhance_decision_with_illumination()` methods were previously "dead code" - defined but never called. They're now wired into the decision-making pipeline.
+
+**Data Flow:**
+```
+AllianceWarfare.process_round() 
+    → sync_organism_confederation_state() 
+        → organism.set_system_references(alliance_warfare, causation_explorer)
+            → organism.decide_action() now calls:
+                → get_illumination_insights() 
+                    → alliance_warfare.get_alliance_wisdom()
+                → enhance_decision_with_illumination()
+```
+
+**Key Config Paths:**
+| Path | Description |
+|------|-------------|
+| `/highlander/alliance_warfare/enabled` | Enable alliance warfare system |
+
+**What to Monitor:**
+- Organisms with alliance membership should show improved decision-making
+- Look for `🔮` emoji in logs indicating illumination-enhanced decisions
+- Alliance wisdom recommendations in organism action logs
+
+### Phase 2: Memory Leak Fixes
+
+**What Changed:**
+Three unbounded data structures were identified and fixed:
+- `episodic_events` in context_memory - now pruned to 1000 max entries
+- `alliance_histories.events` - now pruned to 500 max events per alliance
+- `node_embeddings` / `node_word_associations` - now cleaned up on organism death
+
+**Cleanup Triggers:**
+| Structure | Trigger | Limit |
+|-----------|---------|-------|
+| `episodic_events` | On new episode | 1000 episodes |
+| `alliance_histories.events` | Every 100 rounds | 500 events/alliance |
+| `node_embeddings` | On organism death | N/A (cleaned) |
+| `node_word_associations` | On organism death | N/A (cleaned) |
+
+**What to Monitor:**
+- Memory usage should remain stable over long runs
+- Look for `🧹` emoji in logs indicating cleanup operations
+- `events_pruned` field in alliance warfare round results
+
+### Phase 3: Training Infrastructure Improvements
+
+**What Changed:**
+Added LR scheduler and early stopping to neural trainer for improved training stability.
+
+**New Config Paths:**
+| Path | Safe Range | Description |
+|------|------------|-------------|
+| `/neural/training/lr_scheduler/enabled` | true/false | Enable learning rate decay |
+| `/neural/training/lr_scheduler/type` | "step", "exponential", "plateau" | Scheduler type |
+| `/neural/training/lr_scheduler/step_size` | 10-500 | Steps between LR decay |
+| `/neural/training/lr_scheduler/gamma` | 0.9-0.99 | LR decay factor |
+| `/neural/training/lr_scheduler/min_lr` | 1e-8 - 1e-4 | Minimum learning rate |
+| `/neural/training/early_stopping/enabled` | true/false | Enable early stopping |
+| `/neural/training/early_stopping/patience` | 10-100 | Steps without improvement before stop |
+| `/neural/training/early_stopping/min_delta` | 1e-5 - 1e-3 | Minimum loss change |
+
+**Example Commands:**
+```
+[[CONFIG_UPDATE: {"reason": "Enable LR scheduler", "correlation_id": "lr-sched", "patch": [{"op": "replace", "path": "/neural/training/lr_scheduler/enabled", "value": true}]}]]
+[[CONFIG_UPDATE: {"reason": "Slower LR decay", "correlation_id": "slow-decay", "patch": [{"op": "replace", "path": "/neural/training/lr_scheduler/gamma", "value": 0.98}]}]]
+[[CONFIG_UPDATE: {"reason": "More patience", "correlation_id": "patient", "patch": [{"op": "replace", "path": "/neural/training/early_stopping/patience", "value": 100}]}]]
+```
+
+**What to Monitor:**
+- Learning rate should gradually decrease over training
+- Training should stop early if loss plateaus
+- Check `early_stopped` flag in trainer status
+
+### Phase 4: sklearn Integration in Highlander Protocol
+
+**What Changed:**
+The Highlander Protocol now has `analyze_population()` method that uses sklearn for strategic insights:
+- **Phenotype clustering** (HDBSCAN) - Groups similar organisms
+- **Anomaly detection** (Isolation Forest) - Identifies exceptional organisms
+- **Fitness landscape analysis** - Population diversity metrics
+- **Strategic recommendations** - Actionable insights
+
+**API Access:**
+```python
+analysis = highlander_protocol.analyze_population(organisms, get_fitness)
+# Returns: {
+#   'fitness_stats': {'mean', 'std', 'min', 'max', 'median'},
+#   'clustering': {'n_clusters', 'cluster_sizes', ...},
+#   'anomalies': {'count', 'ids', 'scores'},
+#   'recommendations': ['Population has N clusters', ...]
+# }
+```
+
+**What to Monitor:**
+- Cluster count should reflect population diversity
+- Anomaly count can identify potential champions
+- Low fitness std indicates evolutionary pressure needed
+- High fitness std indicates diverging strategies
 
 ---
 

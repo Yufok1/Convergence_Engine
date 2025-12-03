@@ -91,6 +91,16 @@ class NeuralOrganism(Organism):
         # Optional event emitter for causation graph visualization
         self.event_emitter = None  # Set by main.py or unified_entry.py
         
+        # ═══════════════════════════════════════════════════════════════════════
+        # 🔮 ILLUMINATION ENGINE SYSTEM REFERENCES
+        # These are set externally when organism joins an alliance
+        # If None, illumination is gracefully skipped (no breaking changes)
+        # ═══════════════════════════════════════════════════════════════════════
+        self._alliance_warfare_ref = None  # Set via set_system_references()
+        self._causation_explorer_ref = None  # Set via set_system_references()
+        self._illumination_level = 'none'  # Cached level for quick checks
+        self._illumination_capabilities = set()  # Cached capabilities
+        
         # Initialize brain
         if PYTORCH_AVAILABLE and neural_config.get('enabled', False):
             brain_config = neural_config.get('brain', {})
@@ -213,6 +223,43 @@ class NeuralOrganism(Organism):
             self.confederation_wars_participated = 0
             self.cross_alliance_connections = 0  # Connections to organisms in other alliances
     
+    # ═══════════════════════════════════════════════════════════════════════
+    # 🔮 ILLUMINATION ENGINE - System Reference Management
+    # ═══════════════════════════════════════════════════════════════════════
+    
+    def set_system_references(self, 
+                              alliance_warfare=None, 
+                              causation_explorer=None) -> None:
+        """
+        Set references to system-level components for illumination access.
+        
+        Called when organism joins an alliance or during system initialization.
+        These references enable organisms to access collective wisdom.
+        
+        Args:
+            alliance_warfare: AllianceWarfareSystem instance
+            causation_explorer: CausationExplorer instance
+        """
+        self._alliance_warfare_ref = alliance_warfare
+        self._causation_explorer_ref = causation_explorer
+        
+        # Pre-cache illumination level if alliance warfare is available
+        if alliance_warfare is not None:
+            try:
+                illumination = alliance_warfare.get_organism_illumination_level(self.species_id)
+                self._illumination_level = illumination.get('level', 'none')
+                self._illumination_capabilities = illumination.get('capabilities', set())
+            except Exception:
+                self._illumination_level = 'none'
+                self._illumination_capabilities = set()
+    
+    def clear_system_references(self) -> None:
+        """Clear system references (e.g., when organism leaves alliance)."""
+        self._alliance_warfare_ref = None
+        self._causation_explorer_ref = None
+        self._illumination_level = 'none'
+        self._illumination_capabilities = set()
+
     def get_state_features(self, 
                           local_env: Optional[Dict[str, Any]] = None,
                           network_state: Optional[Dict[str, Any]] = None,
@@ -668,6 +715,30 @@ class NeuralOrganism(Organism):
                         action_probs, vp_components
                     )
             
+            # ═══════════════════════════════════════════════════════════════
+            # 🔮 ILLUMINATION ENGINE INTEGRATION
+            # Apply causation-aware adjustments if system references available
+            # This is where dead code becomes ALIVE!
+            # ═══════════════════════════════════════════════════════════════
+            illumination_adjustments = []
+            if self._alliance_warfare_ref is not None:
+                try:
+                    # Get illumination insights (was never called before!)
+                    illumination = self.get_illumination_insights(
+                        alliance_warfare=self._alliance_warfare_ref,
+                        causation_explorer=self._causation_explorer_ref
+                    )
+                    
+                    # Enhance decision with illumination (was never called before!)
+                    if illumination.get('can_see_self', False):
+                        action_probs, illumination_adjustments = self.enhance_decision_with_illumination(
+                            action_probs, illumination
+                        )
+                        vp_adjustments.extend(illumination_adjustments)
+                except Exception as e:
+                    # Graceful degradation - illumination failure shouldn't crash decisions
+                    pass
+            
             # Select action from (possibly adjusted) probabilities
             action = int(np.argmax(action_probs))
         
@@ -786,6 +857,33 @@ class NeuralOrganism(Organism):
             except Exception as e:
                 illumination['query_error'] = str(e)
         
+        # ═══════════════════════════════════════════════════════════════════════
+        # 🏛️ ALLIANCE WISDOM INTEGRATION  
+        # Query collective wisdom if organism is in an alliance (was NEVER called!)
+        # ═══════════════════════════════════════════════════════════════════════
+        if self.alliance_id and illumination.get('can_see_alliance', False):
+            try:
+                # Build current situation context for wisdom query
+                current_situation = {
+                    'organism_id': self.species_id,
+                    'fitness': self.fitness,
+                    'alliance_reputation': self.alliance_reputation,
+                    'at_war': False,  # Could be enhanced with actual war state
+                }
+                
+                # Query alliance wisdom (get_alliance_wisdom was NEVER called!)
+                wisdom = alliance_warfare.get_alliance_wisdom(
+                    self.alliance_id, 
+                    current_situation
+                )
+                
+                if not wisdom.get('error'):
+                    illumination['alliance_wisdom'] = wisdom.get('wisdom', [])
+                    illumination['relevant_patterns'] = wisdom.get('relevant_patterns', [])
+                    illumination['legendary_guidance'] = wisdom.get('legendary_guidance', [])
+            except Exception as e:
+                illumination['wisdom_query_error'] = str(e)
+        
         return illumination
     
     def enhance_decision_with_illumination(self,
@@ -845,7 +943,26 @@ class NeuralOrganism(Organism):
         # ALLIANCE illumination: Coordinate with allies
         if illumination.get('can_see_alliance'):
             adjustments.append(f"🔮 Alliance awareness active")
-            # In future: adjust based on ally strategies
+            # Use alliance wisdom if available
+            wisdom = illumination.get('alliance_wisdom', {})
+            if wisdom:
+                recommended = wisdom.get('recommended_action')
+                confidence = wisdom.get('confidence', 0.5)
+                if recommended == 'defend' and confidence > 0.6:
+                    # Boost defensive actions (typically index 0 or last)
+                    if len(adjusted) > 0:
+                        adjusted[0] *= (1.0 + confidence * 0.3)
+                        adjustments.append(f"🔮 Wisdom: DEFEND (conf={confidence:.2f})")
+                elif recommended == 'attack' and confidence > 0.7:
+                    # Boost aggressive actions (typically index 1)
+                    if len(adjusted) > 1:
+                        adjusted[1] *= (1.0 + confidence * 0.25)
+                        adjustments.append(f"🔮 Wisdom: ATTACK (conf={confidence:.2f})")
+                elif recommended == 'expand':
+                    # Boost exploration/expansion (typically index 2)
+                    if len(adjusted) > 2:
+                        adjusted[2] *= (1.0 + confidence * 0.2)
+                        adjustments.append(f"🔮 Wisdom: EXPAND (conf={confidence:.2f})")
         
         # CONFEDERATION illumination: Macro-level strategy
         if illumination.get('can_see_confederation'):

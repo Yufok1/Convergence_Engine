@@ -630,6 +630,44 @@ class AllianceHistory:
             'wisdom_rules': self.wisdom_rules[:20],
             'legends': {k: {'role': v.role, 'legacy': v.legacy} for k, v in self.legends.items()}
         }
+    
+    def prune_old_events(self, max_events: int = 500) -> int:
+        """
+        🧹 MEMORY LEAK FIX: Prune old events to prevent unbounded growth.
+        
+        Keeps the most recent events and maintains index integrity.
+        Patterns and wisdom are preserved as they represent learned knowledge.
+        
+        Args:
+            max_events: Maximum number of events to keep
+            
+        Returns:
+            Number of events pruned
+        """
+        if len(self.events) <= max_events:
+            return 0
+        
+        # Keep most recent events
+        events_to_remove = len(self.events) - max_events
+        removed_events = self.events[:events_to_remove]
+        self.events = self.events[events_to_remove:]
+        
+        # Update indices - remove references to pruned events
+        removed_ids = {e.event_id for e in removed_events}
+        
+        for event_type in self.events_by_type:
+            self.events_by_type[event_type] = [
+                eid for eid in self.events_by_type[event_type] 
+                if eid not in removed_ids
+            ]
+        
+        for organism_id in self.events_by_organism:
+            self.events_by_organism[organism_id] = [
+                eid for eid in self.events_by_organism[organism_id]
+                if eid not in removed_ids
+            ]
+        
+        return events_to_remove
 
 
 class ConfederationTier(Enum):
@@ -3397,7 +3435,8 @@ class AllianceWarfareSystem:
     # ═══════════════════════════════════════════════════════════════════════
     
     def process_round(self, organisms: Dict[str, Any],
-                     get_fitness: Callable) -> Dict[str, Any]:
+                     get_fitness: Callable,
+                     causation_explorer: Optional[Any] = None) -> Dict[str, Any]:
         """
         Process one round of alliance warfare.
         
@@ -3406,6 +3445,7 @@ class AllianceWarfareSystem:
         - Cleans up dead organisms
         - Times out old proposals
         - Checks for alliance collapse
+        - Wires system references for Illumination Engine
         
         All actual decisions come from organisms.
         """
@@ -3446,8 +3486,18 @@ class AllianceWarfareSystem:
             if not p.resolved and (current_time - p.timestamp) < self.proposal_timeout * 60
         ]
         
+        # 🧹 MEMORY LEAK FIX: Prune alliance histories periodically (every 100 rounds)
+        if self.round_number % 100 == 0:
+            events_pruned = 0
+            for history in self.alliance_histories.values():
+                events_pruned += history.prune_old_events(max_events=500)
+            if events_pruned > 0:
+                self.logger.info(f"🧹 Pruned {events_pruned} old history events")
+            results['events_pruned'] = events_pruned
+        
         # Sync confederation state to organisms for ML feature extraction
-        self.sync_organism_confederation_state(organisms)
+        # Also wires system references for Illumination Engine
+        self.sync_organism_confederation_state(organisms, causation_explorer=causation_explorer)
         
         results['alliances'] = len(self.alliances)
         results['confederations'] = len(self.confederations)
@@ -3472,7 +3522,8 @@ class AllianceWarfareSystem:
             }
         }
     
-    def sync_organism_confederation_state(self, organisms: Dict[str, Any]):
+    def sync_organism_confederation_state(self, organisms: Dict[str, Any],
+                                          causation_explorer: Optional[Any] = None):
         """
         Sync confederation state to organism attributes for ML feature extraction.
         
@@ -3481,6 +3532,7 @@ class AllianceWarfareSystem:
         - confederation_tier: 0=none, 1=confederation, 2=empire, 3=hegemony
         - confederation_wars_participated: Count of mega-wars they've been in
         - cross_alliance_connections: Connections to organisms in other alliances
+        - system_references: Wire AllianceWarfareSystem and CausationExplorer for Illumination Engine
         """
         for org_id, org in organisms.items():
             # Find organism's alliance
@@ -3488,6 +3540,17 @@ class AllianceWarfareSystem:
             
             if hasattr(org, 'alliance_id'):
                 org.alliance_id = alliance_id
+            
+            # 🔮 ILLUMINATION ENGINE WIRING
+            # Wire system references so organisms can access Alliance Wisdom
+            if hasattr(org, 'set_system_references'):
+                try:
+                    org.set_system_references(
+                        alliance_warfare=self,
+                        causation_explorer=causation_explorer
+                    )
+                except Exception:
+                    pass  # Graceful degradation - not all organisms support this
             
             # Determine confederation tier
             tier = 0

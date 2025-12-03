@@ -1500,6 +1500,124 @@ class HighlanderProtocol:
             }
         }
     
+    def analyze_population(self, organisms: Dict[str, Any],
+                          get_fitness: Callable[[Any], float]) -> Dict[str, Any]:
+        """
+        🧬 SKLEARN INTEGRATION: Analyze population for strategic insights.
+        
+        Phase 4 - Leverage sklearn for evolution intelligence:
+        - Fitness landscape clustering
+        - Anomaly detection (exceptional organisms)
+        - Phenotype diversity analysis
+        
+        Args:
+            organisms: Dict of organism_id -> organism
+            get_fitness: Function to get fitness from organism
+            
+        Returns:
+            Analysis results with clusters, anomalies, and recommendations
+        """
+        try:
+            from ..ml_utils import MLAnalyzer, SKLEARN_AVAILABLE
+            
+            if not SKLEARN_AVAILABLE:
+                return {'error': 'sklearn not available', 'available': False}
+            
+            # Filter to active organisms only
+            active_orgs = {
+                org_id: org for org_id, org in organisms.items()
+                if org_id in self.active_organisms
+            }
+            
+            if len(active_orgs) < 3:
+                return {
+                    'available': True,
+                    'error': 'insufficient_organisms',
+                    'count': len(active_orgs)
+                }
+            
+            # Create analyzer with default config
+            analyzer = MLAnalyzer({
+                'enabled': True,
+                'clustering': {'enabled': True, 'algorithm': 'hdbscan', 'min_cluster_size': 3},
+                'anomaly_detection': {'enabled': True, 'algorithm': 'isolation_forest'},
+                'dimensionality_reduction': {'enabled': False}
+            })
+            
+            # Extract features and perform clustering
+            features, organism_ids = analyzer.clusterer.extract_features(active_orgs)
+            cluster_result = analyzer.clusterer.cluster(features, organism_ids)
+            
+            # Perform anomaly detection
+            anomaly_result = analyzer.anomaly_detector.detect(features, organism_ids)
+            
+            # Calculate fitness statistics
+            fitness_values = [get_fitness(active_orgs[org_id]) for org_id in organism_ids]
+            fitness_array = np.array(fitness_values)
+            
+            # Enrich with Highlander-specific stats
+            stats_features = []
+            for org_id in organism_ids:
+                stats = self.organism_stats.get(org_id, OrganismStats())
+                stats_features.append({
+                    'battles_won': stats.battles_won,
+                    'battles_lost': stats.battles_lost,
+                    'concepts_acquired': stats.concepts_acquired,
+                    'peak_fitness': stats.peak_fitness
+                })
+            
+            analysis = {
+                'available': True,
+                'organism_count': len(organism_ids),
+                'fitness_stats': {
+                    'mean': float(np.mean(fitness_array)),
+                    'std': float(np.std(fitness_array)),
+                    'min': float(np.min(fitness_array)),
+                    'max': float(np.max(fitness_array)),
+                    'median': float(np.median(fitness_array))
+                },
+                'clustering': cluster_result.to_dict() if cluster_result else None,
+                'anomalies': {
+                    'count': len(anomaly_result.anomaly_ids) if anomaly_result else 0,
+                    'ids': anomaly_result.anomaly_ids[:10] if anomaly_result else [],
+                    'scores': dict(list(anomaly_result.anomaly_scores.items())[:10]) if anomaly_result else {}
+                },
+                'recommendations': []
+            }
+            
+            # Generate strategic recommendations
+            if cluster_result and cluster_result.n_clusters > 1:
+                analysis['recommendations'].append(
+                    f"Population has {cluster_result.n_clusters} distinct phenotype clusters"
+                )
+                # Identify dominant cluster
+                if cluster_result.cluster_sizes:
+                    dominant = max(cluster_result.cluster_sizes.items(), key=lambda x: x[1])
+                    analysis['recommendations'].append(
+                        f"Cluster {dominant[0]} is dominant with {dominant[1]} members"
+                    )
+            
+            if anomaly_result and len(anomaly_result.anomaly_ids) > 0:
+                analysis['recommendations'].append(
+                    f"Detected {len(anomaly_result.anomaly_ids)} exceptional organisms (potential champions)"
+                )
+            
+            if fitness_array.std() < 0.1:
+                analysis['recommendations'].append(
+                    "Low fitness diversity - consider increasing mutation rate"
+                )
+            elif fitness_array.std() > 0.4:
+                analysis['recommendations'].append(
+                    "High fitness variance - population is diverging"
+                )
+            
+            return analysis
+            
+        except ImportError as e:
+            return {'error': f'import_error: {e}', 'available': False}
+        except Exception as e:
+            return {'error': str(e), 'available': False}
+    
     def _emit_event(self, event_type: str, data: Dict[str, Any]):
         """Emit a causation event."""
         if not self.event_emitter:

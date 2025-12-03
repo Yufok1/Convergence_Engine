@@ -245,6 +245,28 @@ class ContextMemory:
         """
         if organism_id in self.organism_sequences:
             del self.organism_sequences[organism_id]
+    
+    def cleanup_dead_organism(self, organism_id: int) -> None:
+        """
+        🧹 MEMORY LEAK FIX: Clean up ALL data for a dead organism.
+        
+        This should be called when an organism dies to prevent unbounded
+        growth of node_embeddings, node_word_associations, and sequences.
+        
+        Args:
+            organism_id: Organism ID to clean up
+        """
+        # Clear sequence data
+        if organism_id in self.organism_sequences:
+            del self.organism_sequences[organism_id]
+        
+        # Clear embedding data (MEMORY LEAK FIX)
+        if organism_id in self.node_embeddings:
+            del self.node_embeddings[organism_id]
+        
+        # Clear word associations (but keep language_anchors for history)
+        if organism_id in self.node_word_associations:
+            del self.node_word_associations[organism_id]
 
     def _load_persistence(self) -> None:
         """Load context memory from disk if it exists, falling back to backup on corruption."""
@@ -314,18 +336,31 @@ class ContextMemory:
                 except OSError:
                     pass
 
-    def record_generation_state(self, generation: int, metrics: Dict[str, Any]) -> None:
+    def record_generation_state(self, generation: int, metrics: Dict[str, Any],
+                                  max_episodes: int = 1000) -> None:
         """
         Record key metrics snapshot for a generation.
+        
+        🧹 MEMORY LEAK FIX: Prunes old episodic events to prevent unbounded growth.
 
         Args:
             generation: Current generation number
             metrics: Dictionary of key metrics (organism_count, connection_count, etc.)
+            max_episodes: Maximum number of episodes to keep (default 1000)
         """
         self.episodic_events[generation] = {
             'timestamp': datetime.now().isoformat(),
             'metrics': metrics.copy()
         }
+        
+        # 🧹 MEMORY LEAK FIX: Prune old episodes if over limit
+        if len(self.episodic_events) > max_episodes:
+            # Keep most recent episodes
+            sorted_gens = sorted(self.episodic_events.keys())
+            gens_to_remove = sorted_gens[:len(sorted_gens) - max_episodes]
+            for gen in gens_to_remove:
+                del self.episodic_events[gen]
+        
         self._save_persistence()
 
     def link_word_to_node(self, word: str, organism_id: int, generation: int = None) -> None:

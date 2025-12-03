@@ -1749,6 +1749,15 @@ class UnifiedSystem:
                         if fallen_id in network.organisms:
                             del network.organisms[fallen_id]
                             removed_count += 1
+                            
+                            # 🧹 MEMORY LEAK FIX: Clean up context memory for dead organisms
+                            if hasattr(network, 'context_memory') and network.context_memory:
+                                try:
+                                    # Convert fallen_id to int if needed (context_memory uses int keys)
+                                    org_id_int = int(fallen_id.split('_')[-1]) if isinstance(fallen_id, str) and '_' in fallen_id else hash(fallen_id) % (2**31)
+                                    network.context_memory.cleanup_dead_organism(org_id_int)
+                                except (ValueError, AttributeError):
+                                    pass  # Graceful degradation
                     if removed_count > 0:
                         print(f"[HIGHLANDER] 🪦 {removed_count} organisms permanently removed from network")
             
@@ -1770,7 +1779,11 @@ class UnifiedSystem:
             # ⚔️🪐 ALLIANCE WARFARE - Collective battles for existential dominance
             if hasattr(self, 'alliance_warfare') and self.alliance_warfare:
                 # Process alliance round (cleanup, proposal timeouts, alliance dissolution)
-                war_results = self.alliance_warfare.process_round(organisms, get_fitness)
+                # Also wires Illumination Engine system references to organisms
+                causation_ref = getattr(self, 'causation_explorer', None)
+                war_results = self.alliance_warfare.process_round(
+                    organisms, get_fitness, causation_explorer=causation_ref
+                )
                 
                 # Log alliance warfare activity
                 if war_results:
