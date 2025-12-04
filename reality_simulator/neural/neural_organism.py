@@ -1513,7 +1513,8 @@ class NeuralOrganism(Organism):
                                 # Get semantic guidance config
                                 semantic_config = self.config.get('neural', {}).get('language_model', {}).get('relationship_learning', {}).get('semantic_guidance', {})
                                 semantic_enabled = semantic_config.get('enabled', True)
-                                min_strength = semantic_config.get('min_strength_threshold', 0.7)
+                                # GROK-4 FIX: Lower threshold from 0.7 to 0.3 so semantic guidance actually activates
+                                min_strength = semantic_config.get('min_strength_threshold', 0.3)
                                 semantic_boost = semantic_config.get('semantic_boost', 0.2)
                                 high_strength_boost = semantic_config.get('high_strength_boost', 0.1)
                                 max_similar_words = semantic_config.get('max_similar_words', 5)
@@ -1592,9 +1593,35 @@ class NeuralOrganism(Organism):
                         mask[:actual_vocab_size] = 0  # Keep actual vocabulary tokens
                         logits = logits + mask  # Apply mask (softmax will make -inf → 0 probability)
                     
+                    # GROK-2 FIX: Apply repetition penalty to prevent "was was was" patterns
+                    # Penalize tokens that appeared in recent generation window
+                    # GROK REVIEW FIX: Use SUBTRACTION not division (division on negative logits increases probability!)
+                    repetition_penalty = 2.0  # Penalty to subtract from logits (not divide)
+                    recent_window = 5  # Look back this many tokens
+                    if len(generated) > 0:
+                        recent_tokens = generated[-recent_window:] if len(generated) >= recent_window else generated
+                        for prev_token in recent_tokens:
+                            if prev_token < len(logits):
+                                # Reduce probability by subtracting from logits
+                                logits[prev_token] = logits[prev_token] - repetition_penalty
+                        # Extra penalty for immediately previous token (prevent "was was")
+                        if generated[-1] < len(logits):
+                            logits[generated[-1]] = logits[generated[-1]] - (repetition_penalty * 1.5)
+                    
+                    # GROK-2 FIX: Top-k sampling for better diversity
+                    # Only sample from top-k most likely tokens
+                    top_k = 40  # Number of top tokens to consider
+                    if len(logits) > top_k:
+                        # Get top-k indices
+                        top_k_values, top_k_indices = torch.topk(logits, top_k)
+                        # Create mask keeping only top-k
+                        top_k_mask = torch.full_like(logits, float('-inf'))
+                        top_k_mask[top_k_indices] = 0
+                        logits = logits + top_k_mask
+                    
                     probs = torch.softmax(logits, dim=-1)
                     
-                    # Sample next token - now constrained to actual vocabulary
+                    # Sample next token - now constrained to actual vocabulary with diversity
                     next_token = torch.multinomial(probs, 1).item()
                     next_token = min(next_token, actual_vocab_size - 1)  # Clamp to valid range
                     

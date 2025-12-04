@@ -777,19 +777,30 @@ class ButterflyChatRouter:
             # KNOWLEDGE TRANSFER: Broadcast successful responses to connected organisms
             # Based on Grok-2's inter-organism knowledge transfer design
             # High-reward responses (reward > 0.6) are shared with network neighbors
-            if reward > 0.6 and network_state:
-                self._broadcast_successful_response(
-                    source_organism=organism,
-                    user_tokens=user_tokens,
-                    response_tokens=organism_tokens,
-                    reward=reward,
-                    network_state=network_state
-                )
-                
-                # CREATIVE VOCABULARY EXPANSION: Grok-4's vocabulary expansion
-                # Successful multi-token patterns become compound vocabulary entries
-                if self.vocabulary and hasattr(self.vocabulary, 'expand_vocabulary_from_pattern'):
+            # GROK-3 FIX: Only broadcast if response has good variety (no repetition)
+            response_words_for_broadcast = organism_response.lower().split() if organism_response else []
+            broadcast_unique_ratio = len(set(response_words_for_broadcast)) / max(1, len(response_words_for_broadcast))
+            
+            # GROK REVIEW FIX: Separate broadcast and vocab expansion into isolated try blocks
+            if reward > 0.6 and network_state and broadcast_unique_ratio > 0.5:
+                try:
+                    self._broadcast_successful_response(
+                        source_organism=organism,
+                        user_tokens=user_tokens,
+                        response_tokens=organism_tokens,
+                        reward=reward,
+                        network_state=network_state
+                    )
+                except Exception as broadcast_err:
+                    logger.debug(f"Broadcast failed (non-fatal): {broadcast_err}")
+            
+            # GROK REVIEW FIX: Vocabulary expansion moved OUTSIDE broadcast condition
+            # Expand vocab for any moderately successful response (reward > 0.4)
+            if reward > 0.4 and self.vocabulary and hasattr(self.vocabulary, 'expand_vocabulary_from_pattern'):
+                try:
                     self.vocabulary.expand_vocabulary_from_pattern(organism_tokens, reward)
+                except Exception as vocab_err:
+                    logger.debug(f"Vocabulary expansion failed (non-fatal): {vocab_err}")
             
         except Exception as e:
             # Don't fail chat if experience storage fails
@@ -871,10 +882,23 @@ class ButterflyChatRouter:
             if organism_response.strip().lower() == user_message.strip().lower():
                 coherence_score -= 0.1  # Penalty for pure echoing
             
-            # Check word variety (not just repeating same word)
+            # GROK-3 FIX: Stronger repetition penalty - not just variety bonus
+            # GROK REVIEW FIX: Initialize unique_ratio before conditional so it's always defined
+            unique_ratio = 1.0  # Default to 1.0 (no repetition) for single-word responses
             if len(response_words) > 1:
                 unique_ratio = len(response_words_set) / len(response_words)
-                coherence_score += unique_ratio * 0.1
+                # Bonus for variety
+                coherence_score += unique_ratio * 0.15
+                # PENALTY for repetition ("was was was" gets unique_ratio=0.2, penalty=-0.24)
+                if unique_ratio < 0.5:
+                    coherence_score -= (1.0 - unique_ratio) * 0.3  # Heavy penalty for repetition
+                # Check for consecutive repetition (n-gram detection)
+                consecutive_repeats = 0
+                for i in range(1, len(response_words)):
+                    if response_words[i] == response_words[i-1]:
+                        consecutive_repeats += 1
+                if consecutive_repeats > 0:
+                    coherence_score -= consecutive_repeats * 0.15  # -0.15 per consecutive repeat
             
             # Check for multiple words (indicates more than just noise)
             if len(response_words) >= 2:
@@ -924,7 +948,17 @@ class ButterflyChatRouter:
                     # At low VP, be more forgiving
                     reward = max(reward, 0.0)  # No negative rewards when struggling
             
-            final_reward = max(0.2, min(1.0, reward))  # Clamp to reasonable range, minimum 0.2
+            # GROK-3 FIX: Allow negative rewards for severe repetition
+            # Repetitive outputs should not get positive reinforcement
+            # GROK REVIEW FIX: Reuse unique_ratio from earlier (line ~880) instead of recalculating
+            # unique_ratio was already calculated in the coherence section above
+            # GROK STABILIZE FIX: Allow rewards to go lower for proper learning signal
+            if len(response_words) > 1 and unique_ratio < 0.3:  # Severe repetition
+                final_reward = max(-0.3, min(1.0, reward))  # Allow more negative for severe cases
+            elif len(response_words) > 1 and unique_ratio < 0.5:  # Moderate repetition
+                final_reward = max(0.0, min(1.0, reward))  # Allow zero but not negative
+            else:
+                final_reward = max(0.05, min(1.0, reward))  # Very low floor for normal output
             
             # ═══════════════════════════════════════════════════════════════
             # MISSION 1: Track semantic reward components for CRA/AutoTune

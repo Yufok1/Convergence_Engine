@@ -262,7 +262,7 @@ ARCHITECTURE_DEFAULTS = {
     'neural.brain.vocab_size': 50000,
     'neural.concept_system.num_key_compositions': 20,
     'neural.concept_system.embed_dim': 64,
-    'neural.language_model.teacher.vocab_size': 4096,
+    'neural.language_model.teacher.vocab_size': 50000,  # GROK FIX: was 4096
 }
 
 
@@ -299,7 +299,7 @@ def validate_architecture_config(config: Dict[str, Any], strict: bool = False) -
         ('neural.brain.vocab_size', brain_config.get('vocab_size'), 50000),
         ('neural.concept_system.num_key_compositions', concept_config.get('num_key_compositions'), 20),
         ('neural.concept_system.embed_dim', concept_config.get('embed_dim'), 64),
-        ('neural.language_model.teacher.vocab_size', teacher_config.get('vocab_size'), 4096),
+        ('neural.language_model.teacher.vocab_size', teacher_config.get('vocab_size'), 50000),  # GROK FIX: Match config.json
     ]
     
     for param_path, config_value, default_value in checks:

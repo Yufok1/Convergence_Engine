@@ -73,13 +73,13 @@
         "step": 0.05
       },
       "mutation_rate": {
-        "initial": 0.04,
+        "initial": 0.034,
         "max": 0.06,
         "min": 0.002,
         "step": 0.001
       },
       "new_edge_rate": {
-        "initial": 2.5,
+        "initial": 5,
         "max": 6,
         "min": 0.2,
         "step": 0.1
@@ -215,10 +215,10 @@
   "network": {
     "connection_strength_resolution": 5e-06,
     "emergence_sensitivity": 1e-06,
-    "max_connections": 20000,
+    "max_connections": 19000,
     "max_organisms": 500,
     "resource_flow_precision": 0.0001,
-    "resource_pool": 550,
+    "resource_pool": 525,
     "stability_precision": 1e-07
   },
   "neural": {
@@ -319,7 +319,7 @@
           "enabled": true,
           "high_strength_boost": 0.1,
           "max_similar_words": 5,
-          "min_strength_threshold": 0.7,
+          "min_strength_threshold": 0.3,
           "semantic_boost": 0.2
         }
       },
@@ -335,16 +335,16 @@
         "teaching_frequency": 1,
         "use_knowledge_web": true,
         "use_semantic_embeddings": true,
-        "vocab_size": 4096
+        "vocab_size": 50000
       },
       "training": {
-        "alpha": 0.8,
-        "beta": 0.1,
+        "alpha": 0.5,
+        "beta": 0.4,
         "gamma": 0.1,
         "vp_temperature_scale": true
       },
       "vocabulary": {
-        "max_size": 10000,
+        "max_size": 50000,
         "special_tokens": [
           "<PAD>",
           "<UNK>",
@@ -377,12 +377,12 @@
       },
       "enabled": true,
       "epsilon": 0.95,
-      "epsilon_decay": 0.985,
+      "epsilon_decay": 0.99,
       "epsilon_end": 0.01,
       "epsilon_start": 0.8,
       "gamma": 0.995,
       "language_reward_scaling": 0.25,
-      "learning_rate": 0.008,
+      "learning_rate": 0.005,
       "lr_scheduler": {
         "enabled": true,
         "gamma": 0.95,
@@ -394,7 +394,7 @@
       "update_frequency": 1
     },
     "vp_aware_planning": {
-      "base_boost": 0.2,
+      "base_boost": 0.18,
       "enabled": true,
       "high_threshold": 0.45,
       "low_threshold": 0.25,
@@ -460,14 +460,14 @@
   "scikit": {
     "anomaly_detection": {
       "algorithm": "isolation_forest",
-      "contamination": 0.15,
+      "contamination": 0.18,
       "enabled": true,
-      "n_estimators": 400
+      "n_estimators": 450
     },
     "clustering": {
       "algorithm": "hdbscan",
       "enabled": true,
-      "min_cluster_size": 3,
+      "min_cluster_size": 4,
       "min_samples": 1,
       "use_neural_embeddings": true
     },

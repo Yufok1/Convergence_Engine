@@ -1525,12 +1525,141 @@ class NeuralTrainer:
         if len(organism.experience_buffer) < 2:
             return None
         
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        try:
+            # GROK SWARM FIX: Use proper seq2seq data from experience buffer instead of token_sequence
+            # This fixes the root cause of repetitive outputs - training on proper input→target pairs
+            
+            # Check if experience buffer has seq2seq data
+            if hasattr(organism.experience_buffer, 'has_seq2seq_data') and organism.experience_buffer.has_seq2seq_data(min_count=2):
+                # Use proper seq2seq sampling
+                _, _, rewards, _, _, input_tokens_list, target_tokens_list, _, vp_values = \
+                    organism.experience_buffer.sample_batch_with_seq2seq(min(4, len(organism.experience_buffer)))
+                
+                # Find the longest input/target pair for training
+                best_idx = 0
+                best_len = 0
+                for i, (inp, tgt) in enumerate(zip(input_tokens_list, target_tokens_list)):
+                    if len(inp) > 0 and len(tgt) > 0 and len(inp) + len(tgt) > best_len:
+                        best_len = len(inp) + len(tgt)
+                        best_idx = i
+                
+                if best_len >= 2:
+                    # Use the best seq2seq pair
+                    input_seq = input_tokens_list[best_idx]
+                    target_seq = target_tokens_list[best_idx]
+                    vp_value = vp_values[best_idx] if vp_values[best_idx] is not None else 0.0
+                    
+                    # Prepare tensors
+                    input_tokens = torch.LongTensor([input_seq]).to(self.device)
+                    target_tokens = torch.LongTensor([target_seq]).to(self.device)
+                else:
+                    # Fall back to token_sequence if no good seq2seq data
+                    return self._train_from_token_sequence(organism, network_state)
+            else:
+                # Fall back to legacy token_sequence method
+                return self._train_from_token_sequence(organism, network_state)
+            
+            # Get VP value for temperature scaling (if not already set from seq2seq)
+            if vp_value is None:
+                vp_value = network_state.get('vp_value', 0.0) if network_state else 0.0
+            
+            # Get state features for brain input
+            if hasattr(organism, 'get_state_features'):
+                state = organism.get_state_features(
+                    local_env=None,
+                    network_state=network_state,
+                    breath_state=None
+                )
+                state_tensor = torch.FloatTensor(state).unsqueeze(0).to(self.device)
+            else:
+                brain_input_dim = organism.brain.fc1.in_features
+                state_tensor = torch.zeros(1, brain_input_dim, device=self.device)
+            
+            # Forward pass to get language logits
+            organism.brain.train()
+            
+            if hasattr(organism.brain, 'fc_language'):
+                # Get language head output
+                hidden = torch.relu(organism.brain.fc1(state_tensor))
+                hidden = torch.relu(organism.brain.fc2(hidden))
+                language_logits = organism.brain.fc_language(hidden)
+                
+                # Expand to sequence length (use target_tokens size from seq2seq)
+                seq_len = target_tokens.size(1)
+                language_logits = language_logits.unsqueeze(1).expand(-1, seq_len, -1)
+                
+                # Calculate loss
+                loss = self.calculate_language_loss(language_logits, target_tokens, vp_value)
+                
+                # Backpropagation
+                organism_id = id(organism.brain)
+                if self.reuse_optimizers:
+                    if organism_id not in self.optimizers:
+                        self.optimizers[organism_id] = optim.Adam(
+                            organism.brain.parameters(), 
+                            lr=self.learning_rate
+                        )
+                    optimizer = self.optimizers[organism_id]
+                else:
+                    optimizer = optim.Adam(organism.brain.parameters(), lr=self.learning_rate)
+                
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+                
+                # Emit training event
+                if self.event_emitter:
+                    try:
+                        from causation_explorer import Event
+                        event = Event(
+                            timestamp=time.time(),
+                            component='neural',
+                            event_type='chat_training_complete',
+                            data={
+                                'organism_id': getattr(organism, 'species_id', str(organism_id)),
+                                'loss': float(loss.item()),
+                                'sequence_length': len(input_seq) + len(target_seq),  # GROK FIX: was token_seq (undefined)
+                                'vp_value': vp_value
+                            }
+                        )
+                        self.event_emitter(event)
+                    except Exception as e:
+                        logger.debug(f"Chat training event emission failed: {e}")
+                
+                logger.debug(f"[NEURAL] Chat training loss: {loss.item():.4f}")
+                return loss.item()
+            
+            return None
+            
+        except Exception as e:
+            logger.debug(f"[NEURAL] Chat training failed: {e}")
+            return None
+    
+    def _train_from_token_sequence(self,
+                                   organism: 'NeuralOrganism',
+                                   network_state: Optional[Dict[str, Any]] = None) -> Optional[float]:
+        """
+        LEGACY FALLBACK: Train from organism.token_sequence when no seq2seq data available.
+        
+        This is the old method that trains on concatenated token history.
+        Used only when experience buffer has no proper input_tokens/target_tokens data.
+        
+        Args:
+            organism: Neural organism to train
+            network_state: Current network state
+            
+        Returns:
+            Loss value if training occurred, None otherwise
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+        
         # Get token sequences from organism
         if not hasattr(organism, 'token_sequence') or len(organism.token_sequence) < 4:
             return None
-        
-        import logging
-        logger = logging.getLogger(__name__)
         
         try:
             # Get token sequence for training
@@ -1544,7 +1673,7 @@ class NeuralTrainer:
             seq_len = min(len(token_seq), self.current_sequence_length)
             token_seq = token_seq[-seq_len:]
             
-            # Prepare input/target pairs for next-token prediction
+            # Prepare input/target pairs for next-token prediction (legacy approach)
             input_tokens = torch.LongTensor([token_seq[:-1]]).to(self.device)
             target_tokens = torch.LongTensor([token_seq[1:]]).to(self.device)
             
@@ -1578,48 +1707,31 @@ class NeuralTrainer:
                 # Calculate loss
                 loss = self.calculate_language_loss(language_logits, target_tokens, vp_value)
                 
-                # Backpropagation
-                organism_id = id(organism.brain)
-                if self.reuse_optimizers:
-                    if organism_id not in self.optimizers:
-                        self.optimizers[organism_id] = optim.Adam(
-                            organism.brain.parameters(), 
-                            lr=self.learning_rate
-                        )
-                    optimizer = self.optimizers[organism_id]
-                else:
-                    optimizer = optim.Adam(organism.brain.parameters(), lr=self.learning_rate)
-                
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
-                
-                # Emit training event
-                if self.event_emitter:
-                    try:
-                        from causation_explorer import Event
-                        event = Event(
-                            timestamp=time.time(),
-                            component='neural',
-                            event_type='chat_training_complete',
-                            data={
-                                'organism_id': getattr(organism, 'species_id', str(organism_id)),
-                                'loss': float(loss.item()),
-                                'sequence_length': len(token_seq),
-                                'vp_value': vp_value
-                            }
-                        )
-                        self.event_emitter(event)
-                    except Exception as e:
-                        logger.debug(f"Chat training event emission failed: {e}")
-                
-                logger.debug(f"[NEURAL] Chat training loss: {loss.item():.4f}")
-                return loss.item()
+                if loss is not None:
+                    # Get or create optimizer (inline pattern - no helper method)
+                    organism_id = id(organism.brain)
+                    if self.reuse_optimizers:
+                        if organism_id not in self.optimizers:
+                            self.optimizers[organism_id] = optim.Adam(
+                                organism.brain.parameters(),
+                                lr=self.learning_rate
+                            )
+                        optimizer = self.optimizers[organism_id]
+                    else:
+                        optimizer = optim.Adam(organism.brain.parameters(), lr=self.learning_rate)
+                    
+                    optimizer.zero_grad()
+                    loss.backward()
+                    torch.nn.utils.clip_grad_norm_(organism.brain.parameters(), 1.0)
+                    optimizer.step()
+                    
+                    logger.debug(f"[NEURAL] Legacy token_sequence training loss: {loss.item():.4f}")
+                    return loss.item()
             
             return None
             
         except Exception as e:
-            logger.debug(f"[NEURAL] Chat training failed: {e}")
+            logger.debug(f"[NEURAL] Legacy token_sequence training failed: {e}")
             return None
     
     def bootstrap_language_learning(self,

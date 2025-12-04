@@ -164,6 +164,50 @@ class ExperienceBuffer:
         vp_values = [e.vp_value for e in experiences]
         
         return states, actions, rewards, next_states, dones, token_sequences, vp_values
+
+    def sample_batch_with_seq2seq(self, batch_size: int) -> Tuple[np.ndarray, np.ndarray, 
+                                                                   np.ndarray, np.ndarray, 
+                                                                   np.ndarray, List[List[int]],
+                                                                   List[List[int]], List[float],
+                                                                   List[Optional[float]]]:
+        """
+        Sample a batch with proper seq2seq input/target separation.
+        
+        GROK SWARM FIX: This method returns separated input_tokens and target_tokens
+        for proper supervised language learning instead of concatenated token_sequence.
+        
+        Args:
+            batch_size: Number of experiences to sample
+            
+        Returns:
+            Tuple of (states, actions, rewards, next_states, dones, 
+                      input_tokens_list, target_tokens_list, rewards_list, vp_values)
+        """
+        # Filter experiences that have proper seq2seq data
+        seq2seq_experiences = [e for e in self.buffer if e.has_seq2seq_data()]
+        
+        if len(seq2seq_experiences) < batch_size:
+            # Fall back to regular experiences if not enough seq2seq data
+            experiences = self.sample(min(batch_size, self.size))
+        else:
+            experiences = random.sample(seq2seq_experiences, min(batch_size, len(seq2seq_experiences)))
+        
+        states = np.array([e.state for e in experiences])
+        actions = np.array([e.action for e in experiences])
+        rewards = np.array([e.reward for e in experiences])
+        next_states = np.array([e.next_state for e in experiences])
+        dones = np.array([e.done for e in experiences])
+        input_tokens_list = [e.input_tokens for e in experiences]
+        target_tokens_list = [e.target_tokens for e in experiences]
+        rewards_list = [e.reward for e in experiences]
+        vp_values = [e.vp_value for e in experiences]
+        
+        return states, actions, rewards, next_states, dones, input_tokens_list, target_tokens_list, rewards_list, vp_values
+    
+    def has_seq2seq_data(self, min_count: int = 1) -> bool:
+        """Check if buffer has enough experiences with proper seq2seq data."""
+        seq2seq_count = sum(1 for e in self.buffer if e.has_seq2seq_data())
+        return seq2seq_count >= min_count
     
     def clear(self):
         """Clear all experiences from buffer."""
