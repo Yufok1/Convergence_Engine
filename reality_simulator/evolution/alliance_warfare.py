@@ -847,6 +847,9 @@ class AllianceWarfareSystem:
         self.config = config or {}
         self.event_emitter = event_emitter
         
+        # Neural organism registry for feedback loops (injected from UnifiedSystem)
+        self._neural_organisms: Optional[Dict[str, Any]] = None
+        
         # Logger
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
@@ -917,6 +920,31 @@ class AllianceWarfareSystem:
         # Like human civilization's history books, oral traditions, and laws.
         # ═══════════════════════════════════════════════════════════════════════
         self.alliance_histories: Dict[str, AllianceHistory] = {}  # alliance_id -> history
+    
+    def set_neural_organisms(self, organisms: Dict[str, Any]):
+        """
+        Inject neural organisms registry for feedback loops.
+        Called by UnifiedSystem after initialization.
+        """
+        self._neural_organisms = organisms
+    
+    def _get_neural_organism(self, organism_id: str):
+        """Get neural organism for feedback, if available."""
+        if self._neural_organisms:
+            return self._neural_organisms.get(organism_id)
+        return None
+    
+    def _record_neural_feedback(self, organism_id: str, event_type: str, success: bool):
+        """
+        Record alliance event to neural organism for learning.
+        Closes the alliance → neural feedback loop.
+        """
+        neural_org = self._get_neural_organism(organism_id)
+        if neural_org and hasattr(neural_org, 'record_alliance_event'):
+            try:
+                neural_org.record_alliance_event(event_type, success)
+            except Exception as e:
+                self.logger.debug(f"Neural feedback failed for {organism_id}: {e}")
     
     def _get_or_create_reputation(self, organism_id: str) -> OrganismReputation:
         """Get reputation, create if doesn't exist."""
@@ -3367,17 +3395,21 @@ class AllianceWarfareSystem:
                 self.territory_control[stolen] = winner.alliance_id
                 result['territory_stolen'] = stolen.value
             
-            # Update reputations
+            # Update reputations AND neural feedback
             for org_id in winner.members:
                 rep = self._get_or_create_reputation(org_id)
                 rep.alliances_honored += 1
                 rep.wars_fought += 1
                 rep.wars_won += 1
+                # 🧠 NEURAL FEEDBACK: War victory → positive reinforcement
+                self._record_neural_feedback(org_id, "war_won", True)
             
             for org_id in loser.members:
                 rep = self._get_or_create_reputation(org_id)
                 rep.alliances_honored += 1
                 rep.wars_fought += 1
+                # 🧠 NEURAL FEEDBACK: War defeat → negative reinforcement  
+                self._record_neural_feedback(org_id, "war_lost", False)
             
             result['war_ended'] = True
             

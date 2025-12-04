@@ -812,10 +812,22 @@ class NeuralTrainer:
         # Increment step count first
         self.training_step_count += 1
         
-        # Check if we should train this step
-        # With update_frequency=3: train on steps 3, 6, 9, etc.
-        # So we check if (step_count % update_frequency == 0)
-        if (self.training_step_count % self.update_frequency) != 0:
+        # Check if we should train this step - USE BREATH STATE
+        # Train during "exhale" phase (breath_depth descending, phase > π)
+        should_train = False
+        if breath_state and isinstance(breath_state, dict):
+            breath_depth = breath_state.get('depth', 0.0)
+            breath_phase = breath_state.get('phase', 0.0)
+            # Train during exhale phase (π to 2π) when breath is deep enough
+            # Exhale = consolidation phase, ideal for learning
+            training_threshold = 0.3
+            if breath_phase > 3.14159 and breath_depth > training_threshold:
+                should_train = True
+        else:
+            # Fallback to step counter if no breath state (backward compatibility)
+            should_train = (self.training_step_count % self.update_frequency) == 0
+
+        if not should_train:
             return None
         
         # Check if we have enough experiences to train

@@ -544,6 +544,15 @@ class BattleArena:
         
         self._emit_battle_event(outcome)
         
+        # 🧠 NEURAL FEEDBACK: Record individual battle outcomes for learning
+        # This wires up the previously orphaned BATTLE_FOUGHT concept
+        winner_org = org1 if winner_id == org1_id else org2
+        loser_org = org2 if winner_id == org1_id else org1
+        if hasattr(winner_org, 'record_alliance_event'):
+            winner_org.record_alliance_event("battle_won", True)
+        if hasattr(loser_org, 'record_alliance_event'):
+            loser_org.record_alliance_event("battle_lost", False)
+        
         return outcome
     
     def _resolve_attack(self, attacker_stats: CombatStats, 

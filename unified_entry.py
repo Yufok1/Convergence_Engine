@@ -1694,6 +1694,12 @@ class UnifiedSystem:
             # Store reference to network for organism access
             self._highlander_network = network
             
+            # 🧠 NEURAL FEEDBACK LOOP: Inject organisms into alliance warfare
+            # This allows alliance outcomes to feed back into neural learning
+            if network and hasattr(network, 'organisms') and self.alliance_warfare:
+                self.alliance_warfare.set_neural_organisms(network.organisms)
+                print("[UNIFIED] [HIGHLANDER] 🧠 Neural feedback loop connected (alliance → neural)")
+            
             print(f"[UNIFIED] [HIGHLANDER] ✅ Protocol active with {self.highlander_protocol.get_population_count()} organisms")
             print(f"[UNIFIED] [HIGHLANDER] 📊 Config: survival={survival_threshold}, intensity={competition_intensity}")
             self.logger.log_state('system', {

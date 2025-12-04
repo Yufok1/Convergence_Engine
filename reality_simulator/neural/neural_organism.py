@@ -1232,7 +1232,7 @@ class NeuralOrganism(Organism):
         Record alliance-related events as training rewards.
 
         Args:
-            event_type: Type of alliance event ("joined", "betrayed", "war_won", "war_lost")
+            event_type: Type of alliance event ("joined", "betrayed", "war_won", "war_lost", "battle_won", "battle_lost")
             success: True if the event was successful for this organism
         """
         # Reward mapping for different alliance events
@@ -1240,7 +1240,9 @@ class NeuralOrganism(Organism):
             "joined": 0.3,      # Positive for forming alliances
             "betrayed": -0.8,   # Negative for betrayal
             "war_won": 0.5,     # Positive for winning wars
-            "war_lost": -0.3    # Negative for losing wars
+            "war_lost": -0.3,   # Negative for losing wars
+            "battle_won": 0.2,  # Positive for individual battle wins
+            "battle_lost": -0.1 # Slight negative for individual losses
         }
         
         # Reputation adjustments for alliance events (Integration: Feature 20)
@@ -1248,7 +1250,9 @@ class NeuralOrganism(Organism):
             "joined": 0.05,     # Joining alliance builds reputation
             "betrayed": -0.2,   # Betrayal damages reputation significantly
             "war_won": 0.1,     # Victory improves standing
-            "war_lost": -0.05   # Loss slightly reduces reputation
+            "war_lost": -0.05,  # Loss slightly reduces reputation
+            "battle_won": 0.02, # Individual wins build reputation
+            "battle_lost": -0.01 # Individual losses minor impact
         }
 
         # Get base reward
