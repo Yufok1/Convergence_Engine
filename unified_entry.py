@@ -1032,6 +1032,18 @@ class UnifiedSystem:
         self.config_watcher = ConfigHotReloadWatcher(parent_path / 'config.json')
         self.active_config = self.config_watcher.get_current_config()
         
+        # Apply Hardware Governor - MUST happen before any other system uses config
+        # Hardware envelope supersedes CRA self-tuning for hardware-critical params
+        try:
+            from reality_simulator.hardware_governor import apply_hardware_envelope, get_hardware_governor
+            force_profile = self.active_config.get('hardware_profile', None)  # Allow manual override
+            self.active_config = apply_hardware_envelope(self.active_config, force_profile)
+            self.hardware_governor = get_hardware_governor()
+            print(f"[UNIFIED] [PASS] Hardware Governor: {self.hardware_governor.capabilities.profile.value.upper()} mode")
+        except Exception as hw_err:
+            print(f"[UNIFIED] [WARN] Hardware Governor not applied: {hw_err}")
+            self.hardware_governor = None
+        
         # Initialize systems FIRST (before visualization, which needs references)
         print("\n[UNIFIED] Initializing systems...")
         

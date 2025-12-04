@@ -6,6 +6,8 @@
     "learning_rate_resolution": 1e-06,
     "performance_tracking_precision": 0.0001
   },
+  "hardware_profile": null,
+  "_hardware_profile_help": "Set to 'beast', 'workstation', 'standard', 'laptop', 'potato', or 'cpu_only' to override auto-detection. null = auto-detect",
   "causation_detection": {
     "correlation_threshold": 0.45,
     "direct_causation_time_window": 2,
