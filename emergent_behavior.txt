@@ -477,6 +477,68 @@ Quick Win #16: Expanded CRA Control (54 Safe Parameters) ⭐ NEW (2025-12-03)
   - Parameter change success rates
   - Emergence metrics correlation with tuner adjustments
 
+Quick Win #17: Proton Game Arena (Gym Battle Settlement) ⭐ NEW (2025-12-04)
+- **Attribution**: Game selection grid inspired by Piers Anthony's "Apprentice Adept" series (1980-1990)
+- **Attribution**: Absorption system inspired by "Highlander" (1986) film
+- **Core Concept**: Strategic game selection + OpenAI Gym battle resolution for organism combat
+- **Status**: ENABLED
+- **4x4 Game Selection Grid**:
+  - **Rows (Challenge Types)**: PHYSICAL, MENTAL, CHANCE, ARTS
+  - **Columns (Resource Types)**: NAKED, TOOL, MACHINE, ANIMAL
+  - **Selection Process**: One organism chooses row (challenge), other chooses column (resource)
+  - **Strategic Element**: Organisms pick based on their traits/strengths
+- **26 Gym Environments Mapped**:
+  | Challenge | Naked | Tool | Machine | Animal |
+  |-----------|-------|------|---------|--------|
+  | PHYSICAL | CartPole, MountainCar, Acrobot | LunarLander, Pendulum | BipedalWalker, CarRacing | Ant, HalfCheetah |
+  | MENTAL | FrozenLake, CliffWalking | Blackjack, Taxi | Breakout, Pong | Custom Pursuit |
+  | CHANCE | CoinFlip, DiceRoll | SlotMachine, Roulette | QuantumRandom | AnimalRace |
+  | ARTS | WordCoherence, ConceptLink | VocabBattle | DialogueQuality | SwarmArt |
+- **Battle Flow**:
+  1. `proton_selection_begun` - Organisms assigned row/column chooser roles
+  2. `proton_challenge_chosen` - Row chooser picks PHYSICAL/MENTAL/CHANCE/ARTS
+  3. `proton_resource_chosen` - Column chooser picks NAKED/TOOL/MACHINE/ANIMAL
+  4. `proton_game_selected` - Final game determined from grid intersection
+  5. `proton_battle_complete` - Gym episodes run, winner determined by score
+  6. `proton_consequences_applied` - Fitness/resource transfer executed
+- **Consequences System**:
+  - fitness_transfer_rate: 0.15 (winner takes 15% of loser's fitness)
+  - resource_transfer_rate: 0.1 (winner takes 10% of loser's energy)
+  - trait_evolution_enabled: true (winners develop stronger traits)
+  - highlander_mode: If true, loser is eliminated ("There can be only one")
+- **AI-Driven Selection**:
+  - Organisms evaluate their traits vs game requirements
+  - Favored traits per game (e.g., CartPole favors stability, reflexes)
+  - Strategic maneuvering to pick favorable matchups
+- **Tournament Modes**:
+  - single_elimination: Bracket-style knockout
+  - round_robin: Everyone plays everyone
+  - seeding_method: fitness_based (top organisms seeded higher)
+- **Bridge Commands** (Exported Agents):
+  - `/arena` - Show game selection grid
+  - `/arena games [category]` - List available games
+  - `/arena play <game>` - Play specific game
+- **Integration**:
+  - BattleType.PROTON_GAME in battle_arena.py
+  - _resolve_proton_game_battle() converts arena result to BattleOutcome
+  - Causation events emitted for full tracking
+- **Config Paths**:
+  - /arena/enabled (master toggle)
+  - /arena/default_battle_type ("PROTON_GAME")
+  - /arena/game_selection/mode ("ai_driven")
+  - /arena/game_selection/allow_negotiation (true)
+  - /arena/gym_settings/default_episodes (10)
+  - /arena/gym_settings/max_episode_steps (1000)
+  - /arena/battle_consequences/fitness_transfer_rate (0.15)
+  - /arena/battle_consequences/resource_transfer_rate (0.1)
+  - /arena/tournament/default_format ("single_elimination")
+  - /arena/grid_weights/challenge_types/* (adjust game category emphasis)
+- **Visualization**:
+  - Component color: Orange (#FF6B35) - componentColor_proton_arena
+  - Link color: Orange (#FF6B35) - linkColor_arena
+  - Events appear in causation graph with proton_arena component
+- **Emergence benefit**: Strategic game selection teaches self-awareness and opponent modeling; gym battles provide objective skill measurement; consequence system creates meaningful stakes driving rapid adaptation
+
 ---
 📋 Detailed Instructions
 
