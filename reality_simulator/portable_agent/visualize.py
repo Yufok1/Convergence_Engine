@@ -109,13 +109,35 @@ class AgentVisualizer:
     
     def _get_input_dim(self) -> int:
         """Get the input dimension from metadata or model."""
+        # Check neural_network architecture first
         if self.metadata:
             arch = self.metadata.get('neural_network', {}).get('architecture', {})
             if 'input_size' in arch:
                 return arch['input_size']
+            
+            # Check ensemble members
+            ensemble = self.metadata.get('ensemble', {})
+            members = ensemble.get('members', [])
+            if members and 'input_dim' in members[0]:
+                return members[0]['input_dim']
+            
+            # Check max_input_dim from ensemble
+            if 'max_input_dim' in ensemble:
+                return ensemble['max_input_dim']
+        
+        # Check bridge_config.json
+        config_path = self.archive_dir / 'bridge_config.json'
+        if config_path.exists():
+            try:
+                with open(config_path, 'r') as f:
+                    config = json.load(f)
+                if 'state_dim' in config:
+                    return config['state_dim']
+            except Exception:
+                pass
         
         # Default fallback
-        return 18
+        return 24  # Updated default to match current system
     
     def predict(self, state: list) -> dict:
         """Run inference and return Q-values and action."""
@@ -196,16 +218,19 @@ class AgentVisualizer:
             color = ACTION_COLORS.get(response, '#666')
             scenario_html += f'<div class="scenario"><strong>{scenario.replace("_", " ").title()}:</strong> <span style="color: {color}; font-weight: bold;">{response}</span></div>'
         
-        # Input sliders
+        # Input sliders (24 dimensions to match current neural system)
         input_labels = [
-            'pos_x', 'pos_y', 'pos_z',
-            'vel_x', 'vel_y', 'vel_z',
-            'energy', 'health', 'age',
-            'threat_1', 'threat_2', 'threat_3',
-            'resource_1', 'resource_2', 'resource_3',
-            'social_1', 'social_2', 'social_3'
+            'pos_x', 'pos_y', 'pos_z',                        # 0-2: position
+            'vel_x', 'vel_y', 'vel_z',                        # 3-5: velocity
+            'energy', 'health', 'age',                        # 6-8: vitality
+            'threat_1', 'threat_2', 'threat_3',               # 9-11: threats
+            'resource_1', 'resource_2', 'resource_3',         # 12-14: resources
+            'social_1', 'social_2', 'social_3',               # 15-17: social
+            'alliance', 'battle',                             # 18-19: combat
+            'vocab_size', 'comm_activity',                    # 20-21: language
+            'vp', 'coherence'                                 # 22-23: stability
         ]
-        # Extend labels if input_dim > 18
+        # Extend labels if input_dim > 24
         while len(input_labels) < self.input_dim:
             input_labels.append(f'input_{len(input_labels)}')
         

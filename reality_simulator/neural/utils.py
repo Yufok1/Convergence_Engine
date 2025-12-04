@@ -167,7 +167,7 @@ def create_brain(config: Dict[str, Any], silent: bool = False):
     else:
         concept_config = config.get('concept_system', {})
     use_concept_head = concept_config.get('enabled', False)
-    num_key_compositions = concept_config.get('num_key_compositions', 15)
+    num_key_compositions = concept_config.get('num_key_compositions', 20)
     
     # Debug log for language/concept head creation (only once per batch, or if not silent)
     if not silent and not _brain_creation_counter['logged_config']:

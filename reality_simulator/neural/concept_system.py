@@ -676,7 +676,7 @@ def get_concept_config_defaults() -> Dict[str, Any]:
         'concept_loss_weight': 0.1,  # Weight in triple-loss
         'utility_update_alpha': 0.1,
         'key_compositions': KEY_COMPOSITIONS,
-        'num_key_compositions': 15,  # Updated from 5 to 15
+        'num_key_compositions': 20,  # Updated to match config.json
     }
 
 

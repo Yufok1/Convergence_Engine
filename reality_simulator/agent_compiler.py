@@ -63,6 +63,28 @@ class AgentCompiler:
     def __init__(self):
         self.supported_formats = ['onnx', 'torchscript', 'statedict']
 
+    class LanguageHeadWrapper(torch.nn.Module):
+        """Wrapper that exports both action and language heads together."""
+        
+        def __init__(self, brain: 'OrganismBrain'):
+            super().__init__()
+            self.brain = brain
+            self.has_language_head = brain.use_language_head
+            self.input_dim = brain.input_dim
+            self.output_dim = brain.output_dim
+            self.vocab_size = brain.vocab_size if hasattr(brain, 'vocab_size') else 50000
+            
+        def forward(self, x: torch.Tensor):
+            """Forward pass returning (action_probs, language_logits) if language head exists."""
+            if self.has_language_head:
+                # Call forward with return_language_logits=True
+                action_probs, language_logits = self.brain(x, return_language_logits=True)
+                return action_probs, language_logits
+            else:
+                # Just return action probs
+                action_probs = self.brain(x)
+                return action_probs
+
     class MultiOrganismWrapper(torch.nn.Module):
         def __init__(self, brains: List['OrganismBrain'], names: List[str]):
             super().__init__()
@@ -195,18 +217,38 @@ class AgentCompiler:
         return reconstructed_brain
 
     def _export_onnx(self, brain: OrganismBrain, dummy_input: torch.Tensor, model_path: str) -> None: 
-        """Exports the PyTorch brain to ONNX format."""
+        """Exports the PyTorch brain to ONNX format, including language head if present."""
         try:
+            # Wrap brain to export both action and language heads
+            wrapper = self.LanguageHeadWrapper(brain)
+            wrapper.eval()
+            
+            # Configure output names based on whether language head exists
+            if wrapper.has_language_head:
+                output_names = ['action_probs', 'language_logits']
+                dynamic_axes = {
+                    'input': {0: 'batch_size'},
+                    'action_probs': {0: 'batch_size'},
+                    'language_logits': {0: 'batch_size'}
+                }
+            else:
+                output_names = ['action_probs']
+                dynamic_axes = {
+                    'input': {0: 'batch_size'},
+                    'action_probs': {0: 'batch_size'}
+                }
+            
             torch.onnx.export(
-                brain,
+                wrapper,
                 dummy_input,
                 model_path,
                 input_names=['input'],
-                output_names=['output'],
-                dynamic_axes={'input': {0: 'batch_size'}, 'output': {0: 'batch_size'}},
+                output_names=output_names,
+                dynamic_axes=dynamic_axes,
                 opset_version=11 # A commonly supported opset version
             )
-            logger.info(f"Successfully exported brain to ONNX: {model_path}")
+            head_info = " (with language head)" if wrapper.has_language_head else ""
+            logger.info(f"Successfully exported brain to ONNX{head_info}: {model_path}")
         except Exception as e:
             # Provide clearer guidance when onnx/onnxscript is missing (PyTorch 2.6+)
             msg = str(e)
@@ -217,29 +259,34 @@ class AgentCompiler:
             raise
 
     def _export_torchscript(self, brain: OrganismBrain, model_path) -> None: 
-        """Exports the PyTorch brain to TorchScript format.
+        """Exports the PyTorch brain to TorchScript format, including language head if present.
         
         Args:
             brain: The OrganismBrain to export
             model_path: Either a file path string or a BytesIO buffer
         """
         try:
+            # Wrap brain to export both action and language heads
+            wrapper = self.LanguageHeadWrapper(brain)
+            wrapper.eval()
+            
             # Use torch.jit.trace instead of torch.jit.script
             # trace captures the execution path dynamically, which works with
             # OrganismBrain's complex control flow (conditional attention, etc.)
             # script analyzes code statically and fails on Python 3.12 + PyTorch 2.5
-            brain.eval()  # Disable dropout for deterministic tracing
             dummy_input = torch.randn(1, brain.input_dim, dtype=torch.float32)
-            traced_brain = torch.jit.trace(brain, (dummy_input,))
+            traced_brain = torch.jit.trace(wrapper, (dummy_input,))
+            
+            head_info = " (with language head)" if wrapper.has_language_head else ""
             
             # Handle both file path (str) and BytesIO buffer
             if isinstance(model_path, BytesIO):
                 torch.jit.save(traced_brain, model_path)
                 model_path.seek(0)  # Reset buffer position for reading
-                logger.info("Successfully exported brain to TorchScript (traced) in memory buffer")
+                logger.info(f"Successfully exported brain to TorchScript (traced){head_info} in memory buffer")
             else:
                 traced_brain.save(model_path)
-                logger.info(f"Successfully exported brain to TorchScript (traced): {model_path}")
+                logger.info(f"Successfully exported brain to TorchScript (traced){head_info}: {model_path}")
         except Exception as e:
             logger.error(f"Failed to export brain to TorchScript: {e}")
             raise
@@ -253,9 +300,13 @@ class AgentCompiler:
             logger.error(f"Failed to export brain state_dict at {model_path}: {e}")
             raise
 
-    def _create_rich_metadata(self, capsule: OrganismCapsule) -> Dict[str, Any]:
+    def _create_rich_metadata(self, capsule: OrganismCapsule, brain: Optional[OrganismBrain] = None) -> Dict[str, Any]:
         """
         Creates comprehensive metadata for the compiled agent, leveraging the rich capsule data.
+        
+        Args:
+            capsule: The OrganismCapsule containing agent state
+            brain: Optional reconstructed brain for extracting additional architecture info
         """
         metadata = {
             'agent_id': capsule.organism_id,
@@ -280,7 +331,11 @@ class AgentCompiler:
                     'hidden_size': capsule.neural.hidden_size,
                     'output_size': capsule.neural.output_size,
                     'num_layers': capsule.neural.num_layers,
-                    'total_parameters': capsule.neural.total_parameters
+                    'total_parameters': capsule.neural.total_parameters,
+                    'has_language_head': hasattr(brain, 'use_language_head') and brain.use_language_head if brain else False,
+                    'has_attention': hasattr(brain, 'use_attention') and brain.use_attention if brain else False,
+                    'has_concept_head': hasattr(brain, 'use_concept_head') and brain.use_concept_head if brain else False,
+                    'vocab_size': brain.vocab_size if brain and hasattr(brain, 'vocab_size') and hasattr(brain, 'use_language_head') and brain.use_language_head else None
                 } if capsule.neural else {},
                 'training_steps': capsule.neural.training_steps if capsule.neural else 0,
                 'avg_loss': None,
@@ -803,6 +858,7 @@ if __name__ == "__main__":
             
             # 5. Bridge Config (JSON) - Critical for AgentBridge to know state dimensions
             input_dim = metadata.get('neural_network', {}).get('architecture', {}).get('input_size', 24)
+            arch_info = metadata.get('neural_network', {}).get('architecture', {})
             bridge_config = {
                 'state_dim': input_dim,
                 'num_actions': 6,
@@ -815,13 +871,29 @@ if __name__ == "__main__":
                 'batch_size': 32,
                 'max_response_length': 32,
                 'temperature': 1.0,
-                'default_port': 8080
+                'default_port': 8080,
+                'has_language_head': arch_info.get('has_language_head', False),
+                'has_attention': arch_info.get('has_attention', False),
+                'has_concept_head': arch_info.get('has_concept_head', False),
+                'vocab_size': arch_info.get('vocab_size', 50000)
             }
             zf.writestr("bridge_config.json", json.dumps(bridge_config, indent=2))
             
             # 6. Atomic Language (JSON)
             if capsule.language:
                 zf.writestr("atomic_language.json", json.dumps(capsule.language.to_dict(), indent=2))
+            else:
+                # Write empty language file - bridge.py will use default vocabulary
+                empty_language = {
+                    'vocabulary': [],
+                    'word_frequencies': {},
+                    'concepts': {},
+                    'semantic_associations': {},
+                    'dialect_signature': None,
+                    'total_concepts': 0,
+                    'source_note': 'No language training data available'
+                }
+                zf.writestr("atomic_language.json", json.dumps(empty_language, indent=2))
 
             # 6. Runner Script
             zf.writestr("run_agent.py", runner_script)
@@ -1673,7 +1745,7 @@ done
             zf.writestr("metadata.json", json.dumps(metadata, indent=2))
             
             # Bridge Config (JSON) - Critical for AgentBridge to know state dimensions
-            max_input_dim = metadata.get('ensemble', {}).get('max_input_dim', 18)
+            max_input_dim = metadata.get('ensemble', {}).get('max_input_dim', 24)
             bridge_config = {
                 'state_dim': max_input_dim,
                 'num_actions': 6,
@@ -2523,7 +2595,7 @@ if __name__ == '__main__':
             self._export_statedict(brain, model_buffer)
         
         # 4. Create rich metadata
-        metadata = self._create_rich_metadata(capsule)
+        metadata = self._create_rich_metadata(capsule, brain)
         metadata['export_format'] = chosen_format # Add (possibly updated) export format to metadata
         
         # 4b. Compute behavioral fingerprint by sampling the brain

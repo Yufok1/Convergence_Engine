@@ -104,8 +104,8 @@ class AgentConfig:
     ])
     num_actions: int = 6
     
-    # State space
-    state_dim: int = 18
+    # State space (24D to match current neural system)
+    state_dim: int = 24
     
     # Learning
     epsilon: float = 0.1
@@ -151,7 +151,7 @@ class InputAdapter:
 class GymInputAdapter(InputAdapter):
     """Adapter for Gymnasium/Gym observations."""
     
-    def __init__(self, state_dim: int = 18):
+    def __init__(self, state_dim: int = 24):
         self.state_dim = state_dim
     
     def to_state(self, obs: Any, context: Optional[Dict] = None) -> np.ndarray:
@@ -216,9 +216,15 @@ class TextInputAdapter(InputAdapter):
         'confident': (15, 0.5), 'scared': (15, -0.5), 'uncertain': (15, -0.2),
         'happy': (16, 0.5), 'sad': (16, -0.4), 'angry': (16, 0.3),
         'calm': (17, -0.3), 'stressed': (17, 0.4), 'relaxed': (17, -0.4),
+        
+        # Extended state indicators (dim 18-23)
+        'alliance': (18, 0.5), 'battle': (19, 0.5), 'victory': (19, 0.7), 'defeat': (19, -0.5),
+        'vocabulary': (20, 0.5), 'communicate': (21, 0.5), 'language': (21, 0.4),
+        'vp': (22, 0.5), 'pressure': (22, 0.4), 'violation': (22, 0.6),
+        'coherence': (23, 0.5), 'stability': (23, 0.4),
     }
     
-    def __init__(self, state_dim: int = 18, vocabulary: Optional[Dict] = None):
+    def __init__(self, state_dim: int = 24, vocabulary: Optional[Dict] = None):
         self.state_dim = state_dim
         self.vocabulary = vocabulary or {}
         
@@ -272,21 +278,24 @@ class TextInputAdapter(InputAdapter):
 class ContextInputAdapter(InputAdapter):
     """Adapter for structured context dictionaries."""
     
-    def __init__(self, state_dim: int = 18):
+    def __init__(self, state_dim: int = 24):
         self.state_dim = state_dim
         
     def to_state(self, context: Dict[str, Any], _: Optional[Dict] = None) -> np.ndarray:
         """Convert context dict directly to state vector."""
         state = np.zeros(self.state_dim, dtype=np.float32)
         
-        # Direct mapping for known keys
+        # Direct mapping for known keys (24 dimensions)
         mapping = [
-            'energy', 'hunger', 'health',
-            'danger', 'enemy_distance', 'attack_imminent',
-            'friend_nearby', 'cooperation', 'competition',
-            'food_available', 'abundance', 'opportunity',
-            'crowding', 'temperature', 'visibility',
-            'confidence', 'mood', 'stress'
+            'energy', 'hunger', 'health',                     # 0-2: vitality
+            'danger', 'enemy_distance', 'attack_imminent',    # 3-5: threat
+            'friend_nearby', 'cooperation', 'competition',    # 6-8: social
+            'food_available', 'abundance', 'opportunity',     # 9-11: resources
+            'crowding', 'temperature', 'visibility',          # 12-14: environment
+            'confidence', 'mood', 'stress',                   # 15-17: emotional
+            'alliance_strength', 'battle_performance',        # 18-19: alliance/combat
+            'vocabulary_size', 'communication_activity',      # 20-21: language
+            'violation_pressure', 'coherence'                 # 22-23: VP/stability
         ]
         
         for i, key in enumerate(mapping):
@@ -431,9 +440,9 @@ class PortableVocabulary:
     
     @classmethod
     def load(cls, path: Path) -> 'PortableVocabulary':
-        """Load vocabulary from atomic_language.json."""
+        """Load vocabulary from atomic_language.json or similar file."""
         if not path.exists():
-            return cls()
+            return cls._create_default_vocabulary()
         
         with open(path, 'r', encoding='utf-8') as f:
             data = json.load(f)
@@ -443,15 +452,60 @@ class PortableVocabulary:
         # Handle different atomic_language.json formats
         if 'word_to_id' in data:
             vocab.word_to_id = data['word_to_id']
-        elif 'concepts' in data:
+        elif 'concepts' in data and data['concepts']:
             # Extract words from atomic concepts
             for concept_id, concept_data in data['concepts'].items():
                 vocab.add_word(concept_id)
-        elif 'vocabulary' in data:
+        elif 'vocabulary' in data and data['vocabulary']:
             for word in data['vocabulary']:
                 vocab.add_word(word)
+        elif 'semantic_associations' in data and data['semantic_associations']:
+            # Extract words from semantic associations
+            for word in data['semantic_associations'].keys():
+                vocab.add_word(word)
+        
+        # If vocabulary is still basically empty, use default
+        if vocab.vocab_size <= 5:
+            print(f"  ⚠ Vocabulary file has no words, using built-in vocabulary")
+            return cls._create_default_vocabulary()
         
         vocab.id_to_word = {int(v): k for k, v in vocab.word_to_id.items()}
+        return vocab
+    
+    @classmethod
+    def _create_default_vocabulary(cls) -> 'PortableVocabulary':
+        """Create a default vocabulary with common organism-relevant words."""
+        vocab = cls()
+        
+        # Basic action/state words
+        default_words = [
+            # Actions
+            'move', 'cooperate', 'compete', 'rest', 'reproduce', 'isolate',
+            'explore', 'search', 'attack', 'defend', 'flee', 'hide',
+            # States
+            'energy', 'health', 'danger', 'safe', 'threat', 'opportunity',
+            'hungry', 'tired', 'strong', 'weak', 'alive', 'dying',
+            # Environment
+            'food', 'water', 'shelter', 'resource', 'territory', 'home',
+            'crowded', 'empty', 'dark', 'light', 'hot', 'cold',
+            # Social
+            'friend', 'enemy', 'ally', 'rival', 'group', 'alone',
+            'help', 'share', 'fight', 'trust', 'fear', 'hope',
+            # Descriptors
+            'good', 'bad', 'better', 'worse', 'best', 'worst',
+            'high', 'low', 'near', 'far', 'fast', 'slow',
+            # Connectors
+            'and', 'but', 'or', 'the', 'a', 'to', 'is', 'are',
+            'i', 'we', 'they', 'it', 'this', 'that', 'here', 'there',
+            # Organism-specific
+            'survive', 'thrive', 'adapt', 'evolve', 'grow', 'learn',
+            'sense', 'feel', 'know', 'want', 'need', 'must',
+        ]
+        
+        for word in default_words:
+            vocab.add_word(word)
+        
+        print(f"  ✓ Created default vocabulary: {vocab.vocab_size} words")
         return vocab
 
 
@@ -581,6 +635,7 @@ class AgentBridge:
         # Brain (ONNX or TorchScript)
         self.brain = None
         self.brain_type = None
+        self.has_language_head = False  # Track if model has language generation capability
         if brain_path:
             self._load_brain(brain_path)
         
@@ -594,17 +649,20 @@ class AgentBridge:
         self._server_app = None
         self._server_thread = None
         
-        logger.info(f"AgentBridge initialized (brain: {self.brain_type}, vocab: {self.vocabulary.vocab_size})")
+        logger.info(f"AgentBridge initialized (brain: {self.brain_type}, vocab: {self.vocabulary.vocab_size}, language_head: {self.has_language_head})")
     
     def _load_brain(self, path: Path):
-        """Load neural network model."""
+        """Load neural network model and detect capabilities."""
         path = Path(path)
         
         if path.suffix == '.onnx' and ONNX_AVAILABLE:
             try:
                 self.brain = ort.InferenceSession(str(path))
                 self.brain_type = 'onnx'
-                print(f"  ✓ Loaded ONNX model")
+                # Check for language head in ONNX outputs
+                output_names = [o.name for o in self.brain.get_outputs()]
+                self.has_language_head = len(output_names) > 1
+                print(f"  ✓ Loaded ONNX model ({len(output_names)} outputs)")
             except Exception as e:
                 print(f"  ✗ Failed to load ONNX model: {e}")
             
@@ -613,7 +671,20 @@ class AgentBridge:
                 self.brain = torch.jit.load(str(path))
                 self.brain.eval()
                 self.brain_type = 'torchscript'
-                print(f"  ✓ Loaded TorchScript model")
+                
+                # Test inference to detect language head
+                try:
+                    dummy = torch.zeros(1, self.config.state_dim)
+                    with torch.no_grad():
+                        outputs = self.brain(dummy)
+                    if isinstance(outputs, tuple) and len(outputs) >= 2:
+                        self.has_language_head = True
+                        print(f"  ✓ Loaded TorchScript model (with language head)")
+                    else:
+                        print(f"  ✓ Loaded TorchScript model")
+                except Exception:
+                    print(f"  ✓ Loaded TorchScript model")
+                    
             except Exception as e:
                 print(f"  ✗ Failed to load TorchScript model: {e}")
         
@@ -671,18 +742,134 @@ class AgentBridge:
         return action, q_values, confidence
     
     def _generate_response(self, state: np.ndarray, action: int) -> str:
-        """Generate language response (if model supports it)."""
-        # For now, return action-based response
-        # TODO: Use language head if available
+        """Generate language response using the language head if available."""
+        # Try to use the language head for real generation
+        if self.has_language_head and self.vocabulary.vocab_size > 10 and self.brain is not None:
+            try:
+                response = self._generate_from_language_head(state)
+                if response and len(response) > 2:
+                    return response
+            except Exception as e:
+                logger.debug(f"Language generation failed: {e}")
+        
+        # Fallback to enhanced action-based responses
         action_responses = {
-            0: "Moving to explore the environment.",
-            1: "Seeking cooperation with nearby entities.",
-            2: "Competing for available resources.",
-            3: "Resting to conserve energy.",
-            4: "Conditions favor reproduction.",
-            5: "Isolating for safety.",
+            0: self._get_contextual_response("move", state),
+            1: self._get_contextual_response("cooperate", state),
+            2: self._get_contextual_response("compete", state),
+            3: self._get_contextual_response("rest", state),
+            4: self._get_contextual_response("reproduce", state),
+            5: self._get_contextual_response("isolate", state),
         }
         return action_responses.get(action, "")
+    
+    def _generate_from_language_head(self, state: np.ndarray, max_tokens: int = 16, temperature: float = 1.0) -> str:
+        """Generate text using the neural network's language head."""
+        if not TORCH_AVAILABLE or self.brain_type != 'torchscript':
+            return ""
+        
+        state = state.astype(np.float32)
+        if len(state.shape) == 1:
+            state = state.reshape(1, -1)
+        
+        generated_tokens = []
+        
+        with torch.no_grad():
+            state_tensor = torch.FloatTensor(state)
+            
+            # Get model outputs - language logits should be second output if available
+            outputs = self.brain(state_tensor)
+            
+            if isinstance(outputs, tuple) and len(outputs) >= 2:
+                # outputs[0] = action probs, outputs[1] = language logits
+                language_logits = outputs[1]
+                
+                if language_logits is not None and language_logits.numel() > 0:
+                    # Sample tokens from logits
+                    logits = language_logits[0] if len(language_logits.shape) > 1 else language_logits
+                    
+                    # Apply temperature
+                    logits = logits / temperature
+                    
+                    # Sample multiple tokens
+                    probs = torch.softmax(logits, dim=-1)
+                    
+                    for _ in range(max_tokens):
+                        token_id = torch.multinomial(probs, 1).item()
+                        
+                        # Stop at END token or if we've repeated too much
+                        if token_id == self.vocabulary.SPECIAL_TOKENS.get('<END>', 3):
+                            break
+                        if token_id < 4:  # Skip special tokens
+                            continue
+                            
+                        generated_tokens.append(token_id)
+                        
+                        # Early stop if we have enough
+                        if len(generated_tokens) >= max_tokens:
+                            break
+        
+        # Decode tokens to words
+        if generated_tokens:
+            words = self.vocabulary.decode(generated_tokens, skip_special=True)
+            return ' '.join(words)
+        
+        return ""
+    
+    def _get_contextual_response(self, action: str, state: np.ndarray) -> str:
+        """Generate contextual response based on action and state."""
+        # Enhanced responses that consider state context
+        base_responses = {
+            'move': [
+                "Moving to explore the environment.",
+                "Relocating to a better position.",
+                "Seeking new opportunities elsewhere.",
+            ],
+            'cooperate': [
+                "Seeking cooperation with nearby entities.",
+                "Offering to work together.",
+                "Building alliances for mutual benefit.",
+            ],
+            'compete': [
+                "Competing for available resources.",
+                "Asserting dominance in this situation.",
+                "Fighting for what I need.",
+            ],
+            'rest': [
+                "Resting to conserve energy.",
+                "Taking a moment to recover.",
+                "Pausing to assess the situation.",
+            ],
+            'reproduce': [
+                "Conditions favor reproduction.",
+                "Passing on my knowledge to the next generation.",
+                "Creating offspring to continue my legacy.",
+            ],
+            'isolate': [
+                "Isolating for safety.",
+                "Withdrawing from potential threats.",
+                "Finding solitude to regroup.",
+            ],
+        }
+        
+        responses = base_responses.get(action, ["Taking action."])
+        
+        # Use state to pick contextually appropriate response
+        if len(state) >= 8:
+            # Use energy/health state to modulate
+            energy_level = state[6] if len(state) > 6 else 0.5
+            if energy_level < 0.3:
+                # Low energy responses
+                modifiers = {
+                    'move': "Despite low energy, I'm moving.",
+                    'rest': "Desperately need to rest.",
+                    'compete': "Struggling but competing.",
+                }
+                if action in modifiers:
+                    return modifiers[action]
+        
+        # Random selection from base responses for variety
+        return responses[self.total_steps % len(responses)]
     
     # =========================================================================
     # MAIN INTERFACE - process() is the core method
@@ -801,11 +988,19 @@ class AgentBridge:
         Returns:
             Statistics dict
         """
-        # Import gym
+        # Import gym with helpful error message
         try:
             import gymnasium as gym
         except ImportError:
-            import gym
+            try:
+                import gym
+            except ImportError:
+                print("\n❌ Gym environment not available.")
+                print("   Install with one of:")
+                print("     pip install gymnasium    (recommended)")
+                print("     pip install gym          (legacy)")
+                print("")
+                return {'error': 'gymnasium/gym not installed', 'episodes': 0, 'total_rewards': [], 'episode_lengths': []}
         
         env = gym.make(env_spec)
         
@@ -1134,6 +1329,15 @@ class AgentBridge:
             config=config,
             vocabulary=vocab
         )
+        
+        # Override has_language_head from config if not detected from model
+        # (for models that were compiled with language head support)
+        if config_path.exists():
+            with open(config_path, 'r') as f:
+                config_data = json.load(f)
+            if config_data.get('has_language_head', False) and not bridge.has_language_head:
+                bridge.has_language_head = True
+                print(f"  ✓ Language head enabled from config")
         
         # Load experience buffer
         exp_path = directory / 'experiences.pkl'

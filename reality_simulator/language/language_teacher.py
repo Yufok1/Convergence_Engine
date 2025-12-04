@@ -59,12 +59,12 @@ class SemanticEmbeddingTeacher(nn.Module if PYTORCH_AVAILABLE else object):
     based on actual organism experiences (state-action-reward sequences).
     """
     
-    def __init__(self, state_dim: int = 18, embedding_dim: int = 64, vocab_size: int = 1000):
+    def __init__(self, state_dim: int = 24, embedding_dim: int = 64, vocab_size: int = 1000):
         """
         Initialize semantic embedding teacher.
         
         Args:
-            state_dim: Dimension of organism state vector (default: 18)
+            state_dim: Dimension of organism state vector (default: 24)
             embedding_dim: Dimension of semantic embedding space (default: 64)
             vocab_size: Maximum vocabulary size (default: 1000)
         """
