@@ -49,7 +49,7 @@ def test_web_compile_simulation():
                     hidden_dim=64,
                     output_dim=6,
                     use_attention=True,
-                    vocab_size=50000,
+                    vocab_size=1000,
                     use_language_head=True
                 )
                 self.vitality = 75.0

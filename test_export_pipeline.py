@@ -115,7 +115,7 @@ class ExportPipelineTest:
             input_dim=24,
             hidden_dim=128,
             output_dim=6,
-            vocab_size=50000,
+            vocab_size=1000,
             use_language_head=False  # Start simple
         )
 
@@ -441,7 +441,7 @@ class ExportPipelineTest:
             input_dim=24,
             hidden_dim=128,
             output_dim=6,
-            vocab_size=50000,
+            vocab_size=1000,
             use_language_head=True  # Enable language
         )
 

@@ -72,7 +72,7 @@ class AgentCompiler:
             self.has_language_head = brain.use_language_head
             self.input_dim = brain.input_dim
             self.output_dim = brain.output_dim
-            self.vocab_size = brain.vocab_size if hasattr(brain, 'vocab_size') else 50000
+            self.vocab_size = brain.vocab_size if hasattr(brain, 'vocab_size') else 1000
             
         def forward(self, x: torch.Tensor):
             """Forward pass returning (action_probs, language_logits) if language head exists."""
@@ -187,7 +187,7 @@ class AgentCompiler:
         use_concept_head = any(k.startswith('concept_head.') for k in sd_keys)
 
         # Use .size() instead of .shape[] for robustness
-        vocab_size = state_dict['fc_language.weight'].size(0) if use_language_head else 50000
+        vocab_size = state_dict['fc_language.weight'].size(0) if use_language_head else 1000
 
         # Infer num_attention_heads if attention is used
         if use_attention:
@@ -986,7 +986,7 @@ if __name__ == "__main__":
                 'has_language_head': arch_info.get('has_language_head', False),
                 'has_attention': arch_info.get('has_attention', False),
                 'has_concept_head': arch_info.get('has_concept_head', False),
-                'vocab_size': arch_info.get('vocab_size', 50000)
+                'vocab_size': arch_info.get('vocab_size', 1000)
             }
             zf.writestr("bridge_config.json", json.dumps(bridge_config, indent=2))
             
@@ -3111,7 +3111,7 @@ if __name__ == '__main__':
         'use_attention': False,
         'num_attention_heads': 4,
         'attention_dim': 64,
-        'vocab_size': 50000,
+        'vocab_size': 1000,
         'use_language_head': False
     }
     dummy_brain = OrganismBrain(**dummy_brain_arch)

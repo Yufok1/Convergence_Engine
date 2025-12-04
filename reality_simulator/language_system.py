@@ -55,7 +55,7 @@ class LanguageVocabulary:
     word_to_id: Dict[str, int] = field(default_factory=dict)
     id_to_word: Dict[int, str] = field(default_factory=dict)
     word_frequencies: Dict[str, int] = field(default_factory=dict)
-    max_vocab_size: int = 50000
+    max_vocab_size: int = 1000  # Reduced: ensemble strategy for full coverage
     frozen: bool = False
     event_emitter: Any = None  # Optional callback for causation events
     
@@ -343,7 +343,7 @@ class LanguageVocabulary:
             word_to_id=data.get('word_to_id', {}),
             id_to_word={int(k): v for k, v in data.get('id_to_word', {}).items()},
             word_frequencies=data.get('word_frequencies', {}),
-            max_vocab_size=data.get('max_vocab_size', 50000),
+            max_vocab_size=data.get('max_vocab_size', 1000),
             frozen=data.get('frozen', False)
         )
         
