@@ -1658,21 +1658,111 @@ class UnifiedSystem:
             except Exception:
                 pass
         
+        # Handler: React to battle results (feed back to evolution)
+        def on_battle_resolved(event):
+            """Track battle outcomes to inform evolution strategy."""
+            if not config_tuner:
+                return
+            try:
+                winner_id = event.data.get('winner_id')
+                loser_id = event.data.get('loser_id')
+                battle_type = event.data.get('battle_type', 'unknown')
+                
+                # Battles happening = selection pressure working
+                # If too many battles, maybe reduce competition intensity
+                logger.debug(f"[BATTLE] {battle_type}: {winner_id} defeated {loser_id}")
+            except Exception:
+                pass
+        
+        # Handler: React to alliance decisions
+        def on_alliance_decision(event):
+            """Track alliance formation for social dynamics."""
+            try:
+                decision_type = event.data.get('decision_type', '')
+                organism_id = event.data.get('organism_id', '')
+                alliance_id = event.data.get('alliance_id', '')
+                
+                logger.debug(f"[ALLIANCE] {decision_type}: org={organism_id} alliance={alliance_id}")
+            except Exception:
+                pass
+        
+        # Handler: React to neural decisions (track decision quality)
+        def on_neural_decision(event):
+            """Track organism decision-making patterns."""
+            try:
+                # Only log periodically to avoid spam
+                action = event.data.get('action', '')
+                confidence = event.data.get('confidence', 0.0)
+                
+                # Track low-confidence decisions - may indicate need for more training
+                if confidence < 0.3:
+                    logger.debug(f"[NEURAL] Low-confidence decision: {action} ({confidence:.2f})")
+            except Exception:
+                pass
+        
+        # Handler: React to vocabulary growth
+        def on_vocabulary_growth(event):
+            """Track language system evolution."""
+            try:
+                vocab_size = event.data.get('vocab_size', 0)
+                new_word = event.data.get('word', '')
+                
+                if vocab_size % 10 == 0:  # Log every 10 words
+                    logger.debug(f"[LANGUAGE] Vocabulary: {vocab_size} words (latest: {new_word})")
+            except Exception:
+                pass
+        
+        # Handler: React to early stopping
+        def on_early_stopping(event):
+            """React when training stops early."""
+            try:
+                best_loss = event.data.get('best_loss', 0)
+                patience_exhausted = event.data.get('patience_exhausted', 0)
+                
+                logger.info(f"[NEURAL] Early stopping triggered: best_loss={best_loss:.4f}, patience={patience_exhausted}")
+                
+                # Record as successful outcome - training converged
+                if config_tuner:
+                    config_tuner.record_outcome(success=True, context="early_stopping_convergence")
+            except Exception:
+                pass
+        
+        # Handler: React to learning rate adjustments
+        def on_lr_adjusted(event):
+            """Track LR schedule changes."""
+            try:
+                old_lr = event.data.get('old_lr', 0)
+                new_lr = event.data.get('new_lr', 0)
+                reason = event.data.get('reason', '')
+                
+                logger.debug(f"[NEURAL] LR adjusted: {old_lr:.6f} → {new_lr:.6f} ({reason})")
+            except Exception:
+                pass
+        
         # Subscribe handlers to ACTUAL event types that are emitted
         # (Audit found mismatches - these are the real event_type values)
-        self.causation_explorer.subscribe('neural_training', on_training_complete)  # trainer.py:1273
-        self.causation_explorer.subscribe('neural_autotune_metrics', on_training_complete)  # trainer.py:1411
+        self.causation_explorer.subscribe('neural_training', on_training_complete)  # trainer.py:1276
+        self.causation_explorer.subscribe('neural_autotune_metrics', on_training_complete)  # trainer.py:1414
         self.causation_explorer.subscribe('ml_autotune_metrics', on_ml_analysis_complete)  # ml_utils.py:1146
         self.causation_explorer.subscribe('phase_transition', on_phase_transition)
         self.causation_explorer.subscribe('explorer_phase_change', on_phase_transition)
         self.causation_explorer.subscribe('config_atom_update', on_config_atom_update)  # atomic_config.py:328
         self.causation_explorer.subscribe('config_outcome', on_config_outcome)  # atomic_config.py:850
+        self.causation_explorer.subscribe('battle_resolved', on_battle_resolved)  # battle_arena.py:787
+        self.causation_explorer.subscribe('absorption_complete', on_battle_resolved)  # battle_arena.py:917 (reuse handler)
+        self.causation_explorer.subscribe('alliance_decision', on_alliance_decision)  # neural_organism.py:2260
+        self.causation_explorer.subscribe('neural_decision', on_neural_decision)  # neural_organism.py:802
+        self.causation_explorer.subscribe('vocabulary_growth', on_vocabulary_growth)  # language_system.py:184
+        self.causation_explorer.subscribe('word_assignment', on_vocabulary_growth)  # context_memory.py:401
+        self.causation_explorer.subscribe('early_stopping_triggered', on_early_stopping)  # trainer.py:366
+        self.causation_explorer.subscribe('lr_adjusted', on_lr_adjusted)  # trainer.py:1221
         
-        print("[UNIFIED] [INTEGRATION] ✅ Reactive event handlers wired")
-        print("[UNIFIED] [INTEGRATION]    - Training → Config tuner (loss-based LR adjustment)")
-        print("[UNIFIED] [INTEGRATION]    - ML Analysis → Evolution (diversity-based mutation)")
-        print("[UNIFIED] [INTEGRATION]    - Phase transitions → Config outcomes (success tracking)")
-        print("[UNIFIED] [INTEGRATION]    - Config updates → Optimizer invalidation (immediate effect)")
+        print("[UNIFIED] [INTEGRATION] ✅ Reactive event handlers wired (14 event types)")
+        print("[UNIFIED] [INTEGRATION]    - Training/LR → Config tuner")
+        print("[UNIFIED] [INTEGRATION]    - ML Analysis → Evolution")  
+        print("[UNIFIED] [INTEGRATION]    - Battles/Alliances → Logged")
+        print("[UNIFIED] [INTEGRATION]    - Language → Logged")
+        print("[UNIFIED] [INTEGRATION]    - Config updates → Immediate effect")
     
     def _initialize_highlander_protocol(self):
         """Initialize the Highlander Protocol tournament system.

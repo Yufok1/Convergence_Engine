@@ -1849,7 +1849,7 @@ class RealitySimulator:
                 quantum.set_pruning_aggressiveness(aggressiveness)
                 print(ColorScheme.log_component("feedback", f"Quantum pruning aggressiveness set to {aggressiveness:.2f}"))
 
-        # TODO: Implement clustering bias adjustments
+        # Apply clustering bias adjustments
         if 'clustering_bias' in knob_changes:
             # Apply clustering bias to network (triangle closure preference)
             if network and hasattr(network, 'set_clustering_bias'):

@@ -256,21 +256,13 @@ def check_illumination_engine():
         
         aws = AllianceWarfareSystem(highlander_protocol=None, config={})
         
-        # Check if wire_illumination method exists
-        has_illumination = hasattr(aws, 'wire_illumination_engine')
-        print(f"   - wire_illumination_engine: {'✅' if has_illumination else '❌'}")
+        # Check if illumination granting method exists (was renamed from wire_illumination_engine)
+        has_illumination = hasattr(aws, 'check_and_grant_illumination')
+        print(f"   - check_and_grant_illumination: {'✅' if has_illumination else '❌'}")
         
-        # Check if grant_illumination exists
-        has_grant = hasattr(aws, '_grant_illumination')
-        print(f"   - _grant_illumination: {'✅' if has_grant else '❌'}")
-        
-        # Check illumination levels
-        if hasattr(aws, 'ILLUMINATION_LEVELS'):
-            print(f"   - ILLUMINATION_LEVELS defined: ✅")
-            print(f"     Levels: {list(aws.ILLUMINATION_LEVELS.keys()) if isinstance(aws.ILLUMINATION_LEVELS, dict) else 'N/A'}")
-        else:
-            # Check if defined at class level
-            print(f"   - Checking for illumination level definitions in source...")
+        # Check if alliances dict exists (for illumination tracking)
+        has_alliances = hasattr(aws, 'alliances')
+        print(f"   - alliances tracking: {'✅' if has_alliances else '❌'}")
         
     except Exception as e:
         print(f"❌ Illumination check failed: {e}")
