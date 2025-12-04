@@ -777,9 +777,14 @@ class HighlanderProtocol:
         if self.battle_arena is not None:
             try:
                 from reality_simulator.evolution.battle_arena import BattleType
+                import random as rng
                 
                 # Determine battle type from config (respects arena.default_battle_type)
                 default_battle_type_str = self.config.get('default_battle_type', 'FULL_COMBAT')
+                
+                # Check proton_game_probability for mixed battle selection
+                proton_probability = self.config.get('proton_game_probability', 0.0)
+                
                 if isinstance(default_battle_type_str, str):
                     try:
                         battle_type = BattleType[default_battle_type_str.upper()]
@@ -788,12 +793,39 @@ class HighlanderProtocol:
                 else:
                     battle_type = BattleType.FULL_COMBAT
                 
+                # Apply proton_game_probability if set (for mixed battles)
+                # If probability > 0, randomly select between PROTON_GAME and FULL_COMBAT
+                if proton_probability > 0 and battle_type != BattleType.PROTON_GAME:
+                    if rng.random() < proton_probability:
+                        battle_type = BattleType.PROTON_GAME
+                        self.logger.info(f"🎮 Proton Game selected (probability: {proton_probability})")
+                elif proton_probability < 1.0 and battle_type == BattleType.PROTON_GAME:
+                    # Even if default is PROTON_GAME, respect probability
+                    if rng.random() > proton_probability:
+                        battle_type = BattleType.FULL_COMBAT
+                        self.logger.info(f"⚔️ Full Combat selected (probability: {1.0 - proton_probability})")
+                
                 self.logger.info(f"⚔️ Battle type: {battle_type.value}")
+                
+                # For PROTON_GAME, create LiveOrganismAdapters as bridges
+                bridge_1 = None
+                bridge_2 = None
+                if battle_type == BattleType.PROTON_GAME:
+                    try:
+                        from reality_simulator.arena.live_organism_adapter import LiveOrganismAdapter
+                        bridge_1 = LiveOrganismAdapter(org1)
+                        bridge_2 = LiveOrganismAdapter(org2)
+                        self.logger.info(f"🌉 Created LiveOrganismAdapters for Proton Game battle")
+                    except ImportError as e:
+                        self.logger.warning(f"LiveOrganismAdapter not available: {e}, falling back to FULL_COMBAT")
+                        battle_type = BattleType.FULL_COMBAT
                 
                 # Run combat with configured battle type!
                 arena_outcome = self.battle_arena.resolve_battle(
                     org1, org2, 
-                    battle_type=battle_type
+                    battle_type=battle_type,
+                    bridge_1=bridge_1,
+                    bridge_2=bridge_2
                 )
                 
                 # Convert arena outcome to our BattleResult format

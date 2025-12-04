@@ -53,10 +53,29 @@ __all__ = [
     'ResourceType',
     'GameDifficulty',
     
+    
     # Data
     'GAME_GRID',
     
     # Convenience functions
     'create_arena',
-    'quick_battle'
+    'quick_battle',
+    
+    # Live organism adapter
+    'LiveOrganismAdapter',
+    'create_adapter',
+    'create_adapter_pair'
 ]
+
+# Import live organism adapter
+try:
+    from .live_organism_adapter import (
+        LiveOrganismAdapter,
+        create_adapter,
+        create_adapter_pair
+    )
+except ImportError:
+    # Graceful degradation if not available
+    LiveOrganismAdapter = None
+    create_adapter = None
+    create_adapter_pair = None

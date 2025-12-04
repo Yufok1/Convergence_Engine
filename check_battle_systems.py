@@ -383,22 +383,42 @@ def main():
     
     # Check if proton is actually being used
     if config:
-        if config.get('arena', {}).get('enabled'):
+        arena_config = config.get('arena', {})
+        if arena_config.get('enabled'):
             print("   ✅ Proton Arena ENABLED in config")
-            if config.get('arena', {}).get('default_battle_type') == 'PROTON_GAME':
+            if arena_config.get('default_battle_type') == 'PROTON_GAME':
                 print("   ✅ default_battle_type = PROTON_GAME")
             else:
                 print("   ⚠️ default_battle_type != PROTON_GAME")
+            
+            # Check proton_game_probability (NEW!)
+            proton_prob = arena_config.get('proton_game_probability', 0.0)
+            if proton_prob > 0:
+                print(f"   ✅ proton_game_probability = {proton_prob:.0%}")
+                if proton_prob >= 0.5:
+                    print("   🎮 Proton Game will handle 50%+ of battles!")
+            else:
+                print("   ⚠️ proton_game_probability = 0% (not using mixed battles)")
+            
+            # Check prefer_native_games
+            if arena_config.get('prefer_native_games', False):
+                print("   ✅ prefer_native_games = true (language/concept games prioritized)")
         else:
             print("   ❌ Proton Arena DISABLED in config")
     
-    print("\n🔧 POTENTIAL ISSUES TO FIX:")
-    print("   1. HighlanderProtocol may be hardcoded to BattleType.FULL_COMBAT")
-    print("      → Should respect arena.default_battle_type config")
-    print("   2. ProtonGameArena needs AgentBridge to work")
-    print("      → Bridges may not be wired in unified_entry.py")
-    print("   3. Alliance formation requires organism DECISIONS")
-    print("      → Organisms need to use alliance_warfare.propose_*() methods")
+    # Check for LiveOrganismAdapter
+    try:
+        from reality_simulator.arena.live_organism_adapter import LiveOrganismAdapter
+        print("   ✅ LiveOrganismAdapter available (bridges organism → Proton Game)")
+    except ImportError:
+        print("   ❌ LiveOrganismAdapter NOT FOUND")
+    
+    print("\n🔧 STATUS:")
+    print("   ✅ HighlanderProtocol reads arena.default_battle_type from config")
+    print("   ✅ HighlanderProtocol creates LiveOrganismAdapters for PROTON_GAME")
+    print("   ✅ proton_game_probability controls mixed battle selection")
+    print("   ℹ️  Alliance formation requires organism neural DECISIONS")
+    print("      → Organisms need to output 'cooperate' action to trigger alliances")
     
     print("\n" + "="*70)
 

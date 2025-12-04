@@ -1602,15 +1602,21 @@ class UnifiedSystem:
                 'max_population': config.get('max_population', 100),
                 'min_population': config.get('min_population', 10),
                 'battle_randomness': config.get('chaos_factor', 0.15),
-                # Include arena battle type setting
-                'default_battle_type': arena_settings.get('default_battle_type', 'FULL_COMBAT')
+                # Include arena battle type and probability settings
+                'default_battle_type': arena_settings.get('default_battle_type', 'FULL_COMBAT'),
+                'proton_game_probability': arena_settings.get('proton_game_probability', 0.5),
+                'prefer_native_games': arena_settings.get('prefer_native_games', True)
             }
             
             # Log battle type selection
             battle_type = highlander_config['default_battle_type']
+            proton_prob = highlander_config['proton_game_probability']
             print(f"[UNIFIED] [HIGHLANDER] ⚔️ Battle type: {battle_type}")
-            if battle_type == 'PROTON_GAME':
+            print(f"[UNIFIED] [HIGHLANDER] 🎮 Proton Game probability: {proton_prob:.0%}")
+            if battle_type == 'PROTON_GAME' or proton_prob > 0:
                 print("[UNIFIED] [HIGHLANDER] 🎮 Proton Game Arena battles enabled!")
+                if highlander_config['prefer_native_games']:
+                    print("[UNIFIED] [HIGHLANDER]    (Prioritizing language/concept games - no Gym dependency)")
             
             self.highlander_protocol = HighlanderProtocol(
                 config=highlander_config,

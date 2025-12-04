@@ -159,6 +159,10 @@
     "description": "Proton Game Arena - Apprentice Adept style gym battles (Piers Anthony + Highlander inspired)",
     "enabled": true,
     "default_battle_type": "PROTON_GAME",
+    "proton_game_probability": 0.5,
+    "_proton_game_probability_help": "Fraction of battles that use Proton Game Arena (0.0-1.0). Set to 0.5 for 50% Proton Game battles.",
+    "prefer_native_games": true,
+    "_prefer_native_games_help": "When true, prioritizes language/concept games that use organism's native abilities (no Gym dependency)",
     "game_selection": {
       "mode": "ai_driven",
       "allow_negotiation": true,
