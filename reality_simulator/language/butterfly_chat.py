@@ -409,10 +409,22 @@ class ButterflyChatRouter:
             return {}
 
         if strategy == 'all':
-            selected = all_orgs
-            self._log_debug("STEP_3", "Strategy: All Organisms", {
-                "selected_count": len(selected)
-            })
+            # Even 'all' strategy should respect max_organisms limit for performance
+            if max_organisms and len(all_orgs) > max_organisms:
+                # Sort by fitness and take top max_organisms
+                sorted_orgs = sorted(all_orgs.items(), key=lambda x: getattr(x[1], 'fitness', 0.0), reverse=True)
+                selected = dict(sorted_orgs[:max_organisms])
+                self._log_debug("STEP_3", "Strategy: All Organisms (Limited)", {
+                    "total_organisms": len(all_orgs),
+                    "max_organisms": max_organisms,
+                    "selected_count": len(selected),
+                    "limited_by_fitness": True
+                })
+            else:
+                selected = all_orgs
+                self._log_debug("STEP_3", "Strategy: All Organisms", {
+                    "selected_count": len(selected)
+                })
         elif strategy == 'random':
             # Pick a random sample of items
             keys = list(all_orgs.keys())

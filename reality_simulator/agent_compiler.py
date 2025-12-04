@@ -1807,7 +1807,10 @@ done
                 'default_port': 8080,
                 'has_language_head': any_language_head,
                 'is_ensemble': True,
-                'member_count': member_count
+                'member_count': member_count,
+                # Ensemble voting configuration
+                'voting_strategy': 'fitness_weighted',  # Default: weight by organism fitness
+                'top_k_voters': 5  # For fittest_top_k strategy
             }
             zf.writestr("bridge_config.json", json.dumps(bridge_config, indent=2))
             

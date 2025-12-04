@@ -40,10 +40,13 @@ import numpy as np
 import logging
 import time
 import threading
+import hashlib
 from pathlib import Path
 from typing import Dict, Any, Optional, List, Tuple, Union, Callable
 from dataclasses import dataclass, field
-from collections import deque
+from collections import deque, OrderedDict
+from functools import lru_cache
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import random
 
 logger = logging.getLogger(__name__)
@@ -67,10 +70,68 @@ try:
 except ImportError:
     FLASK_AVAILABLE = False
 
+from enum import Enum
+
+
+# =============================================================================
+# ENSEMBLE VOTING STRATEGIES
+# =============================================================================
+
+class EnsembleVotingStrategy(Enum):
+    """
+    Voting strategies for ensemble decision making.
+    
+    Modeled after ButterflyChatRouter's aggregation system.
+    """
+    SINGLE = "single"                     # Use only first organism (legacy behavior)
+    MAJORITY = "majority"                 # Democratic: each organism votes, most common wins
+    FITNESS_WEIGHTED = "fitness_weighted" # Weight votes by organism fitness
+    SOFTMAX_ENSEMBLE = "softmax_ensemble" # Softmax aggregate across all Q-values
+    CONFIDENCE_WEIGHTED = "confidence_weighted"  # Weight by Q-value confidence
+    FITTEST_TOP_K = "fittest_top_k"       # Only top K fittest organisms vote
+    ADAPTIVE = "adaptive"                 # Automatically select best strategy per situation
+
 
 # =============================================================================
 # DATA STRUCTURES
 # =============================================================================
+
+@dataclass
+class OrganismVote:
+    """Individual organism's vote in the ensemble."""
+    organism_idx: int
+    organism_id: str
+    action: int
+    q_values: List[float]
+    confidence: float
+    fitness: float
+    weight: float  # Combined weight for aggregation
+
+
+@dataclass
+class EnsembleResult:
+    """Detailed result from ensemble voting."""
+    winning_action: int
+    action_name: str
+    votes: List[OrganismVote]
+    vote_counts: Dict[int, int]          # Action -> count
+    weighted_votes: Dict[int, float]     # Action -> weighted sum
+    agreement_ratio: float               # % of organisms that agreed
+    total_weight: float
+    strategy_used: str
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'winning_action': self.winning_action,
+            'action_name': self.action_name,
+            'vote_counts': self.vote_counts,
+            'weighted_votes': self.weighted_votes,
+            'agreement_ratio': self.agreement_ratio,
+            'total_weight': self.total_weight,
+            'strategy_used': self.strategy_used,
+            'num_voters': len(self.votes)
+        }
+
 
 @dataclass
 class BridgeResult:
@@ -80,11 +141,12 @@ class BridgeResult:
     response: str                        # Language response (if applicable)
     confidence: float                    # Decision confidence (0-1)
     q_values: List[float]               # Raw Q-values for all actions
-    state_vector: List[float]           # The 18D state used for decision
+    state_vector: List[float]           # The 24D state used for decision
     metadata: Dict[str, Any] = field(default_factory=dict)
+    ensemble_result: Optional['EnsembleResult'] = None  # Detailed voting info if ensemble
     
     def to_dict(self) -> Dict[str, Any]:
-        return {
+        result = {
             'action': self.action,
             'action_name': self.action_name,
             'response': self.response,
@@ -93,6 +155,9 @@ class BridgeResult:
             'state_vector': self.state_vector,
             'metadata': self.metadata
         }
+        if self.ensemble_result:
+            result['ensemble'] = self.ensemble_result.to_dict()
+        return result
 
 
 @dataclass  
@@ -122,6 +187,25 @@ class AgentConfig:
     # Server
     default_port: int = 8080
     
+    # Ensemble configuration
+    is_ensemble: bool = False
+    member_count: int = 1
+    voting_strategy: str = "fitness_weighted"  # Default: weight by organism fitness
+    top_k_voters: int = 5                       # For fittest_top_k strategy
+    member_fitness: List[float] = field(default_factory=list)  # Fitness per organism
+    member_ids: List[str] = field(default_factory=list)        # IDs per organism
+    
+    # Advanced features
+    adaptive_strategy: bool = True              # Auto-select best strategy per situation
+    temperature_scaling: bool = True            # Dynamic temperature based on confidence
+    min_temperature: float = 0.3                # Temperature floor (high confidence)
+    max_temperature: float = 2.0                # Temperature ceiling (low confidence)
+    cache_enabled: bool = True                  # Enable response caching
+    cache_size: int = 256                       # LRU cache size
+    cache_ttl: float = 60.0                     # Cache entry TTL in seconds
+    parallel_inference: bool = True             # Enable parallel organism execution
+    max_workers: int = 4                        # Thread pool size for parallel inference
+    
     def to_dict(self) -> Dict[str, Any]:
         return {
             'action_names': self.action_names,
@@ -132,19 +216,23 @@ class AgentConfig:
             'gamma': self.gamma,
             'batch_size': self.batch_size,
             'max_response_length': self.max_response_length,
-            'temperature': self.temperature
+            'temperature': self.temperature,
+            'is_ensemble': self.is_ensemble,
+            'member_count': self.member_count,
+            'voting_strategy': self.voting_strategy,
+            'top_k_voters': self.top_k_voters
         }
 
 
 # =============================================================================
-# INPUT ADAPTERS - Convert various inputs to unified 18D state
+# INPUT ADAPTERS - Convert various inputs to unified 24D state
 # =============================================================================
 
 class InputAdapter:
     """Base class for input adapters."""
     
     def to_state(self, input_data: Any, context: Optional[Dict] = None) -> np.ndarray:
-        """Convert input to 18D state vector."""
+        """Convert input to 24D state vector."""
         raise NotImplementedError
 
 
@@ -649,7 +737,51 @@ class AgentBridge:
         self._server_app = None
         self._server_thread = None
         
+        # Advanced features
+        # Response cache: OrderedDict for LRU behavior with TTL
+        self._response_cache: OrderedDict = OrderedDict()
+        self._cache_timestamps: Dict[str, float] = {}
+        self._cache_lock = threading.Lock()
+        
+        # Temperature tracking for adaptive scaling
+        self._recent_confidences: deque = deque(maxlen=50)
+        self._current_temperature: float = self.config.temperature
+        
+        # Thread pool for parallel inference
+        self._executor: Optional[ThreadPoolExecutor] = None
+        if self.config.parallel_inference and self.config.is_ensemble:
+            self._executor = ThreadPoolExecutor(max_workers=self.config.max_workers)
+        
+        # Strategy selection history for adaptive mode
+        self._strategy_performance: Dict[str, List[float]] = {
+            'majority': [],
+            'fitness_weighted': [],
+            'softmax_ensemble': [],
+            'confidence_weighted': [],
+            'fittest_top_k': []
+        }
+        
         logger.info(f"AgentBridge initialized (brain: {self.brain_type}, vocab: {self.vocabulary.vocab_size}, language_head: {self.has_language_head})")
+        if self.config.is_ensemble:
+            features = []
+            if self.config.adaptive_strategy: features.append('adaptive')
+            if self.config.temperature_scaling: features.append('temp_scale')
+            if self.config.cache_enabled: features.append('cache')
+            if self.config.parallel_inference: features.append('parallel')
+            logger.info(f"  Ensemble features: {', '.join(features) if features else 'none'}")
+    
+    def __del__(self):
+        """Cleanup resources."""
+        if hasattr(self, '_executor') and self._executor is not None:
+            self._executor.shutdown(wait=False)
+    
+    def shutdown(self):
+        """Explicitly shutdown the bridge and release resources."""
+        if self._executor is not None:
+            self._executor.shutdown(wait=True)
+            self._executor = None
+        self.clear_cache()
+        logger.info("AgentBridge shutdown complete")
     
     def _load_brain(self, path: Path):
         """Load neural network model and detect capabilities."""
@@ -695,25 +827,48 @@ class AgentBridge:
         else:
             print(f"  [X] Unknown model format: {path.suffix}")
     
-    def _infer(self, state: np.ndarray) -> Tuple[int, List[float], float]:
-        """Run inference on state, return (action, q_values, confidence)."""
+    def _infer(self, state: np.ndarray) -> Tuple[int, List[float], float, Optional[EnsembleResult]]:
+        """
+        Run inference on state, return (action, q_values, confidence, ensemble_result).
+        
+        For ensemble models, uses voting strategies to aggregate decisions from all organisms.
+        For single models, uses standard inference.
+        
+        Features:
+        - Response caching for repeated states
+        - Adaptive strategy selection
+        - Temperature scaling based on confidence
+        """
         if self.brain is None:
             # Random action if no brain
             action = random.randint(0, self.config.num_actions - 1)
-            return action, [0.0] * self.config.num_actions, 0.0
+            return action, [0.0] * self.config.num_actions, 0.0, None
         
         # Ensure correct shape
         state = state.astype(np.float32)
         if len(state.shape) == 1:
             state = state.reshape(1, -1)
         
-        # Epsilon-greedy exploration
+        # Check cache first
+        cache_key = self._cache_key(state)
+        cached = self._cache_get(cache_key)
+        if cached is not None:
+            return cached
+        
+        # Epsilon-greedy exploration (skip caching for exploration)
         if random.random() < self.config.epsilon:
             action = random.randint(0, self.config.num_actions - 1)
             q_values = [0.0] * self.config.num_actions
-            return action, q_values, 0.0
+            return action, q_values, 0.0, None
         
-        # Run inference
+        # Check if this is an ensemble model that needs voting
+        if self.config.is_ensemble and self.config.member_count > 1:
+            ensemble_result = self._infer_ensemble(state)
+            # Cache ensemble result
+            self._cache_set(cache_key, ensemble_result)
+            return ensemble_result
+        
+        # Standard single-organism inference
         if self.brain_type == 'onnx':
             input_name = self.brain.get_inputs()[0].name
             outputs = self.brain.run(None, {input_name: state})
@@ -739,7 +894,534 @@ class AgentBridge:
         probs = exp_q / np.sum(exp_q)
         confidence = float(probs[action])
         
-        return action, q_values, confidence
+        # Cache result
+        result = (action, q_values, confidence, None)
+        self._cache_set(cache_key, result)
+        
+        return result
+    
+    def _infer_ensemble(self, state: np.ndarray) -> Tuple[int, List[float], float, EnsembleResult]:
+        """
+        Run ensemble inference with voting aggregation.
+        
+        Extracts outputs from all organisms and uses the configured voting strategy.
+        Mirrors ButterflyChatRouter's _aggregate_responses logic.
+        """
+        num_organisms = self.config.member_count
+        num_actions = self.config.num_actions
+        
+        # Get all organism outputs
+        all_q_values = []
+        all_language_logits = []
+        
+        if self.brain_type == 'onnx':
+            input_name = self.brain.get_inputs()[0].name
+            outputs = self.brain.run(None, {input_name: state})
+            # Ensemble ONNX outputs are flat: [q1, q2, ..., qN, lang1, lang2, ..., langN]
+            flat_outputs = outputs[0][0]
+            
+            # Split into per-organism Q-values
+            for i in range(num_organisms):
+                start_idx = i * num_actions
+                end_idx = start_idx + num_actions
+                if end_idx <= len(flat_outputs):
+                    all_q_values.append(flat_outputs[start_idx:end_idx].tolist())
+            
+            # Language outputs start after all Q-values
+            lang_start = num_organisms * num_actions
+            if len(flat_outputs) > lang_start:
+                for i in range(num_organisms):
+                    # Assume language logits follow Q-values
+                    lang_idx = lang_start + i
+                    if lang_idx < len(flat_outputs):
+                        all_language_logits.append(flat_outputs[lang_idx])
+                        
+        elif self.brain_type == 'torchscript':
+            with torch.no_grad():
+                state_tensor = torch.FloatTensor(state)
+                outputs = self.brain(state_tensor)
+                
+                if isinstance(outputs, tuple):
+                    # outputs = (q_values_flat, language_logits_flat)
+                    # q_values_flat shape: [1, num_organisms * num_actions]
+                    # language_logits_flat shape: [1, num_organisms * vocab_size] or [1, num_organisms]
+                    q_flat = outputs[0][0].numpy()
+                    
+                    for i in range(num_organisms):
+                        start_idx = i * num_actions
+                        end_idx = start_idx + num_actions
+                        if end_idx <= len(q_flat):
+                            all_q_values.append(q_flat[start_idx:end_idx].tolist())
+                    
+                    if len(outputs) > 1 and outputs[1] is not None:
+                        lang_flat = outputs[1][0].numpy()
+                        # Store for potential language aggregation
+                        for i in range(min(num_organisms, len(lang_flat))):
+                            all_language_logits.append(lang_flat[i])
+                else:
+                    # Single tensor output - treat as flat Q-values
+                    q_flat = outputs[0].numpy()
+                    for i in range(num_organisms):
+                        start_idx = i * num_actions
+                        end_idx = start_idx + num_actions
+                        if end_idx <= len(q_flat):
+                            all_q_values.append(q_flat[start_idx:end_idx].tolist())
+        
+        # Fallback if we couldn't extract organism outputs
+        if not all_q_values:
+            # Use single inference as fallback
+            action = random.randint(0, num_actions - 1)
+            return action, [0.0] * num_actions, 0.0, None
+        
+        # Build votes from each organism
+        votes: List[OrganismVote] = []
+        for i, q_values in enumerate(all_q_values):
+            # Get fitness for this organism (default 1.0 if not available)
+            fitness = self.config.member_fitness[i] if i < len(self.config.member_fitness) else 1.0
+            org_id = self.config.member_ids[i] if i < len(self.config.member_ids) else f"organism_{i}"
+            
+            # Calculate organism confidence from its Q-values
+            q_array = np.array(q_values)
+            exp_q = np.exp(q_array - np.max(q_array))
+            probs = exp_q / np.sum(exp_q)
+            org_action = int(np.argmax(q_values))
+            org_confidence = float(probs[org_action])
+            
+            # Weight = fitness * confidence (matching butterfly_chat)
+            weight = max(fitness, 0.0) * max(org_confidence, 0.0)
+            
+            votes.append(OrganismVote(
+                organism_idx=i,
+                organism_id=org_id,
+                action=org_action,
+                q_values=q_values,
+                confidence=org_confidence,
+                fitness=fitness,
+                weight=weight
+            ))
+        
+        # Apply voting strategy (with adaptive selection if enabled)
+        strategy = self.config.voting_strategy.lower()
+        
+        # Adaptive strategy selection
+        if strategy == "adaptive" or (self.config.adaptive_strategy and strategy == "fitness_weighted"):
+            strategy = self._adaptive_select_strategy(votes)
+        
+        if strategy == "single":
+            result = self._vote_single(votes)
+        elif strategy == "majority":
+            result = self._vote_majority(votes)
+        elif strategy == "fitness_weighted":
+            result = self._vote_fitness_weighted(votes)
+        elif strategy == "softmax_ensemble":
+            result = self._vote_softmax_ensemble(votes)
+        elif strategy == "confidence_weighted":
+            result = self._vote_confidence_weighted(votes)
+        elif strategy == "fittest_top_k":
+            result = self._vote_fittest_top_k(votes, self.config.top_k_voters)
+        else:
+            # Default to fitness_weighted
+            result = self._vote_fitness_weighted(votes)
+        
+        # Aggregate Q-values for reporting (weighted average)
+        total_weight = sum(v.weight for v in votes) or 1.0
+        aggregated_q_values = [0.0] * num_actions
+        for vote in votes:
+            for j, qv in enumerate(vote.q_values):
+                aggregated_q_values[j] += qv * vote.weight / total_weight
+        
+        # Update adaptive temperature based on ensemble confidence
+        self._compute_adaptive_temperature(votes, result)
+        
+        # Cache result (use state from closure)
+        final_result = (result.winning_action, aggregated_q_values, result.agreement_ratio, result)
+        # Note: We need to pass cache_key from _infer - for now ensemble caching happens at _infer level
+        
+        return final_result
+    
+    def _vote_single(self, votes: List[OrganismVote]) -> EnsembleResult:
+        """Use only the first organism (legacy behavior)."""
+        if not votes:
+            return self._empty_ensemble_result("single")
+        
+        first = votes[0]
+        return EnsembleResult(
+            winning_action=first.action,
+            action_name=self.ACTION_NAMES[first.action],
+            votes=votes,
+            vote_counts={first.action: 1},
+            weighted_votes={first.action: first.weight},
+            agreement_ratio=first.confidence,
+            total_weight=first.weight,
+            strategy_used="single"
+        )
+    
+    def _vote_majority(self, votes: List[OrganismVote]) -> EnsembleResult:
+        """Democratic voting - each organism gets one vote, most common wins."""
+        if not votes:
+            return self._empty_ensemble_result("majority")
+        
+        # Count votes per action
+        vote_counts: Dict[int, int] = {}
+        for vote in votes:
+            vote_counts[vote.action] = vote_counts.get(vote.action, 0) + 1
+        
+        # Find winner
+        winning_action = max(vote_counts.keys(), key=lambda a: vote_counts[a])
+        winner_count = vote_counts[winning_action]
+        agreement_ratio = winner_count / len(votes)
+        
+        return EnsembleResult(
+            winning_action=winning_action,
+            action_name=self.ACTION_NAMES[winning_action],
+            votes=votes,
+            vote_counts=vote_counts,
+            weighted_votes={a: float(c) for a, c in vote_counts.items()},
+            agreement_ratio=agreement_ratio,
+            total_weight=float(len(votes)),
+            strategy_used="majority"
+        )
+    
+    def _vote_fitness_weighted(self, votes: List[OrganismVote]) -> EnsembleResult:
+        """
+        Weight votes by organism fitness (matching butterfly_chat's aggregation).
+        
+        weight = fitness * confidence
+        """
+        if not votes:
+            return self._empty_ensemble_result("fitness_weighted")
+        
+        # Accumulate weighted votes per action
+        vote_counts: Dict[int, int] = {}
+        weighted_votes: Dict[int, float] = {}
+        total_weight = 0.0
+        
+        for vote in votes:
+            vote_counts[vote.action] = vote_counts.get(vote.action, 0) + 1
+            weighted_votes[vote.action] = weighted_votes.get(vote.action, 0.0) + vote.weight
+            total_weight += vote.weight
+        
+        # Find winner by weighted votes
+        if total_weight == 0:
+            # Fallback to majority if all weights are zero
+            winning_action = max(vote_counts.keys(), key=lambda a: vote_counts[a])
+        else:
+            winning_action = max(weighted_votes.keys(), key=lambda a: weighted_votes[a])
+        
+        # Agreement = proportion of weight that agreed
+        winner_weight = weighted_votes.get(winning_action, 0.0)
+        agreement_ratio = winner_weight / total_weight if total_weight > 0 else 0.0
+        
+        return EnsembleResult(
+            winning_action=winning_action,
+            action_name=self.ACTION_NAMES[winning_action],
+            votes=votes,
+            vote_counts=vote_counts,
+            weighted_votes=weighted_votes,
+            agreement_ratio=agreement_ratio,
+            total_weight=total_weight,
+            strategy_used="fitness_weighted"
+        )
+    
+    def _vote_confidence_weighted(self, votes: List[OrganismVote]) -> EnsembleResult:
+        """Weight votes by Q-value confidence only (ignores fitness)."""
+        if not votes:
+            return self._empty_ensemble_result("confidence_weighted")
+        
+        vote_counts: Dict[int, int] = {}
+        weighted_votes: Dict[int, float] = {}
+        total_weight = 0.0
+        
+        for vote in votes:
+            vote_counts[vote.action] = vote_counts.get(vote.action, 0) + 1
+            weighted_votes[vote.action] = weighted_votes.get(vote.action, 0.0) + vote.confidence
+            total_weight += vote.confidence
+        
+        if total_weight == 0:
+            winning_action = max(vote_counts.keys(), key=lambda a: vote_counts[a])
+        else:
+            winning_action = max(weighted_votes.keys(), key=lambda a: weighted_votes[a])
+        
+        winner_weight = weighted_votes.get(winning_action, 0.0)
+        agreement_ratio = winner_weight / total_weight if total_weight > 0 else 0.0
+        
+        return EnsembleResult(
+            winning_action=winning_action,
+            action_name=self.ACTION_NAMES[winning_action],
+            votes=votes,
+            vote_counts=vote_counts,
+            weighted_votes=weighted_votes,
+            agreement_ratio=agreement_ratio,
+            total_weight=total_weight,
+            strategy_used="confidence_weighted"
+        )
+    
+    def _vote_softmax_ensemble(self, votes: List[OrganismVote]) -> EnsembleResult:
+        """
+        Aggregate all Q-values via weighted softmax.
+        
+        This treats the ensemble as a single unified network by:
+        1. Computing weighted average of all organism Q-values
+        2. Applying softmax to get final action probabilities
+        """
+        if not votes:
+            return self._empty_ensemble_result("softmax_ensemble")
+        
+        num_actions = self.config.num_actions
+        
+        # Compute fitness-weighted average Q-values
+        total_fitness = sum(v.fitness for v in votes) or 1.0
+        aggregated_q = np.zeros(num_actions)
+        
+        for vote in votes:
+            weight = vote.fitness / total_fitness
+            aggregated_q += np.array(vote.q_values) * weight
+        
+        # Softmax to get probabilities
+        exp_q = np.exp(aggregated_q - np.max(aggregated_q))
+        probs = exp_q / np.sum(exp_q)
+        
+        # Select action with highest probability
+        winning_action = int(np.argmax(probs))
+        confidence = float(probs[winning_action])
+        
+        # Count how many organisms would have chosen this action
+        vote_counts: Dict[int, int] = {}
+        for vote in votes:
+            vote_counts[vote.action] = vote_counts.get(vote.action, 0) + 1
+        
+        agreement_count = vote_counts.get(winning_action, 0)
+        agreement_ratio = agreement_count / len(votes)
+        
+        return EnsembleResult(
+            winning_action=winning_action,
+            action_name=self.ACTION_NAMES[winning_action],
+            votes=votes,
+            vote_counts=vote_counts,
+            weighted_votes={winning_action: confidence},
+            agreement_ratio=agreement_ratio,
+            total_weight=total_fitness,
+            strategy_used="softmax_ensemble"
+        )
+    
+    def _vote_fittest_top_k(self, votes: List[OrganismVote], k: int = 5) -> EnsembleResult:
+        """Only top K fittest organisms vote (elitist strategy)."""
+        if not votes:
+            return self._empty_ensemble_result("fittest_top_k")
+        
+        # Sort by fitness descending
+        sorted_votes = sorted(votes, key=lambda v: v.fitness, reverse=True)
+        top_k_votes = sorted_votes[:k]
+        
+        # Use fitness-weighted voting among top K
+        vote_counts: Dict[int, int] = {}
+        weighted_votes: Dict[int, float] = {}
+        total_weight = 0.0
+        
+        for vote in top_k_votes:
+            vote_counts[vote.action] = vote_counts.get(vote.action, 0) + 1
+            weighted_votes[vote.action] = weighted_votes.get(vote.action, 0.0) + vote.weight
+            total_weight += vote.weight
+        
+        if total_weight == 0:
+            winning_action = max(vote_counts.keys(), key=lambda a: vote_counts[a])
+        else:
+            winning_action = max(weighted_votes.keys(), key=lambda a: weighted_votes[a])
+        
+        winner_weight = weighted_votes.get(winning_action, 0.0)
+        agreement_ratio = winner_weight / total_weight if total_weight > 0 else 0.0
+        
+        return EnsembleResult(
+            winning_action=winning_action,
+            action_name=self.ACTION_NAMES[winning_action],
+            votes=top_k_votes,  # Only include the votes that counted
+            vote_counts=vote_counts,
+            weighted_votes=weighted_votes,
+            agreement_ratio=agreement_ratio,
+            total_weight=total_weight,
+            strategy_used=f"fittest_top_{k}"
+        )
+    
+    def _empty_ensemble_result(self, strategy: str) -> EnsembleResult:
+        """Return empty result when no votes available."""
+        return EnsembleResult(
+            winning_action=0,
+            action_name=self.ACTION_NAMES[0],
+            votes=[],
+            vote_counts={},
+            weighted_votes={},
+            agreement_ratio=0.0,
+            total_weight=0.0,
+            strategy_used=strategy
+        )
+    
+    # =========================================================================
+    # ADVANCED FEATURES: Adaptive Strategy, Temperature Scaling, Caching
+    # =========================================================================
+    
+    def _adaptive_select_strategy(self, votes: List[OrganismVote]) -> str:
+        """
+        Intelligently select the best voting strategy based on ensemble state.
+        
+        Analyzes:
+        - Disagreement level (high disagreement → softmax_ensemble)
+        - Fitness distribution (skewed → fittest_top_k)  
+        - Confidence spread (high variance → confidence_weighted)
+        - Recent strategy performance
+        
+        Returns optimal strategy name.
+        """
+        if not votes or len(votes) < 2:
+            return "single"
+        
+        # Analyze vote distribution
+        action_votes: Dict[int, int] = {}
+        for vote in votes:
+            action_votes[vote.action] = action_votes.get(vote.action, 0) + 1
+        
+        # Calculate disagreement (entropy-like measure)
+        vote_counts = list(action_votes.values())
+        total_votes = len(votes)
+        disagreement = 1.0 - (max(vote_counts) / total_votes)  # 0 = unanimous, 1 = split
+        
+        # Analyze fitness distribution
+        fitnesses = [v.fitness for v in votes]
+        fitness_mean = np.mean(fitnesses)
+        fitness_std = np.std(fitnesses)
+        fitness_skew = (max(fitnesses) - fitness_mean) / (fitness_std + 0.001)  # How skewed toward top
+        
+        # Analyze confidence distribution
+        confidences = [v.confidence for v in votes]
+        conf_std = np.std(confidences)
+        conf_mean = np.mean(confidences)
+        
+        # Decision logic
+        if disagreement < 0.2:
+            # Strong agreement - majority is fine (fast)
+            return "majority"
+        elif fitness_skew > 2.0 and fitness_std > 0.1:
+            # Very skewed fitness - trust the elite
+            return "fittest_top_k"
+        elif disagreement > 0.6:
+            # High disagreement - blend via softmax
+            return "softmax_ensemble"
+        elif conf_std > 0.2 and conf_mean > 0.5:
+            # High confidence variance with decent overall confidence
+            return "confidence_weighted"
+        else:
+            # Default: trust fitness weighting
+            return "fitness_weighted"
+    
+    def _compute_adaptive_temperature(self, votes: List[OrganismVote], 
+                                       ensemble_result: Optional[EnsembleResult] = None) -> float:
+        """
+        Dynamically adjust temperature based on confidence and agreement.
+        
+        - High confidence/agreement → lower temperature (more deterministic)
+        - Low confidence/disagreement → higher temperature (more exploration)
+        
+        Returns scaled temperature value.
+        """
+        if not self.config.temperature_scaling:
+            return self.config.temperature
+        
+        base_temp = self.config.temperature
+        min_temp = self.config.min_temperature
+        max_temp = self.config.max_temperature
+        
+        # Calculate confidence metrics
+        if ensemble_result:
+            agreement = ensemble_result.agreement_ratio
+        else:
+            agreement = 0.5
+        
+        if votes:
+            avg_confidence = np.mean([v.confidence for v in votes])
+            max_confidence = max(v.confidence for v in votes)
+        else:
+            avg_confidence = 0.5
+            max_confidence = 0.5
+        
+        # Track recent confidences for smoothing
+        self._recent_confidences.append(avg_confidence)
+        smoothed_conf = np.mean(list(self._recent_confidences))
+        
+        # Compute temperature multiplier
+        # High confidence + high agreement = low temperature
+        confidence_factor = 1.0 - (smoothed_conf * 0.5 + agreement * 0.5)
+        
+        # Map to temperature range
+        temp_range = max_temp - min_temp
+        scaled_temp = min_temp + (confidence_factor * temp_range)
+        
+        # Smooth transition
+        self._current_temperature = 0.8 * self._current_temperature + 0.2 * scaled_temp
+        
+        return np.clip(self._current_temperature, min_temp, max_temp)
+    
+    def _cache_key(self, state: np.ndarray) -> str:
+        """Generate cache key from state vector."""
+        # Round state to reduce cache misses from minor variations
+        rounded = np.round(state, decimals=3)
+        return hashlib.md5(rounded.tobytes()).hexdigest()
+    
+    def _cache_get(self, key: str) -> Optional[Tuple[int, List[float], float, Optional[EnsembleResult]]]:
+        """Get cached result if valid."""
+        if not self.config.cache_enabled:
+            return None
+        
+        with self._cache_lock:
+            if key not in self._response_cache:
+                return None
+            
+            # Check TTL
+            timestamp = self._cache_timestamps.get(key, 0)
+            if time.time() - timestamp > self.config.cache_ttl:
+                # Expired - remove
+                del self._response_cache[key]
+                del self._cache_timestamps[key]
+                return None
+            
+            # Move to end (LRU)
+            self._response_cache.move_to_end(key)
+            return self._response_cache[key]
+    
+    def _cache_set(self, key: str, value: Tuple[int, List[float], float, Optional[EnsembleResult]]):
+        """Store result in cache."""
+        if not self.config.cache_enabled:
+            return
+        
+        with self._cache_lock:
+            # Evict oldest if at capacity
+            while len(self._response_cache) >= self.config.cache_size:
+                oldest_key = next(iter(self._response_cache))
+                del self._response_cache[oldest_key]
+                del self._cache_timestamps[oldest_key]
+            
+            self._response_cache[key] = value
+            self._cache_timestamps[key] = time.time()
+    
+    def get_cache_stats(self) -> Dict[str, Any]:
+        """Get cache statistics."""
+        with self._cache_lock:
+            return {
+                'enabled': self.config.cache_enabled,
+                'size': len(self._response_cache),
+                'max_size': self.config.cache_size,
+                'ttl': self.config.cache_ttl,
+                'hit_rate': 'N/A'  # Would need hit/miss tracking
+            }
+    
+    def clear_cache(self):
+        """Clear the response cache."""
+        with self._cache_lock:
+            self._response_cache.clear()
+            self._cache_timestamps.clear()
+        logger.info("Response cache cleared")
+    
+    def get_current_temperature(self) -> float:
+        """Get the current adaptive temperature value."""
+        return self._current_temperature
     
     def _generate_response(self, state: np.ndarray, action: int) -> str:
         """Generate language response using the language head if available."""
@@ -895,7 +1577,7 @@ class AgentBridge:
             learn: Whether to store experience for learning
             
         Returns:
-            BridgeResult with action, response, confidence, etc.
+            BridgeResult with action, response, confidence, ensemble voting details
         """
         # Convert input to state vector
         if obs is not None:
@@ -911,17 +1593,33 @@ class AgentBridge:
         prev_state = self.current_state
         self.current_state = state
         
-        # Run inference
-        action, q_values, confidence = self._infer(state)
+        # Run inference (now returns 4-tuple with ensemble_result)
+        action, q_values, confidence, ensemble_result = self._infer(state)
         self.last_action = action
         self.total_steps += 1
         
-        # Generate language response
-        response = self._generate_response(state, action)
+        # Generate language response (with ensemble awareness)
+        if ensemble_result and self.config.is_ensemble:
+            response = self._generate_ensemble_response(state, action, ensemble_result)
+        else:
+            response = self._generate_response(state, action)
         
         # Decay epsilon
         if self.config.epsilon > self.config.epsilon_min:
             self.config.epsilon *= self.config.epsilon_decay
+        
+        # Build metadata
+        metadata = {
+            'total_steps': self.total_steps,
+            'epsilon': self.config.epsilon,
+            'input_type': 'obs' if obs is not None else ('text' if text is not None else 'context')
+        }
+        
+        # Add ensemble info if applicable
+        if self.config.is_ensemble:
+            metadata['is_ensemble'] = True
+            metadata['voting_strategy'] = self.config.voting_strategy
+            metadata['member_count'] = self.config.member_count
         
         # Create result
         result = BridgeResult(
@@ -931,14 +1629,98 @@ class AgentBridge:
             confidence=confidence,
             q_values=q_values,
             state_vector=state.tolist(),
-            metadata={
-                'total_steps': self.total_steps,
-                'epsilon': self.config.epsilon,
-                'input_type': 'obs' if obs is not None else ('text' if text is not None else 'context')
-            }
+            metadata=metadata,
+            ensemble_result=ensemble_result
         )
         
         return result
+    
+    def _generate_ensemble_response(self, state: np.ndarray, action: int, 
+                                     ensemble_result: EnsembleResult) -> str:
+        """
+        Generate response for ensemble decision with agreement context.
+        
+        Mirrors butterfly_chat's approach of selecting best response from
+        organisms that voted for the winning action.
+        """
+        # Try language head first
+        if self.has_language_head and self.vocabulary.vocab_size > 10:
+            try:
+                response = self._generate_from_language_head(state)
+                if response and len(response) > 2:
+                    return response
+            except Exception:
+                pass
+        
+        # Build contextual response with ensemble awareness
+        agreement_pct = ensemble_result.agreement_ratio * 100
+        voter_count = len(ensemble_result.votes)
+        
+        # Base action responses
+        base_responses = {
+            0: "Moving to a new position.",
+            1: "Seeking cooperation.",
+            2: "Competing for resources.",
+            3: "Resting to recover.",
+            4: "Reproducing.",
+            5: "Isolating for safety.",
+        }
+        
+        action_text = base_responses.get(action, f"Taking action {action}.")
+        
+        # Add ensemble context if agreement is notable
+        if agreement_pct >= 80:
+            return f"{action_text} (Strong consensus: {agreement_pct:.0f}% of {voter_count} organisms)"
+        elif agreement_pct >= 50:
+            return f"{action_text} (Majority decision: {agreement_pct:.0f}% agreement)"
+        elif agreement_pct >= 30:
+            return f"{action_text} (Contested vote: {agreement_pct:.0f}% agreement)"
+        else:
+            return f"{action_text} (Divided opinion: {agreement_pct:.0f}% consensus)"
+    
+    def set_voting_strategy(self, strategy: str):
+        """
+        Change the ensemble voting strategy at runtime.
+        
+        Args:
+            strategy: One of 'single', 'majority', 'fitness_weighted', 
+                     'softmax_ensemble', 'confidence_weighted', 'fittest_top_k'
+        """
+        valid_strategies = ['single', 'majority', 'fitness_weighted', 
+                           'softmax_ensemble', 'confidence_weighted', 'fittest_top_k']
+        if strategy.lower() not in valid_strategies:
+            raise ValueError(f"Invalid strategy. Choose from: {valid_strategies}")
+        self.config.voting_strategy = strategy.lower()
+        logger.info(f"Voting strategy changed to: {strategy}")
+    
+    def get_ensemble_stats(self) -> Dict[str, Any]:
+        """Get statistics about the ensemble configuration and advanced features."""
+        if not self.config.is_ensemble:
+            return {'is_ensemble': False}
+        
+        return {
+            'is_ensemble': True,
+            'member_count': self.config.member_count,
+            'voting_strategy': self.config.voting_strategy,
+            'top_k_voters': self.config.top_k_voters,
+            'fitness_stats': {
+                'min': min(self.config.member_fitness) if self.config.member_fitness else 0,
+                'max': max(self.config.member_fitness) if self.config.member_fitness else 0,
+                'mean': sum(self.config.member_fitness) / len(self.config.member_fitness) if self.config.member_fitness else 0
+            },
+            'member_ids': self.config.member_ids[:5],  # First 5 for brevity
+            # Advanced features
+            'advanced_features': {
+                'adaptive_strategy': self.config.adaptive_strategy,
+                'temperature_scaling': self.config.temperature_scaling,
+                'current_temperature': round(self._current_temperature, 3),
+                'cache_enabled': self.config.cache_enabled,
+                'cache_size': len(self._response_cache),
+                'cache_max_size': self.config.cache_size,
+                'parallel_inference': self.config.parallel_inference,
+                'recent_confidences': list(self._recent_confidences)[-5:] if self._recent_confidences else []
+            }
+        }
     
     def reward(self, reward_value: float, done: bool = False):
         """
@@ -1312,6 +2094,46 @@ class AgentBridge:
                 if hasattr(config, key):
                     setattr(config, key, value)
         
+        # Load metadata for ensemble information (fitness scores, member IDs)
+        metadata_path = directory / 'metadata.json'
+        if metadata_path.exists():
+            with open(metadata_path, 'r', encoding='utf-8') as f:
+                metadata = json.load(f)
+            
+            # Extract ensemble member data
+            ensemble_info = metadata.get('ensemble', {})
+            members = ensemble_info.get('members', [])
+            
+            if members:
+                config.is_ensemble = True
+                config.member_count = len(members)
+                
+                # Extract fitness and IDs for each member
+                config.member_fitness = []
+                config.member_ids = []
+                
+                for member in members:
+                    # Extract fitness (try multiple possible keys)
+                    fitness = member.get('fitness')
+                    if fitness is None:
+                        fitness = member.get('core', {}).get('fitness', 1.0)
+                    if fitness is None:
+                        fitness = 1.0
+                    config.member_fitness.append(float(fitness))
+                    
+                    # Extract organism ID
+                    org_id = member.get('organism_id', member.get('id', f'org_{len(config.member_ids)}'))
+                    config.member_ids.append(str(org_id))
+                
+                print(f"  [OK] Ensemble: {config.member_count} organisms")
+                
+                # Show fitness distribution
+                if config.member_fitness:
+                    min_fit = min(config.member_fitness)
+                    max_fit = max(config.member_fitness)
+                    avg_fit = sum(config.member_fitness) / len(config.member_fitness)
+                    print(f"       Fitness range: {min_fit:.4f} - {max_fit:.4f} (avg: {avg_fit:.4f})")
+        
         # Load vocabulary
         vocab = PortableVocabulary()
         vocab_path = directory / 'vocabulary.json'
@@ -1338,6 +2160,10 @@ class AgentBridge:
             if config_data.get('has_language_head', False) and not bridge.has_language_head:
                 bridge.has_language_head = True
                 print(f"  [OK] Language head enabled from config")
+        
+        # Report voting strategy for ensemble
+        if config.is_ensemble:
+            print(f"  [OK] Voting strategy: {config.voting_strategy}")
         
         # Load experience buffer
         exp_path = directory / 'experiences.pkl'
