@@ -4,6 +4,20 @@
 
 "There can be only one... but there never will be."
 
+================================================================================
+ATTRIBUTION: This system is inspired by "Highlander" (1986), directed by 
+Russell Mulcahy, written by Gregory Widen.
+
+The immortal combat system where warriors battle across centuries, and the 
+victor claims "The Quickening" - absorbing the defeated's power, knowledge,
+and life force - is the creative foundation of this evolutionary protocol.
+
+    "I am Connor MacLeod of the Clan MacLeod. I was born in 1518 in the 
+     village of Glenfinnan on the shores of Loch Shiel. And I am immortal."
+
+We honor this iconic film that inspired our absorption battle system.
+================================================================================
+
 A perpetual evolutionary tournament where organisms compete for survival.
 The fittest absorb the fallen, growing stronger with each victory.
 But the germination pool ensures eternal competition - new challengers arise.

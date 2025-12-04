@@ -733,6 +733,14 @@ class AgentBridge:
         self.total_steps: int = 0
         self.episode_rewards: List[float] = []
         
+        # Online learning (disabled by default)
+        self._online_learning_enabled = False
+        self._optimizer = None
+        self._train_steps = 0
+        self._total_loss = 0.0
+        self._train_batch_size = 32
+        self._gamma = 0.99
+        
         # Server (lazy init)
         self._server_app = None
         self._server_thread = None
@@ -1800,33 +1808,287 @@ class AgentBridge:
         if done:
             logger.info(f"Episode done. Total reward: {sum(self.episode_rewards):.2f}")
             self.episode_rewards = []
+        
+        # Online learning: train if enabled and buffer has enough samples
+        if self._online_learning_enabled and len(self.experience_buffer.buffer) >= self._train_batch_size:
+            self._train_step()
     
+    # =========================================================================
+    # ONLINE LEARNING - Independent Training Outside Butterfly
+    # =========================================================================
+    
+    def enable_online_learning(self, learning_rate: float = 0.001) -> bool:
+        """
+        Enable online learning for this agent.
+        
+        This allows the agent to update its weights during gym runs,
+        learning independently from the Butterfly ecosystem.
+        
+        Returns True if online learning was successfully enabled.
+        Requires PyTorch and a non-frozen model format.
+        """
+        if not TORCH_AVAILABLE:
+            logger.warning("PyTorch not available - cannot enable online learning")
+            return False
+        
+        if self.brain is None:
+            logger.warning("No brain loaded - cannot enable online learning")
+            return False
+        
+        # TorchScript models can be made trainable
+        if self.brain_type == 'torchscript':
+            try:
+                # Create a trainable version of the model
+                # TorchScript models have parameters that can be optimized
+                self._optimizer = torch.optim.Adam(
+                    self.brain.parameters(), 
+                    lr=learning_rate
+                )
+                self._train_batch_size = 32
+                self._train_steps = 0
+                self._total_loss = 0.0
+                self._online_learning_enabled = True
+                self._gamma = 0.99  # Discount factor for Q-learning
+                
+                logger.info(f"Online learning enabled (TorchScript, lr={learning_rate})")
+                return True
+            except Exception as e:
+                logger.warning(f"Failed to enable online learning: {e}")
+                return False
+        
+        elif self.brain_type == 'onnx':
+            logger.warning("ONNX models are frozen - cannot enable online learning")
+            logger.info("  Export your agent as TorchScript for online learning")
+            return False
+        
+        return False
+    
+    def disable_online_learning(self):
+        """Disable online learning and freeze the model."""
+        self._online_learning_enabled = False
+        if hasattr(self, '_optimizer'):
+            del self._optimizer
+        logger.info("Online learning disabled")
+    
+    def _train_step(self):
+        """Perform one training step using experience buffer."""
+        if not self._online_learning_enabled or self.brain is None:
+            return
+        
+        if not TORCH_AVAILABLE:
+            return
+        
+        try:
+            # Sample batch from experience buffer
+            batch = self.experience_buffer.sample(self._train_batch_size)
+            if len(batch) < self._train_batch_size:
+                return
+            
+            # Convert to tensors
+            states = torch.tensor(
+                np.array([exp['state'] for exp in batch]), 
+                dtype=torch.float32
+            )
+            actions = torch.tensor(
+                [exp['action'] for exp in batch], 
+                dtype=torch.long
+            )
+            rewards = torch.tensor(
+                [exp['reward'] for exp in batch], 
+                dtype=torch.float32
+            )
+            next_states = torch.tensor(
+                np.array([exp['next_state'] for exp in batch]), 
+                dtype=torch.float32
+            )
+            dones = torch.tensor(
+                [exp['done'] for exp in batch], 
+                dtype=torch.float32
+            )
+            
+            # Get current Q values
+            self.brain.train()  # Enable training mode
+            outputs = self.brain(states)
+            
+            # Handle different output formats
+            if isinstance(outputs, tuple):
+                q_values = outputs[0]
+            else:
+                q_values = outputs
+            
+            # Get Q values for taken actions
+            current_q = q_values.gather(1, actions.unsqueeze(1)).squeeze(1)
+            
+            # Compute target Q values (no gradient for targets)
+            with torch.no_grad():
+                next_outputs = self.brain(next_states)
+                if isinstance(next_outputs, tuple):
+                    next_q_values = next_outputs[0]
+                else:
+                    next_q_values = next_outputs
+                
+                max_next_q = next_q_values.max(1)[0]
+                target_q = rewards + (1 - dones) * self._gamma * max_next_q
+            
+            # Compute loss (MSE)
+            loss = torch.nn.functional.mse_loss(current_q, target_q)
+            
+            # Backprop
+            self._optimizer.zero_grad()
+            loss.backward()
+            
+            # Gradient clipping for stability
+            torch.nn.utils.clip_grad_norm_(self.brain.parameters(), max_norm=1.0)
+            
+            self._optimizer.step()
+            
+            # Track stats
+            self._train_steps += 1
+            self._total_loss += loss.item()
+            
+            self.brain.eval()  # Back to eval mode
+            
+            if self._train_steps % 100 == 0:
+                avg_loss = self._total_loss / self._train_steps
+                logger.info(f"Online learning step {self._train_steps}, avg_loss={avg_loss:.4f}")
+                
+        except Exception as e:
+            logger.warning(f"Training step failed: {e}")
+            self.brain.eval()  # Ensure we're back in eval mode
+    
+    def get_training_stats(self) -> Dict[str, Any]:
+        """Get online learning statistics."""
+        if not hasattr(self, '_online_learning_enabled') or not self._online_learning_enabled:
+            return {'online_learning': False}
+        
+        return {
+            'online_learning': True,
+            'training_steps': self._train_steps,
+            'total_loss': self._total_loss,
+            'avg_loss': self._total_loss / max(1, self._train_steps),
+            'buffer_size': len(self.experience_buffer.buffer),
+            'batch_size': self._train_batch_size
+        }
+    
+    def save_trained_model(self, path: Path):
+        """Save the trained model after online learning."""
+        if not TORCH_AVAILABLE or self.brain is None:
+            logger.warning("Cannot save model - PyTorch not available or no brain")
+            return False
+        
+        path = Path(path)
+        try:
+            if self.brain_type == 'torchscript':
+                # Save updated TorchScript model
+                self.brain.save(str(path))
+                logger.info(f"Saved trained model to {path}")
+                return True
+        except Exception as e:
+            logger.warning(f"Failed to save model: {e}")
+        return False
+
     # =========================================================================
     # MODE 1: Gymnasium/Gym Environment Runner
     # =========================================================================
+    
+    def list_environments(self) -> Dict[str, List[str]]:
+        """List all available gymnasium environments by category."""
+        try:
+            import gymnasium as gym
+            try:
+                import ale_py
+                gym.register_envs(ale_py)
+            except ImportError:
+                pass
+        except ImportError:
+            return {'error': 'gymnasium not installed'}
+        
+        envs = list(gym.envs.registry.keys())
+        
+        categories = {
+            'classic_control': sorted([e for e in envs if any(x in e for x in 
+                ['CartPole', 'MountainCar', 'Pendulum', 'Acrobot', 'LunarLander']) and 'ALE' not in e]),
+            'tabular': sorted([e for e in envs if any(x in e for x in 
+                ['FrozenLake', 'Taxi', 'Blackjack', 'Cliff']) and 'ALE' not in e]),
+            'box2d': sorted([e for e in envs if any(x in e for x in 
+                ['Bipedal', 'CarRacing', 'LunarLander']) and 'ALE' not in e]),
+            'mujoco': sorted([e for e in envs if any(x in e for x in 
+                ['Ant-', 'Cheetah', 'Hopper-', 'Humanoid', 'Walker2d', 'Swimmer', 'Pusher', 'Reacher', 'Inverted'])]),
+            'atari': sorted([e for e in envs if 'ALE/' in e]),
+            'total_count': len(envs)
+        }
+        return categories
+    
+    def get_environment_info(self, env_spec: str) -> Dict[str, Any]:
+        """Get detailed information about a specific environment."""
+        try:
+            import gymnasium as gym
+            try:
+                import ale_py
+                gym.register_envs(ale_py)
+            except ImportError:
+                pass
+        except ImportError:
+            return {'error': 'gymnasium not installed'}
+        
+        try:
+            env = gym.make(env_spec)
+            info = {
+                'name': env_spec,
+                'action_space': str(env.action_space),
+                'observation_space': str(env.observation_space),
+                'reward_range': getattr(env, 'reward_range', 'unknown'),
+                'max_episode_steps': getattr(env.spec, 'max_episode_steps', None) if env.spec else None,
+            }
+            
+            # Get action meanings if available
+            if hasattr(env.action_space, 'n'):
+                info['num_actions'] = env.action_space.n
+                if hasattr(env, 'get_action_meanings'):
+                    info['action_meanings'] = env.get_action_meanings()
+                elif hasattr(env.unwrapped, 'get_action_meanings'):
+                    info['action_meanings'] = env.unwrapped.get_action_meanings()
+            
+            # Get observation shape
+            if hasattr(env.observation_space, 'shape'):
+                info['obs_shape'] = env.observation_space.shape
+            
+            env.close()
+            return info
+        except Exception as e:
+            return {'error': str(e)}
     
     def run_gym(self, 
                 env_spec: str,
                 episodes: int = 10,
                 max_steps: Optional[int] = None,
                 render: bool = False,
-                learn: bool = True) -> Dict[str, Any]:
+                learn: bool = True,
+                verbose: bool = True,
+                save_best: bool = False) -> Dict[str, Any]:
         """
-        Run agent in a Gymnasium environment.
+        Run agent in a Gymnasium environment with rich progress display.
         
         Args:
             env_spec: Gym environment spec (e.g., 'CartPole-v1')
             episodes: Number of episodes to run
             max_steps: Max steps per episode (None = no limit)
-            render: Whether to render environment
-            learn: Whether to learn from experiences
+            render: Whether to render environment visually
+            learn: Whether to enable online learning
+            verbose: Whether to show detailed progress
+            save_best: Whether to save model when new best score achieved
             
         Returns:
-            Statistics dict
+            Comprehensive statistics dict
         """
         # Import gym with helpful error message
         try:
             import gymnasium as gym
+            try:
+                import ale_py
+                gym.register_envs(ale_py)
+            except ImportError:
+                pass
         except ImportError:
             try:
                 import gym
@@ -1838,20 +2100,61 @@ class AgentBridge:
                 print("")
                 return {'error': 'gymnasium/gym not installed', 'episodes': 0, 'total_rewards': [], 'episode_lengths': []}
         
-        env = gym.make(env_spec)
+        # Get environment info first
+        env_info = self.get_environment_info(env_spec)
+        if 'error' in env_info:
+            print(f"\n❌ Environment error: {env_info['error']}")
+            return {'error': env_info['error']}
         
+        # Display environment info if verbose
+        if verbose:
+            print("\n" + "="*60)
+            print(f"🎮 GYMNASIUM ARENA: {env_spec}")
+            print("="*60)
+            print(f"  Action Space:      {env_info.get('action_space', 'unknown')}")
+            print(f"  Observation Space: {env_info.get('observation_space', 'unknown')}")
+            if 'num_actions' in env_info:
+                print(f"  Num Actions:       {env_info['num_actions']}")
+            if 'action_meanings' in env_info:
+                print(f"  Action Meanings:   {env_info['action_meanings'][:6]}...")
+            if env_info.get('max_episode_steps'):
+                print(f"  Max Steps/Episode: {env_info['max_episode_steps']}")
+            print("-"*60)
+            print(f"  Episodes: {episodes} | Render: {render} | Online Learning: {learn}")
+            print("="*60 + "\n")
+        
+        # Create environment with render mode if requested
+        if render:
+            env = gym.make(env_spec, render_mode='human')
+        else:
+            env = gym.make(env_spec)
+        
+        # Initialize stats tracking
         stats = {
+            'env': env_spec,
+            'env_info': env_info,
             'episodes': episodes,
             'total_rewards': [],
             'episode_lengths': [],
-            'env': env_spec
+            'actions_taken': [],
+            'best_reward': float('-inf'),
+            'best_episode': 0,
+            'worst_reward': float('inf'),
+            'worst_episode': 0,
+            'render': render,
+            'online_learning': learn
         }
+        
+        # Track action distribution
+        action_counts = {}
+        start_time = time.time()
         
         for ep in range(episodes):
             obs, info = env.reset() if hasattr(env, 'reset') else (env.reset(), {})
             done = False
             total_reward = 0
             steps = 0
+            ep_actions = []
             
             while not done:
                 if render:
@@ -1864,6 +2167,10 @@ class AgentBridge:
                 # Ensure action is valid for this env
                 if hasattr(env.action_space, 'n'):
                     action = action % env.action_space.n
+                
+                # Track action
+                ep_actions.append(action)
+                action_counts[action] = action_counts.get(action, 0) + 1
                 
                 # Step environment
                 step_result = env.step(action)
@@ -1884,14 +2191,102 @@ class AgentBridge:
                 if max_steps and steps >= max_steps:
                     break
             
+            # Track episode stats
             stats['total_rewards'].append(total_reward)
             stats['episode_lengths'].append(steps)
-            logger.info(f"Episode {ep+1}/{episodes}: reward={total_reward:.2f}, steps={steps}")
+            stats['actions_taken'].append(ep_actions)
+            
+            # Track best/worst
+            if total_reward > stats['best_reward']:
+                stats['best_reward'] = total_reward
+                stats['best_episode'] = ep + 1
+            if total_reward < stats['worst_reward']:
+                stats['worst_reward'] = total_reward
+                stats['worst_episode'] = ep + 1
+            
+            # Display progress
+            if verbose:
+                # Progress bar
+                progress = (ep + 1) / episodes
+                bar_width = 30
+                filled = int(bar_width * progress)
+                bar = '█' * filled + '░' * (bar_width - filled)
+                
+                # Running stats
+                running_mean = np.mean(stats['total_rewards'])
+                running_std = np.std(stats['total_rewards']) if len(stats['total_rewards']) > 1 else 0
+                
+                # Episode indicator
+                trend = "📈" if total_reward >= running_mean else "📉"
+                if total_reward == stats['best_reward']:
+                    trend = "🏆"
+                
+                print(f"\r  [{bar}] {ep+1}/{episodes} | "
+                      f"Reward: {total_reward:7.2f} {trend} | "
+                      f"Avg: {running_mean:7.2f} ± {running_std:5.2f} | "
+                      f"Steps: {steps:4d}", end='')
+                
+                if (ep + 1) % 10 == 0 or ep == episodes - 1:
+                    print()  # New line every 10 episodes
         
         env.close()
         
+        # Calculate final statistics
+        elapsed = time.time() - start_time
+        stats['elapsed_time'] = elapsed
         stats['mean_reward'] = np.mean(stats['total_rewards'])
         stats['std_reward'] = np.std(stats['total_rewards'])
+        stats['min_reward'] = min(stats['total_rewards'])
+        stats['max_reward'] = max(stats['total_rewards'])
+        stats['mean_steps'] = np.mean(stats['episode_lengths'])
+        stats['total_steps'] = sum(stats['episode_lengths'])
+        stats['steps_per_second'] = stats['total_steps'] / elapsed if elapsed > 0 else 0
+        
+        # Action distribution
+        total_actions = sum(action_counts.values())
+        stats['action_distribution'] = {
+            a: {'count': c, 'percentage': c/total_actions*100} 
+            for a, c in sorted(action_counts.items())
+        }
+        
+        # Add training stats if online learning was active
+        if hasattr(self, '_online_learning_enabled') and self._online_learning_enabled:
+            train_stats = self.get_training_stats()
+            stats['training_steps'] = train_stats['training_steps']
+            stats['final_loss'] = train_stats['avg_loss']
+        
+        # Display final summary if verbose
+        if verbose:
+            print("\n" + "="*60)
+            print("📊 FINAL RESULTS")
+            print("="*60)
+            print(f"  Environment:     {env_spec}")
+            print(f"  Episodes:        {episodes}")
+            print(f"  Total Steps:     {stats['total_steps']:,}")
+            print(f"  Time Elapsed:    {elapsed:.2f}s ({stats['steps_per_second']:.0f} steps/sec)")
+            print("-"*60)
+            print(f"  Mean Reward:     {stats['mean_reward']:.2f} ± {stats['std_reward']:.2f}")
+            print(f"  Best Reward:     {stats['best_reward']:.2f} (Episode {stats['best_episode']})")
+            print(f"  Worst Reward:    {stats['worst_reward']:.2f} (Episode {stats['worst_episode']})")
+            print(f"  Mean Steps/Ep:   {stats['mean_steps']:.1f}")
+            print("-"*60)
+            print("  Action Distribution:")
+            for action, data in stats['action_distribution'].items():
+                bar = '█' * int(data['percentage'] / 5)
+                action_name = env_info.get('action_meanings', {})
+                if isinstance(action_name, list) and action < len(action_name):
+                    action_name = action_name[action]
+                else:
+                    action_name = f"Action {action}"
+                print(f"    {action_name:15} {bar:20} {data['percentage']:5.1f}% ({data['count']:,})")
+            
+            if learn and hasattr(self, '_online_learning_enabled') and self._online_learning_enabled:
+                print("-"*60)
+                print(f"  🧠 Online Learning:")
+                print(f"     Training Steps: {stats.get('training_steps', 0)}")
+                print(f"     Final Loss:     {stats.get('final_loss', 0):.6f}")
+            
+            print("="*60 + "\n")
         
         return stats
     
@@ -2006,25 +2401,189 @@ class AgentBridge:
         return self._server_thread
     
     # =========================================================================
+    # MODE 3.5: Proton Game Arena (Apprentice Adept Style)
+    # =========================================================================
+    
+    def _handle_arena_command(self, command: str):
+        """
+        Handle /arena commands for Proton Game Arena interaction.
+        
+        Commands:
+            /arena              - Show game selection grid
+            /arena games        - List all arena games
+            /arena games <cat>  - Games by category (physical/mental/chance/arts)
+            /arena play <game>  - Play a specific arena game
+        """
+        parts = command.lower().strip().split()
+        
+        # Get arena data (embedded - no external imports needed)
+        ARENA_GAMES = {
+            ('physical', 'naked'): [
+                ('Balance Beam', 'CartPole-v1', 'NOVICE', 'Pure balance challenge'),
+                ('Mountain Climb', 'MountainCar-v0', 'APPRENTICE', 'Build momentum to climb'),
+                ('Gymnast Swing', 'Acrobot-v1', 'JOURNEYMAN', 'Swing using body momentum'),
+            ],
+            ('physical', 'tool'): [
+                ('Lunar Landing', 'LunarLander-v3', 'JOURNEYMAN', 'Land spacecraft with thrusters'),
+                ('Pendulum Control', 'Pendulum-v1', 'APPRENTICE', 'Control pendulum with force'),
+            ],
+            ('physical', 'machine'): [
+                ('Road Racing', 'CarRacing-v3', 'EXPERT', 'Race car around track'),
+                ('Endurance Rally', 'ALE/Enduro-v5', 'EXPERT', 'Endless racing endurance'),
+            ],
+            ('physical', 'animal'): [
+                ('Bipedal Walk', 'BipedalWalker-v3', 'EXPERT', 'Walk on two legs'),
+            ],
+            ('mental', 'naked'): [
+                ('Frozen Lake', 'FrozenLake-v1', 'NOVICE', 'Navigate slippery ice'),
+                ('Cliff Walking', 'CliffWalking-v0', 'APPRENTICE', 'Navigate cliffs safely'),
+            ],
+            ('mental', 'tool'): [
+                ('Blackjack', 'Blackjack-v1', 'APPRENTICE', 'Card counting and probability'),
+                ('Taxi Navigation', 'Taxi-v3', 'JOURNEYMAN', 'Optimal pickup/dropoff'),
+            ],
+            ('mental', 'machine'): [
+                ('Brick Breaker', 'ALE/Breakout-v5', 'JOURNEYMAN', 'Strategic brick destruction'),
+                ('Space Defense', 'ALE/SpaceInvaders-v5', 'JOURNEYMAN', 'Defend against waves'),
+                ('Pac Maze', 'ALE/MsPacman-v5', 'EXPERT', 'Navigate maze, avoid ghosts'),
+            ],
+            ('chance', 'naked'): [
+                ('Coin Fate', 'coin_flip', 'NOVICE', 'Pure luck - coin flip'),
+            ],
+            ('chance', 'tool'): [
+                ('Card Draw', 'Blackjack-v1', 'APPRENTICE', 'Luck meets strategy'),
+            ],
+        }
+        
+        if len(parts) == 1:
+            # /arena - Show grid
+            print("\n" + "="*70)
+            print("  🎮 PROTON GAME ARENA - Game Selection Grid")
+            print("  (Inspired by Piers Anthony's Apprentice Adept)")
+            print("="*70)
+            print()
+            print("  " + " "*15 + "NAKED        TOOL         MACHINE      ANIMAL")
+            print("  " + "-"*65)
+            for challenge in ['physical', 'mental', 'chance', 'arts']:
+                row = f"  {challenge.upper():12}"
+                for resource in ['naked', 'tool', 'machine', 'animal']:
+                    games = ARENA_GAMES.get((challenge, resource), [])
+                    if games:
+                        row += f"  [{len(games)} games]  "
+                    else:
+                        row += "     ---      "
+                print(row)
+            print("  " + "-"*65)
+            print("\n  Commands:")
+            print("    /arena games         - List all games")
+            print("    /arena games <cat>   - Games by category")
+            print("    /arena play <game>   - Play specific game")
+            print("="*70 + "\n")
+            return
+        
+        subcommand = parts[1] if len(parts) > 1 else ""
+        
+        if subcommand == 'games':
+            # /arena games [category]
+            category_filter = parts[2] if len(parts) > 2 else None
+            
+            print("\n" + "="*60)
+            print("  📋 ARENA GAMES")
+            print("="*60)
+            
+            for (challenge, resource), games in ARENA_GAMES.items():
+                if category_filter and challenge != category_filter:
+                    continue
+                    
+                if games:
+                    print(f"\n  {challenge.upper()} + {resource.upper()}:")
+                    for name, env, difficulty, desc in games:
+                        print(f"    • {name}")
+                        print(f"      Env: {env} ({difficulty})")
+                        print(f"      {desc}")
+            
+            print("\n" + "="*60 + "\n")
+            return
+        
+        elif subcommand == 'play':
+            # /arena play <game_name>
+            if len(parts) < 3:
+                print("\n  Usage: /arena play <game>")
+                print("  Example: /arena play 'Balance Beam'")
+                print("  Use /arena games to see available games\n")
+                return
+            
+            game_name = ' '.join(parts[2:]).strip("'\"")
+            
+            # Find the game
+            found_game = None
+            for (challenge, resource), games in ARENA_GAMES.items():
+                for name, env, difficulty, desc in games:
+                    if name.lower() == game_name.lower():
+                        found_game = (name, env, difficulty, desc, challenge, resource)
+                        break
+                if found_game:
+                    break
+            
+            if not found_game:
+                print(f"\n  ❌ Game '{game_name}' not found")
+                print("  Use /arena games to see available games\n")
+                return
+            
+            name, env, difficulty, desc, challenge, resource = found_game
+            
+            print("\n" + "="*60)
+            print(f"  🎮 ARENA: {name}")
+            print(f"  Category: {challenge.upper()} × {resource.upper()}")
+            print(f"  Difficulty: {difficulty}")
+            print(f"  {desc}")
+            print("="*60)
+            
+            # Check if gym env exists
+            if env.startswith('ALE/') or env in ['CartPole-v1', 'MountainCar-v0', 'Acrobot-v1',
+                                                    'LunarLander-v3', 'Pendulum-v1', 'CarRacing-v3',
+                                                    'BipedalWalker-v3', 'FrozenLake-v1', 'CliffWalking-v0',
+                                                    'Blackjack-v1', 'Taxi-v3']:
+                print("\n  Running 5 episodes...")
+                print("-"*60)
+                self.run_gym(env, episodes=5, render=False, learn=True, verbose=True)
+            else:
+                print(f"\n  ⚠️ Custom game '{env}' - not a standard gym environment")
+                print("  This game requires special handling\n")
+            
+            print("="*60 + "\n")
+            return
+        
+        else:
+            print(f"\n  Unknown arena command: {subcommand}")
+            print("  Use /arena for help\n")
+    
+    # =========================================================================
     # MODE 3: Interactive CLI
     # =========================================================================
     
     def interactive(self):
         """
-        Start interactive CLI mode.
+        Start interactive CLI mode with comprehensive gym integration.
         
         Commands:
-            <text>      - Send text to agent
-            /act <json> - Send structured action request
-            /gym <env>  - Run in Gym environment
-            /state      - Show current state
-            /config     - Show configuration
-            /quit       - Exit
+            <text>            - Send text to agent
+            /act <json>       - Send structured action request
+            /gym <env>        - Run in Gym environment
+            /envs             - Browse available environments
+            /info <env>       - Get environment details
+            /train            - Show training stats
+            /state            - Show current state
+            /config           - Show configuration
+            /help             - Show all commands
+            /quit             - Exit
         """
-        print("\n[Butterfly] AgentBridge Interactive Mode")
-        print("   Type messages to chat with the agent")
-        print("   Commands: /act, /gym, /state, /config, /quit")
-        print()
+        print("\n" + "="*60)
+        print("  🦋 BUTTERFLY AGENT - Interactive Mode")
+        print("="*60)
+        print("  Type messages to chat, or use commands:")
+        print("  /gym, /envs, /arena, /train, /state, /help, /quit")
+        print("="*60 + "\n")
         
         while True:
             try:
@@ -2038,6 +2597,37 @@ class AgentBridge:
             if user_input.lower() == '/quit':
                 break
             
+            elif user_input.lower() == '/help':
+                print("\n" + "-"*50)
+                print("  📖 COMMANDS")
+                print("-"*50)
+                print("  Chat:")
+                print("    <text>              - Chat with the agent")
+                print("    /act {json}         - Send structured input")
+                print()
+                print("  Gymnasium:")
+                print("    /gym <env>          - Run 3 episodes")
+                print("    /gym <env> N        - Run N episodes")
+                print("    /gym <env> render   - With visual rendering")
+                print("    /gym <env> learn    - With online learning")
+                print("    /gym <env> 10 render learn  - Combined")
+                print("    /envs               - Browse all environments")
+                print("    /envs <category>    - Filter by category")
+                print("    /info <env>         - Environment details")
+                print()
+                print("  Proton Arena:")
+                print("    /arena              - Show Proton Game grid")
+                print("    /arena games        - List all arena games")
+                print("    /arena games <cat>  - Games by category")
+                print("    /arena play <game>  - Play specific arena game")
+                print()
+                print("  Status:")
+                print("    /train              - Training statistics")
+                print("    /state              - Agent state")
+                print("    /config             - Configuration")
+                print("-"*50 + "\n")
+                continue
+            
             elif user_input.lower() == '/state':
                 print(f"\nState: {self.current_state}")
                 print(f"Steps: {self.total_steps}, Epsilon: {self.config.epsilon:.4f}")
@@ -2049,12 +2639,122 @@ class AgentBridge:
                 print()
                 continue
             
-            elif user_input.lower().startswith('/gym '):
-                env_spec = user_input[5:].strip()
-                print(f"\nRunning {env_spec}...")
-                stats = self.run_gym(env_spec, episodes=3)
-                print(f"Mean reward: {stats['mean_reward']:.2f}")
+            elif user_input.lower() == '/train':
+                stats = self.get_training_stats()
+                print(f"\nTraining stats: {json.dumps(stats, indent=2)}")
                 print()
+                continue
+            
+            elif user_input.lower().startswith('/arena'):
+                self._handle_arena_command(user_input)
+                continue
+            
+            elif user_input.lower().startswith('/envs'):
+                parts = user_input.split()
+                category = parts[1].lower() if len(parts) > 1 else None
+                
+                categories = self.list_environments()
+                if 'error' in categories:
+                    print(f"\n❌ {categories['error']}")
+                    continue
+                
+                print("\n" + "="*60)
+                print("  🎮 GYMNASIUM ENVIRONMENTS")
+                print("="*60)
+                
+                cat_map = {
+                    'classic': 'classic_control',
+                    'control': 'classic_control',
+                    'tabular': 'tabular',
+                    'grid': 'tabular',
+                    'box2d': 'box2d',
+                    'physics': 'box2d',
+                    'mujoco': 'mujoco',
+                    'robot': 'mujoco',
+                    'atari': 'atari',
+                    'arcade': 'atari'
+                }
+                
+                if category and category in cat_map:
+                    cat_key = cat_map[category]
+                    envs = categories.get(cat_key, [])
+                    print(f"\n  📁 {cat_key.upper()} ({len(envs)} environments)")
+                    print("-"*50)
+                    for env in envs[:30]:
+                        print(f"    {env}")
+                    if len(envs) > 30:
+                        print(f"    ... and {len(envs)-30} more")
+                else:
+                    print(f"\n  Total Environments: {categories.get('total_count', '?')}")
+                    print()
+                    for cat_name in ['classic_control', 'tabular', 'box2d', 'mujoco', 'atari']:
+                        envs = categories.get(cat_name, [])
+                        sample = envs[:3] if envs else []
+                        print(f"  📁 {cat_name.upper()} ({len(envs)})")
+                        for env in sample:
+                            print(f"      {env}")
+                        if len(envs) > 3:
+                            print(f"      ...")
+                        print()
+                    print("  Use /envs <category> for full list")
+                    print("  Categories: classic, tabular, box2d, mujoco, atari")
+                
+                print("="*60 + "\n")
+                continue
+            
+            elif user_input.lower().startswith('/info '):
+                env_spec = user_input[6:].strip()
+                info = self.get_environment_info(env_spec)
+                
+                if 'error' in info:
+                    print(f"\n❌ {info['error']}")
+                else:
+                    print("\n" + "-"*50)
+                    print(f"  📋 {env_spec}")
+                    print("-"*50)
+                    for key, value in info.items():
+                        if key != 'name':
+                            print(f"  {key}: {value}")
+                    print("-"*50 + "\n")
+                continue
+            
+            elif user_input.lower().startswith('/gym'):
+                parts = user_input[4:].strip().split()
+                
+                if not parts:
+                    # Show quick help
+                    print("\n  Usage: /gym <env> [episodes] [render] [learn]")
+                    print("  Example: /gym CartPole-v1 10 render learn")
+                    print("  Use /envs to see available environments\n")
+                    continue
+                
+                env_spec = parts[0]
+                
+                # Parse options
+                episodes = 3
+                render = False
+                learn = False
+                
+                for p in parts[1:]:
+                    if p.isdigit():
+                        episodes = int(p)
+                    elif p.lower() == 'render':
+                        render = True
+                    elif p.lower() == 'learn':
+                        learn = True
+                
+                if learn:
+                    print("  Enabling online learning...")
+                    if self.enable_online_learning():
+                        print("  ✅ Online learning enabled")
+                    else:
+                        print("  ⚠️ Could not enable online learning (frozen model?)")
+                
+                # Run with the comprehensive run_gym
+                stats = self.run_gym(env_spec, episodes=episodes, render=render, learn=learn, verbose=True)
+                
+                if 'error' in stats:
+                    print(f"\n❌ Error: {stats['error']}\n")
                 continue
             
             elif user_input.startswith('/act '):
@@ -2077,7 +2777,7 @@ class AgentBridge:
             print(f"       (confidence: {result.confidence:.2%})")
             print()
         
-        print("\nGoodbye! [Butterfly]")
+        print("\n  Goodbye! 🦋\n")
     
     # =========================================================================
     # PERSISTENCE
@@ -2281,6 +2981,22 @@ def main():
         default=10,
         help='Number of episodes for gym mode (default: 10)'
     )
+    parser.add_argument(
+        '--render', '-r',
+        action='store_true',
+        help='Enable visual rendering for gym mode'
+    )
+    parser.add_argument(
+        '--online-learn', '-l',
+        action='store_true',
+        help='Enable online learning (updates weights during gym run)'
+    )
+    parser.add_argument(
+        '--learning-rate', '-lr',
+        type=float,
+        default=0.001,
+        help='Learning rate for online learning (default: 0.001)'
+    )
     
     args = parser.parse_args()
     
@@ -2294,10 +3010,29 @@ def main():
     elif args.mode == 'serve':
         bridge.serve(port=args.port)
     elif args.mode == 'gym':
-        stats = bridge.run_gym(args.gym_env, episodes=args.episodes)
+        # Enable online learning if requested
+        if args.online_learn:
+            if bridge.enable_online_learning(learning_rate=args.learning_rate):
+                print(f"  [OK] Online learning enabled (lr={args.learning_rate})")
+            else:
+                print(f"  [!] Online learning not available (frozen model)")
+        
+        stats = bridge.run_gym(
+            args.gym_env, 
+            episodes=args.episodes,
+            render=args.render,
+            learn=args.online_learn
+        )
         print(f"\nResults:")
-        print(f"  Mean reward: {stats['mean_reward']:.2f} ± {stats['std_reward']:.2f}")
-        print(f"  Episodes: {stats['episodes']}")
+        if 'error' in stats:
+            print(f"  Error: {stats['error']}")
+            print(f"  Install gymnasium with: pip install gymnasium")
+        else:
+            print(f"  Mean reward: {stats['mean_reward']:.2f} ± {stats['std_reward']:.2f}")
+            print(f"  Episodes: {stats['episodes']}")
+            if args.online_learn and 'training_steps' in stats:
+                print(f"  Training steps: {stats['training_steps']}")
+                print(f"  Final loss: {stats.get('final_loss', 'N/A')}")
 
 
 if __name__ == '__main__':

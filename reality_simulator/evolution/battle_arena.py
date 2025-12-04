@@ -4,6 +4,16 @@
 
 Where organisms clash in multi-dimensional combat.
 
+================================================================================
+ATTRIBUTION: The absorption battle system is inspired by "Highlander" (1986),
+directed by Russell Mulcahy, written by Gregory Widen.
+
+    "There can be only one."
+
+The Quickening - where an immortal gains the knowledge, skills, and power of
+a defeated opponent - directly inspired this neural/concept/trait transfer system.
+================================================================================
+
 Battle is not just fitness comparison - it's a complex interaction:
 - Neural outputs clash (who makes better decisions?)
 - Concepts compete (richer vocabulary = strategic advantage)
@@ -12,7 +22,7 @@ Battle is not just fitness comparison - it's a complex interaction:
 - Random chaos keeps it unpredictable
 
 The winner absorbs the loser's best capabilities:
-- Neural patterns (partial weight transfer)
+- Neural patterns (partial weight transfer) 
 - Concepts (vocabulary expansion)
 - Configs (optimal hyperparameters)
 - Traits (behavioral tendencies)
@@ -41,6 +51,7 @@ class BattleType(Enum):
     FULL_COMBAT = "full_combat"         # All dimensions combined
     PREDATOR_HUNT = "predator_hunt"     # Asymmetric hunt scenario
     COOPERATIVE_TEST = "cooperative"    # Can they work together?
+    PROTON_GAME = "proton_game"         # Apprentice Adept style gym battles
 
 
 class TraitAdvantage(Enum):
@@ -349,7 +360,8 @@ class BattleArena:
         return stats
     
     def resolve_battle(self, organism_1: Any, organism_2: Any,
-                      battle_type: BattleType = BattleType.FULL_COMBAT) -> BattleOutcome:
+                      battle_type: BattleType = BattleType.FULL_COMBAT,
+                      bridge_1: Any = None, bridge_2: Any = None) -> BattleOutcome:
         """
         Resolve a battle between two organisms.
         
@@ -357,10 +369,20 @@ class BattleArena:
             organism_1: First combatant
             organism_2: Second combatant
             battle_type: Type of battle to conduct
+            bridge_1: Optional AgentBridge for organism 1 (required for PROTON_GAME)
+            bridge_2: Optional AgentBridge for organism 2 (required for PROTON_GAME)
             
         Returns:
             Complete battle outcome
         """
+        # ═══════════════════════════════════════════════════════════════
+        # PROTON GAME ARENA (Gym-based battles)
+        # ═══════════════════════════════════════════════════════════════
+        if battle_type == BattleType.PROTON_GAME:
+            return self._resolve_proton_game_battle(
+                organism_1, organism_2, bridge_1, bridge_2
+            )
+        
         self.battle_count += 1
         battle_id = f"battle_{self.battle_count}_{int(time.time())}"
         
@@ -895,6 +917,108 @@ class BattleArena:
                 pass
         
         return absorption_results
+    
+    # ═══════════════════════════════════════════════════════════════════
+    # PROTON GAME ARENA INTEGRATION
+    # ═══════════════════════════════════════════════════════════════════
+    
+    def _resolve_proton_game_battle(self, 
+                                    organism_1: Any, 
+                                    organism_2: Any,
+                                    bridge_1: Any = None,
+                                    bridge_2: Any = None) -> BattleOutcome:
+        """
+        Resolve a battle using the Proton Game Arena (Gym-based combat).
+        
+        This uses the Apprentice Adept style game selection system where
+        organisms compete in actual gymnasium environments.
+        """
+        self.battle_count += 1
+        battle_id = f"proton_{self.battle_count}_{int(time.time())}"
+        
+        org1_id = getattr(organism_1, 'organism_id', getattr(organism_1, 'id', 'organism_1'))
+        org2_id = getattr(organism_2, 'organism_id', getattr(organism_2, 'id', 'organism_2'))
+        
+        try:
+            from reality_simulator.arena import ProtonGameArena
+            proton_arena = ProtonGameArena()
+            
+            # Check if we have bridges
+            if bridge_1 is None or bridge_2 is None:
+                # Fall back to standard combat
+                print("⚠️ Proton Game requires AgentBridge - falling back to standard combat")
+                return self.resolve_battle(
+                    organism_1, organism_2, 
+                    battle_type=BattleType.FULL_COMBAT
+                )
+            
+            # Run the Proton Game selection and battle
+            proton_result = proton_arena.full_battle(
+                organism_1, organism_2,
+                bridge_1, bridge_2,
+                highlander_mode=False,  # Consequences handled by our system
+                ai_selection=True
+            )
+            
+            # Convert ProtonGameArena result to BattleOutcome
+            winner = organism_1 if proton_result.winner_id == org1_id else organism_2
+            loser = organism_2 if proton_result.winner_id == org1_id else organism_1
+            
+            # Determine absorption based on margin
+            margin = abs(proton_result.score_a - proton_result.score_b) / max(
+                max(proton_result.score_a, proton_result.score_b), 1.0
+            )
+            
+            concepts_transferred = self._determine_concept_transfer(loser, margin)
+            traits_transferred = self._determine_trait_transfer(loser, margin)
+            config_changes = self._determine_config_transfer(loser, margin)
+            
+            # Generate narrative
+            game_name = proton_result.game.name if proton_result.game else "Unknown"
+            narrative = (
+                f"⚔️ PROTON GAME: {game_name}\n"
+                f"{org1_id[:8]}: {proton_result.score_a:.1f} vs "
+                f"{org2_id[:8]}: {proton_result.score_b:.1f}\n"
+                f"🏆 Winner: {proton_result.winner_id[:8] if proton_result.winner_id else 'TIE'}"
+            )
+            
+            outcome = BattleOutcome(
+                battle_id=battle_id,
+                battle_type=BattleType.PROTON_GAME,
+                combatant_1_id=org1_id,
+                combatant_2_id=org2_id,
+                winner_id=proton_result.winner_id or org1_id,
+                loser_id=org2_id if proton_result.winner_id == org1_id else org1_id,
+                rounds=[],  # Gym episodes tracked differently
+                total_rounds=proton_result.total_episodes,
+                winner_final_hp=proton_result.score_a if proton_result.winner_id == org1_id else proton_result.score_b,
+                loser_final_hp=proton_result.score_b if proton_result.winner_id == org1_id else proton_result.score_a,
+                margin_of_victory=margin,
+                concepts_transferred=concepts_transferred,
+                traits_transferred=traits_transferred,
+                config_changes=config_changes,
+                neural_transfer_rate=min(0.1 + margin * 0.2, 0.5),
+                duration_rounds=proton_result.total_episodes,
+                narrative_summary=narrative
+            )
+            
+            self.battle_history.append(outcome)
+            self._emit_battle_event(outcome)
+            
+            return outcome
+            
+        except ImportError as e:
+            print(f"⚠️ Proton Game Arena not available: {e}")
+            return self.resolve_battle(
+                organism_1, organism_2,
+                battle_type=BattleType.FULL_COMBAT
+            )
+        except Exception as e:
+            print(f"⚠️ Proton Game battle failed: {e}")
+            return self.resolve_battle(
+                organism_1, organism_2,
+                battle_type=BattleType.FULL_COMBAT
+            )
     
     def get_arena_stats(self) -> Dict[str, Any]:
         """Get arena statistics."""

@@ -1030,11 +1030,37 @@ if __name__ == "__main__":
             requirements += "# AgentBridge HTTP server & Visualizer\n"
             requirements += "flask>=2.0.0\n\n"
             
-            # Optional dependencies
-            requirements += "# Optional: Gymnasium for environment integration\n"
-            requirements += "# gymnasium>=0.29.0\n\n"
-            requirements += "# Optional: GPU acceleration for ONNX\n"
-            requirements += "# onnxruntime-gpu>=1.15.0\n"
+            # Gymnasium environments (NEW - comprehensive)
+            requirements += "# ========================================\n"
+            requirements += "# GYMNASIUM ENVIRONMENTS - Learning Playground!\n"
+            requirements += "# ========================================\n"
+            requirements += "# 400+ environments to train/test your agent\n\n"
+            requirements += "# Core gymnasium (63 built-in environments)\n"
+            requirements += "gymnasium>=0.29.0\n\n"
+            requirements += "# Classic Control (CartPole, MountainCar, Pendulum, etc)\n"
+            requirements += "# Already included in gymnasium core!\n\n"
+            requirements += "# Visual rendering (required for --render flag)\n"
+            requirements += "pygame>=2.5.0\n\n"
+            requirements += "# Atari Arcade Games (100+ classic games!)\n"
+            requirements += "# Pac-Man, Breakout, Space Invaders, Pong, etc.\n"
+            requirements += "ale-py>=0.8.0\n\n"
+            requirements += "# Box2D Physics (LunarLander, BipedalWalker, CarRacing)\n"
+            requirements += "# gymnasium[box2d]\n"
+            requirements += "box2d-py>=2.3.5\n\n"
+            requirements += "# MuJoCo Robotics (Humanoid, Ant, HalfCheetah, etc)\n"
+            requirements += "# pip install gymnasium[mujoco]\n"
+            requirements += "# mujoco>=2.3.0\n\n"
+            requirements += "# ========================================\n"
+            requirements += "# USAGE EXAMPLES:\n"
+            requirements += "# ========================================\n"
+            requirements += "# python bridge.py . --mode gym --gym-env CartPole-v1 --render\n"
+            requirements += "# python bridge.py . --mode gym --gym-env LunarLander-v3 --episodes 50\n"
+            requirements += "# python bridge.py . --mode gym --gym-env ALE/Breakout-v5 --online-learn\n"
+            requirements += "# python bridge.py . --mode gym --gym-env BipedalWalker-v3 --render --online-learn\n\n"
+            requirements += "# ========================================\n"
+            requirements += "# OPTIONAL GPU ACCELERATION\n"
+            requirements += "# ========================================\n"
+            requirements += "# onnxruntime-gpu>=1.15.0  # NVIDIA CUDA\n"
 
             zf.writestr("requirements.txt", requirements)
 
@@ -1327,6 +1353,140 @@ stats = bridge.run_gym("CartPole-v1", episodes=100)
 print(f"Mean reward: {{stats['mean_reward']:.2f}}")
 ```
 
+---
+
+## 🎮 GYMNASIUM PLAYGROUND - 400+ Learning Environments!
+
+Your agent can learn and play in **400+ environments** across multiple categories!
+
+### 🕹️ Classic Control (Built-in)
+Simple physics environments perfect for testing:
+```bash
+python bridge.py . --mode gym --gym-env CartPole-v1 --render        # Balance a pole
+python bridge.py . --mode gym --gym-env MountainCar-v0 --render     # Drive up a hill
+python bridge.py . --mode gym --gym-env Pendulum-v1 --render        # Swing a pendulum
+python bridge.py . --mode gym --gym-env Acrobot-v1 --render         # Double pendulum
+python bridge.py . --mode gym --gym-env LunarLander-v3 --render     # Land on the moon!
+```
+
+### 👾 Atari Arcade (100+ Classic Games!)
+Install: `pip install ale-py`
+```bash
+python bridge.py . --mode gym --gym-env ALE/Breakout-v5 --render    # Break bricks!
+python bridge.py . --mode gym --gym-env ALE/Pong-v5 --render        # Classic Pong
+python bridge.py . --mode gym --gym-env ALE/SpaceInvaders-v5        # Shoot aliens
+python bridge.py . --mode gym --gym-env ALE/Pacman-v5 --render      # Pac-Man!
+python bridge.py . --mode gym --gym-env ALE/Asteroids-v5            # Space shooter
+python bridge.py . --mode gym --gym-env ALE/Frogger-v5 --render     # Cross the road
+python bridge.py . --mode gym --gym-env ALE/DonkeyKong-v5           # Rescue the princess
+```
+
+### 🚀 Box2D Physics
+Install: `pip install gymnasium[box2d]` or `pip install box2d-py`
+```bash
+python bridge.py . --mode gym --gym-env BipedalWalker-v3 --render   # Walk on 2 legs!
+python bridge.py . --mode gym --gym-env CarRacing-v3 --render       # Race a car
+python bridge.py . --mode gym --gym-env LunarLanderContinuous-v3    # Smooth landing
+```
+
+### 🤖 MuJoCo Robotics (Advanced)
+Install: `pip install gymnasium[mujoco]`
+```bash
+python bridge.py . --mode gym --gym-env Humanoid-v4 --render        # Walk like a human
+python bridge.py . --mode gym --gym-env Ant-v4 --render             # 4-legged ant
+python bridge.py . --mode gym --gym-env HalfCheetah-v4 --render     # Run fast!
+python bridge.py . --mode gym --gym-env Hopper-v4 --render          # One-legged hopper
+python bridge.py . --mode gym --gym-env Swimmer-v4 --render         # Swim through fluid
+python bridge.py . --mode gym --gym-env Walker2d-v4 --render        # 2D walking
+```
+
+### 🧠 Online Learning (Train While Playing!)
+Enable real-time weight updates with `--online-learn`:
+```bash
+# Agent learns from experiences AS IT PLAYS
+python bridge.py . --mode gym --gym-env CartPole-v1 --episodes 100 --online-learn
+
+# With custom learning rate
+python bridge.py . --mode gym --gym-env LunarLander-v3 --online-learn --learning-rate 0.0005
+
+# Watch it learn!
+python bridge.py . --mode gym --gym-env CartPole-v1 --render --online-learn --episodes 50
+```
+
+### 📊 Full Command Reference
+```bash
+python bridge.py <agent_dir> --mode gym [options]
+
+Options:
+  --gym-env, -e    Environment name (default: CartPole-v1)
+  --episodes, -n   Number of episodes (default: 10)
+  --render, -r     Show visual window
+  --online-learn   Update weights during play
+  --learning-rate  Learning rate for online learning (default: 0.001)
+```
+
+### 🔬 Interactive Gym Commands
+In interactive mode (`python bridge.py . --mode interactive`):
+```
+/gym CartPole-v1          # Run 3 episodes
+/gym CartPole-v1 render   # With visuals
+/gym CartPole-v1 learn    # With online learning
+/gym CartPole-v1 render learn  # Both!
+/train                    # Show training stats
+```
+
+---
+
+## ⚔️ PROTON GAME ARENA - Apprentice Adept Style Battles!
+
+> **🙏 ATTRIBUTION**:  
+> 
+> 🎮 **Game Selection**: Inspired by "The Game" from **Piers Anthony's "Apprentice Adept"**  
+> series (1980-1990). The 4x4 grid (PHYSICAL/MENTAL/CHANCE/ARTS × NAKED/TOOL/MACHINE/ANIMAL)  
+> is the creative work of Piers Anthony. Read: *Split Infinity*, *Blue Adept*, *Juxtaposition*.  
+> 
+> ⚔️ **Absorption Battles**: Inspired by **"Highlander" (1986)**, directed by Russell Mulcahy.  
+> The "Quickening" - where winners absorb the defeated's power, knowledge, and skills -  
+> directly influenced our neural/concept/trait transfer system. *"There can be only one."*
+
+The Proton Game Arena provides a gamified competition system using the 4x4 game 
+selection grid from the novels:
+
+```
+           NAKED        TOOL         MACHINE      ANIMAL
+         ─────────────────────────────────────────────────
+PHYSICAL   Balance      Lunar        Racing       Bipedal
+           CartPole     LunarLander  CarRacing    Walker
+           
+MENTAL     Frozen       Blackjack    Breakout     Custom
+           Lake         Cards        SpaceInvaders Games
+           
+CHANCE     Pure         Luck+        Machine      Genetic
+           Luck         Skill        Gambling     Lottery
+           
+ARTS       Language     Vocabulary   Dialogue     Cross-
+           Coherence    Duel         Quality      Species
+```
+
+### Arena Commands (Interactive Mode)
+```
+/arena                    # Show game selection grid
+/arena games              # List all arena games
+/arena games physical     # Games by category
+/arena play 'Balance Beam'  # Play specific game
+```
+
+### Game Categories
+- **PHYSICAL**: Speed, reflexes, coordination challenges
+- **MENTAL**: Strategy, planning, puzzle-solving  
+- **CHANCE**: Luck-based games with probabilistic elements
+- **ARTS**: Language, creativity, expression challenges
+
+### Resource Types
+- **NAKED**: Pure ability, no augmentation
+- **TOOL**: Simple tools to extend capabilities
+- **MACHINE**: Complex automation and machinery
+- **ANIMAL**: Living partners and symbiosis
 
 ---
 
@@ -1553,7 +1713,7 @@ REM Install deps if needed
 if not exist ".deps_installed" (
     echo.
     echo First run - installing dependencies...
-    pip install torch numpy flask onnxruntime 2>nul
+    pip install torch numpy flask onnxruntime gymnasium pygame ale-py 2>nul
     echo. > .deps_installed
 )
 goto :eof
@@ -1618,17 +1778,29 @@ call :setup
 cls
 echo.
 echo  ════════════════════════════════════════════════════════════
-echo   🎮 GYM MODE - OpenAI Gymnasium Environment
+echo   🎮 GYM MODE - 400+ Learning Environments!
 echo  ════════════════════════════════════════════════════════════
+echo.
+echo   ENVIRONMENT CATEGORIES:
+echo     Classic: CartPole-v1, MountainCar-v0, LunarLander-v3, Pendulum-v1
+echo     Atari:   ALE/Breakout-v5, ALE/Pong-v5, ALE/SpaceInvaders-v5
+echo     Box2D:   BipedalWalker-v3, CarRacing-v3
+echo     MuJoCo:  Humanoid-v4, Ant-v4, HalfCheetah-v4
 echo.
 set /p gymenv="Enter Gym environment (default: CartPole-v1): "
 if "%gymenv%"=="" set gymenv=CartPole-v1
 set /p episodes="Number of episodes (default: 10): "
 if "%episodes%"=="" set episodes=10
+set /p render="Enable visual rendering? (y/n, default: n): "
+set /p online="Enable online learning? (y/n, default: n): "
 echo.
+set renderarg=
+set onlinearg=
+if /i "%render%"=="y" set renderarg=--render
+if /i "%online%"=="y" set onlinearg=--online-learn
 echo   Running %episodes% episodes in %gymenv%...
 echo.
-python portable_agent/bridge.py . --mode gym --gym-env %gymenv% --episodes %episodes%
+python portable_agent/bridge.py . --mode gym --gym-env %gymenv% --episodes %episodes% %renderarg% %onlinearg%
 pause
 goto menu
 
@@ -1757,7 +1929,7 @@ setup() {
     fi
     if [ ! -f ".deps_installed" ]; then
         echo "First run - installing dependencies..."
-        pip3 install torch numpy flask onnxruntime 2>/dev/null
+        pip3 install torch numpy flask onnxruntime gymnasium pygame ale-py 2>/dev/null
         touch .deps_installed
     fi
     return 0
@@ -1792,11 +1964,26 @@ while true; do
         3)
             setup || continue
             clear
+            echo ""
+            echo "  🎮 GYM MODE - 400+ Learning Environments!"
+            echo ""
+            echo "  ENVIRONMENT CATEGORIES:"
+            echo "    Classic: CartPole-v1, MountainCar-v0, LunarLander-v3"
+            echo "    Atari:   ALE/Breakout-v5, ALE/Pong-v5, ALE/SpaceInvaders-v5"
+            echo "    Box2D:   BipedalWalker-v3, CarRacing-v3"
+            echo "    MuJoCo:  Humanoid-v4, Ant-v4, HalfCheetah-v4"
+            echo ""
             read -p "Gym environment (default: CartPole-v1): " gymenv
             gymenv=${gymenv:-CartPole-v1}
             read -p "Episodes (default: 10): " episodes
             episodes=${episodes:-10}
-            python3 portable_agent/bridge.py . --mode gym --gym-env "$gymenv" --episodes "$episodes"
+            read -p "Enable visual rendering? (y/n, default: n): " render
+            read -p "Enable online learning? (y/n, default: n): " online
+            renderarg=""
+            onlinearg=""
+            [[ "$render" == "y" || "$render" == "Y" ]] && renderarg="--render"
+            [[ "$online" == "y" || "$online" == "Y" ]] && onlinearg="--online-learn"
+            python3 portable_agent/bridge.py . --mode gym --gym-env "$gymenv" --episodes "$episodes" $renderarg $onlinearg
             read -p "Press Enter to continue..."
             ;;
         4)
@@ -1921,10 +2108,37 @@ done
             requirements += "# AgentBridge HTTP server & Visualizer\n"
             requirements += "flask>=2.0.0\n\n"
             
-            requirements += "# Optional: Gymnasium for environment integration\n"
-            requirements += "# gymnasium>=0.29.0\n\n"
-            requirements += "# Optional: GPU acceleration for ONNX\n"
-            requirements += "# onnxruntime-gpu>=1.15.0\n"
+            # Gymnasium environments (NEW - comprehensive)
+            requirements += "# ========================================\n"
+            requirements += "# GYMNASIUM ENVIRONMENTS - Learning Playground!\n"
+            requirements += "# ========================================\n"
+            requirements += "# 400+ environments to train/test your ensemble\n\n"
+            requirements += "# Core gymnasium (63 built-in environments)\n"
+            requirements += "gymnasium>=0.29.0\n\n"
+            requirements += "# Classic Control (CartPole, MountainCar, Pendulum, etc)\n"
+            requirements += "# Already included in gymnasium core!\n\n"
+            requirements += "# Visual rendering (required for --render flag)\n"
+            requirements += "pygame>=2.5.0\n\n"
+            requirements += "# Atari Arcade Games (100+ classic games!)\n"
+            requirements += "# Pac-Man, Breakout, Space Invaders, Pong, etc.\n"
+            requirements += "ale-py>=0.8.0\n\n"
+            requirements += "# Box2D Physics (LunarLander, BipedalWalker, CarRacing)\n"
+            requirements += "# gymnasium[box2d]\n"
+            requirements += "box2d-py>=2.3.5\n\n"
+            requirements += "# MuJoCo Robotics (Humanoid, Ant, HalfCheetah, etc)\n"
+            requirements += "# pip install gymnasium[mujoco]\n"
+            requirements += "# mujoco>=2.3.0\n\n"
+            requirements += "# ========================================\n"
+            requirements += "# ENSEMBLE USAGE EXAMPLES:\n"
+            requirements += "# ========================================\n"
+            requirements += "# python bridge.py . --mode gym --gym-env CartPole-v1 --render\n"
+            requirements += "# python bridge.py . --mode gym --gym-env LunarLander-v3 --episodes 100 --online-learn\n"
+            requirements += "# python bridge.py . --mode gym --gym-env ALE/Breakout-v5 --online-learn --learning-rate 0.0001\n"
+            requirements += "# python bridge.py . --mode gym --gym-env BipedalWalker-v3 --render --online-learn\n\n"
+            requirements += "# ========================================\n"
+            requirements += "# OPTIONAL GPU ACCELERATION\n"
+            requirements += "# ========================================\n"
+            requirements += "# onnxruntime-gpu>=1.15.0  # NVIDIA CUDA\n"
             
             zf.writestr("requirements.txt", requirements)
 
@@ -2094,6 +2308,89 @@ from collections import Counter
 votes = Counter(decisions.values())
 collective_action = votes.most_common(1)[0][0]
 print(f"Collective decision: {{collective_action}}")
+```
+
+---
+
+## 🎮 GYMNASIUM PLAYGROUND - 400+ Learning Environments!
+
+Your ensemble can learn and play in **400+ environments** across multiple categories!
+The collective intelligence votes on actions while learning from shared experiences.
+
+### 🕹️ Classic Control (Built-in)
+Simple physics environments perfect for testing ensemble coordination:
+```bash
+python bridge.py . --mode gym --gym-env CartPole-v1 --render        # Balance a pole
+python bridge.py . --mode gym --gym-env MountainCar-v0 --render     # Drive up a hill
+python bridge.py . --mode gym --gym-env Pendulum-v1 --render        # Swing a pendulum
+python bridge.py . --mode gym --gym-env Acrobot-v1 --render         # Double pendulum
+python bridge.py . --mode gym --gym-env LunarLander-v3 --render     # Land on the moon!
+```
+
+### 👾 Atari Arcade (100+ Classic Games!)
+Install: `pip install ale-py`
+```bash
+python bridge.py . --mode gym --gym-env ALE/Breakout-v5 --render    # Break bricks!
+python bridge.py . --mode gym --gym-env ALE/Pong-v5 --render        # Classic Pong
+python bridge.py . --mode gym --gym-env ALE/SpaceInvaders-v5        # Shoot aliens
+python bridge.py . --mode gym --gym-env ALE/Pacman-v5 --render      # Pac-Man!
+python bridge.py . --mode gym --gym-env ALE/Asteroids-v5            # Space shooter
+python bridge.py . --mode gym --gym-env ALE/Frogger-v5 --render     # Cross the road
+python bridge.py . --mode gym --gym-env ALE/DonkeyKong-v5           # Rescue the princess
+```
+
+### 🚀 Box2D Physics
+Install: `pip install gymnasium[box2d]` or `pip install box2d-py`
+```bash
+python bridge.py . --mode gym --gym-env BipedalWalker-v3 --render   # Walk on 2 legs!
+python bridge.py . --mode gym --gym-env CarRacing-v3 --render       # Race a car
+python bridge.py . --mode gym --gym-env LunarLanderContinuous-v3    # Smooth landing
+```
+
+### 🤖 MuJoCo Robotics (Advanced)
+Install: `pip install gymnasium[mujoco]`
+```bash
+python bridge.py . --mode gym --gym-env Humanoid-v4 --render        # Walk like a human
+python bridge.py . --mode gym --gym-env Ant-v4 --render             # 4-legged ant
+python bridge.py . --mode gym --gym-env HalfCheetah-v4 --render     # Run fast!
+python bridge.py . --mode gym --gym-env Hopper-v4 --render          # One-legged hopper
+python bridge.py . --mode gym --gym-env Swimmer-v4 --render         # Swim through fluid
+python bridge.py . --mode gym --gym-env Walker2d-v4 --render        # 2D walking
+```
+
+### 🧠 Online Learning (Ensemble Learns While Playing!)
+Enable real-time weight updates with `--online-learn`:
+```bash
+# Ensemble learns from experiences AS IT PLAYS
+python bridge.py . --mode gym --gym-env CartPole-v1 --episodes 100 --online-learn
+
+# With custom learning rate
+python bridge.py . --mode gym --gym-env LunarLander-v3 --online-learn --learning-rate 0.0005
+
+# Watch the ensemble learn together!
+python bridge.py . --mode gym --gym-env CartPole-v1 --render --online-learn --episodes 50
+```
+
+### 📊 Full Command Reference
+```bash
+python bridge.py <agent_dir> --mode gym [options]
+
+Options:
+  --gym-env, -e    Environment name (default: CartPole-v1)
+  --episodes, -n   Number of episodes (default: 10)
+  --render, -r     Show visual window
+  --online-learn   Update weights during play (ensemble learns!)
+  --learning-rate  Learning rate for online learning (default: 0.001)
+```
+
+### 🔬 Interactive Gym Commands
+In interactive mode (`python bridge.py . --mode interactive`):
+```
+/gym CartPole-v1          # Run 3 episodes
+/gym CartPole-v1 render   # With visuals
+/gym CartPole-v1 learn    # With online learning
+/gym CartPole-v1 render learn  # Both!
+/train                    # Show training stats
 ```
 
 ---
@@ -2324,7 +2621,7 @@ if errorlevel 1 (
 )
 if not exist ".deps_installed" (
     echo First run - installing dependencies...
-    pip install torch numpy flask onnxruntime 2>nul
+    pip install torch numpy flask onnxruntime gymnasium pygame ale-py 2>nul
     echo. > .deps_installed
 )
 goto :eof
@@ -2334,7 +2631,7 @@ call :setup
 cls
 echo.
 echo  💬 CHAT MODE - Talk to the collective intelligence
-echo  Commands: /state, /config, /reward, /quit
+echo  Commands: /state, /config, /reward, /gym, /train, /quit
 echo.
 python portable_agent/bridge.py . --mode interactive
 pause
@@ -2353,11 +2650,27 @@ goto menu
 
 :gym
 call :setup
+cls
+echo.
+echo  🎮 GYM MODE - 400+ Learning Environments!
+echo.
+echo  ENVIRONMENT CATEGORIES:
+echo    Classic: CartPole-v1, MountainCar-v0, LunarLander-v3
+echo    Atari:   ALE/Breakout-v5, ALE/Pong-v5, ALE/SpaceInvaders-v5
+echo    Box2D:   BipedalWalker-v3, CarRacing-v3
+echo    MuJoCo:  Humanoid-v4, Ant-v4, HalfCheetah-v4
+echo.
 set /p gymenv="Gym environment (default: CartPole-v1): "
 if "%gymenv%"=="" set gymenv=CartPole-v1
 set /p episodes="Episodes (default: 10): "
 if "%episodes%"=="" set episodes=10
-python portable_agent/bridge.py . --mode gym --gym-env %gymenv% --episodes %episodes%
+set /p render="Enable visual rendering? (y/n, default: n): "
+set /p online="Enable online learning? (y/n, default: n): "
+set renderarg=
+set onlinearg=
+if /i "%render%"=="y" set renderarg=--render
+if /i "%online%"=="y" set onlinearg=--online-learn
+python portable_agent/bridge.py . --mode gym --gym-env %gymenv% --episodes %episodes% %renderarg% %onlinearg%
 pause
 goto menu
 
@@ -2400,7 +2713,7 @@ setup() {
         return 1
     fi
     if [ ! -f ".deps_installed" ]; then
-        pip3 install torch numpy flask onnxruntime 2>/dev/null
+        pip3 install torch numpy flask onnxruntime gymnasium pygame ale-py 2>/dev/null
         touch .deps_installed
     fi
 }
@@ -2409,7 +2722,7 @@ while true; do
     clear
     echo "  🦋🦋 BUTTERFLY ENSEMBLE - COLLECTIVE INTELLIGENCE 🦋🦋"
     echo ""
-    echo "  [1] 💬 Chat   [2] 🌐 Server   [3] 🎮 Gym"
+    echo "  [1] 💬 Chat   [2] 🌐 Server   [3] 🎮 Gym (400+ envs!)"
     echo "  [4] 🔬 Viz    [5] 📊 Info     [6] 🐍 Python"
     echo "  [0] Exit"
     echo ""
@@ -2417,7 +2730,21 @@ while true; do
     case $c in
         1) setup && python3 portable_agent/bridge.py . --mode interactive; read -p "Enter..." ;;
         2) setup && python3 portable_agent/bridge.py . --mode serve --port 8080; read -p "Enter..." ;;
-        3) setup && read -p "Env (CartPole-v1): " e; python3 portable_agent/bridge.py . --mode gym --gym-env ${e:-CartPole-v1}; read -p "Enter..." ;;
+        3) 
+            setup || continue
+            echo ""
+            echo "  ENVIRONMENTS: CartPole-v1, LunarLander-v3, ALE/Breakout-v5, BipedalWalker-v3..."
+            read -p "Env (CartPole-v1): " e
+            read -p "Episodes (10): " ep
+            read -p "Render? (y/n): " r
+            read -p "Online learn? (y/n): " l
+            renderarg=""
+            onlinearg=""
+            [[ "$r" == "y" ]] && renderarg="--render"
+            [[ "$l" == "y" ]] && onlinearg="--online-learn"
+            python3 portable_agent/bridge.py . --mode gym --gym-env ${e:-CartPole-v1} --episodes ${ep:-10} $renderarg $onlinearg
+            read -p "Enter..."
+            ;;
         4) setup && python3 portable_agent/visualize.py; read -p "Enter..." ;;
         5) cat metadata.json; read -p "Enter..." ;;
         6) setup && python3 -i -c "from portable_agent.bridge import AgentBridge; agent = AgentBridge.load('.')" ;;
