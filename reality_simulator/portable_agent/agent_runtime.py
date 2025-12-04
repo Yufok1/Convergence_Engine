@@ -314,14 +314,18 @@ class AgentRuntime:
             import torch
             with torch.no_grad():
                 state_tensor = torch.tensor(state, dtype=torch.float32).unsqueeze(0)
-                action_probs = self.brain(state_tensor)
+                output = self.brain(state_tensor)
+                # Handle tuple output (action_probs, language_logits) from language-head models
+                action_probs = output[0] if isinstance(output, tuple) else output
                 action = int(torch.argmax(action_probs).item())
                 
         elif self.brain_type == 'pytorch':
             import torch
             with torch.no_grad():
                 state_tensor = torch.tensor(state, dtype=torch.float32).unsqueeze(0)
-                action_probs = self.brain(state_tensor)
+                output = self.brain(state_tensor)
+                # Handle tuple output (action_probs, language_logits) from language-head models
+                action_probs = output[0] if isinstance(output, tuple) else output
                 action = int(torch.argmax(action_probs).item())
         else:
             action = random.randint(0, 5)
