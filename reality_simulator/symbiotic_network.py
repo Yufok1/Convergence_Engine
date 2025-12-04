@@ -898,17 +898,11 @@ class SymbioticNetwork:
                 if hasattr(self.language_teacher, 'knowledge_web') and self.language_teacher.knowledge_web is not None:
                     self.context_memory.knowledge_web = self.language_teacher.knowledge_web
                     concept_count = len(self.language_teacher.knowledge_web.concepts) if hasattr(self.language_teacher.knowledge_web, 'concepts') else 'unknown'
-                    print(f"[SYMBIOTIC_NETWORK] ✅ Knowledge web attached to context_memory ({concept_count} concepts)")
-                    
-                    # CRITICAL: Populate vocabulary with words from knowledge web
-                    # This ensures organisms can generate meaningful tokens!
-                    if hasattr(self.context_memory, 'vocabulary') and self.context_memory.vocabulary is not None:
-                        words_added = self.language_teacher.knowledge_web.expand_vocabulary_from_web(
-                            self.context_memory.vocabulary
-                        )
-                        print(f"[SYMBIOTIC_NETWORK] ✅ Vocabulary populated from knowledge web ({words_added} words added, total: {self.context_memory.vocabulary.vocab_size})")
-                    else:
-                        print(f"[SYMBIOTIC_NETWORK] ⚠️ context_memory has no vocabulary to populate")
+                    print(f"[SYMBIOTIC_NETWORK] ✅ Knowledge web attached to context_memory ({concept_count} concepts available for semantic lookup)")
+                    # NOTE: Vocabulary grows ORGANICALLY through organism behavior, NOT bulk-loaded
+                    # The knowledge web is a semantic reference database for lookups and teaching,
+                    # not a source to pre-populate vocabulary. Organisms start with minimal vocab
+                    # and learn words through actions, interactions, and the language teacher.
                 else:
                     print(f"[SYMBIOTIC_NETWORK] ⚠️ language_teacher has no knowledge_web or it is None")
                     if hasattr(self.language_teacher, '__dict__'):

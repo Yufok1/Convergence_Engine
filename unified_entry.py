@@ -1352,15 +1352,13 @@ class UnifiedSystem:
                             vocabulary = context_memory.vocabulary
                             print(f"[UNIFIED] [WEB] Using vocabulary from context_memory ({vocabulary.vocab_size} words)")
                         else:
-                            # Vocabulary has only special tokens - try to populate from knowledge web
+                            # Vocabulary has only special tokens - this is CORRECT initial state!
+                            # Vocab grows ORGANICALLY through organism behavior, NOT bulk-loaded
                             vocabulary = context_memory.vocabulary
+                            print(f"[UNIFIED] [WEB] Using vocabulary with {vocabulary.vocab_size} words (will grow through organism behavior)")
                             
-                            # First try knowledge web
-                            if hasattr(context_memory, 'knowledge_web') and context_memory.knowledge_web is not None:
-                                words_added = context_memory.knowledge_web.expand_vocabulary_from_web(vocabulary)
-                                print(f"[UNIFIED] [WEB] Populated vocabulary from knowledge_web ({words_added} words added, total: {vocabulary.vocab_size})")
-                            # Then try language_anchors
-                            elif context_memory.language_anchors:
+                            # Only build from existing language_anchors if organisms have already learned
+                            if context_memory.language_anchors:
                                 words_added = vocabulary.build_from_language_anchors(
                                     language_anchors=dict(context_memory.language_anchors),
                                     node_word_associations={k: v for k, v in context_memory.node_word_associations.items()}

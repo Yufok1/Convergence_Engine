@@ -27,17 +27,31 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Check Ray availability
-try:
-    import ray
-    RAY_AVAILABLE = True
-    RAY_VERSION = ray.__version__
-    logger.info(f"[Distributed] Ray {RAY_VERSION} available")
-except ImportError:
-    RAY_AVAILABLE = False
-    RAY_VERSION = None
-    ray = None
-    logger.info("[Distributed] Ray not available - using sequential fallback")
+# Check Ray availability - do this lazily to avoid caching issues after crashes
+RAY_AVAILABLE = None
+RAY_VERSION = None
+ray = None
+
+def _check_ray_available():
+    """Check if Ray is available - called lazily to avoid stale cache issues."""
+    global RAY_AVAILABLE, RAY_VERSION, ray
+    if RAY_AVAILABLE is not None:
+        return RAY_AVAILABLE
+    try:
+        import ray as _ray
+        ray = _ray
+        RAY_AVAILABLE = True
+        RAY_VERSION = ray.__version__
+        logger.info(f"[Distributed] Ray {RAY_VERSION} available")
+    except ImportError:
+        RAY_AVAILABLE = False
+        RAY_VERSION = None
+        ray = None
+        logger.info("[Distributed] Ray not available - using sequential fallback")
+    return RAY_AVAILABLE
+
+# Perform initial check
+_check_ray_available()
 
 
 def get_ray_manager(config: dict = None):

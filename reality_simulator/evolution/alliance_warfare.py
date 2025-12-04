@@ -1669,10 +1669,9 @@ class AllianceWarfareSystem:
         if history:
             history.add_legend(
                 organism_id=organism_id,
-                title="Founder",
-                achievement=f"Founded {alliance_name}",
-                round_number=self.round_number,
-                impact_score=1.0
+                role="Founder",
+                achievements=[f"Founded {alliance_name}"],
+                legacy=f"Visionary who founded {alliance_name} in round {self.round_number}"
             )
         
         return alliance_id
@@ -3435,10 +3434,9 @@ class AllianceWarfareSystem:
                 for fighter_id in (alliance_fighters if winner == alliance else enemy_fighters):
                     winner_history.add_legend(
                         organism_id=fighter_id,
-                        title="War Hero",
-                        achievement=f"Fought in decisive victory against {loser.name}",
-                        round_number=self.round_number,
-                        impact_score=margin
+                        role="War Hero",
+                        achievements=[f"Fought in decisive victory against {loser.name}"],
+                        legacy=f"Warrior who helped secure victory with margin {margin:.1%} in round {self.round_number}"
                     )
             
             self.record_historical_event(

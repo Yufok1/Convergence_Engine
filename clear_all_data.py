@@ -365,6 +365,20 @@ def clear_all_data():
     # - config.json
     # - causation_explorer/ollama_config.json
     
+    # 13. Clear __pycache__ directories to prevent stale bytecode issues
+    # (Ray import can fail with stale .pyc files)
+    pycache_count = 0
+    for pycache_dir in base_dir.rglob('__pycache__'):
+        if pycache_dir.is_dir():
+            try:
+                shutil.rmtree(pycache_dir)
+                pycache_count += 1
+            except Exception:
+                pass  # Ignore pycache deletion failures
+    if pycache_count > 0:
+        cleared_items.append(f"  ✅ Python cache: {pycache_count} directories")
+        print(f"🐍 Cleared {pycache_count} __pycache__ directories")
+    
     # Summary
     print("\n" + "="*60)
     print("✅ CLEANUP COMPLETE!")
