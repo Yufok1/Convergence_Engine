@@ -113,7 +113,9 @@ class MultiHeadAttention(nn.Module if PYTORCH_AVAILABLE else object):
         Returns:
             Attended output of shape (batch_size, seq_len, embed_dim)
         """
-        batch_size, seq_len, _ = x.shape
+        # Use .size() for TorchScript compatibility
+        batch_size = x.size(0)
+        seq_len = x.size(1)
         
         # Project to Q, K, V
         q = self.q_proj(x)
