@@ -44,12 +44,12 @@ if sys.platform == 'win32':
 # Setup logging early (before imports that may fail)
 try:
     from logging_config import setup_logging, get_logger
-    setup_logging(level=logging.INFO, debug=False, console=False)
+    setup_logging(level=logging.DEBUG, debug=True, console=True)
     logger = get_logger(__name__)
 except ImportError:
     # Fallback if logging_config not available
     logging.basicConfig(
-        level=logging.INFO,
+        level=logging.DEBUG,
         format='%(asctime)s | %(levelname)-8s | %(name)s | %(message)s',
         datefmt='%H:%M:%S'
     )
