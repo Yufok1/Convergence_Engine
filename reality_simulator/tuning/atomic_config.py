@@ -1500,6 +1500,128 @@ class AtomicConfigSystem:
         else:
             return ConfigType.FLOAT  # Default
 
+    # ═══════════════════════════════════════════════════════════════════════
+    # META-COGNITIVE CONFIRMATION LOOP
+    # Tracks pending actions and confirms if they actually helped
+    # ═══════════════════════════════════════════════════════════════════════
+    
+    def record_pending_action(self, action: Dict[str, Any], baseline_metrics: Dict[str, Any]):
+        """
+        Record a tuning action that was applied, awaiting confirmation.
+        
+        Args:
+            action: The action dict that was applied
+            baseline_metrics: Metrics at time of application
+        """
+        if not hasattr(self, '_pending_confirmations'):
+            self._pending_confirmations = []
+        
+        self._pending_confirmations.append({
+            'action': action,
+            'baseline_metrics': baseline_metrics,
+            'applied_at': time.time(),
+            'confirmed': False
+        })
+        
+        # Limit pending confirmations
+        if len(self._pending_confirmations) > 10:
+            self._pending_confirmations = self._pending_confirmations[-10:]
+    
+    def confirm_pending_actions(self, current_metrics: Dict[str, Any], 
+                                confirmation_window: float = 60.0) -> List[Dict[str, Any]]:
+        """
+        Check pending actions and confirm if they helped.
+        
+        Args:
+            current_metrics: Current system metrics
+            confirmation_window: Seconds to wait before confirming
+            
+        Returns:
+            List of confirmed actions with success/failure status
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        if not hasattr(self, '_pending_confirmations'):
+            self._pending_confirmations = []
+            return []
+        
+        now = time.time()
+        confirmed_results = []
+        remaining_pending = []
+        
+        for pending in self._pending_confirmations:
+            if pending['confirmed']:
+                continue
+            
+            elapsed = now - pending['applied_at']
+            if elapsed < confirmation_window:
+                remaining_pending.append(pending)
+                continue
+            
+            # Time to confirm - compare metrics
+            action = pending['action']
+            baseline = pending['baseline_metrics']
+            param_path = action.get('parameter_path', '')
+            
+            # Determine if the change helped
+            domain = self._infer_domain_from_path(param_path)
+            baseline_success = self._evaluate_domain_success(domain, baseline)
+            current_success = self._evaluate_domain_success(domain, current_metrics)
+            
+            improvement = current_success and not baseline_success
+            maintained = current_success and baseline_success
+            regression = not current_success and baseline_success
+            
+            result = {
+                'action': action,
+                'baseline_success': baseline_success,
+                'current_success': current_success,
+                'improvement': improvement,
+                'maintained': maintained,
+                'regression': regression,
+                'confirmation_time': now,
+                'elapsed_seconds': elapsed
+            }
+            
+            # Record outcome to the atom
+            if param_path in self.atoms or param_path.split('.')[-1] in self.atoms:
+                atom_name = param_path.split('.')[-1] if '.' in param_path else param_path
+                if atom_name in self.atoms:
+                    self.atoms[atom_name].record_outcome(
+                        current_success, 
+                        f"confirmed_after_{elapsed:.1f}s"
+                    )
+            
+            if improvement:
+                logger.info(f"[META-COGNITIVE] ✅ CONFIRMED: {param_path} change improved performance")
+            elif maintained:
+                logger.debug(f"[META-COGNITIVE] ⚡ MAINTAINED: {param_path} change maintained performance")
+            elif regression:
+                logger.warning(f"[META-COGNITIVE] ⚠️ REGRESSION: {param_path} change may have hurt performance")
+            
+            confirmed_results.append(result)
+            pending['confirmed'] = True
+        
+        self._pending_confirmations = remaining_pending
+        return confirmed_results
+    
+    def _infer_domain_from_path(self, param_path: str) -> 'ConfigDomain':
+        """Infer domain from parameter path."""
+        path_lower = param_path.lower()
+        if 'neural' in path_lower or 'brain' in path_lower or 'learning' in path_lower:
+            return ConfigDomain.NEURAL
+        elif 'evolution' in path_lower or 'mutation' in path_lower or 'fitness' in path_lower:
+            return ConfigDomain.EVOLUTION
+        elif 'language' in path_lower or 'vocab' in path_lower:
+            return ConfigDomain.LANGUAGE
+        elif 'vp' in path_lower or 'vitality' in path_lower or 'pleasure' in path_lower:
+            return ConfigDomain.VP
+        elif 'illumin' in path_lower or 'causation' in path_lower:
+            return ConfigDomain.ILLUMINATION
+        else:
+            return ConfigDomain.SIMULATION
+
 
 # ═══════════════════════════════════════════════════════════════════════
 # CONVENIENCE FUNCTIONS

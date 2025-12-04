@@ -446,6 +446,16 @@ class AgentCompiler:
             'highlander_data': capsule.highlander.to_dict() if capsule.highlander else {},
             'social_connections': {},  # Not stored in capsule directly
             
+            # VP (Vitality-Pleasure) State - CRITICAL for runtime behavior
+            'vp_state': {
+                'enabled': bool(capsule.vp),
+                'vitality': capsule.vp.vitality if capsule.vp else None,
+                'pleasure': capsule.vp.pleasure if capsule.vp else None,
+                'violation_pressure': capsule.vp.violation_pressure if capsule.vp else None,
+                'trajectory_length': len(capsule.vp.vp_trajectory) if capsule.vp else 0,
+                'critical_events_count': len(capsule.vp.critical_events) if capsule.vp else 0,
+            },
+            
             # Causation Trace
             'causation_trace': {
                 'enabled': bool(capsule.causation),
@@ -1006,7 +1016,24 @@ if __name__ == "__main__":
                 }
                 zf.writestr("atomic_language.json", json.dumps(empty_language, indent=2))
 
-            # 6. Runner Script
+            # 7. VP State (JSON) - Vitality-Pleasure for runtime behavior
+            if capsule.vp:
+                zf.writestr("vp_state.json", json.dumps(capsule.vp.to_dict(), indent=2))
+            else:
+                # Default VP state for agents without VP history
+                default_vp = {
+                    'vitality': 0.5,
+                    'pleasure': 0.5,
+                    'violation_pressure': 0.0,
+                    'vitality_history': [],
+                    'pleasure_history': [],
+                    'vp_trajectory': [],
+                    'critical_events': [],
+                    'source_note': 'Default VP state - no simulation history'
+                }
+                zf.writestr("vp_state.json", json.dumps(default_vp, indent=2))
+
+            # 8. Runner Script
             zf.writestr("run_agent.py", runner_script)
 
             # 7. Requirements.txt

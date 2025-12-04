@@ -63,7 +63,19 @@ class NeuralOrganism(Organism):
     - Experience storage for training
     - State feature extraction
     - Brain inheritance during reproduction
+    
+    Identity Note:
+    - `species_id` is the canonical identifier (from genotype hash)
+    - `organism_id` property aliases to `species_id` for clarity
     """
+    
+    @property
+    def organism_id(self) -> str:
+        """
+        Canonical organism identifier.
+        Aliases species_id for consistent naming across systems.
+        """
+        return self.species_id
     
     def __init__(self, 
                  genotype: Genotype, 

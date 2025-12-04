@@ -1762,8 +1762,27 @@ class RealitySimulator:
 
                 # Apply tuning action if recommended
                 if tuning_action:
+                    # Record baseline metrics for confirmation loop
+                    baseline_metrics = {
+                        **(ml_metrics or {}),
+                        **(neural_metrics or {}),
+                        **(evolution_metrics or {}),
+                        **(network_metrics or {})
+                    }
                     self.config_tuner.apply_action(tuning_action)
-                    # Event emission is now handled by ConfigTuner._emit_tuning_event() with structured explanations
+                    # Record pending action for confirmation
+                    if hasattr(self.config_tuner, 'record_pending_action'):
+                        self.config_tuner.record_pending_action(tuning_action, baseline_metrics)
+                
+                # Confirm pending actions (meta-cognitive loop closure)
+                if hasattr(self.config_tuner, 'confirm_pending_actions'):
+                    current_metrics = {
+                        **(ml_metrics or {}),
+                        **(neural_metrics or {}),
+                        **(evolution_metrics or {}),
+                        **(network_metrics or {})
+                    }
+                    self.config_tuner.confirm_pending_actions(current_metrics)
 
             except Exception as e:
                 logger.warning(f"[CONFIG_TUNER] Analysis failed: {e}")
