@@ -26,10 +26,54 @@ import queue
 import threading
 import copy
 import uuid
+from contextlib import contextmanager
 
 # Setup logging first
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SIMULATION PAUSE CONTEXT MANAGER
+# Use this to pause the simulation during exports to prevent race conditions
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@contextmanager
+def pause_simulation_for_export():
+    """
+    Context manager that pauses the simulation during model export/compilation.
+    
+    This prevents race conditions where organisms change while being serialized.
+    
+    Usage:
+        with pause_simulation_for_export():
+            # Export code here - simulation is paused
+            archive = compiler.compile_capsule_to_agent(capsule)
+        # Simulation automatically resumes
+    """
+    unified_system = getattr(app, 'unified_system', None)
+    reality_sim = None
+    was_paused = False
+    
+    try:
+        # Get reality sim and check current pause state
+        if unified_system and hasattr(unified_system, 'reality_sim'):
+            reality_sim = unified_system.reality_sim
+            was_paused = getattr(reality_sim, 'paused', False)
+            
+            if not was_paused:
+                # Pause the simulation
+                reality_sim.paused = True
+                logger.info("[EXPORT] ⏸️ Simulation paused for export")
+                # Give time for current step to complete
+                time.sleep(0.2)
+        
+        yield  # Export happens here
+        
+    finally:
+        # Resume simulation if we paused it
+        if reality_sim and not was_paused:
+            reality_sim.paused = False
+            logger.info("[EXPORT] ▶️ Simulation resumed after export")
 
 # Try to import PIL for image compression
 try:
@@ -6900,13 +6944,15 @@ def compile_organism_to_agent(organism_id):
             logger.info(f"[COMPILE] Capturing live organism {organism_id}...")
             org = live_organisms[organism_id]
             try:
-                capsule = capsule_manager.capture_organism(
-                    organism=org,
-                    reason=f'compile_request_{datetime.now().isoformat()}',
-                    notes=f'Capsule created for compilation of agent {organism_id}',
-                    include_causation=True,
-                    causation_explorer=getattr(unified_system, 'causation_explorer', None) if unified_system else None
-                )
+                # PAUSE SIMULATION to prevent race conditions during capsule capture
+                with pause_simulation_for_export():
+                    capsule = capsule_manager.capture_organism(
+                        organism=org,
+                        reason=f'compile_request_{datetime.now().isoformat()}',
+                        notes=f'Capsule created for compilation of agent {organism_id}',
+                        include_causation=True,
+                        causation_explorer=getattr(unified_system, 'causation_explorer', None) if unified_system else None
+                    )
                 logger.info(f"[COMPILE] Capsule captured: {capsule is not None}")
             except Exception as e:
                 logger.error(f"[COMPILE] Capsule capture failed: {e}", exc_info=True)
@@ -6935,8 +6981,10 @@ def compile_organism_to_agent(organism_id):
         compiler = AgentCompiler()
         
         # Compile the capsule into an agent archive
-        logger.info("[COMPILE] Compiling capsule to agent...")
-        archive_buffer = compiler.compile_capsule_to_agent(capsule, export_format=export_format)
+        # PAUSE SIMULATION to prevent race conditions during serialization
+        logger.info("[COMPILE] Compiling capsule to agent (simulation paused)...")
+        with pause_simulation_for_export():
+            archive_buffer = compiler.compile_capsule_to_agent(capsule, export_format=export_format)
         logger.info("[COMPILE] Compilation complete")
         
         # Ensure we're at the start of the buffer for reading
@@ -7002,32 +7050,37 @@ def compile_ensemble_to_agent():
                 live_organisms = {}
         capsule_manager = OrganismCapsuleManager(storage_dir=Path('highlander_capsules'))
 
+        # PAUSE SIMULATION during capsule capture to prevent race conditions
         capsules = []
-        for oid in organism_ids:
-            if oid in live_organisms:
-                org = live_organisms[oid]
-                cap = capsule_manager.capture_organism(
-                    organism=org,
-                    reason=f'compile_ensemble_{datetime.now().isoformat()}',
-                    notes=f'Ensemble capture for {oid}',
-                    include_causation=True,
-                    causation_explorer=getattr(unified_system, 'causation_explorer', None) if unified_system else None
-                )
-                if cap:
-                    capsules.append(cap)
-            else:
-                existing_capsules = capsule_manager.list_capsules(organism_id=oid)
-                if existing_capsules:
-                    cap_id = existing_capsules[0]['capsule_id']
-                    cap = capsule_manager.load_capsule(cap_id)
+        with pause_simulation_for_export():
+            for oid in organism_ids:
+                if oid in live_organisms:
+                    org = live_organisms[oid]
+                    cap = capsule_manager.capture_organism(
+                        organism=org,
+                        reason=f'compile_ensemble_{datetime.now().isoformat()}',
+                        notes=f'Ensemble capture for {oid}',
+                        include_causation=True,
+                        causation_explorer=getattr(unified_system, 'causation_explorer', None) if unified_system else None
+                    )
                     if cap:
                         capsules.append(cap)
+                else:
+                    existing_capsules = capsule_manager.list_capsules(organism_id=oid)
+                    if existing_capsules:
+                        cap_id = existing_capsules[0]['capsule_id']
+                        cap = capsule_manager.load_capsule(cap_id)
+                        if cap:
+                            capsules.append(cap)
 
         if not capsules:
             return jsonify({'error': 'No valid capsules found for provided organism_ids'}), 404
 
         compiler = AgentCompiler()
-        archive_buffer = compiler.compile_capsules_to_ensemble(capsules, export_format=export_format)
+        
+        # PAUSE SIMULATION to prevent race conditions during ensemble serialization
+        with pause_simulation_for_export():
+            archive_buffer = compiler.compile_capsules_to_ensemble(capsules, export_format=export_format)
 
         # Ensure we're at the start of the buffer for reading
         archive_buffer.seek(0)
