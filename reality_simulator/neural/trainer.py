@@ -425,8 +425,12 @@ class NeuralTrainer:
         
         # 2. SMALL CLUSTER BOOST: Small/unstable clusters need to adapt faster
         cluster_labels = self.ml_analysis.get('cluster_labels', [])
-        organism_ids = list(self.ml_analysis.get('organism_ids', {}).keys()) if 'organism_ids' in self.ml_analysis else []
-        
+        organism_ids = self.ml_analysis.get('organism_ids', [])  # FIX: organism_ids is a list, not a dict
+
+        # Validate alignment between cluster_labels and organism_ids
+        if not organism_ids or len(organism_ids) != len(cluster_labels):
+            return base_lr  # Can't apply ML adjustments without proper mapping
+
         if cluster_labels and organism_id in organism_ids:
             idx = organism_ids.index(organism_id)
             if idx < len(cluster_labels):
@@ -455,6 +459,62 @@ class NeuralTrainer:
         lr_multiplier = np.clip(lr_multiplier, 0.5, 2.0)
         
         return base_lr * lr_multiplier
+    
+    def sync_from_atomic_config(self) -> Dict[str, Any]:
+        """
+        INTEGRATION FIX: Sync tunable parameters from AtomicConfigSystem.
+        
+        This bridges the gap where atoms are tuned but components don't see the changes.
+        Call this periodically (e.g., every N training steps) to pull updated values.
+        
+        Returns:
+            Dict of parameters that were updated
+        """
+        if self.atomic_config_system is None:
+            return {}
+        
+        updated = {}
+        
+        # Learning rate
+        new_lr = self.atomic_config_system.get('learning_rate')
+        if new_lr is not None and new_lr != self.learning_rate:
+            old_lr = self.learning_rate
+            self.learning_rate = new_lr
+            updated['learning_rate'] = {'old': old_lr, 'new': new_lr}
+            # Invalidate cached optimizers so they get recreated with new LR
+            self.optimizers.clear()
+            self.schedulers.clear()
+        
+        # Batch size
+        new_batch = self.atomic_config_system.get('batch_size')
+        if new_batch is not None and new_batch != self.batch_size:
+            old_batch = self.batch_size
+            self.batch_size = int(new_batch)
+            updated['batch_size'] = {'old': old_batch, 'new': self.batch_size}
+        
+        # Dropout rate (affects organism brains indirectly)
+        new_dropout = self.atomic_config_system.get('dropout_rate')
+        if new_dropout is not None:
+            updated['dropout_rate'] = {'new': new_dropout, 'note': 'affects new brains'}
+        
+        # Loss weights
+        new_alpha = self.atomic_config_system.get('rl_loss_weight')
+        if new_alpha is not None and new_alpha != self.rl_loss_weight:
+            old_alpha = self.rl_loss_weight
+            self.rl_loss_weight = new_alpha
+            updated['rl_loss_weight'] = {'old': old_alpha, 'new': new_alpha}
+        
+        new_beta = self.atomic_config_system.get('language_loss_weight')
+        if new_beta is not None and new_beta != self.language_loss_weight:
+            old_beta = self.language_loss_weight
+            self.language_loss_weight = new_beta
+            updated['language_loss_weight'] = {'old': old_beta, 'new': new_beta}
+        
+        # Log if anything changed
+        if updated and self.training_step_count % 100 == 0:
+            logger.info(f"[NEURAL] Synced {len(updated)} params from AtomicConfigSystem: {list(updated.keys())}")
+        
+        return updated
     
     def activate_language_bridge(self, vocabulary: Any) -> int:
         """
@@ -915,6 +975,13 @@ class NeuralTrainer:
         if not should_train:
             return None
         
+        # ═══════════════════════════════════════════════════════════════════════════
+        # INTEGRATION FIX: Sync from AtomicConfigSystem every 50 steps
+        # This closes the gap where atoms are tuned but trainer doesn't see changes
+        # ═══════════════════════════════════════════════════════════════════════════
+        if self.training_step_count % 50 == 0:
+            self.sync_from_atomic_config()
+        
         # Check if we have enough experiences to train
         # Find organisms with sufficient experience
         trainable_organisms = []
@@ -952,11 +1019,19 @@ class NeuralTrainer:
                     input_tokens = torch.LongTensor([token_seq[:-1]]).to(self.device)
                     target_tokens = torch.LongTensor([token_seq[1:]]).to(self.device)
                     
-                    # Get a dummy state for language logits
-                    dummy_state = torch.zeros(1, organism.brain.input_dim).to(self.device)
+                    # FIX: Use actual organism state instead of zeros
+                    # The language head maps state → vocabulary, so it needs real state
+                    if hasattr(organism, 'get_state'):
+                        state = organism.get_state()
+                        state_tensor = torch.FloatTensor(state).unsqueeze(0).to(self.device)
+                    elif hasattr(organism, '_last_state') and organism._last_state is not None:
+                        state_tensor = torch.FloatTensor(organism._last_state).unsqueeze(0).to(self.device)
+                    else:
+                        # Fallback: skip if no state available (can't train without context)
+                        continue
                     
                     organism.brain.train()
-                    _, language_logits = organism.brain(dummy_state, return_language_logits=True)
+                    _, language_logits = organism.brain(state_tensor, return_language_logits=True)
                     
                     if language_logits is not None:
                         if language_logits.dim() == 2:

@@ -758,9 +758,13 @@ class EvolutionEngine:
         # 1. CLUSTER-AWARE COOPERATION BONUS
         # Organisms in larger clusters (cooperating behavioral phenotypes) get bonus
         cluster_labels = ml_analysis.get('cluster_labels', [])
+        organism_ids = ml_analysis.get('organism_ids', [])  # FIX: organism_ids is a list, not a dict
+        
+        # Validate alignment - if missing or mismatched, ML bonuses can't apply
+        if not organism_ids or len(organism_ids) != len(cluster_labels):
+            return 0.0  # No valid mapping, no bonus
+        
         if cluster_labels:
-            # Find this organism's cluster
-            organism_ids = list(ml_analysis.get('organism_ids', {}).keys()) if 'organism_ids' in ml_analysis else []
             if organism_id in organism_ids:
                 idx = organism_ids.index(organism_id)
                 if idx < len(cluster_labels):
@@ -785,7 +789,7 @@ class EvolutionEngine:
         # Organisms in stable behavioral phenotypes (tracked concepts) get consistency bonus
         concept_tags = ml_analysis.get('concept_tags', {})
         if cluster_labels and concept_tags:
-            organism_ids = list(ml_analysis.get('organism_ids', {}).keys()) if 'organism_ids' in ml_analysis else []
+            # organism_ids already validated above, reuse it
             if organism_id in organism_ids:
                 idx = organism_ids.index(organism_id)
                 if idx < len(cluster_labels):
@@ -942,6 +946,53 @@ class EvolutionEngine:
     def get_mutation_rate(self) -> float:
         """Get the current base mutation rate"""
         return self.mutation.base_rate
+    
+    def sync_from_atomic_config(self, atomic_config_system) -> Dict[str, Any]:
+        """
+        INTEGRATION FIX: Sync tunable parameters from AtomicConfigSystem.
+        
+        This bridges the gap where atoms are tuned but evolution engine doesn't see changes.
+        Call this periodically (e.g., every generation) to pull updated values.
+        
+        Args:
+            atomic_config_system: AtomicConfigSystem instance
+            
+        Returns:
+            Dict of parameters that were updated
+        """
+        if atomic_config_system is None:
+            return {}
+        
+        updated = {}
+        
+        # Mutation rate
+        new_rate = atomic_config_system.get('mutation_rate')
+        if new_rate is not None and new_rate != self.mutation.base_rate:
+            old_rate = self.mutation.base_rate
+            self.set_mutation_rate(new_rate)
+            updated['mutation_rate'] = {'old': old_rate, 'new': self.mutation.base_rate}
+        
+        # Elitism rate
+        new_elitism = atomic_config_system.get('elitism_rate')
+        if new_elitism is not None and new_elitism != self.selection.elitism_rate:
+            old_elitism = self.selection.elitism_rate
+            self.selection.elitism_rate = max(0.0, min(0.5, new_elitism))  # Clamp
+            updated['elitism_rate'] = {'old': old_elitism, 'new': self.selection.elitism_rate}
+        
+        # Tournament size
+        new_tournament = atomic_config_system.get('tournament_size')
+        if new_tournament is not None and new_tournament != self.selection.tournament_size:
+            old_tournament = self.selection.tournament_size
+            self.selection.tournament_size = max(2, min(20, int(new_tournament)))  # Clamp
+            updated['tournament_size'] = {'old': old_tournament, 'new': self.selection.tournament_size}
+        
+        # Log if anything changed
+        if updated:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"[EVOLUTION] Synced {len(updated)} params from AtomicConfigSystem: {list(updated.keys())}")
+        
+        return updated
     
     def _create_organism(self, genotype: Genotype, parents: Optional[List[Organism]] = None) -> Organism:
         """

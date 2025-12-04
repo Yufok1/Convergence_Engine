@@ -1368,6 +1368,11 @@ class RealitySimulator:
         # Update evolution
         if 'evolution' in self.components:
             evolution = self.components['evolution']
+            
+            # INTEGRATION FIX: Sync evolution parameters from AtomicConfigSystem
+            if hasattr(self, 'config_tuner') and self.config_tuner:
+                evolution.sync_from_atomic_config(self.config_tuner)
+            
             gen_before = evolution.generation
             logger.debug(f"About to call evolve_generation() on generation {gen_before}")
             evolution.evolve_generation()

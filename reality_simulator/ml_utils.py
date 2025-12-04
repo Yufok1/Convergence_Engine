@@ -985,7 +985,8 @@ class MLAnalyzer:
             'enabled': True,
             'sklearn_available': True,
             'timestamp': current_time,
-            'organism_count': len(organisms)
+            'organism_count': len(organisms),
+            'organism_ids': list(organisms.keys())  # CRITICAL: Map cluster indices to organism IDs
         }
         
         # Clustering
