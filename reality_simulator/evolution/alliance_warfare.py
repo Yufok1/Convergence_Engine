@@ -270,6 +270,9 @@ class HistoricalEventType(Enum):
     MEMBER_BETRAYED = "member_betrayed"
     ALLIANCE_SABOTAGED = "alliance_sabotaged"
     
+    # Dissolution
+    DISSOLUTION = "dissolution"
+    
     # Territory
     TERRITORY_CLAIMED = "territory_claimed"
     TERRITORY_LOST = "territory_lost"

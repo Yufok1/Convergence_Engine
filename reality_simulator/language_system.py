@@ -10,6 +10,7 @@ with the neural network's language modeling capabilities.
 
 import json
 import logging
+import time
 from typing import Dict, List, Optional, Set, Tuple, Any
 from pathlib import Path
 from dataclasses import dataclass, field
@@ -40,21 +41,25 @@ class LanguageVocabulary:
     Key Design Decisions:
     - Deterministic ordering: Words are sorted before ID assignment
       to ensure consistent vocabulary across simulation restarts.
-    - Special tokens: Reserved IDs 0-4 for control tokens.
+    - Special tokens: Reserved IDs 0-4 for control tokens (NEVER evicted).
     - Extensible: New words can be added during runtime.
+    - Rolling vocabulary: When full, least-recently-used words are evicted
+      to make room for new learning. The system keeps evolving.
     - Serializable: Can persist to/from JSON for checkpoint/restore.
     
     Attributes:
         word_to_id: Mapping from word strings to integer IDs
         id_to_word: Mapping from integer IDs to word strings
         word_frequencies: Count of how often each word appears
-        max_vocab_size: Maximum vocabulary size (default 32768 - balanced for CPU performance)
+        word_last_used: Timestamp of last use for each word (for LRU eviction)
+        max_vocab_size: Maximum vocabulary size (default 1000)
         frozen: If True, no new words can be added
     """
     
     word_to_id: Dict[str, int] = field(default_factory=dict)
     id_to_word: Dict[int, str] = field(default_factory=dict)
     word_frequencies: Dict[str, int] = field(default_factory=dict)
+    word_last_used: Dict[str, float] = field(default_factory=dict)  # LRU tracking
     max_vocab_size: int = 1000  # Reduced: ensemble strategy for full coverage
     frozen: bool = False
     event_emitter: Any = None  # Optional callback for causation events
@@ -68,8 +73,10 @@ class LanguageVocabulary:
         """Set up special token mappings."""
         self.word_to_id = dict(SPECIAL_TOKENS)
         self.id_to_word = dict(SPECIAL_TOKEN_IDS)
+        now = time.time()
         for token in SPECIAL_TOKENS:
             self.word_frequencies[token] = 0
+            self.word_last_used[token] = float('inf')  # Special tokens NEVER get evicted
     
     @property
     def vocab_size(self) -> int:
@@ -125,6 +132,7 @@ class LanguageVocabulary:
         # Add words to vocabulary
         words_added = 0
         next_id = len(self.word_to_id)
+        now = time.time()
         
         for word in sorted_words:
             if word not in self.word_to_id:
@@ -137,6 +145,7 @@ class LanguageVocabulary:
                     
                 self.word_to_id[word] = next_id
                 self.id_to_word[next_id] = word
+                self.word_last_used[word] = now  # Track for LRU eviction
                 next_id += 1
                 words_added += 1
         
@@ -147,28 +156,39 @@ class LanguageVocabulary:
         """
         Add a single word to the vocabulary.
         
+        If vocabulary is full, evicts least-recently-used words to make room.
+        The system keeps evolving - there is no hard ceiling.
+        
         Args:
             word: Word to add
             
         Returns:
             ID of the word (existing or newly assigned)
         """
+        now = time.time()
+        
         if word in self.word_to_id:
             self.word_frequencies[word] = self.word_frequencies.get(word, 0) + 1
+            self.word_last_used[word] = now  # Update LRU timestamp
             return self.word_to_id[word]
         
         if self.frozen:
             logger.debug(f"Vocabulary frozen, returning <UNK> for: {word}")
             return SPECIAL_TOKENS['<UNK>']
         
+        # If at capacity, evict least-recently-used word to make room
         if self.vocab_size >= self.max_vocab_size:
-            logger.debug(f"Vocabulary full, returning <UNK> for: {word}")
-            return SPECIAL_TOKENS['<UNK>']
+            evicted = self._evict_lru_word()
+            if not evicted:
+                # Could not evict (shouldn't happen unless all are special tokens)
+                logger.warning(f"Could not evict any words, returning <UNK> for: {word}")
+                return SPECIAL_TOKENS['<UNK>']
         
         new_id = len(self.word_to_id)
         self.word_to_id[word] = new_id
         self.id_to_word[new_id] = word
         self.word_frequencies[word] = 1
+        self.word_last_used[word] = now
         
         # Only emit vocabulary_growth event for milestone sizes (quality over quantity)
         # Match neural training event frequency - only significant vocabulary growth
@@ -176,7 +196,6 @@ class LanguageVocabulary:
             # Much less frequent - only emit at major vocabulary milestones (every 50 words)
             if self.vocab_size % 50 == 0:
                 try:
-                    import time
                     from causation_explorer import Event
                     event = Event(
                         timestamp=time.time(),
@@ -196,17 +215,90 @@ class LanguageVocabulary:
         
         return new_id
     
-    def get_id(self, word: str) -> int:
+    def _evict_lru_word(self) -> Optional[str]:
+        """
+        Evict the least-recently-used word to make room for new learning.
+        
+        Special tokens (IDs 0-4) are NEVER evicted.
+        
+        Returns:
+            The evicted word, or None if nothing could be evicted
+        """
+        # Find the word with oldest last_used timestamp (excluding special tokens)
+        oldest_word = None
+        oldest_time = float('inf')
+        
+        for word, last_used in self.word_last_used.items():
+            # Skip special tokens
+            if word in SPECIAL_TOKENS:
+                continue
+            if last_used < oldest_time:
+                oldest_time = last_used
+                oldest_word = word
+        
+        if oldest_word is None:
+            return None
+        
+        # Get the ID before removal
+        evicted_id = self.word_to_id[oldest_word]
+        evicted_freq = self.word_frequencies.get(oldest_word, 0)
+        
+        # Remove from all mappings
+        del self.word_to_id[oldest_word]
+        del self.id_to_word[evicted_id]
+        del self.word_frequencies[oldest_word]
+        del self.word_last_used[oldest_word]
+        
+        # Emit eviction event for observability
+        if hasattr(self, 'event_emitter') and self.event_emitter:
+            try:
+                from causation_explorer import Event
+                event = Event(
+                    timestamp=time.time(),
+                    component='language',
+                    event_type='vocabulary_eviction',
+                    data={
+                        'evicted_word': oldest_word,
+                        'evicted_id': evicted_id,
+                        'frequency_at_eviction': evicted_freq,
+                        'time_since_last_use': time.time() - oldest_time,
+                        'vocab_size': self.vocab_size
+                    }
+                )
+                self.event_emitter(event)
+            except ImportError:
+                pass
+        
+        logger.debug(f"Evicted '{oldest_word}' (freq={evicted_freq}, unused for {time.time() - oldest_time:.1f}s)")
+        return oldest_word
+    
+    def touch_word(self, word: str):
+        """
+        Update the last-used timestamp for a word without adding it.
+        Call this when a word is accessed/used.
+        """
+        if word in self.word_last_used:
+            self.word_last_used[word] = time.time()
+            self.word_frequencies[word] = self.word_frequencies.get(word, 0) + 1
+
+    def get_id(self, word: str, touch: bool = True) -> int:
         """
         Get the ID for a word, returning <UNK> if not found.
         
+        Optionally updates last-used timestamp to keep word alive.
+        
         Args:
             word: Word to look up
+            touch: If True, update last-used timestamp (default True)
             
         Returns:
             Integer ID for the word
         """
-        return self.word_to_id.get(word, SPECIAL_TOKENS['<UNK>'])
+        if word in self.word_to_id:
+            if touch:
+                self.touch_word(word)
+            return self.word_to_id[word]
+        return SPECIAL_TOKENS['<UNK>']
     
     def get_token_id(self, word: str) -> int:
         """
@@ -220,17 +312,23 @@ class LanguageVocabulary:
         """
         return self.get_id(word)
     
-    def get_word(self, token_id: int) -> str:
+    def get_word(self, token_id: int, touch: bool = True) -> str:
         """
         Get the word for an ID, returning <UNK> if not found.
         
+        Optionally updates last-used timestamp to keep word alive.
+        
         Args:
             token_id: ID to look up
+            touch: If True, update last-used timestamp (default True)
             
         Returns:
             Word string for the ID
         """
-        return self.id_to_word.get(token_id, '<UNK>')
+        word = self.id_to_word.get(token_id, '<UNK>')
+        if touch and word != '<UNK>' and word in self.word_last_used:
+            self.touch_word(word)
+        return word
     
     def encode(self, words: List[str], add_special: bool = True) -> List[int]:
         """

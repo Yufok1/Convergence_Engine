@@ -1,4 +1,5 @@
 {
+  "_hardware_profile_help": "Set to 'beast', 'workstation', 'standard', 'laptop', 'potato', or 'cpu_only' to override auto-detection. null = auto-detect",
   "agency": {
     "confidence_threshold": 0.0001,
     "decision_precision": 1e-05,
@@ -6,8 +7,53 @@
     "learning_rate_resolution": 1e-06,
     "performance_tracking_precision": 0.0001
   },
-  "hardware_profile": null,
-  "_hardware_profile_help": "Set to 'beast', 'workstation', 'standard', 'laptop', 'potato', or 'cpu_only' to override auto-detection. null = auto-detect",
+  "arena": {
+    "_prefer_native_games_help": "When true, prioritizes language/concept games that use organism's native abilities (no Gym dependency)",
+    "_proton_game_probability_help": "Fraction of battles that use Proton Game Arena (0.0-1.0). Set to 0.5 for 50% Proton Game battles.",
+    "battle_consequences": {
+      "fitness_transfer_rate": 0.15,
+      "resource_transfer_enabled": true,
+      "resource_transfer_rate": 0.1,
+      "trait_bonus_cap": 0.3,
+      "trait_evolution_enabled": true
+    },
+    "default_battle_type": "PROTON_GAME",
+    "description": "Proton Game Arena - Apprentice Adept style gym battles (Piers Anthony + Highlander inspired)",
+    "enabled": true,
+    "game_selection": {
+      "allow_negotiation": true,
+      "fallback_on_deadlock": "random",
+      "mode": "ai_driven",
+      "negotiation_rounds": 3
+    },
+    "grid_weights": {
+      "challenge_types": {
+        "ARTS": 1.0,
+        "CHANCE": 1.0,
+        "MENTAL": 1.0,
+        "PHYSICAL": 1.0
+      },
+      "resource_types": {
+        "ANIMAL": 1.0,
+        "MACHINE": 1.0,
+        "NAKED": 1.0,
+        "TOOL": 1.0
+      }
+    },
+    "gym_settings": {
+      "default_episodes": 10,
+      "max_episode_steps": 1000,
+      "parallel_envs": 1,
+      "render_mode": null
+    },
+    "prefer_native_games": true,
+    "proton_game_probability": 0.5,
+    "tournament": {
+      "default_format": "single_elimination",
+      "round_robin_battles_per_pair": 3,
+      "seeding_method": "fitness_based"
+    }
+  },
   "causation_detection": {
     "correlation_threshold": 0.45,
     "direct_causation_time_window": 2,
@@ -58,7 +104,7 @@
     "genotype_length": 48,
     "max_generations": 1500,
     "mutation_rate": {
-      "initial": 0.045
+      "initial": 0.035
     },
     "mutation_rate_precision": 0.001,
     "population_size": 200
@@ -95,6 +141,7 @@
     },
     "rate_limit_frames": 60
   },
+  "hardware_profile": null,
   "health_monitor": {
     "critical_threshold": 0.25,
     "enabled": true,
@@ -154,53 +201,6 @@
     "predation_enabled": true,
     "rounds_per_cycle": 2,
     "survival_threshold": 0.5
-  },
-  "arena": {
-    "description": "Proton Game Arena - Apprentice Adept style gym battles (Piers Anthony + Highlander inspired)",
-    "enabled": true,
-    "default_battle_type": "PROTON_GAME",
-    "proton_game_probability": 0.5,
-    "_proton_game_probability_help": "Fraction of battles that use Proton Game Arena (0.0-1.0). Set to 0.5 for 50% Proton Game battles.",
-    "prefer_native_games": true,
-    "_prefer_native_games_help": "When true, prioritizes language/concept games that use organism's native abilities (no Gym dependency)",
-    "game_selection": {
-      "mode": "ai_driven",
-      "allow_negotiation": true,
-      "negotiation_rounds": 3,
-      "fallback_on_deadlock": "random"
-    },
-    "gym_settings": {
-      "default_episodes": 10,
-      "max_episode_steps": 1000,
-      "render_mode": null,
-      "parallel_envs": 1
-    },
-    "battle_consequences": {
-      "fitness_transfer_rate": 0.15,
-      "resource_transfer_enabled": true,
-      "resource_transfer_rate": 0.1,
-      "trait_evolution_enabled": true,
-      "trait_bonus_cap": 0.3
-    },
-    "tournament": {
-      "default_format": "single_elimination",
-      "round_robin_battles_per_pair": 3,
-      "seeding_method": "fitness_based"
-    },
-    "grid_weights": {
-      "challenge_types": {
-        "PHYSICAL": 1.0,
-        "MENTAL": 1.0,
-        "CHANCE": 1.0,
-        "ARTS": 1.0
-      },
-      "resource_types": {
-        "NAKED": 1.0,
-        "TOOL": 1.0,
-        "MACHINE": 1.0,
-        "ANIMAL": 1.0
-      }
-    }
   },
   "lattice": {
     "entropy_sensitivity": 5e-05,
