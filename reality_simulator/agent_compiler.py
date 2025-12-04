@@ -186,7 +186,8 @@ class AgentCompiler:
         use_language_head = 'fc_language.weight' in sd_keys
         use_concept_head = any(k.startswith('concept_head.') for k in sd_keys)
 
-        vocab_size = state_dict['fc_language.weight'].shape[0] if use_language_head else 50000
+        # Use .size() instead of .shape[] for robustness
+        vocab_size = state_dict['fc_language.weight'].size(0) if use_language_head else 50000
 
         # Infer num_attention_heads if attention is used
         if use_attention:
@@ -209,7 +210,7 @@ class AgentCompiler:
         num_key_compositions = 20  # Default
         if use_concept_head and 'concept_head.composition_value.weight' in state_dict:
             # composition_value.weight shape is (num_key_compositions, hidden_dim)
-            num_key_compositions = state_dict['concept_head.composition_value.weight'].shape[0]
+            num_key_compositions = state_dict['concept_head.composition_value.weight'].size(0)
             logger.debug(f"Inferred num_key_compositions={num_key_compositions} from state_dict")
 
         # Create a new instance of OrganismBrain matching the checkpoint
