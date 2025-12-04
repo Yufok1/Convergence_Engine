@@ -40,6 +40,7 @@ class InteractionMode(Enum):
     OBSERVER = "observer"    # Scientific observation and analysis
     PARTICIPANT = "participant"  # Immersive participation
     SCIENTIST = "scientist"  # Experimental manipulation
+    HEADLESS = "headless"    # No rendering, pure computation (server/cloud mode)
 
 
 @dataclass
@@ -177,6 +178,10 @@ class RealityRenderer:
                 "quantum_field", "evolution_tree",
                 "performance_monitor", "agency_flow"
             ]
+        elif mode == InteractionMode.HEADLESS:
+            # No visualizations in headless mode - pure computation
+            self.state.active_visualizations = []
+            self.visualizations_enabled = False
         
         # Reset unified figure when mode changes (will be recreated on next render)
         if self.unified_figure is not None:
@@ -283,6 +288,15 @@ class RealityRenderer:
             "visualizations": {},
             "performance": self.state.performance_metrics
         }
+
+        # HEADLESS mode: skip all visualization, just return metrics
+        if self.state.mode == InteractionMode.HEADLESS:
+            self.frame_count += 1
+            render_output["headless_data"] = {
+                "simulation_data": simulation_data,
+                "frame_count": self.frame_count
+            }
+            return render_output
 
         # Create unified visualization window on first frame
         if self.visualizations_enabled and self.unified_figure is None:
