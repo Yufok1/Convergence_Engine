@@ -2175,6 +2175,42 @@ class UnifiedSystem:
             if self.controller and hasattr(self.controller, 'apply_runtime_config'):
                 applied = self.controller.apply_runtime_config(new_config) or []
                 applied_sections.extend(applied)
+            
+            # GAP 6 FIX: Sync hot reload config to AtomicConfigSystem
+            # This ensures runtime config changes propagate to the meta-cognitive tuner
+            if self.reality_sim and hasattr(self.reality_sim, 'config_tuner') and self.reality_sim.config_tuner:
+                try:
+                    atomic_config = self.reality_sim.config_tuner
+                    synced_params = 0
+                    
+                    # Flatten and sync key config sections
+                    config_mappings = {
+                        'neural': ['neural.learning_rate', 'neural.batch_size', 'neural.epsilon'],
+                        'language': ['language.vocab_size', 'language.embedding_dim'],
+                        'simulation': ['simulation.max_organisms', 'simulation.mutation_rate'],
+                        'evolution': ['evolution.selection_pressure', 'evolution.crossover_rate']
+                    }
+                    
+                    for section, param_paths in config_mappings.items():
+                        if section in new_config:
+                            section_config = new_config[section]
+                            for param_path in param_paths:
+                                # Extract param name from path (e.g., 'neural.learning_rate' -> 'learning_rate')
+                                param_name = param_path.split('.')[-1]
+                                if param_name in section_config:
+                                    value = section_config[param_name]
+                                    # Check if atom exists and update
+                                    if hasattr(atomic_config, 'atoms') and param_name in atomic_config.atoms:
+                                        if atomic_config.atoms[param_name].value != value:
+                                            atomic_config.atoms[param_name].update_value(value, 'hot_reload_sync')
+                                            synced_params += 1
+                    
+                    if synced_params > 0:
+                        applied_sections.append(f'atomic_config({synced_params})')
+                        logger.debug(f"[UNIFIED→ATOMIC] Synced {synced_params} params from hot reload")
+                except Exception as atomic_err:
+                    logger.debug(f"[UNIFIED] AtomicConfigSystem sync failed: {atomic_err}")
+            
             self.active_config = new_config
             summary = ', '.join(applied_sections) if applied_sections else 'no-op'
             print(f"[UNIFIED] [CONFIG] Runtime config applied ({summary})")

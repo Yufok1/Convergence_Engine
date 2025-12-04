@@ -464,8 +464,12 @@ class LanguageTeacher:
                     logger.warning(f"[LANGUAGE_TEACHER] Failed to link situational word '{word}': {e}")
             
             # Add semantically related words (associative complexity)
+            # GAP 7 FIX: Use min_confidence_for_use to filter word assignments
             for base_word in situational_words[:4]:  # Top 4 base words
-                similar_words = self.knowledge_web.get_similar_words(base_word, min_strength=0.6)
+                similar_words = self.knowledge_web.get_similar_words(
+                    base_word, 
+                    min_strength=max(0.6, self.min_confidence_for_use)  # GAP 7: Apply confidence threshold
+                )
                 for word in similar_words[:2]:  # Top 2 similar words
                     if word not in situational_words:  # Avoid duplicates
                         try:
@@ -776,6 +780,7 @@ class LanguageTeacher:
         Perform system-wide quality review of discovered relationships.
         
         Strengthens high-quality ones, weakens low-quality ones, prunes very weak ones.
+        GAP 7 FIX: Updates learning_confidence based on relationship quality.
         """
         if not self.knowledge_web:
             return
@@ -785,6 +790,8 @@ class LanguageTeacher:
         strengthened = 0
         weakened = 0
         pruned = 0
+        total_quality_score = 0.0
+        rated_count = 0
         
         for relation in self.knowledge_web.discovered_relations:
             if relation.is_seeded:
@@ -796,6 +803,10 @@ class LanguageTeacher:
             
             success_rate = relation.success_count / total_uses
             failure_rate = relation.failure_count / total_uses
+            
+            # Track quality for learning_confidence
+            total_quality_score += success_rate
+            rated_count += 1
             
             # Strengthen high-quality relationships
             if success_rate > 0.6:
@@ -809,13 +820,30 @@ class LanguageTeacher:
                 relation.confidence = max(0.0, relation.confidence - 0.15 * failure_rate)
                 weakened += 1
         
+        # GAP 7 FIX: Update learning_confidence based on overall quality
+        # This transitions the system from hardcoded to learned word selection
+        if rated_count > 0:
+            avg_quality = total_quality_score / rated_count
+            # Smoothly update confidence (exponential moving average)
+            self.learning_confidence = 0.9 * self.learning_confidence + 0.1 * avg_quality
+            
+            # Log if confidence crosses the min_confidence threshold
+            if self.learning_confidence >= self.min_confidence_for_use:
+                logger.info(f"[LANGUAGE_TEACHER] Learning confidence {self.learning_confidence:.3f} >= "
+                           f"min_confidence {self.min_confidence_for_use:.3f} - using learned relationships")
+        
         # Pruning is handled by decay_relationships, but we log the review
         logger.info(f"[LANGUAGE_TEACHER] Quality review complete: {strengthened} strengthened, "
-                   f"{weakened} weakened")
+                   f"{weakened} weakened, learning_confidence={self.learning_confidence:.3f}")
     
     def get_stats(self) -> Dict[str, Any]:
         """Get teaching statistics."""
-        return dict(self.stats)
+        stats = dict(self.stats)
+        # GAP 7 FIX: Include learning_confidence in stats
+        stats['learning_confidence'] = self.learning_confidence
+        stats['min_confidence_for_use'] = self.min_confidence_for_use
+        stats['using_learned'] = self.learning_confidence >= self.min_confidence_for_use
+        return stats
     
     def reset_stats(self):
         """Reset teaching statistics."""

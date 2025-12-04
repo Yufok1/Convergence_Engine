@@ -495,11 +495,13 @@ class NeuralTrainer:
                         current_fitness: float,
                         action: int,
                         connection_success: Optional[bool] = None,
-                        resource_delta: float = 0.0) -> float:
+                        resource_delta: float = 0.0,
+                        vp_value: float = 0.0) -> float:
         """
         Calculate reward for an organism based on various factors.
         
         Integration 2: Now includes language reward from ML feature importance.
+        GAP 2 FIX: Now includes VP-aware reward shaping.
         
         Args:
             organism: Neural organism
@@ -508,9 +510,10 @@ class NeuralTrainer:
             action: Action taken
             connection_success: Whether connection attempt succeeded (None = no attempt)
             resource_delta: Change in resources
+            vp_value: Current violation pressure (0.0-1.0) for VP-aware reward shaping
             
         Returns:
-            Calculated reward (base + language)
+            Calculated reward (base + language + VP adjustment)
         """
         reward = 0.0
         
@@ -533,6 +536,22 @@ class NeuralTrainer:
             reward += resource_delta * self.reward_weights['resource_gain']
         elif resource_delta < 0:
             reward += abs(resource_delta) * self.reward_weights['resource_loss']
+        
+        # 5. VP-aware reward shaping (GAP 2 FIX)
+        # Penalize high VP as a curriculum signal - organisms should learn to
+        # maintain healthy VP levels. High VP indicates system strain.
+        if vp_value > 0.7:
+            # Strong penalty for dangerously high VP
+            vp_penalty = -0.3 * (vp_value - 0.7) / 0.3  # -0.3 at VP=1.0
+            reward += vp_penalty
+        elif vp_value < 0.2:
+            # Small penalty for too-low VP (indicates underexploration)
+            vp_penalty = -0.1 * (0.2 - vp_value) / 0.2  # -0.1 at VP=0.0
+            reward += vp_penalty
+        elif 0.3 <= vp_value <= 0.6:
+            # Small bonus for healthy VP range (exploration-exploitation balance)
+            vp_bonus = 0.05
+            reward += vp_bonus
         
         # Integration 2: Add language reward (if ML analysis available)
         language_reward = self._calculate_language_reward(organism)
@@ -602,14 +621,16 @@ class NeuralTrainer:
             prev_fitness = self.organism_fitness_history.get(org_id, organism.fitness)
             current_fitness = organism.fitness
             
-            # Calculate reward
+            # Calculate reward (GAP 2: VP-aware reward shaping)
+            vp_value = network_state.get('vp_value', 0.0) if network_state else 0.0
             reward = self.calculate_reward(
                 organism=organism,
                 prev_fitness=prev_fitness,
                 current_fitness=current_fitness,
                 action=organism.prev_action if hasattr(organism, 'prev_action') else 0,
                 connection_success=None,  # Would need to track this
-                resource_delta=0.0  # Would need to track this
+                resource_delta=0.0,  # Would need to track this
+                vp_value=vp_value  # GAP 2 FIX: Pass VP for curriculum learning
             )
             
             # Get next state
@@ -1202,6 +1223,35 @@ class NeuralTrainer:
                 actions = self.atomic_config_system.tune(neural_metrics, self.training_step_count)
                 if actions:
                     logger.debug(f"[NEURAL→AUTOTUNE] Applied {len(actions)} config adjustments based on training metrics")
+                
+                # GAP 4 FIX: Use propose_action + apply_action with meta-cognitive confirmation
+                # Every 10 training steps, attempt a more deliberate tuning proposal
+                if self.training_step_count % 10 == 0:
+                    proposed = self.atomic_config_system.propose_action(neural_metrics)
+                    if proposed is not None:
+                        # Record baseline before applying
+                        baseline = {
+                            'avg_loss': self.autotune_metrics_buffer['avg_loss'],
+                            'improvement_rate': self.autotune_metrics_buffer['improvement_rate']
+                        }
+                        # Apply the action
+                        if self.atomic_config_system.apply_action(proposed):
+                            # Record as pending for confirmation loop
+                            if hasattr(self.atomic_config_system, 'record_pending_action'):
+                                self.atomic_config_system.record_pending_action(proposed, baseline)
+                            logger.info(f"[NEURAL→META] Applied proposed config: {proposed.get('parameter_path')} "
+                                       f"= {proposed.get('proposed_value')}")
+                
+                # GAP 4 FIX: Confirm any pending actions from previous iterations
+                if hasattr(self.atomic_config_system, 'confirm_action_outcome'):
+                    current_metrics = {
+                        'avg_loss': self.autotune_metrics_buffer['avg_loss'],
+                        'improvement_rate': self.autotune_metrics_buffer['improvement_rate']
+                    }
+                    confirmed = self.atomic_config_system.confirm_action_outcome(current_metrics)
+                    if confirmed:
+                        logger.debug(f"[NEURAL→META] Confirmed {len(confirmed) if isinstance(confirmed, list) else 1} action(s) outcome")
+                        
             except Exception as e:
                 logger.debug(f"AutoTune integration error: {e}")
         
