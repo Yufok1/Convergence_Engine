@@ -180,6 +180,7 @@ class NeuralOrganism(Organism):
             self.prev_state = None
             self.prev_action = None
             self.prev_fitness = self.fitness
+            self.last_action = None  # For alliance system to check cooperation
             
             # Epsilon for exploration (starts high, decays)
             training_config = neural_config.get('training', {})
@@ -209,6 +210,7 @@ class NeuralOrganism(Organism):
             self.prev_state = None
             self.prev_action = None
             self.prev_fitness = self.fitness
+            self.last_action = None  # For alliance system to check cooperation
             self.epsilon = 0.0
             # Battle outcome tracking for learning
             self.battle_wins = 0
@@ -795,7 +797,8 @@ class NeuralOrganism(Organism):
         # Store for experience recording
         self.prev_state = state
         self.prev_action = action
-        
+        self.last_action = action  # Also store as last_action for alliance system
+
         # DEBUG: Log first decision per organism
         import logging
         _decision_logger = logging.getLogger(__name__)
