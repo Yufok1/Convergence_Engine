@@ -698,14 +698,18 @@ class NeuralOrganism(Organism):
             # Exploration: random action (but still get probs for logging)
             action = np.random.randint(0, 6)
             if hasattr(self.brain, 'forward'):
-                state_tensor = torch.tensor(state, dtype=torch.float32).unsqueeze(0)
+                # Get the device from the brain's parameters
+                device = next(self.brain.parameters()).device
+                state_tensor = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
                 with torch.no_grad():
                     action_probs = self.brain.forward(state_tensor).cpu().numpy()[0]
         else:
             # Exploitation: use neural network with optional VP adjustments
             self.brain.eval()
             with torch.no_grad():
-                state_tensor = torch.FloatTensor(state).unsqueeze(0)
+                # Get the device from the brain's parameters
+                device = next(self.brain.parameters()).device
+                state_tensor = torch.FloatTensor(state).to(device).unsqueeze(0)
                 action_probs = self.brain.forward(state_tensor).cpu().numpy()[0]
             
             # Apply VP-aware adjustments if enabled
@@ -1114,10 +1118,14 @@ class NeuralOrganism(Organism):
             next_state: Next state (if None, uses current state)
             done: Whether episode is done
         """
-        if (self.brain is None or 
-            self.experience_buffer is None or 
-            self.prev_state is None or 
-            self.prev_action is None):
+        # DEBUG: Log why experiences might not be recorded
+        if self.brain is None:
+            return  # No brain, no experience recording
+        if self.experience_buffer is None:
+            return  # No buffer, no recording
+        if self.prev_state is None or self.prev_action is None:
+            # This is the most common issue - organism hasn't made a decision yet
+            # This is expected on first frame, but should resolve after first decide_action()
             return
         
         if next_state is None:
@@ -2089,7 +2097,8 @@ class NeuralOrganism(Organism):
         # Get action probabilities from brain
         self.brain.eval()
         with torch.no_grad():
-            state_tensor = torch.FloatTensor(base_state).unsqueeze(0)
+            device = next(self.brain.parameters()).device
+            state_tensor = torch.FloatTensor(base_state).to(device).unsqueeze(0)
             action_probs = self.brain.forward(state_tensor).cpu().numpy()[0]
         
         # Map brain outputs to alliance decision

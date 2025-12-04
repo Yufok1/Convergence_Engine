@@ -7,7 +7,7 @@
     "performance_tracking_precision": 0.0001
   },
   "causation_detection": {
-    "correlation_threshold": 0.4,
+    "correlation_threshold": 0.45,
     "direct_causation_time_window": 2,
     "enable_bidirectional_causations": true,
     "enable_language_causations": true,
@@ -17,8 +17,8 @@
     "enable_neural_training_causations": true,
     "enable_phase_transition_causations": true,
     "enabled": true,
-    "phase_transition_time_window": 3.0,
-    "recent_events_window": 200,
+    "phase_transition_time_window": 2.5,
+    "recent_events_window": 150,
     "thresholds": {
       "clustering_coefficient": {
         "collapse": 0.5,
@@ -29,7 +29,7 @@
         "direction": "below"
       },
       "organism_count": {
-        "collapse": 400,
+        "collapse": 500,
         "direction": "above"
       },
       "violation_pressure": {
@@ -45,134 +45,134 @@
     }
   },
   "evolution": {
-    "adaptation_sensitivity": 0.003,
+    "adaptation_sensitivity": 0.002,
     "diversity_guard": {
       "enabled": true,
-      "frequency_threshold": 0.08,
-      "hash_similarity_threshold": 0.88,
-      "penalty": 0.07
+      "frequency_threshold": 0.1,
+      "hash_similarity_threshold": 0.92,
+      "penalty": 0.05
     },
     "fitness_precision": 1e-07,
-    "genotype_length": 64,
-    "max_generations": 2000,
+    "genotype_length": 48,
+    "max_generations": 1500,
     "mutation_rate": {
-      "initial": 0.055
+      "initial": 0.045
     },
     "mutation_rate_precision": 0.001,
-    "population_size": 250
+    "population_size": 200
   },
   "feedback": {
     "enabled": true,
     "hysteresis_checks": 3,
-    "interval_frames": 8,
+    "interval_frames": 10,
     "knobs": {
       "clustering_bias": {
         "initial": 1.5,
-        "max": 1.8,
-        "min": 0.25,
+        "max": 1.6,
+        "min": 0.3,
         "step": 0.05
       },
       "mutation_rate": {
-        "initial": 0.05,
-        "max": 0.08,
+        "initial": 0.04,
+        "max": 0.06,
         "min": 0.002,
         "step": 0.001
       },
       "new_edge_rate": {
-        "initial": 3.0,
-        "max": 7,
+        "initial": 2.5,
+        "max": 6,
         "min": 0.2,
         "step": 0.1
       },
       "quantum_pruning": {
-        "initial": 0.5,
+        "initial": 0.45,
         "max": 1,
         "min": 0,
         "step": 0.05
       }
     },
-    "rate_limit_frames": 50
+    "rate_limit_frames": 60
   },
   "health_monitor": {
-    "critical_threshold": 0.2,
+    "critical_threshold": 0.25,
     "enabled": true,
-    "healthy_threshold": 0.7,
-    "history_size": 150,
+    "healthy_threshold": 0.65,
+    "history_size": 100,
     "thresholds": {
-      "critical": 0.2,
-      "healthy": 0.7,
-      "warning": 0.4
+      "critical": 0.25,
+      "healthy": 0.65,
+      "warning": 0.45
     },
-    "warning_threshold": 0.4,
-    "weight_adaptability": 0.25,
-    "weight_coherence": 0.25,
+    "warning_threshold": 0.45,
+    "weight_adaptability": 0.2,
+    "weight_coherence": 0.3,
     "weight_diversity": 0.25,
     "weight_lawfulness": 0.15,
     "weight_sustainability": 0.1
   },
   "highlander": {
     "alliance_warfare": {
-      "betrayal_chance": 0.08,
-      "confederation_war_threshold": 0.65,
+      "betrayal_chance": 0.05,
+      "confederation_war_threshold": 0.7,
       "enabled": true,
-      "existential_war_threshold": 0.75,
-      "max_alliance_size": 12,
-      "max_alliances": 20,
-      "max_confederations": 5,
-      "min_alliance_size": 2,
-      "war_declaration_threshold": 0.35,
-      "war_frequency": 0.4
+      "existential_war_threshold": 0.8,
+      "max_alliance_size": 10,
+      "max_alliances": 1000,
+      "max_confederations": 50,
+      "min_alliance_size": 3,
+      "war_declaration_threshold": 0.4,
+      "war_frequency": 0.3
     },
-    "chaos_factor": 0.5,
-    "competition_intensity": 0.85,
-    "description": "Highlander Protocol - EMERGENCE-OPTIMIZED for GTX 1660 SUPER",
+    "chaos_factor": 0.4,
+    "competition_intensity": 0.8,
+    "description": "Highlander Protocol - Survival of the fittest tournament system",
     "enabled": true,
     "extreme_mode": {
-      "chaos_factor": 0.5,
+      "chaos_factor": 0.4,
       "competition_intensity": 1.0,
       "description": "EXTREME DIFFICULTY - Maximum evolutionary pressure",
-      "germination_rate": 0.06,
-      "max_battle_rounds": 20,
-      "max_population": 25,
-      "min_population": 3,
-      "mutation_rate": 0.18,
-      "population_size": 8,
+      "germination_rate": 0.05,
+      "max_battle_rounds": 15,
+      "max_population": 20,
+      "min_population": 2,
+      "mutation_rate": 0.15,
+      "population_size": 5,
       "predation_enabled": true,
-      "rounds_per_cycle": 3,
-      "survival_threshold": 0.75
+      "rounds_per_cycle": 2,
+      "survival_threshold": 0.8
     },
-    "germination_rate": 0.12,
-    "max_battle_rounds": 60,
-    "max_capsules": 15,
-    "max_genetic_samples": 150,
-    "max_population": 40,
-    "min_population": 8,
-    "mutation_rate": 0.18,
-    "population_size": 150,
+    "germination_rate": 0.1,
+    "max_battle_rounds": 50,
+    "max_capsules": 10,
+    "max_genetic_samples": 100,
+    "max_population": 30,
+    "min_population": 5,
+    "mutation_rate": 0.15,
+    "population_size": 100,
     "predation_enabled": true,
-    "rounds_per_cycle": 3,
-    "survival_threshold": 0.45
+    "rounds_per_cycle": 2,
+    "survival_threshold": 0.5
   },
   "lattice": {
     "entropy_sensitivity": 5e-05,
     "interaction_precision": 0.0001,
-    "particles": 600,
+    "particles": 500,
     "prune_threshold": 0,
     "stability_tolerance": 0.0005
   },
   "logging": {
-    "shared_state_dump_interval": 180
+    "shared_state_dump_interval": 300
   },
   "meta_cognitive": {
     "description": "Meta-cognitive systems: self-awareness, self-tuning, autonomous optimization",
     "self_tuning": {
       "enabled": true,
-      "min_confidence_threshold": 0.55,
+      "min_confidence_threshold": 0.6,
       "mode": "autonomous",
       "performance_targets": {
-        "max_anomaly_ratio": 0.25,
-        "min_cluster_diversity": 4,
-        "min_fitness_std": 0.06
+        "max_anomaly_ratio": 0.2,
+        "min_cluster_diversity": 3,
+        "min_fitness_std": 0.05
       },
       "safe_parameters": [
         "evolution.mutation_rate.initial",
@@ -189,33 +189,14 @@
         "neural.training.gamma",
         "neural.training.epsilon_decay",
         "neural.training.batch_size",
-        "neural.training.lr_scheduler.enabled",
-        "neural.training.lr_scheduler.type",
-        "neural.training.lr_scheduler.step_size",
-        "neural.training.lr_scheduler.gamma",
-        "neural.training.lr_scheduler.min_lr",
-        "neural.training.early_stopping.enabled",
-        "neural.training.early_stopping.patience",
-        "neural.training.early_stopping.min_delta",
         "neural.rewards.fitness_improvement",
         "neural.rewards.connection_success",
         "neural.rewards.survival",
         "neural.inheritance.crossover_rate",
         "neural.inheritance.mutation_rate",
-        "neural.language_model.knowledge_web.max_concepts",
-        "neural.language_model.knowledge_web.quality_control.exploration_start",
-        "neural.language_model.knowledge_web.quality_control.max_discoveries_per_generation",
-        "neural.language_model.generation.temperature",
-        "neural.language_model.attention.num_heads",
         "network.max_organisms",
         "network.max_connections",
         "network.resource_pool",
-        "highlander.chaos_factor",
-        "highlander.competition_intensity",
-        "highlander.alliance_warfare.war_frequency",
-        "highlander.alliance_warfare.betrayal_chance",
-        "highlander.alliance_warfare.max_alliances",
-        "highlander.alliance_warfare.max_confederations",
         "scikit.clustering.min_cluster_size",
         "scikit.anomaly_detection.contamination",
         "scikit.anomaly_detection.n_estimators",
@@ -226,44 +207,42 @@
         "vp_monitoring.stabilization.smoothing_factor",
         "causation_detection.correlation_threshold",
         "meta_cognitive.self_tuning.tuning_interval_frames",
-        "meta_cognitive.self_tuning.min_confidence_threshold",
-        "rendering.frame_rate",
-        "simulation.target_fps"
+        "meta_cognitive.self_tuning.min_confidence_threshold"
       ],
-      "tuning_interval_frames": 15
+      "tuning_interval_frames": 20
     }
   },
   "network": {
     "connection_strength_resolution": 5e-06,
     "emergence_sensitivity": 1e-06,
-    "max_connections": 20000,
-    "max_organisms": 600,
+    "max_connections": 1000000,
+    "max_organisms": 500,
     "resource_flow_precision": 0.0001,
-    "resource_pool": 700,
+    "resource_pool": 550,
     "stability_precision": 1e-07
   },
   "neural": {
     "brain": {
       "activation": "relu",
-      "dropout": 0.15,
-      "hidden_dim": 128,
+      "dropout": 0.1,
+      "hidden_dim": 64,
       "input_dim": 24,
       "output_dim": 6,
       "vocab_size": 50000
     },
     "concept_system": {
-      "concept_loss_weight": 0.12,
-      "embed_dim": 128,
+      "concept_loss_weight": 0.1,
+      "embed_dim": 64,
       "enabled": true,
-      "num_key_compositions": 20,
-      "utility_update_alpha": 0.12
+      "num_key_compositions": 15,
+      "utility_update_alpha": 0.1
     },
     "device": "cuda",
     "enabled": true,
     "inheritance": {
-      "crossover_rate": 0.92,
+      "crossover_rate": 0.9,
       "enabled": true,
-      "mutation_rate": 0.25
+      "mutation_rate": 0.2
     },
     "initialization": {
       "deterministic": false,
@@ -271,101 +250,101 @@
     },
     "language_model": {
       "attention": {
-        "attention_dim": 64,
+        "attention_dim": 32,
         "enabled": true,
-        "num_heads": 8
+        "num_heads": 4
       },
       "curriculum": {
         "enabled": true,
         "ml_quality": {
           "enabled": true,
-          "high_quality_threshold": 0.5,
-          "low_quality_threshold": 0.25,
-          "max_sequence_length": 96,
+          "high_quality_threshold": 0.55,
+          "low_quality_threshold": 0.3,
+          "max_sequence_length": 64,
           "min_sequence_length": 8,
-          "sequence_length_step": 4
+          "sequence_length_step": 2
         },
         "sequence_lengths": {
           "stage_0": 8,
-          "stage_1": 24,
-          "stage_2": 48,
-          "stage_3": 192
+          "stage_1": 16,
+          "stage_2": 32,
+          "stage_3": 128
         },
         "vp_thresholds": {
-          "stage_1": 0.45,
-          "stage_2": 0.35,
-          "stage_3": 0.25
+          "stage_1": 0.5,
+          "stage_2": 0.4,
+          "stage_3": 0.3
         }
       },
       "enabled": true,
       "generation": {
-        "max_length": 48,
-        "temperature": 1.3,
-        "vp_gate_threshold": 0.45
+        "max_length": 32,
+        "temperature": 1.2,
+        "vp_gate_threshold": 0.5
       },
       "knowledge_web": {
-        "embedding_dim": 128,
+        "embedding_dim": 64,
         "enabled": true,
-        "max_concepts": 750,
+        "max_concepts": 500,
         "quality_control": {
-          "confidence_growth_rate": 0.0008,
+          "confidence_growth_rate": 0.0005,
           "enabled": true,
-          "exploration_decay_generations": 800,
-          "exploration_end": 0.08,
-          "exploration_start": 0.25,
-          "max_discoveries_per_generation": 15,
-          "min_confidence_threshold": 0.25,
-          "min_discovery_count": 2,
-          "pruning_confidence_threshold": 0.15,
-          "pruning_failure_rate": 0.65,
-          "pruning_unused_generations": 80,
-          "review_frequency": 75,
+          "exploration_decay_generations": 1000,
+          "exploration_end": 0.05,
+          "exploration_start": 0.2,
+          "max_discoveries_per_generation": 10,
+          "min_confidence_threshold": 0.3,
+          "min_discovery_count": 3,
+          "pruning_confidence_threshold": 0.2,
+          "pruning_failure_rate": 0.7,
+          "pruning_unused_generations": 100,
+          "review_frequency": 100,
           "validation_required": true,
           "vp_boost_exploration": true,
-          "vp_boost_threshold": 0.65
+          "vp_boost_threshold": 0.7
         }
       },
       "relationship_learning": {
         "enabled": true,
         "quality_evaluation": {
-          "coherent_threshold": 0.45,
-          "garbled_threshold": 0.18,
-          "max_word_count": 25,
+          "coherent_threshold": 0.5,
+          "garbled_threshold": 0.2,
+          "max_word_count": 20,
           "min_word_count": 2,
           "min_word_count_for_evaluation": 3,
-          "relationship_strength_threshold": 0.45,
-          "unk_ratio_threshold": 0.25
+          "relationship_strength_threshold": 0.5,
+          "unk_ratio_threshold": 0.3
         },
         "semantic_guidance": {
           "enabled": true,
-          "high_strength_boost": 0.12,
-          "max_similar_words": 7,
-          "min_strength_threshold": 0.65,
-          "semantic_boost": 0.25
+          "high_strength_boost": 0.1,
+          "max_similar_words": 5,
+          "min_strength_threshold": 0.7,
+          "semantic_boost": 0.2
         }
       },
       "sequence": {
-        "context_window": 48,
-        "max_length": 192
+        "context_window": 32,
+        "max_length": 128
       },
       "teacher": {
-        "embedding_dim": 128,
+        "embedding_dim": 64,
         "enabled": true,
-        "min_action_history": 2,
-        "min_confidence": 0.25,
+        "min_action_history": 3,
+        "min_confidence": 0.3,
         "teaching_frequency": 1,
         "use_knowledge_web": true,
         "use_semantic_embeddings": true,
-        "vocab_size": 4096
+        "vocab_size": 50000
       },
       "training": {
-        "alpha": 0.75,
-        "beta": 0.15,
+        "alpha": 0.8,
+        "beta": 0.1,
         "gamma": 0.1,
         "vp_temperature_scale": true
       },
       "vocabulary": {
-        "max_size": 10000,
+        "max_size": 50000,
         "special_tokens": [
           "<PAD>",
           "<UNK>",
@@ -382,100 +361,98 @@
       "use_scripted_inference": false
     },
     "rewards": {
-      "connection_failure": -0.15,
-      "connection_success": 3.0,
-      "fitness_improvement": 4.0,
-      "resource_gain": 1.2,
-      "resource_loss": -0.25,
-      "survival": 2.0
+      "connection_failure": -0.2,
+      "connection_success": 2.5,
+      "fitness_improvement": 3.5,
+      "resource_gain": 1,
+      "resource_loss": -0.3,
+      "survival": 1.5
     },
     "training": {
-      "batch_size": 128,
-      "early_stopping": {
-        "enabled": true,
-        "min_delta": 5e-05,
-        "patience": 75
-      },
+      "batch_size": 64,
       "enabled": true,
       "epsilon": 0.95,
-      "epsilon_decay": 0.99,
-      "epsilon_end": 0.02,
-      "epsilon_start": 0.85,
-      "gamma": 0.997,
-      "language_reward_scaling": 0.3,
-      "learning_rate": 0.005,
+      "epsilon_decay": 0.985,
+      "epsilon_end": 0.01,
+      "epsilon_start": 0.8,
+      "gamma": 0.995,
+      "language_reward_scaling": 0.25,
+      "learning_rate": 0.008,
+      "memory_size": 20000,
+      "update_frequency": 1,
       "lr_scheduler": {
-        "T_max": 500,
         "enabled": true,
-        "eta_min": 1e-06,
-        "gamma": 0.92,
-        "min_lr": 5e-07,
-        "step_size": 150,
-        "type": "cosine"
+        "type": "step",
+        "step_size": 100,
+        "gamma": 0.95,
+        "min_lr": 1e-6
       },
-      "memory_size": 30000,
-      "update_frequency": 1
+      "early_stopping": {
+        "enabled": true,
+        "patience": 50,
+        "min_delta": 1e-4
+      }
     },
     "vp_aware_planning": {
-      "base_boost": 0.25,
+      "base_boost": 0.2,
       "enabled": true,
-      "high_threshold": 0.4,
-      "low_threshold": 0.2,
-      "strong_boost": 0.35
+      "high_threshold": 0.45,
+      "low_threshold": 0.25,
+      "strong_boost": 0.3
     }
   },
   "quantum": {
-    "entanglement_sensitivity": 2e-06,
+    "entanglement_sensitivity": 2.5e-06,
     "fitness_weights": {
       "entanglement": 0.3,
-      "entropy": 0.25,
-      "measurements": 0.2,
+      "entropy": 0.2,
+      "measurements": 0.25,
       "superposition": 0.25
     },
-    "initial_states": 100,
+    "initial_states": 80,
     "performance_thresholds": {
-      "fitness_std_threshold": 0.35,
-      "iteration_time_ms": 12,
-      "memory_percentage": 6.0,
-      "min_fitness_to_keep": 0.08
+      "fitness_std_threshold": 0.3,
+      "iteration_time_ms": 10,
+      "memory_percentage": 5.0,
+      "min_fitness_to_keep": 0.1
     },
     "probability_precision": 1e-06,
-    "prune_check_interval": 35,
-    "superposition_tolerance": 0.0004
+    "prune_check_interval": 40,
+    "superposition_tolerance": 0.0005
   },
   "ray": {
-    "actor_pool_size": 3,
-    "batch_inference_size": 64,
-    "description": "Ray distributed computing - OPTIMIZED for i5-7400 4-core + 32GB RAM",
+    "actor_pool_size": 2,
+    "batch_inference_size": 32,
+    "description": "Ray distributed computing - parallel organism decisions, training, and analysis",
     "enabled": true,
     "fallback_on_error": true,
     "logging_level": "warning",
     "memory_management": {
       "actor_pool_lru_eviction": true,
       "cleanup_on_organism_death": true,
-      "max_object_refs": 150
+      "max_object_refs": 100
     },
     "num_cpus": 4,
     "num_gpus": 1,
-    "object_store_memory": 8589934592,
-    "parallelization_threshold": 80,
+    "object_store_memory": null,
+    "parallelization_threshold": 100,
     "state_synchronization": {
       "consistency_model": "sequential",
-      "max_state_age_ms": 80,
+      "max_state_age_ms": 100,
       "snapshot_strategy": "breath_cycle"
     },
-    "training_threshold": 12
+    "training_threshold": 16
   },
   "rendering": {
     "enable_visualizations": true,
-    "frame_rate": 20,
+    "frame_rate": 15,
     "metric_display_precision": 6,
     "mode": "god",
-    "performance_monitoring": true,
-    "render_quality": "medium",
+    "performance_monitoring": false,
+    "render_quality": "low",
     "resolution": [
-      1920,
-      1080
+      1280,
+      720
     ],
     "text_interface": true,
     "visualization_update_precision": 0.001
@@ -483,42 +460,42 @@
   "scikit": {
     "anomaly_detection": {
       "algorithm": "isolation_forest",
-      "contamination": 0.18,
+      "contamination": 0.15,
       "enabled": true,
-      "n_estimators": 500
+      "n_estimators": 400
     },
     "clustering": {
       "algorithm": "hdbscan",
       "enabled": true,
-      "min_cluster_size": 2,
+      "min_cluster_size": 3,
       "min_samples": 1,
       "use_neural_embeddings": true
     },
     "concept_tracking": {
       "enabled": true,
-      "persistence_threshold": 2,
-      "stale_threshold": 8
+      "persistence_threshold": 3,
+      "stale_threshold": 10
     },
     "dimensionality_reduction": {
       "algorithm": "pca",
       "enabled": true,
-      "n_components": 4
+      "n_components": 3
     },
     "enabled": true
   },
   "simulation": {
     "log_level": "INFO",
-    "max_runtime": 7200.0,
+    "max_runtime": 3600.0,
     "measurement_precision": 4,
-    "performance_sampling_rate": 150,
-    "save_interval": 45.0,
-    "target_fps": 5,
-    "time_resolution_ms": 0.8
+    "performance_sampling_rate": 200,
+    "save_interval": 60.0,
+    "target_fps": 3,
+    "time_resolution_ms": 1.0
   },
   "vp_monitoring": {
     "adaptive_response": {
-      "high_vp_threshold": 0.8,
-      "streak_threshold": 2
+      "high_vp_threshold": 0.85,
+      "streak_threshold": 3
     },
     "adaptive_thresholds": {
       "enabled": true
@@ -526,18 +503,18 @@
     "adaptive_thresholds_enabled": true,
     "component_decomposition_enabled": true,
     "component_weights": {
-      "evolution_pressure": 0.18,
-      "network_coherence": 0.18,
-      "phase_mismatch": 0.12,
-      "quantum_entropy": 0.18,
-      "trait_divergence": 0.18
+      "evolution_pressure": 0.15,
+      "network_coherence": 0.15,
+      "phase_mismatch": 0.1,
+      "quantum_entropy": 0.15,
+      "trait_divergence": 0.15
     },
     "diagnostics_enabled": true,
     "stabilization": {
       "enabled": true,
-      "history_size": 20,
-      "max_jump": 0.12,
-      "smoothing_factor": 0.22
+      "history_size": 15,
+      "max_jump": 0.1,
+      "smoothing_factor": 0.25
     },
     "stabilization_enabled": true
   }

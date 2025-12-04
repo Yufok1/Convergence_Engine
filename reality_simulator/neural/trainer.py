@@ -571,14 +571,25 @@ class NeuralTrainer:
             breath_state: Breath engine state
         """
         experiences_collected = 0
+        skipped_no_brain = 0
+        skipped_no_record = 0
+        skipped_no_prev_state = 0
+        
         for org_id, organism in organisms.items():
             # Use duck typing instead of isinstance() to avoid import issues
             # Check if organism has neural capabilities
             if not (hasattr(organism, 'brain') and organism.brain is not None):
+                skipped_no_brain += 1
                 continue
 
             if not hasattr(organism, 'record_experience'):
+                skipped_no_record += 1
                 continue  # Not a neural organism
+            
+            # Check if organism has made a decision yet
+            if not hasattr(organism, 'prev_state') or organism.prev_state is None:
+                skipped_no_prev_state += 1
+                continue
 
             # Get previous fitness
             prev_fitness = self.organism_fitness_history.get(org_id, organism.fitness)
@@ -613,8 +624,23 @@ class NeuralTrainer:
             self.organism_fitness_history[org_id] = current_fitness
 
         # Log training progress periodically (every 50 steps to avoid spam)
-        if experiences_collected > 0 and self.training_step_count % 50 == 0:
-            print(f"[NEURAL] Collected {experiences_collected} experiences from {len(organisms)} organisms")
+        # ENHANCED: Also log diagnostic info about why experiences might not be collected
+        if self.training_step_count % 50 == 0:
+            total_orgs = len(organisms)
+            if experiences_collected > 0:
+                print(f"[NEURAL] Collected {experiences_collected} experiences from {total_orgs} organisms")
+            elif total_orgs > 0:
+                print(f"[NEURAL] WARNING: No experiences collected from {total_orgs} organisms!")
+                print(f"  - Skipped (no brain): {skipped_no_brain}")
+                print(f"  - Skipped (no record_experience): {skipped_no_record}")
+                print(f"  - Skipped (no prev_state): {skipped_no_prev_state}")
+        
+        # Update autotune buffer_size metric
+        total_buffer_size = sum(
+            len(org.experience_buffer) for org in organisms.values()
+            if hasattr(org, 'experience_buffer') and org.experience_buffer is not None
+        )
+        self.autotune_metrics_buffer['buffer_size'] = total_buffer_size
         
         # Track whether training occurred this step (for diagnostics)
         self.training_occurred_this_step = False

@@ -399,7 +399,8 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
         # Exploit: use neural network
         self.eval()  # Set to evaluation mode
         with torch.no_grad():
-            state_tensor = torch.FloatTensor(state).unsqueeze(0)
+            device = next(self.parameters()).device
+            state_tensor = torch.FloatTensor(state).to(device).unsqueeze(0)
             
             # Optimization: Use scripted forward pass if available (faster inference)
             if self._use_scripted_inference and self._forward_scripted is not None:
@@ -434,7 +435,8 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
         self.eval()
         
         with torch.no_grad():
-            state_tensor = torch.FloatTensor(state).unsqueeze(0)
+            device = next(self.parameters()).device
+            state_tensor = torch.FloatTensor(state).to(device).unsqueeze(0)
             
             # Get language logits
             _, language_logits = self.forward(
