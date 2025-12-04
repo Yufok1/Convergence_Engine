@@ -248,3 +248,75 @@ def create_brain(config: Dict[str, Any], silent: bool = False):
     
     return brain
 
+
+# =============================================================================
+# ARCHITECTURE CONFIG VALIDATION
+# =============================================================================
+
+# These are the canonical defaults that MUST match config.json
+# Changing config.json values for these will break saved model loading!
+ARCHITECTURE_DEFAULTS = {
+    'neural.brain.input_dim': 24,
+    'neural.brain.hidden_dim': 64,
+    'neural.brain.output_dim': 6,
+    'neural.brain.vocab_size': 50000,
+    'neural.concept_system.num_key_compositions': 20,
+    'neural.concept_system.embed_dim': 64,
+    'neural.language_model.teacher.vocab_size': 4096,
+}
+
+
+def validate_architecture_config(config: Dict[str, Any], strict: bool = False) -> bool:
+    """
+    Validate that config values match expected architecture defaults.
+    
+    Architecture-defining parameters determine neural network layer sizes.
+    Changing these after training will break saved model loading.
+    
+    Args:
+        config: Full configuration dictionary
+        strict: If True, raise exception on mismatch. If False, just warn.
+        
+    Returns:
+        True if all values match, False if mismatches found
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    mismatches = []
+    
+    neural_config = config.get('neural', {})
+    brain_config = neural_config.get('brain', {})
+    concept_config = neural_config.get('concept_system', {})
+    language_config = neural_config.get('language_model', {})
+    teacher_config = language_config.get('teacher', {})
+    
+    # Check each architecture parameter
+    checks = [
+        ('neural.brain.input_dim', brain_config.get('input_dim'), 24),
+        ('neural.brain.hidden_dim', brain_config.get('hidden_dim'), 64),
+        ('neural.brain.output_dim', brain_config.get('output_dim'), 6),
+        ('neural.brain.vocab_size', brain_config.get('vocab_size'), 50000),
+        ('neural.concept_system.num_key_compositions', concept_config.get('num_key_compositions'), 20),
+        ('neural.concept_system.embed_dim', concept_config.get('embed_dim'), 64),
+        ('neural.language_model.teacher.vocab_size', teacher_config.get('vocab_size'), 4096),
+    ]
+    
+    for param_path, config_value, default_value in checks:
+        if config_value is not None and config_value != default_value:
+            mismatches.append(f"{param_path}: config={config_value}, expected={default_value}")
+    
+    if mismatches:
+        msg = (
+            f"⚠️ ARCHITECTURE CONFIG MISMATCH DETECTED!\n"
+            f"These parameters define neural network layer sizes.\n"
+            f"Mismatches will cause saved model loading to fail.\n"
+            f"Mismatches found:\n  " + "\n  ".join(mismatches)
+        )
+        if strict:
+            raise ValueError(msg)
+        else:
+            logger.warning(msg)
+        return False
+    
+    return True

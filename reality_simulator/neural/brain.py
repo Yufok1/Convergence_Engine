@@ -180,9 +180,13 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
                  vocab_size: int = 12288,
                  use_language_head: bool = False,
                  use_concept_head: bool = False,
-                 num_key_compositions: int = 20):
+                 num_key_compositions: int = 20):  # ARCHITECTURE PARAM - must match config.json!
         """
         Initialize the organism brain.
+        
+        IMPORTANT: Architecture-defining parameters (input_dim, hidden_dim, output_dim,
+        vocab_size, num_key_compositions) must match config.json values. Changing these
+        after training will break saved model loading.
         
         Args:
             input_dim: Number of input features (24 with VP + extended features)
@@ -197,7 +201,7 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
             vocab_size: Vocabulary size for language head
             use_language_head: Enable language prediction head
             use_concept_head: Enable concept understanding head (RCUS)
-            num_key_compositions: Number of key concept compositions to track (default 20)
+            num_key_compositions: Number of key concept compositions (must match config!)
         """
         if not PYTORCH_AVAILABLE:
             raise ImportError("PyTorch is required for OrganismBrain")

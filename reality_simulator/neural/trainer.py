@@ -107,6 +107,13 @@ class NeuralTrainer:
         self.config = config
         self.device = device or get_device(config.get('device', 'cpu'))
         
+        # Validate architecture config on startup (warns if mismatched)
+        try:
+            from .utils import validate_architecture_config
+            validate_architecture_config({'neural': config}, strict=False)
+        except ImportError:
+            pass  # Skip validation if import fails
+        
         training_config = config.get('training', {})
         self.batch_size = training_config.get('batch_size', 32)
         self.learning_rate = training_config.get('learning_rate', 0.001)
