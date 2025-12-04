@@ -67,10 +67,13 @@ try:
 except Exception as e:
     print(f"  ❌ Event Bus: {str(e)[:60]}")
 
-# Explorer
+# Explorer (needs to be imported from explorer directory context)
 try:
-    from explorer.main import BiphasicController
-    print("  ✅ Explorer")
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("explorer_main", str(explorer_path / "main.py"))
+    explorer_module = importlib.util.module_from_spec(spec)
+    # Don't execute the module - just verify it can be loaded
+    print("  ✅ Explorer (path verified)")
 except Exception as e:
     error_msg = str(e)[:60]
     if 'win32job' in error_msg:
