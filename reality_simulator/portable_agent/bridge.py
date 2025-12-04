@@ -1446,7 +1446,14 @@ class AgentBridge:
         return action_responses.get(action, "")
     
     def _generate_from_language_head(self, state: np.ndarray, max_tokens: int = 16, temperature: float = 1.0) -> str:
-        """Generate text using the neural network's language head."""
+        """
+        Generate text using the neural network's language head.
+        
+        Includes:
+        - Repetition penalty to prevent "was was was" patterns
+        - Top-k sampling for quality output
+        - Vocabulary masking for valid tokens only
+        """
         if not TORCH_AVAILABLE or self.brain_type != 'torchscript':
             return ""
         
@@ -1455,6 +1462,12 @@ class AgentBridge:
             state = state.reshape(1, -1)
         
         generated_tokens = []
+        recent_tokens = []  # Track recent tokens for repetition penalty
+        
+        # Generation parameters
+        top_k = 40  # Only sample from top 40 tokens
+        repetition_penalty = 2.0  # Penalty for recent tokens
+        strong_repetition_penalty = 3.0  # Stronger penalty for very recent
         
         with torch.no_grad():
             state_tensor = torch.FloatTensor(state)
@@ -1467,25 +1480,66 @@ class AgentBridge:
                 language_logits = outputs[1]
                 
                 if language_logits is not None and language_logits.numel() > 0:
-                    # Sample tokens from logits
-                    logits = language_logits[0] if len(language_logits.shape) > 1 else language_logits
-                    
-                    # Apply temperature
-                    logits = logits / temperature
-                    
-                    # Sample multiple tokens
-                    probs = torch.softmax(logits, dim=-1)
+                    # Get base logits
+                    base_logits = language_logits[0] if len(language_logits.shape) > 1 else language_logits
                     
                     for _ in range(max_tokens):
+                        # Start with fresh copy of base logits
+                        logits = base_logits.clone()
+                        
+                        # Apply temperature
+                        logits = logits / temperature
+                        
+                        # ═══════════════════════════════════════════════════
+                        # REPETITION PENALTY - Prevent "was was was" patterns
+                        # ═══════════════════════════════════════════════════
+                        if recent_tokens:
+                            for i, prev_token in enumerate(recent_tokens):
+                                recency = len(recent_tokens) - i
+                                if recency <= 2:
+                                    # Very recent: strong penalty (SUBTRACT, not divide)
+                                    logits[prev_token] = logits[prev_token] - strong_repetition_penalty
+                                else:
+                                    # Less recent: moderate penalty
+                                    logits[prev_token] = logits[prev_token] - repetition_penalty
+                        
+                        # ═══════════════════════════════════════════════════
+                        # VOCABULARY MASKING - Only valid tokens
+                        # ═══════════════════════════════════════════════════
+                        vocab_size = self.vocabulary.vocab_size
+                        if vocab_size < len(logits):
+                            logits[vocab_size:] = float('-inf')
+                        
+                        # Mask special tokens (0-4)
+                        logits[:5] = float('-inf')
+                        
+                        # ═══════════════════════════════════════════════════
+                        # TOP-K SAMPLING - Quality over randomness
+                        # ═══════════════════════════════════════════════════
+                        if top_k > 0 and top_k < len(logits):
+                            top_k_values, top_k_indices = torch.topk(logits, top_k)
+                            
+                            # Create mask and apply
+                            mask = torch.full_like(logits, float('-inf'))
+                            mask.scatter_(0, top_k_indices, top_k_values)
+                            logits = mask
+                        
+                        # Sample from distribution
+                        probs = torch.softmax(logits, dim=-1)
                         token_id = torch.multinomial(probs, 1).item()
                         
-                        # Stop at END token or if we've repeated too much
+                        # Stop at END token
                         if token_id == self.vocabulary.SPECIAL_TOKENS.get('<END>', 3):
                             break
-                        if token_id < 4:  # Skip special tokens
+                        if token_id < 5:  # Skip special tokens
                             continue
-                            
+                        
                         generated_tokens.append(token_id)
+                        
+                        # Track for repetition penalty (keep last 8)
+                        recent_tokens.append(token_id)
+                        if len(recent_tokens) > 8:
+                            recent_tokens.pop(0)
                         
                         # Early stop if we have enough
                         if len(generated_tokens) >= max_tokens:
