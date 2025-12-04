@@ -1623,6 +1623,41 @@ class UnifiedSystem:
             except Exception:
                 pass
         
+        # Handler: React to config atom updates (close the feedback loop)
+        def on_config_atom_update(event):
+            """Log and potentially react to config parameter changes."""
+            try:
+                param_name = event.data.get('param_name', 'unknown')
+                old_val = event.data.get('old_value')
+                new_val = event.data.get('new_value')
+                reason = event.data.get('reason', '')
+                
+                # Log significant changes for observability
+                logger.debug(f"[CONFIG] Atom updated: {param_name} {old_val} → {new_val} ({reason})")
+                
+                # If learning_rate changed, invalidate cached optimizers in trainer
+                if param_name == 'learning_rate' and self.reality_sim:
+                    trainer = getattr(self.reality_sim, 'neural_trainer', None)
+                    if trainer and hasattr(trainer, 'optimizers'):
+                        trainer.optimizers.clear()
+                        trainer.schedulers.clear()
+            except Exception:
+                pass
+        
+        # Handler: React to config outcomes (track what works)
+        def on_config_outcome(event):
+            """Track config success/failure for meta-learning."""
+            try:
+                success = event.data.get('success', False)
+                context = event.data.get('context', '')
+                domain = event.data.get('domain', 'all')
+                
+                # Log for observability - this closes the loop visibility
+                status = "✓" if success else "✗"
+                logger.debug(f"[CONFIG] Outcome {status}: {domain} ({context})")
+            except Exception:
+                pass
+        
         # Subscribe handlers to ACTUAL event types that are emitted
         # (Audit found mismatches - these are the real event_type values)
         self.causation_explorer.subscribe('neural_training', on_training_complete)  # trainer.py:1273
@@ -1630,11 +1665,14 @@ class UnifiedSystem:
         self.causation_explorer.subscribe('ml_autotune_metrics', on_ml_analysis_complete)  # ml_utils.py:1146
         self.causation_explorer.subscribe('phase_transition', on_phase_transition)
         self.causation_explorer.subscribe('explorer_phase_change', on_phase_transition)
+        self.causation_explorer.subscribe('config_atom_update', on_config_atom_update)  # atomic_config.py:328
+        self.causation_explorer.subscribe('config_outcome', on_config_outcome)  # atomic_config.py:850
         
         print("[UNIFIED] [INTEGRATION] ✅ Reactive event handlers wired")
         print("[UNIFIED] [INTEGRATION]    - Training → Config tuner (loss-based LR adjustment)")
         print("[UNIFIED] [INTEGRATION]    - ML Analysis → Evolution (diversity-based mutation)")
         print("[UNIFIED] [INTEGRATION]    - Phase transitions → Config outcomes (success tracking)")
+        print("[UNIFIED] [INTEGRATION]    - Config updates → Optimizer invalidation (immediate effect)")
     
     def _initialize_highlander_protocol(self):
         """Initialize the Highlander Protocol tournament system.
