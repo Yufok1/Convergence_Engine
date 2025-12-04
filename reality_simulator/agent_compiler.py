@@ -93,19 +93,34 @@ class AgentCompiler:
             self.input_dims = [b.input_dim for b in brains]
             self.output_dims = [b.output_dim for b in brains]
             self.max_input_dim = max(self.input_dims) if self.input_dims else 0
+            # Check if any brain has language head
+            self.has_language_heads = [getattr(b, 'use_language_head', False) for b in brains]
+            self.any_language_head = any(self.has_language_heads)
 
         def forward(self, x: torch.Tensor):
             # x shape: [B, max_input_dim] (we will slice/pad per brain)
-            outputs = []
-            for brain, in_dim in zip(self.brains, self.input_dims):
+            action_outputs = []
+            language_outputs = []
+            
+            for brain, in_dim, has_lang in zip(self.brains, self.input_dims, self.has_language_heads):
                 if x.shape[1] < in_dim:
                     pad = torch.zeros(x.shape[0], in_dim - x.shape[1], dtype=x.dtype, device=x.device)
                     x_i = torch.cat([x, pad], dim=1)
                 else:
                     x_i = x[:, :in_dim]
-                out = brain(x_i)
-                outputs.append(out)
-            return tuple(outputs)
+                
+                if has_lang:
+                    action_probs, lang_logits = brain(x_i, return_language_logits=True)
+                    action_outputs.append(action_probs)
+                    language_outputs.append(lang_logits)
+                else:
+                    action_probs = brain(x_i)
+                    action_outputs.append(action_probs)
+            
+            # Return language outputs only if any brain has language head
+            if self.any_language_head and language_outputs:
+                return tuple(action_outputs), tuple(language_outputs)
+            return tuple(action_outputs)
         
     def _reconstruct_brain_from_capsule(self, capsule: OrganismCapsule) -> OrganismBrain:
         """
@@ -1746,6 +1761,8 @@ done
             
             # Bridge Config (JSON) - Critical for AgentBridge to know state dimensions
             max_input_dim = metadata.get('ensemble', {}).get('max_input_dim', 24)
+            # Check if any brain in ensemble has language head
+            any_language_head = any(getattr(b, 'use_language_head', False) for b in brains) if brains else False
             bridge_config = {
                 'state_dim': max_input_dim,
                 'num_actions': 6,
@@ -1758,7 +1775,10 @@ done
                 'batch_size': 32,
                 'max_response_length': 32,
                 'temperature': 1.0,
-                'default_port': 8080
+                'default_port': 8080,
+                'has_language_head': any_language_head,
+                'is_ensemble': True,
+                'member_count': len(brains) if brains else 0
             }
             zf.writestr("bridge_config.json", json.dumps(bridge_config, indent=2))
             
@@ -1767,6 +1787,19 @@ done
                 merged_language = self._merge_capsule_language_data(capsules)
                 if merged_language:
                     zf.writestr("atomic_language.json", json.dumps(merged_language, indent=2))
+                else:
+                    # Write empty language file - bridge.py will use default vocabulary
+                    empty_language = {
+                        'vocabulary': [],
+                        'word_frequencies': {},
+                        'concepts': {},
+                        'semantic_associations': {},
+                        'dialect_signature': None,
+                        'total_concepts': 0,
+                        'source_note': 'No language training data available in ensemble',
+                        'ensemble_merged': True
+                    }
+                    zf.writestr("atomic_language.json", json.dumps(empty_language, indent=2))
 
             # Runner
             zf.writestr("run_agent.py", runner_script)
@@ -2410,7 +2443,9 @@ if __name__ == '__main__':
                 'organism_id': name,
                 'name': name,
                 'input_dim': b.input_dim,
-                'output_dim': b.output_dim
+                'output_dim': b.output_dim,
+                'has_language_head': getattr(b, 'use_language_head', False),
+                'has_attention': getattr(b, 'use_attention', False)
             })
 
         if not brains:
