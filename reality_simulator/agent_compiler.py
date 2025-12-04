@@ -358,6 +358,34 @@ class AgentCompiler:
             logger.error(f"Failed to export brain state_dict at {model_path}: {e}")
             raise
 
+    def _extract_fitness_value(self, capsule: OrganismCapsule) -> Optional[float]:
+        """Safely extract fitness value from capsule, handling various data formats."""
+        if not capsule.fitness or not capsule.fitness.fitness_history:
+            return None
+        
+        history = capsule.fitness.fitness_history
+        try:
+            # Handle list of tuples: [(time, fitness), ...]
+            if isinstance(history, list) and len(history) > 0:
+                last_entry = history[-1]
+                if isinstance(last_entry, (list, tuple)) and len(last_entry) >= 2:
+                    return float(last_entry[1])
+                else:
+                    # Single value
+                    return float(last_entry)
+            # Handle numpy array
+            elif hasattr(history, 'shape'):
+                if len(history.shape) == 2:
+                    # 2D array: take last row, second column
+                    return float(history[-1, 1])
+                elif len(history.shape) == 1:
+                    # 1D array: take last value
+                    return float(history[-1])
+            return None
+        except (IndexError, TypeError, ValueError) as e:
+            logger.warning(f"Could not extract fitness from history: {e}")
+            return None
+
     def _create_rich_metadata(self, capsule: OrganismCapsule, brain: Optional[OrganismBrain] = None) -> Dict[str, Any]:
         """
         Creates comprehensive metadata for the compiled agent, leveraging the rich capsule data.
@@ -377,7 +405,7 @@ class AgentCompiler:
             'organism_core': {
                 'species_id': capsule.organism_id,
                 'capsule_id': capsule.capsule_id,
-                'fitness': capsule.fitness.fitness_history[-1][1] if capsule.fitness and capsule.fitness.fitness_history else None,
+                'fitness': self._extract_fitness_value(capsule),
                 'organism_age': capsule.organism_age,
                 'birth_time': capsule.organism_birth_time,
             },
@@ -2587,7 +2615,7 @@ if __name__ == '__main__':
             try:
                 fingerprint = self._compute_behavioral_fingerprint(brain, num_samples=50)
                 member_meta['behavioral_fingerprint'] = fingerprint
-                member_meta['fitness'] = cap.fitness.fitness_history[-1][1] if cap.fitness and cap.fitness.fitness_history else None
+                member_meta['fitness'] = self._extract_fitness_value(cap)
                 member_meta['generation'] = getattr(cap, 'generation', None)
                 logger.info(f"  Member {i+1}/{len(brains)}: {fingerprint['personality_label']} "
                            f"(dominant: {fingerprint['dominant_action']})")
