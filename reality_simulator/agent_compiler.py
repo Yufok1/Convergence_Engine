@@ -596,7 +596,33 @@ class AgentCompiler:
             # Track source organism
             merged['source_organisms'].append(str(cap.organism_id))
             
-            # Merge vocabulary
+            # Handle LanguageSnapshot format (atoms, concept_order, etc.)
+            # OR legacy format (vocabulary, word_frequencies, etc.)
+            
+            # Extract vocabulary from atoms or concept_order
+            if 'atoms' in lang_data:
+                # LanguageSnapshot format - extract concept names as vocabulary
+                for concept_id in lang_data['atoms'].keys():
+                    if concept_id not in merged['vocabulary']:
+                        merged['vocabulary'].append(concept_id)
+                # Also merge atom data as concepts
+                for concept_id, atom_data in lang_data['atoms'].items():
+                    if concept_id not in merged['concepts']:
+                        merged['concepts'][concept_id] = atom_data
+                    else:
+                        # Merge strengths by taking max
+                        existing = merged['concepts'][concept_id]
+                        if isinstance(atom_data, dict) and isinstance(existing, dict):
+                            if atom_data.get('strength', 0) > existing.get('strength', 0):
+                                merged['concepts'][concept_id] = atom_data
+            
+            # Also check concept_order for vocabulary
+            if 'concept_order' in lang_data:
+                for concept in lang_data['concept_order']:
+                    if concept not in merged['vocabulary']:
+                        merged['vocabulary'].append(concept)
+            
+            # Legacy format support
             if 'vocabulary' in lang_data:
                 for word in lang_data['vocabulary']:
                     if word not in merged['vocabulary']:
@@ -607,12 +633,11 @@ class AgentCompiler:
                 for word, freq in lang_data['word_frequencies'].items():
                     merged['word_frequencies'][word] = merged['word_frequencies'].get(word, 0) + freq
             
-            # Merge concepts
+            # Legacy concepts format
             if 'concepts' in lang_data:
                 for concept_id, concept_data in lang_data['concepts'].items():
                     if concept_id not in merged['concepts']:
                         merged['concepts'][concept_id] = concept_data
-                    # If already exists, could merge activation counts, etc.
             
             # Merge semantic associations
             if 'semantic_associations' in lang_data:
