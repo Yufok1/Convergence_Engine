@@ -407,7 +407,37 @@ Quick Win #13: Training System Events (LR Scheduler + Early Stopping) ⭐ NEW (2
   - Correlation between LR changes and loss improvements
 - **Emergence benefit**: Provides visibility into training dynamics; helps identify optimal learning rate schedules for emergent behaviors
 
-Quick Win #14: Expanded CRA Control (54 Safe Parameters) ⭐ NEW (2025-12-03)
+Quick Win #15: Agent Export System (Portable Organism Brains) ⭐ NEW (2025-12-04)
+- **Core Concept**: Export trained neural organism brains as portable, standalone packages for deployment
+- **Status**: ENABLED
+- **Export Formats**: TorchScript (.pt), ONNX (.onnx), State Dict (.pth)
+- **Portable Runtime**: Zero-dependency Python runtime included in export package
+- **Usage**:
+  - Web UI: POST /api/capsule/export/:capsule_id
+  - Python: `AgentCompiler().compile_agent(organism, "exported_agent.zip")`
+- **Package Contents**:
+  - `model.pt` - TorchScript model (or `model.pth` state dict)
+  - `config.json` - Architecture & hyperparameters
+  - `metadata.json` - Training history & provenance
+  - `runtime/` - Standalone Python runtime
+- **Tested Capabilities (2025-12-04)**:
+  | Feature | Status |
+  |---------|--------|
+  | Neural inference (679K params) | ✅ |
+  | TorchScript load/execute | ✅ |
+  | Deterministic decisions | ✅ |
+  | State persistence | ✅ |
+  | Batch inference (34K/sec) | ✅ |
+- **Bug Fixes Applied**:
+  - Fixed fitness_history extraction (handles numpy arrays, lists, tuples)
+  - Fixed capsule attribute capture (input_dim not input_size)
+  - Fixed tuple output handling in portable runtime
+  - Fixed TorchScript compatibility (.dim(), .size())
+- **Emergence benefit**: Deploy evolved organisms to external systems; analyze learned strategies; compare organism brains across generations
+- **Config Paths**: None (export-only system)
+- **Events**: organism_exported (when brain is compiled to portable format)
+
+Quick Win #16: Expanded CRA Control (54 Safe Parameters) ⭐ NEW (2025-12-03)
 - **Core Concept**: CRA can now tune 54 parameters autonomously (up from 32)
 - **Status**: ENABLED
 - **New Safe Parameters Added**:

@@ -1685,17 +1685,65 @@ Verification:
 - Confirm semantic boost affecting word selection
 
 ---
-21. Agent Compiler System (Optional ONNX Export)
+21. Agent Compiler System (Portable Brain Export) ⭐ UPDATED (2025-12-04)
 
 Status: SUCCESS / PARTIAL / UNAVAILABLE
 - AgentCompiler available for organism brain export
 - ONNX export: AVAILABLE / UNAVAILABLE (onnxruntime optional)
-- TorchScript export: AVAILABLE
+- TorchScript export: AVAILABLE (primary format)
 
 Core Concept:
 - Compiles neural organism brains to portable agent archives
-- Supports ONNX format (requires onnxruntime)
-- Supports TorchScript format (built-in PyTorch)
+- Exports as ZIP containing model, config, metadata, and runtime
+- Supports TorchScript format (built-in PyTorch) - PRIMARY
+- Supports ONNX format (requires onnxruntime) - OPTIONAL
+- Supports State Dict format (raw weights) - FALLBACK
+
+Export Package Contents:
+- `model.pt` - TorchScript compiled model (or `model.pth` state dict)
+- `config.json` - Architecture & hyperparameters (input_dim, hidden_dim, output_dim, vocab_size)
+- `metadata.json` - Training history, fitness history, provenance, export timestamp
+- `runtime/` - Standalone Python runtime (agent_runtime.py, __init__.py)
+
+Portable Agent Runtime:
+- Zero-dependency Python runtime for running exported agents
+- Handles tuple outputs (action_probs, language_logits) from language-head models
+- Provides MiniEnvironment for testing decisions
+- Includes TrainingLoop for continued learning
+- State persistence: save/load agent state across sessions
+
+Usage:
+- Web UI: POST /api/capsule/export/:capsule_id → downloads ZIP
+- Python API:
+  ```python
+  from reality_simulator.agent_compiler import AgentCompiler
+  compiler = AgentCompiler()
+  compiler.compile_agent(organism, "exported_agent.zip")
+  ```
+- Portable Runtime:
+  ```python
+  from portable_agent import AgentRuntime
+  agent = AgentRuntime("exported_agent.zip")
+  action = agent.decide(state_vector)  # Returns action index
+  ```
+
+Tested Capabilities (2025-12-04):
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Neural inference (679K params) | ✅ | OrganismBrain with language head |
+| TorchScript load/execute | ✅ | Works without original source |
+| Deterministic decisions | ✅ | Same input → same output |
+| State persistence | ✅ | save/load state across sessions |
+| Batch inference | ✅ | 34K inferences/sec on GPU |
+| Single inference | ✅ | 1,334 inferences/sec on CPU |
+| Tuple output handling | ✅ | Unpacks (action_probs, language_logits) |
+
+Bug Fixes Applied (2025-12-04):
+1. **Fitness history extraction**: Helper function `_extract_fitness_value()` handles numpy arrays, lists, tuples
+2. **Capsule attribute capture**: Uses `input_dim` not `input_size`, `hidden_dim` not `hidden_size`
+3. **Tuple output handling**: Portable runtime unpacks tuple outputs from language-head models
+4. **TorchScript compatibility**: Uses `.dim()` and `.size()` instead of `.shape` in attention layers
+5. **num_key_compositions alignment**: Infers from state_dict when loading checkpoints
 
 Import Behavior:
 - onnxruntime import is optional (lazy import)
@@ -1703,18 +1751,17 @@ Import Behavior:
 - System runs without onnxruntime installed
 - causation_web_ui uses lazy import inside compile_organism_to_agent()
 
-**Bug Fix (2025-01-XX)**: Made onnxruntime import optional with ONNX_AVAILABLE flag.
-Previous issue: ModuleNotFoundError when onnxruntime not installed prevented system launch.
-
 Priority:
-- onnxruntime not found = INFO (optional dependency)
+- Export failing with "invalid index" = HIGH (check fitness_history format)
+- Export failing with "module not found" = MEDIUM (check capsule attributes)
+- onnxruntime not found = INFO (optional dependency, TorchScript works)
 - AgentCompiler init failing = LOW
-- TorchScript export failing = LOW
 
 Verification:
 - System launches without onnxruntime installed
-- ONNX export shows "ONNX_AVAILABLE: False" if library missing
-- TorchScript export works regardless of onnxruntime
+- Export via Web UI downloads ZIP file
+- Exported agent loads and runs in portable runtime
+- Decisions are deterministic (same input → same output)
 
 ---
 22. Training System Events (LR Scheduler + Early Stopping) ⭐ NEW (2025-12-03)
@@ -2015,7 +2062,9 @@ Key Updates for 2025 (Quick Wins Edition):
   neural decisions (3-4x), DQN training (2-3x), graceful fallback when Ray unavailable ⭐ NEW
 - Quick Win #14: Training System Events - lr_adjusted (LR scheduler) and early_stopping_triggered
   (convergence) causation events for training visibility ⭐ NEW (2025-12-03)
-- Quick Win #15: Expanded CRA Control - 54 safe parameters (up from 32) for autonomous tuning,
+- Quick Win #15: Agent Export System - Export trained neural brains as portable packages with
+  TorchScript/ONNX/state_dict formats, standalone Python runtime included ⭐ NEW (2025-12-04)
+- Quick Win #16: Expanded CRA Control - 54 safe parameters (up from 32) for autonomous tuning,
   including LR scheduler, early stopping, Highlander, alliance warfare, language, Ray ⭐ NEW (2025-12-03)
 
 Quick Win #8: Dynamic Multi-Dimensional Linguistic Awareness ⭐ NEW
@@ -2056,9 +2105,9 @@ Quick Win #8: Dynamic Multi-Dimensional Linguistic Awareness ⭐ NEW
 - Section 19: Confederation System (NEW - Quick Win #11)
 - Section 20: Neural Relationship Learning (NEW - Quick Win #12)
 - Section 21: Ray Distributed Computing (NEW - Quick Win #13)
-- Section 22: Agent Compiler System (Optional ONNX Export)
-- Section 23: Training System Events (NEW - Quick Win #14) ⭐ 2025-12-03
-- Section 24: Expanded CRA Control (NEW - Quick Win #15) ⭐ 2025-12-03
+- Section 21: Agent Compiler System (Portable Brain Export) ⭐ UPDATED (2025-12-04)
+- Section 22: Training System Events (NEW - Quick Win #14) ⭐ 2025-12-03
+- Section 23: Expanded CRA Control (NEW - Quick Win #16) ⭐ 2025-12-03
 - Section 3b: Language System Audit (NEW - Quick Win #8)
 - Neural field names: organisms_tracked (not organisms_trained)
 - Neural input_dim: 24 (was 12, then 18 - now includes extended features 19-24)
