@@ -234,7 +234,7 @@
       "concept_loss_weight": 0.1,
       "embed_dim": 64,
       "enabled": true,
-      "num_key_compositions": 15,
+      "num_key_compositions": 20,
       "utility_update_alpha": 0.1
     },
     "device": "cuda",
