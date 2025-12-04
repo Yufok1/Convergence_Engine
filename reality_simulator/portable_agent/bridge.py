@@ -466,7 +466,7 @@ class PortableVocabulary:
         
         # If vocabulary is still basically empty, use default
         if vocab.vocab_size <= 5:
-            print(f"  ⚠ Vocabulary file has no words, using built-in vocabulary")
+            print(f"  [!] Vocabulary file has no words, using built-in vocabulary")
             return cls._create_default_vocabulary()
         
         vocab.id_to_word = {int(v): k for k, v in vocab.word_to_id.items()}
@@ -505,7 +505,7 @@ class PortableVocabulary:
         for word in default_words:
             vocab.add_word(word)
         
-        print(f"  ✓ Created default vocabulary: {vocab.vocab_size} words")
+        print(f"  [OK] Created default vocabulary: {vocab.vocab_size} words")
         return vocab
 
 
@@ -662,9 +662,9 @@ class AgentBridge:
                 # Check for language head in ONNX outputs
                 output_names = [o.name for o in self.brain.get_outputs()]
                 self.has_language_head = len(output_names) > 1
-                print(f"  ✓ Loaded ONNX model ({len(output_names)} outputs)")
+                print(f"  [OK] Loaded ONNX model ({len(output_names)} outputs)")
             except Exception as e:
-                print(f"  ✗ Failed to load ONNX model: {e}")
+                print(f"  [X] Failed to load ONNX model: {e}")
             
         elif path.suffix in ('.pt', '.pth', '.torchscript') and TORCH_AVAILABLE:
             try:
@@ -679,21 +679,21 @@ class AgentBridge:
                         outputs = self.brain(dummy)
                     if isinstance(outputs, tuple) and len(outputs) >= 2:
                         self.has_language_head = True
-                        print(f"  ✓ Loaded TorchScript model (with language head)")
+                        print(f"  [OK] Loaded TorchScript model (with language head)")
                     else:
-                        print(f"  ✓ Loaded TorchScript model")
+                        print(f"  [OK] Loaded TorchScript model")
                 except Exception:
-                    print(f"  ✓ Loaded TorchScript model")
+                    print(f"  [OK] Loaded TorchScript model")
                     
             except Exception as e:
-                print(f"  ✗ Failed to load TorchScript model: {e}")
+                print(f"  [X] Failed to load TorchScript model: {e}")
         
         elif path.suffix in ('.pt', '.pth', '.torchscript') and not TORCH_AVAILABLE:
-            print(f"  ✗ PyTorch not available - cannot load {path.suffix} model")
+            print(f"  [X] PyTorch not available - cannot load {path.suffix} model")
             print(f"    Install with: pip install torch")
             
         else:
-            print(f"  ✗ Unknown model format: {path.suffix}")
+            print(f"  [X] Unknown model format: {path.suffix}")
     
     def _infer(self, state: np.ndarray) -> Tuple[int, List[float], float]:
         """Run inference on state, return (action, q_values, confidence)."""
@@ -1146,7 +1146,7 @@ class AgentBridge:
         self._server_app = app
         
         logger.info(f"Starting HTTP server on {host}:{port}")
-        print(f"\n🦋 AgentBridge HTTP Server")
+        print(f"\n[Butterfly] AgentBridge HTTP Server")
         print(f"   http://{host}:{port}")
         print(f"\n   Endpoints:")
         print(f"   POST /act    - Get action for input")
@@ -1185,7 +1185,7 @@ class AgentBridge:
             /config     - Show configuration
             /quit       - Exit
         """
-        print("\n🦋 AgentBridge Interactive Mode")
+        print("\n[Butterfly] AgentBridge Interactive Mode")
         print("   Type messages to chat with the agent")
         print("   Commands: /act, /gym, /state, /config, /quit")
         print()
@@ -1241,7 +1241,7 @@ class AgentBridge:
             print(f"       (confidence: {result.confidence:.2%})")
             print()
         
-        print("\nGoodbye! 🦋")
+        print("\nGoodbye! [Butterfly]")
     
     # =========================================================================
     # PERSISTENCE
@@ -1290,11 +1290,11 @@ class AgentBridge:
             candidates = list(directory.glob(f'brain{ext}'))
             if candidates:
                 brain_path = candidates[0]
-                print(f"  ✓ Found brain: {brain_path.name}")
+                print(f"  [OK] Found brain: {brain_path.name}")
                 break
         
         if brain_path is None:
-            print(f"  ⚠ No brain file found in {directory}")
+            print(f"  [!] No brain file found in {directory}")
             print(f"    Looking for: brain.onnx, brain.pt, brain.pth, brain.torchscript")
             # List what files ARE there
             files = list(directory.glob('*'))
@@ -1319,9 +1319,9 @@ class AgentBridge:
             vocab_path = directory / 'atomic_language.json'
         if vocab_path.exists():
             vocab = PortableVocabulary.load(vocab_path)
-            print(f"  ✓ Loaded vocabulary: {vocab.vocab_size} words")
+            print(f"  [OK] Loaded vocabulary: {vocab.vocab_size} words")
         else:
-            print(f"  ⚠ No vocabulary file found")
+            print(f"  [!] No vocabulary file found")
         
         # Create bridge
         bridge = cls(
@@ -1337,7 +1337,7 @@ class AgentBridge:
                 config_data = json.load(f)
             if config_data.get('has_language_head', False) and not bridge.has_language_head:
                 bridge.has_language_head = True
-                print(f"  ✓ Language head enabled from config")
+                print(f"  [OK] Language head enabled from config")
         
         # Load experience buffer
         exp_path = directory / 'experiences.pkl'
@@ -1422,3 +1422,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
