@@ -205,6 +205,13 @@ class AgentCompiler:
         # Use reasonable dropout matching current config (can't infer from state_dict)
         dropout = 0.15
 
+        # Infer num_key_compositions from concept_head if present
+        num_key_compositions = 20  # Default
+        if use_concept_head and 'concept_head.composition_value.weight' in state_dict:
+            # composition_value.weight shape is (num_key_compositions, hidden_dim)
+            num_key_compositions = state_dict['concept_head.composition_value.weight'].shape[0]
+            logger.debug(f"Inferred num_key_compositions={num_key_compositions} from state_dict")
+
         # Create a new instance of OrganismBrain matching the checkpoint
         reconstructed_brain = OrganismBrain(
             input_dim=int(inferred_input),
@@ -217,7 +224,8 @@ class AgentCompiler:
             attention_dim=int(inferred_hidden),
             vocab_size=int(vocab_size),
             use_language_head=bool(use_language_head),
-            use_concept_head=bool(use_concept_head)
+            use_concept_head=bool(use_concept_head),
+            num_key_compositions=int(num_key_compositions)
         )
 
         # Load state dict allowing extra/missing keys (robust to optional heads)
