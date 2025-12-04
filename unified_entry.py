@@ -1162,6 +1162,15 @@ class UnifiedSystem:
             
             self.reality_sim.event_emitter = neural_event_emitter
 
+            # ═══════════════════════════════════════════════════════════════════════════
+            # INTEGRATION FIX: Wire event emitter to AtomicConfigSystem (config_tuner)
+            # This fixes the race condition where config_tuner was created with None
+            # because event_emitter wasn't set on reality_sim yet during __init__
+            # ═══════════════════════════════════════════════════════════════════════════
+            if hasattr(self.reality_sim, 'config_tuner') and self.reality_sim.config_tuner:
+                self.reality_sim.config_tuner.set_event_emitter(neural_event_emitter)
+                print("[UNIFIED] [INTEGRATION] ✅ Wired event_emitter to AtomicConfigSystem (config_tuner)")
+
             # CRITICAL: Wire context_memory and vocabulary event emitters for language events
             # This MUST happen BEFORE any word assignments occur
             # Do this immediately after network is created, not later

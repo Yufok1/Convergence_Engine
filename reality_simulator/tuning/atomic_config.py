@@ -759,6 +759,22 @@ class AtomicConfigSystem:
         self.atoms[atom.param_name] = atom
         self.domains[atom.domain].add(atom.param_name)
     
+    def set_event_emitter(self, event_emitter: Callable):
+        """
+        Set or update the event emitter for this config system and all atoms.
+        
+        INTEGRATION FIX: This method allows wiring the event emitter AFTER
+        construction, solving the race condition where AtomicConfigSystem
+        is created before unified_entry.py wires the causation explorer.
+        
+        Args:
+            event_emitter: Callback to emit causation events
+        """
+        self.event_emitter = event_emitter
+        # Propagate to all existing atoms
+        for atom in self.atoms.values():
+            atom._event_emitter = event_emitter
+    
     def _form_default_associations(self):
         """Form known correlations between config parameters."""
         # Learning rate <-> batch size (often inverse)
