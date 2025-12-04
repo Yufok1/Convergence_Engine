@@ -1761,8 +1761,10 @@ done
             
             # Bridge Config (JSON) - Critical for AgentBridge to know state dimensions
             max_input_dim = metadata.get('ensemble', {}).get('max_input_dim', 24)
-            # Check if any brain in ensemble has language head
-            any_language_head = any(getattr(b, 'use_language_head', False) for b in brains) if brains else False
+            # Check if any brain in ensemble has language head from metadata
+            members = metadata.get('ensemble', {}).get('members', [])
+            any_language_head = any(m.get('has_language_head', False) for m in members)
+            member_count = len(members)
             bridge_config = {
                 'state_dim': max_input_dim,
                 'num_actions': 6,
@@ -1778,7 +1780,7 @@ done
                 'default_port': 8080,
                 'has_language_head': any_language_head,
                 'is_ensemble': True,
-                'member_count': len(brains) if brains else 0
+                'member_count': member_count
             }
             zf.writestr("bridge_config.json", json.dumps(bridge_config, indent=2))
             
