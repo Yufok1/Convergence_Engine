@@ -26,6 +26,7 @@ import time
 import json
 import logging
 import threading
+import random
 from pathlib import Path
 from typing import Dict, Any, Optional, List
 from dataclasses import dataclass, asdict
@@ -1589,6 +1590,9 @@ class UnifiedSystem:
             )
             print("[UNIFIED] [HIGHLANDER] [PASS] 🌱 Germination Pool initialized")
             
+            # Get arena config for battle type selection
+            arena_settings = self.active_config.get('arena', {})
+            
             # Initialize Highlander Protocol (tournament orchestration)
             highlander_config = {
                 'survival_threshold': survival_threshold,
@@ -1597,8 +1601,17 @@ class UnifiedSystem:
                 'germination_rate': config.get('germination_rate', 0.1),
                 'max_population': config.get('max_population', 100),
                 'min_population': config.get('min_population', 10),
-                'battle_randomness': config.get('chaos_factor', 0.15)
+                'battle_randomness': config.get('chaos_factor', 0.15),
+                # Include arena battle type setting
+                'default_battle_type': arena_settings.get('default_battle_type', 'FULL_COMBAT')
             }
+            
+            # Log battle type selection
+            battle_type = highlander_config['default_battle_type']
+            print(f"[UNIFIED] [HIGHLANDER] ⚔️ Battle type: {battle_type}")
+            if battle_type == 'PROTON_GAME':
+                print("[UNIFIED] [HIGHLANDER] 🎮 Proton Game Arena battles enabled!")
+            
             self.highlander_protocol = HighlanderProtocol(
                 config=highlander_config,
                 event_emitter=highlander_event_emitter,
@@ -1833,6 +1846,12 @@ class UnifiedSystem:
                     organisms, get_fitness, causation_explorer=causation_ref
                 )
                 
+                # 🤝 PROCESS ORGANISM COOPERATION DECISIONS → ALLIANCE ACTIONS
+                # When organisms choose "cooperate" action, they may form/join alliances
+                alliance_actions = self._process_organism_alliance_decisions(organisms, get_fitness)
+                if alliance_actions:
+                    war_results.update(alliance_actions)
+                
                 # Log alliance warfare activity
                 if war_results:
                     alliance_count = war_results.get('alliances', 0)
@@ -1860,6 +1879,98 @@ class UnifiedSystem:
             traceback.print_exc()
             import traceback
             traceback.print_exc()
+    
+    def _process_organism_alliance_decisions(self, organisms: Dict[str, Any], 
+                                              get_fitness: callable) -> Dict[str, Any]:
+        """
+        Process organism "cooperate" decisions and convert them to alliance actions.
+        
+        When organisms choose action 1 (cooperate), this checks if they should:
+        1. Form a new alliance (if not in one and high fitness)
+        2. Invite nearby organisms (if alliance founder)
+        3. Accept pending invites (if invited)
+        
+        This bridges the neural decision system with the Alliance Warfare system.
+        """
+        results = {
+            'alliances_formed': 0,
+            'invites_sent': 0,
+            'invites_accepted': 0
+        }
+        
+        if not hasattr(self, 'alliance_warfare') or not self.alliance_warfare:
+            return results
+        
+        aws = self.alliance_warfare
+        
+        # Get organisms that recently chose "cooperate"
+        cooperative_orgs = []
+        for org_id, org in organisms.items():
+            # Check if organism has recent decision data
+            if hasattr(org, 'last_action') and org.last_action == 1:  # 1 = cooperate
+                cooperative_orgs.append((org_id, org))
+            elif hasattr(org, 'brain') and hasattr(org.brain, 'last_action'):
+                if org.brain.last_action == 1:
+                    cooperative_orgs.append((org_id, org))
+        
+        if not cooperative_orgs:
+            return results
+        
+        # Process each cooperative organism
+        for org_id, org in cooperative_orgs:
+            fitness = get_fitness(org)
+            current_alliance = aws.get_organism_alliance(org_id)
+            
+            # High fitness + no alliance = FOUND one!
+            if not current_alliance and fitness > 0.6:
+                # Generate a name based on organism's concepts
+                name_parts = ["United", "Alliance", "Pact", "Legion", "Order"]
+                if hasattr(org, 'atomic_language') and hasattr(org.atomic_language, 'atoms'):
+                    concepts = list(org.atomic_language.atoms.keys())[:3]
+                    if concepts:
+                        name_parts = concepts + ["Alliance"]
+                
+                alliance_name = f"{random.choice(name_parts)}_{org_id[:6]}"
+                
+                alliance_id = aws.organism_create_alliance(org_id, alliance_name)
+                if alliance_id:
+                    results['alliances_formed'] += 1
+                    print(f"[ALLIANCE] 🪐 {org_id[:8]} founded '{alliance_name}' (fitness: {fitness:.2f})")
+            
+            # In alliance + cooperating = invite others
+            elif current_alliance:
+                alliance = aws.alliances.get(current_alliance)
+                if alliance and alliance.founder_id == org_id:
+                    # Founder can invite others
+                    # Find nearby cooperative organisms not in an alliance
+                    for other_id, other_org in organisms.items():
+                        if other_id == org_id:
+                            continue
+                        if aws.get_organism_alliance(other_id):
+                            continue  # Already in alliance
+                        
+                        # Check if other is also cooperative
+                        other_cooperative = False
+                        if hasattr(other_org, 'last_action') and other_org.last_action == 1:
+                            other_cooperative = True
+                        elif hasattr(other_org, 'brain') and hasattr(other_org.brain, 'last_action'):
+                            if other_org.brain.last_action == 1:
+                                other_cooperative = True
+                        
+                        if other_cooperative and len(alliance.members) < 10:
+                            proposal_id = aws.organism_invite(org_id, other_id)
+                            if proposal_id:
+                                results['invites_sent'] += 1
+                                
+                                # Auto-accept if cooperative (organism's "decision")
+                                if aws.organism_accept_invite(other_id, proposal_id):
+                                    results['invites_accepted'] += 1
+                                    print(f"[ALLIANCE] 🤝 {other_id[:8]} joined '{alliance.name}'")
+                            
+                            # Only invite one per round to prevent spam
+                            break
+        
+        return results
     
     def run(self):
         """Run the unified system"""

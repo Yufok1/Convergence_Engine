@@ -778,10 +778,22 @@ class HighlanderProtocol:
             try:
                 from reality_simulator.evolution.battle_arena import BattleType
                 
-                # Run full multi-dimensional combat!
+                # Determine battle type from config (respects arena.default_battle_type)
+                default_battle_type_str = self.config.get('default_battle_type', 'FULL_COMBAT')
+                if isinstance(default_battle_type_str, str):
+                    try:
+                        battle_type = BattleType[default_battle_type_str.upper()]
+                    except KeyError:
+                        battle_type = BattleType.FULL_COMBAT
+                else:
+                    battle_type = BattleType.FULL_COMBAT
+                
+                self.logger.info(f"⚔️ Battle type: {battle_type.value}")
+                
+                # Run combat with configured battle type!
                 arena_outcome = self.battle_arena.resolve_battle(
                     org1, org2, 
-                    battle_type=BattleType.FULL_COMBAT
+                    battle_type=battle_type
                 )
                 
                 # Convert arena outcome to our BattleResult format
