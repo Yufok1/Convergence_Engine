@@ -244,6 +244,21 @@ class AgentCompiler:
             wrapper = self.LanguageHeadWrapper(brain)
             wrapper.eval()
             
+            # Log brain architecture for debugging
+            logger.debug(f"ONNX export: input_dim={brain.input_dim}, hidden_dim={brain.hidden_dim}, "
+                        f"output_dim={brain.output_dim}, use_attention={brain.use_attention}, "
+                        f"use_language_head={brain.use_language_head}, use_concept_head={brain.use_concept_head}, "
+                        f"num_key_compositions={getattr(brain, 'num_key_compositions', 'N/A')}")
+            
+            # Test forward pass before export to catch errors early
+            logger.debug("Testing forward pass before ONNX export...")
+            with torch.no_grad():
+                test_output = wrapper(dummy_input)
+                if isinstance(test_output, tuple):
+                    logger.debug(f"Forward pass OK: {len(test_output)} outputs")
+                else:
+                    logger.debug(f"Forward pass OK: single output shape {test_output.shape}")
+            
             # Configure output names based on whether language head exists
             if wrapper.has_language_head:
                 output_names = ['action_probs', 'language_logits']
@@ -259,6 +274,7 @@ class AgentCompiler:
                     'action_probs': {0: 'batch_size'}
                 }
             
+            logger.debug("Starting torch.onnx.export...")
             torch.onnx.export(
                 wrapper,
                 dummy_input,
@@ -272,11 +288,13 @@ class AgentCompiler:
             logger.info(f"Successfully exported brain to ONNX{head_info}: {model_path}")
         except Exception as e:
             # Provide clearer guidance when onnx/onnxscript is missing (PyTorch 2.6+)
+            import traceback
             msg = str(e)
             hint = ""
             if 'onnxscript' in msg.lower():
                 hint = " (install with: pip install onnx onnxscript)"
             logger.error(f"Failed to export brain to ONNX at {model_path}: {e}{hint}")
+            logger.error(f"Full traceback:\n{traceback.format_exc()}")
             raise
 
     def _export_torchscript(self, brain: OrganismBrain, model_path) -> None: 
@@ -291,11 +309,28 @@ class AgentCompiler:
             wrapper = self.LanguageHeadWrapper(brain)
             wrapper.eval()
             
+            # Log brain architecture for debugging
+            logger.debug(f"TorchScript export: input_dim={brain.input_dim}, hidden_dim={brain.hidden_dim}, "
+                        f"output_dim={brain.output_dim}, use_attention={brain.use_attention}, "
+                        f"use_language_head={brain.use_language_head}, use_concept_head={brain.use_concept_head}, "
+                        f"num_key_compositions={getattr(brain, 'num_key_compositions', 'N/A')}")
+            
             # Use torch.jit.trace instead of torch.jit.script
             # trace captures the execution path dynamically, which works with
             # OrganismBrain's complex control flow (conditional attention, etc.)
             # script analyzes code statically and fails on Python 3.12 + PyTorch 2.5
             dummy_input = torch.randn(1, brain.input_dim, dtype=torch.float32)
+            
+            # Test forward pass before tracing to catch errors early
+            logger.debug("Testing forward pass before trace...")
+            with torch.no_grad():
+                test_output = wrapper(dummy_input)
+                if isinstance(test_output, tuple):
+                    logger.debug(f"Forward pass OK: {len(test_output)} outputs")
+                else:
+                    logger.debug(f"Forward pass OK: single output shape {test_output.shape}")
+            
+            logger.debug("Starting torch.jit.trace...")
             traced_brain = torch.jit.trace(wrapper, (dummy_input,))
             
             head_info = " (with language head)" if wrapper.has_language_head else ""
@@ -309,7 +344,9 @@ class AgentCompiler:
                 traced_brain.save(model_path)
                 logger.info(f"Successfully exported brain to TorchScript (traced){head_info}: {model_path}")
         except Exception as e:
+            import traceback
             logger.error(f"Failed to export brain to TorchScript: {e}")
+            logger.error(f"Full traceback:\n{traceback.format_exc()}")
             raise
 
     def _export_statedict(self, brain: OrganismBrain, model_path: str) -> None: 
