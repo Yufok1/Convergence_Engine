@@ -1123,6 +1123,13 @@ class UnifiedSystem:
             print(f"[UNIFIED] [WARN] Causation Explorer initialization failed: {e}")
             self.causation_explorer = None
 
+        # ═══════════════════════════════════════════════════════════════════════════
+        # INTEGRATION FIX: Wire event handlers to make system reactive, not just observant
+        # This closes the loop: events → handlers → config tuning → behavior changes
+        # ═══════════════════════════════════════════════════════════════════════════
+        if self.causation_explorer and self.reality_sim:
+            self._wire_reactive_event_handlers()
+
         # Wire event emitter for neural/ML visualization (AFTER causation_explorer is initialized)
         if self.reality_sim and self.causation_explorer:
             from causation_explorer import Event
@@ -1511,6 +1518,113 @@ class UnifiedSystem:
                             print(f"[UNIFIED] [WEB] 🦋 Butterfly Chat now has {current_count} organisms available")
         except Exception:
             pass  # Silent fail - don't break main loop for web UI updates
+    
+    def _wire_reactive_event_handlers(self):
+        """
+        INTEGRATION FIX: Wire event handlers to make the system reactive.
+        
+        This is the key fix for the "events as museum" problem. Events are no longer
+        just logged - they trigger actual responses that affect system behavior.
+        
+        The flow becomes:
+        1. Neural training completes → emits event
+        2. Causation explorer receives event → calls handler
+        3. Handler adjusts config tuner parameters
+        4. Config tuner syncs to components (trainer, evolution)
+        5. Components use updated parameters
+        """
+        if not self.causation_explorer or not self.reality_sim:
+            return
+        
+        config_tuner = getattr(self.reality_sim, 'config_tuner', None)
+        neural_trainer = getattr(self.reality_sim, 'neural_trainer', None)
+        
+        # Handler: Adjust learning rate when training loss is high
+        def on_training_complete(event):
+            """React to neural training completion events."""
+            if not config_tuner:
+                return
+            
+            try:
+                avg_loss = event.data.get('avg_loss', 0.0)
+                step = event.data.get('training_step', 0)
+                
+                # Only react every 100 steps to avoid thrashing
+                if step % 100 != 0:
+                    return
+                
+                # If loss is too high (>2.0), reduce learning rate
+                if avg_loss > 2.0:
+                    current_lr = config_tuner.get('learning_rate')
+                    if current_lr and current_lr > 1e-5:
+                        new_lr = current_lr * 0.9
+                        config_tuner.set('learning_rate', new_lr, 
+                                        reason=f'loss_high_{avg_loss:.3f}')
+                
+                # If loss is very low and stable, slightly increase for faster learning
+                elif avg_loss < 0.1 and step > 500:
+                    current_lr = config_tuner.get('learning_rate')
+                    if current_lr and current_lr < 0.01:
+                        new_lr = current_lr * 1.05
+                        config_tuner.set('learning_rate', new_lr,
+                                        reason=f'loss_stable_{avg_loss:.3f}')
+            except Exception as e:
+                pass  # Don't break on handler errors
+        
+        # Handler: Adjust mutation rate based on ML clustering diversity
+        def on_ml_analysis_complete(event):
+            """React to ML analysis events - adjust evolution parameters."""
+            if not config_tuner:
+                return
+            
+            try:
+                cluster_count = event.data.get('n_clusters', 0)
+                anomaly_ratio = event.data.get('anomaly_ratio', 0.0)
+                
+                # If too many anomalies (>30%), increase mutation to explore more
+                if anomaly_ratio > 0.3:
+                    current_rate = config_tuner.get('mutation_rate')
+                    if current_rate and current_rate < 0.1:
+                        config_tuner.set('mutation_rate', current_rate * 1.1,
+                                        reason=f'high_anomaly_{anomaly_ratio:.2f}')
+                
+                # If clusters are too few (<3), system is converging - increase exploration
+                elif cluster_count < 3 and cluster_count > 0:
+                    current_rate = config_tuner.get('mutation_rate')
+                    if current_rate:
+                        config_tuner.set('mutation_rate', current_rate * 1.2,
+                                        reason=f'low_diversity_{cluster_count}_clusters')
+            except Exception:
+                pass
+        
+        # Handler: Record config outcomes based on phase transitions
+        def on_phase_transition(event):
+            """Track config success/failure based on phase changes."""
+            if not config_tuner:
+                return
+            
+            try:
+                new_phase = event.data.get('new_phase', '')
+                success = 'emergence' in new_phase or 'convergence' in new_phase
+                config_tuner.record_outcome(
+                    success=success,
+                    context=f"phase_transition_to_{new_phase}"
+                )
+            except Exception:
+                pass
+        
+        # Subscribe handlers to relevant event types
+        self.causation_explorer.subscribe('neural_training_complete', on_training_complete)
+        self.causation_explorer.subscribe('neural_batch_complete', on_training_complete)
+        self.causation_explorer.subscribe('ml_analysis_complete', on_ml_analysis_complete)
+        self.causation_explorer.subscribe('organism_clustering_complete', on_ml_analysis_complete)
+        self.causation_explorer.subscribe('phase_transition', on_phase_transition)
+        self.causation_explorer.subscribe('explorer_phase_change', on_phase_transition)
+        
+        print("[UNIFIED] [INTEGRATION] ✅ Reactive event handlers wired")
+        print("[UNIFIED] [INTEGRATION]    - Training → Config tuner (loss-based LR adjustment)")
+        print("[UNIFIED] [INTEGRATION]    - ML Analysis → Evolution (diversity-based mutation)")
+        print("[UNIFIED] [INTEGRATION]    - Phase transitions → Config outcomes (success tracking)")
     
     def _initialize_highlander_protocol(self):
         """Initialize the Highlander Protocol tournament system.

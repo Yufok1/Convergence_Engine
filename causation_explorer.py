@@ -70,6 +70,9 @@ class CausationExplorer:
     and allows exploration of "why did this happen?" and "what did this cause?"
     
     Now integrates with Akashic Ledger for tape-based causation tracking.
+    
+    INTEGRATION FIX: Now supports event handlers for reactive behavior.
+    Events are no longer just logged - they can trigger responses.
     """
     
     def __init__(self, state_logger=None, log_dir: Path = None, utm_kernel=None, config: Optional[Dict[str, Any]] = None):
@@ -88,6 +91,14 @@ class CausationExplorer:
         self.events: Dict[str, Event] = {}
         self.events_by_component: Dict[str, List[str]] = defaultdict(list)
         self.events_by_type: Dict[str, List[str]] = defaultdict(list)
+        
+        # ═══════════════════════════════════════════════════════════════════════════
+        # INTEGRATION FIX: Event handlers - turn the "museum" into a "control center"
+        # Events can now trigger reactive behavior, not just be stored
+        # ═══════════════════════════════════════════════════════════════════════════
+        from typing import Callable
+        self.event_handlers: Dict[str, List[Callable[[Event], None]]] = defaultdict(list)
+        self.global_handlers: List[Callable[[Event], None]] = []  # Called for all events
         
         # Metric tracking (for correlation detection)
         self.metric_history: Dict[str, deque] = defaultdict(lambda: deque(maxlen=1000))
@@ -732,6 +743,80 @@ class CausationExplorer:
             
             # Detect causations with recent events (inside lock)
             self._detect_causations(event)
+        
+        # ═══════════════════════════════════════════════════════════════════════════
+        # INTEGRATION FIX: Invoke event handlers AFTER storing (outside lock)
+        # This turns events from logged observations into triggers for action
+        # ═══════════════════════════════════════════════════════════════════════════
+        self._invoke_handlers(event)
+    
+    def _invoke_handlers(self, event: Event):
+        """
+        Invoke all registered handlers for an event.
+        
+        Called outside the graph lock to prevent deadlocks.
+        Handlers should be fast - if they need to do heavy work, they should
+        queue it for async processing.
+        """
+        # Type-specific handlers
+        if event.event_type in self.event_handlers:
+            for handler in self.event_handlers[event.event_type]:
+                try:
+                    handler(event)
+                except Exception as e:
+                    logger.warning(f"[CAUSATION] Handler error for {event.event_type}: {e}")
+        
+        # Global handlers (called for ALL events)
+        for handler in self.global_handlers:
+            try:
+                handler(event)
+            except Exception as e:
+                logger.warning(f"[CAUSATION] Global handler error: {e}")
+    
+    def subscribe(self, event_type: str, handler) -> None:
+        """
+        Subscribe to events of a specific type.
+        
+        This is the key integration point - use this to make the system
+        react to events, not just log them.
+        
+        Args:
+            event_type: Event type to subscribe to (e.g., 'neural_training_complete')
+            handler: Callable that takes an Event and does something with it
+            
+        Example:
+            def on_training_complete(event):
+                # Adjust config based on training results
+                loss = event.data.get('avg_loss', 0)
+                if loss > threshold:
+                    config_tuner.set('learning_rate', lr * 0.9)
+            
+            causation_explorer.subscribe('neural_training_complete', on_training_complete)
+        """
+        if handler not in self.event_handlers[event_type]:
+            self.event_handlers[event_type].append(handler)
+            logger.debug(f"[CAUSATION] Subscribed handler to '{event_type}' events")
+    
+    def subscribe_all(self, handler) -> None:
+        """
+        Subscribe to ALL events.
+        
+        Use sparingly - global handlers are called for every event.
+        Useful for logging, metrics collection, or global coordination.
+        """
+        if handler not in self.global_handlers:
+            self.global_handlers.append(handler)
+            logger.debug(f"[CAUSATION] Subscribed global handler")
+    
+    def unsubscribe(self, event_type: str, handler) -> None:
+        """Unsubscribe from events of a specific type."""
+        if handler in self.event_handlers[event_type]:
+            self.event_handlers[event_type].remove(handler)
+    
+    def unsubscribe_all(self, handler) -> None:
+        """Unsubscribe from global handler list."""
+        if handler in self.global_handlers:
+            self.global_handlers.remove(handler)
     
     def _detect_causations(self, new_event: Event):
         """
