@@ -309,10 +309,10 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
             If both: Tuple of (action_probs, language_logits, concept_outputs)
         """
         # Handle both 2D (batch, input) and 3D (batch, seq, input) inputs
-        is_sequence = len(x.shape) == 3
+        is_sequence = x.dim() == 3  # Use .dim() for TorchScript compatibility
         
         if is_sequence:
-            batch_size, seq_len, _ = x.shape
+            batch_size, seq_len, _ = x.size()  # Use .size() for TorchScript
             # Apply fc1 to each position
             x = self._get_activation(self.fc1(x))
             x = self.dropout(x)
@@ -333,10 +333,11 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
             x = self.attention_norm(x + attn_out)
         
         # Reshape back to 2D for remaining layers if we added a sequence dim
-        if is_sequence and len(x.shape) == 3 and x.shape[1] == 1:
+        x_ndim = x.dim()  # Use .dim() instead of len(x.shape) for TorchScript compatibility
+        if is_sequence and x_ndim == 3 and x.size(1) == 1:
             x = x.squeeze(1)
             is_sequence = False  # No longer treating as sequence after squeezing
-        elif is_sequence and len(x.shape) == 3:
+        elif is_sequence and x_ndim == 3:
             # For actual sequences, use the last position for action prediction
             x_for_action = x[:, -1, :]  # (batch, hidden)
         else:
@@ -344,14 +345,15 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
             is_sequence = False  # Ensure flag matches tensor shape
         
         # Apply fc2
-        if is_sequence and len(x.shape) == 3 and x.shape[1] > 1:
+        x_ndim = x.dim()  # Refresh after potential squeeze
+        if is_sequence and x_ndim == 3 and x.size(1) > 1:
             # For language modeling, process all positions
             x = self._get_activation(self.fc2(x))
             x = self.dropout(x)
             x_for_action = x[:, -1, :]  # Last position for action
         else:
             # 2D tensor or single-position sequence
-            x_2d = x if len(x.shape) == 2 else x_for_action
+            x_2d = x if x.dim() == 2 else x_for_action
             x = self._get_activation(self.fc2(x_2d))
             x = self.dropout(x)
             x_for_action = x
@@ -369,7 +371,7 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
         if return_language_logits and self.use_language_head:
             # Language head (for next-token prediction)
             # Apply to all sequence positions
-            if is_sequence and len(x.shape) == 3:
+            if is_sequence and x.dim() == 3:  # Use .dim() for TorchScript
                 language_logits = self.fc_language(x)  # (batch, seq, vocab)
             else:
                 language_logits = self.fc_language(x_for_action)  # (batch, vocab)
@@ -459,7 +461,7 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
             
             # Sample from distribution
             probs = F.softmax(language_logits, dim=-1)
-            token_ids = torch.multinomial(probs.squeeze(0) if len(probs.shape) > 2 else probs, 1)
+            token_ids = torch.multinomial(probs.squeeze(0) if probs.dim() > 2 else probs, 1)
             
         return token_ids
     
