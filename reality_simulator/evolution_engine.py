@@ -659,7 +659,7 @@ class EvolutionEngine:
         }
 
     def _evaluate_population(self):
-        """Evaluate fitness for all organisms (with caching and diversity penalty)"""
+        """Evaluate fitness for all organisms (with caching, diversity penalty, and ML bonuses)"""
         for organism in self.population:
             # Check cache first
             genotype_hash = organism.genotype.get_hash()
@@ -682,6 +682,12 @@ class EvolutionEngine:
             # NEW: Apply language-aware fitness bonus (if ML analysis available)
             language_bonus = self._calculate_language_fitness_bonus(organism, getattr(self, '_ml_analysis', None))
             adjusted_fitness += language_bonus
+            
+            # ML-AWARE EVOLUTION: Apply cluster/anomaly/concept bonuses
+            # This uses scikit-learn analysis to influence selection pressure
+            organism_id = getattr(organism, 'id', str(id(organism)))
+            ml_bonus = self.apply_ml_selection_bonus(organism, organism_id)
+            adjusted_fitness += ml_bonus
             
             # Clamp to valid range
             organism.fitness = max(0.0, min(1.0, adjusted_fitness))
@@ -726,6 +732,126 @@ class EvolutionEngine:
                 bonus += 0.02  # Small bonus for good language structure
         
         return min(0.1, bonus)  # Cap at 0.1 (10% fitness bonus)
+    
+    # ═══════════════════════════════════════════════════════════════════════════
+    # ML-AWARE EVOLUTION: Use scikit-learn analysis to influence selection
+    # Groks identified that ML data wasn't being used to affect behavior
+    # ═══════════════════════════════════════════════════════════════════════════
+    
+    def apply_ml_selection_bonus(self, organism: 'Organism', organism_id: str) -> float:
+        """
+        Apply fitness bonus/penalty based on ML analysis results.
+        
+        Uses:
+        - Cluster membership: organisms in larger clusters get small cooperation bonus
+        - Anomaly status: anomalies get exploration bonus (they're trying something new)
+        - Concept stability: stable behavioral phenotypes get consistency bonus
+        
+        Returns bonus/penalty to add to fitness (-0.1 to +0.1 range)
+        """
+        ml_analysis = getattr(self, '_ml_analysis', None)
+        if not ml_analysis or not ml_analysis.get('enabled'):
+            return 0.0
+        
+        bonus = 0.0
+        
+        # 1. CLUSTER-AWARE COOPERATION BONUS
+        # Organisms in larger clusters (cooperating behavioral phenotypes) get bonus
+        cluster_labels = ml_analysis.get('cluster_labels', [])
+        if cluster_labels:
+            # Find this organism's cluster
+            organism_ids = list(ml_analysis.get('organism_ids', {}).keys()) if 'organism_ids' in ml_analysis else []
+            if organism_id in organism_ids:
+                idx = organism_ids.index(organism_id)
+                if idx < len(cluster_labels):
+                    cluster_id = cluster_labels[idx]
+                    if cluster_id >= 0:  # Not noise/outlier (-1)
+                        cluster_sizes = ml_analysis.get('clustering', {}).get('cluster_sizes', {})
+                        cluster_size = cluster_sizes.get(cluster_id, 0)
+                        # Larger clusters = more organisms with similar successful behavior
+                        if cluster_size >= 5:
+                            bonus += 0.02  # Cooperation bonus
+                        elif cluster_size >= 3:
+                            bonus += 0.01
+        
+        # 2. ANOMALY EXPLORATION BONUS
+        # Anomalies are trying novel strategies - reward exploration
+        anomaly_organisms = ml_analysis.get('anomaly_organisms', [])
+        if organism_id in anomaly_organisms:
+            # Small exploration bonus for trying something different
+            bonus += 0.03  # Exploration bonus (encourages innovation)
+        
+        # 3. CONCEPT STABILITY BONUS
+        # Organisms in stable behavioral phenotypes (tracked concepts) get consistency bonus
+        concept_tags = ml_analysis.get('concept_tags', {})
+        if cluster_labels and concept_tags:
+            organism_ids = list(ml_analysis.get('organism_ids', {}).keys()) if 'organism_ids' in ml_analysis else []
+            if organism_id in organism_ids:
+                idx = organism_ids.index(organism_id)
+                if idx < len(cluster_labels):
+                    cluster_id = cluster_labels[idx]
+                    if cluster_id in concept_tags:
+                        # This organism is part of a named, stable concept
+                        bonus += 0.02  # Stability bonus
+        
+        # Clamp to reasonable range
+        return np.clip(bonus, -0.1, 0.1)
+    
+    def get_cluster_crossover_candidates(self, parents: List['Organism']) -> List[Tuple['Organism', 'Organism']]:
+        """
+        Use ML clustering to suggest better crossover pairs.
+        
+        Organisms in the SAME cluster have similar successful strategies,
+        so crossing them may produce more viable offspring.
+        Organisms in DIFFERENT clusters bring diversity.
+        
+        Returns list of (parent1, parent2) pairs optimized for both.
+        """
+        ml_analysis = getattr(self, '_ml_analysis', None)
+        if not ml_analysis or not ml_analysis.get('enabled'):
+            # Fallback to random pairing
+            return []
+        
+        cluster_labels = ml_analysis.get('cluster_labels', [])
+        if not cluster_labels:
+            return []
+        
+        # Group parents by cluster
+        cluster_groups: Dict[int, List['Organism']] = {}
+        organism_ids = list(ml_analysis.get('organism_ids', {}).keys()) if 'organism_ids' in ml_analysis else []
+        
+        for parent in parents:
+            parent_id = getattr(parent, 'id', str(id(parent)))
+            if parent_id in organism_ids:
+                idx = organism_ids.index(parent_id)
+                if idx < len(cluster_labels):
+                    cluster_id = cluster_labels[idx]
+                    if cluster_id not in cluster_groups:
+                        cluster_groups[cluster_id] = []
+                    cluster_groups[cluster_id].append(parent)
+        
+        pairs = []
+        
+        # 70% same-cluster pairs (exploit successful strategies)
+        # 30% cross-cluster pairs (explore diversity)
+        for cluster_id, members in cluster_groups.items():
+            if len(members) >= 2:
+                # Same-cluster pairs
+                for i in range(0, len(members) - 1, 2):
+                    if np.random.random() < 0.7:
+                        pairs.append((members[i], members[i + 1]))
+        
+        # Cross-cluster pairs
+        cluster_ids = list(cluster_groups.keys())
+        if len(cluster_ids) >= 2:
+            for _ in range(len(pairs) // 3):  # Add 30% cross-cluster
+                c1, c2 = np.random.choice(cluster_ids, 2, replace=False)
+                if cluster_groups[c1] and cluster_groups[c2]:
+                    p1 = np.random.choice(cluster_groups[c1])
+                    p2 = np.random.choice(cluster_groups[c2])
+                    pairs.append((p1, p2))
+        
+        return pairs
 
     def _create_offspring(self, parents: List[Organism], num_offspring: int) -> List[Genotype]:
         """Create offspring from selected parents"""

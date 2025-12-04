@@ -392,6 +392,70 @@ class NeuralTrainer:
         self.early_stopped = False
         logger.info("[NEURAL] Early stopping state reset")
     
+    # ═══════════════════════════════════════════════════════════════════════════
+    # ML-AWARE TRAINING: Use scikit-learn analysis to adjust learning
+    # Groks identified that ML data wasn't being used to affect neural training
+    # ═══════════════════════════════════════════════════════════════════════════
+    
+    def get_ml_adjusted_learning_rate(self, organism_id: str, base_lr: float) -> float:
+        """
+        Adjust learning rate based on ML analysis of organism status.
+        
+        Uses:
+        - Anomaly status: Anomalies get higher LR (they're exploring novel strategies)
+        - Cluster membership: Organisms in small/unstable clusters get higher LR
+        - Concept stability: Stable phenotypes get lower LR (preserve what works)
+        
+        Args:
+            organism_id: ID of organism being trained
+            base_lr: Base learning rate
+            
+        Returns:
+            Adjusted learning rate
+        """
+        if self.ml_analysis is None or not self.ml_analysis.get('enabled'):
+            return base_lr
+        
+        lr_multiplier = 1.0
+        
+        # 1. ANOMALY BOOST: Anomalies are trying novel strategies, train faster
+        anomaly_organisms = self.ml_analysis.get('anomaly_organisms', [])
+        if organism_id in anomaly_organisms:
+            lr_multiplier *= 1.5  # 50% faster learning for anomalies
+        
+        # 2. SMALL CLUSTER BOOST: Small/unstable clusters need to adapt faster
+        cluster_labels = self.ml_analysis.get('cluster_labels', [])
+        organism_ids = list(self.ml_analysis.get('organism_ids', {}).keys()) if 'organism_ids' in self.ml_analysis else []
+        
+        if cluster_labels and organism_id in organism_ids:
+            idx = organism_ids.index(organism_id)
+            if idx < len(cluster_labels):
+                cluster_id = cluster_labels[idx]
+                if cluster_id == -1:
+                    # Outlier/noise - needs to find its place
+                    lr_multiplier *= 1.3
+                else:
+                    cluster_sizes = self.ml_analysis.get('clustering', {}).get('cluster_sizes', {})
+                    cluster_size = cluster_sizes.get(cluster_id, 0)
+                    if cluster_size <= 2:
+                        # Very small cluster - unstable, train faster
+                        lr_multiplier *= 1.2
+        
+        # 3. CONCEPT STABILITY DAMPENING: Stable phenotypes should learn slower
+        concept_tags = self.ml_analysis.get('concept_tags', {})
+        if cluster_labels and concept_tags and organism_id in organism_ids:
+            idx = organism_ids.index(organism_id)
+            if idx < len(cluster_labels):
+                cluster_id = cluster_labels[idx]
+                if cluster_id in concept_tags:
+                    # Part of a named/stable concept - don't disrupt what works
+                    lr_multiplier *= 0.8
+        
+        # Clamp multiplier to reasonable range
+        lr_multiplier = np.clip(lr_multiplier, 0.5, 2.0)
+        
+        return base_lr * lr_multiplier
+    
     def activate_language_bridge(self, vocabulary: Any) -> int:
         """
         GAP FIX C3: Activate the concept-language bridge.
@@ -1030,19 +1094,26 @@ class NeuralTrainer:
                 organism.brain.train()
                 
                 # Optimization: Reuse optimizer if enabled
+                # ML-AWARE TRAINING: Adjust learning rate based on ML analysis
+                org_id_str = getattr(organism, 'species_id', str(id(organism)))
+                adjusted_lr = self.get_ml_adjusted_learning_rate(org_id_str, self.learning_rate)
+                
                 if self.reuse_optimizers:
                     organism_id = id(organism.brain)
                     if organism_id not in self.optimizers:
                         self.optimizers[organism_id] = optim.Adam(
                             organism.brain.parameters(), 
-                            lr=self.learning_rate
+                            lr=adjusted_lr  # Use ML-adjusted LR
                         )
                     optimizer = self.optimizers[organism_id]
+                    # Update LR if it changed due to ML analysis
+                    for param_group in optimizer.param_groups:
+                        param_group['lr'] = adjusted_lr
                     
                     # 📈 LR SCHEDULER: Get or create scheduler for this organism
                     scheduler = self._get_or_create_scheduler(organism_id, optimizer)
                 else:
-                    optimizer = optim.Adam(organism.brain.parameters(), lr=self.learning_rate)
+                    optimizer = optim.Adam(organism.brain.parameters(), lr=adjusted_lr)
                     scheduler = None
                 
                 optimizer.zero_grad()
