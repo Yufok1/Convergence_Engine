@@ -117,8 +117,8 @@
       "enabled": true,
       "existential_war_threshold": 0.8,
       "max_alliance_size": 10,
-      "max_alliances": 1000,
-      "max_confederations": 50,
+      "max_alliances": 20,
+      "max_confederations": 5,
       "min_alliance_size": 3,
       "war_declaration_threshold": 0.4,
       "war_frequency": 0.3
@@ -215,7 +215,7 @@
   "network": {
     "connection_strength_resolution": 5e-06,
     "emergence_sensitivity": 1e-06,
-    "max_connections": 1000000,
+    "max_connections": 20000,
     "max_organisms": 500,
     "resource_flow_precision": 0.0001,
     "resource_pool": 550,
@@ -335,7 +335,7 @@
         "teaching_frequency": 1,
         "use_knowledge_web": true,
         "use_semantic_embeddings": true,
-        "vocab_size": 50000
+        "vocab_size": 4096
       },
       "training": {
         "alpha": 0.8,
@@ -344,7 +344,7 @@
         "vp_temperature_scale": true
       },
       "vocabulary": {
-        "max_size": 50000,
+        "max_size": 10000,
         "special_tokens": [
           "<PAD>",
           "<UNK>",
@@ -370,6 +370,11 @@
     },
     "training": {
       "batch_size": 64,
+      "early_stopping": {
+        "enabled": true,
+        "min_delta": 0.0001,
+        "patience": 50
+      },
       "enabled": true,
       "epsilon": 0.95,
       "epsilon_decay": 0.985,
@@ -378,20 +383,15 @@
       "gamma": 0.995,
       "language_reward_scaling": 0.25,
       "learning_rate": 0.008,
-      "memory_size": 20000,
-      "update_frequency": 1,
       "lr_scheduler": {
         "enabled": true,
-        "type": "step",
-        "step_size": 100,
         "gamma": 0.95,
-        "min_lr": 1e-6
+        "min_lr": 1e-06,
+        "step_size": 100,
+        "type": "step"
       },
-      "early_stopping": {
-        "enabled": true,
-        "patience": 50,
-        "min_delta": 1e-4
-      }
+      "memory_size": 20000,
+      "update_frequency": 1
     },
     "vp_aware_planning": {
       "base_boost": 0.2,

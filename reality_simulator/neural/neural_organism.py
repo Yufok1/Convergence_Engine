@@ -796,6 +796,15 @@ class NeuralOrganism(Organism):
         self.prev_state = state
         self.prev_action = action
         
+        # DEBUG: Log first decision per organism
+        import logging
+        _decision_logger = logging.getLogger(__name__)
+        if not hasattr(self, '_decisions_made'):
+            self._decisions_made = 0
+        self._decisions_made += 1
+        if self._decisions_made <= 2:
+            _decision_logger.warning(f"[DECIDE] {self.species_id}: action={action}, state_shape={state.shape if hasattr(state, 'shape') else 'N/A'}, epsilon={self.epsilon:.3f}")
+        
         # Update sequence histories for language model training
         self.action_history.append(action)
         self.state_history.append(state.copy() if isinstance(state, np.ndarray) else state)
@@ -1119,13 +1128,19 @@ class NeuralOrganism(Organism):
             done: Whether episode is done
         """
         # DEBUG: Log why experiences might not be recorded
+        import logging
+        _logger = logging.getLogger(__name__)
+        
         if self.brain is None:
+            _logger.debug(f"[EXP] {self.species_id}: Skipped - no brain")
             return  # No brain, no experience recording
         if self.experience_buffer is None:
+            _logger.debug(f"[EXP] {self.species_id}: Skipped - no buffer")
             return  # No buffer, no recording
         if self.prev_state is None or self.prev_action is None:
             # This is the most common issue - organism hasn't made a decision yet
             # This is expected on first frame, but should resolve after first decide_action()
+            _logger.debug(f"[EXP] {self.species_id}: Skipped - no prev_state/action")
             return
         
         if next_state is None:
@@ -1141,7 +1156,12 @@ class NeuralOrganism(Organism):
             done=done
         )
         
-        # ?? Update atomic language system with experience
+        # DEBUG: Log successful recording (first few per organism)
+        buffer_len = len(self.experience_buffer)
+        if buffer_len <= 3:
+            _logger.warning(f"[EXP] {self.species_id}: RECORDED! buffer_size={buffer_len}")
+        
+        # ✨ Update atomic language system with experience
         if self.atomic_language is not None:
             # Get VP state from current state if available
             vp_state = (0.5, 0.5)  # Default
