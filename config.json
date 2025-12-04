@@ -7,7 +7,7 @@
     "performance_tracking_precision": 0.0001
   },
   "causation_detection": {
-    "correlation_threshold": 0.40,
+    "correlation_threshold": 0.4,
     "direct_causation_time_window": 2,
     "enable_bidirectional_causations": true,
     "enable_language_causations": true,
@@ -67,7 +67,7 @@
     "interval_frames": 8,
     "knobs": {
       "clustering_bias": {
-        "initial": 1.6,
+        "initial": 1.5,
         "max": 1.8,
         "min": 0.25,
         "step": 0.05
@@ -117,8 +117,8 @@
       "enabled": true,
       "existential_war_threshold": 0.75,
       "max_alliance_size": 12,
-      "max_alliances": 1500,
-      "max_confederations": 75,
+      "max_alliances": 20,
+      "max_confederations": 5,
       "min_alliance_size": 2,
       "war_declaration_threshold": 0.35,
       "war_frequency": 0.4
@@ -236,7 +236,7 @@
   "network": {
     "connection_strength_resolution": 5e-06,
     "emergence_sensitivity": 1e-06,
-    "max_connections": 1200000,
+    "max_connections": 20000,
     "max_organisms": 600,
     "resource_flow_precision": 0.0001,
     "resource_pool": 700,
@@ -356,7 +356,7 @@
         "teaching_frequency": 1,
         "use_knowledge_web": true,
         "use_semantic_embeddings": true,
-        "vocab_size": 50000
+        "vocab_size": 4096
       },
       "training": {
         "alpha": 0.75,
@@ -365,7 +365,7 @@
         "vp_temperature_scale": true
       },
       "vocabulary": {
-        "max_size": 50000,
+        "max_size": 10000,
         "special_tokens": [
           "<PAD>",
           "<UNK>",
@@ -391,6 +391,11 @@
     },
     "training": {
       "batch_size": 128,
+      "early_stopping": {
+        "enabled": true,
+        "min_delta": 5e-05,
+        "patience": 75
+      },
       "enabled": true,
       "epsilon": 0.95,
       "epsilon_decay": 0.99,
@@ -399,22 +404,17 @@
       "gamma": 0.997,
       "language_reward_scaling": 0.3,
       "learning_rate": 0.005,
-      "memory_size": 30000,
-      "update_frequency": 1,
       "lr_scheduler": {
-        "enabled": true,
-        "type": "cosine",
-        "step_size": 150,
-        "gamma": 0.92,
-        "min_lr": 5e-7,
         "T_max": 500,
-        "eta_min": 1e-6
-      },
-      "early_stopping": {
         "enabled": true,
-        "patience": 75,
-        "min_delta": 5e-5
-      }
+        "eta_min": 1e-06,
+        "gamma": 0.92,
+        "min_lr": 5e-07,
+        "step_size": 150,
+        "type": "cosine"
+      },
+      "memory_size": 30000,
+      "update_frequency": 1
     },
     "vp_aware_planning": {
       "base_boost": 0.25,

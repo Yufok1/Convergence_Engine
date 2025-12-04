@@ -322,7 +322,7 @@ class ContextMemory:
             }
 
             with open(tmp_path, 'w') as tmp_file:
-                json.dump(data, tmp_file, indent=2)
+                json.dump(data, tmp_file)  # No indent for faster writes
                 tmp_file.flush()
                 os.fsync(tmp_file.fileno())
 
@@ -416,8 +416,8 @@ class ContextMemory:
             # If event_emitter is None, word is still assigned but no event emitted
             # This is OK - events will start appearing once emitter is wired
 
-        # Persist changes periodically
-        if len(self.language_anchors) % 10 == 0:  # Save every 10 links
+        # Persist changes much less frequently (every 500 links) to avoid I/O bottleneck
+        if len(self.language_anchors) % 500 == 0:
             self._save_persistence()
 
     def _update_node_embedding(self, organism_id: int, word: str) -> None:
