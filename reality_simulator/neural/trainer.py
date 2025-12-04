@@ -193,6 +193,87 @@ class NeuralTrainer:
             logger.info(f"[NEURAL] LR scheduler enabled: {self.lr_scheduler_type} (gamma={self.lr_gamma})")
         if self.early_stopping_enabled:
             logger.info(f"[NEURAL] Early stopping enabled: patience={self.early_stopping_patience}")
+        
+        # ═══════════════════════════════════════════════════════════════════════════
+        # EVENT EMITTER & EXTERNAL INTEGRATIONS
+        # These are set by main.py or unified_entry.py after initialization
+        # ═══════════════════════════════════════════════════════════════════════════
+        # Optional event emitter for causation graph visualization
+        self.event_emitter = None  # Set by main.py or unified_entry.py
+        
+        # Integration 2: Neural-ML Symbiosis - ML analysis for language rewards
+        self.ml_analysis = None  # Set by main.py when ML analysis is available
+        self.context_memory = None  # Set by main.py for vocabulary access
+        self.language_reward_scaling = training_config.get('language_reward_scaling', 0.2)
+        
+        # Track language rewards for ConfigTuner analysis
+        self.language_reward_total = 0.0  # Cumulative language rewards per training step
+        self.language_reward_count = 0  # Number of language rewards given
+        self._last_step_language_reward_total = 0.0  # Store last step's total for metrics
+        
+        # ═══════════════════════════════════════════════════════════════════════════
+        # MISSION 2: AutoTune Integration Buffer
+        # Track neural training metrics for AtomicConfigSystem feedback loop
+        # ═══════════════════════════════════════════════════════════════════════════
+        self.autotune_metrics_buffer = {
+            'avg_loss': 0.0,
+            'min_loss': float('inf'),
+            'max_loss': 0.0,
+            'loss_variance': 0.0,
+            'loss_history': [],  # Last N losses for trend analysis
+            'organisms_trained_total': 0,
+            'training_steps_completed': 0,
+            'improvement_rate': 0.0,
+            'language_loss_total': 0.0,
+            'rl_loss_total': 0.0,
+            'concept_loss_total': 0.0,  # RCUS concept learning loss
+            'avg_training_time_ms': 0.0
+        }
+        self.autotune_loss_window = 50  # Window size for moving average
+        self.atomic_config_system = None  # Set by main.py when available
+        
+        # ═══════════════════════════════════════════════════════════════════════════
+        # RCUS: Concept System Integration
+        # Compositional understanding through primitive axioms
+        # ═══════════════════════════════════════════════════════════════════════════
+        concept_config = config.get('concept_system', {})
+        self.concept_system_enabled = concept_config.get('enabled', False) and CONCEPT_SYSTEM_AVAILABLE
+        self.concept_loss_weight = concept_config.get('concept_loss_weight', 0.1)  # gamma in triple-loss
+        self.concept_system = None  # Shared concept system for all organisms
+        self.concept_bridge = None  # GAP FIX C3: Language bridge
+        
+        if self.concept_system_enabled and CONCEPT_SYSTEM_AVAILABLE:
+            try:
+                self.concept_system = ConceptSystem(
+                    state_dim=config.get('brain', {}).get('input_dim', 24),
+                    embed_dim=concept_config.get('embed_dim', 64),
+                    device=str(self.device)
+                )
+                logger.info(f"[NEURAL] Concept system enabled with {len(KEY_COMPOSITIONS)} key compositions")
+            except Exception as e:
+                logger.warning(f"[NEURAL] Failed to initialize concept system: {e}")
+                self.concept_system_enabled = False
+        
+        # Track concept learning metrics
+        self.total_concept_loss = 0.0
+        self.concept_compositions_evaluated = 0
+        
+        # ═══════════════════════════════════════════════════════════════════════════
+        # RAY DISTRIBUTED TRAINING
+        # Parallel training for large populations (2-3x speedup)
+        # ═══════════════════════════════════════════════════════════════════════════
+        ray_config = config.get('ray', {})
+        self.ray_enabled = ray_config.get('enabled', True) and RAY_DISTRIBUTED_AVAILABLE
+        self.ray_training_threshold = ray_config.get('training_threshold', 8)  # Min organisms for parallel
+        self.ray_manager = None
+        
+        if self.ray_enabled:
+            try:
+                self.ray_manager = get_ray_manager()
+                logger.info(f"[NEURAL] Ray parallel training enabled (threshold: {self.ray_training_threshold})")
+            except Exception as e:
+                logger.warning(f"[NEURAL] Ray initialization failed, using sequential training: {e}")
+                self.ray_enabled = False
     
     def _get_or_create_scheduler(self, organism_id: int, optimizer: optim.Optimizer) -> Any:
         """
@@ -303,83 +384,6 @@ class NeuralTrainer:
         self.best_loss = float('inf')
         self.early_stopped = False
         logger.info("[NEURAL] Early stopping state reset")
-        
-        # Optional event emitter for causation graph visualization
-        self.event_emitter = None  # Set by main.py or unified_entry.py
-        
-        # Integration 2: Neural-ML Symbiosis - ML analysis for language rewards
-        self.ml_analysis = None  # Set by main.py when ML analysis is available
-        self.context_memory = None  # Set by main.py for vocabulary access
-        self.language_reward_scaling = training_config.get('language_reward_scaling', 0.2)
-        
-        # Track language rewards for ConfigTuner analysis
-        self.language_reward_total = 0.0  # Cumulative language rewards per training step
-        self.language_reward_count = 0  # Number of language rewards given
-        self._last_step_language_reward_total = 0.0  # Store last step's total for metrics
-        
-        # ═══════════════════════════════════════════════════════════════════════════
-        # MISSION 2: AutoTune Integration Buffer
-        # Track neural training metrics for AtomicConfigSystem feedback loop
-        # ═══════════════════════════════════════════════════════════════════════════
-        self.autotune_metrics_buffer = {
-            'avg_loss': 0.0,
-            'min_loss': float('inf'),
-            'max_loss': 0.0,
-            'loss_variance': 0.0,
-            'loss_history': [],  # Last N losses for trend analysis
-            'organisms_trained_total': 0,
-            'training_steps_completed': 0,
-            'improvement_rate': 0.0,
-            'language_loss_total': 0.0,
-            'rl_loss_total': 0.0,
-            'concept_loss_total': 0.0,  # RCUS concept learning loss
-            'avg_training_time_ms': 0.0
-        }
-        self.autotune_loss_window = 50  # Window size for moving average
-        self.atomic_config_system = None  # Set by main.py when available
-        
-        # ═══════════════════════════════════════════════════════════════════════════
-        # RCUS: Concept System Integration
-        # Compositional understanding through primitive axioms
-        # ═══════════════════════════════════════════════════════════════════════════
-        concept_config = config.get('concept_system', {})
-        self.concept_system_enabled = concept_config.get('enabled', False) and CONCEPT_SYSTEM_AVAILABLE
-        self.concept_loss_weight = concept_config.get('concept_loss_weight', 0.1)  # gamma in triple-loss
-        self.concept_system = None  # Shared concept system for all organisms
-        self.concept_bridge = None  # GAP FIX C3: Language bridge
-        
-        if self.concept_system_enabled and CONCEPT_SYSTEM_AVAILABLE:
-            try:
-                self.concept_system = ConceptSystem(
-                    state_dim=config.get('brain', {}).get('input_dim', 24),
-                    embed_dim=concept_config.get('embed_dim', 64),
-                    device=str(self.device)
-                )
-                logger.info(f"[NEURAL] Concept system enabled with {len(KEY_COMPOSITIONS)} key compositions")
-            except Exception as e:
-                logger.warning(f"[NEURAL] Failed to initialize concept system: {e}")
-                self.concept_system_enabled = False
-        
-        # Track concept learning metrics
-        self.total_concept_loss = 0.0
-        self.concept_compositions_evaluated = 0
-        
-        # ═══════════════════════════════════════════════════════════════════════════
-        # RAY DISTRIBUTED TRAINING
-        # Parallel training for large populations (2-3x speedup)
-        # ═══════════════════════════════════════════════════════════════════════════
-        ray_config = config.get('ray', {})
-        self.ray_enabled = ray_config.get('enabled', True) and RAY_DISTRIBUTED_AVAILABLE
-        self.ray_training_threshold = ray_config.get('training_threshold', 8)  # Min organisms for parallel
-        self.ray_manager = None
-        
-        if self.ray_enabled:
-            try:
-                self.ray_manager = get_ray_manager()
-                logger.info(f"[NEURAL] Ray parallel training enabled (threshold: {self.ray_training_threshold})")
-            except Exception as e:
-                logger.warning(f"[NEURAL] Ray initialization failed, using sequential training: {e}")
-                self.ray_enabled = False
     
     def activate_language_bridge(self, vocabulary: Any) -> int:
         """
