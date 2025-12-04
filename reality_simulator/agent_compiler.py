@@ -143,30 +143,8 @@ class AgentCompiler:
         input_dim = neural_snap.input_size
         hidden_dim = neural_snap.hidden_size
         output_dim = neural_snap.output_size
-        # NeuralSnapshot doesn't store these, use defaults
-        activation = 'relu'
-        dropout = 0.0
-        use_attention = False
-        num_attention_heads = 4
-        attention_dim = 64
-        vocab_size = 50000  # Default
-        use_language_head = False  # Will be detected from state_dict
 
-        # Create a new instance of OrganismBrain with the same architecture
-        reconstructed_brain = OrganismBrain(
-            input_dim=input_dim,
-            hidden_dim=hidden_dim,
-            output_dim=output_dim,
-            activation=activation,
-            dropout=dropout,
-            use_attention=use_attention,
-            num_attention_heads=num_attention_heads,
-            attention_dim=attention_dim,
-            vocab_size=vocab_size,
-            use_language_head=use_language_head
-        )
-        
-        # Load the state_dict (handle possible compression)
+        # Load the state_dict FIRST to detect architecture
         state_dict_bytes = base64.b64decode(brain_state_dict_b64)
         # Some snapshots may be gzip or zip compressed before base64 encoding
         try:
@@ -210,15 +188,32 @@ class AgentCompiler:
 
         vocab_size = state_dict['fc_language.weight'].shape[0] if use_language_head else 50000
 
+        # Infer num_attention_heads if attention is used
+        if use_attention:
+            # Infer from hidden_dim and common head counts
+            # attention uses hidden_dim as embed_dim, which must be divisible by num_heads
+            # Try to match common patterns: 8, 16, 4, 2
+            for candidate_heads in [8, 16, 4, 2, 1]:
+                if inferred_hidden % candidate_heads == 0:
+                    num_attention_heads = candidate_heads
+                    break
+            else:
+                num_attention_heads = 4  # Fallback
+        else:
+            num_attention_heads = 4
+
+        # Use reasonable dropout matching current config (can't infer from state_dict)
+        dropout = 0.15
+
         # Create a new instance of OrganismBrain matching the checkpoint
         reconstructed_brain = OrganismBrain(
             input_dim=int(inferred_input),
             hidden_dim=int(inferred_hidden),
             output_dim=int(inferred_output),
             activation='relu',
-            dropout=0.0,
+            dropout=dropout,
             use_attention=bool(use_attention),
-            num_attention_heads=4,
+            num_attention_heads=int(num_attention_heads),
             attention_dim=int(inferred_hidden),
             vocab_size=int(vocab_size),
             use_language_head=bool(use_language_head),
