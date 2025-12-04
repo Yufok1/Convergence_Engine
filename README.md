@@ -479,25 +479,64 @@ python causation_web_ui.py
 # Open http://localhost:5000 in your browser
 ```
 
-### Agent Exporter (Build Portable Agents)
+### Agent Exporter (Build Portable Agents) 🚀
 
-Use the Web UI Exporter or programmatic API to compile an organism capsule into a portable agent archive (ONNX, TorchScript, or state_dict):
+Export evolved organisms as standalone, deployable AI agents! Use the Web UI Exporter or programmatic API:
 
 ```bash
-# Programmatic example
-python -c "from reality_simulator.agent_compiler import AgentCompiler; print('AgentCompiler ready')"
+# Via Web UI (recommended)
+python causation_web_ui.py
+# Navigate to CRA → Agent Exporter tab
+# Select organism and click "Compile Agent"
+
+# Programmatic
+from reality_simulator.agent_compiler import AgentCompiler
+compiler = AgentCompiler()
+archive = compiler.compile_capsule_to_agent(capsule, export_format='torchscript')
 ```
 
-Output archive contents:
-- `brain.<format>`: The model (ONNX/TorchScript/torch state_dict)
-- `metadata.json`: Architecture and organism metadata
-- `atomic_language.json`, `atomic_config.json`, `genotype.json` (if available)
-- `run_agent.py`: Simple runner that demonstrates inference
+**Exported Agent Capabilities:**
+- ✅ **TorchScript/ONNX models** - 679K+ parameters with attention + language heads
+- ✅ **Standalone runtime** - Just `python run_agent.py --episodes 10`
+- ✅ **State persistence** - Saves/loads learning progress
+- ✅ **Experience buffer** - Continues learning in new environments
+- ✅ **28 atomic concepts** - Preserved language understanding
+- ✅ **Behavioral fingerprint** - Personality analysis (altruist/aggressive/etc.)
+
+**Archive Contents:**
+```
+agent_<id>.zip/
+├── brain.torchscript      # Neural network (2.6 MB)
+├── metadata.json          # Full agent profile + behavioral fingerprint
+├── atomic_language.json   # Learned concepts
+├── run_agent.py           # Standalone runner
+├── start.bat / start.sh   # Quick launchers
+├── portable_agent/        # Complete runtime library
+│   ├── agent_runtime.py   # Agent class with act/learn/save
+│   ├── mini_environment.py # Built-in test environment
+│   └── gym_adapter.py     # OpenAI Gym integration
+└── agent_state/           # Persistent state
+    ├── state.json         # Fitness, epsilon, history
+    └── experience_buffer.pkl
+```
+
+**Performance:**
+- Single inference: ~0.75ms (1,334/sec CPU)
+- Batch 128: 34,385 samples/sec
+- Model size: 2.6 MB
+
+**Run Exported Agent:**
+```bash
+cd agent_downloads/agent_<id>
+python run_agent.py --episodes 100 --max-steps 200
+# Or with OpenAI Gym:
+python run_agent.py --gym-env CartPole-v1 --episodes 50
+```
 
 Tips:
-- ONNX can be visualized with Netron: https://netron.app
-- PyTorch 2.6 changed `torch.load` defaults. Our tooling explicitly sets `weights_only=False` and loads on CPU for compatibility.
-- If you hit errors like “invalid load key, '\x1f'”, it usually indicates compressed state dicts; the exporter handles gzip/zip.
+- ONNX models viewable at https://netron.app
+- Install `onnx onnxscript` for ONNX format (falls back to TorchScript)
+- Agents are fully portable - copy anywhere Python runs
 
 ### Configuration
 

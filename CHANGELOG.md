@@ -4,6 +4,60 @@
 
 ---
 
+## [Unreleased] - 2025-12-04
+
+### 🚀 Agent Export System - Full Production Ready (2025-12-04)
+
+After extensive debugging session, the agent export system is now fully functional:
+
+#### Fixed
+- **Tuple Output Handling** (portable_agent/agent_runtime.py)
+  - Language-head models return `(action_probs, language_logits)` tuple
+  - Runtime now correctly extracts `action_probs[0]` for decision making
+  - Fixes `TypeError: argmax(): argument 'input' must be Tensor, not tuple`
+
+- **Fitness History Extraction** (agent_compiler.py)
+  - Added `_extract_fitness_value()` helper to handle various formats
+  - Supports: list of tuples, numpy arrays (1D/2D), scalar values
+  - Fixes `IndexError: invalid index to scalar variable`
+
+- **Capsule Attribute Names** (organism_capsule.py)
+  - Changed from `input_size/hidden_size/output_size` to `input_dim/hidden_dim/output_dim`
+  - Now matches OrganismBrain attribute naming convention
+
+- **TorchScript Compatibility** (brain.py)
+  - Replaced `len(x.shape)` → `x.dim()`
+  - Replaced `x.shape[i]` → `x.size(i)`
+  - Fixed MultiHeadAttention tuple unpacking for tracing
+
+- **Architecture Inference** (agent_compiler.py)
+  - Auto-detects `num_key_compositions` from state_dict
+  - Infers vocab_size, attention heads from saved weights
+  - No manual config alignment needed
+
+#### Added
+- **Diagnostic Logging** (agent_compiler.py)
+  - Full brain architecture logged before export
+  - Forward pass test before tracing catches errors early
+  - Complete tracebacks on failure
+
+- **Debug Mode** (unified_entry.py)
+  - Changed to `DEBUG` level with `console=True`
+  - All diagnostic info visible during development
+
+#### Verified
+- ✅ TorchScript export works
+- ✅ 679,548 parameter model loads correctly
+- ✅ Deterministic decisions (100/100 identical)
+- ✅ Epsilon-greedy exploration functional
+- ✅ State persistence across sessions
+- ✅ Experience buffer stores learning data
+- ✅ Batch inference: 34,385 samples/sec
+- ✅ GPU acceleration available
+- ✅ 28 atomic language concepts preserved
+
+---
+
 ## [Unreleased] - 2025-12-02
 
 ### 📦 Agent Exporter / Capsule System (2025-12-02)

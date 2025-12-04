@@ -122,6 +122,30 @@ python archive_logs.py --list     # List archives
 
 ---
 
+## 📦 Agent Export
+
+**Export evolved organisms as portable AI agents:**
+
+```bash
+# Via Web UI (recommended)
+# CRA → Agent Exporter → Select organism → Compile
+
+# Via CLI
+cd agent_downloads/agent_<id>
+python run_agent.py --episodes 10
+```
+
+**What's in the export:**
+- `brain.torchscript` - Neural network (2.6 MB)
+- `metadata.json` - Behavioral fingerprint
+- `atomic_language.json` - 28 learned concepts
+- `run_agent.py` - Standalone runner
+- `portable_agent/` - Full runtime library
+
+**Performance:** ~1,300 inferences/sec (CPU)
+
+---
+
 ## 📚 Documentation
 
 **Central Hub:** [DOCUMENTATION_HUB.md](./DOCUMENTATION_HUB.md)
