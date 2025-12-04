@@ -99,6 +99,7 @@ class AgentCompiler:
 
         def forward(self, x: torch.Tensor):
             # x shape: [B, max_input_dim] (we will slice/pad per brain)
+            # Returns FLAT tuple: (action1, action2, ..., lang1, lang2, ...) for ONNX compatibility
             action_outputs = []
             language_outputs = []
             
@@ -117,9 +118,10 @@ class AgentCompiler:
                     action_probs = brain(x_i)
                     action_outputs.append(action_probs)
             
-            # Return language outputs only if any brain has language head
-            if self.any_language_head and language_outputs:
-                return tuple(action_outputs), tuple(language_outputs)
+            # Return flat tuple: all actions first, then all language outputs
+            # This is compatible with ONNX which expects flat output tuple
+            if language_outputs:
+                return tuple(action_outputs + language_outputs)
             return tuple(action_outputs)
         
     def _reconstruct_brain_from_capsule(self, capsule: OrganismCapsule) -> OrganismBrain:
@@ -2501,8 +2503,16 @@ if __name__ == '__main__':
         chosen_format = export_format
         if export_format == 'onnx':
             try:
-                # Multiple outputs with names per member
-                output_names = [f"out_{n}" for n in names]
+                # Build output names based on whether language heads exist
+                if wrapper.any_language_head:
+                    # Action outputs + language outputs for members with language heads
+                    output_names = [f"action_{n}" for n in names]
+                    for i, (name, has_lang) in enumerate(zip(names, wrapper.has_language_heads)):
+                        if has_lang:
+                            output_names.append(f"language_{name}")
+                else:
+                    output_names = [f"out_{n}" for n in names]
+                
                 torch.onnx.export(
                     wrapper,
                     dummy_input,
