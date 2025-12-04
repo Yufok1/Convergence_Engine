@@ -1578,7 +1578,8 @@ class UnifiedSystem:
                 return
             
             try:
-                cluster_count = event.data.get('n_clusters', 0)
+                # ml_autotune_metrics event uses 'cluster_count', not 'n_clusters'
+                cluster_count = event.data.get('cluster_count', event.data.get('n_clusters', 0))
                 anomaly_ratio = event.data.get('anomaly_ratio', 0.0)
                 
                 # If too many anomalies (>30%), increase mutation to explore more
@@ -1613,11 +1614,11 @@ class UnifiedSystem:
             except Exception:
                 pass
         
-        # Subscribe handlers to relevant event types
-        self.causation_explorer.subscribe('neural_training_complete', on_training_complete)
-        self.causation_explorer.subscribe('neural_batch_complete', on_training_complete)
-        self.causation_explorer.subscribe('ml_analysis_complete', on_ml_analysis_complete)
-        self.causation_explorer.subscribe('organism_clustering_complete', on_ml_analysis_complete)
+        # Subscribe handlers to ACTUAL event types that are emitted
+        # (Audit found mismatches - these are the real event_type values)
+        self.causation_explorer.subscribe('neural_training', on_training_complete)  # trainer.py:1273
+        self.causation_explorer.subscribe('neural_autotune_metrics', on_training_complete)  # trainer.py:1411
+        self.causation_explorer.subscribe('ml_autotune_metrics', on_ml_analysis_complete)  # ml_utils.py:1146
         self.causation_explorer.subscribe('phase_transition', on_phase_transition)
         self.causation_explorer.subscribe('explorer_phase_change', on_phase_transition)
         

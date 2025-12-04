@@ -525,6 +525,50 @@ class AtomicConfigSystem:
             sensitivity=0.5
         ))
         
+        # Alias for elite_fraction (some components use elitism_rate)
+        self._add_atom(ConfigAtom(
+            param_name='elitism_rate',
+            value=0.1,
+            bounds=(0.0, 0.5),
+            domain=ConfigDomain.EVOLUTION,
+            config_type=ConfigType.FLOAT,
+            sensitivity=0.5,
+            description='Selection elitism rate (alias for elite_fraction)'
+        ))
+        
+        self._add_atom(ConfigAtom(
+            param_name='tournament_size',
+            value=5,
+            bounds=(2, 20),
+            domain=ConfigDomain.EVOLUTION,
+            config_type=ConfigType.INT,
+            sensitivity=0.4,
+            description='Tournament selection size'
+        ))
+        
+        # ═══════════════════════════════════════════════════════════════
+        # LEARNING DOMAIN - Loss weights for multi-head training
+        # ═══════════════════════════════════════════════════════════════
+        self._add_atom(ConfigAtom(
+            param_name='rl_loss_weight',
+            value=0.8,
+            bounds=(0.0, 1.0),
+            domain=ConfigDomain.LEARNING,
+            config_type=ConfigType.FLOAT,
+            sensitivity=0.7,
+            description='Weight for RL (Q-learning) loss in combined training'
+        ))
+        
+        self._add_atom(ConfigAtom(
+            param_name='language_loss_weight',
+            value=0.1,
+            bounds=(0.0, 1.0),
+            domain=ConfigDomain.LEARNING,
+            config_type=ConfigType.FLOAT,
+            sensitivity=0.6,
+            description='Weight for language model loss in combined training'
+        ))
+        
         # ═══════════════════════════════════════════════════════════════
         # SIMULATION DOMAIN (VP system)
         # ═══════════════════════════════════════════════════════════════

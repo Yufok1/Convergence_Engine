@@ -1021,13 +1021,16 @@ class NeuralTrainer:
                     
                     # FIX: Use actual organism state instead of zeros
                     # The language head maps state → vocabulary, so it needs real state
-                    if hasattr(organism, 'get_state'):
-                        state = organism.get_state()
+                    if hasattr(organism, 'get_state_features'):
+                        # get_state_features() is the correct method on NeuralOrganism
+                        state = organism.get_state_features(
+                            local_env=None,
+                            network_state=network_state,
+                            breath_state=breath_state
+                        )
                         state_tensor = torch.FloatTensor(state).unsqueeze(0).to(self.device)
-                    elif hasattr(organism, '_last_state') and organism._last_state is not None:
-                        state_tensor = torch.FloatTensor(organism._last_state).unsqueeze(0).to(self.device)
                     else:
-                        # Fallback: skip if no state available (can't train without context)
+                        # Skip non-neural organisms that don't have state features
                         continue
                     
                     organism.brain.train()
