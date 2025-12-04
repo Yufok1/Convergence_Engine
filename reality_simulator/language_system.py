@@ -451,19 +451,23 @@ class LanguageVocabulary:
     def expand_vocabulary_from_pattern(self, pattern_tokens: List[int], 
                                         success_reward: float) -> bool:
         """
-        Expand vocabulary based on successful multi-token patterns.
+        Reinforce vocabulary based on successful multi-token patterns.
         
         When organisms create successful multi-token expressions (high reward),
-        this creates new compound vocabulary entries for future use.
+        this boosts the frequency of individual words in the pattern.
+        
+        NOTE: No longer creates compound tokens (e.g., "hello_there") as these
+        cause "sharp edges" in output. Learning happens through frequency
+        reinforcement of individual words.
         
         Args:
             pattern_tokens: Token sequence that was successful
             success_reward: Reward received (higher = more successful)
             
         Returns:
-            True if vocabulary was expanded
+            True if vocabulary was reinforced
         """
-        # Only expand for highly successful patterns
+        # Only reinforce for highly successful patterns
         if success_reward < 0.7:
             return False
         
@@ -475,7 +479,7 @@ class LanguageVocabulary:
         
         # Decode pattern to words
         pattern_words = []
-        for token in pattern_tokens[:4]:  # Max 4-word compounds
+        for token in pattern_tokens[:4]:  # Max 4 words
             word = self.id_to_word.get(token)
             if word and word not in SPECIAL_TOKEN_IDS.values():
                 pattern_words.append(word)
@@ -483,26 +487,19 @@ class LanguageVocabulary:
         if len(pattern_words) < 2:
             return False
         
-        # Create compound word entry (e.g., "hello_there" or "good_morning")
-        compound = '_'.join(pattern_words[:3])  # Max 3 words
+        # Reinforce individual words instead of creating compounds
+        # This preserves learning without polluting vocabulary with underscore-joined tokens
+        reinforced = False
+        for word in pattern_words:
+            if word in self.word_to_id:
+                boost = int(success_reward * 3) + 1
+                self.word_frequencies[word] = self.word_frequencies.get(word, 0) + boost
+                reinforced = True
         
-        # Check if already exists
-        if compound in self.word_to_id:
-            # Just increase frequency
-            self.word_frequencies[compound] = self.word_frequencies.get(compound, 0) + 1
-            return False
+        if reinforced:
+            logger.debug(f"[VOCAB] Pattern reinforced: {pattern_words} (reward={success_reward:.2f})")
         
-        # Add new compound to vocabulary
-        new_id = self.add_word(compound)
-        
-        if new_id != SPECIAL_TOKENS['<UNK>']:
-            # Boost frequency based on success
-            self.word_frequencies[compound] = int(success_reward * 5) + 1
-            
-            logger.debug(f"[VOCAB] Creative expansion: '{compound}' (reward={success_reward:.2f})")
-            return True
-        
-        return False
+        return reinforced
     
     def get_phrase_suggestions(self, context_tokens: List[int], 
                                num_suggestions: int = 3) -> List[List[int]]:
