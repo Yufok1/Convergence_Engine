@@ -270,21 +270,26 @@ class LanguageTeacher:
         if self.use_knowledge_web:
             self.knowledge_web = LinguisticKnowledgeWeb(config)
             
-            # Try to load expanded knowledge web first
+            # Try to load expanded/seeded knowledge web first
             from pathlib import Path
             data_dir = Path(__file__).parent.parent.parent / "data"
+            
+            # Check for 50k seeded web first, then expanded web
+            seeded_web_path = data_dir / "seeded_knowledge_web_50k.json"
             expanded_web_path = data_dir / "expanded_knowledge_web.json"
             
-            if expanded_web_path.exists():
-                logger.info(f"[LANGUAGE_TEACHER] Loading expanded knowledge web from {expanded_web_path}")
+            web_path = seeded_web_path if seeded_web_path.exists() else expanded_web_path
+            
+            if web_path.exists():
+                logger.info(f"[LANGUAGE_TEACHER] Loading knowledge web from {web_path}")
                 try:
-                    self.knowledge_web.load_from_file(str(expanded_web_path))
-                    logger.info(f"[LANGUAGE_TEACHER] Successfully loaded expanded knowledge web with {len(self.knowledge_web.concepts)} concepts")
+                    self.knowledge_web.load_from_file(str(web_path))
+                    logger.info(f"[LANGUAGE_TEACHER] Successfully loaded knowledge web with {len(self.knowledge_web.concepts)} concepts")
                 except Exception as e:
-                    logger.error(f"[LANGUAGE_TEACHER] Failed to load expanded knowledge web: {e}")
+                    logger.error(f"[LANGUAGE_TEACHER] Failed to load knowledge web: {e}")
                     logger.info("[LANGUAGE_TEACHER] Falling back to base knowledge initialization")
             else:
-                logger.info("[LANGUAGE_TEACHER] Expanded knowledge web not found, using base initialization")
+                logger.info("[LANGUAGE_TEACHER] No expanded knowledge web found, using base initialization")
             
             # Load comprehensive knowledge base from JSON files (if expanded web wasn't loaded)
             if len(self.knowledge_web.concepts) < 10000:  # Only load if we don't have expanded web
