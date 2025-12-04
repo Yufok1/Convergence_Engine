@@ -153,6 +153,49 @@
     "rounds_per_cycle": 2,
     "survival_threshold": 0.5
   },
+  "arena": {
+    "description": "Proton Game Arena - Apprentice Adept style gym battles (Piers Anthony + Highlander inspired)",
+    "enabled": true,
+    "default_battle_type": "PROTON_GAME",
+    "game_selection": {
+      "mode": "ai_driven",
+      "allow_negotiation": true,
+      "negotiation_rounds": 3,
+      "fallback_on_deadlock": "random"
+    },
+    "gym_settings": {
+      "default_episodes": 10,
+      "max_episode_steps": 1000,
+      "render_mode": null,
+      "parallel_envs": 1
+    },
+    "battle_consequences": {
+      "fitness_transfer_rate": 0.15,
+      "resource_transfer_enabled": true,
+      "resource_transfer_rate": 0.1,
+      "trait_evolution_enabled": true,
+      "trait_bonus_cap": 0.3
+    },
+    "tournament": {
+      "default_format": "single_elimination",
+      "round_robin_battles_per_pair": 3,
+      "seeding_method": "fitness_based"
+    },
+    "grid_weights": {
+      "challenge_types": {
+        "PHYSICAL": 1.0,
+        "MENTAL": 1.0,
+        "CHANCE": 1.0,
+        "ARTS": 1.0
+      },
+      "resource_types": {
+        "NAKED": 1.0,
+        "TOOL": 1.0,
+        "MACHINE": 1.0,
+        "ANIMAL": 1.0
+      }
+    }
+  },
   "lattice": {
     "entropy_sensitivity": 5e-05,
     "interaction_precision": 0.0001,

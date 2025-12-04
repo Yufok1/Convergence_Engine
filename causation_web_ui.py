@@ -2852,6 +2852,20 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "    - **Event Types**:\n"
         prompt += "      * `organism_exported`: Brain compiled to portable format (format, size, success)\n"
         prompt += "    - **Emergence Benefit**: Deploy evolved organisms to external systems; compare brains across generations\n"
+        prompt += "  * **Proton Game Arena** (proton_arena): 🎮 **NEW** - Apprentice Adept style gym battles\n"
+        prompt += "    - **Attribution**: Game grid inspired by Piers Anthony's 'Apprentice Adept' (1980-1990)\n"
+        prompt += "    - **Attribution**: Absorption system inspired by 'Highlander' (1986) film\n"
+        prompt += "    - **Philosophy**: Strategic game selection teaches self-awareness and opponent modeling\n"
+        prompt += "    - **4x4 Grid**: PHYSICAL/MENTAL/CHANCE/ARTS × NAKED/TOOL/MACHINE/ANIMAL\n"
+        prompt += "    - **26 Gym Environments**: Mapped to grid intersections (CartPole, LunarLander, Breakout, etc.)\n"
+        prompt += "    - **Event Types**:\n"
+        prompt += "      * `proton_selection_begun`: Game selection started (row/column choosers assigned)\n"
+        prompt += "      * `proton_challenge_chosen`: Challenge type selected (PHYSICAL/MENTAL/CHANCE/ARTS)\n"
+        prompt += "      * `proton_resource_chosen`: Resource type selected (NAKED/TOOL/MACHINE/ANIMAL)\n"
+        prompt += "      * `proton_game_selected`: Final game determined from grid intersection\n"
+        prompt += "      * `proton_battle_complete`: Gym battle finished (scores, winner, margin)\n"
+        prompt += "    - **Integration**: BattleType.PROTON_GAME in battle_arena.py\n"
+        prompt += "    - **Bridge Commands**: /arena, /arena games, /arena play <game>\n"
         prompt += "- **Causation Types** (link types):\n"
         prompt += "  * **Threshold**: Event caused by crossing a threshold (e.g., VP crossing VP3 threshold)\n"
         prompt += "  * **Correlation**: Events that changed together (metrics correlated)\n"
@@ -3043,8 +3057,8 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "     * **Depth Effects**: depthStrength (0-2), depthOpacityRange (0-1), depthSizeRange (0-1), depthParallaxAmount (0-2)\n"
         prompt += "     * **Visual Effects**: enableShadows (true/false), enableGlow (true/false), shadowOffset (0-5px), shadowBlur (0-10), glowIntensity (0-5)\n"
         prompt += "     * **Color Settings**: frontColorBrightness (0.5-1.5), backColorBrightness (0.3-1.0), colorSaturation (0-2)\n"
-        prompt += "     * **Component Colors**: componentColor_reality_sim, componentColor_explorer, componentColor_djinn_kernel, componentColor_breath, componentColor_neural (🧠 Neural - check current value), componentColor_ml_analysis (🔬 ML Analysis - check current value), componentColor_language (🦋 Language System - default: #00BCD4 Teal - check current value), componentColor_butterfly_chat (🦋 Butterfly Chat - default: #8BC34A Light Green - check current value), componentColor_system (hex colors)\n"
-        prompt += "     * **Link Colors**: linkColor_threshold, linkColor_correlation, linkColor_direct, linkColor_temporal, linkColor_neural (🧠 Neural links - check current value), linkColor_ml (🔬 ML links - check current value), linkColor_language (🦋 Language causation links - default: #9B59B6 Purple - check current value), linkColor_linguistic (🦋 Linguistic edges from language_anchors - default: #9B59B6 Purple - check current value), linkColor_unknown (hex colors)\n"
+        prompt += "     * **Component Colors**: componentColor_reality_sim, componentColor_explorer, componentColor_djinn_kernel, componentColor_breath, componentColor_neural (🧠 Neural - check current value), componentColor_ml_analysis (🔬 ML Analysis - check current value), componentColor_language (🦋 Language System - default: #00BCD4 Teal - check current value), componentColor_butterfly_chat (🦋 Butterfly Chat - default: #8BC34A Light Green - check current value), componentColor_proton_arena (🎮 Proton Arena - default: #FF6B35 Orange - battles), componentColor_highlander (⚔️ Highlander - default: #9C27B0 Purple - combat), componentColor_system (hex colors)\n"
+        prompt += "     * **Link Colors**: linkColor_threshold, linkColor_correlation, linkColor_direct, linkColor_temporal, linkColor_neural (🧠 Neural links - check current value), linkColor_ml (🔬 ML links - check current value), linkColor_language (🦋 Language causation links - default: #9B59B6 Purple - check current value), linkColor_linguistic (🦋 Linguistic edges from language_anchors - default: #9B59B6 Purple - check current value), linkColor_arena (🎮 Arena battle links - default: #FF6B35 Orange - check current value), linkColor_unknown (hex colors)\n"
         prompt += "     * **IMPORTANT**: All colors are dynamic - check current values in graph context or visualization settings, don't assume default colors\n"
         prompt += "     * **Performance**: maxVisibleLinks (1000-50000), maxVisibleNodes (500-20000), renderQuality (\"low\"/\"medium\"/\"high\")\n"
         prompt += "     * **Animation/Transitions**: enableTransitions (true/false), transitionDuration (100-1000ms), animationSpeed (0.1-3.0)\n"
@@ -3121,7 +3135,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "     * NO COMMENTS in JSON - JSON does not support // or /* */ comments\n"
         prompt += "     * Property names MUST use underscores: componentColor_reality_sim (NOT componentColorrealitysim)\n"
         prompt += "     * Link colors: linkColor_threshold (NOT linkColorthreshold)\n"
-        prompt += "     * All component colors: componentColor_reality_sim, componentColor_explorer, componentColor_djinn_kernel, componentColor_breath, componentColor_neural, componentColor_ml_analysis, componentColor_language, componentColor_butterfly_chat, componentColor_config_tuner, componentColor_health_monitor, componentColor_highlander, componentColor_alliance, componentColor_confederation, componentColor_system\n"
+        prompt += "     * All component colors: componentColor_reality_sim, componentColor_explorer, componentColor_djinn_kernel, componentColor_breath, componentColor_neural, componentColor_ml_analysis, componentColor_language, componentColor_butterfly_chat, componentColor_config_tuner, componentColor_health_monitor, componentColor_highlander, componentColor_alliance, componentColor_confederation, componentColor_proton_arena, componentColor_battle_arena, componentColor_system\n"
         prompt += "     * All link colors: linkColor_threshold, linkColor_correlation, linkColor_direct, linkColor_temporal, linkColor_neural, linkColor_ml, linkColor_language, linkColor_linguistic, linkColor_unknown\n"
         prompt += "     * Use valid JSON only - no trailing commas, proper quotes, etc.\n"
         prompt += "   - Examples of autonomous adjustments:\n"
@@ -5874,6 +5888,34 @@ The Lawfold Field Architecture provides advanced mathematical governance capabil
 - Reflection Index: Civilization health metric (0.0-1.0, higher = healthier)
 - Collapse Risk: System collapse probability (0.0-1.0, lower = safer)
 - Prosocial Factor: Social health indicator (0.0-1.0, higher = more prosocial)
+
+## Battle Systems
+
+### Highlander Protocol (highlander_protocol.py)
+- **Attribution**: Inspired by "Highlander" (1986) - "There can be only one"
+- Perpetual survival tournament with immortality mechanics
+- Quickening absorption: Winner absorbs loser's fitness/traits
+- Connor MacLeod dynamics: Ancient organisms gain power advantages
+- Integration: BattleType.HIGHLANDER in battle_arena.py
+
+### Proton Game Arena (arena/proton_game.py)
+- **Attribution**: Game grid inspired by Piers Anthony's "Apprentice Adept" series (1980-1990)
+- **Attribution**: Absorption system inspired by "Highlander" (1986) film
+- 4x4 Game Selection Grid:
+  - **Rows (Challenge Types)**: PHYSICAL, MENTAL, CHANCE, ARTS
+  - **Columns (Resource Types)**: NAKED, TOOL, MACHINE, ANIMAL
+- Strategic Selection: Row chooser picks challenge, column chooser picks resources
+- 26 Gym Environments mapped to grid intersections (CartPole, LunarLander, Breakout, etc.)
+- Consequences: Fitness transfer, resource transfer, trait evolution
+- Tournament modes: single_elimination, round_robin
+- Integration: BattleType.PROTON_GAME in battle_arena.py
+- Bridge commands: /arena, /arena games, /arena play <game>
+
+### Battle Arena (evolution/battle_arena.py)
+- Multi-dimensional organism combat system
+- Battle Types: FITNESS, NEURAL, HYBRID, HIGHLANDER, PROTON_GAME
+- BattleConsequence enum: FITNESS_LOSS, TRAIT_TRANSFER, RESOURCE_TRANSFER, etc.
+- Configurable through config.json evolution and arena sections
 """
 
 
@@ -12483,7 +12525,8 @@ def cra_set_viz_settings():
                                'componentColor_language', 'componentColor_butterfly_chat', 'componentColor_config_tuner',
                                'componentColor_health_monitor', 'componentColor_system', 'componentColor_highlander',
                                'componentColor_alliance', 'componentColor_confederation', 'componentColor_combat',
-                               'componentColor_germination', 'componentColor_alliance_warfare']
+                               'componentColor_germination', 'componentColor_alliance_warfare', 'componentColor_proton_arena',
+                               'componentColor_battle_arena']
         for key in component_color_keys:
             if key in data:
                 viz_settings[key] = str(data[key])
@@ -12491,7 +12534,8 @@ def cra_set_viz_settings():
         # Link colors
         link_color_keys = ['linkColor_threshold', 'linkColor_correlation', 'linkColor_direct', 'linkColor_temporal', 
                           'linkColor_neural', 'linkColor_ml', 'linkColor_language', 'linkColor_linguistic', 
-                          'linkColor_battle', 'linkColor_alliance', 'linkColor_confederation', 'linkColor_unknown']
+                          'linkColor_battle', 'linkColor_alliance', 'linkColor_confederation', 'linkColor_arena',
+                          'linkColor_proton', 'linkColor_unknown']
         for key in link_color_keys:
             if key in data:
                 viz_settings[key] = str(data[key])

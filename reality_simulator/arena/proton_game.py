@@ -568,7 +568,8 @@ class ProtonGameArena:
     def __init__(self, 
                  bridge_loader: Optional[Callable] = None,
                  fitness_transfer_rate: float = 0.1,
-                 resource_transfer_rate: float = 0.05):
+                 resource_transfer_rate: float = 0.05,
+                 event_emitter: Optional[Callable] = None):
         """
         Initialize the Arena.
         
@@ -576,10 +577,12 @@ class ProtonGameArena:
             bridge_loader: Function to load AgentBridge for an organism
             fitness_transfer_rate: How much fitness winner takes from loser
             resource_transfer_rate: How much resources transfer on win
+            event_emitter: Callable to emit causation events
         """
         self.bridge_loader = bridge_loader
         self.fitness_transfer_rate = fitness_transfer_rate
         self.resource_transfer_rate = resource_transfer_rate
+        self.event_emitter = event_emitter
         
         # Battle history
         self.battle_history: List[BattleResult] = []
@@ -590,6 +593,26 @@ class ProtonGameArena:
         self.challenge_win_rates: Dict[ChallengeType, Dict[str, float]] = {}
         
         logger.info("⚔️ Proton Game Arena initialized")
+    
+    def _emit_event(self, event_type: str, data: Dict[str, Any]):
+        """Emit a causation event for arena activities."""
+        if not self.event_emitter:
+            return
+        
+        try:
+            from causation_explorer import Event
+            event = Event(
+                timestamp=time.time(),
+                component='proton_arena',
+                event_type=f'proton_{event_type}',
+                data={
+                    'total_battles': self.total_battles,
+                    **data
+                }
+            )
+            self.event_emitter(event)
+        except ImportError:
+            pass
     
     # =========================================================================
     # GAME SELECTION PROCESS
@@ -612,6 +635,14 @@ class ProtonGameArena:
         logger.info(f"   Row chooser: {state.row_chooser[:8]} (Challenge Type)")
         logger.info(f"   Column chooser: {state.column_chooser[:8]} (Resource Type)")
         
+        # Emit causation event
+        self._emit_event('selection_begun', {
+            'organism_a': organism_a_id,
+            'organism_b': organism_b_id,
+            'row_chooser': state.row_chooser,
+            'column_chooser': state.column_chooser
+        })
+        
         return state
     
     def choose_challenge(self, 
@@ -631,6 +662,15 @@ class ProtonGameArena:
         })
         
         logger.info(f"   Challenge chosen: {choice.value}")
+        
+        # Emit causation event
+        self._emit_event('challenge_chosen', {
+            'organism_a': state.organism_a_id,
+            'organism_b': state.organism_b_id,
+            'chooser': chooser_id,
+            'challenge': choice.value
+        })
+        
         return state
     
     def choose_resource(self,
@@ -658,6 +698,16 @@ class ProtonGameArena:
         logger.info(f"   Available games: {len(state.available_games)}")
         for game in state.available_games:
             logger.info(f"      - {game.name} ({game.gym_env})")
+        
+        # Emit causation event
+        self._emit_event('resource_chosen', {
+            'organism_a': state.organism_a_id,
+            'organism_b': state.organism_b_id,
+            'chooser': chooser_id,
+            'resource': choice.value,
+            'challenge': state.challenge_choice.value if state.challenge_choice else None,
+            'available_games': len(state.available_games)
+        })
         
         return state
     
@@ -687,6 +737,17 @@ class ProtonGameArena:
         })
         
         logger.info(f"   🎯 Final game: {state.final_game.name}")
+        
+        # Emit causation event
+        self._emit_event('game_selected', {
+            'organism_a': state.organism_a_id,
+            'organism_b': state.organism_b_id,
+            'game_name': state.final_game.name,
+            'gym_env': state.final_game.gym_env,
+            'challenge': state.challenge_choice.value if state.challenge_choice else None,
+            'resource': state.resource_choice.value if state.resource_choice else None,
+            'difficulty': state.final_game.difficulty.value if state.final_game.difficulty else None
+        })
         
         return state
     
@@ -861,6 +922,22 @@ class ProtonGameArena:
         self.game_play_counts[game.name] = self.game_play_counts.get(game.name, 0) + 1
         self.battle_history.append(result)
         
+        # Emit causation event for battle completion
+        self._emit_event('battle_complete', {
+            'organism_a': state.organism_a_id,
+            'organism_b': state.organism_b_id,
+            'winner': winner_id,
+            'score_a': score_a,
+            'score_b': score_b,
+            'margin': margin,
+            'game_name': game.name,
+            'gym_env': game.gym_env,
+            'challenge': state.challenge_choice.value if state.challenge_choice else None,
+            'resource': state.resource_choice.value if state.resource_choice else None,
+            'battle_duration': battle_duration,
+            'episodes': episodes
+        })
+        
         return result
     
     def _is_standard_gym_env(self, env_spec: str) -> bool:
@@ -1005,6 +1082,16 @@ class ProtonGameArena:
                 winner.energy = min(winner.energy + resource_transfer, 1.0)
                 loser.energy = max(loser.energy - resource_transfer, 0.0)
                 consequences['resources_transferred'] = resource_transfer
+        
+        # Emit causation event for consequences
+        self._emit_event('consequences_applied', {
+            'winner': winner.organism_id,
+            'loser': loser.organism_id,
+            'highlander_mode': highlander_mode,
+            'fitness_transferred': consequences.get('fitness_transferred', 0),
+            'resources_transferred': consequences.get('resources_transferred', 0),
+            'deaths': consequences.get('deaths', [])
+        })
         
         return consequences
     
