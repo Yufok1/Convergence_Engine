@@ -11,9 +11,9 @@
     "_prefer_native_games_help": "When true, prioritizes language/concept games that use organism's native abilities (no Gym dependency)",
     "_proton_game_probability_help": "Fraction of battles that use Proton Game Arena (0.0-1.0). Set to 0.5 for 50% Proton Game battles.",
     "battle_consequences": {
-      "fitness_transfer_rate": 0.15,
+      "fitness_transfer_rate": 1,
       "resource_transfer_enabled": true,
-      "resource_transfer_rate": 0.1,
+      "resource_transfer_rate": 1,
       "trait_bonus_cap": 0.3,
       "trait_evolution_enabled": true
     },
@@ -162,17 +162,17 @@
   "highlander": {
     "alliance_warfare": {
       "betrayal_chance": 0.05,
-      "confederation_war_threshold": 0.7,
+      "confederation_war_threshold": 0.5,
       "enabled": true,
-      "existential_war_threshold": 0.8,
-      "max_alliance_size": 10,
-      "max_alliances": 20,
+      "existential_war_threshold": 0.5,
+      "max_alliance_size": 50,
+      "max_alliances": 500,
       "max_confederations": 5,
-      "min_alliance_size": 3,
-      "war_declaration_threshold": 0.4,
-      "war_frequency": 0.3
+      "min_alliance_size": 5,
+      "war_declaration_threshold": 0.7,
+      "war_frequency": 0.5
     },
-    "chaos_factor": 0.4,
+    "chaos_factor": 0.3,
     "competition_intensity": 0.5,
     "description": "Highlander Protocol - Survival of the fittest tournament system",
     "enabled": true,
@@ -182,25 +182,25 @@
       "description": "EXTREME DIFFICULTY - Maximum evolutionary pressure",
       "germination_rate": 0.05,
       "max_battle_rounds": 15,
-      "max_population": 20,
-      "min_population": 2,
+      "max_population": 500,
+      "min_population": 20,
       "mutation_rate": 0.15,
-      "population_size": 5,
+      "population_size": 20,
       "predation_enabled": true,
       "rounds_per_cycle": 2,
       "survival_threshold": 0.8
     },
     "germination_rate": 0.2,
     "max_battle_rounds": 50,
-    "max_capsules": 20,
+    "max_capsules": 100,
     "max_genetic_samples": 100,
-    "max_population": 30,
-    "min_population": 5,
+    "max_population": 500,
+    "min_population": 20,
     "mutation_rate": 0.15,
-    "population_size": 100,
+    "population_size": 20,
     "predation_enabled": true,
     "rounds_per_cycle": 2,
-    "survival_threshold": 0.45
+    "survival_threshold": 0.5
   },
   "lattice": {
     "entropy_sensitivity": 5e-05,
@@ -258,7 +258,7 @@
         "meta_cognitive.self_tuning.tuning_interval_frames",
         "meta_cognitive.self_tuning.min_confidence_threshold"
       ],
-      "tuning_interval_frames": 20
+      "tuning_interval_frames": 10
     }
   },
   "network": {
