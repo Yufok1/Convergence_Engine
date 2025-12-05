@@ -3338,6 +3338,33 @@ if __name__ == '__main__':
         arch_bytes = zlib.compress(arch_json.encode('utf-8'), level=9) if compress_data else arch_json.encode('utf-8')
         arch_b64 = base64.b64encode(arch_bytes).decode('ascii')
 
+        # 6) Atomic Language System - per-organism linguistic atoms
+        atomic_lang_data = {'organism_id': 'cocoon_ensemble', 'atoms': {}, 'concept_order': []}
+        for entity in capsules:
+            capsule = self._get_capsule_from_entity(entity)
+            if capsule and hasattr(capsule, 'atomic_language_state') and capsule.atomic_language_state:
+                als = capsule.atomic_language_state
+                if isinstance(als, dict) and 'atoms' in als:
+                    # Merge atoms from this organism
+                    for cid, atom_data in als.get('atoms', {}).items():
+                        if cid not in atomic_lang_data['atoms']:
+                            atomic_lang_data['atoms'][cid] = atom_data
+                            atomic_lang_data['concept_order'].append(cid)
+                        else:
+                            # Merge strengths (average)
+                            old_strength = atomic_lang_data['atoms'][cid].get('strength', 0.5)
+                            new_strength = atom_data.get('strength', 0.5)
+                            atomic_lang_data['atoms'][cid]['strength'] = (old_strength + new_strength) / 2
+        atomic_json = json.dumps(atomic_lang_data)
+        atomic_bytes = zlib.compress(atomic_json.encode('utf-8'), level=9) if compress_data else atomic_json.encode('utf-8')
+        atomic_lang_b64 = base64.b64encode(atomic_bytes).decode('ascii')
+
+        # 7) Conversation History - empty by default (cocoon starts fresh)
+        conversation_data = {'messages': [], 'topics': {}, 'turn_count': 0}
+        conv_json = json.dumps(conversation_data)
+        conv_bytes = zlib.compress(conv_json.encode('utf-8'), level=9) if compress_data else conv_json.encode('utf-8')
+        conversation_b64 = base64.b64encode(conv_bytes).decode('ascii')
+
         # Generate cocoon source (always needed for 'cocoon' and 'package' formats)
         cocoon_source = self._generate_cocoon_source(
             brain_data_list=brain_data_list,
@@ -3345,6 +3372,8 @@ if __name__ == '__main__':
             vocab_b64=vocab_b64,
             kw_b64=kw_b64,
             config_b64=config_b64,
+            atomic_lang_b64=atomic_lang_b64,
+            conversation_b64=conversation_b64,
             compressed=compress_data,
             include_gym=include_gym,
             include_http=include_http,
@@ -4077,12 +4106,14 @@ python bridge.py -m brain_ensemble.onnx --mode gym --env CartPole-v1 --episodes 
                                 vocab_b64: str,
                                 kw_b64: str,
                                 config_b64: str,
+                                atomic_lang_b64: str,
+                                conversation_b64: str,
                                 compressed: bool,
                                 include_gym: bool,
                                 include_http: bool,
                                 is_ensemble: bool,
                                 organism_names: List[str]) -> str:
-        """Generate the complete cocoon Python source code."""
+        """Generate the complete cocoon Python source code with MONOLITHIC subsystems."""
 
         brain_data_py = "[\n" + ",\n".join(f'    "{b}"' for b in brain_data_list) + "\n]"
         mode_comment = "ENSEMBLE MODE - Multiple organisms with voting" if is_ensemble else "SOLO MODE - Single organism"
@@ -4134,6 +4165,8 @@ _ARCHITECTURE_B64 = "$ARCH_B64"
 _VOCABULARY_B64 = "$VOCAB_B64"
 _KNOWLEDGE_WEB_B64 = "$KW_B64"
 _TRAINING_CONFIG_B64 = "$CONFIG_B64"
+_ATOMIC_LANG_B64 = "$ATOMIC_LANG_B64"
+_CONVERSATION_HISTORY_B64 = "$CONVERSATION_B64"
 _DATA_COMPRESSED = $DATA_COMPRESSED
 
 
@@ -4221,6 +4254,360 @@ class ExperienceBuffer:
             [e.target_tokens for e in exps],
             [e.vp_value for e in exps],
         )
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 🧬 ATOMIC LANGUAGE SYSTEM - Trackable Linguistic Units
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@dataclass
+class ConceptAssociation:
+    """Association between two concepts - a trackable link."""
+    target_concept: str
+    strength: float = 0.0  # -1.0 to 1.0 (negative = inhibition)
+    formation_reason: str = "unknown"
+    success_count: int = 0
+    failure_count: int = 0
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'target': self.target_concept,
+            'strength': self.strength,
+            'formation_reason': self.formation_reason,
+            'success_rate': self.success_count / max(1, self.success_count + self.failure_count)
+        }
+
+
+@dataclass
+class LinguisticAtom:
+    """Single trackable linguistic unit - like a trait but for language."""
+    concept_id: str
+    strength: float = 0.5
+    associations: Dict[str, ConceptAssociation] = None
+    source: str = "innate"  # 'innate', 'observed', 'taught', 'discovered'
+    semantic_frame: str = "unknown"  # 'action', 'state', 'quality', 'relationship'
+    abstraction_level: int = 0  # 0=concrete, 1=abstract, 2=meta
+    usage_count: int = 0
+    vp_vitality_affinity: float = 0.5
+    vp_pleasure_affinity: float = 0.5
+    
+    def __post_init__(self):
+        if self.associations is None:
+            self.associations = {}
+    
+    def form_association(self, target: str, strength: float, reason: str):
+        """Form or strengthen association with another concept."""
+        if target in self.associations:
+            old = self.associations[target].strength
+            self.associations[target].strength = np.clip(old + strength * 0.3, -1.0, 1.0)
+        else:
+            self.associations[target] = ConceptAssociation(
+                target_concept=target, strength=np.clip(strength, -1.0, 1.0),
+                formation_reason=reason
+            )
+    
+    def get_top_associations(self, n: int = 5) -> List[Tuple[str, float]]:
+        """Get top N associations by strength."""
+        sorted_assocs = sorted(self.associations.items(), key=lambda x: abs(x[1].strength), reverse=True)
+        return [(k, v.strength) for k, v in sorted_assocs[:n]]
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'concept_id': self.concept_id,
+            'strength': self.strength,
+            'source': self.source,
+            'semantic_frame': self.semantic_frame,
+            'abstraction_level': self.abstraction_level,
+            'usage_count': self.usage_count,
+            'vp_affinity': {'vitality': self.vp_vitality_affinity, 'pleasure': self.vp_pleasure_affinity},
+            'associations': {k: v.to_dict() for k, v in self.associations.items()}
+        }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'LinguisticAtom':
+        atom = cls(
+            concept_id=data['concept_id'],
+            strength=data.get('strength', 0.5),
+            source=data.get('source', 'unknown'),
+            semantic_frame=data.get('semantic_frame', 'unknown'),
+            abstraction_level=data.get('abstraction_level', 0),
+            usage_count=data.get('usage_count', 0),
+            vp_vitality_affinity=data.get('vp_affinity', {}).get('vitality', 0.5),
+            vp_pleasure_affinity=data.get('vp_affinity', {}).get('pleasure', 0.5)
+        )
+        for assoc_id, assoc_data in data.get('associations', {}).items():
+            atom.associations[assoc_id] = ConceptAssociation(
+                target_concept=assoc_data['target'],
+                strength=assoc_data['strength'],
+                formation_reason=assoc_data.get('formation_reason', 'loaded')
+            )
+        return atom
+
+
+class AtomicLanguageSystem:
+    """Per-organism atomic language representation with trackable discrete atoms."""
+    
+    INNATE_CONCEPTS = {
+        'move': {'frame': 'action', 'level': 0, 'vp': (0.5, 0.5)},
+        'rest': {'frame': 'action', 'level': 0, 'vp': (0.3, 0.6)},
+        'eat': {'frame': 'action', 'level': 0, 'vp': (0.4, 0.7)},
+        'cooperate': {'frame': 'action', 'level': 0, 'vp': (0.5, 0.7)},
+        'attack': {'frame': 'action', 'level': 0, 'vp': (0.6, 0.3)},
+        'hungry': {'frame': 'state', 'level': 0, 'vp': (0.3, 0.3)},
+        'safe': {'frame': 'state', 'level': 0, 'vp': (0.6, 0.7)},
+        'danger': {'frame': 'state', 'level': 0, 'vp': (0.4, 0.2)},
+        'friend': {'frame': 'relationship', 'level': 0, 'vp': (0.5, 0.8)},
+        'enemy': {'frame': 'relationship', 'level': 0, 'vp': (0.5, 0.2)},
+        'food': {'frame': 'resource', 'level': 0, 'vp': (0.5, 0.7)},
+        'energy': {'frame': 'resource', 'level': 0, 'vp': (0.6, 0.5)},
+    }
+    
+    INNATE_ASSOCIATIONS = [
+        ('hungry', 'food', 0.8), ('hungry', 'eat', 0.9), ('danger', 'attack', 0.5),
+        ('safe', 'rest', 0.7), ('friend', 'cooperate', 0.8), ('enemy', 'attack', 0.6),
+    ]
+    
+    def __init__(self, organism_id: str = "cocoon"):
+        self.organism_id = organism_id
+        self.atoms: Dict[str, LinguisticAtom] = {}
+        self._concept_order: List[str] = []
+        self._initialize_innate_concepts()
+    
+    def _initialize_innate_concepts(self):
+        for concept_id, info in self.INNATE_CONCEPTS.items():
+            atom = LinguisticAtom(
+                concept_id=concept_id,
+                strength=0.5 + np.random.uniform(-0.1, 0.1),
+                source='innate',
+                semantic_frame=info['frame'],
+                abstraction_level=info['level'],
+                vp_vitality_affinity=info['vp'][0],
+                vp_pleasure_affinity=info['vp'][1]
+            )
+            self.atoms[concept_id] = atom
+            self._concept_order.append(concept_id)
+        for source, target, strength in self.INNATE_ASSOCIATIONS:
+            if source in self.atoms:
+                self.atoms[source].form_association(target, strength, 'innate')
+    
+    def acquire_concept(self, concept_id: str, source: str = 'discovered', 
+                       semantic_frame: str = 'unknown', initial_strength: float = 0.3) -> LinguisticAtom:
+        """Acquire a new concept (learn a new word)."""
+        if concept_id in self.atoms:
+            self.atoms[concept_id].strength = min(1.0, self.atoms[concept_id].strength + 0.1)
+            return self.atoms[concept_id]
+        atom = LinguisticAtom(
+            concept_id=concept_id, strength=initial_strength, source=source,
+            semantic_frame=semantic_frame
+        )
+        self.atoms[concept_id] = atom
+        self._concept_order.append(concept_id)
+        return atom
+    
+    def form_association(self, source: str, target: str, strength: float, reason: str):
+        """Form association between two concepts."""
+        if source not in self.atoms:
+            self.acquire_concept(source, 'implicit')
+        if target not in self.atoms:
+            self.acquire_concept(target, 'implicit')
+        self.atoms[source].form_association(target, strength, reason)
+    
+    def get_activated_concepts(self, vp_state: Tuple[float, float], top_k: int = 10) -> List[Tuple[str, float]]:
+        """Get concepts most activated by current VP state."""
+        vitality, pleasure = vp_state
+        activations = []
+        for concept_id, atom in self.atoms.items():
+            activation = atom.strength
+            vp_match = 1.0 - 0.5 * (abs(vitality - atom.vp_vitality_affinity) + abs(pleasure - atom.vp_pleasure_affinity))
+            activation *= (0.7 + 0.3 * vp_match)
+            activations.append((concept_id, activation))
+        activations.sort(key=lambda x: x[1], reverse=True)
+        return activations[:top_k]
+    
+    def to_tensor(self, dim: int = 64) -> np.ndarray:
+        """Convert to fixed-size tensor for neural network input."""
+        tensor = np.zeros(dim, dtype=np.float32)
+        for i, concept_id in enumerate(self._concept_order[:dim]):
+            if concept_id in self.atoms:
+                tensor[i] = self.atoms[concept_id].strength
+        return tensor
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'organism_id': self.organism_id,
+            'atoms': {cid: atom.to_dict() for cid, atom in self.atoms.items()},
+            'concept_order': self._concept_order
+        }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'AtomicLanguageSystem':
+        system = cls(organism_id=data.get('organism_id', 'cocoon'))
+        system.atoms.clear()
+        system._concept_order = data.get('concept_order', [])
+        for concept_id, atom_data in data.get('atoms', {}).items():
+            system.atoms[concept_id] = LinguisticAtom.from_dict(atom_data)
+        return system
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 💬 CONVERSATION HISTORY - Context Memory System
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class ConversationHistory:
+    """Tracks conversation context for coherent multi-turn dialogue."""
+    
+    def __init__(self, max_turns: int = 50, max_topics: int = 10):
+        self.messages: deque = deque(maxlen=max_turns)
+        self.topics: Dict[str, float] = {}  # topic -> relevance score
+        self.max_topics = max_topics
+        self.turn_count = 0
+    
+    def add_message(self, role: str, content: str, metadata: Optional[Dict] = None):
+        """Add a message to history."""
+        self.turn_count += 1
+        entry = {
+            'turn': self.turn_count,
+            'role': role,  # 'user' or 'assistant'
+            'content': content,
+            'metadata': metadata or {}
+        }
+        self.messages.append(entry)
+        self._update_topics(content)
+    
+    def _update_topics(self, content: str):
+        """Extract and update topic relevance from content."""
+        words = content.lower().split()
+        # Simple topic extraction: words that appear multiple times
+        word_counts = {}
+        for word in words:
+            if len(word) > 3:  # Skip short words
+                word_counts[word] = word_counts.get(word, 0) + 1
+        # Decay existing topics
+        for topic in self.topics:
+            self.topics[topic] *= 0.9
+        # Boost mentioned topics
+        for word, count in word_counts.items():
+            if count >= 1:
+                self.topics[word] = min(1.0, self.topics.get(word, 0) + 0.2 * count)
+        # Prune low-relevance topics
+        self.topics = dict(sorted(self.topics.items(), key=lambda x: x[1], reverse=True)[:self.max_topics])
+    
+    def get_context_window(self, n: int = 5) -> List[Dict]:
+        """Get last N messages for context."""
+        return list(self.messages)[-n:]
+    
+    def get_active_topics(self, min_relevance: float = 0.3) -> List[str]:
+        """Get currently active topics."""
+        return [t for t, r in self.topics.items() if r >= min_relevance]
+    
+    def get_context_string(self, n: int = 3) -> str:
+        """Get context as string for prompt augmentation."""
+        recent = self.get_context_window(n)
+        if not recent:
+            return ""
+        lines = []
+        for msg in recent:
+            prefix = "User" if msg['role'] == 'user' else "Assistant"
+            lines.append(f"{prefix}: {msg['content'][:100]}")
+        return " | ".join(lines)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'messages': list(self.messages),
+            'topics': self.topics,
+            'turn_count': self.turn_count
+        }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'ConversationHistory':
+        history = cls()
+        history.turn_count = data.get('turn_count', 0)
+        history.topics = data.get('topics', {})
+        for msg in data.get('messages', []):
+            history.messages.append(msg)
+        return history
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 🕸️ ENHANCED KNOWLEDGE WEB - Semantic Relations System
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@dataclass  
+class SemanticRelation:
+    """A semantic relationship between concepts."""
+    source: str
+    target: str
+    relation_type: str  # 'synonym', 'antonym', 'causes', 'enables', 'similar_to'
+    strength: float = 1.0
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {'source': self.source, 'target': self.target, 
+                'type': self.relation_type, 'strength': self.strength}
+
+
+class EnhancedKnowledgeWeb:
+    """Comprehensive semantic network for language understanding."""
+    
+    def __init__(self):
+        self.concepts: Dict[str, Dict[str, Any]] = {}
+        self.relations: List[SemanticRelation] = []
+        self.relation_index: Dict[str, List[SemanticRelation]] = {}
+    
+    def load_from_data(self, data: Dict[str, Any]):
+        """Load from embedded knowledge web data."""
+        self.concepts = data.get('concepts', {})
+        for rel_data in data.get('relations', []):
+            rel = SemanticRelation(
+                source=rel_data['source'], target=rel_data['target'],
+                relation_type=rel_data.get('type', rel_data.get('relation_type', 'related_to')),
+                strength=rel_data.get('strength', 1.0)
+            )
+            self.relations.append(rel)
+            if rel.source not in self.relation_index:
+                self.relation_index[rel.source] = []
+            self.relation_index[rel.source].append(rel)
+    
+    def get_synonyms(self, word: str, min_strength: float = 0.5) -> List[str]:
+        """Get synonyms for a word."""
+        results = []
+        for rel in self.relation_index.get(word.lower(), []):
+            if rel.relation_type == 'synonym' and rel.strength >= min_strength:
+                results.append(rel.target)
+        return results
+    
+    def get_related(self, word: str, relation_type: Optional[str] = None, 
+                   min_strength: float = 0.3) -> List[Tuple[str, str, float]]:
+        """Get related words with optional relation type filter."""
+        results = []
+        for rel in self.relation_index.get(word.lower(), []):
+            if rel.strength >= min_strength:
+                if relation_type is None or rel.relation_type == relation_type:
+                    results.append((rel.target, rel.relation_type, rel.strength))
+        return results
+    
+    def get_concept_info(self, word: str) -> Optional[Dict[str, Any]]:
+        """Get concept information."""
+        return self.concepts.get(word.lower())
+    
+    def compute_semantic_similarity(self, word1: str, word2: str) -> float:
+        """Compute semantic similarity between two words."""
+        # Check direct relations
+        for rel in self.relation_index.get(word1.lower(), []):
+            if rel.target == word2.lower():
+                if rel.relation_type in ['synonym', 'similar_to']:
+                    return rel.strength
+        # Check concept category match
+        c1 = self.concepts.get(word1.lower(), {})
+        c2 = self.concepts.get(word2.lower(), {})
+        if c1.get('category') and c1.get('category') == c2.get('category'):
+            return 0.5
+        return 0.0
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'concepts': self.concepts,
+            'relations': [r.to_dict() for r in self.relations]
+        }
 
 
 # Multi-head attention with VP scaling
@@ -4373,8 +4760,41 @@ class CocoonAgent:
         self._load_brains()
         self.voting = voting
         self.training_step = 0
+        
+        # ═══════════════════════════════════════════════════════════════════
+        # 🧬 MONOLITHIC SUBSYSTEMS - Full Butterfly capabilities
+        # ═══════════════════════════════════════════════════════════════════
+        
+        # Atomic Language System - trackable linguistic units
+        try:
+            atomic_data = _decode_data(_ATOMIC_LANG_B64)
+            if atomic_data and 'atoms' in atomic_data:
+                self.atomic_language = AtomicLanguageSystem.from_dict(atomic_data)
+            else:
+                self.atomic_language = AtomicLanguageSystem(organism_id="cocoon_ensemble")
+        except:
+            self.atomic_language = AtomicLanguageSystem(organism_id="cocoon_ensemble")
+        
+        # Conversation History - context memory
+        try:
+            conv_data = _decode_data(_CONVERSATION_HISTORY_B64)
+            if conv_data and 'messages' in conv_data:
+                self.conversation = ConversationHistory.from_dict(conv_data)
+            else:
+                self.conversation = ConversationHistory()
+        except:
+            self.conversation = ConversationHistory()
+        
+        # Enhanced Knowledge Web - semantic relations
+        self.enhanced_kb = EnhancedKnowledgeWeb()
+        if isinstance(self.knowledge_web, dict):
+            self.enhanced_kb.load_from_data(self.knowledge_web)
+        
         mode = "ENSEMBLE" if self.is_ensemble else "SOLO"
         print(f"[OK] CocoonAgent loaded: {mode}, {len(self.brains)} organism(s), device={self.device}")
+        print(f"     Atomic concepts: {len(self.atomic_language.atoms)}")
+        print(f"     Knowledge web: {len(self.enhanced_kb.concepts)} concepts, {len(self.enhanced_kb.relations)} relations")
+        print(f"     Conversation history: {self.conversation.turn_count} turns")
 
     def _load_brains(self):
         brain_configs = self.architecture.get('brain_configs', [])
@@ -4607,16 +5027,21 @@ class CocoonAgent:
 
     def generate_response(self, prompt: str, organism_idx: int = 0, max_tokens: int = 128,
                           vp_value: Optional[float] = None, temperature: float = 1.0) -> Tuple[str, float]:
-        """Generate response with semantic boosting and confidence. Returns (response, confidence).
+        """Generate response with semantic boosting, conversation context, and confidence.
         
-        NEURAL SYNAPSE MODE: max_tokens=128 allows rich causation chains!"""
+        NEURAL SYNAPSE MODE: max_tokens=128 allows rich causation chains!
+        MONOLITHIC: Uses atomic language, knowledge web, and conversation history."""
         if organism_idx >= len(self.brains):
             organism_idx = 0
         brain = self.brains[organism_idx]
         if not brain.use_language_head:
             return "[No language head available]", 0.1
         
-        tokens = self.tokenize(prompt)
+        # Add conversation context to prompt for better coherence
+        context_str = self.conversation.get_context_string(n=2)
+        augmented_prompt = f"{context_str} {prompt}" if context_str else prompt
+        
+        tokens = self.tokenize(augmented_prompt)
         id_to_word = {int(k): v for k, v in self.vocabulary.get('id_to_word', {}).items()}
         word_to_id = self.vocabulary.get('word_to_id', {})
         
@@ -5400,6 +5825,15 @@ Examples:
             print()
             print(f"🦋 Cocoon: {final_response}")
             
+            # Record conversation for context
+            agent.conversation.add_message('user', user_input)
+            agent.conversation.add_message('assistant', final_response)
+            
+            # Learn concepts from exchange
+            for word in user_input.lower().split():
+                if len(word) > 2:
+                    agent.atomic_language.acquire_concept(word, source='user_input')
+            
             # Train on accumulated experiences
             if len(agent.experience_buffers[0]) >= agent.batch_size:
                 loss = agent.train_step()
@@ -5437,6 +5871,8 @@ if __name__ == "__main__":
             VOCAB_B64=vocab_b64,
             KW_B64=kw_b64,
             CONFIG_B64=config_b64,
+            ATOMIC_LANG_B64=atomic_lang_b64,
+            CONVERSATION_B64=conversation_b64,
             DATA_COMPRESSED=str(compressed)
         )
         return source
