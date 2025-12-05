@@ -7078,9 +7078,24 @@ def compile_ensemble_to_agent():
 
         compiler = AgentCompiler()
         
+        # Get vocabulary and conversation history for export
+        vocabulary = app.config.get('vocabulary')
+        conversation_history = []
+        
+        # Try to get conversation history from butterfly chat router
+        butterfly_router = app.config.get('butterfly_chat_router')
+        if butterfly_router and hasattr(butterfly_router, 'conversation_history'):
+            conversation_history = butterfly_router.conversation_history
+            logger.info(f"[COMPILE] Including {len(conversation_history)} conversation history entries")
+        
         # PAUSE SIMULATION to prevent race conditions during ensemble serialization
         with pause_simulation_for_export():
-            archive_buffer = compiler.compile_capsules_to_ensemble(capsules, export_format=export_format)
+            archive_buffer = compiler.compile_capsules_to_ensemble(
+                capsules, 
+                export_format=export_format,
+                vocabulary=vocabulary,
+                conversation_history=conversation_history
+            )
 
         # Ensure we're at the start of the buffer for reading
         archive_buffer.seek(0)
@@ -9196,7 +9211,17 @@ def butterfly_chat():
             org_id = getattr(org, 'species_id', None) or getattr(org, 'id', None) or str(i)
             organisms_dict[str(org_id)] = org
         
-        router = ButterflyChatRouter(organisms_dict, vocabulary, event_emitter)
+        # Use persistent router if available (preserves conversation history)
+        # Otherwise create new one and store it
+        router = app.config.get('butterfly_chat_router')
+        if router is None:
+            router = ButterflyChatRouter(organisms_dict, vocabulary, event_emitter)
+            app.config['butterfly_chat_router'] = router
+            logger.info("[BUTTERFLY_CHAT] Created new persistent ButterflyChatRouter")
+        else:
+            # Update organisms dict in case population changed
+            router.organisms = organisms_dict
+            router.vocabulary = vocabulary
         
         # Wire trainer for chat-triggered learning
         neural_trainer = app.config.get('neural_trainer')

@@ -2051,7 +2051,9 @@ done
                                  model_buffer: BytesIO,
                                  metadata: Dict[str, Any],
                                  runner_script: str,
-                                 capsules: Optional[List['OrganismCapsule']] = None) -> BytesIO:
+                                 capsules: Optional[List['OrganismCapsule']] = None,
+                                 vocabulary: Any = None,
+                                 conversation_history: List[Dict] = None) -> BytesIO:
         """Package ensemble components into a ZIP archive.
         
         Args:
@@ -2059,6 +2061,8 @@ done
             metadata: Export metadata
             runner_script: Python runner script
             capsules: Optional list of capsules for language/config extraction
+            vocabulary: LanguageVocabulary object for chat system tokenization
+            conversation_history: List of conversation history entries for training data
         """
         archive_buffer = BytesIO()
         with zipfile.ZipFile(archive_buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
@@ -2115,6 +2119,36 @@ done
                         'ensemble_merged': True
                     }
                     zf.writestr("atomic_language.json", json.dumps(empty_language, indent=2))
+
+            # ═══════════════════════════════════════════════════════════════
+            # CHAT VOCABULARY (LanguageVocabulary from butterfly_chat)
+            # ═══════════════════════════════════════════════════════════════
+            # This is SEPARATE from atomic_language - it's the tokenization vocab
+            # used by the chat system for word<->token mapping
+            if vocabulary is not None:
+                chat_vocab_data = {
+                    'word_to_id': dict(getattr(vocabulary, 'word_to_id', {})),
+                    'id_to_word': {str(k): v for k, v in getattr(vocabulary, 'id_to_word', {}).items()},
+                    'vocab_size': getattr(vocabulary, 'vocab_size', 0),
+                    'word_frequencies': dict(getattr(vocabulary, 'word_frequencies', {})),
+                    'word_last_used': dict(getattr(vocabulary, 'word_last_used', {})),
+                    'source_note': 'Chat vocabulary for tokenization - learned words from conversations'
+                }
+                zf.writestr("chat_vocabulary.json", json.dumps(chat_vocab_data, indent=2))
+                logger.info(f"📚 Exported chat vocabulary: {chat_vocab_data['vocab_size']} words")
+
+            # ═══════════════════════════════════════════════════════════════
+            # CONVERSATION HISTORY (Training Data)
+            # ═══════════════════════════════════════════════════════════════
+            # The actual chat exchanges that trained the organisms
+            if conversation_history:
+                history_data = {
+                    'conversations': conversation_history,
+                    'total_entries': len(conversation_history),
+                    'source_note': 'Training conversation history - prompts and organism responses'
+                }
+                zf.writestr("conversation_history.json", json.dumps(history_data, indent=2))
+                logger.info(f"💬 Exported conversation history: {len(conversation_history)} entries")
 
             # Runner
             zf.writestr("run_agent.py", runner_script)
@@ -2876,8 +2910,17 @@ if __name__ == '__main__':
     def compile_capsules_to_ensemble(self,
                                      capsules: List['OrganismCapsule'],
                                      export_format: str = 'onnx',
-                                     example_state: Any = None) -> BytesIO:
+                                     example_state: Any = None,
+                                     vocabulary: Any = None,
+                                     conversation_history: List[Dict] = None) -> BytesIO:
         """Compile multiple capsules into a single ensemble model archive.
+        
+        Args:
+            capsules: List of OrganismCapsule objects
+            export_format: 'onnx' or 'torchscript'
+            example_state: Example state for tracing
+            vocabulary: LanguageVocabulary object for chat system
+            conversation_history: List of conversation history entries
 
         All brains receive the same state vector (max input dim); per-brain
         slicing/padding is handled inside the wrapper for compatibility.
@@ -3029,8 +3072,8 @@ if __name__ == '__main__':
         # Runner
         runner_script = self._generate_ensemble_runner_script(chosen_format, metadata)
 
-        # Package (pass capsules for language data extraction)
-        return self._create_ensemble_archive(model_buffer, metadata, runner_script, capsules)
+        # Package (pass capsules for language data extraction, plus chat vocabulary)
+        return self._create_ensemble_archive(model_buffer, metadata, runner_script, capsules, vocabulary, conversation_history)
 
     def compile_capsule_to_agent(self, 
                                  capsule: OrganismCapsule, 
