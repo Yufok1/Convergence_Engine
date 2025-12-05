@@ -2975,6 +2975,8 @@ if __name__ == '__main__':
         members_meta = []
         for cap in capsules:
             b = self._reconstruct_brain_from_capsule(cap)
+            # CRITICAL: Move brain to CPU for export (avoids cuda/cpu device mismatch)
+            b = b.cpu()
             brains.append(b)
             name = str(cap.organism_id)
             names.append(name)
@@ -2992,8 +2994,9 @@ if __name__ == '__main__':
 
         wrapper = self.MultiOrganismWrapper(brains, names)
         wrapper.eval()  # Disable dropout for deterministic tracing
+        wrapper = wrapper.cpu()  # Ensure wrapper is on CPU
 
-        # Prepare deterministic input
+        # Prepare deterministic input (on CPU to match model)
         if example_state is not None:
             try:
                 arr = np.asarray(example_state, dtype=np.float32).reshape(1, -1)
@@ -3002,11 +3005,11 @@ if __name__ == '__main__':
                     arr = np.concatenate([arr, pad], axis=1)
                 elif arr.shape[1] > wrapper.max_input_dim:
                     arr = arr[:, :wrapper.max_input_dim]
-                dummy_input = torch.from_numpy(arr)
+                dummy_input = torch.from_numpy(arr).cpu()
             except Exception:
-                dummy_input = torch.zeros(1, wrapper.max_input_dim, dtype=torch.float32)
+                dummy_input = torch.zeros(1, wrapper.max_input_dim, dtype=torch.float32, device='cpu')
         else:
-            dummy_input = torch.zeros(1, wrapper.max_input_dim, dtype=torch.float32)
+            dummy_input = torch.zeros(1, wrapper.max_input_dim, dtype=torch.float32, device='cpu')
 
         # Export
         model_buffer = BytesIO()
@@ -3357,8 +3360,9 @@ if __name__ == '__main__':
         elif export_format == 'onnx':
             # Export first brain as ONNX
             brain = self._get_brain_from_entity(capsules[0])
+            brain = brain.cpu()  # Move to CPU for export
             onnx_buffer = BytesIO()
-            dummy_input = torch.randn(1, brain.input_dim)
+            dummy_input = torch.randn(1, brain.input_dim, device='cpu')
             try:
                 torch.onnx.export(
                     brain, dummy_input, onnx_buffer,
@@ -3376,12 +3380,13 @@ if __name__ == '__main__':
         elif export_format == 'torchscript':
             # Export first brain as TorchScript using trace (more compatible than script)
             brain = self._get_brain_from_entity(capsules[0])
+            brain = brain.cpu()  # Move to CPU for export
             ts_buffer = BytesIO()
             try:
                 brain.eval()
                 # Use trace instead of script - script fails with "Can't redefine method: forward"
                 input_dim = getattr(brain, 'input_dim', 24)
-                dummy_input = torch.randn(1, input_dim)
+                dummy_input = torch.randn(1, input_dim, device='cpu')
                 traced = torch.jit.trace(brain, (dummy_input,))
                 torch.jit.save(traced, ts_buffer)
                 logger.info(f"[COCOON] ✅ Generated TorchScript: {ts_buffer.tell():,} bytes")
@@ -3393,6 +3398,7 @@ if __name__ == '__main__':
         elif export_format == 'statedict':
             # Export first brain state dict
             brain = self._get_brain_from_entity(capsules[0])
+            brain = brain.cpu()  # Move to CPU for export
             sd_buffer = BytesIO()
             torch.save(brain.state_dict(), sd_buffer)
             logger.info(f"[COCOON] ✅ Generated StateDict: {sd_buffer.tell():,} bytes")
@@ -3421,14 +3427,17 @@ if __name__ == '__main__':
             for entity in capsules:
                 brain = self._get_brain_from_entity(entity)
                 name = self._get_organism_id(entity)
+                # CRITICAL: Move brain to CPU for export (avoids cuda/cpu device mismatch)
+                brain = brain.cpu()
                 brains.append(brain)
                 names.append(name)
             
             wrapper = self.MultiOrganismWrapper(brains, names)
             wrapper.eval()
+            wrapper = wrapper.cpu()  # Ensure wrapper is also on CPU
             
-            # Prepare dummy input for tracing
-            dummy_input = torch.zeros(1, wrapper.max_input_dim, dtype=torch.float32)
+            # Prepare dummy input for tracing (on CPU to match model)
+            dummy_input = torch.zeros(1, wrapper.max_input_dim, dtype=torch.float32, device='cpu')
             
             export_results = {
                 'onnx': {'success': False, 'size': 0, 'error': None},
