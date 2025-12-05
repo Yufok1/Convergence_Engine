@@ -1,0 +1,5 @@
+{
+  "_comment": "DEPRECATED - Use config.json in project root instead. This file exists only for backward compatibility.",
+  "_canonical_config": "../config.json",
+  "_deprecated_since": "2025-01-27"
+}

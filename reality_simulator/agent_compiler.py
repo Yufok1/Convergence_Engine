@@ -4704,46 +4704,88 @@ Examples:
             print("└────────────────────────────────────────────────────────────┘")
             
             # ═══════════════════════════════════════════════════════════════
-            # STEP 4: GENERATION (per-organism)
+            # STEP 4: GENERATION (per-organism with detailed decision matrix)
             # ═══════════════════════════════════════════════════════════════
             print("┌─── STEP 4: GENERATION ──────────────────────────────────────┐")
+            print("│ Decision Matrix: weight = fitness × confidence × gene_mod")
+            print("├────────────────────────────────────────────────────────────┤")
             
             responses = []
             
             for i, name in enumerate(agent.organism_names):
                 response, confidence = agent.generate_response(user_input, organism_idx=i)
                 fitness = agent.organism_fitness[i] if i < len(agent.organism_fitness) else 1.0
-                weight = fitness * confidence
+                
+                # Granular decision matrix (matching main Butterfly Chat)
+                # 1. Base weight from fitness × confidence
+                base_weight = fitness * confidence
+                
+                # 2. Genetic diversity modifier (if available)
+                gene_modifier = 1.0
+                if hasattr(agent, 'organism_metadata') and i < len(agent.organism_metadata):
+                    meta = agent.organism_metadata[i]
+                    if 'gene_variance' in meta:
+                        # More genetic diversity = slight weight bonus (max 20%)
+                        gene_modifier = 1.0 + min(meta['gene_variance'] / 50000.0, 0.2)
+                
+                # 3. Response quality modifier
+                response_modifier = 1.0
+                if response.strip():
+                    # Non-empty response bonus
+                    word_count = len(response.split())
+                    if word_count >= 1:
+                        response_modifier = 1.0 + min(word_count * 0.05, 0.15)  # Max 15% bonus
+                
+                # Final weight with all modifiers
+                weight = base_weight * gene_modifier * response_modifier
+                
                 responses.append({
                     'name': name,
                     'response': response,
                     'confidence': confidence,
                     'fitness': fitness,
+                    'gene_mod': gene_modifier,
+                    'resp_mod': response_modifier,
                     'weight': weight
                 })
-                # Show individual organism response
-                print(f"│ [{name}] conf={confidence:.3f} fit={fitness:.2f} weight={weight:.3f}")
-                print(f"│   → {response[:45]}{'...' if len(response) > 45 else ''}")
+                
+                # Show individual organism response with granular breakdown
+                print(f"│ [{name}]")
+                print(f"│   conf={confidence:.3f} × fit={fitness:.2f} × gene={gene_modifier:.2f} × resp={response_modifier:.2f}")
+                print(f"│   = weight {weight:.4f}")
+                print(f"│   → {response[:40]}{'...' if len(response) > 40 else ''}")
             
             print("└────────────────────────────────────────────────────────────┘")
             
             # ═══════════════════════════════════════════════════════════════
-            # STEP 5: AGGREGATION (Decision Matrix)
+            # STEP 5: AGGREGATION (Granular Decision Matrix Summary)
             # ═══════════════════════════════════════════════════════════════
             print("┌─── STEP 5: AGGREGATION ─────────────────────────────────────┐")
             
             # Filter empty responses
             valid_responses = [r for r in responses if r['response'].strip() and not r['response'].startswith('[')]
+            total_weight = sum(r['weight'] for r in valid_responses)
             
             if valid_responses:
-                # Select best by weight (fitness × confidence)
-                best = max(valid_responses, key=lambda r: r['weight'])
+                # Sort by weight descending
+                sorted_responses = sorted(valid_responses, key=lambda r: r['weight'], reverse=True)
+                best = sorted_responses[0]
                 final_response = best['response']
-                print(f"│ Decision Matrix: weight = fitness × confidence")
-                print(f"│ Winner: [{best['name']}] weight={best['weight']:.4f}")
+                
+                # Show granular decision matrix summary
+                print(f"│ Aggregation: WEIGHTED_SELECTION")
+                print(f"│ Total Weight Pool: {total_weight:.4f}")
+                print(f"├────────────────────────────────────────────────────────────┤")
+                print(f"│ 🏆 WINNER: [{best['name']}]")
+                print(f"│    Weight: {best['weight']:.4f} ({best['weight']/total_weight*100:.1f}% of pool)")
+                print(f"│    Breakdown: conf={best['confidence']:.3f} × fit={best['fitness']:.2f}")
+                if 'gene_mod' in best:
+                    print(f"│               × gene={best['gene_mod']:.2f} × resp={best['resp_mod']:.2f}")
+                print(f"├────────────────────────────────────────────────────────────┤")
                 print(f"│ Runners-up:")
-                for r in sorted(valid_responses, key=lambda x: x['weight'], reverse=True)[1:3]:
-                    print(f"│   [{r['name']}] weight={r['weight']:.4f}")
+                for i, r in enumerate(sorted_responses[1:4], 2):  # Show top 3 runners-up
+                    pct = r['weight']/total_weight*100 if total_weight > 0 else 0
+                    print(f"│   #{i} [{r['name']}] weight={r['weight']:.4f} ({pct:.1f}%)")
             else:
                 final_response = "[No valid response from organisms]"
                 best = None
@@ -4755,7 +4797,12 @@ Examples:
             # STEP 6: CAUSATION (Event Tracking)
             # ═══════════════════════════════════════════════════════════════
             print("┌─── STEP 6: CAUSATION ───────────────────────────────────────┐")
-            print(f"│ Event: CHAT_RESPONSE │ Organisms: {num_orgs} │ Winner: {best['name'] if best else 'none'}")
+            print(f"│ Event: CHAT_RESPONSE")
+            print(f"│ Organisms Queried: {num_orgs}")
+            print(f"│ Valid Responses: {len(valid_responses)}")
+            print(f"│ Winner: {best['name'] if best else 'none'}")
+            if best:
+                print(f"│ Winner Weight: {best['weight']:.4f}")
             print("└────────────────────────────────────────────────────────────┘")
             
             # ═══════════════════════════════════════════════════════════════

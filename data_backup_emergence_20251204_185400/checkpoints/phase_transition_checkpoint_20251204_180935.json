@@ -1,0 +1,137 @@
+{
+  "phase": "genesis",
+  "kernel_sovereign_ids": [
+    "hash-f1b2075a0277c1bb",
+    "hash-81c3f9fc1aa6e85f",
+    "hash-8d8073e1007c62f4",
+    "hash-10c27787ec3aaeb5",
+    "hash-0819dc0bc4e662e4",
+    "hash-f2727b902c6115a1",
+    "hash-4a8d8fb90926895d",
+    "hash-7b4300bb8f8d3020",
+    "hash-7c6c63e37fb8746b",
+    "hash-c883dee08c4f6344",
+    "hash-2b6ea4a130bc97bf",
+    "hash-91925aedc15b0843",
+    "hash-d2bdb873f072c775",
+    "hash-641173e31c710750",
+    "hash-12d4ef7239178fe7",
+    "hash-d1a54120b02767c0",
+    "hash-321a4fc13708bf6c",
+    "hash-d6759d33191d205c",
+    "hash-b828bac529e6683f",
+    "hash-e80adaeba4ee4abd",
+    "hash-6e667654c7715123",
+    "hash-47f7657045bc8c91",
+    "hash-892bef7c8d9d4806",
+    "hash-9a8db4857583f6f6",
+    "hash-b4b26c080866a54f",
+    "hash-78b2005849d0799a",
+    "hash-98db736df0fffe72",
+    "hash-9b6331cfebe0689b",
+    "hash-f8cbc5b2608a6774",
+    "hash-320c26054a0904dd",
+    "hash-0c44beb9d6719119",
+    "hash-7689b2d6b23b8bdb"
+  ],
+  "breath_state": {
+    "depth": 0.6079188325389109,
+    "phase": 0.21754963470695543,
+    "cycle_count": 64,
+    "intensity": 1.0
+  },
+  "insight_data": {
+    "timestamp": 1764889775.5463562,
+    "phase": "genesis",
+    "breath_state": {
+      "depth": 0.6079188325389109,
+      "phase": 0.21754963470695543,
+      "cycle_count": 64,
+      "intensity": 1.0
+    },
+    "kernel_sovereign_ids": [
+      "hash-f1b2075a0277c1bb",
+      "hash-81c3f9fc1aa6e85f",
+      "hash-8d8073e1007c62f4",
+      "hash-10c27787ec3aaeb5",
+      "hash-0819dc0bc4e662e4",
+      "hash-f2727b902c6115a1",
+      "hash-4a8d8fb90926895d",
+      "hash-7b4300bb8f8d3020",
+      "hash-7c6c63e37fb8746b",
+      "hash-c883dee08c4f6344",
+      "hash-2b6ea4a130bc97bf",
+      "hash-91925aedc15b0843",
+      "hash-d2bdb873f072c775",
+      "hash-641173e31c710750",
+      "hash-12d4ef7239178fe7",
+      "hash-d1a54120b02767c0",
+      "hash-321a4fc13708bf6c",
+      "hash-d6759d33191d205c",
+      "hash-b828bac529e6683f",
+      "hash-e80adaeba4ee4abd",
+      "hash-6e667654c7715123",
+      "hash-47f7657045bc8c91",
+      "hash-892bef7c8d9d4806",
+      "hash-9a8db4857583f6f6",
+      "hash-b4b26c080866a54f",
+      "hash-78b2005849d0799a",
+      "hash-98db736df0fffe72",
+      "hash-9b6331cfebe0689b",
+      "hash-f8cbc5b2608a6774",
+      "hash-320c26054a0904dd",
+      "hash-0c44beb9d6719119",
+      "hash-7689b2d6b23b8bdb"
+    ],
+    "patterns": {
+      "breath_rhythm": "stable",
+      "function_growth": 32,
+      "phase_consistency": "consistent"
+    },
+    "stability_assessment": {
+      "score": 1.0,
+      "level": "stable"
+    },
+    "growth_indicators": {
+      "function_count": 32,
+      "breath_cycles": 64,
+      "phase_progression": "developing"
+    }
+  },
+  "forecast_data": {
+    "timestamp": 1764889775.5469284,
+    "short_term": {
+      "next_breath_cycle": 65,
+      "stability_trend": "improving",
+      "function_growth_likelihood": "high"
+    },
+    "medium_term": {
+      "phase_transition_likelihood": "high",
+      "function_expansion": "expected",
+      "system_maturity": "approaching"
+    },
+    "warnings": [],
+    "opportunities": [
+      {
+        "type": "phase_advancement",
+        "priority": "medium",
+        "description": "System ready for phase transition"
+      }
+    ]
+  },
+  "bloom_data": {
+    "bloom_curvature": 0.34965075614664803,
+    "phase_bloom": 0.8,
+    "reflection_index": 0.4,
+    "breath_resonance": 1.0,
+    "natural_unfolding": "medium",
+    "bloom_cycles": 108,
+    "bloom_maturity": "mature"
+  },
+  "learning_stats": {
+    "success_patterns": 0,
+    "failure_patterns": 0,
+    "defunct_sovereign_ids": 0,
+    "total_operations": 0
+  }
+}

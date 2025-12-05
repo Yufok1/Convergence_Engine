@@ -1,0 +1,404 @@
+Step 0: orgs=15, collected=10, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 1: orgs=20, collected=15, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 2: orgs=24, collected=19, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 3: orgs=29, collected=24, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 4: orgs=34, collected=29, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 5: orgs=39, collected=34, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 6: orgs=44, collected=39, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 7: orgs=49, collected=44, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 8: orgs=54, collected=49, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 9: orgs=59, collected=54, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 10: orgs=62, collected=57, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 0: orgs=15, collected=10, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 1: orgs=20, collected=15, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 2: orgs=25, collected=20, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 3: orgs=30, collected=25, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 4: orgs=35, collected=30, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 5: orgs=40, collected=35, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 6: orgs=44, collected=39, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 7: orgs=48, collected=44, no_brain=0, no_record=0, no_prev=4
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 8: orgs=53, collected=48, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 9: orgs=58, collected=53, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 10: orgs=61, collected=56, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 0: orgs=15, collected=10, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 1: orgs=20, collected=15, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 2: orgs=25, collected=20, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 3: orgs=30, collected=25, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 4: orgs=35, collected=30, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 5: orgs=39, collected=35, no_brain=0, no_record=0, no_prev=4
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 6: orgs=44, collected=39, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 7: orgs=49, collected=44, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 8: orgs=54, collected=49, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 9: orgs=59, collected=54, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 0: orgs=15, collected=10, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 1: orgs=20, collected=15, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 2: orgs=22, collected=17, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 3: orgs=27, collected=22, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 4: orgs=32, collected=27, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 5: orgs=37, collected=32, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 6: orgs=40, collected=35, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 7: orgs=45, collected=40, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 8: orgs=50, collected=45, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 0: orgs=15, collected=10, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 1: orgs=20, collected=15, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 2: orgs=24, collected=19, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 3: orgs=29, collected=24, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 4: orgs=34, collected=29, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 5: orgs=39, collected=34, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 6: orgs=41, collected=36, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 7: orgs=46, collected=41, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 8: orgs=51, collected=46, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 9: orgs=56, collected=51, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 10: orgs=59, collected=54, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 0: orgs=15, collected=10, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 1: orgs=20, collected=15, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 2: orgs=22, collected=17, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 3: orgs=27, collected=22, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 0: orgs=15, collected=10, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 1: orgs=20, collected=15, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 2: orgs=24, collected=19, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 3: orgs=29, collected=24, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 4: orgs=34, collected=29, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 5: orgs=39, collected=34, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 6: orgs=43, collected=38, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 7: orgs=48, collected=43, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 8: orgs=53, collected=48, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 9: orgs=58, collected=53, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 10: orgs=62, collected=57, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 0: orgs=15, collected=10, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 1: orgs=20, collected=15, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 2: orgs=24, collected=19, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 3: orgs=29, collected=24, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 4: orgs=34, collected=29, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 5: orgs=39, collected=34, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 6: orgs=43, collected=38, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 7: orgs=48, collected=43, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 8: orgs=53, collected=48, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 9: orgs=58, collected=53, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 10: orgs=60, collected=55, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 0: orgs=15, collected=10, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 1: orgs=20, collected=15, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 2: orgs=24, collected=19, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 3: orgs=29, collected=24, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 4: orgs=34, collected=29, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 5: orgs=39, collected=34, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 6: orgs=41, collected=36, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 7: orgs=46, collected=41, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 8: orgs=51, collected=46, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 9: orgs=56, collected=51, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 10: orgs=59, collected=54, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 0: orgs=15, collected=10, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 0: orgs=15, collected=10, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 1: orgs=20, collected=15, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 1: orgs=20, collected=15, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 2: orgs=14, collected=9, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 2: orgs=25, collected=20, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 3: orgs=19, collected=14, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 3: orgs=30, collected=25, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 4: orgs=24, collected=19, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 4: orgs=35, collected=30, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 5: orgs=29, collected=24, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 6: orgs=20, collected=15, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 7: orgs=25, collected=20, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 8: orgs=30, collected=25, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 9: orgs=34, collected=30, no_brain=0, no_record=0, no_prev=4
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 0: orgs=15, collected=10, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 1: orgs=19, collected=15, no_brain=0, no_record=0, no_prev=4
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 0: orgs=15, collected=10, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 1: orgs=18, collected=15, no_brain=0, no_record=0, no_prev=3
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 2: orgs=23, collected=18, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 3: orgs=27, collected=23, no_brain=0, no_record=0, no_prev=4
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 4: orgs=32, collected=27, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 5: orgs=37, collected=32, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 6: orgs=41, collected=37, no_brain=0, no_record=0, no_prev=4
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 7: orgs=46, collected=41, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 8: orgs=50, collected=46, no_brain=0, no_record=0, no_prev=4
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 9: orgs=54, collected=50, no_brain=0, no_record=0, no_prev=4
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 0: orgs=15, collected=10, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 1: orgs=20, collected=15, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 2: orgs=25, collected=20, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 3: orgs=30, collected=25, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 4: orgs=35, collected=30, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 0: orgs=15, collected=10, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 1: orgs=20, collected=15, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 2: orgs=24, collected=19, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 3: orgs=29, collected=24, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 4: orgs=34, collected=29, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 5: orgs=39, collected=34, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 6: orgs=44, collected=39, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 7: orgs=49, collected=44, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 8: orgs=54, collected=49, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 9: orgs=59, collected=54, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 10: orgs=60, collected=55, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 0: orgs=15, collected=10, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 1: orgs=20, collected=15, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 2: orgs=24, collected=19, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 3: orgs=29, collected=24, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 4: orgs=34, collected=29, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 0: orgs=15, collected=10, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 1: orgs=19, collected=15, no_brain=0, no_record=0, no_prev=4
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 2: orgs=21, collected=16, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 3: orgs=26, collected=21, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 4: orgs=31, collected=26, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 5: orgs=36, collected=31, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 6: orgs=38, collected=33, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 7: orgs=43, collected=38, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 8: orgs=48, collected=43, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 9: orgs=53, collected=48, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 10: orgs=55, collected=50, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 0: orgs=15, collected=10, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 1: orgs=20, collected=15, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 2: orgs=23, collected=18, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 3: orgs=28, collected=23, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 4: orgs=33, collected=28, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 5: orgs=38, collected=33, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 6: orgs=41, collected=36, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 7: orgs=46, collected=41, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 8: orgs=51, collected=46, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 9: orgs=56, collected=51, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 10: orgs=61, collected=56, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 0: orgs=15, collected=10, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 1: orgs=20, collected=15, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 2: orgs=15, collected=10, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 3: orgs=20, collected=15, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 4: orgs=25, collected=20, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 5: orgs=30, collected=25, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 0: orgs=15, collected=10, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 1: orgs=20, collected=15, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 2: orgs=15, collected=10, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 3: orgs=20, collected=15, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 0: orgs=15, collected=10, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 1: orgs=20, collected=15, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 2: orgs=15, collected=10, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 3: orgs=20, collected=15, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 4: orgs=25, collected=20, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 5: orgs=30, collected=25, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 6: orgs=18, collected=13, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 7: orgs=23, collected=18, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 8: orgs=28, collected=23, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 9: orgs=33, collected=28, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 10: orgs=21, collected=16, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 0: orgs=15, collected=10, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 1: orgs=20, collected=15, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 2: orgs=14, collected=9, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 3: orgs=19, collected=14, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 4: orgs=24, collected=19, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 5: orgs=29, collected=24, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 6: orgs=20, collected=15, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 7: orgs=25, collected=20, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 8: orgs=30, collected=25, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 9: orgs=35, collected=30, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 10: orgs=23, collected=18, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 0: orgs=15, collected=10, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 1: orgs=20, collected=15, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 2: orgs=14, collected=9, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 3: orgs=19, collected=14, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 4: orgs=24, collected=19, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 5: orgs=29, collected=24, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 6: orgs=19, collected=14, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 7: orgs=24, collected=19, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 8: orgs=29, collected=24, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 9: orgs=34, collected=29, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
+Step 10: orgs=21, collected=16, no_brain=0, no_record=0, no_prev=5
+  Sample org: brain=OK, buffer=OK, prev_state=OK
