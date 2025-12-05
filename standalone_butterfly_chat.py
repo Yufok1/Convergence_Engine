@@ -862,7 +862,16 @@ class StandaloneButterflyChat:
                     
                     # Sample from distribution
                     probs = torch.softmax(logits, dim=-1)
-                    token_id = torch.multinomial(probs, 1).item()
+                    
+                    # SAFEGUARD: Check for NaN/Inf/zero probabilities before multinomial
+                    if not torch.isfinite(probs).all() or probs.sum() <= 0:
+                        probs = torch.ones_like(probs) / len(probs)
+                    
+                    try:
+                        token_id = torch.multinomial(probs, 1).item()
+                    except (RuntimeError, AssertionError):
+                        # Fallback to random valid token
+                        token_id = random.randint(5, min(self.vocabulary.vocab_size - 1, len(probs) - 1))
                     
                     # Stop at END token
                     if token_id == self.vocabulary.SPECIAL_TOKENS.get('<END>', 3):
