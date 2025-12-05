@@ -1549,7 +1549,12 @@ class NeuralOrganism(Organism):
                                     # Only boost if neural network already has some confidence (coherent reasoning)
                                     # Get current top predictions
                                     current_probs = torch.softmax(logits, dim=-1)
-                                    top_probs, top_indices = torch.topk(current_probs, 10)
+                                    # Safe topk: don't request more than available
+                                    safe_k = min(10, len(current_probs))
+                                    if safe_k > 0:
+                                        top_probs, top_indices = torch.topk(current_probs, safe_k)
+                                    else:
+                                        top_indices = torch.tensor([], dtype=torch.long)
                                     
                                     # Boost logits for semantically related words that are ALREADY in top predictions
                                     # This ensures coherence - we strengthen existing good predictions, not random words
