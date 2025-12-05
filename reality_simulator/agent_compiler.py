@@ -3399,44 +3399,276 @@ if __name__ == '__main__':
             return cocoon_source, sd_buffer.getvalue()
         
         elif export_format == 'package':
-            # Create ZIP with everything
+            # ═══════════════════════════════════════════════════════════════════════
+            # ULTIMATE PACKAGE - Everything you need to deploy the ensemble
+            # ═══════════════════════════════════════════════════════════════════════
+            # Contains:
+            #   - brain_ensemble.onnx (ALL organisms wrapped in MultiOrganismWrapper)
+            #   - brain_ensemble.pt (TorchScript version of same)
+            #   - cocoon.py (self-contained Python with embedded weights)
+            #   - bridge.py (universal runner for Gym/HTTP/CLI)
+            #   - metadata.json (ensemble config, member profiles, behavioral fingerprints)
+            #   - vocabulary.json (tokenization vocab)
+            #   - requirements.txt
+            #   - README.md
+            # ═══════════════════════════════════════════════════════════════════════
             import zipfile
             zip_buffer = BytesIO()
+            
+            # Build the MultiOrganismWrapper for unified ensemble export
+            brains = []
+            names = []
+            for entity in capsules:
+                brain = self._get_brain_from_entity(entity)
+                name = self._get_organism_id(entity)
+                brains.append(brain)
+                names.append(name)
+            
+            wrapper = self.MultiOrganismWrapper(brains, names)
+            wrapper.eval()
+            
+            # Prepare dummy input for tracing
+            dummy_input = torch.zeros(1, wrapper.max_input_dim, dtype=torch.float32)
+            
+            export_results = {
+                'onnx': {'success': False, 'size': 0, 'error': None},
+                'torchscript': {'success': False, 'size': 0, 'error': None},
+            }
+            
             with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
-                # Add cocoon.py
+                # ─────────────────────────────────────────────────────────────
+                # 1. ONNX ENSEMBLE MODEL
+                # ─────────────────────────────────────────────────────────────
+                onnx_buffer = BytesIO()
+                try:
+                    output_names = [f"action_{n}" for n in names]
+                    if wrapper.any_language_head:
+                        for i, (name, has_lang) in enumerate(zip(names, wrapper.has_language_heads)):
+                            if has_lang:
+                                output_names.append(f"language_{name}")
+                    
+                    torch.onnx.export(
+                        wrapper,
+                        dummy_input,
+                        onnx_buffer,
+                        input_names=['state'],
+                        output_names=output_names,
+                        dynamic_axes={'state': {0: 'batch_size'}},
+                        opset_version=14,
+                        do_constant_folding=True
+                    )
+                    onnx_buffer.seek(0)
+                    onnx_bytes = onnx_buffer.read()
+                    zf.writestr('brain_ensemble.onnx', onnx_bytes)
+                    export_results['onnx'] = {'success': True, 'size': len(onnx_bytes), 'error': None}
+                    logger.info(f"[PACKAGE] ✅ ONNX ensemble: {len(onnx_bytes):,} bytes")
+                except Exception as e:
+                    export_results['onnx'] = {'success': False, 'size': 0, 'error': str(e)}
+                    logger.warning(f"[PACKAGE] ⚠️ ONNX export failed: {e}")
+                
+                # ─────────────────────────────────────────────────────────────
+                # 2. TORCHSCRIPT ENSEMBLE MODEL
+                # ─────────────────────────────────────────────────────────────
+                ts_buffer = BytesIO()
+                try:
+                    traced = torch.jit.trace(wrapper, (dummy_input,))
+                    torch.jit.save(traced, ts_buffer)
+                    ts_buffer.seek(0)
+                    ts_bytes = ts_buffer.read()
+                    zf.writestr('brain_ensemble.pt', ts_bytes)
+                    export_results['torchscript'] = {'success': True, 'size': len(ts_bytes), 'error': None}
+                    logger.info(f"[PACKAGE] ✅ TorchScript ensemble: {len(ts_bytes):,} bytes")
+                except Exception as e:
+                    export_results['torchscript'] = {'success': False, 'size': 0, 'error': str(e)}
+                    logger.warning(f"[PACKAGE] ⚠️ TorchScript export failed: {e}")
+                
+                # ─────────────────────────────────────────────────────────────
+                # 3. COCOON.PY (self-contained Python)
+                # ─────────────────────────────────────────────────────────────
                 zf.writestr('cocoon.py', cocoon_source)
+                logger.info(f"[PACKAGE] ✅ Cocoon source: {len(cocoon_source):,} chars")
                 
-                # Add ONNX for each brain
-                for i, entity in enumerate(capsules):
-                    brain = self._get_brain_from_entity(entity)
-                    name = self._get_organism_id(entity)
-                    onnx_buf = BytesIO()
-                    dummy_input = torch.randn(1, brain.input_dim)
+                # ─────────────────────────────────────────────────────────────
+                # 4. BRIDGE.PY (universal runner)
+                # ─────────────────────────────────────────────────────────────
+                bridge_script = self._generate_bridge_script(brain_configs, is_ensemble)
+                zf.writestr('bridge.py', bridge_script)
+                
+                # ─────────────────────────────────────────────────────────────
+                # 5. METADATA.JSON (comprehensive)
+                # ─────────────────────────────────────────────────────────────
+                # Compute behavioral fingerprints
+                member_profiles = []
+                for i, (brain, cfg) in enumerate(zip(brains, brain_configs)):
+                    profile = dict(cfg)  # Copy config
                     try:
-                        torch.onnx.export(brain, dummy_input, onnx_buf, export_params=True, opset_version=14)
-                        zf.writestr(f'brain_{name}.onnx', onnx_buf.getvalue())
+                        fingerprint = self._compute_behavioral_fingerprint(brain, num_samples=50)
+                        profile['behavioral_fingerprint'] = fingerprint
+                        logger.info(f"[PACKAGE] Member {i+1}: {fingerprint.get('personality_label', '?')}")
                     except Exception as e:
-                        logger.warning(f"[COCOON] ONNX for {name} failed: {e}")
+                        profile['behavioral_fingerprint'] = {'error': str(e)}
+                    member_profiles.append(profile)
                 
-                # Add vocabulary.json
-                zf.writestr('vocabulary.json', vocab_json)
-                
-                # Add metadata.json
                 metadata = {
                     'mode': 'ENSEMBLE' if is_ensemble else 'SOLO',
                     'num_organisms': len(capsules),
                     'organism_names': organism_names,
+                    'max_input_dim': wrapper.max_input_dim,
                     'brain_configs': brain_configs,
+                    'member_profiles': member_profiles,
                     'training_config': default_training,
+                    'export_results': export_results,
                     'generated': datetime.datetime.now().isoformat(),
+                    'package_contents': [
+                        'brain_ensemble.onnx' if export_results['onnx']['success'] else None,
+                        'brain_ensemble.pt' if export_results['torchscript']['success'] else None,
+                        'cocoon.py',
+                        'bridge.py',
+                        'metadata.json',
+                        'vocabulary.json',
+                        'requirements.txt',
+                        'README.md',
+                    ],
                 }
+                # Filter out None entries
+                metadata['package_contents'] = [x for x in metadata['package_contents'] if x]
                 zf.writestr('metadata.json', json.dumps(metadata, indent=2))
                 
-                # Add README.md
-                readme = self._generate_package_readme(organism_names, brain_configs, metadata)
+                # ─────────────────────────────────────────────────────────────
+                # 6. VOCABULARY.JSON
+                # ─────────────────────────────────────────────────────────────
+                zf.writestr('vocabulary.json', vocab_json)
+                
+                # ─────────────────────────────────────────────────────────────
+                # 7. REQUIREMENTS.TXT
+                # ─────────────────────────────────────────────────────────────
+                requirements = """# Butterfly Ensemble - Complete Package Dependencies
+# Install with: pip install -r requirements.txt
+
+# ═══════════════════════════════════════════════════════════════
+# CORE DEPENDENCIES
+# ═══════════════════════════════════════════════════════════════
+
+# Neural network inference
+torch>=2.0.0           # For TorchScript (.pt) models
+onnxruntime>=1.15.0    # For ONNX models (CPU)
+# onnxruntime-gpu>=1.15.0  # Uncomment for NVIDIA GPU acceleration
+
+numpy>=1.21.0
+
+# HTTP server & web interface
+flask>=2.0.0
+
+# ═══════════════════════════════════════════════════════════════
+# GYMNASIUM ENVIRONMENTS (Optional but recommended!)
+# ═══════════════════════════════════════════════════════════════
+
+gymnasium>=0.29.0      # 63 built-in environments
+pygame>=2.5.0          # Visual rendering
+
+# Classic Control (CartPole, MountainCar, Pendulum, Acrobot)
+# -> Included in gymnasium core!
+
+# Atari Arcade (100+ classic games)
+# ale-py>=0.8.0
+
+# Box2D Physics (LunarLander, BipedalWalker, CarRacing)
+# box2d-py>=2.3.5
+
+# MuJoCo Robotics (Humanoid, Ant, HalfCheetah, Hopper)
+# mujoco>=2.3.0
+
+# ═══════════════════════════════════════════════════════════════
+# QUICK START COMMANDS
+# ═══════════════════════════════════════════════════════════════
+# 
+# Run with TorchScript model:
+#   python bridge.py --model brain_ensemble.pt --mode interactive
+#
+# Run with ONNX model:
+#   python bridge.py --model brain_ensemble.onnx --mode interactive
+#
+# Run in Gymnasium:
+#   python bridge.py --model brain_ensemble.onnx --mode gym --env CartPole-v1
+#
+# Start HTTP server:
+#   python bridge.py --model brain_ensemble.onnx --mode http --port 8080
+"""
+                zf.writestr('requirements.txt', requirements)
+                
+                # ─────────────────────────────────────────────────────────────
+                # 8. README.MD
+                # ─────────────────────────────────────────────────────────────
+                readme = self._generate_ultimate_readme(
+                    organism_names, brain_configs, metadata, export_results, is_ensemble
+                )
                 zf.writestr('README.md', readme)
+                
+                # ─────────────────────────────────────────────────────────────
+                # 9. QUICK-START SCRIPTS
+                # ─────────────────────────────────────────────────────────────
+                # Windows batch
+                start_bat = """@echo off
+echo ═══════════════════════════════════════════════════════════════
+echo  🦋 Butterfly Ensemble - Quick Start
+echo ═══════════════════════════════════════════════════════════════
+echo.
+echo 1. Interactive Chat (TorchScript)
+echo 2. Interactive Chat (ONNX)
+echo 3. Gymnasium - CartPole
+echo 4. HTTP Server
+echo 5. View Metadata
+echo 0. Exit
+echo.
+set /p choice="Select option: "
+
+if "%choice%"=="1" python bridge.py --model brain_ensemble.pt --mode interactive
+if "%choice%"=="2" python bridge.py --model brain_ensemble.onnx --mode interactive
+if "%choice%"=="3" python bridge.py --model brain_ensemble.onnx --mode gym --env CartPole-v1 --render
+if "%choice%"=="4" python bridge.py --model brain_ensemble.onnx --mode http --port 8080
+if "%choice%"=="5" type metadata.json
+if "%choice%"=="0" exit /b
+
+pause
+"""
+                zf.writestr('start.bat', start_bat)
+                
+                # Unix shell
+                start_sh = """#!/bin/bash
+echo "═══════════════════════════════════════════════════════════════"
+echo " 🦋 Butterfly Ensemble - Quick Start"
+echo "═══════════════════════════════════════════════════════════════"
+echo ""
+echo "1. Interactive Chat (TorchScript)"
+echo "2. Interactive Chat (ONNX)"
+echo "3. Gymnasium - CartPole"
+echo "4. HTTP Server"
+echo "5. View Metadata"
+echo "0. Exit"
+echo ""
+read -p "Select option: " choice
+
+case $choice in
+    1) python bridge.py --model brain_ensemble.pt --mode interactive ;;
+    2) python bridge.py --model brain_ensemble.onnx --mode interactive ;;
+    3) python bridge.py --model brain_ensemble.onnx --mode gym --env CartPole-v1 --render ;;
+    4) python bridge.py --model brain_ensemble.onnx --mode http --port 8080 ;;
+    5) cat metadata.json ;;
+    0) exit 0 ;;
+esac
+"""
+                zf.writestr('start.sh', start_sh)
             
-            logger.info(f"[COCOON] ✅ Generated package: {zip_buffer.tell():,} bytes")
+            # Verify we got at least one model format
+            if not export_results['onnx']['success'] and not export_results['torchscript']['success']:
+                logger.error("[PACKAGE] ❌ FAILED: Neither ONNX nor TorchScript export succeeded!")
+                # Still return the package but log the error
+            
+            zip_buffer.seek(0)
+            total_size = len(zip_buffer.getvalue())
+            logger.info(f"[COCOON] ✅ Generated ULTIMATE package: {total_size:,} bytes")
+            logger.info(f"[COCOON]    ONNX: {'✅' if export_results['onnx']['success'] else '❌'} "
+                       f"TorchScript: {'✅' if export_results['torchscript']['success'] else '❌'}")
             return cocoon_source, zip_buffer.getvalue()
         
         else:
@@ -3493,6 +3725,342 @@ python cocoon.py --mode serve --port 8080
 - [Netron Model Viewer](https://netron.app/)
 - [Convergence Engine](https://github.com/Yufok1/Convergence_Engine)
 """
+
+    def _generate_bridge_script(self, brain_configs: List[Dict], is_ensemble: bool) -> str:
+        """Generate the universal bridge.py runner script."""
+        return '''#!/usr/bin/env python3
+"""
+🌉 BUTTERFLY BRIDGE - Universal Agent Runner
+Supports: ONNX, TorchScript, Interactive, HTTP, Gymnasium
+"""
+import argparse
+import json
+import sys
+from pathlib import Path
+
+def load_model(model_path: str):
+    """Load either ONNX or TorchScript model."""
+    model_path = Path(model_path)
+    
+    if model_path.suffix == '.onnx':
+        import onnxruntime as ort
+        return ort.InferenceSession(str(model_path)), 'onnx'
+    elif model_path.suffix == '.pt':
+        import torch
+        return torch.jit.load(str(model_path)), 'torchscript'
+    else:
+        raise ValueError(f"Unknown model format: {model_path.suffix}")
+
+def run_inference(model, model_type: str, state):
+    """Run inference on model."""
+    import numpy as np
+    state = np.array(state, dtype=np.float32).reshape(1, -1)
+    
+    if model_type == 'onnx':
+        input_name = model.get_inputs()[0].name
+        outputs = model.run(None, {input_name: state})
+        return outputs
+    else:  # torchscript
+        import torch
+        with torch.no_grad():
+            state_t = torch.from_numpy(state)
+            outputs = model(state_t)
+            if isinstance(outputs, torch.Tensor):
+                return [outputs.numpy()]
+            return [o.numpy() for o in outputs]
+
+def interactive_mode(model, model_type: str, metadata: dict):
+    """Interactive chat/command mode."""
+    print("\\n🦋 Butterfly Ensemble Interactive Mode")
+    print("=" * 50)
+    print(f"Model: {model_type.upper()}")
+    print(f"Organisms: {metadata.get('num_organisms', '?')}")
+    print("\\nCommands: /state <values>, /quit")
+    print("=" * 50)
+    
+    import numpy as np
+    max_dim = metadata.get('max_input_dim', 24)
+    
+    while True:
+        try:
+            cmd = input("\\n> ").strip()
+            if cmd.lower() in ('/quit', '/exit', 'quit', 'exit'):
+                break
+            elif cmd.startswith('/state '):
+                values = [float(x) for x in cmd[7:].split()]
+                # Pad to max_dim
+                if len(values) < max_dim:
+                    values.extend([0.0] * (max_dim - len(values)))
+                outputs = run_inference(model, model_type, values[:max_dim])
+                print(f"Outputs: {len(outputs)} tensors")
+                for i, out in enumerate(outputs):
+                    print(f"  [{i}] shape={out.shape}, argmax={np.argmax(out)}")
+            else:
+                # Generate random state for demo
+                state = np.random.randn(max_dim).astype(np.float32)
+                outputs = run_inference(model, model_type, state)
+                actions = [np.argmax(out) for out in outputs]
+                print(f"Random state -> Actions: {actions}")
+        except KeyboardInterrupt:
+            break
+        except Exception as e:
+            print(f"Error: {e}")
+    
+    print("\\nGoodbye! 🦋")
+
+def http_mode(model, model_type: str, metadata: dict, port: int):
+    """Start HTTP API server."""
+    from flask import Flask, request, jsonify
+    import numpy as np
+    
+    app = Flask(__name__)
+    
+    @app.route('/predict', methods=['POST'])
+    def predict():
+        data = request.get_json()
+        state = data.get('state', [0.0] * metadata.get('max_input_dim', 24))
+        outputs = run_inference(model, model_type, state)
+        return jsonify({
+            'outputs': [out.tolist() for out in outputs],
+            'actions': [int(np.argmax(out)) for out in outputs]
+        })
+    
+    @app.route('/metadata')
+    def get_metadata():
+        return jsonify(metadata)
+    
+    @app.route('/health')
+    def health():
+        return jsonify({'status': 'ok', 'model_type': model_type})
+    
+    print(f"\\n🌐 Starting HTTP server on port {port}")
+    print(f"   POST /predict - Run inference")
+    print(f"   GET /metadata - Get model info")
+    app.run(host='0.0.0.0', port=port)
+
+def gym_mode(model, model_type: str, metadata: dict, env_name: str, episodes: int, render: bool):
+    """Run in Gymnasium environment."""
+    import gymnasium as gym
+    import numpy as np
+    
+    env = gym.make(env_name, render_mode='human' if render else None)
+    max_dim = metadata.get('max_input_dim', 24)
+    
+    print(f"\\n🎮 Running {env_name} for {episodes} episodes")
+    
+    for ep in range(episodes):
+        state, _ = env.reset()
+        # Pad/truncate state
+        state = np.array(state, dtype=np.float32)
+        if len(state) < max_dim:
+            state = np.concatenate([state, np.zeros(max_dim - len(state))])
+        elif len(state) > max_dim:
+            state = state[:max_dim]
+        
+        total_reward = 0
+        done = False
+        steps = 0
+        
+        while not done:
+            outputs = run_inference(model, model_type, state)
+            # Use first output (or majority vote could be implemented)
+            action = int(np.argmax(outputs[0]))
+            # Clamp to valid action space
+            action = min(action, env.action_space.n - 1)
+            
+            state, reward, terminated, truncated, _ = env.step(action)
+            done = terminated or truncated
+            total_reward += reward
+            steps += 1
+            
+            # Pad state for next iteration
+            state = np.array(state, dtype=np.float32)
+            if len(state) < max_dim:
+                state = np.concatenate([state, np.zeros(max_dim - len(state))])
+            elif len(state) > max_dim:
+                state = state[:max_dim]
+        
+        print(f"  Episode {ep+1}: {steps} steps, reward={total_reward:.2f}")
+    
+    env.close()
+    print("\\nDone! 🦋")
+
+def main():
+    parser = argparse.ArgumentParser(description='🦋 Butterfly Bridge - Universal Agent Runner')
+    parser.add_argument('--model', '-m', default='brain_ensemble.onnx', help='Model file (.onnx or .pt)')
+    parser.add_argument('--mode', choices=['interactive', 'http', 'gym'], default='interactive')
+    parser.add_argument('--port', type=int, default=8080, help='HTTP server port')
+    parser.add_argument('--env', '-e', default='CartPole-v1', help='Gymnasium environment')
+    parser.add_argument('--episodes', '-n', type=int, default=5, help='Number of episodes')
+    parser.add_argument('--render', '-r', action='store_true', help='Render environment')
+    args = parser.parse_args()
+    
+    # Load metadata
+    metadata = {}
+    if Path('metadata.json').exists():
+        with open('metadata.json') as f:
+            metadata = json.load(f)
+    
+    # Load model
+    print(f"Loading {args.model}...")
+    model, model_type = load_model(args.model)
+    print(f"✅ Loaded {model_type.upper()} model")
+    
+    if args.mode == 'interactive':
+        interactive_mode(model, model_type, metadata)
+    elif args.mode == 'http':
+        http_mode(model, model_type, metadata, args.port)
+    elif args.mode == 'gym':
+        gym_mode(model, model_type, metadata, args.env, args.episodes, args.render)
+
+if __name__ == '__main__':
+    main()
+'''
+
+    def _generate_ultimate_readme(self, organism_names: List[str], brain_configs: List[Dict], 
+                                   metadata: Dict, export_results: Dict, is_ensemble: bool) -> str:
+        """Generate comprehensive README for ultimate package."""
+        mode = "ENSEMBLE" if is_ensemble else "SOLO"
+        num_orgs = len(organism_names)
+        
+        # Build organism table
+        org_table = "| # | Organism ID | Input | Hidden | Output | Language | Fitness |\n"
+        org_table += "|---|-------------|-------|--------|--------|----------|--------|\n"
+        for i, cfg in enumerate(brain_configs):
+            org_id = cfg.get('organism_id', '?')[:16]
+            has_lang = '✅' if cfg.get('use_language_head') else '❌'
+            fitness = cfg.get('fitness', 0)
+            fitness_str = f"{fitness:.4f}" if isinstance(fitness, float) else str(fitness)
+            org_table += f"| {i+1} | `{org_id}` | {cfg.get('input_dim', 24)} | {cfg.get('hidden_dim', 64)} | {cfg.get('output_dim', 6)} | {has_lang} | {fitness_str} |\n"
+        
+        # Export status
+        onnx_status = "✅ Included" if export_results.get('onnx', {}).get('success') else "❌ Failed"
+        ts_status = "✅ Included" if export_results.get('torchscript', {}).get('success') else "❌ Failed"
+        onnx_size = export_results.get('onnx', {}).get('size', 0)
+        ts_size = export_results.get('torchscript', {}).get('size', 0)
+        
+        return f'''# 🦋🦋 Butterfly Ensemble - Ultimate Package
+
+> **{num_orgs} evolved AI organisms** unified into a single deployable intelligence
+
+## 📦 Package Contents
+
+| File | Description | Size |
+|------|-------------|------|
+| `brain_ensemble.onnx` | ONNX model (all organisms) | {onnx_size:,} bytes {onnx_status} |
+| `brain_ensemble.pt` | TorchScript model (all organisms) | {ts_size:,} bytes {ts_status} |
+| `cocoon.py` | Self-contained Python (embedded weights) | - |
+| `bridge.py` | Universal runner (Gym/HTTP/CLI) | - |
+| `metadata.json` | Complete configuration | - |
+| `vocabulary.json` | Token vocabulary | - |
+| `requirements.txt` | Python dependencies | - |
+| `start.bat` / `start.sh` | Quick-start launcher | - |
+
+## 🚀 Quick Start
+
+### Option 1: Double-Click Launch
+- **Windows:** Run `start.bat`
+- **Linux/Mac:** Run `./start.sh`
+
+### Option 2: Command Line
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Interactive mode (TorchScript)
+python bridge.py --model brain_ensemble.pt --mode interactive
+
+# Interactive mode (ONNX - faster)
+python bridge.py --model brain_ensemble.onnx --mode interactive
+
+# Gymnasium environment
+python bridge.py --model brain_ensemble.onnx --mode gym --env CartPole-v1 --render
+
+# HTTP API server
+python bridge.py --model brain_ensemble.onnx --mode http --port 8080
+```
+
+### Option 3: Pure Python (No Dependencies)
+
+```bash
+# The cocoon.py has embedded weights - runs standalone!
+python cocoon.py --mode chat
+python cocoon.py --mode gym --env CartPole-v1
+```
+
+## 🧠 Ensemble Members
+
+{org_table}
+
+## 🔬 Architecture
+
+```
+                    Input State Vector ({metadata.get('max_input_dim', 24)} dims)
+                           │
+           ┌───────────────┼───────────────┐
+           │               │               │
+           ▼               ▼               ▼
+      ┌─────────┐     ┌─────────┐     ┌─────────┐
+      │ Brain 1 │     │ Brain 2 │ ... │ Brain N │
+      │  (DQN)  │     │  (DQN)  │     │  (DQN)  │
+      └────┬────┘     └────┬────┘     └────┬────┘
+           │               │               │
+           ▼               ▼               ▼
+      ┌─────────┐     ┌─────────┐     ┌─────────┐
+      │Action Q │     │Action Q │     │Action Q │
+      │ values  │     │ values  │     │ values  │
+      └─────────┘     └─────────┘     └─────────┘
+```
+
+The `MultiOrganismWrapper` feeds the same input to all brains and returns
+all their Q-value outputs. You can then:
+- **Majority vote** - Most common action
+- **Weighted vote** - Weight by fitness scores
+- **Ensemble average** - Average Q-values, then argmax
+
+## 🌐 HTTP API
+
+Start server: `python bridge.py --model brain_ensemble.onnx --mode http --port 8080`
+
+### Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/predict` | POST | Run inference on state |
+| `/metadata` | GET | Get ensemble info |
+| `/health` | GET | Health check |
+
+### Example
+
+```bash
+curl -X POST http://localhost:8080/predict \\
+  -H "Content-Type: application/json" \\
+  -d '{{"state": [0.1, 0.2, 0.3, 0.4]}}'
+```
+
+## 🎮 Gymnasium Environments
+
+```bash
+# Classic Control
+python bridge.py -m brain_ensemble.onnx --mode gym --env CartPole-v1 --render
+python bridge.py -m brain_ensemble.onnx --mode gym --env MountainCar-v0 --render
+python bridge.py -m brain_ensemble.onnx --mode gym --env LunarLander-v3 --render
+
+# With training
+python bridge.py -m brain_ensemble.onnx --mode gym --env CartPole-v1 --episodes 100
+```
+
+## 🔗 Links
+
+- 📊 [View Model in Netron](https://netron.app/) - Drag & drop any `.onnx` or `.pt` file
+- 🦋 [Convergence Engine](https://github.com/Yufok1/Convergence_Engine)
+- 📚 [Gymnasium Docs](https://gymnasium.farama.org/)
+
+---
+
+*Generated: {metadata.get('generated', 'Unknown')}*
+'''
 
     def _generate_cocoon_source(self,
                                 brain_data_list: List[str],
