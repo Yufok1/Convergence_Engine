@@ -4024,9 +4024,11 @@ class CocoonAgent:
         related.sort(key=lambda x: x[1], reverse=True)
         return [w for w, s in related[:10] if s >= min_strength]
 
-    def generate_response(self, prompt: str, organism_idx: int = 0, max_tokens: int = 32,
+    def generate_response(self, prompt: str, organism_idx: int = 0, max_tokens: int = 128,
                           vp_value: Optional[float] = None, temperature: float = 1.0) -> Tuple[str, float]:
-        """Generate response with semantic boosting and confidence. Returns (response, confidence)."""
+        """Generate response with semantic boosting and confidence. Returns (response, confidence).
+        
+        NEURAL SYNAPSE MODE: max_tokens=128 allows rich causation chains!"""
         if organism_idx >= len(self.brains):
             organism_idx = 0
         brain = self.brains[organism_idx]

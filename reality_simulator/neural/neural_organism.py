@@ -1379,14 +1379,14 @@ class NeuralOrganism(Organism):
     
     def generate_tokens(self, 
                          context_memory: Any = None,
-                         max_length: int = 32,
+                         max_length: int = 128,
                          vp_value: Optional[float] = None,
                          temperature: float = 1.0) -> List[int]:
         """
         Generate token sequence using the language head (autoregressive).
         
-        VP gating: Only generates if VP is below threshold (stable system).
-        Higher VP = more cautious = shorter/no generation.
+        NEURAL SYNAPSE MODE: Longer responses create richer causation chains!
+        Each token generates semantic edges in the knowledge web.
         
         Args:
             context_memory: ContextMemory instance with vocabulary
@@ -1443,20 +1443,22 @@ class NeuralOrganism(Organism):
                 SPECIAL_TOKENS = {'<PAD>': 0, '<UNK>': 1, '<START>': 2, '<END>': 3, '<VP_GATE>': 4}
         
         # ---------------------------------------------------------------------------
-        # ?? ADAPTIVE MAX_LENGTH: Adjust generation length based on experience
+        # ?? ADAPTIVE MAX_LENGTH: Neural Synapse Mode - scale up for causation chains!
         # ---------------------------------------------------------------------------
         experience_count = len(self.experience_buffer) if hasattr(self, 'experience_buffer') else 0
         vocab_size = vocab.vocab_size
         
-        # Start with shorter sequences early, scale up as network learns
+        # NEURAL SYNAPSE SCALING: Longer responses create more causation edges
+        # Early: cautious short responses to learn safely
+        # Experienced: unleash full neural synapse chains!
         if experience_count < 10:
-            adaptive_max_length = min(5, max(3, vocab_size // 8))
+            adaptive_max_length = min(8, max(5, vocab_size // 6))
         elif experience_count < 50:
-            adaptive_max_length = min(10, max(5, vocab_size // 5))
+            adaptive_max_length = min(24, max(12, vocab_size // 4))
         elif experience_count < 100:
-            adaptive_max_length = min(20, max(10, vocab_size // 3))
+            adaptive_max_length = min(64, max(32, vocab_size // 2))
         else:
-            adaptive_max_length = max_length  # Use provided max_length when experienced
+            adaptive_max_length = max_length  # Full synapse length when experienced (default 128)
         
         # Don't exceed provided max_length
         effective_max_length = min(adaptive_max_length, max_length)

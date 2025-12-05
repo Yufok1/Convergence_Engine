@@ -179,14 +179,15 @@ class ButterflyChatRouter:
                     vocab_size = self.vocabulary.vocab_size if self.vocabulary else 100
                     
                     # Adaptive max_length: shorter sequences early, scale up as network learns
+                    # NEURAL SYNAPSE MODE: Longer responses = more causation edges!
                     if experience_count < 10:
-                        adaptive_max_length = min(5, max(3, vocab_size // 8))
+                        adaptive_max_length = min(8, max(5, vocab_size // 6))
                     elif experience_count < 50:
-                        adaptive_max_length = min(10, max(5, vocab_size // 5))
+                        adaptive_max_length = min(24, max(12, vocab_size // 4))
                     elif experience_count < 100:
-                        adaptive_max_length = min(20, max(10, vocab_size // 3))
+                        adaptive_max_length = min(64, max(32, vocab_size // 2))
                     else:
-                        adaptive_max_length = 50  # Full length when experienced
+                        adaptive_max_length = 128  # Full neural synapse length when experienced
                     
                     self._log_debug("STEP_4", f"Generating tokens for organism {org_id}", {
                         "method": "generate_tokens",
