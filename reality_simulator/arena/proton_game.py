@@ -116,6 +116,98 @@ class GameDefinition:
     
     # Trait bonuses - organisms with these traits get advantages
     favored_traits: Dict[str, float] = field(default_factory=dict)
+    
+    # Two-player game support - organisms play AGAINST each other
+    is_two_player: bool = False           # If True, organisms compete head-to-head
+    two_player_env: Optional[str] = None  # Alternative env for 2P mode (e.g., "ALE/Pong-v5" -> "PettingZoo/pong_v3")
+
+
+# =============================================================================
+# TWO-PLAYER GAMES - Head-to-head competition
+# =============================================================================
+
+TWO_PLAYER_GAMES: Dict[str, GameDefinition] = {
+    # Classic arcade versus games
+    "pong": GameDefinition(
+        name="Pong Duel",
+        gym_env="pong_versus",  # Custom handler
+        challenge=ChallengeType.PHYSICAL,
+        resource=ResourceType.MACHINE,
+        difficulty=GameDifficulty.APPRENTICE,
+        description="Classic Pong - two organisms battle paddle-to-paddle",
+        min_episodes=5,
+        score_metric="win_rate",
+        tags=["versus", "reflexes", "timing", "classic"],
+        favored_traits={"reflexes": 0.3, "timing": 0.2, "prediction": 0.15},
+        is_two_player=True
+    ),
+    "tennis": GameDefinition(
+        name="Tennis Match",
+        gym_env="tennis_versus",
+        challenge=ChallengeType.PHYSICAL,
+        resource=ResourceType.TOOL,
+        difficulty=GameDifficulty.JOURNEYMAN,
+        description="Atari Tennis - serve, volley, compete",
+        min_episodes=3,
+        score_metric="win_rate",
+        tags=["versus", "sports", "strategy"],
+        favored_traits={"timing": 0.25, "strategy": 0.2},
+        is_two_player=True
+    ),
+    "boxing": GameDefinition(
+        name="Boxing Match",
+        gym_env="boxing_versus",
+        challenge=ChallengeType.PHYSICAL,
+        resource=ResourceType.NAKED,
+        difficulty=GameDifficulty.EXPERT,
+        description="Boxing - punch, dodge, knock out",
+        min_episodes=3,
+        score_metric="win_rate",
+        tags=["versus", "combat", "reflexes"],
+        favored_traits={"aggression": 0.25, "reflexes": 0.2, "endurance": 0.15},
+        is_two_player=True
+    ),
+    "combat": GameDefinition(
+        name="Tank Combat",
+        gym_env="combat_versus",
+        challenge=ChallengeType.MENTAL,
+        resource=ResourceType.MACHINE,
+        difficulty=GameDifficulty.JOURNEYMAN,
+        description="Tank warfare - outmaneuver and destroy",
+        min_episodes=5,
+        score_metric="win_rate",
+        tags=["versus", "tanks", "strategy"],
+        favored_traits={"strategy": 0.25, "spatial_awareness": 0.2},
+        is_two_player=True
+    ),
+    "warlords": GameDefinition(
+        name="Warlords",
+        gym_env="warlords_versus",
+        challenge=ChallengeType.MENTAL,
+        resource=ResourceType.TOOL,
+        difficulty=GameDifficulty.EXPERT,
+        description="Defend your castle, destroy theirs",
+        min_episodes=3,
+        score_metric="win_rate",
+        tags=["versus", "defense", "strategy"],
+        favored_traits={"defense": 0.25, "timing": 0.2},
+        is_two_player=True
+    ),
+    # Language duel - organisms compete with vocabulary
+    "word_duel": GameDefinition(
+        name="Word Duel",
+        gym_env="word_duel_versus",
+        challenge=ChallengeType.ARTS,
+        resource=ResourceType.NAKED,
+        difficulty=GameDifficulty.JOURNEYMAN,
+        description="Vocabulary battle - respond with richer language",
+        min_episodes=5,
+        score_metric="language_score",
+        tags=["versus", "language", "vocabulary"],
+        favored_traits={"vocabulary_size": 0.3, "coherence": 0.25},
+        is_two_player=True
+    ),
+}
 
 
 # The Master Game Grid
@@ -200,6 +292,35 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
             tags=["endurance", "racing", "atari"],
             favored_traits={"endurance": 0.25, "focus": 0.1}
         ),
+        # ═══════════════════════════════════════════════════════════════════
+        # TWO-PLAYER VERSUS GAMES - Head-to-head competition!
+        # ═══════════════════════════════════════════════════════════════════
+        GameDefinition(
+            name="Pong Duel",
+            gym_env="pong_versus",
+            challenge=ChallengeType.PHYSICAL,
+            resource=ResourceType.MACHINE,
+            difficulty=GameDifficulty.APPRENTICE,
+            description="Classic Pong - paddle-to-paddle battle",
+            min_episodes=5,
+            score_metric="win_rate",
+            tags=["versus", "reflexes", "timing", "classic"],
+            favored_traits={"reflexes": 0.3, "timing": 0.2, "prediction": 0.15},
+            is_two_player=True
+        ),
+        GameDefinition(
+            name="Tank Combat",
+            gym_env="combat_versus",
+            challenge=ChallengeType.PHYSICAL,
+            resource=ResourceType.MACHINE,
+            difficulty=GameDifficulty.JOURNEYMAN,
+            description="Tank warfare - outmaneuver and destroy",
+            min_episodes=5,
+            score_metric="win_rate",
+            tags=["versus", "tanks", "strategy"],
+            favored_traits={"strategy": 0.25, "spatial_awareness": 0.2},
+            is_two_player=True
+        ),
     ],
     
     (ChallengeType.PHYSICAL, ResourceType.ANIMAL): [
@@ -232,6 +353,20 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
             description="Walk on two legs across terrain",
             tags=["balance", "locomotion", "box2d"],
             favored_traits={"balance": 0.2, "adaptability": 0.15}
+        ),
+        # Two-player boxing - NAKED combat with animal instincts
+        GameDefinition(
+            name="Boxing Match",
+            gym_env="boxing_versus",
+            challenge=ChallengeType.PHYSICAL,
+            resource=ResourceType.ANIMAL,
+            difficulty=GameDifficulty.EXPERT,
+            description="Boxing - punch, dodge, knock out",
+            min_episodes=5,
+            score_metric="win_rate",
+            tags=["versus", "combat", "reflexes"],
+            favored_traits={"aggression": 0.25, "reflexes": 0.2, "endurance": 0.15},
+            is_two_player=True
         ),
     ],
     
@@ -423,6 +558,20 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
             description="Link related concepts - semantic understanding",
             tags=["concepts", "semantics", "knowledge"],
             favored_traits={"concept_breadth": 0.2, "association_strength": 0.15}
+        ),
+        # Two-player word duel!
+        GameDefinition(
+            name="Word Duel",
+            gym_env="word_duel_versus",
+            challenge=ChallengeType.ARTS,
+            resource=ResourceType.NAKED,
+            difficulty=GameDifficulty.JOURNEYMAN,
+            description="Vocabulary battle - respond with richer language",
+            min_episodes=5,
+            score_metric="language_score",
+            tags=["versus", "language", "vocabulary"],
+            favored_traits={"vocabulary_size": 0.3, "coherence": 0.25},
+            is_two_player=True
         ),
     ],
     
@@ -858,8 +1007,16 @@ class ProtonGameArena:
         
         start_time = time.time()
         
+        # ═══════════════════════════════════════════════════════════════════
+        # TWO-PLAYER HEAD-TO-HEAD GAMES
+        # Organisms compete DIRECTLY against each other
+        # ═══════════════════════════════════════════════════════════════════
+        if game.is_two_player or game.gym_env.endswith('_versus'):
+            score_a, score_b, stats_a, stats_b = self._run_two_player_battle(
+                game, bridge_a, bridge_b, state, episodes
+            )
         # Check if this is a standard gym env or custom
-        if self._is_standard_gym_env(game.gym_env):
+        elif self._is_standard_gym_env(game.gym_env):
             # Run both organisms in the gym environment
             stats_a = bridge_a.run_gym(
                 game.gym_env, 
@@ -949,6 +1106,375 @@ class ProtonGameArena:
                             'Walker2d', 'Swimmer', 'Pusher', 'Reacher', 'Inverted']
         return any(env_spec.startswith(prefix) for prefix in standard_prefixes)
     
+    # =========================================================================
+    # TWO-PLAYER HEAD-TO-HEAD BATTLES
+    # =========================================================================
+    
+    def _run_two_player_battle(self,
+                               game: GameDefinition,
+                               bridge_a,
+                               bridge_b,
+                               state: SelectionState,
+                               episodes: int) -> Tuple[float, float, Dict, Dict]:
+        """
+        Run a true head-to-head battle where organisms compete DIRECTLY.
+        
+        Instead of running solo environments and comparing scores,
+        both organisms play in the same game taking turns or simultaneously.
+        
+        Returns: (score_a, score_b, stats_a, stats_b)
+        """
+        game_type = game.gym_env.replace('_versus', '')
+        
+        logger.info(f"🎮 HEAD-TO-HEAD BATTLE: {game.name}")
+        logger.info(f"   {state.organism_a_id[:8]} 🆚 {state.organism_b_id[:8]}")
+        
+        wins_a = 0
+        wins_b = 0
+        rounds_detail = []
+        
+        for episode in range(episodes):
+            logger.info(f"\n   Round {episode + 1}/{episodes}")
+            
+            if game_type in ['pong', 'tennis', 'boxing', 'combat', 'warlords']:
+                # Arcade-style turn-based simulation
+                result = self._simulate_arcade_duel(game_type, bridge_a, bridge_b)
+            elif game_type == 'word_duel':
+                # Language-based competition
+                result = self._simulate_word_duel(bridge_a, bridge_b)
+            else:
+                # Default to reaction-based competition
+                result = self._simulate_reaction_duel(bridge_a, bridge_b)
+            
+            if result['winner'] == 'a':
+                wins_a += 1
+                logger.info(f"      🔴 {state.organism_a_id[:8]} wins!")
+            elif result['winner'] == 'b':
+                wins_b += 1
+                logger.info(f"      🔵 {state.organism_b_id[:8]} wins!")
+            else:
+                logger.info(f"      🤝 Draw!")
+            
+            rounds_detail.append(result)
+        
+        # Calculate scores (wins as percentage * 100)
+        total_rounds = wins_a + wins_b
+        if total_rounds > 0:
+            score_a = (wins_a / episodes) * 100
+            score_b = (wins_b / episodes) * 100
+        else:
+            score_a = score_b = 50.0
+        
+        stats_a = {
+            'wins': wins_a,
+            'losses': wins_b,
+            'win_rate': wins_a / episodes if episodes > 0 else 0,
+            'rounds': rounds_detail,
+            'game_type': game_type
+        }
+        stats_b = {
+            'wins': wins_b,
+            'losses': wins_a,
+            'win_rate': wins_b / episodes if episodes > 0 else 0,
+            'rounds': rounds_detail,
+            'game_type': game_type
+        }
+        
+        logger.info(f"\n   📊 Final: {state.organism_a_id[:8]} {wins_a} - {wins_b} {state.organism_b_id[:8]}")
+        
+        return score_a, score_b, stats_a, stats_b
+    
+    def _simulate_arcade_duel(self, 
+                              game_type: str,
+                              bridge_a,
+                              bridge_b) -> Dict[str, Any]:
+        """
+        Simulate an arcade-style duel between two organisms.
+        
+        Each organism makes decisions based on a game state,
+        and we resolve the round based on their choices.
+        """
+        # Generate a game scenario state
+        game_state = self._generate_game_state(game_type)
+        
+        # Both organisms decide on action
+        action_a = self._get_organism_action(bridge_a, game_state, game_type)
+        action_b = self._get_organism_action(bridge_b, game_state, game_type)
+        
+        # Resolve based on game type
+        if game_type == 'pong':
+            return self._resolve_pong_round(action_a, action_b, game_state)
+        elif game_type == 'tennis':
+            return self._resolve_tennis_round(action_a, action_b, game_state)
+        elif game_type == 'boxing':
+            return self._resolve_boxing_round(action_a, action_b, game_state)
+        elif game_type == 'combat':
+            return self._resolve_combat_round(action_a, action_b, game_state)
+        elif game_type == 'warlords':
+            return self._resolve_warlords_round(action_a, action_b, game_state)
+        else:
+            return self._resolve_generic_round(action_a, action_b)
+    
+    def _generate_game_state(self, game_type: str) -> np.ndarray:
+        """Generate a game state vector for decision-making."""
+        state = np.random.rand(24).astype(np.float32)
+        
+        # Game-specific state adjustments
+        if game_type == 'pong':
+            state[0] = random.uniform(-1, 1)  # Ball X position
+            state[1] = random.uniform(-1, 1)  # Ball Y position
+            state[2] = random.uniform(-0.5, 0.5)  # Ball X velocity
+            state[3] = random.uniform(-0.5, 0.5)  # Ball Y velocity
+        elif game_type == 'boxing':
+            state[0] = random.uniform(0, 1)  # Distance to opponent
+            state[1] = random.uniform(0, 1)  # Own stamina
+            state[2] = random.uniform(0, 1)  # Opponent stamina
+        
+        return state
+    
+    def _get_organism_action(self, bridge, state: np.ndarray, game_type: str) -> int:
+        """Get an organism's action decision for the game state."""
+        try:
+            result = bridge.process(state=state)
+            return result.action
+        except Exception:
+            # Fallback to random action
+            return random.randint(0, 5)
+    
+    def _resolve_pong_round(self, action_a: int, action_b: int, state: np.ndarray) -> Dict:
+        """
+        Resolve a Pong-style round.
+        
+        Actions: 0=stay, 1=up, 2=down, 3=sprint_up, 4=sprint_down, 5=special
+        Ball position determines optimal action.
+        """
+        ball_y = state[1]
+        ball_vel_y = state[3]
+        predicted_y = ball_y + ball_vel_y * 3  # Predict where ball will be
+        
+        # Determine optimal actions (simplified)
+        # If ball coming high, should move up; if low, move down
+        optimal_for_a = 1 if predicted_y > 0.3 else (2 if predicted_y < -0.3 else 0)
+        optimal_for_b = 2 if predicted_y > 0.3 else (1 if predicted_y < -0.3 else 0)  # Opposite side
+        
+        # Score based on how close to optimal
+        score_a = 1.0 if action_a == optimal_for_a else (0.5 if abs(action_a - optimal_for_a) <= 1 else 0.2)
+        score_b = 1.0 if action_b == optimal_for_b else (0.5 if abs(action_b - optimal_for_b) <= 1 else 0.2)
+        
+        # Add randomness (ball physics)
+        score_a += random.uniform(0, 0.3)
+        score_b += random.uniform(0, 0.3)
+        
+        if score_a > score_b:
+            winner = 'a'
+        elif score_b > score_a:
+            winner = 'b'
+        else:
+            winner = 'draw'
+        
+        return {
+            'winner': winner,
+            'action_a': action_a,
+            'action_b': action_b,
+            'score_a': score_a,
+            'score_b': score_b,
+            'game_type': 'pong'
+        }
+    
+    def _resolve_tennis_round(self, action_a: int, action_b: int, state: np.ndarray) -> Dict:
+        """Resolve a tennis-style round."""
+        # Similar to pong but with serve/return mechanics
+        is_serve = random.random() < 0.3
+        
+        if is_serve:
+            # Server advantage
+            server_score = 0.6 + random.uniform(0, 0.4)
+            receiver_score = 0.3 + random.uniform(0, 0.4)
+        else:
+            # Rally - both have equal chance
+            server_score = 0.4 + random.uniform(0, 0.4)
+            receiver_score = 0.4 + random.uniform(0, 0.4)
+        
+        # Action quality matters
+        server_score += 0.1 if action_a in [1, 2] else 0
+        receiver_score += 0.1 if action_b in [1, 2] else 0
+        
+        winner = 'a' if server_score > receiver_score else ('b' if receiver_score > server_score else 'draw')
+        
+        return {'winner': winner, 'action_a': action_a, 'action_b': action_b, 'game_type': 'tennis'}
+    
+    def _resolve_boxing_round(self, action_a: int, action_b: int, state: np.ndarray) -> Dict:
+        """
+        Resolve a boxing-style round.
+        
+        Actions map to: 0=jab, 1=hook, 2=uppercut, 3=block, 4=dodge, 5=clinch
+        Rock-paper-scissors style counters.
+        """
+        # Action counters
+        counters = {
+            0: [4],     # Jab beaten by dodge
+            1: [3, 4],  # Hook beaten by block or dodge
+            2: [4],     # Uppercut beaten by dodge
+            3: [2],     # Block beaten by uppercut
+            4: [5],     # Dodge beaten by clinch
+            5: [0, 1],  # Clinch beaten by jab or hook
+        }
+        
+        a_counters_b = action_a in counters.get(action_b, [])
+        b_counters_a = action_b in counters.get(action_a, [])
+        
+        if a_counters_b and not b_counters_a:
+            winner = 'a'
+        elif b_counters_a and not a_counters_b:
+            winner = 'b'
+        elif a_counters_b and b_counters_a:
+            winner = 'draw'  # Both counter each other
+        else:
+            # No counter - random based on action strength
+            attack_strength = {0: 0.3, 1: 0.5, 2: 0.7, 3: 0.1, 4: 0.1, 5: 0.05}
+            str_a = attack_strength.get(action_a, 0.2) + random.uniform(0, 0.3)
+            str_b = attack_strength.get(action_b, 0.2) + random.uniform(0, 0.3)
+            winner = 'a' if str_a > str_b else ('b' if str_b > str_a else 'draw')
+        
+        return {'winner': winner, 'action_a': action_a, 'action_b': action_b, 'game_type': 'boxing'}
+    
+    def _resolve_combat_round(self, action_a: int, action_b: int, state: np.ndarray) -> Dict:
+        """Resolve a tank combat round."""
+        # Actions: 0=move, 1=turn_left, 2=turn_right, 3=fire, 4=retreat, 5=special
+        
+        fire_a = action_a == 3
+        fire_b = action_b == 3
+        dodge_a = action_a in [0, 1, 2, 4]
+        dodge_b = action_b in [0, 1, 2, 4]
+        
+        if fire_a and not dodge_b:
+            winner = 'a'
+        elif fire_b and not dodge_a:
+            winner = 'b'
+        elif fire_a and fire_b:
+            winner = random.choice(['a', 'b', 'draw'])
+        else:
+            winner = 'draw'
+        
+        return {'winner': winner, 'action_a': action_a, 'action_b': action_b, 'game_type': 'combat'}
+    
+    def _resolve_warlords_round(self, action_a: int, action_b: int, state: np.ndarray) -> Dict:
+        """Resolve a Warlords-style defense/attack round."""
+        # Actions: 0-2 = defensive positions, 3-5 = attack positions
+        
+        attack_a = action_a >= 3
+        attack_b = action_b >= 3
+        defense_a = not attack_a
+        defense_b = not attack_b
+        
+        if attack_a and defense_b:
+            winner = random.choice(['a', 'draw']) if random.random() < 0.6 else 'b'
+        elif attack_b and defense_a:
+            winner = random.choice(['b', 'draw']) if random.random() < 0.6 else 'a'
+        elif attack_a and attack_b:
+            winner = random.choice(['a', 'b'])
+        else:
+            winner = 'draw'
+        
+        return {'winner': winner, 'action_a': action_a, 'action_b': action_b, 'game_type': 'warlords'}
+    
+    def _resolve_generic_round(self, action_a: int, action_b: int) -> Dict:
+        """Generic round resolution based on action comparison."""
+        if action_a > action_b:
+            winner = 'a'
+        elif action_b > action_a:
+            winner = 'b'
+        else:
+            winner = random.choice(['a', 'b', 'draw'])
+        return {'winner': winner, 'action_a': action_a, 'action_b': action_b, 'game_type': 'generic'}
+    
+    def _simulate_word_duel(self, bridge_a, bridge_b) -> Dict[str, Any]:
+        """
+        Language-based competition between organisms.
+        
+        Both respond to a prompt, winner has more coherent/rich response.
+        """
+        prompts = [
+            "Describe your strategy for survival.",
+            "What makes cooperation valuable?",
+            "Explain the nature of competition.",
+            "How do you perceive your environment?",
+            "What defines strength?"
+        ]
+        prompt = random.choice(prompts)
+        
+        try:
+            result_a = bridge_a.process(text=prompt)
+            response_a = result_a.response if hasattr(result_a, 'response') else str(result_a)
+        except Exception:
+            response_a = "..."
+        
+        try:
+            result_b = bridge_b.process(text=prompt)
+            response_b = result_b.response if hasattr(result_b, 'response') else str(result_b)
+        except Exception:
+            response_b = "..."
+        
+        # Score responses
+        def score_response(resp: str) -> float:
+            words = resp.split()
+            length_score = min(len(words) / 15, 1.0) * 40
+            variety_score = (len(set(words)) / max(len(words), 1)) * 40
+            # Penalize very short or repetitive
+            if len(words) < 3:
+                return 10
+            return length_score + variety_score + random.uniform(0, 20)
+        
+        score_a = score_response(response_a)
+        score_b = score_response(response_b)
+        
+        if score_a > score_b + 5:
+            winner = 'a'
+        elif score_b > score_a + 5:
+            winner = 'b'
+        else:
+            winner = 'draw'
+        
+        return {
+            'winner': winner,
+            'prompt': prompt,
+            'response_a': response_a[:100],
+            'response_b': response_b[:100],
+            'score_a': score_a,
+            'score_b': score_b,
+            'game_type': 'word_duel'
+        }
+    
+    def _simulate_reaction_duel(self, bridge_a, bridge_b) -> Dict[str, Any]:
+        """Reaction time based competition."""
+        # Generate random state
+        state = np.random.rand(24).astype(np.float32)
+        
+        # See who responds faster/better
+        import time as time_module
+        
+        start_a = time_module.perf_counter()
+        try:
+            result_a = bridge_a.process(state=state)
+            time_a = time_module.perf_counter() - start_a
+        except Exception:
+            time_a = 999
+        
+        start_b = time_module.perf_counter()
+        try:
+            result_b = bridge_b.process(state=state)
+            time_b = time_module.perf_counter() - start_b
+        except Exception:
+            time_b = 999
+        
+        # Faster + random factor wins
+        score_a = (1.0 / (time_a + 0.001)) + random.uniform(0, 0.5)
+        score_b = (1.0 / (time_b + 0.001)) + random.uniform(0, 0.5)
+        
+        winner = 'a' if score_a > score_b else ('b' if score_b > score_a else 'draw')
+        
+        return {'winner': winner, 'time_a': time_a, 'time_b': time_b, 'game_type': 'reaction'}
+
     def _run_custom_game(self, 
                          game: GameDefinition,
                          bridge,

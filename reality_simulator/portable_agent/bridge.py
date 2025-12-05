@@ -2417,11 +2417,15 @@ class AgentBridge:
         parts = command.lower().strip().split()
         
         # Get arena data (embedded - no external imports needed)
+        # COMPLETE GAME CATALOG - All Proton Arena Games
         ARENA_GAMES = {
+            # ═══════════════════════════════════════════════════════════════
+            # PHYSICAL CHALLENGES
+            # ═══════════════════════════════════════════════════════════════
             ('physical', 'naked'): [
-                ('Balance Beam', 'CartPole-v1', 'NOVICE', 'Pure balance challenge'),
+                ('Balance Beam', 'CartPole-v1', 'NOVICE', 'Pure balance - keep pole upright'),
                 ('Mountain Climb', 'MountainCar-v0', 'APPRENTICE', 'Build momentum to climb'),
-                ('Gymnast Swing', 'Acrobot-v1', 'JOURNEYMAN', 'Swing using body momentum'),
+                ('Gymnast Swing', 'Acrobot-v1', 'JOURNEYMAN', 'Swing up using body momentum'),
             ],
             ('physical', 'tool'): [
                 ('Lunar Landing', 'LunarLander-v3', 'JOURNEYMAN', 'Land spacecraft with thrusters'),
@@ -2430,29 +2434,78 @@ class AgentBridge:
             ('physical', 'machine'): [
                 ('Road Racing', 'CarRacing-v3', 'EXPERT', 'Race car around track'),
                 ('Endurance Rally', 'ALE/Enduro-v5', 'EXPERT', 'Endless racing endurance'),
+                ('Pong Duel', 'pong_versus', 'APPRENTICE', '🆚 HEAD-TO-HEAD paddle battle'),
+                ('Tank Combat', 'combat_versus', 'JOURNEYMAN', '🆚 HEAD-TO-HEAD tank warfare'),
             ],
             ('physical', 'animal'): [
-                ('Bipedal Walk', 'BipedalWalker-v3', 'EXPERT', 'Walk on two legs'),
+                ('Ant Colony', 'Ant-v4', 'MASTER', 'Control multi-legged creature'),
+                ('Cheetah Sprint', 'HalfCheetah-v4', 'MASTER', 'Run as fast as possible'),
+                ('Bipedal Walk', 'BipedalWalker-v3', 'EXPERT', 'Walk on two legs across terrain'),
+                ('Boxing Match', 'boxing_versus', 'EXPERT', '🆚 HEAD-TO-HEAD punch & dodge'),
             ],
+            # ═══════════════════════════════════════════════════════════════
+            # MENTAL CHALLENGES  
+            # ═══════════════════════════════════════════════════════════════
             ('mental', 'naked'): [
                 ('Frozen Lake', 'FrozenLake-v1', 'NOVICE', 'Navigate slippery ice'),
                 ('Cliff Walking', 'CliffWalking-v0', 'APPRENTICE', 'Navigate cliffs safely'),
             ],
             ('mental', 'tool'): [
                 ('Blackjack', 'Blackjack-v1', 'APPRENTICE', 'Card counting and probability'),
-                ('Taxi Navigation', 'Taxi-v3', 'JOURNEYMAN', 'Optimal pickup/dropoff'),
+                ('Taxi Navigation', 'Taxi-v3', 'JOURNEYMAN', 'Optimal pickup/dropoff routing'),
             ],
             ('mental', 'machine'): [
                 ('Brick Breaker', 'ALE/Breakout-v5', 'JOURNEYMAN', 'Strategic brick destruction'),
                 ('Space Defense', 'ALE/SpaceInvaders-v5', 'JOURNEYMAN', 'Defend against waves'),
                 ('Pac Maze', 'ALE/MsPacman-v5', 'EXPERT', 'Navigate maze, avoid ghosts'),
             ],
+            ('mental', 'animal'): [
+                ('Predator Evasion', 'predator_prey', 'EXPERT', 'Evade using prey instincts'),
+                ('Cooperation Test', 'cooperation_game', 'MASTER', 'Work together to win'),
+            ],
+            # ═══════════════════════════════════════════════════════════════
+            # CHANCE CHALLENGES
+            # ═══════════════════════════════════════════════════════════════
             ('chance', 'naked'): [
                 ('Coin Fate', 'coin_flip', 'NOVICE', 'Pure luck - coin flip'),
             ],
             ('chance', 'tool'): [
                 ('Card Draw', 'Blackjack-v1', 'APPRENTICE', 'Luck meets strategy'),
             ],
+            ('chance', 'machine'): [
+                ('Slot Challenge', 'ALE/Casino-v5', 'APPRENTICE', 'Machine gambling'),
+            ],
+            ('chance', 'animal'): [
+                ('Genetic Lottery', 'mutation_roulette', 'JOURNEYMAN', 'Random mutations'),
+            ],
+            # ═══════════════════════════════════════════════════════════════
+            # ARTS CHALLENGES (Language/Creative)
+            # ═══════════════════════════════════════════════════════════════
+            ('arts', 'naked'): [
+                ('Word Coherence', 'language_coherence', 'JOURNEYMAN', 'Generate coherent text'),
+                ('Concept Association', 'concept_linking', 'APPRENTICE', 'Link related concepts'),
+                ('Word Duel', 'word_duel_versus', 'JOURNEYMAN', '🆚 HEAD-TO-HEAD vocabulary battle'),
+            ],
+            ('arts', 'tool'): [
+                ('Vocabulary Battle', 'vocabulary_duel', 'JOURNEYMAN', 'Express complex ideas'),
+            ],
+            ('arts', 'machine'): [
+                ('Response Quality', 'dialogue_quality', 'EXPERT', 'Generate quality responses'),
+            ],
+            ('arts', 'animal'): [
+                ('Cross-Organism Dialogue', 'inter_organism_chat', 'MASTER', 'Communicate with others'),
+                ('Alliance Poetry', 'collaborative_creation', 'GRANDMASTER', 'Create together'),
+            ],
+        }
+        
+        # Separate lookup for versus games
+        VERSUS_GAMES = {
+            'pong_versus': ('Pong Duel', 'APPRENTICE', 'Classic Pong head-to-head'),
+            'boxing_versus': ('Boxing Match', 'EXPERT', 'Boxing - punch, dodge, knockout'),
+            'combat_versus': ('Tank Combat', 'JOURNEYMAN', 'Tank warfare - outmaneuver'),
+            'word_duel_versus': ('Word Duel', 'JOURNEYMAN', 'Vocabulary competition'),
+            'tennis_versus': ('Tennis Match', 'JOURNEYMAN', 'Serve, volley, compete'),
+            'warlords_versus': ('Warlords', 'EXPERT', 'Defend castle, destroy theirs'),
         }
         
         if len(parts) == 1:
@@ -2539,11 +2592,23 @@ class AgentBridge:
             print(f"  {desc}")
             print("="*60)
             
-            # Check if gym env exists
-            if env.startswith('ALE/') or env in ['CartPole-v1', 'MountainCar-v0', 'Acrobot-v1',
-                                                    'LunarLander-v3', 'Pendulum-v1', 'CarRacing-v3',
-                                                    'BipedalWalker-v3', 'FrozenLake-v1', 'CliffWalking-v0',
-                                                    'Blackjack-v1', 'Taxi-v3']:
+            # Check if it's a versus game (head-to-head)
+            if env.endswith('_versus'):
+                print("\n  🆚 This is a HEAD-TO-HEAD game!")
+                print("  Two organisms compete directly against each other.")
+                print("  Run with: python bridge.py . --mode arena --versus <opponent_capsule>")
+                print("="*60 + "\n")
+                return
+            
+            # Check if gym env exists - expanded list
+            STANDARD_GYM_ENVS = [
+                'CartPole-v1', 'MountainCar-v0', 'Acrobot-v1',
+                'LunarLander-v3', 'Pendulum-v1', 'CarRacing-v3',
+                'BipedalWalker-v3', 'FrozenLake-v1', 'CliffWalking-v0',
+                'Blackjack-v1', 'Taxi-v3', 'Ant-v4', 'HalfCheetah-v4',
+                'Hopper-v4', 'Walker2d-v4', 'Humanoid-v4', 'Swimmer-v4',
+            ]
+            if env.startswith('ALE/') or env in STANDARD_GYM_ENVS:
                 print("\n  Running 5 episodes...")
                 print("-"*60)
                 self.run_gym(env, episodes=5, render=False, learn=True, verbose=True)

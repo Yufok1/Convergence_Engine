@@ -1,6 +1,7 @@
 import torch
 import json
 import zipfile
+import zlib
 from io import BytesIO
 import numpy as np
 import datetime
@@ -8,6 +9,7 @@ import os
 import sys
 from typing import Dict, Any, List, Optional
 import base64
+from string import Template
 import uuid
 import pickle
 from pathlib import Path
@@ -123,13 +125,40 @@ class AgentCompiler:
             if language_outputs:
                 return tuple(action_outputs + language_outputs)
             return tuple(action_outputs)
+    
+    def _get_brain_from_entity(self, entity) -> OrganismBrain:
+        """
+        Extract or reconstruct brain from either a live NeuralOrganism or an OrganismCapsule.
+        
+        Args:
+            entity: Either a NeuralOrganism (live) or OrganismCapsule (saved)
+            
+        Returns:
+            OrganismBrain instance
+        """
+        # Check if it's a live organism with a brain attribute
+        if hasattr(entity, 'brain') and entity.brain is not None:
+            return entity.brain
+        
+        # Otherwise, treat as capsule and reconstruct from neural snapshot
+        return self._reconstruct_brain_from_capsule(entity)
+    
+    def _get_organism_id(self, entity) -> str:
+        """Get organism ID from either a live organism or capsule."""
+        if hasattr(entity, 'organism_id'):
+            return str(entity.organism_id)
+        if hasattr(entity, 'id'):
+            return str(entity.id)
+        if hasattr(entity, 'species_id'):
+            return str(entity.species_id)
+        return "unknown"
         
     def _reconstruct_brain_from_capsule(self, capsule: OrganismCapsule) -> OrganismBrain:
         """
         Reconstructs the OrganismBrain model from the capsule data.
         Uses capsule.neural (NeuralSnapshot) for reconstruction.
         """
-        if not capsule.neural:
+        if not hasattr(capsule, 'neural') or not capsule.neural:
             raise ValueError("Capsule does not contain neural network state.")
         
         # Extract from NeuralSnapshot
@@ -3165,6 +3194,981 @@ if __name__ == '__main__':
             capsule,
             agent_state_payload
         )
+
+    def compile_cocoon(self,
+                       capsules: List['OrganismCapsule'],
+                       vocabulary: Any = None,
+                       knowledge_web: Any = None,
+                       training_config: Dict[str, Any] = None,
+                       include_gym: bool = True,
+                       include_http: bool = True,
+                       compress_data: bool = True) -> str:
+        """
+        🦋 COCOON COMPILER - Single-file deployable agent
+        Compiles organism(s) into a SINGLE self-contained Python file that can run solo or ensemble.
+        """
+        logger.info(f"[COCOON] Compiling {len(capsules)} organism(s) into single-file cocoon...")
+
+        is_ensemble = len(capsules) > 1
+        mode_str = "ENSEMBLE" if is_ensemble else "SOLO"
+        logger.info(f"[COCOON] Mode: {mode_str}")
+
+        # 1) Serialize brains
+        brain_data_list = []
+        brain_configs = []
+        organism_names = []
+
+        for entity in capsules:
+            brain = self._get_brain_from_entity(entity)
+            name = self._get_organism_id(entity)
+            organism_names.append(name)
+
+            state_buffer = BytesIO()
+            torch.save(brain.state_dict(), state_buffer)
+            state_bytes = state_buffer.getvalue()
+            if compress_data:
+                state_bytes = zlib.compress(state_bytes, level=9)
+            state_b64 = base64.b64encode(state_bytes).decode('ascii')
+            brain_data_list.append(state_b64)
+
+            config = {
+                'organism_id': name,
+                'input_dim': brain.input_dim,
+                'hidden_dim': brain.hidden_dim,
+                'output_dim': brain.output_dim,
+                'vocab_size': getattr(brain, 'vocab_size', 1000),
+                'use_attention': getattr(brain, 'use_attention', False),
+                'use_language_head': getattr(brain, 'use_language_head', False),
+                'use_concept_head': getattr(brain, 'use_concept_head', False),
+                'num_attention_heads': getattr(brain, 'num_attention_heads', 4),
+                'num_key_compositions': getattr(brain, 'num_key_compositions', 15),
+                'dropout': getattr(brain, 'dropout_rate', 0.1),
+            }
+            brain_configs.append(config)
+
+        # 2) Vocabulary
+        vocab_data = {}
+        if vocabulary is not None:
+            vocab_data = {
+                'word_to_id': dict(getattr(vocabulary, 'word_to_id', {})),
+                'id_to_word': {str(k): v for k, v in getattr(vocabulary, 'id_to_word', {}).items()},
+                'vocab_size': getattr(vocabulary, 'vocab_size', 0),
+            }
+        vocab_json = json.dumps(vocab_data)
+        vocab_bytes = zlib.compress(vocab_json.encode('utf-8'), level=9) if compress_data else vocab_json.encode('utf-8')
+        vocab_b64 = base64.b64encode(vocab_bytes).decode('ascii')
+
+        # 3) Knowledge web (condensed)
+        kw_data = {}
+        if knowledge_web is not None:
+            try:
+                concepts = getattr(knowledge_web, 'concepts', {})
+                relations = getattr(knowledge_web, 'relations', [])
+                sorted_concepts = sorted(concepts.values(), key=lambda c: getattr(c, 'discovery_count', 0), reverse=True)[:5000]
+                kw_data = {
+                    'concepts': {c.word: {'category': c.category, 'confidence': c.confidence} for c in sorted_concepts},
+                    'relation_count': len(relations),
+                }
+            except Exception as e:
+                logger.warning(f"[COCOON] Could not serialize knowledge web: {e}")
+        kw_json = json.dumps(kw_data)
+        kw_bytes = zlib.compress(kw_json.encode('utf-8'), level=9) if compress_data else kw_json.encode('utf-8')
+        kw_b64 = base64.b64encode(kw_bytes).decode('ascii')
+
+        # 4) Training config
+        default_training = {
+            'learning_rate': 0.001,
+            'batch_size': 32,
+            'gamma': 0.99,
+            'epsilon': 0.1,
+            'epsilon_decay': 0.995,
+            'epsilon_min': 0.01,
+            'rl_loss_weight': 0.8,
+            'language_loss_weight': 0.1,
+            'concept_loss_weight': 0.1,
+            'buffer_size': 10000,
+        }
+        if training_config:
+            default_training.update(training_config)
+        config_json = json.dumps(default_training)
+        config_bytes = zlib.compress(config_json.encode('utf-8'), level=9) if compress_data else config_json.encode('utf-8')
+        config_b64 = base64.b64encode(config_bytes).decode('ascii')
+
+        # 5) Architecture
+        arch_data = {
+            'brain_configs': brain_configs,
+            'organism_names': organism_names,
+            'ensemble_size': len(capsules),
+            'is_ensemble': is_ensemble,
+        }
+        arch_json = json.dumps(arch_data)
+        arch_bytes = zlib.compress(arch_json.encode('utf-8'), level=9) if compress_data else arch_json.encode('utf-8')
+        arch_b64 = base64.b64encode(arch_bytes).decode('ascii')
+
+        cocoon_source = self._generate_cocoon_source(
+            brain_data_list=brain_data_list,
+            arch_b64=arch_b64,
+            vocab_b64=vocab_b64,
+            kw_b64=kw_b64,
+            config_b64=config_b64,
+            compressed=compress_data,
+            include_gym=include_gym,
+            include_http=include_http,
+            is_ensemble=is_ensemble,
+            organism_names=organism_names,
+        )
+
+        logger.info(f"[COCOON] ✅ Generated cocoon: {len(cocoon_source):,} characters")
+        return cocoon_source
+
+    def _generate_cocoon_source(self,
+                                brain_data_list: List[str],
+                                arch_b64: str,
+                                vocab_b64: str,
+                                kw_b64: str,
+                                config_b64: str,
+                                compressed: bool,
+                                include_gym: bool,
+                                include_http: bool,
+                                is_ensemble: bool,
+                                organism_names: List[str]) -> str:
+        """Generate the complete cocoon Python source code."""
+
+        brain_data_py = "[\n" + ",\n".join(f'    "{b}"' for b in brain_data_list) + "\n]"
+        mode_comment = "ENSEMBLE MODE - Multiple organisms with voting" if is_ensemble else "SOLO MODE - Single organism"
+        generated_timestamp = datetime.datetime.now().isoformat()
+
+        template = Template(r'''#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+🦋 BUTTERFLY COCOON - Self-Contained Learning Agent
+════════════════════════════════════════════════════════════════════════════════
+
+$MODE_COMMENT
+Organisms: $ORGANISMS
+Generated: $GENERATED_TS
+
+Faithful behavioral clone of Butterfly System (as prescribed):
+    • VP-aware attention: scores / (1.0 + vp_value)
+    • Experience buffer stores input_tokens, target_tokens, vp_value
+    • Triple-loss pipeline (RL + Language + Concept placeholder)
+    • Curriculum-ready sequence handling
+    • Solo + Ensemble voting
+
+USAGE:
+    python cocoon.py --mode chat
+    python cocoon.py --mode gym --env CartPole-v1
+    python cocoon.py --mode serve --port 8080
+    python cocoon.py --export new_cocoon.py
+
+ATTRIBUTION:
+    Proton Game Arena inspired by Piers Anthony's "Apprentice Adept" (1980-1990)
+    Absorption battle mechanic inspired by "Highlander" (1986), dir. Russell Mulcahy
+    Butterfly System / Convergence Engine: https://github.com/Yufok1/Convergence_Engine
+"""
+
+import json
+import base64
+import random
+import sys
+import os
+from io import BytesIO
+from typing import Dict, List, Any, Optional, Tuple
+from dataclasses import dataclass
+from collections import deque
+import numpy as np
+
+# Embedded payloads (base64, optional zlib)
+_BRAIN_DATA = $BRAIN_DATA
+_ARCHITECTURE_B64 = "$ARCH_B64"
+_VOCABULARY_B64 = "$VOCAB_B64"
+_KNOWLEDGE_WEB_B64 = "$KW_B64"
+_TRAINING_CONFIG_B64 = "$CONFIG_B64"
+_DATA_COMPRESSED = $DATA_COMPRESSED
+
+
+def _decode_data(b64_str: str, is_json: bool = True) -> Any:
+    raw = base64.b64decode(b64_str)
+    if _DATA_COMPRESSED:
+        import zlib
+        raw = zlib.decompress(raw)
+    if is_json:
+        return json.loads(raw.decode('utf-8'))
+    return raw
+
+
+def _decode_brain(b64_str: str) -> bytes:
+    raw = base64.b64decode(b64_str)
+    if _DATA_COMPRESSED:
+        import zlib
+        raw = zlib.decompress(raw)
+    return raw
+
+
+# Torch imports
+try:
+    import torch
+    import torch.nn as nn
+    import torch.nn.functional as F
+    import torch.optim as optim
+    TORCH_AVAILABLE = True
+except ImportError:
+    TORCH_AVAILABLE = False
+    print("[!] PyTorch not found. Install with: pip install torch")
+    print("    Learning disabled; info mode still works.")
+
+
+# Experience buffer with token + VP support
+@dataclass
+class Experience:
+    state: np.ndarray
+    action: int
+    reward: float
+    next_state: np.ndarray
+    done: bool
+    input_tokens: List[int]
+    target_tokens: List[int]
+    vp_value: Optional[float]
+
+
+class ExperienceBuffer:
+    def __init__(self, capacity: int = 0):
+        self.capacity = capacity if capacity and capacity > 0 else None
+        self.buffer: deque = deque(maxlen=self.capacity)
+
+    def add(self, state, action, reward, next_state, done,
+            input_tokens: Optional[List[int]] = None,
+            target_tokens: Optional[List[int]] = None,
+            vp_value: Optional[float] = None):
+        exp = Experience(
+            np.asarray(state, dtype=np.float32),
+            int(action),
+            float(reward),
+            np.asarray(next_state, dtype=np.float32),
+            bool(done),
+            input_tokens or [],
+            target_tokens or [],
+            vp_value
+        )
+        self.buffer.append(exp)
+
+    def __len__(self):
+        return len(self.buffer)
+
+    def sample(self, batch_size: int) -> List[Experience]:
+        batch_size = min(batch_size, len(self.buffer))
+        return random.sample(list(self.buffer), batch_size)
+
+    def sample_batch(self, batch_size: int):
+        exps = self.sample(batch_size)
+        return (
+            np.array([e.state for e in exps]),
+            np.array([e.action for e in exps]),
+            np.array([e.reward for e in exps]),
+            np.array([e.next_state for e in exps]),
+            np.array([e.done for e in exps]),
+            [e.input_tokens for e in exps],
+            [e.target_tokens for e in exps],
+            [e.vp_value for e in exps],
+        )
+
+
+# Multi-head attention with VP scaling
+if TORCH_AVAILABLE:
+    class MultiHeadAttention(nn.Module):
+        def __init__(self, embed_dim: int, num_heads: int = 4, dropout: float = 0.1):
+            super().__init__()
+            if embed_dim % num_heads != 0:
+                raise ValueError("embed_dim must be divisible by num_heads")
+            self.embed_dim = embed_dim
+            self.num_heads = num_heads
+            self.head_dim = embed_dim // num_heads
+            self.scale = float(self.head_dim) ** 0.5
+            self.q_proj = nn.Linear(embed_dim, embed_dim)
+            self.k_proj = nn.Linear(embed_dim, embed_dim)
+            self.v_proj = nn.Linear(embed_dim, embed_dim)
+            self.out_proj = nn.Linear(embed_dim, embed_dim)
+            self.dropout = nn.Dropout(dropout)
+
+        def forward(self, x: torch.Tensor, vp_value: Optional[float] = None) -> torch.Tensor:
+            bsz, seq_len, _ = x.size()
+            q = self.q_proj(x).view(bsz, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
+            k = self.k_proj(x).view(bsz, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
+            v = self.v_proj(x).view(bsz, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
+
+            scores = torch.matmul(q, k.transpose(-2, -1)) / self.scale
+            if vp_value is not None and vp_value > 0:
+                scores = scores / (1.0 + vp_value)
+
+            attn = F.softmax(scores, dim=-1)
+            attn = self.dropout(attn)
+            out = torch.matmul(attn, v)
+            out = out.transpose(1, 2).contiguous().view(bsz, seq_len, self.embed_dim)
+            return self.out_proj(out)
+
+
+    class ConceptHead(nn.Module):
+        """Concept prediction head for compositional understanding (RCUS)."""
+        def __init__(self, hidden_dim: int = 64, num_axioms: int = 18, num_compositions: int = 15):
+            super().__init__()
+            self.hidden_dim = hidden_dim
+            self.num_axioms = num_axioms
+            self.num_compositions = num_compositions
+            self.axiom_relevance = nn.Linear(hidden_dim, num_axioms)
+            self.composition_value = nn.Linear(hidden_dim, num_compositions)
+            self.context_embed = nn.Linear(hidden_dim, hidden_dim)
+
+        def forward(self, hidden: torch.Tensor) -> Dict[str, torch.Tensor]:
+            return {
+                'axiom_relevance': torch.sigmoid(self.axiom_relevance(hidden)),
+                'composition_value': self.composition_value(hidden),
+                'context': self.context_embed(hidden),
+            }
+
+
+    class OrganismBrain(nn.Module):
+        def __init__(self, config: Dict[str, Any]):
+            super().__init__()
+            self.input_dim = config['input_dim']
+            self.hidden_dim = config['hidden_dim']
+            self.output_dim = config['output_dim']
+            self.vocab_size = config.get('vocab_size', 1000)
+            self.use_language_head = config.get('use_language_head', False)
+            self.use_concept_head = config.get('use_concept_head', False)
+            self.use_attention = config.get('use_attention', False)
+            self.dropout_rate = config.get('dropout', 0.1)
+            self.num_attention_heads = config.get('num_attention_heads', 4)
+            self.num_key_compositions = config.get('num_key_compositions', 15)
+            self.fc1 = nn.Linear(self.input_dim, self.hidden_dim)
+            if self.use_attention:
+                self.attention = MultiHeadAttention(self.hidden_dim, self.num_attention_heads, self.dropout_rate)
+                self.attention_norm = nn.LayerNorm(self.hidden_dim)
+            self.fc2 = nn.Linear(self.hidden_dim, self.hidden_dim)
+            self.fc3 = nn.Linear(self.hidden_dim, self.output_dim)
+            if self.use_language_head:
+                self.fc_language = nn.Linear(self.hidden_dim, self.vocab_size)
+            if self.use_concept_head:
+                self.concept_head = ConceptHead(self.hidden_dim, num_axioms=18, num_compositions=self.num_key_compositions)
+            self.dropout = nn.Dropout(self.dropout_rate)
+
+        def forward(self, x: torch.Tensor, vp_value: Optional[float] = None,
+                    return_language_logits: bool = True) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
+            if x.shape[-1] < self.input_dim:
+                pad = torch.zeros(*x.shape[:-1], self.input_dim - x.shape[-1], device=x.device)
+                x = torch.cat([x, pad], dim=-1)
+            elif x.shape[-1] > self.input_dim:
+                x = x[..., :self.input_dim]
+
+            h = F.relu(self.fc1(x))
+            h = self.dropout(h)
+
+            if self.use_attention:
+                if h.dim() == 2:
+                    h = h.unsqueeze(1)
+                attn_out = self.attention(h, vp_value=vp_value)
+                h = self.attention_norm(h + attn_out)
+                h = h.squeeze(1)
+
+            h = F.relu(self.fc2(h))
+            h = self.dropout(h)
+
+            action_logits = self.fc3(h)
+            action_probs = F.softmax(action_logits, dim=-1)
+
+            language_logits = None
+            if self.use_language_head and return_language_logits:
+                language_logits = self.fc_language(h)
+            return action_probs, language_logits
+
+
+class EnsembleVoting:
+    @staticmethod
+    def majority(actions: List[int]) -> int:
+        from collections import Counter
+        return Counter(actions).most_common(1)[0][0]
+
+    @staticmethod
+    def confidence(action_probs_list: List[np.ndarray]) -> int:
+        weights = [float(np.max(p)) for p in action_probs_list]
+        weighted = np.zeros_like(action_probs_list[0])
+        for p, w in zip(action_probs_list, weights):
+            weighted += p * w
+        return int(np.argmax(weighted / max(1e-9, sum(weights))))
+
+
+class CocoonAgent:
+    def __init__(self, voting: str = 'confidence'):
+        if not TORCH_AVAILABLE:
+            raise RuntimeError("PyTorch required")
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.architecture = _decode_data(_ARCHITECTURE_B64)
+        self.is_ensemble = self.architecture.get('is_ensemble', False)
+        self.organism_names = self.architecture.get('organism_names', [])
+        self.config = _decode_data(_TRAINING_CONFIG_B64)
+        self.learning_rate = self.config.get('learning_rate', 0.001)
+        self.batch_size = self.config.get('batch_size', 32)
+        self.gamma = self.config.get('gamma', 0.99)
+        self.epsilon = self.config.get('epsilon', 0.1)
+        self.epsilon_decay = self.config.get('epsilon_decay', 0.995)
+        self.epsilon_min = self.config.get('epsilon_min', 0.01)
+        self.rl_weight = self.config.get('rl_loss_weight', 0.8)
+        self.lang_weight = self.config.get('language_loss_weight', 0.1)
+        self.concept_weight = self.config.get('concept_loss_weight', 0.1)
+        self.vocabulary = _decode_data(_VOCABULARY_B64)
+        self.knowledge_web = _decode_data(_KNOWLEDGE_WEB_B64)
+        self.brains: List[OrganismBrain] = []
+        self.optimizers: List[optim.Adam] = []
+        self.experience_buffers: List[ExperienceBuffer] = []
+        self._load_brains()
+        self.voting = voting
+        self.training_step = 0
+        mode = "ENSEMBLE" if self.is_ensemble else "SOLO"
+        print(f"[OK] CocoonAgent loaded: {mode}, {len(self.brains)} organism(s), device={self.device}")
+
+    def _load_brains(self):
+        brain_configs = self.architecture.get('brain_configs', [])
+        for cfg, brain_b64 in zip(brain_configs, _BRAIN_DATA):
+            brain = OrganismBrain(cfg)
+            state_bytes = _decode_brain(brain_b64)
+            state_dict = torch.load(BytesIO(state_bytes), map_location=self.device, weights_only=False)
+            brain.load_state_dict(state_dict)
+            brain.to(self.device)
+            brain.eval()
+            self.brains.append(brain)
+            self.optimizers.append(optim.Adam(brain.parameters(), lr=self.learning_rate))
+            self.experience_buffers.append(ExperienceBuffer(self.config.get('buffer_size', 0)))
+
+    def tokenize(self, text: str) -> List[int]:
+        word_to_id = self.vocabulary.get('word_to_id', {})
+        unk_id = word_to_id.get('<UNK>', 1)
+        return [word_to_id.get(w, unk_id) for w in text.lower().split()]
+
+    def detokenize(self, tokens: List[int]) -> str:
+        id_to_word = {int(k): v for k, v in self.vocabulary.get('id_to_word', {}).items()}
+        words = []
+        for t in tokens:
+            w = id_to_word.get(int(t), '<UNK>')
+            if w in ['<END>', '<PAD>']:
+                break
+            words.append(w)
+        return ' '.join(words)
+
+    def add_word(self, word: str) -> int:
+        """Add a new word to vocabulary dynamically. Returns token ID."""
+        word = word.lower().strip()
+        if not word:
+            return self.vocabulary.get('word_to_id', {}).get('<UNK>', 1)
+        
+        word_to_id = self.vocabulary.get('word_to_id', {})
+        id_to_word = self.vocabulary.get('id_to_word', {})
+        
+        if word in word_to_id:
+            return word_to_id[word]
+        
+        # Add new word
+        new_id = len(word_to_id)
+        word_to_id[word] = new_id
+        id_to_word[str(new_id)] = word
+        self.vocabulary['word_to_id'] = word_to_id
+        self.vocabulary['id_to_word'] = id_to_word
+        self.vocabulary['vocab_size'] = len(word_to_id)
+        print(f"[VOCAB] Learned new word: '{word}' (ID={new_id})")
+        return new_id
+
+    def learn_from_text(self, text: str, context_state: Optional[np.ndarray] = None,
+                        reward: float = 0.0, vp_value: Optional[float] = None):
+        """Learn from text input - adds new words and creates training experience."""
+        words = text.lower().split()
+        tokens = []
+        for word in words:
+            # Add word if new
+            token_id = self.add_word(word)
+            tokens.append(token_id)
+        
+        # Create experience with language targets
+        if context_state is None:
+            context_state = np.zeros(self.brains[0].input_dim, dtype=np.float32)
+        
+        # Add as experience for language learning
+        if len(tokens) > 1:
+            for i in range(len(tokens) - 1):
+                self.add_experience(
+                    state=context_state,
+                    action=0,  # Placeholder
+                    reward=reward,
+                    next_state=context_state,
+                    done=False,
+                    input_tokens=tokens[:i+1],
+                    target_tokens=[tokens[i+1]],
+                    vp_value=vp_value
+                )
+        return tokens
+
+    def add_concept(self, word: str, category: str = 'learned', confidence: float = 0.5):
+        """Add a new concept to knowledge web."""
+        if 'concepts' not in self.knowledge_web:
+            self.knowledge_web['concepts'] = {}
+        
+        self.knowledge_web['concepts'][word] = {
+            'category': category,
+            'confidence': confidence
+        }
+        # Also add to vocabulary
+        self.add_word(word)
+
+    def get_action(self, state: np.ndarray, explore: bool = True, vp_value: Optional[float] = None,
+                   action_space_size: Optional[int] = None) -> int:
+        """Get action from ensemble or single brain, optionally limited to action_space_size."""
+        effective_size = action_space_size if action_space_size else self.brains[0].output_dim
+        if explore and random.random() < self.epsilon:
+            return random.randint(0, effective_size - 1)
+        state_t = torch.FloatTensor(state).unsqueeze(0).to(self.device)
+        if self.is_ensemble:
+            probs_list = []
+            for brain in self.brains:
+                brain.eval()
+                with torch.no_grad():
+                    probs, _ = brain(state_t, vp_value=vp_value, return_language_logits=False)
+                # Slice to action_space_size if needed
+                p = probs.cpu().numpy().squeeze(0)
+                if action_space_size and len(p) > action_space_size:
+                    p = p[:action_space_size]
+                    p = p / (p.sum() + 1e-9)  # Re-normalize
+                probs_list.append(p)
+            return EnsembleVoting.confidence(probs_list)
+        brain = self.brains[0]
+        brain.eval()
+        with torch.no_grad():
+            probs, _ = brain(state_t, vp_value=vp_value, return_language_logits=False)
+        if action_space_size and probs.shape[-1] > action_space_size:
+            probs = probs[..., :action_space_size]
+        return int(torch.argmax(probs, dim=-1).item())
+
+    def add_experience(self, state, action, reward, next_state, done,
+                        input_tokens=None, target_tokens=None, vp_value=None, organism_idx: Optional[int] = None):
+        targets = range(len(self.experience_buffers)) if organism_idx is None else [organism_idx]
+        for idx in targets:
+            if idx < len(self.experience_buffers):
+                self.experience_buffers[idx].add(state, action, reward, next_state, done,
+                                                  input_tokens=input_tokens, target_tokens=target_tokens, vp_value=vp_value)
+
+    def _language_loss(self, logits: torch.Tensor, target_tokens: List[List[int]], vp_value: Optional[float]):
+        if logits is None or len(target_tokens) == 0:
+            return None
+        targets = torch.LongTensor([t[0] if t else 0 for t in target_tokens]).to(self.device)
+        if vp_value is not None and vp_value > 0:
+            logits = logits / (1.0 + vp_value)
+        return F.cross_entropy(logits, targets, ignore_index=0)
+
+    def train_step(self) -> float:
+        total = 0.0
+        trained = 0
+        for brain, opt, buf in zip(self.brains, self.optimizers, self.experience_buffers):
+            if len(buf) < self.batch_size:
+                continue
+            states, actions, rewards, next_states, dones, in_tok, tgt_tok, vp_vals = buf.sample_batch(self.batch_size)
+            vp_val = None
+            for v in vp_vals:
+                if v is not None:
+                    vp_val = v
+                    break
+            states_t = torch.FloatTensor(states).to(self.device)
+            actions_t = torch.LongTensor(actions).to(self.device)
+            rewards_t = torch.FloatTensor(rewards).to(self.device)
+            next_states_t = torch.FloatTensor(next_states).to(self.device)
+            dones_t = torch.BoolTensor(dones).to(self.device)
+
+            brain.train()
+            q_values, lang_logits = brain(states_t, vp_value=vp_val, return_language_logits=True)
+            q_sel = q_values.gather(1, actions_t.unsqueeze(1)).squeeze(1)
+
+            brain.eval()
+            with torch.no_grad():
+                next_q, _ = brain(next_states_t, vp_value=vp_val, return_language_logits=False)
+                next_max = next_q.max(1)[0]
+            target_q = rewards_t + self.gamma * next_max * (~dones_t)
+
+            rl_loss = F.mse_loss(q_sel, target_q)
+            lang_loss = self._language_loss(lang_logits, tgt_tok, vp_val)
+            
+            # Concept loss: ConceptHead predicts composition values that should correlate with rewards
+            concept_loss = None
+            if hasattr(brain, 'use_concept_head') and brain.use_concept_head and hasattr(brain, 'concept_head'):
+                brain.train()
+                # Get hidden state for concept head (recompute forward to get hidden)
+                h = F.relu(brain.fc1(states_t))
+                h = brain.dropout(h)
+                if brain.use_attention:
+                    if h.dim() == 2:
+                        h = h.unsqueeze(1)
+                    attn_out = brain.attention(h, vp_value=vp_val)
+                    h = brain.attention_norm(h + attn_out)
+                    h = h.squeeze(1)
+                h = F.relu(brain.fc2(h))
+                h = brain.dropout(h)
+                
+                # Get concept predictions
+                concept_out = brain.concept_head(h)
+                composition_values = concept_out['composition_value']  # (batch, num_compositions)
+                
+                # Loss: predicted composition values should predict rewards
+                # Average composition value should approximate reward signal
+                predicted_reward = composition_values.mean(dim=-1)
+                concept_loss = F.mse_loss(predicted_reward, rewards_t)
+
+            loss = self.rl_weight * rl_loss
+            if lang_loss is not None:
+                loss = loss + self.lang_weight * lang_loss
+            if concept_loss is not None:
+                loss = loss + self.concept_weight * concept_loss
+
+            opt.zero_grad()
+            loss.backward()
+            opt.step()
+
+            total += loss.item()
+            trained += 1
+
+        if trained > 0:
+            self.training_step += 1
+            self.epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_decay)
+            return total / trained
+        return 0.0
+
+    def generate_response(self, prompt: str, organism_idx: int = 0, max_tokens: int = 32,
+                          vp_value: Optional[float] = None, temperature: float = 1.0) -> str:
+        if organism_idx >= len(self.brains):
+            organism_idx = 0
+        brain = self.brains[organism_idx]
+        if not brain.use_language_head:
+            return "[No language head available]"
+        tokens = self.tokenize(prompt)
+        id_to_word = {int(k): v for k, v in self.vocabulary.get('id_to_word', {}).items()}
+        
+        # Get actual vocab size from vocabulary (not brain's output dim)
+        actual_vocab_size = len(id_to_word)
+        if actual_vocab_size == 0:
+            return "[Empty vocabulary]"
+        
+        # Get valid token IDs (skip special tokens 0-4: PAD, UNK, START, END, VP_GATE)
+        valid_ids = [i for i in range(5, actual_vocab_size) if i in id_to_word and id_to_word[i] not in ['<PAD>', '<UNK>', '<START>', '<END>', '<VP_GATE>']]
+        if not valid_ids:
+            return "[No valid words in vocabulary]"
+        
+        brain.eval()
+        generated: List[str] = []
+        # Represent recent tokens as state
+        state = np.zeros(brain.input_dim, dtype=np.float32)
+        for i, tok in enumerate(tokens[-brain.input_dim:]):
+            state[i] = tok / 1000.0
+
+        for _ in range(max_tokens):
+            state_t = torch.FloatTensor(state).unsqueeze(0).to(self.device)
+            with torch.no_grad():
+                _, lang_logits = brain(state_t, vp_value=vp_value, return_language_logits=True)
+            if lang_logits is None:
+                break
+            
+            # Only consider valid vocabulary tokens
+            logits_np = lang_logits.cpu().numpy().squeeze(0)
+            valid_logits = np.array([logits_np[i] if i < len(logits_np) else -1e9 for i in valid_ids])
+            valid_probs = np.exp(valid_logits / max(1e-6, temperature))
+            valid_probs = valid_probs / (valid_probs.sum() + 1e-9)
+            
+            # Sample from valid tokens only
+            chosen_idx = np.random.choice(len(valid_ids), p=valid_probs)
+            next_token = valid_ids[chosen_idx]
+            
+            word = id_to_word.get(next_token, '<UNK>')
+            if word in ['<END>', '<PAD>']:
+                break
+            generated.append(word)
+            state = np.roll(state, -1)
+            state[-1] = next_token / 1000.0
+
+        return ' '.join(generated) if generated else "[Empty response]"
+
+    def export_cocoon(self, output_path: str):
+        import zlib
+        new_brain_data = []
+        for brain in self.brains:
+            buf = BytesIO()
+            torch.save(brain.state_dict(), buf)
+            compressed = zlib.compress(buf.getvalue(), level=9)
+            new_brain_data.append(base64.b64encode(compressed).decode('ascii'))
+        with open(__file__, 'r', encoding='utf-8') as f:
+            source = f.read()
+        import re
+        brain_data_py = "[\n" + ",\n".join(f'    "{b}"' for b in new_brain_data) + "\n]"
+        source = re.sub(r'_BRAIN_DATA = \[.*?\]', f'_BRAIN_DATA = {brain_data_py}', source, flags=re.DOTALL)
+        with open(output_path, 'w', encoding='utf-8') as f:
+            f.write(source)
+        print(f"[OK] Exported updated cocoon to: {output_path}")
+
+
+# Optional Gym adapter
+class GymRunner:
+    def __init__(self, agent: CocoonAgent):
+        self.agent = agent
+
+    def run(self, env_name: str, episodes: int = 100, render: bool = False, learn: bool = True):
+        try:
+            import gymnasium as gym
+        except ImportError:
+            try:
+                import gym
+            except ImportError:
+                print("[!] Gymnasium not found. Install with: pip install gymnasium")
+                return
+
+        env = gym.make(env_name, render_mode='human' if render else None)
+        
+        # Get environment's action space size
+        action_space_size = None
+        if hasattr(env.action_space, 'n'):
+            action_space_size = env.action_space.n
+            print(f"[INFO] Environment action space: {action_space_size} (brain has {self.agent.brains[0].output_dim})")
+        
+        all_rewards = []
+        for ep in range(episodes):
+            obs, _ = env.reset()
+            if isinstance(obs, dict):
+                obs = np.array(list(obs.values())).flatten()
+            obs = np.asarray(obs, dtype=np.float32).flatten()
+            done = False
+            ep_reward = 0.0
+            while not done:
+                action = self.agent.get_action(obs, explore=learn, action_space_size=action_space_size)
+                result = env.step(action)
+                if len(result) == 5:
+                    next_obs, reward, terminated, truncated, info = result
+                    done = terminated or truncated
+                else:
+                    next_obs, reward, done, info = result
+                if isinstance(next_obs, dict):
+                    next_obs = np.array(list(next_obs.values())).flatten()
+                next_obs = np.asarray(next_obs, dtype=np.float32).flatten()
+                if learn:
+                    self.agent.add_experience(obs, action, reward, next_obs, done)
+                    if len(self.agent.experience_buffers[0]) >= self.agent.batch_size:
+                        self.agent.train_step()
+                obs = next_obs
+                ep_reward += reward
+            all_rewards.append(ep_reward)
+            if (ep + 1) % 10 == 0:
+                avg = np.mean(all_rewards[-10:])
+                print(f"  Episode {ep+1:4d}: reward={ep_reward:7.1f}, avg10={avg:7.1f}, ε={self.agent.epsilon:.3f}")
+        env.close()
+        print(f"\n✅ Completed {episodes} episodes")
+        print(f"   Mean reward: {np.mean(all_rewards):.2f}")
+        print(f"   Best reward: {np.max(all_rewards):.2f}")
+
+
+# Optional HTTP server
+def run_http_server(agent: CocoonAgent, port: int = 8080):
+    try:
+        from flask import Flask, request, jsonify
+    except ImportError:
+        print("[!] Flask not found. Install with: pip install flask")
+        return
+
+    app = Flask(__name__)
+
+    @app.route('/health', methods=['GET'])
+    def health():
+        return jsonify({'status': 'ok', 'organisms': len(agent.brains)})
+
+    @app.route('/act', methods=['POST'])
+    def act():
+        data = request.json
+        state = np.array(data.get('state', []), dtype=np.float32)
+        explore = data.get('explore', False)
+        action = agent.get_action(state, explore=explore)
+        return jsonify({'action': action})
+
+    @app.route('/learn', methods=['POST'])
+    def learn():
+        data = request.json
+        agent.add_experience(
+            np.array(data['state'], dtype=np.float32),
+            data['action'],
+            data['reward'],
+            np.array(data['next_state'], dtype=np.float32),
+            data['done']
+        )
+        loss = agent.train_step()
+        return jsonify({'loss': loss, 'step': agent.training_step})
+
+    @app.route('/chat', methods=['POST'])
+    def chat():
+        data = request.json
+        prompt = data.get('prompt', '')
+        learn = data.get('learn', True)
+        
+        # Learn from input if enabled
+        if learn and prompt:
+            agent.learn_from_text(prompt, reward=0.1)
+            if len(agent.experience_buffers[0]) >= agent.batch_size:
+                agent.train_step()
+        
+        response = agent.generate_response(prompt)
+        return jsonify({
+            'response': response,
+            'vocab_size': len(agent.vocabulary.get('word_to_id', {}))
+        })
+
+    @app.route('/teach', methods=['POST'])
+    def teach():
+        """Teach the cocoon new words or concepts."""
+        data = request.json
+        text = data.get('text', '')
+        reward = data.get('reward', 0.5)
+        
+        if not text:
+            return jsonify({'error': 'No text provided'}), 400
+        
+        tokens = agent.learn_from_text(text, reward=reward)
+        
+        # Train if we have enough experiences
+        loss = 0.0
+        if len(agent.experience_buffers[0]) >= agent.batch_size:
+            loss = agent.train_step()
+        
+        return jsonify({
+            'tokens': tokens,
+            'vocab_size': len(agent.vocabulary.get('word_to_id', {})),
+            'loss': loss
+        })
+
+    @app.route('/vocab', methods=['GET'])
+    def get_vocab():
+        """Get current vocabulary."""
+        return jsonify({
+            'vocab_size': len(agent.vocabulary.get('word_to_id', {})),
+            'words': list(agent.vocabulary.get('word_to_id', {}).keys())
+        })
+
+    print(f"\n🌐 HTTP API Server starting on port {port}")
+    print(f"   Endpoints: /health, /act, /learn, /chat, /teach, /vocab")
+    app.run(host='0.0.0.0', port=port)
+
+
+def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="🦋 Butterfly Cocoon - Self-Contained Learning Agent",
+                                     formatter_class=argparse.RawDescriptionHelpFormatter,
+                                     epilog="""
+Examples:
+  python cocoon.py --mode chat
+  python cocoon.py --mode gym --env CartPole-v1 --episodes 100
+  python cocoon.py --mode serve --port 8080
+  python cocoon.py --export updated_cocoon.py
+        """)
+    parser.add_argument('--mode', choices=['chat', 'gym', 'serve', 'info'], default='info')
+    parser.add_argument('--env', type=str, default='CartPole-v1')
+    parser.add_argument('--episodes', type=int, default=100)
+    parser.add_argument('--render', action='store_true')
+    parser.add_argument('--no-learn', action='store_true')
+    parser.add_argument('--port', type=int, default=8080)
+    parser.add_argument('--export', type=str)
+    parser.add_argument('--voting', choices=['majority', 'weighted', 'confidence'], default='confidence')
+    args = parser.parse_args()
+
+    arch = _decode_data(_ARCHITECTURE_B64)
+    config = _decode_data(_TRAINING_CONFIG_B64)
+    vocab = _decode_data(_VOCABULARY_B64)
+
+    if args.mode == 'info':
+        print("\n🦋 BUTTERFLY COCOON")
+        print("=" * 50)
+        print(f"Mode:       {'ENSEMBLE' if arch.get('is_ensemble') else 'SOLO'}")
+        print(f"Organisms:  {arch.get('ensemble_size', 1)}")
+        print(f"Names:      {', '.join(arch.get('organism_names', []))}")
+        print(f"Vocabulary: {len(vocab.get('word_to_id', {}))} words")
+        print("\nTraining Config:")
+        for k, v in config.items():
+            print(f"  {k}: {v}")
+        print("\nUse --mode chat/gym/serve to run the agent")
+        return
+
+    if not TORCH_AVAILABLE:
+        print("[!] PyTorch required for agent modes")
+        return
+
+    agent = CocoonAgent(voting=args.voting)
+
+    if args.export:
+        agent.export_cocoon(args.export)
+        return
+
+    if args.mode == 'chat':
+        print("\n🦋 Butterfly Cocoon - Interactive Chat")
+        print("=" * 50)
+        print("Type 'quit' to exit, 'export <file>' to save")
+        print("The cocoon learns new words from your input!\n")
+        initial_vocab = len(agent.vocabulary.get('word_to_id', {}))
+        while True:
+            try:
+                user_input = input("You: ").strip()
+            except (EOFError, KeyboardInterrupt):
+                break
+            if not user_input:
+                continue
+            if user_input.lower() == 'quit':
+                break
+            if user_input.lower().startswith('export '):
+                agent.export_cocoon(user_input[7:].strip())
+                continue
+            
+            # Learn from user input (adds new words to vocabulary)
+            agent.learn_from_text(user_input, reward=0.1)
+            
+            # Train on accumulated experiences
+            if len(agent.experience_buffers[0]) >= agent.batch_size:
+                loss = agent.train_step()
+                if loss > 0:
+                    print(f"  [trained: loss={loss:.4f}]")
+            
+            # Generate responses
+            for i, name in enumerate(agent.organism_names):
+                response = agent.generate_response(user_input, organism_idx=i)
+                print(f"[{name}]: {response}")
+            print()
+        
+        # Show vocabulary growth
+        final_vocab = len(agent.vocabulary.get('word_to_id', {}))
+        if final_vocab > initial_vocab:
+            print(f"\n📚 Vocabulary grew: {initial_vocab} → {final_vocab} words (+{final_vocab - initial_vocab})")
+            print("   Export the cocoon to save learned words!")
+
+    elif args.mode == 'gym':
+        runner = GymRunner(agent)
+        runner.run(args.env, episodes=args.episodes, render=args.render, learn=not args.no_learn)
+        if not args.no_learn:
+            save = input("\nSave updated cocoon? (y/N): ").strip().lower()
+            if save == 'y':
+                agent.export_cocoon('cocoon_trained.py')
+
+    elif args.mode == 'serve':
+        run_http_server(agent, port=args.port)
+
+
+if __name__ == "__main__":
+    main()
+''')
+
+        source = template.substitute(
+            MODE_COMMENT=mode_comment,
+            ORGANISMS=", ".join(organism_names),
+            GENERATED_TS=generated_timestamp,
+            BRAIN_DATA=brain_data_py,
+            ARCH_B64=arch_b64,
+            VOCAB_B64=vocab_b64,
+            KW_B64=kw_b64,
+            CONFIG_B64=config_b64,
+            DATA_COMPRESSED=str(compressed)
+        )
+        return source
 
 if __name__ == '__main__':
     # This block is for testing the AgentCompiler in isolation.

@@ -6888,9 +6888,10 @@ from flask import send_file
 # Download endpoint for compiled agent archives
 @app.route('/api/download/<filename>')
 def download_agent_archive(filename):
-    """Serve a compiled agent archive for download."""
-    # Security: only allow .zip files from our downloads directory
-    if not filename.endswith('.zip') or '..' in filename or '/' in filename or '\\\\' in filename:
+    """Serve a compiled agent archive or cocoon for download."""
+    # Security: only allow .zip and .py files from our downloads directory
+    allowed_extensions = ('.zip', '.py')
+    if not filename.endswith(allowed_extensions) or '..' in filename or '/' in filename or '\\' in filename:
         return jsonify({'error': 'Invalid filename'}), 400
     
     downloads_dir = Path(__file__).parent / 'agent_downloads'
@@ -6901,11 +6902,17 @@ def download_agent_archive(filename):
     
     logger.info(f"[DOWNLOAD] Serving {filename} ({file_path.stat().st_size} bytes)")
     
+    # Set mimetype based on extension
+    if filename.endswith('.py'):
+        mimetype = 'text/x-python'
+    else:
+        mimetype = 'application/zip'
+    
     return send_file(
         str(file_path),
         as_attachment=True,
         download_name=filename,
-        mimetype='application/zip'
+        mimetype=mimetype
     )
 
 @app.route('/api/capsule/<organism_id>/compile', methods=['POST'])
@@ -7088,13 +7095,55 @@ def compile_ensemble_to_agent():
             conversation_history = butterfly_router.conversation_history
             logger.info(f"[COMPILE] Including {len(conversation_history)} conversation history entries")
         
+        # 🔮 Get knowledge web for semantic relationships (CRITICAL for coherent generation!)
+        knowledge_web = None
+        context_memory = app.config.get('context_memory')
+        network = app.config.get('network')
+        
+        # Try context_memory from app.config first, then from network
+        if context_memory and hasattr(context_memory, 'knowledge_web'):
+            knowledge_web = context_memory.knowledge_web
+            logger.info(f"[COMPILE] Including knowledge web with {len(knowledge_web.concepts)} concepts")
+        elif network and hasattr(network, 'context_memory'):
+            cm = network.context_memory
+            if cm and hasattr(cm, 'knowledge_web'):
+                knowledge_web = cm.knowledge_web
+                logger.info(f"[COMPILE] Including knowledge web from network: {len(knowledge_web.concepts)} concepts")
+        
+        # 🧠 Get context_memory for word-organism mappings (CRITICAL for characteristic speech!)
+        # Use the context_memory we already retrieved above, or get from network
+        if context_memory is None and network and hasattr(network, 'context_memory'):
+            context_memory = network.context_memory
+        if context_memory:
+            logger.info(f"[COMPILE] Including context memory with {len(getattr(context_memory, 'language_anchors', {}))} language anchors")
+        
+        # 🔬 Get causation_explorer for the full illumination engine (CRITICAL for understanding WHY!)
+        causation_explorer = app.config.get('causation_explorer')
+        if causation_explorer is None and unified_system:
+            causation_explorer = getattr(unified_system, 'causation_explorer', None)
+        if causation_explorer:
+            n_events = len(getattr(causation_explorer, 'events', {}))
+            logger.info(f"[COMPILE] Including causation system with {n_events} events")
+        
+        # 🏛️ Get alliance_system for civilization state (CRITICAL for social context!)
+        alliance_system = app.config.get('alliance_system')
+        if alliance_system is None and unified_system:
+            alliance_system = getattr(unified_system, 'alliance_warfare', None)
+        if alliance_system:
+            n_alliances = len(getattr(alliance_system, 'alliances', {}))
+            logger.info(f"[COMPILE] Including alliance system with {n_alliances} alliances")
+        
         # PAUSE SIMULATION to prevent race conditions during ensemble serialization
         with pause_simulation_for_export():
             archive_buffer = compiler.compile_capsules_to_ensemble(
                 capsules, 
                 export_format=export_format,
                 vocabulary=vocabulary,
-                conversation_history=conversation_history
+                conversation_history=conversation_history,
+                knowledge_web=knowledge_web,
+                context_memory=context_memory,
+                causation_explorer=causation_explorer,
+                alliance_system=alliance_system
             )
 
         # Ensure we're at the start of the buffer for reading
@@ -7132,6 +7181,319 @@ def compile_ensemble_to_agent():
 
     except Exception as e:
         logger.error(f"Error compiling ensemble capsules: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/capsules/compile-learning', methods=['POST'])
+def compile_learning_capsule():
+    """
+    Compile organisms into a LEARNING CAPSULE that can continue training.
+    
+    Unlike frozen ONNX/TorchScript exports, this exports:
+    - Full PyTorch models with trainable weights
+    - Training configuration and optimizer states
+    - All learning infrastructure (knowledge web, context memory, etc.)
+    - A self-contained learning loop runner
+    
+    The resulting capsule is a fully autonomous learning agent.
+    """
+    try:
+        data = request.get_json() or {}
+        organism_ids = data.get('organism_ids', [])
+        training_config = data.get('training_config', {})
+        
+        logger.info(f"[LEARNING_CAPSULE] Compiling learning capsule for organisms: {organism_ids}")
+        
+        # Get unified system components
+        unified_system = app.config.get('unified_system')
+        network = app.config.get('network')
+        capsule_manager = app.config.get('capsule_manager')
+        
+        if not capsule_manager:
+            return jsonify({'error': 'Capsule manager not available'}), 500
+        
+        # Gather capsules
+        capsules = []
+        if organism_ids:
+            for oid in organism_ids:
+                org = network.get_organism(oid) if network else None
+                if org:
+                    cap = capsule_manager.create_capsule(
+                        organism=org,
+                        reason=f'learning_capsule_{datetime.now().isoformat()}',
+                        notes=f'Learning capsule for {oid}',
+                        include_causation=True,
+                        causation_explorer=getattr(unified_system, 'causation_explorer', None) if unified_system else None
+                    )
+                    if cap:
+                        capsules.append(cap)
+        else:
+            # Get top organisms by fitness
+            if network:
+                organisms = list(network.organisms.values()) if hasattr(network, 'organisms') else []
+                organisms.sort(key=lambda o: getattr(o, 'fitness', 0), reverse=True)
+                top_10 = organisms[:10]
+                for org in top_10:
+                    cap = capsule_manager.create_capsule(
+                        organism=org,
+                        reason=f'learning_capsule_{datetime.now().isoformat()}',
+                        include_causation=True,
+                        causation_explorer=getattr(unified_system, 'causation_explorer', None) if unified_system else None
+                    )
+                    if cap:
+                        capsules.append(cap)
+        
+        if not capsules:
+            return jsonify({'error': 'No valid capsules found'}), 404
+        
+        # Get all learning components
+        vocabulary = app.config.get('vocabulary')
+        conversation_history = []
+        butterfly_router = app.config.get('butterfly_chat_router')
+        if butterfly_router and hasattr(butterfly_router, 'conversation_history'):
+            conversation_history = butterfly_router.conversation_history
+        
+        # Get knowledge web
+        knowledge_web = None
+        context_memory = app.config.get('context_memory')
+        if context_memory and hasattr(context_memory, 'knowledge_web'):
+            knowledge_web = context_memory.knowledge_web
+        elif network and hasattr(network, 'context_memory'):
+            context_memory = network.context_memory
+            knowledge_web = getattr(context_memory, 'knowledge_web', None)
+        
+        # Get causation explorer
+        causation_explorer = None
+        if unified_system:
+            causation_explorer = getattr(unified_system, 'causation_explorer', None)
+        
+        # Get alliance system
+        alliance_system = app.config.get('alliance_system')
+        if alliance_system is None and unified_system:
+            alliance_system = getattr(unified_system, 'alliance_warfare', None)
+        
+        # Compile learning capsule
+        compiler = AgentCompiler()
+        archive_buffer = compiler.compile_learning_capsule(
+            capsules=capsules,
+            vocabulary=vocabulary,
+            conversation_history=conversation_history,
+            knowledge_web=knowledge_web,
+            context_memory=context_memory,
+            causation_explorer=causation_explorer,
+            alliance_system=alliance_system,
+            training_config=training_config
+        )
+        
+        # Save to downloads folder
+        archive_buffer.seek(0)
+        filename = f"learning_capsule_{datetime.now().strftime('%Y%m%d%H%M%S')}.zip"
+        downloads_dir = Path(__file__).parent / 'agent_downloads'
+        downloads_dir.mkdir(exist_ok=True)
+        download_path = downloads_dir / filename
+        
+        with open(download_path, 'wb') as f:
+            f.write(archive_buffer.read())
+        
+        file_size = download_path.stat().st_size
+        logger.info(f"[LEARNING_CAPSULE] Saved to: {download_path} ({file_size} bytes)")
+        
+        return jsonify({
+            'success': True,
+            'capsule_type': 'learning',
+            'filename': filename,
+            'size': file_size,
+            'organism_count': len(capsules),
+            'capabilities': {
+                'trainable': True,
+                'vocabulary_expandable': vocabulary is not None,
+                'knowledge_updatable': knowledge_web is not None,
+                'has_causation': causation_explorer is not None,
+            },
+            'download_url': f'/api/download/{filename}'
+        })
+    
+    except Exception as e:
+        logger.error(f"Error compiling learning capsule: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/capsules/compile-cocoon', methods=['POST'])
+def compile_cocoon():
+    """
+    🦋 COCOON COMPILER - Single-file deployable agent
+    
+    Compiles organism(s) into a SINGLE self-contained Python file.
+    Supports both SOLO (1 organism) and ENSEMBLE (multiple organisms).
+    
+    Request JSON:
+        organism_ids: List of organism IDs (optional, defaults to all top organisms)
+        top_n: Number of top organisms to use (default: 1 for solo, can specify more for ensemble)
+        include_gym: Include Gymnasium adapter (default: true)
+        include_http: Include HTTP server (default: true)
+        compress: Compress embedded data (default: true)
+        voting_strategy: 'majority', 'weighted', 'confidence' (for ensemble)
+        training_config: Training hyperparameters (optional)
+    
+    Returns:
+        Python source code as downloadable .py file
+    """
+    try:
+        from reality_simulator.agent_compiler import AgentCompiler
+        
+        data = request.get_json() or {}
+        organism_ids = data.get('organism_ids', [])
+        top_n = data.get('top_n', 1)
+        include_gym = data.get('include_gym', True)
+        include_http = data.get('include_http', True)
+        compress = data.get('compress', True)
+        training_config = data.get('training_config', {})
+        
+        # Get unified system and checkpoint manager
+        unified_system = app.config.get('unified_system') or getattr(app, 'unified_system', None)
+        checkpoint_manager = app.config.get('checkpoint_manager')
+        
+        # Collect organisms from available sources
+        organisms = []
+        
+        # 1. Try to get live organisms from simulation
+        if unified_system and hasattr(unified_system, 'get_current_organisms'):
+            live_organisms = unified_system.get_current_organisms()
+            logger.info(f"Found {len(live_organisms)} live organisms from simulation")
+            
+            if organism_ids:
+                # Get specific organisms
+                for oid in organism_ids:
+                    if oid in live_organisms:
+                        organisms.append(live_organisms[oid])
+            else:
+                # Get top N by fitness
+                sorted_orgs = sorted(
+                    live_organisms.values(),
+                    key=lambda o: getattr(o, 'fitness', 0) or 0,
+                    reverse=True
+                )[:top_n]
+                organisms.extend(sorted_orgs)
+        
+        # 2. Try checkpoint manager if no live organisms found
+        if not organisms and checkpoint_manager:
+            logger.info("No live organisms, trying checkpoint manager")
+            if organism_ids:
+                for oid in organism_ids:
+                    cap = checkpoint_manager.load_capsule(oid)
+                    if cap:
+                        organisms.append(cap)
+            else:
+                all_capsules = checkpoint_manager.list_capsules()
+                if all_capsules:
+                    sorted_caps = sorted(
+                        all_capsules,
+                        key=lambda c: c.get('fitness', 0) or 0,
+                        reverse=True
+                    )[:top_n]
+                    for cap_info in sorted_caps:
+                        cap = checkpoint_manager.load_capsule(cap_info['organism_id'])
+                        if cap:
+                            organisms.append(cap)
+        
+        # 3. Try highlander capsule manager as fallback
+        if not organisms:
+            logger.info("Trying highlander capsule manager fallback")
+            capsule_manager = None
+            if unified_system and hasattr(unified_system, 'highlander_protocol'):
+                hp = unified_system.highlander_protocol
+                if hp and hasattr(hp, 'capsule_manager'):
+                    capsule_manager = hp.capsule_manager
+            
+            if not capsule_manager:
+                try:
+                    from reality_simulator.checkpointing.organism_capsule import OrganismCapsuleManager
+                    capsule_manager = OrganismCapsuleManager(storage_dir=Path('highlander_capsules'))
+                except Exception as e:
+                    logger.warning(f"Could not initialize capsule manager: {e}")
+            
+            if capsule_manager and capsule_manager.capsule_index:
+                capsule_list = list(capsule_manager.capsule_index.items())
+                sorted_caps = sorted(
+                    capsule_list,
+                    key=lambda x: x[1].get('fitness', 0) or 0,
+                    reverse=True
+                )[:top_n]
+                
+                for capsule_id, info in sorted_caps:
+                    cap = capsule_manager.load_capsule(capsule_id)
+                    if cap:
+                        organisms.append(cap)
+        
+        if not organisms:
+            return jsonify({'error': 'No organisms available. Run the simulation first or load capsules.'}), 404
+        
+        logger.info(f"Compiling cocoon with {len(organisms)} organism(s)")
+        
+        # Get vocabulary
+        vocabulary = app.config.get('vocabulary')
+        if vocabulary is None and unified_system:
+            lang_system = getattr(unified_system, 'language_system', None)
+            if lang_system:
+                vocabulary = getattr(lang_system, 'vocabulary', None)
+        
+        # Get knowledge web
+        knowledge_web = app.config.get('knowledge_web')
+        if knowledge_web is None and unified_system:
+            lang_system = getattr(unified_system, 'language_system', None)
+            if lang_system:
+                knowledge_web = getattr(lang_system, 'knowledge_web', None)
+        
+        # Compile cocoon
+        compiler = AgentCompiler()
+        cocoon_source = compiler.compile_cocoon(
+            capsules=organisms,
+            vocabulary=vocabulary,
+            knowledge_web=knowledge_web,
+            training_config=training_config,
+            include_gym=include_gym,
+            include_http=include_http,
+            compress_data=compress
+        )
+        
+        # Generate filename
+        mode = "ensemble" if len(organisms) > 1 else "solo"
+        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+        filename = f"cocoon_{mode}_{timestamp}.py"
+        
+        # Save to downloads folder
+        downloads_dir = Path(__file__).parent / 'agent_downloads'
+        downloads_dir.mkdir(exist_ok=True)
+        download_path = downloads_dir / filename
+        
+        with open(download_path, 'w', encoding='utf-8') as f:
+            f.write(cocoon_source)
+        
+        file_size = download_path.stat().st_size
+        organism_names = [str(getattr(org, 'organism_id', getattr(org, 'id', i))) for i, org in enumerate(organisms)]
+        
+        logger.info(f"[COCOON] Generated {mode} cocoon: {filename} ({file_size:,} bytes)")
+        
+        return jsonify({
+            'success': True,
+            'capsule_type': 'cocoon',
+            'mode': mode,
+            'filename': filename,
+            'size': file_size,
+            'size_kb': round(file_size / 1024, 1),
+            'organism_count': len(organisms),
+            'organism_names': organism_names,
+            'features': {
+                'gym_adapter': include_gym,
+                'http_server': include_http,
+                'compressed': compress,
+                'trainable': True,
+            },
+            'download_url': f'/api/download/{filename}'
+        })
+    
+    except Exception as e:
+        logger.error(f"Error compiling cocoon: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 

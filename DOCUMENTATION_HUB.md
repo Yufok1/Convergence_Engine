@@ -107,6 +107,30 @@ Export trained agents as portable, standalone packages for deployment.
   | Batch inference (34K/sec) | ✅ |
 - **Status:** ✅ Fully implemented and tested (2025-12-04)
 
+### 🦋 Cocoon System (Single-File Deployment) ⭐ NEW
+
+- **[COCOON_SYSTEM.md](./COCOON_SYSTEM.md)** - Complete cocoon documentation
+- **Purpose:** Compile trained organisms into standalone, single-file Python agents
+- **Features:**
+  - Single `.py` file with all dependencies embedded
+  - Full triple-loss training (RL + Language + Concept)
+  - VP-aware attention mechanism preserved
+  - Dynamic vocabulary expansion
+  - Multiple runtime modes: Chat, Gym, HTTP server, Self-export
+- **Usage:**
+  ```bash
+  # Via web UI: Agent Exporter → Compile Cocoon
+  # Via API:
+  POST /api/capsules/compile-cocoon
+  
+  # Run cocoon:
+  python cocoon.py --mode chat
+  python cocoon.py --mode gym --env CartPole-v1
+  python cocoon.py --mode serve --port 8080
+  ```
+- **CRA Integration:** Full control via Agent Exporter tab
+- **Status:** ✅ Fully implemented and tested (2025-12-05)
+
 ### ⚡ Distributed Computing (Ray)
 
 - **[reality_simulator/distributed/](./reality_simulator/distributed/)** - Ray distributed computing module ⭐ NEW

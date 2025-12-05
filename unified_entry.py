@@ -1612,7 +1612,8 @@ class UnifiedSystem:
                 return
             
             try:
-                new_phase = event.data.get('new_phase', '')
+                # Handle both 'to_phase' (from causation_explorer) and 'new_phase' (from other sources)
+                new_phase = event.data.get('to_phase', event.data.get('new_phase', ''))
                 success = 'emergence' in new_phase or 'convergence' in new_phase
                 config_tuner.record_outcome(
                     success=success,
@@ -1662,8 +1663,9 @@ class UnifiedSystem:
             if not config_tuner:
                 return
             try:
-                winner_id = event.data.get('winner_id')
-                loser_id = event.data.get('loser_id')
+                # Handle both 'winner'/'loser' (from battle_arena) and 'winner_id'/'loser_id' variants
+                winner_id = event.data.get('winner', event.data.get('winner_id'))
+                loser_id = event.data.get('loser', event.data.get('loser_id'))
                 battle_type = event.data.get('battle_type', 'unknown')
                 
                 # Battles happening = selection pressure working
@@ -1678,9 +1680,10 @@ class UnifiedSystem:
             try:
                 decision_type = event.data.get('decision_type', '')
                 organism_id = event.data.get('organism_id', '')
-                alliance_id = event.data.get('alliance_id', '')
+                decision = event.data.get('decision', '')
+                confidence = event.data.get('confidence', 0.0)
                 
-                logger.debug(f"[ALLIANCE] {decision_type}: org={organism_id} alliance={alliance_id}")
+                logger.debug(f"[ALLIANCE] {decision_type}: org={organism_id} decision={decision} conf={confidence:.2f}")
             except Exception:
                 pass
         
@@ -1702,11 +1705,18 @@ class UnifiedSystem:
         def on_vocabulary_growth(event):
             """Track language system evolution."""
             try:
-                vocab_size = event.data.get('vocab_size', 0)
                 new_word = event.data.get('word', '')
                 
-                if vocab_size % 10 == 0:  # Log every 10 words
-                    logger.debug(f"[LANGUAGE] Vocabulary: {vocab_size} words (latest: {new_word})")
+                # Handle both vocabulary_growth and word_assignment events
+                if event.event_type == 'vocabulary_growth':
+                    vocab_size = event.data.get('vocab_size', 0)
+                    if vocab_size % 10 == 0:  # Log every 10 words
+                        logger.debug(f"[LANGUAGE] Vocabulary: {vocab_size} words (latest: {new_word})")
+                elif event.event_type == 'word_assignment':
+                    # word_assignment tracks organism-word linkages, not vocab size
+                    num_orgs = event.data.get('total_organisms_with_word', 0)
+                    if num_orgs % 5 == 0:  # Log every 5 organisms adopting
+                        logger.debug(f"[LANGUAGE] Word '{new_word}' adopted by {num_orgs} organisms")
             except Exception:
                 pass
         
@@ -1731,7 +1741,8 @@ class UnifiedSystem:
             try:
                 old_lr = event.data.get('old_lr', 0)
                 new_lr = event.data.get('new_lr', 0)
-                reason = event.data.get('reason', '')
+                # Handle both 'reason' and 'scheduler_type' which trainer.py emits
+                reason = event.data.get('reason', event.data.get('scheduler_type', ''))
                 
                 logger.debug(f"[NEURAL] LR adjusted: {old_lr:.6f} → {new_lr:.6f} ({reason})")
             except Exception:

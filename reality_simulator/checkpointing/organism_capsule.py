@@ -146,6 +146,37 @@ class ConfigSnapshot:
 
 
 @dataclass
+class ExperienceSnapshot:
+    """
+    Snapshot of organism's experiential learning state.
+    
+    This captures what the organism has LEARNED through interaction,
+    not just its static weights. Critical for:
+    - Continued learning from where it left off
+    - Language model training data
+    - Behavioral context
+    """
+    action_history: List[int]  # Recent action sequence
+    state_history: List[List[float]]  # Recent state vectors
+    token_sequence: List[int]  # Token IDs for language model
+    epsilon: float  # Current exploration rate
+    alliance_reputation: float  # Social standing
+    alliance_id: Optional[str]  # Current alliance
+    confederation_tier: int  # Alliance level
+    battle_wins: int
+    battle_losses: int
+    cross_alliance_connections: int
+    experience_samples: List[Dict[str, Any]]  # Sample of experience buffer
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'ExperienceSnapshot':
+        return cls(**data)
+
+
+@dataclass
 class TraitSnapshot:
     """Snapshot of trait atoms (behavioral phenotype)."""
     traits: Dict[str, Dict[str, Any]]  # trait_name -> trait data
@@ -257,6 +288,9 @@ class OrganismCapsule:
     config: Optional[ConfigSnapshot] = None
     traits: Optional[TraitSnapshot] = None
     
+    # Experiential state (what the organism has LEARNED)
+    experience: Optional[ExperienceSnapshot] = None
+    
     # Context
     environment: Optional[EnvironmentContext] = None
     fitness: Optional[FitnessTrajectory] = None
@@ -310,6 +344,7 @@ class OrganismCapsule:
             'language': self.language.to_dict() if self.language else None,
             'config': self.config.to_dict() if self.config else None,
             'traits': self.traits.to_dict() if self.traits else None,
+            'experience': self.experience.to_dict() if self.experience else None,
             'environment': self.environment.to_dict() if self.environment else None,
             'fitness': self.fitness.to_dict() if self.fitness else None,
             'highlander': self.highlander.to_dict() if self.highlander else None,
@@ -335,6 +370,7 @@ class OrganismCapsule:
             language=LanguageSnapshot.from_dict(data['language']) if data.get('language') else None,
             config=ConfigSnapshot.from_dict(data['config']) if data.get('config') else None,
             traits=TraitSnapshot.from_dict(data['traits']) if data.get('traits') else None,
+            experience=ExperienceSnapshot.from_dict(data['experience']) if data.get('experience') else None,
             environment=EnvironmentContext.from_dict(data['environment']) if data.get('environment') else None,
             fitness=FitnessTrajectory.from_dict(data['fitness']) if data.get('fitness') else None,
             highlander=HighlanderMetadata.from_dict(data['highlander']) if data.get('highlander') else None,
@@ -473,6 +509,11 @@ class OrganismCapsuleManager:
         # ═══════════════════════════════════════════════════════════════
         if hasattr(organism, 'traits') and organism.traits is not None:
             capsule.traits = self._capture_traits(organism)
+        
+        # ═══════════════════════════════════════════════════════════════
+        # EXPERIENCE (What the organism has LEARNED through interaction)
+        # ═══════════════════════════════════════════════════════════════
+        capsule.experience = self._capture_experience(organism)
         
         # ═══════════════════════════════════════════════════════════════
         # FITNESS
@@ -637,6 +678,78 @@ class OrganismCapsuleManager:
             traits=traits_dict,
             phenotype_cluster=getattr(organism, 'phenotype_cluster', None),
             behavioral_signature=behavioral_sig
+        )
+    
+    def _capture_experience(self, organism: Any) -> ExperienceSnapshot:
+        """
+        Capture experiential learning state.
+        
+        This is what makes the organism SMART - its learned behaviors,
+        not just static weights.
+        """
+        # Action history
+        action_history = list(getattr(organism, 'action_history', []))
+        
+        # State history (convert numpy arrays to lists)
+        state_history_raw = list(getattr(organism, 'state_history', []))
+        state_history = []
+        for state in state_history_raw[-50:]:  # Keep last 50
+            if hasattr(state, 'tolist'):
+                state_history.append(state.tolist())
+            elif isinstance(state, (list, tuple)):
+                state_history.append(list(state))
+        
+        # Token sequence for language model
+        token_sequence = list(getattr(organism, 'token_sequence', []))
+        
+        # Exploration rate
+        epsilon = float(getattr(organism, 'epsilon', 0.0))
+        
+        # Alliance/social state
+        alliance_reputation = float(getattr(organism, 'alliance_reputation', 0.5))
+        alliance_id = getattr(organism, 'alliance_id', None)
+        if alliance_id is not None:
+            alliance_id = str(alliance_id)
+        confederation_tier = int(getattr(organism, 'confederation_tier', 0))
+        
+        # Battle record
+        battle_wins = int(getattr(organism, 'battle_wins', 0))
+        battle_losses = int(getattr(organism, 'battle_losses', 0))
+        cross_alliance = int(getattr(organism, 'cross_alliance_connections', 0))
+        
+        # Sample from experience buffer (don't export entire buffer - too big)
+        experience_samples = []
+        exp_buffer = getattr(organism, 'experience_buffer', None)
+        if exp_buffer and hasattr(exp_buffer, 'buffer'):
+            buffer_list = list(exp_buffer.buffer)
+            # Sample up to 100 recent experiences
+            sample_size = min(100, len(buffer_list))
+            if sample_size > 0:
+                for exp in buffer_list[-sample_size:]:
+                    try:
+                        sample = {
+                            'state': exp.state.tolist() if hasattr(exp.state, 'tolist') else list(exp.state),
+                            'action': int(exp.action),
+                            'reward': float(exp.reward),
+                            'next_state': exp.next_state.tolist() if hasattr(exp.next_state, 'tolist') else list(exp.next_state),
+                            'done': bool(exp.done)
+                        }
+                        experience_samples.append(sample)
+                    except Exception:
+                        pass  # Skip malformed experiences
+        
+        return ExperienceSnapshot(
+            action_history=action_history[-100:],  # Last 100 actions
+            state_history=state_history,
+            token_sequence=token_sequence[-200:],  # Last 200 tokens
+            epsilon=epsilon,
+            alliance_reputation=alliance_reputation,
+            alliance_id=alliance_id,
+            confederation_tier=confederation_tier,
+            battle_wins=battle_wins,
+            battle_losses=battle_losses,
+            cross_alliance_connections=cross_alliance,
+            experience_samples=experience_samples
         )
     
     def _capture_fitness(self, organism: Any) -> FitnessTrajectory:

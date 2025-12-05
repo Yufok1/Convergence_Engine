@@ -7,14 +7,24 @@ from reality_simulator.language_system import LanguageVocabulary
 
 
 class MockOrganism:
+    """Mock organism aligned with NeuralOrganism.generate_tokens() signature."""
     def __init__(self, oid, tokens=None, fitness=1.0):
         self.species_id = oid
         self.fitness = fitness
         self._tokens = tokens or [2, 3, 4]
+        self.experience_buffer = []  # Required for adaptive max_length calculation
 
-    def generate_tokens(self, prompt_tokens, max_length=50):
-        # ignore prompt and return preset tokens
-        return self._tokens
+    def generate_tokens(self, context_memory=None, max_length=50, vp_value=None, temperature=1.0):
+        """
+        Generate tokens - aligned with NeuralOrganism signature.
+        
+        Args:
+            context_memory: Optional context memory (ignored in mock)
+            max_length: Maximum tokens to generate
+            vp_value: Violation pressure value (ignored in mock)
+            temperature: Sampling temperature (ignored in mock)
+        """
+        return self._tokens[:max_length]
 
 
 def make_vocab():

@@ -274,11 +274,12 @@ class LanguageTeacher:
             from pathlib import Path
             data_dir = Path(__file__).parent.parent.parent / "data"
             
-            # Check for 50k seeded web first, then expanded web
+            # Check for expanded web first (has ConceptNet data), then seeded web
             seeded_web_path = data_dir / "seeded_knowledge_web_50k.json"
             expanded_web_path = data_dir / "expanded_knowledge_web.json"
             
-            web_path = seeded_web_path if seeded_web_path.exists() else expanded_web_path
+            # Prefer expanded web (388K+ relations from ConceptNet) over seeded web
+            web_path = expanded_web_path if expanded_web_path.exists() else seeded_web_path
             
             if web_path.exists():
                 logger.info(f"[LANGUAGE_TEACHER] Loading knowledge web from {web_path}")

@@ -807,6 +807,84 @@ The ML system emits specialized events with distinct visual shapes:
 
 ---
 
+## 🦋 Cocoon System - Single-File Agent Export ⭐ NEW
+
+The Cocoon System compiles trained organisms into standalone, single-file Python agents that can run independently.
+
+### What is a Cocoon?
+
+A **Cocoon** is a "graduation package" - when organisms have evolved through Highlander battles and proven their fitness, they can be exported as standalone agents:
+
+- **Single Python file** - No dependencies on Butterfly infrastructure
+- **Full triple-loss training** - RL + Language + Concept loss preserved
+- **VP-aware attention** - Same attention mechanism as Butterfly
+- **Vocabulary expansion** - Can learn new words dynamically
+- **Multiple runtime modes** - Chat, Gym, HTTP server, self-export
+
+### CRA Control via Web UI
+
+1. Open **Agent Exporter** tab in Causation Explorer
+2. Select organisms (or leave blank for top N by fitness)
+3. Configure options:
+   - Include Gym adapter (for OpenAI Gym environments)
+   - Include HTTP server (for API deployment)
+   - Compress embedded data
+4. Click **🦋 Compile Cocoon (single-file)**
+5. Download the `.py` file
+
+### CRA Control via API
+
+```
+POST /api/capsules/compile-cocoon
+{
+  "organism_ids": ["org_001", "org_002"],
+  "include_gym": true,
+  "include_http": true,
+  "compress": true
+}
+```
+
+### Cocoon Runtime Modes
+
+| Mode | Command | Purpose |
+|------|---------|---------|
+| Info | `python cocoon.py --mode info` | Show metadata |
+| Chat | `python cocoon.py --mode chat` | Interactive chat |
+| Gym | `python cocoon.py --mode gym --env CartPole-v1` | Train in environments |
+| Serve | `python cocoon.py --mode serve --port 8080` | HTTP API |
+| Export | `python cocoon.py --export new_cocoon.py` | Self-replicate with learned state |
+
+### HTTP Server Endpoints (When Serving)
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/health` | GET | Health check |
+| `/act` | POST | Get action from state |
+| `/learn` | POST | Train on experience |
+| `/chat` | POST | Send message, get response |
+| `/teach` | POST | Teach new words |
+| `/vocab` | GET | View vocabulary |
+
+### Capability Alignment
+
+| Feature | Butterfly | Cocoon |
+|---------|-----------|--------|
+| VP-aware attention | ✅ | ✅ |
+| Triple loss (RL+Lang+Concept) | ✅ | ✅ |
+| ConceptHead | ✅ | ✅ |
+| Vocabulary expansion | ✅ | ✅ |
+| Gym integration | ✅ | ✅ |
+| Highlander battles | ✅ | ❌ (post-selection) |
+| Alliance warfare | ✅ | ❌ (post-selection) |
+
+**Note:** Cocoons are *champions* that have already survived selection. They don't need battle systems - they've proven themselves.
+
+### Full Documentation
+
+See [COCOON_SYSTEM.md](./COCOON_SYSTEM.md) for complete documentation.
+
+---
+
 ## 🔬 Illumination Engine - Deep Causal Intelligence ⭐ NEW
 
 The Illumination Engine provides deep causal analysis capabilities, allowing the CRA to trace causation chains, analyze impact, and discover pivotal events in the system.

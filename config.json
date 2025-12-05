@@ -55,7 +55,7 @@
     }
   },
   "causation_detection": {
-    "correlation_threshold": 0.45,
+    "correlation_threshold": 0.5,
     "direct_causation_time_window": 2,
     "enable_bidirectional_causations": true,
     "enable_language_causations": true,
@@ -97,21 +97,21 @@
     "diversity_guard": {
       "enabled": true,
       "frequency_threshold": 0.1,
-      "hash_similarity_threshold": 0.92,
+      "hash_similarity_threshold": 0.88,
       "penalty": 0.05
     },
     "fitness_precision": 1e-07,
     "genotype_length": 48,
     "max_generations": 1500,
     "mutation_rate": {
-      "initial": 0.035
+      "initial": 0.06
     },
     "mutation_rate_precision": 0.001,
-    "population_size": 200
+    "population_size": 400
   },
   "feedback": {
     "enabled": true,
-    "hysteresis_checks": 3,
+    "hysteresis_checks": 5,
     "interval_frames": 10,
     "knobs": {
       "clustering_bias": {
@@ -127,7 +127,7 @@
         "step": 0.001
       },
       "new_edge_rate": {
-        "initial": 5,
+        "initial": 4.8,
         "max": 6,
         "min": 0.2,
         "step": 0.1
@@ -139,20 +139,20 @@
         "step": 0.05
       }
     },
-    "rate_limit_frames": 60
+    "rate_limit_frames": 120
   },
   "hardware_profile": null,
   "health_monitor": {
     "critical_threshold": 0.25,
     "enabled": true,
-    "healthy_threshold": 0.65,
+    "healthy_threshold": 0.75,
     "history_size": 100,
     "thresholds": {
-      "critical": 0.25,
+      "critical": 0.3,
       "healthy": 0.65,
       "warning": 0.45
     },
-    "warning_threshold": 0.45,
+    "warning_threshold": 0.55,
     "weight_adaptability": 0.2,
     "weight_coherence": 0.3,
     "weight_diversity": 0.25,
@@ -173,7 +173,7 @@
       "war_frequency": 0.3
     },
     "chaos_factor": 0.4,
-    "competition_intensity": 0.8,
+    "competition_intensity": 0.5,
     "description": "Highlander Protocol - Survival of the fittest tournament system",
     "enabled": true,
     "extreme_mode": {
@@ -190,9 +190,9 @@
       "rounds_per_cycle": 2,
       "survival_threshold": 0.8
     },
-    "germination_rate": 0.1,
+    "germination_rate": 0.2,
     "max_battle_rounds": 50,
-    "max_capsules": 10,
+    "max_capsules": 20,
     "max_genetic_samples": 100,
     "max_population": 30,
     "min_population": 5,
@@ -200,7 +200,7 @@
     "population_size": 100,
     "predation_enabled": true,
     "rounds_per_cycle": 2,
-    "survival_threshold": 0.5
+    "survival_threshold": 0.45
   },
   "lattice": {
     "entropy_sensitivity": 5e-05,
@@ -210,12 +210,12 @@
     "stability_tolerance": 0.0005
   },
   "logging": {
-    "shared_state_dump_interval": 300
+    "shared_state_dump_interval": 60
   },
   "meta_cognitive": {
     "description": "Meta-cognitive systems: self-awareness, self-tuning, autonomous optimization",
     "self_tuning": {
-      "enabled": true,
+      "enabled": false,
       "min_confidence_threshold": 0.6,
       "mode": "autonomous",
       "performance_targets": {
@@ -265,7 +265,7 @@
     "connection_strength_resolution": 5e-06,
     "emergence_sensitivity": 1e-06,
     "max_connections": 19000,
-    "max_organisms": 500,
+    "max_organisms": 800,
     "resource_flow_precision": 0.0001,
     "resource_pool": 525,
     "stability_precision": 1e-07
@@ -418,11 +418,11 @@
       "survival": 1.5
     },
     "training": {
-      "batch_size": 64,
+      "batch_size": 16,
       "early_stopping": {
         "enabled": true,
         "min_delta": 0.0001,
-        "patience": 50
+        "patience": 10
       },
       "enabled": true,
       "epsilon": 0.95,
@@ -430,14 +430,15 @@
       "epsilon_end": 0.01,
       "epsilon_start": 0.8,
       "gamma": 0.995,
-      "language_reward_scaling": 0.25,
+      "language_reward_scaling": 0.2,
       "learning_rate": 0.005,
       "lr_scheduler": {
         "enabled": true,
         "gamma": 0.95,
-        "min_lr": 1e-06,
+        "min_lr": 0.0001,
         "step_size": 100,
-        "type": "step"
+        "type": "cosine",
+        "warmup_steps": 100
       },
       "memory_size": 20000,
       "update_frequency": 1
@@ -563,7 +564,7 @@
       "enabled": true,
       "history_size": 15,
       "max_jump": 0.1,
-      "smoothing_factor": 0.25
+      "smoothing_factor": 0.4
     },
     "stabilization_enabled": true
   }

@@ -2605,6 +2605,22 @@
                                 <option value="statedict">State Dict (.pth)</option>
                             </select>
                         </div>
+
+                        <div style="margin-bottom: 15px; display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; align-items: center;">
+                            <div>
+                                <label for="agentExporterTopN" style="display: block; color: #0f0; margin-bottom: 5px;">Top N (when none selected):</label>
+                                <input id="agentExporterTopN" type="number" value="1" min="1" step="1" style="width: 100%; padding: 8px; background: #111; color: #0f0; border: 1px solid #0ff; font-family: 'Courier New', monospace;" />
+                            </div>
+                            <label style="color:#0ff; display:flex; align-items:center; gap:8px; background:#0a0a0a; border:1px solid #0ff; padding:8px; border-radius:4px;">
+                                <input type="checkbox" id="agentExporterIncludeGym" checked /> Include Gym adapter
+                            </label>
+                            <label style="color:#0ff; display:flex; align-items:center; gap:8px; background:#0a0a0a; border:1px solid #0ff; padding:8px; border-radius:4px;">
+                                <input type="checkbox" id="agentExporterIncludeHttp" checked /> Include HTTP server
+                            </label>
+                            <label style="color:#0ff; display:flex; align-items:center; gap:8px; background:#0a0a0a; border:1px solid #0ff; padding:8px; border-radius:4px;">
+                                <input type="checkbox" id="agentExporterCompress" checked /> Compress embedded data
+                            </label>
+                        </div>
                         
                         <button onclick="compileAgentFromExporter()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #f0f 0%, #a0a 100%); color: #000; border: 1px solid #f0f; font-weight: bold; cursor: pointer; font-family: 'Courier New', monospace; font-size: 1em; border-radius: 4px; transition: all 0.2s;" onmouseover="this.style.boxShadow='0 0 15px #f0f'" onmouseout="this.style.boxShadow='none'">
                             🚀 Compile Agent
@@ -2612,6 +2628,10 @@
 
                         <button onclick="compileEnsembleFromExporter()" style="width: 100%; margin-top: 10px; padding: 12px; background: linear-gradient(135deg, #0ff 0%, #0aa 100%); color: #000; border: 1px solid #0ff; font-weight: bold; cursor: pointer; font-family: 'Courier New', monospace; font-size: 1em; border-radius: 4px; transition: all 0.2s;" onmouseover="this.style.boxShadow='0 0 15px #0ff'" onmouseout="this.style.boxShadow='none'">
                             🤝 Compile Ensemble
+                        </button>
+
+                        <button onclick="compileCocoonFromExporter()" style="width: 100%; margin-top: 10px; padding: 12px; background: linear-gradient(135deg, #ff0 0%, #cc0 100%); color: #000; border: 1px solid #ff0; font-weight: bold; cursor: pointer; font-family: 'Courier New', monospace; font-size: 1em; border-radius: 4px; transition: all 0.2s;" onmouseover="this.style.boxShadow='0 0 15px #ff0'" onmouseout="this.style.boxShadow='none'">
+                            🦋 Compile Cocoon (single-file)
                         </button>
                         
                         <div id="agentExporterStatus" style="margin-top: 15px; padding: 12px; background: #0a0a0a; border: 1px solid #333; color: #0ff; min-height: 40px; text-align: center; border-radius: 4px;">
@@ -11752,6 +11772,62 @@
                     
                 } catch (error) {
                     console.error('Error compiling ensemble:', error);
+                    updateCompileAgentStatus(`❌ Error: ${error.message}`, '#f66');
+                }
+            }
+
+            // Compile cocoon from exporter tab (single-file deployable agent)
+            async function compileCocoonFromExporter() {
+                const selector = document.getElementById('agentExporterOrganismSelect');
+                const selected = selector ? Array.from(selector.selectedOptions).map(o => o.value).filter(Boolean) : [];
+                const topNInput = document.getElementById('agentExporterTopN');
+                let topN = parseInt(topNInput ? topNInput.value : '1', 10);
+                if (!topN || topN < 1) topN = 1;
+                const includeGym = document.getElementById('agentExporterIncludeGym')?.checked ?? true;
+                const includeHttp = document.getElementById('agentExporterIncludeHttp')?.checked ?? true;
+                const compress = document.getElementById('agentExporterCompress')?.checked ?? true;
+
+                const targetLabel = selected.length > 0 ? `${selected.length} selected` : `top ${topN}`;
+                updateCompileAgentStatus(`Compiling cocoon (${targetLabel})...`, '#ff0');
+
+                try {
+                    const response = await fetch('/api/capsules/compile-cocoon', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            organism_ids: selected,
+                            top_n: topN,
+                            include_gym: includeGym,
+                            include_http: includeHttp,
+                            compress: compress
+                        })
+                    });
+
+                    if (!response.ok) {
+                        let errorMessage = `Server error: ${response.status}`;
+                        try {
+                            const errorData = await response.json();
+                            errorMessage = errorData.error || errorMessage;
+                        } catch (e) { /* default */ }
+                        throw new Error(errorMessage);
+                    }
+
+                    const result = await response.json();
+                    if (!result.success || !result.download_url) {
+                        throw new Error(result.error || 'Cocoon compilation failed');
+                    }
+
+                    const sizeMb = result.size ? (result.size / 1024 / 1024).toFixed(1) : (result.size_kb ? (result.size_kb / 1024).toFixed(1) : '?');
+                    updateCompileAgentStatus(`✅ Cocoon ready! Downloading (~${sizeMb} MB)...`, '#0f0');
+
+                    const a = document.createElement('a');
+                    a.href = result.download_url;
+                    a.download = result.filename || 'cocoon.py';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                } catch (error) {
+                    console.error('Error compiling cocoon:', error);
                     updateCompileAgentStatus(`❌ Error: ${error.message}`, '#f66');
                 }
             }

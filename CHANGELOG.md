@@ -4,6 +4,66 @@
 
 ---
 
+## [Unreleased] - 2025-12-05
+
+### 🦋 Cocoon System - Single-File Deployable Agents (2025-12-05)
+
+Complete implementation of the Cocoon System for exporting trained organisms as standalone Python files.
+
+#### Added
+- **Cocoon Compiler** (agent_compiler.py)
+  - `compile_cocoon()` method generates single-file Python agents
+  - Full triple-loss training preserved (RL + Language + Concept)
+  - VP-aware attention mechanism embedded
+  - Knowledge web and vocabulary serialized
+
+- **ConceptHead in Cocoon Template**
+  - `axiom_relevance` (18 axioms)
+  - `composition_value` (configurable compositions)
+  - `context_embed` for contextual understanding
+  - Concept loss computed during training
+
+- **Vocabulary Expansion**
+  - `add_word()` - Add individual words
+  - `learn_from_text()` - Learn from text passages
+  - `add_concept()` - Add categorized concepts with associations
+  - Chat mode automatically learns from user input
+
+- **Multiple Runtime Modes**
+  - `--mode info` - Display metadata
+  - `--mode chat` - Interactive chat with learning
+  - `--mode gym --env <name>` - OpenAI Gym integration
+  - `--mode serve --port <port>` - HTTP API server
+  - `--export <file>` - Self-replication with learned state
+
+- **HTTP Server Endpoints** (serve mode)
+  - `/health` - Health check
+  - `/act` - Get action from state
+  - `/learn` - Train on experiences
+  - `/chat` - Chat with response
+  - `/teach` - Explicitly teach new words
+  - `/vocab` - View vocabulary
+
+- **Documentation**
+  - [COCOON_SYSTEM.md](./COCOON_SYSTEM.md) - Complete documentation
+  - CRA_CAPABILITIES.md updated with Cocoon System section
+  - DOCUMENTATION_HUB.md updated with Cocoon System entry
+
+#### Fixed
+- **Concept Loss Computation** - Was always `None`, now properly computed using ConceptHead
+- **UNK Spam in Chat** - `generate_response()` now filters valid vocab IDs
+- **Action Space Mismatch** - GymRunner passes `action_space_size` to agent
+- **zlib Decompression** - Consistent compression for config/arch data
+
+### 📚 Documentation Sweep (2025-12-05)
+
+#### Updated
+- **CRA_CAPABILITIES.md** - Added Cocoon System section with full control reference
+- **DOCUMENTATION_HUB.md** - Added Cocoon System entry under Agent Export System
+- **CONFIG_REFERENCE.md** - Current (no changes needed)
+
+---
+
 ## [Unreleased] - 2025-12-04
 
 ### 🚀 Agent Export System - Full Production Ready (2025-12-04)
