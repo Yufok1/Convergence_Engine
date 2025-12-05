@@ -7465,9 +7465,9 @@ def compile_cocoon():
         is_ensemble = len(organisms) > 1
         if is_ensemble and export_format in ('onnx', 'torchscript'):
             logger.info(f"[COCOON] Using ensemble export for {len(organisms)} organisms")
-            # export_multi_organism_ensemble returns a BytesIO archive containing
+            # compile_capsules_to_ensemble returns a BytesIO archive containing
             # brain.onnx/brain.pt + metadata + runner scripts
-            ensemble_archive = compiler.export_multi_organism_ensemble(
+            ensemble_archive = compiler.compile_capsules_to_ensemble(
                 capsules=organisms,
                 export_format=export_format,
                 vocabulary=vocabulary,
