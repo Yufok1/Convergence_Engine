@@ -6889,8 +6889,8 @@ from flask import send_file
 @app.route('/api/download/<filename>')
 def download_agent_archive(filename):
     """Serve a compiled agent archive or cocoon for download."""
-    # Security: only allow .zip and .py files from our downloads directory
-    allowed_extensions = ('.zip', '.py')
+    # Security: only allow specific extensions from our downloads directory
+    allowed_extensions = ('.zip', '.py', '.pt', '.onnx')
     if not filename.endswith(allowed_extensions) or '..' in filename or '/' in filename or '\\' in filename:
         return jsonify({'error': 'Invalid filename'}), 400
     
@@ -6905,6 +6905,10 @@ def download_agent_archive(filename):
     # Set mimetype based on extension
     if filename.endswith('.py'):
         mimetype = 'text/x-python'
+    elif filename.endswith('.pt'):
+        mimetype = 'application/octet-stream'
+    elif filename.endswith('.onnx'):
+        mimetype = 'application/octet-stream'
     else:
         mimetype = 'application/zip'
     

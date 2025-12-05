@@ -3374,12 +3374,16 @@ if __name__ == '__main__':
                 return cocoon_source, None
         
         elif export_format == 'torchscript':
-            # Export first brain as TorchScript
+            # Export first brain as TorchScript using trace (more compatible than script)
             brain = self._get_brain_from_entity(capsules[0])
             ts_buffer = BytesIO()
             try:
-                scripted = torch.jit.script(brain)
-                torch.jit.save(scripted, ts_buffer)
+                brain.eval()
+                # Use trace instead of script - script fails with "Can't redefine method: forward"
+                input_dim = getattr(brain, 'input_dim', 24)
+                dummy_input = torch.randn(1, input_dim)
+                traced = torch.jit.trace(brain, (dummy_input,))
+                torch.jit.save(traced, ts_buffer)
                 logger.info(f"[COCOON] ✅ Generated TorchScript: {ts_buffer.tell():,} bytes")
                 return cocoon_source, ts_buffer.getvalue()
             except Exception as e:
@@ -4214,8 +4218,11 @@ class CocoonAgent:
         brain.eval()
         
         try:
-            scripted = torch.jit.script(brain)
-            scripted.save(output_path)
+            # Use trace instead of script - more compatible with complex models
+            input_dim = getattr(brain, 'input_dim', 24)
+            dummy_input = torch.randn(1, input_dim)
+            traced = torch.jit.trace(brain, (dummy_input,))
+            traced.save(output_path)
             print(f"[OK] Exported TorchScript model to: {output_path}")
             print(f"     View at: https://netron.app/")
             return True
