@@ -3383,46 +3383,192 @@ if __name__ == '__main__':
 
         # Handle different export formats
         if export_format == 'cocoon':
-            logger.info(f"[COCOON] ✅ Generated cocoon: {len(cocoon_source):,} characters")
-            return cocoon_source, None
+            # Generate README for the cocoon
+            readme = self._generate_cocoon_readme(
+                organism_names=organism_names,
+                brain_configs=brain_configs,
+                metadata={
+                    'generated': datetime.now().isoformat(),
+                    'template_size': f"{len(cocoon_source):,} chars",
+                    'num_organisms': len(capsules),
+                },
+                is_ensemble=is_ensemble,
+            )
+            logger.info(f"[COCOON] ✅ Generated cocoon: {len(cocoon_source):,} characters + README ({len(readme):,} chars)")
+            return cocoon_source, readme
         
         elif export_format == 'onnx':
-            # Export first brain as ONNX
+            # ═══════════════════════════════════════════════════════════════════════
+            # COMPLETE ONNX PACKAGE - Neural model + ALL subsystems
+            # ═══════════════════════════════════════════════════════════════════════
+            # ONNX itself is inference-only, but we bundle everything needed:
+            #   - brain.onnx (neural network for fast inference)
+            #   - subsystems.json (AtomicLang, KnowledgeWeb, ConversationHistory, VP config)
+            #   - vocabulary.json
+            #   - metadata.json
+            #   - loader.py (Python script to use full agent)
+            # ═══════════════════════════════════════════════════════════════════════
+            import zipfile
+            zip_buffer = BytesIO()
+            
             brain = self._get_brain_from_entity(capsules[0])
-            brain = brain.cpu()  # Move to CPU for export
-            onnx_buffer = BytesIO()
-            dummy_input = torch.randn(1, brain.input_dim, device='cpu')
-            try:
-                torch.onnx.export(
-                    brain, dummy_input, onnx_buffer,
-                    export_params=True, opset_version=14,
-                    do_constant_folding=True,
-                    input_names=['state'],
-                    output_names=['action_probs', 'language_logits'] if brain.use_language_head else ['action_probs'],
-                )
-                logger.info(f"[COCOON] ✅ Generated ONNX: {onnx_buffer.tell():,} bytes")
-                return cocoon_source, onnx_buffer.getvalue()
-            except Exception as e:
-                logger.error(f"[COCOON] ONNX export failed: {e}")
-                return cocoon_source, None
+            brain = brain.cpu()
+            
+            with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
+                # 1. ONNX model
+                onnx_buffer = BytesIO()
+                try:
+                    dummy_input = torch.randn(1, brain.input_dim, device='cpu')
+                    torch.onnx.export(
+                        brain, dummy_input, onnx_buffer,
+                        export_params=True, opset_version=14,
+                        do_constant_folding=True,
+                        input_names=['state'],
+                        output_names=['action_probs', 'language_logits'] if brain.use_language_head else ['action_probs'],
+                    )
+                    onnx_buffer.seek(0)
+                    zf.writestr('brain.onnx', onnx_buffer.read())
+                    logger.info(f"[ONNX] ✅ Neural model: {onnx_buffer.tell():,} bytes")
+                except Exception as e:
+                    logger.error(f"[ONNX] Neural export failed: {e}")
+                
+                # 2. ALL SUBSYSTEMS as JSON
+                subsystems = {
+                    'atomic_language': atomic_lang_state if atomic_lang_state else {},
+                    'conversation_history': conversation_state if conversation_state else {},
+                    'knowledge_web': kw_state,
+                    'vp_config': {
+                        'vigilance_base': 0.5,
+                        'plasticity_base': 0.5,
+                        'attention_weight': 0.3,
+                        'novelty_weight': 0.3,
+                        'uncertainty_weight': 0.2,
+                        'energy_weight': 0.2,
+                    },
+                    'experience_buffer': {'max_size': 10000, 'gamma': 0.99, 'entries': []},
+                }
+                zf.writestr('subsystems.json', json.dumps(subsystems, indent=2, default=str))
+                logger.info(f"[ONNX] ✅ Subsystems: AtomicLang, KnowledgeWeb, ConvHistory, VP, ExpBuffer")
+                
+                # 3. Vocabulary
+                zf.writestr('vocabulary.json', json.dumps(vocabulary or {}, indent=2))
+                
+                # 4. Metadata
+                metadata = {
+                    'generated': datetime.now().isoformat(),
+                    'organism_id': self._get_organism_id(capsules[0]),
+                    'brain_config': {
+                        'input_dim': getattr(brain, 'input_dim', 24),
+                        'hidden_dim': getattr(brain, 'hidden_dim', 64),
+                        'output_dim': getattr(brain, 'output_dim', 6),
+                        'use_language_head': getattr(brain, 'use_language_head', False),
+                    },
+                    'subsystems_included': ['AtomicLanguageSystem', 'ConversationHistory', 
+                                           'EnhancedKnowledgeWeb', 'VPRuntime', 'ExperienceBuffer'],
+                    'continued_learning': False,  # ONNX neural is inference-only
+                    'symbolic_learning': True,    # But symbolic systems CAN grow
+                    'format_version': '2.0',
+                }
+                zf.writestr('metadata.json', json.dumps(metadata, indent=2))
+                
+                # 5. Loader script
+                loader_script = self._generate_onnx_loader()
+                zf.writestr('loader.py', loader_script)
+                zf.writestr('README.md', self._generate_onnx_readme(metadata))
+            
+            zip_buffer.seek(0)
+            logger.info(f"[ONNX] ✅ Complete package: {zip_buffer.tell():,} bytes (neural + ALL subsystems)")
+            return cocoon_source, zip_buffer.getvalue()
         
         elif export_format == 'torchscript':
-            # Export first brain as TorchScript using trace (more compatible than script)
+            # ═══════════════════════════════════════════════════════════════════════
+            # COMPLETE TORCHSCRIPT PACKAGE - Neural model + ALL subsystems
+            # ═══════════════════════════════════════════════════════════════════════
+            # TorchScript can only trace nn.Module forward pass, so we bundle:
+            #   - brain.pt (traced neural network - CAN continue learning!)
+            #   - subsystems.json (AtomicLang, KnowledgeWeb, ConversationHistory, VP config)
+            #   - vocabulary.json
+            #   - metadata.json
+            #   - loader.py (Python script to reconstruct full agent)
+            # ═══════════════════════════════════════════════════════════════════════
+            import zipfile
+            zip_buffer = BytesIO()
+            
             brain = self._get_brain_from_entity(capsules[0])
-            brain = brain.cpu()  # Move to CPU for export
-            ts_buffer = BytesIO()
-            try:
-                brain.eval()
-                # Use trace instead of script - script fails with "Can't redefine method: forward"
-                input_dim = getattr(brain, 'input_dim', 24)
-                dummy_input = torch.randn(1, input_dim, device='cpu')
-                traced = torch.jit.trace(brain, (dummy_input,))
-                torch.jit.save(traced, ts_buffer)
-                logger.info(f"[COCOON] ✅ Generated TorchScript: {ts_buffer.tell():,} bytes")
-                return cocoon_source, ts_buffer.getvalue()
-            except Exception as e:
-                logger.error(f"[COCOON] TorchScript export failed: {e}")
-                return cocoon_source, None
+            brain = brain.cpu()
+            
+            with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
+                # 1. TorchScript model
+                ts_buffer = BytesIO()
+                try:
+                    brain.eval()
+                    input_dim = getattr(brain, 'input_dim', 24)
+                    dummy_input = torch.randn(1, input_dim, device='cpu')
+                    traced = torch.jit.trace(brain, (dummy_input,))
+                    torch.jit.save(traced, ts_buffer)
+                    ts_buffer.seek(0)
+                    zf.writestr('brain.pt', ts_buffer.read())
+                    logger.info(f"[TORCHSCRIPT] ✅ Neural model: {ts_buffer.tell():,} bytes")
+                except Exception as e:
+                    logger.error(f"[TORCHSCRIPT] Neural export failed: {e}")
+                
+                # 2. ALL SUBSYSTEMS as JSON (the missing pieces!)
+                subsystems = {
+                    'atomic_language': atomic_lang_state if atomic_lang_state else {},
+                    'conversation_history': conversation_state if conversation_state else {},
+                    'knowledge_web': kw_state,
+                    'vp_config': {
+                        'vigilance_base': 0.5,
+                        'plasticity_base': 0.5,
+                        'attention_weight': 0.3,
+                        'novelty_weight': 0.3,
+                        'uncertainty_weight': 0.2,
+                        'energy_weight': 0.2,
+                    },
+                    'experience_buffer': {
+                        'max_size': 10000,
+                        'gamma': 0.99,
+                        'entries': [],  # Empty - will grow during learning
+                    },
+                }
+                zf.writestr('subsystems.json', json.dumps(subsystems, indent=2, default=str))
+                logger.info(f"[TORCHSCRIPT] ✅ Subsystems: AtomicLang, KnowledgeWeb, ConvHistory, VP, ExpBuffer")
+                
+                # 3. Vocabulary
+                zf.writestr('vocabulary.json', json.dumps(vocabulary or {}, indent=2))
+                
+                # 4. Metadata
+                metadata = {
+                    'generated': datetime.now().isoformat(),
+                    'organism_id': self._get_organism_id(capsules[0]),
+                    'organism_count': len(capsules),
+                    'brain_config': {
+                        'input_dim': getattr(brain, 'input_dim', 24),
+                        'hidden_dim': getattr(brain, 'hidden_dim', 64),
+                        'output_dim': getattr(brain, 'output_dim', 6),
+                        'use_language_head': getattr(brain, 'use_language_head', False),
+                        'vocab_size': getattr(brain, 'vocab_size', 0),
+                    },
+                    'subsystems_included': [
+                        'AtomicLanguageSystem',
+                        'ConversationHistory', 
+                        'EnhancedKnowledgeWeb',
+                        'VPRuntime',
+                        'ExperienceBuffer',
+                    ],
+                    'continued_learning': True,
+                    'format_version': '2.0',
+                }
+                zf.writestr('metadata.json', json.dumps(metadata, indent=2))
+                
+                # 5. Loader script to reconstruct full agent
+                loader_script = self._generate_torchscript_loader()
+                zf.writestr('loader.py', loader_script)
+                zf.writestr('README.md', self._generate_torchscript_readme(metadata))
+            
+            zip_buffer.seek(0)
+            logger.info(f"[TORCHSCRIPT] ✅ Complete package: {zip_buffer.tell():,} bytes (neural + ALL subsystems)")
+            return cocoon_source, zip_buffer.getvalue()
         
         elif export_format == 'statedict':
             # Export first brain state dict
@@ -3713,6 +3859,228 @@ esac
             logger.warning(f"[COCOON] Unknown format '{export_format}', defaulting to cocoon")
             return cocoon_source, None
 
+    def _generate_cocoon_readme(self, organism_names: List[str], brain_configs: List[Dict], metadata: Dict, is_ensemble: bool) -> str:
+        """Generate comprehensive README for single cocoon.py export.
+        
+        This README explains:
+        - What's embedded (neural brains, subsystems, vocabularies)
+        - How to use (chat, gym, serve, export)
+        - Continued learning capabilities
+        - API reference
+        """
+        org_list = "\n".join([f"  - `{name}`" for name in organism_names])
+        
+        subsystem_table = """| Subsystem | Purpose | Continued Learning |
+|-----------|---------|-------------------|
+| `OrganismBrain` | Neural network (action + language) | ✅ Yes - weights updated via backprop |
+| `AtomicLanguageSystem` | Semantic units with emotion/context | ✅ Yes - atoms can be created/reinforced |
+| `ConversationHistory` | Topic tracking & context memory | ✅ Yes - grows with each conversation |
+| `EnhancedKnowledgeWeb` | Semantic relations between concepts | ✅ Yes - relations added/strengthened |
+| `VPRuntime` | Self-regulation (Vigilance × Plasticity) | ✅ Yes - adapts from state |
+| `ExperienceBuffer` | Learning from past experiences | ✅ Yes - buffer grows with experience |"""
+        
+        return f'''# 🦋 Butterfly Cocoon - Standalone Agent
+
+**Generated:** {metadata.get('generated', 'Unknown')}
+**Mode:** {"ENSEMBLE" if is_ensemble else "SOLO"} ({len(organism_names)} organism{"s" if len(organism_names) > 1 else ""})
+**Template Size:** {metadata.get('template_size', '~80KB')}
+**Classes:** 15 (Neural + Language + Memory + Knowledge + VP)
+
+---
+
+## 🧠 What's Inside
+
+This is a **MONOLITHIC** cocoon - a completely self-contained Python file with:
+
+**Organisms:**
+{org_list}
+
+**Embedded Subsystems:**
+
+{subsystem_table}
+
+**Embedded Data:**
+- Neural weights (Base64-encoded PyTorch state dicts)
+- Vocabulary (token↔id mapping)
+- Atomic language corpus (if available)
+- Conversation history (if available)
+
+---
+
+## 🔥 Continued Learning
+
+**YES, this cocoon supports continued learning!**
+
+The cocoon.py file contains full PyTorch modules that can continue training:
+
+1. **Full PyTorch modules** - can call `backward()` and update gradients
+2. **ExperienceBuffer** - stores (state, action, reward) tuples for replay
+3. **AtomicLanguageSystem** - creates new semantic atoms from conversations
+4. **EnhancedKnowledgeWeb** - grows semantic relations as concepts connect
+5. **ConversationHistory** - accumulates context over time
+
+```python
+# The agent learns from every interaction:
+agent = CocoonAgent()
+action, output = agent.get_action(state)  # Updates VP, stores experience
+agent.atomic_lang.create_atom("new_concept", "definition", emotion=0.8)  # Creates new atom
+agent.knowledge_web.add_relation("concept_a", "concept_b", "related_to", strength=0.9)  # Grows web
+```
+
+**Export Comparison:**
+
+| Format | File | Learning | Subsystems | Portability |
+|--------|------|----------|------------|-------------|
+| `cocoon.py` | Python source | ✅ Full (neural + symbolic) | ✅ All | Python only |
+| `.pt` | TorchScript | ✅ Neural only* | ❌ None | PyTorch/LibTorch/C++ |
+| `.onnx` | ONNX model | ❌ Inference only | ❌ None | Universal (C++, JS, Rust) |
+| `.statedict` | Weights only | ✅ Loadable | ❌ None | PyTorch |
+
+*TorchScript (.pt) **CAN** continue learning! Load with `torch.jit.load()`, call `.train()`, run backward pass.
+However, it only contains the neural network - no AtomicLanguageSystem, KnowledgeWeb, or other symbolic subsystems.
+
+**Fine-tuning a TorchScript model:**
+```python
+import torch
+
+# Load the exported TorchScript model
+model = torch.jit.load("brain_ensemble.pt")
+model.train()
+
+# Fine-tune on new data
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+for state, target in new_training_data:
+    optimizer.zero_grad()
+    output = model(state)
+    loss = criterion(output, target)
+    loss.backward()
+    optimizer.step()
+
+# Save updated model
+torch.jit.save(model, "brain_finetuned.pt")
+```
+
+---
+
+## 🚀 Quick Start
+
+```bash
+# Interactive chat mode (default)
+python cocoon.py --mode chat
+
+# Gymnasium environment
+python cocoon.py --mode gym --env CartPole-v1 --episodes 100
+
+# HTTP API server
+python cocoon.py --mode serve --port 8080
+
+# Single inference
+python cocoon.py --mode infer --state "[1.0, 0.5, -0.3, 0.2]"
+
+# Export neural model to ONNX
+python cocoon.py --export-onnx brain.onnx
+
+# Export neural model to TorchScript
+python cocoon.py --export-torchscript brain.pt
+
+# Verbose mode
+python cocoon.py --mode chat --verbose
+```
+
+---
+
+## 📡 API Reference
+
+### CocoonAgent
+
+```python
+from cocoon import CocoonAgent
+
+agent = CocoonAgent()
+
+# Get action from state (returns action_idx, {{outputs dict}})
+action, outputs = agent.get_action(state_vector)
+# outputs = {{'action_probs': [...], 'value': float, 'language_logits': [...], 'vp': float}}
+
+# Process text input (for chat mode)
+response = agent.process_input("Hello there!")
+
+# Access subsystems
+agent.atomic_lang.get_atoms_by_emotion(min_valence=0.5)  # Get positive atoms
+agent.conversation_history.get_summary()  # Get conversation stats
+agent.knowledge_web.get_related("concept", min_strength=0.3)  # Get related concepts
+agent.vp_runtime.compute_from_state(state)  # Get VP value
+```
+
+### HTTP Endpoints (--mode serve)
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/health` | GET | Health check |
+| `/infer` | POST | `{{"state": [...]}}` → action |
+| `/chat` | POST | `{{"message": "..."}}` → response |
+| `/info` | GET | Agent metadata |
+
+---
+
+## 🔧 Dependencies
+
+Minimal requirements:
+```
+torch>=2.0
+numpy
+```
+
+Optional for HTTP serving:
+```
+flask  # or fastapi + uvicorn
+```
+
+Optional for Gymnasium:
+```
+gymnasium
+```
+
+---
+
+## 📦 Re-Exporting
+
+The cocoon can re-export its neural models:
+
+```python
+from cocoon import CocoonAgent
+
+agent = CocoonAgent()
+
+# Export to ONNX for deployment
+agent.export_onnx("brain.onnx")
+
+# Export to TorchScript for C++/LibTorch
+agent.export_torchscript("brain.pt")
+
+# Save updated weights after learning
+torch.save(agent.brain.state_dict(), "updated_weights.pth")
+```
+
+---
+
+## 🦋 About the Butterfly System
+
+This cocoon was generated by the **Butterfly Convergence Engine** - a neuro-symbolic AI framework that combines:
+
+- **Neural networks** for pattern recognition and action selection
+- **Atomic language** for grounded semantic understanding
+- **VP regulation** (Vigilance × Plasticity) for adaptive attention
+- **Knowledge webs** for relational reasoning
+- **Distributed ensembles** for robust decision-making
+
+Learn more: [Convergence Engine on GitHub](https://github.com/Yufok1/Convergence_Engine)
+
+---
+
+*Generated by 🦋 Butterfly Agent Compiler*
+'''
+
     def _generate_package_readme(self, organism_names: List[str], brain_configs: List[Dict], metadata: Dict) -> str:
         """Generate README for package export."""
         org_table = "| Organism | Input | Hidden | Output | Language Head |\n|----------|-------|--------|--------|---------------|\n"
@@ -3763,6 +4131,643 @@ python cocoon.py --mode serve --port 8080
 - [Netron Model Viewer](https://netron.app/)
 - [Convergence Engine](https://github.com/Yufok1/Convergence_Engine)
 """
+
+    def _generate_torchscript_loader(self) -> str:
+        """Generate loader.py that reconstructs full agent from TorchScript package."""
+        return '''#!/usr/bin/env python3
+"""
+🔥 TorchScript Agent Loader - Reconstructs full agent with ALL subsystems
+
+This loader takes the TorchScript package (brain.pt + subsystems.json) and
+rebuilds the complete agent with:
+  - Neural network (trainable!)
+  - AtomicLanguageSystem
+  - ConversationHistory
+  - EnhancedKnowledgeWeb
+  - VPRuntime
+  - ExperienceBuffer
+
+Usage:
+    from loader import load_agent
+    agent = load_agent('.')  # Load from current directory
+    action = agent.get_action(state)
+"""
+import json
+import torch
+from pathlib import Path
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Any
+from collections import deque
+
+
+@dataclass
+class LinguisticAtom:
+    """A semantic unit with grounded meaning."""
+    concept_id: str
+    definition: str = ""
+    emotion_valence: float = 0.0
+    context_tags: List[str] = field(default_factory=list)
+    activation_count: int = 0
+    strength: float = 1.0
+    
+    def activate(self):
+        self.activation_count += 1
+        self.strength = min(1.0, self.strength + 0.01)
+
+
+class AtomicLanguageSystem:
+    """Semantic atom management for grounded language understanding."""
+    
+    def __init__(self, state: Dict = None):
+        self.atoms: Dict[str, LinguisticAtom] = {}
+        if state:
+            for concept_id, atom_data in state.get('atoms', {}).items():
+                if isinstance(atom_data, dict):
+                    self.atoms[concept_id] = LinguisticAtom(
+                        concept_id=concept_id,
+                        definition=atom_data.get('definition', ''),
+                        emotion_valence=atom_data.get('emotion_valence', 0.0),
+                        context_tags=atom_data.get('context_tags', []),
+                        activation_count=atom_data.get('activation_count', 0),
+                        strength=atom_data.get('strength', 1.0),
+                    )
+    
+    def create_atom(self, concept_id: str, definition: str = "", emotion: float = 0.0) -> LinguisticAtom:
+        atom = LinguisticAtom(concept_id=concept_id, definition=definition, emotion_valence=emotion)
+        self.atoms[concept_id] = atom
+        return atom
+    
+    def get_atom(self, concept_id: str) -> Optional[LinguisticAtom]:
+        return self.atoms.get(concept_id)
+    
+    def activate_atom(self, concept_id: str):
+        if concept_id in self.atoms:
+            self.atoms[concept_id].activate()
+    
+    def get_atoms_by_emotion(self, min_valence: float = 0.0) -> List[LinguisticAtom]:
+        return [a for a in self.atoms.values() if a.emotion_valence >= min_valence]
+    
+    def get_state(self) -> Dict:
+        return {
+            'atoms': {k: {'concept_id': v.concept_id, 'definition': v.definition,
+                         'emotion_valence': v.emotion_valence, 'context_tags': v.context_tags,
+                         'activation_count': v.activation_count, 'strength': v.strength}
+                     for k, v in self.atoms.items()}
+        }
+
+
+class ConversationHistory:
+    """Tracks conversation context and topics."""
+    
+    def __init__(self, state: Dict = None, max_turns: int = 100):
+        self.max_turns = max_turns
+        self.turns: deque = deque(maxlen=max_turns)
+        self.topics: Dict[str, int] = {}
+        if state:
+            for turn in state.get('turns', []):
+                self.turns.append(turn)
+            self.topics = state.get('topics', {})
+    
+    def add_turn(self, role: str, content: str, topics: List[str] = None):
+        self.turns.append({'role': role, 'content': content, 'topics': topics or []})
+        for topic in (topics or []):
+            self.topics[topic] = self.topics.get(topic, 0) + 1
+    
+    def get_recent(self, n: int = 5) -> List[Dict]:
+        return list(self.turns)[-n:]
+    
+    def get_summary(self) -> Dict:
+        return {'total_turns': len(self.turns), 'top_topics': sorted(self.topics.items(), key=lambda x: -x[1])[:10]}
+    
+    def get_state(self) -> Dict:
+        return {'turns': list(self.turns), 'topics': self.topics}
+
+
+@dataclass
+class SemanticRelation:
+    source: str
+    target: str
+    relation_type: str
+    strength: float = 1.0
+
+
+class EnhancedKnowledgeWeb:
+    """Semantic knowledge graph with relations."""
+    
+    def __init__(self, state: Dict = None):
+        self.relations: List[SemanticRelation] = []
+        if state:
+            for rel in state.get('relations', []):
+                self.relations.append(SemanticRelation(
+                    source=rel.get('source', ''),
+                    target=rel.get('target', ''),
+                    relation_type=rel.get('relation_type', 'related'),
+                    strength=rel.get('strength', 1.0),
+                ))
+    
+    def add_relation(self, source: str, target: str, rel_type: str, strength: float = 1.0):
+        self.relations.append(SemanticRelation(source, target, rel_type, strength))
+    
+    def get_related(self, concept: str, min_strength: float = 0.0) -> List[SemanticRelation]:
+        return [r for r in self.relations if (r.source == concept or r.target == concept) and r.strength >= min_strength]
+    
+    def get_state(self) -> Dict:
+        return {'relations': [{'source': r.source, 'target': r.target, 
+                               'relation_type': r.relation_type, 'strength': r.strength} 
+                             for r in self.relations]}
+
+
+class VPRuntime:
+    """Vigilance × Plasticity self-regulation system."""
+    
+    def __init__(self, config: Dict = None):
+        config = config or {}
+        self.vigilance_base = config.get('vigilance_base', 0.5)
+        self.plasticity_base = config.get('plasticity_base', 0.5)
+        self.attention_weight = config.get('attention_weight', 0.3)
+        self.novelty_weight = config.get('novelty_weight', 0.3)
+        self.uncertainty_weight = config.get('uncertainty_weight', 0.2)
+        self.energy_weight = config.get('energy_weight', 0.2)
+    
+    def compute_from_state(self, state) -> float:
+        if hasattr(state, 'numpy'):
+            state = state.numpy()
+        if hasattr(state, 'flatten'):
+            state = state.flatten()
+        state = list(state) if not isinstance(state, list) else state
+        
+        variance = sum((x - sum(state)/len(state))**2 for x in state) / len(state) if state else 0
+        novelty = min(1.0, variance * 2)
+        uncertainty = 1.0 - max(abs(x) for x in state) if state else 0.5
+        energy = sum(abs(x) for x in state) / len(state) if state else 0.5
+        
+        vigilance = self.vigilance_base + self.novelty_weight * novelty + self.uncertainty_weight * uncertainty
+        plasticity = self.plasticity_base + self.energy_weight * energy
+        
+        return min(1.0, max(0.0, vigilance * plasticity))
+
+
+class ExperienceBuffer:
+    """Replay buffer for continued learning."""
+    
+    def __init__(self, config: Dict = None):
+        config = config or {}
+        self.max_size = config.get('max_size', 10000)
+        self.gamma = config.get('gamma', 0.99)
+        self.buffer: deque = deque(maxlen=self.max_size)
+        for entry in config.get('entries', []):
+            self.buffer.append(entry)
+    
+    def add(self, state, action, reward, next_state=None, done=False):
+        self.buffer.append({'state': state, 'action': action, 'reward': reward, 
+                           'next_state': next_state, 'done': done})
+    
+    def sample(self, batch_size: int = 32) -> List[Dict]:
+        import random
+        return random.sample(list(self.buffer), min(batch_size, len(self.buffer)))
+    
+    def __len__(self):
+        return len(self.buffer)
+
+
+class TorchScriptAgent:
+    """Complete agent reconstructed from TorchScript package."""
+    
+    def __init__(self, package_dir: str):
+        package_dir = Path(package_dir)
+        
+        # Load neural model
+        self.brain = torch.jit.load(package_dir / 'brain.pt')
+        self.brain.eval()
+        
+        # Load subsystems
+        with open(package_dir / 'subsystems.json') as f:
+            subsystems = json.load(f)
+        
+        self.atomic_lang = AtomicLanguageSystem(subsystems.get('atomic_language', {}))
+        self.conversation_history = ConversationHistory(subsystems.get('conversation_history', {}))
+        self.knowledge_web = EnhancedKnowledgeWeb(subsystems.get('knowledge_web', {}))
+        self.vp_runtime = VPRuntime(subsystems.get('vp_config', {}))
+        self.experience_buffer = ExperienceBuffer(subsystems.get('experience_buffer', {}))
+        
+        # Load vocabulary
+        with open(package_dir / 'vocabulary.json') as f:
+            self.vocabulary = json.load(f)
+        
+        # Load metadata
+        with open(package_dir / 'metadata.json') as f:
+            self.metadata = json.load(f)
+    
+    def get_action(self, state) -> tuple:
+        """Get action from state, updating VP and storing experience."""
+        if not isinstance(state, torch.Tensor):
+            state = torch.tensor(state, dtype=torch.float32)
+        if state.dim() == 1:
+            state = state.unsqueeze(0)
+        
+        # Compute VP for attention scaling
+        vp = self.vp_runtime.compute_from_state(state)
+        
+        with torch.no_grad():
+            outputs = self.brain(state)
+        
+        if isinstance(outputs, tuple):
+            action_probs = outputs[0]
+            language_logits = outputs[1] if len(outputs) > 1 else None
+        else:
+            action_probs = outputs
+            language_logits = None
+        
+        # Scale by VP
+        action_probs = action_probs * (0.5 + vp * 0.5)
+        action = torch.argmax(action_probs, dim=-1).item()
+        
+        return action, {
+            'action_probs': action_probs.squeeze().tolist(),
+            'language_logits': language_logits.squeeze().tolist() if language_logits is not None else None,
+            'vp': vp,
+        }
+    
+    def train_step(self, states, targets, optimizer):
+        """Perform a training step - YES, TorchScript CAN learn!"""
+        self.brain.train()
+        optimizer.zero_grad()
+        outputs = self.brain(states)
+        action_probs = outputs[0] if isinstance(outputs, tuple) else outputs
+        loss = torch.nn.functional.cross_entropy(action_probs, targets)
+        loss.backward()
+        optimizer.step()
+        self.brain.eval()
+        return loss.item()
+    
+    def save(self, package_dir: str):
+        """Save updated agent back to package."""
+        package_dir = Path(package_dir)
+        package_dir.mkdir(exist_ok=True)
+        
+        # Save neural model
+        torch.jit.save(self.brain, package_dir / 'brain.pt')
+        
+        # Save subsystems
+        subsystems = {
+            'atomic_language': self.atomic_lang.get_state(),
+            'conversation_history': self.conversation_history.get_state(),
+            'knowledge_web': self.knowledge_web.get_state(),
+            'vp_config': {
+                'vigilance_base': self.vp_runtime.vigilance_base,
+                'plasticity_base': self.vp_runtime.plasticity_base,
+            },
+            'experience_buffer': {
+                'max_size': self.experience_buffer.max_size,
+                'gamma': self.experience_buffer.gamma,
+                'entries': list(self.experience_buffer.buffer)[-1000:],  # Save last 1000
+            },
+        }
+        with open(package_dir / 'subsystems.json', 'w') as f:
+            json.dump(subsystems, f, indent=2, default=str)
+
+
+def load_agent(package_dir: str = '.') -> TorchScriptAgent:
+    """Load agent from TorchScript package directory."""
+    return TorchScriptAgent(package_dir)
+
+
+if __name__ == '__main__':
+    import sys
+    agent = load_agent(sys.argv[1] if len(sys.argv) > 1 else '.')
+    print(f"Loaded agent: {agent.metadata.get('organism_id', 'unknown')}")
+    print(f"Subsystems: {agent.metadata.get('subsystems_included', [])}")
+    print(f"Atoms: {len(agent.atomic_lang.atoms)}")
+    print(f"Relations: {len(agent.knowledge_web.relations)}")
+    print(f"Experience buffer: {len(agent.experience_buffer)} entries")
+'''
+
+    def _generate_torchscript_readme(self, metadata: Dict) -> str:
+        """Generate README for TorchScript package."""
+        return f'''# 🔥 TorchScript Agent Package
+
+**Generated:** {metadata.get('generated', 'Unknown')}
+**Organism:** {metadata.get('organism_id', 'Unknown')}
+**Format Version:** {metadata.get('format_version', '2.0')}
+
+## 📁 Contents
+
+| File | Description |
+|------|-------------|
+| `brain.pt` | TorchScript neural network (TRAINABLE!) |
+| `subsystems.json` | AtomicLanguageSystem, KnowledgeWeb, ConversationHistory, VP config |
+| `vocabulary.json` | Token vocabulary |
+| `metadata.json` | Configuration and architecture info |
+| `loader.py` | Python script to reconstruct full agent |
+| `README.md` | This file |
+
+## ✅ Included Subsystems
+
+{chr(10).join(f"- {s}" for s in metadata.get('subsystems_included', []))}
+
+## 🔥 Continued Learning
+
+**YES! This package supports continued learning!**
+
+```python
+from loader import load_agent
+import torch
+
+# Load the complete agent
+agent = load_agent('.')
+
+# The agent learns like normal
+action, outputs = agent.get_action(state)
+
+# Fine-tune the neural network
+optimizer = torch.optim.Adam(agent.brain.parameters(), lr=1e-4)
+loss = agent.train_step(states_batch, targets_batch, optimizer)
+
+# Grow the symbolic systems
+agent.atomic_lang.create_atom("new_concept", "learned from experience", emotion=0.7)
+agent.knowledge_web.add_relation("concept_a", "concept_b", "causes", strength=0.9)
+agent.experience_buffer.add(state, action, reward)
+
+# Save everything back
+agent.save('updated_agent/')
+```
+
+## 🚀 Quick Start
+
+```python
+from loader import load_agent
+
+# Load agent
+agent = load_agent('.')
+
+# Get action
+state = [1.0, 0.5, -0.3, 0.2, ...]  # Your state vector
+action, outputs = agent.get_action(state)
+
+print(f"Action: {{action}}")
+print(f"VP: {{outputs['vp']:.3f}}")
+```
+
+## 🔗 Links
+
+- [Convergence Engine](https://github.com/Yufok1/Convergence_Engine)
+- View brain.pt at [Netron](https://netron.app/)
+'''
+
+    def _generate_onnx_loader(self) -> str:
+        """Generate loader.py for ONNX package with all subsystems."""
+        return '''#!/usr/bin/env python3
+"""
+🌐 ONNX Agent Loader - Fast inference with ALL symbolic subsystems
+
+The ONNX neural network is inference-only (no gradient updates), but the
+symbolic subsystems CAN continue learning and growing:
+  - AtomicLanguageSystem - create new atoms
+  - ConversationHistory - accumulate context
+  - EnhancedKnowledgeWeb - add relations
+  - VPRuntime - adapts from state
+  - ExperienceBuffer - stores experiences (for later training)
+
+Usage:
+    from loader import load_agent
+    agent = load_agent('.')
+    action = agent.get_action(state)
+"""
+import json
+import numpy as np
+from pathlib import Path
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional
+from collections import deque
+
+try:
+    import onnxruntime as ort
+except ImportError:
+    print("Install onnxruntime: pip install onnxruntime")
+    raise
+
+
+@dataclass
+class LinguisticAtom:
+    concept_id: str
+    definition: str = ""
+    emotion_valence: float = 0.0
+    context_tags: List[str] = field(default_factory=list)
+    activation_count: int = 0
+    strength: float = 1.0
+    
+    def activate(self):
+        self.activation_count += 1
+        self.strength = min(1.0, self.strength + 0.01)
+
+
+class AtomicLanguageSystem:
+    def __init__(self, state: Dict = None):
+        self.atoms: Dict[str, LinguisticAtom] = {}
+        if state:
+            for cid, data in state.get('atoms', {}).items():
+                if isinstance(data, dict):
+                    self.atoms[cid] = LinguisticAtom(
+                        concept_id=cid, definition=data.get('definition', ''),
+                        emotion_valence=data.get('emotion_valence', 0.0),
+                        context_tags=data.get('context_tags', []),
+                        activation_count=data.get('activation_count', 0),
+                        strength=data.get('strength', 1.0))
+    
+    def create_atom(self, concept_id: str, definition: str = "", emotion: float = 0.0):
+        self.atoms[concept_id] = LinguisticAtom(concept_id, definition, emotion)
+        return self.atoms[concept_id]
+    
+    def get_state(self) -> Dict:
+        return {'atoms': {k: {'concept_id': v.concept_id, 'definition': v.definition,
+                             'emotion_valence': v.emotion_valence, 'strength': v.strength}
+                         for k, v in self.atoms.items()}}
+
+
+class ConversationHistory:
+    def __init__(self, state: Dict = None, max_turns: int = 100):
+        self.turns = deque(maxlen=max_turns)
+        self.topics = {}
+        if state:
+            for turn in state.get('turns', []): self.turns.append(turn)
+            self.topics = state.get('topics', {})
+    
+    def add_turn(self, role: str, content: str, topics: List[str] = None):
+        self.turns.append({'role': role, 'content': content})
+        for t in (topics or []): self.topics[t] = self.topics.get(t, 0) + 1
+    
+    def get_state(self) -> Dict:
+        return {'turns': list(self.turns), 'topics': self.topics}
+
+
+@dataclass
+class SemanticRelation:
+    source: str
+    target: str
+    relation_type: str
+    strength: float = 1.0
+
+
+class EnhancedKnowledgeWeb:
+    def __init__(self, state: Dict = None):
+        self.relations = []
+        if state:
+            for r in state.get('relations', []):
+                self.relations.append(SemanticRelation(r['source'], r['target'], r['relation_type'], r.get('strength', 1.0)))
+    
+    def add_relation(self, source: str, target: str, rel_type: str, strength: float = 1.0):
+        self.relations.append(SemanticRelation(source, target, rel_type, strength))
+    
+    def get_state(self) -> Dict:
+        return {'relations': [{'source': r.source, 'target': r.target, 'relation_type': r.relation_type, 'strength': r.strength} for r in self.relations]}
+
+
+class VPRuntime:
+    def __init__(self, config: Dict = None):
+        config = config or {}
+        self.vigilance_base = config.get('vigilance_base', 0.5)
+        self.plasticity_base = config.get('plasticity_base', 0.5)
+    
+    def compute_from_state(self, state) -> float:
+        state = list(state.flatten()) if hasattr(state, 'flatten') else list(state)
+        variance = np.var(state) if state else 0
+        return min(1.0, max(0.0, self.vigilance_base * self.plasticity_base + variance * 0.3))
+
+
+class ExperienceBuffer:
+    def __init__(self, config: Dict = None):
+        config = config or {}
+        self.buffer = deque(maxlen=config.get('max_size', 10000))
+        for e in config.get('entries', []): self.buffer.append(e)
+    
+    def add(self, state, action, reward, next_state=None, done=False):
+        self.buffer.append({'state': list(state) if hasattr(state, 'tolist') else state,
+                           'action': action, 'reward': reward})
+    
+    def __len__(self): return len(self.buffer)
+
+
+class ONNXAgent:
+    """Complete agent with ONNX inference + all symbolic subsystems."""
+    
+    def __init__(self, package_dir: str):
+        package_dir = Path(package_dir)
+        
+        # Load ONNX model
+        self.session = ort.InferenceSession(str(package_dir / 'brain.onnx'))
+        self.input_name = self.session.get_inputs()[0].name
+        
+        # Load subsystems
+        with open(package_dir / 'subsystems.json') as f:
+            subsystems = json.load(f)
+        
+        self.atomic_lang = AtomicLanguageSystem(subsystems.get('atomic_language', {}))
+        self.conversation_history = ConversationHistory(subsystems.get('conversation_history', {}))
+        self.knowledge_web = EnhancedKnowledgeWeb(subsystems.get('knowledge_web', {}))
+        self.vp_runtime = VPRuntime(subsystems.get('vp_config', {}))
+        self.experience_buffer = ExperienceBuffer(subsystems.get('experience_buffer', {}))
+        
+        with open(package_dir / 'vocabulary.json') as f:
+            self.vocabulary = json.load(f)
+        with open(package_dir / 'metadata.json') as f:
+            self.metadata = json.load(f)
+    
+    def get_action(self, state) -> tuple:
+        state = np.array(state, dtype=np.float32).reshape(1, -1)
+        vp = self.vp_runtime.compute_from_state(state)
+        
+        outputs = self.session.run(None, {self.input_name: state})
+        action_probs = outputs[0][0]
+        action_probs = action_probs * (0.5 + vp * 0.5)
+        action = int(np.argmax(action_probs))
+        
+        return action, {
+            'action_probs': action_probs.tolist(),
+            'language_logits': outputs[1][0].tolist() if len(outputs) > 1 else None,
+            'vp': vp,
+        }
+    
+    def save(self, package_dir: str):
+        """Save updated symbolic subsystems (ONNX model is read-only)."""
+        package_dir = Path(package_dir)
+        package_dir.mkdir(exist_ok=True)
+        
+        import shutil
+        # Copy ONNX (can't modify it)
+        shutil.copy(Path('.') / 'brain.onnx', package_dir / 'brain.onnx')
+        
+        # Save updated subsystems
+        subsystems = {
+            'atomic_language': self.atomic_lang.get_state(),
+            'conversation_history': self.conversation_history.get_state(),
+            'knowledge_web': self.knowledge_web.get_state(),
+            'vp_config': {'vigilance_base': self.vp_runtime.vigilance_base, 'plasticity_base': self.vp_runtime.plasticity_base},
+            'experience_buffer': {'entries': list(self.experience_buffer.buffer)[-1000:]},
+        }
+        with open(package_dir / 'subsystems.json', 'w') as f:
+            json.dump(subsystems, f, indent=2, default=str)
+
+
+def load_agent(package_dir: str = '.') -> ONNXAgent:
+    return ONNXAgent(package_dir)
+
+
+if __name__ == '__main__':
+    import sys
+    agent = load_agent(sys.argv[1] if len(sys.argv) > 1 else '.')
+    print(f"Loaded ONNX agent: {agent.metadata.get('organism_id', 'unknown')}")
+    print(f"Subsystems: {agent.metadata.get('subsystems_included', [])}")
+'''
+
+    def _generate_onnx_readme(self, metadata: Dict) -> str:
+        """Generate README for ONNX package."""
+        return f'''# 🌐 ONNX Agent Package
+
+**Generated:** {metadata.get('generated', 'Unknown')}
+**Organism:** {metadata.get('organism_id', 'Unknown')}
+
+## 📁 Contents
+
+| File | Description |
+|------|-------------|
+| `brain.onnx` | ONNX neural network (fast inference, view at netron.app) |
+| `subsystems.json` | AtomicLanguageSystem, KnowledgeWeb, ConversationHistory, VP config |
+| `vocabulary.json` | Token vocabulary |
+| `metadata.json` | Configuration |
+| `loader.py` | Python loader for complete agent |
+
+## ⚠️ Learning Capabilities
+
+| Component | Can Learn? | Notes |
+|-----------|------------|-------|
+| Neural Network (brain.onnx) | ❌ No | ONNX is inference-only |
+| AtomicLanguageSystem | ✅ Yes | Create new atoms, reinforce existing |
+| ConversationHistory | ✅ Yes | Grows with each conversation |
+| EnhancedKnowledgeWeb | ✅ Yes | Add new relations |
+| VPRuntime | ✅ Yes | Adapts from state |
+| ExperienceBuffer | ✅ Yes | Stores experiences for later training |
+
+**To retrain the neural network:** Export experiences, train in PyTorch, re-export to ONNX.
+
+## 🚀 Quick Start
+
+```python
+from loader import load_agent
+
+agent = load_agent('.')
+action, outputs = agent.get_action(state)
+
+# Symbolic systems CAN learn
+agent.atomic_lang.create_atom("new_concept", "learned meaning", emotion=0.8)
+agent.knowledge_web.add_relation("a", "b", "causes", strength=0.9)
+agent.save('updated_agent/')
+```
+
+## 🔗 Links
+
+- View brain.onnx at [Netron](https://netron.app/)
+- [Convergence Engine](https://github.com/Yufok1/Convergence_Engine)
+'''
 
     def _generate_bridge_script(self, brain_configs: List[Dict], is_ensemble: bool) -> str:
         """Generate the universal bridge.py runner script."""

@@ -7505,14 +7505,14 @@ def compile_cocoon():
         timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
         
         # File extensions by format
-        # Ensemble binary exports are ZIP archives containing model + metadata
+        # ONNX and TorchScript are now COMPLETE PACKAGES (ZIP) with all subsystems
         extensions = {
             'cocoon': '.py',
-            'onnx': '.onnx',
-            'torchscript': '.pt',
+            'onnx': '.zip',                 # ZIP: brain.onnx + subsystems.json + loader.py
+            'torchscript': '.zip',          # ZIP: brain.pt + subsystems.json + loader.py (TRAINABLE!)
             'statedict': '.pth',
             'package': '.zip',
-            'ensemble_onnx': '.zip',       # ZIP containing brain.onnx + metadata
+            'ensemble_onnx': '.zip',        # ZIP containing brain.onnx + metadata
             'ensemble_torchscript': '.zip'  # ZIP containing brain.pt + metadata
         }
         ext = extensions.get(export_format, '.py')
@@ -7532,17 +7532,33 @@ def compile_cocoon():
                 'fallback': 'Try using format=cocoon or format=package instead.'
             }), 500
         
+        # Track additional files for response
+        additional_files = []
+        
         # Save appropriate content
         if export_format == 'cocoon':
             # Save Python source
             with open(download_path, 'w', encoding='utf-8') as f:
                 f.write(cocoon_source)
-        elif export_format in ('package', 'ensemble_onnx', 'ensemble_torchscript'):
-            # Save ZIP package/archive
+            
+            # Save README if provided (model_bytes contains README for cocoon format)
+            if model_bytes and isinstance(model_bytes, str):
+                readme_path = downloads_dir / filename.replace('.py', '_README.md')
+                with open(readme_path, 'w', encoding='utf-8') as f:
+                    f.write(model_bytes)
+                additional_files.append({
+                    'filename': readme_path.name,
+                    'size': readme_path.stat().st_size,
+                    'download_url': f'/api/download/{readme_path.name}'
+                })
+                logger.info(f"[COCOON] Saved README: {readme_path.name} ({readme_path.stat().st_size:,} bytes)")
+                
+        elif export_format in ('package', 'ensemble_onnx', 'ensemble_torchscript', 'onnx', 'torchscript'):
+            # Save ZIP package/archive (ONNX and TorchScript are now complete packages!)
             with open(download_path, 'wb') as f:
                 f.write(model_bytes)
         else:
-            # Save binary model (onnx, torchscript, statedict)
+            # Save binary model (statedict only now)
             with open(download_path, 'wb') as f:
                 f.write(model_bytes)
         
@@ -7554,7 +7570,7 @@ def compile_cocoon():
         # Map ensemble format back to base format for response
         base_format = export_format.replace('ensemble_', '') if export_format.startswith('ensemble_') else export_format
         
-        return jsonify({
+        response_data = {
             'success': True,
             'capsule_type': 'cocoon',
             'export_format': base_format,
@@ -7569,13 +7585,36 @@ def compile_cocoon():
                 'gym_adapter': include_gym,
                 'http_server': include_http,
                 'compressed': compress,
-                'trainable': export_format in ['cocoon', 'package'],
+                # ALL formats now include full subsystems!
+                'complete_package': export_format in ['cocoon', 'package', 'onnx', 'torchscript'],
+                'neural_trainable': export_format in ['cocoon', 'package', 'torchscript'],  # TorchScript CAN train!
+                'symbolic_trainable': export_format in ['cocoon', 'package', 'onnx', 'torchscript'],  # All have subsystems
                 'netron_viewable': base_format in ['onnx', 'torchscript', 'package'],
                 'ensemble_archive': export_format.startswith('ensemble_'),
+                'subsystems_included': [
+                    'AtomicLanguageSystem',
+                    'ConversationHistory',
+                    'EnhancedKnowledgeWeb',
+                    'VPRuntime',
+                    'ExperienceBuffer',
+                ] if export_format in ['cocoon', 'package', 'onnx', 'torchscript'] else [],
             },
             'download_url': f'/api/download/{filename}',
-            'usage_hint': 'Extract the ZIP archive to get brain.onnx/brain.pt + metadata.json + bridge.py runner' if export_format.startswith('ensemble_') else None
-        })
+            'usage_hint': {
+                'cocoon': 'Run with: python cocoon.py --mode chat',
+                'onnx': 'Extract ZIP, then: from loader import load_agent; agent = load_agent(".")',
+                'torchscript': 'Extract ZIP, then: from loader import load_agent; agent = load_agent(".") # TRAINABLE!',
+                'package': 'Extract ZIP to get cocoon.py + brain.onnx + brain.pt + metadata',
+                'statedict': 'Load with: model.load_state_dict(torch.load("weights.pth"))',
+            }.get(base_format, 'Extract and run'),
+        }
+        
+        # Include additional files info (README, etc.)
+        if additional_files:
+            response_data['additional_files'] = additional_files
+            response_data['readme_url'] = additional_files[0]['download_url'] if additional_files else None
+        
+        return jsonify(response_data)
     
     except Exception as e:
         logger.error(f"Error compiling cocoon: {e}", exc_info=True)
