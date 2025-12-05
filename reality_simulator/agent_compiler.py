@@ -4610,6 +4610,146 @@ class EnhancedKnowledgeWeb:
         }
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# ⚡ VP RUNTIME - Violation Pressure Computation for Self-Regulation
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class VPRuntime:
+    """
+    Lightweight VP (Violation Pressure) runtime for standalone cocoon operation.
+    Computes vitality, pleasure, and violation_pressure from state vectors.
+    
+    VP Classification:
+        VP0: 0.00-0.25 (Fully lawful - optimal operation)
+        VP1: 0.25-0.50 (Stable drift - continue with logging)
+        VP2: 0.50-0.75 (Instability - needs attention)
+        VP3: 0.75-0.99 (Critical - intervention needed)
+        VP4: >= 1.00 (Collapse threshold)
+    """
+    
+    def __init__(self, smoothing_factor: float = 0.3, history_size: int = 20):
+        self.smoothing_factor = smoothing_factor
+        self.history_size = history_size
+        self.vp_history: deque = deque(maxlen=history_size)
+        self.last_vp = 0.0
+        self.vitality = 0.5
+        self.pleasure = 0.5
+        
+        # Component weights for VP calculation
+        self.component_weights = {
+            'resource_deficit': 0.25,   # Low energy/resources
+            'social_isolation': 0.20,   # Few connections
+            'action_conflict': 0.20,    # Competing action signals
+            'learning_stagnation': 0.15, # Low reward variance
+            'entropy_excess': 0.20      # High uncertainty
+        }
+    
+    def compute_from_state(self, state: np.ndarray, reward_history: Optional[List[float]] = None) -> Dict[str, float]:
+        """
+        Compute VP components from organism state vector.
+        
+        State vector mapping (typical 24-dim):
+            0-5: Action probabilities
+            6-8: Resource levels (energy, fitness, age)
+            9-11: Social signals (cooperation, competition, isolation)
+            12-14: Environmental context
+            15-23: Additional features
+        
+        Returns dict with: vitality, pleasure, violation_pressure, vp_class, components
+        """
+        components = {}
+        
+        # 1. Resource deficit: low values in resource positions
+        if len(state) > 8:
+            resource_signals = state[6:9]  # Energy, fitness, age-normalized
+            resource_deficit = max(0, 1.0 - np.mean(resource_signals))
+            components['resource_deficit'] = resource_deficit
+        else:
+            components['resource_deficit'] = 0.3
+        
+        # 2. Social isolation: low cooperation, high isolation signals
+        if len(state) > 11:
+            cooperation = state[9] if len(state) > 9 else 0.5
+            isolation = state[11] if len(state) > 11 else 0.5
+            social_isolation = max(0, isolation - cooperation + 0.5)
+            components['social_isolation'] = np.clip(social_isolation, 0, 1)
+        else:
+            components['social_isolation'] = 0.3
+        
+        # 3. Action conflict: entropy of action probabilities
+        if len(state) > 5:
+            action_probs = state[0:6]
+            action_probs = np.abs(action_probs) / (np.sum(np.abs(action_probs)) + 1e-9)
+            entropy = -np.sum(action_probs * np.log(action_probs + 1e-9))
+            max_entropy = np.log(6)  # 6 actions
+            components['action_conflict'] = np.clip(entropy / max_entropy, 0, 1)
+        else:
+            components['action_conflict'] = 0.3
+        
+        # 4. Learning stagnation: low variance in recent rewards
+        if reward_history and len(reward_history) > 3:
+            reward_std = np.std(reward_history[-10:])
+            stagnation = max(0, 1.0 - reward_std * 5)  # Low variance = high stagnation
+            components['learning_stagnation'] = np.clip(stagnation, 0, 1)
+        else:
+            components['learning_stagnation'] = 0.3
+        
+        # 5. Entropy excess: general state entropy
+        state_normalized = np.abs(state) / (np.sum(np.abs(state)) + 1e-9)
+        state_entropy = -np.sum(state_normalized * np.log(state_normalized + 1e-9))
+        max_state_entropy = np.log(len(state))
+        components['entropy_excess'] = np.clip(state_entropy / max_state_entropy, 0, 1)
+        
+        # Combine components using weighted sum
+        raw_vp = sum(components[k] * self.component_weights[k] for k in components)
+        
+        # Apply smoothing
+        smoothed_vp = self.smoothing_factor * raw_vp + (1 - self.smoothing_factor) * self.last_vp
+        smoothed_vp = np.clip(smoothed_vp, 0, 1)
+        self.last_vp = smoothed_vp
+        self.vp_history.append(smoothed_vp)
+        
+        # Derive vitality and pleasure from components
+        self.vitality = 1.0 - (components['resource_deficit'] * 0.6 + components['learning_stagnation'] * 0.4)
+        self.pleasure = 1.0 - (components['social_isolation'] * 0.5 + components['action_conflict'] * 0.5)
+        
+        # Classify VP
+        if smoothed_vp < 0.25:
+            vp_class = 'VP0'
+        elif smoothed_vp < 0.50:
+            vp_class = 'VP1'
+        elif smoothed_vp < 0.75:
+            vp_class = 'VP2'
+        elif smoothed_vp < 1.00:
+            vp_class = 'VP3'
+        else:
+            vp_class = 'VP4'
+        
+        return {
+            'vitality': float(self.vitality),
+            'pleasure': float(self.pleasure),
+            'violation_pressure': float(smoothed_vp),
+            'vp_class': vp_class,
+            'components': components,
+            'history_mean': float(np.mean(list(self.vp_history))) if self.vp_history else smoothed_vp
+        }
+    
+    def get_vp_value(self) -> float:
+        """Get current VP value for attention scaling."""
+        return self.last_vp
+    
+    def get_vp_state(self) -> Tuple[float, float]:
+        """Get (vitality, pleasure) tuple for concept activation."""
+        return (self.vitality, self.pleasure)
+    
+    def reset(self):
+        """Reset VP runtime state."""
+        self.vp_history.clear()
+        self.last_vp = 0.0
+        self.vitality = 0.5
+        self.pleasure = 0.5
+
+
 # Multi-head attention with VP scaling
 if TORCH_AVAILABLE:
     class MultiHeadAttention(nn.Module):
@@ -4790,11 +4930,16 @@ class CocoonAgent:
         if isinstance(self.knowledge_web, dict):
             self.enhanced_kb.load_from_data(self.knowledge_web)
         
+        # VP Runtime - self-regulation and internal state
+        self.vp_runtime = VPRuntime(smoothing_factor=0.3, history_size=20)
+        self.reward_history: List[float] = []  # For VP stagnation calculation
+        
         mode = "ENSEMBLE" if self.is_ensemble else "SOLO"
         print(f"[OK] CocoonAgent loaded: {mode}, {len(self.brains)} organism(s), device={self.device}")
         print(f"     Atomic concepts: {len(self.atomic_language.atoms)}")
         print(f"     Knowledge web: {len(self.enhanced_kb.concepts)} concepts, {len(self.enhanced_kb.relations)} relations")
         print(f"     Conversation history: {self.conversation.turn_count} turns")
+        print(f"     VP Runtime: enabled (smoothing={self.vp_runtime.smoothing_factor})")
 
     def _load_brains(self):
         brain_configs = self.architecture.get('brain_configs', [])
@@ -4892,7 +5037,15 @@ class CocoonAgent:
 
     def get_action(self, state: np.ndarray, explore: bool = True, vp_value: Optional[float] = None,
                    action_space_size: Optional[int] = None) -> int:
-        """Get action from ensemble or single brain, optionally limited to action_space_size."""
+        """Get action from ensemble or single brain, optionally limited to action_space_size.
+        
+        If vp_value is None, computes it automatically using VPRuntime.
+        """
+        # Auto-compute VP if not provided
+        if vp_value is None:
+            vp_data = self.vp_runtime.compute_from_state(state, self.reward_history)
+            vp_value = vp_data['violation_pressure']
+        
         effective_size = action_space_size if action_space_size else self.brains[0].output_dim
         if explore and random.random() < self.epsilon:
             return random.randint(0, effective_size - 1)
@@ -4920,6 +5073,11 @@ class CocoonAgent:
 
     def add_experience(self, state, action, reward, next_state, done,
                         input_tokens=None, target_tokens=None, vp_value=None, organism_idx: Optional[int] = None):
+        # Track reward for VP stagnation calculation
+        self.reward_history.append(reward)
+        if len(self.reward_history) > 100:
+            self.reward_history = self.reward_history[-100:]
+        
         targets = range(len(self.experience_buffers)) if organism_idx is None else [organism_idx]
         for idx in targets:
             if idx < len(self.experience_buffers):
