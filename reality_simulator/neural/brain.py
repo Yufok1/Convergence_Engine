@@ -463,7 +463,18 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
             
             # Sample from distribution
             probs = F.softmax(language_logits, dim=-1)
-            token_ids = torch.multinomial(probs.squeeze(0) if probs.dim() > 2 else probs, 1)
+            
+            # SAFEGUARD: Check for NaN/Inf/zero probabilities before multinomial
+            probs_flat = probs.squeeze(0) if probs.dim() > 2 else probs
+            if not torch.isfinite(probs_flat).all() or probs_flat.sum() <= 0:
+                # Fall back to uniform distribution
+                probs_flat = torch.ones_like(probs_flat) / probs_flat.numel()
+            
+            try:
+                token_ids = torch.multinomial(probs_flat, 1)
+            except (RuntimeError, AssertionError):
+                # Last resort: random token
+                token_ids = torch.randint(0, probs_flat.shape[-1], (1,))
             
         return token_ids
     

@@ -10,6 +10,7 @@ Extended with:
 - Communication pattern extraction
 """
 
+import random
 import numpy as np
 from typing import Dict, Any, Optional, List, Tuple
 from dataclasses import field
@@ -1650,8 +1651,25 @@ class NeuralOrganism(Organism):
                     
                     probs = torch.softmax(logits, dim=-1)
                     
+                    # SAFEGUARD: Check for NaN/Inf/zero probabilities before multinomial
+                    # torch.multinomial will throw AssertionError if probs are invalid
+                    if not torch.isfinite(probs).all() or probs.sum() <= 0:
+                        # Probabilities are invalid - fall back to uniform distribution over valid vocab
+                        logger.warning(f"Invalid probabilities detected, using uniform fallback")
+                        probs = torch.zeros_like(probs)
+                        probs[:actual_vocab_size] = 1.0 / actual_vocab_size
+                    
+                    # Extra safety: ensure at least some probability mass exists
+                    if probs.sum() <= 1e-10:
+                        probs[:actual_vocab_size] = 1.0 / actual_vocab_size
+                    
                     # Sample next token - now constrained to actual vocabulary with diversity
-                    next_token = torch.multinomial(probs, 1).item()
+                    try:
+                        next_token = torch.multinomial(probs, 1).item()
+                    except (RuntimeError, AssertionError) as e:
+                        # Last resort fallback: random token from vocabulary
+                        logger.warning(f"Multinomial sampling failed: {e}, using random fallback")
+                        next_token = random.randint(0, max(0, actual_vocab_size - 1))
                     next_token = min(next_token, actual_vocab_size - 1)  # Clamp to valid range
                     
                     # Verify token maps to an actual word
