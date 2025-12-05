@@ -1536,8 +1536,10 @@ class AgentBridge:
                         probs = torch.softmax(logits, dim=-1)
                         
                         # SAFEGUARD: Check for NaN/Inf/zero probabilities before multinomial
-                        if not torch.isfinite(probs).all() or probs.sum() <= 0:
-                            probs = torch.ones_like(probs) / len(probs)
+                        # Use .item() to convert tensor booleans to Python booleans
+                        probs_valid = torch.isfinite(probs).all().item() and probs.sum().item() > 0
+                        if not probs_valid:
+                            probs = torch.ones_like(probs) / max(1, len(probs))
                         
                         try:
                             token_id = torch.multinomial(probs, 1).item()

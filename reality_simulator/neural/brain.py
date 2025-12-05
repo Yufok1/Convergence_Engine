@@ -466,9 +466,11 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
             
             # SAFEGUARD: Check for NaN/Inf/zero probabilities before multinomial
             probs_flat = probs.squeeze(0) if probs.dim() > 2 else probs
-            if not torch.isfinite(probs_flat).all() or probs_flat.sum() <= 0:
+            # Use .item() to convert tensor booleans to Python booleans
+            probs_valid = torch.isfinite(probs_flat).all().item() and probs_flat.sum().item() > 0
+            if not probs_valid:
                 # Fall back to uniform distribution
-                probs_flat = torch.ones_like(probs_flat) / probs_flat.numel()
+                probs_flat = torch.ones_like(probs_flat) / max(1, probs_flat.numel())
             
             try:
                 token_ids = torch.multinomial(probs_flat, 1)

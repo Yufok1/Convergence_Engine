@@ -1614,10 +1614,14 @@ class NeuralOrganism(Organism):
                     # Without masking, most samples hit non-existent tokens → <UNK> → empty output
                     actual_vocab_size = len(vocab.word_to_id)  # Real vocab size including only actual words
                     
-                    if actual_vocab_size < len(logits):
+                    # SAFETY: Clamp actual_vocab_size to not exceed logits tensor size
+                    # Vocabulary can grow beyond network capacity - use min to prevent IndexError
+                    effective_vocab_size = min(actual_vocab_size, len(logits))
+                    
+                    if effective_vocab_size < len(logits):
                         # Create mask: -inf for tokens beyond actual vocabulary
                         mask = torch.full_like(logits, float('-inf'))
-                        mask[:actual_vocab_size] = 0  # Keep actual vocabulary tokens
+                        mask[:effective_vocab_size] = 0  # Keep actual vocabulary tokens
                         logits = logits + mask  # Apply mask (softmax will make -inf → 0 probability)
                     
                     # GROK-2 FIX: Apply repetition penalty to prevent "was was was" patterns
@@ -1653,15 +1657,17 @@ class NeuralOrganism(Organism):
                     
                     # SAFEGUARD: Check for NaN/Inf/zero probabilities before multinomial
                     # torch.multinomial will throw AssertionError if probs are invalid
-                    if not torch.isfinite(probs).all() or probs.sum() <= 0:
+                    # Use .item() to convert tensor booleans to Python booleans
+                    probs_valid = torch.isfinite(probs).all().item() and probs.sum().item() > 0
+                    if not probs_valid:
                         # Probabilities are invalid - fall back to uniform distribution over valid vocab
                         logger.warning(f"Invalid probabilities detected, using uniform fallback")
                         probs = torch.zeros_like(probs)
-                        probs[:actual_vocab_size] = 1.0 / actual_vocab_size
+                        probs[:effective_vocab_size] = 1.0 / max(1, effective_vocab_size)
                     
                     # Extra safety: ensure at least some probability mass exists
-                    if probs.sum() <= 1e-10:
-                        probs[:actual_vocab_size] = 1.0 / actual_vocab_size
+                    if probs.sum().item() <= 1e-10:
+                        probs[:effective_vocab_size] = 1.0 / max(1, effective_vocab_size)
                     
                     # Sample next token - now constrained to actual vocabulary with diversity
                     try:
@@ -1669,20 +1675,20 @@ class NeuralOrganism(Organism):
                     except (RuntimeError, AssertionError) as e:
                         # Last resort fallback: random token from vocabulary
                         logger.warning(f"Multinomial sampling failed: {e}, using random fallback")
-                        next_token = random.randint(0, max(0, actual_vocab_size - 1))
-                    next_token = min(next_token, actual_vocab_size - 1)  # Clamp to valid range
+                        next_token = random.randint(0, max(0, effective_vocab_size - 1))
+                    next_token = min(next_token, effective_vocab_size - 1)  # Clamp to valid range
                     
                     # Verify token maps to an actual word
                     word = vocab.get_word(next_token)
-                    if word == '<UNK>' and actual_vocab_size > len(SPECIAL_TOKENS):
+                    if word == '<UNK>' and effective_vocab_size > len(SPECIAL_TOKENS):
                         # Try nearby tokens to find a valid word
-                        non_special_size = actual_vocab_size - len(SPECIAL_TOKENS)
+                        non_special_size = effective_vocab_size - len(SPECIAL_TOKENS)
                         found_valid = False
                         for offset in range(1, min(10, non_special_size)):
                             # Try both directions
                             for direction in [-1, 1]:
                                 candidate = next_token + (offset * direction)
-                                if candidate >= len(SPECIAL_TOKENS) and candidate < actual_vocab_size:
+                                if candidate >= len(SPECIAL_TOKENS) and candidate < effective_vocab_size:
                                     candidate_word = vocab.get_word(candidate)
                                     if candidate_word and candidate_word != '<UNK>':
                                         next_token = candidate
