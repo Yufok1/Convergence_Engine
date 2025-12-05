@@ -941,7 +941,9 @@ class HighlanderProtocol:
         margin = abs(effective1 - effective2) / max(effective1, effective2)
         
         # Determine what gets transferred
-        concepts_to_transfer = self._get_transferable_concepts(loser_id, organisms={org1_id: org1, org2_id: org2}.get(loser_id))
+        # Get loser organism from the battle participants
+        loser_organism = org1 if loser_id == org1_id else org2
+        concepts_to_transfer = self._get_transferable_concepts(loser_id, loser=loser_organism)
         configs_to_transfer = self._get_transferable_configs(loser_id)
         
         # Update stats
