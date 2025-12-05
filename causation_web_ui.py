@@ -7451,30 +7451,69 @@ def compile_cocoon():
             if lang_system:
                 knowledge_web = getattr(lang_system, 'knowledge_web', None)
         
+        # Get conversation history for ensemble export
+        conversation_history = app.config.get('conversation_history', [])
+        if not conversation_history and unified_system:
+            lang_system = getattr(unified_system, 'language_system', None)
+            if lang_system:
+                conversation_history = getattr(lang_system, 'conversation_history', [])
+        
         # Compile cocoon with specified format
         compiler = AgentCompiler()
-        cocoon_source, model_bytes = compiler.compile_cocoon(
-            capsules=organisms,
-            vocabulary=vocabulary,
-            knowledge_web=knowledge_web,
-            training_config=training_config,
-            include_gym=include_gym,
-            include_http=include_http,
-            compress_data=compress,
-            export_format=export_format
-        )
+        
+        # For ONNX/TorchScript with multiple organisms, use proper ensemble export
+        is_ensemble = len(organisms) > 1
+        if is_ensemble and export_format in ('onnx', 'torchscript'):
+            logger.info(f"[COCOON] Using ensemble export for {len(organisms)} organisms")
+            # export_multi_organism_ensemble returns a BytesIO archive containing
+            # brain.onnx/brain.pt + metadata + runner scripts
+            ensemble_archive = compiler.export_multi_organism_ensemble(
+                capsules=organisms,
+                export_format=export_format,
+                vocabulary=vocabulary,
+                conversation_history=conversation_history
+            )
+            # This is a ZIP archive - always save as .zip for ensemble binary exports
+            model_bytes = ensemble_archive.read()
+            # Generate cocoon source separately for reference (not used for binary exports)
+            cocoon_source, _ = compiler.compile_cocoon(
+                capsules=organisms,
+                vocabulary=vocabulary,
+                knowledge_web=knowledge_web,
+                training_config=training_config,
+                include_gym=include_gym,
+                include_http=include_http,
+                compress_data=compress,
+                export_format='cocoon'  # Just get the Python source
+            )
+            # Override extension for ensemble binary - it's always a zip archive
+            export_format = 'ensemble_' + export_format  # ensemble_onnx or ensemble_torchscript
+        else:
+            cocoon_source, model_bytes = compiler.compile_cocoon(
+                capsules=organisms,
+                vocabulary=vocabulary,
+                knowledge_web=knowledge_web,
+                training_config=training_config,
+                include_gym=include_gym,
+                include_http=include_http,
+                compress_data=compress,
+                export_format=export_format
+            )
         
         # Generate filename based on format
         mode = "ensemble" if len(organisms) > 1 else "solo"
         timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
         
         # File extensions by format
+        # Ensemble binary exports are ZIP archives containing model + metadata
         extensions = {
             'cocoon': '.py',
             'onnx': '.onnx',
             'torchscript': '.pt',
             'statedict': '.pth',
-            'package': '.zip'
+            'package': '.zip',
+            'ensemble_onnx': '.zip',       # ZIP containing brain.onnx + metadata
+            'ensemble_torchscript': '.zip'  # ZIP containing brain.pt + metadata
         }
         ext = extensions.get(export_format, '.py')
         filename = f"cocoon_{mode}_{timestamp}{ext}"
@@ -7484,13 +7523,22 @@ def compile_cocoon():
         downloads_dir.mkdir(exist_ok=True)
         download_path = downloads_dir / filename
         
+        # Handle case where binary export failed (model_bytes is None for non-cocoon format)
+        # Don't save Python source with binary extension - that creates corrupt files
+        if model_bytes is None and export_format not in ('cocoon',):
+            logger.error(f"[COCOON] Binary export failed for format '{export_format}' - model_bytes is None")
+            return jsonify({
+                'error': f'Export failed for format {export_format}. The model could not be compiled to this format.',
+                'fallback': 'Try using format=cocoon or format=package instead.'
+            }), 500
+        
         # Save appropriate content
-        if export_format == 'cocoon' or model_bytes is None:
+        if export_format == 'cocoon':
             # Save Python source
             with open(download_path, 'w', encoding='utf-8') as f:
                 f.write(cocoon_source)
-        elif export_format == 'package':
-            # Save ZIP package
+        elif export_format in ('package', 'ensemble_onnx', 'ensemble_torchscript'):
+            # Save ZIP package/archive
             with open(download_path, 'wb') as f:
                 f.write(model_bytes)
         else:
@@ -7503,11 +7551,15 @@ def compile_cocoon():
         
         logger.info(f"[COCOON] Generated {export_format} ({mode}): {filename} ({file_size:,} bytes)")
         
+        # Map ensemble format back to base format for response
+        base_format = export_format.replace('ensemble_', '') if export_format.startswith('ensemble_') else export_format
+        
         return jsonify({
             'success': True,
             'capsule_type': 'cocoon',
-            'export_format': export_format,
+            'export_format': base_format,
             'mode': mode,
+            'is_ensemble_archive': export_format.startswith('ensemble_'),
             'filename': filename,
             'size': file_size,
             'size_kb': round(file_size / 1024, 1),
@@ -7518,9 +7570,11 @@ def compile_cocoon():
                 'http_server': include_http,
                 'compressed': compress,
                 'trainable': export_format in ['cocoon', 'package'],
-                'netron_viewable': export_format in ['onnx', 'torchscript', 'package'],
+                'netron_viewable': base_format in ['onnx', 'torchscript', 'package'],
+                'ensemble_archive': export_format.startswith('ensemble_'),
             },
-            'download_url': f'/api/download/{filename}'
+            'download_url': f'/api/download/{filename}',
+            'usage_hint': 'Extract the ZIP archive to get brain.onnx/brain.pt + metadata.json + bridge.py runner' if export_format.startswith('ensemble_') else None
         })
     
     except Exception as e:
