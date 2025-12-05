@@ -2581,12 +2581,12 @@
                     
                     <!-- Agent Exporter Tab Content -->
                     <div id="agentExporterTabContent" style="display: none; padding: 15px; border: 1px solid #f0f; background: linear-gradient(135deg, #1a0a1a 0%, #0a050a 100%); border-radius: 5px;">
-                        <h4 style="color: #f0f; margin-top: 0; margin-bottom: 15px;">📦 Agent Exporter</h4>
-                        <p style="color: #aaa; font-size: 0.9em; margin-bottom: 20px;">Compile and download a selected organism as a portable AI agent. Toggle multi-select to build an ensemble.</p>
+                        <h4 style="color: #f0f; margin-top: 0; margin-bottom: 15px;">📦 Compile & Export</h4>
+                        <p style="color: #aaa; font-size: 0.9em; margin-bottom: 20px;">Export organisms as portable AI agents. Select specific organisms or use "Top N" to auto-select the fittest.</p>
                         
                         <div style="margin-bottom: 15px;">
                             <div style="display: flex; align-items: center; gap: 10px; justify-content: space-between;">
-                                <label for="agentExporterOrganismSelect" style="display: block; color: #0f0; margin-bottom: 5px;">Select Organism:</label>
+                                <label for="agentExporterOrganismSelect" style="display: block; color: #0f0; margin-bottom: 5px;">Select Organism(s):</label>
                                 <label style="color:#0ff; font-size: 0.85em; display:flex; align-items:center; gap:6px;">
                                     <input type="checkbox" id="agentExporterMulti" onchange="document.getElementById('agentExporterOrganismSelect').multiple=this.checked; populateOrganismSelector();" />
                                     Multi-select
@@ -2600,18 +2600,21 @@
                         <div style="margin-bottom: 20px;">
                             <label for="agentExporterFormat" style="display: block; color: #0f0; margin-bottom: 5px;">Export Format:</label>
                             <select id="agentExporterFormat" style="width: 100%; padding: 8px; background: #111; color: #0f0; border: 1px solid #0ff; font-family: 'Courier New', monospace;">
-                                <option value="cocoon">🦋 Cocoon (.py single-file)</option>
-                                <option value="onnx">ONNX (.onnx) - Netron viewable</option>
-                                <option value="torchscript">TorchScript (.pt) - Netron viewable</option>
-                                <option value="package">📦 Full Package (.zip) - All formats + README</option>
-                                <option value="statedict">State Dict (.pth) - PyTorch weights only</option>
+                                <option value="package">🎁 Ultimate Package (.zip) - ALL formats + runners + docs</option>
+                                <option value="cocoon">🐍 Python Cocoon (.py) - Self-contained, embedded weights</option>
+                                <option value="onnx">📊 ONNX Model (.onnx) - Fast inference, Netron viewable</option>
+                                <option value="torchscript">🔥 TorchScript (.pt) - PyTorch native, Netron viewable</option>
+                                <option value="statedict">💾 State Dict (.pth) - PyTorch weights only</option>
                             </select>
+                            <div id="formatDescription" style="margin-top: 8px; padding: 10px; background: #0a0a0a; border: 1px solid #333; border-radius: 4px; font-size: 0.85em; color: #888;">
+                                <strong style="color: #f0f;">Ultimate Package</strong> includes: brain_ensemble.onnx + brain_ensemble.pt + cocoon.py + bridge.py runner + metadata + README. One export, all formats!
+                            </div>
                         </div>
 
                         <div style="margin-bottom: 15px; display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; align-items: center;">
                             <div>
-                                <label for="agentExporterTopN" style="display: block; color: #0f0; margin-bottom: 5px;">Top N (when none selected):</label>
-                                <input id="agentExporterTopN" type="number" value="1" min="1" step="1" style="width: 100%; padding: 8px; background: #111; color: #0f0; border: 1px solid #0ff; font-family: 'Courier New', monospace;" />
+                                <label for="agentExporterTopN" style="display: block; color: #0f0; margin-bottom: 5px;">Top N (auto-select fittest):</label>
+                                <input id="agentExporterTopN" type="number" value="10" min="1" step="1" style="width: 100%; padding: 8px; background: #111; color: #0f0; border: 1px solid #0ff; font-family: 'Courier New', monospace;" />
                             </div>
                             <label style="color:#0ff; display:flex; align-items:center; gap:8px; background:#0a0a0a; border:1px solid #0ff; padding:8px; border-radius:4px;">
                                 <input type="checkbox" id="agentExporterIncludeGym" checked /> Include Gym adapter
@@ -2624,20 +2627,12 @@
                             </label>
                         </div>
                         
-                        <button onclick="compileAgentFromExporter()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #f0f 0%, #a0a 100%); color: #000; border: 1px solid #f0f; font-weight: bold; cursor: pointer; font-family: 'Courier New', monospace; font-size: 1em; border-radius: 4px; transition: all 0.2s;" onmouseover="this.style.boxShadow='0 0 15px #f0f'" onmouseout="this.style.boxShadow='none'">
-                            🚀 Compile Agent
-                        </button>
-
-                        <button onclick="compileEnsembleFromExporter()" style="width: 100%; margin-top: 10px; padding: 12px; background: linear-gradient(135deg, #0ff 0%, #0aa 100%); color: #000; border: 1px solid #0ff; font-weight: bold; cursor: pointer; font-family: 'Courier New', monospace; font-size: 1em; border-radius: 4px; transition: all 0.2s;" onmouseover="this.style.boxShadow='0 0 15px #0ff'" onmouseout="this.style.boxShadow='none'">
-                            🤝 Compile Ensemble
-                        </button>
-
-                        <button onclick="compileCocoonFromExporter()" style="width: 100%; margin-top: 10px; padding: 12px; background: linear-gradient(135deg, #ff0 0%, #cc0 100%); color: #000; border: 1px solid #ff0; font-weight: bold; cursor: pointer; font-family: 'Courier New', monospace; font-size: 1em; border-radius: 4px; transition: all 0.2s;" onmouseover="this.style.boxShadow='0 0 15px #ff0'" onmouseout="this.style.boxShadow='none'">
-                            🦋 Compile Cocoon (single-file)
+                        <button onclick="compileAndExport()" style="width: 100%; padding: 15px; background: linear-gradient(135deg, #f0f 0%, #0ff 50%, #0f0 100%); color: #000; border: 2px solid #fff; font-weight: bold; cursor: pointer; font-family: 'Courier New', monospace; font-size: 1.1em; border-radius: 4px; transition: all 0.2s; text-shadow: 0 0 2px #fff;" onmouseover="this.style.boxShadow='0 0 20px #f0f, 0 0 30px #0ff'" onmouseout="this.style.boxShadow='none'">
+                            🚀 COMPILE & EXPORT
                         </button>
                         
                         <div id="agentExporterStatus" style="margin-top: 15px; padding: 12px; background: #0a0a0a; border: 1px solid #333; color: #0ff; min-height: 40px; text-align: center; border-radius: 4px;">
-                            Ready to compile.
+                            Ready to compile. Select format and organisms above.
                         </div>
                     </div>
                 </div>
@@ -11679,7 +11674,108 @@
                 }
             }
             
-            // Compile agent from exporter tab
+            // Update format description when format changes
+            function updateFormatDescription() {
+                const format = document.getElementById('agentExporterFormat')?.value || 'package';
+                const descDiv = document.getElementById('formatDescription');
+                if (!descDiv) return;
+                
+                const descriptions = {
+                    'package': '<strong style="color: #f0f;">Ultimate Package</strong> includes: brain_ensemble.onnx + brain_ensemble.pt + cocoon.py + bridge.py runner + metadata + README. One export, all formats!',
+                    'cocoon': '<strong style="color: #ff0;">Python Cocoon</strong>: Self-contained .py file with embedded neural weights. Run anywhere Python exists, no external model files needed.',
+                    'onnx': '<strong style="color: #0f0;">ONNX Model</strong>: Industry-standard format. Fast inference with onnxruntime. View architecture at <a href="https://netron.app" target="_blank" style="color:#0ff;">netron.app</a>',
+                    'torchscript': '<strong style="color: #f80;">TorchScript</strong>: PyTorch native format. Use with torch.jit.load(). View at <a href="https://netron.app" target="_blank" style="color:#0ff;">netron.app</a>',
+                    'statedict': '<strong style="color: #888;">State Dict</strong>: Raw PyTorch weights only. Requires matching model architecture to load.'
+                };
+                descDiv.innerHTML = descriptions[format] || descriptions['package'];
+            }
+            
+            // Attach format change listener
+            document.addEventListener('DOMContentLoaded', () => {
+                const formatSelect = document.getElementById('agentExporterFormat');
+                if (formatSelect) {
+                    formatSelect.addEventListener('change', updateFormatDescription);
+                }
+            });
+            
+            // UNIFIED COMPILE & EXPORT - One button to rule them all
+            async function compileAndExport() {
+                const selector = document.getElementById('agentExporterOrganismSelect');
+                const selected = selector ? Array.from(selector.selectedOptions).map(o => o.value).filter(Boolean) : [];
+                const topNInput = document.getElementById('agentExporterTopN');
+                let topN = parseInt(topNInput ? topNInput.value : '10', 10);
+                if (!topN || topN < 1) topN = 10;
+                const includeGym = document.getElementById('agentExporterIncludeGym')?.checked ?? true;
+                const includeHttp = document.getElementById('agentExporterIncludeHttp')?.checked ?? true;
+                const compress = document.getElementById('agentExporterCompress')?.checked ?? true;
+                const format = document.getElementById('agentExporterFormat')?.value || 'package';
+
+                const formatLabels = {
+                    'package': '🎁 Ultimate Package',
+                    'cocoon': '🐍 Python Cocoon', 
+                    'onnx': '📊 ONNX Model', 
+                    'torchscript': '🔥 TorchScript', 
+                    'statedict': '💾 State Dict'
+                };
+                const targetLabel = selected.length > 0 ? `${selected.length} selected organisms` : `top ${topN} organisms`;
+                updateCompileAgentStatus(`⏳ Compiling ${formatLabels[format] || format} with ${targetLabel}...`, '#ff0');
+
+                try {
+                    const response = await fetch('/api/capsules/compile-cocoon', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            organism_ids: selected,
+                            top_n: topN,
+                            include_gym: includeGym,
+                            include_http: includeHttp,
+                            compress: compress,
+                            format: format
+                        })
+                    });
+
+                    if (!response.ok) {
+                        let errorMessage = `Server error: ${response.status}`;
+                        try {
+                            const errorData = await response.json();
+                            errorMessage = errorData.error || errorMessage;
+                        } catch (e) { /* default */ }
+                        throw new Error(errorMessage);
+                    }
+
+                    const result = await response.json();
+                    if (!result.success || !result.download_url) {
+                        throw new Error(result.error || 'Compilation failed');
+                    }
+
+                    // Show success with details
+                    const sizeStr = result.size > 1024*1024 
+                        ? `${(result.size / 1024 / 1024).toFixed(1)} MB` 
+                        : `${(result.size / 1024).toFixed(0)} KB`;
+                    let successMsg = `✅ ${formatLabels[format]} compiled! ${sizeStr}`;
+                    if (result.is_ensemble_archive || result.features?.ensemble_archive) {
+                        successMsg += ' (Ensemble ZIP)';
+                    }
+                    if (result.usage_hint) {
+                        successMsg += `<br><small style="color:#888;">${result.usage_hint}</small>`;
+                    }
+                    updateCompileAgentStatus(successMsg, '#0f0');
+
+                    // Trigger download
+                    const a = document.createElement('a');
+                    a.href = result.download_url;
+                    a.download = result.filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+
+                } catch (error) {
+                    console.error('Error compiling:', error);
+                    updateCompileAgentStatus(`❌ Error: ${error.message}`, '#f66');
+                }
+            }
+            
+            // Keep old functions for backwards compatibility but redirect to unified
             async function compileAgentFromExporter() {
                 const organismId = document.getElementById('agentExporterOrganismSelect').value;
                 const formatSelect = document.getElementById('agentExporterFormat');
