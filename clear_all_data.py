@@ -24,6 +24,7 @@ WHAT GETS CLEARED:
 - data/neural_models/*.pt, *.pth - Neural models
 - data/capsules/*.json - Organism capsules
 - highlander_capsules/*.json - Highlander champion capsules
+- agent_downloads/*.py, *.onnx, *.pt, *.pth, *.zip - Exported cocoons/agents
 - test_capsules_temp/ - Test capsule directory
 
 PRESERVED (Not Deleted):
@@ -357,6 +358,23 @@ def clear_all_data():
         if capsule_count > 0:
             cleared_items.append(f"  ✅ Capsules: {capsule_count} files")
             print(f"💊 Cleared {capsule_count} capsule files")
+    
+    # 14. Clear agent_downloads (exported cocoons, ONNX, TorchScript, etc.)
+    agent_downloads_dir = base_dir / 'agent_downloads'
+    if agent_downloads_dir.exists():
+        agent_count = 0
+        extensions = ['*.py', '*.onnx', '*.pt', '*.pth', '*.zip']
+        for ext in extensions:
+            for agent_file in agent_downloads_dir.glob(ext):
+                success, size, msg = safe_delete_file(agent_file)
+                if success:
+                    total_size += size
+                    agent_count += 1
+                else:
+                    skipped_items.append(f"  ⚠️  Agent export: {agent_file.name} - {msg}")
+        if agent_count > 0:
+            cleared_items.append(f"  ✅ Agent exports: {agent_count} files")
+            print(f"🦋 Cleared {agent_count} exported cocoon/agent files")
     
     # Note: Knowledge base files are PRESERVED (not runtime data):
     # - linguistic_concepts.json

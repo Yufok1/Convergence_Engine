@@ -6,6 +6,82 @@
 
 ## [Unreleased] - 2025-12-05
 
+### 🔬 Netron-Compatible Export Formats (2025-12-05)
+
+Added multiple export formats for cocoons, including Netron-viewable ONNX and TorchScript.
+
+#### Added
+- **Multi-Format Export Dropdown** in Agent Exporter UI
+  - 🦋 Cocoon (.py) - Single Python file
+  - ONNX (.onnx) - Netron viewable
+  - TorchScript (.pt) - Netron viewable  
+  - StateDict (.pth) - PyTorch weights
+  - 📦 Package (.zip) - All formats + README
+
+- **`export_format` Parameter** in `compile_cocoon()`
+  - Returns `(cocoon_source, model_bytes)` tuple
+  - Handles all 5 export formats
+  - Generates README for package exports
+
+- **Cocoon Runtime Export Commands**
+  - `--export-onnx <file>` - Export brain as ONNX
+  - `--export-package <dir>` - Export full package
+  - `--organism <idx>` - Select organism for export
+
+- **Package Export Contents**
+  - `cocoon.py` - Standalone Python agent
+  - `brain_*.onnx` - ONNX models per organism
+  - `vocabulary.json` - Token vocabulary
+  - `metadata.json` - Full configuration
+  - `README.md` - Model card documentation
+
+#### Fixed
+- **Netron Can't View .py Files** - Now exports actual model formats
+- **No Model Card** - Package includes README.md
+
+### 🦋 Cocoon Intelligence Alignment (2025-12-05)
+
+Major enhancement to align Cocoon output with full Butterfly pipeline intelligence.
+
+#### Added
+- **Full STEP 1-7 Pipeline Display** in chat mode
+  - STEP 1: Message received
+  - STEP 2: Tokenization with token IDs
+  - STEP 3: Organism selection (strategy display)
+  - STEP 4: Per-organism generation with conf/fit/weight
+  - STEP 5: Aggregation via Decision Matrix (weight = fitness × confidence)
+  - STEP 6: Causation event tracking
+  - STEP 7: Final response output
+
+- **Decision Matrix for Response Selection**
+  - `weight = fitness × confidence` formula
+  - Winner selection from valid responses
+  - Runner-up display for transparency
+  - Filters empty and error responses
+
+- **Semantic Boosting in Generation**
+  - `_get_semantic_related()` queries knowledge web
+  - Initial semantic priming from input words
+  - Continuous boosting from last generated word
+  - Top-k sampling with semantic guidance
+
+- **Per-Organism Fitness Tracking**
+  - `organism_fitness[]` list in CocoonAgent
+  - Fitness extracted from capsule during compilation
+  - Real fitness values used in decision matrix
+
+- **Enhanced generate_response()**
+  - Returns `(response, confidence)` tuple
+  - Tiered repetition penalty (strong/moderate)
+  - Semantic boosting loop
+  - Diversity-based confidence calculation
+
+#### Fixed
+- **"Word Salad" Output** - Semantic boosting + decision matrix = coherent responses
+- **No Decision Matrix** - Now uses fitness × confidence weighting
+- **Knowledge Web Unused** - Now actively queries during generation
+- **All Organisms Dumped** - Single aggregated response via STEP 5
+
 ### 🦋 Cocoon System - Single-File Deployable Agents (2025-12-05)
 
 Complete implementation of the Cocoon System for exporting trained organisms as standalone Python files.

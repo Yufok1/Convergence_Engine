@@ -1630,9 +1630,12 @@ class NeuralOrganism(Organism):
                     # GROK-2 FIX: Top-k sampling for better diversity
                     # Only sample from top-k most likely tokens
                     top_k = 40  # Number of top tokens to consider
-                    if len(logits) > top_k:
-                        # Get top-k indices
-                        top_k_values, top_k_indices = torch.topk(logits, top_k)
+                    # Count non-masked (finite) logits to avoid "selected index k out of range"
+                    finite_count = torch.isfinite(logits).sum().item()
+                    effective_k = min(top_k, finite_count, len(logits))
+                    if effective_k > 0 and finite_count > effective_k:
+                        # Get top-k indices (only if we have more finite values than k)
+                        top_k_values, top_k_indices = torch.topk(logits, effective_k)
                         # Create mask keeping only top-k
                         top_k_mask = torch.full_like(logits, float('-inf'))
                         top_k_mask[top_k_indices] = 0

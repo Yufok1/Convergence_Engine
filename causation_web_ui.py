@@ -7347,7 +7347,10 @@ def compile_cocoon():
         include_gym = data.get('include_gym', True)
         include_http = data.get('include_http', True)
         compress = data.get('compress', True)
+        export_format = data.get('format', 'cocoon')  # cocoon, onnx, torchscript, package
         training_config = data.get('training_config', {})
+        
+        logger.info(f"[COCOON] Export format: {export_format}")
         
         # Get unified system and checkpoint manager
         unified_system = app.config.get('unified_system') or getattr(app, 'unified_system', None)
@@ -7444,39 +7447,62 @@ def compile_cocoon():
             if lang_system:
                 knowledge_web = getattr(lang_system, 'knowledge_web', None)
         
-        # Compile cocoon
+        # Compile cocoon with specified format
         compiler = AgentCompiler()
-        cocoon_source = compiler.compile_cocoon(
+        cocoon_source, model_bytes = compiler.compile_cocoon(
             capsules=organisms,
             vocabulary=vocabulary,
             knowledge_web=knowledge_web,
             training_config=training_config,
             include_gym=include_gym,
             include_http=include_http,
-            compress_data=compress
+            compress_data=compress,
+            export_format=export_format
         )
         
-        # Generate filename
+        # Generate filename based on format
         mode = "ensemble" if len(organisms) > 1 else "solo"
         timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-        filename = f"cocoon_{mode}_{timestamp}.py"
+        
+        # File extensions by format
+        extensions = {
+            'cocoon': '.py',
+            'onnx': '.onnx',
+            'torchscript': '.pt',
+            'statedict': '.pth',
+            'package': '.zip'
+        }
+        ext = extensions.get(export_format, '.py')
+        filename = f"cocoon_{mode}_{timestamp}{ext}"
         
         # Save to downloads folder
         downloads_dir = Path(__file__).parent / 'agent_downloads'
         downloads_dir.mkdir(exist_ok=True)
         download_path = downloads_dir / filename
         
-        with open(download_path, 'w', encoding='utf-8') as f:
-            f.write(cocoon_source)
+        # Save appropriate content
+        if export_format == 'cocoon' or model_bytes is None:
+            # Save Python source
+            with open(download_path, 'w', encoding='utf-8') as f:
+                f.write(cocoon_source)
+        elif export_format == 'package':
+            # Save ZIP package
+            with open(download_path, 'wb') as f:
+                f.write(model_bytes)
+        else:
+            # Save binary model (onnx, torchscript, statedict)
+            with open(download_path, 'wb') as f:
+                f.write(model_bytes)
         
         file_size = download_path.stat().st_size
         organism_names = [str(getattr(org, 'organism_id', getattr(org, 'id', i))) for i, org in enumerate(organisms)]
         
-        logger.info(f"[COCOON] Generated {mode} cocoon: {filename} ({file_size:,} bytes)")
+        logger.info(f"[COCOON] Generated {export_format} ({mode}): {filename} ({file_size:,} bytes)")
         
         return jsonify({
             'success': True,
             'capsule_type': 'cocoon',
+            'export_format': export_format,
             'mode': mode,
             'filename': filename,
             'size': file_size,
@@ -7487,7 +7513,8 @@ def compile_cocoon():
                 'gym_adapter': include_gym,
                 'http_server': include_http,
                 'compressed': compress,
-                'trainable': True,
+                'trainable': export_format in ['cocoon', 'package'],
+                'netron_viewable': export_format in ['onnx', 'torchscript', 'package'],
             },
             'download_url': f'/api/download/{filename}'
         })

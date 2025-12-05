@@ -2600,9 +2600,11 @@
                         <div style="margin-bottom: 20px;">
                             <label for="agentExporterFormat" style="display: block; color: #0f0; margin-bottom: 5px;">Export Format:</label>
                             <select id="agentExporterFormat" style="width: 100%; padding: 8px; background: #111; color: #0f0; border: 1px solid #0ff; font-family: 'Courier New', monospace;">
-                                <option value="onnx">ONNX (.onnx)</option>
-                                <option value="torchscript">TorchScript (.pt)</option>
-                                <option value="statedict">State Dict (.pth)</option>
+                                <option value="cocoon">🦋 Cocoon (.py single-file)</option>
+                                <option value="onnx">ONNX (.onnx) - Netron viewable</option>
+                                <option value="torchscript">TorchScript (.pt) - Netron viewable</option>
+                                <option value="package">📦 Full Package (.zip) - All formats + README</option>
+                                <option value="statedict">State Dict (.pth) - PyTorch weights only</option>
                             </select>
                         </div>
 
@@ -11786,9 +11788,12 @@
                 const includeGym = document.getElementById('agentExporterIncludeGym')?.checked ?? true;
                 const includeHttp = document.getElementById('agentExporterIncludeHttp')?.checked ?? true;
                 const compress = document.getElementById('agentExporterCompress')?.checked ?? true;
+                const formatSelect = document.getElementById('agentExporterFormat');
+                const format = formatSelect ? formatSelect.value : 'cocoon';
 
+                const formatLabels = {'cocoon': '🦋 Cocoon', 'onnx': 'ONNX', 'torchscript': 'TorchScript', 'package': '📦 Package', 'statedict': 'StateDict'};
                 const targetLabel = selected.length > 0 ? `${selected.length} selected` : `top ${topN}`;
-                updateCompileAgentStatus(`Compiling cocoon (${targetLabel})...`, '#ff0');
+                updateCompileAgentStatus(`Compiling ${formatLabels[format] || format} (${targetLabel})...`, '#ff0');
 
                 try {
                     const response = await fetch('/api/capsules/compile-cocoon', {
@@ -11799,7 +11804,8 @@
                             top_n: topN,
                             include_gym: includeGym,
                             include_http: includeHttp,
-                            compress: compress
+                            compress: compress,
+                            format: format
                         })
                     });
 

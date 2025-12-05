@@ -59,7 +59,31 @@ cocoon.add_concept("emergence", category="dynamics", associations=["growth", "pa
 
 ---
 
-## 📦 Usage Modes
+## 📦 Export Formats
+
+The cocoon compiler supports multiple export formats:
+
+| Format | Extension | Netron Viewable | Trainable | Description |
+|--------|-----------|-----------------|-----------|-------------|
+| **🦋 Cocoon** | `.py` | ❌ | ✅ | Single Python file with embedded weights |
+| **ONNX** | `.onnx` | ✅ | ❌ | Open Neural Network Exchange format |
+| **TorchScript** | `.pt` | ✅ | ❌ | PyTorch JIT compiled model |
+| **StateDict** | `.pth` | ❌ | ✅* | Raw PyTorch weights |
+| **📦 Package** | `.zip` | ✅ | ✅ | All formats + README + metadata |
+
+*StateDict requires rebuilding the model architecture to use.
+
+### View in Netron
+
+1. Select **ONNX**, **TorchScript**, or **📦 Package** format
+2. Download the file
+3. Go to [https://netron.app/](https://netron.app/)
+4. Drag & drop the `.onnx` or `.pt` file
+5. Explore the neural network architecture!
+
+---
+
+## 🚀 Usage Modes
 
 ### 1. Info Mode (Default)
 ```bash
@@ -94,9 +118,16 @@ Endpoints:
 | `/teach` | POST | Explicitly teach new words |
 | `/vocab` | GET | View current vocabulary |
 
-### 5. Export Mode (Self-Replication)
+### 5. Export Modes
 ```bash
+# Export updated cocoon with learned state
 python cocoon.py --export evolved_cocoon.py
+
+# Export ONNX for Netron visualization
+python cocoon.py --export-onnx brain.onnx
+
+# Export full package (ONNX + README + metadata)
+python cocoon.py --export-package ./my_model/
 ```
 Export current state (with learned words) to new cocoon file.
 
@@ -166,13 +197,68 @@ special_tokens = ['<PAD>', '<UNK>', '<START>', '<END>', '<VP_GATE>']
 | Concept loss (MSE) | ✅ | ✅ | Aligned |
 | ConceptHead | ✅ | ✅ | Aligned |
 | Vocabulary expansion | ✅ | ✅ | Aligned |
+| STEP 1-7 Pipeline | ✅ | ✅ | **NEW** - Aligned |
+| Decision Matrix | ✅ | ✅ | **NEW** - Aligned |
+| Semantic Boosting | ✅ | ✅ | **NEW** - Aligned |
+| Fitness Weighting | ✅ | ✅ | **NEW** - Aligned |
+| Knowledge Web Usage | ✅ | ✅ | **NEW** - Aligned |
+| Response Aggregation | ✅ | ✅ | **NEW** - Aligned |
 | Gym integration | ✅ | ✅ | Aligned |
 | HTTP server | N/A | ✅ | Cocoon-specific |
 | Self-export | N/A | ✅ | Cocoon-specific |
 | Highlander battles | ✅ | ❌ | Post-selection |
 | Alliance warfare | ✅ | ❌ | Post-selection |
-| Causation tracking | ✅ | ❌ | Not needed |
+| Causation events | ✅ | ✅ | **NEW** - Display only |
 | Population dynamics | ✅ | ❌ | Post-selection |
+
+### NEW: Full Intelligence Pipeline (2025-12-05)
+
+The cocoon now implements Butterfly's complete STEP 1-7 tokenomic pipeline:
+
+```
+┌─── STEP 1: MESSAGE ───────────────────────────────────────┐
+│ Input: hello world                                        │
+└────────────────────────────────────────────────────────────┘
+┌─── STEP 2: TOKENIZATION ────────────────────────────────────┐
+│ Tokens: 2 │ IDs: [27, 45]                                   │
+└────────────────────────────────────────────────────────────┘
+┌─── STEP 3: SELECTION ───────────────────────────────────────┐
+│ Strategy: FITNESS_WEIGHTED │ Organisms: 10                  │
+└────────────────────────────────────────────────────────────┘
+┌─── STEP 4: GENERATION ──────────────────────────────────────┐
+│ [org_001] conf=0.650 fit=1.25 weight=0.812                  │
+│   → greeting response from organism...                      │
+│ [org_002] conf=0.540 fit=1.10 weight=0.594                  │
+│   → another response...                                     │
+└────────────────────────────────────────────────────────────┘
+┌─── STEP 5: AGGREGATION ─────────────────────────────────────┐
+│ Decision Matrix: weight = fitness × confidence              │
+│ Winner: [org_001] weight=0.8125                             │
+│ Runners-up:                                                 │
+│   [org_003] weight=0.7890                                   │
+│   [org_002] weight=0.5940                                   │
+└────────────────────────────────────────────────────────────┘
+┌─── STEP 6: CAUSATION ───────────────────────────────────────┐
+│ Event: CHAT_RESPONSE │ Organisms: 10 │ Winner: org_001      │
+└────────────────────────────────────────────────────────────┘
+┌─── STEP 7: COMPLETE ────────────────────────────────────────┐
+│ Final Response:                                             │
+└────────────────────────────────────────────────────────────┘
+
+🦋 Cocoon: <aggregated response>
+```
+
+### Decision Matrix Formula
+
+The winner is selected by maximizing:
+
+```python
+weight = fitness × confidence
+```
+
+Where:
+- **fitness** - Organism's proven fitness from Highlander/evolution
+- **confidence** - Response confidence (diversity × token probability)
 
 **Note:** Alliance warfare and Highlander battles are *selection mechanisms* - they determine WHICH organisms graduate to cocoons. Once exported, cocoons are champions that have already proven themselves.
 
