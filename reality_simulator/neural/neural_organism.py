@@ -1618,6 +1618,12 @@ class NeuralOrganism(Organism):
                     # Vocabulary can grow beyond network capacity - use min to prevent IndexError
                     effective_vocab_size = min(actual_vocab_size, len(logits))
                     
+                    # CRITICAL FIX: If vocab is empty, can't generate anything
+                    # Without this check, probs become all-zeros → multinomial throws AssertionError
+                    if effective_vocab_size == 0:
+                        logger.warning(f"[NeuralOrganism] Cannot generate: effective_vocab_size=0")
+                        break  # Exit generation loop - return what we have (just START token)
+                    
                     if effective_vocab_size < len(logits):
                         # Create mask: -inf for tokens beyond actual vocabulary
                         mask = torch.full_like(logits, float('-inf'))
@@ -1675,8 +1681,14 @@ class NeuralOrganism(Organism):
                     except (RuntimeError, AssertionError) as e:
                         # Last resort fallback: random token from vocabulary
                         logger.warning(f"Multinomial sampling failed: {e}, using random fallback")
-                        next_token = random.randint(0, max(0, effective_vocab_size - 1))
-                    next_token = min(next_token, effective_vocab_size - 1)  # Clamp to valid range
+                        # SAFEGUARD: Ensure random range is valid (effective_vocab_size already checked > 0)
+                        if effective_vocab_size > 0:
+                            next_token = random.randint(0, effective_vocab_size - 1)
+                        else:
+                            # Should never reach here due to early break, but safety first
+                            logger.error(f"[NeuralOrganism] Critical: effective_vocab_size=0 in fallback")
+                            break
+                    next_token = min(next_token, max(0, effective_vocab_size - 1))  # Clamp to valid range
                     
                     # Verify token maps to an actual word
                     word = vocab.get_word(next_token)
