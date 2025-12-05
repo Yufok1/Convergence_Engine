@@ -1300,7 +1300,7 @@ def integrate_germination_with_highlander(
 
         if needs:
             logger.info(f"🌱 GERMINATION TRIGGERED: Population {current_pop} -> need {count} new organisms")
-            logger.info(f"   Generation: {germination_pool.generation}")
+            logger.info(f"   Generation: {germination_pool.generation_counter}")
             logger.info(f"   Strategy weights: {germination_pool.strategy_weights}")
         else:
             logger.debug(f"Population stable: {current_pop} organisms")
