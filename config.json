@@ -276,7 +276,7 @@
       "activation": "relu",
       "dropout": 0.1,
       "hidden_dim": 64,
-      "input_dim": 25,
+      "input_dim": 24,
       "output_dim": 6,
       "vocab_size": 1000
     },
@@ -450,6 +450,18 @@
       "high_threshold": 0.45,
       "low_threshold": 0.25,
       "strong_boost": 0.3
+    },
+    "checkpointing": {
+      "_help": "Auto-save training state to prevent data loss. Checkpoint every N generations or minutes.",
+      "enabled": true,
+      "auto_save_interval_generations": 100,
+      "auto_save_interval_minutes": 30,
+      "max_checkpoints": 10,
+      "checkpoint_dir": "data/neural_checkpoints",
+      "include_experience_buffer": true,
+      "include_optimizer_states": true,
+      "compression": false,
+      "auto_resume": true
     }
   },
   "quantum": {

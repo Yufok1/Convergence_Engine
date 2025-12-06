@@ -2196,6 +2196,26 @@
 
                 <button onclick="resetFilters()" style="width: 100%; margin-top: 10px;">Reset All Filters</button>
 
+                <!-- Checkpoint Controls Section -->
+                <div class="filter-section" style="border-top: 2px solid #0f0; margin-top: 20px; padding-top: 15px;">
+                    <h4 style="color: #0f0;">💾 Checkpoint Controls</h4>
+                    <div id="checkpointStatus" style="margin-bottom: 10px; padding: 8px; background: #001100; border: 1px solid #0f0; font-size: 0.85em; color: #0f0;">
+                        Loading checkpoint status...
+                    </div>
+                    <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+                        <button onclick="saveCheckpoint()" style="flex: 1; padding: 8px; background: #040; border: 1px solid #0f0; color: #0f0; cursor: pointer; font-size: 0.85em;">
+                            💾 Save Now
+                        </button>
+                        <button onclick="loadCheckpointList()" style="flex: 1; padding: 8px; background: #004; border: 1px solid #0aa; color: #0aa; cursor: pointer; font-size: 0.85em;">
+                            🔄 Refresh
+                        </button>
+                    </div>
+                    <div id="checkpointList" style="max-height: 150px; overflow-y: auto; background: #000; border: 1px solid #0a0; padding: 5px;">
+                        <div style="color: #0a0; font-size: 0.8em;">No checkpoints loaded</div>
+                    </div>
+                    <div id="checkpointMessage" style="margin-top: 5px; font-size: 0.8em; color: #0a0;"></div>
+                </div>
+
 
                 <div class="filter-section" style="border-bottom: none; margin-top: 20px;">
                     <h4>Navigation Help</h4>
@@ -15205,6 +15225,129 @@
                     });
             }
 
+            // ==================== CHECKPOINT CONTROLS ====================
+            
+            // Load checkpoint status on page load
+            function loadCheckpointStatus() {
+                const statusDiv = document.getElementById('checkpointStatus');
+                if (!statusDiv) return;
+                
+                fetch('/api/cra/diagnostics/checkpoint_status')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.enabled) {
+                            const lastSave = data.last_checkpoint_time ? 
+                                new Date(data.last_checkpoint_time * 1000).toLocaleTimeString() : 'Never';
+                            statusDiv.innerHTML = `
+                                <div style="color: #0f0;">✅ Checkpointing Enabled</div>
+                                <div style="font-size: 0.8em; color: #0a0;">
+                                    Last: ${lastSave} | Count: ${data.checkpoint_count || 0}
+                                </div>
+                            `;
+                        } else {
+                            statusDiv.innerHTML = '<span style="color: #aa0;">⚠️ Checkpointing Disabled</span>';
+                        }
+                        // Also load checkpoint list
+                        loadCheckpointList();
+                    })
+                    .catch(err => {
+                        console.error('Error loading checkpoint status:', err);
+                        statusDiv.innerHTML = '<span style="color: #f00;">❌ Error loading status</span>';
+                    });
+            }
+
+            // Load list of available checkpoints
+            function loadCheckpointList() {
+                const listDiv = document.getElementById('checkpointList');
+                if (!listDiv) return;
+                
+                listDiv.innerHTML = '<div style="color: #0a0;">Loading...</div>';
+                
+                fetch('/api/checkpoint/list')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.checkpoints && data.checkpoints.length > 0) {
+                            let html = '';
+                            data.checkpoints.forEach((cp, idx) => {
+                                const date = new Date(cp.timestamp * 1000);
+                                const timeStr = date.toLocaleString();
+                                const isLatest = idx === 0;
+                                html += `
+                                    <div style="padding: 5px; margin-bottom: 5px; background: ${isLatest ? '#020' : '#000'}; border: 1px solid ${isLatest ? '#0f0' : '#040'}; font-size: 0.8em;">
+                                        <div style="color: ${isLatest ? '#0f0' : '#0a0'};">
+                                            ${isLatest ? '⭐ ' : ''}Gen ${cp.generation || '?'}
+                                        </div>
+                                        <div style="color: #080; font-size: 0.9em;">${timeStr}</div>
+                                        <button onclick="restoreCheckpoint('${cp.path}')" 
+                                            style="margin-top: 3px; padding: 2px 8px; background: #004; border: 1px solid #0aa; color: #0aa; cursor: pointer; font-size: 0.8em;">
+                                            ↩️ Restore
+                                        </button>
+                                    </div>
+                                `;
+                            });
+                            listDiv.innerHTML = html;
+                        } else {
+                            listDiv.innerHTML = '<div style="color: #0a0; font-size: 0.8em;">No checkpoints available</div>';
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Error loading checkpoint list:', err);
+                        listDiv.innerHTML = '<div style="color: #f00; font-size: 0.8em;">Error loading checkpoints</div>';
+                    });
+            }
+
+            // Save a checkpoint now
+            function saveCheckpoint() {
+                const msgDiv = document.getElementById('checkpointMessage');
+                if (msgDiv) msgDiv.innerHTML = '<span style="color: #0aa;">Saving...</span>';
+                
+                fetch('/api/checkpoint/save', { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            if (msgDiv) msgDiv.innerHTML = '<span style="color: #0f0;">✅ Checkpoint saved!</span>';
+                            // Refresh status and list
+                            loadCheckpointStatus();
+                            setTimeout(() => { if (msgDiv) msgDiv.innerHTML = ''; }, 3000);
+                        } else {
+                            if (msgDiv) msgDiv.innerHTML = `<span style="color: #f00;">❌ ${data.error || 'Save failed'}</span>`;
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Error saving checkpoint:', err);
+                        if (msgDiv) msgDiv.innerHTML = '<span style="color: #f00;">❌ Error saving checkpoint</span>';
+                    });
+            }
+
+            // Restore from a specific checkpoint
+            function restoreCheckpoint(path) {
+                if (!confirm('Restore from this checkpoint? Current training state will be replaced.')) return;
+                
+                const msgDiv = document.getElementById('checkpointMessage');
+                if (msgDiv) msgDiv.innerHTML = '<span style="color: #0aa;">Restoring...</span>';
+                
+                fetch('/api/checkpoint/restore', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ checkpoint_path: path })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            if (msgDiv) msgDiv.innerHTML = '<span style="color: #0f0;">✅ Checkpoint restored!</span>';
+                            loadCheckpointStatus();
+                        } else {
+                            if (msgDiv) msgDiv.innerHTML = `<span style="color: #f00;">❌ ${data.error || 'Restore failed'}</span>`;
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Error restoring checkpoint:', err);
+                        if (msgDiv) msgDiv.innerHTML = '<span style="color: #f00;">❌ Error restoring checkpoint</span>';
+                    });
+            }
+
+            // ==================== END CHECKPOINT CONTROLS ====================
+
             // Toggle cloud mode
             function toggleCloudMode() {
                 const cloudModeCheckbox = document.getElementById('ollamaCloudMode');
@@ -15488,6 +15631,9 @@
 
             // Load Ollama configuration on page load
             loadOllamaConfig();
+            
+            // Load checkpoint status on page load
+            loadCheckpointStatus();
 
             // Check simulation status on page load - but DON'T clear snapshots
             // Snapshots are preserved across sessions so user can review them

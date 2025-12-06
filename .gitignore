@@ -5,6 +5,13 @@ agent_downloads/
 
 # Backup files
 *.backup
+data_backup_*/
+
+# Highlander capsules (runtime-generated champion saves)
+highlander_capsules/
+
+# Neural checkpoints (training state - can be large)
+data/neural_checkpoints/
 
 # Semantic datasets and generated knowledge webs (large, user-installed)
 data/knowledge/**

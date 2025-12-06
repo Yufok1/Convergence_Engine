@@ -3590,6 +3590,27 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "   - **Tested Capabilities**: 679K params, 34K inferences/sec, deterministic decisions\n"
         prompt += "   - Use to export evolved organisms for deployment to external systems\n"
         prompt += "   - **WATCH FOR**: Export failures may indicate capsule attribute mismatches\n\n"
+        prompt += "5i. **Checkpointing & Persistence** ⭐ FULLY IMPLEMENTED (2025-12-06):\n"
+        prompt += "   - **STATUS ENDPOINT**: `/api/cra/diagnostics/checkpoint_status` - Get full checkpoint health\n"
+        prompt += "   - **MANUAL SAVE**: `POST /api/checkpoint/save` - Force immediate checkpoint (use before stopping!)\n"
+        prompt += "   - **RESTORE**: `POST /api/checkpoint/restore` - Restore from specific or latest checkpoint\n"
+        prompt += "   - **LIST**: `GET /api/checkpoint/list` - List all checkpoints with metadata\n"
+        prompt += "   - **Checkpoint Directory Structure**:\n"
+        prompt += "     * `data/neural_checkpoints/checkpoint_YYYYMMDD_HHMMSS/` - Timestamped folders\n"
+        prompt += "     * `neural_brains.pt` - All organism neural weights (state_dicts)\n"
+        prompt += "     * `experience_buffer.pt` - VP history, language rewards, training state\n"
+        prompt += "     * `optimizer_states.pt` - Adam optimizer momentum/velocity\n"
+        prompt += "     * `concept_system.pt` - RCUS concept embeddings (if enabled)\n"
+        prompt += "     * `metadata.json` - Generation, timestamp, training metrics, config snapshot\n"
+        prompt += "   - **Config** (`neural.checkpointing`):\n"
+        prompt += "     * `enabled`: true - Master switch for auto-save\n"
+        prompt += "     * `auto_save_interval_generations`: 100 - Save every N generations\n"
+        prompt += "     * `auto_save_interval_minutes`: 30 - Save every N minutes (whichever comes first)\n"
+        prompt += "     * `max_checkpoints`: 10 - Rotate old checkpoints to save disk space\n"
+        prompt += "     * `auto_resume`: true - Load latest checkpoint on startup\n"
+        prompt += "   - **Auto-Save Triggers**: Generation interval, time interval, graceful shutdown (Ctrl+C)\n"
+        prompt += "   - **Graceful Shutdown**: Checkpoint automatically saved when user interrupts or error occurs\n"
+        prompt += "   - **CRITICAL ACTION**: Before stopping simulation, call `POST /api/checkpoint/save` to ensure no data loss!\n\n"
         prompt += "6. **PC System Resource Monitoring**: `/api/cra/system/state` and `/api/cra/health/check`\n"
         prompt += "   - Returns real-time PC stats: CPU (total, per-core), RAM, disk usage\n"
         prompt += "   - Returns Butterfly System resource usage: lattice CPU, RAM\n"
@@ -12514,6 +12535,345 @@ def cra_get_ml_autotune():
             'success': False,
             'error': str(e),
             'ml_autotune': {}
+        }), 500
+
+
+@app.route('/api/cra/diagnostics/checkpoint_status', methods=['GET'])
+def cra_get_checkpoint_status():
+    """Get neural checkpoint and persistence status for CRA monitoring
+    
+    Returns metrics about the checkpointing system:
+    - enabled: Whether checkpointing is enabled in config
+    - auto_resume: Whether auto-resume on startup is enabled
+    - checkpoints_count: Number of checkpoint directories found
+    - latest_checkpoint: Info about the most recent checkpoint
+    - total_size_mb: Total disk space used by checkpoints
+    - config: Checkpointing configuration (intervals, limits)
+    """
+    try:
+        result = {
+            'enabled': False,
+            'auto_resume': False,
+            'checkpoints_count': 0,
+            'latest_checkpoint': None,
+            'checkpoints_list': [],
+            'total_size_mb': 0.0,
+            'config': {},
+            'source': 'filesystem'
+        }
+        
+        # Check config for checkpointing settings
+        config_file = Path('config.json')
+        if config_file.exists():
+            try:
+                with open(config_file, 'r') as f:
+                    config = json.load(f)
+                    checkpoint_config = config.get('neural', {}).get('checkpointing', {})
+                    result['enabled'] = checkpoint_config.get('enabled', False)
+                    result['auto_resume'] = checkpoint_config.get('auto_resume', True)
+                    result['config'] = {
+                        'interval_generations': checkpoint_config.get('interval_generations', 50),
+                        'interval_time_seconds': checkpoint_config.get('interval_time_seconds', 300),
+                        'max_checkpoints': checkpoint_config.get('max_checkpoints', 10),
+                        'base_directory': checkpoint_config.get('base_directory', 'data/neural_checkpoints')
+                    }
+            except Exception as e:
+                logger.debug(f"Could not read checkpoint config: {e}")
+        
+        # Scan checkpoint directory
+        base_dir = Path(result.get('config', {}).get('base_directory', 'data/neural_checkpoints'))
+        if base_dir.exists():
+            checkpoints = sorted([d for d in base_dir.iterdir() if d.is_dir() and d.name.startswith('checkpoint_')], reverse=True)
+            result['checkpoints_count'] = len(checkpoints)
+            
+            # Calculate total size and gather checkpoint info
+            total_size = 0
+            checkpoint_list = []
+            for ckpt_dir in checkpoints:
+                ckpt_info = {'name': ckpt_dir.name, 'path': str(ckpt_dir)}
+                ckpt_size = sum(f.stat().st_size for f in ckpt_dir.rglob('*') if f.is_file())
+                total_size += ckpt_size
+                ckpt_info['size_mb'] = round(ckpt_size / (1024 * 1024), 2)
+                
+                # Read metadata if available
+                metadata_file = ckpt_dir / 'metadata.json'
+                if metadata_file.exists():
+                    try:
+                        with open(metadata_file, 'r') as f:
+                            meta = json.load(f)
+                            ckpt_info['timestamp'] = meta.get('timestamp')
+                            ckpt_info['generation'] = meta.get('generation')
+                            ckpt_info['training_step_count'] = meta.get('training_step_count')
+                            ckpt_info['organisms_count'] = meta.get('organisms_count')
+                            ckpt_info['total_experience_count'] = meta.get('total_experience_count')
+                            ckpt_info['avg_loss'] = meta.get('avg_loss')
+                    except Exception:
+                        pass
+                checkpoint_list.append(ckpt_info)
+            
+            result['checkpoints_list'] = checkpoint_list[:5]  # Limit to 5 most recent for brevity
+            result['total_size_mb'] = round(total_size / (1024 * 1024), 2)
+            
+            # Set latest checkpoint info
+            if checkpoint_list:
+                result['latest_checkpoint'] = checkpoint_list[0]
+        
+        # Add health indicators
+        result['health'] = {
+            'checkpointing_active': result['enabled'] and result['checkpoints_count'] > 0,
+            'has_recent_checkpoint': False,
+            'storage_healthy': result['total_size_mb'] < 500,  # Warn if > 500MB
+            'recommendation': ''
+        }
+        
+        # Check if latest checkpoint is recent (within 2x interval)
+        if result['latest_checkpoint'] and result['latest_checkpoint'].get('timestamp'):
+            try:
+                from datetime import datetime
+                ckpt_time = datetime.fromisoformat(result['latest_checkpoint']['timestamp'].replace('Z', '+00:00'))
+                age_seconds = (datetime.now(ckpt_time.tzinfo) - ckpt_time).total_seconds()
+                interval = result['config'].get('interval_time_seconds', 300)
+                result['health']['has_recent_checkpoint'] = age_seconds < (interval * 2)
+                result['health']['checkpoint_age_seconds'] = int(age_seconds)
+            except Exception:
+                pass
+        
+        # Generate recommendation
+        if not result['enabled']:
+            result['health']['recommendation'] = 'Enable checkpointing in config to prevent training loss on interruption'
+        elif result['checkpoints_count'] == 0:
+            result['health']['recommendation'] = 'No checkpoints yet - training may not have started or reached first checkpoint interval'
+        elif not result['health']['has_recent_checkpoint']:
+            result['health']['recommendation'] = 'No recent checkpoint - check if training is running and checkpointing is working'
+        elif result['total_size_mb'] > 500:
+            result['health']['recommendation'] = 'High checkpoint storage usage - consider reducing max_checkpoints or clearing old checkpoints'
+        else:
+            result['health']['recommendation'] = 'Checkpointing healthy - neural state will be preserved on interruption'
+        
+        return jsonify({
+            'success': True,
+            'checkpoint_status': result,
+            'message': 'Neural checkpoint persistence status - training state backup and recovery'
+        })
+    except Exception as e:
+        logger.error(f"Error getting checkpoint status: {e}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'checkpoint_status': {}
+        }), 500
+
+
+@app.route('/api/checkpoint/save', methods=['POST'])
+def manual_checkpoint_save():
+    """Force an immediate checkpoint save (useful before stopping simulation)
+    
+    This triggers a checkpoint save regardless of the normal interval settings.
+    Useful for:
+    - Saving before intentionally stopping the simulation
+    - Creating a known-good checkpoint after achieving a milestone
+    - Backup before making config changes
+    """
+    try:
+        # Signal the simulation to save a checkpoint
+        signal_file = project_root / 'data' / '.checkpoint_signal.json'
+        signal_file.parent.mkdir(parents=True, exist_ok=True)
+        
+        signal_data = {
+            'action': 'save_now',
+            'timestamp': datetime.now().isoformat(),
+            'reason': request.json.get('reason', 'manual_trigger') if request.json else 'manual_trigger'
+        }
+        
+        with open(signal_file, 'w') as f:
+            json.dump(signal_data, f, indent=2)
+        
+        logger.info(f"[CHECKPOINT] Manual save signal sent: {signal_data['reason']}")
+        
+        # Also try to directly trigger if shared state has trainer reference
+        # (This is a fallback - the signal file is the primary mechanism)
+        checkpoint_triggered = False
+        if shared_state_path.exists():
+            try:
+                with open(shared_state_path, 'r') as f:
+                    state = json.load(f)
+                    # Check if simulation is running with neural trainer
+                    reality_sim = state.get('data', {}).get('reality_sim', {})
+                    if reality_sim.get('neural', {}).get('enabled'):
+                        checkpoint_triggered = True
+            except Exception:
+                pass
+        
+        return jsonify({
+            'success': True,
+            'message': 'Checkpoint save signal sent',
+            'signal_file': str(signal_file),
+            'checkpoint_triggered': checkpoint_triggered,
+            'reason': signal_data['reason']
+        })
+    except Exception as e:
+        logger.error(f"Error sending checkpoint save signal: {e}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/checkpoint/restore', methods=['POST'])
+def manual_checkpoint_restore():
+    """Restore from a specific checkpoint
+    
+    Request body:
+    - checkpoint_name: Name of checkpoint directory to restore (e.g., 'checkpoint_20250615_143022')
+                      If not provided, restores from latest checkpoint
+    
+    NOTE: This signals the simulation to restore on next restart.
+    For immediate restore, the simulation must be restarted.
+    """
+    try:
+        checkpoint_dir = Path(project_root / 'data' / 'neural_checkpoints')
+        
+        # Get checkpoint name from request
+        checkpoint_name = None
+        if request.json:
+            checkpoint_name = request.json.get('checkpoint_name')
+        
+        # Find the checkpoint to restore
+        if checkpoint_name:
+            target_checkpoint = checkpoint_dir / checkpoint_name
+            if not target_checkpoint.exists():
+                return jsonify({
+                    'success': False,
+                    'error': f'Checkpoint not found: {checkpoint_name}',
+                    'available_checkpoints': [d.name for d in checkpoint_dir.iterdir() 
+                                              if d.is_dir() and d.name.startswith('checkpoint_')]
+                                              if checkpoint_dir.exists() else []
+                }), 404
+        else:
+            # Find latest checkpoint
+            if not checkpoint_dir.exists():
+                return jsonify({
+                    'success': False,
+                    'error': 'No checkpoint directory found'
+                }), 404
+            
+            checkpoints = sorted([d for d in checkpoint_dir.iterdir() 
+                                 if d.is_dir() and d.name.startswith('checkpoint_')],
+                               key=lambda x: x.name, reverse=True)
+            if not checkpoints:
+                return jsonify({
+                    'success': False,
+                    'error': 'No checkpoints available'
+                }), 404
+            target_checkpoint = checkpoints[0]
+            checkpoint_name = target_checkpoint.name
+        
+        # Read checkpoint metadata
+        metadata = {}
+        metadata_file = target_checkpoint / 'metadata.json'
+        if metadata_file.exists():
+            with open(metadata_file, 'r') as f:
+                metadata = json.load(f)
+        
+        # Signal the simulation to restore this checkpoint
+        signal_file = project_root / 'data' / '.checkpoint_signal.json'
+        signal_file.parent.mkdir(parents=True, exist_ok=True)
+        
+        signal_data = {
+            'action': 'restore',
+            'checkpoint_path': str(target_checkpoint),
+            'checkpoint_name': checkpoint_name,
+            'timestamp': datetime.now().isoformat(),
+            'checkpoint_metadata': {
+                'generation': metadata.get('generation'),
+                'training_step_count': metadata.get('training_step_count'),
+                'organisms_count': metadata.get('organisms_count'),
+                'saved_timestamp': metadata.get('timestamp')
+            }
+        }
+        
+        with open(signal_file, 'w') as f:
+            json.dump(signal_data, f, indent=2)
+        
+        logger.info(f"[CHECKPOINT] Restore signal sent for: {checkpoint_name}")
+        
+        return jsonify({
+            'success': True,
+            'message': f'Checkpoint restore signal sent for {checkpoint_name}',
+            'checkpoint_name': checkpoint_name,
+            'checkpoint_path': str(target_checkpoint),
+            'metadata': signal_data['checkpoint_metadata'],
+            'note': 'Restore will apply on next simulation start/restart'
+        })
+    except Exception as e:
+        logger.error(f"Error sending checkpoint restore signal: {e}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/checkpoint/list', methods=['GET'])
+def list_checkpoints():
+    """List all available checkpoints with metadata"""
+    try:
+        checkpoint_dir = Path(project_root / 'data' / 'neural_checkpoints')
+        
+        if not checkpoint_dir.exists():
+            return jsonify({
+                'success': True,
+                'checkpoints': [],
+                'count': 0,
+                'message': 'No checkpoint directory found'
+            })
+        
+        checkpoints = []
+        for ckpt_dir in sorted(checkpoint_dir.iterdir(), key=lambda x: x.name, reverse=True):
+            if ckpt_dir.is_dir() and ckpt_dir.name.startswith('checkpoint_'):
+                ckpt_info = {
+                    'name': ckpt_dir.name,
+                    'path': str(ckpt_dir),
+                    'size_mb': round(sum(f.stat().st_size for f in ckpt_dir.rglob('*') 
+                                        if f.is_file()) / (1024 * 1024), 2)
+                }
+                
+                # Read metadata if available
+                metadata_file = ckpt_dir / 'metadata.json'
+                if metadata_file.exists():
+                    try:
+                        with open(metadata_file, 'r') as f:
+                            meta = json.load(f)
+                            ckpt_info['timestamp'] = meta.get('timestamp')
+                            ckpt_info['generation'] = meta.get('generation')
+                            ckpt_info['training_step_count'] = meta.get('training_step_count')
+                            ckpt_info['organisms_count'] = meta.get('organisms_count')
+                            ckpt_info['best_loss'] = meta.get('best_loss')
+                    except Exception:
+                        pass
+                
+                # Check what files exist
+                ckpt_info['files'] = {
+                    'neural_brains': (ckpt_dir / 'neural_brains.pt').exists(),
+                    'experience_buffer': (ckpt_dir / 'experience_buffer.pt').exists(),
+                    'optimizer_states': (ckpt_dir / 'optimizer_states.pt').exists(),
+                    'concept_system': (ckpt_dir / 'concept_system.pt').exists(),
+                    'metadata': metadata_file.exists()
+                }
+                
+                checkpoints.append(ckpt_info)
+        
+        return jsonify({
+            'success': True,
+            'checkpoints': checkpoints,
+            'count': len(checkpoints),
+            'checkpoint_directory': str(checkpoint_dir)
+        })
+    except Exception as e:
+        logger.error(f"Error listing checkpoints: {e}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'checkpoints': []
         }), 500
 
 

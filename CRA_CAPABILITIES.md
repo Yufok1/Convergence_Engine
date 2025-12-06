@@ -45,6 +45,59 @@ The Convergence Research Assistant (CRA) is an AI-powered research assistant tha
 
 ---
 
+## 📊 CRITICAL: Metric Definitions & Interpretation
+
+### Fitness Metric Architecture
+
+**⚠️ IMPORTANT**: The Butterfly System uses MULTIPLE fitness concepts that are NOT interchangeable:
+
+| Metric | Range | Context | What It Measures |
+|--------|-------|---------|------------------|
+| **Organism Fitness** | 0.0 – 1.0+ | Individual organism | Evolutionary adaptation score (can exceed 1.0 for exceptional individuals) |
+| **Neural Training Loss** | 0.0 – ∞ | DQN training | Loss decreasing = learning (lower = better) |
+| **Response Weight** | 0.0 – 3.0+ | Chat aggregation | `fitness × confidence × genetic_modifier` (composite score) |
+| **Aggregated Fitness** | 0.0 – 5.0+ | Elite population | Sum of elite weights (NOT normalized) |
+
+### Response Weight Calculation (Chat System)
+
+When organisms respond to chat messages, their contributions are weighted:
+
+```
+weight = organism_fitness × confidence × genetic_weight_modifier
+
+Where:
+- organism_fitness: 0.0-1.0+ (evolutionary fitness)
+- confidence: 0.0-1.0 (response quality + neural capability)
+- genetic_weight_modifier: 1.0-1.2 (genetic diversity bonus)
+
+Result: Weight can exceed 1.0 (e.g., 0.85 × 0.95 × 1.15 = 0.93)
+        Sum of weights across elite can exceed 2.0+
+```
+
+### Population Context
+
+| Term | Definition |
+|------|------------|
+| **Active Organisms** | Currently alive in simulation (can change each generation) |
+| **Elite Organisms** | Top N by fitness used for chat responses (default: top 10) |
+| **Historical Total** | All organisms ever created (informational only) |
+| **Responding Organisms** | Subset with sufficient vocabulary to generate output |
+
+**Key Insight**: Seeing "36 active, 10 elite" does NOT mean collapse. Elite selection is intentional quality filtering.
+
+### Illumination Readiness Assessment
+
+DO NOT use fitness alone for readiness. Use composite criteria:
+
+| Criterion | Threshold | Why |
+|-----------|-----------|-----|
+| Elite Fitness Sum | > 2.0 | Shows quality aggregation capability |
+| Vocabulary Size | > 50 words | Sufficient expression capacity |
+| VP Stability | < 0.3 variance | System equilibrium |
+| Semantic Coherence | > 0.5 | Response quality |
+
+---
+
 ## 🎯 System Maturity Awareness (Context-Sensitive Diagnostics)
 
 **NEW**: The CRA now recognizes system maturity states and adjusts diagnostic severity accordingly. This prevents false alarms during early startup.
@@ -282,6 +335,11 @@ The CRA can now adjust `config.json` while the Butterfly System keeps running. U
 | `/ray/actor_pool_size` | 1 – 16 | Max concurrent Ray actors |
 | `/ray/fallback_on_error` | true/false | Fall back to sequential on errors |
 | `/ray/logging_level` | debug/info/warning/error | Ray logging verbosity |
+| `/neural/checkpointing/enabled` | true/false | ⭐ NEW: Auto-save training state |
+| `/neural/checkpointing/auto_save_interval_generations` | 50 – 500 | ⭐ NEW: Save every N generations |
+| `/neural/checkpointing/auto_save_interval_minutes` | 5 – 60 | ⭐ NEW: Save every N minutes |
+| `/neural/checkpointing/max_checkpoints` | 3 – 20 | ⭐ NEW: Rotate old checkpoints |
+| `/neural/checkpointing/auto_resume` | true/false | ⭐ NEW: Load checkpoint on startup |
 
 **Path Notes:** Dashes and camelCase are normalized (`/feedback/knobs/mutationrate/initial` → `/feedback/knobs/mutation_rate/initial`), but prefer underscore names.
 
@@ -294,6 +352,10 @@ The CRA can now adjust `config.json` while the Butterfly System keeps running. U
 - `POST /api/config/rollback` – revert last N snapshots (history depth: 10)
 - `GET /api/config/current` – active config + version
 - `GET /api/config/history` – recent snapshots (optionally include full config payloads)
+- `GET /api/cra/diagnostics/checkpoint_status` – ⭐ NEW: Checkpoint health & stats
+- `POST /api/checkpoint/save` – ⭐ NEW: Force immediate checkpoint save
+- `POST /api/checkpoint/restore` – ⭐ NEW: Restore from checkpoint
+- `GET /api/checkpoint/list` – ⭐ NEW: List all checkpoints with metadata
 
 Run results are logged to `data/logs/config_actions.log` and streamed to the CRA via `config_update` / `config_rollback` events.
 
@@ -1051,6 +1113,25 @@ The CRA uses the Research Notepad like a real scientist would: recording observa
 5. **ANALYZE** patterns across multiple observations
 6. **CONCLUDE** only when evidence is strong
 7. **QUESTION** things you don't understand - revisit later
+
+### Recommended Hashtag Categories
+
+**System State:**
+- `#vp_spike`, `#vp_stable`, `#collapse`, `#recovery`
+- `#genesis_phase`, `#sovereign_phase`, `#maturation`
+
+**Neural/Learning:**
+- `#neural_training`, `#loss_improvement`, `#learning_plateau`
+- `#experience_buffer`, `#weight_update`
+
+**Population:**
+- `#elite_selection`, `#population_growth`, `#extinction_event`
+- `#fitness_improvement`, `#adaptation`
+
+**Response Quality:**
+- `#coherence_high`, `#coherence_low`
+- `#semantic_improvement`, `#vocabulary_growth`
+- `#aggregation_quality`
 
 ### Investigation Workflow Example
 

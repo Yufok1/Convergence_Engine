@@ -11,6 +11,7 @@ WHAT GETS CLEARED:
 - data/logs/*.log - All log files (breath, state, neural, etc.)
 - data/checkpoints/*.json - All checkpoint files
 - data/checkpoints/*.pt, *.pth - Neural model checkpoints
+- data/neural_checkpoints/* - Neural training checkpoints (full trainer state)
 - data/.shared_simulation_state.json - Current simulation state
 - data/.simulation_control.json - Simulation control state
 - data/.simulation_paused - Pause flag
@@ -299,6 +300,21 @@ def clear_all_data():
         if model_count > 0:
             cleared_items.append(f"  ✅ Neural models: {model_count} files")
             print(f"🧠 Cleared {model_count} neural model checkpoint files")
+    
+    # 12b. Clear neural training checkpoints (full trainer state)
+    neural_checkpoints_dir = data_dir / 'neural_checkpoints'
+    if neural_checkpoints_dir.exists():
+        checkpoint_dirs = [d for d in neural_checkpoints_dir.iterdir() if d.is_dir()]
+        checkpoint_count = 0
+        for checkpoint_dir in checkpoint_dirs:
+            success, msg = safe_delete_dir(checkpoint_dir)
+            if success:
+                checkpoint_count += 1
+            else:
+                skipped_items.append(f"  ⚠️  Neural checkpoint dir: {checkpoint_dir.name} - {msg}")
+        if checkpoint_count > 0:
+            cleared_items.append(f"  ✅ Neural training checkpoints: {checkpoint_count} directories")
+            print(f"🧠 Cleared {checkpoint_count} neural training checkpoint directories")
     
     # Also check checkpoints directory for neural models
     if checkpoints_dir.exists():

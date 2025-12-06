@@ -955,6 +955,20 @@ class RealitySimulator:
                     if self.event_emitter:
                         self.neural_trainer.event_emitter = self.event_emitter
                     print(ColorScheme.log_component("neural", "Neural trainer initialized"))
+                    
+                    # Auto-resume from latest checkpoint if enabled
+                    if self.neural_trainer.checkpoint_auto_resume:
+                        latest_checkpoint = self.neural_trainer.get_latest_checkpoint(
+                            self.neural_trainer.checkpoint_dir
+                        )
+                        if latest_checkpoint:
+                            from pathlib import Path
+                            checkpoint_path = Path(latest_checkpoint)
+                            print(f"[NEURAL CHECKPOINT] Found latest checkpoint: {checkpoint_path.name}")
+                            # We'll restore neural states after organisms are created in network
+                            # Store the checkpoint path for deferred loading
+                            self._pending_checkpoint_restore = checkpoint_path
+                            print(f"[NEURAL CHECKPOINT] Checkpoint ready for deferred restore after organisms load")
                 except ImportError as e:
                     error_msg = f"Import error: {e}"
                     print(f"[WARN] Neural trainer import failed: {error_msg}")
@@ -1136,6 +1150,43 @@ class RealitySimulator:
             return {"error": "not_initialized"}
 
         print("[TARGET] Starting Reality Simulator...")
+        
+        # ═══════════════════════════════════════════════════════════════
+        # DEFERRED CHECKPOINT RESTORE: Restore neural states after organisms exist
+        # ═══════════════════════════════════════════════════════════════
+        if hasattr(self, '_pending_checkpoint_restore') and self._pending_checkpoint_restore:
+            checkpoint_path = self._pending_checkpoint_restore
+            network = self.components.get('network')
+            if network and self.neural_trainer:
+                print(f"[NEURAL CHECKPOINT] Restoring from: {checkpoint_path.name}")
+                try:
+                    result = self.neural_trainer.load_checkpoint(
+                        checkpoint_dir=str(checkpoint_path),
+                        organisms=list(network.organisms.values()),
+                        strict=False
+                    )
+                    if result.get('success'):
+                        print(ColorScheme.colorize(f"[NEURAL CHECKPOINT] Successfully restored neural state!", ColorScheme.GREEN))
+                        # Get metadata for display
+                        meta = result.get('metadata', {})
+                        if meta:
+                            print(f"  Restored from: {meta.get('timestamp', 'unknown')}")
+                            print(f"  Generation: {meta.get('generation', 'unknown')}")
+                            print(f"  Training steps: {meta.get('training_step_count', 'unknown')}")
+                            print(f"  Brains loaded: {result.get('loaded', {}).get('brains', 0)}")
+                        if result.get('warnings'):
+                            for warning in result['warnings'][:3]:  # Show first 3 warnings
+                                print(f"  ⚠️ {warning}")
+                    else:
+                        errors = result.get('errors', ['Unknown error'])
+                        print(f"[NEURAL CHECKPOINT] Restore failed: {errors}")
+                except Exception as e:
+                    print(f"[WARN] Checkpoint restore failed: {e}")
+                    import traceback
+                    traceback.print_exc()
+            # Clear the pending restore flag
+            self._pending_checkpoint_restore = None
+        
         self.running = True
         self.start_time = time.time()
 
@@ -1295,10 +1346,14 @@ class RealitySimulator:
 
         except KeyboardInterrupt:
             print("\n[STOP]  Simulation interrupted by user")
+            # Graceful shutdown: Save checkpoint before exiting
+            self._save_shutdown_checkpoint("user_interrupt")
         except Exception as e:
             print(f"\n[ERROR] Simulation error: {e}")
             import traceback
             traceback.print_exc()
+            # Try to save checkpoint even on error
+            self._save_shutdown_checkpoint("error_recovery")
         finally:
             self.running = False
 
@@ -1542,6 +1597,49 @@ class RealitySimulator:
                 # Log training occasionally (every 100 steps to avoid spam)
                 if loss is not None and hasattr(self, 'frame_count') and self.frame_count % 100 == 0:
                     logger.debug(f"[NEURAL] Training step completed, loss: {loss:.6f}, epsilon: {avg_epsilon:.3f}")
+                
+                # Check for manual checkpoint signal (from web UI or API)
+                checkpoint_signal_file = os.path.join("data", ".checkpoint_signal.json")
+                force_checkpoint = False
+                if os.path.exists(checkpoint_signal_file):
+                    try:
+                        with open(checkpoint_signal_file, 'r') as f:
+                            signal = json.load(f)
+                        if signal.get('action') == 'save_now':
+                            force_checkpoint = True
+                            print(f"[NEURAL CHECKPOINT] Manual save triggered: {signal.get('reason', 'unknown')}")
+                        # Remove signal file after reading
+                        os.remove(checkpoint_signal_file)
+                    except Exception as e:
+                        logger.debug(f"Could not read checkpoint signal: {e}")
+                
+                # Check for checkpointing (time-based, generation-based, or manual trigger)
+                checkpoint_saved = False
+                if force_checkpoint:
+                    # Force immediate checkpoint
+                    from datetime import datetime
+                    checkpoint_name = f"checkpoint_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                    checkpoint_path = os.path.join(self.neural_trainer.checkpoint_dir, checkpoint_name)
+                    checkpoint_saved = self.neural_trainer.save_checkpoint(
+                        checkpoint_dir=checkpoint_path,
+                        organisms=list(network.organisms.values()),
+                        generation=network_state.get('generation', 0),
+                        metadata={'trigger': 'manual', 'reason': signal.get('reason', 'manual')}
+                    )
+                    if checkpoint_saved:
+                        self.neural_trainer.rotate_checkpoints(
+                            self.neural_trainer.checkpoint_dir,
+                            self.neural_trainer.checkpoint_max_count
+                        )
+                else:
+                    # Normal interval-based checkpointing
+                    checkpoint_saved = self.neural_trainer.maybe_checkpoint(
+                        organisms=list(network.organisms.values()),
+                        generation=network_state.get('generation', 0)
+                    )
+                
+                if checkpoint_saved:
+                    logger.info(f"[NEURAL CHECKPOINT] Checkpoint saved at generation {network_state.get('generation', 0)}")
             except Exception as e:
                 logger.warning(f"[NEURAL] Training step failed: {e}")
                 neural_metrics = {
@@ -1856,6 +1954,72 @@ class RealitySimulator:
                 clustering_bias = knob_changes['clustering_bias']
                 network.set_clustering_bias(clustering_bias)
                 print(ColorScheme.log_component("feedback", f"Clustering bias adjusted to {clustering_bias:.2f}"))
+
+    def _save_shutdown_checkpoint(self, reason: str = "shutdown"):
+        """
+        Save a checkpoint during graceful shutdown.
+        
+        Called when:
+        - User interrupts with Ctrl+C (KeyboardInterrupt)
+        - An error occurs during simulation
+        - Simulation terminates normally
+        
+        Args:
+            reason: Why the checkpoint is being saved (for metadata)
+        """
+        if not hasattr(self, 'neural_trainer') or self.neural_trainer is None:
+            return
+        
+        if not self.neural_trainer.checkpoint_enabled:
+            print("[NEURAL CHECKPOINT] Checkpointing disabled, skipping shutdown save")
+            return
+        
+        network = self.components.get('network')
+        if not network:
+            print("[NEURAL CHECKPOINT] No network available for shutdown checkpoint")
+            return
+        
+        try:
+            from datetime import datetime
+            
+            # Get current generation
+            generation = getattr(network, 'generation', 0)
+            
+            # Create checkpoint directory
+            checkpoint_name = f"checkpoint_{datetime.now().strftime('%Y%m%d_%H%M%S')}_shutdown"
+            checkpoint_path = os.path.join(self.neural_trainer.checkpoint_dir, checkpoint_name)
+            
+            print(f"\n[NEURAL CHECKPOINT] Saving shutdown checkpoint...")
+            print(f"  Reason: {reason}")
+            print(f"  Generation: {generation}")
+            print(f"  Path: {checkpoint_path}")
+            
+            success = self.neural_trainer.save_checkpoint(
+                checkpoint_dir=checkpoint_path,
+                organisms=list(network.organisms.values()),
+                generation=generation,
+                metadata={
+                    'trigger': 'shutdown',
+                    'reason': reason,
+                    'frame_count': getattr(self, 'frame_count', 0),
+                    'training_step_count': self.neural_trainer.training_step_count
+                }
+            )
+            
+            if success:
+                print(ColorScheme.colorize("[NEURAL CHECKPOINT] ✓ Shutdown checkpoint saved successfully!", ColorScheme.GREEN))
+                # Rotate old checkpoints to stay within limit
+                self.neural_trainer.rotate_checkpoints(
+                    self.neural_trainer.checkpoint_dir,
+                    self.neural_trainer.checkpoint_max_count
+                )
+            else:
+                print("[NEURAL CHECKPOINT] ⚠ Shutdown checkpoint save returned False")
+                
+        except Exception as e:
+            print(f"[NEURAL CHECKPOINT] ⚠ Failed to save shutdown checkpoint: {e}")
+            import traceback
+            traceback.print_exc()
 
     def _collect_simulation_data(self) -> Dict[str, Any]:
         """Collect current state from all components"""

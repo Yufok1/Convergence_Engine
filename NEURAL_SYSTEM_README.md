@@ -79,6 +79,38 @@ See `config.json` → `neural` section for all parameters:
 - **Training**: `batch_size`, `learning_rate`, `gamma`, `epsilon_*`, `update_frequency`
 - **Rewards**: `fitness_improvement`, `survival`, `connection_success/failure`, `resource_gain/loss`
 - **Inheritance**: `mutation_rate`, `crossover_rate` for brain weights
+- **Checkpointing**: `enabled`, `auto_save_interval_*`, `max_checkpoints`, `auto_resume`
+
+---
+
+## 💾 Checkpointing
+
+Training state is automatically saved and can be restored:
+
+```json
+{
+  "neural": {
+    "checkpointing": {
+      "enabled": true,
+      "auto_save_interval_generations": 100,
+      "auto_save_interval_minutes": 10,
+      "max_checkpoints": 5,
+      "auto_resume": true
+    }
+  }
+}
+```
+
+**Features:**
+- **Auto-save** by generation count or time interval
+- **Rotation** keeps last N checkpoints
+- **Auto-resume** loads latest checkpoint on startup
+- **Graceful shutdown** saves checkpoint on Ctrl+C
+
+**API Endpoints:**
+- `POST /api/checkpoint/save` - Force immediate save
+- `POST /api/checkpoint/restore` - Restore from checkpoint
+- `GET /api/checkpoint/list` - List all checkpoints
 
 ---
 

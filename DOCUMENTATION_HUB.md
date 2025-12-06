@@ -76,6 +76,14 @@ pip install pywin32
 - **[SIMPLE_PYTORCH_OPTIMIZATIONS.md](./SIMPLE_PYTORCH_OPTIMIZATIONS.md)** - Get 5-10x speedup with simple code changes
 - **[docs/NEURAL_RELATIONSHIP_LEARNING.md](./docs/NEURAL_RELATIONSHIP_LEARNING.md)** - ⭐ NEW - Neural system learns from generation quality to strengthen/weaken semantic relationships
 
+#### 💾 Checkpointing (NEW)
+- **Auto-save**: Configurable by generation count or time interval
+- **Rotation**: Keeps last N checkpoints to save disk space
+- **Auto-resume**: Automatically loads latest checkpoint on startup
+- **Graceful shutdown**: Saves checkpoint on Ctrl+C or exception
+- **API Control**: `/api/checkpoint/save`, `/api/checkpoint/restore`, `/api/checkpoint/list`
+- **Config**: `config.json` → `neural.checkpointing.*`
+
 ### 📦 Agent Export System ⭐ NEW
 
 Export trained agents as portable, standalone packages for deployment.
@@ -285,6 +293,27 @@ Export trained agents as portable, standalone packages for deployment.
 - `implementation_guides/` - Historical implementation guides
 - `outdated/` - Superseded documentation
 - `performance_optimization/` - Performance tuning records
+
+---
+
+## 🧪 Research & Experiments
+
+**Personal training experiments and research syllabi (`docs/experiments/`):**
+
+### Training Curricula
+- **[WAR_DOCTRINE_SYLLABUS.md](./docs/experiments/WAR_DOCTRINE_SYLLABUS.md)** - Comprehensive warfare doctrine for elite organism training
+  - Sun Tzu, Machiavelli, Clausewitz strategic analysis
+  - Neurobiology of aggression (dopamine/serotonin reward systems)
+  - Empire collapse patterns and economic imperialism
+  - Cost-benefit analysis of aggressive vs diplomatic strategies
+  - Goal: Train organisms to be wise, not just powerful
+
+- **[MATH_SYLLABUS.md](./docs/experiments/MATH_SYLLABUS.md)** - Mathematical foundations syllabus
+
+### Research Notes
+- Training syllabi are user experiments, not core system features
+- These documents explore how elite organisms can be taught complex strategic concepts
+- Results tracked via Research Notepad hashtags in the web UI
 
 ---
 

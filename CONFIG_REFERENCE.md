@@ -707,3 +707,99 @@ Violation Pressure monitoring and stabilization.
 - Reduce `rendering.frame_rate` (10)
 - Disable `neural.optimization.use_compile`
 - Increase `ray.parallelization_threshold` (200)
+
+---
+
+## Hardware Profile & Autodetection
+
+Butterfly System automatically detects hardware capabilities and optimizes configuration at runtime. The `hardware_profile` key can be set to `beast`, `workstation`, `standard`, `laptop`, `potato`, or `cpu_only` to override autodetection, but leaving it `null` or unset enables full dynamic optimization.
+
+- **Autodetects:** GPU (model, VRAM, CUDA), CPU (cores, model), RAM, disk, network
+- **Dynamic scaling:** Population size, batch size, memory, and device settings are clamped to hardware limits
+- **Envelope:** HardwareGovernor applies safe limits and stores metadata in config for CRA awareness
+- **Manual override:** Set `hardware_profile` in config to force a profile tier
+- **Best practice:** Let autodetect handle scaling for cloud/local/multi-machine setups
+
+See `reality_simulator/hardware_governor.py` for implementation details.
+
+---
+
+## Checkpointing & Persistence (Planned)
+
+**CURRENT STATUS**: Partially implemented. Neural training state is NOT automatically persisted.
+
+### What IS Currently Persisted
+| Data | Location | Status |
+|------|----------|--------|
+| Highlander Champions | `highlander_capsules/` | ✅ Working |
+| Config Rollback | In-memory (10 snapshots) | ✅ Working (lost on restart) |
+| Event Logs | `data/logs/*.log` | ✅ Working |
+| Frame State | `data/shared_state.json` | ✅ Working |
+| Concept System | Via `trainer.save_concept_system()` | ✅ Manual |
+
+### What is NOT Persisted (Training Lost on Restart)
+| Data | Impact | Priority |
+|------|--------|----------|
+| Neural Brains | Organisms restart with random/inherited weights | 🔴 Critical |
+| Experience Buffer | Must recollect all training experiences | 🔴 Critical |
+| Optimizer States | Adam momentum/velocity reset | 🟡 High |
+| VP History | Stabilization history lost | 🟡 Medium |
+| Training Metrics | Loss/epsilon history lost | 🟢 Low |
+
+### Planned Configuration
+
+```json
+{
+  "checkpointing": {
+    "enabled": true,
+    "auto_save_interval_generations": 100,
+    "auto_save_interval_minutes": 30,
+    "max_checkpoints": 10,
+    "checkpoint_dir": "data/neural_checkpoints",
+    "include_experience_buffer": true,
+    "include_optimizer_states": true,
+    "compression": true,
+    "auto_resume": true
+  }
+}
+```
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `enabled` | bool | true | Master toggle for auto-checkpointing |
+| `auto_save_interval_generations` | int | 100 | Save checkpoint every N generations |
+| `auto_save_interval_minutes` | int | 30 | Save checkpoint every N minutes |
+| `max_checkpoints` | int | 10 | Maximum checkpoints to retain (older deleted) |
+| `checkpoint_dir` | string | "data/neural_checkpoints" | Directory for checkpoint storage |
+| `include_experience_buffer` | bool | true | Save experience replay buffer (large!) |
+| `include_optimizer_states` | bool | true | Save optimizer momentum/velocity |
+| `compression` | bool | true | Compress .pt files to save space |
+| `auto_resume` | bool | true | Load latest checkpoint on startup |
+
+### Checkpoint Directory Structure
+
+```
+data/neural_checkpoints/
+├── checkpoint_20251206_143022/
+│   ├── neural_brains.pt         # All organism neural weights
+│   ├── experience_buffer.pt     # Experience replay buffer
+│   ├── optimizer_states.pt      # Optimizer states
+│   ├── concept_system.pt        # Concept tracker state
+│   └── metadata.json            # Generation, timestamp, metrics
+└── latest -> checkpoint_20251206_143022/
+```
+
+### Best Practices
+1. **Enable checkpointing before long training runs** - Hours of training can be lost
+2. **Set reasonable intervals** - 50-100 generations or 15-30 minutes
+3. **Monitor disk space** - Each checkpoint can be 10-100MB
+4. **Test recovery** - Verify checkpoints actually load correctly
+5. **Archive before experiments** - Manually checkpoint before config changes
+
+### Related Systems
+- `OrganismCapsuleManager` - Saves individual champion organisms (Highlander mode)
+- `ConfigManager` - 10-snapshot rollback for config (in-memory, lost on restart)
+- `NeuralTrainer.save_concept_system()` - Manual concept system persistence
+
+---
+

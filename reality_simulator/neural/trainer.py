@@ -281,6 +281,28 @@ class NeuralTrainer:
             except Exception as e:
                 logger.warning(f"[NEURAL] Ray initialization failed, using sequential training: {e}")
                 self.ray_enabled = False
+        
+        # ═══════════════════════════════════════════════════════════════════════════
+        # CHECKPOINT SYSTEM CONFIGURATION
+        # Auto-save training state periodically to prevent data loss
+        # ═══════════════════════════════════════════════════════════════════════════
+        checkpoint_config = config.get('checkpointing', {})
+        self.checkpoint_enabled = checkpoint_config.get('enabled', False)
+        self.checkpoint_interval_generations = checkpoint_config.get('auto_save_interval_generations', 100)
+        self.checkpoint_interval_minutes = checkpoint_config.get('auto_save_interval_minutes', 30)
+        self.checkpoint_max_count = checkpoint_config.get('max_checkpoints', 10)
+        self.checkpoint_dir = checkpoint_config.get('checkpoint_dir', 'data/neural_checkpoints')
+        self.checkpoint_include_buffer = checkpoint_config.get('include_experience_buffer', True)
+        self.checkpoint_compression = checkpoint_config.get('compression', True)
+        self.checkpoint_auto_resume = checkpoint_config.get('auto_resume', True)
+        
+        # Checkpoint tracking
+        self._last_checkpoint_generation = 0
+        self._last_checkpoint_time = time.time()
+        self._checkpoint_count = 0
+        
+        if self.checkpoint_enabled:
+            logger.info(f"[NEURAL] Checkpointing enabled: every {self.checkpoint_interval_generations} gens or {self.checkpoint_interval_minutes} mins")
     
     def _get_or_create_scheduler(self, organism_id: int, optimizer: optim.Optimizer) -> Any:
         """
@@ -2224,5 +2246,566 @@ class NeuralTrainer:
             'total_concept_loss': self.total_concept_loss,
             'concept_compositions_evaluated': self.concept_compositions_evaluated,
         }
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # CHECKPOINT SYSTEM - Save/Load Complete Training State
+    # Preserves neural brains, experience buffer, optimizer states across restarts
+    # ═══════════════════════════════════════════════════════════════════════════
+    
+    def save_checkpoint(self, checkpoint_dir: str, organisms: List[Any], 
+                       generation: int = 0, metadata: Optional[Dict] = None) -> bool:
+        """
+        Save complete training state checkpoint.
+        
+        Saves:
+        - All organism neural brain weights
+        - Experience buffer (if enabled)
+        - Optimizer states (if enabled)
+        - Concept system state
+        - VP history
+        - Training metrics
+        - Metadata (generation, timestamp, config)
+        
+        Args:
+            checkpoint_dir: Directory to save checkpoint files
+            organisms: List of NeuralOrganism instances
+            generation: Current generation number
+            metadata: Optional additional metadata
+            
+        Returns:
+            True if checkpoint saved successfully, False otherwise
+        """
+        import os
+        import json
+        from datetime import datetime
+        
+        try:
+            os.makedirs(checkpoint_dir, exist_ok=True)
+            
+            # 1. Save neural brain weights
+            brain_states = {}
+            for org in organisms:
+                if hasattr(org, 'brain') and org.brain is not None:
+                    org_id = getattr(org, 'id', id(org))
+                    try:
+                        brain_states[str(org_id)] = {
+                            'state_dict': org.brain.state_dict(),
+                            'fitness': getattr(org, 'fitness', 0.0),
+                            'age': getattr(org, 'age', 0),
+                        }
+                    except Exception as e:
+                        logger.warning(f"[CHECKPOINT] Failed to save brain for organism {org_id}: {e}")
+            
+            if brain_states:
+                brain_path = os.path.join(checkpoint_dir, 'neural_brains.pt')
+                torch.save(brain_states, brain_path)
+                logger.info(f"[CHECKPOINT] Saved {len(brain_states)} neural brains")
+            
+            # 2. Save experience buffer
+            experience_data = self._serialize_experience_buffer()
+            if experience_data:
+                exp_path = os.path.join(checkpoint_dir, 'experience_buffer.pt')
+                torch.save(experience_data, exp_path)
+                logger.info(f"[CHECKPOINT] Saved experience buffer ({len(experience_data.get('experiences', []))} experiences)")
+            
+            # 3. Save optimizer states
+            if self.optimizers:
+                optimizer_states = {}
+                for org_id, optimizer in self.optimizers.items():
+                    try:
+                        optimizer_states[str(org_id)] = optimizer.state_dict()
+                    except Exception as e:
+                        logger.warning(f"[CHECKPOINT] Failed to save optimizer for {org_id}: {e}")
+                
+                if optimizer_states:
+                    opt_path = os.path.join(checkpoint_dir, 'optimizer_states.pt')
+                    torch.save(optimizer_states, opt_path)
+                    logger.info(f"[CHECKPOINT] Saved {len(optimizer_states)} optimizer states")
+            
+            # 4. Save concept system
+            if self.concept_system_enabled and self.concept_system is not None:
+                concept_path = os.path.join(checkpoint_dir, 'concept_system.pt')
+                self.save_concept_system(concept_path)
+            
+            # 5. Save metadata
+            checkpoint_metadata = {
+                'timestamp': datetime.now().isoformat(),
+                'generation': generation,
+                'training_step_count': self.training_step_count,
+                'total_loss': float(self.total_loss),
+                'total_language_loss': float(self.total_language_loss),
+                'organisms_count': len(brain_states),
+                'experience_buffer_size': len(experience_data.get('experiences', [])) if experience_data else 0,
+                'vp_history_length': len(self.vp_history),
+                'current_sequence_length': self.current_sequence_length,
+                'early_stopped': self.early_stopped,
+                'best_loss': float(self.best_loss) if self.best_loss != float('inf') else None,
+                'config': {
+                    'batch_size': self.batch_size,
+                    'learning_rate': self.learning_rate,
+                    'gamma': self.gamma,
+                    'input_dim': self.config.get('brain', {}).get('input_dim', 24),
+                    'hidden_dim': self.config.get('brain', {}).get('hidden_dim', 128),
+                    'output_dim': self.config.get('brain', {}).get('output_dim', 6),
+                },
+                'autotune_metrics': self.autotune_metrics_buffer.copy(),
+            }
+            
+            if metadata:
+                checkpoint_metadata.update(metadata)
+            
+            # Also save VP history
+            checkpoint_metadata['vp_history'] = self.vp_history[-100:]  # Last 100 VP values
+            
+            # 6. Save AtomicConfigSystem state (learning state)
+            if self.atomic_config_system is not None:
+                try:
+                    atomic_config_state = {}
+                    for name, atom in self.atomic_config_system.atoms.items():
+                        atomic_config_state[name] = atom.to_dict()
+                    
+                    atomic_path = os.path.join(checkpoint_dir, 'atomic_config.json')
+                    with open(atomic_path, 'w') as f:
+                        json.dump(atomic_config_state, f, indent=2)
+                    logger.info(f"[CHECKPOINT] Saved AtomicConfigSystem state ({len(atomic_config_state)} atoms)")
+                except Exception as e:
+                    logger.warning(f"[CHECKPOINT] Failed to save AtomicConfigSystem: {e}")
+            
+            meta_path = os.path.join(checkpoint_dir, 'metadata.json')
+            with open(meta_path, 'w') as f:
+                json.dump(checkpoint_metadata, f, indent=2, default=str)
+            
+            logger.info(f"[CHECKPOINT] Checkpoint saved to {checkpoint_dir} (gen={generation})")
+            return True
+            
+        except Exception as e:
+            logger.error(f"[CHECKPOINT] Failed to save checkpoint: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+    
+    def load_checkpoint(self, checkpoint_dir: str, organisms: List[Any],
+                       strict: bool = False) -> Dict[str, Any]:
+        """
+        Load complete training state from checkpoint.
+        
+        Restores:
+        - Neural brain weights (matched by organism ID when possible)
+        - Experience buffer
+        - Optimizer states
+        - Concept system state
+        - VP history
+        - Training metrics
+        
+        Args:
+            checkpoint_dir: Directory containing checkpoint files
+            organisms: List of NeuralOrganism instances to restore weights to
+            strict: If True, raise errors on architecture mismatch; if False, skip mismatched
+            
+        Returns:
+            Dict with load results: {'success': bool, 'loaded': {...}, 'errors': [...]}
+        """
+        import os
+        import json
+        
+        result = {
+            'success': False,
+            'loaded': {
+                'brains': 0,
+                'experiences': 0,
+                'optimizers': 0,
+                'concept_system': False,
+            },
+            'errors': [],
+            'warnings': [],
+            'metadata': None,
+        }
+        
+        if not os.path.exists(checkpoint_dir):
+            result['errors'].append(f"Checkpoint directory not found: {checkpoint_dir}")
+            return result
+        
+        try:
+            # 1. Load metadata first (to validate architecture)
+            meta_path = os.path.join(checkpoint_dir, 'metadata.json')
+            if os.path.exists(meta_path):
+                with open(meta_path, 'r') as f:
+                    result['metadata'] = json.load(f)
+                
+                # Check architecture compatibility
+                saved_config = result['metadata'].get('config', {})
+                current_input_dim = self.config.get('brain', {}).get('input_dim', 24)
+                saved_input_dim = saved_config.get('input_dim', 24)
+                
+                if current_input_dim != saved_input_dim:
+                    msg = f"Architecture mismatch: saved input_dim={saved_input_dim}, current={current_input_dim}"
+                    if strict:
+                        result['errors'].append(msg)
+                        return result
+                    else:
+                        result['warnings'].append(msg + " - some weights may not load correctly")
+            
+            # 2. Load neural brain weights
+            brain_path = os.path.join(checkpoint_dir, 'neural_brains.pt')
+            if os.path.exists(brain_path):
+                brain_states = torch.load(brain_path, map_location=self.device, weights_only=False)
+                
+                # Create lookup of organisms by ID
+                org_by_id = {}
+                for org in organisms:
+                    org_id = str(getattr(org, 'id', id(org)))
+                    org_by_id[org_id] = org
+                
+                loaded_brains = 0
+                for org_id, brain_data in brain_states.items():
+                    if org_id in org_by_id:
+                        org = org_by_id[org_id]
+                        if hasattr(org, 'brain') and org.brain is not None:
+                            try:
+                                org.brain.load_state_dict(brain_data['state_dict'], strict=strict)
+                                loaded_brains += 1
+                            except Exception as e:
+                                result['warnings'].append(f"Failed to load brain {org_id}: {e}")
+                    else:
+                        # Try to load into any organism without a match (for new populations)
+                        for org in organisms:
+                            if hasattr(org, 'brain') and org.brain is not None:
+                                try:
+                                    org.brain.load_state_dict(brain_data['state_dict'], strict=False)
+                                    loaded_brains += 1
+                                    break
+                                except:
+                                    continue
+                
+                result['loaded']['brains'] = loaded_brains
+                logger.info(f"[CHECKPOINT] Loaded {loaded_brains} neural brains")
+            
+            # 3. Load experience buffer
+            exp_path = os.path.join(checkpoint_dir, 'experience_buffer.pt')
+            if os.path.exists(exp_path):
+                experience_data = torch.load(exp_path, map_location=self.device, weights_only=False)
+                loaded_exp = self._deserialize_experience_buffer(experience_data)
+                result['loaded']['experiences'] = loaded_exp
+                logger.info(f"[CHECKPOINT] Loaded {loaded_exp} experiences")
+            
+            # 4. Load optimizer states
+            opt_path = os.path.join(checkpoint_dir, 'optimizer_states.pt')
+            if os.path.exists(opt_path):
+                optimizer_states = torch.load(opt_path, map_location=self.device, weights_only=False)
+                loaded_opts = 0
+                for org_id_str, opt_state in optimizer_states.items():
+                    try:
+                        org_id = int(org_id_str)
+                        if org_id in self.optimizers:
+                            self.optimizers[org_id].load_state_dict(opt_state)
+                            loaded_opts += 1
+                    except Exception as e:
+                        result['warnings'].append(f"Failed to load optimizer {org_id_str}: {e}")
+                
+                result['loaded']['optimizers'] = loaded_opts
+                logger.info(f"[CHECKPOINT] Loaded {loaded_opts} optimizer states")
+            
+            # 5. Load concept system
+            concept_path = os.path.join(checkpoint_dir, 'concept_system.pt')
+            if os.path.exists(concept_path) and self.concept_system_enabled:
+                try:
+                    self.load_concept_system(concept_path)
+                    result['loaded']['concept_system'] = True
+                except Exception as e:
+                    result['warnings'].append(f"Failed to load concept system: {e}")
+            
+            # 6. Restore training state from metadata
+            if result['metadata']:
+                meta = result['metadata']
+                self.training_step_count = meta.get('training_step_count', 0)
+                self.total_loss = meta.get('total_loss', 0.0)
+                self.total_language_loss = meta.get('total_language_loss', 0.0)
+                self.current_sequence_length = meta.get('current_sequence_length', 8)
+                self.early_stopped = meta.get('early_stopped', False)
+                if meta.get('best_loss') is not None:
+                    self.best_loss = meta.get('best_loss')
+                if meta.get('vp_history'):
+                    self.vp_history = meta.get('vp_history', [])
+                if meta.get('autotune_metrics'):
+                    self.autotune_metrics_buffer.update(meta.get('autotune_metrics', {}))
+            
+            # 7. Load AtomicConfigSystem state
+            atomic_path = os.path.join(checkpoint_dir, 'atomic_config.json')
+            if os.path.exists(atomic_path) and self.atomic_config_system is not None:
+                try:
+                    with open(atomic_path, 'r') as f:
+                        atomic_config_state = json.load(f)
+                    
+                    restored_count = 0
+                    for name, atom_data in atomic_config_state.items():
+                        if name in self.atomic_config_system.atoms:
+                            atom = self.atomic_config_system.atoms[name]
+                            # Restore learning state (not value - config.json is source of truth)
+                            if 'strength' in atom_data:
+                                atom.strength = atom_data['strength']
+                            if 'stability' in atom_data:
+                                atom.stability = atom_data.get('stability', 0.5)
+                            if 'update_count' in atom_data:
+                                atom.update_count = atom_data.get('update_count', 0)
+                            restored_count += 1
+                    
+                    result['loaded']['atomic_config'] = restored_count
+                    logger.info(f"[CHECKPOINT] Restored {restored_count} AtomicConfig atom states")
+                except Exception as e:
+                    result['warnings'].append(f"Failed to load AtomicConfigSystem: {e}")
+            
+            result['success'] = True
+            logger.info(f"[CHECKPOINT] Checkpoint loaded from {checkpoint_dir}")
+            
+        except Exception as e:
+            result['errors'].append(f"Failed to load checkpoint: {e}")
+            import traceback
+            traceback.print_exc()
+        
+        return result
+    
+    def _serialize_experience_buffer(self) -> Optional[Dict]:
+        """
+        Serialize experience buffer for saving.
+        
+        Returns:
+            Dictionary with serialized experiences, or None if no organisms
+        """
+        # Experience buffer is typically stored per-organism in NeuralOrganism
+        # We need to collect from self if we have a shared buffer
+        # For now, return training metrics that help resume
+        return {
+            'experiences': [],  # Individual organisms manage their buffers
+            'vp_history': self.vp_history[-1000:],  # Save recent VP history
+            'training_step_count': self.training_step_count,
+            'vp_stable_steps': self.vp_stable_steps,
+            'language_reward_total': self.language_reward_total,
+            'language_reward_count': self.language_reward_count,
+        }
+    
+    def _deserialize_experience_buffer(self, data: Dict) -> int:
+        """
+        Restore experience buffer from saved data.
+        
+        Args:
+            data: Serialized experience buffer data
+            
+        Returns:
+            Number of experiences restored
+        """
+        if not data:
+            return 0
+        
+        # Restore VP history
+        if 'vp_history' in data:
+            self.vp_history = data['vp_history']
+        
+        # Restore counters
+        if 'vp_stable_steps' in data:
+            self.vp_stable_steps = data['vp_stable_steps']
+        if 'language_reward_total' in data:
+            self.language_reward_total = data['language_reward_total']
+        if 'language_reward_count' in data:
+            self.language_reward_count = data['language_reward_count']
+        
+        return len(data.get('experiences', []))
+    
+    def rotate_checkpoints(self, checkpoint_base_dir: str, max_checkpoints: int = 10):
+        """
+        Delete old checkpoints to stay within max_checkpoints limit.
+        
+        Args:
+            checkpoint_base_dir: Base directory containing checkpoint folders
+            max_checkpoints: Maximum number of checkpoints to keep
+        """
+        import os
+        import shutil
+        
+        if not os.path.exists(checkpoint_base_dir):
+            return
+        
+        # Find all checkpoint directories (format: checkpoint_YYYYMMDD_HHMMSS)
+        checkpoints = []
+        for name in os.listdir(checkpoint_base_dir):
+            if name.startswith('checkpoint_') and os.path.isdir(os.path.join(checkpoint_base_dir, name)):
+                full_path = os.path.join(checkpoint_base_dir, name)
+                # Parse timestamp from name for sorting
+                try:
+                    # checkpoint_YYYYMMDD_HHMMSS
+                    timestamp_str = name.replace('checkpoint_', '')
+                    checkpoints.append((timestamp_str, full_path))
+                except:
+                    checkpoints.append((name, full_path))
+        
+        # Sort by timestamp (oldest first)
+        checkpoints.sort(key=lambda x: x[0])
+        
+        # Delete oldest checkpoints beyond limit
+        while len(checkpoints) > max_checkpoints:
+            _, oldest_path = checkpoints.pop(0)
+            try:
+                shutil.rmtree(oldest_path)
+                logger.info(f"[CHECKPOINT] Rotated out old checkpoint: {oldest_path}")
+            except Exception as e:
+                logger.warning(f"[CHECKPOINT] Failed to delete old checkpoint {oldest_path}: {e}")
+    
+    def get_latest_checkpoint(self, checkpoint_base_dir: str) -> Optional[str]:
+        """
+        Find the most recent checkpoint directory.
+        
+        Args:
+            checkpoint_base_dir: Base directory containing checkpoint folders
+            
+        Returns:
+            Path to latest checkpoint directory, or None if no checkpoints
+        """
+        import os
+        
+        if not os.path.exists(checkpoint_base_dir):
+            return None
+        
+        checkpoints = []
+        for name in os.listdir(checkpoint_base_dir):
+            if name.startswith('checkpoint_') and os.path.isdir(os.path.join(checkpoint_base_dir, name)):
+                full_path = os.path.join(checkpoint_base_dir, name)
+                try:
+                    timestamp_str = name.replace('checkpoint_', '')
+                    checkpoints.append((timestamp_str, full_path))
+                except:
+                    checkpoints.append((name, full_path))
+        
+        if not checkpoints:
+            return None
+        
+        # Sort by timestamp (newest last)
+        checkpoints.sort(key=lambda x: x[0])
+        return checkpoints[-1][1]
+    
+    def create_checkpoint_name(self) -> str:
+        """
+        Generate a timestamped checkpoint directory name.
+        
+        Returns:
+            Directory name in format: checkpoint_YYYYMMDD_HHMMSS
+        """
+        from datetime import datetime
+        return f"checkpoint_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    
+    def should_checkpoint(self, generation: int) -> bool:
+        """
+        Check if a checkpoint should be saved based on config thresholds.
+        
+        Args:
+            generation: Current generation number
+            
+        Returns:
+            True if checkpoint should be saved
+        """
+        if not self.checkpoint_enabled:
+            return False
+        
+        # Check generation-based trigger
+        if generation - self._last_checkpoint_generation >= self.checkpoint_interval_generations:
+            return True
+        
+        # Check time-based trigger
+        elapsed_minutes = (time.time() - self._last_checkpoint_time) / 60.0
+        if elapsed_minutes >= self.checkpoint_interval_minutes:
+            return True
+        
+        return False
+    
+    def maybe_checkpoint(self, organisms: List[Any], generation: int, 
+                        metadata: Optional[Dict] = None) -> bool:
+        """
+        Save checkpoint if thresholds are met.
+        
+        Convenience method for main loop to call each generation.
+        Handles checkpoint creation, rotation, and tracking.
+        
+        Args:
+            organisms: List of NeuralOrganism instances
+            generation: Current generation number
+            metadata: Optional additional metadata
+            
+        Returns:
+            True if checkpoint was saved, False otherwise
+        """
+        import os
+        
+        if not self.should_checkpoint(generation):
+            return False
+        
+        # Create checkpoint directory
+        checkpoint_name = self.create_checkpoint_name()
+        checkpoint_path = os.path.join(self.checkpoint_dir, checkpoint_name)
+        
+        # Save checkpoint
+        success = self.save_checkpoint(checkpoint_path, organisms, generation, metadata)
+        
+        if success:
+            # Update tracking
+            self._last_checkpoint_generation = generation
+            self._last_checkpoint_time = time.time()
+            self._checkpoint_count += 1
+            
+            # Rotate old checkpoints
+            self.rotate_checkpoints(self.checkpoint_dir, self.checkpoint_max_count)
+            
+            # Emit checkpoint event
+            if self.event_emitter:
+                try:
+                    from causation_explorer import Event
+                    event = Event(
+                        timestamp=time.time(),
+                        component='neural',
+                        event_type='checkpoint_saved',
+                        data={
+                            'generation': generation,
+                            'checkpoint_path': checkpoint_path,
+                            'checkpoint_count': self._checkpoint_count,
+                            'organisms_count': len(organisms),
+                        }
+                    )
+                    self.event_emitter(event)
+                except ImportError:
+                    pass
+        
+        return success
+    
+    def auto_resume(self, organisms: List[Any]) -> Optional[Dict]:
+        """
+        Automatically load the latest checkpoint if auto_resume is enabled.
+        
+        Call this after trainer initialization and before training starts.
+        
+        Args:
+            organisms: List of NeuralOrganism instances to restore weights to
+            
+        Returns:
+            Load result dict if resumed, None if no checkpoint or disabled
+        """
+        if not self.checkpoint_auto_resume:
+            return None
+        
+        latest = self.get_latest_checkpoint(self.checkpoint_dir)
+        if latest is None:
+            logger.info("[CHECKPOINT] No checkpoint found for auto-resume")
+            return None
+        
+        logger.info(f"[CHECKPOINT] Auto-resuming from: {latest}")
+        result = self.load_checkpoint(latest, organisms, strict=False)
+        
+        if result['success']:
+            logger.info(f"[CHECKPOINT] Auto-resume successful: {result['loaded']}")
+            # Update tracking from loaded metadata
+            if result['metadata']:
+                self._last_checkpoint_generation = result['metadata'].get('generation', 0)
+        else:
+            logger.warning(f"[CHECKPOINT] Auto-resume failed: {result['errors']}")
+        
+        return result
+
+
 
 

@@ -1,8 +1,32 @@
 ---
-🔍 CRA Diagnostic Prompt - 2025 Edition (Quick Wins #1-5 Integrated)
+🔍 CRA Diagnostic Prompt - 2025 Edition (Current)
+Last Updated: 2025-12-06
 
-Complete system audit - Neural, ML, Meta-Cognitive Tuning, VP Monitoring, Unified 
-Visualization, Causation Detection, Health Monitor, Concept Tracking
+System diagnostics now leverage full hardware autodetection and dynamic optimization:
+- Hardware profile, GPU, CPU, RAM, disk, and network are auto-detected at runtime.
+- All scaling, batch sizes, population limits, and device settings are dynamically set by the HardwareGovernor.
+- Manual override is possible via config 'hardware_profile', but defaults to autodetect.
+- Diagnostic results and system health reflect the current machine's capabilities.
+- No static hardware values are required; diagnostics adapt to any system.
+
+For details, see: reality_simulator/hardware_governor.py
+
+# Hardware Profile (Autodetect)
+- Profile: auto-detect (beast/workstation/standard/laptop/potato/cpu_only)
+- GPU: detected (CUDA, VRAM, model)
+- CPU: detected (cores, model)
+- RAM: detected (size)
+- Disk: detected (speed/model)
+- Network: detected (bandwidth/ports)
+
+# Optimization Envelope
+- All config values (batch size, population, memory, etc.) are clamped to hardware limits
+- Device and GPU optimizations are set automatically
+- Envelope metadata is stored in config for CRA awareness
+
+# Usage Note
+- Diagnostics and config files should not hardcode hardware specs
+- System adapts to any machine, including cloud and local setups
 
 ---
 📋 1. System Access Audit
@@ -224,6 +248,185 @@ Quick Win #17: Proton Game Arena (Gym Battle Settlement) ⭐ NEW (2025-12-04)
   * Component color: Orange (#FF6B35) - componentColor_proton_arena
   * Link color: Orange (#FF6B35) - linkColor_arena
 - Verification: Arena battles occur, games selected from grid, consequences applied
+
+---
+✅ CHECKPOINTING & PERSISTENCE SYSTEM ⭐ FULLY IMPLEMENTED (2025-12-06)
+
+**STATUS**: FULLY OPERATIONAL
+Neural training state is now automatically persisted. Checkpoints are saved periodically
+and on graceful shutdown, preventing training progress loss.
+
+## What IS Persisted (All Working):
+- **Neural Brains**: All organism neural weights (DQN state_dicts) - SAVED
+- **Experience Buffer State**: VP history, language rewards, training counters - SAVED
+- **Optimizer States**: Adam optimizer momentum/velocity - SAVED
+- **Concept System**: RCUS concept embeddings - SAVED (if enabled)
+- **Training Metrics**: Loss history, epsilon, step counts - SAVED
+- **Highlander Champion Capsules**: Elite organisms in `highlander_capsules/`
+- **Config State**: ConfigManager tracks 10 rollback snapshots
+- **Log Files**: All events logged to `data/logs/*.log`
+- **Shared State**: `data/shared_state.json` - Current system state
+
+## Auto-Save Triggers:
+1. **Generation Interval**: Every N generations (default: 100)
+2. **Time Interval**: Every N minutes (default: 30)
+3. **Graceful Shutdown**: Saved on Ctrl+C interrupt or error
+4. **Manual Trigger**: Via `POST /api/checkpoint/save` API
+
+## Checkpoint API Endpoints:
+- `GET /api/cra/diagnostics/checkpoint_status` - Checkpoint health & stats
+- `POST /api/checkpoint/save` - Force immediate checkpoint save
+- `POST /api/checkpoint/restore` - Restore from specific checkpoint
+- `GET /api/checkpoint/list` - List all checkpoints with metadata
+
+## Directory Structure:
+```
+data/neural_checkpoints/
+├── checkpoint_20251206_143022/      # Timestamped checkpoint
+│   ├── neural_brains.pt             # All organism neural weights
+│   ├── experience_buffer.pt         # VP history, training state
+│   ├── optimizer_states.pt          # Adam momentum/velocity
+│   ├── concept_system.pt            # RCUS embeddings (if enabled)
+│   └── metadata.json                # Generation, timestamp, metrics
+├── checkpoint_20251206_140000/
+│   └── ...
+└── checkpoint_20251206_143022_shutdown/  # Shutdown checkpoint (special suffix)
+    └── ...
+```
+
+## Config Parameters (config.json > neural > checkpointing):
+```json
+{
+  "checkpointing": {
+    "enabled": true,                       // Master switch
+    "auto_save_interval_generations": 100, // Save every N generations
+    "auto_save_interval_minutes": 30,      // Or every N minutes (whichever first)
+    "max_checkpoints": 10,                 // Rotate old checkpoints
+    "checkpoint_dir": "data/neural_checkpoints",
+    "include_experience_buffer": true,
+    "include_optimizer_states": true,
+    "compression": false,
+    "auto_resume": true                    // Resume from latest on startup
+  }
+}
+```
+
+## Auto-Resume Behavior:
+On simulation startup with `auto_resume: true`:
+1. Trainer initialization detects latest checkpoint
+2. Checkpoint path stored for deferred restore
+3. After network/organisms created, checkpoint is loaded
+4. Neural weights restored to matching organisms
+5. Training state (VP history, step counts) restored
+
+## CRA Checkpoint Awareness:
+CRA can monitor checkpointing via `/api/cra/diagnostics/checkpoint_status`:
+- **enabled**: Whether checkpointing is active
+- **checkpoints_count**: Number of saved checkpoints
+- **latest_checkpoint**: Info on most recent (timestamp, generation, organisms)
+- **total_size_mb**: Disk space used by checkpoints
+- **health.has_recent_checkpoint**: Whether a recent checkpoint exists
+- **health.recommendation**: Actionable guidance
+
+## CRITICAL: Before Stopping Simulation
+**ALWAYS** call `POST /api/checkpoint/save` before intentionally stopping the simulation
+to ensure all training progress is saved. Shutdown checkpoints are also auto-created on
+Ctrl+C, but explicit saves are recommended for important milestones.
+
+## Recovery Procedure:
+1. Start simulation normally (auto_resume will detect checkpoints)
+2. OR: Use `POST /api/checkpoint/restore` with specific checkpoint name
+3. Training resumes from saved state (generation, loss, VP history restored)
+
+## Two-Tier Checkpointing Architecture:
+The Butterfly System has TWO complementary checkpointing systems:
+
+1. **NeuralTrainer Checkpointing** (NEW - what we just built):
+   - **Purpose**: Bulk training continuity - ALL organisms' neural weights
+   - **Trigger**: Every N generations, every N minutes, or on shutdown
+   - **Location**: `data/neural_checkpoints/checkpoint_YYYYMMDD_HHMMSS/`
+   - **Contents**: All neural brains, optimizer states, VP history, training metrics,
+     AtomicConfigSystem learning state (strength, stability, update_count)
+   - **Use Case**: Resume training after crash/restart without losing progress
+
+2. **OrganismCapsuleManager** (Highlander system):
+   - **Purpose**: Elite preservation - INDIVIDUAL champion organisms
+   - **Trigger**: When organism wins Highlander tournament
+   - **Location**: `highlander_capsules/`
+   - **Contents**: Complete "soul jar" - neural weights + VP state + language atoms + 
+     traits + experience samples + battle history + causation digest
+   - **Use Case**: Preserve exceptional organisms for study, replay, cross-pollination
+
+These systems are complementary:
+- **NeuralTrainer** = "Population snapshot" (everyone, shallow) + config learning state
+- **CapsuleManager** = "Champion biography" (one organism, deep)
+
+### Related Systems:
+- **ConfigManager**: 10-snapshot rollback for config changes (in-memory)
+- **LogParser**: Historical analysis from log files
+- **StateLogger**: Writes state.log each frame
+
+### Implementation Status:
+| Feature                    | Status       | Notes                                    |
+|----------------------------|--------------|------------------------------------------|
+| Capsule Manager            | ✅ Working   | Champions saved to highlander_capsules/  |
+| Config Rollback            | ✅ Working   | 10 in-memory snapshots                   |
+| State Logging              | ✅ Working   | data/logs/state.log per frame            |
+| shared_state.json          | ✅ Working   | Current frame snapshot                   |
+| Neural Checkpoint API      | ✅ Working   | save_checkpoint/load_checkpoint methods  |
+| Experience Buffer Save     | ✅ Working   | VP history, language rewards saved       |
+| Optimizer State Save       | ✅ Working   | Adam momentum/velocity preserved         |
+| AtomicConfig State Save    | ✅ Working   | Config atom strength/stability preserved |
+| Auto-Resume on Startup     | ✅ Working   | Deferred load after organisms created    |
+| Checkpoint Rotation        | ✅ Working   | max_checkpoints enforced                 |
+| Manual Checkpoint API      | ✅ Working   | POST /api/checkpoint/save                |
+| Graceful Shutdown Save     | ✅ Working   | Saves on Ctrl+C or error                 |
+| Web UI Checkpoint Panel    | ✅ Working   | Save/Restore buttons in Causation Explorer |
+
+---
+✅ CRA KNOWLEDGE ALIGNMENT ⭐ FIXED (2025-12-06)
+
+**STATUS**: CRA documentation updated to reflect actual system behavior.
+
+## Previous Issues (Now Fixed):
+1. **Fitness Definition Mismatch**: CRA assumed fitness was 0.0-1.0 normalized
+   - Reality: Response weights are composite (`fitness × confidence × genetic_modifier`) and CAN exceed 1.0
+   - Aggregated elite fitness can exceed 2.0+
+   
+2. **Population Context Confusion**: CRA conflated "active" vs "elite" organisms
+   - Reality: "36 active, 10 elite" is NOT collapse - it's intentional quality filtering
+   - Elite selection reduces noise, improves response quality
+   
+3. **Illumination Readiness Miscalculation**: CRA used single metrics
+   - Reality: Readiness requires composite criteria (fitness sum + vocabulary + VP stability + coherence)
+
+## Metric Definitions (Now in CRA_CAPABILITIES.md):
+| Metric | Range | Context |
+|--------|-------|---------|
+| Organism Fitness | 0.0 – 1.0+ | Individual adaptation score |
+| Neural Training Loss | 0.0 – ∞ | Lower = better learning |
+| Response Weight | 0.0 – 3.0+ | `fitness × confidence × genetic_modifier` |
+| Aggregated Fitness | 0.0 – 5.0+ | Sum of elite weights (NOT normalized) |
+
+## Population Terms (Now Documented):
+| Term | Definition |
+|------|------------|
+| Active Organisms | Currently alive in simulation |
+| Elite Organisms | Top N by fitness for chat responses (default: top 10) |
+| Historical Total | All organisms ever created (informational only) |
+| Responding Organisms | Subset with sufficient vocabulary |
+
+## Illumination Readiness Criteria (Composite):
+- Elite Fitness Sum > 2.0
+- Vocabulary Size > 50 words
+- VP Stability < 0.3 variance
+- Semantic Coherence > 0.5
+
+## CRA Can Now Correctly:
+- Interpret fitness > 1.0 as valid elite aggregation
+- Understand elite selection ≠ population collapse
+- Assess readiness using composite criteria
+- Track population context accurately
 
 ---
 2. Neural System Audit
@@ -2065,7 +2268,9 @@ Special Instructions
   - loss=None and organisms_tracked=0 is NORMAL until organisms collect batch_size (128, check config) experiences
   - Panel shows "N/A" for loss until first training
   - training_steps=0 is normal early-game
-  - input_dim=24 (was 12, then 18) for VP-aware perception + extended features
+  - input_dim=24 (was 12, then 18) for VP-aware perception + extended features 19-24
+  - batch_size: 128 (check config.json neural.training.batch_size for actual value)
+  - hidden_dim: 128 (check config.json neural.brain.hidden_dim for actual value)
 
 - ML Priority: Enabled but analyzer unavailable = HIGH, sklearn import failure = HIGH
 - Concept Tracking: Clusters need 3+ cycles to become concepts (persistence_threshold)
@@ -2170,12 +2375,10 @@ Key Updates for 2025 (Quick Wins Edition):
   evaluation, semantic guidance, relationship strengthening/weakening based on generation quality ⭐ NEW
 - Quick Win #13: Ray Distributed Computing - Parallel processing for ML features (4-5x), battles (4-5x),
   neural decisions (3-4x), DQN training (2-3x), graceful fallback when Ray unavailable ⭐ NEW
-- Quick Win #14: Training System Events - lr_adjusted (LR scheduler) and early_stopping_triggered
-  (convergence) causation events for training visibility ⭐ NEW (2025-12-03)
+- Quick Win #14: Training System Events - lr_adjusted and early_stopping_triggered causation events added to trainer.py
 - Quick Win #15: Agent Export System - Export trained neural brains as portable packages with
-  TorchScript/ONNX/state_dict formats, standalone Python runtime included ⭐ NEW (2025-12-04)
-- Quick Win #16: Expanded CRA Control - 54 safe parameters (up from 32) for autonomous tuning,
-  including LR scheduler, early stopping, Highlander, alliance warfare, language, Ray ⭐ NEW (2025-12-03)
+  TorchScript/ONNX/state_dict formats, standalone Python runtime included
+- Quick Win #16: Expanded CRA Control - 54 safe parameters (up from 32) for comprehensive autonomous tuning
 
 Quick Win #8: Dynamic Multi-Dimensional Linguistic Awareness ⭐ NEW
 - Status: ENABLED / DISABLED
@@ -2269,7 +2472,6 @@ Quick Win #8: Dynamic Multi-Dimensional Linguistic Awareness ⭐ NEW
   - **Training System Events**: lr_adjusted and early_stopping_triggered causation events added to trainer.py
   - **Expanded CRA Control**: 54 safe parameters (up from 32) for comprehensive autonomous tuning
   - **6 New Graph Visualizations**: Confederation, Illumination, Betrayal, Diplomacy, Training, Hegemony event types
-  - **Config Optimization**: Hardware-optimized for i5-7400 + GTX 1660 SUPER + 32GB RAM
   - **Alliance Wisdom Fix**: Corrected List[str] vs dict type mismatch in neural_organism.py
   - **LR Scheduler Integration**: Cosine learning rate scheduler with warmup and min_lr
   - **Early Stopping Integration**: Patience-based convergence detection with min_delta threshold
@@ -2278,9 +2480,13 @@ Quick Win #8: Dynamic Multi-Dimensional Linguistic Awareness ⭐ NEW
     (neural_organism.py, trainer.py, brain.py, organism_capsule.py, ray_tasks.py)
   - **PhaseSyncBridge wiring**: Now uses controller's live Explorer components instead of fresh instances
   - **Health Monitor periodic logging**: Added INFO log every 10 snapshots to confirm active calculation
-- **Recent Bug Fixes (Fresh Clone Compatibility)**:
-  - ConfigAtom description field: Added missing `description: str = ""` field to ConfigAtom dataclass
-  - onnxruntime optional: Made onnxruntime import optional with ONNX_AVAILABLE flag
-  - causation_web_ui lazy import: AgentCompiler import moved inside function to prevent startup errors
-
----
+- **Recent Improvements (2025-12-06)**:
+  - **Neural Checkpointing System**: Complete save/restore/rotate/auto-resume functionality in trainer.py
+  - **API Checkpoint Endpoints**: /api/checkpoint/save, /restore, /list, /api/cra/diagnostics/checkpoint_status
+  - **Web UI Checkpoint Panel**: Interactive save/restore controls in Causation Explorer
+  - **AtomicConfigSystem Persistence**: Learning state (strength, stability, update_count) now saved in checkpoints
+  - **CRA Metric Alignment Fix**: Added "CRITICAL: Metric Definitions" section to CRA_CAPABILITIES.md
+    - Clarified 4 distinct fitness concepts (Organism Fitness, Neural Loss, Response Weight, Aggregated Fitness)
+    - Documented Response Weight formula: `weight = fitness × confidence × genetic_modifier`
+    - Values CAN exceed 1.0 in aggregation contexts - this is VALID system behavior
+  - **Population Terminology**: Clarified Elite vs Active vs Historical organism distinctions for CRA

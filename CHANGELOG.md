@@ -4,7 +4,95 @@
 
 ---
 
-## [Unreleased] - 2025-12-05
+## [Unreleased] - 2025-12-06
+
+### 📚 Documentation Organization (2025-12-06)
+
+Repository cleanup and organization for GitHub push.
+
+#### Changed
+- **Created `docs/experiments/`**: New folder for personal training experiments
+- **Moved syllabi**: `WAR_DOCTRINE_SYLLABUS.md` and `MATH_SYLLABUS.md` to `docs/experiments/`
+- **Updated `.gitignore`**: Added coverage for `data_backup_*/`, `highlander_capsules/`, `data/neural_checkpoints/`
+- **Updated DOCUMENTATION_HUB.md**: Added "Research & Experiments" section with syllabus references
+- **Removed**: `Unconfirmed 678800.crdownload` (incomplete download artifact)
+
+#### Purpose
+- Separates user experiments from core system documentation
+- Ensures large/generated files are properly gitignored
+- Prepares repository for clean GitHub push
+
+---
+
+### 🤖 CRA Knowledge Alignment Fix (2025-12-06)
+
+Fixed critical CRA misalignment where diagnostic assessments were based on incorrect metric assumptions.
+
+#### Root Causes Identified
+- CRA assumed fitness was normalized 0.0-1.0, but system uses composite weights that can exceed 1.0
+- CRA conflated "active organisms" with "elite organisms" (different concepts)
+- Illumination readiness used wrong threshold calculations
+
+#### Added to CRA_CAPABILITIES.md
+- **Metric Definitions Section**: Explains fitness vs weight vs aggregated fitness
+- **Response Weight Formula**: `weight = fitness × confidence × genetic_modifier`
+- **Population Context Table**: Defines active/elite/historical/responding organisms
+- **Illumination Readiness Criteria**: Composite assessment (not fitness alone)
+
+#### Impact
+- CRA now correctly interprets fitness > 1.0 as valid (elite aggregation)
+- CRA understands elite selection is intentional filtering, not population collapse
+- Readiness assessments use composite criteria instead of single metrics
+
+---
+
+### 💾 Neural Checkpointing System (2025-12-05)
+
+Complete training state persistence with auto-save, rotation, and graceful shutdown.
+
+#### Added
+- **Auto-Save Checkpoints**
+  - Configurable by generation interval (`auto_save_interval_generations`)
+  - Configurable by time interval (`auto_save_interval_minutes`)
+  - Checkpoint rotation to limit disk usage (`max_checkpoints`)
+
+- **Auto-Resume on Startup**
+  - Automatically loads latest checkpoint when `auto_resume: true`
+  - Validates checkpoint compatibility before restore
+
+- **Graceful Shutdown Saves**
+  - Saves checkpoint on Ctrl+C (KeyboardInterrupt)
+  - Saves checkpoint on unexpected exceptions
+  - Works in both `main.py` and `unified_entry.py`
+
+- **API Endpoints**
+  - `GET /api/cra/diagnostics/checkpoint_status` - Health and stats
+  - `POST /api/checkpoint/save` - Force immediate save
+  - `POST /api/checkpoint/restore` - Restore from checkpoint
+  - `GET /api/checkpoint/list` - List all checkpoints with metadata
+
+- **Signal File Trigger**
+  - Create `data/.checkpoint_signal.json` for manual checkpoint trigger
+  - Enables external tools to request checkpoints
+
+- **Config Options** (`neural.checkpointing.*`)
+  - `enabled`: Toggle auto-save
+  - `auto_save_interval_generations`: Save every N generations
+  - `auto_save_interval_minutes`: Save every N minutes
+  - `max_checkpoints`: Rotation limit
+  - `checkpoint_dir`: Storage location
+  - `auto_resume`: Load latest on startup
+
+#### Two-Tier Architecture
+- **NeuralTrainer Checkpoints**: Population-level bulk saves (optimizer, replay buffer, metrics, AtomicConfig learning state)
+- **OrganismCapsuleManager**: Champion "soul" preservation (neural + language + traits)
+
+#### AtomicConfigSystem Persistence (2025-12-06)
+- Checkpoint now saves/restores AtomicConfigSystem learning state
+- Preserves: atom strength (confidence), stability, update_count
+- Values still come from config.json (source of truth) - only learning metadata restored
+
+---
 
 ### 🔬 Netron-Compatible Export Formats (2025-12-05)
 

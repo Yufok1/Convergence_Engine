@@ -2440,12 +2440,86 @@ class UnifiedSystem:
                 
         except KeyboardInterrupt:
             print("\n[UNIFIED] Shutting down gracefully...")
+            # Save neural checkpoint before exit
+            self._save_shutdown_checkpoint("user_interrupt")
             self.logger.log_state('system', {'event': 'shutdown'})
         except Exception as e:
             print(f"\n[UNIFIED] [FAIL] Error: {e}")
             traceback.print_exc()
+            # Try to save checkpoint even on error
+            self._save_shutdown_checkpoint("error_recovery")
             self.logger.log_state('system', {'event': 'error', 'error': str(e)})
     
+    def _save_shutdown_checkpoint(self, reason: str = "shutdown"):
+        """
+        Save a neural checkpoint during graceful shutdown.
+        
+        Called when:
+        - User interrupts with Ctrl+C
+        - An error occurs
+        - Simulation terminates normally
+        
+        Args:
+            reason: Why the checkpoint is being saved (for metadata)
+        """
+        if not self.reality_sim:
+            return
+        
+        neural_trainer = getattr(self.reality_sim, 'neural_trainer', None)
+        if not neural_trainer:
+            return
+        
+        if not getattr(neural_trainer, 'checkpoint_enabled', False):
+            print("[UNIFIED CHECKPOINT] Checkpointing disabled, skipping shutdown save")
+            return
+        
+        network = self.reality_sim.components.get('network')
+        if not network:
+            print("[UNIFIED CHECKPOINT] No network available for shutdown checkpoint")
+            return
+        
+        try:
+            from datetime import datetime
+            import os
+            
+            # Get current generation
+            generation = getattr(network, 'generation', 0)
+            
+            # Create checkpoint directory
+            checkpoint_name = f"checkpoint_{datetime.now().strftime('%Y%m%d_%H%M%S')}_shutdown"
+            checkpoint_path = os.path.join(neural_trainer.checkpoint_dir, checkpoint_name)
+            
+            print(f"\n[UNIFIED CHECKPOINT] Saving shutdown checkpoint...")
+            print(f"  Reason: {reason}")
+            print(f"  Generation: {generation}")
+            
+            success = neural_trainer.save_checkpoint(
+                checkpoint_dir=checkpoint_path,
+                organisms=list(network.organisms.values()),
+                generation=generation,
+                metadata={
+                    'trigger': 'shutdown',
+                    'reason': reason,
+                    'entry_point': 'unified_entry',
+                    'training_step_count': neural_trainer.training_step_count
+                }
+            )
+            
+            if success:
+                print("[UNIFIED CHECKPOINT] ✓ Shutdown checkpoint saved successfully!")
+                # Rotate old checkpoints
+                neural_trainer.rotate_checkpoints(
+                    neural_trainer.checkpoint_dir,
+                    neural_trainer.checkpoint_max_count
+                )
+            else:
+                print("[UNIFIED CHECKPOINT] ⚠ Shutdown checkpoint save returned False")
+                
+        except Exception as e:
+            print(f"[UNIFIED CHECKPOINT] ⚠ Failed to save shutdown checkpoint: {e}")
+            import traceback
+            traceback.print_exc()
+
     def _apply_runtime_config(self, new_config: Dict[str, Any]):
         """Apply runtime configuration updates to live subsystems."""
         if not isinstance(new_config, dict):
