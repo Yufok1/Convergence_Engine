@@ -762,6 +762,30 @@ class ButterflyChatRouter:
             # Track chat experiences
             self.total_chat_experiences += 1
             
+            # ═══════════════════════════════════════════════════════════════════════════
+            # 🆕 GAP 2 FIX: VOCABULARY LEARNING FROM CHAT
+            # Organisms learn words from user messages (low initial strength, must reinforce)
+            # ═══════════════════════════════════════════════════════════════════════════
+            user_words = user_message.lower().split()
+            words_learned = self._learn_words_from_chat(
+                organism=organism,
+                words=user_words,
+                source='chat_heard',
+                network_state=network_state,
+                initial_strength=0.2  # Low strength - must be reinforced
+            )
+            
+            # Strengthen words the organism successfully used in its response
+            if organism_response and len(organism_response.strip()) > 0:
+                response_words = organism_response.lower().split()
+                self._learn_words_from_chat(
+                    organism=organism,
+                    words=response_words,
+                    source='chat_used',
+                    network_state=network_state,
+                    initial_strength=0.3  # Slightly higher - organism actively used it
+                )
+            
             # Trigger training more frequently (every 5 experiences instead of waiting for buffer to fill)
             buffer_size = len(organism.experience_buffer) if hasattr(organism.experience_buffer, '__len__') else 0
             if buffer_size >= 5 and buffer_size % 5 == 0:
@@ -811,6 +835,82 @@ class ButterflyChatRouter:
                 "organism_id": getattr(organism, 'species_id', 'unknown')
             })
             logger.warning(f"Failed to store chat experience for organism: {e}")
+
+    def _learn_words_from_chat(self,
+                                organism: Any,
+                                words: List[str],
+                                source: str,
+                                network_state: Optional[Dict[str, Any]] = None,
+                                initial_strength: float = 0.2) -> int:
+        """
+        Have organism acquire concepts from chat words.
+        
+        This is the KEY FIX for vocabulary learning - organisms now learn words
+        from user chat messages. Words must exist in knowledge_web to be valid concepts.
+        
+        Args:
+            organism: Organism with atomic_language system
+            words: List of words from user message
+            source: Source of learning ('chat_heard', 'chat_used', etc.)
+            network_state: Network state containing knowledge_web reference
+            initial_strength: Starting strength for acquired concepts (low = must be reinforced)
+            
+        Returns:
+            Number of words learned
+        """
+        # Need atomic_language to learn
+        if not hasattr(organism, 'atomic_language') or organism.atomic_language is None:
+            return 0
+        
+        # Get knowledge_web for semantic frame info
+        knowledge_web = None
+        if network_state:
+            context_memory = network_state.get('context_memory')
+            if context_memory and hasattr(context_memory, 'knowledge_web'):
+                knowledge_web = context_memory.knowledge_web
+        
+        learned = 0
+        for word in words:
+            # Clean word
+            word = word.lower().strip()
+            if not word or len(word) < 2:
+                continue
+            
+            # Skip if already known (but strengthen it)
+            if word in organism.atomic_language.atoms:
+                organism.atomic_language.strengthen_concept(
+                    word, 0.03, f"{source}_reinforced"
+                )
+                continue
+            
+            # Get semantic frame from knowledge_web if available
+            semantic_frame = 'unknown'
+            if knowledge_web and hasattr(knowledge_web, 'concepts') and word in knowledge_web.concepts:
+                concept = knowledge_web.concepts[word]
+                semantic_frame = getattr(concept, 'semantic_frame', 'unknown')
+            
+            # Acquire the concept at low strength (must be reinforced through use)
+            try:
+                organism.atomic_language.acquire_concept(
+                    concept_id=word,
+                    source=source,
+                    semantic_frame=semantic_frame,
+                    initial_strength=initial_strength,
+                    reason=f"heard_in_chat"
+                )
+                learned += 1
+                
+                self._log_debug("VOCAB_LEARNING", f"Organism learned word: {word}", {
+                    "organism_id": getattr(organism, 'species_id', 'unknown'),
+                    "word": word,
+                    "source": source,
+                    "strength": initial_strength,
+                    "semantic_frame": semantic_frame
+                })
+            except Exception as e:
+                logger.debug(f"Failed to acquire concept '{word}': {e}")
+        
+        return learned
 
     def _calculate_semantic_reward(self,
                                      user_message: str,

@@ -177,9 +177,18 @@ class AgentCompiler:
         
     def _reconstruct_brain_from_capsule(self, capsule: OrganismCapsule) -> OrganismBrain:
         """
-        Reconstructs the OrganismBrain model from the capsule data.
-        Uses capsule.neural (NeuralSnapshot) for reconstruction.
+        Reconstructs the OrganismBrain model from the capsule data OR
+        extracts the brain directly from a live NeuralOrganism.
+        
+        Handles both:
+        - Live NeuralOrganism objects (have .brain attribute)
+        - OrganismCapsule objects (have .neural attribute)
         """
+        # Check if this is a live organism with a brain attached
+        if hasattr(capsule, 'brain') and capsule.brain is not None:
+            return capsule.brain
+        
+        # Otherwise, it should be a capsule with neural snapshot
         if not hasattr(capsule, 'neural') or not capsule.neural:
             raise ValueError("Capsule does not contain neural network state.")
         
@@ -731,14 +740,22 @@ class AgentCompiler:
         has_language = False
         
         for cap in capsules:
-            if not cap.language:
+            # Handle both capsules (.language) and live organisms (.atomic_language)
+            lang_obj = None
+            if hasattr(cap, 'language') and cap.language:
+                lang_obj = cap.language
+            elif hasattr(cap, 'atomic_language') and cap.atomic_language:
+                lang_obj = cap.atomic_language
+            
+            if not lang_obj:
                 continue
                 
             has_language = True
-            lang_data = cap.language.to_dict() if hasattr(cap.language, 'to_dict') else cap.language
+            lang_data = lang_obj.to_dict() if hasattr(lang_obj, 'to_dict') else lang_obj
             
-            # Track source organism
-            merged['source_organisms'].append(str(cap.organism_id))
+            # Track source organism - handle both capsule.organism_id and organism.species_id
+            org_id = getattr(cap, 'organism_id', None) or getattr(cap, 'species_id', 'unknown')
+            merged['source_organisms'].append(str(org_id))
             
             # Handle LanguageSnapshot format (atoms, concept_order, etc.)
             # OR legacy format (vocabulary, word_frequencies, etc.)

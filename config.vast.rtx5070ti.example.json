@@ -1,6 +1,6 @@
 {
   "_hardware_profile_help": "Set to 'beast', 'workstation', 'standard', 'laptop', 'potato', or 'cpu_only' to override auto-detection. null = auto-detect",
-  "hardware_profile": "workstation",
+  "hardware_profile": "beast",
   "agency": {
     "confidence_threshold": 0.0001,
     "decision_precision": 1e-05,
@@ -103,12 +103,12 @@
     },
     "fitness_precision": 1e-07,
     "genotype_length": 64,
-    "max_generations": 5000,
+    "max_generations": 20000,
     "mutation_rate": {
       "initial": 0.07
     },
     "mutation_rate_precision": 0.001,
-    "population_size": 3000
+    "population_size": 20000
   },
   "feedback": {
     "enabled": true,
@@ -159,6 +159,30 @@
     "weight_lawfulness": 0.15,
     "weight_sustainability": 0.1
   },
+  "hardware": {
+    "max_cuda": 24.0,
+    "vram": "96.0 GB",
+    "dlperf": "1500.0 DLP/$/hr",
+    "network": {
+      "ports": 200,
+      "upload_speed": "1000 Mbps",
+      "download_speed": "2500 Mbps"
+    },
+    "cpu": {
+      "model": "AMD EPYC 9654 96-Core Processor",
+      "cores": 192,
+      "usage": "25%"
+    },
+    "disk": {
+      "model": "SAMSUNG PM1743 7.68TB",
+      "speed": "8000 MB/s"
+    },
+    "motherboard": {
+      "model": "Supermicro H13SSL-NT",
+      "pcie": "5.0/32x",
+      "bandwidth": "64.0 GB/s"
+    }
+  },
   "highlander": {
     "alliance_warfare": {
       "betrayal_chance": 0.05,
@@ -205,7 +229,7 @@
   "lattice": {
     "entropy_sensitivity": 5e-05,
     "interaction_precision": 0.0001,
-    "particles": 3000,
+    "particles": 20000,
     "prune_threshold": 0,
     "stability_tolerance": 0.0005
   },
@@ -264,10 +288,10 @@
   "network": {
     "connection_strength_resolution": 5e-06,
     "emergence_sensitivity": 1e-06,
-    "max_connections": 100000,
-    "max_organisms": 5000,
+    "max_connections": 5000000,
+    "max_organisms": 200000,
     "resource_flow_precision": 0.0001,
-    "resource_pool": 5000,
+    "resource_pool": 200000,
     "stability_precision": 1e-07
   },
   "neural": {

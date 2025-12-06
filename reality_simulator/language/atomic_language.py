@@ -24,7 +24,7 @@ import time
 import logging
 from typing import Dict, List, Optional, Set, Tuple, Any, Callable
 from dataclasses import dataclass, field
-from collections import defaultdict
+from collections import defaultdict, Counter
 import numpy as np
 import json
 
@@ -385,9 +385,15 @@ class AtomicLanguageSystem:
         logger.debug(f"[ATOMIC_LANG] Initialized for organism {organism_id} with {len(self.atoms)} innate concepts")
     
     def _initialize_innate_concepts(self):
-        """Initialize organism with innate (inherited) concepts."""
+        """
+        Initialize organism with innate (inherited) concepts.
+        
+        GAP 1 FIX: Adds randomized extra concepts so organisms start with different
+        vocabularies, enabling dialect emergence and specialization.
+        """
         current_time = time.time()
         
+        # Core innate concepts (all organisms get these)
         for concept_id, info in self.INNATE_CONCEPTS.items():
             atom = LinguisticAtom(
                 concept_id=concept_id,
@@ -409,7 +415,81 @@ class AtomicLanguageSystem:
             if source in self.atoms and target in self.atoms:
                 self.atoms[source].form_association(target, strength, reason, emit_event=False)
         
+        # ═══════════════════════════════════════════════════════════════════════════
+        # 🆕 GAP 1 FIX: RANDOMIZED SEED VOCABULARY
+        # Each organism gets a random subset of additional words, creating diversity
+        # ═══════════════════════════════════════════════════════════════════════════
+        EXTRA_SEED_POOL = {
+            # Movement/Action variations
+            'explore': {'frame': 'action', 'level': 0, 'vp': (0.6, 0.6)},
+            'wander': {'frame': 'action', 'level': 0, 'vp': (0.5, 0.5)},
+            'search': {'frame': 'action', 'level': 0, 'vp': (0.6, 0.5)},
+            'flee': {'frame': 'action', 'level': 0, 'vp': (0.4, 0.3)},
+            'hide': {'frame': 'action', 'level': 0, 'vp': (0.3, 0.4)},
+            'gather': {'frame': 'action', 'level': 0, 'vp': (0.5, 0.6)},
+            'share': {'frame': 'action', 'level': 0, 'vp': (0.5, 0.7)},
+            'trade': {'frame': 'action', 'level': 0, 'vp': (0.5, 0.6)},
+            'defend': {'frame': 'action', 'level': 0, 'vp': (0.6, 0.5)},
+            'protect': {'frame': 'action', 'level': 0, 'vp': (0.6, 0.6)},
+            # Social variations
+            'ally': {'frame': 'relationship', 'level': 0, 'vp': (0.5, 0.7)},
+            'rival': {'frame': 'relationship', 'level': 0, 'vp': (0.6, 0.4)},
+            'leader': {'frame': 'relationship', 'level': 1, 'vp': (0.7, 0.6)},
+            'follower': {'frame': 'relationship', 'level': 1, 'vp': (0.4, 0.5)},
+            'trust': {'frame': 'relationship', 'level': 1, 'vp': (0.5, 0.7)},
+            'betray': {'frame': 'relationship', 'level': 1, 'vp': (0.6, 0.2)},
+            # State variations
+            'strong': {'frame': 'quality', 'level': 0, 'vp': (0.8, 0.6)},
+            'healthy': {'frame': 'quality', 'level': 0, 'vp': (0.7, 0.7)},
+            'tired': {'frame': 'state', 'level': 0, 'vp': (0.2, 0.3)},
+            'alert': {'frame': 'state', 'level': 0, 'vp': (0.7, 0.5)},
+            'calm': {'frame': 'state', 'level': 0, 'vp': (0.4, 0.7)},
+            'anxious': {'frame': 'state', 'level': 0, 'vp': (0.6, 0.3)},
+            'curious': {'frame': 'state', 'level': 0, 'vp': (0.6, 0.6)},
+            'cautious': {'frame': 'state', 'level': 0, 'vp': (0.5, 0.5)},
+            # Environment
+            'territory': {'frame': 'spatial', 'level': 0, 'vp': (0.5, 0.5)},
+            'home': {'frame': 'spatial', 'level': 0, 'vp': (0.5, 0.7)},
+            'boundary': {'frame': 'spatial', 'level': 1, 'vp': (0.5, 0.4)},
+            'path': {'frame': 'spatial', 'level': 0, 'vp': (0.5, 0.5)},
+            # Resources
+            'abundance': {'frame': 'resource', 'level': 1, 'vp': (0.6, 0.8)},
+            'scarcity': {'frame': 'resource', 'level': 1, 'vp': (0.4, 0.3)},
+            'opportunity': {'frame': 'resource', 'level': 1, 'vp': (0.6, 0.7)},
+            'threat': {'frame': 'state', 'level': 0, 'vp': (0.5, 0.2)},
+            # Outcomes
+            'success': {'frame': 'outcome', 'level': 1, 'vp': (0.7, 0.8)},
+            'failure': {'frame': 'outcome', 'level': 1, 'vp': (0.3, 0.2)},
+            'growth': {'frame': 'outcome', 'level': 1, 'vp': (0.7, 0.7)},
+            'decay': {'frame': 'outcome', 'level': 1, 'vp': (0.3, 0.3)},
+        }
+        
+        # Each organism gets 5-15 random extra words for vocabulary variation
+        num_extra = np.random.randint(5, 16)
+        extra_concepts = list(EXTRA_SEED_POOL.keys())
+        np.random.shuffle(extra_concepts)
+        selected_extras = extra_concepts[:num_extra]
+        
+        for concept_id in selected_extras:
+            if concept_id not in self.atoms:  # Don't duplicate
+                info = EXTRA_SEED_POOL[concept_id]
+                atom = LinguisticAtom(
+                    concept_id=concept_id,
+                    strength=0.3 + np.random.uniform(-0.1, 0.1),  # Lower than core
+                    source='innate_varied',
+                    semantic_frame=info['frame'],
+                    abstraction_level=info['level'],
+                    acquisition_time=current_time,
+                    vp_vitality_affinity=info['vp'][0],
+                    vp_pleasure_affinity=info['vp'][1]
+                )
+                atom._event_emitter = self.event_emitter
+                atom._organism_id = self.organism_id
+                self.atoms[concept_id] = atom
+                self._concept_order.append(concept_id)
+        
         self.total_concepts_acquired = len(self.atoms)
+
     
     def acquire_concept(self, concept_id: str, source: str, semantic_frame: str = 'unknown',
                        initial_strength: float = 0.3, reason: str = "acquired") -> LinguisticAtom:

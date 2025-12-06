@@ -2100,6 +2100,50 @@ class SymbioticNetwork:
                     'edge_strength': edge_data.get('strength', 0.5)
                 })
                 
+                # ═══════════════════════════════════════════════════════════════════════════
+                # 🆕 GAP 4 FIX: CONCEPT TEACHING DURING TOKEN EXCHANGE
+                # When organisms exchange tokens, they also teach each other concepts!
+                # ═══════════════════════════════════════════════════════════════════════════
+                if hasattr(org_a, 'atomic_language') and hasattr(org_b, 'atomic_language'):
+                    if org_a.atomic_language and org_b.atomic_language:
+                        try:
+                            # Get strongest concepts from each organism to teach
+                            edge_strength = edge_data.get('strength', 0.5)
+                            teaching_strength = edge_strength * 0.3  # Scale by connection strength
+                            
+                            # A teaches B their strongest concepts
+                            a_concepts = sorted(
+                                org_a.atomic_language.atoms.items(),
+                                key=lambda x: x[1].strength,
+                                reverse=True
+                            )[:3]  # Top 3 concepts
+                            
+                            for concept_id, atom in a_concepts:
+                                org_a.atomic_language.teach_concept(
+                                    concept_id, 
+                                    org_b.atomic_language,
+                                    teaching_strength=teaching_strength
+                                )
+                            
+                            # B teaches A their strongest concepts
+                            b_concepts = sorted(
+                                org_b.atomic_language.atoms.items(),
+                                key=lambda x: x[1].strength,
+                                reverse=True
+                            )[:3]
+                            
+                            for concept_id, atom in b_concepts:
+                                org_b.atomic_language.teach_concept(
+                                    concept_id,
+                                    org_a.atomic_language, 
+                                    teaching_strength=teaching_strength
+                                )
+                            
+                            if len(a_concepts) > 0 or len(b_concepts) > 0:
+                                exchanges[-1]['concepts_taught'] = len(a_concepts) + len(b_concepts)
+                        except Exception as e:
+                            logging.debug(f"Concept teaching failed: {e}")
+                
                 # Only emit organism_communication event for very significant exchanges (quality over quantity)
                 # Match ML event selectivity - only meaningful communications
                 if self.ml_event_emitter and tokens_exchanged > 0:
