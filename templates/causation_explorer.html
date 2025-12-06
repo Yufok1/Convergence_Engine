@@ -15269,8 +15269,16 @@
                         if (data.checkpoints && data.checkpoints.length > 0) {
                             let html = '';
                             data.checkpoints.forEach((cp, idx) => {
-                                const date = new Date(cp.timestamp * 1000);
-                                const timeStr = date.toLocaleString();
+                                // Handle both ISO string and Unix timestamp
+                                let timeStr = 'Unknown';
+                                if (cp.timestamp) {
+                                    const date = typeof cp.timestamp === 'number' 
+                                        ? new Date(cp.timestamp * 1000)
+                                        : new Date(cp.timestamp);
+                                    if (!isNaN(date.getTime())) {
+                                        timeStr = date.toLocaleString();
+                                    }
+                                }
                                 const isLatest = idx === 0;
                                 html += `
                                     <div style="padding: 5px; margin-bottom: 5px; background: ${isLatest ? '#020' : '#000'}; border: 1px solid ${isLatest ? '#0f0' : '#040'}; font-size: 0.8em;">

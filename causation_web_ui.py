@@ -12572,10 +12572,12 @@ def cra_get_checkpoint_status():
                     result['enabled'] = checkpoint_config.get('enabled', False)
                     result['auto_resume'] = checkpoint_config.get('auto_resume', True)
                     result['config'] = {
-                        'interval_generations': checkpoint_config.get('interval_generations', 50),
-                        'interval_time_seconds': checkpoint_config.get('interval_time_seconds', 300),
+                        'interval_generations': checkpoint_config.get('auto_save_interval_generations', 
+                                                checkpoint_config.get('interval_generations', 100)),
+                        'interval_time_seconds': checkpoint_config.get('auto_save_interval_minutes', 30) * 60,
                         'max_checkpoints': checkpoint_config.get('max_checkpoints', 10),
-                        'base_directory': checkpoint_config.get('base_directory', 'data/neural_checkpoints')
+                        'base_directory': checkpoint_config.get('checkpoint_dir', 
+                                          checkpoint_config.get('base_directory', 'data/neural_checkpoints'))
                     }
             except Exception as e:
                 logger.debug(f"Could not read checkpoint config: {e}")
