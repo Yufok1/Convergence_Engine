@@ -152,6 +152,28 @@ class AgentCompiler:
         if hasattr(entity, 'species_id'):
             return str(entity.species_id)
         return "unknown"
+    
+    def _get_capsule_from_entity(self, entity) -> Optional[OrganismCapsule]:
+        """
+        Get capsule from an entity, handling both live organisms and capsules.
+        
+        Args:
+            entity: Either a NeuralOrganism (live) or OrganismCapsule (saved)
+            
+        Returns:
+            OrganismCapsule if the entity is a capsule, or None if it's a live organism
+            (since live organisms don't have capsule-specific data like atomic_language_state)
+        """
+        # If it's already a capsule (has capsule-specific attributes), return it
+        if isinstance(entity, OrganismCapsule):
+            return entity
+        
+        # Check for capsule-like attributes (atomic_language_state is capsule-specific)
+        if hasattr(entity, 'atomic_language_state') or hasattr(entity, 'neural'):
+            return entity
+        
+        # It's a live organism without capsule data
+        return None
         
     def _reconstruct_brain_from_capsule(self, capsule: OrganismCapsule) -> OrganismBrain:
         """
@@ -3388,7 +3410,7 @@ if __name__ == '__main__':
                 organism_names=organism_names,
                 brain_configs=brain_configs,
                 metadata={
-                    'generated': datetime.now().isoformat(),
+                    'generated': datetime.datetime.now().isoformat(),
                     'template_size': f"{len(cocoon_source):,} chars",
                     'num_organisms': len(capsules),
                 },
@@ -3434,9 +3456,9 @@ if __name__ == '__main__':
                 
                 # 2. ALL SUBSYSTEMS as JSON
                 subsystems = {
-                    'atomic_language': atomic_lang_state if atomic_lang_state else {},
-                    'conversation_history': conversation_state if conversation_state else {},
-                    'knowledge_web': kw_state,
+                    'atomic_language': atomic_lang_data if atomic_lang_data else {},
+                    'conversation_history': conversation_data if conversation_data else {},
+                    'knowledge_web': kw_data,
                     'vp_config': {
                         'vigilance_base': 0.5,
                         'plasticity_base': 0.5,
@@ -3451,11 +3473,11 @@ if __name__ == '__main__':
                 logger.info(f"[ONNX] ✅ Subsystems: AtomicLang, KnowledgeWeb, ConvHistory, VP, ExpBuffer")
                 
                 # 3. Vocabulary
-                zf.writestr('vocabulary.json', json.dumps(vocabulary or {}, indent=2))
+                zf.writestr('vocabulary.json', vocab_json)
                 
                 # 4. Metadata
                 metadata = {
-                    'generated': datetime.now().isoformat(),
+                    'generated': datetime.datetime.now().isoformat(),
                     'organism_id': self._get_organism_id(capsules[0]),
                     'brain_config': {
                         'input_dim': getattr(brain, 'input_dim', 24),
@@ -3514,9 +3536,9 @@ if __name__ == '__main__':
                 
                 # 2. ALL SUBSYSTEMS as JSON (the missing pieces!)
                 subsystems = {
-                    'atomic_language': atomic_lang_state if atomic_lang_state else {},
-                    'conversation_history': conversation_state if conversation_state else {},
-                    'knowledge_web': kw_state,
+                    'atomic_language': atomic_lang_data if atomic_lang_data else {},
+                    'conversation_history': conversation_data if conversation_data else {},
+                    'knowledge_web': kw_data,
                     'vp_config': {
                         'vigilance_base': 0.5,
                         'plasticity_base': 0.5,
@@ -3535,11 +3557,11 @@ if __name__ == '__main__':
                 logger.info(f"[TORCHSCRIPT] ✅ Subsystems: AtomicLang, KnowledgeWeb, ConvHistory, VP, ExpBuffer")
                 
                 # 3. Vocabulary
-                zf.writestr('vocabulary.json', json.dumps(vocabulary or {}, indent=2))
+                zf.writestr('vocabulary.json', vocab_json)
                 
                 # 4. Metadata
                 metadata = {
-                    'generated': datetime.now().isoformat(),
+                    'generated': datetime.datetime.now().isoformat(),
                     'organism_id': self._get_organism_id(capsules[0]),
                     'organism_count': len(capsules),
                     'brain_config': {

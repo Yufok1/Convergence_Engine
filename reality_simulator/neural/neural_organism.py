@@ -15,6 +15,9 @@ import numpy as np
 from typing import Dict, Any, Optional, List, Tuple
 from dataclasses import field
 from collections import deque
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Import base Organism class
 try:
