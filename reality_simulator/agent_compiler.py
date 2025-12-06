@@ -6233,14 +6233,46 @@ class CocoonAgent:
         return new_id
 
     def learn_from_text(self, text: str, context_state: Optional[np.ndarray] = None,
-                        reward: float = 0.0, vp_value: Optional[float] = None):
-        """Learn from text input - adds new words and creates training experience."""
+                        reward: float = 0.0, vp_value: Optional[float] = None,
+                        filter_by_knowledge_web: bool = True):
+        """Learn from text input - adds valid words and creates training experience.
+        
+        Args:
+            text: Input text to learn from
+            context_state: Optional state vector for experience
+            reward: Reward signal for this experience
+            vp_value: Violation pressure value
+            filter_by_knowledge_web: If True, only learn words that exist in knowledge_web
+                                     (matching butterfly_chat's gating behavior)
+        """
         words = text.lower().split()
         tokens = []
+        learned_count = 0
+        
+        # Get knowledge_web concepts for filtering
+        kw_concepts = self.knowledge_web.get('concepts', {}) if filter_by_knowledge_web else None
+        
         for word in words:
-            # Add word if new
-            token_id = self.add_word(word)
+            # Clean word (remove punctuation)
+            clean_word = ''.join(c for c in word if c.isalnum())
+            if len(clean_word) < 2:
+                continue
+                
+            # Gate: only learn words in knowledge_web (matching butterfly_chat)
+            if kw_concepts is not None and clean_word not in kw_concepts:
+                # Word not in knowledge_web - still tokenize but don't add to vocab
+                word_to_id = self.vocabulary.get('word_to_id', {})
+                token_id = word_to_id.get(clean_word, word_to_id.get('<UNK>', 1))
+                tokens.append(token_id)
+                continue
+            
+            # Word passes knowledge_web gate - learn it
+            token_id = self.add_word(clean_word)
             tokens.append(token_id)
+            learned_count += 1
+        
+        if learned_count > 0 and filter_by_knowledge_web:
+            print(f"[LEARN] Learned {learned_count}/{len(words)} words (knowledge_web gated)")
         
         # Create experience with language targets
         if context_state is None:
@@ -7225,10 +7257,24 @@ Examples:
             agent.conversation.add_message('user', user_input)
             agent.conversation.add_message('assistant', final_response)
             
-            # Learn concepts from exchange
+            # Learn concepts from exchange (matching butterfly_chat's vocabulary learning)
+            # Words HEARD from user: acquire with lower strength
             for word in user_input.lower().split():
-                if len(word) > 2:
-                    agent.atomic_language.acquire_concept(word, source='user_input')
+                clean_word = ''.join(c for c in word if c.isalnum())
+                if len(clean_word) > 2:
+                    agent.atomic_language.acquire_concept(clean_word, source='chat_heard', 
+                                                          initial_strength=0.2)
+            
+            # Gap 3 Fix: Words USED in response get higher strength (rewarding active vocabulary use)
+            for word in final_response.lower().split():
+                clean_word = ''.join(c for c in word if c.isalnum())
+                if len(clean_word) > 2:
+                    # Strengthen if already known, acquire if new
+                    if hasattr(agent.atomic_language, 'atoms') and clean_word in agent.atomic_language.atoms:
+                        agent.atomic_language.strengthen_concept(clean_word, 0.03, "chat_used")
+                    else:
+                        agent.atomic_language.acquire_concept(clean_word, source='chat_used',
+                                                              initial_strength=0.3)
             
             # Train on accumulated experiences
             if len(agent.experience_buffers[0]) >= agent.batch_size:
