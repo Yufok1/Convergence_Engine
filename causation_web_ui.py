@@ -169,6 +169,94 @@ PATH_SEGMENT_ALIASES = {
     'inheritanceblend': 'inheritance_blend'
 }
 
+# ═══════════════════════════════════════════════════════════════════════
+# 🚫 BLOCKED PATHS - CRA CANNOT MODIFY THESE
+# ═══════════════════════════════════════════════════════════════════════
+# These paths are critical for system stability and MUST NOT be changed
+# via runtime config updates. Modifications break butterfly chat, cocoon
+# export, and capsule creation due to GPU/weight mismatches.
+# ═══════════════════════════════════════════════════════════════════════
+
+BLOCKED_PATHS = {
+    # GPU and Device Settings - CRITICAL: Changing breaks cocoon/capsule
+    '/neural/device',
+    '/neural/brain/input_dim',
+    '/neural/brain/hidden_dim',
+    '/neural/brain/output_dim',
+    '/neural/brain/vocab_size',
+    '/neural/brain/activation',
+    '/neural/brain/dropout',
+    
+    # Training Settings - CRITICAL: Changing affects weight shapes
+    '/neural/training/batch_size',
+    '/neural/training/memory_size',
+    '/neural/training/learning_rate',
+    '/neural/training/gamma',
+    '/neural/training/epsilon_start',
+    '/neural/training/epsilon_end',
+    '/neural/training/epsilon_decay',
+    '/neural/training/target_update_frequency',
+    '/neural/training/gradient_clip',
+    
+    # Concept System - CRITICAL: Affects brain architecture
+    '/neural/concept_system/enabled',
+    '/neural/concept_system/embed_dim',
+    '/neural/concept_system/num_key_compositions',
+    
+    # Language Model - CRITICAL: Affects weight shapes and export
+    '/neural/language_model/enabled',
+    '/neural/language_model/vocabulary/max_size',
+    '/neural/language_model/sequence/context_window',
+    
+    # Inheritance - CRITICAL: Affects weight transfer
+    '/neural/inheritance/enabled',
+    '/neural/inheritance/mutation_rate',
+    '/neural/inheritance/crossover_rate',
+    
+    # Export Settings - CRITICAL: Required for cocoon/capsule
+    '/neural/export/format',
+    '/neural/export/include_optimizer',
+    '/neural/export/use_scripted_inference',
+    '/neural/export/compile_mode',
+}
+
+BLOCKED_PATHS_REASON = """
+⛔ **Configuration Locked**
+
+The following neural network and GPU settings are **permanently locked** and cannot be modified via runtime configuration updates:
+
+- **GPU/Device Settings** (`neural.device`, `neural.brain.*`)
+- **Training Parameters** (`neural.training.*`)  
+- **Brain Architecture** (`neural.brain.input_dim`, `hidden_dim`, etc.)
+- **Export Settings** (`neural.export.*`)
+
+**Why These Are Locked:**
+Modifying these settings causes critical mismatches between:
+1. Trained neural network weights (already saved to disk)
+2. Brain architecture expected by `unified_entry.py` and butterfly chat
+3. Exported cocoon/capsule packages (ONNX/TorchScript format)
+
+**What Happens If Changed:**
+- ❌ Butterfly chat fails to load organisms
+- ❌ Cocoon export crashes with dimension mismatch  
+- ❌ Capsule creation fails
+- ❌ All trained neural weights become invalid
+
+**How To Change These:**
+1. Stop the simulation completely
+2. Clear all neural data: `python clear_all_data.py --neural-only`
+3. Edit `config.json` manually
+4. Restart simulation from scratch
+
+**You CAN still modify:**
+- Causation detection settings
+- Evolution parameters (mutation rates, etc.)
+- Network topology (max_connections, etc.)
+- Feedback knobs
+- VP monitoring settings
+- All non-neural configurations
+"""
+
 CONFIG_GUARDRAILS = {
     '/feedback/knobs/mutation_rate/initial': {
         'min': 0.001,
@@ -1066,6 +1154,16 @@ class ConfigManager:
                     raise ValueError("Each patch operation requires 'op' and 'path'")
 
                 normalized_path, segments = self._normalize_path(path)
+                
+                # 🚫 BLOCKED PATH CHECK - Prevent modifying critical neural/GPU settings
+                if normalized_path in BLOCKED_PATHS:
+                    blocked_paths_list = '\n'.join(f"  - {p}" for p in sorted(BLOCKED_PATHS))
+                    raise ValueError(
+                        f"❌ Configuration path '{normalized_path}' is BLOCKED and cannot be modified via runtime updates.\\n\\n"
+                        f"{BLOCKED_PATHS_REASON}\\n\\n"
+                        f"All Blocked Paths:\\n{blocked_paths_list}"
+                    )
+                
                 previous_value = None
                 try:
                     previous_value = self._get_value(working, segments)
@@ -2743,7 +2841,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "      * Neural link color controlled by `linkColor_neural` setting (check current value in graph context or viz settings)\n"
         prompt += "    - **Autonomous Control**: You can adjust `componentColor_neural` and `linkColor_neural` via [[VIZ_SETTINGS_UPDATE: {...}]] to change colors dynamically\n"
         prompt += "    - **Causation Links**: Neural decisions connect to actions showing thought → action causality on the graph\n"
-        prompt += "    - **Configuration Control**: You can manipulate ALL neural parameters via CONFIG_UPDATE (see section 7 below)\n"
+        prompt += "    - **Configuration Control**: You can manipulate SOME neural parameters via CONFIG_UPDATE (many are BLOCKED - see section 7 below)\n"
         prompt += "    - **Neural-ML Symbiosis** ⭐ NEW - Three bidirectional integrations creating emergent language comprehension:\n"
         prompt += "      * **Integration 1: Neural Embeddings → ML Features**: Neural semantic embeddings (64-dim from fc2 hidden state) replace behavioral features for clustering when `use_neural_embeddings=true`. Enables semantic population clustering (organisms grouped by understanding, not just behavior). Config: `/scikit/clustering/use_neural_embeddings` (true/false, default: false).\n"
         prompt += "      * **Integration 2: ML Feature Importance → Neural Rewards**: ML identifies words that predict fitness (via feature selection), neural organisms rewarded for using these words. Creates functional vocabulary emergence. Events: `neural_language_reward` (when organisms receive language rewards). Config: `/neural/training/language_reward_scaling` (0.0-1.0, default: 0.2).\n"
@@ -3230,7 +3328,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "   - After you issue a config update, monitor diagnostics (VP history, network trends, exploration ratio) and explain whether the change produced the intended effect.\n"
         prompt += "   - To revert changes, use [[CONFIG_ROLLBACK: {\"steps\": 1, \"reason\": \"Undo plan alpha\"}]] — up to 10 historical snapshots are retained.\n"
         prompt += "   - Summaries of your actions should describe the parameter, the old → new value, and the expected behavioral shift.\n\n"
-        prompt += "   - **🧠 NEURAL SYSTEM CONFIGURATION CONTROL**: You can manipulate ALL neural system parameters:\n"
+        prompt += "   - **🧠 NEURAL SYSTEM CONFIGURATION CONTROL** (⚠️ MOST PATHS BLOCKED - see BLOCKED_PATHS): Only `/neural/enabled` and `/neural/rewards/*` are allowed. All other neural paths are BLOCKED to prevent breaking butterfly chat and cocoon export:\n"
         prompt += "     * **Enable/Disable**: `/neural/enabled` (true/false) - Turn neural system on/off\n"
         prompt += "     * **Device**: `/neural/device` (\"cpu\" or \"cuda\") - Select computation device\n"
         prompt += "     * **Brain Architecture**:\n"

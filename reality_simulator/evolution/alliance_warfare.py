@@ -1271,13 +1271,68 @@ class AllianceWarfareSystem:
     # 🔮 ILLUMINATION ENGINE - CIVILIZATION CAPABILITY SYSTEM
     # ═══════════════════════════════════════════════════════════════════════
     
+    def sync_alliance_state(self, alliance_id: str, alliance_data: Dict[str, Any]) -> None:
+        """
+        Synchronize alliance state from HighlanderProtocol to AllianceWarfareSystem.
+        
+        Called whenever an alliance is formed, updated, or dissolved in Highlander.
+        This ensures AllianceWarfareSystem has current information for stability tracking.
+        
+        Args:
+            alliance_id: Unique alliance identifier
+            alliance_data: {
+                'members': List[str],           # Organism IDs in alliance
+                'formation_round': int,         # When alliance was formed
+                'stability_rounds': int,        # How many rounds survived
+                'confederation_id': str | None, # If part of confederation
+                'war_count': int,              # Wars engaged in
+                'betrayal_count': int          # Members who left
+            }
+        """
+        # Ensure alliance object exists
+        if alliance_id not in self.alliances:
+            members_list = list(alliance_data.get('members', []))
+            founder_id = members_list[0] if members_list else 'unknown'
+            
+            # Create a localized PlanetaryAlliance stub
+            # We assume PlanetaryAlliance is defined in this module
+            new_alliance = PlanetaryAlliance(
+                alliance_id=alliance_id,
+                name=f"Alliance {alliance_id[-6:]}",
+                founder_id=founder_id
+            )
+            self.alliances[alliance_id] = new_alliance
+
+        alliance = self.alliances[alliance_id]
+        
+        # Update members
+        # We need to preserve roles if possible, or just reset to MEMBER if new
+        sync_members = set(alliance_data.get('members', []))
+        
+        # Remove old members
+        current_members = list(alliance.members.keys())
+        for member_id in current_members:
+            if member_id not in sync_members:
+                del alliance.members[member_id]
+        
+        # Add new members
+        for member_id in sync_members:
+            if member_id not in alliance.members:
+                alliance.members[member_id] = AllianceRole.MEMBER
+        
+        # Monkey-patch stability data (PlanetaryAlliance doesn't have stability_rounds field by default)
+        alliance.stability_rounds = alliance_data.get('stability_rounds', 0)
+        
+        # Automatically check and grant illumination based on new state
+        self.check_and_grant_illumination(alliance_id)
+
     def check_and_grant_illumination(self, alliance_id: str) -> List[str]:
         """
         Check if alliance meets thresholds for Illumination Engine access.
         
-        The Illumination Engine is the reward for CIVILIZATION.
-        Organisms cannot access causation data alone - they ARE the state.
-        But through organization, they earn the ability to SEE.
+        Criteria:
+        1. **Stability:** Alliance must persist for N rounds.
+        2. **Complexity:** Member count and Confederation status.
         
         Returns:
             List of newly granted capabilities
@@ -1288,7 +1343,10 @@ class AllianceWarfareSystem:
         
         capabilities = self.alliance_capabilities.setdefault(alliance_id, set())
         newly_granted = []
+        
+        # Get data (handling both Dataclass and potential Dict sync)
         member_count = len(alliance.members)
+        stability_rounds = getattr(alliance, 'stability_rounds', 0)
         
         # Check confederation tier
         confederation_id = self.alliance_to_confederation.get(alliance_id)
@@ -1298,77 +1356,108 @@ class AllianceWarfareSystem:
             if conf:
                 conf_tier = conf.tier.value
         
-        # Basic Causation - 3+ members
-        if member_count >= 3 and 'illumination_basic' not in capabilities:
-            capabilities.add('illumination_basic')
+        # Get config thresholds
+        min_size = self.config.get('min_alliance_size', 3)
+        basic_stability = self.config.get('illumination_stability_threshold', 5)
+        
+        # 1. Basic Causation: Min size, Basic stability
+        if member_count >= min_size and stability_rounds >= basic_stability and 'illumination_basic' not in capabilities:
+            self.unlock_causation_for_alliance(alliance_id, 'illumination_basic')
             newly_granted.append('illumination_basic')
-            self._emit_event('illumination_granted', {
-                'alliance': alliance.name,
-                'alliance_id': alliance_id,
-                'capability': 'illumination_basic',
-                'capability_name': 'Basic Causation',
-                'threshold': 'members >= 3',
-                'description': 'Organisms can now see their own causal chain'
-            })
-            self.logger.info(f"🔮 {alliance.name} UNLOCKED: Basic Causation (3+ members)")
-        
-        # Alliance Insight - 5+ members
-        if member_count >= 5 and 'illumination_alliance' not in capabilities:
-            capabilities.add('illumination_alliance')
+            
+        # 2. Alliance Insight: Min size + 2, Basic stability * 2
+        if member_count >= (min_size + 2) and stability_rounds >= (basic_stability * 2) and 'illumination_alliance' not in capabilities:
+            self.unlock_causation_for_alliance(alliance_id, 'illumination_alliance')
             newly_granted.append('illumination_alliance')
-            self._emit_event('illumination_granted', {
-                'alliance': alliance.name,
-                'alliance_id': alliance_id,
-                'capability': 'illumination_alliance',
-                'capability_name': 'Alliance Insight',
-                'threshold': 'members >= 5',
-                'description': 'Organisms can see alliance-wide causation patterns'
-            })
-            self.logger.info(f"🔮 {alliance.name} UNLOCKED: Alliance Insight (5+ members)")
-        
-        # Confederation Vision - Part of confederation
-        if conf_tier >= 1 and 'illumination_confederation' not in capabilities:
-            capabilities.add('illumination_confederation')
+
+        # 3. Confederation Vision: Tier 1+, Basic stability * 3
+        if conf_tier >= 1 and stability_rounds >= (basic_stability * 3) and 'illumination_confederation' not in capabilities:
+            self.unlock_causation_for_alliance(alliance_id, 'illumination_confederation')
             newly_granted.append('illumination_confederation')
-            self._emit_event('illumination_granted', {
-                'alliance': alliance.name,
-                'alliance_id': alliance_id,
-                'capability': 'illumination_confederation',
-                'capability_name': 'Confederation Vision',
-                'threshold': 'confederation_tier >= 1',
-                'description': 'Organisms gain cross-alliance causation visibility'
-            })
-            self.logger.info(f"🔮 {alliance.name} UNLOCKED: Confederation Vision")
-        
-        # Imperial Foresight - Empire tier
+
+        # 4. Imperial Foresight: Tier 2+
         if conf_tier >= 2 and 'illumination_empire' not in capabilities:
-            capabilities.add('illumination_empire')
+            self.unlock_causation_for_alliance(alliance_id, 'illumination_empire')
             newly_granted.append('illumination_empire')
-            self._emit_event('illumination_granted', {
-                'alliance': alliance.name,
-                'alliance_id': alliance_id,
-                'capability': 'illumination_empire',
-                'capability_name': 'Imperial Foresight',
-                'threshold': 'confederation_tier >= 2 (Empire)',
-                'description': 'Deep root cause analysis and impact prediction'
-            })
-            self.logger.info(f"🔮 {alliance.name} UNLOCKED: Imperial Foresight (Empire tier)")
-        
-        # Hegemonic Omniscience - Hegemony tier
+
+        # 5. Hegemonic Omniscience: Tier 3+
         if conf_tier >= 3 and 'illumination_hegemony' not in capabilities:
-            capabilities.add('illumination_hegemony')
+            self.unlock_causation_for_alliance(alliance_id, 'illumination_hegemony')
             newly_granted.append('illumination_hegemony')
-            self._emit_event('illumination_granted', {
-                'alliance': alliance.name,
-                'alliance_id': alliance_id,
-                'capability': 'illumination_hegemony',
-                'capability_name': 'Hegemonic Omniscience',
-                'threshold': 'confederation_tier >= 3 (Hegemony)',
-                'description': 'Complete omniscience - all causation data accessible'
-            })
-            self.logger.info(f"🔮 {alliance.name} UNLOCKED: Hegemonic Omniscience (Hegemony tier)")
-        
+            
         return newly_granted
+
+    def unlock_causation_for_alliance(self, alliance_id: str, illumination_tier: str) -> None:
+        """
+        Grant Causation Illumination to all members of an alliance.
+        
+        Args:
+            alliance_id: Alliance to grant illumination to
+            illumination_tier: Capability string identifier
+        """
+        if alliance_id not in self.alliances:
+            return
+            
+        alliance = self.alliances[alliance_id]
+        capabilities = self.alliance_capabilities.setdefault(alliance_id, set())
+        capabilities.add(illumination_tier)
+        
+        # Map capability to simple tier name for organisms
+        tier_map = {
+            'illumination_basic': 'basic',
+            'illumination_alliance': 'alliance', 
+            'illumination_confederation': 'confederation',
+            'illumination_empire': 'empire',
+            'illumination_hegemony': 'hegemony'
+        }
+        simple_tier = tier_map.get(illumination_tier, 'basic')
+        
+        self.logger.info(f"🔮 [{alliance.name}] UNLOCKED: {simple_tier.upper()} Causation (Stability: {getattr(alliance, 'stability_rounds', 0)})")
+        
+        # Update each organism's illumination level
+        # We need to access organisms via HighlanderProtocol
+        if self.highlander_protocol:
+            for organism_id in alliance.members:
+                # We need a way to get the organism object
+                # HighlanderProtocol doesn't standardly expose get_organism yet, 
+                # but we will add it or access the list directly.
+                organism = self._get_organism(organism_id)
+                if organism and hasattr(organism, '_illumination_level'):
+                    # Only upgrade
+                    tier_ranks = {'none': 0, 'basic': 1, 'alliance': 2, 'confederation': 3, 'empire': 4, 'hegemony': 5}
+                    current_rank = tier_ranks.get(organism._illumination_level, 0)
+                    new_rank = tier_ranks.get(simple_tier, 0)
+                    
+                    if new_rank > current_rank:
+                        organism._illumination_level = simple_tier
+                        # Also refresh references just in case
+                        if hasattr(organism, 'set_system_references'):
+                             organism.set_system_references(
+                                 alliance_warfare=self,
+                                 causation_explorer=self.event_emitter.__self__ if hasattr(self.event_emitter, '__self__') else None
+                             )
+
+        # Emit event to CausationExplorer
+        self._emit_event('illumination_unlocked', {
+            'alliance': alliance.name,
+            'alliance_id': alliance_id,
+            'capability': illumination_tier,
+            'tier': simple_tier,
+            'member_count': len(alliance.members),
+            'stability_rounds': getattr(alliance, 'stability_rounds', 0)
+        })
+
+    def _get_organism(self, organism_id: str):
+        """Retrieve organism by ID from HighlanderProtocol."""
+        if self.highlander_protocol:
+            # Try method first
+            if hasattr(self.highlander_protocol, 'get_organism'):
+                return self.highlander_protocol.get_organism(organism_id)
+            # Try raw access (fallback)
+            if hasattr(self.highlander_protocol, 'active_organisms'):
+                 # active_organisms is usually a Set[str], so we can't get the object
+                 pass
+        return None
     
     def get_organism_illumination_level(self, organism_id: str) -> Dict[str, Any]:
         """

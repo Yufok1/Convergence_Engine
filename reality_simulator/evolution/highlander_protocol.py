@@ -125,6 +125,7 @@ class Alliance:
     """
     members: Set[str]
     formation_time: float
+    formation_round: int = 0  # Round when alliance was formed
     strength: float = 1.0  # Alliance cohesion
     shared_concepts: Set[str] = field(default_factory=set)
     betrayal_count: int = 0
@@ -291,6 +292,35 @@ class HighlanderProtocol:
         self.on_champion_callback: Optional[Callable] = None
         self.on_round_complete_callback: Optional[Callable] = None
     
+    def set_alliance_warfare_system(self, alliance_warfare_system) -> None:
+        """
+        Wire AllianceWarfareSystem into HighlanderProtocol.
+        
+        Called during unified_entry.py initialization to establish the bidirectional link.
+        """
+        self.alliance_warfare = alliance_warfare_system
+        self.logger.info("🔗 AllianceWarfareSystem linked to HighlanderProtocol")
+
+    def get_organism(self, organism_id: str):
+        """
+        Retrieve organism by ID for AllianceWarfareSystem to access.
+        
+        Needed because AllianceWarfareSystem.unlock_causation_for_alliance()
+        must be able to get organisms to set their _illumination_level.
+        """
+        # We need to access the organisms dict passed to run_round usually.
+        # But Highlander doesn't persist the full organism objects in self.
+        # It gets them in run_round.
+        # However, we might have a reference if integrated.
+        # For now, we'll try to use a stored reference if we add one, 
+        # or rely on the fact that run_round calls are active.
+        
+        # NOTE: This is a limitation. If get_organism is called OUTSIDE run_round,
+        # we might fail. But Illumination grant happens DURING run_round (via sync).
+        # So we can store a temporary reference in run_round?
+        # Or rely on `self.active_organisms_ref` from run_round.
+        return getattr(self, '_current_round_organisms', {}).get(organism_id)
+
     def register_organism(self, organism_id: str, initial_fitness: float = 0.5):
         """Register an organism in the protocol."""
         if organism_id not in self.organism_stats:
@@ -348,6 +378,9 @@ class HighlanderProtocol:
         Returns:
             Round results with battles, eliminations, etc.
         """
+        # Store organisms reference for get_organism() calls during this round
+        self._current_round_organisms = organisms
+        
         self.round_number += 1
         self.round_start_time = time.time()
         
@@ -1058,6 +1091,20 @@ class HighlanderProtocol:
             'linguistic_traits_inherited': linguistic_traits_inherited,
             'inheritance_details': linguistic_inheritance
         })
+        
+        # [NEW] Sync updated alliance state if loser was in an alliance
+        if loser_id in self.organism_stats:
+            alliance_id = self.organism_stats[loser_id].alliance_id
+            if alliance_id and alliance_id in self.alliances and hasattr(self, 'alliance_warfare') and self.alliance_warfare:
+                alliance = self.alliances[alliance_id]
+                self.alliance_warfare.sync_alliance_state(alliance_id, {
+                    'members': list(alliance.members),
+                    'formation_round': getattr(alliance, 'formation_round', self.round_number),
+                    'stability_rounds': max(0, self.round_number - getattr(alliance, 'formation_round', self.round_number)),
+                    'confederation_id': None,
+                    'war_count': alliance.total_battles_won,
+                    'betrayal_count': alliance.betrayal_count
+                })
     
     def _inherit_linguistic_traits(self, winner: Any, loser: Any) -> Dict[str, Any]:
         """
@@ -1186,6 +1233,15 @@ class HighlanderProtocol:
                 if mid in organisms
             )
             
+            # [NEW] Sync updates to AllianceWarfareSystem (Critical for Illumination Stability)
+            if hasattr(self, 'alliance_warfare') and self.alliance_warfare:
+                self.alliance_warfare.sync_alliance_state(alliance_id, {
+                    'members': list(alliance.members),
+                    'formation_round': alliance.formation_round,
+                    'stability_rounds': getattr(alliance, 'stability_rounds', self.round_number - alliance.formation_round),
+                    'strength': alliance.strength
+                })
+            
             # Remove dead alliances
             if alliance.strength <= 0 or len(alliance.members) < 2:
                 for member in alliance.members:
@@ -1255,7 +1311,8 @@ class HighlanderProtocol:
                 alliance_id = f"alliance_{self.round_number}_{org_id[:4]}_{best_partner[:4]}"
                 alliance = Alliance(
                     members={org_id, best_partner},
-                    formation_time=time.time()
+                    formation_time=time.time(),
+                    formation_round=self.round_number
                 )
                 alliance.collective_fitness = org_fitness + fitness_values.get(best_partner, 0)
 
@@ -1292,6 +1349,17 @@ class HighlanderProtocol:
                     'reason': 'weakness_cooperation' if weakness_factor > 0.2 else 'strategic',
                     'collective_strength': alliance.get_collective_strength_bonus()
                 })
+                
+                # [NEW] Sync to AllianceWarfareSystem
+                if hasattr(self, 'alliance_warfare') and self.alliance_warfare:
+                    self.alliance_warfare.sync_alliance_state(alliance_id, {
+                        'members': [org_id, best_partner],
+                        'formation_round': self.round_number,
+                        'stability_rounds': 0,
+                        'confederation_id': None,
+                        'war_count': 0,
+                        'betrayal_count': 0
+                    })
                 
                 # Remove from unallied to prevent double-allying
                 unallied = [uid for uid in unallied if uid not in [org_id, best_partner]]

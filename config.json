@@ -170,7 +170,8 @@
       "max_confederations": 5,
       "min_alliance_size": 2,
       "war_declaration_threshold": 0.3,
-      "war_frequency": 0.8
+      "war_frequency": 0.8,
+      "illumination_stability_threshold": 5
     },
     "chaos_factor": 0.25,
     "competition_intensity": 0.8,
@@ -275,7 +276,7 @@
       "activation": "relu",
       "dropout": 0.1,
       "hidden_dim": 64,
-      "input_dim": 18,
+      "input_dim": 25,
       "output_dim": 6,
       "vocab_size": 1000
     },

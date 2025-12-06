@@ -279,6 +279,30 @@ class NeuralOrganism(Organism):
         self._illumination_level = 'none'
         self._illumination_capabilities = set()
 
+    def get_illumination_level(self) -> str:
+        """Get current illumination level."""
+        return self._illumination_level
+
+    def can_access_causation_features(self) -> bool:
+        """Check if any causation features are accessible."""
+        return self._illumination_level != 'none'
+
+    def get_wisdom_from_causation(self, situation_context: Dict[str, Any]) -> List[str]:
+        """
+        Directly query causation engine for wisdom.
+        
+        Args:
+            situation_context: Context for the query
+            
+        Returns:
+            List of wisdom strings
+        """
+        if self._alliance_warfare_ref and self.alliance_id:
+            return self._alliance_warfare_ref.get_alliance_wisdom(
+                self.alliance_id, situation_context
+            ).get('wisdom', [])
+        return []
+
     def get_state_features(self, 
                           local_env: Optional[Dict[str, Any]] = None,
                           network_state: Optional[Dict[str, Any]] = None,
@@ -458,6 +482,12 @@ class NeuralOrganism(Organism):
             if older_avg > 0:
                 health_trend = np.clip(0.5 + (recent_avg - older_avg) / older_avg, 0.0, 1.0)
         features.append(health_trend)
+        
+        # 25. Illumination Level (normalized 0-1)
+        # Higher illumination = more processing power/awareness
+        illum_map = {'none': 0.0, 'basic': 0.2, 'alliance': 0.4, 'confederation': 0.6, 'empire': 0.8, 'hegemony': 1.0}
+        illum_val = illum_map.get(self._illumination_level, 0.0)
+        features.append(illum_val)
         
         # Ensure we have exactly input_dim features
         input_dim = self.config.get('neural', {}).get('brain', {}).get('input_dim', 24)

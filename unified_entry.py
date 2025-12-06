@@ -1909,11 +1909,17 @@ class UnifiedSystem:
             def organism_factory(organism_id, initial_traits=None, initial_config=None):
                 """Factory function to create new organisms for the tournament"""
                 if network and hasattr(network, 'create_organism'):
-                    return network.create_organism(
+                    org = network.create_organism(
                         organism_id=organism_id,
                         traits=initial_traits,
                         config=initial_config
                     )
+                    # Wire Illumination Engine references
+                    if org and hasattr(org, 'set_system_references'):
+                        aws = getattr(self, 'alliance_warfare', None)
+                        causation_explorer = getattr(self, 'causation_explorer', None)
+                        org.set_system_references(aws, causation_explorer)
+                    return org
                 return None
                 
             self._germination_callback = integrate_germination_with_highlander(
@@ -1944,6 +1950,20 @@ class UnifiedSystem:
             )
             print("[UNIFIED] [HIGHLANDER] [PASS] 🪐⚔️ Alliance Warfare System initialized")
             print("[UNIFIED] [HIGHLANDER] 'Beyond individual battles - collective warfare for existential dominance'")
+            
+            # Explicitly wire AWS to Highlander (bidirectional)
+            self.highlander_protocol.set_alliance_warfare_system(self.alliance_warfare)
+            
+            # 🔌 SYSTEM WIRING: Connect NeuralOrganisms to Illumination Engine
+            # This enables organisms to query "Why?" and access the Causation Explorer
+            if network and hasattr(network, 'organisms'):
+                wired_count = 0
+                for org_id, organism in network.organisms.items():
+                    if hasattr(organism, 'set_system_references'):
+                        organism.set_system_references(self.alliance_warfare, self.causation_explorer)
+                        wired_count += 1
+                if wired_count > 0:
+                    print(f"[UNIFIED] [ILLUMINATION] 👁️ Wired {wired_count} organisms to Causation Engine")
             
             # 🏛️ CONFEDERATION (Super-Alliance) logging
             print("[UNIFIED] [HIGHLANDER] [PASS] 🏛️ Confederation System enabled (CONFEDERATION → EMPIRE → HEGEMONY)")
