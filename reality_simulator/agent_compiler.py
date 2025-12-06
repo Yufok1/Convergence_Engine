@@ -3377,23 +3377,19 @@ if __name__ == '__main__':
         arch_bytes = zlib.compress(arch_json.encode('utf-8'), level=9) if compress_data else arch_json.encode('utf-8')
         arch_b64 = base64.b64encode(arch_bytes).decode('ascii')
 
-        # 6) Atomic Language System - per-organism linguistic atoms
-        atomic_lang_data = {'organism_id': 'cocoon_ensemble', 'atoms': {}, 'concept_order': []}
+        # 6) Atomic Language System - per-organism linguistic atoms (Gap 5 Fix: Preserve individual data)
+        atomic_lang_data = []
         for entity in capsules:
             capsule = self._get_capsule_from_entity(entity)
+            organism_data = {'organism_id': self._get_organism_id(entity), 'atoms': {}, 'concept_order': []}
+            
             if capsule and hasattr(capsule, 'atomic_language_state') and capsule.atomic_language_state:
                 als = capsule.atomic_language_state
                 if isinstance(als, dict) and 'atoms' in als:
-                    # Merge atoms from this organism
-                    for cid, atom_data in als.get('atoms', {}).items():
-                        if cid not in atomic_lang_data['atoms']:
-                            atomic_lang_data['atoms'][cid] = atom_data
-                            atomic_lang_data['concept_order'].append(cid)
-                        else:
-                            # Merge strengths (average)
-                            old_strength = atomic_lang_data['atoms'][cid].get('strength', 0.5)
-                            new_strength = atom_data.get('strength', 0.5)
-                            atomic_lang_data['atoms'][cid]['strength'] = (old_strength + new_strength) / 2
+                    organism_data = als  # Use the actual exported state
+            
+            atomic_lang_data.append(organism_data)
+            
         atomic_json = json.dumps(atomic_lang_data)
         atomic_bytes = zlib.compress(atomic_json.encode('utf-8'), level=9) if compress_data else atomic_json.encode('utf-8')
         atomic_lang_b64 = base64.b64encode(atomic_bytes).decode('ascii')
@@ -6144,14 +6140,30 @@ class CocoonAgent:
         # ═══════════════════════════════════════════════════════════════════
         
         # Atomic Language System - trackable linguistic units
+        self.atomic_languages = []
         try:
             atomic_data = _decode_data(_ATOMIC_LANG_B64)
-            if atomic_data and 'atoms' in atomic_data:
-                self.atomic_language = AtomicLanguageSystem.from_dict(atomic_data)
-            else:
-                self.atomic_language = AtomicLanguageSystem(organism_id="cocoon_ensemble")
-        except:
+            
+            # Gap 5 Fix: Support per-organism atomic languages
+            if isinstance(atomic_data, list):
+                # New format: List of organism data
+                for data in atomic_data:
+                    self.atomic_languages.append(AtomicLanguageSystem.from_dict(data))
+            elif isinstance(atomic_data, dict) and 'atoms' in atomic_data:
+                # Legacy format: Single merged dict
+                self.atomic_languages.append(AtomicLanguageSystem.from_dict(atomic_data))
+            
+            # Fill missing if any
+            while len(self.atomic_languages) < len(self.brains):
+                self.atomic_languages.append(AtomicLanguageSystem(organism_id=f"org_{len(self.atomic_languages)}"))
+                
+            # Set primary for backward compatibility
+            self.atomic_language = self.atomic_languages[0] if self.atomic_languages else AtomicLanguageSystem(organism_id="cocoon_default")
+            
+        except Exception as e:
+            print(f"[ERROR] Loading atomic language: {e}")
             self.atomic_language = AtomicLanguageSystem(organism_id="cocoon_ensemble")
+            self.atomic_languages = [self.atomic_language]
         
         # Conversation History - context memory
         try:
@@ -6270,6 +6282,27 @@ class CocoonAgent:
             token_id = self.add_word(clean_word)
             tokens.append(token_id)
             learned_count += 1
+            
+            # Update all organisms' atomic languages (Gap 2 Fix: Actual learning)
+            if hasattr(self, 'atomic_languages'):
+                for als in self.atomic_languages:
+                    als.acquire_concept(clean_word, source='chat_heard', initial_strength=0.2)
+                    
+        # Gap 4 Fix: Social Learning (Inter-organism teaching)
+        if hasattr(self, 'atomic_languages') and len(self.atomic_languages) > 1 and random.random() < 0.2:
+            try:
+                teacher = random.choice(self.atomic_languages)
+                student = random.choice(self.atomic_languages)
+                if teacher != student:
+                    # Teacher shares a strong concept
+                    strong_atoms = [a for a in teacher.atoms.values() if a.strength > 0.7]
+                    if strong_atoms:
+                        atom = random.choice(strong_atoms)
+                        # Student learns if they don't know it or know it weakly
+                        if atom.concept_id not in student.atoms or student.atoms[atom.concept_id].strength < 0.3:
+                            student.acquire_concept(atom.concept_id, source='peer_teaching', initial_strength=0.3)
+            except Exception:
+                pass  # Social learning fails silently to not disrupt flow
         
         if learned_count > 0 and filter_by_knowledge_web:
             print(f"[LEARN] Learned {learned_count}/{len(words)} words (knowledge_web gated)")
@@ -6515,6 +6548,16 @@ class CocoonAgent:
                 prime_token = word_to_id.get(prime_word.lower())
                 if prime_token is not None and prime_token < len(base_logits):
                     base_logits[prime_token] += initial_boost
+        
+        # Gap 2 Fix: Boost words known by THIS organism's AtomicLanguageSystem
+        if hasattr(self, 'atomic_languages') and organism_idx < len(self.atomic_languages):
+            current_als = self.atomic_languages[organism_idx]
+            for atom_id, atom in current_als.atoms.items():
+                if atom.strength > 0.4:
+                    token_id = word_to_id.get(atom_id)
+                    if token_id is not None and token_id < len(base_logits):
+                        # Boost proportional to strength (e.g. 0.8 strength -> 0.4 boost)
+                        base_logits[token_id] += atom.strength * 0.4
         
         # Generation loop with semantic boosting
         for step in range(max_tokens):
@@ -7257,24 +7300,26 @@ Examples:
             agent.conversation.add_message('user', user_input)
             agent.conversation.add_message('assistant', final_response)
             
-            # Learn concepts from exchange (matching butterfly_chat's vocabulary learning)
-            # Words HEARD from user: acquire with lower strength
-            for word in user_input.lower().split():
-                clean_word = ''.join(c for c in word if c.isalnum())
-                if len(clean_word) > 2:
-                    agent.atomic_language.acquire_concept(clean_word, source='chat_heard', 
-                                                          initial_strength=0.2)
-            
             # Gap 3 Fix: Words USED in response get higher strength (rewarding active vocabulary use)
-            for word in final_response.lower().split():
-                clean_word = ''.join(c for c in word if c.isalnum())
-                if len(clean_word) > 2:
-                    # Strengthen if already known, acquire if new
-                    if hasattr(agent.atomic_language, 'atoms') and clean_word in agent.atomic_language.atoms:
-                        agent.atomic_language.strengthen_concept(clean_word, 0.03, "chat_used")
-                    else:
-                        agent.atomic_language.acquire_concept(clean_word, source='chat_used',
-                                                              initial_strength=0.3)
+            # Use the winning organism's atomic language (Gap 5 Alignment)
+            if best:
+                winner_idx = best['idx']
+                target_als = agent.atomic_language
+                # Check for per-organism atomic languages
+                if hasattr(agent, 'atomic_languages') and winner_idx < len(agent.atomic_languages):
+                    target_als = agent.atomic_languages[winner_idx]
+                
+                for word in final_response.lower().split():
+                    clean_word = ''.join(c for c in word if c.isalnum())
+                    if len(clean_word) > 2:
+                        # Strengthen if already known, acquire if new
+                        if hasattr(target_als, 'atoms') and clean_word in target_als.atoms:
+                            if hasattr(target_als, 'strengthen_concept'):
+                                target_als.strengthen_concept(clean_word, 0.03, "chat_used")
+                            else:
+                                target_als.acquire_concept(clean_word, source='chat_used', initial_strength=0.3)
+                        else:
+                            target_als.acquire_concept(clean_word, source='chat_used', initial_strength=0.3)
             
             # Train on accumulated experiences
             if len(agent.experience_buffers[0]) >= agent.batch_size:

@@ -678,6 +678,88 @@ class UnifiedExperienceBuffer:
 
 
 # =============================================================================
+# VP RUNTIME - Violation Pressure Computation (Butterfly Alignment)
+# =============================================================================
+
+class VPRuntime:
+    """
+    Lightweight violation pressure runtime for portable agents.
+    
+    Computes VP from state and reward history, matching butterfly's VP-aware
+    attention gating formula: scores / (1 + vp_value)
+    """
+    
+    def __init__(self, window_size: int = 50):
+        self.window_size = window_size
+        self.reward_history: deque = deque(maxlen=window_size)
+        self.vp_history: deque = deque(maxlen=window_size)
+        self._current_vp: float = 0.0
+    
+    def compute(self, state: np.ndarray, reward: Optional[float] = None) -> Dict[str, float]:
+        """
+        Compute violation pressure from current state and reward history.
+        
+        VP increases when:
+        - Repeated negative rewards (stagnation)
+        - State shows stress indicators (dims 17, 22)
+        - Entropy drops (getting stuck in patterns)
+        
+        Returns dict with 'violation_pressure' and component breakdown.
+        """
+        # Track reward if provided
+        if reward is not None:
+            self.reward_history.append(reward)
+        
+        # Component 1: Reward stagnation
+        stagnation = 0.0
+        if len(self.reward_history) >= 5:
+            recent = list(self.reward_history)[-5:]
+            avg_recent = np.mean(recent)
+            if avg_recent < 0:
+                stagnation = min(abs(avg_recent) * 2, 1.0)
+        
+        # Component 2: State stress indicators (if 24D state available)
+        stress = 0.0
+        if len(state) >= 23:
+            stress_dim = state[17] if len(state) > 17 else 0  # stress/calm dimension
+            vp_dim = state[22] if len(state) > 22 else 0      # VP dimension
+            stress = max(stress_dim, vp_dim * 0.5)
+        
+        # Component 3: Pattern entropy (detecting stuck behavior)
+        entropy_penalty = 0.0
+        if len(self.vp_history) >= 10:
+            recent_vp = list(self.vp_history)[-10:]
+            vp_std = np.std(recent_vp)
+            if vp_std < 0.05:  # Low variance = stuck
+                entropy_penalty = 0.2
+        
+        # Combine components
+        vp_value = min(0.3 * stagnation + 0.4 * stress + 0.3 * entropy_penalty, 1.0)
+        
+        # Smooth over time
+        self._current_vp = 0.8 * self._current_vp + 0.2 * vp_value
+        self.vp_history.append(self._current_vp)
+        
+        return {
+            'violation_pressure': self._current_vp,
+            'stagnation': stagnation,
+            'stress': stress,
+            'entropy_penalty': entropy_penalty
+        }
+    
+    @property
+    def current_vp(self) -> float:
+        """Get current VP value."""
+        return self._current_vp
+    
+    def reset(self):
+        """Reset VP tracking."""
+        self.reward_history.clear()
+        self.vp_history.clear()
+        self._current_vp = 0.0
+
+
+# =============================================================================
 # AGENT BRIDGE - The main unified interface
 # =============================================================================
 
@@ -768,6 +850,9 @@ class AgentBridge:
             'confidence_weighted': [],
             'fittest_top_k': []
         }
+        
+        # VP Runtime for violation pressure computation (Butterfly alignment)
+        self.vp_runtime = VPRuntime(window_size=50)
         
         logger.info(f"AgentBridge initialized (brain: {self.brain_type}, vocab: {self.vocabulary.vocab_size}, language_head: {self.has_language_head})")
         if self.config.is_ensemble:
