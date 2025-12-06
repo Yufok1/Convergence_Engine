@@ -1518,6 +1518,13 @@ class AgentBridge:
                         if vocab_size < len(logits):
                             logits[vocab_size:] = float('-inf')
                         
+                        # CRITICAL FIX: Check if vocab has real words beyond special tokens
+                        # Special tokens are: <PAD>=0, <UNK>=1, <START>=2, <END>=3, <VP_GATE>=4
+                        non_special_count = vocab_size - 5  # 5 special tokens
+                        if non_special_count <= 0:
+                            # No real words to sample - return empty
+                            break
+                        
                         # Mask special tokens (0-4)
                         logits[:5] = float('-inf')
                         
