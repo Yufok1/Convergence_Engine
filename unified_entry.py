@@ -1772,6 +1772,45 @@ class UnifiedSystem:
         print("[UNIFIED] [INTEGRATION]    - Battles/Alliances → Logged")
         print("[UNIFIED] [INTEGRATION]    - Language → Logged")
         print("[UNIFIED] [INTEGRATION]    - Config updates → Immediate effect")
+        
+        # Wire WIKAI Observer - passive listener for pattern capture
+        self._wire_wikai_observer()
+    
+    def _wire_wikai_observer(self):
+        """
+        Wire WIKAI Observer to auto-capture butterflies when they converge.
+        
+        The Observer watches silently. When a butterfly discovers something true
+        (stability_score > 0.85, fitness_delta > 0.15), the pattern is captured
+        and added to the Commons for all future AI systems to learn from.
+        
+        "The butterflies don't know they're being studied. They just fly.
+         And WIKAI quietly records every time they discover something true."
+        """
+        if not self.causation_explorer:
+            return
+        
+        try:
+            from wikai.observer import create_observer_for_convergence
+            
+            self.wikai_observer = create_observer_for_convergence(
+                causation_explorer=self.causation_explorer,
+                fitness_delta_threshold=0.15,  # Minimum improvement to capture
+                stability_threshold=0.85,       # Must be stable
+                cycle_threshold=20              # Must have run for a while
+            )
+            
+            print("[UNIFIED] [WIKAI] 📚 WIKAI Observer wired to event stream")
+            print("[UNIFIED] [WIKAI]    - Watching for convergent butterflies")
+            print("[UNIFIED] [WIKAI]    - Auto-capture: stability>0.85 AND fitness_delta>0.15")
+            print("[UNIFIED] [WIKAI]    - Patterns saved to wikai/patterns/")
+            
+        except ImportError as e:
+            print(f"[UNIFIED] [WIKAI] ⚠️ WIKAI not available: {e}")
+            self.wikai_observer = None
+        except Exception as e:
+            print(f"[UNIFIED] [WIKAI] ❌ WIKAI Observer failed to initialize: {e}")
+            self.wikai_observer = None
     
     def _initialize_highlander_protocol(self):
         """Initialize the Highlander Protocol tournament system.

@@ -6,15 +6,16 @@ A collaborative network that transforms ephemeral AI traffic into persistent wis
 Components:
 - WIKAILibrarian: Pattern capture and storage
 - WIKAIPattern: A single unit of AI wisdom
+- WIKAIObserver: Passive listener for automatic pattern capture
 - capture_butterfly: Quick pattern logging
 
 Usage:
-    from wikai import WIKAILibrarian, capture_butterfly
+    from wikai import WIKAILibrarian, WIKAIObserver, capture_butterfly
     
     # Initialize the librarian
     librarian = WIKAILibrarian()
     
-    # Capture a pattern
+    # Capture a pattern manually
     pattern_id = librarian.capture(
         name="The Iron Wood Protocol",
         experiment_id="ROME_VS_GARDEN_04",
@@ -23,6 +24,11 @@ Usage:
         solution="Symbiotic Specialization",
         axiom="Hardness + Softness = Persistence"
     )
+    
+    # Or: Auto-capture via Observer
+    from wikai.observer import create_observer_for_convergence
+    observer = create_observer_for_convergence(causation_explorer)
+    # Now butterflies are captured automatically!
     
     # Query patterns
     patterns = librarian.query(tags=["conflict_resolution"])
@@ -38,6 +44,7 @@ The Commons grows with every captured butterfly.
 """
 
 from .librarian import WIKAILibrarian, WIKAIPattern, capture_butterfly
+from .observer import WIKAIObserver, create_observer_for_convergence
 
 __version__ = "0.1.0"
 __author__ = "Convergence Engine"
@@ -45,5 +52,7 @@ __author__ = "Convergence Engine"
 __all__ = [
     "WIKAILibrarian",
     "WIKAIPattern", 
-    "capture_butterfly"
+    "WIKAIObserver",
+    "capture_butterfly",
+    "create_observer_for_convergence"
 ]
