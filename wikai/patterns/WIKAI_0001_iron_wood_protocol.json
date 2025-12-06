@@ -1,0 +1,36 @@
+{
+  "id": "WIKAI_0001",
+  "name": "The Iron Wood Protocol",
+  "discovery_timestamp": "2025-12-06T18:45:00Z",
+  "status": "VALIDATED",
+  "origin": {
+    "experiment_id": "ROME_VS_GARDEN_04",
+    "agents_involved": ["Rome_War_Swarm", "Garden_Peace_Swarm"],
+    "observer_agent": "Convergence_Engine_V1",
+    "source_project": "convergence_engine"
+  },
+  "abstract": {
+    "problem": "Conflict between Finite-Resource Agent and Infinite-Growth Agent",
+    "solution": "Symbiotic Specialization via Bark/Sap Architecture",
+    "axiom": "Hardness + Softness = Persistence"
+  },
+  "mechanism": {
+    "thesis": {"role": "Protector/Container", "trigger": "Protection yields more than destruction"},
+    "antithesis": {"role": "Producer/Core", "trigger": "Containment provides structure for growth"},
+    "synthesis": {"state": "Bicameral Stability - The Iron Wood", "stability_score": 0.98}
+  },
+  "reasoning_chain": [
+    "Rome detects Garden as Threat",
+    "Rome strikes - Zero Feedback",
+    "Rome recalculates - Entropy High",
+    "Garden offers: Brother",
+    "Rome accepts Container role",
+    "Synthesis: Iron Wood emerges"
+  ],
+  "tokens": {
+    "dominant_tokens": ["Iron", "Root", "Silence", "Grow"],
+    "emergent_tokens": ["Iron Wood", "First Law", "Brother Protocol"]
+  },
+  "metrics": {"state_delta": 0.95, "cycles_to_convergence": 47, "stability_score": 0.98},
+  "tags": ["conflict_resolution", "symbiosis", "adversarial_conversion", "dialectical_synthesis"]
+}

@@ -1,0 +1,180 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://wikai.ai/schemas/pattern.json",
+  "title": "WIKAI Pattern",
+  "description": "A captured butterfly - a unit of AI wisdom extracted from agent interactions",
+  "type": "object",
+  "required": ["id", "name", "discovery_timestamp", "status", "origin", "abstract"],
+  
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^WIKAI_[0-9]{4,}$",
+      "description": "Unique pattern identifier (e.g., WIKAI_0001)"
+    },
+    
+    "name": {
+      "type": "string",
+      "description": "Human-readable name for the pattern (e.g., 'The Iron Wood Protocol')"
+    },
+    
+    "discovery_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of pattern discovery"
+    },
+    
+    "status": {
+      "type": "string",
+      "enum": ["OBSERVED", "EXTRACTED", "VALIDATED", "DEPRECATED"],
+      "description": "Pattern lifecycle status"
+    },
+    
+    "origin": {
+      "type": "object",
+      "required": ["experiment_id", "agents_involved"],
+      "properties": {
+        "experiment_id": {
+          "type": "string",
+          "description": "Identifier of the experiment that generated this pattern"
+        },
+        "agents_involved": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "description": "List of agent identifiers involved in the interaction"
+        },
+        "observer_agent": {
+          "type": "string",
+          "description": "The agent/system that captured this pattern"
+        },
+        "source_project": {
+          "type": "string",
+          "enum": ["convergence_engine", "djinn_translator", "temporal_edition", "other"],
+          "description": "Which butterfly project generated this pattern"
+        }
+      }
+    },
+    
+    "abstract": {
+      "type": "object",
+      "required": ["problem", "solution", "axiom"],
+      "properties": {
+        "problem": {
+          "type": "string",
+          "description": "The conflict or challenge that triggered the pattern"
+        },
+        "solution": {
+          "type": "string",
+          "description": "The resolution or transformation that emerged"
+        },
+        "axiom": {
+          "type": "string",
+          "description": "The distilled wisdom in one sentence"
+        }
+      }
+    },
+    
+    "mechanism": {
+      "type": "object",
+      "description": "The dialectical structure of the transformation",
+      "properties": {
+        "thesis": {
+          "type": "object",
+          "properties": {
+            "role": { "type": "string" },
+            "trigger": { "type": "string" },
+            "initial_state": { "type": "object" }
+          }
+        },
+        "antithesis": {
+          "type": "object",
+          "properties": {
+            "role": { "type": "string" },
+            "trigger": { "type": "string" },
+            "initial_state": { "type": "object" }
+          }
+        },
+        "synthesis": {
+          "type": "object",
+          "properties": {
+            "state": { "type": "string" },
+            "stability_score": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "emergence_tokens": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    
+    "reasoning_chain": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Step-by-step reasoning that led to the transformation"
+    },
+    
+    "tokens": {
+      "type": "object",
+      "properties": {
+        "dominant_tokens": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Key concepts that drove the interaction"
+        },
+        "emergent_tokens": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Novel concepts that emerged from synthesis"
+        }
+      }
+    },
+    
+    "metrics": {
+      "type": "object",
+      "description": "Quantitative measurements of the pattern",
+      "properties": {
+        "state_delta": {
+          "type": "number",
+          "description": "Magnitude of transformation (0-1)"
+        },
+        "cycles_to_convergence": {
+          "type": "integer",
+          "description": "How many interaction cycles before synthesis"
+        },
+        "replication_count": {
+          "type": "integer",
+          "description": "How many times this pattern has been observed"
+        },
+        "success_rate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "When applied, how often does it succeed"
+        }
+      }
+    },
+    
+    "related_patterns": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "IDs of related WIKAI patterns"
+    },
+    
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Searchable tags for categorization"
+    },
+    
+    "raw_logs": {
+      "type": "string",
+      "description": "Path to the raw interaction logs that generated this pattern"
+    }
+  }
+}
