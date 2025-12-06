@@ -15235,13 +15235,25 @@
                 fetch('/api/cra/diagnostics/checkpoint_status')
                     .then(response => response.json())
                     .then(data => {
-                        if (data.enabled) {
-                            const lastSave = data.last_checkpoint_time ? 
-                                new Date(data.last_checkpoint_time * 1000).toLocaleTimeString() : 'Never';
+                        // Handle nested response structure
+                        const status = data.checkpoint_status || data;
+                        const isEnabled = status.enabled || false;
+                        const checkpointCount = status.checkpoints_count || status.checkpoint_count || 0;
+                        const latestCheckpoint = status.latest_checkpoint;
+                        
+                        if (isEnabled) {
+                            let lastSave = 'Never';
+                            if (latestCheckpoint && latestCheckpoint.timestamp) {
+                                const ts = latestCheckpoint.timestamp;
+                                const date = typeof ts === 'number' ? new Date(ts * 1000) : new Date(ts);
+                                if (!isNaN(date.getTime())) {
+                                    lastSave = date.toLocaleTimeString();
+                                }
+                            }
                             statusDiv.innerHTML = `
                                 <div style="color: #0f0;">✅ Checkpointing Enabled</div>
                                 <div style="font-size: 0.8em; color: #0a0;">
-                                    Last: ${lastSave} | Count: ${data.checkpoint_count || 0}
+                                    Last: ${lastSave} | Count: ${checkpointCount}
                                 </div>
                             `;
                         } else {
