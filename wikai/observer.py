@@ -450,24 +450,61 @@ class WIKAIObserver:
     # ═══════════════════════════════════════════════════════════════════════════
     
     def _extract_stability(self, event_data: Dict[str, Any]) -> float:
-        """Extract stability score from event data."""
+        """Extract stability score from event data - uses Butterfly System metrics."""
+        data = event_data.get('data', {})
+        
+        # health_state_change events have health_score directly
+        if 'health_score' in data:
+            return float(data['health_score'])
+        
+        # Check nested components (from HealthMonitor)
+        if 'components' in data:
+            components = data['components']
+            # Use coherence as primary stability indicator
+            if 'coherence' in components:
+                return float(components['coherence'])
+            # Or average all components
+            if components:
+                vals = [v for v in components.values() if isinstance(v, (int, float))]
+                if vals:
+                    return sum(vals) / len(vals)
+        
         # Try common stability field names
         for key in ['stability_score', 'stability', 'health', 'coherence', 
-                    'synthesis_score', 'convergence_score']:
-            if key in event_data.get('data', {}):
-                val = event_data['data'][key]
+                    'synthesis_score', 'convergence_score', 'lawfulness']:
+            if key in data:
+                val = data[key]
                 if isinstance(val, (int, float)):
                     return float(val)
+        
+        # Neural training: use 1 - loss as stability proxy
+        if 'loss' in data or 'avg_loss' in data:
+            loss = data.get('loss', data.get('avg_loss', 0.5))
+            return max(0.0, min(1.0, 1.0 - float(loss)))
         
         # Default moderate stability for observed events
         return 0.5
     
     def _extract_fitness(self, event_data: Dict[str, Any]) -> float:
-        """Extract fitness from event data."""
+        """Extract fitness from event data - uses Butterfly System metrics."""
         data = event_data.get('data', {})
         
+        # Direct fitness fields
         for key in ['fitness', 'avg_fitness', 'best_fitness', 'collective_fitness',
-                    'winner_fitness', 'champion_fitness']:
+                    'winner_fitness', 'champion_fitness', 'fitness_after']:
+            if key in data:
+                val = data[key]
+                if isinstance(val, (int, float)):
+                    return float(val)
+        
+        # health_state_change: use adaptability component as fitness proxy
+        if 'components' in data:
+            components = data['components']
+            if 'adaptability' in components:
+                return float(components['adaptability'])
+        
+        # Neural training: check for accuracy or reward
+        for key in ['accuracy', 'reward', 'avg_reward', 'episode_reward']:
             if key in data:
                 val = data[key]
                 if isinstance(val, (int, float)):
