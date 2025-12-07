@@ -264,6 +264,71 @@ class CausationDigest:
 
 
 @dataclass
+class SemanticConvergenceSnapshot:
+    """
+    🔗 SEMANTIC CONVERGENCE SNAPSHOT
+    
+    Captures the organism's contribution to unified word embeddings.
+    This is CRITICAL for portable agents to maintain their unique "voice".
+    
+    The Semantic Convergence system unifies 6 systems:
+    - ContextMemory (word embeddings)
+    - LanguageTeacher (word assignment)
+    - ConceptSystem (axiom embeddings)
+    - LinguisticKnowledgeWeb (semantic relations)
+    - ConceptTracker (emergent concepts)
+    - AtomicLanguage (organism-local concepts)
+    """
+    # Words this organism has influenced
+    organism_words: List[str]  # Words assigned to this organism
+    word_frequencies: Dict[str, int]  # How often each word was used
+    
+    # Word embedding contributions (base64-encoded for JSON compatibility)
+    word_embeddings_b64: Optional[str] = None  # Compressed word embeddings for org's words
+    embedding_dim: int = 64
+    
+    # Axiom embeddings from ConceptSystem (grounded concepts)
+    axiom_embeddings: Dict[str, List[float]] = field(default_factory=dict)  # good/bad/self/other
+    
+    # Language anchor info
+    language_anchor_count: int = 0  # How many words anchored to this organism
+    
+    # Teaching history
+    words_taught_count: int = 0
+    teaching_generations: List[int] = field(default_factory=list)  # Generations when taught
+    
+    # Semantic config at capture time
+    semantic_config: Dict[str, Any] = field(default_factory=dict)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'organism_words': self.organism_words,
+            'word_frequencies': self.word_frequencies,
+            'word_embeddings_b64': self.word_embeddings_b64,
+            'embedding_dim': self.embedding_dim,
+            'axiom_embeddings': self.axiom_embeddings,
+            'language_anchor_count': self.language_anchor_count,
+            'words_taught_count': self.words_taught_count,
+            'teaching_generations': self.teaching_generations,
+            'semantic_config': self.semantic_config
+        }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'SemanticConvergenceSnapshot':
+        return cls(
+            organism_words=data.get('organism_words', []),
+            word_frequencies=data.get('word_frequencies', {}),
+            word_embeddings_b64=data.get('word_embeddings_b64'),
+            embedding_dim=data.get('embedding_dim', 64),
+            axiom_embeddings=data.get('axiom_embeddings', {}),
+            language_anchor_count=data.get('language_anchor_count', 0),
+            words_taught_count=data.get('words_taught_count', 0),
+            teaching_generations=data.get('teaching_generations', []),
+            semantic_config=data.get('semantic_config', {})
+        )
+
+
+@dataclass
 class OrganismCapsule:
     """
     Complete state capsule for an organism.
@@ -296,6 +361,9 @@ class OrganismCapsule:
     fitness: Optional[FitnessTrajectory] = None
     highlander: Optional[HighlanderMetadata] = None
     causation: Optional[CausationDigest] = None
+    
+    # Semantic Convergence state (word embeddings, language anchors)
+    semantic_convergence: Optional[SemanticConvergenceSnapshot] = None
     
     # Metadata
     capture_reason: str = "manual"  # 'highlander_champion', 'fitness_milestone', 'manual', etc.
@@ -349,6 +417,7 @@ class OrganismCapsule:
             'fitness': self.fitness.to_dict() if self.fitness else None,
             'highlander': self.highlander.to_dict() if self.highlander else None,
             'causation': self.causation.to_dict() if self.causation else None,
+            'semantic_convergence': self.semantic_convergence.to_dict() if self.semantic_convergence else None,
             'capture_reason': self.capture_reason,
             'notes': self.notes,
             'tags': self.tags,
@@ -375,6 +444,7 @@ class OrganismCapsule:
             fitness=FitnessTrajectory.from_dict(data['fitness']) if data.get('fitness') else None,
             highlander=HighlanderMetadata.from_dict(data['highlander']) if data.get('highlander') else None,
             causation=CausationDigest.from_dict(data['causation']) if data.get('causation') else None,
+            semantic_convergence=SemanticConvergenceSnapshot.from_dict(data['semantic_convergence']) if data.get('semantic_convergence') else None,
             capture_reason=data.get('capture_reason', 'loaded'),
             notes=data.get('notes', ''),
             tags=data.get('tags', []),
@@ -407,6 +477,8 @@ class OrganismCapsule:
         if self.fitness:
             peak = self.fitness.fitness_history[-1][1] if self.fitness.fitness_history else 0
             summary['components'].append(f"📈 Fitness (peak={peak:.3f})")
+        if self.semantic_convergence:
+            summary['components'].append(f"🔗 Semantic ({len(self.semantic_convergence.organism_words)} words, {self.semantic_convergence.language_anchor_count} anchors)")
         
         summary['tags'] = self.tags
         summary['integrity'] = '✅' if self.verify_integrity() else '❌'
@@ -453,7 +525,9 @@ class OrganismCapsuleManager:
                         notes: str = "",
                         tags: Optional[List[str]] = None,
                         include_causation: bool = True,
-                        causation_explorer: Optional[Any] = None) -> OrganismCapsule:
+                        causation_explorer: Optional[Any] = None,
+                        context_memory: Optional[Any] = None,
+                        concept_system: Optional[Any] = None) -> OrganismCapsule:
         """
         Capture complete organism state into a capsule.
         
@@ -464,6 +538,8 @@ class OrganismCapsuleManager:
             tags: Tags for categorization
             include_causation: Whether to include causation history
             causation_explorer: CausationExplorer for event history
+            context_memory: ContextMemory for semantic convergence data
+            concept_system: ConceptSystem for axiom embeddings
             
         Returns:
             OrganismCapsule with complete state
@@ -532,6 +608,14 @@ class OrganismCapsuleManager:
         # ═══════════════════════════════════════════════════════════════
         if include_causation and causation_explorer:
             capsule.causation = self._capture_causation(organism.species_id, causation_explorer)
+        
+        # ═══════════════════════════════════════════════════════════════
+        # SEMANTIC CONVERGENCE (word embeddings, language anchors)
+        # ═══════════════════════════════════════════════════════════════
+        if context_memory is not None:
+            capsule.semantic_convergence = self._capture_semantic_convergence(
+                organism, context_memory, concept_system
+            )
         
         # Compute checksum
         capsule.checksum = capsule.compute_checksum()
@@ -822,6 +906,129 @@ class OrganismCapsuleManager:
             turning_points=turning_points
         )
     
+    def _capture_semantic_convergence(self, organism: Any, context_memory: Any, 
+                                      concept_system: Optional[Any] = None) -> SemanticConvergenceSnapshot:
+        """
+        🔗 Capture semantic convergence state for this organism.
+        
+        This captures:
+        - Words assigned to this organism (language anchors)
+        - Word embeddings for those words
+        - Axiom embeddings from ConceptSystem
+        - Teaching history
+        
+        Args:
+            organism: The organism being captured
+            context_memory: ContextMemory instance with word embeddings and anchors
+            concept_system: Optional ConceptSystem for axiom embeddings
+            
+        Returns:
+            SemanticConvergenceSnapshot with all semantic data
+        """
+        organism_id = organism.species_id if hasattr(organism, 'species_id') else str(id(organism))
+        # Convert to int hash if string for lookup
+        org_id_hash = hash(organism_id) if isinstance(organism_id, str) else organism_id
+        
+        # Get words assigned to this organism
+        organism_words = []
+        word_frequencies = {}
+        
+        if hasattr(context_memory, 'node_word_associations'):
+            words_set = context_memory.node_word_associations.get(org_id_hash, set())
+            organism_words = list(words_set)
+        
+        # Get word frequencies
+        if hasattr(context_memory, 'word_frequencies') and organism_words:
+            for word in organism_words:
+                freq = context_memory.word_frequencies.get(word, 0)
+                if freq > 0:
+                    word_frequencies[word] = freq
+        
+        # Capture word embeddings for this organism's words
+        word_embeddings_b64 = None
+        embedding_dim = 64
+        
+        if (hasattr(context_memory, 'word_embedding') and 
+            context_memory.word_embedding is not None and
+            hasattr(context_memory, 'vocabulary') and 
+            context_memory.vocabulary is not None and
+            organism_words):
+            try:
+                import torch
+                import zlib
+                embedding_dim = context_memory.embedding_dim
+                
+                # Extract embeddings for organism's words
+                embeddings_dict = {}
+                for word in organism_words[:200]:  # Limit to top 200 words
+                    token_id = context_memory.vocabulary.get_id(word)
+                    if token_id is not None and token_id < context_memory.word_embedding.weight.shape[0]:
+                        embed = context_memory.word_embedding.weight[token_id].detach().cpu().numpy().tolist()
+                        embeddings_dict[word] = embed
+                
+                if embeddings_dict:
+                    # Serialize and compress
+                    embed_json = json.dumps(embeddings_dict)
+                    embed_bytes = zlib.compress(embed_json.encode('utf-8'), level=9)
+                    word_embeddings_b64 = base64.b64encode(embed_bytes).decode('ascii')
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).warning(f"Could not capture word embeddings: {e}")
+        
+        # Capture axiom embeddings from ConceptSystem
+        axiom_embeddings = {}
+        if concept_system is not None and hasattr(concept_system, 'export_concept_embeddings'):
+            try:
+                import torch
+                # Get organism state for grounding
+                if hasattr(organism, 'get_state_features'):
+                    state_np = organism.get_state_features(None, None, None)
+                    if state_np is not None and len(state_np) >= 18:
+                        state_tensor = torch.from_numpy(state_np).float()
+                        axiom_embeds = concept_system.export_concept_embeddings(state_tensor)
+                        for axiom_name, embed in axiom_embeds.items():
+                            if isinstance(embed, (torch.Tensor, np.ndarray)):
+                                axiom_embeddings[axiom_name] = embed.tolist() if hasattr(embed, 'tolist') else list(embed)
+                            else:
+                                axiom_embeddings[axiom_name] = list(embed)
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).warning(f"Could not capture axiom embeddings: {e}")
+        
+        # Count language anchors
+        language_anchor_count = 0
+        if hasattr(context_memory, 'language_anchors'):
+            for word, org_ids in context_memory.language_anchors.items():
+                if org_id_hash in org_ids:
+                    language_anchor_count += 1
+        
+        # Get teaching history from LanguageTeacher stats if available
+        words_taught_count = len(organism_words)
+        teaching_generations = []
+        
+        # Get semantic config
+        semantic_config = {}
+        if hasattr(context_memory, 'organism_embedding_alpha'):
+            semantic_config['organism_embedding_alpha'] = context_memory.organism_embedding_alpha
+        if hasattr(context_memory, 'use_learned_embeddings'):
+            semantic_config['use_learned_embeddings'] = context_memory.use_learned_embeddings
+        if hasattr(context_memory, 'embedding_dim'):
+            semantic_config['embedding_dim'] = context_memory.embedding_dim
+        if hasattr(context_memory, 'max_vocab_size'):
+            semantic_config['max_vocab_size'] = context_memory.max_vocab_size
+        
+        return SemanticConvergenceSnapshot(
+            organism_words=organism_words,
+            word_frequencies=word_frequencies,
+            word_embeddings_b64=word_embeddings_b64,
+            embedding_dim=embedding_dim,
+            axiom_embeddings=axiom_embeddings,
+            language_anchor_count=language_anchor_count,
+            words_taught_count=words_taught_count,
+            teaching_generations=teaching_generations,
+            semantic_config=semantic_config
+        )
+
     def save_capsule(self, capsule: OrganismCapsule, 
                     compress: bool = True) -> str:
         """

@@ -678,6 +678,563 @@ class UnifiedExperienceBuffer:
 
 
 # =============================================================================
+# 🧠 LIVE SEMANTIC SYSTEMS - Continued Learning for ALL Subsystems
+# =============================================================================
+
+class LiveKnowledgeWeb:
+    """
+    Live, learnable knowledge web for exported agents.
+    
+    Unlike static JSON, this can:
+    - Add new concepts discovered during interaction
+    - Strengthen/weaken relations based on experience
+    - Grow the semantic network over time
+    - Persist updates to disk
+    """
+    
+    def __init__(self):
+        self.concepts: Dict[str, Dict[str, Any]] = {}
+        self.relations: List[Dict[str, Any]] = []
+        self._relation_index: Dict[str, List[Dict]] = {}  # word -> related
+        self._dirty = False  # Track if needs saving
+    
+    def add_concept(self, word: str, category: str = 'learned', 
+                    confidence: float = 0.5, associations: Optional[List[str]] = None):
+        """Add or update a concept."""
+        if word not in self.concepts:
+            self.concepts[word] = {
+                'category': category,
+                'confidence': confidence,
+                'semantic_frame': 'learned',
+                'discovery_count': 1,
+                'associations': associations or [],
+                'learned_at': time.time()
+            }
+        else:
+            # Reinforce existing concept
+            self.concepts[word]['discovery_count'] += 1
+            self.concepts[word]['confidence'] = min(1.0, self.concepts[word]['confidence'] + 0.05)
+        self._dirty = True
+    
+    def add_relation(self, source: str, target: str, relation_type: str = 'related_to',
+                     strength: float = 0.5):
+        """Add or strengthen a semantic relation."""
+        # Check if relation exists
+        for rel in self.relations:
+            if rel['source'] == source and rel['target'] == target:
+                # Strengthen existing relation
+                rel['strength'] = min(1.0, rel['strength'] + 0.1)
+                self._rebuild_index()
+                self._dirty = True
+                return
+        
+        # Add new relation
+        self.relations.append({
+            'source': source,
+            'target': target,
+            'relation_type': relation_type,
+            'strength': strength,
+            'learned_at': time.time()
+        })
+        self._rebuild_index()
+        self._dirty = True
+    
+    def weaken_relation(self, source: str, target: str, amount: float = 0.1):
+        """Weaken a relation (negative reinforcement)."""
+        for rel in self.relations:
+            if rel['source'] == source and rel['target'] == target:
+                rel['strength'] = max(0.0, rel['strength'] - amount)
+                self._dirty = True
+                return
+    
+    def get_related(self, word: str, min_strength: float = 0.3) -> List[str]:
+        """Get words related to this word."""
+        relations = self._relation_index.get(word.lower(), [])
+        return [r['target'] for r in relations if r['strength'] >= min_strength]
+    
+    def _rebuild_index(self):
+        """Rebuild relation index for fast lookup."""
+        self._relation_index = {}
+        for rel in self.relations:
+            source = rel['source'].lower()
+            if source not in self._relation_index:
+                self._relation_index[source] = []
+            self._relation_index[source].append(rel)
+            # Bidirectional for symmetric relations
+            if rel['relation_type'] in ['synonym', 'similar_to', 'related_to']:
+                target = rel['target'].lower()
+                if target not in self._relation_index:
+                    self._relation_index[target] = []
+                self._relation_index[target].append({
+                    'source': rel['target'],
+                    'target': rel['source'],
+                    'relation_type': rel['relation_type'],
+                    'strength': rel['strength']
+                })
+    
+    def learn_from_context(self, words: List[str], reward: float):
+        """Learn semantic relations from words appearing together with reward."""
+        if len(words) < 2:
+            return
+        
+        # Words appearing together in positive context are related
+        strength_delta = 0.1 if reward > 0 else -0.05
+        
+        for i, w1 in enumerate(words):
+            for w2 in words[i+1:]:
+                if w1 != w2:
+                    # Ensure both concepts exist
+                    self.add_concept(w1)
+                    self.add_concept(w2)
+                    
+                    if strength_delta > 0:
+                        self.add_relation(w1, w2, 'co_occurred', strength=0.3)
+                    else:
+                        self.weaken_relation(w1, w2, abs(strength_delta))
+    
+    def save(self, path: Path):
+        """Save knowledge web to JSON."""
+        data = {
+            'version': '2.0',
+            'source_note': 'Live Knowledge Web - learned semantic relationships',
+            'concepts': self.concepts,
+            'relations': self.relations,
+            'concept_count': len(self.concepts),
+            'relation_count': len(self.relations),
+            'saved_at': time.time()
+        }
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2)
+        self._dirty = False
+        logger.info(f"Saved knowledge web: {len(self.concepts)} concepts, {len(self.relations)} relations")
+    
+    @classmethod
+    def load(cls, path: Path) -> 'LiveKnowledgeWeb':
+        """Load knowledge web from JSON."""
+        web = cls()
+        if not path.exists():
+            return web
+        
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            web.concepts = data.get('concepts', {})
+            web.relations = data.get('relations', [])
+            web._rebuild_index()
+            logger.info(f"Loaded knowledge web: {len(web.concepts)} concepts, {len(web.relations)} relations")
+        except Exception as e:
+            logger.warning(f"Failed to load knowledge web: {e}")
+        
+        return web
+
+
+class LiveContextMemory:
+    """
+    Live, learnable context memory for organism-word associations.
+    
+    Tracks which organisms use which words, enabling:
+    - Personality-based word preferences
+    - Word-organism anchoring during learning
+    - TF-IDF importance scoring
+    """
+    
+    def __init__(self):
+        self.language_anchors: Dict[str, List[str]] = {}  # word -> organism_ids
+        self.node_word_associations: Dict[str, set] = {}  # organism -> words
+        self.word_frequencies: Dict[str, int] = {}
+        self.organism_sequences: Dict[str, List[int]] = {}  # organism -> recent tokens
+        self.state_patterns: Dict[str, Any] = {}  # state pattern -> learned associations
+        self._dirty = False
+    
+    def anchor_word(self, word: str, organism_id: str):
+        """Anchor a word to an organism."""
+        word = word.lower()
+        org_id = str(organism_id)
+        
+        # Add to language anchors
+        if word not in self.language_anchors:
+            self.language_anchors[word] = []
+        if org_id not in self.language_anchors[word]:
+            self.language_anchors[word].append(org_id)
+        
+        # Add to node associations
+        if org_id not in self.node_word_associations:
+            self.node_word_associations[org_id] = set()
+        self.node_word_associations[org_id].add(word)
+        
+        # Update frequency
+        self.word_frequencies[word] = self.word_frequencies.get(word, 0) + 1
+        
+        self._dirty = True
+    
+    def record_token_sequence(self, organism_id: str, tokens: List[int]):
+        """Record token sequence for an organism."""
+        org_id = str(organism_id)
+        if org_id not in self.organism_sequences:
+            self.organism_sequences[org_id] = []
+        self.organism_sequences[org_id].extend(tokens)
+        # Keep last 200 tokens
+        self.organism_sequences[org_id] = self.organism_sequences[org_id][-200:]
+        self._dirty = True
+    
+    def get_organism_words(self, organism_id: str) -> set:
+        """Get words associated with an organism."""
+        return self.node_word_associations.get(str(organism_id), set())
+    
+    def get_word_organisms(self, word: str) -> List[str]:
+        """Get organisms that use this word."""
+        return self.language_anchors.get(word.lower(), [])
+    
+    def learn_from_response(self, organism_id: str, words: List[str], reward: float):
+        """Learn word-organism associations from a response."""
+        if reward > 0:
+            # Positive reward: strengthen word-organism associations
+            for word in words:
+                self.anchor_word(word, organism_id)
+    
+    def get_tfidf_scores(self) -> Dict[str, float]:
+        """Calculate TF-IDF importance scores."""
+        if not self.word_frequencies:
+            return {}
+        
+        total_count = sum(self.word_frequencies.values())
+        total_orgs = len(self.node_word_associations)
+        
+        scores = {}
+        for word, freq in self.word_frequencies.items():
+            tf = freq / max(total_count, 1)
+            orgs_with_word = len(self.language_anchors.get(word, []))
+            idf = 1.0 + (1.0 / (orgs_with_word + 1)) if total_orgs > 0 else 1.0
+            scores[word] = tf * idf
+        
+        return scores
+    
+    def save(self, path: Path):
+        """Save context memory to JSON."""
+        data = {
+            'version': '2.0',
+            'source_note': 'Live Context Memory - learned word-organism associations',
+            'language_anchors': self.language_anchors,
+            'node_word_associations': {k: list(v) for k, v in self.node_word_associations.items()},
+            'word_frequencies': self.word_frequencies,
+            'organism_sequences': self.organism_sequences,
+            'total_anchors': sum(len(v) for v in self.language_anchors.values()),
+            'saved_at': time.time()
+        }
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2)
+        self._dirty = False
+        logger.info(f"Saved context memory: {len(self.language_anchors)} anchored words")
+    
+    @classmethod
+    def load(cls, path: Path) -> 'LiveContextMemory':
+        """Load context memory from JSON."""
+        mem = cls()
+        if not path.exists():
+            return mem
+        
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            mem.language_anchors = data.get('language_anchors', {})
+            mem.node_word_associations = {k: set(v) for k, v in data.get('node_word_associations', {}).items()}
+            mem.word_frequencies = data.get('word_frequencies', {})
+            mem.organism_sequences = data.get('organism_sequences', {})
+            logger.info(f"Loaded context memory: {len(mem.language_anchors)} anchored words")
+        except Exception as e:
+            logger.warning(f"Failed to load context memory: {e}")
+        
+        return mem
+
+
+class LiveCausationSystem:
+    """
+    Live, learnable causation system for event tracking.
+    
+    Records events and their causal relationships, enabling:
+    - Understanding WHY decisions were made
+    - Tracking cause-effect chains
+    - Learning causal patterns from experience
+    """
+    
+    def __init__(self, max_events: int = 5000):
+        self.events: Dict[str, Dict[str, Any]] = {}
+        self.causal_links: List[Dict[str, Any]] = []
+        self.max_events = max_events
+        self._event_counter = 0
+        self._dirty = False
+    
+    def record_event(self, event_type: str, component: str, 
+                     data: Optional[Dict[str, Any]] = None) -> str:
+        """Record a new event."""
+        self._event_counter += 1
+        event_id = f"evt_{self._event_counter}_{int(time.time() * 1000) % 100000}"
+        
+        self.events[event_id] = {
+            'id': event_id,
+            'event_type': event_type,
+            'component': component,
+            'timestamp': time.time(),
+            'data': data or {}
+        }
+        
+        # Trim old events if over limit
+        if len(self.events) > self.max_events:
+            oldest_keys = sorted(self.events.keys(), 
+                               key=lambda k: self.events[k]['timestamp'])[:100]
+            for key in oldest_keys:
+                del self.events[key]
+        
+        self._dirty = True
+        return event_id
+    
+    def add_causal_link(self, from_event: str, to_event: str, 
+                        strength: float = 0.5, explanation: str = ""):
+        """Add a causal link between events."""
+        self.causal_links.append({
+            'from_event': from_event,
+            'to_event': to_event,
+            'strength': strength,
+            'explanation': explanation,
+            'created_at': time.time()
+        })
+        self._dirty = True
+    
+    def record_decision(self, organism_id: str, action: int, action_name: str,
+                       state_summary: Dict[str, Any], reward: Optional[float] = None) -> str:
+        """Record a decision event."""
+        return self.record_event(
+            event_type='decision',
+            component='neural',
+            data={
+                'organism_id': str(organism_id),
+                'action': action,
+                'action_name': action_name,
+                'state_summary': state_summary,
+                'reward': reward
+            }
+        )
+    
+    def record_learning(self, organism_id: str, loss: float, 
+                        training_step: int) -> str:
+        """Record a learning event."""
+        return self.record_event(
+            event_type='learning',
+            component='training',
+            data={
+                'organism_id': str(organism_id),
+                'loss': loss,
+                'training_step': training_step
+            }
+        )
+    
+    def get_recent_events(self, limit: int = 50, 
+                          event_type: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Get recent events, optionally filtered by type."""
+        events = list(self.events.values())
+        if event_type:
+            events = [e for e in events if e['event_type'] == event_type]
+        events.sort(key=lambda e: e['timestamp'], reverse=True)
+        return events[:limit]
+    
+    def explain_decision(self, event_id: str, max_depth: int = 5) -> Dict[str, Any]:
+        """Trace back causes of a decision."""
+        if event_id not in self.events:
+            return {'error': f'Event {event_id} not found'}
+        
+        # Build backward causation index
+        backward = {}
+        for link in self.causal_links:
+            to_evt = link['to_event']
+            if to_evt not in backward:
+                backward[to_evt] = []
+            backward[to_evt].append(link)
+        
+        # Trace causes
+        root_causes = []
+        visited = set()
+        
+        def trace(evt_id: str, path: List[str], depth: int):
+            if depth > max_depth or evt_id in visited:
+                return
+            visited.add(evt_id)
+            
+            causes = backward.get(evt_id, [])
+            if not causes:
+                if evt_id in self.events:
+                    root_causes.append({
+                        'event': self.events[evt_id],
+                        'path': path + [evt_id],
+                        'depth': len(path)
+                    })
+            else:
+                for link in causes:
+                    trace(link['from_event'], path + [evt_id], depth + 1)
+        
+        trace(event_id, [], 0)
+        
+        return {
+            'event': self.events.get(event_id, {}),
+            'root_causes': root_causes[:10],
+            'total_causes_found': len(root_causes)
+        }
+    
+    def save(self, path: Path):
+        """Save causation system to JSON."""
+        data = {
+            'version': '2.0',
+            'source_note': 'Live Causation System - learned event history',
+            'events': self.events,
+            'causal_links': self.causal_links,
+            'total_events': len(self.events),
+            'total_links': len(self.causal_links),
+            'saved_at': time.time()
+        }
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2)
+        self._dirty = False
+        logger.info(f"Saved causation system: {len(self.events)} events, {len(self.causal_links)} links")
+    
+    @classmethod
+    def load(cls, path: Path) -> 'LiveCausationSystem':
+        """Load causation system from JSON."""
+        sys = cls()
+        if not path.exists():
+            return sys
+        
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            sys.events = data.get('events', {})
+            sys.causal_links = data.get('causal_links', [])
+            sys._event_counter = len(sys.events)
+            logger.info(f"Loaded causation system: {len(sys.events)} events")
+        except Exception as e:
+            logger.warning(f"Failed to load causation system: {e}")
+        
+        return sys
+
+
+class LiveAllianceSystem:
+    """
+    Live, learnable alliance system for social context.
+    
+    Tracks alliances, reputations, and social relationships.
+    """
+    
+    def __init__(self):
+        self.alliances: Dict[str, Dict[str, Any]] = {}  # alliance_id -> alliance data
+        self.reputations: Dict[str, float] = {}  # organism_id -> reputation score
+        self.organism_to_alliance: Dict[str, str] = {}  # organism_id -> alliance_id
+        self.wisdom_rules: List[str] = []  # Learned wisdom rules
+        self._dirty = False
+    
+    def join_alliance(self, organism_id: str, alliance_id: str):
+        """Have an organism join an alliance."""
+        org_id = str(organism_id)
+        
+        # Leave current alliance if any
+        if org_id in self.organism_to_alliance:
+            old_alliance = self.organism_to_alliance[org_id]
+            if old_alliance in self.alliances:
+                self.alliances[old_alliance]['members'].discard(org_id)
+        
+        # Create alliance if doesn't exist
+        if alliance_id not in self.alliances:
+            self.alliances[alliance_id] = {
+                'members': set(),
+                'tier': 1,
+                'reputation': 0.5,
+                'founding_time': time.time()
+            }
+        
+        # Join new alliance
+        self.alliances[alliance_id]['members'].add(org_id)
+        self.organism_to_alliance[org_id] = alliance_id
+        self._dirty = True
+    
+    def update_reputation(self, organism_id: str, delta: float):
+        """Update an organism's reputation."""
+        org_id = str(organism_id)
+        current = self.reputations.get(org_id, 0.5)
+        self.reputations[org_id] = max(0.0, min(1.0, current + delta))
+        self._dirty = True
+    
+    def get_reputation(self, organism_id: str) -> float:
+        """Get an organism's reputation."""
+        return self.reputations.get(str(organism_id), 0.5)
+    
+    def get_alliance(self, organism_id: str) -> Optional[str]:
+        """Get an organism's alliance."""
+        return self.organism_to_alliance.get(str(organism_id))
+    
+    def add_wisdom_rule(self, rule: str):
+        """Add a learned wisdom rule."""
+        if rule not in self.wisdom_rules:
+            self.wisdom_rules.append(rule)
+            self._dirty = True
+    
+    def learn_from_interaction(self, org1_id: str, org2_id: str, 
+                               action: str, reward: float):
+        """Learn from a social interaction."""
+        # Positive cooperation increases reputation
+        if action == 'cooperate' and reward > 0:
+            self.update_reputation(org1_id, 0.05)
+            self.update_reputation(org2_id, 0.05)
+            
+            # If both in same alliance, strengthen alliance
+            alliance1 = self.get_alliance(org1_id)
+            alliance2 = self.get_alliance(org2_id)
+            if alliance1 and alliance1 == alliance2:
+                self.alliances[alliance1]['reputation'] = min(
+                    1.0, self.alliances[alliance1]['reputation'] + 0.02
+                )
+        
+        # Competition can hurt reputation
+        elif action == 'compete' and reward < 0:
+            self.update_reputation(org1_id, -0.02)
+    
+    def save(self, path: Path):
+        """Save alliance system to JSON."""
+        data = {
+            'version': '2.0',
+            'source_note': 'Live Alliance System - learned social structures',
+            'alliances': {k: {**v, 'members': list(v['members'])} 
+                         for k, v in self.alliances.items()},
+            'reputations': self.reputations,
+            'organism_to_alliance': self.organism_to_alliance,
+            'wisdom_rules': self.wisdom_rules,
+            'alliance_count': len(self.alliances),
+            'saved_at': time.time()
+        }
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2)
+        self._dirty = False
+        logger.info(f"Saved alliance system: {len(self.alliances)} alliances")
+    
+    @classmethod
+    def load(cls, path: Path) -> 'LiveAllianceSystem':
+        """Load alliance system from JSON."""
+        sys = cls()
+        if not path.exists():
+            return sys
+        
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            sys.alliances = {k: {**v, 'members': set(v.get('members', []))} 
+                            for k, v in data.get('alliances', {}).items()}
+            sys.reputations = data.get('reputations', {})
+            sys.organism_to_alliance = data.get('organism_to_alliance', {})
+            sys.wisdom_rules = data.get('wisdom_rules', [])
+            logger.info(f"Loaded alliance system: {len(sys.alliances)} alliances")
+        except Exception as e:
+            logger.warning(f"Failed to load alliance system: {e}")
+        
+        return sys
+
+
+# =============================================================================
 # VP RUNTIME - Violation Pressure Computation (Butterfly Alignment)
 # =============================================================================
 
@@ -822,6 +1379,13 @@ class AgentBridge:
         self._total_loss = 0.0
         self._train_batch_size = 32
         self._gamma = 0.99
+        
+        # 🧠 LIVE SEMANTIC SYSTEMS - Continued Learning for ALL Subsystems
+        self.knowledge_web = LiveKnowledgeWeb()
+        self.context_memory = LiveContextMemory()
+        self.causation_system = LiveCausationSystem()
+        self.alliance_system = LiveAllianceSystem()
+        self._agent_dir: Optional[Path] = None  # For saving learned state
         
         # Server (lazy init)
         self._server_app = None
@@ -1745,6 +2309,10 @@ class AgentBridge:
         Returns:
             BridgeResult with action, response, confidence, ensemble voting details
         """
+        # Capture text for semantic learning (used in reward())
+        if text is not None:
+            self._last_processed_text = text
+        
         # Convert input to state vector
         if obs is not None:
             state = self.gym_input.to_state(obs, context)
@@ -1893,6 +2461,13 @@ class AgentBridge:
         Provide reward for last action (for learning).
         
         Call this after process() to enable learning.
+        
+        This now updates ALL learning systems:
+        - Experience buffer (replay memory)
+        - Knowledge web (semantic relations)
+        - Context memory (word anchoring)  
+        - Causation system (action-outcome tracking)
+        - Alliance system (if applicable)
         """
         if self.current_state is None or self.last_action is None:
             return
@@ -1908,6 +2483,45 @@ class AgentBridge:
         )
         
         self.episode_rewards.append(reward_value)
+        
+        # ═══════════════════════════════════════════════════════════════
+        # 🧠 UPDATE SEMANTIC SYSTEMS - Continued Learning for ALL!
+        # ═══════════════════════════════════════════════════════════════
+        
+        # Causation learning: Track action -> outcome
+        if self.causation_system and self.causation_system.events:
+            outcome = 'positive' if reward_value > 0 else ('negative' if reward_value < 0 else 'neutral')
+            self.causation_system.record_event(
+                event_type=f'action_{self.last_action}',
+                component='gym_reward',
+                data={
+                    'reward': reward_value,
+                    'done': done,
+                    'step': self.total_steps,
+                    'outcome': outcome
+                }
+            )
+        
+        # Knowledge web learning: Associate concepts with good/bad outcomes
+        if self.knowledge_web and self.knowledge_web.concepts and hasattr(self, '_last_processed_text'):
+            last_text = getattr(self, '_last_processed_text', '')
+            if last_text:
+                words = [w.lower() for w in str(last_text).split() if len(w) > 2][:10]
+                self.knowledge_web.learn_from_context(words, reward_value)
+        
+        # Context memory learning: Anchor words to current state
+        if self.context_memory and self.context_memory.language_anchors:
+            if reward_value > 0 and hasattr(self, '_last_processed_text'):
+                last_text = getattr(self, '_last_processed_text', '')
+                if last_text:
+                    words = [w.lower() for w in str(last_text).split() if len(w) > 2][:5]
+                    for word in words:
+                        # Use state hash as pseudo-organism ID for anchoring
+                        state_id = f"state_{hash(str(self.current_state[:4]))}" if self.current_state is not None else "state_unknown"
+                        self.context_memory.anchor_word(word, state_id)
+        
+        # Track what text was processed for learning
+        self._last_processed_text = None  # Reset after use
         
         if done:
             logger.info(f"Episode done. Total reward: {sum(self.episode_rewards):.2f}")
@@ -2090,6 +2704,160 @@ class AgentBridge:
         except Exception as e:
             logger.warning(f"Failed to save model: {e}")
         return False
+    
+    # ═══════════════════════════════════════════════════════════════════════
+    # 🧠 SAVE LEARNED STATE - Persist ALL Systems After Continued Learning
+    # ═══════════════════════════════════════════════════════════════════════
+    
+    def save_learned_state(self, directory: Optional[Path] = None) -> Dict[str, bool]:
+        """
+        Save ALL learned state after continued learning sessions.
+        
+        This saves:
+        - Neural network (.pt) if online learning was active
+        - Knowledge web with new concepts/relations
+        - Context memory with new anchors
+        - Causation system with new events/patterns
+        - Alliance system with updated trust scores
+        - Experience buffer for future learning
+        - Bridge state (steps, epsilon, etc.)
+        
+        Returns dict mapping system name to save success.
+        """
+        if directory is None:
+            directory = getattr(self, '_agent_dir', None)
+        
+        if directory is None:
+            logger.warning("No agent directory set - cannot save learned state")
+            return {'error': 'no_directory'}
+        
+        directory = Path(directory)
+        results = {}
+        
+        print("\n" + "="*60)
+        print("💾 SAVING LEARNED STATE")
+        print("="*60)
+        
+        # 1. Save neural network if online learning happened
+        if hasattr(self, '_online_learning_enabled') and self._online_learning_enabled:
+            brain_path = directory / 'brain.pt'
+            if self.save_trained_model(brain_path):
+                results['neural_network'] = True
+                print(f"  ✅ Neural network: {self._train_steps} training steps saved")
+            else:
+                results['neural_network'] = False
+                print(f"  ⚠️ Neural network: could not save")
+        else:
+            results['neural_network'] = 'skipped'
+        
+        # 2. Save knowledge web
+        if self.knowledge_web and self.knowledge_web.concepts:
+            kw_path = directory / 'knowledge_web.json'
+            try:
+                self.knowledge_web.save(kw_path)
+                results['knowledge_web'] = True
+                print(f"  ✅ Knowledge web: {len(self.knowledge_web.concepts)} concepts, "
+                      f"{len(self.knowledge_web.relations)} relations")
+            except Exception as e:
+                results['knowledge_web'] = False
+                print(f"  ❌ Knowledge web: {e}")
+        else:
+            results['knowledge_web'] = 'empty'
+        
+        # 3. Save context memory
+        if self.context_memory and self.context_memory.language_anchors:
+            cm_path = directory / 'context_memory.json'
+            try:
+                self.context_memory.save(cm_path)
+                results['context_memory'] = True
+                print(f"  ✅ Context memory: {len(self.context_memory.language_anchors)} anchors, "
+                      f"{len(self.context_memory.state_patterns)} patterns")
+            except Exception as e:
+                results['context_memory'] = False
+                print(f"  ❌ Context memory: {e}")
+        else:
+            results['context_memory'] = 'empty'
+        
+        # 4. Save causation system
+        if self.causation_system and self.causation_system.events:
+            cs_path = directory / 'causation_system.json'
+            try:
+                self.causation_system.save(cs_path)
+                results['causation_system'] = True
+                print(f"  ✅ Causation system: {len(self.causation_system.events)} events, "
+                      f"{len(self.causation_system.causal_links)} causal links")
+            except Exception as e:
+                results['causation_system'] = False
+                print(f"  ❌ Causation system: {e}")
+        else:
+            results['causation_system'] = 'empty'
+        
+        # 5. Save alliance system
+        if self.alliance_system and self.alliance_system.alliances:
+            as_path = directory / 'alliance_system.json'
+            try:
+                self.alliance_system.save(as_path)
+                results['alliance_system'] = True
+                print(f"  ✅ Alliance system: {len(self.alliance_system.alliances)} alliances")
+            except Exception as e:
+                results['alliance_system'] = False
+                print(f"  ❌ Alliance system: {e}")
+        else:
+            results['alliance_system'] = 'empty'
+        
+        # 6. Save experience buffer
+        exp_path = directory / 'experiences.pkl'
+        try:
+            if hasattr(self, 'experience_buffer') and self.experience_buffer:
+                self.experience_buffer.save(exp_path)
+                results['experience_buffer'] = True
+                print(f"  ✅ Experience buffer: {len(self.experience_buffer.buffer)} experiences")
+        except Exception as e:
+            results['experience_buffer'] = False
+            print(f"  ❌ Experience buffer: {e}")
+        
+        # 7. Save bridge state
+        state_path = directory / 'bridge_state.json'
+        try:
+            state_data = {
+                'total_steps': self.total_steps,
+                'epsilon': self.config.epsilon,
+                'current_state': self.current_state.tolist() if self.current_state is not None else None,
+                'last_action': self.last_action,
+                'saved_at': time.strftime('%Y-%m-%d %H:%M:%S'),
+                'online_learning_steps': getattr(self, '_train_steps', 0)
+            }
+            with open(state_path, 'w') as f:
+                json.dump(state_data, f, indent=2)
+            results['bridge_state'] = True
+            print(f"  ✅ Bridge state: {self.total_steps} total steps")
+        except Exception as e:
+            results['bridge_state'] = False
+            print(f"  ❌ Bridge state: {e}")
+        
+        # Summary
+        saved_count = sum(1 for v in results.values() if v is True)
+        total_count = len([v for v in results.values() if v != 'skipped' and v != 'empty'])
+        
+        print("-"*60)
+        print(f"  📊 Saved {saved_count}/{total_count} systems")
+        print("="*60 + "\n")
+        
+        return results
+    
+    def auto_save_if_learning(self):
+        """Auto-save learned state if any learning occurred."""
+        has_learning = (
+            (hasattr(self, '_online_learning_enabled') and self._online_learning_enabled) or
+            (self.knowledge_web and self.knowledge_web._dirty) or
+            (self.context_memory and self.context_memory._dirty) or
+            (self.causation_system and self.causation_system._dirty) or
+            (self.alliance_system and self.alliance_system._dirty)
+        )
+        
+        if has_learning:
+            return self.save_learned_state()
+        return {'status': 'no_changes'}
 
     # =========================================================================
     # MODE 1: Gymnasium/Gym Environment Runner
@@ -2391,6 +3159,15 @@ class AgentBridge:
                 print(f"     Final Loss:     {stats.get('final_loss', 0):.6f}")
             
             print("="*60 + "\n")
+        
+        # Auto-save learned state after gym runs with learning enabled
+        if learn and hasattr(self, '_agent_dir') and self._agent_dir:
+            print("  💾 Auto-saving learned state...")
+            save_results = self.save_learned_state()
+            saved_count = sum(1 for v in save_results.values() if v is True)
+            if saved_count > 0:
+                stats['auto_saved'] = True
+                stats['saved_systems'] = saved_count
         
         return stats
     
@@ -2751,7 +3528,7 @@ class AgentBridge:
         print("  🦋 BUTTERFLY AGENT - Interactive Mode")
         print("="*60)
         print("  Type messages to chat, or use commands:")
-        print("  /gym, /envs, /arena, /train, /state, /help, /quit")
+        print("  /gym, /envs, /arena, /train, /save, /state, /help, /quit")
         print("="*60 + "\n")
         
         while True:
@@ -2794,6 +3571,7 @@ class AgentBridge:
                 print("    /train              - Training statistics")
                 print("    /state              - Agent state")
                 print("    /config             - Configuration")
+                print("    /save               - Save all learned state")
                 print("-"*50 + "\n")
                 continue
             
@@ -2812,6 +3590,14 @@ class AgentBridge:
                 stats = self.get_training_stats()
                 print(f"\nTraining stats: {json.dumps(stats, indent=2)}")
                 print()
+                continue
+            
+            elif user_input.lower() == '/save':
+                # Save all learned state
+                results = self.save_learned_state()
+                if 'error' in results:
+                    print(f"\n❌ Cannot save: {results['error']}")
+                    print("   Agent was not loaded from a directory")
                 continue
             
             elif user_input.lower().startswith('/arena'):
@@ -3075,6 +3861,9 @@ class AgentBridge:
             vocabulary=vocab
         )
         
+        # Store agent directory for saving learned state
+        bridge._agent_dir = directory
+        
         # Override has_language_head from config if not detected from model
         # (for models that were compiled with language head support)
         if config_path.exists():
@@ -3105,6 +3894,48 @@ class AgentBridge:
             if state_data.get('current_state'):
                 bridge.current_state = np.array(state_data['current_state'])
             bridge.last_action = state_data.get('last_action')
+        
+        # ═══════════════════════════════════════════════════════════════
+        # 🧠 LOAD LIVE SEMANTIC SYSTEMS - Continued Learning for ALL!
+        # ═══════════════════════════════════════════════════════════════
+        
+        # Load Knowledge Web
+        kw_path = directory / 'knowledge_web.json'
+        if kw_path.exists():
+            bridge.knowledge_web = LiveKnowledgeWeb.load(kw_path)
+            print(f"  [OK] Loaded live knowledge web: {len(bridge.knowledge_web.concepts)} concepts")
+        
+        # Load Context Memory
+        cm_path = directory / 'context_memory.json'
+        if cm_path.exists():
+            bridge.context_memory = LiveContextMemory.load(cm_path)
+            print(f"  [OK] Loaded live context memory: {len(bridge.context_memory.language_anchors)} anchors")
+        
+        # Load Causation System
+        cs_path = directory / 'causation_system.json'
+        if cs_path.exists():
+            bridge.causation_system = LiveCausationSystem.load(cs_path)
+            print(f"  [OK] Loaded live causation system: {len(bridge.causation_system.events)} events")
+        
+        # Load Alliance System
+        as_path = directory / 'alliance_system.json'
+        if as_path.exists():
+            bridge.alliance_system = LiveAllianceSystem.load(as_path)
+            print(f"  [OK] Loaded live alliance system: {len(bridge.alliance_system.alliances)} alliances")
+        
+        # Report full continued learning capabilities
+        live_systems = []
+        if bridge.knowledge_web.concepts:
+            live_systems.append('knowledge_web')
+        if bridge.context_memory.language_anchors:
+            live_systems.append('context_memory')
+        if bridge.causation_system.events:
+            live_systems.append('causation')
+        if bridge.alliance_system.alliances:
+            live_systems.append('alliances')
+        
+        if live_systems:
+            print(f"  [OK] 🧠 CONTINUED LEARNING ENABLED: {', '.join(live_systems)}")
         
         logger.info(f"Loaded AgentBridge from {directory}")
         return bridge

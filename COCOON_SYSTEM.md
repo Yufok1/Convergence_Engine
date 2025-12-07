@@ -197,18 +197,21 @@ special_tokens = ['<PAD>', '<UNK>', '<START>', '<END>', '<VP_GATE>']
 | Concept loss (MSE) | ✅ | ✅ | Aligned |
 | ConceptHead | ✅ | ✅ | Aligned |
 | Vocabulary expansion | ✅ | ✅ | Aligned |
-| STEP 1-7 Pipeline | ✅ | ✅ | **NEW** - Aligned |
-| Decision Matrix | ✅ | ✅ | **NEW** - Aligned |
-| Semantic Boosting | ✅ | ✅ | **NEW** - Aligned |
-| Fitness Weighting | ✅ | ✅ | **NEW** - Aligned |
-| Knowledge Web Usage | ✅ | ✅ | **NEW** - Aligned |
-| Response Aggregation | ✅ | ✅ | **NEW** - Aligned |
+| STEP 1-7 Pipeline | ✅ | ✅ | Aligned |
+| Decision Matrix | ✅ | ✅ | Aligned |
+| Semantic Boosting | ✅ | ✅ | Aligned |
+| Fitness Weighting | ✅ | ✅ | Aligned |
+| Knowledge Web Usage | ✅ | ✅ | Aligned |
+| Response Aggregation | ✅ | ✅ | Aligned |
+| **Semantic Convergence** | ✅ | ✅ | **NEW** - Word embeddings exported |
+| **Language Anchors** | ✅ | ✅ | **NEW** - Word-organism mappings |
+| **Axiom Embeddings** | ✅ | ✅ | **NEW** - ConceptSystem grounding |
 | Gym integration | ✅ | ✅ | Aligned |
 | HTTP server | N/A | ✅ | Cocoon-specific |
 | Self-export | N/A | ✅ | Cocoon-specific |
 | Highlander battles | ✅ | ❌ | Post-selection |
-| Alliance warfare | ✅ | ❌ | Post-selection |
-| Causation events | ✅ | ✅ | **NEW** - Display only |
+| Alliance warfare | ✅ | ✅ | **NEW** - Exported state |
+| Causation events | ✅ | ✅ | **NEW** - Full event history |
 | Population dynamics | ✅ | ❌ | Post-selection |
 
 ### NEW: Full Intelligence Pipeline (2025-12-05)
@@ -274,6 +277,46 @@ Where:
 4. **Generate Python source** using `string.Template`
 5. **Embed compressed data** as string constants
 6. **Return single `.py` file**
+
+### Archive Contents (Package/Ensemble Export)
+
+When exporting as `.zip` package, the archive contains:
+
+| File | Description | NEW |
+|------|-------------|-----|
+| `brain.onnx` / `brain.pt` | Neural network model | |
+| `metadata.json` | Export metadata, behavioral fingerprints | |
+| `bridge_config.json` | Runtime configuration | |
+| `atomic_language.json` | Merged language concepts from organisms | |
+| `chat_vocabulary.json` | Tokenization vocabulary | |
+| `conversation_history.json` | Training conversation data | |
+| `semantic_convergence.json` | **Word embeddings, language anchors** | ✅ |
+| `knowledge_web_full.json` | **Full semantic relationships (10k concepts)** | ✅ |
+| `causation_system.json` | **Event history for exported organisms** | ✅ |
+| `alliance_system.json` | **Social structures and reputation** | ✅ |
+| `run_agent.py` | Runner script | |
+| `requirements.txt` | Dependencies | |
+| `README.md` | Documentation | |
+
+### Semantic Convergence Export (NEW)
+
+The `semantic_convergence.json` file contains:
+
+```json
+{
+  "version": "1.0",
+  "total_words": 500,
+  "total_anchors": 1200,
+  "embedding_dim": 64,
+  "organism_embedding_alpha": 0.1,
+  "language_anchors": {"word": ["org_id_1", "org_id_2"]},
+  "node_word_associations": {"org_id": ["word1", "word2"]},
+  "word_frequencies": {"word": 42},
+  "word_embeddings_compressed": "<base64 compressed>"
+}
+```
+
+This enables exported agents to maintain their **unique linguistic identity** - the same organism that learned specific words will respond with those words in the cocoon.
 
 ### Key Files
 

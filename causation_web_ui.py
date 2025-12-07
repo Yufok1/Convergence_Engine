@@ -7079,6 +7079,17 @@ def compile_organism_to_agent(organism_id):
         capsule_manager = OrganismCapsuleManager(storage_dir=Path('highlander_capsules'))
         logger.info("[COMPILE] Capsule manager created")
 
+        # Get context_memory and concept_system for semantic convergence capture
+        network = app.config.get('network')
+        context_memory = app.config.get('context_memory')
+        if context_memory is None and network and hasattr(network, 'context_memory'):
+            context_memory = network.context_memory
+        concept_system = None
+        if unified_system and hasattr(unified_system, 'neural_trainer'):
+            trainer = unified_system.neural_trainer
+            if trainer and hasattr(trainer, 'concept_system'):
+                concept_system = trainer.concept_system
+
         # Prefer live organism if available; otherwise use stored capsule
         if organism_id in live_organisms:
             logger.info(f"[COMPILE] Capturing live organism {organism_id}...")
@@ -7091,7 +7102,9 @@ def compile_organism_to_agent(organism_id):
                         reason=f'compile_request_{datetime.now().isoformat()}',
                         notes=f'Capsule created for compilation of agent {organism_id}',
                         include_causation=True,
-                        causation_explorer=getattr(unified_system, 'causation_explorer', None) if unified_system else None
+                        causation_explorer=getattr(unified_system, 'causation_explorer', None) if unified_system else None,
+                        context_memory=context_memory,
+                        concept_system=concept_system
                     )
                 logger.info(f"[COMPILE] Capsule captured: {capsule is not None}")
             except Exception as e:
@@ -7190,6 +7203,17 @@ def compile_ensemble_to_agent():
                 live_organisms = {}
         capsule_manager = OrganismCapsuleManager(storage_dir=Path('highlander_capsules'))
 
+        # Get context_memory and concept_system for semantic convergence capture
+        network = app.config.get('network')
+        context_memory = app.config.get('context_memory')
+        if context_memory is None and network and hasattr(network, 'context_memory'):
+            context_memory = network.context_memory
+        concept_system = None
+        if unified_system and hasattr(unified_system, 'neural_trainer'):
+            trainer = unified_system.neural_trainer
+            if trainer and hasattr(trainer, 'concept_system'):
+                concept_system = trainer.concept_system
+
         # PAUSE SIMULATION during capsule capture to prevent race conditions
         capsules = []
         with pause_simulation_for_export():
@@ -7201,7 +7225,9 @@ def compile_ensemble_to_agent():
                         reason=f'compile_ensemble_{datetime.now().isoformat()}',
                         notes=f'Ensemble capture for {oid}',
                         include_causation=True,
-                        causation_explorer=getattr(unified_system, 'causation_explorer', None) if unified_system else None
+                        causation_explorer=getattr(unified_system, 'causation_explorer', None) if unified_system else None,
+                        context_memory=context_memory,
+                        concept_system=concept_system
                     )
                     if cap:
                         capsules.append(cap)
@@ -7587,6 +7613,25 @@ def compile_cocoon():
             if lang_system:
                 conversation_history = getattr(lang_system, 'conversation_history', [])
         
+        # Get context_memory for semantic convergence
+        network = app.config.get('network')
+        context_memory = app.config.get('context_memory')
+        if context_memory is None and network and hasattr(network, 'context_memory'):
+            context_memory = network.context_memory
+        if context_memory is None and knowledge_web:
+            # Try to get from knowledge_web's parent
+            context_memory = getattr(knowledge_web, '_context_memory', None)
+        
+        # Get causation_explorer
+        causation_explorer = app.config.get('causation_explorer')
+        if causation_explorer is None and unified_system:
+            causation_explorer = getattr(unified_system, 'causation_explorer', None)
+        
+        # Get alliance_system
+        alliance_system = app.config.get('alliance_system')
+        if alliance_system is None and unified_system:
+            alliance_system = getattr(unified_system, 'alliance_warfare', None)
+        
         # Compile cocoon with specified format
         compiler = AgentCompiler()
         
@@ -7595,12 +7640,16 @@ def compile_cocoon():
         if is_ensemble and export_format in ('onnx', 'torchscript'):
             logger.info(f"[COCOON] Using ensemble export for {len(organisms)} organisms")
             # compile_capsules_to_ensemble returns a BytesIO archive containing
-            # brain.onnx/brain.pt + metadata + runner scripts
+            # brain.onnx/brain.pt + metadata + runner scripts + semantic systems
             ensemble_archive = compiler.compile_capsules_to_ensemble(
                 capsules=organisms,
                 export_format=export_format,
                 vocabulary=vocabulary,
-                conversation_history=conversation_history
+                conversation_history=conversation_history,
+                knowledge_web=knowledge_web,
+                context_memory=context_memory,
+                causation_explorer=causation_explorer,
+                alliance_system=alliance_system
             )
             # This is a ZIP archive - always save as .zip for ensemble binary exports
             model_bytes = ensemble_archive.read()

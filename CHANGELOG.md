@@ -4,6 +4,188 @@
 
 ---
 
+## [Unreleased] - 2025-12-07
+
+### 🧠 100% Continued Learning for Exported Agents (2025-12-07)
+
+**MAJOR ENHANCEMENT**: Exported agents now have full continued learning for ALL systems, not just neural networks.
+
+#### Added - Live Semantic Systems (`bridge.py`)
+- **LiveKnowledgeWeb class** (~120 lines):
+  - Dynamic concept addition during interaction
+  - Relation strengthening/weakening based on rewards
+  - `learn_from_context()` - Learns word associations from rewarded text
+  - Persists to `knowledge_web.json`
+
+- **LiveContextMemory class** (~140 lines):
+  - Word-organism anchoring during learning
+  - Token sequence recording
+  - TF-IDF importance scoring
+  - Persists to `context_memory.json`
+
+- **LiveCausationSystem class** (~130 lines):
+  - Action → outcome event tracking
+  - Causal chain learning
+  - Pattern recognition
+  - Persists to `causation_system.json`
+
+- **LiveAllianceSystem class** (~100 lines):
+  - Trust score updates
+  - Alliance strengthening
+  - Interaction tracking
+  - Persists to `alliance_system.json`
+
+#### Added - Save Infrastructure
+- **`save_learned_state()` method** - Saves ALL systems to disk:
+  - Neural network (.pt) if online learning active
+  - Knowledge web with new concepts/relations
+  - Context memory with new anchors
+  - Causation system with new events
+  - Alliance system with updated trust
+  - Experience buffer for future learning
+  - Bridge state (steps, epsilon, etc.)
+
+- **`/save` CLI command** - Manual save trigger
+- **Auto-save after gym runs** - Automatic persistence when learning enabled
+
+#### Enhanced - Reward Learning Hook
+- **`reward()` method** now updates ALL semantic systems:
+  - Causation: Records action → outcome events
+  - Knowledge Web: Associates words with good/bad outcomes
+  - Context Memory: Anchors successful words to state patterns
+
+#### Enhanced - AgentBridge.load()
+- Now loads live semantic systems from JSON files
+- Reports which systems are loaded with stats
+- Displays "🧠 CONTINUED LEARNING ENABLED" banner
+
+#### The Full Picture
+```
+EXPORTED AGENT CONTINUED LEARNING:
+┌─────────────────────────────────────────────────────────────┐
+│  ┌─────────────┐   reward()    ┌───────────────────────┐   │
+│  │   Gym Env   │──────────────▶│   Neural Network      │   │
+│  │  CartPole   │               │   (DQN training)      │   │
+│  │   Atari     │               └───────────────────────┘   │
+│  │  MuJoCo     │                         │                 │
+│  └─────────────┘                         │                 │
+│         │                                ▼                 │
+│         │                   ┌───────────────────────┐      │
+│         └──────────────────▶│  Knowledge Web        │      │
+│                             │  (concept relations)  │      │
+│                             └───────────────────────┘      │
+│                                          │                 │
+│                                          ▼                 │
+│                             ┌───────────────────────┐      │
+│                             │  Context Memory       │      │
+│                             │  (word anchoring)     │      │
+│                             └───────────────────────┘      │
+│                                          │                 │
+│                                          ▼                 │
+│                             ┌───────────────────────┐      │
+│                             │  Causation System     │      │
+│                             │  (action tracking)    │      │
+│                             └───────────────────────┘      │
+│                                          │                 │
+│                                          ▼                 │
+│                             ┌───────────────────────┐      │
+│                             │  Alliance System      │      │
+│                             │  (trust updates)      │      │
+│                             └───────────────────────┘      │
+│                                          │                 │
+│                                          ▼                 │
+│                             ┌───────────────────────┐      │
+│                             │      /save or         │      │
+│                             │   Auto-save at end    │      │
+│                             └───────────────────────┘      │
+│                                          │                 │
+│                                          ▼                 │
+│                             ┌───────────────────────┐      │
+│                             │  ALL .json files      │      │
+│                             │  updated on disk      │      │
+│                             └───────────────────────┘      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 🔧 Agent Exporter File Naming & Context Memory Export Fix (2025-12-07)
+
+Fixed file naming mismatches and added full context_memory.json export for standalone chat compatibility.
+
+#### Fixed
+- **File naming mismatch**: Changed `knowledge_web_full.json` → `knowledge_web.json` for consistency with `standalone_butterfly_chat.py` loader
+- **Missing context_memory.json**: Added dedicated export alongside `semantic_convergence.json`
+
+#### Added
+- **`_serialize_context_memory_full()`** method (`agent_compiler.py`):
+  - Exports full context memory in standalone chat format
+  - Includes: `language_anchors`, `node_word_associations`, `word_frequencies`
+  - Includes: `organism_sequences` (recent tokens per organism)
+  - Includes: `ml_analysis` with TF-IDF scoring for word importance
+
+#### Archive Contents Update
+```
+ensemble_archive/
+├── knowledge_web.json         # (was knowledge_web_full.json)
+├── context_memory.json        # NEW - full context memory export
+├── semantic_convergence.json  # Word embeddings + anchors
+└── ... (other files unchanged)
+```
+
+---
+
+### 🔗 Agent Exporter Semantic Convergence Integration (2025-12-07)
+
+Complete integration of Semantic Convergence systems into the Agent Exporter, ensuring exported agents maintain their unique linguistic identity.
+
+#### Added
+- **SemanticConvergenceSnapshot dataclass** (`organism_capsule.py`):
+  - `organism_words` - Words assigned to this organism
+  - `word_frequencies` - Usage frequency per word
+  - `word_embeddings_b64` - Compressed word embeddings
+  - `axiom_embeddings` - ConceptSystem grounded axioms (good/bad/self/other)
+  - `language_anchor_count` - Number of anchored words
+  - `semantic_config` - EMA alpha, embedding dim, etc.
+
+- **New serialization methods** (`agent_compiler.py`):
+  - `_serialize_semantic_convergence()` - Word embeddings + language anchors
+  - `_serialize_knowledge_web_full()` - Full 10k concepts + relations
+  - `_serialize_causation_system()` - Event history for exported organisms
+  - `_serialize_alliance_system()` - Social structures + reputation
+
+- **New archive contents** (ZIP package exports):
+  - `semantic_convergence.json` - Word embeddings, language anchors
+  - `knowledge_web_full.json` - Complete semantic relationships
+  - `causation_system.json` - Organism event history
+  - `alliance_system.json` - Alliance memberships + reputation
+
+#### Changed
+- **`compile_capsules_to_ensemble()`** signature expanded:
+  - Added: `knowledge_web`, `context_memory`, `causation_explorer`, `alliance_system`
+  - All semantic systems now flow through to archive creation
+
+- **`OrganismCapsuleManager.capture_organism()`** signature expanded:
+  - Added: `context_memory`, `concept_system`
+  - Capsules now capture semantic convergence state
+
+- **`causation_web_ui.py` endpoints updated**:
+  - `/api/capsule/<id>/compile` - Passes context_memory, concept_system
+  - `/api/capsules/compile-ensemble` - Passes all semantic systems
+  - `/api/capsules/compile-cocoon` - Passes all semantic systems
+
+#### Fixed
+- **Method signature mismatch**: Endpoints were passing `knowledge_web`, `context_memory`, `causation_explorer`, `alliance_system` but method signature didn't accept them - now fixed
+- **Silent data loss**: Semantic convergence data was being discarded during export - now preserved
+
+#### Impact
+- Exported agents maintain word-organism associations (who knows what words)
+- Word embeddings preserve semantic differentiation from training
+- Agents can be restored with full linguistic context
+- Causation history travels with exported organisms
+
+---
+
 ## [Unreleased] - 2025-12-06
 
 ### 📚 Documentation Organization (2025-12-06)

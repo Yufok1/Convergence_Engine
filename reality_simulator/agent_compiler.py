@@ -838,6 +838,445 @@ class AgentCompiler:
         
         return merged
 
+    def _serialize_semantic_convergence(self, context_memory: Any, 
+                                        capsules: Optional[List['OrganismCapsule']] = None) -> Optional[Dict[str, Any]]:
+        """
+        🔗 Serialize semantic convergence data from ContextMemory.
+        
+        This captures:
+        - Word embeddings (nn.Embedding 1000×64)
+        - Language anchors (word → organism mappings)
+        - Node word associations (organism → words)
+        - Semantic config
+        
+        Args:
+            context_memory: ContextMemory instance
+            capsules: Optional capsules for filtering to relevant organisms
+            
+        Returns:
+            Serialized semantic convergence data
+        """
+        if context_memory is None:
+            return None
+        
+        try:
+            semantic_data = {
+                'version': '1.0',
+                'source_note': 'Semantic Convergence - unified word embeddings from organism neural networks',
+                'total_words': 0,
+                'total_anchors': 0,
+                'embedding_dim': getattr(context_memory, 'embedding_dim', 64),
+                'max_vocab_size': getattr(context_memory, 'max_vocab_size', 1000),
+                'organism_embedding_alpha': getattr(context_memory, 'organism_embedding_alpha', 0.1),
+                'use_learned_embeddings': getattr(context_memory, 'use_learned_embeddings', True),
+            }
+            
+            # Get capsule organism IDs for filtering
+            capsule_org_ids = set()
+            if capsules:
+                for cap in capsules:
+                    org_id = getattr(cap, 'organism_id', None) or getattr(cap, 'species_id', None)
+                    if org_id:
+                        capsule_org_ids.add(str(org_id))
+                        capsule_org_ids.add(hash(str(org_id)))  # Also add hash version
+            
+            # Serialize language anchors (word → organisms)
+            language_anchors = {}
+            if hasattr(context_memory, 'language_anchors'):
+                for word, org_ids in context_memory.language_anchors.items():
+                    # Filter to capsule organisms if specified
+                    if capsule_org_ids:
+                        filtered_ids = [str(oid) for oid in org_ids if oid in capsule_org_ids or str(oid) in capsule_org_ids]
+                        if filtered_ids:
+                            language_anchors[word] = filtered_ids
+                    else:
+                        language_anchors[word] = [str(oid) for oid in org_ids]
+            semantic_data['language_anchors'] = language_anchors
+            semantic_data['total_anchors'] = sum(len(v) for v in language_anchors.values())
+            
+            # Serialize node word associations (organism → words)
+            node_word_associations = {}
+            if hasattr(context_memory, 'node_word_associations'):
+                for org_id, words in context_memory.node_word_associations.items():
+                    # Filter to capsule organisms if specified
+                    if capsule_org_ids and org_id not in capsule_org_ids and str(org_id) not in capsule_org_ids:
+                        continue
+                    node_word_associations[str(org_id)] = list(words)
+            semantic_data['node_word_associations'] = node_word_associations
+            
+            # Serialize word frequencies
+            word_frequencies = {}
+            if hasattr(context_memory, 'word_frequencies'):
+                word_frequencies = dict(context_memory.word_frequencies)
+            semantic_data['word_frequencies'] = word_frequencies
+            semantic_data['total_words'] = len(word_frequencies)
+            
+            # Serialize word embeddings (compressed)
+            word_embeddings_b64 = None
+            if (hasattr(context_memory, 'word_embedding') and 
+                context_memory.word_embedding is not None and
+                hasattr(context_memory, 'vocabulary') and 
+                context_memory.vocabulary is not None):
+                try:
+                    # Get all words in language anchors
+                    words_to_export = set(language_anchors.keys())
+                    # Also add top words by frequency
+                    if word_frequencies:
+                        sorted_words = sorted(word_frequencies.items(), key=lambda x: x[1], reverse=True)
+                        for word, _ in sorted_words[:500]:  # Top 500
+                            words_to_export.add(word)
+                    
+                    embeddings_dict = {}
+                    for word in words_to_export:
+                        token_id = context_memory.vocabulary.get_id(word)
+                        if token_id is not None and token_id < context_memory.word_embedding.weight.shape[0]:
+                            embed = context_memory.word_embedding.weight[token_id].detach().cpu().numpy().tolist()
+                            embeddings_dict[word] = embed
+                    
+                    if embeddings_dict:
+                        embed_json = json.dumps(embeddings_dict)
+                        embed_bytes = zlib.compress(embed_json.encode('utf-8'), level=9)
+                        word_embeddings_b64 = base64.b64encode(embed_bytes).decode('ascii')
+                        semantic_data['word_embeddings_compressed'] = word_embeddings_b64
+                        semantic_data['word_embeddings_count'] = len(embeddings_dict)
+                except Exception as e:
+                    logger.warning(f"Could not serialize word embeddings: {e}")
+            
+            return semantic_data
+            
+        except Exception as e:
+            logger.warning(f"Could not serialize semantic convergence: {e}")
+            return None
+    
+    def _serialize_knowledge_web_full(self, knowledge_web: Any) -> Optional[Dict[str, Any]]:
+        """
+        🌐 Serialize full LinguisticKnowledgeWeb data.
+        
+        This captures:
+        - All concepts (up to 10000)
+        - All relations
+        - Semantic frames
+        - Discovery history
+        
+        Args:
+            knowledge_web: LinguisticKnowledgeWeb instance
+            
+        Returns:
+            Serialized knowledge web data
+        """
+        if knowledge_web is None:
+            return None
+        
+        try:
+            kw_data = {
+                'version': '1.0',
+                'source_note': 'Linguistic Knowledge Web - semantic relationships and concept frames',
+                'concept_count': 0,
+                'relation_count': 0,
+            }
+            
+            # Serialize concepts
+            concepts = {}
+            if hasattr(knowledge_web, 'concepts'):
+                sorted_concepts = sorted(
+                    knowledge_web.concepts.values(),
+                    key=lambda c: getattr(c, 'discovery_count', 0),
+                    reverse=True
+                )[:10000]  # Top 10k concepts
+                
+                for concept in sorted_concepts:
+                    word = getattr(concept, 'word', str(concept))
+                    concepts[word] = {
+                        'category': getattr(concept, 'category', 'unknown'),
+                        'confidence': getattr(concept, 'confidence', 0.5),
+                        'semantic_frame': getattr(concept, 'semantic_frame', 'unknown'),
+                        'discovery_count': getattr(concept, 'discovery_count', 0),
+                        'associations': list(getattr(concept, 'associations', []))[:20],  # Top 20
+                    }
+            kw_data['concepts'] = concepts
+            kw_data['concept_count'] = len(concepts)
+            
+            # Serialize relations
+            relations = []
+            if hasattr(knowledge_web, 'relations'):
+                for rel in list(knowledge_web.relations)[:5000]:  # Top 5k relations
+                    if hasattr(rel, 'to_dict'):
+                        relations.append(rel.to_dict())
+                    elif isinstance(rel, dict):
+                        relations.append(rel)
+                    else:
+                        relations.append({
+                            'source': str(getattr(rel, 'source', '')),
+                            'target': str(getattr(rel, 'target', '')),
+                            'relation_type': str(getattr(rel, 'relation_type', 'related')),
+                            'strength': float(getattr(rel, 'strength', 0.5)),
+                        })
+            kw_data['relations'] = relations
+            kw_data['relation_count'] = len(relations)
+            
+            # Serialize semantic frames
+            if hasattr(knowledge_web, 'semantic_frames'):
+                kw_data['semantic_frames'] = dict(knowledge_web.semantic_frames)
+            
+            return kw_data
+            
+        except Exception as e:
+            logger.warning(f"Could not serialize knowledge web: {e}")
+            return None
+    
+    def _serialize_causation_system(self, causation_explorer: Any,
+                                    capsules: Optional[List['OrganismCapsule']] = None) -> Optional[Dict[str, Any]]:
+        """
+        🔬 Serialize causation system events.
+        
+        This captures:
+        - Events for exported organisms
+        - Event statistics
+        - Causal chains
+        
+        Args:
+            causation_explorer: CausationExplorer instance
+            capsules: Optional capsules for filtering
+            
+        Returns:
+            Serialized causation data
+        """
+        if causation_explorer is None:
+            return None
+        
+        try:
+            causation_data = {
+                'version': '1.0',
+                'source_note': 'Causation Explorer - event history and causal chains',
+                'total_events': 0,
+                'events_by_component': {},
+                'events_by_type': {},
+            }
+            
+            # Get capsule organism IDs
+            capsule_org_ids = set()
+            if capsules:
+                for cap in capsules:
+                    org_id = getattr(cap, 'organism_id', None) or getattr(cap, 'species_id', None)
+                    if org_id:
+                        capsule_org_ids.add(str(org_id))
+            
+            # Collect events
+            events = []
+            if hasattr(causation_explorer, 'events'):
+                for event_id, event in list(causation_explorer.events.items())[:2000]:  # Max 2k events
+                    event_org_id = event.data.get('organism_id')
+                    
+                    # Filter by organism if capsules specified
+                    if capsule_org_ids and event_org_id and str(event_org_id) not in capsule_org_ids:
+                        continue
+                    
+                    events.append({
+                        'id': event_id,
+                        'timestamp': event.timestamp,
+                        'component': event.component,
+                        'event_type': event.event_type,
+                        'data': event.data,
+                    })
+                    
+                    # Count by component and type
+                    causation_data['events_by_component'][event.component] = \
+                        causation_data['events_by_component'].get(event.component, 0) + 1
+                    causation_data['events_by_type'][event.event_type] = \
+                        causation_data['events_by_type'].get(event.event_type, 0) + 1
+            
+            causation_data['events'] = events
+            causation_data['total_events'] = len(events)
+            
+            return causation_data
+            
+        except Exception as e:
+            logger.warning(f"Could not serialize causation system: {e}")
+            return None
+    
+    def _serialize_alliance_system(self, alliance_system: Any,
+                                   capsules: Optional[List['OrganismCapsule']] = None) -> Optional[Dict[str, Any]]:
+        """
+        🏛️ Serialize alliance system state.
+        
+        This captures:
+        - Alliance memberships
+        - Reputation scores
+        - Battle history
+        
+        Args:
+            alliance_system: AllianceWarfare instance
+            capsules: Optional capsules for filtering
+            
+        Returns:
+            Serialized alliance data
+        """
+        if alliance_system is None:
+            return None
+        
+        try:
+            alliance_data = {
+                'version': '1.0',
+                'source_note': 'Alliance Warfare - social structures and reputation',
+                'alliance_count': 0,
+            }
+            
+            # Get capsule organism IDs
+            capsule_org_ids = set()
+            if capsules:
+                for cap in capsules:
+                    org_id = getattr(cap, 'organism_id', None) or getattr(cap, 'species_id', None)
+                    if org_id:
+                        capsule_org_ids.add(str(org_id))
+            
+            # Serialize alliances
+            alliances = {}
+            if hasattr(alliance_system, 'alliances'):
+                for alliance_id, alliance in alliance_system.alliances.items():
+                    members = list(getattr(alliance, 'members', []))
+                    
+                    # Filter by capsule organisms if specified
+                    if capsule_org_ids:
+                        members = [m for m in members if str(m) in capsule_org_ids]
+                        if not members:
+                            continue
+                    
+                    alliances[str(alliance_id)] = {
+                        'members': [str(m) for m in members],
+                        'tier': getattr(alliance, 'tier', 1),
+                        'reputation': getattr(alliance, 'reputation', 0.5),
+                        'founding_generation': getattr(alliance, 'founding_generation', 0),
+                    }
+            
+            alliance_data['alliances'] = alliances
+            alliance_data['alliance_count'] = len(alliances)
+            
+            # Serialize organism reputations
+            reputations = {}
+            if hasattr(alliance_system, 'reputation_scores'):
+                for org_id, score in alliance_system.reputation_scores.items():
+                    if capsule_org_ids and str(org_id) not in capsule_org_ids:
+                        continue
+                    reputations[str(org_id)] = float(score)
+            alliance_data['reputations'] = reputations
+            
+            return alliance_data
+            
+        except Exception as e:
+            logger.warning(f"Could not serialize alliance system: {e}")
+            return None
+
+    def _serialize_context_memory_full(self, context_memory: Any,
+                                       capsules: Optional[List['OrganismCapsule']] = None) -> Optional[Dict[str, Any]]:
+        """
+        🧠 Serialize full context memory data for standalone_butterfly_chat.py compatibility.
+        
+        This exports data in the format expected by standalone_butterfly_chat.py:
+        - language_anchors: word → organism IDs
+        - node_word_associations: organism → words
+        - word_frequencies: word usage counts
+        - ml_analysis: TF-IDF scores and semantic analysis
+        - organism_sequences: recent token sequences per organism
+        
+        Args:
+            context_memory: ContextMemory instance
+            capsules: Optional capsules for filtering
+            
+        Returns:
+            Serialized context memory data in standalone chat format
+        """
+        if context_memory is None:
+            return None
+        
+        try:
+            # Get capsule organism IDs for filtering
+            capsule_org_ids = set()
+            if capsules:
+                for cap in capsules:
+                    org_id = getattr(cap, 'organism_id', None) or getattr(cap, 'species_id', None)
+                    if org_id:
+                        capsule_org_ids.add(str(org_id))
+                        capsule_org_ids.add(hash(str(org_id)))
+            
+            context_data = {
+                'version': '1.0',
+                'source_note': 'Context Memory - organism word associations and embeddings',
+                'total_anchors': 0,
+                'total_associations': 0,
+            }
+            
+            # Serialize language anchors (word → organism IDs)
+            language_anchors = {}
+            if hasattr(context_memory, 'language_anchors'):
+                for word, org_ids in context_memory.language_anchors.items():
+                    if capsule_org_ids:
+                        filtered_ids = [str(oid) for oid in org_ids if oid in capsule_org_ids or str(oid) in capsule_org_ids]
+                        if filtered_ids:
+                            language_anchors[word] = filtered_ids
+                    else:
+                        language_anchors[word] = [str(oid) for oid in org_ids]
+            context_data['language_anchors'] = language_anchors
+            context_data['total_anchors'] = sum(len(v) for v in language_anchors.values())
+            
+            # Serialize node word associations (organism → words)
+            node_word_associations = {}
+            if hasattr(context_memory, 'node_word_associations'):
+                for org_id, words in context_memory.node_word_associations.items():
+                    if capsule_org_ids and org_id not in capsule_org_ids and str(org_id) not in capsule_org_ids:
+                        continue
+                    node_word_associations[str(org_id)] = list(words)
+            context_data['node_word_associations'] = node_word_associations
+            context_data['total_associations'] = sum(len(w) for w in node_word_associations.values())
+            
+            # Serialize word frequencies
+            word_frequencies = {}
+            if hasattr(context_memory, 'word_frequencies'):
+                word_frequencies = dict(context_memory.word_frequencies)
+            context_data['word_frequencies'] = word_frequencies
+            
+            # Serialize organism sequences (recent tokens per organism)
+            organism_sequences = {}
+            if hasattr(context_memory, 'organism_sequences'):
+                for org_id, seq in context_memory.organism_sequences.items():
+                    if capsule_org_ids and org_id not in capsule_org_ids and str(org_id) not in capsule_org_ids:
+                        continue
+                    organism_sequences[str(org_id)] = list(seq)[-100:]  # Last 100 tokens
+            context_data['organism_sequences'] = organism_sequences
+            
+            # Build ML analysis data for TF-IDF scoring (used by standalone chat)
+            if word_frequencies:
+                # Calculate simple TF-IDF-like importance scores
+                total_word_count = sum(word_frequencies.values())
+                tfidf_scores = []
+                for word, count in sorted(word_frequencies.items(), key=lambda x: x[1], reverse=True)[:200]:
+                    tf = count / max(total_word_count, 1)
+                    # IDF approximation: words appearing in fewer organisms are more important
+                    orgs_with_word = len(language_anchors.get(word, []))
+                    total_orgs = len(node_word_associations)
+                    idf = 1.0 + (1.0 / (orgs_with_word + 1)) if total_orgs > 0 else 1.0
+                    tfidf = tf * idf
+                    tfidf_scores.append({
+                        'word': word,
+                        'frequency': count,
+                        'tfidf_score': tfidf,
+                        'organism_count': orgs_with_word
+                    })
+                
+                context_data['ml_analysis'] = {
+                    'semantic_analysis': {
+                        'tfidf_analysis': {
+                            'top_important_words': tfidf_scores[:100],
+                            'total_unique_words': len(word_frequencies)
+                        }
+                    }
+                }
+            
+            return context_data
+            
+        except Exception as e:
+            logger.warning(f"Could not serialize context memory: {e}")
+            return None
+
     def _build_agent_state_payload(self,
                                    capsule: OrganismCapsule,
                                    metadata: Dict[str, Any]) -> Dict[str, bytes]:
@@ -2133,7 +2572,11 @@ done
                                  runner_script: str,
                                  capsules: Optional[List['OrganismCapsule']] = None,
                                  vocabulary: Any = None,
-                                 conversation_history: List[Dict] = None) -> BytesIO:
+                                 conversation_history: List[Dict] = None,
+                                 knowledge_web: Any = None,
+                                 context_memory: Any = None,
+                                 causation_explorer: Any = None,
+                                 alliance_system: Any = None) -> BytesIO:
         """Package ensemble components into a ZIP archive.
         
         Args:
@@ -2143,6 +2586,10 @@ done
             capsules: Optional list of capsules for language/config extraction
             vocabulary: LanguageVocabulary object for chat system tokenization
             conversation_history: List of conversation history entries for training data
+            knowledge_web: LinguisticKnowledgeWeb for semantic relationships
+            context_memory: ContextMemory for word embeddings and language anchors
+            causation_explorer: CausationExplorer for event history
+            alliance_system: AllianceWarfare for social context
         """
         archive_buffer = BytesIO()
         with zipfile.ZipFile(archive_buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
@@ -2229,6 +2676,53 @@ done
                 }
                 zf.writestr("conversation_history.json", json.dumps(history_data, indent=2))
                 logger.info(f"💬 Exported conversation history: {len(conversation_history)} entries")
+
+            # ═══════════════════════════════════════════════════════════════
+            # 🔗 SEMANTIC CONVERGENCE (Word Embeddings + Language Anchors)
+            # ═══════════════════════════════════════════════════════════════
+            # Critical for organisms to maintain their unique "voice"
+            if context_memory is not None:
+                semantic_data = self._serialize_semantic_convergence(context_memory, capsules)
+                if semantic_data:
+                    zf.writestr("semantic_convergence.json", json.dumps(semantic_data, indent=2))
+                    logger.info(f"🔗 Exported semantic convergence: {semantic_data.get('total_words', 0)} words, "
+                               f"{semantic_data.get('total_anchors', 0)} anchors")
+                
+                # Also write context_memory.json for standalone_butterfly_chat.py compatibility
+                context_memory_data = self._serialize_context_memory_full(context_memory, capsules)
+                if context_memory_data:
+                    zf.writestr("context_memory.json", json.dumps(context_memory_data, indent=2))
+                    logger.info(f"🧠 Exported context memory: {context_memory_data.get('total_anchors', 0)} anchors, "
+                               f"{context_memory_data.get('total_associations', 0)} associations")
+            
+            # ═══════════════════════════════════════════════════════════════
+            # 🌐 KNOWLEDGE WEB (Full Semantic Relationships)
+            # ═══════════════════════════════════════════════════════════════
+            if knowledge_web is not None:
+                kw_data = self._serialize_knowledge_web_full(knowledge_web)
+                if kw_data:
+                    # Write as knowledge_web.json for compatibility with standalone_butterfly_chat.py
+                    zf.writestr("knowledge_web.json", json.dumps(kw_data, indent=2))
+                    logger.info(f"🌐 Exported knowledge web: {kw_data.get('concept_count', 0)} concepts, "
+                               f"{kw_data.get('relation_count', 0)} relations")
+            
+            # ═══════════════════════════════════════════════════════════════
+            # 🔬 CAUSATION SYSTEM (Event History)
+            # ═══════════════════════════════════════════════════════════════
+            if causation_explorer is not None:
+                causation_data = self._serialize_causation_system(causation_explorer, capsules)
+                if causation_data:
+                    zf.writestr("causation_system.json", json.dumps(causation_data, indent=2))
+                    logger.info(f"🔬 Exported causation system: {causation_data.get('total_events', 0)} events")
+            
+            # ═══════════════════════════════════════════════════════════════
+            # 🏛️ ALLIANCE SYSTEM (Social Context)
+            # ═══════════════════════════════════════════════════════════════
+            if alliance_system is not None:
+                alliance_data = self._serialize_alliance_system(alliance_system, capsules)
+                if alliance_data:
+                    zf.writestr("alliance_system.json", json.dumps(alliance_data, indent=2))
+                    logger.info(f"🏛️ Exported alliance system: {alliance_data.get('alliance_count', 0)} alliances")
 
             # Runner
             zf.writestr("run_agent.py", runner_script)
@@ -2992,7 +3486,11 @@ if __name__ == '__main__':
                                      export_format: str = 'onnx',
                                      example_state: Any = None,
                                      vocabulary: Any = None,
-                                     conversation_history: List[Dict] = None) -> BytesIO:
+                                     conversation_history: List[Dict] = None,
+                                     knowledge_web: Any = None,
+                                     context_memory: Any = None,
+                                     causation_explorer: Any = None,
+                                     alliance_system: Any = None) -> BytesIO:
         """Compile multiple capsules into a single ensemble model archive.
         
         Args:
@@ -3001,6 +3499,10 @@ if __name__ == '__main__':
             example_state: Example state for tracing
             vocabulary: LanguageVocabulary object for chat system
             conversation_history: List of conversation history entries
+            knowledge_web: LinguisticKnowledgeWeb for semantic relationships
+            context_memory: ContextMemory for word embeddings and language anchors
+            causation_explorer: CausationExplorer for event history
+            alliance_system: AllianceWarfare for social context
 
         All brains receive the same state vector (max input dim); per-brain
         slicing/padding is handled inside the wrapper for compatibility.
@@ -3155,8 +3657,12 @@ if __name__ == '__main__':
         # Runner
         runner_script = self._generate_ensemble_runner_script(chosen_format, metadata)
 
-        # Package (pass capsules for language data extraction, plus chat vocabulary)
-        return self._create_ensemble_archive(model_buffer, metadata, runner_script, capsules, vocabulary, conversation_history)
+        # Package (pass capsules for language data extraction, plus chat vocabulary and semantic systems)
+        return self._create_ensemble_archive(
+            model_buffer, metadata, runner_script, capsules, vocabulary, conversation_history,
+            knowledge_web=knowledge_web, context_memory=context_memory,
+            causation_explorer=causation_explorer, alliance_system=alliance_system
+        )
 
     def compile_capsule_to_agent(self, 
                                  capsule: OrganismCapsule, 
