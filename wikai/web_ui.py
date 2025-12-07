@@ -409,6 +409,46 @@ WIKAI_TEMPLATE = '''
             border-left: 1px solid var(--border);
             padding: 20px;
             overflow-y: auto;
+            position: relative;
+            min-width: 200px;
+            max-width: 600px;
+            transition: none;
+        }
+        
+        /* Resize Handle */
+        .resize-handle {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 6px;
+            background: transparent;
+            cursor: col-resize;
+            z-index: 100;
+            transition: background 0.2s;
+        }
+        
+        .resize-handle:hover,
+        .resize-handle.dragging {
+            background: var(--accent-purple);
+        }
+        
+        .resize-handle::before {
+            content: '';
+            position: absolute;
+            left: 2px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 2px;
+            height: 40px;
+            background: var(--text-secondary);
+            border-radius: 1px;
+            opacity: 0.3;
+        }
+        
+        .resize-handle:hover::before {
+            opacity: 1;
+            background: white;
         }
         
         .live-feed h3 {
@@ -744,7 +784,8 @@ WIKAI_TEMPLATE = '''
         </section>
         
         <!-- Live Feed -->
-        <aside class="live-feed">
+        <aside class="live-feed" id="live-feed">
+            <div class="resize-handle" id="resize-handle"></div>
             <h3><span class="live-indicator"></span> Live Feed</h3>
             <div id="feed-items">
                 <div class="feed-item">
@@ -905,6 +946,51 @@ WIKAI_TEMPLATE = '''
                 // Silently fail
             }
         }, 2000);
+        
+        // Resizable panel functionality
+        const resizeHandle = document.getElementById('resize-handle');
+        const liveFeed = document.getElementById('live-feed');
+        const mainGrid = document.querySelector('.main');
+        let isResizing = false;
+        let startX, startWidth;
+        
+        resizeHandle.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            startX = e.clientX;
+            startWidth = liveFeed.offsetWidth;
+            resizeHandle.classList.add('dragging');
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+            e.preventDefault();
+        });
+        
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+            
+            const diff = startX - e.clientX;
+            const newWidth = Math.min(Math.max(startWidth + diff, 200), 600);
+            liveFeed.style.width = newWidth + 'px';
+            mainGrid.style.gridTemplateColumns = `280px 1fr ${newWidth}px`;
+        });
+        
+        document.addEventListener('mouseup', () => {
+            if (isResizing) {
+                isResizing = false;
+                resizeHandle.classList.remove('dragging');
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+                
+                // Save preference
+                localStorage.setItem('wikai-feed-width', liveFeed.offsetWidth);
+            }
+        });
+        
+        // Restore saved width
+        const savedWidth = localStorage.getItem('wikai-feed-width');
+        if (savedWidth) {
+            liveFeed.style.width = savedWidth + 'px';
+            mainGrid.style.gridTemplateColumns = `280px 1fr ${savedWidth}px`;
+        }
     </script>
 </body>
 </html>
