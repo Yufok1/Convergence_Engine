@@ -1001,6 +1001,10 @@ class MLAnalyzer:
                 if self.event_emitter:
                     self.concept_tracker.event_emitter = self.event_emitter
                 
+                # SEMANTIC CONVERGENCE: Wire context_memory for phenotype→vocabulary flow
+                if context_memory:
+                    self.concept_tracker.context_memory = context_memory
+                
                 # Update concept tracking with clustering results
                 concept_tags = self.concept_tracker.update(
                     cluster_labels=cluster_result.labels,

@@ -101,6 +101,9 @@ class ConceptTracker:
         # Event emitter callback (will be set by MLAnalyzer or main)
         self.event_emitter: Optional[Callable[[Dict[str, Any]], None]] = None
         
+        # SEMANTIC CONVERGENCE: ContextMemory for feeding phenotype names to vocabulary
+        self.context_memory: Optional[Any] = None
+        
         # Statistics
         self.total_concepts_created = 0
         self.total_concepts_extinct = 0
@@ -201,6 +204,22 @@ class ConceptTracker:
         
         self.concepts[concept_id] = concept
         self.total_concepts_created += 1
+        
+        # SEMANTIC CONVERGENCE: Feed phenotype name to language vocabulary
+        if self.context_memory is not None:
+            try:
+                # Register concept name (e.g., "social_thrivers") as language anchor
+                for org_id in cluster_organism_ids[:10]:  # Limit to avoid flooding
+                    # Convert organism ID to int hash if needed
+                    org_id_int = hash(org_id) if isinstance(org_id, str) else org_id
+                    self.context_memory.link_word_to_node(concept_id, org_id_int, None)
+                    # Also link component words (e.g., "social", "thrivers")
+                    for word in concept_id.replace('_', ' ').split():
+                        if len(word) > 2:  # Skip very short fragments
+                            self.context_memory.link_word_to_node(word, org_id_int, None)
+                logger.debug(f"[ConceptTracker] Linked phenotype '{concept_id}' to language anchors")
+            except Exception as e:
+                logger.warning(f"[ConceptTracker] Failed to link concept to language: {e}")
         
         # Emit concept emergence event
         self._emit_concept_event("concept_emergence", concept)

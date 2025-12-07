@@ -7,6 +7,16 @@
     "learning_rate_resolution": 1e-06,
     "performance_tracking_precision": 0.0001
   },
+  "semantic_convergence": {
+    "_help": "Unifies 6 semantic systems for word embedding differentiation",
+    "enabled": true,
+    "use_learned_embeddings": true,
+    "embedding_dim": 64,
+    "organism_embedding_alpha": 0.1,
+    "concept_system_alpha": 0.05,
+    "knowledge_web_influence_interval": 25,
+    "phenotype_to_vocabulary": true
+  },
   "arena": {
     "_prefer_native_games_help": "When true, prioritizes language/concept games that use organism's native abilities (no Gym dependency)",
     "_proton_game_probability_help": "Fraction of battles that use Proton Game Arena (0.0-1.0). Set to 0.5 for 50% Proton Game battles.",
