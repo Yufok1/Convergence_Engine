@@ -26,8 +26,10 @@ WHAT GETS CLEARED:
 - data/neural_models/*.pt, *.pth - Neural models
 - data/capsules/*.json - Organism capsules
 - highlander_capsules/*.json - Highlander champion capsules
-- agent_downloads/*.py, *.onnx, *.pt, *.pth, *.zip - Exported cocoons/agents
+- agent_downloads/* - Exported cocoons/agents (files and subdirectories)
+- exported_agents/* - Exported agent ensemble archives
 - test_capsules_temp/ - Test capsule directory
+- wikai/patterns/*.json - Wikai learned patterns
 
 PRESERVED (Not Deleted):
 - data/config.json - System configuration
@@ -391,6 +393,7 @@ def clear_all_data():
     agent_downloads_dir = base_dir / 'agent_downloads'
     if agent_downloads_dir.exists():
         agent_count = 0
+        # Clear files
         extensions = ['*.py', '*.onnx', '*.pt', '*.pth', '*.zip']
         for ext in extensions:
             for agent_file in agent_downloads_dir.glob(ext):
@@ -400,9 +403,55 @@ def clear_all_data():
                     agent_count += 1
                 else:
                     skipped_items.append(f"  ⚠️  Agent export: {agent_file.name} - {msg}")
+        # Clear subdirectories (ensemble archives create folders)
+        for subdir in agent_downloads_dir.iterdir():
+            if subdir.is_dir():
+                success, msg = safe_delete_dir(subdir)
+                if success:
+                    agent_count += 1
+                else:
+                    skipped_items.append(f"  ⚠️  Agent dir: {subdir.name} - {msg}")
         if agent_count > 0:
-            cleared_items.append(f"  ✅ Agent exports: {agent_count} files")
-            print(f"🦋 Cleared {agent_count} exported cocoon/agent files")
+            cleared_items.append(f"  ✅ Agent exports: {agent_count} items")
+            print(f"🦋 Cleared {agent_count} exported cocoon/agent items")
+    
+    # 15. Clear exported_agents directory (new ensemble export location)
+    exported_agents_dir = base_dir / 'exported_agents'
+    if exported_agents_dir.exists():
+        export_count = 0
+        # Clear all subdirectories (each export creates a folder)
+        for subdir in exported_agents_dir.iterdir():
+            if subdir.is_dir():
+                success, msg = safe_delete_dir(subdir)
+                if success:
+                    export_count += 1
+                else:
+                    skipped_items.append(f"  ⚠️  Exported agent: {subdir.name} - {msg}")
+            elif subdir.is_file():
+                success, size, msg = safe_delete_file(subdir)
+                if success:
+                    total_size += size
+                    export_count += 1
+                else:
+                    skipped_items.append(f"  ⚠️  Export file: {subdir.name} - {msg}")
+        if export_count > 0:
+            cleared_items.append(f"  ✅ Exported agents: {export_count} items")
+            print(f"📦 Cleared {export_count} exported agent archives")
+    
+    # 16. Clear wikai patterns (learned pattern files)
+    wikai_patterns_dir = base_dir / 'wikai' / 'patterns'
+    if wikai_patterns_dir.exists():
+        pattern_count = 0
+        for pattern_file in wikai_patterns_dir.glob('*.json'):
+            success, size, msg = safe_delete_file(pattern_file)
+            if success:
+                total_size += size
+                pattern_count += 1
+            else:
+                skipped_items.append(f"  ⚠️  Wikai pattern: {pattern_file.name} - {msg}")
+        if pattern_count > 0:
+            cleared_items.append(f"  ✅ Wikai patterns: {pattern_count} files")
+            print(f"🔮 Cleared {pattern_count} wikai pattern files")
     
     # Note: Knowledge base files are PRESERVED (not runtime data):
     # - linguistic_concepts.json
@@ -411,7 +460,7 @@ def clear_all_data():
     # - config.json
     # - causation_explorer/ollama_config.json
     
-    # 13. Clear __pycache__ directories to prevent stale bytecode issues
+    # 17. Clear __pycache__ directories to prevent stale bytecode issues
     # (Ray import can fail with stale .pyc files)
     pycache_count = 0
     for pycache_dir in base_dir.rglob('__pycache__'):
