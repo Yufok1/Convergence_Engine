@@ -385,8 +385,12 @@ class ConceptSystem(nn.Module):
             logger.warning("Invalid state values detected, replacing with zeros")
             state = torch.nan_to_num(state, nan=0.0, posinf=1.0, neginf=-1.0)
         
+        # Move state to same device as axiom_embeddings to prevent device mismatch
+        embed_device = self.axiom_embeddings.weight.device
+        state = state.to(embed_device)
+        
         # Get base embedding
-        idx = torch.tensor([self.axiom_to_idx[axiom]], device=state.device)
+        idx = torch.tensor([self.axiom_to_idx[axiom]], device=embed_device)
         base_embed = self.axiom_embeddings(idx).squeeze(0)
         
         # Get state-based grounding
