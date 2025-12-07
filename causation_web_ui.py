@@ -7259,15 +7259,28 @@ def compile_ensemble_to_agent():
         context_memory = app.config.get('context_memory')
         network = app.config.get('network')
         
-        # Try context_memory from app.config first, then from network
-        if context_memory and hasattr(context_memory, 'knowledge_web'):
-            knowledge_web = context_memory.knowledge_web
-            logger.info(f"[COMPILE] Including knowledge web with {len(knowledge_web.concepts)} concepts")
-        elif network and hasattr(network, 'context_memory'):
-            cm = network.context_memory
-            if cm and hasattr(cm, 'knowledge_web'):
-                knowledge_web = cm.knowledge_web
-                logger.info(f"[COMPILE] Including knowledge web from network: {len(knowledge_web.concepts)} concepts")
+        # PRIMARY SOURCE: LanguageTeacher owns the knowledge web!
+        if network and hasattr(network, 'language_teacher') and network.language_teacher:
+            teacher = network.language_teacher
+            if hasattr(teacher, 'knowledge_web') and teacher.knowledge_web:
+                knowledge_web = teacher.knowledge_web
+                n_concepts = len(getattr(knowledge_web, 'concepts', {}))
+                n_relations = len(getattr(knowledge_web, 'relations', []))
+                logger.info(f"[COMPILE] ✅ Including knowledge web from LanguageTeacher: {n_concepts} concepts, {n_relations} relations")
+        
+        # FALLBACK: Try context_memory (legacy paths)
+        if knowledge_web is None:
+            if context_memory and hasattr(context_memory, 'knowledge_web'):
+                knowledge_web = context_memory.knowledge_web
+                logger.info(f"[COMPILE] Including knowledge web from context_memory: {len(knowledge_web.concepts)} concepts")
+            elif network and hasattr(network, 'context_memory'):
+                cm = network.context_memory
+                if cm and hasattr(cm, 'knowledge_web'):
+                    knowledge_web = cm.knowledge_web
+                    logger.info(f"[COMPILE] Including knowledge web from network.context_memory: {len(knowledge_web.concepts)} concepts")
+        
+        if knowledge_web is None:
+            logger.warning("[COMPILE] ⚠️ No knowledge web found - exported agent will have limited semantic capabilities")
         
         # 🧠 Get context_memory for word-organism mappings (CRITICAL for characteristic speech!)
         # Use the context_memory we already retrieved above, or get from network
@@ -7412,14 +7425,25 @@ def compile_learning_capsule():
         if butterfly_router and hasattr(butterfly_router, 'conversation_history'):
             conversation_history = butterfly_router.conversation_history
         
-        # Get knowledge web
+        # Get knowledge web - PRIMARY SOURCE: LanguageTeacher!
         knowledge_web = None
         context_memory = app.config.get('context_memory')
-        if context_memory and hasattr(context_memory, 'knowledge_web'):
-            knowledge_web = context_memory.knowledge_web
-        elif network and hasattr(network, 'context_memory'):
-            context_memory = network.context_memory
-            knowledge_web = getattr(context_memory, 'knowledge_web', None)
+        
+        # PRIMARY: Get from LanguageTeacher
+        if network and hasattr(network, 'language_teacher') and network.language_teacher:
+            teacher = network.language_teacher
+            if hasattr(teacher, 'knowledge_web') and teacher.knowledge_web:
+                knowledge_web = teacher.knowledge_web
+                n_concepts = len(getattr(knowledge_web, 'concepts', {}))
+                logger.info(f"[LEARNING_CAPSULE] ✅ Knowledge web from LanguageTeacher: {n_concepts} concepts")
+        
+        # FALLBACK: Try context_memory
+        if knowledge_web is None:
+            if context_memory and hasattr(context_memory, 'knowledge_web'):
+                knowledge_web = context_memory.knowledge_web
+            elif network and hasattr(network, 'context_memory'):
+                context_memory = network.context_memory
+                knowledge_web = getattr(context_memory, 'knowledge_web', None)
         
         # Get causation explorer
         causation_explorer = None
@@ -7599,8 +7623,20 @@ def compile_cocoon():
             if lang_system:
                 vocabulary = getattr(lang_system, 'vocabulary', None)
         
-        # Get knowledge web
+        # Get knowledge web - PRIMARY SOURCE: LanguageTeacher!
         knowledge_web = app.config.get('knowledge_web')
+        
+        # PRIMARY: Get from LanguageTeacher
+        network = app.config.get('network')
+        if knowledge_web is None and network and hasattr(network, 'language_teacher') and network.language_teacher:
+            teacher = network.language_teacher
+            if hasattr(teacher, 'knowledge_web') and teacher.knowledge_web:
+                knowledge_web = teacher.knowledge_web
+                n_concepts = len(getattr(knowledge_web, 'concepts', {}))
+                n_relations = len(getattr(knowledge_web, 'relations', []))
+                logger.info(f"[COCOON] ✅ Knowledge web from LanguageTeacher: {n_concepts} concepts, {n_relations} relations")
+        
+        # FALLBACK: Try unified_system.language_system
         if knowledge_web is None and unified_system:
             lang_system = getattr(unified_system, 'language_system', None)
             if lang_system:
