@@ -7380,7 +7380,10 @@ def compile_learning_capsule():
         unified_system = app.config.get('unified_system')
         if unified_system is None:
             unified_system = getattr(app, 'unified_system', None)
-        network = getattr(unified_system, 'network', None) if unified_system else app.config.get('network')
+        # Get network - stored in app.config by unified_entry.py, NOT on unified_system
+        network = app.config.get('network')
+        if network is None and unified_system:
+            network = getattr(unified_system, 'network', None)
         capsule_manager = app.config.get('capsule_manager')
         
         if not capsule_manager:
@@ -7628,8 +7631,13 @@ def compile_cocoon():
         # Get knowledge web - PRIMARY SOURCE: LanguageTeacher!
         knowledge_web = app.config.get('knowledge_web')
         
-        # PRIMARY: Get from LanguageTeacher (network is on unified_system, not app.config!)
-        network = getattr(unified_system, 'network', None) if unified_system else app.config.get('network')
+        # Get network - stored in app.config by unified_entry.py, NOT on unified_system
+        network = app.config.get('network')
+        if network is None and unified_system:
+            # Fallback: check if unified_system has network attribute (for standalone mode)
+            network = getattr(unified_system, 'network', None)
+        logger.info(f"[COCOON DEBUG] unified_system={unified_system is not None}, network={network is not None}")
+        
         if knowledge_web is None and network and hasattr(network, 'language_teacher') and network.language_teacher:
             teacher = network.language_teacher
             if hasattr(teacher, 'knowledge_web') and teacher.knowledge_web:
@@ -7637,6 +7645,10 @@ def compile_cocoon():
                 n_concepts = len(getattr(knowledge_web, 'concepts', {}))
                 n_relations = len(getattr(knowledge_web, 'relations', []))
                 logger.info(f"[COCOON] ✅ Knowledge web from LanguageTeacher: {n_concepts} concepts, {n_relations} relations")
+            else:
+                logger.info(f"[COCOON DEBUG] teacher.knowledge_web is None or empty")
+        else:
+            logger.info(f"[COCOON DEBUG] Could not get language_teacher: network={network is not None}, has_teacher={hasattr(network, 'language_teacher') if network else 'N/A'}")
         
         # FALLBACK: Try unified_system.language_system
         if knowledge_web is None and unified_system:
@@ -7652,13 +7664,16 @@ def compile_cocoon():
                 conversation_history = getattr(lang_system, 'conversation_history', [])
         
         # Get context_memory for semantic convergence
-        # network already retrieved above from unified_system
+        # network is retrieved from app.config (where unified_entry.py stores it)
         context_memory = app.config.get('context_memory')
         if context_memory is None and network and hasattr(network, 'context_memory'):
             context_memory = network.context_memory
+            logger.info(f"[COCOON] ✅ Got context_memory from network")
         if context_memory is None and knowledge_web:
             # Try to get from knowledge_web's parent
             context_memory = getattr(knowledge_web, '_context_memory', None)
+        
+        logger.info(f"[COCOON DEBUG] Final context_memory={context_memory is not None}, knowledge_web={knowledge_web is not None}")
         
         # Get causation_explorer
         causation_explorer = app.config.get('causation_explorer')
