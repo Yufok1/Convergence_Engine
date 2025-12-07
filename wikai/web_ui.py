@@ -573,7 +573,25 @@ WIKAI_TEMPLATE = '''
                 grid-template-columns: 250px 1fr;
             }
             .live-feed {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                height: auto;
+                max-height: 200px;
+                border-left: none;
+                border-top: 2px solid var(--accent-purple);
+                z-index: 1000;
+                padding: 10px 20px;
+            }
+            .live-feed h3 {
+                margin-bottom: 10px;
+            }
+            #feed-items {
                 display: none;
+            }
+            .content {
+                padding-bottom: 220px;
             }
         }
         

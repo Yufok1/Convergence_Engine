@@ -1783,11 +1783,14 @@ class UnifiedSystem:
         The Observer watches silently. When a butterfly discovers something true
         (stability_score > 0.85, fitness_delta > 0.15), the pattern is captured
         and added to the Commons for all future AI systems to learn from.
-        
+
         "The butterflies don't know they're being studied. They just fly.
          And WIKAI quietly records every time they discover something true."
         """
+        print("[UNIFIED] [WIKAI] 📚 Attempting to wire WIKAI Observer...")
+        
         if not self.causation_explorer:
+            print("[UNIFIED] [WIKAI] ⚠️ No causation_explorer - skipping WIKAI")
             return
         
         try:
@@ -1800,13 +1803,18 @@ class UnifiedSystem:
                 cycle_threshold=20              # Must have run for a while
             )
             
-            print("[UNIFIED] [WIKAI] 📚 WIKAI Observer wired to event stream")
+            print("[UNIFIED] [WIKAI] ✅ WIKAI Observer wired to event stream")
             print("[UNIFIED] [WIKAI]    - Watching for convergent butterflies")
             print("[UNIFIED] [WIKAI]    - Auto-capture: stability>0.85 AND fitness_delta>0.15")
             print("[UNIFIED] [WIKAI]    - Patterns saved to wikai/patterns/")
             
         except ImportError as e:
-            print(f"[UNIFIED] [WIKAI] ⚠️ WIKAI not available: {e}")
+            print(f"[UNIFIED] [WIKAI] ⚠️ WIKAI import failed: {e}")
+            self.wikai_observer = None
+        except Exception as e:
+            print(f"[UNIFIED] [WIKAI] ❌ WIKAI Observer error: {e}")
+            import traceback
+            traceback.print_exc()
             self.wikai_observer = None
         except Exception as e:
             print(f"[UNIFIED] [WIKAI] ❌ WIKAI Observer failed to initialize: {e}")
