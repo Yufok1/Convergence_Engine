@@ -487,6 +487,30 @@ class ConceptSystem(nn.Module):
         return {name: self.get_axiom_embedding(name, state) 
                 for name in self.axiom_names}
     
+    def export_concept_embeddings(self, state: torch.Tensor) -> Dict[str, np.ndarray]:
+        """
+        Export grounded axiom embeddings as numpy arrays for language system integration.
+        
+        SEMANTIC CONVERGENCE: These embeddings flow into ContextMemory's word embeddings,
+        so axiom words like 'good', 'bad', 'self', 'other' inherit semantic meaning
+        from the organism's current state-grounded understanding.
+        
+        Args:
+            state: Organism state tensor (state_dim,) or (batch, state_dim)
+            
+        Returns:
+            Dict mapping axiom name -> 64-dim numpy array
+        """
+        embeddings = {}
+        with torch.no_grad():
+            for axiom_name in self.axiom_names:
+                try:
+                    embed = self.get_axiom_embedding(axiom_name, state)
+                    embeddings[axiom_name] = embed.cpu().numpy().astype(np.float32)
+                except Exception as e:
+                    logger.debug(f"Could not export embedding for {axiom_name}: {e}")
+        return embeddings
+    
     def get_useful_concepts(self, top_k: int = 10) -> List[Tuple[str, float, int]]:
         """Get most useful concepts: (name, utility, use_count)."""
         scored = [

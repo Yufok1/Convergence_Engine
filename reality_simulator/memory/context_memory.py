@@ -52,7 +52,7 @@ class ContextMemory:
     """
 
     def __init__(self, persistence_path: str = "data/context_memory.json",
-                 use_learned_embeddings: bool = False,
+                 use_learned_embeddings: bool = True,
                  embedding_dim: int = 64,
                  max_vocab_size: int = 1000):
         """
@@ -159,6 +159,36 @@ class ContextMemory:
             return embedding
         
         return None
+    
+    def update_word_embedding_from_organism(
+        self, word: str, organism_embedding: np.ndarray, alpha: float = 0.1
+    ) -> None:
+        """
+        Blend organism neural embedding into word embedding (EMA update).
+        
+        This creates SEMANTIC DIFFERENTIATION - words used by differently-tuned
+        organisms will occupy different regions of embedding space.
+        
+        Args:
+            word: Word to update embedding for
+            organism_embedding: 64-dim neural embedding from organism.brain.fc2
+            alpha: EMA blending factor (0.1 = 90% keep, 10% new)
+        """
+        if not self.use_learned_embeddings or self.word_embedding is None:
+            return
+        if self.vocabulary is None:
+            return
+        
+        token_id = self.vocabulary.get_id(word)
+        if token_id is None or token_id >= self.max_vocab_size:
+            return
+        if len(organism_embedding) != self.embedding_dim:
+            return
+        
+        with torch.no_grad():
+            current = self.word_embedding.weight[token_id]
+            org_tensor = torch.from_numpy(organism_embedding.astype(np.float32)).to(current.device)
+            self.word_embedding.weight[token_id] = (1 - alpha) * current + alpha * org_tensor
     
     def tokenize_sequence(self, words: List[str], add_special: bool = True) -> List[int]:
         """
@@ -363,7 +393,8 @@ class ContextMemory:
         
         self._save_persistence()
 
-    def link_word_to_node(self, word: str, organism_id: int, generation: int = None) -> None:
+    def link_word_to_node(self, word: str, organism_id: int, generation: int = None,
+                          organism_embedding: Optional[np.ndarray] = None) -> None:
         """
         Create language anchor linking a word to an organism node.
 
@@ -371,6 +402,8 @@ class ContextMemory:
             word: The word being associated
             organism_id: ID of the organism node
             generation: Optional generation when this link was made
+            organism_embedding: Optional 64-dim neural embedding from organism.brain.fc2
+                                If provided, blends into word embedding for semantic differentiation
         """
         # Update language anchors
         self.language_anchors[word].add(organism_id)
@@ -384,6 +417,10 @@ class ContextMemory:
 
         # Create/update embedding for this node
         self._update_node_embedding(organism_id, word)
+        
+        # NEW: Blend organism neural embedding into word embedding
+        if organism_embedding is not None:
+            self.update_word_embedding_from_organism(word, organism_embedding)
         
         # Only emit word_assignment event for significant milestones (quality over quantity)
         # Match neural/ML event frequency - only emit when word reaches meaningful adoption

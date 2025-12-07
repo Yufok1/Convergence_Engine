@@ -387,6 +387,38 @@ class LanguageTeacher:
         organism_id = hash(species_id) if isinstance(species_id, str) else species_id
         
         # ============================================================
+        # SEMANTIC CONVERGENCE: Extract organism neural embedding
+        # This 64-dim embedding from fc2 layer will flow into word embeddings
+        # ============================================================
+        organism_embedding = None
+        if hasattr(organism, 'get_language_embedding'):
+            try:
+                organism_embedding = organism.get_language_embedding(context_memory)
+            except Exception as e:
+                logger.debug(f"[LANGUAGE_TEACHER] Could not get organism embedding: {e}")
+        
+        # ============================================================
+        # SEMANTIC CONVERGENCE: Export ConceptSystem axiom embeddings
+        # Axiom words (good, bad, self, other) get state-grounded embeddings
+        # ============================================================
+        if hasattr(organism, 'concept_system') and organism.concept_system is not None:
+            try:
+                # Get organism state for grounding
+                if hasattr(organism, 'get_state_features'):
+                    state_np = organism.get_state_features(None, None, None)
+                    if state_np is not None and len(state_np) >= 18:
+                        import torch
+                        state_tensor = torch.from_numpy(state_np).float()
+                        # Export grounded axiom embeddings
+                        axiom_embeds = organism.concept_system.export_concept_embeddings(state_tensor)
+                        # Push axiom embeddings to word embeddings
+                        for axiom_name, embed in axiom_embeds.items():
+                            axiom_word = axiom_name.lower()  # GOOD -> good
+                            context_memory.update_word_embedding_from_organism(axiom_word, embed, alpha=0.05)
+            except Exception as e:
+                logger.debug(f"[LANGUAGE_TEACHER] Could not export concept embeddings: {e}")
+        
+        # ============================================================
         # ENHANCED: Dynamic Multi-Dimensional Situational Awareness
         # ============================================================
         if self.use_knowledge_web and self.knowledge_web:
@@ -457,7 +489,7 @@ class LanguageTeacher:
             # Link situationally aware words
             for word in situational_words[:12]:  # Top 12 most relevant
                 try:
-                    context_memory.link_word_to_node(word, organism_id, generation)
+                    context_memory.link_word_to_node(word, organism_id, generation, organism_embedding)
                     words_assigned += 1
                     self.stats['words_by_type']['situational'] += 1
                     self.stats['situational_words'] += 1
@@ -474,7 +506,7 @@ class LanguageTeacher:
                 for word in similar_words[:2]:  # Top 2 similar words
                     if word not in situational_words:  # Avoid duplicates
                         try:
-                            context_memory.link_word_to_node(word, organism_id, generation)
+                            context_memory.link_word_to_node(word, organism_id, generation, organism_embedding)
                             words_assigned += 1
                             self.stats['words_by_type']['associative'] += 1
                             self.stats['associative_words'] += 1
@@ -530,7 +562,7 @@ class LanguageTeacher:
                         
                         for word in words:
                             try:
-                                context_memory.link_word_to_node(word, organism_id, generation)
+                                context_memory.link_word_to_node(word, organism_id, generation, organism_embedding)
                                 words_assigned += 1
                                 self.stats['words_by_type']['action'] += 1
                             except Exception as e:
@@ -543,7 +575,7 @@ class LanguageTeacher:
                     
                     for word in words[:2]:  # Limit to 2 words for single action
                         try:
-                            context_memory.link_word_to_node(word, organism_id, generation)
+                            context_memory.link_word_to_node(word, organism_id, generation, organism_embedding)
                             words_assigned += 1
                             self.stats['words_by_type']['action'] += 1
                         except Exception as e:
@@ -565,7 +597,7 @@ class LanguageTeacher:
                 # Assign top 2-3 words based on fitness
                 for word in words[:3]:
                     try:
-                        context_memory.link_word_to_node(word, organism_id, generation)
+                        context_memory.link_word_to_node(word, organism_id, generation, organism_embedding)
                         words_assigned += 1
                         self.stats['words_by_type']['fitness'] += 1
                     except Exception as e:
@@ -586,7 +618,7 @@ class LanguageTeacher:
                 # Assign top 2 words
                 for word in words[:2]:
                     try:
-                        context_memory.link_word_to_node(word, organism_id, generation)
+                        context_memory.link_word_to_node(word, organism_id, generation, organism_embedding)
                         words_assigned += 1
                         self.stats['words_by_type']['connections'] += 1
                     except Exception as e:
@@ -606,7 +638,7 @@ class LanguageTeacher:
                     words = self.knowledge_web.get_words_for_state(state_type) if self.knowledge_web else []
                     
                     for word in words[:2]:
-                        context_memory.link_word_to_node(word, organism_id, generation)
+                        context_memory.link_word_to_node(word, organism_id, generation, organism_embedding)
                         words_assigned += 1
                         self.stats['words_by_type']['connections'] += 1
                 except (AttributeError, KeyError, TypeError) as e:
@@ -626,7 +658,7 @@ class LanguageTeacher:
                 
                 for word in words[:2]:
                     try:
-                        context_memory.link_word_to_node(word, organism_id, generation)
+                        context_memory.link_word_to_node(word, organism_id, generation, organism_embedding)
                         words_assigned += 1
                         self.stats['words_by_type']['resources'] += 1
                     except Exception as e:
@@ -732,6 +764,19 @@ class LanguageTeacher:
                 pruning_unused_generations=quality_config.get('pruning_unused_generations', 100),
                 pruning_failure_rate=quality_config.get('pruning_failure_rate', 0.7)
             )
+        
+        # ============================================================
+        # SEMANTIC CONVERGENCE: Push semantic relations into word embeddings
+        # Synonyms pulled closer, antonyms pushed apart
+        # ============================================================
+        semantic_influence_interval = self.config.get('neural', {}).get('semantic_convergence', {}).get('knowledge_web_influence_interval', 25)
+        if self.knowledge_web and generation % semantic_influence_interval == 0:
+            try:
+                influenced = self.knowledge_web.influence_context_memory(context_memory)
+                if influenced > 0:
+                    logger.debug(f"[LANGUAGE_TEACHER] Semantic convergence: influenced {influenced} word embeddings")
+            except Exception as e:
+                logger.warning(f"[LANGUAGE_TEACHER] Semantic convergence failed: {e}")
         
         result = {
             'enabled': True,

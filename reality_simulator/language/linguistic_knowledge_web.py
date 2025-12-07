@@ -1773,6 +1773,68 @@ class LinguisticKnowledgeWeb:
         logger.info(f"[LINGUISTIC_WEB] Added {words_added} words from knowledge web to vocabulary")
         return words_added
     
+    def influence_context_memory(self, context_memory) -> int:
+        """
+        SEMANTIC CONVERGENCE: Push semantic relations into word embeddings.
+        
+        - Synonyms: Pull word embeddings closer together
+        - Antonyms: Push word embeddings apart
+        
+        This ensures that the context_memory word embeddings reflect
+        semantic relationships from the knowledge web.
+        
+        Args:
+            context_memory: ContextMemory instance with word embeddings
+            
+        Returns:
+            Number of word embeddings influenced
+        """
+        if not hasattr(context_memory, 'update_word_embedding_from_organism'):
+            logger.debug("[LINGUISTIC_WEB] ContextMemory lacks update_word_embedding_from_organism")
+            return 0
+        
+        influenced = 0
+        
+        # Process synonym relations
+        for relation in self.relations[:1000]:  # Limit to avoid overly long processing
+            if relation.strength < 0.5:
+                continue
+            
+            source_embed = context_memory.get_word_embedding(relation.source)
+            target_embed = context_memory.get_word_embedding(relation.target)
+            
+            if source_embed is None or target_embed is None:
+                continue
+            
+            if relation.relation_type == 'synonym':
+                # Pull synonyms closer: blend embeddings
+                blended = (source_embed + target_embed) / 2
+                context_memory.update_word_embedding_from_organism(relation.source, blended, alpha=0.02)
+                context_memory.update_word_embedding_from_organism(relation.target, blended, alpha=0.02)
+                influenced += 2
+            
+            elif relation.relation_type == 'antonym':
+                # Push antonyms apart: add negative of the other
+                # (Moving in opposite direction)
+                context_memory.update_word_embedding_from_organism(
+                    relation.source, source_embed - 0.1 * target_embed, alpha=0.02
+                )
+                context_memory.update_word_embedding_from_organism(
+                    relation.target, target_embed - 0.1 * source_embed, alpha=0.02
+                )
+                influenced += 2
+            
+            elif relation.relation_type == 'similar_to':
+                # Similar words: slight pull together
+                blended = 0.7 * source_embed + 0.3 * target_embed
+                context_memory.update_word_embedding_from_organism(relation.source, blended, alpha=0.01)
+                influenced += 1
+        
+        if influenced > 0:
+            logger.info(f"[LINGUISTIC_WEB] Influenced {influenced} word embeddings from semantic relations")
+        
+        return influenced
+    
     def save_to_file(self, filepath: str):
         """Save knowledge web to JSON file."""
         data = {
