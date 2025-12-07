@@ -3759,6 +3759,9 @@ if __name__ == '__main__':
                        capsules: List['OrganismCapsule'],
                        vocabulary: Any = None,
                        knowledge_web: Any = None,
+                       context_memory: Any = None,
+                       causation_explorer: Any = None,
+                       alliance_system: Any = None,
                        training_config: Dict[str, Any] = None,
                        include_gym: bool = True,
                        include_http: bool = True,
@@ -4383,6 +4386,56 @@ case $choice in
 esac
 """
                 zf.writestr('start.sh', start_sh)
+                
+                # ─────────────────────────────────────────────────────────────
+                # 10. SEMANTIC SYSTEMS (Full Intelligence Files)
+                # ─────────────────────────────────────────────────────────────
+                # These files contain the agent's learned semantic understanding
+                
+                # a) Semantic Convergence (Word Embeddings + Language Anchors)
+                if context_memory is not None:
+                    semantic_data = self._serialize_semantic_convergence(context_memory, capsules)
+                    if semantic_data:
+                        zf.writestr("semantic_convergence.json", json.dumps(semantic_data, indent=2))
+                        logger.info(f"[PACKAGE] ✅ Semantic convergence: {semantic_data.get('total_words', 0)} words, "
+                                   f"{semantic_data.get('total_anchors', 0)} anchors")
+                        metadata['package_contents'].append('semantic_convergence.json')
+                    
+                    # Also write context_memory.json for standalone_butterfly_chat.py compatibility
+                    context_memory_data = self._serialize_context_memory_full(context_memory, capsules)
+                    if context_memory_data:
+                        zf.writestr("context_memory.json", json.dumps(context_memory_data, indent=2))
+                        logger.info(f"[PACKAGE] ✅ Context memory: {context_memory_data.get('total_anchors', 0)} anchors, "
+                                   f"{context_memory_data.get('total_associations', 0)} associations")
+                        metadata['package_contents'].append('context_memory.json')
+                
+                # b) Knowledge Web (Full Semantic Relationships)
+                if knowledge_web is not None:
+                    kw_data = self._serialize_knowledge_web_full(knowledge_web)
+                    if kw_data:
+                        zf.writestr("knowledge_web.json", json.dumps(kw_data, indent=2))
+                        logger.info(f"[PACKAGE] ✅ Knowledge web: {kw_data.get('concept_count', 0)} concepts, "
+                                   f"{kw_data.get('relation_count', 0)} relations")
+                        metadata['package_contents'].append('knowledge_web.json')
+                
+                # c) Causation System (Event History)
+                if causation_explorer is not None:
+                    causation_data = self._serialize_causation_system(causation_explorer, capsules)
+                    if causation_data:
+                        zf.writestr("causation_system.json", json.dumps(causation_data, indent=2))
+                        logger.info(f"[PACKAGE] ✅ Causation system: {causation_data.get('total_events', 0)} events")
+                        metadata['package_contents'].append('causation_system.json')
+                
+                # d) Alliance System (Social Context)
+                if alliance_system is not None:
+                    alliance_data = self._serialize_alliance_system(alliance_system, capsules)
+                    if alliance_data:
+                        zf.writestr("alliance_system.json", json.dumps(alliance_data, indent=2))
+                        logger.info(f"[PACKAGE] ✅ Alliance system: {alliance_data.get('alliance_count', 0)} alliances")
+                        metadata['package_contents'].append('alliance_system.json')
+                
+                # Re-write metadata.json to include the semantic files we added
+                zf.writestr('metadata.json', json.dumps(metadata, indent=2))
             
             # Verify we got at least one model format
             if not export_results['onnx']['success'] and not export_results['torchscript']['success']:
