@@ -11686,14 +11686,40 @@
                     if (organisms && organisms.length > 0) {
                         const multi = document.getElementById('agentExporterMulti')?.checked;
                         selector.innerHTML = multi ? '' : '<option value="">-- Select an Organism --</option>';
+                        
+                        // Calculate averages for summary
+                        let totalWords = 0;
+                        let totalUtil = 0;
+                        let vocabCap = 1000;
+                        
                         organisms.forEach(org => {
                             const option = document.createElement('option');
                             option.value = org.id;
-                            option.textContent = `${org.id} (Fitness: ${(org.fitness || 0).toFixed(2)}, Age: ${org.age || 0})`;
+                            
+                            // Include word stats in dropdown
+                            const words = org.words_learned || 0;
+                            const util = org.vocab_utilization || 0;
+                            vocabCap = org.vocab_capacity || 1000;
+                            totalWords += words;
+                            totalUtil += util;
+                            
+                            // Color-code utilization: green=good, yellow=mid, red=low
+                            let utilColor = util >= 50 ? '🟢' : util >= 20 ? '🟡' : '🔴';
+                            
+                            option.textContent = `${org.id.substring(0,8)}.. | F:${(org.fitness || 0).toFixed(2)} | 📚${words}/${vocabCap} (${util}%) ${utilColor}`;
+                            option.title = `ID: ${org.id}\nFitness: ${(org.fitness || 0).toFixed(4)}\nAge: ${org.age || 0}\nWords: ${words}/${vocabCap} (${util}% capacity)\nSource: ${org.source || 'unknown'}`;
                             selector.appendChild(option);
                         });
+                        
                         selector.disabled = false;
-                        updateCompileAgentStatus('Ready to compile.', '#0ff');
+                        
+                        // Show summary stats
+                        const avgWords = organisms.length > 0 ? Math.round(totalWords / organisms.length) : 0;
+                        const avgUtil = organisms.length > 0 ? (totalUtil / organisms.length).toFixed(1) : 0;
+                        updateCompileAgentStatus(
+                            `📊 ${organisms.length} organisms | Avg: ${avgWords}/${vocabCap} words (${avgUtil}% capacity)`,
+                            avgUtil >= 50 ? '#0f0' : avgUtil >= 20 ? '#ff0' : '#f66'
+                        );
                     } else {
                         selector.innerHTML = '<option value="">No organisms found</option>';
                         updateCompileAgentStatus('No organisms available for export.', '#f66');

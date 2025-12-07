@@ -6899,11 +6899,29 @@ def list_organisms():
     """
     List all available organisms from live simulation or saved capsules.
     Returns:
-        A list of dictionaries, each representing an organism with 'id', 'fitness', and 'age'.
+        A list of dictionaries, each representing an organism with 'id', 'fitness', 'age',
+        and language stats (words_learned, vocab_capacity, vocab_utilization).
     """
     try:
         organisms_data = []
         organism_ids = set() # To store unique organism IDs
+        
+        # Get config for vocab_size
+        config = app.config.get('config') or {}
+        vocab_size = config.get('neural', {}).get('language_model', {}).get('teacher', {}).get('vocab_size', 1000)
+        if not vocab_size:
+            vocab_size = config.get('neural', {}).get('brain', {}).get('vocab_size', 1000)
+        
+        # Get context_memory for word associations
+        network = app.config.get('network')
+        context_memory = None
+        if network and hasattr(network, 'context_memory'):
+            context_memory = network.context_memory
+        
+        # Get node_word_associations map
+        node_word_associations = {}
+        if context_memory and hasattr(context_memory, 'node_word_associations'):
+            node_word_associations = context_memory.node_word_associations
 
         # 1. Get organisms from current live simulation if available
         if hasattr(app, 'unified_system') and app.unified_system:
@@ -6913,11 +6931,18 @@ def list_organisms():
                 logger.info(f"Found {len(live_organisms)} live organisms from simulation")
                 for org_id, organism in live_organisms.items():
                     if org_id not in organism_ids:
+                        # Get word count for this organism
+                        org_id_int = hash(org_id) if isinstance(org_id, str) else org_id
+                        words_learned = len(node_word_associations.get(org_id_int, set()))
+                        
                         organisms_data.append({
                             'id': org_id,
                             'fitness': getattr(organism, 'fitness', 0.0),
                             'age': getattr(organism, 'age', 0),
-                            'source': 'live_simulation'
+                            'source': 'live_simulation',
+                            'words_learned': words_learned,
+                            'vocab_capacity': vocab_size,
+                            'vocab_utilization': round(words_learned / vocab_size * 100, 1) if vocab_size > 0 else 0
                         })
                         organism_ids.add(org_id)
             else:
@@ -6949,11 +6974,18 @@ def list_organisms():
             for capsule_id, info in capsule_index.items():
                 org_id = info.get('organism_id')
                 if org_id and org_id not in organism_ids:
+                    # Get word count for this organism from context_memory
+                    org_id_int = hash(org_id) if isinstance(org_id, str) else org_id
+                    words_learned = len(node_word_associations.get(org_id_int, set()))
+                    
                     organisms_data.append({
                         'id': org_id,
-                        'fitness': info.get('fitness', 0.0), # Assuming fitness is stored in capsule index
-                        'age': info.get('age', 0),           # Assuming age is stored in capsule index
-                        'source': 'saved_capsule'
+                        'fitness': info.get('fitness', 0.0),
+                        'age': info.get('age', 0),
+                        'source': 'saved_capsule',
+                        'words_learned': words_learned,
+                        'vocab_capacity': vocab_size,
+                        'vocab_utilization': round(words_learned / vocab_size * 100, 1) if vocab_size > 0 else 0
                     })
                     organism_ids.add(org_id)
         else:
