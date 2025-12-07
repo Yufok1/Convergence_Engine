@@ -506,7 +506,12 @@ class ConceptSystem(nn.Module):
             for axiom_name in self.axiom_names:
                 try:
                     embed = self.get_axiom_embedding(axiom_name, state)
-                    embeddings[axiom_name] = embed.cpu().numpy().astype(np.float32)
+                    # Flatten to ensure 1D 64-dim array
+                    embed_np = embed.cpu().numpy().astype(np.float32).flatten()
+                    if len(embed_np) >= self.embed_dim:
+                        embeddings[axiom_name] = embed_np[:self.embed_dim]
+                    else:
+                        embeddings[axiom_name] = embed_np
                 except Exception as e:
                     logger.debug(f"Could not export embedding for {axiom_name}: {e}")
         return embeddings
