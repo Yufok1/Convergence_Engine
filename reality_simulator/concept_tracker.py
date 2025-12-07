@@ -212,11 +212,20 @@ class ConceptTracker:
                 for org_id in cluster_organism_ids[:10]:  # Limit to avoid flooding
                     # Convert organism ID to int hash if needed
                     org_id_int = hash(org_id) if isinstance(org_id, str) else org_id
-                    self.context_memory.link_word_to_node(concept_id, org_id_int, None)
+                    # Try to get organism embedding for semantic differentiation
+                    org_embedding = None
+                    if org_id in all_organisms:
+                        org = all_organisms[org_id]
+                        if hasattr(org, 'get_language_embedding'):
+                            try:
+                                org_embedding = org.get_language_embedding(self.context_memory)
+                            except Exception:
+                                pass
+                    self.context_memory.link_word_to_node(concept_id, org_id_int, None, organism_embedding=org_embedding)
                     # Also link component words (e.g., "social", "thrivers")
                     for word in concept_id.replace('_', ' ').split():
                         if len(word) > 2:  # Skip very short fragments
-                            self.context_memory.link_word_to_node(word, org_id_int, None)
+                            self.context_memory.link_word_to_node(word, org_id_int, None, organism_embedding=org_embedding)
                 logger.debug(f"[ConceptTracker] Linked phenotype '{concept_id}' to language anchors")
             except Exception as e:
                 logger.warning(f"[ConceptTracker] Failed to link concept to language: {e}")

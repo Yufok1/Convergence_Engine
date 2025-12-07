@@ -613,6 +613,29 @@ Classical ML analytics with scikit-learn.
 
 ---
 
+## `semantic_convergence`
+
+Unifies 6 semantic systems for word embedding differentiation. Enables words used by differently-tuned organisms to occupy different regions of embedding space.
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `enabled` | bool | true | Master toggle for semantic convergence |
+| `use_learned_embeddings` | bool | true | Use nn.Embedding for learned word representations |
+| `embedding_dim` | int | 64 | Dimension for learned embeddings (matches OrganismBrain.fc2) |
+| `organism_embedding_alpha` | float | 0.1 | EMA blending factor (0.1 = 90% keep, 10% new from organism) |
+| `concept_system_alpha` | float | 0.05 | Alpha for ConceptSystem axiom embeddings |
+| `knowledge_web_influence_interval` | int | 25 | Generations between KnowledgeWeb semantic influence passes |
+| `phenotype_to_vocabulary` | bool | true | Auto-register phenotype names ("social_thrivers") as vocabulary |
+
+**Data Flow:**
+1. `organism.brain.fc2` (64-dim) → extracted via `get_language_embedding()`
+2. → `ContextMemory.update_word_embedding_from_organism()` (EMA blend)
+3. → `word_embedding` collective pool influences all organisms' `generate_tokens()`
+
+**Related Systems:** See `CRA_CAPABILITIES.md` Semantic Convergence section for CRA control commands.
+
+---
+
 ## `simulation`
 
 Global runtime settings.

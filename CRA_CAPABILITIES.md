@@ -869,6 +869,107 @@ The ML system emits specialized events with distinct visual shapes:
 
 ---
 
+## 🧬 Semantic Convergence System ⭐ NEW
+
+The **Semantic Convergence System** unifies 6 semantic subsystems to create word embedding differentiation. Each organism's neural state contributes to a shared collective semantic pool, enabling words to inherit meaning from the organisms that use them.
+
+### Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     SEMANTIC CONVERGENCE                        │
+│                                                                 │
+│  ┌──────────────┐    contribute    ┌────────────────────────┐  │
+│  │  Organism A  │ ──────────────→  │                        │  │
+│  │  .brain.fc2  │                  │   ContextMemory        │  │
+│  │  (64-dim)    │    influence     │   .word_embedding      │  │
+│  └──────────────┘ ←────────────────│   (Collective Pool)    │  │
+│                                    │                        │  │
+│  ┌──────────────┐    contribute    │                        │  │
+│  │  Organism B  │ ──────────────→  │                        │  │
+│  │  .brain.fc2  │                  └────────────────────────┘  │
+│  └──────────────┘                                              │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 6 Unified Systems
+
+| Component | Scope | Purpose |
+|-----------|-------|---------|
+| `ContextMemory.word_embedding` | Collective | Shared semantic pool (nn.Embedding) |
+| `OrganismBrain.fc2` | Per-organism | 64-dim neural embedding contributed to pool |
+| `ConceptSystem` (RCUS) | Collective | Axiom embeddings (GOOD, BAD, SELF, OTHER) |
+| `LinguisticKnowledgeWeb` | Collective | Synonyms closer, antonyms apart |
+| `ConceptTracker` | Collective | Phenotype names → vocabulary |
+| `AtomicLanguage` | Per-organism | Individual concept atoms |
+
+### Config Paths
+
+| Path | Type | Default | Purpose |
+|------|------|---------|---------|
+| `/semantic_convergence/enabled` | bool | true | Master toggle for system |
+| `/semantic_convergence/use_learned_embeddings` | bool | true | Enable nn.Embedding layer |
+| `/semantic_convergence/embedding_dim` | int | 64 | Embedding dimension |
+| `/semantic_convergence/organism_embedding_alpha` | float | 0.1 | EMA blend rate for organism embeddings |
+| `/semantic_convergence/concept_system_alpha` | float | 0.05 | EMA blend rate for axiom embeddings |
+| `/semantic_convergence/knowledge_web_influence_interval` | int | 25 | Generations between semantic influence |
+| `/semantic_convergence/phenotype_to_vocabulary` | bool | true | Feed phenotype names to vocabulary |
+
+### CRA Control Commands
+
+**Enable/Disable Semantic Convergence:**
+```json
+[[CONFIG_UPDATE: {
+  "reason": "Enable semantic convergence",
+  "correlation_id": "semantic-on",
+  "patch": [{
+    "op": "replace",
+    "path": "/semantic_convergence/enabled",
+    "value": true
+  }]
+}]]
+```
+
+**Adjust Embedding Alpha (Learning Speed):**
+```json
+[[CONFIG_UPDATE: {
+  "reason": "Faster semantic learning",
+  "correlation_id": "semantic-alpha",
+  "patch": [{
+    "op": "replace",
+    "path": "/semantic_convergence/organism_embedding_alpha",
+    "value": 0.15
+  }]
+}]]
+```
+
+### Causation Events
+
+The semantic convergence system emits events to the causation graph:
+
+| Event Type | Component | When |
+|------------|-----------|------|
+| `word_assignment` | `semantic_convergence` | Word linked to 3+ organisms |
+| `embedding_updated` | `semantic_convergence` | Word embedding updated |
+| `concept_emergence` | `ml_analysis` | Phenotype name created |
+
+### What This Means for Analysis
+
+1. **Word Differentiation**: "alone", "isolated", and "independent" now occupy different regions of embedding space based on which organisms use them
+2. **Semantic Grounding**: Axiom words (good, bad) get grounded in organism state - "good" means something different to thriving vs struggling organisms
+3. **Collective Learning**: Each organism's neural state contributes to shared understanding
+4. **Persistence**: Word embeddings are saved to `data/context_memory_embeddings.pt` and restored on restart
+
+### Diagnostic Checks
+
+When analyzing semantic convergence health:
+- Check `use_learned_embeddings=True` in logs
+- Verify `word_embedding initialized` message on startup
+- Look for `[SEMANTIC]` log entries during training
+- Monitor vocabulary size growth
+
+---
+
 ## 🦋 Cocoon System - Single-File Agent Export ⭐ NEW
 
 The Cocoon System compiles trained organisms into standalone, single-file Python agents that can run independently.

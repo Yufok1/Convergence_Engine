@@ -867,7 +867,16 @@ class SymbioticNetwork:
         
         # Context memory for language anchoring and stability metrics
         # Creates a new instance if none provided (lazy initialization pattern)
-        self.context_memory = context_memory if context_memory is not None else ContextMemory()
+        # SEMANTIC CONVERGENCE: Pass config values if creating new ContextMemory
+        if context_memory is not None:
+            self.context_memory = context_memory
+        else:
+            semantic_config = (config or {}).get('semantic_convergence', {})
+            self.context_memory = ContextMemory(
+                use_learned_embeddings=semantic_config.get('use_learned_embeddings', True),
+                embedding_dim=semantic_config.get('embedding_dim', 64),
+                organism_embedding_alpha=semantic_config.get('organism_embedding_alpha', 0.1)
+            )
         
         # Initialize event_emitter attribute (will be wired later by unified_entry.py or reality_simulator/main.py)
         # This ensures word_assignment events can be emitted when words are linked
@@ -946,6 +955,16 @@ class SymbioticNetwork:
         
         # External VP data source (from Explorer/Djinn Kernel via unified_entry.py)
         self._external_vp_data: Optional[Dict[str, Any]] = None
+        
+        # SEMANTIC CONVERGENCE: Neural trainer reference for ConceptSystem access
+        # Set by unified_entry.py after trainer creation
+        self._neural_trainer: Optional[Any] = None
+
+    def set_neural_trainer(self, trainer) -> None:
+        """Set neural trainer reference for semantic convergence (ConceptSystem access)."""
+        self._neural_trainer = trainer
+        if self.language_teacher is not None:
+            self.language_teacher._current_trainer = trainer
 
     def configure_ml_analyzer(self, config: Dict[str, Any]):
         """
@@ -1511,7 +1530,8 @@ class SymbioticNetwork:
                 teaching_result = self.language_teacher.teach_network(
                     self.organisms,
                     self.context_memory,
-                    self.generation
+                    self.generation,
+                    trainer=self._neural_trainer  # SEMANTIC CONVERGENCE: Pass trainer for ConceptSystem
                 )
                 # Log teaching stats for monitoring (don't store in undefined result)
                 if teaching_result.get('enabled') and teaching_result.get('words_assigned', 0) > 0:

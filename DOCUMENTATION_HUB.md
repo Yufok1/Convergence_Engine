@@ -185,6 +185,11 @@ Export trained agents as portable, standalone packages for deployment.
   - **Illumination Integration**: Direct linking between chat interactions and deep causal analysis
   - **Language Visualization**: Complete representation in graph with distinct icons and link colors
   - **CRA Integration**: Complete knowledge and control over all language system settings
+  - **Semantic Convergence System**: ⭐ NEW - Unifies 6 semantic systems for word embedding differentiation
+    - Per-organism embeddings from `brain.fc2` contribute to collective word embedding pool
+    - Config-driven blending via `organism_embedding_alpha` (EMA update)
+    - Causation events: `embedding_updated`, `semantic_influence`, `phenotype_vocabulary`
+    - See `CRA_CAPABILITIES.md` Semantic Convergence section for CRA controls
   - **Status:** ✅ Fully implemented and operational
 
 ### Explorer (Central Body / Breath Engine)

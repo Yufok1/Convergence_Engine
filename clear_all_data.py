@@ -17,6 +17,7 @@ WHAT GETS CLEARED:
 - data/.simulation_paused - Pause flag
 - data/context_memory.json - Context memory
 - data/context_memory.json.backup - Context memory backup
+- data/context_memory_embeddings.pt - Semantic Convergence word embeddings
 - data/causation_explorer/snapshots/* - Graph snapshots
 - data/causation_explorer/chat_history.json - CRA chat history
 - data/kernel/versions/*.json - Kernel version files
@@ -183,6 +184,17 @@ def clear_all_data():
             print("🧠 Cleared context memory backup")
         else:
             skipped_items.append(f"  ⚠️  Context memory backup - {msg}")
+    
+    # 4c. Clear word embeddings (Semantic Convergence learned embeddings)
+    word_embeddings = data_dir / 'context_memory_embeddings.pt'
+    if word_embeddings.exists():
+        success, size, msg = safe_delete_file(word_embeddings)
+        if success:
+            total_size += size
+            cleared_items.append(f"  ✅ Word embeddings: {size / 1024:.1f} KB")
+            print("🔗 Cleared semantic convergence word embeddings")
+        else:
+            skipped_items.append(f"  ⚠️  Word embeddings - {msg}")
     
     # 5. Clear simulation control
     sim_control = data_dir / '.simulation_control.json'

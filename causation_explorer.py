@@ -635,7 +635,8 @@ class CausationExplorer:
             'reality_sim', 'explorer', 'djinn_kernel', 'neural', 'ml_analysis',
             'language', 'butterfly_chat', 'config_tuner', 'health_monitor',
             'breath', 'state', 'system', 'application', 'causation_explorer',
-            'network', 'quantum', 'lattice', 'consciousness', 'evolution'
+            'network', 'quantum', 'lattice', 'consciousness', 'evolution',
+            'semantic_convergence'  # SEMANTIC CONVERGENCE: Word embedding differentiation events
         }
         
         try:

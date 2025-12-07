@@ -54,7 +54,8 @@ class ContextMemory:
     def __init__(self, persistence_path: str = "data/context_memory.json",
                  use_learned_embeddings: bool = True,
                  embedding_dim: int = 64,
-                 max_vocab_size: int = 1000):
+                 max_vocab_size: int = 1000,
+                 organism_embedding_alpha: float = 0.1):
         """
         Initialize context memory.
         
@@ -63,11 +64,13 @@ class ContextMemory:
             use_learned_embeddings: Use nn.Embedding for learned word representations
             embedding_dim: Dimension for learned embeddings
             max_vocab_size: Maximum vocabulary size
+            organism_embedding_alpha: Alpha for blending organism embeddings (0.1 = 90% keep, 10% new)
         """
         self.persistence_path = persistence_path
         self.use_learned_embeddings = use_learned_embeddings and PYTORCH_AVAILABLE
         self.embedding_dim = embedding_dim
         self.max_vocab_size = max_vocab_size
+        self.organism_embedding_alpha = organism_embedding_alpha  # SEMANTIC CONVERGENCE: Config-driven alpha
         
         # Core data structures
         self.node_embeddings: Dict[int, List[float]] = {}  # organism_id -> embedding vector
@@ -78,6 +81,10 @@ class ContextMemory:
         
         # Event emitter for word assignment events
         self.event_emitter: Optional[Any] = None
+        
+        # Thread safety for embedding updates (used when Ray parallelizes)
+        import threading
+        self._embedding_lock = threading.Lock()
         
         # Language model integration
         self.vocabulary: Optional['LanguageVocabulary'] = None
@@ -169,6 +176,16 @@ class ContextMemory:
         This creates SEMANTIC DIFFERENTIATION - words used by differently-tuned
         organisms will occupy different regions of embedding space.
         
+        Thread-safe: Uses lock to prevent corruption during multi-threaded access.
+        
+        RAY COMPATIBILITY NOTE:
+            Ray workers serialize and deserialize data - embedding updates inside
+            Ray workers happen on COPIES and do NOT propagate back to the main
+            process's word_embedding. For semantic convergence, this method should
+            be called from the main process after Ray batch operations complete.
+            The LanguageTeacher.teach_network() call happens in the main process,
+            so embedding updates are properly accumulated there.
+        
         Args:
             word: Word to update embedding for
             organism_embedding: 64-dim neural embedding from organism.brain.fc2
@@ -182,13 +199,15 @@ class ContextMemory:
         token_id = self.vocabulary.get_id(word)
         if token_id is None or token_id >= self.max_vocab_size:
             return
-        if len(organism_embedding) != self.embedding_dim:
+        if organism_embedding is None or len(organism_embedding) != self.embedding_dim:
             return
         
-        with torch.no_grad():
-            current = self.word_embedding.weight[token_id]
-            org_tensor = torch.from_numpy(organism_embedding.astype(np.float32)).to(current.device)
-            self.word_embedding.weight[token_id] = (1 - alpha) * current + alpha * org_tensor
+        # Thread-safe embedding update
+        with self._embedding_lock:
+            with torch.no_grad():
+                current = self.word_embedding.weight[token_id]
+                org_tensor = torch.from_numpy(organism_embedding.astype(np.float32)).to(current.device)
+                self.word_embedding.weight[token_id] = (1 - alpha) * current + alpha * org_tensor
     
     def tokenize_sequence(self, words: List[str], add_special: bool = True) -> List[int]:
         """
@@ -333,6 +352,16 @@ class ContextMemory:
         self.word_frequencies = defaultdict(int, data.get('word_frequencies', {}))
         # Convert back to defaultdict to maintain auto-creation behavior
         self.node_word_associations = defaultdict(set, {int(k): set(v) for k, v in data.get('node_word_associations', {}).items()})
+        
+        # SEMANTIC CONVERGENCE: Load learned word embeddings if they exist
+        if self.use_learned_embeddings and self.word_embedding is not None and PYTORCH_AVAILABLE:
+            embedding_path = self.persistence_path.replace('.json', '_embeddings.pt')
+            if os.path.exists(embedding_path):
+                try:
+                    self.word_embedding.load_state_dict(torch.load(embedding_path, weights_only=True))
+                    print(f"[CONTEXT_MEMORY] Loaded learned word embeddings from {embedding_path}")
+                except Exception as e:
+                    print(f"[CONTEXT_MEMORY] Warning: Could not load word embeddings: {e}")
 
     def _save_persistence(self) -> None:
         """Save context memory to disk using atomic writes and a backup copy."""
@@ -358,6 +387,15 @@ class ContextMemory:
 
             os.replace(tmp_path, self.persistence_path)
             shutil.copy2(self.persistence_path, backup_path)
+            
+            # SEMANTIC CONVERGENCE: Save learned word embeddings
+            if self.use_learned_embeddings and self.word_embedding is not None and PYTORCH_AVAILABLE:
+                embedding_path = self.persistence_path.replace('.json', '_embeddings.pt')
+                try:
+                    torch.save(self.word_embedding.state_dict(), embedding_path)
+                except Exception as e:
+                    print(f"[CONTEXT_MEMORY] Warning: Could not save word embeddings: {e}")
+                    
         except Exception as e:
             print(f"[CONTEXT_MEMORY] Warning: Could not save persistence data: {e}")
             if os.path.exists(tmp_path):
@@ -419,22 +457,23 @@ class ContextMemory:
         self._update_node_embedding(organism_id, word)
         
         # NEW: Blend organism neural embedding into word embedding
+        # Uses config-driven alpha for semantic convergence
         if organism_embedding is not None:
-            self.update_word_embedding_from_organism(word, organism_embedding)
+            self.update_word_embedding_from_organism(word, organism_embedding, alpha=self.organism_embedding_alpha)
         
         # Only emit word_assignment event for significant milestones (quality over quantity)
         # Match neural/ML event frequency - only emit when word reaches meaningful adoption
         if was_new_word:
-            # Only emit if word is adopted by many organisms (significant language emergence)
+            # Only emit if word is adopted by multiple organisms (significant language emergence)
             num_organisms_with_word = len(self.language_anchors[word])
-            # Much higher threshold - only when 10+ organisms use it (major language pattern)
-            if self.event_emitter and num_organisms_with_word >= 10:
+            # SEMANTIC CONVERGENCE: Lower threshold to 3+ organisms for better causation tracking
+            if self.event_emitter and num_organisms_with_word >= 3:
                 try:
                     import time
                     from causation_explorer import Event
                     event = Event(
                         timestamp=time.time(),
-                        component='language',
+                        component='semantic_convergence',  # Changed from 'language' for causation filtering
                         event_type='word_assignment',
                         data={
                             'word': word,

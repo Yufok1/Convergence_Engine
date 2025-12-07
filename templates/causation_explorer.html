@@ -1539,6 +1539,10 @@
                             <span>🦋 Language System</span></label>
                     </div>
                     <div class="filter-item">
+                        <label><input type="checkbox" id="filter-semantic_convergence" checked onchange="applyFilters()">
+                            <span>🔗 Semantic Convergence</span></label>
+                    </div>
+                    <div class="filter-item">
                         <label><input type="checkbox" id="filter-butterfly_chat" checked onchange="applyFilters()">
                             <span>🦋 Butterfly Chat</span></label>
                     </div>
@@ -1687,6 +1691,16 @@
                                 <span style="min-width: 120px;">🦋 Language:</span>
                                 <input type="color" id="color-language" value="#00BCD4"
                                     onchange="updateComponentColor('language', this.value)"
+                                    style="width: 60px; height: 25px; cursor: pointer;">
+                            </label>
+                        </div>
+
+                        <div class="filter-item" style="margin-bottom: 8px;">
+                            <label
+                                style="display: flex; align-items: center; gap: 8px; color: #0ff; font-size: 0.85em;">
+                                <span style="min-width: 120px;">🔗 Semantic Conv:</span>
+                                <input type="color" id="color-semantic_convergence" value="#E91E63"
+                                    onchange="updateComponentColor('semantic_convergence', this.value)"
                                     style="width: 60px; height: 25px; cursor: pointer;">
                             </label>
                         </div>
@@ -4404,6 +4418,7 @@
                 'neural': '#00FFFF',            // 🧠 Electric Cyan (Neural System)
                 'ml_analysis': '#32CD32',       // 🔬 Lime Green (ML Analysis) - doc consistency
                 'language': '#00BCD4',          // 🦋 Teal (Language System)
+                'semantic_convergence': '#E91E63', // 🔗 Pink (Semantic Convergence - word embedding differentiation)
                 'butterfly_chat': '#8BC34A',    // 🦋 Light Green (Chat Interactions)
                 'config_tuner': '#FFD700',      // 🔧 Gold (Config Tuner - autonomous tuning)
                 'health_monitor': '#FF69B4',    // ⚕️ Hot Pink (Health Monitor - system health)
@@ -5025,6 +5040,7 @@
                 filters.components.neural = document.getElementById('filter-neural').checked;
                 filters.components.ml_analysis = document.getElementById('filter-ml_analysis').checked;
                 filters.components.language = document.getElementById('filter-language') ? document.getElementById('filter-language').checked : true;
+                filters.components.semantic_convergence = document.getElementById('filter-semantic_convergence') ? document.getElementById('filter-semantic_convergence').checked : true;
                 filters.components.butterfly_chat = document.getElementById('filter-butterfly_chat') ? document.getElementById('filter-butterfly_chat').checked : true;
                 filters.components.config_tuner = document.getElementById('filter-config_tuner') ? document.getElementById('filter-config_tuner').checked : true;
                 filters.components.health_monitor = document.getElementById('filter-health_monitor') ? document.getElementById('filter-health_monitor').checked : true;
@@ -5591,6 +5607,7 @@
                     'neural': '#00FFFF',
                     'ml_analysis': '#32CD32',
                     'language': '#00BCD4',
+                    'semantic_convergence': '#E91E63',
                     'butterfly_chat': '#8BC34A',
                     'config_tuner': '#FFD700',
                     'health_monitor': '#FF69B4',
@@ -5837,6 +5854,7 @@
                             'neural': 'filter-neural',
                             'ml_analysis': 'filter-ml_analysis',
                             'language': 'filter-language',
+                            'semantic_convergence': 'filter-semantic_convergence',
                             'butterfly_chat': 'filter-butterfly_chat',
                             'config_tuner': 'filter-config_tuner',
                             'health_monitor': 'filter-health_monitor',
@@ -6432,6 +6450,7 @@
                     { name: '🧠 Neural', color: componentColors['neural'], key: 'neural' },
                     { name: '🔬 ML', color: componentColors['ml_analysis'], key: 'ml_analysis' },
                     { name: '🦋 Language', color: componentColors['language'] || '#00BCD4', key: 'language' },
+                    { name: '🔗 Semantic', color: componentColors['semantic_convergence'] || '#E91E63', key: 'semantic_convergence' },
                     { name: '⚔️ Alliance', color: componentColors['alliance'] || '#9400D3', key: 'alliance' },
                     { name: '🗡️ Highlander', color: componentColors['highlander'] || '#FF1493', key: 'highlander' },
                     { name: '🌱 Germination', color: componentColors['germination'] || '#32CD32', key: 'germination' },

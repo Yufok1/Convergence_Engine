@@ -11,6 +11,21 @@ Stateless task definitions for:
 
 These tasks have NO state management complexity - they receive
 all inputs as arguments and return results.
+
+SEMANTIC CONVERGENCE COMPATIBILITY NOTE:
+    Ray workers serialize/deserialize data - PyTorch nn.Embedding updates inside
+    Ray workers happen on COPIES and do NOT propagate back to the main process.
+    
+    This is BY DESIGN: Semantic convergence word embedding updates happen in the
+    main process via LanguageTeacher.teach_network(), which is called AFTER Ray
+    batch operations complete. The teach_network() flow:
+    
+    1. Ray batch training completes
+    2. Main process calls teach_network(organisms, context_memory, generation, trainer)
+    3. teach_organism() extracts organism.get_language_embedding() 
+    4. link_word_to_node() updates word_embedding in main process memory
+    
+    This ensures embedding updates are properly accumulated centrally.
 """
 
 import logging

@@ -1183,6 +1183,12 @@ class UnifiedSystem:
                     if hasattr(network.context_memory, 'vocabulary') and network.context_memory.vocabulary:
                         network.context_memory.vocabulary.event_emitter = neural_event_emitter
                     print(f"[UNIFIED] [LANGUAGE] Wired event_emitter to context_memory (event_emitter is {'set' if neural_event_emitter else 'None'})")
+                
+                # SEMANTIC CONVERGENCE: Wire neural_trainer to network for ConceptSystem access
+                if hasattr(self.reality_sim, 'neural_trainer') and self.reality_sim.neural_trainer:
+                    if hasattr(network, 'set_neural_trainer'):
+                        network.set_neural_trainer(self.reality_sim.neural_trainer)
+                        print("[UNIFIED] [SEMANTIC] ✅ Wired neural_trainer to network for ConceptSystem access")
 
             # Also wire ML event emitter on the network (clustering, anomaly, phenotype events)
             try:

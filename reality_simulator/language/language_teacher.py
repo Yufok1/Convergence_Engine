@@ -400,8 +400,18 @@ class LanguageTeacher:
         # ============================================================
         # SEMANTIC CONVERGENCE: Export ConceptSystem axiom embeddings
         # Axiom words (good, bad, self, other) get state-grounded embeddings
+        # NOTE: ConceptSystem is on NeuralTrainer, not organism. Access via self.trainer if available.
         # ============================================================
-        if hasattr(organism, 'concept_system') and organism.concept_system is not None:
+        concept_system = None
+        # Try to get concept_system from trainer (set by teach_network)
+        if hasattr(self, '_current_trainer') and self._current_trainer is not None:
+            if hasattr(self._current_trainer, 'concept_system'):
+                concept_system = self._current_trainer.concept_system
+        # Fallback: check organism (legacy path, usually None)
+        if concept_system is None and hasattr(organism, 'concept_system'):
+            concept_system = organism.concept_system
+        
+        if concept_system is not None:
             try:
                 # Get organism state for grounding
                 if hasattr(organism, 'get_state_features'):
@@ -410,11 +420,14 @@ class LanguageTeacher:
                         import torch
                         state_tensor = torch.from_numpy(state_np).float()
                         # Export grounded axiom embeddings
-                        axiom_embeds = organism.concept_system.export_concept_embeddings(state_tensor)
+                        axiom_embeds = concept_system.export_concept_embeddings(state_tensor)
+                        # Read alpha from config (default 0.05)
+                        semantic_config = self.config.get('semantic_convergence', {})
+                        concept_alpha = semantic_config.get('concept_system_alpha', 0.05)
                         # Push axiom embeddings to word embeddings
                         for axiom_name, embed in axiom_embeds.items():
                             axiom_word = axiom_name.lower()  # GOOD -> good
-                            context_memory.update_word_embedding_from_organism(axiom_word, embed, alpha=0.05)
+                            context_memory.update_word_embedding_from_organism(axiom_word, embed, alpha=concept_alpha)
             except Exception as e:
                 logger.debug(f"[LANGUAGE_TEACHER] Could not export concept embeddings: {e}")
         
@@ -713,7 +726,8 @@ class LanguageTeacher:
         
         return words_assigned
     
-    def teach_network(self, organisms: Dict[str, Any], context_memory, generation: int) -> Dict[str, Any]:
+    def teach_network(self, organisms: Dict[str, Any], context_memory, generation: int, 
+                      trainer=None) -> Dict[str, Any]:
         """
         Teach all organisms in the network.
         
@@ -721,10 +735,13 @@ class LanguageTeacher:
             organisms: Dictionary of organism_id -> organism
             context_memory: ContextMemory instance
             generation: Current generation number
+            trainer: Optional NeuralTrainer instance (provides ConceptSystem for semantic convergence)
             
         Returns:
             Dictionary with teaching statistics
         """
+        # SEMANTIC CONVERGENCE: Store trainer reference for teach_organism to access ConceptSystem
+        self._current_trainer = trainer
         if not self.enabled:
             return {'enabled': False, 'organisms_taught': 0, 'words_assigned': 0}
         
@@ -769,8 +786,9 @@ class LanguageTeacher:
         # SEMANTIC CONVERGENCE: Push semantic relations into word embeddings
         # Synonyms pulled closer, antonyms pushed apart
         # ============================================================
-        semantic_influence_interval = self.config.get('neural', {}).get('semantic_convergence', {}).get('knowledge_web_influence_interval', 25)
-        if self.knowledge_web and generation % semantic_influence_interval == 0:
+        semantic_config = self.config.get('semantic_convergence', {})
+        semantic_influence_interval = semantic_config.get('knowledge_web_influence_interval', 25)
+        if semantic_config.get('enabled', True) and self.knowledge_web and generation % semantic_influence_interval == 0:
             try:
                 influenced = self.knowledge_web.influence_context_memory(context_memory)
                 if influenced > 0:
