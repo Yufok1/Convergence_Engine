@@ -7257,7 +7257,7 @@ def compile_ensemble_to_agent():
         # 🔮 Get knowledge web for semantic relationships (CRITICAL for coherent generation!)
         knowledge_web = None
         context_memory = app.config.get('context_memory')
-        network = app.config.get('network')
+        # network already retrieved above from unified_system
         
         # PRIMARY SOURCE: LanguageTeacher owns the knowledge web!
         if network and hasattr(network, 'language_teacher') and network.language_teacher:
@@ -7378,7 +7378,9 @@ def compile_learning_capsule():
         
         # Get unified system components
         unified_system = app.config.get('unified_system')
-        network = app.config.get('network')
+        if unified_system is None:
+            unified_system = getattr(app, 'unified_system', None)
+        network = getattr(unified_system, 'network', None) if unified_system else app.config.get('network')
         capsule_manager = app.config.get('capsule_manager')
         
         if not capsule_manager:
@@ -7626,8 +7628,8 @@ def compile_cocoon():
         # Get knowledge web - PRIMARY SOURCE: LanguageTeacher!
         knowledge_web = app.config.get('knowledge_web')
         
-        # PRIMARY: Get from LanguageTeacher
-        network = app.config.get('network')
+        # PRIMARY: Get from LanguageTeacher (network is on unified_system, not app.config!)
+        network = getattr(unified_system, 'network', None) if unified_system else app.config.get('network')
         if knowledge_web is None and network and hasattr(network, 'language_teacher') and network.language_teacher:
             teacher = network.language_teacher
             if hasattr(teacher, 'knowledge_web') and teacher.knowledge_web:
@@ -7650,7 +7652,7 @@ def compile_cocoon():
                 conversation_history = getattr(lang_system, 'conversation_history', [])
         
         # Get context_memory for semantic convergence
-        network = app.config.get('network')
+        # network already retrieved above from unified_system
         context_memory = app.config.get('context_memory')
         if context_memory is None and network and hasattr(network, 'context_memory'):
             context_memory = network.context_memory
