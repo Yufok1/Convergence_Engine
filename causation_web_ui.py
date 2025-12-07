@@ -6935,6 +6935,31 @@ def list_organisms():
                         org_id_int = hash(org_id) if isinstance(org_id, str) else org_id
                         words_learned = len(node_word_associations.get(org_id_int, set()))
                         
+                        # Get brain stats
+                        brain = getattr(organism, 'brain', None)
+                        has_language_head = False
+                        brain_params = 0
+                        hidden_dim = 0
+                        if brain:
+                            has_language_head = getattr(brain, 'use_language_head', False)
+                            hidden_dim = getattr(brain, 'hidden_dim', 0)
+                            try:
+                                brain_params = sum(p.numel() for p in brain.parameters())
+                            except:
+                                pass
+                        
+                        # Get experience buffer size
+                        exp_buffer = getattr(organism, 'experience_buffer', None)
+                        exp_buffer_size = len(exp_buffer) if exp_buffer else 0
+                        
+                        # Get action history
+                        action_history = getattr(organism, 'action_history', [])
+                        action_history_len = len(action_history) if action_history else 0
+                        
+                        # Get connections (social)
+                        connections = getattr(organism, 'connections', [])
+                        connection_count = len(connections) if connections else 0
+                        
                         organisms_data.append({
                             'id': org_id,
                             'fitness': getattr(organism, 'fitness', 0.0),
@@ -6942,7 +6967,13 @@ def list_organisms():
                             'source': 'live_simulation',
                             'words_learned': words_learned,
                             'vocab_capacity': vocab_size,
-                            'vocab_utilization': round(words_learned / vocab_size * 100, 1) if vocab_size > 0 else 0
+                            'vocab_utilization': round(words_learned / vocab_size * 100, 1) if vocab_size > 0 else 0,
+                            'has_language_head': has_language_head,
+                            'brain_params': brain_params,
+                            'hidden_dim': hidden_dim,
+                            'experience_buffer_size': exp_buffer_size,
+                            'action_history_len': action_history_len,
+                            'connection_count': connection_count
                         })
                         organism_ids.add(org_id)
             else:
@@ -6978,6 +7009,10 @@ def list_organisms():
                     org_id_int = hash(org_id) if isinstance(org_id, str) else org_id
                     words_learned = len(node_word_associations.get(org_id_int, set()))
                     
+                    # Get capsule-specific stats if available
+                    capsule_exp_buffer = info.get('experience_count', 0)
+                    capsule_connections = info.get('connection_count', 0)
+                    
                     organisms_data.append({
                         'id': org_id,
                         'fitness': info.get('fitness', 0.0),
@@ -6985,7 +7020,14 @@ def list_organisms():
                         'source': 'saved_capsule',
                         'words_learned': words_learned,
                         'vocab_capacity': vocab_size,
-                        'vocab_utilization': round(words_learned / vocab_size * 100, 1) if vocab_size > 0 else 0
+                        'vocab_utilization': round(words_learned / vocab_size * 100, 1) if vocab_size > 0 else 0,
+                        'experience_buffer_size': capsule_exp_buffer,
+                        'action_history_length': info.get('action_count', 0),
+                        'connections_count': capsule_connections,
+                        'brain_config': info.get('brain_config', {}),
+                        'has_language_head': info.get('has_language_head', False),
+                        'generation': info.get('generation', 0),
+                        'total_reward': info.get('total_reward', 0.0)
                     })
                     organism_ids.add(org_id)
         else:
