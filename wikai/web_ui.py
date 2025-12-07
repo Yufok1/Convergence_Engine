@@ -461,6 +461,93 @@ WIKAI_TEMPLATE = '''
             color: var(--text-secondary);
         }
         
+        /* Debug Panel */
+        .debug-panel {
+            margin-top: 20px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .debug-header {
+            background: var(--bg-dark);
+            padding: 10px 15px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85em;
+            font-weight: 500;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .debug-header:hover {
+            background: var(--bg-hover);
+        }
+        
+        .debug-content {
+            max-height: 300px;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        
+        .debug-content.collapsed {
+            max-height: 0;
+        }
+        
+        .debug-stats {
+            display: flex;
+            justify-content: space-around;
+            padding: 10px;
+            background: var(--bg-dark);
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .debug-stat {
+            text-align: center;
+        }
+        
+        .debug-stat-value {
+            display: block;
+            font-size: 1.2em;
+            font-weight: 700;
+            color: var(--accent-cyan);
+        }
+        
+        .debug-stat-label {
+            font-size: 0.7em;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+        
+        .debug-log {
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.75em;
+            padding: 10px;
+            background: #0a0e14;
+        }
+        
+        .log-entry {
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .log-entry.log-event { color: var(--text-secondary); }
+        .log-entry.log-candidate { color: var(--accent-orange); }
+        .log-entry.log-capture { color: var(--accent-green); font-weight: bold; }
+        .log-entry.log-info { color: var(--accent-blue); }
+        .log-entry.log-error { color: var(--accent-red); }
+        
+        .log-time {
+            color: var(--text-secondary);
+            margin-right: 8px;
+        }
+        
         /* Empty State */
         .empty-state {
             text-align: center;
@@ -648,6 +735,33 @@ WIKAI_TEMPLATE = '''
                     <div class="feed-detail">The WIKAI Observer is watching for convergent patterns.</div>
                 </div>
             </div>
+            
+            <!-- Debug Log Panel -->
+            <div class="debug-panel">
+                <div class="debug-header" onclick="toggleDebugLog()">
+                    <span>🔍 Observer Debug Log</span>
+                    <span id="debug-toggle">▼</span>
+                </div>
+                <div class="debug-content" id="debug-content">
+                    <div class="debug-stats" id="debug-stats">
+                        <div class="debug-stat">
+                            <span class="debug-stat-value" id="events-processed">0</span>
+                            <span class="debug-stat-label">Events</span>
+                        </div>
+                        <div class="debug-stat">
+                            <span class="debug-stat-value" id="candidates-count">0</span>
+                            <span class="debug-stat-label">Candidates</span>
+                        </div>
+                        <div class="debug-stat">
+                            <span class="debug-stat-value" id="captured-count">0</span>
+                            <span class="debug-stat-label">Captured</span>
+                        </div>
+                    </div>
+                    <div class="debug-log" id="debug-log">
+                        <div class="log-entry log-info">Observer initializing...</div>
+                    </div>
+                </div>
+            </div>
         </aside>
     </main>
     
@@ -725,6 +839,54 @@ WIKAI_TEMPLATE = '''
                 // Silently fail
             }
         }, 10000);
+        
+        // Debug log functions
+        function toggleDebugLog() {
+            const content = document.getElementById('debug-content');
+            const toggle = document.getElementById('debug-toggle');
+            content.classList.toggle('collapsed');
+            toggle.textContent = content.classList.contains('collapsed') ? '▶' : '▼';
+        }
+        
+        const debugLog = document.getElementById('debug-log');
+        
+        function addDebugEntry(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            const time = new Date().toLocaleTimeString();
+            entry.innerHTML = `<span class="log-time">${time}</span>${message}`;
+            debugLog.insertBefore(entry, debugLog.firstChild);
+            
+            // Keep only last 100 entries
+            while (debugLog.children.length > 100) {
+                debugLog.removeChild(debugLog.lastChild);
+            }
+        }
+        
+        // Poll for debug updates every 2 seconds
+        let lastDebugUpdate = 0;
+        setInterval(async () => {
+            try {
+                const response = await fetch('/wikai/api/observer/debug?since=' + lastDebugUpdate);
+                const data = await response.json();
+                
+                // Update stats
+                document.getElementById('events-processed').textContent = data.metrics?.events_processed || 0;
+                document.getElementById('candidates-count').textContent = data.metrics?.candidates || 0;
+                document.getElementById('captured-count').textContent = data.metrics?.patterns_captured || 0;
+                
+                // Add new log entries
+                if (data.logs) {
+                    data.logs.forEach(log => {
+                        addDebugEntry(log.message, log.type);
+                    });
+                }
+                
+                lastDebugUpdate = data.timestamp || Date.now();
+            } catch (e) {
+                // Silently fail
+            }
+        }, 2000);
     </script>
 </body>
 </html>
@@ -763,13 +925,14 @@ def wikai_index():
         patterns = librarian.query()
     
     # Sort by capture date (newest first)
-    patterns.sort(key=lambda p: p.origin.get('captured', ''), reverse=True)
+    patterns.sort(key=lambda p: p.origin.get('captured', '') if isinstance(p.origin, dict) else '', reverse=True)
     
     # Build tag cloud
     tag_counts = {}
     all_patterns = librarian.query()
     for p in all_patterns:
-        for tag in p.tags:
+        pattern_tags = p.tags if hasattr(p, 'tags') and p.tags else []
+        for tag in pattern_tags:
             tag_counts[tag] = tag_counts.get(tag, 0) + 1
     
     # Sort tags by count
@@ -785,24 +948,27 @@ def wikai_index():
     # Convert pattern to dict for template
     pattern_dicts = []
     for p in patterns[:50]:  # Limit to 50
+        origin = p.origin if isinstance(p.origin, dict) else {}
+        captured = origin.get('captured', 'Unknown')
         pattern_dicts.append({
             'id': p.id,
             'name': p.name,
-            'captured': p.origin.get('captured', 'Unknown')[:10]
+            'captured': captured[:10] if captured else 'Unknown'
         })
     
     selected_dict = None
     if selected_pattern:
+        origin = selected_pattern.origin if isinstance(selected_pattern.origin, dict) else {}
         selected_dict = {
             'id': selected_pattern.id,
             'name': selected_pattern.name,
-            'origin': selected_pattern.origin,
-            'abstract': selected_pattern.abstract,
-            'mechanism': selected_pattern.mechanism,
-            'reasoning_chain': selected_pattern.reasoning_chain,
-            'axiom': selected_pattern.axiom,
-            'metrics': selected_pattern.metrics,
-            'tags': selected_pattern.tags
+            'origin': origin,
+            'abstract': selected_pattern.abstract if hasattr(selected_pattern, 'abstract') else '',
+            'mechanism': selected_pattern.mechanism if hasattr(selected_pattern, 'mechanism') else '',
+            'reasoning_chain': selected_pattern.reasoning_chain if hasattr(selected_pattern, 'reasoning_chain') else [],
+            'axiom': selected_pattern.axiom if hasattr(selected_pattern, 'axiom') else '',
+            'metrics': selected_pattern.metrics if hasattr(selected_pattern, 'metrics') else {},
+            'tags': selected_pattern.tags if hasattr(selected_pattern, 'tags') else []
         }
     
     # Calculate stats
@@ -811,7 +977,7 @@ def wikai_index():
     
     # Today's captures
     today = datetime.now().strftime('%Y-%m-%d')
-    today_count = sum(1 for p in all_patterns if p.origin.get('captured', '').startswith(today))
+    today_count = sum(1 for p in all_patterns if (p.origin.get('captured', '') if isinstance(p.origin, dict) else '').startswith(today))
     
     return render_template_string(
         WIKAI_TEMPLATE,
@@ -918,6 +1084,63 @@ def api_feed():
     # Get items since last request (simplified: just return last 5)
     return jsonify({
         'items': _feed_buffer[:5]
+    })
+
+
+# Debug log buffer for live streaming
+_debug_buffer = []
+_debug_buffer_max = 200
+_debug_last_id = 0
+
+
+def add_debug_log(message: str, log_type: str = 'info'):
+    """Add a debug log entry for the web UI."""
+    global _debug_last_id
+    _debug_last_id += 1
+    _debug_buffer.insert(0, {
+        'id': _debug_last_id,
+        'message': message,
+        'type': log_type,
+        'time': datetime.now().isoformat()
+    })
+    # Trim buffer
+    if len(_debug_buffer) > _debug_buffer_max:
+        _debug_buffer[:] = _debug_buffer[:_debug_buffer_max]
+
+
+@wikai_bp.route('/api/observer/debug')
+def api_observer_debug():
+    """Get observer debug information for live streaming."""
+    since = int(request.args.get('since', 0))
+    
+    # Get observer metrics
+    metrics = {
+        'events_processed': 0,
+        'candidates': 0,
+        'patterns_captured': 0
+    }
+    
+    # Try to get live metrics from the observer
+    try:
+        # Check if unified_system has wikai_observer
+        from flask import current_app
+        unified_system = getattr(current_app, 'unified_system', None)
+        if unified_system and hasattr(unified_system, 'wikai_observer'):
+            observer = unified_system.wikai_observer
+            if observer:
+                metrics['events_processed'] = observer.metrics.get('events_processed', 0)
+                metrics['candidates'] = len(observer._candidates) if hasattr(observer, '_candidates') else 0
+                metrics['patterns_captured'] = observer.metrics.get('patterns_captured', 0)
+    except Exception:
+        pass
+    
+    # Get new log entries since last request
+    new_logs = [log for log in _debug_buffer if log['id'] > since][:50]
+    
+    return jsonify({
+        'timestamp': _debug_last_id,
+        'metrics': metrics,
+        'logs': new_logs
     })
 
 

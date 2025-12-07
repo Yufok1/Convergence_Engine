@@ -207,6 +207,16 @@ class WIKAIObserver:
         
         logger.info(f"🦋 WIKAI Observer initialized (watching {len(self.config['watch_event_types'])} event types)")
     
+    def _send_debug_log(self, message: str, log_type: str = 'info'):
+        """Send a debug log entry to the web UI."""
+        try:
+            from wikai.web_ui import add_debug_log
+            add_debug_log(message, log_type)
+        except ImportError:
+            pass  # Web UI not loaded
+        except Exception:
+            pass  # Non-critical
+    
     def start_watching(self):
         """Start the observer in a background thread."""
         if self._watching:
@@ -230,10 +240,17 @@ class WIKAIObserver:
     
     def _watch_loop(self):
         """Main observation loop - polls for new events."""
+        loop_count = 0
         while self._watching:
             try:
                 self._process_new_events()
                 self._evaluate_candidates()
+                
+                # Periodic status update every ~60 seconds (60 loops at 1s interval)
+                loop_count += 1
+                if loop_count % 60 == 0:
+                    print(f"[WIKAI] 👁️ Observer status: {self.metrics['events_processed']} events | {len(self._candidates)} candidates | {self.metrics['patterns_captured']} captured")
+                    
             except Exception as e:
                 logger.error(f"🦋 WIKAI Observer error: {e}")
             
@@ -260,6 +277,10 @@ class WIKAIObserver:
             for event in new_events:
                 self._analyze_event(event)
                 self.metrics['events_processed'] += 1
+            
+            # Send debug update to web UI periodically
+            if self.metrics['events_processed'] % 50 == 0:
+                self._send_debug_log(f"Processed {self.metrics['events_processed']} events, {len(self._candidates)} candidates", 'info')
                 
         except Exception as e:
             logger.error(f"🦋 Error processing events: {e}")
@@ -285,6 +306,9 @@ class WIKAIObserver:
         fitness = self._extract_fitness(event_data)
         tokens = self._extract_tokens(event_data)
         
+        # Send event to debug log
+        self._send_debug_log(f"[{event_type}] stab={stability:.2f} fit={fitness:.2f}", 'event')
+        
         # Generate pattern signature (unique identifier for this type of pattern)
         signature = self._generate_signature(event_type, tokens)
         
@@ -292,6 +316,8 @@ class WIKAIObserver:
             if signature in self._candidates:
                 # Existing candidate - add observation
                 self._candidates[signature].add_observation(event_data, stability, fitness)
+                cand = self._candidates[signature]
+                self._send_debug_log(f"Candidate updated: {signature[:15]}... obs={cand.observation_count} stab={cand.avg_stability:.2f}", 'candidate')
             else:
                 # New candidate - start observing
                 candidate = PatternCandidate(
@@ -389,7 +415,20 @@ class WIKAIObserver:
             )
             
             self.metrics['patterns_captured'] += 1
+            
+            # LOUD announcement so you don't miss it!
+            print("\n" + "=" * 60)
+            print(f"📸 WIKAI CAPTURE! Pattern #{self.metrics['patterns_captured']}")
+            print(f"   ID:    {pattern_id}")
+            print(f"   Name:  {name}")
+            print(f"   Axiom: \"{axiom}\"")
+            print(f"   Stability: {candidate.avg_stability:.2f} | Fitness Δ: {candidate.fitness_delta:.2f}")
+            print("=" * 60 + "\n")
+            
             logger.info(f"🦋 WIKAI Captured: {pattern_id} - {name}")
+            
+            # Send to debug log
+            self._send_debug_log(f"🎉 CAPTURED: {pattern_id} - {name}", 'capture')
             
             # Notify web UI feed
             try:
@@ -628,10 +667,20 @@ class WIKAIObserver:
 # Convenience function to wire observer to unified_entry
 def create_observer_for_convergence(
     causation_explorer: Any,
-    librarian: Optional[WIKAILibrarian] = None
+    librarian: Optional[WIKAILibrarian] = None,
+    fitness_delta_threshold: float = 0.15,
+    stability_threshold: float = 0.85,
+    cycle_threshold: int = 20
 ) -> WIKAIObserver:
     """
     Create and start a WIKAI Observer for the Convergence Engine.
+    
+    Args:
+        causation_explorer: The CausationExplorer instance to watch
+        librarian: Optional WIKAILibrarian (creates one if not provided)
+        fitness_delta_threshold: Minimum fitness improvement to trigger capture
+        stability_threshold: Minimum stability score to trigger capture
+        cycle_threshold: Minimum cycles/observations before capture
     
     Usage in unified_entry.py:
         from wikai.observer import create_observer_for_convergence
@@ -639,10 +688,17 @@ def create_observer_for_convergence(
         # After causation_explorer is created:
         wikai_observer = create_observer_for_convergence(self.causation_explorer)
     """
+    # Create observer with custom thresholds
     observer = WIKAIObserver(
         causation_explorer=causation_explorer,
         librarian=librarian
     )
+    
+    # Override thresholds if specified
+    observer.config['min_fitness_delta'] = fitness_delta_threshold
+    observer.config['min_stability_score'] = stability_threshold
+    observer.config['min_observations'] = max(3, cycle_threshold // 5)  # Scale down for observations
+    
     observer.start_watching()
     return observer
 

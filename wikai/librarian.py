@@ -68,6 +68,37 @@ class WIKAIPattern:
     def stability_score(self) -> float:
         return self.data.get("mechanism", {}).get("synthesis", {}).get("stability_score", 0.0)
     
+    @property
+    def origin(self) -> Dict[str, Any]:
+        """Origin metadata: experiment_id, agents, captured timestamp."""
+        return self.data.get("origin", {})
+    
+    @property
+    def abstract(self) -> str:
+        """The abstract/summary of the pattern."""
+        abstract_data = self.data.get("abstract", {})
+        if isinstance(abstract_data, dict):
+            return abstract_data.get("summary", abstract_data.get("problem", ""))
+        return str(abstract_data)
+    
+    @property
+    def mechanism(self) -> str:
+        """The mechanism description."""
+        mech = self.data.get("mechanism", {})
+        if isinstance(mech, dict):
+            return json.dumps(mech, indent=2)
+        return str(mech)
+    
+    @property
+    def metrics(self) -> Dict[str, Any]:
+        """Performance metrics."""
+        return self.data.get("metrics", {})
+    
+    @property
+    def tags(self) -> List[str]:
+        """Tags for categorization."""
+        return self.data.get("tags", [])
+    
     def to_dict(self) -> Dict[str, Any]:
         return self.data
     
