@@ -117,12 +117,64 @@ WIKAI_TEMPLATE = '''
             letter-spacing: 1px;
         }
         
-        /* Main Layout */
+        /* Main Layout - Top/Bottom split */
         .main {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 100px);
+        }
+        
+        /* Top section: Sidebar + Content */
+        .top-section {
             display: grid;
-            grid-template-columns: 280px 1fr 350px;
-            gap: 0;
-            min-height: calc(100vh - 100px);
+            grid-template-columns: 280px 1fr;
+            flex: 1;
+            min-height: 200px;
+            overflow: hidden;
+        }
+        
+        /* Horizontal Resize Handle */
+        .h-resize-handle {
+            height: 8px;
+            background: var(--bg-card);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            cursor: ns-resize;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .h-resize-handle:hover {
+            background: var(--accent-purple);
+        }
+        
+        .h-resize-handle.active {
+            background: var(--accent-cyan);
+        }
+        
+        .h-resize-handle::after {
+            content: '';
+            width: 60px;
+            height: 4px;
+            background: var(--text-secondary);
+            border-radius: 2px;
+            opacity: 0.5;
+        }
+        
+        .h-resize-handle:hover::after {
+            opacity: 1;
+            background: white;
+        }
+        
+        /* Bottom section: Live Feed */
+        .bottom-section {
+            height: 300px;
+            min-height: 100px;
+            max-height: calc(100vh - 250px);
+            display: flex;
+            overflow: hidden;
         }
         
         /* Sidebar */
@@ -403,12 +455,34 @@ WIKAI_TEMPLATE = '''
             color: var(--text-secondary);
         }
         
-        /* Live Feed */
+        /* Live Feed - full width bottom */
         .live-feed {
             background: var(--bg-card);
-            border-left: 1px solid var(--border);
-            padding: 20px;
+            border-top: 1px solid var(--border);
+            padding: 15px 20px;
             overflow-y: auto;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .live-feed-content {
+            display: flex;
+            gap: 20px;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .feed-column {
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .debug-column {
+            flex: 2;
+            overflow-y: auto;
+            border-left: 1px solid var(--border);
+            padding-left: 20px;
         }
         
         .live-feed h3 {
@@ -569,38 +643,26 @@ WIKAI_TEMPLATE = '''
         
         /* Responsive */
         @media (max-width: 1200px) {
-            .main {
-                grid-template-columns: 250px 1fr;
-            }
-            .live-feed {
-                position: fixed;
-                bottom: 0;
-                left: 0;
-                right: 0;
-                height: auto;
-                max-height: 200px;
-                border-left: none;
-                border-top: 2px solid var(--accent-purple);
-                z-index: 1000;
-                padding: 10px 20px;
-            }
-            .live-feed h3 {
-                margin-bottom: 10px;
-            }
-            #feed-items {
-                display: none;
-            }
-            .content {
-                padding-bottom: 220px;
+            .top-section {
+                grid-template-columns: 220px 1fr;
             }
         }
         
         @media (max-width: 768px) {
-            .main {
+            .top-section {
                 grid-template-columns: 1fr;
             }
             .sidebar {
                 display: none;
+            }
+            .live-feed-content {
+                flex-direction: column;
+            }
+            .debug-column {
+                border-left: none;
+                border-top: 1px solid var(--border);
+                padding-left: 0;
+                padding-top: 15px;
             }
         }
     </style>
@@ -631,8 +693,10 @@ WIKAI_TEMPLATE = '''
     </header>
     
     <main class="main">
-        <!-- Sidebar -->
-        <aside class="sidebar">
+        <!-- Top Section: Sidebar + Content -->
+        <div class="top-section" id="top-section">
+            <!-- Sidebar -->
+            <aside class="sidebar">
             <div class="search-box">
                 <input type="text" id="search-input" placeholder="Search patterns...">
             </div>
@@ -742,25 +806,26 @@ WIKAI_TEMPLATE = '''
             </div>
             {% endif %}
         </section>
+        </div>
         
-        <!-- Live Feed -->
+        <!-- Horizontal Resize Handle -->
+        <div class="h-resize-handle" id="h-resize-handle" title="Drag up/down to resize"></div>
+        
+        <!-- Bottom Section: Live Feed -->
+        <div class="bottom-section" id="bottom-section">
         <aside class="live-feed">
-            <h3><span class="live-indicator"></span> Live Feed</h3>
-            <div id="feed-items">
+            <h3><span class="live-indicator"></span> Live Feed & Debug</h3>
+            <div class="live-feed-content">
+                <div class="feed-column" id="feed-items">
                 <div class="feed-item">
                     <div class="feed-time">Waiting for butterflies...</div>
                     <div class="feed-title">🦋 Observer Active</div>
                     <div class="feed-detail">The WIKAI Observer is watching for convergent patterns.</div>
                 </div>
-            </div>
-            
-            <!-- Debug Log Panel -->
-            <div class="debug-panel">
-                <div class="debug-header" onclick="toggleDebugLog()">
-                    <span>🔍 Observer Debug Log</span>
-                    <span id="debug-toggle">▼</span>
                 </div>
-                <div class="debug-content" id="debug-content">
+                
+                <!-- Debug Column -->
+                <div class="debug-column">
                     <div class="debug-stats" id="debug-stats">
                         <div class="debug-stat">
                             <span class="debug-stat-value" id="events-processed">0</span>
@@ -781,9 +846,8 @@ WIKAI_TEMPLATE = '''
                 </div>
             </div>
         </aside>
-    </main>
-    
-    <script>
+        </div>
+    </main>    <script>
         // Pattern selection
         document.querySelectorAll('.pattern-item').forEach(item => {
             item.addEventListener('click', () => {
@@ -905,6 +969,58 @@ WIKAI_TEMPLATE = '''
                 // Silently fail
             }
         }, 2000);
+        
+        // ═══════════════════════════════════════════════════════════════
+        // HORIZONTAL RESIZE - Drag up/down to resize top/bottom
+        // ═══════════════════════════════════════════════════════════════
+        (function() {
+            const handle = document.getElementById('h-resize-handle');
+            const topSection = document.getElementById('top-section');
+            const bottomSection = document.getElementById('bottom-section');
+            const main = document.querySelector('.main');
+            if (!handle || !topSection || !bottomSection) return;
+            
+            let dragging = false;
+            let startY = 0;
+            let startBottomHeight = 0;
+            
+            // Restore saved height
+            const saved = localStorage.getItem('wikai-bottom-height');
+            if (saved) {
+                const h = parseInt(saved);
+                if (h >= 100 && h <= window.innerHeight - 250) {
+                    bottomSection.style.height = h + 'px';
+                }
+            }
+            
+            handle.addEventListener('mousedown', (e) => {
+                dragging = true;
+                startY = e.clientY;
+                startBottomHeight = bottomSection.offsetHeight;
+                handle.classList.add('active');
+                document.body.style.cursor = 'ns-resize';
+                document.body.style.userSelect = 'none';
+                e.preventDefault();
+            });
+            
+            document.addEventListener('mousemove', (e) => {
+                if (!dragging) return;
+                const delta = startY - e.clientY; // drag up = positive = bottom grows
+                const maxHeight = window.innerHeight - 250;
+                const newHeight = Math.max(100, Math.min(maxHeight, startBottomHeight + delta));
+                bottomSection.style.height = newHeight + 'px';
+            });
+            
+            document.addEventListener('mouseup', () => {
+                if (dragging) {
+                    dragging = false;
+                    handle.classList.remove('active');
+                    document.body.style.cursor = '';
+                    document.body.style.userSelect = '';
+                    localStorage.setItem('wikai-bottom-height', bottomSection.offsetHeight);
+                }
+            });
+        })();
     </script>
 </body>
 </html>
