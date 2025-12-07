@@ -409,55 +409,6 @@ WIKAI_TEMPLATE = '''
             border-left: 1px solid var(--border);
             padding: 20px;
             overflow-y: auto;
-            position: relative;
-        }
-        
-        /* Vertical Resize Handle - drag up/down */
-        .v-resize-handle {
-            height: 8px;
-            cursor: ns-resize;
-            background: var(--bg-dark);
-            border-top: 1px solid var(--border);
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            user-select: none;
-        }
-        
-        .v-resize-handle:hover {
-            background: var(--accent-purple);
-        }
-        
-        .v-resize-handle.active {
-            background: var(--accent-cyan);
-        }
-        
-        .v-resize-handle::after {
-            content: '';
-            width: 40px;
-            height: 3px;
-            background: var(--text-secondary);
-            border-radius: 2px;
-            opacity: 0.5;
-        }
-        
-        .v-resize-handle:hover::after {
-            opacity: 1;
-            background: white;
-        }
-        
-        /* Resizable debug section */
-        .debug-panel {
-            display: flex;
-            flex-direction: column;
-            min-height: 100px;
-            max-height: calc(100vh - 250px);
-        }
-        
-        .debug-content {
-            flex: 1;
-            overflow-y: auto;
         }
         
         .live-feed h3 {
@@ -793,7 +744,7 @@ WIKAI_TEMPLATE = '''
         </section>
         
         <!-- Live Feed -->
-        <aside class="live-feed" id="live-feed">
+        <aside class="live-feed">
             <h3><span class="live-indicator"></span> Live Feed</h3>
             <div id="feed-items">
                 <div class="feed-item">
@@ -803,11 +754,8 @@ WIKAI_TEMPLATE = '''
                 </div>
             </div>
             
-            <!-- Vertical Resize Handle -->
-            <div class="v-resize-handle" id="v-resize-handle" title="Drag up/down to resize"></div>
-            
             <!-- Debug Log Panel -->
-            <div class="debug-panel" id="debug-panel">
+            <div class="debug-panel">
                 <div class="debug-header" onclick="toggleDebugLog()">
                     <span>🔍 Observer Debug Log</span>
                     <span id="debug-toggle">▼</span>
@@ -957,64 +905,6 @@ WIKAI_TEMPLATE = '''
                 // Silently fail
             }
         }, 2000);
-        
-        // ═══════════════════════════════════════════════════════════════
-        // VERTICAL RESIZABLE DEBUG PANEL (drag up/down)
-        // ═══════════════════════════════════════════════════════════════
-        (function() {
-            const handle = document.getElementById('v-resize-handle');
-            const panel = document.getElementById('debug-panel');
-            const feedItems = document.getElementById('feed-items');
-            if (!handle || !panel) return;
-            
-            let dragging = false;
-            let startY = 0;
-            let startPanelHeight = 0;
-            let startFeedHeight = 0;
-            
-            // Restore saved height
-            const saved = localStorage.getItem('wikai-debug-height');
-            if (saved) {
-                const h = parseInt(saved);
-                if (h >= 100 && h <= 600) {
-                    panel.style.height = h + 'px';
-                }
-            }
-            
-            handle.addEventListener('mousedown', (e) => {
-                dragging = true;
-                startY = e.clientY;
-                startPanelHeight = panel.offsetHeight;
-                if (feedItems) startFeedHeight = feedItems.offsetHeight;
-                handle.classList.add('active');
-                document.body.style.cursor = 'ns-resize';
-                document.body.style.userSelect = 'none';
-                e.preventDefault();
-            });
-            
-            document.addEventListener('mousemove', (e) => {
-                if (!dragging) return;
-                const delta = startY - e.clientY; // drag up = positive = grow panel
-                const newPanelHeight = Math.max(100, Math.min(600, startPanelHeight + delta));
-                panel.style.height = newPanelHeight + 'px';
-                
-                // Shrink feed items as panel grows
-                if (feedItems) {
-                    const newFeedHeight = Math.max(50, startFeedHeight - delta);
-                    feedItems.style.maxHeight = newFeedHeight + 'px';
-                }
-            });
-            
-            document.addEventListener('mouseup', () => {
-                if (dragging) {
-                    dragging = false;
-                    handle.classList.remove('active');
-                    document.body.style.cursor = '';
-                    document.body.style.userSelect = '';
-                    localStorage.setItem('wikai-debug-height', panel.offsetHeight);
-                }
-            });
-        })();
     </script>
 </body>
 </html>
