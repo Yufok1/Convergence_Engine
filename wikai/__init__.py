@@ -8,6 +8,7 @@ Components:
 - WIKAIPattern: A single unit of AI wisdom
 - WIKAIObserver: Passive listener for automatic pattern capture
 - capture_butterfly: Quick pattern logging
+- Web UI: Browse the Commons at /wikai
 
 Usage:
     from wikai import WIKAILibrarian, WIKAIObserver, capture_butterfly
@@ -30,6 +31,9 @@ Usage:
     observer = create_observer_for_convergence(causation_explorer)
     # Now butterflies are captured automatically!
     
+    # Browse the Commons
+    # Start the web UI and visit http://localhost:5000/wikai
+    
     # Query patterns
     patterns = librarian.query(tags=["conflict_resolution"])
     
@@ -46,7 +50,7 @@ The Commons grows with every captured butterfly.
 from .librarian import WIKAILibrarian, WIKAIPattern, capture_butterfly
 from .observer import WIKAIObserver, create_observer_for_convergence
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __author__ = "Convergence Engine"
 
 __all__ = [

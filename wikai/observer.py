@@ -391,6 +391,15 @@ class WIKAIObserver:
             self.metrics['patterns_captured'] += 1
             logger.info(f"🦋 WIKAI Captured: {pattern_id} - {name}")
             
+            # Notify web UI feed
+            try:
+                from wikai.web_ui import notify_capture
+                notify_capture(pattern_id, name, axiom)
+            except ImportError:
+                pass  # Web UI not loaded
+            except Exception:
+                pass  # Non-critical
+            
             return pattern_id
             
         except Exception as e:

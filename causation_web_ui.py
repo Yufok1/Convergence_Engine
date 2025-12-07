@@ -1395,6 +1395,16 @@ def handle_500(e):
 if SOCKETIO_AVAILABLE:
     socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
+# Register WIKAI Web UI Blueprint
+try:
+    from wikai.web_ui import register_wikai_routes
+    register_wikai_routes(app)
+    logger.info("[WIKAI] 📚 WIKAI Commons browser available at /wikai")
+except ImportError as e:
+    logger.warning(f"[WIKAI] ⚠️ WIKAI Web UI not available: {e}")
+except Exception as e:
+    logger.error(f"[WIKAI] ❌ Failed to register WIKAI routes: {e}")
+
 # Input validation decorators for API endpoints
 from functools import wraps
 from werkzeug.exceptions import BadRequest
@@ -13702,6 +13712,7 @@ if __name__ == '__main__':
 
     print("🔬 Causation Explorer Web UI")
     print("Open http://localhost:5000 in your browser")
+    print("📚 WIKAI Commons Browser: http://localhost:5000/wikai")
     print("🛡️  SYSTEM CUSTODIAN - Autonomous Guardian Active")
     print("🤖 Custodian Real-time API Endpoints:")
     print("   /api/cra/status - Custodian status and capabilities")
@@ -13714,6 +13725,10 @@ if __name__ == '__main__':
     print("   /api/cra/events/stream - Real-time event stream")
     print("   /api/cra/events/recent - Recent events")
     print("   /api/cra/config/validate - Config validation")
+    print("📚 WIKAI Endpoints:")
+    print("   /wikai - Commons Browser (browse captured patterns)")
+    print("   /wikai/api/patterns - Pattern list API")
+    print("   /wikai/api/stats - WIKAI statistics")
 
     # Respect FLASK_DEBUG environment variable, default to False for safety
     debug_mode = os.environ.get('FLASK_DEBUG', 'false').lower() in ('true', '1', 'yes')
