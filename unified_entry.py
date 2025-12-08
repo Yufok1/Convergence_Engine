@@ -3106,11 +3106,21 @@ def main():
     highlander_enabled = args.highlander or config_highlander.get('enabled', False)
     
     if highlander_enabled:
-        # Command line args override config file settings
+        # Config file values, command line can override if explicitly passed
+        # Check if args were explicitly set (not just default values)
+        survival_thresh = config_highlander.get('survival_threshold', 0.3)
+        competition_int = config_highlander.get('competition_intensity', 0.5)
+        
+        # Only override with command line if user explicitly set them (different from defaults)
+        if args.survival_threshold != 0.3:  # User explicitly passed --survival-threshold
+            survival_thresh = args.survival_threshold
+        if args.competition_intensity != 0.5:  # User explicitly passed --competition-intensity
+            competition_int = args.competition_intensity
+            
         highlander_config = {
             'enabled': True,
-            'survival_threshold': args.survival_threshold,
-            'competition_intensity': args.competition_intensity,
+            'survival_threshold': survival_thresh,
+            'competition_intensity': competition_int,
             'predation_enabled': args.predation or config_highlander.get('predation_enabled', False),
             # Use config file values as defaults, override with command line if specified
             'germination_rate': config_highlander.get('germination_rate', 0.1),
