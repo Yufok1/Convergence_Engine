@@ -1894,13 +1894,16 @@ class UnifiedSystem:
             print(f"[UNIFIED] [HIGHLANDER] [PASS] Capsule Manager initialized (dir: {capsule_dir})")
             
             # Initialize Germination Pool (new life from the fallen)
+            # Pass context_memory for vocabulary extraction from dying organisms
+            network_context_memory = network.context_memory if network and hasattr(network, 'context_memory') else None
             self.germination_pool = GerminationPool(
                 causation_explorer=self.causation_explorer,
                 max_genetic_samples=config.get('max_genetic_samples', 100),
                 min_population=config.get('min_population', 5),
                 max_population=config.get('max_population', 50),
                 germination_rate=config.get('germination_rate', 0.1),
-                mutation_base_rate=config.get('mutation_rate', 0.05)
+                mutation_base_rate=config.get('mutation_rate', 0.05),
+                context_memory=network_context_memory  # For full vocabulary inheritance
             )
             print("[UNIFIED] [HIGHLANDER] [PASS] 🌱 Germination Pool initialized")
             
@@ -2014,6 +2017,13 @@ class UnifiedSystem:
             if hasattr(self, '_germination_callback') and hasattr(self._germination_callback, 'set_alliance_warfare'):
                 self._germination_callback.set_alliance_warfare(self.alliance_warfare)
                 print("[UNIFIED] [GERMINATION] 🏛️ Wave Alliances enabled - newcomers will be born allied!")
+            
+            # 📚 WIRE CONTEXT MEMORY FOR VOCABULARY INHERITANCE
+            # This enables resurrected organisms to inherit their full vocabulary
+            if hasattr(self, '_germination_callback') and hasattr(self._germination_callback, 'set_context_memory'):
+                if network and hasattr(network, 'context_memory'):
+                    self._germination_callback.set_context_memory(network.context_memory)
+                    print("[UNIFIED] [GERMINATION] 📚 Vocabulary inheritance enabled - the fallen keep their words!")
             
             # 🔌 SYSTEM WIRING: Connect NeuralOrganisms to Illumination Engine
             # This enables organisms to query "Why?" and access the Causation Explorer

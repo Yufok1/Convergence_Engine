@@ -125,9 +125,11 @@ class GerminationPool:
         max_population: int = 50,
         germination_rate: float = 0.1,
         mutation_base_rate: float = 0.05,
-        crossover_bias: float = 0.3
+        crossover_bias: float = 0.3,
+        context_memory: Optional[Any] = None  # For vocabulary extraction
     ):
         self.causation_explorer = causation_explorer
+        self.context_memory = context_memory  # For extracting organism vocabularies
         self.max_genetic_samples = max_genetic_samples
         self.min_population = min_population
         self.max_population = max_population
@@ -215,13 +217,28 @@ class GerminationPool:
         elif hasattr(organism, 'knowledge_base'):
             material.concepts = dict(organism.knowledge_base)
             
-        # Extract vocabulary
-        if hasattr(organism, 'vocabulary'):
+        # Extract vocabulary - try multiple sources
+        vocab_words = []
+        if hasattr(organism, 'vocabulary') and organism.vocabulary:
             vocab = organism.vocabulary
             if hasattr(vocab, 'get_all_words'):
-                material.vocabulary_sample = list(vocab.get_all_words())  # FULL vocab - they earned it
+                vocab_words = list(vocab.get_all_words())
             elif hasattr(vocab, 'word_to_id'):
-                material.vocabulary_sample = list(vocab.word_to_id.keys())  # FULL vocab - they earned it
+                vocab_words = list(vocab.word_to_id.keys())
+        
+        # Also check for inherited vocabulary from previous resurrection
+        if hasattr(organism, '_inherited_vocabulary') and organism._inherited_vocabulary:
+            vocab_words = list(set(vocab_words) | set(organism._inherited_vocabulary))
+        
+        # Check context_memory for this organism's words (primary source)
+        if hasattr(self, 'context_memory') and self.context_memory:
+            org_id_int = hash(org_id) if isinstance(org_id, str) else org_id
+            if hasattr(self.context_memory, 'node_word_associations'):
+                org_words = self.context_memory.node_word_associations.get(org_id_int, set())
+                if org_words:
+                    vocab_words = list(set(vocab_words) | set(org_words))
+        
+        material.vocabulary_sample = vocab_words  # FULL vocab - they earned it
                 
         # Extract config atoms
         if hasattr(organism, 'config'):
@@ -1265,7 +1282,8 @@ def integrate_germination_with_highlander(
     highlander_protocol: Any,
     germination_pool: GerminationPool,
     organism_factory: Callable[..., Any],
-    alliance_warfare: Any = None
+    alliance_warfare: Any = None,
+    context_memory: Any = None  # NEW: Pass context_memory for vocabulary restoration
 ) -> Callable:
     """
     Wire the germination pool into the Highlander Protocol.
@@ -1286,10 +1304,15 @@ def integrate_germination_with_highlander(
     snapshot_interval = 50  # Take developmental snapshot every N frames
     frame_counter = [0]  # Mutable counter for closure
     alliance_warfare_ref = [alliance_warfare]  # Mutable reference for later update
+    context_memory_ref = [context_memory]  # Mutable reference for vocabulary restoration
     
     def set_alliance_warfare(aws):
         """Update the alliance_warfare reference after initialization."""
         alliance_warfare_ref[0] = aws
+    
+    def set_context_memory(cm):
+        """Update the context_memory reference after initialization."""
+        context_memory_ref[0] = cm
     
     def on_organism_eliminated(organism: Any, killer_id: Optional[str] = None):
         """Called when an organism is eliminated"""
@@ -1364,8 +1387,8 @@ def integrate_germination_with_highlander(
                 
                 # RESTORE VOCABULARY: Link inherited words to new organism in context_memory
                 if hasattr(organism, '_inherited_vocabulary') and organism._inherited_vocabulary:
-                    if hasattr(highlander_protocol, 'context_memory') and highlander_protocol.context_memory:
-                        cm = highlander_protocol.context_memory
+                    cm = context_memory_ref[0]  # Use the reference from closure
+                    if cm:
                         org_id = organism.id if hasattr(organism, 'id') else hash(str(id(organism)))
                         for word in organism._inherited_vocabulary:
                             try:
@@ -1464,7 +1487,8 @@ def integrate_germination_with_highlander(
     if hasattr(highlander_protocol, 'on_round_complete_callback'):
         highlander_protocol.on_round_complete_callback = on_round_complete
     
-    # Attach the setter so alliance_warfare can be wired later
+    # Attach the setters so alliance_warfare and context_memory can be wired later
     check_and_germinate.set_alliance_warfare = set_alliance_warfare
+    check_and_germinate.set_context_memory = set_context_memory
         
     return check_and_germinate
