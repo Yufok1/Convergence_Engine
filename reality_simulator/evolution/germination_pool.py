@@ -92,6 +92,7 @@ class GerminationCandidate:
     concept_seed: Dict[str, Any] = field(default_factory=dict)
     config_template: Dict[str, Any] = field(default_factory=dict)
     trait_template: Dict[str, float] = field(default_factory=dict)
+    vocabulary_words: List[str] = field(default_factory=list)  # RESTORED: Full vocabulary inheritance
     
     # Birth parameters
     mutation_rate: float = 0.1
@@ -218,9 +219,9 @@ class GerminationPool:
         if hasattr(organism, 'vocabulary'):
             vocab = organism.vocabulary
             if hasattr(vocab, 'get_all_words'):
-                material.vocabulary_sample = list(vocab.get_all_words())[:50]
+                material.vocabulary_sample = list(vocab.get_all_words())  # FULL vocab - they earned it
             elif hasattr(vocab, 'word_to_id'):
-                material.vocabulary_sample = list(vocab.word_to_id.keys())[:50]
+                material.vocabulary_sample = list(vocab.word_to_id.keys())  # FULL vocab - they earned it
                 
         # Extract config atoms
         if hasattr(organism, 'config'):
@@ -617,6 +618,7 @@ class GerminationPool:
         candidate.concept_seed = dict(parent.concepts)
         candidate.config_template = dict(parent.config_atoms)
         candidate.trait_template = dict(parent.traits)
+        candidate.vocabulary_words = list(parent.vocabulary_sample)  # FULL vocab inheritance
         candidate.mutation_rate = 0.05  # Low mutation for clones
         candidate.ancestry_depth = 1
         
@@ -651,6 +653,10 @@ class GerminationPool:
         # Crossover traits (weighted average)
         candidate.trait_template = self._crossover_traits(parent1, parent2)
         
+        # Crossover vocabulary (union of both parents' words)
+        vocab_union = set(parent1.vocabulary_sample) | set(parent2.vocabulary_sample)
+        candidate.vocabulary_words = list(vocab_union)
+        
         candidate.mutation_rate = 0.1
         candidate.ancestry_depth = max(
             getattr(parent1, 'ancestry_depth', 0),
@@ -680,6 +686,12 @@ class GerminationPool:
         for donor in donors:
             all_concepts.update(donor.concepts)
         candidate.concept_seed = all_concepts
+        
+        # Merge all vocabulary (chimera gets ALL words from ALL donors)
+        all_vocab = set()
+        for donor in donors:
+            all_vocab.update(donor.vocabulary_sample)
+        candidate.vocabulary_words = list(all_vocab)
         
         # Blend configs
         blended_config = {}
@@ -756,6 +768,11 @@ class GerminationPool:
             candidate.config_template = capsule.config_snapshot
         if hasattr(capsule, 'trait_snapshot'):
             candidate.trait_template = capsule.trait_snapshot
+        # RESTORE VOCABULARY: Phoenix rises with ALL their words
+        if hasattr(capsule, 'vocabulary_words'):
+            candidate.vocabulary_words = list(capsule.vocabulary_words)
+        elif hasattr(capsule, 'vocabulary_sample'):
+            candidate.vocabulary_words = list(capsule.vocabulary_sample)
             
         candidate.mutation_rate = 0.03  # Very low - champions are proven
         candidate.vigor = 1.2  # Extra vigor for champions
@@ -1103,6 +1120,17 @@ class GerminationPool:
             # Apply concepts
             if candidate.concept_seed and hasattr(organism, 'concepts'):
                 organism.concepts.update(candidate.concept_seed)
+            
+            # RESTORE VOCABULARY: Give them back ALL their words
+            if candidate.vocabulary_words:
+                if hasattr(organism, 'vocabulary') and organism.vocabulary:
+                    for word in candidate.vocabulary_words:
+                        try:
+                            organism.vocabulary.add_word(word)
+                        except Exception:
+                            pass  # Word might already exist
+                # Also store for context_memory linking later
+                organism._inherited_vocabulary = candidate.vocabulary_words
                 
             # Apply vigor
             if hasattr(organism, 'energy'):
@@ -1333,6 +1361,19 @@ def integrate_germination_with_highlander(
                 # Register with highlander protocol
                 highlander_protocol.register_organism(organism)
                 new_organisms.append(organism)
+                
+                # RESTORE VOCABULARY: Link inherited words to new organism in context_memory
+                if hasattr(organism, '_inherited_vocabulary') and organism._inherited_vocabulary:
+                    if hasattr(highlander_protocol, 'context_memory') and highlander_protocol.context_memory:
+                        cm = highlander_protocol.context_memory
+                        org_id = organism.id if hasattr(organism, 'id') else hash(str(id(organism)))
+                        for word in organism._inherited_vocabulary:
+                            try:
+                                cm.link_word_to_node(word, org_id)
+                            except Exception:
+                                pass  # Word linking failed, but organism still lives
+                        reincarnation_logger = logging.getLogger(__name__)
+                        reincarnation_logger.info(f"   📚 Restored {len(organism._inherited_vocabulary)} inherited words")
 
                 # DEBUG: Reincarnation logging
                 reincarnation_logger = logging.getLogger(__name__)

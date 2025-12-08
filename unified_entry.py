@@ -2923,10 +2923,14 @@ class UnifiedSystem:
                 if network and hasattr(network, 'context_memory') and network.context_memory:
                     cm = network.context_memory
                     vocab = cm.vocabulary if hasattr(cm, 'vocabulary') else None
+                    # node_word_associations: Dict[organism_id, Set[words]] - organism -> words they know
+                    # language_anchors: Dict[word, Set[organism_ids]] - word -> organisms using it
+                    node_assocs = cm.node_word_associations if hasattr(cm, 'node_word_associations') else {}
                     language_data = {
                         'vocab_size': vocab.vocab_size if vocab else 0,
                         'word_count': len(vocab.word_to_id) if vocab and hasattr(vocab, 'word_to_id') else 0,
-                        'organism_word_assignments': len(cm.organism_words) if hasattr(cm, 'organism_words') else 0,
+                        'organism_word_assignments': sum(len(words) for words in node_assocs.values()),  # Total word-organism links
+                        'organisms_with_words': len(node_assocs),  # How many organisms have ANY words
                         'language_anchors': len(cm.language_anchors) if hasattr(cm, 'language_anchors') else 0,
                         'total_associations': sum(len(v) for v in cm.language_anchors.values()) if hasattr(cm, 'language_anchors') else 0
                     }

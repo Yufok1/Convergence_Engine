@@ -842,8 +842,8 @@ class LightweightVisualizationViewer:
                     
                     # Language metrics
                     vocab_size = language_data.get('vocab_size', 0)
-                    word_count = language_data.get('word_count', 0)
-                    org_words = language_data.get('organism_word_assignments', 0)
+                    org_word_links = language_data.get('organism_word_assignments', 0)  # Total word-organism links
+                    orgs_with_words = language_data.get('organisms_with_words', 0)  # Organisms that have words
                     
                     # Build status text
                     transition_lines = [
@@ -855,7 +855,8 @@ class LightweightVisualizationViewer:
                     
                     # Add language info if available
                     if vocab_size > 0:
-                        transition_lines.append(f"🗣️ Vocab: {vocab_size} ({org_words} assigned)")
+                        # Show: Vocab size | orgs with words | total word-org links
+                        transition_lines.append(f"🗣️ Vocab: {vocab_size} | {orgs_with_words} orgs | {org_word_links} links")
                     
                     transition_text = "\n".join(transition_lines)
                     ax.text2D(0.50, 0.10, transition_text, transform=ax.transAxes,
