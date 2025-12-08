@@ -1,3 +1,6 @@
+import pytest
+pytest.skip("Debug script - requires sim_run.log which is not committed", allow_module_level=True)
+
 with open('sim_run.log', 'r') as f:
     lines = f.readlines()
     print(f'Total lines: {len(lines)}')

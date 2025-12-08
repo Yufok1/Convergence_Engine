@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 """Test the 7-agent swarm chat."""
+import pytest
+pytest.skip("Requires specific cocoon export fixture that is not committed", allow_module_level=True)
+
 from standalone_butterfly_chat import StandaloneButterflyChat
 
 chat = StandaloneButterflyChat('agent_downloads/cocoon_ensemble_20251208164133')

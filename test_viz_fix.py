@@ -1,4 +1,7 @@
 """Quick test to identify visualization issue"""
+import pytest
+pytest.skip("GUI test - run manually with: python test_viz_fix.py", allow_module_level=True)
+
 import sys
 sys.path.insert(0, '.')
 
@@ -38,5 +41,6 @@ except Exception as e:
     import traceback
     traceback.print_exc()
 
-print("\nVisualization test complete. Close the window to exit.")
-input("Press Enter to close...")
+print("\nVisualization test complete.")
+# Removed input() - breaks pytest capture
+# To run interactively: python test_viz_fix.py
