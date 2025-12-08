@@ -1172,38 +1172,96 @@ class HighlanderProtocol:
         except Exception as e:
             self.logger.debug(f"Word association transfer failed: {e}")
         
-        # Transfer neural language weights (if neural organisms)
-        if (hasattr(loser, 'brain') and hasattr(winner, 'brain') and
-            hasattr(loser.brain, 'use_language_head') and loser.brain.use_language_head and
-            hasattr(winner.brain, 'use_language_head') and winner.brain.use_language_head):
+        # ═══════════════════════════════════════════════════════════════════════════
+        # FULL BRAIN TRANSFER - Winner absorbs ALL neural weights from loser!
+        # ═══════════════════════════════════════════════════════════════════════════
+        if (hasattr(loser, 'brain') and loser.brain is not None and
+            hasattr(winner, 'brain') and winner.brain is not None):
             try:
-                # Soft inheritance: blend language head weights
                 import torch
                 
-                if (hasattr(loser.brain, 'language_head') and 
-                    hasattr(winner.brain, 'language_head')):
-                    
-                    # Get loser's language head weights
-                    loser_weights = loser.brain.language_head.state_dict()
-                    winner_weights = winner.brain.language_head.state_dict()
-                    
-                    # FULL ABSORPTION - 100% knowledge transfer! Winner takes ALL!
-                    blend_ratio = 1.0
-                    for key in loser_weights:
-                        if key in winner_weights:
-                            winner_weights[key] = (
-                                (1 - blend_ratio) * winner_weights[key] + 
-                                blend_ratio * loser_weights[key]
-                            )
-                    
-                    winner.brain.language_head.load_state_dict(winner_weights)
-                    result['neural_transfer'] = True
-                    result['traits_inherited'] += 1
-                    
-                    self.logger.info(f"🧠 Neural language inheritance: {loser_id} → {winner_id} (100% FULL ABSORPTION - zero knowledge loss)")
+                # Transfer FULL brain weights (100% absorption)
+                loser_state = loser.brain.state_dict()
+                winner_state = winner.brain.state_dict()
+                
+                # Blend all weights - 100% from loser (full absorption)
+                blend_ratio = 1.0
+                for key in loser_state:
+                    if key in winner_state and loser_state[key].shape == winner_state[key].shape:
+                        winner_state[key] = (
+                            (1 - blend_ratio) * winner_state[key] + 
+                            blend_ratio * loser_state[key]
+                        )
+                
+                winner.brain.load_state_dict(winner_state, strict=False)
+                result['full_brain_transfer'] = True
+                result['traits_inherited'] += 1
+                
+                self.logger.info(f"🧠 FULL BRAIN inheritance: {loser_id} → {winner_id} (100% neural weights absorbed)")
                     
             except Exception as e:
-                self.logger.debug(f"Neural weight transfer failed: {e}")
+                self.logger.debug(f"Full brain transfer failed: {e}")
+        
+        # ═══════════════════════════════════════════════════════════════════════════
+        # EXPERIENCE BUFFER TRANSFER - Zero data loss! Winner inherits ALL experiences!
+        # ═══════════════════════════════════════════════════════════════════════════
+        if (hasattr(loser, 'experience_buffer') and loser.experience_buffer is not None and
+            hasattr(winner, 'experience_buffer') and winner.experience_buffer is not None):
+            try:
+                # Get all experiences from loser's buffer
+                loser_buffer = loser.experience_buffer.buffer if hasattr(loser.experience_buffer, 'buffer') else []
+                
+                if loser_buffer:
+                    # Transfer Experience objects directly to winner's buffer
+                    for exp in loser_buffer:
+                        # Experience objects have: state, action, reward, next_state, done, token_sequence, etc.
+                        winner.experience_buffer.buffer.append(exp)
+                    
+                    # Update size tracking
+                    winner.experience_buffer.size = len(winner.experience_buffer.buffer)
+                    
+                    result['experiences_transferred'] = len(loser_buffer)
+                    result['traits_inherited'] += 1
+                    
+                    self.logger.info(f"📚 Experience buffer inheritance: {loser_id} → {winner_id} ({len(loser_buffer)} experiences - ZERO DATA LOSS)")
+            except Exception as e:
+                self.logger.debug(f"Experience buffer transfer failed: {e}")
+        
+        # Transfer action/state history for language continuity
+        if hasattr(loser, 'action_history') and hasattr(winner, 'action_history'):
+            try:
+                loser_actions = list(loser.action_history)
+                if loser_actions:
+                    winner.action_history.extend(loser_actions)
+                    result['action_history_transferred'] = len(loser_actions)
+                    self.logger.info(f"🎯 Action history inheritance: {loser_id} → {winner_id} ({len(loser_actions)} actions)")
+            except Exception as e:
+                self.logger.debug(f"Action history transfer failed: {e}")
+        
+        if hasattr(loser, 'state_history') and hasattr(winner, 'state_history'):
+            try:
+                loser_states = list(loser.state_history)
+                if loser_states:
+                    winner.state_history.extend(loser_states)
+                    result['state_history_transferred'] = len(loser_states)
+            except Exception as e:
+                self.logger.debug(f"State history transfer failed: {e}")
+        
+        # Transfer fitness history for trend analysis
+        if hasattr(loser, 'fitness_history') and hasattr(winner, 'fitness_history'):
+            try:
+                loser_fitness = list(loser.fitness_history) if loser.fitness_history else []
+                if loser_fitness:
+                    winner.fitness_history.extend(loser_fitness)
+                    result['fitness_history_transferred'] = len(loser_fitness)
+            except Exception as e:
+                self.logger.debug(f"Fitness history transfer failed: {e}")
+        
+        # Transfer battle stats (accumulated knowledge)
+        if hasattr(loser, 'battle_wins') and hasattr(winner, 'battle_wins'):
+            winner.battle_wins += loser.battle_wins
+            winner.battle_losses += loser.battle_losses
+            result['battle_stats_transferred'] = True
         
         return result
     
