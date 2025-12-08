@@ -6922,6 +6922,11 @@ def list_organisms():
         node_word_associations = {}
         if context_memory and hasattr(context_memory, 'node_word_associations'):
             node_word_associations = context_memory.node_word_associations
+        
+        # Get network connections dict for counting per-organism connections
+        network_connections = {}
+        if network and hasattr(network, 'connections'):
+            network_connections = network.connections  # Dict of (org_a, org_b) -> connection
 
         # 1. Get organisms from current live simulation if available
         if hasattr(app, 'unified_system') and app.unified_system:
@@ -6956,9 +6961,12 @@ def list_organisms():
                         action_history = getattr(organism, 'action_history', [])
                         action_history_len = len(action_history) if action_history else 0
                         
-                        # Get connections (social)
-                        connections = getattr(organism, 'connections', [])
-                        connection_count = len(connections) if connections else 0
+                        # Count connections from network (not organism attribute)
+                        connection_count = 0
+                        if network_connections:
+                            for (a, b) in network_connections.keys():
+                                if a == org_id or b == org_id:
+                                    connection_count += 1
                         
                         organisms_data.append({
                             'id': org_id,
@@ -6972,8 +6980,8 @@ def list_organisms():
                             'brain_params': brain_params,
                             'hidden_dim': hidden_dim,
                             'experience_buffer_size': exp_buffer_size,
-                            'action_history_len': action_history_len,
-                            'connection_count': connection_count
+                            'action_history_length': action_history_len,
+                            'connections_count': connection_count
                         })
                         organism_ids.add(org_id)
             else:
