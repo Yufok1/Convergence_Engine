@@ -224,12 +224,12 @@ class StandaloneButterflyChat:
         self.voting_strategy = VotingStrategy(voting_strategy)
         self.trainer = trainer  # Optional: for continued neural learning
         
-        # Load components
+        # Load components (order matters!)
         self.metadata = self._load_metadata()
         self.vocabulary = self._load_vocabulary()
+        self.config = self._load_config()  # Load config BEFORE organisms
         self.organisms = self._create_organisms()
         self.brain = self._load_brain()
-        self.config = self._load_config()
         
         # 🔮 Load knowledge web for semantic coherence (CRITICAL!)
         self.knowledge_web = self._load_knowledge_web()
@@ -403,6 +403,15 @@ class StandaloneButterflyChat:
         if not self.context_memory:
             return {}
         return self.context_memory.get('_tfidf_scores', {})
+    
+    def _get_tfidf_important_words(self) -> List[str]:
+        """Get top TF-IDF important words sorted by score."""
+        scores = self._get_tfidf_scores()
+        if not scores:
+            return []
+        # Sort by score descending and return just the words
+        sorted_words = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+        return [word for word, score in sorted_words]
     
     def _load_causation_system(self) -> Optional[Dict[str, Any]]:
         """
@@ -585,21 +594,30 @@ class StandaloneButterflyChat:
     def _create_organisms(self) -> Dict[str, CapsuleOrganism]:
         """Create organism objects from metadata."""
         organisms = {}
-        ensemble = self.metadata.get('ensemble', {})
-        members = ensemble.get('members', [])
         
-        # Debug: Check if any have language heads
-        any_lang = any(m.get('has_language_head', False) for m in members)
-        config_lang = self.config.get('has_language_head', False)
-        print(f"  [DEBUG] Members has_language_head in metadata: {any_lang}")
-        print(f"  [DEBUG] Bridge config has_language_head: {config_lang}")
+        # Try different metadata structures
+        # Structure 1: ensemble.members (older format)
+        # Structure 2: member_profiles (cocoon format)
+        # Structure 3: brain_configs (minimal format)
+        members = self.metadata.get('ensemble', {}).get('members', [])
+        if not members:
+            members = self.metadata.get('member_profiles', [])
+        if not members:
+            members = self.metadata.get('brain_configs', [])
+        
+        # Debug info
+        config_lang = self.config.get('has_language_head', False) if self.config else False
         
         for idx, member_data in enumerate(members):
             org_id = member_data.get('organism_id', f'org_{idx}')
             behavioral = member_data.get('behavioral_fingerprint', {})
             
-            # Use bridge config as fallback - if the ensemble has language heads, all members do
-            member_has_lang = member_data.get('has_language_head', config_lang)
+            # Check multiple locations for language head flag
+            member_has_lang = (
+                member_data.get('has_language_head') or
+                member_data.get('use_language_head') or
+                config_lang
+            )
             
             organism = CapsuleOrganism(
                 organism_id=org_id,
@@ -613,37 +631,46 @@ class StandaloneButterflyChat:
             )
             organisms[org_id] = organism
         
+        if organisms:
+            print(f"  [OK] Created {len(organisms)} organisms from metadata")
+        else:
+            print(f"  [!] No organisms found in metadata")
+        
         return organisms
     
     def _load_brain(self) -> Any:
         """Load neural network model from capsule."""
-        # Try TorchScript first
-        ts_path = self.export_dir / 'brain.torchscript'
-        if ts_path.exists() and TORCH_AVAILABLE:
-            try:
-                model = torch.jit.load(str(ts_path), map_location='cpu')
-                model.eval()
-                print(f"  [OK] Loaded TorchScript model")
-                return ('torchscript', model)
-            except Exception as e:
-                print(f"  [!] TorchScript load failed: {e}")
+        # Try TorchScript first (multiple naming conventions)
+        ts_paths = [
+            self.export_dir / 'brain.torchscript',
+            self.export_dir / 'brain_ensemble.pt',
+            self.export_dir / 'brain.pt',
+        ]
         
-        # Try ONNX
-        onnx_path = self.export_dir / 'brain.onnx'
-        if onnx_path.exists() and ONNX_AVAILABLE:
-            try:
-                session = ort.InferenceSession(str(onnx_path))
-                print(f"  [OK] Loaded ONNX model")
-                return ('onnx', session)
-            except Exception as e:
-                print(f"  [!] ONNX load failed: {e}")
+        for ts_path in ts_paths:
+            if ts_path.exists() and TORCH_AVAILABLE:
+                try:
+                    model = torch.jit.load(str(ts_path), map_location='cpu')
+                    model.eval()
+                    print(f"  [OK] Loaded TorchScript model from {ts_path.name}")
+                    return ('torchscript', model)
+                except Exception as e:
+                    print(f"  [!] TorchScript load failed for {ts_path.name}: {e}")
         
-        # Try PyTorch state dict
-        pt_path = self.export_dir / 'brain.pt'
-        if not pt_path.exists():
-            pt_path = self.export_dir / 'brain.pth'
-        if pt_path.exists() and TORCH_AVAILABLE:
-            print(f"  [!] State dict loading not implemented (need architecture)")
+        # Try ONNX (multiple naming conventions)
+        onnx_paths = [
+            self.export_dir / 'brain.onnx',
+            self.export_dir / 'brain_ensemble.onnx',
+        ]
+        
+        for onnx_path in onnx_paths:
+            if onnx_path.exists() and ONNX_AVAILABLE:
+                try:
+                    session = ort.InferenceSession(str(onnx_path))
+                    print(f"  [OK] Loaded ONNX model from {onnx_path.name}")
+                    return ('onnx', session)
+                except Exception as e:
+                    print(f"  [!] ONNX load failed for {onnx_path.name}: {e}")
         
         print(f"  [!] No neural model loaded - using fallback generation")
         return None
@@ -1568,7 +1595,7 @@ class StandaloneButterflyChat:
                 })
                 
                 # Optional: trigger neural training periodically
-                self._maybe_trigger_training(organism, state_dict)
+                self._maybe_trigger_training(organism, None)
                 
                 self.debug_logs.append({
                     'step': 'REWARD_CALC',
