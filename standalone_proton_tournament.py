@@ -448,7 +448,8 @@ class ProtonTournament:
                org_b_idx: int,
                game: Optional[str] = None,
                episodes: int = 5,
-               max_steps: int = 500) -> BattleResult:
+               max_steps: int = 500,
+               render: bool = False) -> BattleResult:
         """
         Run a battle between two organisms.
         
@@ -461,6 +462,7 @@ class ProtonTournament:
             game: Game key (or None for random)
             episodes: Number of episodes each plays
             max_steps: Max steps per episode
+            render: If True, show visual rendering of the game
         
         Returns:
             BattleResult with scores and winner
@@ -476,17 +478,19 @@ class ProtonTournament:
         
         self._log(f"\n⚔️ BATTLE: Organism {org_a_idx} vs Organism {org_b_idx}")
         self._log(f"   Game: {game_def.name} ({game_def.gym_env})")
+        if render:
+            self._log(f"   🎬 Visual rendering ENABLED")
         
         start_time = time.time()
         
         # Run organism A
         self._log(f"   🅰️ Organism {org_a_idx} playing...")
-        rewards_a = self._run_organism(org_a_idx, game_def.gym_env, episodes, max_steps)
+        rewards_a = self._run_organism(org_a_idx, game_def.gym_env, episodes, max_steps, render=render)
         score_a = np.mean(rewards_a) if rewards_a else 0.0
         
         # Run organism B
         self._log(f"   🅱️ Organism {org_b_idx} playing...")
-        rewards_b = self._run_organism(org_b_idx, game_def.gym_env, episodes, max_steps)
+        rewards_b = self._run_organism(org_b_idx, game_def.gym_env, episodes, max_steps, render=render)
         score_b = np.mean(rewards_b) if rewards_b else 0.0
         
         # Determine winner
@@ -543,7 +547,8 @@ class ProtonTournament:
                       organism_idx: int,
                       env_name: str,
                       episodes: int,
-                      max_steps: int) -> List[float]:
+                      max_steps: int,
+                      render: bool = False) -> List[float]:
         """Run a single organism in an environment."""
         try:
             import gymnasium as gym
@@ -553,7 +558,9 @@ class ProtonTournament:
         rewards = []
         
         try:
-            env = gym.make(env_name)
+            # Create environment with or without rendering
+            render_mode = 'human' if render else None
+            env = gym.make(env_name, render_mode=render_mode)
             
             # Get action space size
             action_space_size = None
@@ -610,42 +617,67 @@ class ProtonTournament:
                              organism_idx: int,
                              state: np.ndarray,
                              action_space_size: Optional[int] = None) -> int:
-        """Get action from a specific organism (not ensemble vote)."""
+        """Get action from a SPECIFIC organism (not ensemble vote).
+        
+        This calls the individual brain directly, matching the cocoon's internal
+        brain calling pattern but for a specific organism index.
+        """
         try:
             import torch
             
+            # Get the specific brain for this organism
             brain = self.agent.brains[organism_idx]
-            state_tensor = torch.FloatTensor(state).unsqueeze(0)
             
+            # Prepare state
+            state = np.asarray(state, dtype=np.float32).flatten()
+            
+            # Get VP value from agent's runtime if available
+            vp_value = None
+            if hasattr(self.agent, 'vp_runtime'):
+                try:
+                    reward_history = getattr(self.agent, 'reward_history', [])
+                    vp_data = self.agent.vp_runtime.compute_from_state(state, reward_history)
+                    vp_value = vp_data.get('violation_pressure', 0.5)
+                except:
+                    vp_value = 0.5
+            
+            # Epsilon-greedy exploration
+            effective_size = action_space_size or getattr(brain, 'output_dim', 6)
+            epsilon = getattr(self.agent, 'epsilon', 0.1)
+            if random.random() < epsilon:
+                return random.randint(0, effective_size - 1)
+            
+            # Create tensor and move to correct device
+            device = getattr(self.agent, 'device', 'cpu')
+            state_t = torch.FloatTensor(state).unsqueeze(0).to(device)
+            
+            # Call brain (it handles input padding internally)
+            brain.eval()
             with torch.no_grad():
-                output = brain(state_tensor)
-                if isinstance(output, dict):
-                    action_probs = output.get('action_probs', output.get('actions'))
-                else:
-                    action_probs = output
+                output = brain(state_t, vp_value=vp_value, return_language_logits=False)
                 
-                if action_probs is not None:
-                    action_probs = action_probs.numpy().flatten()
-                    
-                    # Clip to action space if needed
-                    if action_space_size and len(action_probs) > action_space_size:
-                        action_probs = action_probs[:action_space_size]
-                    
-                    # Epsilon-greedy exploration
-                    if random.random() < getattr(self.agent, 'epsilon', 0.1):
-                        if action_space_size:
-                            return random.randint(0, action_space_size - 1)
-                        return random.randint(0, len(action_probs) - 1)
-                    
-                    return int(np.argmax(action_probs))
+                # Handle tuple output
+                if isinstance(output, tuple):
+                    probs = output[0]
+                else:
+                    probs = output
+                
+                # Convert to numpy
+                p = probs.cpu().numpy().squeeze(0)
+                
+                # Clip to action space if needed
+                if action_space_size and len(p) > action_space_size:
+                    p = p[:action_space_size]
+                    p = p / (p.sum() + 1e-9)  # Re-normalize
+                
+                return int(np.argmax(p))
         
-        except Exception:
-            pass
-        
-        # Fallback: random action
-        if action_space_size:
-            return random.randint(0, action_space_size - 1)
-        return 0
+        except Exception as e:
+            # Fallback: random action
+            if self.verbose:
+                print(f"      [!] Brain {organism_idx} error: {e}")
+            effective_size = action_space_size or 6
+            return random.randint(0, effective_size - 1)
     
     def _apply_fitness_transfer(self, winner_idx: int, loser_idx: int) -> float:
         """Transfer fitness from loser to winner (Highlander-style)."""
