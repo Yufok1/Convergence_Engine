@@ -1,6 +1,6 @@
 # 🦋 COCOON SYSTEM - Single-File Deployable Agent
 
-**Last Updated:** 2025-12-05
+**Last Updated:** 2025-12-08
 
 The Cocoon System compiles trained Butterfly organisms into a single, self-contained Python file that can run independently without the full Butterfly infrastructure.
 
@@ -332,6 +332,41 @@ This enables exported agents to maintain their **unique linguistic identity** - 
 | `Unexpected key in state_dict` | Architecture mismatch | Check ConceptHead inclusion |
 | `action X invalid` | Action space size | Use `--env` to set environment |
 | UNK spam in chat | Vocab filter missing | Regenerate (fixed 2025-12-05) |
+
+---
+
+## 🎮 Tournament & Arena System (NEW)
+
+Exported cocoons can battle each other for self-improvement:
+
+### Proton Tournament
+```python
+from cocoon import CocoonAgent
+from standalone_proton_tournament import ProtonTournament
+
+agent = CocoonAgent()
+tournament = ProtonTournament(agent)
+
+# Different tournament formats
+tournament.round_robin()              # All vs All
+tournament.elimination()              # Single elimination bracket
+tournament.ladder(total_battles=50)   # Continuous random pairings
+```
+
+### Swarm Pong Arena
+```python
+# Multi-agent elimination battle (polygon Pong)
+tournament.swarm_pong_arena(lives=3, headless=True)
+
+# Best-of-5 series
+tournament.swarm_pong_series(rounds=5)
+```
+
+Features:
+- **13 games** - CartPole, LunarLander, Taxi, Blackjack, Pong, Swarm Pong, etc.
+- **Fitness transfer** - Winners absorb loser's fitness (Highlander-style)
+- **Headless mode** - Training without display
+- **Deterministic** - Seedable for reproducibility
 
 ---
 
