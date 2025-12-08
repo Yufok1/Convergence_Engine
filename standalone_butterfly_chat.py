@@ -210,9 +210,19 @@ class StandaloneButterflyChat:
     
     ACTION_NAMES = ['move', 'cooperate', 'compete', 'rest', 'reproduce', 'isolate']
     
-    def __init__(self, export_dir: str, voting_strategy: str = 'fitness_weighted'):
+    def __init__(self, export_dir: str, voting_strategy: str = 'fitness_weighted',
+                 trainer: Optional[Any] = None):
+        """
+        Initialize standalone chat with optional trainer for continued learning.
+        
+        Args:
+            export_dir: Path to exported capsule directory
+            voting_strategy: How to aggregate multi-organism responses
+            trainer: Optional NeuralTrainer for chat-triggered training (requires PyTorch)
+        """
         self.export_dir = Path(export_dir)
         self.voting_strategy = VotingStrategy(voting_strategy)
+        self.trainer = trainer  # Optional: for continued neural learning
         
         # Load components
         self.metadata = self._load_metadata()
@@ -1335,6 +1345,59 @@ class StandaloneButterflyChat:
         else:
             return 128  # Full neural synapse length
     
+    def _train_from_chat(self, organism: CapsuleOrganism, network_state: Optional[Dict] = None) -> Optional[float]:
+        """
+        Optional: Train neural network on chat experiences.
+        
+        Aligned with live butterfly_chat.py trainer integration.
+        Only runs if trainer was provided during initialization (requires PyTorch).
+        
+        Returns:
+            Training loss if trainer available, None otherwise
+        """
+        if not self.trainer:
+            return None
+        
+        try:
+            # Use trainer's chat training method if available
+            if hasattr(self.trainer, 'train_from_chat_experiences'):
+                loss = self.trainer.train_from_chat_experiences(organism, network_state)
+                self.debug_logs.append({
+                    'step': 'TRAIN',
+                    'action': f'Neural training for {organism.organism_id}',
+                    'data': {'loss': loss, 'method': 'train_from_chat_experiences'}
+                })
+                return loss
+            elif hasattr(self.trainer, 'train_step'):
+                # Fallback to generic train_step
+                loss = self.trainer.train_step([organism], network_state or {})
+                self.debug_logs.append({
+                    'step': 'TRAIN',
+                    'action': f'Neural training for {organism.organism_id}',
+                    'data': {'loss': loss, 'method': 'train_step'}
+                })
+                return loss
+        except Exception as e:
+            self.debug_logs.append({
+                'step': 'TRAIN_ERROR',
+                'action': f'Training failed for {organism.organism_id}',
+                'data': {'error': str(e)}
+            })
+        return None
+    
+    def _maybe_trigger_training(self, organism: CapsuleOrganism, network_state: Optional[Dict] = None):
+        """
+        Trigger training periodically based on experience count.
+        
+        Aligned with live butterfly_chat.py: trains every 10 experiences.
+        """
+        if not self.trainer:
+            return
+        
+        experience_count = len(organism.experience_buffer)
+        if experience_count > 0 and experience_count % 10 == 0:
+            self._train_from_chat(organism, network_state)
+    
     def _build_state_vector(self, message: str) -> np.ndarray:
         """
         Build a 24D state vector from the message context.
@@ -1503,6 +1566,9 @@ class StandaloneButterflyChat:
                     'reward': semantic_reward,
                     'timestamp': time.time()
                 })
+                
+                # Optional: trigger neural training periodically
+                self._maybe_trigger_training(organism, state_dict)
                 
                 self.debug_logs.append({
                     'step': 'REWARD_CALC',

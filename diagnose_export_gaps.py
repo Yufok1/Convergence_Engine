@@ -64,17 +64,17 @@ def main():
         # Learning Features
         "vocabulary_learning": r"learn.*word|add_word|_learn_words",
         "experience_storage": r"store.*experience|_store_chat_experience|experience_buffer",
-        "neural_training": r"trainer\.|train_on_chat|chat.*train",
-        "adaptive_response_length": r"adaptive_max_length|experience_count.*<",
+        "neural_training": r"trainer|train_on|train_step|optional.*train",
+        "adaptive_response_length": r"adaptive.*length|_get_adaptive_max_length|experience_count.*<",
         
         # Semantic Features
         "knowledge_web_integration": r"knowledge_web|semantic_related|_get_semantic",
         "context_memory": r"context_memory|language_anchors",
-        "semantic_reward": r"semantic_reward|reward.*calc|calculate.*reward",
+        "semantic_reward": r"semantic_reward|_calculate_semantic_reward|reward.*calc",
         
         # Quality Features
         "confidence_calculation": r"_calculate_confidence|confidence.*score",
-        "repetition_penalty": r"repetition_penalty|recent_tokens",
+        "repetition_penalty": r"repetition_penalty|unique_ratio|consecutive_repeat",
         "top_k_sampling": r"top_k|top-k",
         
         # Tracking Features
@@ -82,10 +82,8 @@ def main():
         "causation_events": r"event_emitter|causation|emit.*event",
         "conversation_history": r"conversation_history",
         
-        # Export-specific
-        "full_vocabulary_export": r"base_pool|74.*557|full.*vocab",
-        "knowledge_web_export": r"knowledge_web.*json|serialize.*knowledge",
-        "organism_state_export": r"atomic_language|organism.*state",
+        # State Management
+        "organism_state_export": r"atomic_language|organism.*state|experience_buffer",
     }
     
     print("📋 FEATURE COMPARISON: Live System vs Standalone Export")
