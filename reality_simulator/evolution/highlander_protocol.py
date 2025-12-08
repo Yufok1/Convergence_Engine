@@ -246,7 +246,8 @@ class HighlanderProtocol:
             formatter = logging.Formatter('[HIGHLANDER] %(message)s')
             console_handler.setFormatter(formatter)
             self.logger.addHandler(console_handler)
-            self.logger.propagate = False  # Don't propagate to root logger
+            # Allow propagation so logs also go to application.log
+            self.logger.propagate = True
         
         # Initialize Battle Arena for real combat
         if battle_arena:
