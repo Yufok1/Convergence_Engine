@@ -232,6 +232,21 @@ TOURNAMENT_GAMES: Dict[str, GameDefinition] = {
         tags=["arcade", "versus"],
         favored_traits={"reflexes": 0.25, "prediction": 0.2}
     ),
+    
+    # =========================================================================
+    # CUSTOM SWARM GAMES
+    # =========================================================================
+    "swarm_pong": GameDefinition(
+        name="Swarm Pong Arena",
+        gym_env="custom:swarm_pong",
+        challenge=ChallengeType.PHYSICAL,
+        resource=ResourceType.ANIMAL,  # Multi-agent symbiosis
+        difficulty=GameDifficulty.EXPERT,
+        description="Multi-agent polygon Pong with elimination - last organism standing wins",
+        tags=["arena", "elimination", "multi-agent"],
+        favored_traits={"reflexes": 0.2, "survival": 0.3, "prediction": 0.2},
+        is_two_player=False  # N-player
+    ),
 }
 
 # The 4x4 Grid mapping
@@ -239,7 +254,7 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[str]] = {
     (ChallengeType.PHYSICAL, ResourceType.NAKED): ["cartpole", "mountaincar", "acrobot"],
     (ChallengeType.PHYSICAL, ResourceType.TOOL): ["pendulum", "breakout"],
     (ChallengeType.PHYSICAL, ResourceType.MACHINE): ["lunarlander", "pong", "spaceinvaders"],
-    (ChallengeType.PHYSICAL, ResourceType.ANIMAL): [],  # Future: multi-agent cooperation
+    (ChallengeType.PHYSICAL, ResourceType.ANIMAL): ["swarm_pong"],  # Multi-agent arena
     
     (ChallengeType.MENTAL, ResourceType.NAKED): ["frozenlake", "cliffwalking"],
     (ChallengeType.MENTAL, ResourceType.TOOL): [],
@@ -389,6 +404,17 @@ class ProtonTournament:
                 return []
         
         for game_key, game_def in TOURNAMENT_GAMES.items():
+            # Custom games (like swarm_pong) are always available
+            if game_def.gym_env.startswith("custom:"):
+                try:
+                    # Check if the custom module exists
+                    if game_key == "swarm_pong":
+                        import swarm_pong_arena
+                    available.append(game_key)
+                except ImportError:
+                    pass
+                continue
+            
             try:
                 # Try to create the environment briefly
                 env = gym.make(game_def.gym_env)
@@ -846,6 +872,148 @@ class ProtonTournament:
         return results
     
     # =========================================================================
+    # SWARM PONG ARENA - Multi-Agent Battle Royale
+    # =========================================================================
+    
+    def swarm_pong_arena(self,
+                         organism_indices: Optional[List[int]] = None,
+                         lives: int = 3,
+                         max_frames: int = 10000,
+                         headless: bool = True,
+                         seed: Optional[int] = None) -> Dict[str, Any]:
+        """
+        🎮 Run a Swarm Pong Arena - Multi-agent elimination battle.
+        
+        Each organism defends an edge of a polygon. As they're eliminated,
+        the arena shrinks until one champion remains.
+        
+        Args:
+            organism_indices: Which organisms to include (default: all, max 12)
+            lives: Lives per organism before elimination
+            max_frames: Maximum frames before declaring survivor as winner
+            headless: Run without display (True for training)
+            seed: Random seed for deterministic runs
+        
+        Returns:
+            Dict with winner, eliminations, scores, and battle stats
+        """
+        try:
+            from swarm_pong_arena import SwarmPongArena, run_swarm_pong_tournament
+        except ImportError as e:
+            self._log(f"[!] Swarm Pong Arena not available: {e}")
+            return {'error': str(e), 'winner': None}
+        
+        # Default to all organisms (max 12 for polygon geometry)
+        if organism_indices is None:
+            organism_indices = list(range(min(len(self.agent.brains), 12)))
+        
+        num_players = len(organism_indices)
+        
+        self._log(f"\n🎮 SWARM PONG ARENA")
+        self._log(f"   Players: {num_players} organisms")
+        self._log(f"   Lives: {lives} per player")
+        self._log(f"   Max frames: {max_frames}")
+        self._log(f"   Headless: {headless}")
+        if seed is not None:
+            self._log(f"   Seed: {seed}")
+        
+        # Create and run arena
+        arena = SwarmPongArena(
+            agent=self.agent,
+            organism_indices=organism_indices,
+            lives_per_organism=lives,
+            headless=headless,
+            seed=seed
+        )
+        
+        results = arena.run(max_frames=max_frames)
+        
+        # Apply fitness transfers based on elimination order
+        if results.get('eliminations'):
+            eliminations = results['eliminations']
+            num_eliminated = len(eliminations)
+            
+            # Earlier elimination = more fitness lost
+            for rank, (frame, org_idx) in enumerate(eliminations):
+                # Rank 0 = first out = loses most
+                survival_bonus = (rank + 1) / (num_eliminated + 1)
+                loss = self.fitness_transfer_rate * (1 - survival_bonus)
+                self.organism_fitness[org_idx] = max(0.1, self.organism_fitness.get(org_idx, 1.0) - loss)
+                self._log(f"   💀 Organism {org_idx} eliminated #{rank+1}, fitness -{loss:.3f}")
+        
+        # Winner gets fitness boost
+        winner = results.get('winner')
+        if winner is not None:
+            bonus = self.fitness_transfer_rate * num_players * 0.5
+            self.organism_fitness[winner] = self.organism_fitness.get(winner, 1.0) + bonus
+            self._log(f"   🏆 Champion {winner} gains fitness +{bonus:.3f}")
+            
+            # Record in stats
+            self.stats.wins_by_organism[winner] = self.stats.wins_by_organism.get(winner, 0) + 1
+        
+        self.stats.total_battles += 1
+        self.stats.battles_by_game['swarm_pong'] = self.stats.battles_by_game.get('swarm_pong', 0) + 1
+        
+        self._log(f"\n📊 Arena Results:")
+        self._log(f"   Winner: Organism {winner}")
+        self._log(f"   Total frames: {results.get('total_frames', 0)}")
+        self._log(f"   Eliminations: {[e[1] for e in results.get('eliminations', [])]}")
+        
+        return results
+    
+    def swarm_pong_series(self,
+                          rounds: int = 5,
+                          organism_indices: Optional[List[int]] = None,
+                          lives: int = 3,
+                          headless: bool = True) -> List[Dict[str, Any]]:
+        """
+        Run multiple Swarm Pong Arena rounds.
+        
+        Useful for tournament seeding or extended training.
+        
+        Args:
+            rounds: Number of arena rounds to run
+            organism_indices: Which organisms (default: all)
+            lives: Lives per round
+            headless: Run without display
+        
+        Returns:
+            List of results from each round
+        """
+        self._log(f"\n🏆 SWARM PONG SERIES - {rounds} rounds")
+        
+        all_results = []
+        wins = {}
+        
+        for round_num in range(rounds):
+            self._log(f"\n=== Round {round_num + 1}/{rounds} ===")
+            
+            result = self.swarm_pong_arena(
+                organism_indices=organism_indices,
+                lives=lives,
+                headless=headless,
+                seed=round_num  # Different seed each round but reproducible
+            )
+            all_results.append(result)
+            
+            winner = result.get('winner')
+            if winner is not None:
+                wins[winner] = wins.get(winner, 0) + 1
+        
+        # Summary
+        self._log(f"\n📊 SERIES SUMMARY")
+        self._log(f"   Rounds: {rounds}")
+        sorted_wins = sorted(wins.items(), key=lambda x: -x[1])
+        for org_idx, win_count in sorted_wins:
+            self._log(f"   Organism {org_idx}: {win_count} wins")
+        
+        if sorted_wins:
+            series_champion = sorted_wins[0][0]
+            self._log(f"   🏆 Series Champion: Organism {series_champion}")
+        
+        return all_results
+    
+    # =========================================================================
     # REPORTING
     # =========================================================================
     
@@ -1025,12 +1193,17 @@ def main():
     print("  tournament.elimination()            # Single elimination")
     print("  tournament.ladder(total_battles=50) # Continuous matches")
     print()
+    print("  # 🎮 SWARM PONG ARENA - Multi-agent battle royale:")
+    print("  tournament.swarm_pong_arena()         # Single arena battle")
+    print("  tournament.swarm_pong_series(rounds=5) # Best-of-5 series")
+    print()
     print("  # Or run specific battles:")
     print("  result = tournament.battle(0, 1, game='cartpole')")
     print()
     print("Available games:")
     for game_key, game_def in TOURNAMENT_GAMES.items():
-        print(f"  - {game_key}: {game_def.name} ({game_def.gym_env})")
+        marker = "⭐" if game_key == "swarm_pong" else " "
+        print(f"  {marker} {game_key}: {game_def.name} ({game_def.gym_env})")
 
 
 if __name__ == "__main__":
