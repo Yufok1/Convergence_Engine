@@ -184,9 +184,9 @@
       "war_frequency": 0.5,
       "illumination_stability_threshold": 5
     },
-    "chaos_factor": 0.1,
-    "competition_intensity": 0.3,
-    "description": "Highlander Protocol - CIVILIZATION MODE - 4x RTX 4070 Ti optimized for stable populations",
+    "chaos_factor": 0.05,
+    "competition_intensity": 0.15,
+    "description": "Highlander Protocol - PEACEFUL MODE - 4x RTX 4070 Ti optimized for stable growth",
     "enabled": true,
     "extreme_mode": {
       "chaos_factor": 0.4,
@@ -211,8 +211,8 @@
     "mutation_rate": 0.05,
     "population_size": 300,
     "predation_enabled": false,
-    "rounds_per_cycle": 5,
-    "survival_threshold": 0.2
+    "rounds_per_cycle": 2,
+    "survival_threshold": 0.15
   },
   "lattice": {
     "entropy_sensitivity": 5e-05,
