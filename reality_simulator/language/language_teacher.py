@@ -565,13 +565,17 @@ class LanguageTeacher:
         # SUPPLEMENT: Use knowledge web methods for action/state-based words
         # ============================================================
         if use_hardcoded:
-            # Action-based words (using knowledge web)
+            # Action-based words (using knowledge web with SEMANTIC SEEDING)
             if hasattr(organism, 'get_action_sequence'):
                 # Neural organism with action history
                 recent_actions = organism.get_action_sequence(length=10)  # Last 10 actions
                 if len(recent_actions) >= self.min_action_history:
                     for action in recent_actions:
-                        words = self.knowledge_web.get_words_for_action(action) if self.knowledge_web else []
+                        # Use dynamic method for diverse per-organism vocabulary
+                        if hasattr(self.knowledge_web, 'get_words_for_action_dynamic'):
+                            words = self.knowledge_web.get_words_for_action_dynamic(action, organism_id)
+                        else:
+                            words = self.knowledge_web.get_words_for_action(action) if self.knowledge_web else []
                         
                         for word in words:
                             try:
@@ -584,7 +588,11 @@ class LanguageTeacher:
                 # Organism with single previous action
                 action = organism.prev_action
                 if action is not None:
-                    words = self.knowledge_web.get_words_for_action(action) if self.knowledge_web else []
+                    # Use dynamic method for diverse per-organism vocabulary
+                    if hasattr(self.knowledge_web, 'get_words_for_action_dynamic'):
+                        words = self.knowledge_web.get_words_for_action_dynamic(action, organism_id)
+                    else:
+                        words = self.knowledge_web.get_words_for_action(action) if self.knowledge_web else []
                     
                     for word in words[:2]:  # Limit to 2 words for single action
                         try:
@@ -594,7 +602,7 @@ class LanguageTeacher:
                         except Exception as e:
                             logger.warning(f"[LANGUAGE_TEACHER] Failed to link word '{word}': {e}")
             
-            # State-based words (using knowledge web)
+            # State-based words (using knowledge web with SEMANTIC SEEDING)
             # Fitness-based words
             if hasattr(organism, 'fitness'):
                 fitness = organism.fitness
@@ -605,7 +613,11 @@ class LanguageTeacher:
                 else:
                     state_type = 'medium_fitness'
                 
-                words = self.knowledge_web.get_words_for_state(state_type) if self.knowledge_web else []
+                # Use dynamic method for diverse per-organism vocabulary
+                if hasattr(self.knowledge_web, 'get_words_for_state_dynamic'):
+                    words = self.knowledge_web.get_words_for_state_dynamic(state_type, organism_id)
+                else:
+                    words = self.knowledge_web.get_words_for_state(state_type) if self.knowledge_web else []
                 
                 # Assign top 2-3 words based on fitness
                 for word in words[:3]:
@@ -626,7 +638,11 @@ class LanguageTeacher:
                 else:
                     state_type = 'few_connections'
                 
-                words = self.knowledge_web.get_words_for_state(state_type) if self.knowledge_web else []
+                # Use dynamic method for diverse per-organism vocabulary
+                if hasattr(self.knowledge_web, 'get_words_for_state_dynamic'):
+                    words = self.knowledge_web.get_words_for_state_dynamic(state_type, organism_id)
+                else:
+                    words = self.knowledge_web.get_words_for_state(state_type) if self.knowledge_web else []
                 
                 # Assign top 2 words
                 for word in words[:2]:
@@ -648,7 +664,11 @@ class LanguageTeacher:
                     else:
                         state_type = 'few_connections'
                     
-                    words = self.knowledge_web.get_words_for_state(state_type) if self.knowledge_web else []
+                    # Use dynamic method for diverse per-organism vocabulary
+                    if hasattr(self.knowledge_web, 'get_words_for_state_dynamic'):
+                        words = self.knowledge_web.get_words_for_state_dynamic(state_type, organism_id)
+                    else:
+                        words = self.knowledge_web.get_words_for_state(state_type) if self.knowledge_web else []
                     
                     for word in words[:2]:
                         context_memory.link_word_to_node(word, organism_id, generation, organism_embedding)
@@ -667,7 +687,11 @@ class LanguageTeacher:
                 else:
                     state_type = 'medium_resources'
                 
-                words = self.knowledge_web.get_words_for_state(state_type) if self.knowledge_web else []
+                # Use dynamic method for diverse per-organism vocabulary
+                if hasattr(self.knowledge_web, 'get_words_for_state_dynamic'):
+                    words = self.knowledge_web.get_words_for_state_dynamic(state_type, organism_id)
+                else:
+                    words = self.knowledge_web.get_words_for_state(state_type) if self.knowledge_web else []
                 
                 for word in words[:2]:
                     try:

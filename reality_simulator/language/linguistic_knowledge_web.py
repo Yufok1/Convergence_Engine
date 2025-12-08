@@ -10,6 +10,7 @@ Based on:
 - WordNet (synonym/antonym hierarchies)
 - FrameNet (semantic frames)
 - Custom organism-behavior mappings
+- 50K CURATED VOCABULARY with semantic seeding for diverse organism lexicons
 """
 
 import logging
@@ -19,6 +20,8 @@ from dataclasses import dataclass, field
 import json
 import numpy as np
 import random
+import os
+import hashlib
 
 logger = logging.getLogger(__name__)
 
@@ -90,6 +93,15 @@ class LinguisticKnowledgeWeb:
         # Semantic clusters (for associative reasoning)
         self.semantic_clusters: Dict[str, Set[str]] = defaultdict(set)
         
+        # ============================================================
+        # SEMANTIC SEEDING: 50k vocabulary with category-based diversity
+        # ============================================================
+        self.curated_vocabulary: List[str] = []
+        self.vocabulary_categories: Dict[str, List[str]] = {}  # category -> words
+        self.word_to_category: Dict[str, str] = {}  # word -> category
+        self.organism_word_seeds: Dict[str, Set[str]] = {}  # organism_id -> seeded words (diverse per org)
+        self._load_curated_vocabulary()
+        
         # Recursive expansion mechanisms (prevent yarn ball, enable growth)
         self.word_usage_counts: Dict[str, int] = defaultdict(int)  # Track word usage for diversity
         self.relation_usage_counts: Dict[Tuple[str, str, str], int] = defaultdict(int)  # Track relation usage
@@ -121,7 +133,52 @@ class LinguisticKnowledgeWeb:
         # Load base knowledge
         self._initialize_base_knowledge()
         
-        logger.info(f"[LINGUISTIC_WEB] Initialized with {len(self.concepts)} concepts, {len(self.relations)} relations")
+        logger.info(f"[LINGUISTIC_WEB] Initialized with {len(self.concepts)} concepts, {len(self.relations)} relations, {len(self.curated_vocabulary)} curated words")
+    
+    def _load_curated_vocabulary(self):
+        """
+        Load the 50k curated vocabulary with semantic categories.
+        
+        This enables DIVERSE word seeding per organism instead of the same
+        hardcoded ~60 words for everyone.
+        """
+        vocab_paths = [
+            os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'butterfly_vocabulary_50k_curated.json'),
+            'data/butterfly_vocabulary_50k_curated.json',
+            'd:/end-GAME/butterfly/data/butterfly_vocabulary_50k_curated.json'
+        ]
+        
+        vocab_data = None
+        for path in vocab_paths:
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    vocab_data = json.load(f)
+                logger.info(f"[SEMANTIC_SEED] Loaded vocabulary from {path}")
+                break
+            except (FileNotFoundError, json.JSONDecodeError):
+                continue
+        
+        if vocab_data is None:
+            logger.warning("[SEMANTIC_SEED] Could not load curated vocabulary - using fallback")
+            return
+        
+        # Load all words
+        self.curated_vocabulary = vocab_data.get('words', [])
+        
+        # Load category samples (these are the categorized words)
+        category_samples = vocab_data.get('category_samples', {})
+        for category, words in category_samples.items():
+            self.vocabulary_categories[category] = words
+            for word in words:
+                self.word_to_category[word] = category
+        
+        # Build reverse index for uncategorized words -> 'other'
+        categorized = set(self.word_to_category.keys())
+        for word in self.curated_vocabulary:
+            if word not in categorized:
+                self.word_to_category[word] = 'other'
+        
+        logger.info(f"[SEMANTIC_SEED] Loaded {len(self.curated_vocabulary)} words in {len(self.vocabulary_categories)} categories")
     
     def _initialize_base_knowledge(self):
         """Initialize comprehensive linguistic knowledge base."""
@@ -1194,8 +1251,14 @@ class LinguisticKnowledgeWeb:
         self.semantic_clusters['low_relevance'] = low_relevance
     
     def _build_organism_mappings(self):
-        """Build organism-behavior mappings."""
-        # Action mappings
+        """
+        Build organism-behavior mappings.
+        
+        UPDATED: Now uses semantic seeding from 50k vocabulary instead of
+        hardcoded word lists. Each organism gets DIFFERENT words based on
+        their unique seed, with category biasing for causal coordination.
+        """
+        # Core action words (these are the "anchor" words - organisms can earn more)
         self.action_word_map = {
             0: ['move', 'explore', 'travel', 'wander', 'journey'],
             1: ['cooperate', 'collaborate', 'help', 'share', 'assist'],
@@ -1205,7 +1268,7 @@ class LinguisticKnowledgeWeb:
             5: ['isolate', 'withdraw', 'separate', 'retreat', 'alone']
         }
         
-        # State mappings
+        # Core state words (anchor words)
         self.state_word_map = {
             'high_fitness': ['thrive', 'flourish', 'prosper', 'succeed', 'strong'],
             'low_fitness': ['struggle', 'suffer', 'decline', 'weak', 'failing'],
@@ -1218,7 +1281,7 @@ class LinguisticKnowledgeWeb:
             'medium_resources': ['moderate', 'adequate', 'sufficient', 'stable', 'balanced']
         }
         
-        # Situational contexts
+        # Situational contexts (anchor contexts)
         self.situational_contexts = {
             'exploration': ['move', 'explore', 'travel', 'wander', 'discover', 'search'],
             'cooperation': ['cooperate', 'help', 'share', 'collaborate', 'assist', 'together'],
@@ -1231,6 +1294,198 @@ class LinguisticKnowledgeWeb:
             'social': ['social', 'connected', 'networked', 'together', 'cooperative', 'united'],
             'learning': ['learn', 'acquire', 'develop', 'adapt', 'evolve', 'understand']
         }
+        
+        # Category affinities for semantic seeding
+        # Maps action types and states to vocabulary categories they should pull from
+        self._action_category_affinities = {
+            0: ['behavior', 'spatial', 'perception'],  # move -> behavior, spatial awareness
+            1: ['social', 'communication', 'governance'],  # cooperate -> social, communication
+            2: ['behavior', 'survival', 'causal'],  # compete -> survival, aggression
+            3: ['temporal', 'cognition', 'perception'],  # rest -> temporal, recovery
+            4: ['survival', 'temporal', 'causal'],  # reproduce -> survival, growth
+            5: ['spatial', 'perception', 'cognition']  # isolate -> spatial, introspection
+        }
+        
+        self._state_category_affinities = {
+            'high_fitness': ['survival', 'behavior', 'social'],
+            'low_fitness': ['survival', 'causal', 'temporal'],
+            'medium_fitness': ['cognition', 'temporal', 'perception'],
+            'many_connections': ['social', 'communication', 'governance'],
+            'few_connections': ['cognition', 'spatial', 'perception'],
+            'no_connections': ['spatial', 'cognition', 'survival'],
+            'high_resources': ['survival', 'social', 'behavior'],
+            'low_resources': ['survival', 'causal', 'behavior'],
+            'medium_resources': ['cognition', 'temporal', 'behavior']
+        }
+
+    def seed_organism_vocabulary(self, organism_id: str, 
+                                  initial_action: Optional[int] = None,
+                                  initial_state: Optional[str] = None,
+                                  num_words: int = 20) -> Set[str]:
+        """
+        Seed an organism with a UNIQUE vocabulary based on its identity.
+        
+        This is SEMANTIC SEEDING: random yet causally coordinated inseminations
+        meant to connect organisms and agitate convergence on ideation.
+        
+        Args:
+            organism_id: Unique organism identifier (used as seed)
+            initial_action: Starting action type (0-5)
+            initial_state: Starting state type
+            num_words: How many words to seed (default 20)
+            
+        Returns:
+            Set of seeded words unique to this organism
+        """
+        if not self.curated_vocabulary:
+            # Fallback to hardcoded words if vocabulary not loaded
+            return set()
+        
+        # Use organism ID as deterministic seed for reproducible but diverse vocabulary
+        seed_hash = int(hashlib.md5(organism_id.encode()).hexdigest(), 16) % (2**32)
+        rng = random.Random(seed_hash)
+        
+        seeded_words = set()
+        
+        # ============================================================
+        # PHASE 1: Category-biased seeding (causally coordinated)
+        # ============================================================
+        category_pool = []
+        
+        # Add words from action-related categories
+        if initial_action is not None and initial_action in self._action_category_affinities:
+            for category in self._action_category_affinities[initial_action]:
+                if category in self.vocabulary_categories:
+                    category_pool.extend(self.vocabulary_categories[category])
+        
+        # Add words from state-related categories
+        if initial_state and initial_state in self._state_category_affinities:
+            for category in self._state_category_affinities[initial_state]:
+                if category in self.vocabulary_categories:
+                    category_pool.extend(self.vocabulary_categories[category])
+        
+        # Sample from category pool (40% of words)
+        category_words_count = int(num_words * 0.4)
+        if category_pool:
+            category_pool = list(set(category_pool))  # Dedupe
+            rng.shuffle(category_pool)
+            seeded_words.update(category_pool[:category_words_count])
+        
+        # ============================================================
+        # PHASE 2: Bridging words (for cross-organism convergence)
+        # ============================================================
+        # Sample from ALL categories to create semantic bridges
+        all_categorized = []
+        for category, words in self.vocabulary_categories.items():
+            if category != 'other':  # Skip the massive 'other' category
+                all_categorized.extend(words)
+        
+        bridge_words_count = int(num_words * 0.3)
+        if all_categorized:
+            all_categorized = list(set(all_categorized) - seeded_words)  # Exclude already seeded
+            rng.shuffle(all_categorized)
+            seeded_words.update(all_categorized[:bridge_words_count])
+        
+        # ============================================================
+        # PHASE 3: Random exploration (agitation for ideation)
+        # ============================================================
+        # Sample from entire 50k vocabulary for wild card words
+        exploration_count = num_words - len(seeded_words)
+        if exploration_count > 0:
+            available = [w for w in self.curated_vocabulary if w not in seeded_words]
+            rng.shuffle(available)
+            seeded_words.update(available[:exploration_count])
+        
+        # Store organism's seed vocabulary
+        self.organism_word_seeds[organism_id] = seeded_words
+        
+        logger.debug(f"[SEMANTIC_SEED] Organism {organism_id[:8]} seeded with {len(seeded_words)} unique words")
+        
+        return seeded_words
+
+    def get_words_for_action_dynamic(self, action_idx: int, organism_id: Optional[str] = None) -> List[str]:
+        """
+        Get words for an action with organism-specific semantic seeding.
+        
+        Unlike the static `get_words_for_action`, this returns DIFFERENT words
+        for different organisms based on their seed vocabulary.
+        
+        Args:
+            action_idx: Action type (0-5)
+            organism_id: Organism identifier for personalized words
+            
+        Returns:
+            List of words relevant to the action (different per organism)
+        """
+        # Always include anchor words
+        base_words = list(self.action_word_map.get(action_idx, []))
+        
+        if not organism_id or not self.curated_vocabulary:
+            return base_words
+        
+        # Get or create organism's seed vocabulary
+        if organism_id not in self.organism_word_seeds:
+            self.seed_organism_vocabulary(organism_id, initial_action=action_idx)
+        
+        # Add words from organism's seed that are in relevant categories
+        organism_words = self.organism_word_seeds.get(organism_id, set())
+        
+        if action_idx in self._action_category_affinities:
+            relevant_categories = self._action_category_affinities[action_idx]
+            for word in organism_words:
+                word_category = self.word_to_category.get(word, 'other')
+                if word_category in relevant_categories:
+                    base_words.append(word)
+        
+        # Also add a few random seeded words for exploration
+        remaining = list(organism_words - set(base_words))
+        if remaining:
+            random.shuffle(remaining)
+            base_words.extend(remaining[:3])  # Add 3 random seeded words
+        
+        return base_words
+
+    def get_words_for_state_dynamic(self, state_type: str, organism_id: Optional[str] = None) -> List[str]:
+        """
+        Get words for a state with organism-specific semantic seeding.
+        
+        Unlike the static `get_words_for_state`, this returns DIFFERENT words
+        for different organisms based on their seed vocabulary.
+        
+        Args:
+            state_type: State type string
+            organism_id: Organism identifier for personalized words
+            
+        Returns:
+            List of words relevant to the state (different per organism)
+        """
+        # Always include anchor words
+        base_words = list(self.state_word_map.get(state_type, []))
+        
+        if not organism_id or not self.curated_vocabulary:
+            return base_words
+        
+        # Get or create organism's seed vocabulary
+        if organism_id not in self.organism_word_seeds:
+            self.seed_organism_vocabulary(organism_id, initial_state=state_type)
+        
+        # Add words from organism's seed that are in relevant categories
+        organism_words = self.organism_word_seeds.get(organism_id, set())
+        
+        if state_type in self._state_category_affinities:
+            relevant_categories = self._state_category_affinities[state_type]
+            for word in organism_words:
+                word_category = self.word_to_category.get(word, 'other')
+                if word_category in relevant_categories:
+                    base_words.append(word)
+        
+        # Also add a few random seeded words for exploration
+        remaining = list(organism_words - set(base_words))
+        if remaining:
+            random.shuffle(remaining)
+            base_words.extend(remaining[:3])  # Add 3 random seeded words
+        
+        return base_words
     
     def get_concept(self, word: str) -> Optional[LinguisticConcept]:
         """Get concept for a word."""

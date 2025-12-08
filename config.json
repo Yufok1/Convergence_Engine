@@ -226,7 +226,7 @@
   "meta_cognitive": {
     "description": "Meta-cognitive systems: self-awareness, self-tuning, autonomous optimization",
     "self_tuning": {
-      "enabled": false,
+      "enabled": true,
       "min_confidence_threshold": 0.6,
       "mode": "autonomous",
       "performance_targets": {
