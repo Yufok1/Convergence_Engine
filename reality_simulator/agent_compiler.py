@@ -4300,6 +4300,15 @@ if __name__ == '__main__':
                 zf.writestr('bridge.py', bridge_script)
                 
                 # ─────────────────────────────────────────────────────────────
+                # 4b. PROTON_TOURNAMENT.PY (self-training battle system)
+                # ─────────────────────────────────────────────────────────────
+                tournament_path = Path(__file__).parent.parent / 'standalone_proton_tournament.py'
+                if tournament_path.exists():
+                    tournament_source = tournament_path.read_text(encoding='utf-8')
+                    zf.writestr('proton_tournament.py', tournament_source)
+                    logger.info(f"[PACKAGE] ✅ Proton Tournament: {len(tournament_source):,} chars")
+                
+                # ─────────────────────────────────────────────────────────────
                 # 5. METADATA.JSON (comprehensive)
                 # ─────────────────────────────────────────────────────────────
                 # Compute behavioral fingerprints
@@ -4329,6 +4338,7 @@ if __name__ == '__main__':
                         'brain_ensemble.pt' if export_results['torchscript']['success'] else None,
                         'cocoon.py',
                         'bridge.py',
+                        'proton_tournament.py',
                         'metadata.json',
                         'vocabulary.json',
                         'requirements.txt',
