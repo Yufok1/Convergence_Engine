@@ -146,26 +146,32 @@ class AgentCompiler:
 
         # Load the state_dict FIRST to detect architecture
         state_dict_bytes = base64.b64decode(brain_state_dict_b64)
-        # Some snapshots may be gzip or zip compressed before base64 encoding
+        # Some snapshots may be gzip compressed before base64 encoding
+        # Note: PyTorch's native ZIP format (PK header with archive/ prefix) should NOT be extracted
         try:
             if len(state_dict_bytes) >= 2 and state_dict_bytes[:2] == b"\x1f\x8b":
                 import gzip
                 state_dict_bytes = gzip.decompress(state_dict_bytes)
             elif len(state_dict_bytes) >= 2 and state_dict_bytes[:2] == b"PK":
-                # ZIP archive; read first plausible tensor file
+                # Check if this is PyTorch's native ZIP format (has archive/ prefix)
+                # If so, leave it alone - torch.load handles it directly
                 with zipfile.ZipFile(BytesIO(state_dict_bytes)) as zf:
                     names = zf.namelist()
-                    candidate = None
-                    for ext in ('.pt', '.pth', '.pkl', '.bin', '.tensors'):
-                        for n in names:
-                            if n.lower().endswith(ext):
-                                candidate = n
+                    is_pytorch_native = any(n.startswith('archive/') for n in names)
+                    
+                    if not is_pytorch_native:
+                        # Legacy: manually zipped checkpoint file - extract it
+                        candidate = None
+                        for ext in ('.pt', '.pth', '.pkl', '.bin', '.tensors'):
+                            for n in names:
+                                if n.lower().endswith(ext):
+                                    candidate = n
+                                    break
+                            if candidate:
                                 break
                         if candidate:
-                            break
-                    if not candidate and names:
-                        candidate = names[0]
-                    state_dict_bytes = zf.read(candidate)
+                            state_dict_bytes = zf.read(candidate)
+                    # else: PyTorch native format, pass through to torch.load unchanged
         except Exception:
             # If decompression fails, fall back to raw bytes
             pass

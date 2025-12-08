@@ -119,32 +119,31 @@ class ExportPipelineTest:
             use_language_head=False  # Start simple
         )
 
-        # Serialize brain state
+        # Serialize brain state - use raw bytes, not base64
         state_buffer = BytesIO()
         torch.save(brain.state_dict(), state_buffer, _use_new_zipfile_serialization=True)
         state_bytes = state_buffer.getvalue()
-        state_b64 = base64.b64encode(state_bytes).decode('utf-8')
 
-        # Create NeuralSnapshot
+        # Create NeuralSnapshot with correct fields
         neural_snap = NeuralSnapshot(
-            brain_type='OrganismBrain',
-            input_size=24,
+            state_dict_bytes=state_bytes,
+            architecture_hash=f"arch_{organism_id}",
             hidden_size=128,
+            num_layers=2,
+            input_size=24,
             output_size=6,
-            state_dict_b64=state_b64
+            total_parameters=sum(p.numel() for p in brain.parameters()),
+            training_steps=100
         )
 
-        # Create capsule
+        # Create capsule with correct fields
         capsule = OrganismCapsule(
             organism_id=organism_id,
-            generation=100,
-            fitness=0.75,
-            neural=neural_snap,
-            memory_traces={'test_memory': 'value'},
-            vocabulary=['move', 'cooperate', 'compete', 'rest']
+            capsule_id=f"cap_{organism_id}",
+            neural=neural_snap
         )
 
-        logger.info(f"Created test capsule: {organism_id} (fitness={capsule.fitness})")
+        logger.info(f"Created test capsule: {organism_id}")
         return capsule
 
     # =========================================================================
@@ -174,8 +173,8 @@ class ExportPipelineTest:
             files = zf.namelist()
             logger.info(f"Archive contains {len(files)} files: {files}")
 
-            # Check required files
-            required = ['brain.onnx', 'metadata.json', 'agent_state.json']
+            # Check required files - agent_state is now in agent_state/ folder
+            required = ['brain.onnx', 'metadata.json', 'agent_state/state.json']
             missing = [f for f in required if f not in files]
             if missing:
                 return f"Missing files: {missing}"
@@ -220,12 +219,12 @@ class ExportPipelineTest:
             export_format='torchscript'
         )
 
-        # Verify
+        # Verify - TorchScript exports as brain.torchscript
         archive_buffer.seek(0)
         with zipfile.ZipFile(archive_buffer, 'r') as zf:
             files = zf.namelist()
-            if 'brain.pt' not in files:
-                return "Missing brain.pt (TorchScript model)"
+            if 'brain.torchscript' not in files:
+                return f"Missing brain.torchscript (TorchScript model). Found: {files[:5]}..."
 
             logger.info("TorchScript export verified")
 
@@ -250,9 +249,6 @@ class ExportPipelineTest:
             self.create_test_capsule("ensemble_org_002"),
             self.create_test_capsule("ensemble_org_003")
         ]
-        capsules[0].fitness = 0.9  # High fitness
-        capsules[1].fitness = 0.6  # Medium fitness
-        capsules[2].fitness = 0.3  # Low fitness
 
         # Export ensemble
         archive_buffer = compiler.compile_capsules_to_ensemble(
@@ -260,11 +256,15 @@ class ExportPipelineTest:
             export_format='onnx'
         )
 
-        # Verify
-        if archive_buffer.tell() == 0:
+        # Verify - seek to end to get size, then back to start
+        archive_buffer.seek(0, 2)  # Seek to end
+        size = archive_buffer.tell()
+        archive_buffer.seek(0)  # Seek back to start
+        
+        if size == 0:
             return "Ensemble export produced empty buffer"
 
-        logger.info(f"Ensemble export size: {archive_buffer.tell()} bytes")
+        logger.info(f"Ensemble export size: {size} bytes")
 
         # Save for inspection
         output_path = self.temp_dir / 'ensemble_export.onnx'
@@ -445,26 +445,26 @@ class ExportPipelineTest:
             use_language_head=True  # Enable language
         )
 
-        # Serialize
+        # Serialize - use raw bytes, not base64
         state_buffer = BytesIO()
         torch.save(brain.state_dict(), state_buffer, _use_new_zipfile_serialization=True)
         state_bytes = state_buffer.getvalue()
-        state_b64 = base64.b64encode(state_bytes).decode('utf-8')
 
         neural_snap = NeuralSnapshot(
-            brain_type='OrganismBrain',
-            input_size=24,
+            state_dict_bytes=state_bytes,
+            architecture_hash="arch_lang_head_test",
             hidden_size=128,
+            num_layers=2,
+            input_size=24,
             output_size=6,
-            state_dict_b64=state_b64
+            total_parameters=sum(p.numel() for p in brain.parameters()),
+            training_steps=50
         )
 
         capsule = OrganismCapsule(
             organism_id="lang_head_test_001",
-            generation=50,
-            fitness=0.8,
-            neural=neural_snap,
-            vocabulary=['move', 'cooperate', 'hello', 'world']
+            capsule_id="cap_lang_head_test",
+            neural=neural_snap
         )
 
         # Export

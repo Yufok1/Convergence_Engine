@@ -1,10 +1,10 @@
 {
   "id": "WIKAI_0001",
   "name": "The Neural Training Pattern",
-  "discovery_timestamp": "2025-12-08T07:37:33.230045Z",
+  "discovery_timestamp": "2025-12-08T20:56:08.444413Z",
   "status": "OBSERVED",
   "origin": {
-    "experiment_id": "convergence_auto_20251208_073733",
+    "experiment_id": "convergence_auto_20251208_205608",
     "agents_involved": [
       "convergence_engine"
     ],
@@ -18,7 +18,7 @@
   },
   "reasoning_chain": [
     "Trigger: neural_training observed",
-    "Pattern observed 6 times over 35.5s",
+    "Pattern observed 5 times over 30.0s",
     "Stability stable: 1.00 \u2192 1.00",
     "Pattern crystallized with avg stability 1.00"
   ],
@@ -36,10 +36,10 @@
   },
   "metrics": {
     "state_delta": 0.0,
-    "cycles_to_convergence": 6,
+    "cycles_to_convergence": 5,
     "avg_stability": 1.0,
     "avg_fitness": 0.0,
-    "duration_seconds": 35.458551
+    "duration_seconds": 30.014769
   },
   "tags": [
     "neural_training",
