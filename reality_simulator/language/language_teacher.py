@@ -381,10 +381,12 @@ class LanguageTeacher:
         
         words_assigned = 0
         
-        # Get organism ID (convert to int if needed for compatibility)
-        species_id = organism.species_id if hasattr(organism, 'species_id') else str(id(organism))
-        # Convert string ID to int (hash-based) for compatibility with link_word_to_node
-        organism_id = hash(species_id) if isinstance(species_id, str) else species_id
+        # Get organism ID - keep BOTH string and int versions
+        # String ID needed for semantic seeding (unique vocabulary per organism)
+        # Int ID needed for link_word_to_node compatibility
+        species_id_str = organism.species_id if hasattr(organism, 'species_id') else str(id(organism))
+        organism_id_str = species_id_str  # String for semantic seeding
+        organism_id = hash(species_id_str) if isinstance(species_id_str, str) else species_id_str  # Int for context_memory
         
         # ============================================================
         # SEMANTIC CONVERGENCE: Extract organism neural embedding
@@ -572,8 +574,9 @@ class LanguageTeacher:
                 if len(recent_actions) >= self.min_action_history:
                     for action in recent_actions:
                         # Use dynamic method for diverse per-organism vocabulary
+                        # NOTE: organism_id_str (string) for seeding, organism_id (int) for context_memory
                         if hasattr(self.knowledge_web, 'get_words_for_action_dynamic'):
-                            words = self.knowledge_web.get_words_for_action_dynamic(action, organism_id)
+                            words = self.knowledge_web.get_words_for_action_dynamic(action, organism_id_str)
                         else:
                             words = self.knowledge_web.get_words_for_action(action) if self.knowledge_web else []
                         
@@ -590,7 +593,7 @@ class LanguageTeacher:
                 if action is not None:
                     # Use dynamic method for diverse per-organism vocabulary
                     if hasattr(self.knowledge_web, 'get_words_for_action_dynamic'):
-                        words = self.knowledge_web.get_words_for_action_dynamic(action, organism_id)
+                        words = self.knowledge_web.get_words_for_action_dynamic(action, organism_id_str)
                     else:
                         words = self.knowledge_web.get_words_for_action(action) if self.knowledge_web else []
                     
@@ -615,7 +618,7 @@ class LanguageTeacher:
                 
                 # Use dynamic method for diverse per-organism vocabulary
                 if hasattr(self.knowledge_web, 'get_words_for_state_dynamic'):
-                    words = self.knowledge_web.get_words_for_state_dynamic(state_type, organism_id)
+                    words = self.knowledge_web.get_words_for_state_dynamic(state_type, organism_id_str)
                 else:
                     words = self.knowledge_web.get_words_for_state(state_type) if self.knowledge_web else []
                 
@@ -640,7 +643,7 @@ class LanguageTeacher:
                 
                 # Use dynamic method for diverse per-organism vocabulary
                 if hasattr(self.knowledge_web, 'get_words_for_state_dynamic'):
-                    words = self.knowledge_web.get_words_for_state_dynamic(state_type, organism_id)
+                    words = self.knowledge_web.get_words_for_state_dynamic(state_type, organism_id_str)
                 else:
                     words = self.knowledge_web.get_words_for_state(state_type) if self.knowledge_web else []
                 
@@ -666,7 +669,7 @@ class LanguageTeacher:
                     
                     # Use dynamic method for diverse per-organism vocabulary
                     if hasattr(self.knowledge_web, 'get_words_for_state_dynamic'):
-                        words = self.knowledge_web.get_words_for_state_dynamic(state_type, organism_id)
+                        words = self.knowledge_web.get_words_for_state_dynamic(state_type, organism_id_str)
                     else:
                         words = self.knowledge_web.get_words_for_state(state_type) if self.knowledge_web else []
                     
@@ -689,7 +692,7 @@ class LanguageTeacher:
                 
                 # Use dynamic method for diverse per-organism vocabulary
                 if hasattr(self.knowledge_web, 'get_words_for_state_dynamic'):
-                    words = self.knowledge_web.get_words_for_state_dynamic(state_type, organism_id)
+                    words = self.knowledge_web.get_words_for_state_dynamic(state_type, organism_id_str)
                 else:
                     words = self.knowledge_web.get_words_for_state(state_type) if self.knowledge_web else []
                 
