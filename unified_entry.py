@@ -1978,7 +1978,8 @@ class UnifiedSystem:
             self._germination_callback = integrate_germination_with_highlander(
                 self.highlander_protocol,
                 self.germination_pool,
-                organism_factory
+                organism_factory,
+                alliance_warfare=None  # Will be set after alliance_warfare is created
             )
             print("[UNIFIED] [HIGHLANDER] [PASS] 🔗 Germination Pool wired to tournament")
             
@@ -2006,6 +2007,13 @@ class UnifiedSystem:
             
             # Explicitly wire AWS to Highlander (bidirectional)
             self.highlander_protocol.set_alliance_warfare_system(self.alliance_warfare)
+            
+            # 🏛️ WIRE GERMINATION WAVE ALLIANCES
+            # Now that alliance_warfare exists, tell germination pool about it
+            # This enables pre-allied germination waves - the fallen rise TOGETHER!
+            if hasattr(self, '_germination_callback') and hasattr(self._germination_callback, 'set_alliance_warfare'):
+                self._germination_callback.set_alliance_warfare(self.alliance_warfare)
+                print("[UNIFIED] [GERMINATION] 🏛️ Wave Alliances enabled - newcomers will be born allied!")
             
             # 🔌 SYSTEM WIRING: Connect NeuralOrganisms to Illumination Engine
             # This enables organisms to query "Why?" and access the Causation Explorer

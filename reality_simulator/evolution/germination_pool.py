@@ -1236,7 +1236,8 @@ class GerminationPool:
 def integrate_germination_with_highlander(
     highlander_protocol: Any,
     germination_pool: GerminationPool,
-    organism_factory: Callable[..., Any]
+    organism_factory: Callable[..., Any],
+    alliance_warfare: Any = None
 ) -> Callable:
     """
     Wire the germination pool into the Highlander Protocol.
@@ -1247,10 +1248,20 @@ def integrate_germination_with_highlander(
     - Updates population state each round for calibration
     - Takes periodic snapshots for regression strategy  
     - Spawns challengers tuned to current board state
+    
+    GERMINATION WAVE ALLIANCES:
+    - Each germination wave creates a PRE-ALLIED cohort
+    - Newcomers are born into "Generation N" alliance
+    - Gives the fallen a fighting chance against veterans
     """
     
     snapshot_interval = 50  # Take developmental snapshot every N frames
     frame_counter = [0]  # Mutable counter for closure
+    alliance_warfare_ref = [alliance_warfare]  # Mutable reference for later update
+    
+    def set_alliance_warfare(aws):
+        """Update the alliance_warfare reference after initialization."""
+        alliance_warfare_ref[0] = aws
     
     def on_organism_eliminated(organism: Any, killer_id: Optional[str] = None):
         """Called when an organism is eliminated"""
@@ -1332,6 +1343,72 @@ def integrate_germination_with_highlander(
                     inherited_concepts = len(organism.atomic_language.atoms) if hasattr(organism.atomic_language, 'atoms') else 0
                     reincarnation_logger.info(f"   Inherited concepts: {inherited_concepts}")
                 reincarnation_logger.info(f"   Ready for battle round {highlander_protocol.round_number + 1}")
+        
+        # ═══════════════════════════════════════════════════════════════════════
+        # 🏛️ GERMINATION WAVE ALLIANCE - The fallen rise TOGETHER
+        # Each wave of newcomers is pre-allied as a generation cohort.
+        # This gives them a fighting chance against established veterans.
+        # ═══════════════════════════════════════════════════════════════════════
+        aws = alliance_warfare_ref[0]  # Get current alliance_warfare reference
+        if new_organisms and aws and len(new_organisms) >= 2:
+            generation = germination_pool.generation_counter
+            wave_alliance_name = f"Generation {generation} Rising"
+            
+            # Create the wave alliance with the first organism as founder
+            founder = new_organisms[0]
+            founder_id = getattr(founder, 'id', getattr(founder, 'species_id', str(id(founder))))
+            
+            try:
+                # Create alliance directly (bypassing proposal system for wave cohorts)
+                from reality_simulator.evolution.alliance_warfare import PlanetaryAlliance, AllianceRole
+                
+                wave_alliance_id = f"wave_gen_{generation}_{int(time.time())}"
+                wave_alliance = PlanetaryAlliance(
+                    alliance_id=wave_alliance_id,
+                    name=wave_alliance_name,
+                    founder_id=founder_id
+                )
+                
+                # Add all wave members
+                wave_alliance.add_member(founder_id, AllianceRole.FOUNDER)
+                for org in new_organisms[1:]:
+                    org_id = getattr(org, 'id', getattr(org, 'species_id', str(id(org))))
+                    wave_alliance.add_member(org_id, AllianceRole.MEMBER)
+                    # Set alliance_id on organism
+                    if hasattr(org, 'alliance_id'):
+                        org.alliance_id = wave_alliance_id
+                
+                # Set founder's alliance_id
+                if hasattr(founder, 'alliance_id'):
+                    founder.alliance_id = wave_alliance_id
+                
+                # Register with alliance warfare system
+                aws.alliances[wave_alliance_id] = wave_alliance
+                
+                # Create alliance history for illumination progression
+                if hasattr(aws, '_get_or_create_history'):
+                    aws._get_or_create_history(wave_alliance_id)
+                
+                # Record founding event
+                if hasattr(aws, 'record_historical_event'):
+                    from reality_simulator.evolution.alliance_warfare import HistoricalEventType
+                    aws.record_historical_event(
+                        alliance_id=wave_alliance_id,
+                        event_type=HistoricalEventType.ALLIANCE_FOUNDED,
+                        description=f"Generation {generation} rises from the fallen! {len(new_organisms)} warriors born allied.",
+                        primary_organism_id=founder_id,
+                        outcome="success"
+                    )
+                
+                reincarnation_logger = logging.getLogger(__name__)
+                reincarnation_logger.info(f"🏛️ WAVE ALLIANCE FORMED: '{wave_alliance_name}'")
+                reincarnation_logger.info(f"   Members: {len(new_organisms)} warriors born allied")
+                reincarnation_logger.info(f"   Founder: {founder_id}")
+                reincarnation_logger.info(f"   🛡️ The fallen rise TOGETHER - they have a fighting chance!")
+                
+            except Exception as e:
+                reincarnation_logger = logging.getLogger(__name__)
+                reincarnation_logger.warning(f"Could not create wave alliance: {e}")
                 
         if new_organisms:
             germination_pool.advance_generation()
@@ -1345,5 +1422,8 @@ def integrate_germination_with_highlander(
         highlander_protocol.on_champion_callback = on_champion_crowned
     if hasattr(highlander_protocol, 'on_round_complete_callback'):
         highlander_protocol.on_round_complete_callback = on_round_complete
+    
+    # Attach the setter so alliance_warfare can be wired later
+    check_and_germinate.set_alliance_warfare = set_alliance_warfare
         
     return check_and_germinate
