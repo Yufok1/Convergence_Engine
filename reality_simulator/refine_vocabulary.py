@@ -1,14 +1,14 @@
-"""Refine raw WordNet vocabulary into curated 50k domain set.
+"""Refine raw WordNet vocabulary into curated 250k domain set.
 
 Input: data/butterfly_vocabulary_200k_raw.json (created by build_vocabulary.py)
-Output: data/butterfly_vocabulary_50k_curated.json (50k filtered)
+Output: data/butterfly_vocabulary_250k_curated.json (250k filtered)
 
 Filtering Strategy:
 - Start with ~141k natural words from WordNet
-- Aggressively filter: surnames, brands, jargon, technical terms
+- Filter: surnames, brands, obvious jargon, technical terms
 - Remove malformed morphological variants
 - Score remaining words by domain relevance
-- Extract top 50k most relevant words
+- Extract top 250k most relevant words (or all available if <250k)
 
 Domain Focus: organism behavior, communication, comprehension, understanding
 Source: Princeton WordNet (100% real English words, zero artificial generation)
@@ -19,8 +19,8 @@ from typing import List, Dict, Set
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), '..', 'data')
 RAW_PATH = os.path.join(DATA_DIR, 'butterfly_vocabulary_200k_raw.json')
-CURATED_PATH = os.path.join(DATA_DIR, 'butterfly_vocabulary_50k_curated.json')
-TARGET_SIZE = 50000  # Will take top 50k from ~110k filtered WordNet words
+CURATED_PATH = os.path.join(DATA_DIR, 'butterfly_vocabulary_250k_curated.json')
+TARGET_SIZE = 250000  # Will take top 250k from filtered WordNet words (or all available)
 
 PUNCT_RE = re.compile(r"^[\W_]+$")
 NON_ALPHA_RE = re.compile(r"[^a-zA-Z-]")

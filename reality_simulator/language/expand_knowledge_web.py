@@ -475,12 +475,13 @@ class KnowledgeWebExpander:
         logger.info(f"Added {relations_added} WordNet relations ({self.stats['wordnet_synonyms']} synonyms, {self.stats['wordnet_antonyms']} antonyms)")
         return relations_added
     
-    def expand(self, output_path: str = "data/expanded_knowledge_web.json") -> LinguisticKnowledgeWeb:
+    def expand(self, output_path: str = "data/expanded_knowledge_web.json", input_path: str = None) -> LinguisticKnowledgeWeb:
         """
         Main expansion pipeline.
         
         Args:
             output_path: Path to save expanded knowledge web
+            input_path: Path to load existing knowledge web from (optional, uses base if None)
             
         Returns:
             Expanded LinguisticKnowledgeWeb
@@ -489,9 +490,14 @@ class KnowledgeWebExpander:
         logger.info("LINGUISTIC KNOWLEDGE WEB EXPANSION")
         logger.info("=" * 80)
         
-        # Start with base knowledge web (your hand-crafted 326 concepts)
-        logger.info("Initializing base knowledge web...")
-        knowledge_web = LinguisticKnowledgeWeb()
+        # Start with base or seeded knowledge web
+        if input_path and Path(input_path).exists():
+            logger.info(f"Loading seeded knowledge web from {input_path}...")
+            knowledge_web = LinguisticKnowledgeWeb()
+            knowledge_web.load_from_file(input_path)
+        else:
+            logger.info("Initializing base knowledge web...")
+            knowledge_web = LinguisticKnowledgeWeb()
         base_concepts = len(knowledge_web.concepts)
         base_relations = len(knowledge_web.relations)
         logger.info(f"Base: {base_concepts} concepts, {base_relations} relations")
@@ -549,6 +555,8 @@ def main():
                        help='Weight boost for organism-relevant concepts (default: 2.0)')
     parser.add_argument('--output', type=str, default='data/expanded_knowledge_web.json',
                        help='Output path for expanded knowledge web')
+    parser.add_argument('--input', type=str, default=None,
+                       help='Input path for seeded knowledge web (optional, uses base concepts if not provided)')
     parser.add_argument('--data-dir', type=str, default='data/knowledge',
                        help='Directory for cached data files')
     
@@ -564,7 +572,7 @@ def main():
     
     # Run expansion
     start_time = time.time()
-    knowledge_web = expander.expand(output_path=args.output)
+    knowledge_web = expander.expand(output_path=args.output, input_path=args.input)
     elapsed = time.time() - start_time
     
     logger.info(f"\nTotal time: {elapsed / 60:.1f} minutes")

@@ -1,8 +1,7 @@
-"""
-Seed Linguistic Knowledge Web from Curated Vocabulary
+"""Seed Linguistic Knowledge Web from Curated Vocabulary
 
-Takes the curated 50k vocabulary and initializes the knowledge web with:
-- All 50k words as concepts
+Takes the curated 250K vocabulary and initializes the knowledge web with:
+- All 250K words as concepts
 - Basic semantic frames (inferred from word categories)
 - Ready for ConceptNet/WordNet expansion
 
@@ -275,9 +274,9 @@ def seed_knowledge_web_from_curated(
 
 
 if __name__ == '__main__':
-    # Paths
-    vocab_path = os.path.join('data', 'butterfly_vocabulary_50k_curated.json')
-    output_path = os.path.join('data', 'seeded_knowledge_web_50k.json')
+    # Paths - updated for 250K target
+    vocab_path = os.path.join('data', 'butterfly_vocabulary_250k_curated.json')
+    output_path = os.path.join('data', 'seeded_knowledge_web_250k.json')
     
     if not os.path.exists(vocab_path):
         print(f"❌ Curated vocabulary not found: {vocab_path}")
