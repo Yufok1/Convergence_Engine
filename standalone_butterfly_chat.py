@@ -25,7 +25,7 @@ import time
 import numpy as np
 from pathlib import Path
 from dataclasses import dataclass, field
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional, Tuple, Set
 from collections import defaultdict
 from enum import Enum
 
@@ -1198,7 +1198,7 @@ class StandaloneButterflyChat:
             return best.response
     
     def _calculate_confidence(self, tokens: List[int], organism: CapsuleOrganism) -> float:
-        """Calculate response confidence."""
+        """Calculate response confidence - aligned with live butterfly_chat.py."""
         if not tokens:
             return 0.1
         
@@ -1211,6 +1211,129 @@ class StandaloneButterflyChat:
         diversity_score = unique_tokens / max(len(tokens), 1)
         
         return (length_score * 0.3 + fitness_score * 0.4 + diversity_score * 0.3)
+    
+    def _calculate_semantic_reward(self,
+                                     user_message: str,
+                                     user_tokens: List[int],
+                                     organism_response: str,
+                                     organism_tokens: List[int],
+                                     confidence: float) -> float:
+        """
+        Calculate reward with SEMANTIC AWARENESS - aligned with live butterfly_chat.py.
+        
+        Components:
+        1. Word overlap: Relevance to user message (0.0-0.25)
+        2. Coherence: Structural quality indicators (0.0-0.25)
+        3. Length appropriateness: Neither too short nor too long (0.0-0.2)
+        4. Confidence scaling: Model confidence adjustment (0.0-0.2)
+        """
+        try:
+            # Base reward for generating any response
+            reward = 0.3
+            
+            # Handle empty response
+            if not organism_response or len(organism_response.strip()) == 0:
+                return -0.1  # Penalty for empty responses
+            
+            # Normalize text
+            user_words = set(user_message.lower().split())
+            response_words = organism_response.lower().split()
+            response_words_set = set(response_words)
+            
+            # 1. WORD OVERLAP SCORE (0.0 - 0.25)
+            stopwords = {'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been',
+                         'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would',
+                         'i', 'you', 'he', 'she', 'it', 'we', 'they', 'what', 'who',
+                         'this', 'that', 'to', 'of', 'in', 'for', 'on', 'with', 'at'}
+            
+            user_content = user_words - stopwords
+            response_content = response_words_set - stopwords
+            
+            if user_content and response_content:
+                overlap = len(user_content & response_content)
+                max_possible = min(len(user_content), len(response_content))
+                overlap_score = (overlap / max_possible) * 0.25 if max_possible > 0 else 0.0
+            else:
+                overlap_score = 0.1
+            
+            reward += overlap_score
+            
+            # 2. COHERENCE SCORE (0.0 - 0.25)
+            coherence_score = 0.0
+            
+            if organism_response[0].isupper():
+                coherence_score += 0.05
+            
+            if organism_response.rstrip()[-1:] in '.!?':
+                coherence_score += 0.05
+            
+            if organism_response.strip().lower() == user_message.strip().lower():
+                coherence_score -= 0.1  # Penalty for echoing
+            
+            unique_ratio = 1.0
+            if len(response_words) > 1:
+                unique_ratio = len(response_words_set) / len(response_words)
+                coherence_score += unique_ratio * 0.15
+                if unique_ratio < 0.5:
+                    coherence_score -= (1.0 - unique_ratio) * 0.3  # Repetition penalty
+            
+            if len(response_words) >= 2:
+                coherence_score += 0.05
+            
+            reward += max(0.0, coherence_score)
+            
+            # 3. LENGTH APPROPRIATENESS (0.0 - 0.2)
+            response_length = len(response_words)
+            if response_length == 0:
+                length_score = 0.0
+            elif response_length <= 2:
+                length_score = 0.05
+            elif response_length <= 10:
+                length_score = 0.2
+            elif response_length <= 20:
+                length_score = 0.15
+            else:
+                length_score = 0.1
+            
+            reward += length_score
+            
+            # 4. CONFIDENCE SCALING (0.0 - 0.2)
+            reward += confidence * 0.2
+            
+            # Allow negative for severe repetition
+            if len(response_words) > 1 and unique_ratio < 0.3:
+                final_reward = max(-0.3, min(1.0, reward))
+            elif len(response_words) > 1 and unique_ratio < 0.5:
+                final_reward = max(0.0, min(1.0, reward))
+            else:
+                final_reward = max(0.05, min(1.0, reward))
+            
+            return final_reward
+            
+        except Exception:
+            return 0.3  # Safe fallback
+    
+    def _get_adaptive_max_length(self, organism: CapsuleOrganism) -> int:
+        """
+        Calculate adaptive max response length based on organism experience.
+        
+        Aligned with live butterfly_chat.py logic:
+        - experience < 10: short responses (6-8 tokens)
+        - experience < 50: medium (12-24 tokens)
+        - experience < 100: longer (32-64 tokens)
+        - experience >= 100: full length (128 tokens)
+        """
+        experience_count = len(organism.experience_buffer)
+        vocab_size = self.vocabulary.vocab_size
+        
+        if experience_count < 10:
+            return min(8, max(5, vocab_size // 6))
+        elif experience_count < 50:
+            return min(24, max(12, vocab_size // 4))
+        elif experience_count < 100:
+            return min(64, max(32, vocab_size // 2))
+        else:
+            return 128  # Full neural synapse length
     
     def _build_state_vector(self, message: str) -> np.ndarray:
         """
@@ -1320,7 +1443,22 @@ class StandaloneButterflyChat:
                 
                 # Generate tokens if language head available
                 if organism.has_language_head and self.brain is not None:
-                    response_tokens = self._generate_tokens_neural(organism, state, input_message=message)
+                    # Use adaptive max length based on organism experience
+                    adaptive_length = self._get_adaptive_max_length(organism)
+                    response_tokens = self._generate_tokens_neural(
+                        organism, state, 
+                        max_length=adaptive_length,
+                        input_message=message
+                    )
+                    
+                    self.debug_logs.append({
+                        'step': 'STEP_4',
+                        'action': f'Adaptive length for {org_id}',
+                        'data': {
+                            'experience_count': len(organism.experience_buffer),
+                            'adaptive_max_length': adaptive_length
+                        }
+                    })
                 else:
                     response_tokens = []
                 
@@ -1348,6 +1486,33 @@ class StandaloneButterflyChat:
                     response_text = ""
                 
                 confidence = self._calculate_confidence(response_tokens, organism)
+                
+                # Calculate semantic reward (for quality tracking)
+                semantic_reward = self._calculate_semantic_reward(
+                    user_message=message,
+                    user_tokens=tokens,
+                    organism_response=response_text,
+                    organism_tokens=response_tokens,
+                    confidence=confidence
+                )
+                
+                # Store experience for adaptive growth
+                organism.experience_buffer.append({
+                    'input': message,
+                    'response': response_text,
+                    'reward': semantic_reward,
+                    'timestamp': time.time()
+                })
+                
+                self.debug_logs.append({
+                    'step': 'REWARD_CALC',
+                    'action': f'Semantic reward for {org_id}',
+                    'data': {
+                        'semantic_reward': semantic_reward,
+                        'confidence': confidence,
+                        'experience_count': len(organism.experience_buffer)
+                    }
+                })
                 
                 organism_responses.append(OrganismResponse(
                     organism_id=org_id,
