@@ -1321,18 +1321,22 @@ class LinguisticKnowledgeWeb:
     def seed_organism_vocabulary(self, organism_id: str, 
                                   initial_action: Optional[int] = None,
                                   initial_state: Optional[str] = None,
-                                  num_words: int = 100) -> Set[str]:
+                                  num_words: int = 500) -> Set[str]:
         """
         Seed an organism with a UNIQUE vocabulary based on its identity.
         
         This is SEMANTIC SEEDING: random yet causally coordinated inseminations
         meant to connect organisms and agitate convergence on ideation.
         
+        Organisms can KNOW up to 1000 words (vocab storage) but only PROCESS
+        ~64-128 tokens at a time (context window). Like humans knowing 20k words
+        but only using 100-200 in a conversation. Rich vocabulary = more choices.
+        
         Args:
             organism_id: Unique organism identifier (used as seed)
             initial_action: Starting action type (0-5)
             initial_state: Starting state type
-            num_words: How many words to seed (default 20)
+            num_words: How many words to seed (default 500 = 50% of capacity)
             
         Returns:
             Set of seeded words unique to this organism
