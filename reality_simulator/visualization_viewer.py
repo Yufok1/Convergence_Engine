@@ -593,10 +593,17 @@ class LightweightVisualizationViewer:
                             epsilon = neural_data.get('avg_epsilon', neural_data.get('epsilon', 0.0))
                             organisms_tracked = neural_data.get('organisms_tracked', 0)
                             training_steps = neural_data.get('training_steps', 0)
+                            
+                            # Granular loss components (EMA smoothed)
+                            ema_loss = neural_data.get('ema_loss')
+                            ema_rl = neural_data.get('ema_rl_loss')
+                            ema_lang = neural_data.get('ema_language_loss')
+                            ema_concept = neural_data.get('ema_concept_loss')
 
-                            # Use avg_loss if training_loss is None (early training)
-                            # Show "Warming..." if no loss data yet (collecting experiences)
-                            if training_loss is not None:
+                            # Use EMA loss if available (smoother), else avg_loss, else training_loss
+                            if ema_loss is not None:
+                                loss_str = f"{ema_loss:.4f}"
+                            elif training_loss is not None:
                                 loss_str = f"{training_loss:.4f}"
                             elif avg_loss is not None and avg_loss != 'N/A' and avg_loss != 0.0:
                                 loss_str = f"{float(avg_loss):.4f}"
@@ -608,11 +615,21 @@ class LightweightVisualizationViewer:
 
                             panel2_lines.extend([
                                 f"🧠 Neural: ACTIVE",
-                                f"Loss: {loss_str}",
+                                f"Loss: {loss_str} (EMA)",
                                 f"Epsilon: {epsilon_val:.3f}",
                                 f"Tracked: {organisms_tracked}",
                                 f"Steps: {training_steps}"
                             ])
+                            
+                            # Add granular loss breakdown if available
+                            if ema_rl is not None or ema_lang is not None or ema_concept is not None:
+                                panel2_lines.append("─── Loss Breakdown ───")
+                                if ema_rl is not None:
+                                    panel2_lines.append(f"  RL: {ema_rl:.4f}")
+                                if ema_lang is not None:
+                                    panel2_lines.append(f"  Lang: {ema_lang:.4f}")
+                                if ema_concept is not None:
+                                    panel2_lines.append(f"  Concept: {ema_concept:.4f}")
                     else:
                         panel2_lines.append("🧠 Neural: OFF")
 

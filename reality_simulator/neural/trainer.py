@@ -158,7 +158,16 @@ class NeuralTrainer:
         self.training_occurred_this_step = False  # Track if training happened in current step
         self.total_loss = 0.0
         self.total_language_loss = 0.0
+        self.total_rl_loss = 0.0  # Granular: RL/DQN loss only
+        self.total_concept_loss = 0.0  # Granular: Concept loss only
         self.last_training_time = 0.0
+        
+        # EMA (Exponential Moving Average) for smoother loss tracking
+        self.ema_alpha = 0.1  # Smoothing factor (lower = smoother)
+        self.ema_loss = None  # EMA of combined loss
+        self.ema_rl_loss = None  # EMA of RL loss
+        self.ema_language_loss = None  # EMA of language loss
+        self.ema_concept_loss = None  # EMA of concept loss
         
         # Track organism fitness history for reward calculation
         self.organism_fitness_history: Dict[str, float] = {}
@@ -1127,6 +1136,7 @@ class NeuralTrainer:
                 
                 # Calculate RL loss (Q-learning)
                 rl_loss = F.mse_loss(q_value, target_q_value)
+                self.total_rl_loss += rl_loss.item()  # Track granular RL loss
                 
                 # Calculate language loss if enabled and brain has language head
                 language_loss = None
@@ -1269,6 +1279,26 @@ class NeuralTrainer:
             self.training_occurred_this_step = True
             avg_loss = total_loss / num_trained
             self.total_loss += avg_loss
+            
+            # Calculate per-component averages for this step
+            avg_rl = self.total_rl_loss / max(1, self.training_step_count + 1)
+            avg_lang = self.total_language_loss / max(1, self.training_step_count + 1) if self.language_model_enabled else None
+            avg_concept = self.total_concept_loss / max(1, self.training_step_count + 1) if self.concept_system_enabled else None
+            
+            # Update EMA (Exponential Moving Average) for smoother tracking
+            alpha = self.ema_alpha
+            if self.ema_loss is None:
+                self.ema_loss = avg_loss
+                self.ema_rl_loss = avg_rl
+                self.ema_language_loss = avg_lang
+                self.ema_concept_loss = avg_concept
+            else:
+                self.ema_loss = alpha * avg_loss + (1 - alpha) * self.ema_loss
+                self.ema_rl_loss = alpha * avg_rl + (1 - alpha) * self.ema_rl_loss
+                if avg_lang is not None:
+                    self.ema_language_loss = alpha * avg_lang + (1 - alpha) * (self.ema_language_loss or avg_lang)
+                if avg_concept is not None:
+                    self.ema_concept_loss = alpha * avg_concept + (1 - alpha) * (self.ema_concept_loss or avg_concept)
             
             # Emit neural training event for visualization
             if self.event_emitter:
@@ -1467,12 +1497,20 @@ class NeuralTrainer:
         Get training statistics.
         
         Returns:
-            Dictionary of training statistics
+            Dictionary of training statistics including granular loss breakdown
         """
+        steps = max(1, self.training_step_count)
         stats = {
             'training_steps': self.training_step_count,
-            'average_loss': self.total_loss / max(1, self.training_step_count),
-            'average_language_loss': self.total_language_loss / max(1, self.training_step_count) if self.language_model_enabled else None,
+            'average_loss': self.total_loss / steps,
+            'average_language_loss': self.total_language_loss / steps if self.language_model_enabled else None,
+            'average_rl_loss': self.total_rl_loss / steps,  # Granular: RL/DQN loss
+            'average_concept_loss': self.total_concept_loss / steps if self.concept_system_enabled else None,
+            # EMA smoothed losses (less noisy)
+            'ema_loss': self.ema_loss,
+            'ema_rl_loss': self.ema_rl_loss,
+            'ema_language_loss': self.ema_language_loss if self.language_model_enabled else None,
+            'ema_concept_loss': self.ema_concept_loss if self.concept_system_enabled else None,
             'last_training_time': self.last_training_time,
             'organisms_tracked': len(self.organism_fitness_history),
             'language_model_enabled': self.language_model_enabled,
@@ -1480,7 +1518,6 @@ class NeuralTrainer:
             'vp_stable_steps': self.vp_stable_steps,
             # RCUS concept system stats
             'concept_system_enabled': self.concept_system_enabled,
-            'average_concept_loss': self.total_concept_loss / max(1, self.training_step_count) if self.concept_system_enabled else None,
             'concept_compositions_evaluated': self.concept_compositions_evaluated if self.concept_system_enabled else 0,
         }
         

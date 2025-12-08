@@ -1589,7 +1589,16 @@ class RealitySimulator:
                         'reuse_optimizers': getattr(self.neural_trainer, 'reuse_optimizers', False),
                         'compiled_brains': self._check_torch_compile_available() if hasattr(self, '_check_torch_compile_available') else False
                     },
-                    # Neural-ML Symbiosis metrics ⭐ NEW
+                    # Granular loss breakdown (EMA smoothed)
+                    'ema_loss': training_stats.get('ema_loss'),
+                    'ema_rl_loss': training_stats.get('ema_rl_loss'),
+                    'ema_language_loss': training_stats.get('ema_language_loss'),
+                    'ema_concept_loss': training_stats.get('ema_concept_loss'),
+                    # Raw averages
+                    'avg_rl_loss': training_stats.get('average_rl_loss'),
+                    'avg_language_loss': training_stats.get('average_language_loss'),
+                    'avg_concept_loss': training_stats.get('average_concept_loss'),
+                    # Neural-ML Symbiosis metrics
                     'language_reward_total': symbiosis_metrics.get('language_reward_total', 0.0),
                     'curriculum_sequence_length': symbiosis_metrics.get('curriculum_sequence_length', 8)
                 }
