@@ -171,7 +171,7 @@
   },
   "highlander": {
     "alliance_warfare": {
-      "betrayal_chance": 0.05,
+      "betrayal_chance": 0.0,
       "confederation_war_threshold": 0.5,
       "enabled": true,
       "existential_war_threshold": 0.5,
@@ -183,15 +183,15 @@
       "war_frequency": 0.8,
       "illumination_stability_threshold": 5
     },
-    "chaos_factor": 0.25,
-    "competition_intensity": 0.8,
-    "description": "Highlander Protocol - Survival of the fittest tournament system",
+    "chaos_factor": 0.1,
+    "competition_intensity": 0.3,
+    "description": "Highlander Protocol - CIVILIZATION MODE - Stable populations, full knowledge transfer",
     "enabled": true,
     "extreme_mode": {
       "chaos_factor": 0.4,
       "competition_intensity": 1.0,
       "description": "EXTREME DIFFICULTY - Maximum evolutionary pressure",
-      "germination_rate": 0.05,
+      "germination_rate": 1,
       "max_battle_rounds": 15,
       "max_population": 500,
       "min_population": 20,
@@ -201,17 +201,17 @@
       "rounds_per_cycle": 2,
       "survival_threshold": 0.8
     },
-    "germination_rate": 0.15,
+    "germination_rate": 1.0,
     "max_battle_rounds": 50,
     "max_capsules": 100,
     "max_genetic_samples": 100,
     "max_population": 400,
-    "min_population": 25,
-    "mutation_rate": 0.15,
-    "population_size": 20,
-    "predation_enabled": true,
-    "rounds_per_cycle": 3,
-    "survival_threshold": 0.7
+    "min_population": 100,
+    "mutation_rate": 0.05,
+    "population_size": 100,
+    "predation_enabled": false,
+    "rounds_per_cycle": 5,
+    "survival_threshold": 0.2
   },
   "lattice": {
     "entropy_sensitivity": 5e-05,

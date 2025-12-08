@@ -1079,8 +1079,8 @@ class HighlanderProtocol:
         # Absorb configs
         if hasattr(winner, 'config_system') and hasattr(loser, 'config_system'):
             try:
-                # FULL ABSORPTION - 50% rate for dramatic power swings!
-                winner.config_system.absorb_config(loser.config_system, absorption_rate=0.5)
+                # FULL ABSORPTION - 100% rate for zero knowledge loss!
+                winner.config_system.absorb_config(loser.config_system, absorption_rate=1.0)
             except Exception as e:
                 self.logger.debug(f"Config absorption failed: {e}")
         
@@ -1187,8 +1187,8 @@ class HighlanderProtocol:
                     loser_weights = loser.brain.language_head.state_dict()
                     winner_weights = winner.brain.language_head.state_dict()
                     
-                    # FULL BLEND - 50/50 redistribution! Dramatic power swings!
-                    blend_ratio = 0.5
+                    # FULL ABSORPTION - 100% knowledge transfer! Winner takes ALL!
+                    blend_ratio = 1.0
                     for key in loser_weights:
                         if key in winner_weights:
                             winner_weights[key] = (
@@ -1200,7 +1200,7 @@ class HighlanderProtocol:
                     result['neural_transfer'] = True
                     result['traits_inherited'] += 1
                     
-                    self.logger.info(f"🧠 Neural language inheritance: {loser_id} → {winner_id} (50% blend - FULL REDISTRIBUTION)")
+                    self.logger.info(f"🧠 Neural language inheritance: {loser_id} → {winner_id} (100% FULL ABSORPTION - zero knowledge loss)")
                     
             except Exception as e:
                 self.logger.debug(f"Neural weight transfer failed: {e}")
