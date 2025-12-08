@@ -64,6 +64,148 @@ class AgentCompiler:
 
     def __init__(self):
         self.supported_formats = ['onnx', 'torchscript', 'statedict']
+        self._base_vocabulary_cache = None  # Cache for base vocabulary pool
+        self._base_knowledge_web_cache = None  # Cache for base knowledge web
+
+    def _load_base_vocabulary_pool(self) -> Dict[str, Any]:
+        """
+        🌐 Load the base vocabulary pool from the distilled knowledge web.
+        
+        This provides the FULL vocabulary (74,557+ concepts) that should be
+        exported with every package, not just the learned/discovered words.
+        
+        Returns:
+            Dict containing full vocabulary pool with concepts and relations
+        """
+        if self._base_vocabulary_cache is not None:
+            return self._base_vocabulary_cache
+        
+        # Search paths for the base vocabulary
+        search_paths = [
+            Path(__file__).parent.parent / 'data' / 'knowledge_web_distilled.json',
+            Path(__file__).parent.parent / 'data' / 'seeded_knowledge_web_250k.json',
+            Path(__file__).parent.parent / 'data' / 'seeded_knowledge_web_expanded.json',
+            Path(__file__).parent.parent / 'data' / 'seeded_knowledge_web_50k.json',
+        ]
+        
+        for vocab_path in search_paths:
+            if vocab_path.exists():
+                try:
+                    with open(vocab_path, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                    
+                    concept_count = len(data.get('concepts', {}))
+                    logger.info(f"[COMPILER] Loaded base vocabulary pool: {concept_count:,} concepts from {vocab_path.name}")
+                    
+                    self._base_vocabulary_cache = data
+                    return data
+                except Exception as e:
+                    logger.warning(f"[COMPILER] Failed to load {vocab_path}: {e}")
+                    continue
+        
+        logger.warning("[COMPILER] No base vocabulary pool found - exports will only contain learned words")
+        self._base_vocabulary_cache = {'concepts': {}, 'relations': []}
+        return self._base_vocabulary_cache
+    
+    def _build_full_vocabulary_export(self, runtime_vocabulary: Any = None) -> Dict[str, Any]:
+        """
+        🔧 Build a complete vocabulary export combining base pool + runtime learned words.
+        
+        Args:
+            runtime_vocabulary: The runtime vocabulary object (may have learned words)
+            
+        Returns:
+            Dict with full vocabulary data for export
+        """
+        base_pool = self._load_base_vocabulary_pool()
+        
+        # Start with base vocabulary mappings
+        full_vocab = {
+            'word_to_id': {},
+            'id_to_word': {},
+            'vocab_size': 0,
+            'base_pool_size': len(base_pool.get('concepts', {})),
+            'source': 'base_pool + runtime',
+        }
+        
+        # Build word_to_id from base concepts
+        word_id = 0
+        for word in base_pool.get('concepts', {}):
+            if word not in full_vocab['word_to_id']:
+                full_vocab['word_to_id'][word] = word_id
+                full_vocab['id_to_word'][str(word_id)] = word
+                word_id += 1
+        
+        # Merge runtime vocabulary if provided
+        if runtime_vocabulary is not None:
+            runtime_w2i = getattr(runtime_vocabulary, 'word_to_id', {})
+            for word in runtime_w2i:
+                if word not in full_vocab['word_to_id']:
+                    full_vocab['word_to_id'][word] = word_id
+                    full_vocab['id_to_word'][str(word_id)] = word
+                    word_id += 1
+        
+        full_vocab['vocab_size'] = word_id
+        return full_vocab
+    
+    def _build_full_knowledge_web_export(self, runtime_knowledge_web: Any = None) -> Dict[str, Any]:
+        """
+        🌐 Build a complete knowledge web export combining base pool + runtime discoveries.
+        
+        Args:
+            runtime_knowledge_web: The runtime knowledge web object (may have discovered concepts)
+            
+        Returns:
+            Dict with full knowledge web data for export
+        """
+        base_pool = self._load_base_vocabulary_pool()
+        
+        # Start with base pool concepts
+        full_kw = {
+            'version': '2.0',
+            'source': 'base_pool + runtime',
+            'concepts': {},
+            'relations': base_pool.get('relations', []),
+            'concept_count': 0,
+            'relation_count': len(base_pool.get('relations', [])),
+        }
+        
+        # Add base concepts (full structure preserved)
+        for word, concept_data in base_pool.get('concepts', {}).items():
+            full_kw['concepts'][word] = concept_data
+        
+        # Merge runtime discoveries (override with learned confidence/discovery_count)
+        if runtime_knowledge_web is not None:
+            try:
+                runtime_concepts = getattr(runtime_knowledge_web, 'concepts', {})
+                runtime_relations = getattr(runtime_knowledge_web, 'relations', [])
+                
+                for concept in runtime_concepts.values():
+                    word = getattr(concept, 'word', str(concept))
+                    # Merge/update with runtime data
+                    existing = full_kw['concepts'].get(word, {})
+                    full_kw['concepts'][word] = {
+                        **existing,  # Base pool data
+                        'word': word,
+                        'category': getattr(concept, 'category', existing.get('semantic_frame', 'unknown')),
+                        'confidence': getattr(concept, 'confidence', existing.get('organism_relevance', 0.5)),
+                        'discovery_count': getattr(concept, 'discovery_count', 0),
+                        'learned': True,  # Flag that this was learned at runtime
+                    }
+                
+                # Add runtime relations
+                for rel in runtime_relations:
+                    if hasattr(rel, 'to_dict'):
+                        full_kw['relations'].append(rel.to_dict())
+                    elif isinstance(rel, dict):
+                        full_kw['relations'].append(rel)
+            except Exception as e:
+                logger.warning(f"[COMPILER] Error merging runtime knowledge: {e}")
+        
+        full_kw['concept_count'] = len(full_kw['concepts'])
+        full_kw['relation_count'] = len(full_kw['relations'])
+        
+        return full_kw
 
     class LanguageHeadWrapper(torch.nn.Module):
         """Wrapper that exports both action and language heads together."""
@@ -956,79 +1098,23 @@ class AgentCompiler:
     
     def _serialize_knowledge_web_full(self, knowledge_web: Any) -> Optional[Dict[str, Any]]:
         """
-        🌐 Serialize full LinguisticKnowledgeWeb data.
+        🌐 Serialize full LinguisticKnowledgeWeb data INCLUDING BASE VOCABULARY POOL.
         
         This captures:
-        - All concepts (up to 10000)
+        - FULL base vocabulary pool (74,557+ concepts)
+        - Runtime learned concepts (merged with higher priority)
         - All relations
         - Semantic frames
         - Discovery history
         
         Args:
-            knowledge_web: LinguisticKnowledgeWeb instance
+            knowledge_web: LinguisticKnowledgeWeb instance (runtime)
             
         Returns:
-            Serialized knowledge web data
+            Serialized knowledge web data with full vocabulary
         """
-        if knowledge_web is None:
-            return None
-        
-        try:
-            kw_data = {
-                'version': '1.0',
-                'source_note': 'Linguistic Knowledge Web - semantic relationships and concept frames',
-                'concept_count': 0,
-                'relation_count': 0,
-            }
-            
-            # Serialize concepts
-            concepts = {}
-            if hasattr(knowledge_web, 'concepts'):
-                sorted_concepts = sorted(
-                    knowledge_web.concepts.values(),
-                    key=lambda c: getattr(c, 'discovery_count', 0),
-                    reverse=True
-                )[:10000]  # Top 10k concepts
-                
-                for concept in sorted_concepts:
-                    word = getattr(concept, 'word', str(concept))
-                    concepts[word] = {
-                        'category': getattr(concept, 'category', 'unknown'),
-                        'confidence': getattr(concept, 'confidence', 0.5),
-                        'semantic_frame': getattr(concept, 'semantic_frame', 'unknown'),
-                        'discovery_count': getattr(concept, 'discovery_count', 0),
-                        'associations': list(getattr(concept, 'associations', []))[:20],  # Top 20
-                    }
-            kw_data['concepts'] = concepts
-            kw_data['concept_count'] = len(concepts)
-            
-            # Serialize relations
-            relations = []
-            if hasattr(knowledge_web, 'relations'):
-                for rel in list(knowledge_web.relations)[:5000]:  # Top 5k relations
-                    if hasattr(rel, 'to_dict'):
-                        relations.append(rel.to_dict())
-                    elif isinstance(rel, dict):
-                        relations.append(rel)
-                    else:
-                        relations.append({
-                            'source': str(getattr(rel, 'source', '')),
-                            'target': str(getattr(rel, 'target', '')),
-                            'relation_type': str(getattr(rel, 'relation_type', 'related')),
-                            'strength': float(getattr(rel, 'strength', 0.5)),
-                        })
-            kw_data['relations'] = relations
-            kw_data['relation_count'] = len(relations)
-            
-            # Serialize semantic frames
-            if hasattr(knowledge_web, 'semantic_frames'):
-                kw_data['semantic_frames'] = dict(knowledge_web.semantic_frames)
-            
-            return kw_data
-            
-        except Exception as e:
-            logger.warning(f"Could not serialize knowledge web: {e}")
-            return None
+        # Use the new method that includes base pool
+        return self._build_full_knowledge_web_export(knowledge_web)
     
     def _serialize_causation_system(self, causation_explorer: Any,
                                     capsules: Optional[List['OrganismCapsule']] = None) -> Optional[Dict[str, Any]]:
@@ -3833,31 +3919,16 @@ if __name__ == '__main__':
             }
             brain_configs.append(config)
 
-        # 2) Vocabulary
-        vocab_data = {}
-        if vocabulary is not None:
-            vocab_data = {
-                'word_to_id': dict(getattr(vocabulary, 'word_to_id', {})),
-                'id_to_word': {str(k): v for k, v in getattr(vocabulary, 'id_to_word', {}).items()},
-                'vocab_size': getattr(vocabulary, 'vocab_size', 0),
-            }
+        # 2) Vocabulary - FULL BASE POOL + runtime learned
+        vocab_data = self._build_full_vocabulary_export(vocabulary)
+        logger.info(f"[COCOON] Vocabulary export: {vocab_data['vocab_size']:,} words ({vocab_data.get('base_pool_size', 0):,} base + runtime)")
         vocab_json = json.dumps(vocab_data)
         vocab_bytes = zlib.compress(vocab_json.encode('utf-8'), level=9) if compress_data else vocab_json.encode('utf-8')
         vocab_b64 = base64.b64encode(vocab_bytes).decode('ascii')
 
-        # 3) Knowledge web (condensed)
-        kw_data = {}
-        if knowledge_web is not None:
-            try:
-                concepts = getattr(knowledge_web, 'concepts', {})
-                relations = getattr(knowledge_web, 'relations', [])
-                sorted_concepts = sorted(concepts.values(), key=lambda c: getattr(c, 'discovery_count', 0), reverse=True)[:5000]
-                kw_data = {
-                    'concepts': {c.word: {'category': c.category, 'confidence': c.confidence} for c in sorted_concepts},
-                    'relation_count': len(relations),
-                }
-            except Exception as e:
-                logger.warning(f"[COCOON] Could not serialize knowledge web: {e}")
+        # 3) Knowledge web - FULL BASE POOL + runtime discoveries
+        kw_data = self._build_full_knowledge_web_export(knowledge_web)
+        logger.info(f"[COCOON] Knowledge web export: {kw_data['concept_count']:,} concepts, {kw_data['relation_count']:,} relations")
         kw_json = json.dumps(kw_data)
         kw_bytes = zlib.compress(kw_json.encode('utf-8'), level=9) if compress_data else kw_json.encode('utf-8')
         kw_b64 = base64.b64encode(kw_bytes).decode('ascii')
