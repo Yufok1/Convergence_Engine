@@ -1012,7 +1012,7 @@ class UnifiedSystem:
     """The unified butterfly system - one cohesive unit"""
     
     def __init__(self, enable_visualization: bool = True, max_cycles: int = 0,
-                 highlander_config: Optional[Dict] = None):
+                 highlander_config: Optional[Dict] = None, config_path: str = 'config.json'):
         # Pre-flight checks (tkinter optional for headless runs)
         checker = PreFlightChecker()
         check_results = checker.run_all_checks(require_visualization=enable_visualization)
@@ -1027,10 +1027,13 @@ class UnifiedSystem:
         self.capsule_manager = None
         self.germination_pool = None
         
+        # Store config path for use throughout the system
+        self.config_path = Path(config_path)
+        
         # Initialize logging
         self.logger = StateLogger()
         self.logger.log_state('system', {'event': 'initialization_start'})
-        self.config_watcher = ConfigHotReloadWatcher(parent_path / 'config.json')
+        self.config_watcher = ConfigHotReloadWatcher(self.config_path)
         self.active_config = self.config_watcher.get_current_config()
         
         # Apply Hardware Governor - MUST happen before any other system uses config
@@ -3082,6 +3085,8 @@ def main():
     parser.add_argument('--no-viz', action='store_true', help='Disable visualization')
     parser.add_argument('--check-only', action='store_true', help='Run pre-flight checks only')
     parser.add_argument('--max-cycles', type=int, default=0, help='Number of breath cycles to run (0 = unlimited)')
+    parser.add_argument('--config', type=str, default='config.json',
+                       help='Path to config file (default: config.json)')
     
     # 🆕 Highlander Mode - Survival of the fittest
     parser.add_argument('--highlander', action='store_true', 
@@ -3095,6 +3100,14 @@ def main():
     
     args = parser.parse_args()
     
+    # Use specified config file
+    config_file = Path(args.config)
+    if not config_file.exists():
+        print(f"❌ Config file not found: {config_file}")
+        print(f"   Available configs: {list(Path('.').glob('config*.json'))}")
+        return
+    print(f"📋 Using config: {config_file}")
+    
     if args.check_only:
         checker = PreFlightChecker()
         # For check-only, assume visualization is required (can be overridden with --no-viz)
@@ -3104,13 +3117,13 @@ def main():
     # Build Highlander config if enabled (via command line OR config.json)
     highlander_config = None
     
-    # Load config from config.json first
+    # Load config from specified config file
     config_highlander = {}
+    full_config = {}
     try:
         import json
-        config_path = Path('config.json')
-        if config_path.exists():
-            with open(config_path, 'r') as f:
+        if config_file.exists():
+            with open(config_file, 'r') as f:
                 full_config = json.load(f)
                 config_highlander = full_config.get('highlander', {})
     except Exception:
@@ -3156,7 +3169,8 @@ def main():
     system = UnifiedSystem(
         enable_visualization=not args.no_viz, 
         max_cycles=args.max_cycles,
-        highlander_config=highlander_config
+        highlander_config=highlander_config,
+        config_path=str(config_file)
     )
     system.run()
 
