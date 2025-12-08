@@ -117,7 +117,7 @@
       "initial": 0.04
     },
     "mutation_rate_precision": 0.001,
-    "population_size": 300
+    "population_size": 5
   },
   "feedback": {
     "enabled": true,
@@ -183,9 +183,9 @@
       "war_frequency": 0.8,
       "illumination_stability_threshold": 5
     },
-    "chaos_factor": 0.05,
-    "competition_intensity": 0.15,
-    "description": "Highlander Protocol - PEACEFUL MODE - Minimal battles, stable growth",
+    "chaos_factor": 0.15,
+    "competition_intensity": 0.5,
+    "description": "Highlander Protocol - SMALL TRIBE MODE - Start with 9, stack vocabulary, grow naturally",
     "enabled": true,
     "extreme_mode": {
       "chaos_factor": 0.4,
@@ -205,13 +205,13 @@
     "max_battle_rounds": 50,
     "max_capsules": 100,
     "max_genetic_samples": 100,
-    "max_population": 400,
-    "min_population": 100,
+    "max_population": 100,
+    "min_population": 5,
     "mutation_rate": 0.05,
-    "population_size": 100,
-    "predation_enabled": false,
+    "population_size": 9,
+    "predation_enabled": true,
     "rounds_per_cycle": 2,
-    "survival_threshold": 0.15
+    "survival_threshold": 0.4
   },
   "lattice": {
     "entropy_sensitivity": 5e-05,
@@ -275,10 +275,10 @@
   "network": {
     "connection_strength_resolution": 5e-06,
     "emergence_sensitivity": 1e-06,
-    "max_connections": 18500,
-    "max_organisms": 800,
+    "max_connections": 8000,
+    "max_organisms": 300,
     "resource_flow_precision": 0.0001,
-    "resource_pool": 600,
+    "resource_pool": 500,
     "stability_precision": 1e-07
   },
   "neural": {

@@ -1321,7 +1321,7 @@ class LinguisticKnowledgeWeb:
     def seed_organism_vocabulary(self, organism_id: str, 
                                   initial_action: Optional[int] = None,
                                   initial_state: Optional[str] = None,
-                                  num_words: int = 20) -> Set[str]:
+                                  num_words: int = 100) -> Set[str]:
         """
         Seed an organism with a UNIQUE vocabulary based on its identity.
         
