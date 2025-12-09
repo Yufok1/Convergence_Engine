@@ -869,8 +869,29 @@ class NeuralTrainer:
         
         for organism in trainable_organisms:
             try:
-                # Sample batch from experience buffer (use effective batch size for early training)
-                batch_size_to_use = getattr(self, '_effective_batch_size', self.batch_size)
+                # ?? VETERAN-AWARE BATCH SIZING: Scale batch based on experience buffer size
+                # Veterans with large buffers can handle larger batches for better learning
+                base_batch_size = getattr(self, '_effective_batch_size', self.batch_size)
+                buffer_len = len(organism.experience_buffer) if organism.experience_buffer else 0
+                
+                # Dynamic scaling: veterans get proportionally larger batches (up to 2x)
+                # This prevents underutilization of their rich experience
+                if buffer_len > 500:
+                    # Elite veteran: can use up to 2x batch size
+                    veteran_scale = min(2.0, 1.0 + (buffer_len - 500) / 1000)
+                elif buffer_len > 200:
+                    # Veteran: can use up to 1.5x batch size
+                    veteran_scale = min(1.5, 1.0 + (buffer_len - 200) / 600)
+                else:
+                    veteran_scale = 1.0
+                
+                # Apply scaling but cap at buffer size
+                batch_size_to_use = min(
+                    int(base_batch_size * veteran_scale),
+                    buffer_len
+                )
+                batch_size_to_use = max(1, batch_size_to_use)  # Ensure at least 1
+                
                 states, actions, rewards, next_states, dones = organism.experience_buffer.sample_batch(
                     batch_size_to_use
                 )
@@ -894,7 +915,15 @@ class NeuralTrainer:
                     organism.brain.use_language_head and
                     hasattr(organism, 'token_sequence') and 
                     len(organism.token_sequence) >= 2):
-                    token_seq = list(organism.token_sequence)[-self.current_sequence_length:]
+                    # ?? VETERAN SEQUENCE SCALING for distributed training
+                    if buffer_len > 250:
+                        effective_seq_len = min(self.current_sequence_length * 2, len(organism.token_sequence))
+                    elif buffer_len > 100:
+                        effective_seq_len = min(int(self.current_sequence_length * 1.5), len(organism.token_sequence))
+                    else:
+                        effective_seq_len = self.current_sequence_length
+                    
+                    token_seq = list(organism.token_sequence)[-effective_seq_len:]
                     if len(token_seq) >= 2:
                         language_config = {
                             'enabled': True,
@@ -1065,7 +1094,21 @@ class NeuralTrainer:
         
         for organism in language_only_organisms:
             try:
-                token_seq = list(organism.token_sequence)[-self.current_sequence_length:]
+                # ?? VETERAN SEQUENCE SCALING: Allow veterans to use longer sequences
+                # This utilizes their deeper language history for better learning
+                buffer_len = len(organism.experience_buffer) if hasattr(organism, 'experience_buffer') and organism.experience_buffer else 0
+                
+                # Veterans can use longer sequence lengths (up to 2x curriculum length)
+                if buffer_len > 250:
+                    # Elite: up to 2x sequence length
+                    effective_seq_len = min(self.current_sequence_length * 2, len(organism.token_sequence))
+                elif buffer_len > 100:
+                    # Veteran: up to 1.5x sequence length
+                    effective_seq_len = min(int(self.current_sequence_length * 1.5), len(organism.token_sequence))
+                else:
+                    effective_seq_len = self.current_sequence_length
+                
+                token_seq = list(organism.token_sequence)[-effective_seq_len:]
                 if len(token_seq) >= 2:
                     input_tokens = torch.LongTensor([token_seq[:-1]]).to(self.device)
                     target_tokens = torch.LongTensor([token_seq[1:]]).to(self.device)
@@ -1167,8 +1210,17 @@ class NeuralTrainer:
                     hasattr(organism, 'token_sequence') and 
                     len(organism.token_sequence) >= 2):
                     
+                    # ?? VETERAN SEQUENCE SCALING for single-organism training
+                    org_buffer_len = len(organism.experience_buffer) if hasattr(organism, 'experience_buffer') and organism.experience_buffer else 0
+                    if org_buffer_len > 250:
+                        effective_seq_len = min(self.current_sequence_length * 2, len(organism.token_sequence))
+                    elif org_buffer_len > 100:
+                        effective_seq_len = min(int(self.current_sequence_length * 1.5), len(organism.token_sequence))
+                    else:
+                        effective_seq_len = self.current_sequence_length
+                    
                     # Get token sequence for next-token prediction
-                    token_seq = list(organism.token_sequence)[-self.current_sequence_length:]
+                    token_seq = list(organism.token_sequence)[-effective_seq_len:]
                     if len(token_seq) >= 2:
                         # Prepare input (all but last) and target (all but first)
                         input_tokens = torch.LongTensor([token_seq[:-1]]).to(self.device)
