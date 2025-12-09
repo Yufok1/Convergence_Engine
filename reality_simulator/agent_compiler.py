@@ -3858,7 +3858,8 @@ if __name__ == '__main__':
                        include_gym: bool = True,
                        include_http: bool = True,
                        compress_data: bool = True,
-                       export_format: str = 'cocoon') -> Tuple[str, Optional[bytes]]:
+                       export_format: str = 'cocoon',
+                       conversation_history: List[Dict] = None) -> Tuple[str, Optional[bytes]]:
         """
         🦋 COCOON COMPILER - Single-file deployable agent
         Compiles organism(s) into a SINGLE self-contained Python file that can run solo or ensemble.
@@ -3980,8 +3981,31 @@ if __name__ == '__main__':
         atomic_bytes = zlib.compress(atomic_json.encode('utf-8'), level=9) if compress_data else atomic_json.encode('utf-8')
         atomic_lang_b64 = base64.b64encode(atomic_bytes).decode('ascii')
 
-        # 7) Conversation History - empty by default (cocoon starts fresh)
-        conversation_data = {'messages': [], 'topics': {}, 'turn_count': 0}
+        # 7) Conversation History - preserve from training if available
+        if conversation_history:
+            # Convert conversation history to serializable format
+            messages = []
+            topics = {}
+            for entry in conversation_history:
+                msg = {
+                    'user': entry.get('user_message', ''),
+                    'response': entry.get('aggregated_response', ''),
+                    'timestamp': entry.get('timestamp', 0),
+                    'organisms_responded': len(entry.get('organism_responses', []))
+                }
+                messages.append(msg)
+                # Extract topics from responses
+                for word in msg['user'].lower().split():
+                    if len(word) > 3:
+                        topics[word] = topics.get(word, 0) + 1
+            conversation_data = {
+                'messages': messages[-100:],  # Keep last 100 conversations
+                'topics': dict(sorted(topics.items(), key=lambda x: -x[1])[:50]),  # Top 50 topics
+                'turn_count': len(conversation_history)
+            }
+            logger.info(f"[COCOON] 💬 Preserving {len(messages)} conversation turns, {len(topics)} topics")
+        else:
+            conversation_data = {'messages': [], 'topics': {}, 'turn_count': 0}
         conv_json = json.dumps(conversation_data)
         conv_bytes = zlib.compress(conv_json.encode('utf-8'), level=9) if compress_data else conv_json.encode('utf-8')
         conversation_b64 = base64.b64encode(conv_bytes).decode('ascii')
@@ -6754,13 +6778,18 @@ class EnsembleVoting:
 
 
 class CocoonAgent:
-    def __init__(self, voting: str = 'confidence'):
+    def __init__(self, voting: str = 'confidence', max_organisms: int = None):
         if not TORCH_AVAILABLE:
             raise RuntimeError("PyTorch required")
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.architecture = _decode_data(_ARCHITECTURE_B64)
         self.is_ensemble = self.architecture.get('is_ensemble', False)
         self.organism_names = self.architecture.get('organism_names', [])
+        # Limit organisms if requested (saves VRAM)
+        self.max_organisms = max_organisms
+        if max_organisms and len(self.organism_names) > max_organisms:
+            self.organism_names = self.organism_names[:max_organisms]
+            print(f"[INFO] Limiting to {max_organisms} organisms (of {self.architecture.get('ensemble_size', 1)})")
         self.config = _decode_data(_TRAINING_CONFIG_B64)
         self.learning_rate = self.config.get('learning_rate', 0.001)
         self.batch_size = self.config.get('batch_size', 32)
@@ -6839,10 +6868,20 @@ class CocoonAgent:
 
     def _load_brains(self):
         brain_configs = self.architecture.get('brain_configs', [])
-        for idx, (cfg, brain_b64) in enumerate(zip(brain_configs, _BRAIN_DATA)):
+        # Respect max_organisms limit
+        if self.max_organisms:
+            brain_configs = brain_configs[:self.max_organisms]
+            brain_data = _BRAIN_DATA[:self.max_organisms]
+        else:
+            brain_data = _BRAIN_DATA
+        for idx, (cfg, brain_b64) in enumerate(zip(brain_configs, brain_data)):
             brain = OrganismBrain(cfg)
             state_bytes = _decode_brain(brain_b64)
             state_dict = torch.load(BytesIO(state_bytes), map_location=self.device, weights_only=False)
+            # Fix for torch.compile() models: strip '_orig_mod.' prefix from keys
+            # When a model is compiled with torch.compile(), state_dict keys get prefixed
+            if any(k.startswith('_orig_mod.') for k in state_dict.keys()):
+                state_dict = {k.replace('_orig_mod.', ''): v for k, v in state_dict.items()}
             brain.load_state_dict(state_dict)
             brain.to(self.device)
             brain.eval()
@@ -6984,12 +7023,30 @@ class CocoonAgent:
         # Also add to vocabulary
         self.add_word(word)
 
+    def _pad_state(self, state: np.ndarray) -> np.ndarray:
+        """Pad state to match brain input_dim. Handles gym envs with smaller state spaces."""
+        expected_dim = self.brains[0].input_dim if self.brains else 24
+        state = np.asarray(state, dtype=np.float32).flatten()
+        if len(state) < expected_dim:
+            # Pad with zeros to match brain input dimension
+            padded = np.zeros(expected_dim, dtype=np.float32)
+            padded[:len(state)] = state
+            return padded
+        elif len(state) > expected_dim:
+            # Truncate if somehow larger
+            return state[:expected_dim]
+        return state
+
     def get_action(self, state: np.ndarray, explore: bool = True, vp_value: Optional[float] = None,
                    action_space_size: Optional[int] = None) -> int:
         """Get action from ensemble or single brain, optionally limited to action_space_size.
         
         If vp_value is None, computes it automatically using VPRuntime.
+        State is automatically padded to match brain.input_dim.
         """
+        # Pad state to match brain input dimension
+        state = self._pad_state(state)
+        
         # Auto-compute VP if not provided
         if vp_value is None:
             vp_data = self.vp_runtime.compute_from_state(state, self.reward_history)
@@ -7022,6 +7079,10 @@ class CocoonAgent:
 
     def add_experience(self, state, action, reward, next_state, done,
                         input_tokens=None, target_tokens=None, vp_value=None, organism_idx: Optional[int] = None):
+        # Pad states to match brain input dimension
+        state = self._pad_state(state)
+        next_state = self._pad_state(next_state)
+        
         # Track reward for VP stagnation calculation
         self.reward_history.append(reward)
         if len(self.reward_history) > 100:
@@ -7210,17 +7271,19 @@ class CocoonAgent:
             logits = base_logits.copy()
             logits = logits / max(0.1, temperature)
             
-            # Tiered repetition penalty
-            strong_penalty = 3.0
-            moderate_penalty = 1.5
+            # Tiered repetition penalty (stronger to fight mode collapse)
+            strong_penalty = 8.0   # Very recent tokens get heavily penalized
+            moderate_penalty = 4.0 # Older tokens still penalized
             if recent_tokens:
                 for i, prev_token in enumerate(recent_tokens):
                     recency = len(recent_tokens) - i
                     if prev_token < len(logits):
-                        if recency <= 2:
+                        if recency <= 3:
                             logits[prev_token] -= strong_penalty
-                        else:
+                        elif recency <= 8:
                             logits[prev_token] -= moderate_penalty
+                        else:
+                            logits[prev_token] -= 1.5  # Light penalty for older
             
             # Semantic boosting from last generated word
             if self.knowledge_web and generated:
@@ -7261,7 +7324,7 @@ class CocoonAgent:
             
             generated.append(next_token)
             recent_tokens.append(next_token)
-            if len(recent_tokens) > 8:
+            if len(recent_tokens) > 20:
                 recent_tokens.pop(0)
             
             if len(generated) >= max_tokens:
@@ -7282,21 +7345,63 @@ class CocoonAgent:
         return ' '.join(words) if words else "[Empty response]", confidence
 
     def export_cocoon(self, output_path: str):
+        """Export updated cocoon with ALL learned state preserved."""
         import zlib
+        import re
+        
+        # 1) Brain weights (existing)
         new_brain_data = []
         for brain in self.brains:
             buf = BytesIO()
             torch.save(brain.state_dict(), buf)
             compressed = zlib.compress(buf.getvalue(), level=9)
             new_brain_data.append(base64.b64encode(compressed).decode('ascii'))
+        
+        # 2) Vocabulary (may have grown via learn_from_text)
+        vocab_json = json.dumps(self.vocabulary)
+        vocab_compressed = zlib.compress(vocab_json.encode('utf-8'), level=9)
+        vocab_b64 = base64.b64encode(vocab_compressed).decode('ascii')
+        
+        # 3) Conversation history (accumulated during chat)
+        conv_data = self.conversation.to_dict() if hasattr(self, 'conversation') else {'messages': [], 'topics': {}, 'turn_count': 0}
+        conv_json = json.dumps(conv_data)
+        conv_compressed = zlib.compress(conv_json.encode('utf-8'), level=9)
+        conv_b64 = base64.b64encode(conv_compressed).decode('ascii')
+        
+        # 4) Atomic language states (concept strengths learned during chat)
+        atomic_data = []
+        if hasattr(self, 'atomic_languages'):
+            for als in self.atomic_languages:
+                atomic_data.append(als.to_dict() if hasattr(als, 'to_dict') else {})
+        elif hasattr(self, 'atomic_language'):
+            atomic_data.append(self.atomic_language.to_dict() if hasattr(self.atomic_language, 'to_dict') else {})
+        atomic_json = json.dumps(atomic_data)
+        atomic_compressed = zlib.compress(atomic_json.encode('utf-8'), level=9)
+        atomic_b64 = base64.b64encode(atomic_compressed).decode('ascii')
+        
+        # Read original source
         with open(__file__, 'r', encoding='utf-8') as f:
             source = f.read()
-        import re
-        brain_data_py = "[\n" + ",\n".join(f'    "{b}"' for b in new_brain_data) + "\n]"
+        
+        # Replace brain data
+        brain_data_py = "[\\n" + ",\\n".join(f'    "{b}"' for b in new_brain_data) + "\\n]"
         source = re.sub(r'_BRAIN_DATA = \[.*?\]', f'_BRAIN_DATA = {brain_data_py}', source, flags=re.DOTALL)
+        
+        # Replace vocabulary
+        source = re.sub(r'_VOCABULARY_B64 = "[^"]*"', f'_VOCABULARY_B64 = "{vocab_b64}"', source)
+        
+        # Replace conversation history
+        source = re.sub(r'_CONVERSATION_HISTORY_B64 = "[^"]*"', f'_CONVERSATION_HISTORY_B64 = "{conv_b64}"', source)
+        
+        # Replace atomic language state
+        source = re.sub(r'_ATOMIC_LANG_B64 = "[^"]*"', f'_ATOMIC_LANG_B64 = "{atomic_b64}"', source)
+        
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(source)
+        
         print(f"[OK] Exported updated cocoon to: {output_path}")
+        print(f"     Preserved: brain weights, vocabulary ({len(self.vocabulary.get('word_to_id', {}))} words),")
+        print(f"     conversation ({conv_data.get('turn_count', 0)} turns), atomic language states")
 
     def export_onnx(self, output_path: str, organism_idx: int = 0):
         """Export a brain as ONNX file for Netron visualization."""
@@ -7740,6 +7845,7 @@ Examples:
     parser.add_argument('--export-package', type=str, help='Export full package (ONNX + README + metadata)')
     parser.add_argument('--organism', type=int, default=0, help='Organism index for ONNX export')
     parser.add_argument('--voting', choices=['majority', 'weighted', 'confidence'], default='confidence')
+    parser.add_argument('--max-organisms', type=int, default=None, help='Limit number of organisms to load (saves VRAM)')
     args = parser.parse_args()
 
     arch = _decode_data(_ARCHITECTURE_B64)
@@ -7767,7 +7873,7 @@ Examples:
         print("[!] PyTorch required for agent modes")
         return
 
-    agent = CocoonAgent(voting=args.voting)
+    agent = CocoonAgent(voting=args.voting, max_organisms=args.max_organisms)
 
     if args.export:
         agent.export_cocoon(args.export)
@@ -7868,6 +7974,7 @@ Examples:
                 weight = base_weight * gene_modifier * response_modifier
                 
                 responses.append({
+                    'idx': i,
                     'name': name,
                     'response': response,
                     'confidence': confidence,
@@ -7881,7 +7988,7 @@ Examples:
                 print(f"│ [{name}]")
                 print(f"│   conf={confidence:.3f} × fit={fitness:.2f} × gene={gene_modifier:.2f} × resp={response_modifier:.2f}")
                 print(f"│   = weight {weight:.4f}")
-                print(f"│   → {response[:40]}{'...' if len(response) > 40 else ''}")
+                print(f"│   → {response[:80]}{'...' if len(response) > 80 else ''}")
             
             print("└────────────────────────────────────────────────────────────┘")
             
@@ -7892,6 +7999,20 @@ Examples:
             
             # Filter empty responses
             valid_responses = [r for r in responses if r['response'].strip() and not r['response'].startswith('[')]
+            
+            # Apply diversity penalty - penalize repetitive responses
+            for r in valid_responses:
+                words = r['response'].lower().split()
+                if words:
+                    unique_words = len(set(words))
+                    diversity_ratio = unique_words / len(words)
+                    # Heavy penalty for low diversity (collapsed outputs)
+                    if diversity_ratio < 0.3:
+                        r['weight'] *= 0.1  # 90% penalty for <30% unique words
+                    elif diversity_ratio < 0.5:
+                        r['weight'] *= 0.5  # 50% penalty for <50% unique words
+                    r['diversity'] = diversity_ratio
+            
             total_weight = sum(r['weight'] for r in valid_responses)
             
             if valid_responses:
@@ -7901,7 +8022,7 @@ Examples:
                 final_response = best['response']
                 
                 # Show granular decision matrix summary
-                print(f"│ Aggregation: WEIGHTED_SELECTION")
+                print(f"│ Aggregation: WEIGHTED_SELECTION (diversity-penalized)")
                 print(f"│ Total Weight Pool: {total_weight:.4f}")
                 print(f"├────────────────────────────────────────────────────────────┤")
                 print(f"│ 🏆 WINNER: [{best['name']}]")
@@ -7909,6 +8030,8 @@ Examples:
                 print(f"│    Breakdown: conf={best['confidence']:.3f} × fit={best['fitness']:.2f}")
                 if 'gene_mod' in best:
                     print(f"│               × gene={best['gene_mod']:.2f} × resp={best['resp_mod']:.2f}")
+                if 'diversity' in best:
+                    print(f"│    Diversity: {best['diversity']:.1%} unique words")
                 print(f"├────────────────────────────────────────────────────────────┤")
                 print(f"│ Runners-up:")
                 for i, r in enumerate(sorted_responses[1:4], 2):  # Show top 3 runners-up

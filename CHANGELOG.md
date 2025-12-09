@@ -6,6 +6,39 @@
 
 ## [Unreleased] - 2025-12-08
 
+### 🐛 Critical Cocoon Bug Fixes & Reactive Event Handlers (2025-12-08)
+
+**MAJOR FIX**: Exported cocoons now load and run correctly. Previously 100% of cocoons crashed on startup.
+
+#### Fixed - Cocoon Export/Load Bugs (`agent_compiler.py`, cocoon files)
+- **Shape mismatch crash** - Brain expects 24 inputs, gym env gives 4 → Added `_pad_state()` method
+- **`_orig_mod.` prefix bug** - `torch.compile()` adds prefix to state_dict keys → Strip on load in `_load_brains()`
+- **Empty conversation history** - Was hardcoded `[]` → Now passes actual `conversation_history` parameter
+- **KeyError: 'idx'** - Response aggregation missing key → Added `'idx': i` to response dicts
+
+#### Added - Cocoon Runtime Options
+- **`--max-organisms N`** flag - Limit organisms loaded to reduce VRAM usage (default: all)
+- **Diversity penalty** - Mode-collapsed organisms (repeating same word) get 90% weight reduction
+- **Stronger anti-repetition** - Penalties increased from 3.0/1.5 to 8.0/4.0, history extended to 20 tokens
+
+#### Added - Reactive Event Handlers (`unified_entry.py`)
+Previously 5 of 14 event handlers only logged - now they take action:
+
+| Handler | Event | New Action |
+|---------|-------|------------|
+| `on_battle_resolved` | battle_resolved | Adjusts `selection_pressure` based on battle rate (>20/min ↓, <3/min ↑) |
+| `on_alliance_decision` | alliance_decision | Adjusts `cooperation_bonus` based on acceptance rate |
+| `on_neural_decision` | neural_decision | Adjusts organism `epsilon` based on decision confidence |
+| `on_vocabulary_growth` | vocabulary_growth | Increases `language_fitness_weight` at vocab milestones |
+| `on_lr_adjusted` | lr_adjusted | Records plateau events to config tuner for meta-learning |
+
+#### Added - Event Tracker Infrastructure
+- **`EventTracker` class** - Lightweight rolling window tracker (deque-based, bounded memory)
+- **Rate-based decisions** - Count events in last N seconds
+- **Cooldowns** - Prevent config thrashing (30-120s per action type)
+
+---
+
 ### 🎮 Swarm Pong Arena & Proton Tournament Integration (2025-12-08)
 
 **NEW FEATURE**: Multi-agent battle arena and tournament system for exported cocoons.

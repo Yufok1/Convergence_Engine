@@ -1555,6 +1555,39 @@ class UnifiedSystem:
         config_tuner = getattr(self.reality_sim, 'config_tuner', None)
         neural_trainer = getattr(self.reality_sim, 'neural_trainer', None)
         
+        # ═══════════════════════════════════════════════════════════════
+        # LIGHTWEIGHT EVENT TRACKER - for rate-based decisions
+        # Tracks rolling windows without accumulating unbounded memory
+        # ═══════════════════════════════════════════════════════════════
+        import time
+        from collections import deque
+        
+        class EventTracker:
+            """Minimal rolling window tracker for event-based decisions."""
+            __slots__ = ['battles', 'low_conf_decisions', 'vocab_adoptions', 'last_action_time']
+            
+            def __init__(self):
+                # Rolling windows: (timestamp, data) tuples, max 100 entries each
+                self.battles = deque(maxlen=100)
+                self.low_conf_decisions = deque(maxlen=50)
+                self.vocab_adoptions = deque(maxlen=50)
+                self.last_action_time = {}  # cooldowns per action type
+            
+            def count_recent(self, window: deque, seconds: float = 60.0) -> int:
+                """Count events in last N seconds."""
+                cutoff = time.time() - seconds
+                return sum(1 for ts, _ in window if ts > cutoff)
+            
+            def can_act(self, action_type: str, cooldown: float = 30.0) -> bool:
+                """Check if enough time passed since last action of this type."""
+                last = self.last_action_time.get(action_type, 0)
+                if time.time() - last > cooldown:
+                    self.last_action_time[action_type] = time.time()
+                    return True
+                return False
+        
+        tracker = EventTracker()
+        
         # Handler: Adjust learning rate when training loss is high
         def on_training_complete(event):
             """React to neural training completion events."""
@@ -1668,64 +1701,153 @@ class UnifiedSystem:
         
         # Handler: React to battle results (feed back to evolution)
         def on_battle_resolved(event):
-            """Track battle outcomes to inform evolution strategy."""
+            """React to battle outcomes - adjust selection pressure if needed."""
             if not config_tuner:
                 return
             try:
-                # Handle both 'winner'/'loser' (from battle_arena) and 'winner_id'/'loser_id' variants
                 winner_id = event.data.get('winner', event.data.get('winner_id'))
                 loser_id = event.data.get('loser', event.data.get('loser_id'))
                 battle_type = event.data.get('battle_type', 'unknown')
                 
-                # Battles happening = selection pressure working
-                # If too many battles, maybe reduce competition intensity
-                logger.debug(f"[BATTLE] {battle_type}: {winner_id} defeated {loser_id}")
+                # Track battle in rolling window
+                tracker.battles.append((time.time(), battle_type))
+                
+                # Check battle rate (battles per minute)
+                battles_per_min = tracker.count_recent(tracker.battles, 60.0)
+                
+                # REACTIVE: If too many battles (>20/min), reduce selection pressure
+                if battles_per_min > 20 and tracker.can_act('reduce_selection', cooldown=60.0):
+                    current = config_tuner.get('selection_pressure')
+                    if current and current > 0.3:
+                        new_val = max(0.3, current * 0.85)
+                        config_tuner.set('selection_pressure', new_val,
+                                        reason=f'high_battle_rate_{battles_per_min}/min')
+                        logger.info(f"[BATTLE] High battle rate ({battles_per_min}/min) → selection_pressure {current:.2f}→{new_val:.2f}")
+                
+                # REACTIVE: If too few battles (<3/min), increase selection pressure
+                elif battles_per_min < 3 and tracker.can_act('increase_selection', cooldown=60.0):
+                    current = config_tuner.get('selection_pressure')
+                    if current and current < 0.9:
+                        new_val = min(0.9, current * 1.15)
+                        config_tuner.set('selection_pressure', new_val,
+                                        reason=f'low_battle_rate_{battles_per_min}/min')
+                        logger.info(f"[BATTLE] Low battle rate ({battles_per_min}/min) → selection_pressure {current:.2f}→{new_val:.2f}")
+                
             except Exception:
                 pass
         
         # Handler: React to alliance decisions
         def on_alliance_decision(event):
-            """Track alliance formation for social dynamics."""
+            """React to alliance patterns - adjust cooperation incentives."""
+            if not config_tuner:
+                return
             try:
                 decision_type = event.data.get('decision_type', '')
-                organism_id = event.data.get('organism_id', '')
                 decision = event.data.get('decision', '')
                 confidence = event.data.get('confidence', 0.0)
                 
-                logger.debug(f"[ALLIANCE] {decision_type}: org={organism_id} decision={decision} conf={confidence:.2f}")
+                # REACTIVE: If organisms consistently reject alliances (low cooperation)
+                # boost cooperation_bonus to incentivize teamwork
+                if decision in ['reject', 'defect', 'refuse']:
+                    if tracker.can_act('boost_cooperation', cooldown=120.0):
+                        current = config_tuner.get('cooperation_bonus')
+                        if current is not None and current < 2.0:
+                            new_val = min(2.0, current * 1.2)
+                            config_tuner.set('cooperation_bonus', new_val,
+                                            reason='low_alliance_acceptance')
+                            logger.info(f"[ALLIANCE] Low cooperation → cooperation_bonus {current:.2f}→{new_val:.2f}")
+                
+                # REACTIVE: If alliances form easily, can reduce bonus
+                elif decision in ['accept', 'cooperate', 'form'] and confidence > 0.7:
+                    if tracker.can_act('reduce_cooperation', cooldown=120.0):
+                        current = config_tuner.get('cooperation_bonus')
+                        if current is not None and current > 0.5:
+                            new_val = max(0.5, current * 0.95)
+                            config_tuner.set('cooperation_bonus', new_val,
+                                            reason='healthy_alliance_rate')
+                
             except Exception:
                 pass
         
         # Handler: React to neural decisions (track decision quality)
         def on_neural_decision(event):
-            """Track organism decision-making patterns."""
+            """React to decision confidence patterns - adjust exploration/exploitation."""
+            if not config_tuner or not neural_trainer:
+                return
             try:
-                # Only log periodically to avoid spam
                 action = event.data.get('action', '')
                 confidence = event.data.get('confidence', 0.0)
+                organism_id = event.data.get('organism_id', '')
                 
-                # Track low-confidence decisions - may indicate need for more training
+                # Track low-confidence decisions
                 if confidence < 0.3:
-                    logger.debug(f"[NEURAL] Low-confidence decision: {action} ({confidence:.2f})")
+                    tracker.low_conf_decisions.append((time.time(), confidence))
+                
+                # Check rate of low-confidence decisions
+                low_conf_rate = tracker.count_recent(tracker.low_conf_decisions, 60.0)
+                
+                # REACTIVE: Many low-confidence decisions (>15/min) = organisms uncertain
+                # Increase epsilon for more exploration, they need to learn more
+                if low_conf_rate > 15 and tracker.can_act('increase_epsilon', cooldown=90.0):
+                    # Boost epsilon on all organisms slightly
+                    network = self.reality_sim.components.get('network')
+                    if network:
+                        boosted = 0
+                        for org in network.organisms.values():
+                            if hasattr(org, 'epsilon') and org.epsilon is not None:
+                                org.epsilon = min(0.5, org.epsilon + 0.05)
+                                boosted += 1
+                        if boosted > 0:
+                            logger.info(f"[NEURAL] High uncertainty ({low_conf_rate} low-conf/min) → epsilon boosted on {boosted} organisms")
+                
+                # REACTIVE: Very few low-confidence decisions = organisms confident
+                # Can slightly decay epsilon for more exploitation
+                elif low_conf_rate < 3 and tracker.can_act('decay_epsilon', cooldown=90.0):
+                    network = self.reality_sim.components.get('network')
+                    if network:
+                        decayed = 0
+                        for org in network.organisms.values():
+                            if hasattr(org, 'epsilon') and org.epsilon is not None and org.epsilon > 0.05:
+                                org.epsilon = max(0.05, org.epsilon * 0.95)
+                                decayed += 1
+                        # Silent - this is normal healthy behavior
+                
             except Exception:
                 pass
         
         # Handler: React to vocabulary growth
         def on_vocabulary_growth(event):
-            """Track language system evolution."""
+            """React to language evolution - reward linguistic organisms."""
             try:
                 new_word = event.data.get('word', '')
                 
-                # Handle both vocabulary_growth and word_assignment events
+                # Handle vocabulary_growth events
                 if event.event_type == 'vocabulary_growth':
                     vocab_size = event.data.get('vocab_size', 0)
-                    if vocab_size % 10 == 0:  # Log every 10 words
-                        logger.debug(f"[LANGUAGE] Vocabulary: {vocab_size} words (latest: {new_word})")
+                    
+                    # REACTIVE: Milestone rewards - boost language fitness weight at thresholds
+                    if vocab_size in [25, 50, 100, 200] and config_tuner:
+                        if tracker.can_act(f'vocab_milestone_{vocab_size}', cooldown=300.0):
+                            current = config_tuner.get('language_fitness_weight')
+                            if current is not None:
+                                # Boost language importance as vocab grows
+                                new_val = min(0.4, current + 0.02)
+                                config_tuner.set('language_fitness_weight', new_val,
+                                                reason=f'vocab_milestone_{vocab_size}')
+                                logger.info(f"[LANGUAGE] Vocabulary milestone {vocab_size} → language_fitness_weight {current:.2f}→{new_val:.2f}")
+                
+                # Handle word_assignment events (word spreading through population)
                 elif event.event_type == 'word_assignment':
-                    # word_assignment tracks organism-word linkages, not vocab size
                     num_orgs = event.data.get('total_organisms_with_word', 0)
-                    if num_orgs % 5 == 0:  # Log every 5 organisms adopting
-                        logger.debug(f"[LANGUAGE] Word '{new_word}' adopted by {num_orgs} organisms")
+                    tracker.vocab_adoptions.append((time.time(), num_orgs))
+                    
+                    # REACTIVE: If a word spreads to 10+ organisms, it's "viral"
+                    # This is emergent communication - record as positive outcome
+                    if num_orgs >= 10 and config_tuner:
+                        if tracker.can_act(f'viral_word_{new_word[:10]}', cooldown=60.0):
+                            config_tuner.record_outcome(success=True, context=f'viral_word_{new_word}')
+                            logger.info(f"[LANGUAGE] Viral word '{new_word}' adopted by {num_orgs} organisms")
+                
             except Exception:
                 pass
         
@@ -1746,14 +1868,30 @@ class UnifiedSystem:
         
         # Handler: React to learning rate adjustments
         def on_lr_adjusted(event):
-            """Track LR schedule changes."""
+            """React to LR changes - track scheduler effectiveness."""
             try:
                 old_lr = event.data.get('old_lr', 0)
                 new_lr = event.data.get('new_lr', 0)
-                # Handle both 'reason' and 'scheduler_type' which trainer.py emits
                 reason = event.data.get('reason', event.data.get('scheduler_type', ''))
                 
-                logger.debug(f"[NEURAL] LR adjusted: {old_lr:.6f} → {new_lr:.6f} ({reason})")
+                # REACTIVE: If LR dropped significantly (>50% reduction), record outcome
+                # This helps the config tuner learn which LR schedules work
+                if config_tuner and old_lr > 0 and new_lr > 0:
+                    reduction_ratio = new_lr / old_lr
+                    
+                    # Large reduction = scheduler detected plateau, record for learning
+                    if reduction_ratio < 0.5:
+                        config_tuner.record_outcome(
+                            success=False,  # Plateau = current config wasn't optimal
+                            context=f'lr_plateau_reduction_{reduction_ratio:.2f}'
+                        )
+                        logger.debug(f"[NEURAL] LR plateau: {old_lr:.6f}→{new_lr:.6f} ({reason})")
+                    
+                    # Small reduction = healthy decay, record as neutral/positive
+                    elif reduction_ratio > 0.8:
+                        # Normal scheduled decay - don't record, this is expected
+                        pass
+                
             except Exception:
                 pass
         
@@ -1776,10 +1914,12 @@ class UnifiedSystem:
         self.causation_explorer.subscribe('lr_adjusted', on_lr_adjusted)  # trainer.py:1221
         
         print("[UNIFIED] [INTEGRATION] ✅ Reactive event handlers wired (14 event types)")
-        print("[UNIFIED] [INTEGRATION]    - Training/LR → Config tuner")
-        print("[UNIFIED] [INTEGRATION]    - ML Analysis → Evolution")  
-        print("[UNIFIED] [INTEGRATION]    - Battles/Alliances → Logged")
-        print("[UNIFIED] [INTEGRATION]    - Language → Logged")
+        print("[UNIFIED] [INTEGRATION]    - Training/LR → Config tuner (adjust LR on loss)")
+        print("[UNIFIED] [INTEGRATION]    - ML Analysis → Evolution (adjust mutation on diversity)")
+        print("[UNIFIED] [INTEGRATION]    - Battles → Selection pressure (rate-based tuning)")
+        print("[UNIFIED] [INTEGRATION]    - Alliances → Cooperation bonus (acceptance-based)")
+        print("[UNIFIED] [INTEGRATION]    - Neural decisions → Epsilon (confidence-based)")
+        print("[UNIFIED] [INTEGRATION]    - Language → Fitness weight (milestone rewards)")
         print("[UNIFIED] [INTEGRATION]    - Config updates → Immediate effect")
         
         # Wire WIKAI Observer - passive listener for pattern capture

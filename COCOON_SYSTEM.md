@@ -100,8 +100,20 @@ Interactive chat with the neural organisms. Learns from every interaction.
 ### 3. Gym Mode
 ```bash
 python cocoon.py --mode gym --env CartPole-v1 --episodes 100 --render
+
+# Limit organisms to reduce VRAM usage (useful for large cocoons)
+python cocoon.py --mode gym --max-organisms 10 --episodes 50
 ```
 Train/test in OpenAI Gym environments with visual rendering.
+
+**CLI Options:**
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--env` | CartPole-v1 | Gym environment name |
+| `--episodes` | 10 | Number of episodes to run |
+| `--max-organisms` | all | Limit organisms loaded (reduces VRAM) |
+| `--render` | False | Show visual rendering |
+| `--learn` | True | Enable online learning |
 
 ### 4. HTTP Server Mode
 ```bash
