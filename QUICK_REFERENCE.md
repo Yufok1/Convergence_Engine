@@ -25,6 +25,40 @@ cd explorer && python test_integration.py
 
 ---
 
+## 🌱 Fresh Clone Setup
+
+**First time setup after cloning the repo:**
+
+```bash
+# 1. Install dependencies
+pip install -r requirements.txt
+
+# 2. Verify setup
+python check_setup.py
+
+# 3. Build vocabulary & knowledge web (REQUIRED for language systems)
+python build_curated_dataset.py
+```
+
+This creates:
+- `data/butterfly_vocabulary_200k_raw.json` - WordNet vocabulary (~141k words)
+- `data/butterfly_vocabulary_250k_curated.json` - Filtered vocabulary
+- `data/seeded_knowledge_web_250k.json` - Semantic relationships
+
+**Optional: Distill to smaller vocabulary (faster, less memory)**
+```bash
+# Distill to 50k words
+python distill_vocabulary.py --input data/seeded_knowledge_web_250k.json \
+    --output data/knowledge_web_distilled.json --target 50000
+```
+
+**Then run the system:**
+```bash
+python unified_entry.py
+```
+
+---
+
 ## 📁 Key Files
 
 - `unified_entry.py` - Main entry point (976 lines)
@@ -122,27 +156,47 @@ python archive_logs.py --list     # List archives
 
 ---
 
-## 📦 Agent Export
+## 📦 Agent Export (Cocoon System)
 
 **Export evolved organisms as portable AI agents:**
 
 ```bash
 # Via Web UI (recommended)
-# CRA → Agent Exporter → Select organism → Compile
+# CRA → Agent Exporter → Compile Cocoon
 
-# Via CLI
-cd agent_downloads/agent_<id>
-python run_agent.py --episodes 10
+# What you get:
+agent_downloads/cocoon_ensemble_<timestamp>/
+├── cocoon.py              # Main agent (CocoonAgent class)
+├── bridge.py              # Universal interface (Gym, HTTP, CLI)
+├── proton_tournament.py   # Self-improvement battles
+├── brain_ensemble.pt      # Neural weights (TorchScript)
+├── brain_ensemble.onnx    # Neural weights (ONNX for Netron)
+├── vocabulary.json        # Word pool
+├── knowledge_web.json     # Semantic relationships
+├── context_memory.json    # Word-organism anchors
+├── metadata.json          # Export info
+└── README.md              # Usage instructions
 ```
 
-**What's in the export:**
-- `brain.torchscript` - Neural network (2.6 MB)
-- `metadata.json` - Behavioral fingerprint
-- `atomic_language.json` - 28 learned concepts
-- `run_agent.py` - Standalone runner
-- `portable_agent/` - Full runtime library
+**Run exported agent:**
+```bash
+cd agent_downloads/cocoon_ensemble_<timestamp>
 
-**Performance:** ~1,300 inferences/sec (CPU)
+# Chat mode
+python cocoon.py --mode chat
+
+# Gym training
+python bridge.py . --mode gym --gym-env CartPole-v1 --render
+
+# Self-improvement tournament
+python -c "
+from cocoon import CocoonAgent
+from proton_tournament import ProtonTournament
+agent = CocoonAgent()
+tournament = ProtonTournament(agent)
+tournament.swarm_pong_arena(lives=3, headless=True)
+"
+```
 
 ---
 

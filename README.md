@@ -8,6 +8,34 @@ Three systems unified as one cohesive unit. One process. One breath. Three syste
 
 ## 🚀 Quick Start
 
+### Fresh Clone Setup (First Time)
+
+```bash
+# 1. Clone the repo
+git clone https://github.com/Yufok1/Convergence_Engine.git
+cd Convergence_Engine
+
+# 2. Install dependencies
+pip install -r requirements.txt
+
+# 3. Verify installation
+python check_setup.py
+
+# 4. Build vocabulary & semantic systems (REQUIRED)
+python build_curated_dataset.py
+```
+
+This builds:
+- **Vocabulary Pool**: ~141k words from Princeton WordNet
+- **Knowledge Web**: Semantic relationships between concepts
+- **Context Memory**: Word-organism associations (created at runtime)
+
+**Optional: Smaller vocabulary for faster startup**
+```bash
+python distill_vocabulary.py --input data/seeded_knowledge_web_250k.json \
+    --output data/knowledge_web_distilled.json --target 50000
+```
+
 ### Run the Unified System
 
 ```bash
