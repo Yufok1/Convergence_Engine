@@ -3965,15 +3965,50 @@ if __name__ == '__main__':
         arch_b64 = base64.b64encode(arch_bytes).decode('ascii')
 
         # 6) Atomic Language System - per-organism linguistic atoms (Gap 5 Fix: Preserve individual data)
+        # FIXED: Support both live organisms (.atomic_language) and capsules (.language)
         atomic_lang_data = []
         for entity in capsules:
-            capsule = self._get_capsule_from_entity(entity)
-            organism_data = {'organism_id': self._get_organism_id(entity), 'atoms': {}, 'concept_order': []}
+            organism_id = self._get_organism_id(entity)
+            organism_data = {'organism_id': organism_id, 'atoms': {}, 'concept_order': []}
             
-            if capsule and hasattr(capsule, 'atomic_language_state') and capsule.atomic_language_state:
-                als = capsule.atomic_language_state
+            # Try 1: Live organism with atomic_language attribute
+            if hasattr(entity, 'atomic_language') and entity.atomic_language is not None:
+                als = entity.atomic_language
+                if hasattr(als, 'to_dict'):
+                    organism_data = als.to_dict()
+                elif hasattr(als, 'atoms'):
+                    # Manual extraction if no to_dict
+                    organism_data = {
+                        'organism_id': organism_id,
+                        'atoms': {k: (v.to_dict() if hasattr(v, 'to_dict') else {}) for k, v in als.atoms.items()},
+                        'concept_order': getattr(als, '_concept_order', [])
+                    }
+                logger.info(f"[COCOON] Captured atomic language from live organism {organism_id}: {len(organism_data.get('atoms', {}))} atoms")
+            
+            # Try 2: Capsule with language snapshot (LanguageSnapshot)
+            elif hasattr(entity, 'language') and entity.language is not None:
+                lang_snap = entity.language
+                if hasattr(lang_snap, 'to_dict'):
+                    snap_dict = lang_snap.to_dict()
+                    # LanguageSnapshot has 'atoms' as Dict[str, Dict] - convert to cocoon format
+                    organism_data = {
+                        'organism_id': organism_id,
+                        'atoms': snap_dict.get('atoms', {}),
+                        'concept_order': snap_dict.get('concept_order', [])
+                    }
+                elif isinstance(lang_snap, dict):
+                    organism_data = {
+                        'organism_id': organism_id,
+                        'atoms': lang_snap.get('atoms', {}),
+                        'concept_order': lang_snap.get('concept_order', [])
+                    }
+                logger.info(f"[COCOON] Captured language snapshot from capsule {organism_id}: {len(organism_data.get('atoms', {}))} atoms")
+            
+            # Try 3: Legacy atomic_language_state attribute (deprecated)
+            elif hasattr(entity, 'atomic_language_state') and entity.atomic_language_state:
+                als = entity.atomic_language_state
                 if isinstance(als, dict) and 'atoms' in als:
-                    organism_data = als  # Use the actual exported state
+                    organism_data = als
             
             atomic_lang_data.append(organism_data)
             
@@ -6346,10 +6381,14 @@ class AtomicLanguageSystem:
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'AtomicLanguageSystem':
         system = cls(organism_id=data.get('organism_id', 'cocoon'))
-        system.atoms.clear()
-        system._concept_order = data.get('concept_order', [])
-        for concept_id, atom_data in data.get('atoms', {}).items():
-            system.atoms[concept_id] = LinguisticAtom.from_dict(atom_data)
+        loaded_atoms = data.get('atoms', {})
+        # ONLY clear innate concepts if we have actual data to replace them with
+        if loaded_atoms:
+            system.atoms.clear()
+            system._concept_order = data.get('concept_order', [])
+            for concept_id, atom_data in loaded_atoms.items():
+                system.atoms[concept_id] = LinguisticAtom.from_dict(atom_data)
+        # If no atoms were loaded, keep the innate concepts initialized by __init__
         return system
 
 

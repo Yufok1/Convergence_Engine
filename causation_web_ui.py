@@ -7800,7 +7800,8 @@ def compile_cocoon():
                 include_gym=include_gym,
                 include_http=include_http,
                 compress_data=compress,
-                export_format='cocoon'  # Just get the Python source
+                export_format='cocoon',  # Just get the Python source
+                conversation_history=conversation_history
             )
             # Override extension for ensemble binary - it's always a zip archive
             export_format = 'ensemble_' + export_format  # ensemble_onnx or ensemble_torchscript
@@ -7816,7 +7817,8 @@ def compile_cocoon():
                 include_gym=include_gym,
                 include_http=include_http,
                 compress_data=compress,
-                export_format=export_format
+                export_format=export_format,
+                conversation_history=conversation_history
             )
         
         # Generate filename based on format
