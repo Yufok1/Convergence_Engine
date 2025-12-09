@@ -116,6 +116,7 @@ class NeuralTrainer:
         
         training_config = config.get('training', {})
         self.batch_size = training_config.get('batch_size', 32)
+        self._effective_batch_size = self.batch_size  # Will be reduced during early training
         self.learning_rate = training_config.get('learning_rate', 0.001)
         self.gamma = training_config.get('gamma', 0.99)
         self.update_frequency = training_config.get('update_frequency', 1)
@@ -868,9 +869,10 @@ class NeuralTrainer:
         
         for organism in trainable_organisms:
             try:
-                # Sample batch from experience buffer
+                # Sample batch from experience buffer (use effective batch size for early training)
+                batch_size_to_use = getattr(self, '_effective_batch_size', self.batch_size)
                 states, actions, rewards, next_states, dones = organism.experience_buffer.sample_batch(
-                    self.batch_size
+                    batch_size_to_use
                 )
                 
                 # Serialize brain weights
@@ -996,8 +998,13 @@ class NeuralTrainer:
             breath_phase = breath_state.get('phase', 0.0)
             # Train during exhale phase (π to 2π) when breath is deep enough
             # Exhale = consolidation phase, ideal for learning
-            training_threshold = 0.3
+            # LOWERED threshold from 0.3 to 0.15 to allow more training opportunities
+            training_threshold = 0.15
             if breath_phase > 3.14159 and breath_depth > training_threshold:
+                should_train = True
+            # FALLBACK: Also train periodically even if breath conditions aren't met
+            # This ensures training happens at least every 20 steps
+            elif self.training_step_count > 0 and self.training_step_count % 20 == 0:
                 should_train = True
         else:
             # Fallback to step counter if no breath state (backward compatibility)
@@ -1013,6 +1020,19 @@ class NeuralTrainer:
         if self.training_step_count % 50 == 0:
             self.sync_from_atomic_config()
         
+        # ═══════════════════════════════════════════════════════════════════════════
+        # EARLY TRAINING: Use smaller batch size early on to show loss faster
+        # This helps users see that training IS happening
+        # ═══════════════════════════════════════════════════════════════════════════
+        if self.training_step_count < 100:
+            # During warm-up, use smaller batches (min 4) to start showing loss sooner
+            self._effective_batch_size = max(4, self.batch_size // 4)
+        elif self.training_step_count < 500:
+            # Gradually increase batch size
+            self._effective_batch_size = max(8, self.batch_size // 2)
+        else:
+            self._effective_batch_size = self.batch_size
+        
         # Check if we have enough experiences to train
         # Find organisms with sufficient experience
         trainable_organisms = []
@@ -1020,7 +1040,7 @@ class NeuralTrainer:
             # Use duck typing instead of isinstance()
             if (hasattr(organism, 'brain') and organism.brain is not None and
                 hasattr(organism, 'experience_buffer') and organism.experience_buffer is not None and
-                len(organism.experience_buffer) >= self.batch_size):
+                len(organism.experience_buffer) >= self._effective_batch_size):
                 trainable_organisms.append(organism)
         
         if not trainable_organisms:
@@ -1040,7 +1060,7 @@ class NeuralTrainer:
                 org.brain.use_language_head and
                 (not hasattr(org, 'experience_buffer') or 
                  org.experience_buffer is None or 
-                 len(org.experience_buffer) < self.batch_size))
+                 len(org.experience_buffer) < self._effective_batch_size))
         ]
         
         for organism in language_only_organisms:
@@ -1108,9 +1128,10 @@ class NeuralTrainer:
             num_trained = 0
             
             for organism in trainable_organisms:
-                # Sample batch
+                # Sample batch (use effective batch size for early training)
+                batch_size_to_use = getattr(self, '_effective_batch_size', self.batch_size)
                 states, actions, rewards, next_states, dones = organism.experience_buffer.sample_batch(
-                    self.batch_size
+                    batch_size_to_use
                 )
                 
                 # Convert to tensors

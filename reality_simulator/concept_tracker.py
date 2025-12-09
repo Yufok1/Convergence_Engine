@@ -214,8 +214,8 @@ class ConceptTracker:
                     org_id_int = hash(org_id) if isinstance(org_id, str) else org_id
                     # Try to get organism embedding for semantic differentiation
                     org_embedding = None
-                    if org_id in all_organisms:
-                        org = all_organisms[org_id]
+                    if org_id in organisms:  # Fixed: was 'all_organisms', should be 'organisms'
+                        org = organisms[org_id]
                         if hasattr(org, 'get_language_embedding'):
                             try:
                                 org_embedding = org.get_language_embedding(self.context_memory)

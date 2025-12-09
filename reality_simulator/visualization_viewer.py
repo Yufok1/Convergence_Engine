@@ -608,8 +608,13 @@ class LightweightVisualizationViewer:
                             elif avg_loss is not None and avg_loss != 'N/A' and avg_loss != 0.0:
                                 loss_str = f"{float(avg_loss):.4f}"
                             elif training_steps > 0:
+                                # Training has started but waiting for next batch
+                                loss_str = "Batching..."
+                            elif organisms_tracked > 0:
+                                # Organisms exist but need experiences (< batch_size)
                                 loss_str = "Collecting..."
                             else:
+                                # No organisms with neural brains yet
                                 loss_str = "Warming..."
                             epsilon_val = epsilon if epsilon is not None else 0.0
 
