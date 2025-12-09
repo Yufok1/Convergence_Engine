@@ -210,6 +210,11 @@ class SphereOrganism:
     last_command_received: Optional[Tuple[float, float]] = None  # (target_theta, target_phi)
     command_compliance: float = 0.0  # How well following current command (0-1)
     
+    # Multi-ball assignment
+    assigned_ball: Optional[int] = None  # Which ball this organism is tracking (None = unassigned)
+    is_ball_commander: bool = False       # Is this organism commanding a ball's squad?
+    is_supreme_commander: bool = False    # Is this the overall supreme commander?
+    
     def get_position(self) -> Tuple[float, float, float]:
         """Get 3D Cartesian position on sphere surface."""
         return spherical_to_cartesian(self.theta, self.phi)
@@ -317,13 +322,55 @@ class SphereArena:
         seed: Optional[int] = None,
         mode: GameMode = GameMode.SWARM_DEFENSE,
         teams: Optional[Dict[str, List[int]]] = None,  # For team vs team mode
-        enable_command_chain: bool = True  # Enable hierarchical command system
+        enable_command_chain: bool = True,  # Enable hierarchical command system
+        num_balls: int = 1,  # Number of balls in play (multi-ball chaos!)
+        enable_training: bool = False,  # Enable post-snapshot training during gameplay
+        train_interval: int = 100,  # Train every N frames when training enabled
+        verbose: bool = False  # Enable granular debug logging
     ):
         self.agent = agent
         self.max_misses = max_misses  # Collective miss limit
         self.headless = headless
         self.mode = mode
         self.enable_command_chain = enable_command_chain
+        self.num_balls = max(1, min(num_balls, 5))  # 1-5 balls
+        self.verbose = verbose  # Granular debug logging
+        
+        # ═══════════════════════════════════════════════════════════════════
+        # DEBUG LOGGING SYSTEM
+        # ═══════════════════════════════════════════════════════════════════
+        # When verbose=True, logs:
+        #   - Every brain decision (action probs, chosen action)
+        #   - Every experience added (state, action, reward)
+        #   - Every training step (loss, gradients)
+        #   - Ball tracking (position, velocity, impact prediction)
+        #   - Command chain (orders given, compliance scores)
+        # ═══════════════════════════════════════════════════════════════════
+        self.debug_log: Dict[str, List[Dict]] = {
+            'actions': [],       # Brain decisions 
+            'experiences': [],   # Experience buffer entries
+            'training': [],      # Training steps
+            'commands': [],      # Command chain orders
+            'catches': [],       # Successful catches
+            'misses': [],        # Missed balls
+            'events': [],        # General events (for _log_debug)
+        }
+        self.experience_log: List[Dict] = []  # Detailed experience tracking
+        
+        # ═══════════════════════════════════════════════════════════════════
+        # POST-SNAPSHOT TRAINING SYSTEM
+        # ═══════════════════════════════════════════════════════════════════
+        # When enabled, organisms learn from arena experiences:
+        #   - Catches: +1.0 reward (reinforces interception behavior)
+        #   - Misses: -0.5 reward (penalizes bad positioning)
+        #   - Near misses: +0.2 reward (encourages approach)
+        # Weights are updated via agent.train_step() every train_interval frames
+        # ═══════════════════════════════════════════════════════════════════
+        self.enable_training = enable_training
+        self.train_interval = train_interval
+        self.training_losses: List[float] = []  # Track training progress
+        self.last_observations: Dict[int, np.ndarray] = {}  # For experience tracking
+        self.last_actions: Dict[int, int] = {}  # Action taken from observation
         
         # Swarm stats
         self.collective_catches = 0
@@ -332,13 +379,33 @@ class SphereArena:
         self.best_streak = 0
         
         # ═══════════════════════════════════════════════════════════════════
-        # COMMAND CHAIN SYSTEM - Hierarchical swarm coordination
+        # HIERARCHICAL COMMAND CHAIN SYSTEM (Multi-Ball Support)
         # ═══════════════════════════════════════════════════════════════════
-        self.current_commander: Optional[int] = None  # Who is issuing orders
-        self.current_command: Optional[Tuple[float, float]] = None  # (theta, phi) target
-        self.command_history: List[Dict] = []  # Log of all commands issued
-        self.predicted_impact: Optional[Tuple[float, float]] = None  # Where ball will hit
-        self.command_broadcast_frame: int = 0  # When command was issued
+        # 
+        # Structure with multiple balls:
+        #   👑 SUPREME COMMANDER (best overall performer)
+        #       │
+        #       ├── ⚽ Ball #0 Commander + Squad
+        #       ├── ⚽ Ball #1 Commander + Squad  
+        #       └── ⚽ Ball #2 Commander + Squad
+        #
+        # Supreme Commander: Assigns organisms to balls based on threat/proximity
+        # Ball Commanders: Issue intercept orders for their specific ball
+        # ═══════════════════════════════════════════════════════════════════
+        
+        # Legacy single-ball (backward compat)
+        self.current_commander: Optional[int] = None
+        self.current_command: Optional[Tuple[float, float]] = None
+        self.command_history: List[Dict] = []
+        self.predicted_impact: Optional[Tuple[float, float]] = None
+        self.command_broadcast_frame: int = 0
+        
+        # Multi-ball command structure
+        self.supreme_commander: Optional[int] = None  # Best overall performer
+        self.ball_commanders: Dict[int, Optional[int]] = {}  # ball_idx -> commander organism
+        self.ball_commands: Dict[int, Optional[Tuple[float, float]]] = {}  # ball_idx -> (theta, phi)
+        self.ball_squads: Dict[int, List[int]] = {}  # ball_idx -> list of assigned organisms
+        self.reassignment_cooldown: int = 0  # Frames until next reassignment allowed
         
         # Team configuration (optional)
         self.teams = teams or {}
@@ -462,6 +529,154 @@ class SphereArena:
         else:
             print("   ✅ All wiring checks passed")
     
+    # ═══════════════════════════════════════════════════════════════════════════
+    # GRANULAR DEBUG LOGGING SYSTEM
+    # ═══════════════════════════════════════════════════════════════════════════
+    
+    def _log_debug(self, event_type: str, data: Dict):
+        """Log a debug event with timestamp."""
+        if not self.verbose:
+            return
+        
+        event = {
+            'frame': self.frame_count,
+            'type': event_type,
+            'time': time.time(),
+            **data
+        }
+        
+        # Store in appropriate category
+        if event_type == 'BRAIN_DECISION':
+            self.debug_log['actions'].append(event)
+        elif event_type == 'EXPERIENCE_ADDED':
+            self.debug_log['experiences'].append(event)
+        elif event_type == 'TRAINING_STEP':
+            self.debug_log['training'].append(event)
+        elif event_type == 'COMMAND_ISSUED':
+            self.debug_log['commands'].append(event)
+        elif event_type == 'CATCH':
+            self.debug_log['catches'].append(event)
+        elif event_type == 'MISS':
+            self.debug_log['misses'].append(event)
+        else:
+            self.debug_log['events'].append(event)
+        
+        # Print to console in verbose mode
+        self._print_debug_event(event_type, data)
+    
+    def _print_debug_event(self, event_type: str, data: Dict):
+        """Print formatted debug event to console."""
+        frame = self.frame_count
+        prefix = f"[F{frame:05d}]"
+        
+        if event_type == 'BRAIN_DECISION':
+            # Only print brain decisions every 50 frames to reduce verbosity
+            # (still stored in debug_log for full analysis)
+            if frame % 50 != 0 and frame > 1:
+                return
+            org = data['organism']
+            action = data['action_idx']
+            probs = data.get('action_probs', [])
+            conf = data.get('confidence', 0)
+            move = data.get('movement', (0, 0))
+            probs_str = ','.join([f'{p:.2f}' for p in probs[:6]]) if probs else 'N/A'
+            print(f"{prefix} 🧠 Org#{org} → action={action} conf={conf:.3f} move=({move[0]:+.3f},{move[1]:+.3f}) probs=[{probs_str}]")
+        
+        elif event_type == 'EXPERIENCE_ADDED':
+            org = data['organism']
+            reward = data['reward']
+            action = data['action']
+            buf_size = data.get('buffer_size', '?')
+            reason = data.get('reason', '')
+            print(f"{prefix} 📦 Org#{org} EXP: reward={reward:+.3f} action={action} buf={buf_size} ({reason})")
+        
+        elif event_type == 'TRAINING_STEP':
+            loss = data.get('loss', 0)
+            step = data.get('step', 0)
+            trained = data.get('brains_trained', 0)
+            print(f"{prefix} 📈 TRAIN: step={step} loss={loss:.6f} brains={trained}")
+        
+        elif event_type == 'BALL_STATE':
+            for i, ball_data in enumerate(data.get('balls', [])):
+                pos = ball_data['position']
+                vel = ball_data['velocity']
+                speed = ball_data['speed']
+                print(f"{prefix} ⚽ Ball#{i}: pos=({pos[0]:.2f},{pos[1]:.2f},{pos[2]:.2f}) vel=({vel[0]:+.3f},{vel[1]:+.3f},{vel[2]:+.3f}) speed={speed:.3f}")
+        
+        elif event_type == 'ORGANISM_POSITIONS':
+            for org_idx, pos_data in data.get('organisms', {}).items():
+                theta, phi = pos_data['theta'], pos_data['phi']
+                nearest_ball = pos_data.get('nearest_ball_dist', 999)
+                cmd = pos_data.get('command_dist', 999)
+                print(f"{prefix} 🦠 Org#{org_idx}: θ={theta:.2f} φ={phi:.2f} ball_dist={nearest_ball:.2f} cmd_dist={cmd:.2f}")
+        
+        elif event_type == 'COMMAND_ISSUED':
+            commander = data['commander']
+            target = data['target']
+            print(f"{prefix} 📢 COMMAND: Org#{commander} → target=({target[0]:.2f},{target[1]:.2f})")
+        
+        elif event_type == 'CATCH':
+            catcher = data['catcher']
+            ball = data.get('ball_idx', 0)
+            streak = data.get('streak', 0)
+            print(f"{prefix} 🎯 CATCH: Org#{catcher} caught ball#{ball} streak={streak}")
+        
+        elif event_type == 'MISS':
+            ball = data.get('ball_idx', 0)
+            pos = data.get('position', (0, 0))
+            nearest = data.get('nearest_organism', '?')
+            nearest_dist = data.get('nearest_dist', 999)
+            print(f"{prefix} ❌ MISS: ball#{ball} at ({pos[0]:.2f},{pos[1]:.2f}) nearest=Org#{nearest} dist={nearest_dist:.2f}")
+    
+    def _log_ball_states(self):
+        """Log current state of all balls."""
+        if not self.verbose:
+            return
+        
+        balls_data = []
+        for ball in self.balls:
+            pos = ball.get_position()
+            vel = ball.get_velocity()
+            balls_data.append({
+                'position': pos,
+                'velocity': vel,
+                'speed': ball.get_speed()
+            })
+        
+        self._log_debug('BALL_STATE', {'balls': balls_data})
+    
+    def _log_organism_positions(self):
+        """Log current positions of all organisms."""
+        if not self.verbose:
+            return
+        
+        org_data = {}
+        for org_idx in self.alive_organisms:
+            org = self.organisms[org_idx]
+            
+            # Find nearest ball
+            min_dist = float('inf')
+            for ball in self.balls:
+                ball_pos = ball.get_position()
+                _, ball_theta, ball_phi = cartesian_to_spherical(*ball_pos)
+                dist = angular_distance(org.theta, org.phi, ball_theta, ball_phi)
+                min_dist = min(min_dist, dist)
+            
+            # Command distance
+            cmd_dist = 999
+            if org.last_command_received:
+                cmd_theta, cmd_phi = org.last_command_received
+                cmd_dist = angular_distance(org.theta, org.phi, cmd_theta, cmd_phi)
+            
+            org_data[org_idx] = {
+                'theta': org.theta,
+                'phi': org.phi,
+                'nearest_ball_dist': min_dist,
+                'command_dist': cmd_dist
+            }
+        
+        self._log_debug('ORGANISM_POSITIONS', {'organisms': org_data})
+    
     def _setup_teams(self):
         """Setup team mode configuration."""
         if not self.teams:
@@ -525,14 +740,37 @@ class SphereArena:
                 color=color
             )
         
-        # Create ball at center with random direction
-        direction = self._random_direction()
-        self.ball = Ball3D(
-            x=0, y=0, z=0,
-            vx=direction[0] * BALL_SPEED,
-            vy=direction[1] * BALL_SPEED,
-            vz=direction[2] * BALL_SPEED
-        )
+        # Create balls at center with random directions
+        self.balls: List[Ball3D] = []
+        for ball_idx in range(self.num_balls):
+            direction = self._random_direction()
+            # Offset starting positions slightly so balls don't collide immediately
+            offset = 0.1 * ball_idx
+            ball = Ball3D(
+                x=offset * direction[0], 
+                y=offset * direction[1], 
+                z=offset * direction[2],
+                vx=direction[0] * BALL_SPEED,
+                vy=direction[1] * BALL_SPEED,
+                vz=direction[2] * BALL_SPEED
+            )
+            self.balls.append(ball)
+        
+        # Keep self.ball as primary for backward compatibility
+        self.ball = self.balls[0] if self.balls else None
+        
+        # ═══════════════════════════════════════════════════════════════════
+        # INITIALIZE MULTI-BALL COMMAND CHAIN
+        # ═══════════════════════════════════════════════════════════════════
+        self.supreme_commander = None
+        self.ball_commanders = {i: None for i in range(self.num_balls)}
+        self.ball_commands = {i: None for i in range(self.num_balls)}
+        self.ball_squads = {i: [] for i in range(self.num_balls)}
+        self.reassignment_cooldown = 0
+        
+        # Initial squad assignment: distribute organisms evenly across balls
+        if self.num_balls > 1 and self.enable_command_chain:
+            self._assign_initial_squads()
         
         # Game state
         self.game_over = False
@@ -543,6 +781,10 @@ class SphereArena:
         
         # Camera rotation
         self.camera_angle = 0
+        
+        # Reset training tracking
+        self.last_observations = {}
+        self.last_actions = {}
     
     def _random_direction(self) -> Tuple[float, float, float]:
         """Generate random unit vector."""
@@ -554,14 +796,164 @@ class SphereArena:
             math.sin(phi) * math.sin(theta)
         )
     
+    # ═══════════════════════════════════════════════════════════════════════
+    # MULTI-BALL HIERARCHICAL COMMAND SYSTEM
+    # ═══════════════════════════════════════════════════════════════════════
+    
+    def _assign_initial_squads(self):
+        """
+        Initially distribute organisms across balls evenly.
+        Called at game start when num_balls > 1.
+        """
+        organisms_per_ball = len(self.alive_organisms) // self.num_balls
+        remainder = len(self.alive_organisms) % self.num_balls
+        
+        org_list = list(self.alive_organisms)
+        idx = 0
+        
+        for ball_idx in range(self.num_balls):
+            # How many for this ball
+            count = organisms_per_ball + (1 if ball_idx < remainder else 0)
+            squad = org_list[idx:idx + count]
+            
+            self.ball_squads[ball_idx] = squad
+            
+            # Mark organisms with their assignment
+            for org_idx in squad:
+                self.organisms[org_idx].assigned_ball = ball_idx
+            
+            idx += count
+        
+        print(f"   📋 Initial squad assignment: {[len(s) for s in self.ball_squads.values()]} organisms per ball")
+    
+    def _update_supreme_commander(self):
+        """
+        Update who the supreme commander is based on total performance.
+        Supreme commander is the organism with most total catches.
+        """
+        if not self.enable_command_chain or self.num_balls <= 1:
+            return
+        
+        best_org = None
+        best_catches = -1
+        
+        for org_idx in self.alive_organisms:
+            org = self.organisms[org_idx]
+            if org.catches > best_catches:
+                best_catches = org.catches
+                best_org = org_idx
+        
+        if best_org is not None and best_org != self.supreme_commander:
+            # Crown new supreme commander
+            if self.supreme_commander is not None:
+                self.organisms[self.supreme_commander].is_supreme_commander = False
+            
+            self.supreme_commander = best_org
+            self.organisms[best_org].is_supreme_commander = True
+            
+            if best_catches > 0:  # Only announce if they've actually caught something
+                print(f"   👑 NEW SUPREME COMMANDER: Organism #{best_org} ({best_catches} catches)")
+    
+    def _reassign_squads_by_threat(self):
+        """
+        Supreme Commander reassigns organisms to balls based on threat assessment.
+        
+        Threat = ball speed + proximity to sphere surface
+        More threatening balls get more defenders.
+        
+        Called periodically (with cooldown to prevent constant shuffling).
+        """
+        if not self.enable_command_chain or self.num_balls <= 1:
+            return
+        
+        if self.reassignment_cooldown > 0:
+            self.reassignment_cooldown -= 1
+            return
+        
+        # Calculate threat level for each ball
+        threats = []
+        for ball_idx, ball in enumerate(self.balls):
+            ball_pos = ball.get_position()
+            dist_to_surface = SPHERE_RADIUS - math.sqrt(
+                ball_pos[0]**2 + ball_pos[1]**2 + ball_pos[2]**2
+            )
+            speed = ball.get_speed()
+            
+            # Threat = inversely proportional to distance, proportional to speed
+            threat = speed / max(0.1, dist_to_surface)
+            threats.append((ball_idx, threat))
+        
+        # Sort balls by threat (highest first)
+        threats.sort(key=lambda x: x[1], reverse=True)
+        
+        # Assign more organisms to higher threat balls
+        total_threat = sum(t[1] for t in threats) or 1.0
+        org_list = list(self.alive_organisms)
+        self.rng.shuffle(org_list)  # Randomize who gets reassigned
+        
+        idx = 0
+        for ball_idx, threat in threats:
+            # Proportion of organisms based on threat
+            proportion = threat / total_threat
+            count = max(1, int(len(org_list) * proportion))
+            
+            # Don't overshoot
+            count = min(count, len(org_list) - idx)
+            
+            squad = org_list[idx:idx + count]
+            
+            # Update assignments
+            old_squad = self.ball_squads[ball_idx]
+            if set(squad) != set(old_squad):
+                self.ball_squads[ball_idx] = squad
+                for org_idx in squad:
+                    self.organisms[org_idx].assigned_ball = ball_idx
+            
+            idx += count
+        
+        # Cooldown before next reassignment (60 frames = ~1 second)
+        self.reassignment_cooldown = 60
+    
+    def _get_ball_for_organism(self, organism_idx: int) -> Optional[Ball3D]:
+        """
+        Get the ball this organism should be tracking.
+        Returns the assigned ball, or the closest ball if unassigned.
+        """
+        org = self.organisms.get(organism_idx)
+        if org is None:
+            return self.balls[0] if self.balls else None
+        
+        # If assigned to a specific ball, track that one
+        if org.assigned_ball is not None and org.assigned_ball < len(self.balls):
+            return self.balls[org.assigned_ball]
+        
+        # Otherwise track closest ball
+        org_pos = org.get_position()
+        closest_ball = None
+        closest_dist = float('inf')
+        
+        for ball in self.balls:
+            ball_pos = ball.get_position()
+            dist = point_distance_3d(org_pos, ball_pos)
+            if dist < closest_dist:
+                closest_dist = dist
+                closest_ball = ball
+        
+        return closest_ball or (self.balls[0] if self.balls else None)
+
     def _get_observation(self, organism_idx: int) -> np.ndarray:
         """Get observation for organism's neural network."""
         org = self.organisms.get(organism_idx)
         if org is None or not org.alive:
             return np.zeros(OBSERVATION_SIZE, dtype=np.float32)
         
-        ball_pos = self.ball.get_position()
-        ball_vel = self.ball.get_velocity()
+        # Get the ball this organism is tracking
+        ball = self._get_ball_for_organism(organism_idx)
+        if ball is None:
+            ball = self.ball  # Fallback
+        
+        ball_pos = ball.get_position()
+        ball_vel = ball.get_velocity()
         org_pos = org.get_position()
         
         # Relative ball position
@@ -642,7 +1034,47 @@ class SphereArena:
         """
         Get action from organism's brain.
         Returns (d_theta, d_phi) movement deltas.
+        
+        The brain outputs action_probs (softmax over discrete actions).
+        We interpret the action distribution as movement intention:
+        - Use top actions to determine direction bias
+        - NO perfect prediction - brain must "see" and "decide"
+        
+        Multi-ball: Each organism tracks its ASSIGNED ball (from supreme commander)
         """
+        org = self.organisms.get(organism_idx)
+        if not org:
+            return (0, 0)
+        
+        # Get the ball this organism is assigned to track
+        ball = self._get_ball_for_organism(organism_idx)
+        if ball is None:
+            ball = self.ball  # Fallback
+        
+        ball_pos = ball.get_position()
+        ball_vel = ball.get_velocity()
+        _, ball_theta, ball_phi = cartesian_to_spherical(*ball_pos)
+        
+        # Simple reactive: which direction is ball relative to me?
+        theta_to_ball = ball_theta - org.theta
+        while theta_to_ball > math.pi: theta_to_ball -= 2*math.pi
+        while theta_to_ball < -math.pi: theta_to_ball += 2*math.pi
+        phi_to_ball = ball_phi - org.phi
+        
+        # If commander gave orders for THIS ball, blend in that info
+        cmd_bias_theta = 0.0
+        cmd_bias_phi = 0.0
+        if self.enable_command_chain and org.last_command_received is not None:
+            cmd_theta, cmd_phi = org.last_command_received
+            cmd_bias_theta = cmd_theta - org.theta
+            while cmd_bias_theta > math.pi: cmd_bias_theta -= 2*math.pi
+            while cmd_bias_theta < -math.pi: cmd_bias_theta += 2*math.pi
+            cmd_bias_phi = cmd_phi - org.phi
+        
+        # Query brain for movement decision
+        d_theta = 0.0
+        d_phi = 0.0
+        
         try:
             import torch
             
@@ -657,13 +1089,13 @@ class SphereArena:
                 obs = obs[:target_dim]
             
             # VP integration if available
-            vp_value = None
+            vp_value = 0.5
             if hasattr(self.agent, 'vp_runtime'):
                 try:
                     vp_data = self.agent.vp_runtime.compute_from_state(obs, [])
                     vp_value = vp_data.get('violation_pressure', 0.5)
                 except:
-                    vp_value = 0.5
+                    pass
             
             device = getattr(self.agent, 'device', 'cpu')
             state_tensor = torch.FloatTensor(obs).unsqueeze(0).to(device)
@@ -673,86 +1105,300 @@ class SphereArena:
                 output = brain(state_tensor, vp_value=vp_value, return_language_logits=False)
                 
                 if isinstance(output, tuple):
-                    output = output[0]
-                if isinstance(output, dict):
-                    action_logits = output.get('action_probs') or output.get('actions') or output.get('logits')
+                    action_probs = output[0]
                 else:
-                    action_logits = output
+                    action_probs = output
                 
-                if action_logits is None:
-                    raise RuntimeError("No action logits")
+                probs = action_probs.detach().cpu().numpy().flatten()
                 
-                action_vec = action_logits.detach().cpu().numpy().flatten()
+                # ═══════════════════════════════════════════════════════════
+                # BRAIN-DRIVEN MOVEMENT (no cheating!)
+                # ═══════════════════════════════════════════════════════════
+                # Use the probability distribution to create movement intent
+                # Higher values in certain action indices = direction preference
                 
-                # Interpret as movement: first 2 values -> theta, phi
-                if len(action_vec) >= 2:
-                    d_theta = np.tanh(action_vec[0]) * ORGANISM_MOVE_SPEED
-                    d_phi = np.tanh(action_vec[1]) * ORGANISM_MOVE_SPEED
-                    return (d_theta, d_phi)
-                elif len(action_vec) >= 1:
-                    return (np.tanh(action_vec[0]) * ORGANISM_MOVE_SPEED, 0)
-        
+                n_actions = len(probs)
+                
+                # Method: Use probability values directly as "attention weights"
+                # Split action space into directional buckets
+                # This creates a mapping from action distribution -> 2D movement
+                
+                if n_actions >= 4:
+                    # Divide action space into 4 quadrants
+                    quarter = n_actions // 4
+                    
+                    # Sum probabilities in each directional bucket
+                    up_weight = np.sum(probs[:quarter])           # Move -phi (up)
+                    right_weight = np.sum(probs[quarter:2*quarter])  # Move +theta (right)
+                    down_weight = np.sum(probs[2*quarter:3*quarter]) # Move +phi (down)
+                    left_weight = np.sum(probs[3*quarter:])          # Move -theta (left)
+                    
+                    # Net movement from brain's "vote"
+                    theta_vote = (right_weight - left_weight) * 2.0  # Scale up
+                    phi_vote = (down_weight - up_weight) * 2.0
+                    
+                    # Confidence affects speed
+                    confidence = float(np.max(probs))
+                    speed = ORGANISM_MOVE_SPEED * (0.5 + confidence)
+                    
+                    # Blend: 40% brain vote + 30% reactive chase + 30% command
+                    # This way brain has influence but isn't the ONLY factor
+                    brain_weight = 0.4
+                    reactive_weight = 0.4
+                    command_weight = 0.2
+                    
+                    # Reactive component: move toward ball
+                    reactive_theta = np.sign(theta_to_ball) if abs(theta_to_ball) > 0.1 else 0
+                    reactive_phi = np.sign(phi_to_ball) if abs(phi_to_ball) > 0.1 else 0
+                    
+                    # Command component (if available)
+                    cmd_theta_dir = np.sign(cmd_bias_theta) if abs(cmd_bias_theta) > 0.05 else 0
+                    cmd_phi_dir = np.sign(cmd_bias_phi) if abs(cmd_bias_phi) > 0.05 else 0
+                    
+                    # Final blend
+                    d_theta = speed * (
+                        brain_weight * np.tanh(theta_vote) +
+                        reactive_weight * reactive_theta +
+                        command_weight * cmd_theta_dir
+                    )
+                    d_phi = speed * (
+                        brain_weight * np.tanh(phi_vote) +
+                        reactive_weight * reactive_phi +
+                        command_weight * cmd_phi_dir
+                    )
+                    
+                    # Add personality jitter based on entropy
+                    entropy = -np.sum(probs * np.log(probs + 1e-8))
+                    max_entropy = np.log(n_actions)
+                    exploration = entropy / max_entropy if max_entropy > 0 else 0.5
+                    
+                    if exploration > 0.6:
+                        # High uncertainty = some random exploration
+                        d_theta += self.rng.uniform(-0.02, 0.02)
+                        d_phi += self.rng.uniform(-0.01, 0.01)
+                else:
+                    # Too few actions, fall back to simple reactive
+                    d_theta = ORGANISM_MOVE_SPEED * np.sign(theta_to_ball) if abs(theta_to_ball) > 0.1 else 0
+                    d_phi = ORGANISM_MOVE_SPEED * np.sign(phi_to_ball) if abs(phi_to_ball) > 0.1 else 0
+                    
         except Exception as e:
-            pass
+            # Fallback: simple reactive chase
+            d_theta = ORGANISM_MOVE_SPEED * np.sign(theta_to_ball) if abs(theta_to_ball) > 0.1 else 0
+            d_phi = ORGANISM_MOVE_SPEED * np.sign(phi_to_ball) if abs(phi_to_ball) > 0.1 else 0
         
-        # Fallback: simple AI - move toward ball's projected sphere position
-        org = self.organisms.get(organism_idx)
-        if org:
-            ball_pos = self.ball.get_position()
-            _, ball_theta, ball_phi = cartesian_to_spherical(*ball_pos)
-            
-            # Move toward ball's projection
-            d_theta = 0
-            d_phi = 0
-            
-            theta_diff = ball_theta - org.theta
-            # Normalize to [-π, π]
-            while theta_diff > math.pi: theta_diff -= 2*math.pi
-            while theta_diff < -math.pi: theta_diff += 2*math.pi
-            
-            if abs(theta_diff) > 0.05:
-                d_theta = ORGANISM_MOVE_SPEED * (1 if theta_diff > 0 else -1)
-            
-            phi_diff = ball_phi - org.phi
-            if abs(phi_diff) > 0.05:
-                d_phi = ORGANISM_MOVE_SPEED * (1 if phi_diff > 0 else -1)
-            
-            return (d_theta, d_phi)
+        # Clamp to max speed
+        d_theta = np.clip(d_theta, -ORGANISM_MOVE_SPEED * 1.5, ORGANISM_MOVE_SPEED * 1.5)
+        d_phi = np.clip(d_phi, -ORGANISM_MOVE_SPEED * 1.5, ORGANISM_MOVE_SPEED * 1.5)
         
-        return (0, 0)
+        return (d_theta, d_phi)
+    
+    def _get_organism_action_with_idx(self, organism_idx: int, state: np.ndarray) -> Tuple[float, float, int]:
+        """
+        Get action from organism's brain, also returning the discrete action index.
+        Used for training experience tracking.
+        Returns (d_theta, d_phi, action_idx).
+        """
+        d_theta, d_phi = self._get_organism_action(organism_idx, state)
+        
+        # Get brain's output dimension to stay in bounds
+        brain = self.agent.brains[organism_idx] if organism_idx < len(self.agent.brains) else self.agent.brains[0]
+        output_dim = getattr(brain, 'output_dim', getattr(brain, 'output_size', 8))
+        
+        # Convert movement to discrete action index for experience buffer
+        # Map to: 0=stay, 1=up, 2=right, 3=down, 4=left, 5=up-right, 6=down-right, 7=down-left
+        # (capped at output_dim - 1 to avoid index errors)
+        threshold = ORGANISM_MOVE_SPEED * 0.3
+        
+        up = d_phi < -threshold
+        down = d_phi > threshold
+        right = d_theta > threshold
+        left = d_theta < -threshold
+        
+        if up and right:
+            action_idx = 5
+        elif down and right:
+            action_idx = 6
+        elif down and left:
+            action_idx = 7
+        elif up and left:
+            action_idx = min(7, output_dim - 1)  # Clamp to max output dim
+        elif up:
+            action_idx = 1
+        elif right:
+            action_idx = 2
+        elif down:
+            action_idx = 3
+        elif left:
+            action_idx = 4
+        else:
+            action_idx = 0  # stay
+        
+        # Ensure action is within valid range
+        action_idx = min(action_idx, output_dim - 1)
+        
+        # Debug log the action decision
+        action_names = ['stay', 'up', 'right', 'down', 'left', 'up-right', 'down-right', 'down-left']
+        action_name = action_names[action_idx] if action_idx < len(action_names) else f'action_{action_idx}'
+        self._log_debug('BRAIN_DECISION', {
+            'organism': organism_idx,
+            'action_idx': action_idx,
+            'action_name': action_name,
+            'movement': (d_theta, d_phi),
+            'confidence': 0.0,  # Would need brain query for real confidence
+        })
+        
+        return (d_theta, d_phi, action_idx)
+    
+    def _add_experience(self, organism_idx: int, reward: float, done: bool = False):
+        """
+        Add an experience to the organism's buffer for training.
+        Uses the stored last_observation and last_action.
+        """
+        if not self.enable_training:
+            return
+        
+        if organism_idx not in self.last_observations:
+            return
+        
+        last_obs = self.last_observations[organism_idx]
+        action = self.last_actions.get(organism_idx, 0)
+        
+        # Get current observation as next_state
+        next_obs = self._get_observation(organism_idx)
+        
+        # Pad states to match brain's expected input dimension
+        # This is critical: brains expect their full input_dim, not arena's OBSERVATION_SIZE
+        if hasattr(self.agent, 'brains') and organism_idx < len(self.agent.brains):
+            brain = self.agent.brains[organism_idx]
+            target_dim = getattr(brain, 'input_dim', getattr(brain, 'input_size', OBSERVATION_SIZE))
+            
+            # Pad last_obs
+            last_obs = np.asarray(last_obs, dtype=np.float32).flatten()
+            if len(last_obs) < target_dim:
+                last_obs = np.pad(last_obs, (0, target_dim - len(last_obs)))
+            elif len(last_obs) > target_dim:
+                last_obs = last_obs[:target_dim]
+            
+            # Pad next_obs
+            next_obs = np.asarray(next_obs, dtype=np.float32).flatten()
+            if len(next_obs) < target_dim:
+                next_obs = np.pad(next_obs, (0, target_dim - len(next_obs)))
+            elif len(next_obs) > target_dim:
+                next_obs = next_obs[:target_dim]
+        
+        # Add to agent's experience buffer
+        if hasattr(self.agent, 'experience_buffers') and organism_idx < len(self.agent.experience_buffers):
+            self.agent.experience_buffers[organism_idx].add(
+                state=last_obs,
+                action=action,
+                reward=reward,
+                next_state=next_obs,
+                done=done,
+                input_tokens=None,
+                target_tokens=None,
+                vp_value=0.5
+            )
+            
+            # Debug log the experience
+            buffer_size = len(self.agent.experience_buffers[organism_idx])
+            self._log_debug('EXPERIENCE_ADDED', {
+                'organism': organism_idx,
+                'action': action,
+                'reward': reward,
+                'done': done,
+                'buffer_size': buffer_size,
+                'reason': 'proximity' if abs(reward) < 0.3 else ('catch' if reward > 0 else 'miss'),
+            })
+    
+    def _do_training_step(self):
+        """
+        Perform a training step on accumulated experiences.
+        Called periodically during gameplay when enable_training=True.
+        """
+        if not hasattr(self.agent, 'train_step'):
+            return
+        
+        # Debug: show buffer sizes periodically
+        if hasattr(self.agent, 'experience_buffers'):
+            buf_sizes = [len(buf) for buf in self.agent.experience_buffers[:min(8, len(self.agent.experience_buffers))]]
+            batch_size = getattr(self.agent, 'batch_size', 32)
+            if self.frame_count % 500 == 100:
+                print(f"   📊 Buffer sizes: {buf_sizes} (need {batch_size} each)")
+        
+        try:
+            loss = self.agent.train_step()
+            print(f"   [DEBUG] train_step returned: {loss}")
+            
+            # Track training (handle NaN loss)
+            import math
+            if loss is not None and not math.isnan(loss):
+                if loss > 0:
+                    self.training_losses.append(loss)
+                    if len(self.training_losses) % 5 == 1:
+                        print(f"   📈 Training: step={len(self.training_losses)}, loss={loss:.4f}")
+                    
+                    # Debug log training step
+                    buf_sizes = [len(buf) for buf in self.agent.experience_buffers[:8]] if hasattr(self.agent, 'experience_buffers') else []
+                    self._log_debug('TRAINING_STEP', {
+                        'step': len(self.training_losses),
+                        'loss': loss,
+                        'total_loss': loss,
+                        'buffer_sizes': buf_sizes,
+                        'batch_size': getattr(self.agent, 'batch_size', 32),
+                        'brains_trained': len(self.agent.brains) if hasattr(self.agent, 'brains') else 0,
+                    })
+            elif loss is not None and math.isnan(loss):
+                # NaN loss - numerical instability - still log it
+                buf_sizes = [len(buf) for buf in self.agent.experience_buffers[:8]] if hasattr(self.agent, 'experience_buffers') else []
+                self._log_debug('TRAINING_STEP', {
+                    'step': len(self.training_losses),
+                    'loss': float('nan'),
+                    'total_loss': float('nan'),
+                    'buffer_sizes': buf_sizes,
+                    'batch_size': getattr(self.agent, 'batch_size', 32),
+                    'brains_trained': 0,
+                    'error': 'NaN loss - numerical instability',
+                })
+                if self.frame_count % 500 == 100:
+                    print(f"   ⚠️ Training returned NaN (numerical instability)")
+        except Exception as e:
+            # Show training errors
+            if self.frame_count % 500 == 100:
+                print(f"   ❌ Training error: {type(e).__name__}: {e}")
     
     def _check_ball_collision(self):
         """
-        Check ball collision with sphere surface.
+        Check ball collision with sphere surface for ALL balls.
         In SWARM_DEFENSE mode: ANY organism can catch - it's collective defense.
         """
-        ball_pos = self.ball.get_position()
-        dist_from_center = math.sqrt(ball_pos[0]**2 + ball_pos[1]**2 + ball_pos[2]**2)
-        
-        # Check if ball reached sphere surface
-        if dist_from_center >= SPHERE_RADIUS - BALL_RADIUS:
-            _, ball_theta, ball_phi = cartesian_to_spherical(*ball_pos)
+        for ball_idx, ball in enumerate(self.balls):
+            ball_pos = ball.get_position()
+            dist_from_center = math.sqrt(ball_pos[0]**2 + ball_pos[1]**2 + ball_pos[2]**2)
             
-            # SWARM DEFENSE: Check if ANY organism intercepts
-            catcher = None
-            min_catch_dist = float('inf')
-            
-            for org_idx in self.alive_organisms:
-                org = self.organisms[org_idx]
-                ang_dist = angular_distance(org.theta, org.phi, ball_theta, ball_phi)
+            # Check if ball reached sphere surface
+            if dist_from_center >= SPHERE_RADIUS - BALL_RADIUS:
+                _, ball_theta, ball_phi = cartesian_to_spherical(*ball_pos)
                 
-                if ang_dist <= PADDLE_ANGULAR_RADIUS and ang_dist < min_catch_dist:
-                    min_catch_dist = ang_dist
-                    catcher = org_idx
-            
-            if catcher is not None:
-                # SWARM CATCH! Any organism intercepted
-                self._handle_swarm_catch(ball_pos, dist_from_center, catcher)
-            else:
-                # SWARM MISS - collective failure
-                self._handle_swarm_miss(ball_theta, ball_phi)
+                # SWARM DEFENSE: Check if ANY organism intercepts
+                catcher = None
+                min_catch_dist = float('inf')
+                
+                for org_idx in self.alive_organisms:
+                    org = self.organisms[org_idx]
+                    ang_dist = angular_distance(org.theta, org.phi, ball_theta, ball_phi)
+                    
+                    if ang_dist <= PADDLE_ANGULAR_RADIUS and ang_dist < min_catch_dist:
+                        min_catch_dist = ang_dist
+                        catcher = org_idx
+                
+                if catcher is not None:
+                    # SWARM CATCH! Any organism intercepted this ball
+                    self._handle_swarm_catch(ball, ball_pos, dist_from_center, catcher, ball_idx)
+                else:
+                    # SWARM MISS - collective failure
+                    self._handle_swarm_miss(ball_theta, ball_phi, ball_idx)
     
-    def _handle_swarm_catch(self, ball_pos, dist_from_center, catcher_idx):
+    def _handle_swarm_catch(self, ball: Ball3D, ball_pos, dist_from_center, catcher_idx, ball_idx: int = 0):
         """
         Handle a successful swarm interception.
         
@@ -765,43 +1411,82 @@ class SphereArena:
         """
         # Reflect ball
         normal = normalize_vector(ball_pos)
-        vel = self.ball.get_velocity()
+        vel = ball.get_velocity()
         new_vel = reflect_vector(vel, normal)
         
-        self.ball.vx = new_vel[0]
-        self.ball.vy = new_vel[1]
-        self.ball.vz = new_vel[2]
+        ball.vx = new_vel[0]
+        ball.vy = new_vel[1]
+        ball.vz = new_vel[2]
         
         # Speed up slightly (increases difficulty)
-        self.ball.speed_up(1.02)
+        ball.speed_up(1.02)
         
         # Move ball inside sphere
         scale = (SPHERE_RADIUS - BALL_RADIUS - 0.01) / dist_from_center
-        self.ball.x *= scale
-        self.ball.y *= scale
-        self.ball.z *= scale
+        ball.x *= scale
+        ball.y *= scale
+        ball.z *= scale
         
         # Update basic stats
         self.collective_catches += 1
         self.catch_streak += 1
         self.best_streak = max(self.best_streak, self.catch_streak)
         self.organisms[catcher_idx].catches += 1
-        self.ball.last_hit_by = catcher_idx
+        ball.last_hit_by = catcher_idx
         
         # ═══════════════════════════════════════════════════════════════════
-        # COMMAND CHAIN LOGIC
+        # POST-SNAPSHOT TRAINING: REWARD ON CATCH
+        # ═══════════════════════════════════════════════════════════════════
+        if self.enable_training:
+            # Catcher gets big reward (+1.0)
+            self._add_experience(catcher_idx, reward=1.0, done=False)
+            
+            # Nearby organisms get small reward for good positioning (+0.2)
+            # Organisms far from catch get tiny negative for being out of position (-0.1)
+            _, ball_theta, ball_phi = cartesian_to_spherical(*ball_pos)
+            for org_idx in self.alive_organisms:
+                if org_idx == catcher_idx:
+                    continue
+                org = self.organisms[org_idx]
+                dist = angular_distance(org.theta, org.phi, ball_theta, ball_phi)
+                if dist < PADDLE_ANGULAR_RADIUS * 2:
+                    # Near the action - good backup position
+                    self._add_experience(org_idx, reward=0.2, done=False)
+                elif dist > PADDLE_ANGULAR_RADIUS * 4:
+                    # Too far away - could have been better positioned
+                    self._add_experience(org_idx, reward=-0.1, done=False)
+        
+        # ═══════════════════════════════════════════════════════════════════
+        # COMMAND CHAIN LOGIC (single-ball or per-ball commander)
         # ═══════════════════════════════════════════════════════════════════
         if self.enable_command_chain:
-            self._process_command_chain(catcher_idx)
+            if self.num_balls > 1:
+                # Multi-ball: catcher becomes BALL COMMANDER for this specific ball
+                self._process_ball_command_chain(catcher_idx, ball_idx)
+            else:
+                # Single ball: legacy behavior
+                self._process_command_chain(catcher_idx)
         
         # Log the catch
         self.catch_log.append((self.frame_count, catcher_idx, self.catch_streak))
         
-        cmd_info = ""
-        if self.enable_command_chain and self.current_commander == catcher_idx:
-            cmd_info = " [NOW COMMANDING]"
+        # Debug log the catch event
+        self._log_debug('CATCH', {
+            'catcher': catcher_idx,
+            'ball_idx': ball_idx,
+            'streak': self.catch_streak,
+            'total_catches': self.collective_catches,
+        })
         
-        print(f"   🎯 SWARM CATCH by #{catcher_idx}!{cmd_info} (streak: {self.catch_streak})")
+        cmd_info = ""
+        if self.enable_command_chain:
+            if self.num_balls > 1 and self.ball_commanders.get(ball_idx) == catcher_idx:
+                cmd_info = f" [BALL #{ball_idx} COMMANDER]"
+            elif self.current_commander == catcher_idx:
+                cmd_info = " [NOW COMMANDING]"
+        
+        ball_label = f" (ball #{ball_idx})" if self.num_balls > 1 else ""
+        print(f"   🎯 SWARM CATCH by #{catcher_idx}!{cmd_info}{ball_label} (streak: {self.catch_streak})")
     
     def _process_command_chain(self, new_catcher_idx: int):
         """
@@ -875,7 +1560,85 @@ class SphereArena:
             'catcher': None,
             'compliance': None
         })
+        
+        # Debug log the command
+        self._log_debug('COMMAND_ISSUED', {
+            'commander': new_catcher_idx,
+            'target': self.current_command,
+            'predicted_impact': self.predicted_impact,
+        })
     
+    def _process_ball_command_chain(self, catcher_idx: int, ball_idx: int):
+        """
+        Process command chain for a specific ball in multi-ball mode.
+        
+        Each ball has its own commander who issues orders to their squad.
+        """
+        catcher = self.organisms[catcher_idx]
+        ball = self.balls[ball_idx]
+        
+        # ─────────────────────────────────────────────────────────────────
+        # STEP 1: Catcher becomes this ball's commander
+        # ─────────────────────────────────────────────────────────────────
+        old_commander = self.ball_commanders.get(ball_idx)
+        if old_commander is not None and old_commander in self.organisms:
+            self.organisms[old_commander].is_ball_commander = False
+        
+        self.ball_commanders[ball_idx] = catcher_idx
+        catcher.is_ball_commander = True
+        catcher.commands_issued += 1
+        
+        # ─────────────────────────────────────────────────────────────────
+        # STEP 2: Predict where THIS ball will hit
+        # ─────────────────────────────────────────────────────────────────
+        predicted_theta, predicted_phi = self._predict_ball_impact(ball)
+        
+        # ─────────────────────────────────────────────────────────────────
+        # STEP 3: Issue command to organisms assigned to this ball
+        # ─────────────────────────────────────────────────────────────────
+        self.ball_commands[ball_idx] = (predicted_theta, predicted_phi)
+        
+        # Broadcast to squad members only
+        squad = self.ball_squads.get(ball_idx, [])
+        for org_idx in squad:
+            if org_idx != catcher_idx and org_idx in self.organisms:
+                self.organisms[org_idx].last_command_received = (predicted_theta, predicted_phi)
+                self.organisms[org_idx].command_compliance = 0.0
+    
+    def _predict_ball_impact(self, ball: Ball3D) -> Tuple[float, float]:
+        """Predict where a specific ball will hit the sphere surface."""
+        bx, by, bz = ball.x, ball.y, ball.z
+        vx, vy, vz = ball.vx, ball.vy, ball.vz
+        
+        # Ray-sphere intersection
+        a = vx*vx + vy*vy + vz*vz
+        b = 2 * (bx*vx + by*vy + bz*vz)
+        c = bx*bx + by*by + bz*bz - SPHERE_RADIUS*SPHERE_RADIUS
+        
+        discriminant = b*b - 4*a*c
+        
+        if discriminant < 0 or a == 0:
+            speed = math.sqrt(vx*vx + vy*vy + vz*vz)
+            if speed > 0:
+                impact_x = SPHERE_RADIUS * vx / speed
+                impact_y = SPHERE_RADIUS * vy / speed
+                impact_z = SPHERE_RADIUS * vz / speed
+            else:
+                impact_x, impact_y, impact_z = SPHERE_RADIUS, 0, 0
+        else:
+            t1 = (-b + math.sqrt(discriminant)) / (2*a)
+            t2 = (-b - math.sqrt(discriminant)) / (2*a)
+            t = max(t1, t2)
+            if t < 0:
+                t = min(t1, t2) if min(t1, t2) > 0 else 1.0
+            
+            impact_x = bx + t * vx
+            impact_y = by + t * vy
+            impact_z = bz + t * vz
+        
+        _, impact_theta, impact_phi = cartesian_to_spherical(impact_x, impact_y, impact_z)
+        return (impact_theta, impact_phi)
+
     def _predict_impact_point(self) -> Tuple[float, float]:
         """
         Predict where the ball will hit the sphere surface next.
@@ -988,33 +1751,82 @@ class SphereArena:
         
         return compliance
 
-    def _handle_swarm_miss(self, ball_theta, ball_phi):
+    def _handle_swarm_miss(self, ball_theta, ball_phi, ball_idx: int = 0):
         """Handle a collective miss - the swarm failed to intercept."""
         self.collective_misses += 1
         self.catch_streak = 0  # Reset streak
         
+        # Find nearest organism to the miss
+        nearest_org = None
+        nearest_dist = float('inf')
+        for org_idx in self.alive_organisms:
+            org = self.organisms[org_idx]
+            dist = angular_distance(org.theta, org.phi, ball_theta, ball_phi)
+            if dist < nearest_dist:
+                nearest_dist = dist
+                nearest_org = org_idx
+        
         # Log the miss location
         self.miss_log.append((self.frame_count, (ball_theta, ball_phi)))
         
-        print(f"   ❌ SWARM MISS! ({self.collective_misses}/{self.max_misses}) - Gap at θ={ball_theta:.2f}, φ={ball_phi:.2f}")
+        # Debug log the miss event
+        self._log_debug('MISS', {
+            'ball_idx': ball_idx,
+            'position': (ball_theta, ball_phi),
+            'nearest_organism': nearest_org,
+            'nearest_dist': nearest_dist,
+            'total_misses': self.collective_misses,
+        })
+        
+        ball_label = f" (ball #{ball_idx})" if self.num_balls > 1 else ""
+        print(f"   ❌ SWARM MISS!{ball_label} ({self.collective_misses}/{self.max_misses}) - Gap at θ={ball_theta:.2f}, φ={ball_phi:.2f}")
+        
+        # ═══════════════════════════════════════════════════════════════════
+        # POST-SNAPSHOT TRAINING: PENALTY ON MISS
+        # ═══════════════════════════════════════════════════════════════════
+        if self.enable_training:
+            # Penalize organisms based on how far they were from the miss point
+            for org_idx in self.alive_organisms:
+                org = self.organisms[org_idx]
+                dist = angular_distance(org.theta, org.phi, ball_theta, ball_phi)
+                
+                if dist < PADDLE_ANGULAR_RADIUS * 2:
+                    # Was close but missed - moderate penalty
+                    self._add_experience(org_idx, reward=-0.3, done=False)
+                elif dist < PADDLE_ANGULAR_RADIUS * 4:
+                    # Was in range but not close enough - small penalty
+                    self._add_experience(org_idx, reward=-0.5, done=False)
+                else:
+                    # Was far away - bigger penalty for bad positioning
+                    self._add_experience(org_idx, reward=-0.8, done=False)
         
         # Check if game over
-        if self.collective_misses >= self.max_misses:
+        is_final = self.collective_misses >= self.max_misses
+        
+        if is_final:
             self.game_over = True
             self.winner = None  # No winner - swarm failed
             print(f"   💀 SWARM DEFENSE FAILED! Best streak: {self.best_streak}, Total catches: {self.collective_catches}")
+            
+            # Add terminal experience for all organisms
+            if self.enable_training:
+                for org_idx in self.alive_organisms:
+                    self._add_experience(org_idx, reward=-1.0, done=True)
         else:
-            self._reset_ball()
+            self._reset_ball(ball_idx)
     
-    def _reset_ball(self):
-        """Reset ball to center with random direction."""
-        self.ball.x = 0
-        self.ball.y = 0
-        self.ball.z = 0
+    def _reset_ball(self, ball_idx: int = 0):
+        """Reset specific ball to center with random direction."""
+        if ball_idx >= len(self.balls):
+            return
+        ball = self.balls[ball_idx]
+        ball.x = 0
+        ball.y = 0
+        ball.z = 0
         direction = self._random_direction()
-        self.ball.vx = direction[0] * BALL_SPEED
-        self.ball.vy = direction[1] * BALL_SPEED
-        self.ball.vz = direction[2] * BALL_SPEED
+        ball.vx = direction[0] * BALL_SPEED
+        ball.vy = direction[1] * BALL_SPEED
+        ball.vz = direction[2] * BALL_SPEED
     
     def step(self) -> bool:
         """Advance one frame."""
@@ -1023,17 +1835,73 @@ class SphereArena:
         
         self.frame_count += 1
         
-        # Get actions and move organisms
+        # ═══════════════════════════════════════════════════════════════════
+        # MULTI-BALL COMMAND CHAIN UPDATES
+        # ═══════════════════════════════════════════════════════════════════
+        if self.num_balls > 1 and self.enable_command_chain:
+            # Update supreme commander based on performance
+            if self.frame_count % 30 == 0:  # Every ~0.5 seconds
+                self._update_supreme_commander()
+            
+            # Supreme commander can reassign squads based on threat
+            if self.supreme_commander is not None:
+                self._reassign_squads_by_threat()
+        
+        # Get actions and move organisms (tracking for training)
         for org_idx in self.alive_organisms:
             obs = self._get_observation(org_idx)
-            d_theta, d_phi = self._get_organism_action(org_idx, obs)
+            
+            # Store observation before action for experience buffer
+            if self.enable_training:
+                self.last_observations[org_idx] = obs.copy()
+            
+            d_theta, d_phi, action_idx = self._get_organism_action_with_idx(org_idx, obs)
             self.organisms[org_idx].move(d_theta, d_phi)
+            
+            # Store action for experience buffer
+            if self.enable_training:
+                self.last_actions[org_idx] = action_idx
         
-        # Move ball
-        self.ball.move()
+        # Move all balls
+        for ball in self.balls:
+            ball.move()
         
-        # Check collisions
+        # ═══════════════════════════════════════════════════════════════════
+        # CONTINUOUS EXPERIENCE COLLECTION (every 10 frames)
+        # ═══════════════════════════════════════════════════════════════════
+        # Add small reward/penalty based on positioning relative to nearest ball
+        # This gives organisms feedback BEFORE catch/miss events
+        if self.enable_training and self.frame_count % 10 == 0:
+            for org_idx in self.alive_organisms:
+                org = self.organisms[org_idx]
+                
+                # Find nearest ball and distance
+                min_dist = float('inf')
+                for ball in self.balls:
+                    ball_pos = ball.get_position()
+                    _, ball_theta, ball_phi = cartesian_to_spherical(*ball_pos)
+                    dist = angular_distance(org.theta, org.phi, ball_theta, ball_phi)
+                    min_dist = min(min_dist, dist)
+                
+                # Reward for being close to a ball, penalty for being far
+                if min_dist < PADDLE_ANGULAR_RADIUS * 2:
+                    # Very close - good positioning
+                    self._add_experience(org_idx, reward=0.1, done=False)
+                elif min_dist < PADDLE_ANGULAR_RADIUS * 4:
+                    # Moderate distance - neutral
+                    self._add_experience(org_idx, reward=0.0, done=False)
+                else:
+                    # Far from all balls - bad positioning
+                    self._add_experience(org_idx, reward=-0.05, done=False)
+        
+        # Check collisions for all balls
         self._check_ball_collision()
+        
+        # ═══════════════════════════════════════════════════════════════════
+        # POST-SNAPSHOT TRAINING
+        # ═══════════════════════════════════════════════════════════════════
+        if self.enable_training and self.frame_count % self.train_interval == 0:
+            self._do_training_step()
         
         return not self.game_over
     
@@ -1094,14 +1962,17 @@ class SphereArena:
             # Draw paddle zone indicator (circle on sphere)
             self._draw_paddle_zone(org)
         
-        # Draw ball
-        ball_pos = self.ball.get_position()
-        glPushMatrix()
-        glTranslatef(*ball_pos)
-        glColor3f(1.0, 1.0, 0.0)  # Yellow
-        quad = gluNewQuadric()
-        gluSphere(quad, BALL_RADIUS, 12, 8)
-        glPopMatrix()
+        # Draw balls (support multiple)
+        ball_colors = [(1.0, 1.0, 0.0), (1.0, 0.5, 0.0), (0.0, 1.0, 1.0), (1.0, 0.0, 1.0), (0.5, 1.0, 0.5)]
+        for ball_idx, ball in enumerate(self.balls):
+            ball_pos = ball.get_position()
+            glPushMatrix()
+            glTranslatef(*ball_pos)
+            color = ball_colors[ball_idx % len(ball_colors)]
+            glColor3f(*color)
+            quad = gluNewQuadric()
+            gluSphere(quad, BALL_RADIUS, 12, 8)
+            glPopMatrix()
         
         pygame.display.flip()
     
@@ -1282,7 +2153,179 @@ class SphereArena:
                 'eliminations': self.eliminations,
             })
         
+        # ═══════════════════════════════════════════════════════════════════
+        # POST-SNAPSHOT TRAINING RESULTS
+        # ═══════════════════════════════════════════════════════════════════
+        if self.enable_training:
+            results['training'] = {
+                'enabled': True,
+                'training_steps': len(self.training_losses),
+                'avg_loss': sum(self.training_losses) / max(1, len(self.training_losses)),
+                'final_loss': self.training_losses[-1] if self.training_losses else 0.0,
+            }
+            
+            if self.training_losses:
+                print(f"\n📈 TRAINING SUMMARY:")
+                print(f"   Training steps: {len(self.training_losses)}")
+                print(f"   Average loss: {results['training']['avg_loss']:.4f}")
+                print(f"   Final loss: {results['training']['final_loss']:.4f}")
+                
+                # Offer to save updated weights
+                if not self.headless:
+                    save_prompt = input("\n💾 Save trained weights? (y/N): ").strip().lower()
+                    if save_prompt == 'y':
+                        self._save_trained_weights()
+        
+        # ═══════════════════════════════════════════════════════════════════
+        # VERBOSE DEBUG SUMMARY
+        # ═══════════════════════════════════════════════════════════════════
+        if self.verbose:
+            print(f"\n🔍 VERBOSE DEBUG SUMMARY")
+            print("=" * 60)
+            
+            # Action summary
+            action_counts = {}
+            for entry in self.debug_log['actions']:
+                action = entry.get('action_name', 'unknown')
+                action_counts[action] = action_counts.get(action, 0) + 1
+            
+            print(f"\n📍 ACTIONS ({len(self.debug_log['actions'])} total):")
+            for action, count in sorted(action_counts.items(), key=lambda x: -x[1]):
+                print(f"   {action}: {count}")
+            
+            # Experience summary
+            print(f"\n📦 EXPERIENCES ({len(self.debug_log['experiences'])} total):")
+            if self.debug_log['experiences']:
+                rewards = [e.get('reward', 0) for e in self.debug_log['experiences']]
+                print(f"   Reward range: [{min(rewards):.2f}, {max(rewards):.2f}]")
+                print(f"   Mean reward: {sum(rewards)/len(rewards):.3f}")
+                
+                # Experience by organism
+                by_org = {}
+                for e in self.debug_log['experiences']:
+                    org = e.get('organism', -1)
+                    by_org[org] = by_org.get(org, 0) + 1
+                print(f"   Per organism: {dict(sorted(by_org.items()))}")
+            
+            # Training summary
+            print(f"\n🧠 TRAINING ({len(self.debug_log['training'])} steps):")
+            if self.debug_log['training']:
+                losses = [t.get('total_loss', 0) for t in self.debug_log['training'] 
+                         if not isinstance(t.get('total_loss'), float) or not (t.get('total_loss') != t.get('total_loss'))]  # filter NaN
+                if losses:
+                    print(f"   Loss range: [{min(losses):.4f}, {max(losses):.4f}]")
+                nan_count = sum(1 for t in self.debug_log['training'] 
+                               if isinstance(t.get('total_loss'), float) and t.get('total_loss') != t.get('total_loss'))
+                if nan_count:
+                    print(f"   ⚠️ NaN losses: {nan_count}")
+            
+            # Command summary
+            print(f"\n📢 COMMANDS ({len(self.debug_log['commands'])} total):")
+            if self.debug_log['commands']:
+                by_issuer = {}
+                for c in self.debug_log['commands']:
+                    issuer = c.get('commander', c.get('issuer', -1))
+                    by_issuer[issuer] = by_issuer.get(issuer, 0) + 1
+                print(f"   By organism: {dict(sorted(by_issuer.items()))}")
+            
+            # ═══════════════════════════════════════════════════════════════
+            # PER-ORGANISM ACTIVITY SUMMARY
+            # ═══════════════════════════════════════════════════════════════
+            print(f"\n🦠 PER-ORGANISM SUMMARY")
+            print("-" * 60)
+            
+            for org_idx in sorted(self.organisms.keys()):
+                org = self.organisms[org_idx]
+                
+                # Get organism name if available
+                org_name = ""
+                if hasattr(self.agent, 'organism_names') and org_idx < len(self.agent.organism_names):
+                    org_name = f" ({self.agent.organism_names[org_idx][:8]}...)"
+                
+                print(f"\n   Organism #{org_idx}{org_name}:")
+                
+                # Catches and misses
+                print(f"      🎯 Catches: {org.catches}")
+                
+                # Commands issued/followed
+                if self.enable_command_chain:
+                    print(f"      📢 Commands issued: {org.commands_issued}")
+                    print(f"      📋 Commands followed: {org.commands_followed}")
+                    print(f"      ⭐ Leadership score: {org.leadership_score:.2f}")
+                
+                # Actions taken (from debug log)
+                org_actions = [a for a in self.debug_log['actions'] if a.get('organism') == org_idx]
+                if org_actions:
+                    action_dist = {}
+                    for a in org_actions:
+                        act = a.get('action_name', f"action_{a.get('action_idx', '?')}")
+                        action_dist[act] = action_dist.get(act, 0) + 1
+                    top_actions = sorted(action_dist.items(), key=lambda x: -x[1])[:3]
+                    actions_str = ", ".join([f"{act}:{cnt}" for act, cnt in top_actions])
+                    print(f"      🎮 Top actions: {actions_str}")
+                
+                # Experiences collected
+                org_exps = [e for e in self.debug_log['experiences'] if e.get('organism') == org_idx]
+                if org_exps:
+                    rewards = [e.get('reward', 0) for e in org_exps]
+                    total_reward = sum(rewards)
+                    print(f"      📦 Experiences: {len(org_exps)} (total reward: {total_reward:+.2f})")
+                
+                # Movement stats
+                org_moves = [a.get('movement', (0, 0)) for a in org_actions]
+                if org_moves:
+                    avg_d_theta = sum(m[0] for m in org_moves) / len(org_moves)
+                    avg_d_phi = sum(m[1] for m in org_moves) / len(org_moves)
+                    print(f"      🧭 Avg movement: θ={avg_d_theta:+.4f}, φ={avg_d_phi:+.4f}")
+            
+            print()
+            
+            # Include full debug log in results for post-analysis
+            results['debug_log'] = self.debug_log
+            print()
+        
         return results
+    
+    def _save_trained_weights(self):
+        """Save the trained brain weights back to .pt files."""
+        import torch
+        import os
+        
+        # Find the cocoon directory
+        cocoon_dir = None
+        if hasattr(self.agent, 'cocoon_dir'):
+            cocoon_dir = self.agent.cocoon_dir
+        else:
+            # Try to find brain_ensemble.pt in current directory or parent
+            for check_path in ['.', '..', os.path.dirname(os.path.abspath(__file__))]:
+                pt_path = os.path.join(check_path, 'brain_ensemble.pt')
+                if os.path.exists(pt_path):
+                    cocoon_dir = check_path
+                    break
+        
+        if cocoon_dir is None:
+            print("   ⚠️ Could not find cocoon directory to save weights")
+            return
+        
+        try:
+            # Save individual brain weights
+            for i, brain in enumerate(self.agent.brains):
+                pt_path = os.path.join(cocoon_dir, f'brain_{i}_trained.pt')
+                torch.save(brain.state_dict(), pt_path)
+            
+            # Also save as ensemble
+            ensemble_path = os.path.join(cocoon_dir, 'brain_ensemble_trained.pt')
+            torch.save({
+                f'brain_{i}': brain.state_dict() 
+                for i, brain in enumerate(self.agent.brains)
+            }, ensemble_path)
+            
+            print(f"   ✅ Saved trained weights to {cocoon_dir}")
+            print(f"      - Individual: brain_{{0..{len(self.agent.brains)-1}}}_trained.pt")
+            print(f"      - Ensemble: brain_ensemble_trained.pt")
+            
+        except Exception as e:
+            print(f"   ❌ Failed to save weights: {e}")
 
 
 # =============================================================================
@@ -1294,7 +2337,11 @@ def run_swarm_defense(
     organism_indices: Optional[List[int]] = None,
     max_misses: int = 10,
     headless: bool = False,
-    seed: Optional[int] = None
+    seed: Optional[int] = None,
+    num_balls: int = 1,
+    enable_training: bool = False,
+    train_interval: int = 100,
+    verbose: bool = False
 ) -> Dict[str, Any]:
     """
     Run a Swarm Defense challenge - the PRIMARY game mode.
@@ -1310,6 +2357,22 @@ def run_swarm_defense(
     - Best follower who intercepts becomes new commander
     - Creates EMERGENT LEADERSHIP based on performance
     
+    MULTI-BALL MODE:
+    - Use num_balls > 1 for extra chaos!
+    - Swarm must coordinate to track multiple threats
+    
+    POST-SNAPSHOT TRAINING (when enable_training=True):
+    - Organisms learn from catches (+1.0 reward)
+    - Near-catch positioning rewarded (+0.2)
+    - Misses penalized (-0.5 to -1.0)
+    - Weights updated every train_interval frames
+    - At session end, prompted to save updated weights
+    
+    VERBOSE MODE (when verbose=True):
+    - Logs all organism actions with brain output details
+    - Logs all experience collection (state, action, reward)
+    - Logs all training steps with loss breakdown
+    
     This tests:
     - Swarm coordination and cooperation
     - Emergent role distribution
@@ -1324,7 +2387,10 @@ def run_swarm_defense(
         max_misses: How many collective misses before failure
         headless: Run without display
         seed: Random seed for reproducibility
-        enable_command_chain: Enable hierarchical command system (default True)
+        num_balls: Number of balls in play (1-5, default 1)
+        enable_training: Enable post-snapshot training (weights updated during gameplay)
+        train_interval: How many frames between training steps (default: 100)
+        verbose: Enable granular debug logging of actions, experiences, and training
     
     Returns:
         Results with catches, misses, streak, command chain stats, and leadership metrics
@@ -1336,7 +2402,11 @@ def run_swarm_defense(
         headless=headless,
         seed=seed,
         mode=GameMode.SWARM_DEFENSE,
-        enable_command_chain=True  # Always enable for swarm defense
+        enable_command_chain=True,  # Always enable for swarm defense
+        num_balls=num_balls,
+        enable_training=enable_training,
+        train_interval=train_interval,
+        verbose=verbose
     )
     
     return arena.run()
@@ -1451,9 +2521,86 @@ def run_demo(num_organisms: int = 6, max_misses: int = 10):
 def main():
     """Demo the Sphere Arena - 3D Swarm Defense Training."""
     import sys
+    import os
     
     # Check for --demo flag
     demo_mode = '--demo' in sys.argv
+    
+    # Check for --train flag (enable post-snapshot training)
+    enable_training = '--train' in sys.argv
+    
+    # Check for --verbose flag (granular debug logging)
+    verbose = '--verbose' in sys.argv or '-v' in sys.argv
+    
+    # Check for --cocoon flag (path to cocoon directory)
+    cocoon_path = None
+    for i, arg in enumerate(sys.argv):
+        if arg == '--cocoon' and i + 1 < len(sys.argv):
+            cocoon_path = sys.argv[i + 1]
+            # Resolve to absolute path
+            cocoon_path = os.path.abspath(cocoon_path)
+    
+    # Check for --balls flag (e.g., --balls 3)
+    num_balls = 1
+    for i, arg in enumerate(sys.argv):
+        if arg == '--balls' and i + 1 < len(sys.argv):
+            try:
+                num_balls = int(sys.argv[i + 1])
+                num_balls = max(1, min(5, num_balls))  # Clamp 1-5
+            except ValueError:
+                pass
+    
+    # Check for --organisms flag (e.g., --organisms 50)
+    num_organisms_override = None
+    for i, arg in enumerate(sys.argv):
+        if arg == '--organisms' and i + 1 < len(sys.argv):
+            try:
+                num_organisms_override = int(sys.argv[i + 1])
+                num_organisms_override = max(1, num_organisms_override)  # At least 1
+            except ValueError:
+                pass
+    
+    # Check for --help flag
+    if '--help' in sys.argv or '-h' in sys.argv:
+        print("🌐 Sphere Arena - 3D Swarm Defense")
+        print()
+        print("Usage: python sphere_arena.py [options]")
+        print()
+        print("Options:")
+        print("  --cocoon PATH    Path to cocoon directory (contains cocoon.py)")
+        print("                   Example: --cocoon agent_downloads/small_export")
+        print("  --demo           Run demo mode with dummy AI")
+        print("  --organisms N    Number of organisms to use (default: all available)")
+        print("  --balls N        Number of balls (1-5, default: 1)")
+        print("  --train          Enable post-snapshot training")
+        print("                   Organisms learn from catches (+reward) and misses (-penalty)")
+        print("                   Weights updated every 100 frames")
+        print("                   Prompted to save trained weights at end")
+        print("  --verbose, -v    Enable granular debug logging")
+        print("                   Shows all organism actions, experience collection, and training")
+        print("  --help, -h       Show this help message")
+        print()
+        print("Examples:")
+        print("  # Run with specific cocoon:")
+        print("  python sphere_arena.py --cocoon agent_downloads/small_export --train")
+        print()
+        print("  # Run with 2 balls and verbose logging:")
+        print("  python sphere_arena.py --cocoon ./my_cocoon --balls 2 --verbose")
+        print()
+        print("  # Demo mode (no cocoon needed):")
+        print("  python sphere_arena.py --demo")
+        print()
+        print("Training mode:")
+        print("  When --train is enabled, organisms gain knowledge during gameplay:")
+        print("    • Catches: +1.0 reward (reinforces successful intercepts)")
+        print("    • Near misses: +0.2 reward (good positioning)")
+        print("    • Misses: -0.5 penalty (bad positioning)")
+        print("    • Game over: -1.0 terminal penalty")
+        print()
+        print("  After the game, you'll be prompted to save trained weights as:")
+        print("    • brain_X_trained.pt (individual)")
+        print("    • brain_ensemble_trained.pt (combined)")
+        return
     
     print("🌐 Sphere Arena - 3D Swarm Defense Training")
     print("=" * 60)
@@ -1468,6 +2615,9 @@ def main():
     print("  • Best follower who catches = new commander")
     print("  • Emergent leadership based on performance!")
     print()
+    if num_balls > 1:
+        print(f"⚠️  MULTI-BALL MODE: {num_balls} balls in play!")
+        print()
     
     if demo_mode:
         # Run demo with dummy AI
@@ -1490,11 +2640,7 @@ def main():
     # Normal mode - try to load cocoon
     print("Usage with exported cocoon:")
     print()
-    print("  from cocoon import CocoonAgent")
-    print("  from sphere_arena import run_swarm_defense, GameMode")
-    print()
-    print("  agent = CocoonAgent()")
-    print("  results = run_swarm_defense(agent, max_misses=10)")
+    print("  python sphere_arena.py --cocoon agent_downloads/small_export --train")
     print()
     print("Or run with --demo flag to preview visuals:")
     print("  python sphere_arena.py --demo")
@@ -1506,28 +2652,54 @@ def main():
     
     # Try to run with cocoon
     try:
-        sys.path.insert(0, '.')
+        # If --cocoon path specified, add it to sys.path
+        if cocoon_path:
+            if os.path.isdir(cocoon_path):
+                sys.path.insert(0, cocoon_path)
+                print(f"Loading cocoon from: {cocoon_path}")
+            else:
+                print(f"❌ Cocoon path not found: {cocoon_path}")
+                return
+        else:
+            sys.path.insert(0, '.')
+        
         from cocoon import CocoonAgent
         
         print("Found cocoon.py - starting Swarm Defense!")
         agent = CocoonAgent()
         
-        num_players = min(8, len(agent.brains))
+        # Store cocoon directory on agent for save functionality
+        if cocoon_path:
+            agent.cocoon_dir = cocoon_path
+        
+        # Use all available organisms, or override with --organisms flag
+        if num_organisms_override is not None:
+            num_players = min(num_organisms_override, len(agent.brains))
+        else:
+            num_players = len(agent.brains)  # Use ALL available
         
         if not PYGAME_AVAILABLE:
             print("pygame not installed; running headless")
         
         print(f"\n--- SWARM DEFENSE MODE WITH COMMAND CHAIN ---")
         print(f"    Organisms: {num_players}")
+        print(f"    Balls: {num_balls}")
         print(f"    Max misses: 10 (collective)")
         print(f"    Command chain: ENABLED")
+        if enable_training:
+            print(f"    📈 Training: ENABLED (post-snapshot learning)")
+        if verbose:
+            print(f"    🔍 Verbose: ENABLED (debug logging active)")
         print()
         
         results = run_swarm_defense(
             agent,
             organism_indices=list(range(num_players)),
             max_misses=10,
-            headless=not PYGAME_AVAILABLE
+            headless=not PYGAME_AVAILABLE,
+            num_balls=num_balls,
+            enable_training=enable_training,
+            verbose=verbose
         )
         
         print("\n" + "=" * 60)

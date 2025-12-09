@@ -153,6 +153,9 @@ Example: "Enable neural system and set learning rate to 0.002"
 **Q: Training loss is high (>1.0)**
 - A: Normal during early training. Should decrease over time.
 
+**Q: Training loss is NaN**
+- A: Fixed in 2025-12-09 update. Language logits had extreme values causing overflow. Now uses temperature scaling and NaN guards. Update to latest version.
+
 **Q: Organisms not learning**
 - A: Check `epsilon` - if too high, they're exploring too much. Check reward weights.
 
@@ -161,6 +164,9 @@ Example: "Enable neural system and set learning rate to 0.002"
 
 **Q: CUDA out of memory**
 - A: Reduce `batch_size` or `memory_size`, or use `"device": "cpu"`
+
+**Q: Dimension mismatch errors**
+- A: Fixed in 2025-12-09 update. Model dimensions now read dynamically from `brain.input_dim`. Observations are padded/truncated automatically.
 
 ---
 

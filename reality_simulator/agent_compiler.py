@@ -7137,14 +7137,34 @@ class CocoonAgent:
         if logits is None or len(target_tokens) == 0:
             return None
         targets = torch.LongTensor([t[0] if t else 0 for t in target_tokens]).to(self.device)
+        
+        # CRITICAL: Temperature scaling to prevent numerical overflow
+        # Logits can be HUGE (thousands) which causes exp() overflow in cross_entropy
+        logit_max = logits.abs().max().item()
+        temperature = max(1.0, logit_max / 50.0)  # Scale down if logits > 50
+        logits = logits / temperature
+        
+        # Additional VP scaling
         if vp_value is not None and vp_value > 0:
             logits = logits / (1.0 + vp_value)
-        return F.cross_entropy(logits, targets, ignore_index=0)
+        
+        # Final clamp to absolutely safe range
+        logits = torch.clamp(logits, -50, 50)
+        
+        loss = F.cross_entropy(logits, targets, ignore_index=0)
+        
+        # Final NaN/Inf check
+        if torch.isnan(loss) or torch.isinf(loss):
+            return None
+        return loss
 
     def train_step(self) -> float:
+        import sys
+        import math
         total = 0.0
         trained = 0
-        for brain, opt, buf in zip(self.brains, self.optimizers, self.experience_buffers):
+        skipped_nan = 0
+        for brain_idx, (brain, opt, buf) in enumerate(zip(self.brains, self.optimizers, self.experience_buffers)):
             if len(buf) < self.batch_size:
                 continue
             states, actions, rewards, next_states, dones, in_tok, tgt_tok, vp_vals = buf.sample_batch(self.batch_size)
@@ -7158,25 +7178,71 @@ class CocoonAgent:
             rewards_t = torch.FloatTensor(rewards).to(self.device)
             next_states_t = torch.FloatTensor(next_states).to(self.device)
             dones_t = torch.BoolTensor(dones).to(self.device)
+            
+            # Debug: print state info for first brain
+            if brain_idx == 0:
+                print(f"  [DBG] states shape={states_t.shape}, range=[{states_t.min():.2f},{states_t.max():.2f}]", flush=True)
+            
+            # Check for NaN in inputs (can happen with bad state data)
+            if torch.isnan(states_t).any() or torch.isnan(next_states_t).any():
+                continue
+            if torch.isnan(rewards_t).any():
+                continue
 
             brain.train()
             q_values, lang_logits = brain(states_t, vp_value=vp_val, return_language_logits=True)
+            
+            # Debug: print stats
+            q_min = q_values.min().item()
+            q_max = q_values.max().item()
+            q_mean = q_values.mean().item()
+            
+            # Check for NaN in q_values (model instability)
+            if torch.isnan(q_values).any():
+                print(f"  [NaN] q_values has NaN! brain={brain_idx}", flush=True)
+                skipped_nan += 1
+                continue
+            
+            # Clamp actions to valid range for this brain's output dimension
+            output_dim = q_values.shape[1]
+            actions_t = actions_t.clamp(0, output_dim - 1)
+            
             q_sel = q_values.gather(1, actions_t.unsqueeze(1)).squeeze(1)
 
             brain.eval()
             with torch.no_grad():
                 next_q, _ = brain(next_states_t, vp_value=vp_val, return_language_logits=False)
+                
+                # Check for NaN in next_q
+                if torch.isnan(next_q).any():
+                    print(f"  [NaN] next_q has NaN! brain={brain_idx}", flush=True)
+                    skipped_nan += 1
+                    continue
+                    
                 next_max = next_q.max(1)[0]
             target_q = rewards_t + self.gamma * next_max * (~dones_t)
+            
+            # Check for NaN in target_q
+            if torch.isnan(target_q).any():
+                print(f"  [NaN] target_q has NaN! brain={brain_idx}", flush=True)
+                skipped_nan += 1
+                continue
 
             rl_loss = F.mse_loss(q_sel, target_q)
+            
+            # Check for NaN in rl_loss
+            if torch.isnan(rl_loss):
+                skipped_nan += 1
+                continue
+            
+            # Language loss (with NaN protection in _language_loss)
             lang_loss = self._language_loss(lang_logits, tgt_tok, vp_val)
             
-            # Concept loss: ConceptHead predicts composition values that should correlate with rewards
+            # Concept loss
             concept_loss = None
             if hasattr(brain, 'use_concept_head') and brain.use_concept_head and hasattr(brain, 'concept_head'):
                 brain.train()
-                # Get hidden state for concept head (recompute forward to get hidden)
+                # Get hidden state for concept head
                 h = F.relu(brain.fc1(states_t))
                 h = brain.dropout(h)
                 if brain.use_attention:
@@ -7187,15 +7253,13 @@ class CocoonAgent:
                     h = h.squeeze(1)
                 h = F.relu(brain.fc2(h))
                 h = brain.dropout(h)
-                
-                # Get concept predictions
                 concept_out = brain.concept_head(h)
-                composition_values = concept_out['composition_value']  # (batch, num_compositions)
-                
-                # Loss: predicted composition values should predict rewards
-                # Average composition value should approximate reward signal
+                composition_values = concept_out['composition_value']
                 predicted_reward = composition_values.mean(dim=-1)
                 concept_loss = F.mse_loss(predicted_reward, rewards_t)
+                # NaN check for concept loss
+                if torch.isnan(concept_loss) or torch.isinf(concept_loss):
+                    concept_loss = None
 
             loss = self.rl_weight * rl_loss
             if lang_loss is not None:
@@ -7203,18 +7267,44 @@ class CocoonAgent:
             if concept_loss is not None:
                 loss = loss + self.concept_weight * concept_loss
 
+            # Skip if loss is NaN or Inf (numerical instability protection)
+            if torch.isnan(loss) or torch.isinf(loss):
+                rl_val = rl_loss.item() if not torch.isnan(rl_loss) else float('nan')
+                lang_val = lang_loss.item() if lang_loss is not None and not torch.isnan(lang_loss) else 0.0
+                concept_val = concept_loss.item() if concept_loss is not None and not torch.isnan(concept_loss) else 0.0
+                skipped_nan += 1
+                continue
+
             opt.zero_grad()
             loss.backward()
+            
+            # Gradient clipping to prevent exploding gradients
+            torch.nn.utils.clip_grad_norm_(brain.parameters(), max_norm=1.0)
+            
             opt.step()
 
-            total += loss.item()
+            loss_val = loss.item()
+            if math.isnan(loss_val) or math.isinf(loss_val):
+                print(f"  [NaN] loss.item() is NaN/Inf AFTER backward! brain={brain_idx}", flush=True)
+                skipped_nan += 1
+                continue
+            total += loss_val
             trained += 1
 
         if trained > 0:
             self.training_step += 1
             self.epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_decay)
-            return total / trained
-        return 0.0
+            result = total / trained
+            if skipped_nan > 0:
+                print(f"  📈 Training: {trained} brains OK, {skipped_nan} skipped (NaN), loss={result:.4f}")
+            return result
+        else:
+            # WHY did no training happen?
+            num_brains = len(self.brains)
+            buf_counts = [len(buf) for buf in self.experience_buffers]
+            ready = sum(1 for c in buf_counts if c >= self.batch_size)
+            print(f"  [DEBUG] trained=0, skipped_nan={skipped_nan}, ready_bufs={ready}/{num_brains}")
+            return float('nan') if skipped_nan > 0 else 0.0
 
     def _get_semantic_related(self, word: str, min_strength: float = 0.3) -> List[str]:
         """Get semantically related words from knowledge web."""

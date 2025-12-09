@@ -4,6 +4,43 @@
 
 ---
 
+## [Unreleased] - 2025-12-09
+
+### 🔧 NaN Training Fix & Language Loss Stability (2025-12-09)
+
+**CRITICAL FIX**: Training in sphere arena (and other environments) no longer produces NaN loss.
+
+#### Fixed - Numerical Overflow in Language Loss (`agent_compiler.py`, `cocoon.py`)
+- **Root cause identified**: Language logits ranged from -2775 to +2808, causing `exp()` overflow in `cross_entropy`
+- **Temperature scaling**: Automatically scales logits to safe range [-50, 50] before softmax
+- **Gradient clipping**: Added `clip_grad_norm_(max_norm=1.0)` to prevent exploding gradients
+- **NaN guards**: Skip training step if any tensor contains NaN/Inf instead of corrupting model
+
+#### Fixed - Dimension Mismatch Between Training and Inference
+- **Dynamic padding**: `_pad_state()` reads `brain.input_dim` from loaded model, not hardcoded constants
+- **Action clamping**: Actions clamped to `[0, output_dim-1]` to prevent index-out-of-bounds
+- **Sphere arena compatibility**: Arena now dynamically adapts to ANY model dimensions
+
+#### Fixed - Export Template vs Runtime Mismatch
+- **Identified**: `sphere_arena.py` loads from `agent_downloads/big_export/cocoon.py`, NOT `agent_compiler.py`
+- **Template updated**: `_generate_cocoon_source()` now includes all NaN safeguards
+- **Re-exported cocoon.py**: Patched with temperature scaling and NaN checks
+
+#### Added - Concept Loss Training
+- Re-enabled concept loss in `train_step()` (was disabled for debugging)
+- Concept head predicts reward from composition values
+- NaN check prevents corrupt concept loss from affecting total loss
+
+#### Technical Details
+```python
+# Before: logits could be ~2800, exp(2800) = overflow
+# After: temperature = max(1.0, logit_max / 50.0)
+#        logits = logits / temperature  # Now safe range
+#        logits = clamp(logits, -50, 50)  # Belt and suspenders
+```
+
+---
+
 ## [Unreleased] - 2025-12-08
 
 ### 🐛 Critical Cocoon Bug Fixes & Reactive Event Handlers (2025-12-08)

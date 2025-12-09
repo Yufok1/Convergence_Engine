@@ -924,6 +924,37 @@ python unified_entry.py --highlander --predation --survival-threshold 0.8 --comp
 [GERMINATION] 🌱 REINCARNATION: New organism reborn_001
 ```
 
+### 🌐 Sphere Arena - 3D Swarm Defense Training
+**"The swarm is ONE. The interceptor commands. The best follower leads next."**
+
+A 3D arena where organisms collectively defend a sphere surface with hierarchical command chains:
+
+#### Quick Launch:
+```bash
+# Standard mode (visual)
+python sphere_arena.py
+
+# Training mode (faster, with learning)
+python sphere_arena.py --train --train_interval 2 --train_batch_size 16
+
+# Headless mode (for GPU servers)
+python sphere_arena.py --train --headless
+```
+
+#### Features:
+- **3D OpenGL Visualization**: Real-time sphere with orbiting organisms
+- **Hierarchical Command Chain**: Interceptor becomes commander, broadcasts target
+- **Performance-Based Leadership**: Best followers become best leaders
+- **Dynamic Dimension Matching**: Automatically adapts to any exported cocoon's input/output dimensions
+- **VP Integration**: Uses violation pressure for self-regulation
+- **Swarm Coordination**: Tests emergent collective defense strategies
+
+#### Applications:
+- Swarm robotics coordination
+- Distributed sensor networks
+- Multi-agent reinforcement learning
+- Collective intelligence evaluation
+
 ### 🧊 Consciousness Capsules - AI Preservation System
 **Complete organism state snapshots for research and backup.**
 
