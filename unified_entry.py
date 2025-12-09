@@ -2036,6 +2036,11 @@ class UnifiedSystem:
             )
             print(f"[UNIFIED] [HIGHLANDER] [PASS] Capsule Manager initialized (dir: {capsule_dir})")
             
+            # Get network reference for context_memory and organism access
+            network = None
+            if self.reality_sim and hasattr(self.reality_sim, 'components'):
+                network = self.reality_sim.components.get('network')
+            
             # Initialize Germination Pool (new life from the fallen)
             # Pass context_memory for vocabulary extraction from dying organisms
             network_context_memory = network.context_memory if network and hasattr(network, 'context_memory') else None
@@ -3266,11 +3271,13 @@ def main():
             with open(config_file, 'r') as f:
                 full_config = json.load(f)
                 config_highlander = full_config.get('highlander', {})
-    except Exception:
-        pass  # Use defaults if config loading fails
+                print(f"🔍 [DEBUG] Loaded highlander config: enabled={config_highlander.get('enabled', 'NOT SET')}")
+    except Exception as e:
+        print(f"❌ [DEBUG] Config load failed: {e}")
     
     # Enable Highlander if command line flag OR config.json has enabled=True
     highlander_enabled = args.highlander or config_highlander.get('enabled', False)
+    print(f"🔍 [DEBUG] args.highlander={args.highlander}, config enabled={config_highlander.get('enabled')}, highlander_enabled={highlander_enabled}")
     
     if highlander_enabled:
         # Config file values, command line can override if explicitly passed
