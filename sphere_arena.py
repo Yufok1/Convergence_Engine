@@ -1378,11 +1378,83 @@ def run_elimination_mode(
 
 
 # =============================================================================
+# DEMO MODE - Preview arena without a cocoon
+# =============================================================================
+
+class DummyBrain:
+    """Simple AI brain for demo mode - just chases the ball."""
+    def __init__(self, idx):
+        self.idx = idx
+        self.input_dim = OBSERVATION_SIZE
+        self.output_dim = 4
+    
+    def forward(self, x, **kwargs):
+        """Return random-ish movement."""
+        import torch
+        return torch.randn(1, 4) * 0.5
+    
+    def eval(self):
+        pass
+    
+    def __call__(self, x, **kwargs):
+        return self.forward(x, **kwargs)
+
+
+class DummyAgent:
+    """Fake CocoonAgent for demo mode."""
+    def __init__(self, num_organisms: int = 6):
+        self.brains = [DummyBrain(i) for i in range(num_organisms)]
+        self.vp_runtime = None
+        self.organism_fitness = [1.0] * num_organisms
+        self.organism_names = [f"Demo_{i}" for i in range(num_organisms)]
+        self.device = 'cpu'
+
+
+def run_demo(num_organisms: int = 6, max_misses: int = 10):
+    """
+    Run a DEMO of the sphere arena with dummy AI.
+    
+    This lets you preview the visuals without needing an exported cocoon.
+    The dummy organisms use simple ball-chasing AI.
+    
+    Args:
+        num_organisms: How many dummy organisms (default 6)
+        max_misses: Misses before game over
+    """
+    if not PYGAME_AVAILABLE:
+        print("❌ pygame required for demo mode")
+        print("   Install with: pip install pygame PyOpenGL")
+        return None
+    
+    print("🎮 DEMO MODE - Preview with dummy AI")
+    print("   (Not using trained organisms)")
+    print()
+    
+    dummy_agent = DummyAgent(num_organisms)
+    
+    arena = SphereArena(
+        agent=dummy_agent,
+        organism_indices=list(range(num_organisms)),
+        max_misses=max_misses,
+        headless=False,
+        mode=GameMode.SWARM_DEFENSE,
+        enable_command_chain=True
+    )
+    
+    return arena.run()
+
+
+# =============================================================================
 # MAIN
 # =============================================================================
 
 def main():
     """Demo the Sphere Arena - 3D Swarm Defense Training."""
+    import sys
+    
+    # Check for --demo flag
+    demo_mode = '--demo' in sys.argv
+    
     print("🌐 Sphere Arena - 3D Swarm Defense Training")
     print("=" * 60)
     print()
@@ -1390,47 +1462,57 @@ def main():
     print("Ball bounces inside the sphere in full 3D.")
     print("ANY organism can catch - the swarm succeeds or fails as ONE.")
     print()
-    print("SWARM DEFENSE MODE (PRIMARY):")
-    print("  • All organisms share ONE zone: the ENTIRE sphere surface")
-    print("  • Any organism can intercept the ball")
-    print("  • Success = collective, Failure = collective")
-    print("  • Tests: coordination, self-organization, cooperation")
+    print("COMMAND CHAIN SYSTEM:")
+    print("  • Interceptor becomes COMMANDER")
+    print("  • Commander broadcasts predicted impact to swarm")
+    print("  • Best follower who catches = new commander")
+    print("  • Emergent leadership based on performance!")
     print()
-    print("This evaluates SWARM INTELLIGENCE - not individual performance.")
-    print("Future applications: missile defense, distributed threat response.")
-    print()
+    
+    if demo_mode:
+        # Run demo with dummy AI
+        print("━" * 60)
+        print("🎮 DEMO MODE ACTIVATED")
+        print("━" * 60)
+        print()
+        
+        results = run_demo(num_organisms=6, max_misses=10)
+        
+        if results:
+            print("\n" + "=" * 60)
+            print("📊 DEMO RESULTS")
+            print("=" * 60)
+            print(f"   Total Catches: {results.get('collective_catches', 0)}")
+            print(f"   Total Misses:  {results.get('collective_misses', 0)}")
+            print(f"   Best Streak:   {results.get('best_streak', 0)}")
+        return
+    
+    # Normal mode - try to load cocoon
     print("Usage with exported cocoon:")
     print()
     print("  from cocoon import CocoonAgent")
     print("  from sphere_arena import run_swarm_defense, GameMode")
     print()
     print("  agent = CocoonAgent()")
-    print()
-    print("  # Run swarm defense challenge (default)")
     print("  results = run_swarm_defense(agent, max_misses=10)")
     print()
-    print("  # Results include:")
-    print("  # - collective_catches: total swarm catches")
-    print("  # - collective_misses: swarm failures")
-    print("  # - best_streak: longest rally without a miss")
-    print("  # - best_commander: who led the swarm best")
-    print("  # - command_history: full command chain log")
+    print("Or run with --demo flag to preview visuals:")
+    print("  python sphere_arena.py --demo")
     print()
     print("Controls:")
     print("  ESC - Quit")
     print("  Camera auto-rotates around the sphere")
     print()
     
-    # Try to run demo
+    # Try to run with cocoon
     try:
-        import sys
         sys.path.insert(0, '.')
         from cocoon import CocoonAgent
         
-        print("Found cocoon.py - starting Swarm Defense demo!")
+        print("Found cocoon.py - starting Swarm Defense!")
         agent = CocoonAgent()
         
-        num_players = min(8, len(agent.brains))  # Up to 8 for good coverage
+        num_players = min(8, len(agent.brains))
         
         if not PYGAME_AVAILABLE:
             print("pygame not installed; running headless")
@@ -1457,9 +1539,6 @@ def main():
         print(f"   Total Frames:  {results.get('total_frames', 0)}")
         print()
         
-        # ═══════════════════════════════════════════════════════════════════
-        # COMMAND CHAIN RESULTS
-        # ═══════════════════════════════════════════════════════════════════
         if results.get('command_chain_enabled'):
             print("🎖️  COMMAND CHAIN STATISTICS:")
             print(f"   Total Commands Issued: {results.get('total_commands', 0)}")
@@ -1467,7 +1546,6 @@ def main():
             print(f"   Best Follower:  Organism #{results.get('best_follower', '?')}")
             print()
         
-        # Show per-organism stats
         if 'final_stats' in results:
             print("   Individual Contributions:")
             for idx, stats in sorted(results['final_stats'].items(), 
@@ -1475,8 +1553,6 @@ def main():
                                     reverse=True):
                 catches = stats.get('catches', 0)
                 cmds_issued = stats.get('commands_issued', 0)
-                cmds_followed = stats.get('commands_followed', 0)
-                leadership = stats.get('leadership_score', 0)
                 
                 role_badge = ""
                 if idx == results.get('best_commander'):
@@ -1488,7 +1564,7 @@ def main():
         
     except ImportError as e:
         print(f"Note: Could not load cocoon.py ({e})")
-        print("Export a cocoon first, then run from that directory.")
+        print("Run with --demo to preview visuals, or export a cocoon first.")
 
 
 if __name__ == "__main__":
