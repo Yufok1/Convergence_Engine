@@ -29,6 +29,7 @@ SEMANTIC CONVERGENCE COMPATIBILITY NOTE:
 """
 
 import logging
+import sys
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -528,7 +529,9 @@ def train_organisms_batch(
     Returns:
         List of training results
     """
-    if not use_ray or not RAY_AVAILABLE or len(training_tasks) < 4:
+    # Disable Ray for training on Windows due to access violation issues
+    # Use sequential training for now (can be re-enabled once Ray Windows compatibility is fixed)
+    if not use_ray or not RAY_AVAILABLE or len(training_tasks) < 4 or sys.platform == 'win32':
         # Sequential training
         return [
             train_organism_local(
@@ -543,7 +546,14 @@ def train_organisms_batch(
     # Parallel training with Ray
     try:
         # Put config in object store (shared across all tasks)
-        config_ref = ray.put(training_config)
+        # Ensure config is fully serializable (deep copy of primitives only)
+        import copy
+        serializable_config = {
+            k: copy.deepcopy(v) if isinstance(v, (dict, list, tuple)) else v
+            for k, v in training_config.items()
+            if isinstance(v, (int, float, str, bool, dict, list, tuple, type(None)))
+        }
+        config_ref = ray.put(serializable_config)
         
         # Submit all tasks
         futures = [
@@ -556,11 +566,24 @@ def train_organisms_batch(
             for task in training_tasks
         ]
         
-        # Wait for results
-        return ray.get(futures)
+        # Wait for results with timeout
+        return ray.get(futures, timeout=30.0)
         
+    except (ray.exceptions.RayError, ray.exceptions.RayActorError, MemoryError, OSError) as e:
+        logger.warning(f"[RayTasks] Organism training failed (Ray error), falling back to sequential: {type(e).__name__}: {e}")
+        return [
+            train_organism_local(
+                task['brain_weights'],
+                task['experience_batch'],
+                training_config,
+                task.get('language_config')
+            )
+            for task in training_tasks
+        ]
     except Exception as e:
-        logger.warning(f"[RayTasks] Organism training failed, falling back: {e}")
+        logger.warning(f"[RayTasks] Organism training failed (general error), falling back to sequential: {type(e).__name__}: {e}")
+        import traceback
+        logger.debug(f"[RayTasks] Traceback: {traceback.format_exc()}")
         return [
             train_organism_local(
                 task['brain_weights'],

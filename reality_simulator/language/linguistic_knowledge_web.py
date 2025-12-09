@@ -143,9 +143,14 @@ class LinguisticKnowledgeWeb:
         hardcoded ~60 words for everyone.
         """
         vocab_paths = [
+            # Check for 50k version first (preferred)
             os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'butterfly_vocabulary_50k_curated.json'),
             'data/butterfly_vocabulary_50k_curated.json',
-            'd:/end-GAME/butterfly/data/butterfly_vocabulary_50k_curated.json'
+            'd:/end-GAME/butterfly/data/butterfly_vocabulary_50k_curated.json',
+            # Fallback to 250k version (also valid)
+            os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'butterfly_vocabulary_250k_curated.json'),
+            'data/butterfly_vocabulary_250k_curated.json',
+            'd:/end-GAME/butterfly/data/butterfly_vocabulary_250k_curated.json'
         ]
         
         vocab_data = None
