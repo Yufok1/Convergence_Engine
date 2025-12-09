@@ -7232,17 +7232,196 @@ class CocoonAgent:
         related.sort(key=lambda x: x[1], reverse=True)
         return [w for w, s in related[:10] if s >= min_strength]
 
-    def generate_response(self, prompt: str, organism_idx: int = 0, max_tokens: int = 128,
+    # ═══════════════════════════════════════════════════════════════════════════════
+    # 🎯 SEMANTIC REWARD CALCULATION - Aligned with butterfly_chat.py
+    # ═══════════════════════════════════════════════════════════════════════════════
+    
+    def _calculate_semantic_reward(self, user_message: str, organism_response: str,
+                                   confidence: float, vp_value: Optional[float] = None) -> float:
+        """
+        Calculate reward with SEMANTIC AWARENESS - aligned with live butterfly_chat.py.
+        
+        5-Component Scoring:
+        1. Word overlap: Relevance to user message (0.0-0.25)
+        2. Coherence: Structural quality, repetition penalty (0.0-0.25)
+        3. Length appropriateness: Goldilocks zone (0.0-0.2)
+        4. Confidence scaling: Model certainty adjustment (0.0-0.2)
+        5. VP adjustment: Network health awareness (±0.1)
+        
+        CRITICAL: Heavy repetition penalty (unique_ratio < 0.3 → reward = -0.3)
+        """
+        try:
+            # Base reward for generating any response
+            reward = 0.3
+            
+            # Handle empty response
+            if not organism_response or len(organism_response.strip()) == 0:
+                return -0.1  # Penalty for empty responses
+            
+            # Normalize text
+            user_words = set(user_message.lower().split())
+            response_words = organism_response.lower().split()
+            response_words_set = set(response_words)
+            
+            # 1. WORD OVERLAP SCORE (0.0 - 0.25)
+            stopwords = {'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been',
+                         'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would',
+                         'i', 'you', 'he', 'she', 'it', 'we', 'they', 'what', 'who',
+                         'this', 'that', 'to', 'of', 'in', 'for', 'on', 'with', 'at'}
+            
+            user_content = user_words - stopwords
+            response_content = response_words_set - stopwords
+            
+            if user_content and response_content:
+                overlap = len(user_content & response_content)
+                max_possible = min(len(user_content), len(response_content))
+                overlap_score = (overlap / max_possible) * 0.25 if max_possible > 0 else 0.0
+            else:
+                overlap_score = 0.1  # Small baseline if no meaningful content
+            
+            reward += overlap_score
+            
+            # 2. COHERENCE SCORE (0.0 - 0.25)
+            coherence_score = 0.0
+            
+            # Capitalization check
+            if organism_response[0].isupper():
+                coherence_score += 0.05
+            
+            # Ending punctuation check
+            if organism_response.rstrip()[-1:] in '.!?':
+                coherence_score += 0.05
+            
+            # Echo penalty - don't just repeat the user
+            if organism_response.strip().lower() == user_message.strip().lower():
+                coherence_score -= 0.1
+            
+            # Diversity check (CRITICAL for preventing repetition)
+            unique_ratio = 1.0
+            if len(response_words) > 1:
+                unique_ratio = len(response_words_set) / len(response_words)
+                coherence_score += unique_ratio * 0.15
+                
+                # Heavy repetition penalty (aligned with butterfly_chat.py)
+                if unique_ratio < 0.5:
+                    coherence_score -= (1.0 - unique_ratio) * 0.3
+            
+            # Multiple word bonus
+            if len(response_words) >= 2:
+                coherence_score += 0.05
+            
+            reward += max(0.0, coherence_score)
+            
+            # 3. LENGTH APPROPRIATENESS (0.0 - 0.2)
+            response_length = len(response_words)
+            if response_length == 0:
+                length_score = 0.0
+            elif response_length <= 2:
+                length_score = 0.05  # Too short
+            elif response_length <= 10:
+                length_score = 0.2   # Sweet spot
+            elif response_length <= 20:
+                length_score = 0.15  # Good
+            else:
+                length_score = 0.1   # Long is okay
+            
+            reward += length_score
+            
+            # 4. CONFIDENCE SCALING (0.0 - 0.2)
+            reward += confidence * 0.2
+            
+            # 5. VP ADJUSTMENT (±0.1) - Network health awareness
+            if vp_value is not None:
+                if vp_value < 0.25:  # VP0 - Healthy
+                    reward += 0.1
+                elif vp_value < 0.50:  # VP1 - Stable
+                    reward += 0.05
+                elif vp_value < 0.75:  # VP2 - Unstable
+                    pass  # No adjustment
+                else:  # VP3/VP4 - Critical
+                    reward -= 0.1
+            
+            # Final clamping with repetition awareness
+            if len(response_words) > 1 and unique_ratio < 0.3:
+                # Allow negative for severe repetition
+                final_reward = max(-0.3, min(1.0, reward))
+            elif len(response_words) > 1 and unique_ratio < 0.5:
+                final_reward = max(0.0, min(1.0, reward))
+            else:
+                final_reward = max(0.05, min(1.0, reward))
+            
+            return final_reward
+            
+        except Exception:
+            return 0.3  # Safe fallback
+
+    def _get_adaptive_max_length(self, organism_idx: int = 0) -> int:
+        """
+        Calculate adaptive max response length based on organism experience.
+        
+        Aligned with butterfly_chat.py and standalone_butterfly_chat.py:
+        - experience < 10: short responses (6-8 tokens) - prevents gibberish
+        - experience < 50: medium (12-24 tokens)
+        - experience < 100: longer (32-64 tokens) 
+        - experience >= 100: full length (128 tokens)
+        
+        This prevents young organisms with small vocabularies from generating
+        incoherent long responses full of <UNK> tokens.
+        """
+        if organism_idx < len(self.experience_buffers):
+            experience_count = len(self.experience_buffers[organism_idx])
+        else:
+            experience_count = 0
+        
+        vocab_size = len(self.vocabulary.get('word_to_id', {}))
+        
+        if experience_count < 10:
+            return min(8, max(5, vocab_size // 6))
+        elif experience_count < 50:
+            return min(24, max(12, vocab_size // 4))
+        elif experience_count < 100:
+            return min(64, max(32, vocab_size // 2))
+        else:
+            return 128  # Full neural synapse length
+
+    def _get_tfidf_important_words(self) -> List[Tuple[str, float]]:
+        """
+        Get TF-IDF important words from knowledge web for boosting.
+        
+        Returns words sorted by importance score.
+        """
+        if not self.knowledge_web:
+            return []
+        
+        concepts = self.knowledge_web.get('concepts', {})
+        important_words = []
+        
+        for word, info in concepts.items():
+            # Use confidence or frequency as importance proxy
+            importance = info.get('confidence', 0.5) * info.get('frequency', 1.0)
+            if importance > 0.3:
+                important_words.append((word, importance))
+        
+        important_words.sort(key=lambda x: x[1], reverse=True)
+        return important_words[:30]  # Top 30 important words
+
+    def generate_response(self, prompt: str, organism_idx: int = 0, max_tokens: int = None,
                           vp_value: Optional[float] = None, temperature: float = 1.0) -> Tuple[str, float]:
         """Generate response with semantic boosting, conversation context, and confidence.
         
         NEURAL SYNAPSE MODE: max_tokens=128 allows rich causation chains!
-        MONOLITHIC: Uses atomic language, knowledge web, and conversation history."""
+        MONOLITHIC: Uses atomic language, knowledge web, and conversation history.
+        
+        ENHANCED: Now uses adaptive max_tokens based on organism experience."""
         if organism_idx >= len(self.brains):
             organism_idx = 0
         brain = self.brains[organism_idx]
         if not brain.use_language_head:
             return "[No language head available]", 0.1
+        
+        # Use adaptive max length if not specified
+        if max_tokens is None:
+            max_tokens = self._get_adaptive_max_length(organism_idx)
         
         # Add conversation context to prompt for better coherence
         context_str = self.conversation.get_context_string(n=2)
@@ -7336,6 +7515,17 @@ class CocoonAgent:
                         if related_token and related_token < len(logits):
                             if related_token not in recent_tokens:
                                 logits[related_token] += semantic_boost
+            
+            # 📊 TF-IDF IMPORTANT WORD BOOSTING - aligned with standalone_butterfly_chat.py
+            tfidf_important = self._get_tfidf_important_words()
+            if tfidf_important:
+                tfidf_boost = 0.25  # Subtle but meaningful boost
+                for important_word, importance_score in tfidf_important[:20]:
+                    imp_token = word_to_id.get(important_word.lower())
+                    if imp_token is not None and imp_token < len(logits):
+                        # Only boost if not recently used
+                        if imp_token not in recent_tokens:
+                            logits[imp_token] += tfidf_boost * importance_score
             
             # Mask special tokens
             logits[:5] = -1e9
@@ -7790,23 +7980,36 @@ def run_http_server(agent: CocoonAgent, port: int = 8080):
         prompt = data.get('prompt', '')
         learn = data.get('learn', True)
         
-        # Learn from input if enabled
-        if learn and prompt:
-            agent.learn_from_text(prompt, reward=0.1)
-            if len(agent.experience_buffers[0]) >= agent.batch_size:
-                agent.train_step()
+        # Get current VP value for reward calculation
+        vp_info = agent.vp_runtime.compute_from_state(
+            np.zeros(24, dtype=np.float32),  # Default state
+            agent.reward_history
+        )
+        current_vp = vp_info.get('violation_pressure', 0.0)
         
-        # Get responses from all organisms with confidence
+        # Get responses from all organisms with confidence and semantic reward
         responses = []
         for i, name in enumerate(agent.organism_names):
-            response, confidence = agent.generate_response(prompt, organism_idx=i)
+            response, confidence = agent.generate_response(prompt, organism_idx=i, vp_value=current_vp)
             fitness = agent.organism_fitness[i] if i < len(agent.organism_fitness) else 1.0
-            weight = fitness * confidence
+            
+            # Calculate semantic reward (NEW - aligned with butterfly_chat.py)
+            semantic_reward = agent._calculate_semantic_reward(
+                user_message=prompt,
+                organism_response=response,
+                confidence=confidence,
+                vp_value=current_vp
+            )
+            
+            # Weight combines fitness, confidence, AND semantic quality
+            weight = fitness * confidence * (0.5 + semantic_reward)
+            
             responses.append({
                 'organism': name,
                 'response': response,
                 'confidence': confidence,
                 'fitness': fitness,
+                'semantic_reward': semantic_reward,
                 'weight': weight
             })
         
@@ -7815,13 +8018,27 @@ def run_http_server(agent: CocoonAgent, port: int = 8080):
         if valid:
             best = max(valid, key=lambda r: r['weight'])
             final_response = best['response']
+            best_reward = best['semantic_reward']
         else:
             final_response = responses[0]['response'] if responses else ''
+            best_reward = 0.1
+        
+        # Learn from input with semantic reward if enabled
+        if learn and prompt:
+            agent.learn_from_text(prompt, reward=best_reward, vp_value=current_vp)
+            if len(agent.experience_buffers[0]) >= agent.batch_size:
+                agent.train_step()
+        
+        # Update conversation history
+        agent.conversation.add_message('user', prompt)
+        agent.conversation.add_message('assistant', final_response, {'semantic_reward': best_reward})
         
         return jsonify({
             'response': final_response,
             'all_responses': responses,
-            'vocab_size': len(agent.vocabulary.get('word_to_id', {}))
+            'vocab_size': len(agent.vocabulary.get('word_to_id', {})),
+            'semantic_reward': best_reward,
+            'vp_value': current_vp
         })
 
     @app.route('/teach', methods=['POST'])
@@ -7965,8 +8182,12 @@ Examples:
             print(f"│ Tokens: {len(input_tokens)} │ IDs: {input_tokens[:8]}{'...' if len(input_tokens) > 8 else ''}")
             print("└────────────────────────────────────────────────────────────┘")
             
-            # Learn from user input
-            agent.learn_from_text(user_input, reward=0.1)
+            # Get VP value for semantic reward calculation (BEFORE generation)
+            vp_info = agent.vp_runtime.compute_from_state(
+                np.zeros(24, dtype=np.float32),
+                agent.reward_history
+            )
+            current_vp = vp_info.get('violation_pressure', 0.0)
             
             # ═══════════════════════════════════════════════════════════════
             # STEP 3: ORGANISM SELECTION
@@ -7974,6 +8195,7 @@ Examples:
             print("┌─── STEP 3: SELECTION ───────────────────────────────────────┐")
             num_orgs = len(agent.brains)
             print(f"│ Strategy: FITNESS_WEIGHTED │ Organisms: {num_orgs}")
+            print(f"│ VP State: {vp_info.get('vp_class', 'VP0')} ({current_vp:.3f})")
             print("└────────────────────────────────────────────────────────────┘")
             
             # ═══════════════════════════════════════════════════════════════
@@ -7986,8 +8208,16 @@ Examples:
             responses = []
             
             for i, name in enumerate(agent.organism_names):
-                response, confidence = agent.generate_response(user_input, organism_idx=i)
+                response, confidence = agent.generate_response(user_input, organism_idx=i, vp_value=current_vp)
                 fitness = agent.organism_fitness[i] if i < len(agent.organism_fitness) else 1.0
+                
+                # NEW: Calculate semantic reward (aligned with butterfly_chat.py)
+                semantic_reward = agent._calculate_semantic_reward(
+                    user_message=user_input,
+                    organism_response=response,
+                    confidence=confidence,
+                    vp_value=current_vp
+                )
                 
                 # Granular decision matrix (matching main Butterfly Chat)
                 # 1. Base weight from fitness × confidence
@@ -8001,16 +8231,12 @@ Examples:
                         # More genetic diversity = slight weight bonus (max 20%)
                         gene_modifier = 1.0 + min(meta['gene_variance'] / 50000.0, 0.2)
                 
-                # 3. Response quality modifier
-                response_modifier = 1.0
-                if response.strip():
-                    # Non-empty response bonus
-                    word_count = len(response.split())
-                    if word_count >= 1:
-                        response_modifier = 1.0 + min(word_count * 0.05, 0.15)  # Max 15% bonus
+                # 3. Semantic reward modifier (NEW - replaces basic response_modifier)
+                # Scale semantic reward from [-0.3, 1.0] to [0.2, 1.5] multiplier
+                semantic_modifier = 0.5 + semantic_reward
                 
-                # Final weight with all modifiers
-                weight = base_weight * gene_modifier * response_modifier
+                # Final weight with all modifiers including semantic quality
+                weight = base_weight * gene_modifier * semantic_modifier
                 
                 responses.append({
                     'idx': i,
@@ -8019,14 +8245,15 @@ Examples:
                     'confidence': confidence,
                     'fitness': fitness,
                     'gene_mod': gene_modifier,
-                    'resp_mod': response_modifier,
+                    'semantic_reward': semantic_reward,
+                    'semantic_mod': semantic_modifier,
                     'weight': weight
                 })
                 
                 # Show individual organism response with granular breakdown
                 print(f"│ [{name}]")
-                print(f"│   conf={confidence:.3f} × fit={fitness:.2f} × gene={gene_modifier:.2f} × resp={response_modifier:.2f}")
-                print(f"│   = weight {weight:.4f}")
+                print(f"│   conf={confidence:.3f} × fit={fitness:.2f} × gene={gene_modifier:.2f} × sem={semantic_modifier:.2f}")
+                print(f"│   semantic_reward={semantic_reward:.3f} → weight {weight:.4f}")
                 print(f"│   → {response[:80]}{'...' if len(response) > 80 else ''}")
             
             print("└────────────────────────────────────────────────────────────┘")
@@ -8039,18 +8266,8 @@ Examples:
             # Filter empty responses
             valid_responses = [r for r in responses if r['response'].strip() and not r['response'].startswith('[')]
             
-            # Apply diversity penalty - penalize repetitive responses
-            for r in valid_responses:
-                words = r['response'].lower().split()
-                if words:
-                    unique_words = len(set(words))
-                    diversity_ratio = unique_words / len(words)
-                    # Heavy penalty for low diversity (collapsed outputs)
-                    if diversity_ratio < 0.3:
-                        r['weight'] *= 0.1  # 90% penalty for <30% unique words
-                    elif diversity_ratio < 0.5:
-                        r['weight'] *= 0.5  # 50% penalty for <50% unique words
-                    r['diversity'] = diversity_ratio
+            # Note: Diversity/repetition penalty is now handled by _calculate_semantic_reward()
+            # which already penalizes low unique_ratio responses heavily
             
             total_weight = sum(r['weight'] for r in valid_responses)
             
@@ -8059,25 +8276,26 @@ Examples:
                 sorted_responses = sorted(valid_responses, key=lambda r: r['weight'], reverse=True)
                 best = sorted_responses[0]
                 final_response = best['response']
+                best_reward = best.get('semantic_reward', 0.3)
                 
                 # Show granular decision matrix summary
-                print(f"│ Aggregation: WEIGHTED_SELECTION (diversity-penalized)")
+                print(f"│ Aggregation: SEMANTIC_WEIGHTED_SELECTION")
                 print(f"│ Total Weight Pool: {total_weight:.4f}")
                 print(f"├────────────────────────────────────────────────────────────┤")
                 print(f"│ 🏆 WINNER: [{best['name']}]")
                 print(f"│    Weight: {best['weight']:.4f} ({best['weight']/total_weight*100:.1f}% of pool)")
                 print(f"│    Breakdown: conf={best['confidence']:.3f} × fit={best['fitness']:.2f}")
                 if 'gene_mod' in best:
-                    print(f"│               × gene={best['gene_mod']:.2f} × resp={best['resp_mod']:.2f}")
-                if 'diversity' in best:
-                    print(f"│    Diversity: {best['diversity']:.1%} unique words")
+                    print(f"│               × gene={best['gene_mod']:.2f} × sem={best.get('semantic_mod', 1.0):.2f}")
+                print(f"│    Semantic Reward: {best.get('semantic_reward', 0):.3f}")
                 print(f"├────────────────────────────────────────────────────────────┤")
                 print(f"│ Runners-up:")
                 for i, r in enumerate(sorted_responses[1:4], 2):  # Show top 3 runners-up
                     pct = r['weight']/total_weight*100 if total_weight > 0 else 0
-                    print(f"│   #{i} [{r['name']}] weight={r['weight']:.4f} ({pct:.1f}%)")
+                    print(f"│   #{i} [{r['name']}] weight={r['weight']:.4f} ({pct:.1f}%) sem_reward={r.get('semantic_reward', 0):.3f}")
             else:
                 final_response = "[No valid response from organisms]"
+                best_reward = 0.1
                 best = None
                 print(f"│ No valid responses to aggregate")
             
@@ -8106,7 +8324,10 @@ Examples:
             
             # Record conversation for context
             agent.conversation.add_message('user', user_input)
-            agent.conversation.add_message('assistant', final_response)
+            agent.conversation.add_message('assistant', final_response, {'semantic_reward': best_reward})
+            
+            # Learn from user input WITH the semantic reward (not hardcoded 0.1)
+            agent.learn_from_text(user_input, reward=best_reward, vp_value=current_vp)
             
             # Gap 3 Fix: Words USED in response get higher strength (rewarding active vocabulary use)
             # Use the winning organism's atomic language (Gap 5 Alignment)
