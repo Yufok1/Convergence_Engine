@@ -232,8 +232,8 @@ class Organism:
         if fitness_targets:
             total_fitness /= len(fitness_targets)
 
-        # Clamp fitness to valid bounds [0, 1] with high precision
-        total_fitness = np.clip(total_fitness, 0.0, 1.0)
+        # Allow fitness to exceed 1.0 for meaningful evolution
+        # total_fitness = np.clip(total_fitness, 0.0, 1.0)  # REMOVED - let fitness be unbounded
 
         # Apply high-precision rounding based on config
         fitness_precision = getattr(self, 'fitness_precision', 0.000001)
@@ -689,8 +689,8 @@ class EvolutionEngine:
             ml_bonus = self.apply_ml_selection_bonus(organism, organism_id)
             adjusted_fitness += ml_bonus
             
-            # Clamp to valid range
-            organism.fitness = max(0.0, min(1.0, adjusted_fitness))
+            # Allow fitness to exceed 1.0
+            organism.fitness = max(0.0, adjusted_fitness)  # Only prevent negative
             organism.genotype.fitness = organism.fitness
 
     def _calculate_language_fitness_bonus(self, organism: Organism, ml_analysis: Optional[Dict[str, Any]]) -> float:
@@ -1084,8 +1084,8 @@ class EvolutionEngine:
         # Total initial fitness
         initial_fitness = base_fitness + diversity_bonus + parent_fitness_bonus
         
-        # Clamp to valid range
-        return np.clip(initial_fitness, 0.0, 1.0)
+        # Allow any positive initial fitness
+        return max(0.0, initial_fitness)
 
 
 # Utility functions for easy use

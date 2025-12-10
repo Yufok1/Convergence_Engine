@@ -1194,20 +1194,25 @@ class HighlanderProtocol:
             context_memory = self.context_memory
             if context_memory and hasattr(context_memory, 'node_word_associations'):
                 # Convert IDs to the format context_memory uses
-                # Match the format used in unified_entry.py cleanup_dead_organism
+                # CRITICAL: Must match language_teacher.py line 398: hash(species_id_str)
                 def normalize_id(org_id):
-                    if isinstance(org_id, str) and '_' in org_id:
-                        try:
-                            return int(org_id.split('_')[-1])
-                        except (ValueError, IndexError):
-                            return abs(hash(org_id)) % (2**31)
-                    return abs(hash(org_id)) % (2**31)
+                    # Language teacher uses: hash(species_id_str) - full hash, can be negative
+                    if isinstance(org_id, str):
+                        return hash(org_id)
+                    return org_id  # Already an int
                 
                 loser_id_int = normalize_id(loser_id)
                 winner_id_int = normalize_id(winner_id)
                 
+                # DEBUG: Log what IDs we're looking for
+                all_stored_ids = list(context_memory.node_word_associations.keys())[:10]
+                self.logger.debug(f"🔍 VOCAB DEBUG: loser={loser_id} → int={loser_id_int}, winner={winner_id} → int={winner_id_int}")
+                self.logger.debug(f"🔍 VOCAB DEBUG: stored IDs sample: {all_stored_ids}")
+                
                 # Get loser's word associations BEFORE they might be cleaned up
                 loser_words = context_memory.node_word_associations.get(loser_id_int, set())
+                
+                self.logger.debug(f"🔍 VOCAB DEBUG: loser has {len(loser_words)} words in context_memory")
                 
                 if loser_words:
                     # Transfer word associations to winner

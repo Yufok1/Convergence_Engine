@@ -399,34 +399,9 @@ class ResourceFlowEngine:
     def update_organism_fitness(self, organisms: Dict[str, Organism],
                                resource_distribution: Dict[str, float]):
         """Update organism fitness based on resource allocation"""
-        for org_id, resources in resource_distribution.items():
-            if org_id in organisms:
-                organism = organisms[org_id]
-                
-                # ✅ FIX: Base resource bonus on organism's current fitness
-                # This prevents convergence - organisms with different base fitness
-                # get proportionally different bonuses
-                
-                # Resource bonus (diminishing returns)
-                base_bonus = np.log(1 + resources) * 0.1
-                
-                # ✅ FIX: Fitness-dependent scaling (prevents convergence)
-                # Lower fitness organisms get slightly larger relative bonus (catch-up mechanism)
-                # Higher fitness organisms get slightly smaller relative bonus (prevents runaway)
-                fitness_factor = 1.0 - (organism.fitness * 0.2)  # 1.0 at fitness=0, 0.8 at fitness=1.0
-                scaled_bonus = base_bonus * fitness_factor
-                
-                # ✅ FIX: Genetic uniqueness modifier (ensures differentiation)
-                if hasattr(organism, 'genotype') and hasattr(organism.genotype, 'get_hash'):
-                    genotype_hash = organism.genotype.get_hash()
-                    try:
-                        hash_int = int(genotype_hash[:4], 16) if len(genotype_hash) >= 4 else hash(genotype_hash)
-                    except (ValueError, TypeError):
-                        hash_int = hash(genotype_hash) % 10000
-                    uniqueness_modifier = 0.95 + ((hash_int % 100) / 1000.0)  # 0.95-1.05 range
-                    scaled_bonus *= uniqueness_modifier
-                
-                organisms[org_id].fitness = min(1.0, organisms[org_id].fitness + scaled_bonus)
+        # REMOVED: Free fitness from resources was causing everyone to converge at high fitness
+        # Fitness should come from actual performance (battles, behavior), not just existing
+        pass
 
 
 class CooperationCompetitionEngine:
@@ -447,31 +422,21 @@ class CooperationCompetitionEngine:
     def evaluate_interaction(self, org_a: Organism, org_b: Organism,
                             connection: SymbioticConnection) -> Tuple[float, float]:
         """
-        Evaluate interaction outcome using game theory
+        Evaluate interaction outcome - NO free fitness changes.
+        
+        Fitness should come from actual battle performance, not game theory payoffs.
 
-        Returns: (fitness_change_a, fitness_change_b)
+        Returns: (0.0, 0.0) - no artificial fitness changes
         """
-        # Determine strategies based on organism traits
+        # Only update connection stability based on strategies
         strategy_a = self._determine_strategy(org_a)
         strategy_b = self._determine_strategy(org_b)
-
-        # Get payoffs
         payoff_a, payoff_b = self.payoff_matrix[(strategy_a, strategy_b)]
-
-        # Scale by connection strength
-        strength = connection.get_effective_strength()
-        payoff_a *= strength
-        payoff_b *= strength
-
-        # Convert to fitness changes (normalized)
-        fitness_change_a = payoff_a / 10.0  # Scale to reasonable range
-        fitness_change_b = payoff_b / 10.0
-
-        # Update connection stability
         avg_payoff = (payoff_a + payoff_b) / 2.0
-        connection.update_stability(avg_payoff / 5.0)  # Normalize to 0-1
+        connection.update_stability(avg_payoff / 5.0)
 
-        return fitness_change_a, fitness_change_b
+        # NO fitness changes - fitness comes from real performance
+        return 0.0, 0.0
 
     def _determine_strategy(self, organism: Organism) -> str:
         """Determine cooperation/defection strategy from organism traits"""
@@ -1515,8 +1480,8 @@ class SymbioticNetwork:
                 )
 
                 # Apply fitness changes
-                org_a.fitness = np.clip(org_a.fitness + fitness_change_a, 0.0, 1.0)
-                org_b.fitness = np.clip(org_b.fitness + fitness_change_b, 0.0, 1.0)
+                org_a.fitness = org_a.fitness + fitness_change_a
+                org_b.fitness = org_b.fitness + fitness_change_b
 
         # ✅ FIX: Fitness diversity preservation
         # Prevent all organisms from converging to same value
@@ -1610,34 +1575,12 @@ class SymbioticNetwork:
     
     def _preserve_fitness_diversity(self):
         """
-        Prevent fitness convergence by maintaining genetic-based differentiation.
+        REMOVED: No longer artificially manipulates fitness.
         
-        If all organisms have very similar fitness, add small genetic-based variations.
-        This ensures meaningful selection pressure even after many cycles.
+        Fitness differentiation should come from actual performance in battles,
+        not artificial "genetic variation" injections. That's plastic surgery.
         """
-        if len(self.organisms) < 2:
-            return
-        
-        # Calculate fitness variance
-        fitnesses = [org.fitness for org in self.organisms.values()]
-        fitness_variance = np.var(fitnesses)
-        fitness_mean = np.mean(fitnesses)
-        
-        # If variance is too low (< 0.01), add genetic-based differentiation
-        if fitness_variance < 0.01:
-            for org_id, organism in self.organisms.items():
-                # Get genetic uniqueness factor
-                if hasattr(organism, 'genotype') and hasattr(organism.genotype, 'get_hash'):
-                    genotype_hash = organism.genotype.get_hash()
-                    try:
-                        hash_int = int(genotype_hash[:6], 16) if len(genotype_hash) >= 6 else hash(genotype_hash)
-                    except (ValueError, TypeError):
-                        hash_int = hash(genotype_hash) % 1000000
-                    # Create small variation (-0.05 to +0.05) based on genetics
-                    genetic_variation = ((hash_int % 1000) / 10000.0) - 0.05
-                    
-                    # Apply variation (small enough to not disrupt evolution, large enough to differentiate)
-                    organism.fitness = np.clip(organism.fitness + genetic_variation, 0.0, 1.0)
+        pass
 
     def _collect_organism_decisions_parallel(self, network_state: Dict[str, Any]) -> Dict[str, int]:
         """
@@ -1821,48 +1764,29 @@ class SymbioticNetwork:
                 connection = self.connections[edge_key]
                 connection.strength = min(1.0, connection.strength + 0.05)
                 connection.stability = min(1.0, connection.stability + 0.02)
-                
-                # Small resource sharing (boost neighbor fitness slightly)
-                neighbor = self.organisms.get(neighbor_id)
-                if neighbor and organism.fitness > 0.3:
-                    fitness_gift = 0.01
-                    organism.fitness = max(0.0, organism.fitness - fitness_gift)
-                    neighbor.fitness = min(1.0, neighbor.fitness + fitness_gift)
+                # No free fitness gifts - fitness comes from real performance
     
     def _execute_compete_action(self, org_id: str, organism):
-        """Compete action: Try to gain resources from neighbors"""
-        if org_id not in self.network_graph:
-            return
+        """Compete action: Signal competitive intent only - no free fitness changes
         
-        neighbors = list(self.network_graph.neighbors(org_id))
-        for neighbor_id in neighbors:
-            neighbor = self.organisms.get(neighbor_id)
-            if neighbor:
-                # Competition based on relative fitness
-                if organism.fitness > neighbor.fitness:
-                    # Winner takes a small portion
-                    gain = 0.02 * (organism.fitness - neighbor.fitness)
-                    organism.fitness = min(1.0, organism.fitness + gain)
-                    neighbor.fitness = max(0.0, neighbor.fitness - gain)
-                else:
-                    # Loser loses a bit for trying
-                    organism.fitness = max(0.0, organism.fitness - 0.005)
+        Real competition happens in battles via HighlanderProtocol, not here.
+        """
+        # Competition happens in actual battles, not via free fitness stealing
+        pass
     
     def _execute_rest_action(self, org_id: str, organism):
-        """Rest action: Small fitness recovery, do nothing else"""
-        # Small passive fitness gain for resting
-        organism.fitness = min(1.0, organism.fitness + 0.005)
+        """Rest action: Recovery without free fitness boost"""
+        # Rest is neutral - no free fitness gains
+        # Fitness should come from actual performance, not just existing
+        pass
     
     def _execute_reproduce_action(self, org_id: str, organism):
-        """Reproduce action: Signal reproductive intent via fitness boost"""
-        # Reproduction intent - if fitness is high enough, get a small boost
-        # (actual reproduction handled by evolution engine based on fitness)
-        if organism.fitness > 0.6:
-            organism.fitness = min(1.0, organism.fitness + 0.01)
-            # Mark as wanting to reproduce (for evolution engine to pick up)
-            if not hasattr(organism, 'reproduction_intent'):
-                organism.reproduction_intent = 0
-            organism.reproduction_intent += 1
+        """Reproduce action: Signal reproductive intent (no free fitness)"""
+        # Mark as wanting to reproduce (for evolution engine to pick up)
+        # No free fitness boost - reproduction success should depend on actual fitness
+        if not hasattr(organism, 'reproduction_intent'):
+            organism.reproduction_intent = 0
+        organism.reproduction_intent += 1
     
     def _execute_isolate_action(self, org_id: str, organism):
         """Isolate action: Weaken connections, become more independent"""
@@ -1944,18 +1868,16 @@ class SymbioticNetwork:
         # Get stability metrics from memory
         stability_metrics = context_memory.get_stability_metrics()
 
-        # SELECTION PRESSURE: Penalize organisms not referenced in memory
+        # SELECTION PRESSURE: Track unreferenced organisms but don't artificially penalize fitness
+        # Fitness should come from actual performance, not reference counting
         referenced_nodes = set()
         for word, node_ids in context_memory.language_anchors.items():
             referenced_nodes.update(node_ids)
 
         for org_id, organism in self.organisms.items():
             if org_id not in referenced_nodes:
-                # Apply penalty for unreferenced organisms
-                penalty = -0.05 * (1.0 - stability_metrics.get('anchor_density', 0.5))
-                organism.fitness = max(0.0, organism.fitness + penalty)
+                # Just track - no artificial penalty
                 adjustments['unreferenced_penalty_count'] += 1
-                adjustments['total_penalty_applied'] += abs(penalty)
 
         # STABILIZATION: Boost edges that close reference triangles
         anchor_clusters = context_memory.get_anchor_clusters(min_cluster_size=2)

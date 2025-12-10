@@ -1,0 +1,196 @@
+{
+    "simulation": {
+        "name": "Eden_H200_MilkAndHoney",
+        "description": "Land of milk and honey - abundant resources, gentle selection, massive vocabularies",
+        "max_generations": 50000,
+        "target_population": 80,
+        "min_population": 60,
+        "max_population": 120,
+        "initial_population": 80,
+        "generation_interval": 2.0,
+        "checkpoint_interval": 50,
+        "auto_save": true
+    },
+    
+    "hardware": {
+        "device": "cuda",
+        "gpu_memory_fraction": 0.92,
+        "expected_vram_gb": 140,
+        "mixed_precision": true,
+        "compile_mode": "reduce-overhead"
+    },
+
+    "neural": {
+        "architecture": {
+            "input_size": 256,
+            "hidden_layers": [1024, 768, 512, 384, 256],
+            "output_size": 64,
+            "activation": "gelu",
+            "dropout": 0.08,
+            "use_layer_norm": true,
+            "use_residual": true,
+            "use_attention": true,
+            "num_heads": 8
+        },
+        "learning": {
+            "optimizer": "adamw",
+            "base_learning_rate": 0.0002,
+            "weight_decay": 0.008,
+            "gradient_clip": 1.5,
+            "batch_size": 128,
+            "experience_replay_size": 30000,
+            "min_experiences_to_train": 200,
+            "training_frequency": 3
+        }
+    },
+
+    "evolution": {
+        "selection": {
+            "method": "tournament",
+            "tournament_size": 2,
+            "elite_percentage": 0.25,
+            "selection_pressure": 0.3
+        },
+        "mutation": {
+            "rate": 0.12,
+            "weight_mutation_rate": 0.08,
+            "weight_mutation_strength": 0.03,
+            "structural_mutation_rate": 0.02,
+            "trait_mutation_strength": 0.06
+        },
+        "crossover": {
+            "rate": 0.8,
+            "method": "uniform"
+        },
+        "fitness": {
+            "vocabulary_weight": 0.40,
+            "semantic_weight": 0.30,
+            "social_weight": 0.15,
+            "survival_weight": 0.10,
+            "exploration_weight": 0.05
+        },
+        "speciation": {
+            "enabled": true,
+            "threshold": 0.4,
+            "target_species": 6
+        }
+    },
+
+    "highlander": {
+        "enabled": true,
+        "battle_frequency": 0.08,
+        "min_fitness_for_battle": 0.15,
+        "fitness_difference_threshold": 0.6,
+        "winner_fitness_boost": 0.03,
+        "loser_survival_chance": 0.70,
+        "absorption_rate": 1.0,
+        "vocabulary_transfer_rate": 1.0,
+        "experience_transfer_rate": 1.0,
+        "trait_inheritance_strength": 0.7,
+        "protect_young_organisms": true,
+        "young_organism_generations": 15,
+        "arena": {
+            "enabled": true,
+            "frequency": 0.05,
+            "min_participants": 2,
+            "max_participants": 3,
+            "tournament_style": "gentle"
+        },
+        "germination": {
+            "enabled": true,
+            "pool_size": 30,
+            "germination_threshold": 0.25,
+            "trait_boost": 0.12,
+            "vocabulary_inheritance": 1.0,
+            "experience_inheritance": 0.9,
+            "protect_germinated": true,
+            "protection_generations": 20
+        }
+    },
+
+    "language": {
+        "enabled": true,
+        "vocabulary": {
+            "initial_size": 3000,
+            "max_size": 5000,
+            "growth_rate": 0.06,
+            "sharing_rate": 0.25,
+            "decay_rate": 0.002,
+            "min_frequency_threshold": 1
+        },
+        "semantic": {
+            "embedding_dim": 384,
+            "context_window": 20,
+            "similarity_threshold": 0.35,
+            "clustering_enabled": true,
+            "min_cluster_size": 3
+        },
+        "teaching": {
+            "enabled": true,
+            "rate": 0.20,
+            "effectiveness": 0.85,
+            "social_learning_bonus": 0.18
+        },
+        "butterfly": {
+            "enabled": true,
+            "message_rate": 0.15,
+            "vocabulary_exchange": true,
+            "emotional_contagion": 0.12
+        }
+    },
+
+    "network": {
+        "initial_connections": 6,
+        "max_connections_per_organism": 25,
+        "connection_formation_rate": 0.18,
+        "connection_decay_rate": 0.008,
+        "cooperation_bonus": 0.15,
+        "social_learning_rate": 0.12
+    },
+
+    "resources": {
+        "initial_abundance": 2.5,
+        "regeneration_rate": 0.25,
+        "distribution_method": "abundant",
+        "scarcity_threshold": 0.6,
+        "sharing_enabled": true,
+        "sharing_efficiency": 0.9
+    },
+
+    "environment": {
+        "stability": 0.95,
+        "change_rate": 0.02,
+        "seasons_enabled": false,
+        "catastrophe_chance": 0.0,
+        "niche_count": 8,
+        "niche_overlap": 0.5
+    },
+
+    "memory": {
+        "context_memory_size": 80000,
+        "experience_buffer_size": 30000,
+        "knowledge_retention": 0.98,
+        "forgetting_rate": 0.002
+    },
+
+    "logging": {
+        "level": "INFO",
+        "log_frequency": 10,
+        "detailed_stats": true,
+        "save_lineage": true,
+        "track_vocabulary": true
+    },
+
+    "ray": {
+        "enabled": true,
+        "num_cpus": 24,
+        "parallelization_threshold": 30
+    },
+
+    "performance": {
+        "cache_embeddings": true,
+        "lazy_evaluation": true,
+        "batch_neural_updates": true,
+        "profile_enabled": false
+    }
+}
