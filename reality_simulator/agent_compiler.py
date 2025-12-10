@@ -4433,40 +4433,55 @@ numpy>=1.21.0
 # HTTP server & web interface
 flask>=2.0.0
 
-# ═══════════════════════════════════════════════════════════════
-# GYMNASIUM ENVIRONMENTS (Optional but recommended!)
-# ═══════════════════════════════════════════════════════════════
+# P2P Networking (for CocoonLink battles)
+websockets>=12.0       # Optional - for P2P mode
 
-gymnasium>=0.29.0      # 63 built-in environments
+# ═══════════════════════════════════════════════════════════════
+# GYMNASIUM ENVIRONMENTS - PROTON GAME ARENA
+# ═══════════════════════════════════════════════════════════════
+# Game selection inspired by Piers Anthony's "Apprentice Adept"
+# Absorption mechanic inspired by "Highlander" (1986)
+
+gymnasium>=0.29.0      # Core RL environments (63 built-in)
 pygame>=2.5.0          # Visual rendering
 
-# Classic Control (CartPole, MountainCar, Pendulum, Acrobot)
-# -> Included in gymnasium core!
+# CLASSIC CONTROL (Built into gymnasium - always works!)
+# CartPole-v1, MountainCar-v0, Acrobot-v1, Pendulum-v1
+# FrozenLake-v1, CliffWalking-v1, Taxi-v3, Blackjack-v1
 
-# Atari Arcade (100+ classic games)
+# BOX2D PHYSICS (pip install gymnasium[box2d])
+# LunarLander-v3, BipedalWalker-v3, CarRacing-v3
+
+# ATARI ARCADE (pip install ale-py)
+# ALE/Pong-v5, ALE/Breakout-v5, ALE/SpaceInvaders-v5, etc.
 # ale-py>=0.8.0
 
-# Box2D Physics (LunarLander, BipedalWalker, CarRacing)
-# box2d-py>=2.3.5
-
-# MuJoCo Robotics (Humanoid, Ant, HalfCheetah, Hopper)
+# MUJOCO PHYSICS (pip install gymnasium[mujoco])  
+# Ant-v4, HalfCheetah-v4, Humanoid-v4, etc.
 # mujoco>=2.3.0
 
 # ═══════════════════════════════════════════════════════════════
 # QUICK START COMMANDS
 # ═══════════════════════════════════════════════════════════════
 # 
-# Run with TorchScript model:
-#   python bridge.py --model brain_ensemble.pt --mode interactive
+# Interactive chat:
+#   python cocoon.py --mode chat
 #
-# Run with ONNX model:
-#   python bridge.py --model brain_ensemble.onnx --mode interactive
+# Gym training (shows game menu):
+#   python cocoon.py --mode gym
 #
-# Run in Gymnasium:
-#   python bridge.py --model brain_ensemble.onnx --mode gym --env CartPole-v1
+# Direct gym environment:
+#   python cocoon.py --mode gym --env CartPole-v1 --episodes 100
 #
-# Start HTTP server:
-#   python bridge.py --model brain_ensemble.onnx --mode http --port 8080
+# Tournament (multi-organism battles):
+#   python cocoon.py --mode gym
+#   -> Select "Tournament" from menu
+#
+# HTTP API server:
+#   python cocoon.py --mode serve --port 8080
+#
+# P2P battles (connect to CocoonHatch):
+#   python cocoon.py --mode link --hatch ws://localhost:8765
 """
                 zf.writestr('requirements.txt', requirements)
                 
@@ -9892,6 +9907,237 @@ def run_sphere_demo(num_organisms: int = 6, max_misses: int = 10):
     return arena.run()
 
 
+# =============================================================================
+# INTERNAL TOURNAMENT RUNNER (when standalone_proton_tournament not available)
+# =============================================================================
+
+def _run_internal_tournament(agent: 'CocoonAgent', tournament_type: str, learn: bool = True):
+    """
+    Run an internal tournament between organisms in the ensemble.
+    Fallback when standalone_proton_tournament.py is not available.
+    
+    Args:
+        agent: CocoonAgent with multiple organisms
+        tournament_type: 'round_robin', 'elimination', or 'ladder'
+        learn: Whether to train during battles
+    """
+    import random
+    import itertools
+    
+    num_organisms = len(agent.brains)
+    if num_organisms < 2:
+        print("❌ Tournament requires at least 2 organisms!")
+        return
+    
+    # Default tournament games (built-in, no extra installs needed)
+    TOURNAMENT_GAMES = [
+        "CartPole-v1",
+        "MountainCar-v0",
+        "Acrobot-v1",
+        "FrozenLake-v1",
+    ]
+    
+    # Track wins
+    wins = {i: 0 for i in range(num_organisms)}
+    fitness = list(agent.organism_fitness) if hasattr(agent, 'organism_fitness') else [1.0] * num_organisms
+    
+    print(f"\n⚔️ INTERNAL TOURNAMENT: {tournament_type.upper()}")
+    print(f"   Organisms: {num_organisms}")
+    print(f"   Learning: {'ON' if learn else 'OFF'}")
+    print("=" * 60)
+    
+    try:
+        import gymnasium as gym
+    except ImportError:
+        print("❌ gymnasium not installed!")
+        return
+    
+    def run_battle(org_a: int, org_b: int, game: str, episodes: int = 3) -> tuple:
+        """Run a battle between two organisms, return (score_a, score_b)."""
+        try:
+            env = gym.make(game)
+        except Exception as e:
+            print(f"  ⚠️ Can't load {game}: {e}")
+            return 0, 0
+        
+        scores = [0.0, 0.0]
+        
+        for org_idx, org_pos in enumerate([org_a, org_b]):
+            brain = agent.brains[org_pos]
+            total_reward = 0.0
+            
+            for ep in range(episodes):
+                obs, _ = env.reset()
+                obs = np.asarray(obs, dtype=np.float32).flatten()
+                done = False
+                ep_reward = 0.0
+                
+                while not done:
+                    # Get action from this organism's brain
+                    with torch.no_grad():
+                        obs_tensor = torch.FloatTensor(obs).unsqueeze(0)
+                        if len(obs) < brain.input_dim:
+                            obs_tensor = torch.cat([obs_tensor, torch.zeros(1, brain.input_dim - len(obs))], dim=1)
+                        outputs = brain(obs_tensor)
+                        action = outputs.argmax(dim=-1).item()
+                    
+                    # Clamp action to valid range
+                    if hasattr(env.action_space, 'n'):
+                        action = action % env.action_space.n
+                    
+                    result = env.step(action)
+                    if len(result) == 5:
+                        next_obs, reward, terminated, truncated, _ = result
+                        done = terminated or truncated
+                    else:
+                        next_obs, reward, done, _ = result
+                    
+                    next_obs = np.asarray(next_obs, dtype=np.float32).flatten()
+                    
+                    # Learn if enabled
+                    if learn:
+                        agent.add_experience(obs, action, reward, next_obs, done)
+                    
+                    obs = next_obs
+                    ep_reward += reward
+                
+                total_reward += ep_reward
+            
+            scores[org_idx] = total_reward / episodes
+        
+        env.close()
+        
+        # Train if enough experiences
+        if learn and len(agent.experience_buffers[0]) >= agent.batch_size:
+            agent.train_step()
+        
+        return scores[0], scores[1]
+    
+    # Generate matchups based on tournament type
+    if tournament_type == 'round_robin':
+        matchups = list(itertools.combinations(range(num_organisms), 2))
+        print(f"\n📋 Round Robin: {len(matchups)} matches")
+        
+        for match_num, (org_a, org_b) in enumerate(matchups, 1):
+            game = random.choice(TOURNAMENT_GAMES)
+            name_a = agent.organism_names[org_a] if hasattr(agent, 'organism_names') else f"Org-{org_a}"
+            name_b = agent.organism_names[org_b] if hasattr(agent, 'organism_names') else f"Org-{org_b}"
+            
+            print(f"\n  Match {match_num}/{len(matchups)}: {name_a} vs {name_b} [{game}]")
+            
+            score_a, score_b = run_battle(org_a, org_b, game)
+            
+            if score_a > score_b:
+                wins[org_a] += 1
+                print(f"    🏆 {name_a} wins! ({score_a:.1f} vs {score_b:.1f})")
+                # Fitness transfer
+                transfer = 0.05 * fitness[org_b]
+                fitness[org_a] += transfer
+                fitness[org_b] -= transfer
+            elif score_b > score_a:
+                wins[org_b] += 1
+                print(f"    🏆 {name_b} wins! ({score_b:.1f} vs {score_a:.1f})")
+                transfer = 0.05 * fitness[org_a]
+                fitness[org_b] += transfer
+                fitness[org_a] -= transfer
+            else:
+                print(f"    🤝 Draw! ({score_a:.1f} vs {score_b:.1f})")
+    
+    elif tournament_type == 'elimination':
+        # Single elimination bracket
+        remaining = list(range(num_organisms))
+        random.shuffle(remaining)
+        round_num = 1
+        
+        print(f"\n🏆 Single Elimination: {num_organisms} organisms")
+        
+        while len(remaining) > 1:
+            print(f"\n  === Round {round_num} ({len(remaining)} remaining) ===")
+            next_round = []
+            
+            for i in range(0, len(remaining) - 1, 2):
+                org_a, org_b = remaining[i], remaining[i + 1]
+                game = random.choice(TOURNAMENT_GAMES)
+                name_a = agent.organism_names[org_a] if hasattr(agent, 'organism_names') else f"Org-{org_a}"
+                name_b = agent.organism_names[org_b] if hasattr(agent, 'organism_names') else f"Org-{org_b}"
+                
+                print(f"\n    {name_a} vs {name_b} [{game}]")
+                score_a, score_b = run_battle(org_a, org_b, game, episodes=5)
+                
+                if score_a >= score_b:
+                    next_round.append(org_a)
+                    wins[org_a] += 1
+                    print(f"      🏆 {name_a} advances! ({score_a:.1f} vs {score_b:.1f})")
+                    # Elimination bonus
+                    fitness[org_a] += 0.1 * fitness[org_b]
+                    fitness[org_b] *= 0.8
+                else:
+                    next_round.append(org_b)
+                    wins[org_b] += 1
+                    print(f"      🏆 {name_b} advances! ({score_b:.1f} vs {score_a:.1f})")
+                    fitness[org_b] += 0.1 * fitness[org_a]
+                    fitness[org_a] *= 0.8
+            
+            # Odd organism gets bye
+            if len(remaining) % 2 == 1:
+                bye_org = remaining[-1]
+                name_bye = agent.organism_names[bye_org] if hasattr(agent, 'organism_names') else f"Org-{bye_org}"
+                print(f"    {name_bye} gets a bye")
+                next_round.append(bye_org)
+            
+            remaining = next_round
+            round_num += 1
+        
+        champion = remaining[0]
+        champ_name = agent.organism_names[champion] if hasattr(agent, 'organism_names') else f"Org-{champion}"
+        print(f"\n  👑 CHAMPION: {champ_name}!")
+    
+    elif tournament_type == 'ladder':
+        # Continuous ladder matches
+        num_matches = num_organisms * 3  # 3 matches per organism on average
+        print(f"\n📊 Ladder: {num_matches} matches")
+        
+        for match_num in range(1, num_matches + 1):
+            # Pick two different organisms
+            org_a, org_b = random.sample(range(num_organisms), 2)
+            game = random.choice(TOURNAMENT_GAMES)
+            name_a = agent.organism_names[org_a] if hasattr(agent, 'organism_names') else f"Org-{org_a}"
+            name_b = agent.organism_names[org_b] if hasattr(agent, 'organism_names') else f"Org-{org_b}"
+            
+            print(f"\n  [{match_num}/{num_matches}] {name_a} vs {name_b} [{game}]")
+            score_a, score_b = run_battle(org_a, org_b, game)
+            
+            if score_a > score_b:
+                wins[org_a] += 1
+                print(f"    🏆 {name_a} ({score_a:.1f} vs {score_b:.1f})")
+                transfer = 0.03 * fitness[org_b]
+                fitness[org_a] += transfer
+                fitness[org_b] -= transfer * 0.5  # Less punishment in ladder
+            elif score_b > score_a:
+                wins[org_b] += 1
+                print(f"    🏆 {name_b} ({score_b:.1f} vs {score_a:.1f})")
+                transfer = 0.03 * fitness[org_a]
+                fitness[org_b] += transfer
+                fitness[org_a] -= transfer * 0.5
+    
+    # Update agent fitness
+    if hasattr(agent, 'organism_fitness'):
+        agent.organism_fitness = fitness
+    
+    # Final standings
+    print("\n" + "=" * 60)
+    print("📊 FINAL STANDINGS")
+    print("=" * 60)
+    standings = sorted(range(num_organisms), key=lambda x: (wins[x], fitness[x]), reverse=True)
+    for rank, org_idx in enumerate(standings, 1):
+        name = agent.organism_names[org_idx] if hasattr(agent, 'organism_names') else f"Org-{org_idx}"
+        medal = "🥇" if rank == 1 else ("🥈" if rank == 2 else ("🥉" if rank == 3 else "  "))
+        print(f"  {medal} #{rank}: {name} - {wins[org_idx]} wins, fitness={fitness[org_idx]:.3f}")
+    
+    if learn:
+        print(f"\n📈 Training steps completed: {agent.training_step}")
+
+
 # Optional Gym adapter
 class GymRunner:
     def __init__(self, agent: CocoonAgent):
@@ -9907,7 +10153,33 @@ class GymRunner:
                 print("[!] Gymnasium not found. Install with: pip install gymnasium")
                 return
 
-        env = gym.make(env_name, render_mode='human' if render else None)
+        # Try to create the environment with helpful error messages
+        try:
+            env = gym.make(env_name, render_mode='human' if render else None)
+        except gym.error.NameNotFound as e:
+            print(f"\n❌ Environment '{env_name}' not found!")
+            
+            # Provide specific install hints
+            if 'ALE/' in env_name or 'Atari' in env_name.lower():
+                print("\n💡 Atari games require additional setup:")
+                print("   pip install gymnasium[atari] ale-py")
+                print("   ale-import-roms --yes")
+            elif env_name in ['LunarLander-v3', 'BipedalWalker-v3', 'CarRacing-v2']:
+                print("\n💡 Box2D games require additional setup:")
+                print("   pip install gymnasium[box2d]")
+                print("   (May also need: conda install swig)")
+            elif '-PLE-' in env_name:
+                print("\n❌ PLE (PyGame Learning Environment) is no longer maintained!")
+                print("   These games don't work on modern Python. Try these instead:")
+                print("   - CartPole-v1 (built-in)")
+                print("   - ALE/Pong-v5 (Atari - need ale-py)")
+            else:
+                print("\n💡 Try: pip install gymnasium[all]")
+                print("   Or check: https://gymnasium.farama.org/environments/")
+            return
+        except Exception as e:
+            print(f"\n❌ Failed to create environment: {e}")
+            return
         
         # Get environment's action space size
         action_space_size = None
@@ -10385,9 +10657,9 @@ Examples:
     parser.add_argument('--no-learn', action='store_true')
     parser.add_argument('--port', type=int, default=8080)
     parser.add_argument('--export', type=str, help='Export cocoon Python file')
-    parser.add_argument('--export-onnx', type=str, help='Export ONNX model for Netron visualization')
+    parser.add_argument('--export-onnx', type=str, help='Export ONNX model (ensemble exports all brains, use --organism N to export single)')
     parser.add_argument('--export-package', type=str, help='Export full package (ONNX + README + metadata)')
-    parser.add_argument('--organism', type=int, default=0, help='Organism index for ONNX export')
+    parser.add_argument('--organism', type=int, default=0, help='Organism index for single-brain ONNX export (default: export all as ensemble)')
     parser.add_argument('--voting', choices=['majority', 'weighted', 'confidence'], default='confidence')
     parser.add_argument('--max-organisms', type=int, default=None, help='Limit number of organisms to load (saves VRAM)')
     # Sphere arena arguments
@@ -10416,7 +10688,11 @@ Examples:
             agent.export_cocoon(args.export)
             return
         if args.export_onnx:
-            agent.export_onnx(args.export_onnx, organism_idx=args.organism)
+            # For ensembles, export ALL brains as combined ONNX unless specific organism requested
+            if len(agent.brains) > 1 and args.organism == 0:
+                agent.export_ensemble_onnx(args.export_onnx)
+            else:
+                agent.export_onnx(args.export_onnx, organism_idx=args.organism)
             return
         if args.export_package:
             agent.export_package(args.export_package)
@@ -10667,85 +10943,169 @@ Examples:
     elif args.mode == 'gym':
         # Interactive menu if no env specified
         if args.env == 'CartPole-v1' and '--env' not in sys.argv:
-            print("\n🎮 GAME ENVIRONMENT SELECTOR")
-            print("=" * 60)
+            print("\n🎮 PROTON GAME ARENA - Training & Competition")
+            print("=" * 70)
+            print("Inspired by Piers Anthony's 'Apprentice Adept' game selection system")
+            print("=" * 70)
             
-            # PyGame Learning Environment (PLE) games - REAL pygame games!
-            PLE_GAMES = [
-                ("FlappyBird-PLE-v0", "🐦 Flappy Bird - Tap to fly through pipes!", "ple"),
-                ("Snake-PLE-v0", "🐍 Snake - Eat food, grow longer, don't die!", "ple"),
-                ("Pong-PLE-v0", "🏓 Pong - Classic paddle game", "ple"),
-                ("Pixelcopter-PLE-v0", "🚁 Pixelcopter - Helicopter cave navigator", "ple"),
-                ("Catcher-PLE-v0", "🧺 Catcher - Catch falling fruit", "ple"),
-                ("PuckWorld-PLE-v0", "🔴 PuckWorld - Chase the green, avoid red", "ple"),
-                ("WaterWorld-PLE-v0", "💧 WaterWorld - Collect good, avoid bad", "ple"),
-                ("MonsterKong-PLE-v0", "🦍 Monster Kong - Donkey Kong clone!", "ple"),
-                ("RaycastMaze-PLE-v0", "🏰 Raycast Maze - 3D maze navigator", "ple"),
+            # ═══════════════════════════════════════════════════════════════════
+            # PROTON-ALIGNED GAMES (All verified working!)
+            # ═══════════════════════════════════════════════════════════════════
+            
+            # PHYSICAL CHALLENGES - Body, reflexes, coordination
+            PHYSICAL_GAMES = [
+                ("CartPole-v1", "🎯 Balance Beam - Keep pole balanced (reflexes)", "classic", "PHYSICAL/NAKED"),
+                ("MountainCar-v0", "🏔️ Mountain Climb - Build momentum (persistence)", "classic", "PHYSICAL/NAKED"),
+                ("Acrobot-v1", "🤸 Gymnast Swing - Double pendulum (coordination)", "classic", "PHYSICAL/NAKED"),
+                ("Pendulum-v1", "🔄 Pendulum Control - Torque control (precision)", "classic", "PHYSICAL/TOOL"),
+                ("LunarLander-v3", "🌙 Lunar Landing - Spacecraft landing (piloting)", "box2d", "PHYSICAL/MACHINE"),
+                ("BipedalWalker-v3", "🚶 Biped Walk - Two-legged locomotion", "box2d", "PHYSICAL/MACHINE"),
+                ("CarRacing-v3", "🏎️ Car Racing - Drive the track", "box2d", "PHYSICAL/MACHINE"),
             ]
             
-            # Classic Gym environments (still useful)
-            CLASSIC_GAMES = [
-                ("CartPole-v1", "🎯 CartPole - Balance a pole", "classic"),
-                ("MountainCar-v0", "🏔️ MountainCar - Drive up a hill", "classic"),
-                ("Acrobot-v1", "🤸 Acrobot - Swing up double pendulum", "classic"),
-                ("Pendulum-v1", "🔄 Pendulum - Swing upright", "classic"),
-                ("LunarLander-v3", "🌙 LunarLander - Land on the moon", "classic"),
-                ("BipedalWalker-v3", "🚶 BipedalWalker - Walk on two legs", "classic"),
+            # MENTAL CHALLENGES - Strategy, planning, puzzle
+            MENTAL_GAMES = [
+                ("FrozenLake-v1", "🧊 Frozen Lake - Navigate slippery ice (planning)", "classic", "MENTAL/NAKED"),
+                ("CliffWalking-v1", "🏔️ Cliff Walk - Don't fall off! (caution)", "classic", "MENTAL/NAKED"),
+                ("Taxi-v3", "🚕 Taxi Driver - Pickup & delivery (efficiency)", "classic", "MENTAL/MACHINE"),
             ]
             
-            # Atari via ALE (if installed)
+            # CHANCE CHALLENGES - Probability, luck
+            CHANCE_GAMES = [
+                ("Blackjack-v1", "🃏 Blackjack - Beat the dealer (probability)", "classic", "CHANCE/NAKED"),
+            ]
+            
+            # ATARI ARCADE - Classic games (need ale-py)
             ATARI_GAMES = [
-                ("ALE/Pong-v5", "🏓 Atari Pong", "atari"),
-                ("ALE/Breakout-v5", "🧱 Atari Breakout", "atari"),
-                ("ALE/SpaceInvaders-v5", "👾 Space Invaders", "atari"),
-                ("ALE/Pacman-v5", "🟡 Pac-Man", "atari"),
-                ("ALE/Asteroids-v5", "☄️ Asteroids", "atari"),
-                ("ALE/Frogger-v5", "🐸 Frogger", "atari"),
-                ("ALE/Qbert-v5", "🔺 Q*bert", "atari"),
-                ("ALE/MsPacman-v5", "👩 Ms. Pac-Man", "atari"),
-                ("ALE/Centipede-v5", "🐛 Centipede", "atari"),
-                ("ALE/Galaga-v5", "🚀 Galaga", "atari"),
+                ("ALE/Pong-v5", "🏓 Pong - Classic paddle game", "atari", "PHYSICAL/MACHINE"),
+                ("ALE/Breakout-v5", "🧱 Breakout - Break the bricks", "atari", "PHYSICAL/TOOL"),
+                ("ALE/SpaceInvaders-v5", "👾 Space Invaders - Defend Earth", "atari", "PHYSICAL/MACHINE"),
+                ("ALE/MsPacman-v5", "👩 Ms. Pac-Man - Maze chase", "atari", "MENTAL/MACHINE"),
+                ("ALE/Enduro-v5", "🚗 Enduro - Racing endurance", "atari", "PHYSICAL/MACHINE"),
+            ]
+            
+            # MUJOCO PHYSICS (need gymnasium[mujoco])
+            MUJOCO_GAMES = [
+                ("Ant-v4", "🐜 Ant Walker - Quadruped locomotion", "mujoco", "PHYSICAL/ANIMAL"),
+                ("HalfCheetah-v4", "🐆 Half Cheetah - Fast running", "mujoco", "PHYSICAL/ANIMAL"),
+            ]
+            
+            # MULTIPLAYER TOURNAMENT - Uses multiple organisms!
+            TOURNAMENT_MODES = [
+                ("TOURNAMENT:round_robin", "⚔️ Round Robin - All organisms battle each other", "tournament", "VERSUS"),
+                ("TOURNAMENT:elimination", "🏆 Elimination - Single elimination bracket", "tournament", "VERSUS"),
+                ("TOURNAMENT:ladder", "📊 Ladder - Continuous ranked matches", "tournament", "VERSUS"),
             ]
             
             all_games = []
             idx = 1
             
-            print("\n🕹️  PYGAME LEARNING ENVIRONMENT (Pure Pygame!)")
-            print("-" * 50)
-            for env, desc, cat in PLE_GAMES:
-                print(f"  {idx:2d}. {desc}")
-                all_games.append(env)
+            print("\n╔══════════════════════════════════════════════════════════════════╗")
+            print("║  💪 PHYSICAL CHALLENGES - Reflexes, Coordination, Control        ║")
+            print("╚══════════════════════════════════════════════════════════════════╝")
+            for env, desc, cat, grid in PHYSICAL_GAMES:
+                marker = "✅" if cat == "classic" else "📦"
+                print(f"  {idx:2d}. {marker} {desc}")
+                all_games.append((env, cat, grid, "solo"))
                 idx += 1
             
-            print("\n🎮 CLASSIC CONTROL")
-            print("-" * 50)
-            for env, desc, cat in CLASSIC_GAMES:
-                print(f"  {idx:2d}. {desc}")
-                all_games.append(env)
+            print("\n╔══════════════════════════════════════════════════════════════════╗")
+            print("║  🧠 MENTAL CHALLENGES - Strategy, Planning, Puzzles              ║")
+            print("╚══════════════════════════════════════════════════════════════════╝")
+            for env, desc, cat, grid in MENTAL_GAMES:
+                marker = "✅" if cat == "classic" else "📦"
+                print(f"  {idx:2d}. {marker} {desc}")
+                all_games.append((env, cat, grid, "solo"))
                 idx += 1
             
-            print("\n👾 ATARI ARCADE (requires ale-py)")
-            print("-" * 50)
-            for env, desc, cat in ATARI_GAMES:
-                print(f"  {idx:2d}. {desc}")
-                all_games.append(env)
+            print("\n╔══════════════════════════════════════════════════════════════════╗")
+            print("║  🎲 CHANCE CHALLENGES - Probability, Risk                        ║")
+            print("╚══════════════════════════════════════════════════════════════════╝")
+            for env, desc, cat, grid in CHANCE_GAMES:
+                print(f"  {idx:2d}. ✅ {desc}")
+                all_games.append((env, cat, grid, "solo"))
                 idx += 1
+            
+            print("\n╔══════════════════════════════════════════════════════════════════╗")
+            print("║  👾 ATARI ARCADE (pip install ale-py)                            ║")
+            print("╚══════════════════════════════════════════════════════════════════╝")
+            for env, desc, cat, grid in ATARI_GAMES:
+                print(f"  {idx:2d}. 📦 {desc}")
+                all_games.append((env, cat, grid, "solo"))
+                idx += 1
+            
+            print("\n╔══════════════════════════════════════════════════════════════════╗")
+            print("║  🤖 MUJOCO PHYSICS (pip install gymnasium[mujoco])               ║")
+            print("╚══════════════════════════════════════════════════════════════════╝")
+            for env, desc, cat, grid in MUJOCO_GAMES:
+                print(f"  {idx:2d}. 📦 {desc}")
+                all_games.append((env, cat, grid, "solo"))
+                idx += 1
+            
+            # Only show tournament if we have multiple organisms
+            num_organisms = len(agent.brains) if hasattr(agent, 'brains') else 1
+            if num_organisms > 1:
+                print("\n╔══════════════════════════════════════════════════════════════════╗")
+                print(f"║  ⚔️ TOURNAMENT MODE - {num_organisms} Organisms Battle! (Highlander Style)      ║")
+                print("╚══════════════════════════════════════════════════════════════════╝")
+                for env, desc, cat, grid in TOURNAMENT_MODES:
+                    print(f"  {idx:2d}. 🏟️ {desc}")
+                    all_games.append((env, cat, grid, "tournament"))
+                    idx += 1
             
             print(f"\n  {idx:2d}. [CUSTOM] Enter your own environment name")
-            print("=" * 60)
+            print("=" * 70)
+            print("\n✅ = Built-in (always works)  📦 = Needs extra install  🏟️ = Multiplayer")
             
+            # Selection
             try:
                 choice = input(f"\nSelect game (1-{idx}): ").strip()
                 if choice.isdigit():
                     choice_idx = int(choice) - 1
                     if 0 <= choice_idx < len(all_games):
-                        args.env = all_games[choice_idx]
-                        print(f"\n✅ Selected: {args.env}")
+                        args.env, cat, grid, mode_type = all_games[choice_idx]
+                        print(f"\n✅ Selected: {args.env} [{grid}]")
                         
-                        # Check if PLE game and warn about installation
-                        if '-PLE-' in args.env:
-                            print("\n⚠️  PLE games require: pip install ple pygame-learning-environment")
-                            print("   Or: pip install gym-ple")
+                        # Handle tournament mode specially
+                        if mode_type == "tournament":
+                            tournament_type = args.env.replace("TOURNAMENT:", "")
+                            print(f"\n⚔️ TOURNAMENT: {tournament_type.upper()}")
+                            print(f"   {num_organisms} organisms will battle for supremacy!")
+                            
+                            # Run tournament instead of regular gym
+                            try:
+                                from standalone_proton_tournament import ProtonTournament
+                            except ImportError:
+                                # Use local tournament runner
+                                print("\n🎮 Starting internal tournament...")
+                                _run_internal_tournament(agent, tournament_type, learn=not args.no_learn)
+                                return
+                            
+                            tournament = ProtonTournament(agent, learn_during_battle=not args.no_learn)
+                            
+                            if tournament_type == "round_robin":
+                                tournament.round_robin()
+                            elif tournament_type == "elimination":
+                                tournament.elimination()
+                            elif tournament_type == "ladder":
+                                ep_input = input(f"Ladder episodes [{args.episodes}]: ").strip()
+                                ladder_eps = int(ep_input) if ep_input else args.episodes
+                                tournament.ladder(episodes=ladder_eps)
+                            
+                            # Save after tournament
+                            if not args.no_learn:
+                                save = input("\nSave tournament results? (y/N): ").strip().lower()
+                                if save == 'y':
+                                    agent.export_cocoon('cocoon_tournament.py')
+                            return
+                        
+                        # Show install hints for different categories
+                        if cat == 'box2d':
+                            print("\n💡 Box2D install: pip install gymnasium[box2d]")
+                        elif cat == 'atari':
+                            print("\n💡 Atari install: pip install ale-py")
+                        elif cat == 'mujoco':
+                            print("\n💡 MuJoCo install: pip install gymnasium[mujoco]")
                     elif choice_idx == len(all_games):
                         args.env = input("Enter environment name: ").strip()
                     else:
@@ -10772,14 +11132,30 @@ Examples:
             except:
                 args.render = True
             
+            # Ask for training (default ON now)
+            try:
+                learn_input = input("Train while playing? (Y/n): ").strip().lower()
+                args.no_learn = (learn_input == 'n')
+            except:
+                args.no_learn = False
+            
             print()
         
         runner = GymRunner(agent)
         runner.run(args.env, episodes=args.episodes, render=args.render, learn=not args.no_learn)
+        
         if not args.no_learn:
-            save = input("\nSave updated cocoon? (y/N): ").strip().lower()
+            # Show training summary
+            print(f"\n📊 Training Summary:")
+            print(f"   Steps trained: {agent.training_step}")
+            print(f"   Vocab size: {len(agent.vocabulary.get('word_to_id', {}))}")
+            if hasattr(agent, 'organism_fitness'):
+                print(f"   Organism fitness: {[f'{f:.2f}' for f in agent.organism_fitness]}")
+            
+            save = input("\nSave trained cocoon? (y/N): ").strip().lower()
             if save == 'y':
                 agent.export_cocoon('cocoon_trained.py')
+                print("✅ Saved to cocoon_trained.py")
 
     elif args.mode == 'serve':
         run_http_server(agent, port=args.port)

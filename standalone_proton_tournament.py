@@ -146,7 +146,7 @@ TOURNAMENT_GAMES: Dict[str, GameDefinition] = {
     ),
     "lunarlander": GameDefinition(
         name="Lunar Landing",
-        gym_env="LunarLander-v2",
+        gym_env="LunarLander-v3",
         challenge=ChallengeType.PHYSICAL,
         resource=ResourceType.MACHINE,
         difficulty=GameDifficulty.JOURNEYMAN,
@@ -180,7 +180,7 @@ TOURNAMENT_GAMES: Dict[str, GameDefinition] = {
     ),
     "cliffwalking": GameDefinition(
         name="Cliff Walk",
-        gym_env="CliffWalking-v0",
+        gym_env="CliffWalking-v1",
         challenge=ChallengeType.MENTAL,
         resource=ResourceType.NAKED,
         difficulty=GameDifficulty.JOURNEYMAN,

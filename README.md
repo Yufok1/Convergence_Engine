@@ -926,6 +926,53 @@ python unified_entry.py --highlander --predation --survival-threshold 0.8 --comp
 [GERMINATION] 🌱 REINCARNATION: New organism reborn_001
 ```
 
+### 🎮 Proton Game Arena - Apprentice Adept Style Battles
+**"Choose your game. Master your domain. Absorb the fallen."**
+
+> **🙏 ATTRIBUTION**: Game selection system inspired by **Piers Anthony's "Apprentice Adept"** series (1980-1990).
+> The 4x4 grid concept is the creative work of Piers Anthony.
+
+A gamified tournament system using the 4x4 game selection grid:
+
+```
+           NAKED        TOOL         MACHINE      ANIMAL
+         ─────────────────────────────────────────────────
+PHYSICAL   CartPole     Pendulum     LunarLander  Ant/Cheetah
+           MountainCar  Breakout     CarRacing    BipedalWalk
+           
+MENTAL     FrozenLake   -            Taxi         -
+           CliffWalk    -            MsPacman     -
+           
+CHANCE     Blackjack    -            -            -
+           
+ARTS       Language     Vocabulary   Dialogue     Cross-Species
+           Coherence    Duel         Quality      Communication
+```
+
+#### Quick Launch:
+```bash
+# Standalone tournament
+python standalone_proton_tournament.py
+
+# In exported cocoon
+python cocoon.py --mode gym
+# Then select Tournament mode from menu
+
+# Direct gym environment
+python cocoon.py --mode gym --env CartPole-v1 --episodes 100
+```
+
+#### Tournament Modes:
+- **Round Robin**: All organisms battle each other
+- **Elimination**: Single elimination bracket (Highlander-style)
+- **Ladder**: Continuous ranked matches with ELO-like progression
+
+#### Features:
+- **Fitness Transfer**: Winners absorb power from losers
+- **Online Learning**: Training during battles
+- **Game Categories**: Physical, Mental, Chance, Arts challenges
+- **Resource Types**: Naked, Tool, Machine, Animal augmentation levels
+
 ### 🌐 Sphere Arena - 3D Swarm Defense Training
 **"The swarm is ONE. The interceptor commands. The best follower leads next."**
 
