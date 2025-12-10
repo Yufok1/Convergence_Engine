@@ -521,13 +521,28 @@ class StateLogger:
     
     def log_neural(self, neural_data: Dict[str, Any]):
         """Log Neural System state"""
+        # Use same fallback chain as visualization: ema_loss > training_loss > avg_loss
+        ema_loss = neural_data.get('ema_loss')
+        training_loss = neural_data.get('training_loss')
+        avg_loss = neural_data.get('avg_loss')
+        
+        # Determine display loss (matching visualization_viewer.py logic)
+        if ema_loss is not None:
+            display_loss = f"{ema_loss:.6f}"
+        elif training_loss is not None:
+            display_loss = f"{training_loss:.6f}"
+        elif avg_loss is not None and avg_loss != 0.0:
+            display_loss = f"{avg_loss:.6f}"
+        else:
+            display_loss = 'N/A'
+        
         self.log_state('neural', {
             'enabled': neural_data.get('enabled', False),
-            'training_loss': f"{neural_data.get('training_loss', 0):.6f}" if neural_data.get('training_loss') is not None else 'N/A',
+            'training_loss': display_loss,
             'avg_epsilon': f"{neural_data.get('avg_epsilon', 0):.3f}",
             'organisms_tracked': neural_data.get('organisms_tracked', 0),
             'training_steps': neural_data.get('training_steps', 0),
-            'avg_loss': f"{neural_data.get('avg_loss', 0):.6f}" if neural_data.get('avg_loss') is not None else 'N/A',
+            'avg_loss': f"{avg_loss:.6f}" if avg_loss is not None else 'N/A',
         })
 
 
