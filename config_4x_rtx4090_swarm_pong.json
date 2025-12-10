@@ -300,11 +300,11 @@
   "neural": {
     "brain": {
       "activation": "relu",
-      "dropout": 0.08,
-      "hidden_dim": 512,
+      "dropout": 0.1,
+      "hidden_dim": 256,
       "input_dim": 32,
       "output_dim": 8,
-      "vocab_size": 5000
+      "vocab_size": 3000
     },
     "concept_system": {
       "concept_loss_weight": 0.15,
@@ -449,29 +449,29 @@
       "command_follow_success": 2.0
     },
     "training": {
-      "batch_size": 128,
+      "batch_size": 48,
       "early_stopping": {
         "enabled": true,
-        "min_delta": 0.00005,
-        "patience": 15
+        "min_delta": 0.0001,
+        "patience": 12
       },
       "enabled": true,
-      "epsilon": 0.9,
-      "epsilon_decay": 0.998,
-      "epsilon_end": 0.02,
-      "epsilon_start": 0.9,
-      "gamma": 0.99,
-      "language_reward_scaling": 0.4,
-      "learning_rate": 0.001,
+      "epsilon": 0.85,
+      "epsilon_decay": 0.995,
+      "epsilon_end": 0.01,
+      "epsilon_start": 0.85,
+      "gamma": 0.995,
+      "language_reward_scaling": 0.35,
+      "learning_rate": 0.002,
       "lr_scheduler": {
         "enabled": true,
-        "gamma": 0.97,
-        "min_lr": 0.00005,
-        "step_size": 150,
+        "gamma": 0.95,
+        "min_lr": 0.0001,
+        "step_size": 100,
         "type": "cosine",
-        "warmup_steps": 200
+        "warmup_steps": 100
       },
-      "memory_size": 100000,
+      "memory_size": 50000,
       "update_frequency": 1
     },
     "vp_aware_planning": {
