@@ -4751,6 +4751,7 @@ The cocoon includes a fully embedded **3D Swarm Defense Training Environment**!
 ```bash
 --mode sphere     # Run sphere arena
 --balls N         # Number of balls (1-5, default: 1)
+--misses N        # Max collective misses before game over (default: 10)
 --train           # Enable post-snapshot training
 --demo            # Run with dummy AI (preview visuals)
 --verbose         # Debug logging
@@ -9652,6 +9653,7 @@ Examples:
     parser.add_argument('--max-organisms', type=int, default=None, help='Limit number of organisms to load (saves VRAM)')
     # Sphere arena arguments
     parser.add_argument('--balls', type=int, default=1, help='Number of balls in sphere arena (1-5)')
+    parser.add_argument('--misses', type=int, default=10, help='Max collective misses before game over')
     parser.add_argument('--train', action='store_true', help='Enable post-snapshot training in sphere arena')
     parser.add_argument('--verbose', '-v', action='store_true', help='Verbose debug logging')
     parser.add_argument('--demo', action='store_true', help='Run sphere arena with dummy AI')
@@ -9938,14 +9940,16 @@ Examples:
         
         if args.demo:
             # Demo mode with dummy AI
-            results = run_sphere_demo(num_organisms=6, max_misses=10)
+            results = run_sphere_demo(num_organisms=6, max_misses=args.misses)
         else:
             # Full mode with cocoon brains
             num_organisms = args.max_organisms if args.max_organisms else len(agent.brains)
             num_balls = max(1, min(5, args.balls))
+            max_misses = max(1, args.misses)
             
             print(f"Organisms: {num_organisms}")
             print(f"Balls: {num_balls}")
+            print(f"Max Misses: {max_misses}")
             print(f"Training: {'ENABLED' if args.train else 'disabled'}")
             if args.verbose:
                 print(f"Verbose: ENABLED")
@@ -9954,7 +9958,7 @@ Examples:
             results = run_sphere_swarm_defense(
                 agent,
                 organism_indices=list(range(num_organisms)),
-                max_misses=10,
+                max_misses=max_misses,
                 headless=args.headless,
                 num_balls=num_balls,
                 enable_training=args.train,

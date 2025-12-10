@@ -2550,6 +2550,16 @@ def main():
             except ValueError:
                 pass
     
+    # Check for --misses flag (e.g., --misses 100)
+    max_misses = 10
+    for i, arg in enumerate(sys.argv):
+        if arg == '--misses' and i + 1 < len(sys.argv):
+            try:
+                max_misses = int(sys.argv[i + 1])
+                max_misses = max(1, max_misses)  # At least 1
+            except ValueError:
+                pass
+    
     # Check for --organisms flag (e.g., --organisms 50)
     num_organisms_override = None
     for i, arg in enumerate(sys.argv):
@@ -2572,6 +2582,7 @@ def main():
         print("  --demo           Run demo mode with dummy AI")
         print("  --organisms N    Number of organisms to use (default: all available)")
         print("  --balls N        Number of balls (1-5, default: 1)")
+        print("  --misses N       Max collective misses before game over (default: 10)")
         print("  --train          Enable post-snapshot training")
         print("                   Organisms learn from catches (+reward) and misses (-penalty)")
         print("                   Weights updated every 100 frames")
@@ -2684,7 +2695,7 @@ def main():
         print(f"\n--- SWARM DEFENSE MODE WITH COMMAND CHAIN ---")
         print(f"    Organisms: {num_players}")
         print(f"    Balls: {num_balls}")
-        print(f"    Max misses: 10 (collective)")
+        print(f"    Max misses: {max_misses} (collective)")
         print(f"    Command chain: ENABLED")
         if enable_training:
             print(f"    📈 Training: ENABLED (post-snapshot learning)")
@@ -2695,7 +2706,7 @@ def main():
         results = run_swarm_defense(
             agent,
             organism_indices=list(range(num_players)),
-            max_misses=10,
+            max_misses=max_misses,
             headless=not PYGAME_AVAILABLE,
             num_balls=num_balls,
             enable_training=enable_training,
