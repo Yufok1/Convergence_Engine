@@ -8565,8 +8565,13 @@ class SphereArena:
         
         return obs
     
-    def _get_organism_action(self, org: SphereOrganism, observation: np.ndarray) -> Tuple[int, np.ndarray]:
-        """Query brain for action."""
+    def _get_organism_action(self, org: SphereOrganism, observation: np.ndarray) -> Tuple[int, Tuple[float, float]]:
+        """
+        Query brain for action - 100% BRAIN-DRIVEN, NO CHEATING!
+        
+        Returns (action_idx, (d_theta, d_phi)) movement deltas.
+        The brain must LEARN to chase the ball through training.
+        """
         brain = self.agent.brains[org.idx]
         
         # Prepare input - pad if needed
@@ -8581,25 +8586,92 @@ class SphereArena:
         if hasattr(self.agent, 'device'):
             obs_tensor = obs_tensor.to(self.agent.device)
         
-        # Get action from brain
-        brain.eval()
-        with torch.no_grad():
-            output = brain(obs_tensor)
-            if isinstance(output, tuple):
-                output = output[0]
+        # VP integration if available
+        vp_value = 0.5
+        if hasattr(self.agent, 'vp_runtime'):
+            try:
+                vp_data = self.agent.vp_runtime.compute_from_state(observation, [])
+                vp_value = vp_data.get('violation_pressure', 0.5)
+            except:
+                pass
         
-        # Convert to action (4 outputs: dx, dy, dz movement + catch attempt)
-        if output.shape[-1] >= 4:
-            action_values = output[0, :4].cpu().numpy()
-        else:
-            action_values = output[0].cpu().numpy()
-            if len(action_values) < 4:
-                action_values = np.pad(action_values, (0, 4 - len(action_values)))
-        
-        # Discrete action from argmax for logging
-        action_idx = int(np.argmax(action_values))
-        
-        return action_idx, action_values
+        try:
+            # Get action from brain
+            brain.eval()
+            with torch.no_grad():
+                output = brain(obs_tensor, vp_value=vp_value) if hasattr(brain, 'forward') else brain(obs_tensor)
+                if isinstance(output, tuple):
+                    output = output[0]
+            
+            probs = output[0].cpu().numpy().flatten()
+            n_actions = len(probs)
+            
+            # Discrete action from argmax for logging
+            action_idx = int(np.argmax(probs))
+            
+            # ═══════════════════════════════════════════════════════════
+            # 100% BRAIN-DRIVEN MOVEMENT - NO CHEATING!
+            # ═══════════════════════════════════════════════════════════
+            # Divide action space into directional quadrants
+            # Brain must LEARN which actions mean which directions
+            
+            if n_actions >= 4:
+                quarter = n_actions // 4
+                
+                # Sum probabilities in each directional bucket
+                up_weight = np.sum(probs[:quarter])           # Move -phi (up)
+                right_weight = np.sum(probs[quarter:2*quarter])  # Move +theta (right)
+                down_weight = np.sum(probs[2*quarter:3*quarter]) # Move +phi (down)
+                left_weight = np.sum(probs[3*quarter:])          # Move -theta (left)
+                
+                # Net movement from brain's "vote"
+                theta_vote = (right_weight - left_weight) * 2.0
+                phi_vote = (down_weight - up_weight) * 2.0
+                
+                # Confidence affects speed
+                confidence = float(np.max(probs))
+                speed = PANEL_SPEED * (0.5 + confidence)
+                
+                # Command component (if available) - following orders is learned behavior
+                cmd_theta_dir = 0.0
+                cmd_phi_dir = 0.0
+                has_command = 0.0
+                
+                if self.enable_command_chain and self.active_command is not None:
+                    # Get command target in spherical coords
+                    _, cmd_theta, cmd_phi = _cartesian_to_spherical(*self.active_command)
+                    cmd_bias_theta = cmd_theta - org.theta
+                    while cmd_bias_theta > math.pi: cmd_bias_theta -= 2*math.pi
+                    while cmd_bias_theta < -math.pi: cmd_bias_theta += 2*math.pi
+                    cmd_bias_phi = cmd_phi - org.phi
+                    
+                    if abs(cmd_bias_theta) > 0.05 or abs(cmd_bias_phi) > 0.05:
+                        has_command = 1.0
+                        cmd_theta_dir = np.sign(cmd_bias_theta) if abs(cmd_bias_theta) > 0.05 else 0
+                        cmd_phi_dir = np.sign(cmd_bias_phi) if abs(cmd_bias_phi) > 0.05 else 0
+                
+                command_weight = 0.2 * has_command
+                brain_weight = 1.0 - command_weight
+                
+                # Final movement: brain controls everything
+                d_theta = speed * (
+                    brain_weight * np.tanh(theta_vote) +
+                    command_weight * cmd_theta_dir
+                )
+                d_phi = speed * (
+                    brain_weight * np.tanh(phi_vote) +
+                    command_weight * cmd_phi_dir
+                )
+            else:
+                # Few actions - use brain output directly
+                d_theta = PANEL_SPEED * np.tanh(probs[0] if len(probs) > 0 else 0)
+                d_phi = PANEL_SPEED * np.tanh(probs[1] if len(probs) > 1 else 0)
+            
+            return action_idx, (d_theta, d_phi)
+            
+        except Exception as e:
+            # Fallback on error: stay still (no cheating!)
+            return 0, (0.0, 0.0)
     
     def step(self) -> Tuple[Dict[int, np.ndarray], Dict[int, float], bool, Dict]:
         """Execute one step of the game."""
@@ -8618,15 +8690,12 @@ class SphereArena:
                 continue
             
             obs = self._get_observation(org)
-            action_idx, action_values = self._get_organism_action(org, obs)
+            action_idx, (d_theta, d_phi) = self._get_organism_action(org, obs)
             
             if self.enable_training:
                 self.prev_actions[org.idx] = action_idx
             
-            # Apply angular movement - panels slide on sphere surface
-            d_theta = action_values[0] * PANEL_SPEED
-            d_phi = action_values[1] * PANEL_SPEED
-            
+            # Apply angular movement - panels slide on sphere surface (already computed by brain)
             # Update spherical coords
             org.theta = (org.theta + d_theta) % (2 * math.pi)
             org.phi = max(0.1, min(math.pi - 0.1, org.phi + d_phi))  # Keep away from poles

@@ -433,26 +433,7 @@ class SwarmPongArena:
         except Exception as e:
             pass
         
-        # Fallback: simple AI - move toward ball
-        paddle = self.paddles.get(organism_idx)
-        if paddle:
-            v1, v2 = self._get_edge(paddle.edge_idx)
-            paddle_pos = get_edge_midpoint(v1, v2, paddle.position)
-            
-            # Project ball onto edge direction
-            edge_vec = (v2[0] - v1[0], v2[1] - v1[1])
-            ball_vec = (self.ball.x - v1[0], self.ball.y - v1[1])
-            edge_len_sq = edge_vec[0]**2 + edge_vec[1]**2
-            
-            if edge_len_sq > 0:
-                t = (edge_vec[0] * ball_vec[0] + edge_vec[1] * ball_vec[1]) / edge_len_sq
-                t = max(0, min(1, t))
-                
-                if t < paddle.position - 0.05:
-                    return -1
-                elif t > paddle.position + 0.05:
-                    return 1
-        
+        # Fallback on error: stay still (no cheating!)
         return 0
     
     def _check_ball_collision(self):

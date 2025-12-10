@@ -1141,29 +1141,28 @@ class SphereArena:
                     confidence = float(np.max(probs))
                     speed = ORGANISM_MOVE_SPEED * (0.5 + confidence)
                     
-                    # Blend: 40% brain vote + 30% reactive chase + 30% command
-                    # This way brain has influence but isn't the ONLY factor
-                    brain_weight = 0.4
-                    reactive_weight = 0.4
-                    command_weight = 0.2
+                    # ═══════════════════════════════════════════════════════════
+                    # 100% BRAIN-DRIVEN MOVEMENT - NO CHEATING!
+                    # ═══════════════════════════════════════════════════════════
+                    # The organism must LEARN to chase the ball through training.
+                    # No reactive hand-holding. Pure neural network decision.
                     
-                    # Reactive component: move toward ball
-                    reactive_theta = np.sign(theta_to_ball) if abs(theta_to_ball) > 0.1 else 0
-                    reactive_phi = np.sign(phi_to_ball) if abs(phi_to_ball) > 0.1 else 0
-                    
-                    # Command component (if available)
+                    # Command component still matters (20%) - following orders is learned behavior
+                    # But only if there's an active command
                     cmd_theta_dir = np.sign(cmd_bias_theta) if abs(cmd_bias_theta) > 0.05 else 0
                     cmd_phi_dir = np.sign(cmd_bias_phi) if abs(cmd_bias_phi) > 0.05 else 0
                     
-                    # Final blend
+                    has_command = 1.0 if (abs(cmd_bias_theta) > 0.05 or abs(cmd_bias_phi) > 0.05) else 0.0
+                    command_weight = 0.2 * has_command
+                    brain_weight = 1.0 - command_weight
+                    
+                    # Final movement: brain controls everything (with optional command influence)
                     d_theta = speed * (
                         brain_weight * np.tanh(theta_vote) +
-                        reactive_weight * reactive_theta +
                         command_weight * cmd_theta_dir
                     )
                     d_phi = speed * (
                         brain_weight * np.tanh(phi_vote) +
-                        reactive_weight * reactive_phi +
                         command_weight * cmd_phi_dir
                     )
                     
@@ -1177,14 +1176,15 @@ class SphereArena:
                         d_theta += self.rng.uniform(-0.02, 0.02)
                         d_phi += self.rng.uniform(-0.01, 0.01)
                 else:
-                    # Too few actions, fall back to simple reactive
-                    d_theta = ORGANISM_MOVE_SPEED * np.sign(theta_to_ball) if abs(theta_to_ball) > 0.1 else 0
-                    d_phi = ORGANISM_MOVE_SPEED * np.sign(phi_to_ball) if abs(phi_to_ball) > 0.1 else 0
+                    # Too few actions - brain output directly maps to movement
+                    # Still no cheating! Use whatever the brain outputs
+                    d_theta = ORGANISM_MOVE_SPEED * np.tanh(probs[0] if len(probs) > 0 else 0)
+                    d_phi = ORGANISM_MOVE_SPEED * np.tanh(probs[1] if len(probs) > 1 else 0)
                     
         except Exception as e:
-            # Fallback: simple reactive chase
-            d_theta = ORGANISM_MOVE_SPEED * np.sign(theta_to_ball) if abs(theta_to_ball) > 0.1 else 0
-            d_phi = ORGANISM_MOVE_SPEED * np.sign(phi_to_ball) if abs(phi_to_ball) > 0.1 else 0
+            # Fallback on error: stay still (no cheating even in error case)
+            d_theta = 0.0
+            d_phi = 0.0
         
         # Clamp to max speed
         d_theta = np.clip(d_theta, -ORGANISM_MOVE_SPEED * 1.5, ORGANISM_MOVE_SPEED * 1.5)
