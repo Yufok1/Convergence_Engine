@@ -2188,6 +2188,13 @@ class UnifiedSystem:
                     self._germination_callback.set_context_memory(network.context_memory)
                     print("[UNIFIED] [GERMINATION] 📚 Vocabulary inheritance enabled - the fallen keep their words!")
             
+            # 📚 WIRE CONTEXT MEMORY TO HIGHLANDER FOR VOCABULARY TRANSFER ON DEATH
+            # CRITICAL: Without this, vocabulary is LOST when organisms die in battle!
+            # The winner needs access to loser's word associations.
+            if network and hasattr(network, 'context_memory'):
+                self.highlander_protocol.set_context_memory(network.context_memory)
+                print("[UNIFIED] [HIGHLANDER] 📚 Vocabulary transfer enabled - winners absorb loser's words!")
+            
             # 🔌 SYSTEM WIRING: Connect NeuralOrganisms to Illumination Engine
             # This enables organisms to query "Why?" and access the Causation Explorer
             if network and hasattr(network, 'organisms'):

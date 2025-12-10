@@ -292,6 +292,19 @@ class HighlanderProtocol:
         self.on_elimination_callback: Optional[Callable] = None
         self.on_champion_callback: Optional[Callable] = None
         self.on_round_complete_callback: Optional[Callable] = None
+        
+        # Context memory for vocabulary transfer on battle death
+        self.context_memory: Optional[Any] = None
+    
+    def set_context_memory(self, context_memory) -> None:
+        """
+        Wire ContextMemory for vocabulary transfer on battle death.
+        
+        CRITICAL: Without this, vocabulary is LOST when organisms die!
+        The winner needs access to loser's word associations.
+        """
+        self.context_memory = context_memory
+        self.logger.info("📚 ContextMemory linked - vocabulary will transfer on death!")
     
     def set_alliance_warfare_system(self, alliance_warfare_system) -> None:
         """
@@ -1165,31 +1178,43 @@ class HighlanderProtocol:
         
         # Transfer word associations (if context memory available)
         try:
-            winner_id = getattr(winner, 'species_id', str(id(winner)))
-            loser_id = getattr(loser, 'species_id', str(id(loser)))
+            winner_id = getattr(winner, 'species_id', getattr(winner, 'organism_id', str(id(winner))))
+            loser_id = getattr(loser, 'species_id', getattr(loser, 'organism_id', str(id(loser))))
             
-            # Try to access symbiotic network's context memory
-            if hasattr(winner, 'symbiotic_network') and winner.symbiotic_network:
-                context_memory = getattr(winner.symbiotic_network, 'context_memory', None)
-                if context_memory and hasattr(context_memory, 'node_word_associations'):
-                    # Get loser's word associations
-                    loser_id_hash = hash(loser_id) if isinstance(loser_id, str) else loser_id
-                    loser_words = context_memory.node_word_associations.get(loser_id_hash, set())
+            # Use HighlanderProtocol's wired context_memory (FIXED - don't go through organism)
+            context_memory = self.context_memory
+            if context_memory and hasattr(context_memory, 'node_word_associations'):
+                # Convert IDs to the format context_memory uses
+                # Match the format used in unified_entry.py cleanup_dead_organism
+                def normalize_id(org_id):
+                    if isinstance(org_id, str) and '_' in org_id:
+                        try:
+                            return int(org_id.split('_')[-1])
+                        except (ValueError, IndexError):
+                            return abs(hash(org_id)) % (2**31)
+                    return abs(hash(org_id)) % (2**31)
+                
+                loser_id_int = normalize_id(loser_id)
+                winner_id_int = normalize_id(winner_id)
+                
+                # Get loser's word associations BEFORE they might be cleaned up
+                loser_words = context_memory.node_word_associations.get(loser_id_int, set())
+                
+                if loser_words:
+                    # Transfer word associations to winner
+                    if winner_id_int not in context_memory.node_word_associations:
+                        context_memory.node_word_associations[winner_id_int] = set()
                     
-                    if loser_words:
-                        # Transfer word associations to winner
-                        winner_id_hash = hash(winner_id) if isinstance(winner_id, str) else winner_id
-                        if winner_id_hash not in context_memory.node_word_associations:
-                            context_memory.node_word_associations[winner_id_hash] = set()
-                        
-                        # Inherit loser's words
-                        inherited_words = loser_words.copy()
-                        context_memory.node_word_associations[winner_id_hash].update(inherited_words)
-                        
-                        result['patterns_inherited'] = len(inherited_words)
-                        result['traits_inherited'] += 1
+                    # Inherit loser's words - FULL VOCABULARY TRANSFER!
+                    inherited_words = loser_words.copy()
+                    context_memory.node_word_associations[winner_id_int].update(inherited_words)
+                    
+                    result['patterns_inherited'] = len(inherited_words)
+                    result['traits_inherited'] += 1
+                    
+                    self.logger.info(f"📚 VOCABULARY ABSORBED: {len(inherited_words)} words transferred to {winner_id[:8]}")
         except Exception as e:
-            self.logger.debug(f"Word association transfer failed: {e}")
+            self.logger.warning(f"Word association transfer failed: {e}")
         
         # ═══════════════════════════════════════════════════════════════════════════
         # FULL BRAIN TRANSFER - Winner absorbs ALL neural weights from loser!
