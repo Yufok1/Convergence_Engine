@@ -1491,6 +1491,16 @@ class ProtonGameArena:
             return self._evaluate_vocabulary(bridge, episodes)
         elif game.gym_env == "coin_flip":
             return self._evaluate_coin_flip(episodes)
+        elif game.gym_env == "mutation_roulette":
+            return self._evaluate_mutation_roulette(bridge, episodes)
+        elif game.gym_env == "predator_prey":
+            return self._evaluate_predator_prey(bridge, episodes)
+        elif game.gym_env == "collaborative_creation":
+            return self._evaluate_collaborative_creation(bridge, episodes)
+        elif game.gym_env == "dialogue_quality":
+            return self._evaluate_dialogue_quality(bridge, episodes)
+        elif game.gym_env == "inter_organism_chat":
+            return self._evaluate_inter_organism_chat(bridge, episodes)
         else:
             # Default: random score for unimplemented games
             logger.warning(f"Custom game {game.gym_env} not implemented, using random score")
@@ -1550,6 +1560,262 @@ class ProtonGameArena:
         wins = sum(1 for _ in range(episodes) if random.random() < 0.5)
         return wins * 10, {'wins': wins, 'total': episodes}
     
+    def _evaluate_mutation_roulette(self, bridge, episodes: int) -> Tuple[float, Dict]:
+        """
+        🧬 GENETIC LOTTERY: Test organism's genetic stability under mutation pressure.
+        
+        Simulates random mutations and evaluates how well the organism's
+        neural network maintains coherence under perturbation.
+        """
+        total_score = 0.0
+        stability_scores = []
+        
+        for _ in range(episodes):
+            # Get baseline response
+            baseline_state = np.random.rand(24).astype(np.float32)
+            try:
+                baseline_result = bridge.process(state=baseline_state)
+                baseline_action = baseline_result.action if hasattr(baseline_result, 'action') else 0
+                baseline_confidence = baseline_result.confidence if hasattr(baseline_result, 'confidence') else 0.5
+            except:
+                baseline_action = 0
+                baseline_confidence = 0.5
+            
+            # Apply "mutations" - small perturbations to input
+            mutation_strengths = [0.1, 0.2, 0.3, 0.5]
+            consistency_count = 0
+            
+            for strength in mutation_strengths:
+                mutated_state = baseline_state + np.random.randn(24).astype(np.float32) * strength
+                try:
+                    mutated_result = bridge.process(state=mutated_state)
+                    mutated_action = mutated_result.action if hasattr(mutated_result, 'action') else 0
+                    
+                    # Reward consistency under mutation
+                    if mutated_action == baseline_action:
+                        consistency_count += 1
+                except:
+                    pass
+            
+            # Score: stability (consistency) + base confidence + luck factor
+            stability = consistency_count / len(mutation_strengths)
+            luck_bonus = random.uniform(0, 20)  # Genetic lottery has luck component!
+            episode_score = (stability * 50) + (baseline_confidence * 30) + luck_bonus
+            
+            total_score += episode_score
+            stability_scores.append(stability)
+        
+        avg_score = total_score / episodes
+        avg_stability = sum(stability_scores) / len(stability_scores)
+        
+        return avg_score, {
+            'avg_stability': avg_stability,
+            'episodes': episodes,
+            'game_type': 'mutation_roulette'
+        }
+    
+    def _evaluate_predator_prey(self, bridge, episodes: int) -> Tuple[float, Dict]:
+        """
+        🦁 PREDATOR/PREY: Test organism's survival instincts.
+        
+        Simulates predator encounters - organism must correctly identify
+        threats and respond with flee/fight/hide actions.
+        """
+        total_score = 0.0
+        survival_count = 0
+        
+        # Threat scenarios encoded in state
+        threat_scenarios = [
+            {'threat_level': 0.9, 'distance': 0.1, 'correct_action': 4},  # Close danger -> flee (4)
+            {'threat_level': 0.3, 'distance': 0.8, 'correct_action': 0},  # Far low threat -> stay (0)
+            {'threat_level': 0.7, 'distance': 0.3, 'correct_action': 3},  # Medium threat -> cautious move (3)
+            {'threat_level': 0.2, 'distance': 0.2, 'correct_action': 1},  # Low threat close -> investigate (1)
+            {'threat_level': 0.95, 'distance': 0.05, 'correct_action': 4}, # Extreme danger -> flee (4)
+        ]
+        
+        for ep in range(episodes):
+            scenario = threat_scenarios[ep % len(threat_scenarios)]
+            
+            # Encode threat in state
+            state = np.random.rand(24).astype(np.float32)
+            state[0] = scenario['threat_level']  # Threat perception
+            state[1] = scenario['distance']       # Distance to threat
+            state[2] = 1.0 - scenario['distance'] # Urgency
+            
+            try:
+                result = bridge.process(state=state)
+                action = result.action if hasattr(result, 'action') else random.randint(0, 5)
+                confidence = result.confidence if hasattr(result, 'confidence') else 0.5
+                
+                # Score based on survival appropriateness
+                if action == scenario['correct_action']:
+                    # Perfect response!
+                    episode_score = 20 + confidence * 10
+                    survival_count += 1
+                elif action == 4 and scenario['threat_level'] > 0.5:
+                    # Flee when threatened is acceptable
+                    episode_score = 15 + confidence * 5
+                    survival_count += 1
+                elif action == 0 and scenario['threat_level'] < 0.3:
+                    # Stay when safe is acceptable
+                    episode_score = 12
+                    survival_count += 1
+                else:
+                    # Wrong response - reduced score
+                    episode_score = 5 - (scenario['threat_level'] * 5)
+                    
+            except:
+                episode_score = 0
+            
+            total_score += max(0, episode_score)
+        
+        avg_score = total_score / episodes
+        survival_rate = survival_count / episodes
+        
+        return avg_score, {
+            'survival_rate': survival_rate,
+            'episodes': episodes,
+            'game_type': 'predator_prey'
+        }
+    
+    def _evaluate_collaborative_creation(self, bridge, episodes: int) -> Tuple[float, Dict]:
+        """
+        🎨 COLLABORATIVE CREATION: Test organism's creative & cooperative abilities.
+        
+        Evaluates language generation quality, vocabulary richness, and
+        ability to build on concepts - key for alliance poetry/art.
+        """
+        total_score = 0.0
+        creations = []
+        
+        creative_prompts = [
+            "create beauty",
+            "express harmony",
+            "describe wonder", 
+            "imagine future",
+            "tell story"
+        ]
+        
+        for ep in range(episodes):
+            prompt = creative_prompts[ep % len(creative_prompts)]
+            
+            try:
+                result = bridge.process(text=prompt)
+                response = result.response if hasattr(result, 'response') else ""
+                confidence = result.confidence if hasattr(result, 'confidence') else 0.5
+                
+                # Creativity scoring
+                words = response.split() if response else []
+                
+                # Length score (creativity needs expression)
+                length_score = min(len(words) / 8, 1.0) * 25
+                
+                # Vocabulary diversity (unique words / total words)
+                diversity_score = (len(set(words)) / max(len(words), 1)) * 30 if words else 0
+                
+                # Coherence bonus from confidence
+                coherence_score = confidence * 25
+                
+                # Bonus for vocabulary richness
+                vocab_size = bridge.vocabulary.vocab_size if hasattr(bridge, 'vocabulary') else 0
+                vocab_bonus = min(vocab_size / 100, 1.0) * 20
+                
+                episode_score = length_score + diversity_score + coherence_score + vocab_bonus
+                creations.append(response)
+                
+            except:
+                episode_score = random.uniform(10, 30)  # Participation points
+            
+            total_score += episode_score
+        
+        avg_score = total_score / episodes
+        
+        return avg_score, {
+            'creations': creations,
+            'avg_score': avg_score,
+            'game_type': 'collaborative_creation'
+        }
+    
+    def _evaluate_dialogue_quality(self, bridge, episodes: int) -> Tuple[float, Dict]:
+        """
+        💬 DIALOGUE QUALITY: Test full language system response quality.
+        """
+        total_score = 0.0
+        
+        dialogue_prompts = [
+            "How do you survive?",
+            "What makes you strong?",
+            "Describe your strategy.",
+            "What have you learned?",
+            "How do you cooperate?"
+        ]
+        
+        for ep in range(episodes):
+            prompt = dialogue_prompts[ep % len(dialogue_prompts)]
+            
+            try:
+                result = bridge.process(text=prompt)
+                response = result.response if hasattr(result, 'response') else ""
+                confidence = result.confidence if hasattr(result, 'confidence') else 0.5
+                
+                words = response.split() if response else []
+                
+                # Quality metrics
+                relevance_score = confidence * 40
+                length_score = min(len(words) / 10, 1.0) * 30
+                coherence_score = (len(set(words)) / max(len(words), 1)) * 30 if words else 0
+                
+                total_score += relevance_score + length_score + coherence_score
+                
+            except:
+                total_score += 10
+        
+        return total_score / episodes, {'game_type': 'dialogue_quality'}
+    
+    def _evaluate_inter_organism_chat(self, bridge, episodes: int) -> Tuple[float, Dict]:
+        """
+        🗣️ INTER-ORGANISM CHAT: Test communication ability with others.
+        
+        Simulates receiving messages from another organism and evaluating
+        response appropriateness.
+        """
+        total_score = 0.0
+        
+        # Simulated messages from "other organism"
+        incoming_messages = [
+            "friend need help",
+            "danger near",
+            "food found share",
+            "alliance propose",
+            "territory mine"
+        ]
+        
+        for ep in range(episodes):
+            message = incoming_messages[ep % len(incoming_messages)]
+            
+            try:
+                result = bridge.process(text=message)
+                response = result.response if hasattr(result, 'response') else ""
+                confidence = result.confidence if hasattr(result, 'confidence') else 0.5
+                
+                words = response.split() if response else []
+                
+                # Communication scoring
+                response_exists = 20 if response else 0
+                confidence_score = confidence * 30
+                word_count_score = min(len(words) / 5, 1.0) * 25
+                
+                # Bonus for cooperative words
+                coop_words = {'help', 'share', 'yes', 'friend', 'ally', 'together', 'cooperate', 'agree'}
+                coop_bonus = sum(5 for w in words if w.lower() in coop_words)
+                
+                total_score += response_exists + confidence_score + word_count_score + min(coop_bonus, 25)
+                
+            except:
+                total_score += 10
+        
+        return total_score / episodes, {'game_type': 'inter_organism_chat'}
+
     def _log_battle_result(self, result: BattleResult):
         """Log battle result."""
         winner_str = result.winner_id[:8] if result.winner_id else "TIE"
