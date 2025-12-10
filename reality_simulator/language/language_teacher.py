@@ -274,17 +274,17 @@ class LanguageTeacher:
             from pathlib import Path
             data_dir = Path(__file__).parent.parent.parent / "data"
             
-            # Priority order: distilled (curated) > expanded (ConceptNet) > seeded (base)
-            distilled_web_path = data_dir / "knowledge_web_distilled.json"
+            # Priority order: expanded (ConceptNet - biggest) > distilled > seeded (base)
             expanded_web_path = data_dir / "expanded_knowledge_web.json"
+            distilled_web_path = data_dir / "knowledge_web_distilled.json"
             seeded_web_path = data_dir / "seeded_knowledge_web_250k.json"
             seeded_web_path_50k = data_dir / "seeded_knowledge_web_50k.json"
             
-            # Find best available knowledge web
-            if distilled_web_path.exists():
-                web_path = distilled_web_path
-            elif expanded_web_path.exists():
+            # Find best available knowledge web (largest first)
+            if expanded_web_path.exists():
                 web_path = expanded_web_path
+            elif distilled_web_path.exists():
+                web_path = distilled_web_path
             elif seeded_web_path.exists():
                 web_path = seeded_web_path
             else:
