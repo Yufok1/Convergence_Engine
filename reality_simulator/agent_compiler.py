@@ -5862,12 +5862,28 @@ def http_mode(model, model_type: str, metadata: dict, port: int):
     app.run(host='0.0.0.0', port=port)
 
 def gym_mode(model, model_type: str, metadata: dict, env_name: str, episodes: int, render: bool):
-    """Run in Gymnasium environment."""
-    import gymnasium as gym
+    """Run in Gymnasium or PLE environment."""
     import numpy as np
     
-    env = gym.make(env_name, render_mode='human' if render else None)
     max_dim = metadata.get('max_input_dim', 24)
+    
+    # Check if this is a PLE game
+    if '-PLE-' in env_name:
+        try:
+            run_ple_game(model, model_type, metadata, env_name, episodes, render)
+            return
+        except ImportError as e:
+            print(f"\\n⚠️  PLE not installed. Install with: pip install ple")
+            print(f"   Or try: pip install gym-ple")
+            print(f"   Error: {e}")
+            return
+        except Exception as e:
+            print(f"\\n❌ PLE error: {e}")
+            return
+    
+    # Standard Gymnasium
+    import gymnasium as gym
+    env = gym.make(env_name, render_mode='human' if render else None)
     
     print(f"\\n🎮 Running {env_name} for {episodes} episodes")
     
@@ -5906,6 +5922,82 @@ def gym_mode(model, model_type: str, metadata: dict, env_name: str, episodes: in
         print(f"  Episode {ep+1}: {steps} steps, reward={total_reward:.2f}")
     
     env.close()
+    print("\\nDone! 🦋")
+
+
+def run_ple_game(model, model_type: str, metadata: dict, env_name: str, episodes: int, render: bool):
+    """Run a PyGame Learning Environment game."""
+    import numpy as np
+    
+    # Parse game name from env_name (e.g., "FlappyBird-PLE-v0" -> "FlappyBird")
+    game_name = env_name.split('-PLE-')[0]
+    
+    # Import PLE
+    from ple import PLE
+    from ple.games import flappybird, pong, snake, pixelcopter, catcher, puckworld, waterworld, monsterkong, raycastmaze
+    
+    # Game mapping
+    GAMES = {
+        'FlappyBird': flappybird.FlappyBird,
+        'Pong': pong.Pong,
+        'Snake': snake.Snake,
+        'Pixelcopter': pixelcopter.Pixelcopter,
+        'Catcher': catcher.Catcher,
+        'PuckWorld': puckworld.PuckWorld,
+        'WaterWorld': waterworld.WaterWorld,
+        'MonsterKong': monsterkong.MonsterKong,
+        'RaycastMaze': raycastmaze.RaycastMaze,
+    }
+    
+    if game_name not in GAMES:
+        print(f"❌ Unknown PLE game: {game_name}")
+        print(f"   Available: {list(GAMES.keys())}")
+        return
+    
+    # Create game instance
+    game = GAMES[game_name]()
+    
+    # Create PLE environment
+    p = PLE(game, fps=30, display_screen=render, force_fps=not render)
+    p.init()
+    
+    max_dim = metadata.get('max_input_dim', 24)
+    action_set = p.getActionSet()
+    
+    print(f"\\n🕹️  Running {game_name} (PLE) for {episodes} episodes")
+    print(f"   Actions: {action_set}")
+    
+    for ep in range(episodes):
+        p.reset_game()
+        total_reward = 0
+        steps = 0
+        
+        while not p.game_over():
+            # Get state as dict and flatten to array
+            state_dict = game.getGameState()
+            if isinstance(state_dict, dict):
+                state = np.array(list(state_dict.values()), dtype=np.float32)
+            else:
+                state = np.array(state_dict, dtype=np.float32).flatten()
+            
+            # Pad/truncate
+            if len(state) < max_dim:
+                state = np.concatenate([state, np.zeros(max_dim - len(state))])
+            elif len(state) > max_dim:
+                state = state[:max_dim]
+            
+            # Get action from model
+            outputs = run_inference(model, model_type, state)
+            action_idx = int(np.argmax(outputs[0])) % len(action_set)
+            action = action_set[action_idx]
+            
+            # Step
+            reward = p.act(action)
+            total_reward += reward
+            steps += 1
+        
+        print(f"  Episode {ep+1}: {steps} steps, reward={total_reward:.2f}")
+    
     print("\\nDone! 🦋")
 
 def main():
@@ -10294,6 +10386,115 @@ Examples:
             print("   Export the cocoon to save learned words!")
 
     elif args.mode == 'gym':
+        # Interactive menu if no env specified
+        if args.env == 'CartPole-v1' and '--env' not in sys.argv:
+            print("\n🎮 GAME ENVIRONMENT SELECTOR")
+            print("=" * 60)
+            
+            # PyGame Learning Environment (PLE) games - REAL pygame games!
+            PLE_GAMES = [
+                ("FlappyBird-PLE-v0", "🐦 Flappy Bird - Tap to fly through pipes!", "ple"),
+                ("Snake-PLE-v0", "🐍 Snake - Eat food, grow longer, don't die!", "ple"),
+                ("Pong-PLE-v0", "🏓 Pong - Classic paddle game", "ple"),
+                ("Pixelcopter-PLE-v0", "🚁 Pixelcopter - Helicopter cave navigator", "ple"),
+                ("Catcher-PLE-v0", "🧺 Catcher - Catch falling fruit", "ple"),
+                ("PuckWorld-PLE-v0", "🔴 PuckWorld - Chase the green, avoid red", "ple"),
+                ("WaterWorld-PLE-v0", "💧 WaterWorld - Collect good, avoid bad", "ple"),
+                ("MonsterKong-PLE-v0", "🦍 Monster Kong - Donkey Kong clone!", "ple"),
+                ("RaycastMaze-PLE-v0", "🏰 Raycast Maze - 3D maze navigator", "ple"),
+            ]
+            
+            # Classic Gym environments (still useful)
+            CLASSIC_GAMES = [
+                ("CartPole-v1", "🎯 CartPole - Balance a pole", "classic"),
+                ("MountainCar-v0", "🏔️ MountainCar - Drive up a hill", "classic"),
+                ("Acrobot-v1", "🤸 Acrobot - Swing up double pendulum", "classic"),
+                ("Pendulum-v1", "🔄 Pendulum - Swing upright", "classic"),
+                ("LunarLander-v3", "🌙 LunarLander - Land on the moon", "classic"),
+                ("BipedalWalker-v3", "🚶 BipedalWalker - Walk on two legs", "classic"),
+            ]
+            
+            # Atari via ALE (if installed)
+            ATARI_GAMES = [
+                ("ALE/Pong-v5", "🏓 Atari Pong", "atari"),
+                ("ALE/Breakout-v5", "🧱 Atari Breakout", "atari"),
+                ("ALE/SpaceInvaders-v5", "👾 Space Invaders", "atari"),
+                ("ALE/Pacman-v5", "🟡 Pac-Man", "atari"),
+                ("ALE/Asteroids-v5", "☄️ Asteroids", "atari"),
+                ("ALE/Frogger-v5", "🐸 Frogger", "atari"),
+                ("ALE/Qbert-v5", "🔺 Q*bert", "atari"),
+                ("ALE/MsPacman-v5", "👩 Ms. Pac-Man", "atari"),
+                ("ALE/Centipede-v5", "🐛 Centipede", "atari"),
+                ("ALE/Galaga-v5", "🚀 Galaga", "atari"),
+            ]
+            
+            all_games = []
+            idx = 1
+            
+            print("\n🕹️  PYGAME LEARNING ENVIRONMENT (Pure Pygame!)")
+            print("-" * 50)
+            for env, desc, cat in PLE_GAMES:
+                print(f"  {idx:2d}. {desc}")
+                all_games.append(env)
+                idx += 1
+            
+            print("\n🎮 CLASSIC CONTROL")
+            print("-" * 50)
+            for env, desc, cat in CLASSIC_GAMES:
+                print(f"  {idx:2d}. {desc}")
+                all_games.append(env)
+                idx += 1
+            
+            print("\n👾 ATARI ARCADE (requires ale-py)")
+            print("-" * 50)
+            for env, desc, cat in ATARI_GAMES:
+                print(f"  {idx:2d}. {desc}")
+                all_games.append(env)
+                idx += 1
+            
+            print(f"\n  {idx:2d}. [CUSTOM] Enter your own environment name")
+            print("=" * 60)
+            
+            try:
+                choice = input(f"\nSelect game (1-{idx}): ").strip()
+                if choice.isdigit():
+                    choice_idx = int(choice) - 1
+                    if 0 <= choice_idx < len(all_games):
+                        args.env = all_games[choice_idx]
+                        print(f"\n✅ Selected: {args.env}")
+                        
+                        # Check if PLE game and warn about installation
+                        if '-PLE-' in args.env:
+                            print("\n⚠️  PLE games require: pip install ple pygame-learning-environment")
+                            print("   Or: pip install gym-ple")
+                    elif choice_idx == len(all_games):
+                        args.env = input("Enter environment name: ").strip()
+                    else:
+                        print("Invalid choice, using CartPole-v1")
+                        args.env = "CartPole-v1"
+                else:
+                    args.env = choice  # User typed env name directly
+            except (EOFError, KeyboardInterrupt):
+                print("\nCancelled.")
+                return
+            
+            # Ask for episodes
+            try:
+                ep_input = input(f"Episodes [{args.episodes}]: ").strip()
+                if ep_input:
+                    args.episodes = int(ep_input)
+            except:
+                pass
+            
+            # Ask for render
+            try:
+                render_input = input("Render visually? (Y/n): ").strip().lower()
+                args.render = render_input != 'n'
+            except:
+                args.render = True
+            
+            print()
+        
         runner = GymRunner(agent)
         runner.run(args.env, episodes=args.episodes, render=args.render, learn=not args.no_learn)
         if not args.no_learn:

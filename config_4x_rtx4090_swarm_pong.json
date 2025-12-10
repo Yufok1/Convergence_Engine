@@ -199,12 +199,12 @@
       "war_frequency": 0.4,
       "illumination_stability_threshold": 5
     },
-    "chaos_factor": 0.12,
+    "chaos_factor": 0.0,
     "competition_intensity": 0.6,
     "description": "Highlander Protocol - SWARM PONG SPECIALIST - Learn ball tracking through combat",
     "enabled": true,
     "extreme_mode": {
-      "chaos_factor": 0.5,
+      "chaos_factor": 0.0,
       "competition_intensity": 1.0,
       "description": "EXTREME - Maximum arena pressure",
       "germination_rate": 1,

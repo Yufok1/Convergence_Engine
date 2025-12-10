@@ -31,6 +31,12 @@ onnx>=1.15.0        # ONNX format for neural model export (agent compilation)
 onnxscript>=0.1.0   # Required by PyTorch 2.5+ for ONNX export
 onnxruntime>=1.15.0 # For running exported ONNX models (agent compilation)
 
+# Gaming Environments (OPTIONAL - for cocoon exported agents)
+gymnasium>=0.29.0   # OpenAI Gym successor for standard RL environments
+pygame>=2.5.0       # PyGame for PLE games rendering
+# ple                 # PyGame Learning Environment (pip install ple or git install)
+# ale-py>=0.8.1       # Atari Learning Environment for Atari games (large download)
+
 # Language & Vocabulary (REQUIRED for curated vocabulary pipeline)
 nltk>=3.8.1         # WordNet lexical database for zero-proper-noun vocabulary (120k+ words)
 
