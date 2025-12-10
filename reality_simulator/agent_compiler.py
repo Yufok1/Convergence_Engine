@@ -8415,23 +8415,14 @@ class SphereArena:
         self.organisms = []
         
         num_organisms = len(self.organism_indices)
-        colors = [
-            (0.2, 0.8, 0.2),  # Green
-            (0.2, 0.2, 0.8),  # Blue
-            (0.8, 0.8, 0.2),  # Yellow
-            (0.8, 0.2, 0.8),  # Magenta
-            (0.2, 0.8, 0.8),  # Cyan
-            (0.8, 0.4, 0.0),  # Orange
-            (0.4, 0.8, 0.4),  # Light green
-            (0.4, 0.4, 0.8),  # Light blue
-        ]
         
         for i, idx in enumerate(self.organism_indices):
             # Distribute panels evenly on sphere surface (Fibonacci spiral)
             phi = math.acos(1 - 2 * (i + 0.5) / num_organisms)  # Polar angle
             theta = math.pi * (1 + 5**0.5) * i  # Azimuthal angle
             
-            color = colors[i % len(colors)]
+            # Generate unique color based on organism characteristics
+            color = self._generate_organism_color(idx, i, num_organisms)
             
             org = SphereOrganism(
                 idx=idx,
@@ -8440,6 +8431,79 @@ class SphereArena:
                 color=color
             )
             self.organisms.append(org)
+    
+    def _generate_organism_color(self, org_idx: int, position_idx: int, total_organisms: int) -> Tuple[float, float, float]:
+        """
+        Generate a unique color for an organism based on its characteristics.
+        
+        Color encoding (HSV-based):
+        - Hue: Derived from brain weights hash (neural "personality")
+        - Saturation: Based on position in swarm (spatial identity)
+        - Value: Always high for visibility (0.8-1.0)
+        
+        This creates infinite unique colors that encode organism identity.
+        """
+        import hashlib
+        
+        # Extract brain characteristics for hue
+        brain_hash = 0.0
+        if hasattr(self.agent, 'brains') and org_idx < len(self.agent.brains):
+            brain = self.agent.brains[org_idx]
+            if hasattr(brain, 'parameters'):
+                # Hash first few weight values for consistent color
+                try:
+                    params = list(brain.parameters())
+                    if params:
+                        first_weights = params[0].data.flatten()[:16].tolist()
+                        weight_str = ','.join(f'{w:.4f}' for w in first_weights)
+                        brain_hash = int(hashlib.md5(weight_str.encode()).hexdigest()[:8], 16)
+                except:
+                    brain_hash = org_idx * 12345
+        else:
+            brain_hash = org_idx * 12345
+        
+        # Hue from brain characteristics (0-1)
+        # Use golden ratio for maximum hue spread
+        golden_ratio = (1 + 5**0.5) / 2
+        hue = (brain_hash * golden_ratio) % 1.0
+        
+        # Saturation from spatial position (0.7-1.0 for vibrancy)
+        if total_organisms > 1:
+            spatial_factor = position_idx / (total_organisms - 1)
+        else:
+            spatial_factor = 0.5
+        saturation = 0.7 + 0.3 * (1 - abs(2 * spatial_factor - 1))  # Peak at center
+        
+        # Value always high for visibility
+        value = 0.85 + 0.15 * ((org_idx * 7) % 10) / 10.0
+        
+        # Convert HSV to RGB
+        return self._hsv_to_rgb(hue, saturation, value)
+    
+    def _hsv_to_rgb(self, h: float, s: float, v: float) -> Tuple[float, float, float]:
+        """Convert HSV color to RGB."""
+        if s == 0.0:
+            return (v, v, v)
+        
+        i = int(h * 6.0)
+        f = (h * 6.0) - i
+        p = v * (1.0 - s)
+        q = v * (1.0 - s * f)
+        t = v * (1.0 - s * (1.0 - f))
+        i = i % 6
+        
+        if i == 0:
+            return (v, t, p)
+        elif i == 1:
+            return (q, v, p)
+        elif i == 2:
+            return (p, v, t)
+        elif i == 3:
+            return (p, q, v)
+        elif i == 4:
+            return (t, p, v)
+        else:
+            return (v, p, q)
     
     def reset(self):
         """Reset the arena for a new game."""
@@ -8754,11 +8818,20 @@ class SphereArena:
                         catcher = org
                 
                 if catcher is not None:
-                    # SWARM CATCH!
-                    self._handle_catch(catcher, ball, rewards)
-                    # Reflect ball
+                    # SWARM CATCH! - reflect ball and handle rewards (DO NOT respawn)
+                    # Reflect ball FIRST
                     normal = _sphere_normalize((new_x, new_y, new_z))
                     ball.velocity = _sphere_reflect(ball.velocity, normal)
+                    
+                    # Speed up slightly (like sphere_arena.py)
+                    speed = math.sqrt(ball.velocity[0]**2 + ball.velocity[1]**2 + ball.velocity[2]**2)
+                    new_speed = min(speed * 1.02, MAX_BALL_SPEED)
+                    if speed > 0:
+                        scale_v = new_speed / speed
+                        ball.velocity = (ball.velocity[0]*scale_v, ball.velocity[1]*scale_v, ball.velocity[2]*scale_v)
+                    
+                    # Now handle rewards/tokens (but don't respawn ball!)
+                    self._handle_catch(catcher, ball, rewards)
                 else:
                     # SWARM MISS - reflect and penalize
                     normal = _sphere_normalize((new_x, new_y, new_z))
@@ -8807,11 +8880,50 @@ class SphereArena:
         self.best_streak = max(self.best_streak, self.current_streak)
         org.catches += 1
         
-        # Rewards
-        rewards[org.idx] += CATCH_REWARD
+        # =================================================================
+        # ASSOCIATIVE REWARD SYSTEM
+        # Rewards based on individual + group + contextual performance
+        # =================================================================
+        
+        # Base catch reward
+        base_reward = CATCH_REWARD
+        
+        # 1. STREAK BONUS: Exponential reward for maintaining streaks
+        streak_multiplier = 1.0 + 0.1 * min(self.current_streak, 10)  # Up to 2x at streak 10
+        
+        # 2. GROUP COHESION BONUS: Reward if team is clustered near ball
+        avg_distance_to_ball = 0.0
+        nearby_count = 0
+        for other in self.organisms:
+            if other.alive:
+                dist = _angular_distance(other.theta, other.phi, 
+                    *_cartesian_to_spherical(*ball.position)[1:])
+                avg_distance_to_ball += dist
+                if dist < PADDLE_ANGULAR_RADIUS * 3:  # Within 3x catch range
+                    nearby_count += 1
+        avg_distance_to_ball /= max(1, len([o for o in self.organisms if o.alive]))
+        
+        cohesion_bonus = 0.2 * (nearby_count / max(1, len(self.organisms)))  # Up to +0.2
+        
+        # 3. CONTRIBUTION RATIO: Historical catch rate affects reward
+        total_team_catches = sum(o.catches for o in self.organisms)
+        if total_team_catches > 0:
+            contribution_ratio = org.catches / total_team_catches
+            # High contributors get bonus, but don't punish new catchers
+            contribution_bonus = 0.1 * min(1.0, contribution_ratio * len(self.organisms))
+        else:
+            contribution_bonus = 0.1  # First catch gets bonus
+        
+        # 4. SURVIVAL BONUS: Reward for keeping the game alive
+        survival_ratio = 1.0 - (self.collective_misses / self.max_misses)
+        survival_bonus = 0.15 * survival_ratio
+        
+        # Final catcher reward
+        total_reward = base_reward * streak_multiplier + cohesion_bonus + contribution_bonus + survival_bonus
+        rewards[org.idx] += total_reward
         
         # 🎰 TOKEN TUMBLER: Generate catch tokens for catcher!
-        org.tumble_tokens(action=0, reward=CATCH_REWARD, context='catch')
+        org.tumble_tokens(action=0, reward=total_reward, context='catch')
         
         # Streak milestone tokens
         if self.current_streak == 5:
@@ -8819,14 +8931,37 @@ class SphereArena:
         elif self.current_streak == 10:
             org.token_sequence.append(132)  # streak_10
         
-        # Near-miss rewards for nearby organisms
+        # =================================================================
+        # ASSOCIATIVE REWARDS FOR NON-CATCHERS
+        # Group members benefit from collective success
+        # =================================================================
         for other in self.organisms:
             if other.idx != org.idx and other.alive:
+                other_reward = 0.0
+                
+                # A. PROXIMITY REWARD: Being close to ball = ready to help
                 dist = _sphere_distance(other.position, ball.position)
                 if dist < NEAR_MISS_DISTANCE:
-                    rewards[other.idx] += NEAR_MISS_REWARD
-                    # 🎰 TOKEN TUMBLER: Near-miss tokens
+                    other_reward += NEAR_MISS_REWARD
                     other.tumble_tokens(action=0, reward=NEAR_MISS_REWARD, context='near_miss')
+                elif dist < NEAR_MISS_DISTANCE * 2:
+                    # Partial reward for being somewhat close
+                    proximity_reward = NEAR_MISS_REWARD * 0.5 * (1 - dist / (NEAR_MISS_DISTANCE * 2))
+                    other_reward += proximity_reward
+                
+                # B. FORMATION REWARD: Being in good defensive position
+                # Calculate coverage quality (spread across sphere)
+                angular_dist = _angular_distance(other.theta, other.phi, org.theta, org.phi)
+                if angular_dist > math.pi / 4:  # Good spread from catcher
+                    other_reward += 0.05  # Formation bonus
+                
+                # C. COLLECTIVE SUCCESS SHARE: Everyone benefits from catches
+                collective_share = 0.1 * survival_ratio  # Shared success
+                other_reward += collective_share
+                
+                if other_reward > 0:
+                    rewards[other.idx] += other_reward
+                    other.tumble_tokens(action=0, reward=other_reward, context='follower')
         
         # Command chain - catcher becomes new commander
         if self.enable_command_chain:
@@ -8842,8 +8977,6 @@ class SphereArena:
             for o in self.organisms:
                 if o.idx != org.idx:
                     o.is_commander = False
-                    # 🎰 Follower tokens for all non-commanders
-                    o.tumble_tokens(action=0, reward=0.1, context='follower')
             
             # Log command transition
             self.command_history.append({
@@ -8853,39 +8986,80 @@ class SphereArena:
                 'catches': org.catches
             })
         
-        # Reset ball
+        # Update ball state (don't respawn - ball already reflected in step())
         ball.last_catcher = org.idx
         ball.bounces = 0
-        self._respawn_ball(ball)
         
         if self.verbose:
-            print(f"[SPHERE] ✓ Catch by Org #{org.idx}! Streak: {self.current_streak}")
+            print(f"[SPHERE] ✓ Catch by Org #{org.idx}! Streak: {self.current_streak} Reward: {total_reward:.2f}")
     
     def _handle_miss(self, ball: Ball3D, rewards: Dict[int, float]):
-        """Handle a miss."""
+        """Handle a miss with associative penalties."""
         self.collective_misses += 1
         old_streak = self.current_streak
         self.current_streak = 0
         
-        # Penalty for all organisms
-        penalty_per_org = MISS_PENALTY / len(rewards)
-        for idx in rewards:
-            rewards[idx] += penalty_per_org
+        # =================================================================
+        # ASSOCIATIVE PENALTY SYSTEM
+        # Penalties based on proximity and responsibility
+        # =================================================================
         
-        # 🎰 TOKEN TUMBLER: Generate miss tokens for ALL organisms (collective failure)
+        # Get ball position for responsibility calculation
+        _, ball_theta, ball_phi = _cartesian_to_spherical(*ball.position)
+        
+        # Calculate each organism's "responsibility" for the miss
+        responsibilities = {}
+        total_responsibility = 0.0
+        
         for org in self.organisms:
-            if org.alive:
-                org.tumble_tokens(action=0, reward=penalty_per_org, context='miss')
-                # Streak break token if there was a streak
-                if old_streak >= 3:
-                    org.token_sequence.append(133)  # streak_break
+            if not org.alive:
+                continue
+            
+            # Angular distance to ball = inverse responsibility
+            ang_dist = _angular_distance(org.theta, org.phi, ball_theta, ball_phi)
+            
+            # Closer organisms are more responsible (exponential falloff)
+            responsibility = math.exp(-ang_dist / PADDLE_ANGULAR_RADIUS)
+            responsibilities[org.idx] = responsibility
+            total_responsibility += responsibility
+        
+        # Normalize responsibilities
+        if total_responsibility > 0:
+            for idx in responsibilities:
+                responsibilities[idx] /= total_responsibility
+        
+        # Apply proportional penalties
+        base_penalty = abs(MISS_PENALTY)
+        
+        for org in self.organisms:
+            if not org.alive:
+                continue
+            
+            # Individual responsibility-based penalty
+            resp = responsibilities.get(org.idx, 1.0 / len(self.organisms))
+            individual_penalty = base_penalty * resp * 0.7  # 70% based on responsibility
+            
+            # Collective penalty (everyone shares some blame)
+            collective_penalty = base_penalty * 0.3 / len(self.organisms)
+            
+            # Streak break penalty (losing a good streak hurts more)
+            streak_penalty = 0.1 * min(old_streak, 5) * resp if old_streak >= 3 else 0
+            
+            total_penalty = -(individual_penalty + collective_penalty + streak_penalty)
+            rewards[org.idx] += total_penalty
+            
+            # 🎰 TOKEN TUMBLER: Generate miss tokens
+            org.tumble_tokens(action=0, reward=total_penalty, context='miss')
+            if old_streak >= 3:
+                org.token_sequence.append(133)  # streak_break
         
         # Reset ball
         ball.last_catcher = None
         ball.bounces = 0
         
         if self.verbose:
-            print(f"[SPHERE] ✗ Miss! Total misses: {self.collective_misses}")
+            closest_idx = max(responsibilities, key=responsibilities.get) if responsibilities else -1
+            print(f"[SPHERE] ✗ Miss! Closest: Org #{closest_idx} Total misses: {self.collective_misses}")
     
     def _respawn_ball(self, ball: Ball3D):
         """Respawn ball at new position."""
@@ -8981,10 +9155,31 @@ class SphereArena:
             if isinstance(output, tuple):
                 output = output[0]
             
-            # Simple policy gradient loss
+            # Policy gradient with advantage estimation (baseline = mean reward)
             action = exp['action']
             log_prob = F.log_softmax(output, dim=-1)[0, action % output.shape[-1]]
-            loss = -log_prob * reward
+            
+            # Compute advantage: reward - baseline
+            # Baseline is running mean of rewards to reduce variance
+            if not hasattr(self, '_reward_baseline'):
+                self._reward_baseline = 0.0
+                self._reward_count = 0
+            
+            # Update baseline with exponential moving average
+            self._reward_count += 1
+            alpha = min(0.1, 1.0 / self._reward_count)  # Adaptive learning rate
+            self._reward_baseline = (1 - alpha) * self._reward_baseline + alpha * reward
+            
+            # Advantage = reward - baseline (encourages above-average actions)
+            advantage = reward - self._reward_baseline
+            
+            # Policy gradient loss with entropy bonus for exploration
+            entropy = -(F.softmax(output, dim=-1) * F.log_softmax(output, dim=-1)).sum()
+            entropy_bonus = 0.01 * entropy  # Small entropy bonus encourages exploration
+            
+            # Loss: negative log prob * advantage - entropy bonus
+            # Even when advantage is small, entropy provides learning signal
+            loss = -log_prob * advantage - entropy_bonus
             
             # Backward pass
             if hasattr(brain, 'parameters'):
@@ -8999,7 +9194,8 @@ class SphereArena:
                         if param.grad is not None:
                             param.data -= 0.001 * param.grad
             
-            brain_losses[org_idx].append(loss.item())
+            # Track absolute loss for logging (entropy makes loss meaningful even with 0 reward)
+            brain_losses[org_idx].append(abs(loss.item()))
         
         # Log training
         total_loss = sum(sum(v) for v in brain_losses.values()) / max(1, sum(len(v) for v in brain_losses.values()))
@@ -9072,32 +9268,13 @@ class SphereArena:
             tangent1 = _sphere_normalize(_sphere_cross(normal, up))
             tangent2 = _sphere_cross(normal, tangent1)
             
-            # Color based on role
+            # Color based on role - outline only like sphere_arena.py (subtle, not filled)
             if org.is_commander:
-                glColor4f(1.0, 0.8, 0.0, 0.6)  # Gold for commander
+                glColor4f(1.0, 0.8, 0.0, 0.4)  # Gold for commander (subtle)
             else:
-                glColor4f(*org.color, 0.6)
+                glColor4f(*org.color, 0.3)  # Match sphere_arena.py alpha
             
-            # Draw filled disc
-            glBegin(GL_TRIANGLE_FAN)
-            glVertex3f(*pos)  # Center
-            for i in range(33):
-                angle = 2 * math.pi * i / 32
-                offset_x = PADDLE_ANGULAR_RADIUS * SPHERE_RADIUS * math.cos(angle)
-                offset_y = PADDLE_ANGULAR_RADIUS * SPHERE_RADIUS * math.sin(angle)
-                point = (
-                    pos[0] + tangent1[0]*offset_x + tangent2[0]*offset_y,
-                    pos[1] + tangent1[1]*offset_x + tangent2[1]*offset_y,
-                    pos[2] + tangent1[2]*offset_x + tangent2[2]*offset_y
-                )
-                # Project back to sphere surface
-                point = _sphere_normalize(point)
-                point = (point[0]*SPHERE_RADIUS, point[1]*SPHERE_RADIUS, point[2]*SPHERE_RADIUS)
-                glVertex3f(*point)
-            glEnd()
-            
-            # Draw outline
-            glColor3f(*org.color)
+            # Draw outline only (LINE_LOOP) - matches sphere_arena.py
             glBegin(GL_LINE_LOOP)
             for i in range(32):
                 angle = 2 * math.pi * i / 32
