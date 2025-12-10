@@ -8104,15 +8104,15 @@ import time
 from enum import Enum, auto
 from dataclasses import dataclass, field
 
-# Sphere Arena Constants
-SPHERE_RADIUS = 300
-BALL_RADIUS = 15
-ORGANISM_RADIUS = 20
-CATCH_RADIUS = 35  # Distance to catch ball
-BALL_SPEED = 8.0
-ORGANISM_SPEED = 6.0
-OBSERVATION_SIZE = 24  # Size of observation vector per organism
-MIN_SPAWN_DISTANCE = 50  # Min distance from sphere center for ball spawn
+# Sphere Arena Constants (matches sphere_arena.py)
+SPHERE_RADIUS = 2.0   # Radius of the arena sphere
+BALL_RADIUS = 0.08    # Ball size relative to sphere
+PADDLE_ANGULAR_RADIUS = 0.25  # Radians - size of circular paddle zone
+BALL_SPEED = 0.03     # Initial ball speed
+MAX_BALL_SPEED = 0.08
+PANEL_SPEED = 0.04    # Radians per frame (organism move speed)
+OBSERVATION_SIZE = 24 # Size of observation vector per organism
+MIN_SPAWN_DISTANCE = 0.3  # Min distance from sphere center for ball spawn
 
 # Command chain settings
 BROADCAST_RADIUS = 200
@@ -8156,6 +8156,32 @@ def _sphere_cross(a, b):
     )
 
 
+def _spherical_to_cartesian(theta, phi, r=1.0):
+    """Convert spherical to cartesian coordinates."""
+    x = r * math.sin(phi) * math.cos(theta)
+    y = r * math.cos(phi)
+    z = r * math.sin(phi) * math.sin(theta)
+    return (x, y, z)
+
+
+def _cartesian_to_spherical(x, y, z):
+    """Convert cartesian to spherical coordinates (r, theta, phi)."""
+    r = math.sqrt(x*x + y*y + z*z)
+    if r < 1e-8:
+        return (0, 0, 0)
+    theta = math.atan2(z, x)
+    phi = math.acos(max(-1, min(1, y / r)))
+    return (r, theta, phi)
+
+
+def _angular_distance(theta1, phi1, theta2, phi2):
+    """Great-circle distance between two points on sphere (radians)."""
+    p1 = _spherical_to_cartesian(theta1, phi1, 1.0)
+    p2 = _spherical_to_cartesian(theta2, phi2, 1.0)
+    dot = max(-1.0, min(1.0, _sphere_dot(p1, p2)))
+    return math.acos(dot)
+
+
 def _sphere_reflect(velocity, normal):
     """Reflect velocity off a surface with given normal."""
     dot = _sphere_dot(velocity, normal)
@@ -8173,9 +8199,10 @@ class SphereGameMode(Enum):
 
 @dataclass
 class SphereOrganism:
+    """Panel/paddle on the sphere surface. Position is in spherical coords (theta, phi)."""
     idx: int
-    position: Tuple[float, float, float]
-    velocity: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+    theta: float  # Azimuthal angle (0 to 2*pi)
+    phi: float    # Polar angle (0 to pi)
     catches: int = 0
     misses: int = 0
     alive: bool = True
@@ -8184,8 +8211,19 @@ class SphereOrganism:
     is_commander: bool = False
     commands_issued: int = 0
     commands_followed: int = 0
-    target_position: Optional[Tuple[float, float, float]] = None
+    target_theta: Optional[float] = None
+    target_phi: Optional[float] = None
     command_timer: int = 0
+    
+    @property
+    def position(self) -> Tuple[float, float, float]:
+        """Get 3D cartesian position on sphere surface (matches sphere_arena.py)."""
+        return _spherical_to_cartesian(self.theta, self.phi, SPHERE_RADIUS)
+    
+    def get_normal(self) -> Tuple[float, float, float]:
+        """Get inward-facing normal (toward sphere center)."""
+        pos = self.position
+        return _sphere_normalize((-pos[0], -pos[1], -pos[2]))
 
 
 @dataclass
@@ -8325,7 +8363,7 @@ class SphereArena:
             self.font = None
     
     def _setup_teams(self):
-        """Set up organisms with positions on sphere surface."""
+        """Set up panels on sphere surface using spherical coordinates."""
         self.organisms = []
         
         num_organisms = len(self.organism_indices)
@@ -8341,19 +8379,16 @@ class SphereArena:
         ]
         
         for i, idx in enumerate(self.organism_indices):
-            # Distribute organisms evenly on sphere surface
-            phi = math.acos(1 - 2 * (i + 0.5) / num_organisms)
-            theta = math.pi * (1 + 5**0.5) * i
-            
-            x = SPHERE_RADIUS * 0.8 * math.sin(phi) * math.cos(theta)
-            y = SPHERE_RADIUS * 0.8 * math.sin(phi) * math.sin(theta)
-            z = SPHERE_RADIUS * 0.8 * math.cos(phi)
+            # Distribute panels evenly on sphere surface (Fibonacci spiral)
+            phi = math.acos(1 - 2 * (i + 0.5) / num_organisms)  # Polar angle
+            theta = math.pi * (1 + 5**0.5) * i  # Azimuthal angle
             
             color = colors[i % len(colors)]
             
             org = SphereOrganism(
                 idx=idx,
-                position=(x, y, z),
+                theta=theta,
+                phi=phi,
                 color=color
             )
             self.organisms.append(org)
@@ -8386,21 +8421,26 @@ class SphereArena:
         return self._get_observations()
     
     def _spawn_ball(self):
-        """Spawn a new ball inside the sphere."""
-        # Random position inside sphere (not too close to center)
+        """Spawn a new ball inside the sphere (matches sphere_arena.py)."""
+        # Random position inside sphere (not too close to center or edge)
         while True:
             x = random.uniform(-SPHERE_RADIUS * 0.5, SPHERE_RADIUS * 0.5)
             y = random.uniform(-SPHERE_RADIUS * 0.5, SPHERE_RADIUS * 0.5)
             z = random.uniform(-SPHERE_RADIUS * 0.5, SPHERE_RADIUS * 0.5)
             dist = math.sqrt(x*x + y*y + z*z)
-            if dist > MIN_SPAWN_DISTANCE:
+            if dist > MIN_SPAWN_DISTANCE and dist < SPHERE_RADIUS * 0.7:
                 break
         
-        # Random velocity
-        vx = random.uniform(-1, 1)
-        vy = random.uniform(-1, 1)
-        vz = random.uniform(-1, 1)
-        vel = _sphere_normalize((vx, vy, vz))
+        # Random velocity toward a random point on sphere surface
+        target_theta = random.uniform(0, 2 * math.pi)
+        target_phi = random.uniform(0.3, math.pi - 0.3)
+        target = _spherical_to_cartesian(target_theta, target_phi, SPHERE_RADIUS)
+        
+        # Direction from ball to target
+        dx = target[0] - x
+        dy = target[1] - y
+        dz = target[2] - z
+        vel = _sphere_normalize((dx, dy, dz))
         vel = (vel[0] * BALL_SPEED, vel[1] * BALL_SPEED, vel[2] * BALL_SPEED)
         
         ball = Ball3D(position=(x, y, z), velocity=vel)
@@ -8427,31 +8467,30 @@ class SphereArena:
         obs = np.zeros(OBSERVATION_SIZE, dtype=np.float32)
         
         # Own position (normalized) [0:3]
-        obs[0] = org.position[0] / SPHERE_RADIUS
-        obs[1] = org.position[1] / SPHERE_RADIUS
-        obs[2] = org.position[2] / SPHERE_RADIUS
+        pos = org.position
+        obs[0] = pos[0] / SPHERE_RADIUS
+        obs[1] = pos[1] / SPHERE_RADIUS
+        obs[2] = pos[2] / SPHERE_RADIUS
         
-        # Own velocity (normalized) [3:6]
-        vel_mag = math.sqrt(org.velocity[0]**2 + org.velocity[1]**2 + org.velocity[2]**2)
-        if vel_mag > 0:
-            obs[3] = org.velocity[0] / ORGANISM_SPEED
-            obs[4] = org.velocity[1] / ORGANISM_SPEED
-            obs[5] = org.velocity[2] / ORGANISM_SPEED
+        # Own spherical coords (normalized) [3:5]
+        obs[3] = org.theta / (2 * math.pi)
+        obs[4] = org.phi / math.pi
         
-        # Nearest ball info [6:12]
+        # Nearest ball info [5:11]
         if self.balls:
-            nearest_ball = min(self.balls, key=lambda b: _sphere_distance(org.position, b.position))
-            obs[6] = nearest_ball.position[0] / SPHERE_RADIUS
-            obs[7] = nearest_ball.position[1] / SPHERE_RADIUS
-            obs[8] = nearest_ball.position[2] / SPHERE_RADIUS
-            obs[9] = nearest_ball.velocity[0] / BALL_SPEED
-            obs[10] = nearest_ball.velocity[1] / BALL_SPEED
-            obs[11] = nearest_ball.velocity[2] / BALL_SPEED
+            nearest_ball = min(self.balls, key=lambda b: _sphere_distance(pos, b.position))
+            obs[5] = nearest_ball.position[0] / SPHERE_RADIUS
+            obs[6] = nearest_ball.position[1] / SPHERE_RADIUS
+            obs[7] = nearest_ball.position[2] / SPHERE_RADIUS
+            obs[8] = nearest_ball.velocity[0] / BALL_SPEED
+            obs[9] = nearest_ball.velocity[1] / BALL_SPEED
+            obs[10] = nearest_ball.velocity[2] / BALL_SPEED
         
-        # Distance to nearest ball [12]
-        if self.balls:
-            dist = _sphere_distance(org.position, nearest_ball.position)
-            obs[12] = dist / SPHERE_RADIUS
+            # Angular distance to ball's projected sphere position [11:13]
+            _, ball_theta, ball_phi = _cartesian_to_spherical(*nearest_ball.position)
+            ang_dist = _angular_distance(org.theta, org.phi, ball_theta, ball_phi)
+            obs[11] = ang_dist / math.pi  # Normalized angular distance
+            obs[12] = 1.0 if ang_dist <= PADDLE_ANGULAR_RADIUS else 0.0  # In catch range?
         
         # Command chain info [13:17]
         if self.enable_command_chain and self.active_command:
@@ -8465,26 +8504,17 @@ class SphereArena:
         obs[18] = self.collective_misses / self.max_misses
         obs[19] = self.current_streak / 20.0
         
-        # Distance to sphere surface [20]
-        dist_to_surface = SPHERE_RADIUS - math.sqrt(
-            org.position[0]**2 + org.position[1]**2 + org.position[2]**2
-        )
-        obs[20] = dist_to_surface / SPHERE_RADIUS
-        
-        # Nearest teammate info [21:24]
-        nearest_dist = float('inf')
-        nearest_pos = (0, 0, 0)
+        # Nearest teammate angular distance [20:23]
+        min_teammate_dist = float('inf')
         for other in self.organisms:
             if other.idx != org.idx and other.alive:
-                d = _sphere_distance(org.position, other.position)
-                if d < nearest_dist:
-                    nearest_dist = d
-                    nearest_pos = other.position
+                d = _angular_distance(org.theta, org.phi, other.theta, other.phi)
+                if d < min_teammate_dist:
+                    min_teammate_dist = d
         
-        if nearest_dist < float('inf'):
-            obs[21] = (nearest_pos[0] - org.position[0]) / SPHERE_RADIUS
-            obs[22] = (nearest_pos[1] - org.position[1]) / SPHERE_RADIUS
-            obs[23] = (nearest_pos[2] - org.position[2]) / SPHERE_RADIUS
+        obs[20] = min_teammate_dist / math.pi if min_teammate_dist < float('inf') else 1.0
+        obs[21] = len([o for o in self.organisms if o.alive]) / 10.0  # Alive count
+        obs[22] = self.total_frames / 1000.0  # Time pressure
         
         return obs
     
@@ -8535,7 +8565,7 @@ class SphereArena:
             for idx, obs in observations.items():
                 self.prev_observations[idx] = obs.copy()
         
-        # Get actions from all organisms
+        # Get actions from all organisms - panels move on sphere surface
         for org in self.organisms:
             if not org.alive:
                 continue
@@ -8546,29 +8576,17 @@ class SphereArena:
             if self.enable_training:
                 self.prev_actions[org.idx] = action_idx
             
-            # Apply movement
-            dx = action_values[0] * ORGANISM_SPEED
-            dy = action_values[1] * ORGANISM_SPEED
-            dz = action_values[2] * ORGANISM_SPEED
+            # Apply angular movement - panels slide on sphere surface
+            d_theta = action_values[0] * PANEL_SPEED
+            d_phi = action_values[1] * PANEL_SPEED
             
-            new_x = org.position[0] + dx
-            new_y = org.position[1] + dy
-            new_z = org.position[2] + dz
-            
-            # Constrain to sphere
-            dist = math.sqrt(new_x**2 + new_y**2 + new_z**2)
-            if dist > SPHERE_RADIUS - ORGANISM_RADIUS:
-                # Project back onto sphere surface
-                scale = (SPHERE_RADIUS - ORGANISM_RADIUS) / dist
-                new_x *= scale
-                new_y *= scale
-                new_z *= scale
-            
-            org.position = (new_x, new_y, new_z)
-            org.velocity = (dx, dy, dz)
+            # Update spherical coords
+            org.theta = (org.theta + d_theta) % (2 * math.pi)
+            org.phi = max(0.1, min(math.pi - 0.1, org.phi + d_phi))  # Keep away from poles
             
             if self.verbose and self.total_frames % 60 == 0:
-                print(f"[SPHERE] Org #{org.idx}: pos=({new_x:.1f}, {new_y:.1f}, {new_z:.1f}), action={action_idx}")
+                pos = org.position
+                print(f"[SPHERE] Panel #{org.idx}: theta={org.theta:.2f}, phi={org.phi:.2f}, pos=({pos[0]:.0f}, {pos[1]:.0f}, {pos[2]:.0f})")
         
         # Update balls
         for ball in self.balls:
@@ -8580,34 +8598,47 @@ class SphereArena:
             new_y = ball.position[1] + ball.velocity[1]
             new_z = ball.position[2] + ball.velocity[2]
             
-            # Check sphere boundary
+            # Check sphere boundary - this is where panels can catch!
             dist = math.sqrt(new_x**2 + new_y**2 + new_z**2)
             if dist >= SPHERE_RADIUS - BALL_RADIUS:
-                # Ball hit sphere boundary - reflect
-                normal = _sphere_normalize((new_x, new_y, new_z))
-                ball.velocity = _sphere_reflect(ball.velocity, normal)
-                ball.bounces += 1
+                # Ball hitting sphere boundary - convert to spherical coords
+                _, ball_theta, ball_phi = _cartesian_to_spherical(new_x, new_y, new_z)
                 
-                # Project back inside
-                scale = (SPHERE_RADIUS - BALL_RADIUS - 1) / dist
+                # SWARM DEFENSE: Check if ANY organism intercepts (exact sphere_arena.py logic)
+                catcher = None
+                min_catch_dist = float('inf')
+                
+                for org in self.organisms:
+                    if not org.alive:
+                        continue
+                    
+                    # Great-circle angular distance
+                    ang_dist = _angular_distance(org.theta, org.phi, ball_theta, ball_phi)
+                    
+                    if ang_dist <= PADDLE_ANGULAR_RADIUS and ang_dist < min_catch_dist:
+                        min_catch_dist = ang_dist
+                        catcher = org
+                
+                if catcher is not None:
+                    # SWARM CATCH!
+                    self._handle_catch(catcher, ball, rewards)
+                    # Reflect ball
+                    normal = _sphere_normalize((new_x, new_y, new_z))
+                    ball.velocity = _sphere_reflect(ball.velocity, normal)
+                else:
+                    # SWARM MISS - reflect and penalize
+                    normal = _sphere_normalize((new_x, new_y, new_z))
+                    ball.velocity = _sphere_reflect(ball.velocity, normal)
+                    ball.bounces += 1
+                    self._handle_miss(ball, rewards)
+                
+                # Project back inside sphere
+                scale = (SPHERE_RADIUS - BALL_RADIUS * 2) / dist
                 new_x *= scale
                 new_y *= scale
                 new_z *= scale
-                
-                # Check for miss (no catch before boundary hit)
-                if ball.bounces > 0 and ball.last_catcher is None:
-                    self._handle_miss(ball, rewards)
             
             ball.position = (new_x, new_y, new_z)
-            
-            # Check catches
-            for org in self.organisms:
-                if not org.alive:
-                    continue
-                
-                dist_to_ball = _sphere_distance(org.position, ball.position)
-                if dist_to_ball < CATCH_RADIUS:
-                    self._handle_catch(org, ball, rewards)
         
         # Process command chain
         if self.enable_command_chain:
@@ -8865,37 +8896,85 @@ class SphereArena:
         
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
         
-        # Draw organisms
+        # Draw paddle zones for each organism (matches sphere_arena.py)
         for org in self.organisms:
             if not org.alive:
                 continue
             
-            glPushMatrix()
-            glTranslatef(*org.position)
+            # Draw paddle zone as a filled circle on sphere
+            pos = org.position
+            normal = _sphere_normalize(pos)
+            
+            # Find tangent vectors
+            up = (0, 1, 0)
+            if abs(_sphere_dot(normal, up)) > 0.9:
+                up = (1, 0, 0)
+            tangent1 = _sphere_normalize(_sphere_cross(normal, up))
+            tangent2 = _sphere_cross(normal, tangent1)
             
             # Color based on role
             if org.is_commander:
-                glColor3f(1.0, 0.8, 0.0)  # Gold for commander
+                glColor4f(1.0, 0.8, 0.0, 0.6)  # Gold for commander
             else:
-                glColor3f(*org.color)
+                glColor4f(*org.color, 0.6)
             
+            # Draw filled disc
+            glBegin(GL_TRIANGLE_FAN)
+            glVertex3f(*pos)  # Center
+            for i in range(33):
+                angle = 2 * math.pi * i / 32
+                offset_x = PADDLE_ANGULAR_RADIUS * SPHERE_RADIUS * math.cos(angle)
+                offset_y = PADDLE_ANGULAR_RADIUS * SPHERE_RADIUS * math.sin(angle)
+                point = (
+                    pos[0] + tangent1[0]*offset_x + tangent2[0]*offset_y,
+                    pos[1] + tangent1[1]*offset_x + tangent2[1]*offset_y,
+                    pos[2] + tangent1[2]*offset_x + tangent2[2]*offset_y
+                )
+                # Project back to sphere surface
+                point = _sphere_normalize(point)
+                point = (point[0]*SPHERE_RADIUS, point[1]*SPHERE_RADIUS, point[2]*SPHERE_RADIUS)
+                glVertex3f(*point)
+            glEnd()
+            
+            # Draw outline
+            glColor3f(*org.color)
+            glBegin(GL_LINE_LOOP)
+            for i in range(32):
+                angle = 2 * math.pi * i / 32
+                offset_x = PADDLE_ANGULAR_RADIUS * SPHERE_RADIUS * math.cos(angle)
+                offset_y = PADDLE_ANGULAR_RADIUS * SPHERE_RADIUS * math.sin(angle)
+                point = (
+                    pos[0] + tangent1[0]*offset_x + tangent2[0]*offset_y,
+                    pos[1] + tangent1[1]*offset_x + tangent2[1]*offset_y,
+                    pos[2] + tangent1[2]*offset_x + tangent2[2]*offset_y
+                )
+                point = _sphere_normalize(point)
+                point = (point[0]*SPHERE_RADIUS, point[1]*SPHERE_RADIUS, point[2]*SPHERE_RADIUS)
+                glVertex3f(*point)
+            glEnd()
+            
+            # Draw small sphere marker at organism position (matches sphere_arena.py)
+            glPushMatrix()
+            glTranslatef(*pos)
+            glColor3f(*org.color)
             quadric = gluNewQuadric()
-            gluSphere(quadric, ORGANISM_RADIUS, 16, 16)
+            gluSphere(quadric, 0.12, 12, 8)
             gluDeleteQuadric(quadric)
-            
             glPopMatrix()
         
-        # Draw balls
-        for ball in self.balls:
+        # Draw balls (support multiple with distinct colors - matches sphere_arena.py)
+        ball_colors = [(1.0, 1.0, 0.0), (1.0, 0.5, 0.0), (0.0, 1.0, 1.0), (1.0, 0.0, 1.0), (0.5, 1.0, 0.5)]
+        for ball_idx, ball in enumerate(self.balls):
             if not ball.active:
                 continue
             
             glPushMatrix()
             glTranslatef(*ball.position)
-            glColor3f(1.0, 0.2, 0.2)
+            color = ball_colors[ball_idx % len(ball_colors)]
+            glColor3f(*color)
             
             quadric = gluNewQuadric()
-            gluSphere(quadric, ball.radius, 16, 16)
+            gluSphere(quadric, BALL_RADIUS, 12, 8)
             gluDeleteQuadric(quadric)
             
             glPopMatrix()
@@ -8907,13 +8986,13 @@ class SphereArena:
             glColor4f(1.0, 1.0, 0.0, 0.5)
             
             quadric = gluNewQuadric()
-            gluSphere(quadric, 10, 8, 8)
+            gluSphere(quadric, BALL_RADIUS/2, 8, 8)
             gluDeleteQuadric(quadric)
             
             glPopMatrix()
         
-        # Rotate camera
-        self.camera_angle += 0.3
+        # Rotate camera slowly
+        self.camera_angle += 0.2
         
         pygame.display.flip()
     
@@ -8921,14 +9000,17 @@ class SphereArena:
         """2D fallback rendering when OpenGL not available."""
         self.screen.fill((20, 20, 40))
         
+        cx, cy = 512, 384
+        scale = 150
+        
         # Draw sphere outline
-        pygame.draw.circle(self.screen, (60, 60, 100), (512, 384), int(SPHERE_RADIUS * 0.8), 2)
+        pygame.draw.circle(self.screen, (60, 60, 100), (cx, cy), int(SPHERE_RADIUS * scale), 2)
         
         # Project 3D to 2D (simple orthographic)
         def project(pos):
-            return (int(512 + pos[0] * 0.8), int(384 - pos[1] * 0.8))
+            return (int(cx + pos[0] * scale), int(cy - pos[1] * scale))
         
-        # Draw organisms
+        # Draw paddle zones (as circles in 2D projection)
         for org in self.organisms:
             if not org.alive:
                 continue
@@ -8939,15 +9021,20 @@ class SphereArena:
             if org.is_commander:
                 color = (255, 200, 0)  # Gold
             
-            pygame.draw.circle(self.screen, color, pos, int(ORGANISM_RADIUS * 0.8))
+            # Draw as circle (paddle zone)
+            paddle_radius = int(PADDLE_ANGULAR_RADIUS * SPHERE_RADIUS * scale)
+            pygame.draw.circle(self.screen, color, pos, paddle_radius)
+            pygame.draw.circle(self.screen, (255, 255, 255), pos, paddle_radius, 2)
         
-        # Draw balls
-        for ball in self.balls:
+        # Draw balls (yellow like sphere_arena.py)
+        ball_colors_2d = [(255, 255, 0), (255, 128, 0), (0, 255, 255), (255, 0, 255), (128, 255, 128)]
+        for ball_idx, ball in enumerate(self.balls):
             if not ball.active:
                 continue
             
             pos = project(ball.position)
-            pygame.draw.circle(self.screen, (255, 50, 50), pos, int(ball.radius * 0.8))
+            color = ball_colors_2d[ball_idx % len(ball_colors_2d)]
+            pygame.draw.circle(self.screen, color, pos, int(BALL_RADIUS * scale))
         
         # Draw HUD
         if self.font:

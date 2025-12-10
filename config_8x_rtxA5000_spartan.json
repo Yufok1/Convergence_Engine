@@ -1,0 +1,620 @@
+{
+  "_hardware_profile_help": "8x RTX A5000 SPARTAN CONFIG - Xeon Silver 4110 (32 cores), 128.6GB RAM, 192GB total VRAM - ELITE BREEDING MODE",
+  "_hardware_specs": {
+    "gpus": "8x RTX A5000 (24GB VRAM each, 192GB total)",
+    "cpu": "Xeon Silver 4110 (32 cores)",
+    "ram": "128.6 GB",
+    "storage": "Samsung 531.2 MB/s",
+    "tflops": 220.2,
+    "bandwidth": "652.5 GB/s",
+    "network": "661.3 Mbps down / 744.0 Mbps up",
+    "cuda_max": "12.0",
+    "pcie": "3.0/16x"
+  },
+  "_spartan_philosophy": {
+    "description": "THIS IS SPARTA - Only the strongest survive. High mutation, brutal selection, maximum evolutionary pressure.",
+    "goal": "Breed elite organisms in 2 hours - quality over quantity",
+    "strategy": "Start aggressive, let natural selection do the work"
+  },
+  "agency": {
+    "confidence_threshold": 0.0001,
+    "decision_precision": 1e-05,
+    "initial_mode": "manual_only",
+    "learning_rate_resolution": 1e-06,
+    "performance_tracking_precision": 0.0001
+  },
+  "semantic_convergence": {
+    "_help": "Unifies 6 semantic systems for word embedding differentiation",
+    "enabled": true,
+    "use_learned_embeddings": true,
+    "embedding_dim": 128,
+    "organism_embedding_alpha": 0.15,
+    "concept_system_alpha": 0.08,
+    "knowledge_web_influence_interval": 15,
+    "phenotype_to_vocabulary": true
+  },
+  "arena": {
+    "_spartan_note": "Combat is frequent and brutal - losers die or get absorbed",
+    "battle_consequences": {
+      "fitness_transfer_rate": 1.5,
+      "resource_transfer_enabled": true,
+      "resource_transfer_rate": 1.2,
+      "trait_bonus_cap": 0.4,
+      "trait_evolution_enabled": true
+    },
+    "default_battle_type": "PROTON_GAME",
+    "description": "SPARTAN ARENA - Brutal selection through combat",
+    "enabled": true,
+    "game_selection": {
+      "allow_negotiation": false,
+      "fallback_on_deadlock": "random",
+      "mode": "ai_driven",
+      "negotiation_rounds": 1
+    },
+    "grid_weights": {
+      "challenge_types": {
+        "ARTS": 0.8,
+        "CHANCE": 0.6,
+        "MENTAL": 1.5,
+        "PHYSICAL": 1.5
+      },
+      "resource_types": {
+        "ANIMAL": 1.0,
+        "MACHINE": 1.2,
+        "NAKED": 1.5,
+        "TOOL": 1.0
+      }
+    },
+    "gym_settings": {
+      "default_episodes": 15,
+      "max_episode_steps": 500,
+      "parallel_envs": 2,
+      "render_mode": null
+    },
+    "prefer_native_games": true,
+    "proton_game_probability": 0.7,
+    "tournament": {
+      "default_format": "single_elimination",
+      "round_robin_battles_per_pair": 5,
+      "seeding_method": "fitness_based"
+    }
+  },
+  "causation_detection": {
+    "correlation_threshold": 0.4,
+    "direct_causation_time_window": 1.5,
+    "enable_bidirectional_causations": true,
+    "enable_language_causations": true,
+    "enable_ml_causations": true,
+    "enable_neural_causations": true,
+    "enable_neural_decision_causations": true,
+    "enable_neural_training_causations": true,
+    "enable_phase_transition_causations": true,
+    "enabled": true,
+    "phase_transition_time_window": 2.0,
+    "recent_events_window": 200,
+    "thresholds": {
+      "clustering_coefficient": {
+        "collapse": 0.6,
+        "direction": "above"
+      },
+      "modularity": {
+        "collapse": 0.25,
+        "direction": "below"
+      },
+      "organism_count": {
+        "collapse": 300,
+        "direction": "above"
+      },
+      "violation_pressure": {
+        "vp0": 0.2,
+        "vp1": 0.45,
+        "vp2": 0.7,
+        "vp3": 0.95
+      },
+      "vp_calculations": {
+        "direction": "above",
+        "transition": 40
+      }
+    }
+  },
+  "evolution": {
+    "_spartan_note": "High mutation = more genetic diversity, brutal selection keeps only the best",
+    "adaptation_sensitivity": 0.008,
+    "diversity_guard": {
+      "enabled": true,
+      "frequency_threshold": 0.08,
+      "hash_similarity_threshold": 0.82,
+      "penalty": 0.08
+    },
+    "fitness_precision": 1e-08,
+    "genotype_length": 64,
+    "max_generations": 2000,
+    "mutation_rate": {
+      "initial": 0.08
+    },
+    "mutation_rate_precision": 0.0005,
+    "population_size": 16
+  },
+  "feedback": {
+    "enabled": true,
+    "hysteresis_checks": 3,
+    "interval_frames": 8,
+    "knobs": {
+      "clustering_bias": {
+        "initial": 1.8,
+        "max": 2.0,
+        "min": 0.5,
+        "step": 0.08
+      },
+      "mutation_rate": {
+        "initial": 0.06,
+        "max": 0.12,
+        "min": 0.01,
+        "step": 0.002
+      },
+      "new_edge_rate": {
+        "initial": 5.5,
+        "max": 8,
+        "min": 0.5,
+        "step": 0.15
+      },
+      "quantum_pruning": {
+        "initial": 0.45,
+        "max": 1,
+        "min": 0,
+        "step": 0.08
+      }
+    },
+    "rate_limit_frames": 80
+  },
+  "hardware_profile": "spartan",
+  "health_monitor": {
+    "_spartan_note": "Lower healthy threshold - we expect struggle, that's the point",
+    "critical_threshold": 0.15,
+    "enabled": true,
+    "healthy_threshold": 0.6,
+    "history_size": 150,
+    "thresholds": {
+      "critical": 0.15,
+      "healthy": 0.55,
+      "warning": 0.35
+    },
+    "warning_threshold": 0.4,
+    "weight_adaptability": 0.25,
+    "weight_coherence": 0.25,
+    "weight_diversity": 0.25,
+    "weight_lawfulness": 0.1,
+    "weight_sustainability": 0.15
+  },
+  "highlander": {
+    "_spartan_note": "THERE CAN BE ONLY ONE (well, a few). Brutal population control.",
+    "alliance_warfare": {
+      "betrayal_chance": 0.1,
+      "confederation_war_threshold": 0.4,
+      "enabled": true,
+      "existential_war_threshold": 0.4,
+      "max_alliance_size": 8,
+      "max_alliances": 10,
+      "max_confederations": 3,
+      "min_alliance_size": 2,
+      "war_declaration_threshold": 0.2,
+      "war_frequency": 1.0,
+      "illumination_stability_threshold": 3
+    },
+    "chaos_factor": 0.25,
+    "competition_intensity": 0.85,
+    "description": "8x RTX A5000 SPARTAN - Start with 16, cull to elite squad, max evolutionary pressure",
+    "enabled": true,
+    "extreme_mode": {
+      "chaos_factor": 0.5,
+      "competition_intensity": 1.0,
+      "description": "THERMOPYLAE MODE - 300 style last stand",
+      "germination_rate": 0.8,
+      "max_battle_rounds": 20,
+      "max_population": 300,
+      "min_population": 8,
+      "mutation_rate": 0.2,
+      "population_size": 16,
+      "predation_enabled": true,
+      "rounds_per_cycle": 3,
+      "survival_threshold": 0.85
+    },
+    "germination_rate": 0.9,
+    "max_battle_rounds": 30,
+    "max_capsules": 50,
+    "max_genetic_samples": 150,
+    "max_population": 100,
+    "min_population": 6,
+    "mutation_rate": 0.08,
+    "population_size": 16,
+    "predation_enabled": true,
+    "rounds_per_cycle": 3,
+    "survival_threshold": 0.55
+  },
+  "lattice": {
+    "entropy_sensitivity": 8e-05,
+    "interaction_precision": 0.00015,
+    "particles": 1200,
+    "prune_threshold": 0,
+    "stability_tolerance": 0.0008
+  },
+  "logging": {
+    "shared_state_dump_interval": 45
+  },
+  "meta_cognitive": {
+    "description": "Meta-cognitive systems: aggressive self-tuning for rapid evolution",
+    "self_tuning": {
+      "enabled": true,
+      "min_confidence_threshold": 0.5,
+      "mode": "autonomous",
+      "performance_targets": {
+        "max_anomaly_ratio": 0.25,
+        "min_cluster_diversity": 4,
+        "min_fitness_std": 0.08
+      },
+      "safe_parameters": [
+        "evolution.mutation_rate.initial",
+        "evolution.diversity_guard.penalty",
+        "evolution.diversity_guard.frequency_threshold",
+        "evolution.diversity_guard.hash_similarity_threshold",
+        "evolution.population_size",
+        "evolution.adaptation_sensitivity",
+        "feedback.knobs.mutation_rate.initial",
+        "feedback.knobs.new_edge_rate.initial",
+        "feedback.knobs.clustering_bias.initial",
+        "feedback.knobs.quantum_pruning.initial",
+        "neural.training.learning_rate",
+        "neural.training.gamma",
+        "neural.training.epsilon_decay",
+        "neural.training.batch_size",
+        "neural.rewards.fitness_improvement",
+        "neural.rewards.connection_success",
+        "neural.rewards.survival",
+        "neural.inheritance.crossover_rate",
+        "neural.inheritance.mutation_rate",
+        "network.max_organisms",
+        "network.max_connections",
+        "network.resource_pool",
+        "scikit.clustering.min_cluster_size",
+        "scikit.anomaly_detection.contamination",
+        "scikit.anomaly_detection.n_estimators",
+        "quantum.initial_states",
+        "quantum.entanglement_sensitivity",
+        "quantum.prune_check_interval",
+        "vp_monitoring.adaptive_response.high_vp_threshold",
+        "vp_monitoring.stabilization.smoothing_factor",
+        "causation_detection.correlation_threshold",
+        "meta_cognitive.self_tuning.tuning_interval_frames",
+        "meta_cognitive.self_tuning.min_confidence_threshold"
+      ],
+      "tuning_interval_frames": 6
+    }
+  },
+  "network": {
+    "_spartan_note": "More connections = more competition = stronger survivors",
+    "connection_strength_resolution": 8e-06,
+    "emergence_sensitivity": 2e-06,
+    "max_connections": 15000,
+    "max_organisms": 300,
+    "resource_flow_precision": 0.00015,
+    "resource_pool": 1000,
+    "stability_precision": 1e-07
+  },
+  "neural": {
+    "_spartan_note": "Bigger brains, faster learning, harsh rewards",
+    "brain": {
+      "activation": "relu",
+      "dropout": 0.15,
+      "hidden_dim": 128,
+      "input_dim": 24,
+      "output_dim": 8,
+      "vocab_size": 2000
+    },
+    "concept_system": {
+      "concept_loss_weight": 0.15,
+      "embed_dim": 128,
+      "enabled": true,
+      "num_key_compositions": 30,
+      "utility_update_alpha": 0.15
+    },
+    "device": "cuda",
+    "enabled": true,
+    "inheritance": {
+      "_spartan_note": "High crossover = best traits combine, high mutation = innovation",
+      "crossover_rate": 0.95,
+      "enabled": true,
+      "mutation_rate": 0.3
+    },
+    "initialization": {
+      "deterministic": false,
+      "seed": null
+    },
+    "language_model": {
+      "attention": {
+        "attention_dim": 64,
+        "enabled": true,
+        "num_heads": 8
+      },
+      "curriculum": {
+        "enabled": true,
+        "ml_quality": {
+          "enabled": true,
+          "high_quality_threshold": 0.5,
+          "low_quality_threshold": 0.25,
+          "max_sequence_length": 128,
+          "min_sequence_length": 8,
+          "sequence_length_step": 4
+        },
+        "sequence_lengths": {
+          "stage_0": 8,
+          "stage_1": 24,
+          "stage_2": 64,
+          "stage_3": 256
+        },
+        "vp_thresholds": {
+          "stage_1": 0.45,
+          "stage_2": 0.35,
+          "stage_3": 0.25
+        }
+      },
+      "enabled": true,
+      "generation": {
+        "max_length": 256,
+        "temperature": 1.0,
+        "vp_gate_threshold": 0.4
+      },
+      "knowledge_web": {
+        "embedding_dim": 128,
+        "enabled": true,
+        "max_concepts": 800,
+        "quality_control": {
+          "confidence_growth_rate": 0.001,
+          "enabled": true,
+          "exploration_decay_generations": 800,
+          "exploration_end": 0.03,
+          "exploration_start": 0.25,
+          "max_discoveries_per_generation": 15,
+          "min_confidence_threshold": 0.25,
+          "min_discovery_count": 2,
+          "pruning_confidence_threshold": 0.15,
+          "pruning_failure_rate": 0.6,
+          "pruning_unused_generations": 80,
+          "review_frequency": 80,
+          "validation_required": true,
+          "vp_boost_exploration": true,
+          "vp_boost_threshold": 0.6
+        }
+      },
+      "relationship_learning": {
+        "enabled": true,
+        "quality_evaluation": {
+          "coherent_threshold": 0.45,
+          "garbled_threshold": 0.15,
+          "max_word_count": 30,
+          "min_word_count": 2,
+          "min_word_count_for_evaluation": 3,
+          "relationship_strength_threshold": 0.45,
+          "unk_ratio_threshold": 0.25
+        },
+        "semantic_guidance": {
+          "enabled": true,
+          "high_strength_boost": 0.15,
+          "max_similar_words": 8,
+          "min_strength_threshold": 0.25,
+          "semantic_boost": 0.25
+        }
+      },
+      "sequence": {
+        "context_window": 64,
+        "max_length": 256
+      },
+      "teacher": {
+        "embedding_dim": 128,
+        "enabled": true,
+        "min_action_history": 2,
+        "min_confidence": 0.25,
+        "teaching_frequency": 1,
+        "use_knowledge_web": true,
+        "use_semantic_embeddings": true,
+        "vocab_size": 2000
+      },
+      "training": {
+        "alpha": 0.45,
+        "beta": 0.45,
+        "gamma": 0.1,
+        "vp_temperature_scale": true
+      },
+      "vocabulary": {
+        "max_size": 2000,
+        "special_tokens": [
+          "<PAD>",
+          "<UNK>",
+          "<START>",
+          "<END>",
+          "<VP_GATE>"
+        ]
+      }
+    },
+    "optimization": {
+      "compile_mode": "reduce-overhead",
+      "reuse_optimizers": true,
+      "use_compile": true,
+      "use_scripted_inference": false
+    },
+    "rewards": {
+      "_spartan_note": "Harsh penalties, big rewards - excellence or death",
+      "connection_failure": -0.5,
+      "connection_success": 3.5,
+      "fitness_improvement": 6.0,
+      "resource_gain": 1.5,
+      "resource_loss": -0.6,
+      "survival": 3.0
+    },
+    "training": {
+      "_spartan_note": "Aggressive learning rate, faster decay - adapt or die",
+      "batch_size": 128,
+      "early_stopping": {
+        "enabled": true,
+        "min_delta": 0.00005,
+        "patience": 8
+      },
+      "enabled": true,
+      "epsilon": 0.9,
+      "epsilon_decay": 0.985,
+      "epsilon_end": 0.02,
+      "epsilon_start": 0.85,
+      "gamma": 0.99,
+      "language_reward_scaling": 0.45,
+      "learning_rate": 0.008,
+      "lr_scheduler": {
+        "enabled": true,
+        "gamma": 0.92,
+        "min_lr": 0.0002,
+        "step_size": 80,
+        "type": "cosine",
+        "warmup_steps": 50
+      },
+      "memory_size": 60000,
+      "update_frequency": 1
+    },
+    "vp_aware_planning": {
+      "base_boost": 0.22,
+      "enabled": true,
+      "high_threshold": 0.4,
+      "low_threshold": 0.2,
+      "strong_boost": 0.35
+    },
+    "checkpointing": {
+      "_help": "Frequent checkpoints - 2 hour run, can't lose progress",
+      "enabled": true,
+      "auto_save_interval_generations": 50,
+      "auto_save_interval_minutes": 15,
+      "max_checkpoints": 20,
+      "checkpoint_dir": "data/neural_checkpoints",
+      "include_experience_buffer": true,
+      "include_optimizer_states": true,
+      "compression": false,
+      "auto_resume": true
+    }
+  },
+  "quantum": {
+    "entanglement_sensitivity": 4e-06,
+    "fitness_weights": {
+      "entanglement": 0.35,
+      "entropy": 0.2,
+      "measurements": 0.2,
+      "superposition": 0.25
+    },
+    "initial_states": 180,
+    "performance_thresholds": {
+      "fitness_std_threshold": 0.25,
+      "iteration_time_ms": 8,
+      "memory_percentage": 6.0,
+      "min_fitness_to_keep": 0.15
+    },
+    "probability_precision": 1e-07,
+    "prune_check_interval": 30,
+    "superposition_tolerance": 0.0004
+  },
+  "ray": {
+    "_spartan_note": "Full GPU utilization - 192GB VRAM to burn",
+    "actor_pool_size": 8,
+    "batch_inference_size": 128,
+    "description": "Ray distributed - 8x RTX A5000 SPARTAN parallel processing",
+    "enabled": true,
+    "fallback_on_error": true,
+    "logging_level": "warning",
+    "memory_management": {
+      "actor_pool_lru_eviction": true,
+      "cleanup_on_organism_death": true,
+      "max_object_refs": 300
+    },
+    "num_cpus": 32,
+    "num_gpus": 8,
+    "object_store_memory": null,
+    "parallelization_threshold": 32,
+    "state_synchronization": {
+      "consistency_model": "sequential",
+      "max_state_age_ms": 80,
+      "snapshot_strategy": "breath_cycle"
+    },
+    "training_threshold": 12
+  },
+  "rendering": {
+    "enable_visualizations": true,
+    "frame_rate": 20,
+    "metric_display_precision": 6,
+    "mode": "god",
+    "performance_monitoring": true,
+    "render_quality": "medium",
+    "resolution": [
+      1920,
+      1080
+    ],
+    "text_interface": true,
+    "visualization_update_precision": 0.001
+  },
+  "scikit": {
+    "anomaly_detection": {
+      "algorithm": "isolation_forest",
+      "contamination": 0.2,
+      "enabled": true,
+      "n_estimators": 600
+    },
+    "clustering": {
+      "algorithm": "hdbscan",
+      "enabled": true,
+      "min_cluster_size": 3,
+      "min_samples": 1,
+      "use_neural_embeddings": true
+    },
+    "concept_tracking": {
+      "enabled": true,
+      "persistence_threshold": 2,
+      "stale_threshold": 8
+    },
+    "dimensionality_reduction": {
+      "algorithm": "pca",
+      "enabled": true,
+      "n_components": 4
+    },
+    "enabled": true
+  },
+  "simulation": {
+    "_spartan_note": "2 hour runtime, aggressive FPS for fast generations",
+    "log_level": "INFO",
+    "max_runtime": 7200.0,
+    "measurement_precision": 5,
+    "performance_sampling_rate": 150,
+    "save_interval": 45.0,
+    "target_fps": 8,
+    "time_resolution_ms": 0.5
+  },
+  "vp_monitoring": {
+    "_spartan_note": "Tighter VP monitoring - catch weakness early",
+    "adaptive_response": {
+      "high_vp_threshold": 0.8,
+      "streak_threshold": 2
+    },
+    "adaptive_thresholds": {
+      "enabled": true
+    },
+    "adaptive_thresholds_enabled": true,
+    "component_decomposition_enabled": true,
+    "component_weights": {
+      "evolution_pressure": 0.2,
+      "network_coherence": 0.15,
+      "phase_mismatch": 0.1,
+      "quantum_entropy": 0.15,
+      "trait_divergence": 0.2
+    },
+    "diagnostics_enabled": true,
+    "stabilization": {
+      "enabled": true,
+      "history_size": 20,
+      "max_jump": 0.08,
+      "smoothing_factor": 0.35
+    },
+    "stabilization_enabled": true
+  }
+}
