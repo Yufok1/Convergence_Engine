@@ -924,6 +924,15 @@ class HighlanderProtocol:
 
                 self.battle_arena.execute_absorption(winner_org, loser_org, arena_outcome)
                 
+                # ═══════════════════════════════════════════════════════════════════
+                # CRITICAL FIX: Call _absorb_loser for FULL data transfer!
+                # execute_absorption only transfers atomic_language concepts (30-50)
+                # _absorb_loser transfers: context_memory vocab (8000+), neural weights,
+                # experience buffer, and ALL linguistic traits!
+                # ═══════════════════════════════════════════════════════════════════
+                self._absorb_loser(winner_id, winner_org, loser_id, loser_org)
+                self.logger.info(f"📦 FULL ABSORPTION COMPLETE: {winner_id} now has ALL of {loser_id}'s data")
+                
                 self._emit_event('battle_concluded', {
                     'winner': winner_id,
                     'loser': loser_id,
