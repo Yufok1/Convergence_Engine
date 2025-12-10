@@ -211,6 +211,307 @@
             animation: trainingPulse 1.5s ease-in-out infinite;
         }
         
+        /* ═══════════════════════════════════════════════════════════════════
+           🃏 ORGANISM CARD BINDER SYSTEM - Pokémon-style organism viewer
+           ═══════════════════════════════════════════════════════════════════ */
+        
+        .organism-binder {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+            max-height: 500px;
+            overflow-y: auto;
+            padding: 10px;
+            background: linear-gradient(180deg, #0a0810 0%, #050308 100%);
+            border: 1px solid #333;
+            border-radius: 8px;
+        }
+        
+        .organism-card {
+            background: linear-gradient(145deg, #1a1a2e 0%, #0a0a15 100%);
+            border-radius: 12px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .organism-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            border-radius: 12px 12px 0 0;
+        }
+        
+        /* Rarity border colors */
+        .organism-card.rarity-legendary { border: 2px solid #ffd700; box-shadow: 0 0 20px rgba(255, 215, 0, 0.4); }
+        .organism-card.rarity-legendary::before { background: linear-gradient(90deg, #ffd700, #ff8c00, #ffd700); }
+        .organism-card.rarity-epic { border: 2px solid #a855f7; box-shadow: 0 0 15px rgba(168, 85, 247, 0.3); }
+        .organism-card.rarity-epic::before { background: linear-gradient(90deg, #a855f7, #ec4899, #a855f7); }
+        .organism-card.rarity-rare { border: 2px solid #3b82f6; box-shadow: 0 0 10px rgba(59, 130, 246, 0.3); }
+        .organism-card.rarity-rare::before { background: linear-gradient(90deg, #3b82f6, #06b6d4, #3b82f6); }
+        .organism-card.rarity-uncommon { border: 2px solid #22c55e; }
+        .organism-card.rarity-uncommon::before { background: #22c55e; }
+        .organism-card.rarity-common { border: 1px solid #666; }
+        .organism-card.rarity-common::before { background: #666; }
+        
+        .organism-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            z-index: 10;
+        }
+        
+        .organism-card.selected {
+            outline: 3px solid #0ff;
+            outline-offset: 2px;
+        }
+        
+        /* Card worn edges effect for older organisms */
+        .organism-card.aged-veteran {
+            border-image: linear-gradient(135deg, #666 0%, #333 50%, #666 100%) 1;
+        }
+        
+        .organism-card.aged-ancient {
+            filter: sepia(0.1);
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+        
+        .card-id {
+            font-family: 'Courier New', monospace;
+            font-size: 0.75em;
+            color: #888;
+            letter-spacing: 0.5px;
+        }
+        
+        .card-rarity-badge {
+            font-size: 0.7em;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .rarity-legendary .card-rarity-badge { background: linear-gradient(135deg, #ffd700, #ff8c00); color: #000; }
+        .rarity-epic .card-rarity-badge { background: linear-gradient(135deg, #a855f7, #ec4899); color: #fff; }
+        .rarity-rare .card-rarity-badge { background: linear-gradient(135deg, #3b82f6, #06b6d4); color: #fff; }
+        .rarity-uncommon .card-rarity-badge { background: #22c55e; color: #000; }
+        .rarity-common .card-rarity-badge { background: #666; color: #fff; }
+        
+        .card-personality {
+            text-align: center;
+            margin: 10px 0;
+        }
+        
+        .personality-icon {
+            font-size: 2.5em;
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .personality-label {
+            font-size: 0.85em;
+            color: #f0f;
+            text-transform: capitalize;
+            font-weight: bold;
+        }
+        
+        .card-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin: 10px 0;
+            font-size: 0.8em;
+        }
+        
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 6px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+        }
+        
+        .stat-label {
+            color: #888;
+        }
+        
+        .stat-value {
+            color: #0ff;
+            font-weight: bold;
+        }
+        
+        .stat-value.positive { color: #0f0; }
+        .stat-value.negative { color: #f66; }
+        .stat-value.warning { color: #ff0; }
+        
+        /* Fitness bar */
+        .fitness-bar-container {
+            margin: 8px 0;
+            background: #111;
+            border-radius: 4px;
+            overflow: hidden;
+            height: 8px;
+        }
+        
+        .fitness-bar {
+            height: 100%;
+            transition: width 0.3s ease;
+            border-radius: 4px;
+        }
+        
+        .fitness-bar.excellent { background: linear-gradient(90deg, #0f0, #7fff00); }
+        .fitness-bar.good { background: linear-gradient(90deg, #7fff00, #ff0); }
+        .fitness-bar.average { background: linear-gradient(90deg, #ff0, #ffa500); }
+        .fitness-bar.poor { background: linear-gradient(90deg, #ffa500, #f00); }
+        
+        /* Battle record */
+        .battle-record {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 8px 0;
+            font-size: 0.85em;
+        }
+        
+        .battle-wins { color: #0f0; }
+        .battle-losses { color: #f66; }
+        
+        /* Traits section */
+        .card-traits {
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 1px solid #333;
+        }
+        
+        .trait-tag {
+            display: inline-block;
+            padding: 2px 6px;
+            margin: 2px;
+            border-radius: 8px;
+            font-size: 0.7em;
+        }
+        
+        .trait-strength { background: #0a3a0a; color: #0f0; border: 1px solid #0f0; }
+        .trait-weakness { background: #3a0a0a; color: #f66; border: 1px solid #f66; }
+        
+        /* Behavioral fingerprint visualization */
+        .fingerprint-viz {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            height: 30px;
+            margin: 8px 0;
+            padding: 4px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+        }
+        
+        .fingerprint-bar {
+            width: 14%;
+            background: linear-gradient(180deg, #0ff, #0088ff);
+            border-radius: 2px;
+            transition: height 0.3s ease;
+        }
+        
+        /* Source badge */
+        .source-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            font-size: 0.65em;
+            padding: 2px 5px;
+            border-radius: 4px;
+        }
+        
+        .source-live { background: #0a3a0a; color: #0f0; border: 1px solid #0f0; }
+        .source-capsule { background: #3a2a0a; color: #ffa500; border: 1px solid #ffa500; }
+        
+        /* Organism binder controls */
+        .binder-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .binder-filter, .binder-sort {
+            padding: 6px 10px;
+            background: #111;
+            border: 1px solid #0ff;
+            color: #0ff;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            border-radius: 4px;
+        }
+        
+        .binder-search {
+            flex: 1;
+            min-width: 150px;
+            padding: 6px 10px;
+            background: #111;
+            border: 1px solid #666;
+            color: #0f0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            border-radius: 4px;
+        }
+        
+        .binder-view-toggle {
+            display: flex;
+            gap: 2px;
+        }
+        
+        .view-btn {
+            padding: 6px 10px;
+            background: #222;
+            border: 1px solid #444;
+            color: #888;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .view-btn.active {
+            background: #0ff;
+            color: #000;
+            border-color: #0ff;
+        }
+        
+        .view-btn:first-child { border-radius: 4px 0 0 4px; }
+        .view-btn:last-child { border-radius: 0 4px 4px 0; }
+        
+        /* Compact list view */
+        .organism-binder.list-view {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .organism-binder.list-view .organism-card {
+            display: grid;
+            grid-template-columns: auto 1fr auto auto auto;
+            gap: 10px;
+            align-items: center;
+            padding: 8px 12px;
+        }
+        
+        .organism-binder.list-view .card-personality,
+        .organism-binder.list-view .card-traits,
+        .organism-binder.list-view .fingerprint-viz,
+        .organism-binder.list-view .fitness-bar-container {
+            display: none;
+        }
+        
         body {
             font-family: 'Courier New', monospace;
             background: #000;
@@ -2615,23 +2916,68 @@
                     
                     <!-- Agent Exporter Tab Content -->
                     <div id="agentExporterTabContent" style="display: none; padding: 15px; border: 1px solid #f0f; background: linear-gradient(135deg, #1a0a1a 0%, #0a050a 100%); border-radius: 5px;">
-                        <h4 style="color: #f0f; margin-top: 0; margin-bottom: 15px;">📦 Compile & Export</h4>
-                        <p style="color: #aaa; font-size: 0.9em; margin-bottom: 20px;">Export organisms as portable AI agents. Select specific organisms or use "Top N" to auto-select the fittest.</p>
+                        <h4 style="color: #f0f; margin-top: 0; margin-bottom: 15px;">🃏 Organism Binder - Select for Export</h4>
+                        <p style="color: #aaa; font-size: 0.85em; margin-bottom: 15px;">Browse and select organisms like a Pokémon card collection. Click cards to select for export.</p>
                         
-                        <div style="margin-bottom: 15px;">
-                            <div style="display: flex; align-items: center; gap: 10px; justify-content: space-between;">
-                                <label for="agentExporterOrganismSelect" style="display: block; color: #0f0; margin-bottom: 5px;">Select Organism(s):</label>
-                                <label style="color:#0ff; font-size: 0.85em; display:flex; align-items:center; gap:6px;">
-                                    <input type="checkbox" id="agentExporterMulti" onchange="document.getElementById('agentExporterOrganismSelect').multiple=this.checked; populateOrganismSelector();" />
-                                    Multi-select
-                                </label>
-                            </div>
-                            <select id="agentExporterOrganismSelect" onchange="updateCompileAgentStatus()" style="width: 100%; padding: 8px; background: #111; color: #0f0; border: 1px solid #0ff; font-family: 'Courier New', monospace;">
-                                <option value="">Loading organisms...</option>
+                        <!-- Binder Controls -->
+                        <div class="binder-controls">
+                            <input type="text" id="binderSearch" class="binder-search" placeholder="🔍 Search organisms..." oninput="filterOrganismBinder()">
+                            <select id="binderFilterRarity" class="binder-filter" onchange="filterOrganismBinder()">
+                                <option value="">All Rarities</option>
+                                <option value="legendary">⭐ Legendary</option>
+                                <option value="epic">💎 Epic</option>
+                                <option value="rare">💠 Rare</option>
+                                <option value="uncommon">🟢 Uncommon</option>
+                                <option value="common">⚪ Common</option>
                             </select>
+                            <select id="binderFilterPersonality" class="binder-filter" onchange="filterOrganismBinder()">
+                                <option value="">All Personalities</option>
+                                <option value="diplomat">🤝 Diplomat</option>
+                                <option value="warrior">⚔️ Warrior</option>
+                                <option value="explorer">🧭 Explorer</option>
+                                <option value="hermit">🏔️ Hermit</option>
+                                <option value="balanced">⚖️ Balanced</option>
+                                <option value="opportunist">🎯 Opportunist</option>
+                            </select>
+                            <select id="binderSort" class="binder-sort" onchange="sortOrganismBinder()">
+                                <option value="fitness-desc">Fitness ↓</option>
+                                <option value="fitness-asc">Fitness ↑</option>
+                                <option value="battles-desc">Battles ↓</option>
+                                <option value="rarity-desc">Rarity ↓</option>
+                                <option value="experience-desc">Experience ↓</option>
+                                <option value="vocab-desc">Vocabulary ↓</option>
+                            </select>
+                            <div class="binder-view-toggle">
+                                <button class="view-btn active" onclick="setBinderView('grid', this)" title="Grid View">▦</button>
+                                <button class="view-btn" onclick="setBinderView('list', this)" title="List View">☰</button>
+                            </div>
                         </div>
                         
-                        <div style="margin-bottom: 20px;">
+                        <!-- Selected count indicator -->
+                        <div id="binderSelectionInfo" style="margin-bottom: 10px; padding: 8px; background: #0a0a0a; border: 1px solid #333; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
+                            <span style="color: #888;">Selected: <span id="binderSelectedCount" style="color: #0ff; font-weight: bold;">0</span> organisms</span>
+                            <div style="display: flex; gap: 8px;">
+                                <button onclick="selectTopNOrganisms()" style="padding: 4px 10px; background: #111; border: 1px solid #0ff; color: #0ff; cursor: pointer; font-size: 0.8em; font-family: monospace; border-radius: 3px;">
+                                    🏆 Select Top <input type="number" id="binderTopN" value="10" min="1" style="width: 40px; background: #000; border: 1px solid #666; color: #0ff; text-align: center;" onclick="event.stopPropagation()">
+                                </button>
+                                <button onclick="clearBinderSelection()" style="padding: 4px 10px; background: #111; border: 1px solid #f66; color: #f66; cursor: pointer; font-size: 0.8em; font-family: monospace; border-radius: 3px;">
+                                    ✕ Clear
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Organism Card Binder -->
+                        <div id="organismBinder" class="organism-binder">
+                            <div style="text-align: center; padding: 40px; color: #666;">
+                                <div style="font-size: 3em; margin-bottom: 10px;">🃏</div>
+                                <div>Loading organisms...</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Hidden select for backwards compatibility with existing compile logic -->
+                        <select id="agentExporterOrganismSelect" multiple style="display: none;"></select>
+                        
+                        <div style="margin-top: 15px; margin-bottom: 20px;">
                             <label for="agentExporterFormat" style="display: block; color: #0f0; margin-bottom: 5px;">Export Format:</label>
                             <select id="agentExporterFormat" style="width: 100%; padding: 8px; background: #111; color: #0f0; border: 1px solid #0ff; font-family: 'Courier New', monospace;">
                                 <option value="package">🎁 Ultimate Package (.zip) - ALL formats + runners + docs</option>
@@ -2646,10 +2992,6 @@
                         </div>
 
                         <div style="margin-bottom: 15px; display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; align-items: center;">
-                            <div>
-                                <label for="agentExporterTopN" style="display: block; color: #0f0; margin-bottom: 5px;">Top N (auto-select fittest):</label>
-                                <input id="agentExporterTopN" type="number" value="10" min="1" step="1" style="width: 100%; padding: 8px; background: #111; color: #0f0; border: 1px solid #0ff; font-family: 'Courier New', monospace;" />
-                            </div>
                             <label style="color:#0ff; display:flex; align-items:center; gap:8px; background:#0a0a0a; border:1px solid #0ff; padding:8px; border-radius:4px;">
                                 <input type="checkbox" id="agentExporterIncludeGym" checked /> Include Gym adapter
                             </label>
@@ -2662,11 +3004,11 @@
                         </div>
                         
                         <button onclick="compileAndExport()" style="width: 100%; padding: 15px; background: linear-gradient(135deg, #f0f 0%, #0ff 50%, #0f0 100%); color: #000; border: 2px solid #fff; font-weight: bold; cursor: pointer; font-family: 'Courier New', monospace; font-size: 1.1em; border-radius: 4px; transition: all 0.2s; text-shadow: 0 0 2px #fff;" onmouseover="this.style.boxShadow='0 0 20px #f0f, 0 0 30px #0ff'" onmouseout="this.style.boxShadow='none'">
-                            🚀 COMPILE & EXPORT
+                            🚀 COMPILE & EXPORT SELECTED
                         </button>
                         
                         <div id="agentExporterStatus" style="margin-top: 15px; padding: 12px; background: #0a0a0a; border: 1px solid #333; color: #0ff; min-height: 40px; text-align: center; border-radius: 4px;">
-                            Ready to compile. Select format and organisms above.
+                            Ready to compile. Select organisms from the binder above.
                         </div>
                     </div>
                 </div>
@@ -11668,13 +12010,30 @@
             // 📦 AGENT EXPORTER FUNCTIONS
             // ============================================
             
-            // Populate the organism selector dropdown
+            // Global state for organism binder
+            let allOrganisms = [];
+            let selectedOrganismIds = new Set();
+            let currentBinderView = 'grid';
+            
+            // Personality icons mapping
+            const personalityIcons = {
+                diplomat: '🤝',
+                warrior: '⚔️',
+                explorer: '🧭',
+                hermit: '🏔️',
+                balanced: '⚖️',
+                opportunist: '🎯',
+                nascent: '🌱',
+                unknown: '❓'
+            };
+            
+            // Populate the organism binder with cards
             async function populateOrganismSelector() {
+                const binder = document.getElementById('organismBinder');
                 const selector = document.getElementById('agentExporterOrganismSelect');
-                if (!selector) return;
+                if (!binder) return;
                 
-                selector.innerHTML = '<option value="">Loading organisms...</option>';
-                selector.disabled = true;
+                binder.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;"><div style="font-size: 3em; margin-bottom: 10px;">⏳</div><div>Loading organisms...</div></div>';
                 
                 try {
                     const response = await fetch('/api/organisms');
@@ -11682,74 +12041,276 @@
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
                     const organisms = await response.json();
+                    allOrganisms = organisms;
                     
                     if (organisms && organisms.length > 0) {
-                        const multi = document.getElementById('agentExporterMulti')?.checked;
-                        selector.innerHTML = multi ? '' : '<option value="">-- Select an Organism --</option>';
+                        renderOrganismBinder(organisms);
                         
-                        // Calculate averages for summary
-                        let totalWords = 0;
-                        let totalUtil = 0;
-                        let totalExp = 0;
-                        let totalConnections = 0;
-                        let vocabCap = 1000;
+                        // Update hidden select for backwards compatibility
+                        if (selector) {
+                            selector.innerHTML = '';
+                            organisms.forEach(org => {
+                                const option = document.createElement('option');
+                                option.value = org.id;
+                                option.textContent = org.id;
+                                selector.appendChild(option);
+                            });
+                        }
                         
-                        organisms.forEach(org => {
-                            const option = document.createElement('option');
-                            option.value = org.id;
-                            
-                            // Include word stats in dropdown
-                            const words = org.words_learned || 0;
-                            const util = org.vocab_utilization || 0;
-                            const expBuf = org.experience_buffer_size || 0;
-                            const actHist = org.action_history_length || 0;
-                            const conns = org.connections_count || 0;
-                            const gen = org.generation || 0;
-                            const hasLang = org.has_language_head || false;
-                            vocabCap = org.vocab_capacity || 1000;
-                            totalWords += words;
-                            totalUtil += util;
-                            totalExp += expBuf;
-                            totalConnections += conns;
-                            
-                            // Color-code utilization: green=good, yellow=mid, red=low
-                            let utilColor = util >= 50 ? '🟢' : util >= 20 ? '🟡' : '🔴';
-                            let langIcon = hasLang ? '🗣️' : '';
-                            
-                            // Show key stats: ID | Fitness | Vocab | Experience | Connections
-                            option.textContent = `${org.id.substring(0,8)}.. | F:${(org.fitness || 0).toFixed(2)} | 📚${words}/${vocabCap} ${utilColor} | 🧠${expBuf} | 🔗${conns} ${langIcon}`;
-                            option.title = `ID: ${org.id}
-Fitness: ${(org.fitness || 0).toFixed(4)}
-Age: ${org.age || 0} | Generation: ${gen}
-Words: ${words}/${vocabCap} (${util}% capacity)
-Experience Buffer: ${expBuf} entries
-Action History: ${actHist} actions
-Connections: ${conns}
-Language Head: ${hasLang ? 'Yes' : 'No'}
-Source: ${org.source || 'unknown'}`;
-                            selector.appendChild(option);
-                        });
-                        
-                        selector.disabled = false;
-                        
-                        // Show summary stats
-                        const avgWords = organisms.length > 0 ? Math.round(totalWords / organisms.length) : 0;
-                        const avgUtil = organisms.length > 0 ? (totalUtil / organisms.length).toFixed(1) : 0;
-                        const avgExp = organisms.length > 0 ? Math.round(totalExp / organisms.length) : 0;
-                        const avgConns = organisms.length > 0 ? Math.round(totalConnections / organisms.length) : 0;
+                        // Update status
+                        const legendaryCount = organisms.filter(o => o.rarity === 'legendary').length;
+                        const epicCount = organisms.filter(o => o.rarity === 'epic').length;
                         updateCompileAgentStatus(
-                            `📊 ${organisms.length} organisms | Vocab: ${avgWords}/${vocabCap} (${avgUtil}%) | Exp: ~${avgExp} | Conns: ~${avgConns}`,
-                            avgUtil >= 50 ? '#0f0' : avgUtil >= 20 ? '#ff0' : '#f66'
+                            `🃏 ${organisms.length} organisms loaded | ⭐${legendaryCount} Legendary | 💎${epicCount} Epic`,
+                            '#0ff'
                         );
                     } else {
-                        selector.innerHTML = '<option value="">No organisms found</option>';
+                        binder.innerHTML = '<div style="text-align: center; padding: 40px; color: #f66;"><div style="font-size: 3em; margin-bottom: 10px;">📭</div><div>No organisms found</div></div>';
                         updateCompileAgentStatus('No organisms available for export.', '#f66');
                     }
                 } catch (error) {
-                    console.error('Error populating organism selector:', error);
-                    selector.innerHTML = '<option value="">Error loading organisms</option>';
+                    console.error('Error loading organisms:', error);
+                    binder.innerHTML = `<div style="text-align: center; padding: 40px; color: #f66;"><div style="font-size: 3em; margin-bottom: 10px;">⚠️</div><div>Error: ${error.message}</div></div>`;
                     updateCompileAgentStatus(`Error: ${error.message}`, '#f66');
                 }
+            }
+            
+            // Render organism cards in the binder
+            function renderOrganismBinder(organisms) {
+                const binder = document.getElementById('organismBinder');
+                if (!binder) return;
+                
+                binder.innerHTML = '';
+                binder.className = `organism-binder ${currentBinderView === 'list' ? 'list-view' : ''}`;
+                
+                organisms.forEach(org => {
+                    const card = createOrganismCard(org);
+                    binder.appendChild(card);
+                });
+                
+                updateSelectedCount();
+            }
+            
+            // Create a single organism card
+            function createOrganismCard(org) {
+                const card = document.createElement('div');
+                card.className = `organism-card rarity-${org.rarity || 'common'}`;
+                card.dataset.organismId = org.id;
+                
+                // Add age class for worn edges effect
+                if (org.age > 500) card.classList.add('aged-ancient');
+                else if (org.age > 200) card.classList.add('aged-veteran');
+                
+                // Selection state
+                if (selectedOrganismIds.has(org.id)) {
+                    card.classList.add('selected');
+                }
+                
+                // Fitness bar class
+                const fitnessPercent = Math.round((org.fitness || 0) * 100);
+                let fitnessClass = 'poor';
+                if (org.fitness >= 0.75) fitnessClass = 'excellent';
+                else if (org.fitness >= 0.5) fitnessClass = 'good';
+                else if (org.fitness >= 0.25) fitnessClass = 'average';
+                
+                // Fitness trend icon
+                const trendIcon = org.fitness_trend?.trend === 'rising' ? '📈' : 
+                                  org.fitness_trend?.trend === 'falling' ? '📉' : '➡️';
+                
+                // Personality icon
+                const persIcon = personalityIcons[org.personality_type] || '❓';
+                
+                // Fingerprint bars (behavioral distribution)
+                const fingerprint = org.behavioral_fingerprint || [0, 0, 0, 0, 0, 0];
+                const maxFp = Math.max(...fingerprint, 0.01);
+                const fpBars = fingerprint.map(v => Math.round((v / maxFp) * 100)).join(',');
+                
+                card.innerHTML = `
+                    <span class="source-badge source-${org.source === 'live_simulation' ? 'live' : 'capsule'}">
+                        ${org.source === 'live_simulation' ? '🔴 LIVE' : '💾 CAPSULE'}
+                    </span>
+                    
+                    <div class="card-header">
+                        <span class="card-id">${org.short_id || org.id.substring(0, 8)}</span>
+                        <span class="card-rarity-badge">${org.rarity || 'common'}</span>
+                    </div>
+                    
+                    <div class="card-personality">
+                        <span class="personality-icon">${persIcon}</span>
+                        <span class="personality-label">${org.personality_type || 'Unknown'}</span>
+                    </div>
+                    
+                    <div class="fitness-bar-container" title="Fitness: ${fitnessPercent}%">
+                        <div class="fitness-bar ${fitnessClass}" style="width: ${fitnessPercent}%"></div>
+                    </div>
+                    
+                    <div class="card-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">⚡ Fitness</span>
+                            <span class="stat-value">${(org.fitness || 0).toFixed(2)} ${trendIcon}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">📚 Vocab</span>
+                            <span class="stat-value ${org.vocab_utilization > 50 ? 'positive' : org.vocab_utilization > 20 ? 'warning' : 'negative'}">${org.words_learned || 0}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">🧠 Exp</span>
+                            <span class="stat-value">${org.experience_buffer_size || 0}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">🔗 Social</span>
+                            <span class="stat-value">${org.connections_count || 0}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="battle-record">
+                        <span class="battle-wins" title="Wins">🏆 ${org.battle_wins || 0}</span>
+                        <span style="color: #666;">|</span>
+                        <span class="battle-losses" title="Losses">💀 ${org.battle_losses || 0}</span>
+                        <span style="color: #888; margin-left: 5px;">(${((org.battle_win_rate || 0) * 100).toFixed(0)}%)</span>
+                    </div>
+                    
+                    <div class="fingerprint-viz" title="Behavioral Fingerprint: Move, Coop, Compete, Rest, Repro, Isolate">
+                        ${fingerprint.map((v, i) => `<div class="fingerprint-bar" style="height: ${Math.round((v / maxFp) * 100)}%"></div>`).join('')}
+                    </div>
+                    
+                    <div class="card-traits">
+                        ${(org.strengths || []).map(s => `<span class="trait-tag trait-strength">✓ ${s.replace(/_/g, ' ')}</span>`).join('')}
+                        ${(org.weaknesses || []).map(w => `<span class="trait-tag trait-weakness">✗ ${w.replace(/_/g, ' ')}</span>`).join('')}
+                    </div>
+                `;
+                
+                // Click to select/deselect
+                card.addEventListener('click', () => toggleOrganismSelection(org.id));
+                
+                return card;
+            }
+            
+            // Toggle organism selection
+            function toggleOrganismSelection(orgId) {
+                if (selectedOrganismIds.has(orgId)) {
+                    selectedOrganismIds.delete(orgId);
+                } else {
+                    selectedOrganismIds.add(orgId);
+                }
+                
+                // Update card visual
+                const card = document.querySelector(`[data-organism-id="${orgId}"]`);
+                if (card) {
+                    card.classList.toggle('selected', selectedOrganismIds.has(orgId));
+                }
+                
+                // Update hidden select
+                updateHiddenSelect();
+                updateSelectedCount();
+            }
+            
+            // Update hidden select element for backwards compatibility
+            function updateHiddenSelect() {
+                const selector = document.getElementById('agentExporterOrganismSelect');
+                if (!selector) return;
+                
+                Array.from(selector.options).forEach(opt => {
+                    opt.selected = selectedOrganismIds.has(opt.value);
+                });
+            }
+            
+            // Update selected count display
+            function updateSelectedCount() {
+                const countEl = document.getElementById('binderSelectedCount');
+                if (countEl) {
+                    countEl.textContent = selectedOrganismIds.size;
+                }
+            }
+            
+            // Select top N organisms by fitness
+            function selectTopNOrganisms() {
+                const n = parseInt(document.getElementById('binderTopN')?.value || '10', 10);
+                const sortedOrgs = [...allOrganisms].sort((a, b) => (b.fitness || 0) - (a.fitness || 0));
+                
+                selectedOrganismIds.clear();
+                sortedOrgs.slice(0, n).forEach(org => {
+                    selectedOrganismIds.add(org.id);
+                });
+                
+                // Re-render to show selection
+                renderOrganismBinder(getFilteredOrganisms());
+                updateHiddenSelect();
+            }
+            
+            // Clear all selections
+            function clearBinderSelection() {
+                selectedOrganismIds.clear();
+                renderOrganismBinder(getFilteredOrganisms());
+                updateHiddenSelect();
+            }
+            
+            // Filter organisms based on search and filter controls
+            function filterOrganismBinder() {
+                renderOrganismBinder(getFilteredOrganisms());
+            }
+            
+            // Get filtered organisms based on current filter settings
+            function getFilteredOrganisms() {
+                const search = document.getElementById('binderSearch')?.value.toLowerCase() || '';
+                const rarityFilter = document.getElementById('binderFilterRarity')?.value || '';
+                const personalityFilter = document.getElementById('binderFilterPersonality')?.value || '';
+                
+                return allOrganisms.filter(org => {
+                    // Search filter
+                    if (search) {
+                        const searchable = `${org.id} ${org.personality_type} ${org.rarity} ${org.dominant_action}`.toLowerCase();
+                        if (!searchable.includes(search)) return false;
+                    }
+                    // Rarity filter
+                    if (rarityFilter && org.rarity !== rarityFilter) return false;
+                    // Personality filter
+                    if (personalityFilter && org.personality_type !== personalityFilter) return false;
+                    
+                    return true;
+                });
+            }
+            
+            // Sort organisms based on sort control
+            function sortOrganismBinder() {
+                const sortBy = document.getElementById('binderSort')?.value || 'fitness-desc';
+                
+                const sortFunctions = {
+                    'fitness-desc': (a, b) => (b.fitness || 0) - (a.fitness || 0),
+                    'fitness-asc': (a, b) => (a.fitness || 0) - (b.fitness || 0),
+                    'battles-desc': (a, b) => (b.total_battles || 0) - (a.total_battles || 0),
+                    'rarity-desc': (a, b) => {
+                        const rarityOrder = { legendary: 5, epic: 4, rare: 3, uncommon: 2, common: 1 };
+                        return (rarityOrder[b.rarity] || 0) - (rarityOrder[a.rarity] || 0);
+                    },
+                    'experience-desc': (a, b) => (b.experience_buffer_size || 0) - (a.experience_buffer_size || 0),
+                    'vocab-desc': (a, b) => (b.words_learned || 0) - (a.words_learned || 0)
+                };
+                
+                const filtered = getFilteredOrganisms();
+                const sortFn = sortFunctions[sortBy] || sortFunctions['fitness-desc'];
+                filtered.sort(sortFn);
+                
+                renderOrganismBinder(filtered);
+            }
+            
+            // Switch binder view between grid and list
+            function setBinderView(view, clickedBtn) {
+                currentBinderView = view;
+                
+                // Update button states
+                document.querySelectorAll('.view-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                // Use passed button or find by view type
+                if (clickedBtn) {
+                    clickedBtn.classList.add('active');
+                } else {
+                    document.querySelector(`.view-btn[onclick*="'${view}'"]`)?.classList.add('active');
+                }
+                
+                // Re-render
+                renderOrganismBinder(getFilteredOrganisms());
             }
             
             // Update status message
@@ -11786,9 +12347,9 @@ Source: ${org.source || 'unknown'}`;
             
             // UNIFIED COMPILE & EXPORT - One button to rule them all
             async function compileAndExport() {
-                const selector = document.getElementById('agentExporterOrganismSelect');
-                const selected = selector ? Array.from(selector.selectedOptions).map(o => o.value).filter(Boolean) : [];
-                const topNInput = document.getElementById('agentExporterTopN');
+                // Get selected organisms from binder
+                const selected = Array.from(selectedOrganismIds);
+                const topNInput = document.getElementById('binderTopN');
                 let topN = parseInt(topNInput ? topNInput.value : '10', 10);
                 if (!topN || topN < 1) topN = 10;
                 const includeGym = document.getElementById('agentExporterIncludeGym')?.checked ?? true;

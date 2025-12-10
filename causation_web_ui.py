@@ -6898,13 +6898,25 @@ def capsule_organism(organism_id):
 def list_organisms():
     """
     List all available organisms from live simulation or saved capsules.
-    Returns:
-        A list of dictionaries, each representing an organism with 'id', 'fitness', 'age',
-        and language stats (words_learned, vocab_capacity, vocab_utilization).
+    Returns comprehensive "Pokémon card" style data for informed export decisions.
+    
+    Each organism includes:
+    - Identity: id, species_id, generation
+    - Fitness: current, trend, history
+    - Combat: battle_wins, battle_losses, win_rate
+    - Social: alliance_id, alliance_reputation, connections_count
+    - Language: words_learned, vocab_utilization, has_language_head
+    - Neural: brain_params, hidden_dim, epsilon (exploration)
+    - Experience: buffer_size, action_history breakdown
+    - Personality: dominant_action, personality_type, behavioral_fingerprint
+    - Lineage: parent_ids, illumination_level
     """
     try:
         organisms_data = []
-        organism_ids = set() # To store unique organism IDs
+        organism_ids = set()
+        
+        # Action names for behavioral analysis
+        ACTION_NAMES = ['move', 'cooperate', 'compete', 'rest', 'reproduce', 'isolate']
         
         # Get config for vocab_size
         config = app.config.get('config') or {}
@@ -6926,7 +6938,142 @@ def list_organisms():
         # Get network connections dict for counting per-organism connections
         network_connections = {}
         if network and hasattr(network, 'connections'):
-            network_connections = network.connections  # Dict of (org_a, org_b) -> connection
+            network_connections = network.connections
+
+        def analyze_action_history(action_history):
+            """Analyze action history to determine behavioral traits."""
+            if not action_history:
+                return {
+                    'dominant_action': 'unknown',
+                    'action_distribution': {},
+                    'personality_type': 'nascent',
+                    'behavioral_fingerprint': [0.0] * 6,
+                    'cooperation_ratio': 0.0,
+                    'aggression_ratio': 0.0,
+                    'exploration_ratio': 0.0
+                }
+            
+            # Count action frequencies
+            action_counts = {}
+            for action in action_history:
+                action_idx = action if isinstance(action, int) else 0
+                action_name = ACTION_NAMES[action_idx] if 0 <= action_idx < len(ACTION_NAMES) else 'unknown'
+                action_counts[action_name] = action_counts.get(action_name, 0) + 1
+            
+            total = len(action_history)
+            action_dist = {k: round(v / total * 100, 1) for k, v in action_counts.items()}
+            
+            # Behavioral fingerprint (normalized distribution across 6 actions)
+            fingerprint = [action_counts.get(name, 0) / total for name in ACTION_NAMES]
+            
+            # Dominant action
+            dominant = max(action_counts.items(), key=lambda x: x[1])[0] if action_counts else 'unknown'
+            
+            # Personality type based on dominant behaviors
+            coop_ratio = (action_counts.get('cooperate', 0) + action_counts.get('reproduce', 0)) / total
+            aggro_ratio = action_counts.get('compete', 0) / total
+            explore_ratio = action_counts.get('move', 0) / total
+            passive_ratio = (action_counts.get('rest', 0) + action_counts.get('isolate', 0)) / total
+            
+            if coop_ratio > 0.4:
+                personality = 'diplomat'
+            elif aggro_ratio > 0.3:
+                personality = 'warrior'
+            elif explore_ratio > 0.4:
+                personality = 'explorer'
+            elif passive_ratio > 0.5:
+                personality = 'hermit'
+            elif fingerprint and max(fingerprint) < 0.25:
+                personality = 'balanced'
+            else:
+                personality = 'opportunist'
+            
+            return {
+                'dominant_action': dominant,
+                'action_distribution': action_dist,
+                'personality_type': personality,
+                'behavioral_fingerprint': [round(f, 3) for f in fingerprint],
+                'cooperation_ratio': round(coop_ratio, 3),
+                'aggression_ratio': round(aggro_ratio, 3),
+                'exploration_ratio': round(explore_ratio, 3)
+            }
+
+        def calculate_fitness_trend(fitness_history):
+            """Calculate fitness trend from history."""
+            if not fitness_history or len(fitness_history) < 2:
+                return {'trend': 'unknown', 'change': 0.0, 'volatility': 0.0}
+            
+            recent = fitness_history[-5:] if len(fitness_history) >= 5 else fitness_history
+            oldest = recent[0]
+            newest = recent[-1]
+            change = newest - oldest
+            
+            # Calculate volatility (std dev)
+            import statistics
+            volatility = statistics.stdev(recent) if len(recent) > 1 else 0.0
+            
+            if change > 0.05:
+                trend = 'rising'
+            elif change < -0.05:
+                trend = 'falling'
+            else:
+                trend = 'stable'
+            
+            return {
+                'trend': trend,
+                'change': round(change, 4),
+                'volatility': round(volatility, 4)
+            }
+
+        def determine_rarity(fitness, battle_wins, experience_size, words_learned):
+            """Determine organism rarity tier (like Pokémon card rarity)."""
+            score = 0
+            score += min(fitness * 40, 40)  # Up to 40 points for fitness
+            score += min(battle_wins * 2, 20)  # Up to 20 points for wins
+            score += min(experience_size / 100, 20)  # Up to 20 points for experience
+            score += min(words_learned / 50, 20)  # Up to 20 points for vocabulary
+            
+            if score >= 80:
+                return 'legendary'
+            elif score >= 60:
+                return 'epic'
+            elif score >= 40:
+                return 'rare'
+            elif score >= 20:
+                return 'uncommon'
+            else:
+                return 'common'
+
+        def determine_strengths_weaknesses(behavior, fitness, battle_stats, connections):
+            """Determine organism's strengths and weaknesses."""
+            strengths = []
+            weaknesses = []
+            
+            # Analyze strengths
+            if fitness > 0.7:
+                strengths.append('high_fitness')
+            if battle_stats.get('win_rate', 0) > 0.6:
+                strengths.append('battle_hardened')
+            if behavior.get('cooperation_ratio', 0) > 0.3:
+                strengths.append('team_player')
+            if connections > 5:
+                strengths.append('well_connected')
+            if behavior.get('exploration_ratio', 0) > 0.3:
+                strengths.append('adaptable')
+            
+            # Analyze weaknesses
+            if fitness < 0.3:
+                weaknesses.append('low_fitness')
+            if battle_stats.get('win_rate', 0) < 0.3 and battle_stats.get('total', 0) > 3:
+                weaknesses.append('poor_fighter')
+            if behavior.get('aggression_ratio', 0) > 0.4:
+                weaknesses.append('too_aggressive')
+            if connections < 2:
+                weaknesses.append('isolated')
+            if behavior.get('personality_type') == 'hermit':
+                weaknesses.append('antisocial')
+            
+            return {'strengths': strengths, 'weaknesses': weaknesses}
 
         # 1. Get organisms from current live simulation if available
         if hasattr(app, 'unified_system') and app.unified_system:
@@ -6957,31 +7104,90 @@ def list_organisms():
                         exp_buffer = getattr(organism, 'experience_buffer', None)
                         exp_buffer_size = len(exp_buffer) if exp_buffer else 0
                         
-                        # Get action history
-                        action_history = getattr(organism, 'action_history', [])
-                        action_history_len = len(action_history) if action_history else 0
+                        # Get action history and analyze behavior
+                        action_history = list(getattr(organism, 'action_history', []))
+                        action_history_len = len(action_history)
+                        behavior = analyze_action_history(action_history)
                         
-                        # Count connections from network (not organism attribute)
+                        # Count connections from network
                         connection_count = 0
                         if network_connections:
                             for (a, b) in network_connections.keys():
                                 if a == org_id or b == org_id:
                                     connection_count += 1
                         
+                        # Battle stats
+                        battle_wins = getattr(organism, 'battle_wins', 0)
+                        battle_losses = getattr(organism, 'battle_losses', 0)
+                        total_battles = battle_wins + battle_losses
+                        win_rate = round(battle_wins / total_battles, 3) if total_battles > 0 else 0.0
+                        
+                        # Fitness trend
+                        fitness_history = list(getattr(organism, 'fitness_history', []))
+                        fitness_val = getattr(organism, 'fitness', 0.0)
+                        fitness_trend = calculate_fitness_trend(fitness_history)
+                        
+                        # Rarity and strengths/weaknesses
+                        battle_stats = {'win_rate': win_rate, 'total': total_battles}
+                        rarity = determine_rarity(fitness_val, battle_wins, exp_buffer_size, words_learned)
+                        traits = determine_strengths_weaknesses(behavior, fitness_val, battle_stats, connection_count)
+                        
                         organisms_data.append({
+                            # Identity
                             'id': org_id,
-                            'fitness': getattr(organism, 'fitness', 0.0),
-                            'age': getattr(organism, 'age', 0),
+                            'short_id': org_id[:8] if len(org_id) > 8 else org_id,
                             'source': 'live_simulation',
+                            'generation': getattr(organism, 'generation', 0),
+                            'parent_ids': getattr(organism, 'parent_ids', []),
+                            
+                            # Fitness
+                            'fitness': round(fitness_val, 4),
+                            'fitness_trend': fitness_trend,
+                            'age': getattr(organism, 'age', 0),
+                            
+                            # Combat
+                            'battle_wins': battle_wins,
+                            'battle_losses': battle_losses,
+                            'battle_win_rate': win_rate,
+                            'total_battles': total_battles,
+                            
+                            # Social
+                            'alliance_id': getattr(organism, 'alliance_id', None),
+                            'alliance_reputation': round(getattr(organism, 'alliance_reputation', 0.5), 3),
+                            'connections_count': connection_count,
+                            'confederation_tier': getattr(organism, 'confederation_tier', 0),
+                            
+                            # Language
                             'words_learned': words_learned,
                             'vocab_capacity': vocab_size,
                             'vocab_utilization': round(words_learned / vocab_size * 100, 1) if vocab_size > 0 else 0,
                             'has_language_head': has_language_head,
+                            
+                            # Neural
                             'brain_params': brain_params,
                             'hidden_dim': hidden_dim,
+                            'epsilon': round(getattr(organism, 'epsilon', 0.0), 4),
+                            
+                            # Experience
                             'experience_buffer_size': exp_buffer_size,
                             'action_history_length': action_history_len,
-                            'connections_count': connection_count
+                            
+                            # Behavior & Personality
+                            'dominant_action': behavior['dominant_action'],
+                            'personality_type': behavior['personality_type'],
+                            'action_distribution': behavior['action_distribution'],
+                            'behavioral_fingerprint': behavior['behavioral_fingerprint'],
+                            'cooperation_ratio': behavior['cooperation_ratio'],
+                            'aggression_ratio': behavior['aggression_ratio'],
+                            'exploration_ratio': behavior['exploration_ratio'],
+                            
+                            # Illumination
+                            'illumination_level': getattr(organism, '_illumination_level', 'none'),
+                            
+                            # Card display
+                            'rarity': rarity,
+                            'strengths': traits['strengths'],
+                            'weaknesses': traits['weaknesses']
                         })
                         organism_ids.add(org_id)
             else:
@@ -7020,22 +7226,89 @@ def list_organisms():
                     # Get capsule-specific stats if available
                     capsule_exp_buffer = info.get('experience_count', 0)
                     capsule_connections = info.get('connection_count', 0)
+                    fitness_val = info.get('fitness', 0.0)
+                    battle_wins = info.get('battle_wins', 0)
+                    battle_losses = info.get('battle_losses', 0)
+                    total_battles = battle_wins + battle_losses
+                    win_rate = round(battle_wins / total_battles, 3) if total_battles > 0 else 0.0
+                    
+                    # Determine rarity for capsule
+                    rarity = determine_rarity(fitness_val, battle_wins, capsule_exp_buffer, words_learned)
+                    
+                    # Basic traits from capsule (limited info)
+                    strengths = []
+                    weaknesses = []
+                    if fitness_val > 0.7:
+                        strengths.append('high_fitness')
+                    if win_rate > 0.6 and total_battles > 3:
+                        strengths.append('battle_hardened')
+                    if fitness_val < 0.3:
+                        weaknesses.append('low_fitness')
+                    if capsule_connections < 2:
+                        weaknesses.append('isolated')
                     
                     organisms_data.append({
+                        # Identity
                         'id': org_id,
-                        'fitness': info.get('fitness', 0.0),
-                        'age': info.get('age', 0),
+                        'short_id': org_id[:8] if len(org_id) > 8 else org_id,
                         'source': 'saved_capsule',
+                        'generation': info.get('generation', 0),
+                        'parent_ids': info.get('parent_ids', []),
+                        
+                        # Fitness
+                        'fitness': round(fitness_val, 4),
+                        'fitness_trend': {'trend': 'unknown', 'change': 0.0, 'volatility': 0.0},
+                        'age': info.get('age', 0),
+                        
+                        # Combat
+                        'battle_wins': battle_wins,
+                        'battle_losses': battle_losses,
+                        'battle_win_rate': win_rate,
+                        'total_battles': total_battles,
+                        
+                        # Social
+                        'alliance_id': info.get('alliance_id'),
+                        'alliance_reputation': info.get('alliance_reputation', 0.5),
+                        'connections_count': capsule_connections,
+                        'confederation_tier': info.get('confederation_tier', 0),
+                        
+                        # Language
                         'words_learned': words_learned,
                         'vocab_capacity': vocab_size,
                         'vocab_utilization': round(words_learned / vocab_size * 100, 1) if vocab_size > 0 else 0,
+                        'has_language_head': info.get('has_language_head', False),
+                        
+                        # Neural
+                        'brain_config': info.get('brain_config', {}),
+                        'brain_params': info.get('brain_params', 0),
+                        'hidden_dim': info.get('hidden_dim', 0),
+                        'epsilon': info.get('epsilon', 0.0),
+                        
+                        # Experience
                         'experience_buffer_size': capsule_exp_buffer,
                         'action_history_length': info.get('action_count', 0),
-                        'connections_count': capsule_connections,
-                        'brain_config': info.get('brain_config', {}),
-                        'has_language_head': info.get('has_language_head', False),
-                        'generation': info.get('generation', 0),
-                        'total_reward': info.get('total_reward', 0.0)
+                        
+                        # Behavior & Personality (limited from capsule)
+                        'dominant_action': info.get('dominant_action', 'unknown'),
+                        'personality_type': info.get('personality_type', 'unknown'),
+                        'action_distribution': info.get('action_distribution', {}),
+                        'behavioral_fingerprint': info.get('behavioral_fingerprint', [0.0] * 6),
+                        'cooperation_ratio': info.get('cooperation_ratio', 0.0),
+                        'aggression_ratio': info.get('aggression_ratio', 0.0),
+                        'exploration_ratio': info.get('exploration_ratio', 0.0),
+                        
+                        # Illumination
+                        'illumination_level': info.get('illumination_level', 'none'),
+                        
+                        # Card display
+                        'rarity': rarity,
+                        'strengths': strengths,
+                        'weaknesses': weaknesses,
+                        
+                        # Capsule-specific
+                        'total_reward': info.get('total_reward', 0.0),
+                        'capture_time': info.get('capture_time'),
+                        'capsule_id': capsule_id
                     })
                     organism_ids.add(org_id)
         else:

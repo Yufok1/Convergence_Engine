@@ -57,7 +57,7 @@
       "render_mode": null
     },
     "prefer_native_games": true,
-    "proton_game_probability": 0.5,
+    "proton_game_probability": 1.0,
     "tournament": {
       "default_format": "single_elimination",
       "round_robin_battles_per_pair": 3,
@@ -183,12 +183,12 @@
       "war_frequency": 0.8,
       "illumination_stability_threshold": 5
     },
-    "chaos_factor": 0.15,
+    "chaos_factor": 0.0,
     "competition_intensity": 0.5,
     "description": "Highlander Protocol - SMALL TRIBE MODE - Start with 9, stack vocabulary, grow naturally",
     "enabled": true,
     "extreme_mode": {
-      "chaos_factor": 0.4,
+      "chaos_factor": 0.0,
       "competition_intensity": 1.0,
       "description": "EXTREME DIFFICULTY - Maximum evolutionary pressure",
       "germination_rate": 1,

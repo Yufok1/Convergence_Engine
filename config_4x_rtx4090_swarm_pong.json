@@ -59,7 +59,7 @@
       "render_mode": null
     },
     "prefer_native_games": false,
-    "proton_game_probability": 0.2,
+    "proton_game_probability": 1.0,
     "swarm_pong": {
       "_help": "Swarm pong specific settings for arena training",
       "enabled": true,
