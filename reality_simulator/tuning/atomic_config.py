@@ -1497,6 +1497,24 @@ class AtomicConfigSystem:
         
         return None
     
+    def propose_action(self, metrics: Dict[str, Any], frame_count: int = 0) -> Optional[Dict[str, Any]]:
+        """
+        Propose a tuning action based on metrics - alias for analyze_and_tune.
+        
+        This provides a simpler interface for neural training integration.
+        
+        Args:
+            metrics: Dict with training metrics (neural_loss, neural_improving, etc.)
+            frame_count: Current training step/frame
+            
+        Returns:
+            Dict with tuning action if recommended, None otherwise
+        """
+        return self.analyze_and_tune(
+            neural_metrics=metrics,
+            frame_count=frame_count
+        )
+    
     def apply_action(self, action: Dict[str, Any]) -> bool:
         """
         Apply a tuning action - ConfigTuner compatible.

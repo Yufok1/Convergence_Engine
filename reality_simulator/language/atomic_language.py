@@ -735,21 +735,29 @@ class AtomicLanguageSystem:
         
         return {'nodes': nodes, 'edges': edges}
     
-    def compute_dialect_signature(self) -> np.ndarray:
+    def compute_dialect_signature(self, fixed_length: int = 32) -> np.ndarray:
         """
         Compute a signature vector representing this organism's "dialect".
         
         Used for clustering organisms by linguistic similarity.
         
+        Args:
+            fixed_length: Fixed length for the signature vector (default 32)
+        
         Returns:
-            Normalized signature vector
+            Normalized signature vector of fixed length
         """
         # Combine concept strengths with association patterns
         signature = []
         
-        # Concept strengths (normalized)
-        for concept_id in sorted(self._concept_order):
+        # Concept strengths (normalized) - use sorted concepts
+        sorted_concepts = sorted(self._concept_order)
+        for concept_id in sorted_concepts[:fixed_length - 4]:  # Reserve 4 slots for meta-features
             signature.append(self.atoms[concept_id].strength)
+        
+        # Pad to fixed_length - 4 if fewer concepts
+        while len(signature) < fixed_length - 4:
+            signature.append(0.0)
         
         # Add association density metrics
         total_associations = sum(len(a.associations) for a in self.atoms.values())
@@ -763,7 +771,7 @@ class AtomicLanguageSystem:
         for level in range(3):
             signature.append(level_counts[level] / max(1, len(self.atoms)))
         
-        return np.array(signature)
+        return np.array(signature, dtype=np.float32)
     
     def apply_experience(self, action: int, outcome: float, context: Dict[str, Any]):
         """

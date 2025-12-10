@@ -396,7 +396,7 @@ def train_organism_local(
         device = training_config.get('device', 'cpu')
         
         # Import brain class for reconstruction
-        from reality_simulator.neural.organism_brain import OrganismBrain
+        from reality_simulator.neural.brain import OrganismBrain
         
         # Reconstruct brain from weights
         input_dim = training_config.get('input_dim', 24)
