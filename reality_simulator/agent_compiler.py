@@ -7773,10 +7773,69 @@ class CocoonAgent:
             print(f"[!] TorchScript export failed: {e}")
             return False
 
+    def export_ensemble_onnx(self, output_path: str):
+        """Export ALL brains as a SINGLE combined ONNX model."""
+        if len(self.brains) == 0:
+            print("[!] No brains to export")
+            return False
+        
+        # Create MultiOrganismWrapper that runs all brains and returns all outputs
+        class MultiOrganismWrapper(nn.Module):
+            def __init__(self, brains, names):
+                super().__init__()
+                self.brains = nn.ModuleList(brains)
+                self.names = names
+                self.input_dims = [b.input_dim for b in brains]
+                self.max_input_dim = max(self.input_dims)
+            
+            def forward(self, x: torch.Tensor):
+                # x shape: [batch, max_input_dim]
+                # Returns tuple of action probs for each organism
+                outputs = []
+                for brain, in_dim in zip(self.brains, self.input_dims):
+                    x_i = x[..., :in_dim] if x.shape[-1] >= in_dim else F.pad(x, (0, in_dim - x.shape[-1]))
+                    action_probs, _ = brain(x_i, return_language_logits=False)
+                    outputs.append(action_probs)
+                return tuple(outputs)
+        
+        wrapper = MultiOrganismWrapper(self.brains, self.organism_names)
+        wrapper.eval()
+        
+        # Move wrapper to CPU for ONNX export (more portable)
+        wrapper = wrapper.cpu()
+        
+        try:
+            dummy_input = torch.randn(1, wrapper.max_input_dim)  # CPU tensor
+            output_names = [f"action_{name[:8]}" for name in self.organism_names]
+            
+            torch.onnx.export(
+                wrapper,
+                dummy_input,
+                output_path,
+                input_names=['input'],
+                output_names=output_names,
+                dynamic_axes={'input': {0: 'batch_size'}},
+                opset_version=11
+            )
+            print(f"[OK] Exported ENSEMBLE ONNX ({len(self.brains)} brains) to: {output_path}")
+            print(f"     Outputs: {output_names}")
+            print(f"     View at: https://netron.app/")
+            
+            # Move brains back to original device
+            device = 'cuda' if torch.cuda.is_available() else 'cpu'
+            for brain in self.brains:
+                brain.to(device)
+            
+            return True
+        except Exception as e:
+            print(f"[!] Ensemble ONNX export failed: {e}")
+            return False
+
     def export_package(self, output_dir: str):
         """
         Export a complete Netron-viewable package:
-        - brain_ensemble.onnx (or brain_0.onnx, brain_1.onnx, ...)
+        - brain_ensemble.onnx (combined model with all organisms)
+        - brain_*.onnx (individual brains)
         - README.md with model card
         - vocabulary.json
         - metadata.json
@@ -7784,8 +7843,12 @@ class CocoonAgent:
         import os
         os.makedirs(output_dir, exist_ok=True)
         
+        # Export combined ensemble as single ONNX
+        ensemble_path = os.path.join(output_dir, "brain_ensemble.onnx")
+        self.export_ensemble_onnx(ensemble_path)
+        
         # Export each brain as ONNX
-        onnx_files = []
+        onnx_files = ["brain_ensemble.onnx"]
         for i, (brain, name) in enumerate(zip(self.brains, self.organism_names)):
             onnx_path = os.path.join(output_dir, f"brain_{name}.onnx")
             if self.export_onnx(onnx_path, organism_idx=i):
