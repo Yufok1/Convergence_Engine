@@ -96,7 +96,9 @@ python causation_web_ui.py
 **📚 [DOCUMENTATION_HUB.md](./DOCUMENTATION_HUB.md)** - Central documentation hub with links to all guides
 
 Recent updates:
-- 💾 **Neural Checkpointing System**: ⭐ NEW - Auto-save/restore training state with rotation, graceful shutdown saves, API control
+- 🔗 **CocoonHatch P2P Networking** (Dec 10, 2025): ⭐ NEW - Connect cocoons over the internet for battles, trades, and chat! Anyone can host a relay server.
+- 🎴 **Organism Card Binder** (Dec 10, 2025): ⭐ NEW - Pokémon-style card viewer for organisms with rarity, personality, strengths/weaknesses, behavioral fingerprints
+- 💾 **Neural Checkpointing System**: Auto-save/restore training state with rotation, graceful shutdown saves, API control
 - 🏰 **Confederation System** (Dec 1, 2025): ⭐ NEW - Super-alliances with 3-tier hierarchy (Confederation → Empire → Hegemony), mega-wars, full ML/CRA/neural integration
 - ⚔️ **Alliance Warfare Visualization** (Dec 1, 2025): Full graph visualization for alliance/combat events with shapes, colors, and legend
 - 🧠 **Neural System Expansion** (Dec 1, 2025): 24-dimensional input (was 18), alliance/combat/language integration features

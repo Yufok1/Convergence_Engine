@@ -124,7 +124,8 @@ Export trained agents as portable, standalone packages for deployment.
   - Full triple-loss training (RL + Language + Concept)
   - VP-aware attention mechanism preserved
   - Dynamic vocabulary expansion
-  - Multiple runtime modes: Chat, Gym, HTTP server, Self-export
+  - Multiple runtime modes: Chat, Gym, HTTP server, Link, Self-export
+  - **🔗 P2P Networking (NEW)**: Connect cocoons over the internet for battles!
 - **Usage:**
   ```bash
   # Via web UI: Agent Exporter → Compile Cocoon
@@ -135,9 +136,38 @@ Export trained agents as portable, standalone packages for deployment.
   python cocoon.py --mode chat
   python cocoon.py --mode gym --env CartPole-v1
   python cocoon.py --mode serve --port 8080
+  python cocoon.py --mode link --hatch ws://server:9000
   ```
 - **CRA Integration:** Full control via Agent Exporter tab
-- **Status:** ✅ Fully implemented and tested (2025-12-05)
+- **Status:** ✅ Fully implemented and tested (2025-12-10)
+
+### 🔗 CocoonHatch P2P Networking ⭐ NEW
+
+- **Files:** `cocoon_hatch.py` (server), `cocoon_link.py` (client)
+- **Purpose:** Connect cocoons over the internet for battles, trades, and chat
+- **Architecture:**
+  ```
+  COCOON A ◄───► COCOON HATCH ◄───► COCOON B
+              (Relay Server)
+  ```
+- **Features:**
+  - Decentralized: Anyone can host a hatch server
+  - Battle protocol: 10 rounds of action selection
+  - User presence: See who's online
+  - Chat: Lobby and private messaging
+  - Challenge/accept flow for initiating battles
+- **Usage:**
+  ```bash
+  # Start a hatch (anyone can host)
+  python cocoon_hatch.py --port 9000
+  
+  # Connect your cocoon
+  python cocoon.py --mode link --hatch ws://server:9000 --name "My Swarm"
+  
+  # Commands: /users /challenge /accept /decline /chat /quit
+  ```
+- **Requirements:** `pip install websockets`
+- **Status:** ✅ Fully implemented (2025-12-10)
 
 ### ⚡ Distributed Computing (Ray)
 

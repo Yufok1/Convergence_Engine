@@ -37,6 +37,9 @@ pygame>=2.5.0       # PyGame for PLE games rendering
 # ple                 # PyGame Learning Environment (pip install ple or git install)
 # ale-py>=0.8.1       # Atari Learning Environment for Atari games (large download)
 
+# P2P Networking (OPTIONAL - for cocoon link mode)
+websockets>=12.0    # WebSocket client/server for CocoonHatch P2P battles
+
 # Language & Vocabulary (REQUIRED for curated vocabulary pipeline)
 nltk>=3.8.1         # WordNet lexical database for zero-proper-noun vocabulary (120k+ words)
 

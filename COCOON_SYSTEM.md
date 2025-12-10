@@ -382,6 +382,78 @@ Features:
 
 ---
 
+## 🔗 Link Mode - P2P Networking (NEW)
+
+Cocoons can connect to each other over the internet for battles, trades, and chat!
+
+### Architecture
+
+```
+┌─────────────────┐         WebSocket         ┌─────────────────┐
+│   COCOON A      │◄───────────────────────►│   COCOON B      │
+│  (User Alice)   │                          │  (User Bob)     │
+└────────┬────────┘                          └────────┬────────┘
+         │         ┌──────────────────┐               │
+         └────────►│  COCOON HATCH    │◄──────────────┘
+                   │  (Relay Server)  │
+                   │  ws://host:9000  │
+                   └──────────────────┘
+```
+
+### Starting a Hatch Server
+
+Anyone can host a hatch - it's a simple relay server:
+
+```bash
+# Start on default port 9000
+python cocoon_hatch.py
+
+# Custom port
+python cocoon_hatch.py --port 8080
+
+# Public (accessible from internet)
+python cocoon_hatch.py --public
+```
+
+### Connecting Your Cocoon
+
+```bash
+# Connect to a hatch
+python cocoon.py --mode link --hatch ws://server-ip:9000
+
+# With custom display name
+python cocoon.py --mode link --hatch ws://localhost:9000 --name "Champion Swarm"
+```
+
+### Link Mode Commands
+
+Once connected:
+| Command | Description |
+|---------|-------------|
+| `/users` | List online cocoons |
+| `/challenge <name>` | Challenge a user to battle |
+| `/accept <id>` | Accept a challenge |
+| `/decline <id>` | Decline a challenge |
+| `/chat <message>` | Send message to lobby |
+| `/quit` | Disconnect |
+
+### Battle Protocol
+
+When two cocoons battle:
+1. **10 rounds** of simultaneous action selection
+2. Each organism picks: `move`, `cooperate`, `compete`, `rest`, `reproduce`, `isolate`
+3. **Circular dominance** determines round winner
+4. Final score determines overall winner
+5. Stats tracked on both cocoons
+
+### Requirements
+
+```bash
+pip install websockets
+```
+
+---
+
 ## 📚 Related Documentation
 
 - [DOCUMENTATION_HUB.md](./DOCUMENTATION_HUB.md) - Central documentation
