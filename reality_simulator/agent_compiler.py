@@ -7269,6 +7269,45 @@ class CocoonAgent:
             probs = probs[..., :action_space_size]
         return int(torch.argmax(probs, dim=-1).item())
 
+    def get_continuous_action(self, state: np.ndarray, action_dim: int, 
+                              action_low: np.ndarray, action_high: np.ndarray,
+                              explore: bool = True) -> np.ndarray:
+        """Get continuous action for Box action spaces (e.g., Pendulum, BipedalWalker).
+        
+        Uses brain output to generate continuous actions in the valid range.
+        Maps brain outputs through tanh to get values in [-1, 1], then scales to action bounds.
+        """
+        # Pad state to match brain input dimension
+        state = self._pad_state(state)
+        
+        # Compute VP
+        vp_data = self.vp_runtime.compute_from_state(state, self.reward_history)
+        vp_value = vp_data['violation_pressure']
+        
+        state_t = torch.FloatTensor(state).unsqueeze(0).to(self.device)
+        
+        # Get raw outputs from brain
+        brain = self.brains[0]
+        brain.eval()
+        with torch.no_grad():
+            outputs, _ = brain(state_t, vp_value=vp_value, return_language_logits=False)
+        
+        # Use first action_dim outputs as continuous action values
+        raw_action = outputs[0, :action_dim].cpu().numpy()
+        
+        # Apply tanh to bound to [-1, 1] then scale to action space
+        bounded = np.tanh(raw_action)
+        
+        # Add exploration noise if exploring
+        if explore and random.random() < self.epsilon:
+            noise = np.random.normal(0, 0.3, size=action_dim)
+            bounded = np.clip(bounded + noise, -1.0, 1.0)
+        
+        # Scale from [-1, 1] to [action_low, action_high]
+        action = action_low + (bounded + 1.0) * 0.5 * (action_high - action_low)
+        
+        return action.astype(np.float32)
+
     def add_experience(self, state, action, reward, next_state, done,
                         input_tokens=None, target_tokens=None, vp_value=None, organism_idx: Optional[int] = None):
         # Pad states to match brain input dimension
@@ -7855,18 +7894,42 @@ class CocoonAgent:
         with open(__file__, 'r', encoding='utf-8') as f:
             source = f.read()
         
-        # Replace brain data
+        # Replace brain data - use string find/replace instead of regex to avoid issues with large data
         brain_data_py = "[\\n" + ",\\n".join(f'    "{b}"' for b in new_brain_data) + "\\n]"
-        source = re.sub(r'_BRAIN_DATA = \[.*?\]', f'_BRAIN_DATA = {brain_data_py}', source, flags=re.DOTALL)
         
-        # Replace vocabulary
-        source = re.sub(r'_VOCABULARY_B64 = "[^"]*"', f'_VOCABULARY_B64 = "{vocab_b64}"', source)
+        # Find the start of _BRAIN_DATA
+        brain_start = source.find('_BRAIN_DATA = [')
+        if brain_start != -1:
+            # Find the matching closing bracket
+            bracket_depth = 0
+            brain_end = brain_start + len('_BRAIN_DATA = ')
+            for i, c in enumerate(source[brain_end:], brain_end):
+                if c == '[':
+                    bracket_depth += 1
+                elif c == ']':
+                    bracket_depth -= 1
+                    if bracket_depth == 0:
+                        brain_end = i + 1
+                        break
+            source = source[:brain_start] + f'_BRAIN_DATA = {brain_data_py}' + source[brain_end:]
+        
+        # Replace vocabulary - simple string replacement since it's always a single quoted string
+        vocab_start = source.find('_VOCABULARY_B64 = "')
+        if vocab_start != -1:
+            vocab_end = source.find('"', vocab_start + len('_VOCABULARY_B64 = "')) + 1
+            source = source[:vocab_start] + f'_VOCABULARY_B64 = "{vocab_b64}"' + source[vocab_end:]
         
         # Replace conversation history
-        source = re.sub(r'_CONVERSATION_HISTORY_B64 = "[^"]*"', f'_CONVERSATION_HISTORY_B64 = "{conv_b64}"', source)
+        conv_start = source.find('_CONVERSATION_HISTORY_B64 = "')
+        if conv_start != -1:
+            conv_end = source.find('"', conv_start + len('_CONVERSATION_HISTORY_B64 = "')) + 1
+            source = source[:conv_start] + f'_CONVERSATION_HISTORY_B64 = "{conv_b64}"' + source[conv_end:]
         
         # Replace atomic language state
-        source = re.sub(r'_ATOMIC_LANG_B64 = "[^"]*"', f'_ATOMIC_LANG_B64 = "{atomic_b64}"', source)
+        atomic_start = source.find('_ATOMIC_LANG_B64 = "')
+        if atomic_start != -1:
+            atomic_end = source.find('"', atomic_start + len('_ATOMIC_LANG_B64 = "')) + 1
+            source = source[:atomic_start] + f'_ATOMIC_LANG_B64 = "{atomic_b64}"' + source[atomic_end:]
         
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(source)
@@ -9975,9 +10038,10 @@ def _run_internal_tournament(agent: 'CocoonAgent', tournament_type: str, learn: 
                 while not done:
                     # Get action from this organism's brain
                     with torch.no_grad():
-                        obs_tensor = torch.FloatTensor(obs).unsqueeze(0)
+                        obs_tensor = torch.FloatTensor(obs).unsqueeze(0).to(agent.device)
                         if len(obs) < brain.input_dim:
-                            obs_tensor = torch.cat([obs_tensor, torch.zeros(1, brain.input_dim - len(obs))], dim=1)
+                            pad = torch.zeros(1, brain.input_dim - len(obs), device=agent.device)
+                            obs_tensor = torch.cat([obs_tensor, pad], dim=1)
                         outputs = brain(obs_tensor)
                         action = outputs.argmax(dim=-1).item()
                     
@@ -10146,9 +10210,11 @@ class GymRunner:
     def run(self, env_name: str, episodes: int = 100, render: bool = False, learn: bool = True):
         try:
             import gymnasium as gym
+            from gymnasium import spaces
         except ImportError:
             try:
                 import gym
+                from gym import spaces
             except ImportError:
                 print("[!] Gymnasium not found. Install with: pip install gymnasium")
                 return
@@ -10181,11 +10247,18 @@ class GymRunner:
             print(f"\n❌ Failed to create environment: {e}")
             return
         
-        # Get environment's action space size
+        # Detect action space type
+        is_continuous = isinstance(env.action_space, spaces.Box)
         action_space_size = None
-        if hasattr(env.action_space, 'n'):
+        
+        if is_continuous:
+            action_dim = env.action_space.shape[0]
+            action_low = env.action_space.low
+            action_high = env.action_space.high
+            print(f"[INFO] Continuous action space: dim={action_dim}, range=[{action_low[0]:.2f}, {action_high[0]:.2f}]")
+        elif hasattr(env.action_space, 'n'):
             action_space_size = env.action_space.n
-            print(f"[INFO] Environment action space: {action_space_size} (brain has {self.agent.brains[0].output_dim})")
+            print(f"[INFO] Discrete action space: {action_space_size} (brain has {self.agent.brains[0].output_dim})")
         
         all_rewards = []
         for ep in range(episodes):
@@ -10196,7 +10269,11 @@ class GymRunner:
             done = False
             ep_reward = 0.0
             while not done:
-                action = self.agent.get_action(obs, explore=learn, action_space_size=action_space_size)
+                if is_continuous:
+                    # For continuous action spaces, use brain output as continuous values
+                    action = self.agent.get_continuous_action(obs, action_dim, action_low, action_high, explore=learn)
+                else:
+                    action = self.agent.get_action(obs, explore=learn, action_space_size=action_space_size)
                 result = env.step(action)
                 if len(result) == 5:
                     next_obs, reward, terminated, truncated, info = result

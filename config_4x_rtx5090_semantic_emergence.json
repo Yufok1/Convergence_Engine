@@ -1,0 +1,627 @@
+{
+  "_hardware_profile_help": "4x RTX 5090 VAST.AI - SEMANTIC EMERGENCE & DEEP UNDERSTANDING",
+  "_rental_info": {
+    "instance_id": 28696812,
+    "host_id": 349669,
+    "machine_id": 49571,
+    "host_ip": "45.29.62.113",
+    "cost_per_hour": "$0.005",
+    "provider": "vast.ai"
+  },
+  "_hardware_specs": {
+    "gpus": "4x RTX 5090 (127.4GB VRAM total)",
+    "tflops": 432.4,
+    "bandwidth": "1448.9 GB/s",
+    "cpu": "AMD EPYC 9334 32-Core (64 allocated cores / 128 total)",
+    "ram": "386.8 GB",
+    "storage": "Samsung SSD 9100 PRO 8TB @ 9082.0 MB/s (16GB)",
+    "pcie": "5.0/16x @ 54.2 GB/s",
+    "cuda": "13.0"
+  },
+  "_optimization_notes": {
+    "focus": "SEMANTIC EMERGENCE - Deep understanding through massive parallel learning",
+    "strategy": "4x GPU enables huge populations, 512-dim embeddings, extensive concept tracking",
+    "vram_strategy": "127.4GB VRAM = 4x capacity for massive neural populations and deep embeddings",
+    "battle_philosophy": "Organisms decide when to fight - 50/50 aggression, let emergence happen naturally"
+  },
+  "agency": {
+    "confidence_threshold": 0.0001,
+    "decision_precision": 1e-05,
+    "initial_mode": "manual_only",
+    "learning_rate_resolution": 1e-06,
+    "performance_tracking_precision": 0.0001
+  },
+  "semantic_convergence": {
+    "_help": "MASSIVE: 512-dim embeddings for deep semantic correlation",
+    "enabled": true,
+    "use_learned_embeddings": true,
+    "embedding_dim": 512,
+    "organism_embedding_alpha": 0.25,
+    "concept_system_alpha": 0.15,
+    "knowledge_web_influence_interval": 5,
+    "phenotype_to_vocabulary": true
+  },
+  "arena": {
+    "_help": "75% Proton Games, organisms decide when to fight",
+    "battle_consequences": {
+      "fitness_transfer_rate": 0.90,
+      "resource_transfer_enabled": true,
+      "resource_transfer_rate": 0.70,
+      "trait_bonus_cap": 0.40,
+      "trait_evolution_enabled": true
+    },
+    "default_battle_type": "PROTON_GAME",
+    "description": "Semantic Emergence Arena - Organisms choose their battles",
+    "enabled": true,
+    "game_selection": {
+      "allow_negotiation": true,
+      "fallback_on_deadlock": "mental",
+      "mode": "ai_driven",
+      "negotiation_rounds": 10
+    },
+    "grid_weights": {
+      "challenge_types": {
+        "ARTS": 2.0,
+        "CHANCE": 0.5,
+        "MENTAL": 3.0,
+        "PHYSICAL": 0.5
+      },
+      "resource_types": {
+        "ANIMAL": 1.0,
+        "MACHINE": 1.5,
+        "NAKED": 2.0,
+        "TOOL": 1.2
+      }
+    },
+    "gym_settings": {
+      "default_episodes": 20,
+      "max_episode_steps": 2000,
+      "parallel_envs": 16,
+      "render_mode": null
+    },
+    "prefer_native_games": true,
+    "proton_game_probability": 0.75,
+    "tournament": {
+      "default_format": "round_robin",
+      "round_robin_battles_per_pair": 5,
+      "seeding_method": "fitness_based"
+    }
+  },
+  "causation_detection": {
+    "_help": "Full causation tracking with deep event windows",
+    "enabled": true,
+    "correlation_threshold": 0.30,
+    "direct_causation_time_window": 4.0,
+    "phase_transition_time_window": 5.0,
+    "recent_events_window": 500,
+    "enable_bidirectional_causations": true,
+    "enable_language_causations": true,
+    "enable_ml_causations": true,
+    "enable_neural_causations": true,
+    "enable_neural_decision_causations": true,
+    "enable_neural_training_causations": true,
+    "enable_phase_transition_causations": true,
+    "thresholds": {
+      "clustering_coefficient": {
+        "collapse": 0.60,
+        "direction": "above"
+      },
+      "modularity": {
+        "collapse": 0.20,
+        "direction": "below"
+      },
+      "organism_count": {
+        "collapse": 1500,
+        "direction": "above"
+      },
+      "violation_pressure": {
+        "vp0": 0.20,
+        "vp1": 0.45,
+        "vp2": 0.70,
+        "vp3": 0.92
+      },
+      "vp_calculations": {
+        "direction": "above",
+        "transition": 80
+      }
+    }
+  },
+  "evolution": {
+    "_help": "Large population evolution for semantic diversity",
+    "adaptation_sensitivity": 0.008,
+    "diversity_guard": {
+      "enabled": true,
+      "frequency_threshold": 0.05,
+      "hash_similarity_threshold": 0.78,
+      "penalty": 0.08
+    },
+    "fitness_precision": 1e-08,
+    "genotype_length": 96,
+    "max_generations": 100000,
+    "mutation_rate": {
+      "initial": 0.035
+    },
+    "mutation_rate_precision": 0.001,
+    "population_size": 64
+  },
+  "feedback": {
+    "enabled": true,
+    "hysteresis_checks": 4,
+    "interval_frames": 6,
+    "knobs": {
+      "clustering_bias": {
+        "initial": 1.60,
+        "max": 1.8,
+        "min": 0.3,
+        "step": 0.05
+      },
+      "mutation_rate": {
+        "initial": 0.035,
+        "max": 0.08,
+        "min": 0.002,
+        "step": 0.001
+      },
+      "new_edge_rate": {
+        "initial": 6.0,
+        "max": 8.0,
+        "min": 0.2,
+        "step": 0.1
+      },
+      "quantum_pruning": {
+        "initial": 0.30,
+        "max": 1,
+        "min": 0,
+        "step": 0.05
+      }
+    },
+    "rate_limit_frames": 80
+  },
+  "hardware_profile": "beast",
+  "health_monitor": {
+    "critical_threshold": 0.20,
+    "enabled": true,
+    "healthy_threshold": 0.75,
+    "history_size": 200,
+    "thresholds": {
+      "critical": 0.20,
+      "healthy": 0.70,
+      "warning": 0.45
+    },
+    "warning_threshold": 0.50,
+    "weight_adaptability": 0.22,
+    "weight_coherence": 0.30,
+    "weight_diversity": 0.25,
+    "weight_lawfulness": 0.12,
+    "weight_sustainability": 0.11
+  },
+  "highlander": {
+    "_help": "CHAOS 0 - Let organisms decide battles naturally, 50/50 aggression balance",
+    "alliance_warfare": {
+      "betrayal_chance": 0.03,
+      "confederation_war_threshold": 0.50,
+      "enabled": true,
+      "existential_war_threshold": 0.50,
+      "max_alliance_size": 200,
+      "max_alliances": 50,
+      "max_confederations": 12,
+      "min_alliance_size": 2,
+      "war_declaration_threshold": 0.50,
+      "war_frequency": 0.50,
+      "illumination_stability_threshold": 5
+    },
+    "chaos_factor": 0.0,
+    "competition_intensity": 0.50,
+    "description": "4x RTX 5090 - SEMANTIC EMERGENCE - Organisms choose their battles",
+    "enabled": true,
+    "extreme_mode": {
+      "chaos_factor": 0.40,
+      "competition_intensity": 1.0,
+      "description": "EXTREME - Maximum semantic pressure",
+      "germination_rate": 1,
+      "max_battle_rounds": 20,
+      "max_population": 1500,
+      "min_population": 80,
+      "mutation_rate": 0.15,
+      "population_size": 80,
+      "predation_enabled": true,
+      "rounds_per_cycle": 3,
+      "survival_threshold": 0.80
+    },
+    "germination_rate": 1.0,
+    "max_battle_rounds": 80,
+    "max_capsules": 400,
+    "max_genetic_samples": 400,
+    "max_population": 800,
+    "min_population": 20,
+    "mutation_rate": 0.040,
+    "population_size": 64,
+    "predation_enabled": true,
+    "rounds_per_cycle": 2,
+    "survival_threshold": 0.30
+  },
+  "lattice": {
+    "entropy_sensitivity": 3e-05,
+    "interaction_precision": 0.00006,
+    "particles": 2000,
+    "prune_threshold": 0,
+    "stability_tolerance": 0.0003
+  },
+  "logging": {
+    "shared_state_dump_interval": 40
+  },
+  "meta_cognitive": {
+    "description": "Meta-cognitive systems: autonomous optimization for semantic emergence",
+    "self_tuning": {
+      "enabled": true,
+      "min_confidence_threshold": 0.50,
+      "mode": "autonomous",
+      "performance_targets": {
+        "max_anomaly_ratio": 0.12,
+        "min_cluster_diversity": 6,
+        "min_fitness_std": 0.06
+      },
+      "safe_parameters": [
+        "evolution.mutation_rate.initial",
+        "evolution.diversity_guard.penalty",
+        "evolution.diversity_guard.frequency_threshold",
+        "evolution.diversity_guard.hash_similarity_threshold",
+        "evolution.population_size",
+        "evolution.adaptation_sensitivity",
+        "feedback.knobs.mutation_rate.initial",
+        "feedback.knobs.new_edge_rate.initial",
+        "feedback.knobs.clustering_bias.initial",
+        "feedback.knobs.quantum_pruning.initial",
+        "neural.training.learning_rate",
+        "neural.training.gamma",
+        "neural.training.epsilon_decay",
+        "neural.training.batch_size",
+        "neural.rewards.fitness_improvement",
+        "neural.rewards.connection_success",
+        "neural.rewards.survival",
+        "neural.inheritance.crossover_rate",
+        "neural.inheritance.mutation_rate",
+        "network.max_organisms",
+        "network.max_connections",
+        "network.resource_pool",
+        "scikit.clustering.min_cluster_size",
+        "scikit.anomaly_detection.contamination",
+        "scikit.anomaly_detection.n_estimators",
+        "quantum.initial_states",
+        "quantum.entanglement_sensitivity",
+        "quantum.prune_check_interval",
+        "vp_monitoring.adaptive_response.high_vp_threshold",
+        "vp_monitoring.stabilization.smoothing_factor",
+        "causation_detection.correlation_threshold",
+        "semantic_convergence.organism_embedding_alpha",
+        "semantic_convergence.knowledge_web_influence_interval",
+        "meta_cognitive.self_tuning.tuning_interval_frames",
+        "meta_cognitive.self_tuning.min_confidence_threshold"
+      ],
+      "tuning_interval_frames": 6
+    }
+  },
+  "network": {
+    "connection_strength_resolution": 3e-06,
+    "emergence_sensitivity": 5e-07,
+    "max_connections": 80000,
+    "max_organisms": 1200,
+    "resource_flow_precision": 0.00005,
+    "resource_pool": 2000,
+    "stability_precision": 5e-08
+  },
+  "neural": {
+    "brain": {
+      "activation": "relu",
+      "dropout": 0.08,
+      "hidden_dim": 512,
+      "input_dim": 24,
+      "output_dim": 6,
+      "vocab_size": 8000
+    },
+    "concept_system": {
+      "_help": "Massive concept system for deep semantic learning",
+      "concept_loss_weight": 0.18,
+      "embed_dim": 512,
+      "enabled": true,
+      "num_key_compositions": 80,
+      "utility_update_alpha": 0.15
+    },
+    "device": "cuda",
+    "enabled": true,
+    "inheritance": {
+      "crossover_rate": 0.95,
+      "enabled": true,
+      "mutation_rate": 0.15
+    },
+    "initialization": {
+      "deterministic": false,
+      "seed": null
+    },
+    "language_model": {
+      "attention": {
+        "_help": "Deep attention for semantic relationship discovery",
+        "attention_dim": 256,
+        "enabled": true,
+        "num_heads": 16
+      },
+      "curriculum": {
+        "enabled": true,
+        "ml_quality": {
+          "enabled": true,
+          "high_quality_threshold": 0.55,
+          "low_quality_threshold": 0.22,
+          "max_sequence_length": 256,
+          "min_sequence_length": 8,
+          "sequence_length_step": 8
+        },
+        "sequence_lengths": {
+          "stage_0": 16,
+          "stage_1": 48,
+          "stage_2": 128,
+          "stage_3": 384
+        },
+        "vp_thresholds": {
+          "stage_1": 0.45,
+          "stage_2": 0.35,
+          "stage_3": 0.25
+        }
+      },
+      "enabled": true,
+      "generation": {
+        "max_length": 384,
+        "temperature": 1.10,
+        "vp_gate_threshold": 0.40
+      },
+      "knowledge_web": {
+        "_help": "Massive knowledge web for deep semantic discovery",
+        "embedding_dim": 512,
+        "enabled": true,
+        "max_concepts": 4000,
+        "quality_control": {
+          "confidence_growth_rate": 0.0008,
+          "enabled": true,
+          "exploration_decay_generations": 1500,
+          "exploration_end": 0.05,
+          "exploration_start": 0.30,
+          "max_discoveries_per_generation": 40,
+          "min_confidence_threshold": 0.22,
+          "min_discovery_count": 2,
+          "pruning_confidence_threshold": 0.15,
+          "pruning_failure_rate": 0.60,
+          "pruning_unused_generations": 120,
+          "review_frequency": 60,
+          "validation_required": true,
+          "vp_boost_exploration": true,
+          "vp_boost_threshold": 0.58
+        }
+      },
+      "relationship_learning": {
+        "_help": "Deep relationship learning for emergent understanding",
+        "enabled": true,
+        "quality_evaluation": {
+          "coherent_threshold": 0.45,
+          "garbled_threshold": 0.15,
+          "max_word_count": 40,
+          "min_word_count": 2,
+          "min_word_count_for_evaluation": 3,
+          "relationship_strength_threshold": 0.38,
+          "unk_ratio_threshold": 0.22
+        },
+        "semantic_guidance": {
+          "enabled": true,
+          "high_strength_boost": 0.15,
+          "max_similar_words": 10,
+          "min_strength_threshold": 0.25,
+          "semantic_boost": 0.28
+        }
+      },
+      "sequence": {
+        "context_window": 128,
+        "max_length": 384
+      },
+      "teacher": {
+        "_help": "Deep semantic teacher for guided emergent learning",
+        "embedding_dim": 512,
+        "enabled": true,
+        "min_action_history": 2,
+        "min_confidence": 0.22,
+        "teaching_frequency": 1,
+        "use_knowledge_web": true,
+        "use_semantic_embeddings": true,
+        "vocab_size": 8000
+      },
+      "training": {
+        "_help": "SEMANTIC HEAVY: alpha=0.12, beta=0.55, gamma=0.33 for deep language dominance",
+        "alpha": 0.12,
+        "beta": 0.55,
+        "gamma": 0.33,
+        "vp_temperature_scale": true
+      },
+      "vocabulary": {
+        "max_size": 8000,
+        "special_tokens": [
+          "<PAD>",
+          "<UNK>",
+          "<START>",
+          "<END>",
+          "<VP_GATE>"
+        ]
+      }
+    },
+    "optimization": {
+      "compile_mode": "max-autotune",
+      "reuse_optimizers": true,
+      "use_compile": true,
+      "use_scripted_inference": false
+    },
+    "rewards": {
+      "_help": "High connection rewards for relationship discovery",
+      "connection_failure": -0.12,
+      "connection_success": 4.0,
+      "fitness_improvement": 5.0,
+      "resource_gain": 1.2,
+      "resource_loss": -0.20,
+      "survival": 2.0
+    },
+    "training": {
+      "batch_size": 256,
+      "early_stopping": {
+        "enabled": true,
+        "min_delta": 0.00005,
+        "patience": 25
+      },
+      "enabled": true,
+      "epsilon": 0.95,
+      "epsilon_decay": 0.9940,
+      "epsilon_end": 0.02,
+      "epsilon_start": 0.90,
+      "gamma": 0.9970,
+      "language_reward_scaling": 0.55,
+      "learning_rate": 0.002,
+      "lr_scheduler": {
+        "enabled": true,
+        "gamma": 0.970,
+        "min_lr": 3e-05,
+        "step_size": 150,
+        "type": "cosine",
+        "warmup_steps": 250
+      },
+      "memory_size": 150000,
+      "update_frequency": 1
+    },
+    "vp_aware_planning": {
+      "base_boost": 0.25,
+      "enabled": true,
+      "high_threshold": 0.40,
+      "low_threshold": 0.20,
+      "strong_boost": 0.38
+    },
+    "checkpointing": {
+      "_help": "Frequent checkpoints at $0.005/hr - protect your training investment",
+      "enabled": true,
+      "auto_save_interval_generations": 40,
+      "auto_save_interval_minutes": 10,
+      "max_checkpoints": 30,
+      "checkpoint_dir": "data/neural_checkpoints",
+      "include_experience_buffer": true,
+      "include_optimizer_states": true,
+      "compression": false,
+      "auto_resume": true
+    }
+  },
+  "quantum": {
+    "entanglement_sensitivity": 1.5e-06,
+    "fitness_weights": {
+      "entanglement": 0.35,
+      "entropy": 0.18,
+      "measurements": 0.22,
+      "superposition": 0.25
+    },
+    "initial_states": 300,
+    "performance_thresholds": {
+      "fitness_std_threshold": 0.25,
+      "iteration_time_ms": 5,
+      "memory_percentage": 3.0,
+      "min_fitness_to_keep": 0.08
+    },
+    "probability_precision": 5e-07,
+    "prune_check_interval": 25,
+    "superposition_tolerance": 0.00035
+  },
+  "ray": {
+    "actor_pool_size": 28,
+    "batch_inference_size": 320,
+    "description": "Ray - 4x RTX 5090, 64 CPU cores, semantic emergence mode",
+    "enabled": true,
+    "fallback_on_error": true,
+    "logging_level": "warning",
+    "memory_management": {
+      "actor_pool_lru_eviction": true,
+      "cleanup_on_organism_death": true,
+      "max_object_refs": 400
+    },
+    "num_cpus": 60,
+    "num_gpus": 4,
+    "object_store_memory": null,
+    "parallelization_threshold": 50,
+    "state_synchronization": {
+      "consistency_model": "sequential",
+      "max_state_age_ms": 50,
+      "snapshot_strategy": "breath_cycle"
+    },
+    "training_threshold": 24
+  },
+  "rendering": {
+    "enable_visualizations": true,
+    "frame_rate": 25,
+    "metric_display_precision": 6,
+    "mode": "god",
+    "performance_monitoring": true,
+    "render_quality": "high",
+    "resolution": [1920, 1080],
+    "text_interface": true,
+    "visualization_update_precision": 0.0006
+  },
+  "scikit": {
+    "anomaly_detection": {
+      "algorithm": "isolation_forest",
+      "contamination": 0.12,
+      "enabled": true,
+      "n_estimators": 1000
+    },
+    "clustering": {
+      "_help": "Deep semantic clustering for organism grouping",
+      "algorithm": "hdbscan",
+      "enabled": true,
+      "min_cluster_size": 5,
+      "min_samples": 2,
+      "use_neural_embeddings": true
+    },
+    "concept_tracking": {
+      "enabled": true,
+      "persistence_threshold": 3,
+      "stale_threshold": 6
+    },
+    "dimensionality_reduction": {
+      "algorithm": "pca",
+      "enabled": true,
+      "n_components": 3
+    },
+    "enabled": true
+  },
+  "simulation": {
+    "log_level": "INFO",
+    "max_runtime": 21600.0,
+    "measurement_precision": 6,
+    "performance_sampling_rate": 150,
+    "save_interval": 40.0,
+    "target_fps": 8,
+    "time_resolution_ms": 0.6
+  },
+  "vp_monitoring": {
+    "adaptive_response": {
+      "high_vp_threshold": 0.80,
+      "streak_threshold": 3
+    },
+    "adaptive_thresholds": {
+      "enabled": true
+    },
+    "adaptive_thresholds_enabled": true,
+    "component_decomposition_enabled": true,
+    "component_weights": {
+      "evolution_pressure": 0.15,
+      "network_coherence": 0.20,
+      "phase_mismatch": 0.10,
+      "quantum_entropy": 0.15,
+      "trait_divergence": 0.15
+    },
+    "diagnostics_enabled": true,
+    "stabilization": {
+      "enabled": true,
+      "history_size": 25,
+      "max_jump": 0.06,
+      "smoothing_factor": 0.28
+    },
+    "stabilization_enabled": true
+  }
+}

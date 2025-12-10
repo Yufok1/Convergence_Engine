@@ -172,34 +172,34 @@
   "highlander": {
     "alliance_warfare": {
       "betrayal_chance": 0.0,
-      "confederation_war_threshold": 0.5,
+      "confederation_war_threshold": 0.6,
       "enabled": true,
-      "existential_war_threshold": 0.5,
+      "existential_war_threshold": 0.8,
       "max_alliance_size": 100,
       "max_alliances": 20,
       "max_confederations": 5,
       "min_alliance_size": 2,
-      "war_declaration_threshold": 0.3,
-      "war_frequency": 0.8,
+      "war_declaration_threshold": 0.6,
+      "war_frequency": 0.2,
       "illumination_stability_threshold": 5
     },
     "chaos_factor": 0.0,
-    "competition_intensity": 0.5,
+    "competition_intensity": 0.2,
     "description": "Highlander Protocol - SMALL TRIBE MODE - Start with 9, stack vocabulary, grow naturally",
     "enabled": true,
     "extreme_mode": {
       "chaos_factor": 0.0,
-      "competition_intensity": 1.0,
+      "competition_intensity": 0.5,
       "description": "EXTREME DIFFICULTY - Maximum evolutionary pressure",
       "germination_rate": 1,
       "max_battle_rounds": 15,
       "max_population": 500,
       "min_population": 20,
-      "mutation_rate": 0.15,
+      "mutation_rate": 0.0,
       "population_size": 20,
-      "predation_enabled": true,
+      "predation_enabled": false,
       "rounds_per_cycle": 2,
-      "survival_threshold": 0.8
+      "survival_threshold": 0.4
     },
     "germination_rate": 1.0,
     "max_battle_rounds": 50,
@@ -207,9 +207,9 @@
     "max_genetic_samples": 100,
     "max_population": 100,
     "min_population": 5,
-    "mutation_rate": 0.05,
+    "mutation_rate": 0.0,
     "population_size": 9,
-    "predation_enabled": true,
+    "predation_enabled": false,
     "rounds_per_cycle": 2,
     "survival_threshold": 0.4
   },
@@ -429,7 +429,7 @@
       "survival": 2
     },
     "training": {
-      "batch_size": 24,
+      "batch_size": 32,
       "early_stopping": {
         "enabled": true,
         "min_delta": 0.0001,

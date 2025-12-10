@@ -141,7 +141,15 @@ class LinguisticKnowledgeWeb:
         
         This enables DIVERSE word seeding per organism instead of the same
         hardcoded ~60 words for everyone.
+        
+        Can be disabled via config: neural.language_model.knowledge_web.use_curated_vocabulary = false
         """
+        # Check if curated vocabulary is disabled in config
+        use_curated = self.config.get('neural', {}).get('language_model', {}).get('knowledge_web', {}).get('use_curated_vocabulary', True)
+        if not use_curated:
+            logger.info("[SEMANTIC_SEED] Curated vocabulary DISABLED by config - organisms will develop vocabulary organically")
+            return
+        
         vocab_paths = [
             # Check for 50k version first (preferred)
             os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'butterfly_vocabulary_50k_curated.json'),
