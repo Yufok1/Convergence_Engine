@@ -10088,6 +10088,281 @@ def run_http_server(agent: CocoonAgent, port: int = 8080):
     app.run(host='0.0.0.0', port=port)
 
 
+# =============================================================================
+# COCOON LINK - P2P NETWORKING
+# =============================================================================
+
+async def run_cocoon_link(agent, display_name: str, hatch_url: str):
+    """
+    Run the cocoon in link mode - connect to a CocoonHatch server
+    for P2P battles, trades, and chat with other cocoons.
+    """
+    import asyncio
+    import json
+    from dataclasses import dataclass, field
+    from typing import Dict, Any, Optional, List
+    from queue import Queue
+    
+    try:
+        import websockets
+    except ImportError:
+        print("❌ websockets library required. Install with: pip install websockets")
+        return
+    
+    @dataclass
+    class RemoteUser:
+        user_id: str
+        display_name: str
+        organism_count: int = 0
+        total_fitness: float = 0.0
+        battle_wins: int = 0
+        battle_losses: int = 0
+        status: str = "idle"
+        
+        def __str__(self):
+            icon = "⚔️" if self.status == "battling" else "🟢"
+            return f"{icon} {self.display_name} | 🧬{self.organism_count} | 🏆{self.battle_wins}/{self.battle_losses}"
+    
+    # Connection state
+    websocket = None
+    user_id = None
+    users: Dict[str, RemoteUser] = {}
+    current_battle = None
+    pending_challenges: Dict[str, dict] = {}
+    msg_queue: Queue = Queue()
+    
+    def get_cocoon_stats():
+        return {
+            'organism_count': len(getattr(agent, 'brains', [])),
+            'total_fitness': sum(getattr(agent, 'organism_fitness', [0])),
+            'battle_wins': getattr(agent, 'battle_wins', 0),
+            'battle_losses': getattr(agent, 'battle_losses', 0),
+            'vocab_size': len(agent.vocabulary.get('word_to_id', {})),
+        }
+    
+    async def send(msg_type: str, data: dict):
+        if websocket:
+            await websocket.send(json.dumps({'type': msg_type, 'data': data}))
+    
+    async def handle_message(msg: dict):
+        nonlocal user_id, current_battle
+        msg_type = msg.get('type', '')
+        data = msg.get('data', {})
+        
+        if msg_type == 'REGISTERED':
+            user_id = data.get('user_id')
+            print(f"✅ Connected as {display_name} ({user_id})")
+            print(f"📊 {data.get('online_users', 0)} users online")
+        
+        elif msg_type == 'USER_LIST':
+            users.clear()
+            for u in data.get('users', []):
+                if u.get('user_id') != user_id:
+                    users[u['user_id']] = RemoteUser(**u)
+        
+        elif msg_type == 'USER_JOINED':
+            u = data.get('user', {})
+            if u.get('user_id') != user_id:
+                users[u['user_id']] = RemoteUser(**u)
+                print(f"➕ {u.get('display_name')} joined")
+        
+        elif msg_type == 'USER_LEFT':
+            uid = data.get('user_id')
+            name = data.get('display_name', 'Someone')
+            if uid in users:
+                del users[uid]
+            print(f"➖ {name} left")
+        
+        elif msg_type == 'CHALLENGED':
+            challenger = data.get('challenger', {})
+            cid = data.get('challenge_id')
+            pending_challenges[cid] = data
+            print(f"\n⚔️ CHALLENGE from {challenger.get('display_name')}!")
+            print(f"   Type /accept {cid[:8]} or /decline {cid[:8]}")
+        
+        elif msg_type == 'CHALLENGE_ACCEPTED':
+            opponent = data.get('opponent', {})
+            current_battle = {
+                'battle_id': data.get('battle_id'),
+                'opponent': opponent,
+                'is_user1': data.get('you_are') == 'user1',
+                'round': 0
+            }
+            print(f"\n🎮 BATTLE STARTING vs {opponent.get('display_name')}!")
+            await run_battle()
+        
+        elif msg_type == 'BATTLE_START':
+            opponent = data.get('opponent', {})
+            current_battle = {
+                'battle_id': data.get('battle_id'),
+                'opponent': opponent,
+                'is_user1': data.get('you_are') == 'user1',
+                'round': 0
+            }
+            print(f"\n🎮 BATTLE STARTING vs {opponent.get('display_name')}!")
+            await run_battle()
+        
+        elif msg_type == 'BATTLE_MSG':
+            msg_queue.put(data.get('payload', {}))
+        
+        elif msg_type == 'BATTLE_END':
+            winner = data.get('winner_name')
+            if data.get('winner_id') == user_id:
+                print(f"\n🏆 YOU WON!")
+            elif data.get('winner_id'):
+                print(f"\n💀 You lost to {winner}")
+            else:
+                print(f"\n🤝 Draw!")
+            current_battle = None
+        
+        elif msg_type == 'CHAT':
+            sender = data.get('from', 'Unknown')
+            message = data.get('message', '')
+            print(f"💬 {sender}: {message}")
+        
+        elif msg_type == 'ERROR':
+            print(f"❌ {data.get('error')}")
+    
+    async def run_battle(rounds: int = 10):
+        nonlocal current_battle
+        if not current_battle:
+            return
+        
+        print(f"\n⚔️ Battle: {rounds} rounds")
+        my_score = 0
+        opp_score = 0
+        action_names = ['move', 'cooperate', 'compete', 'rest', 'reproduce', 'isolate']
+        
+        for r in range(1, rounds + 1):
+            # Get my action
+            state = [r/10.0, my_score/10.0, opp_score/10.0] + [0.0] * 21
+            my_action = agent.get_action(np.array(state, dtype=np.float32), explore=True)
+            my_conf = 0.7
+            
+            # Send action
+            await send('BATTLE_MSG', {
+                'round': r,
+                'payload': {'action': int(my_action), 'confidence': my_conf}
+            })
+            
+            # Wait for opponent
+            opp_action = None
+            for _ in range(300):  # 30 second timeout
+                try:
+                    opp_data = msg_queue.get_nowait()
+                    opp_action = opp_data.get('action', 0)
+                    break
+                except:
+                    await asyncio.sleep(0.1)
+            
+            if opp_action is None:
+                print("⏱️ Opponent timed out!")
+                await send('BATTLE_END', {'winner_id': user_id, 'reason': 'timeout'})
+                return
+            
+            # Resolve (simple: different actions = attacker wins)
+            if my_action == opp_action:
+                result = "🤝 Tie"
+            elif (opp_action - my_action) % 6 in [1, 2]:
+                my_score += 1
+                result = "✅ You win"
+            else:
+                opp_score += 1
+                result = "❌ Opponent wins"
+            
+            print(f"R{r}: {action_names[my_action]} vs {action_names[opp_action]} → {result} [{my_score}-{opp_score}]")
+            await asyncio.sleep(0.3)
+        
+        # Determine winner
+        if my_score > opp_score:
+            await send('BATTLE_END', {'winner_id': user_id, 'reason': f'{my_score}-{opp_score}'})
+        elif opp_score > my_score:
+            opp_id = current_battle['opponent'].get('user_id')
+            await send('BATTLE_END', {'winner_id': opp_id, 'reason': f'{my_score}-{opp_score}'})
+        else:
+            await send('BATTLE_END', {'winner_id': None, 'reason': 'Draw'})
+    
+    # Connect
+    print(f"🔗 Connecting to {hatch_url}...")
+    try:
+        websocket = await websockets.connect(hatch_url)
+    except Exception as e:
+        print(f"❌ Connection failed: {e}")
+        return
+    
+    # Register
+    await send('REGISTER', {'display_name': display_name, **get_cocoon_stats()})
+    
+    print("\n📖 Commands: /users /challenge <name> /accept <id> /decline <id> /chat <msg> /quit")
+    print("=" * 60)
+    
+    # Message receiver task
+    async def receiver():
+        try:
+            async for message in websocket:
+                await handle_message(json.loads(message))
+        except websockets.exceptions.ConnectionClosed:
+            print("⚠️ Connection lost")
+    
+    receiver_task = asyncio.create_task(receiver())
+    
+    # Input loop (simplified - blocking)
+    import sys
+    while True:
+        try:
+            await asyncio.sleep(0.1)
+            # Simple input handling
+            if sys.stdin in await asyncio.get_event_loop().run_in_executor(None, lambda: [sys.stdin] if sys.stdin.readable() else []):
+                line = sys.stdin.readline().strip()
+                if not line:
+                    continue
+                
+                parts = line.split(maxsplit=2)
+                cmd = parts[0].lower()
+                
+                if cmd == '/users':
+                    await send('LIST_USERS', {})
+                    await asyncio.sleep(0.2)
+                    if users:
+                        print("\n👥 Online Users:")
+                        for u in users.values():
+                            print(f"   {u}")
+                    else:
+                        print("No other users online")
+                
+                elif cmd == '/challenge' and len(parts) > 1:
+                    await send('CHALLENGE', {'target': parts[1], 'message': parts[2] if len(parts) > 2 else ''})
+                
+                elif cmd == '/accept' and len(parts) > 1:
+                    for cid in list(pending_challenges.keys()):
+                        if cid.startswith(parts[1]):
+                            await send('ACCEPT', {'challenge_id': cid})
+                            del pending_challenges[cid]
+                            break
+                
+                elif cmd == '/decline' and len(parts) > 1:
+                    for cid in list(pending_challenges.keys()):
+                        if cid.startswith(parts[1]):
+                            await send('DECLINE', {'challenge_id': cid})
+                            del pending_challenges[cid]
+                            break
+                
+                elif cmd == '/chat' and len(parts) > 1:
+                    await send('CHAT', {'message': ' '.join(parts[1:])})
+                
+                elif cmd == '/quit':
+                    break
+                
+        except KeyboardInterrupt:
+            break
+        except Exception as e:
+            pass
+    
+    receiver_task.cancel()
+    await websocket.close()
+    print("👋 Disconnected")
+
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="🦋 Butterfly Cocoon - Self-Contained Learning Agent",
@@ -10097,12 +10372,13 @@ Examples:
   python cocoon.py --mode chat
   python cocoon.py --mode gym --env CartPole-v1 --episodes 100
   python cocoon.py --mode serve --port 8080
+  python cocoon.py --mode link --hatch ws://localhost:9000
   python cocoon.py --mode sphere --balls 2 --train
   python cocoon.py --export updated_cocoon.py
   python cocoon.py --export-onnx brain.onnx
   python cocoon.py --export-package ./my_model
         """)
-    parser.add_argument('--mode', choices=['chat', 'gym', 'serve', 'sphere', 'info'], default='info')
+    parser.add_argument('--mode', choices=['chat', 'gym', 'serve', 'link', 'sphere', 'info'], default='info')
     parser.add_argument('--env', type=str, default='CartPole-v1')
     parser.add_argument('--episodes', type=int, default=100)
     parser.add_argument('--render', action='store_true')
@@ -10121,6 +10397,9 @@ Examples:
     parser.add_argument('--verbose', '-v', action='store_true', help='Verbose debug logging')
     parser.add_argument('--demo', action='store_true', help='Run sphere arena with dummy AI')
     parser.add_argument('--headless', action='store_true', help='Run sphere arena without display')
+    # Link mode arguments
+    parser.add_argument('--hatch', type=str, default='ws://localhost:9000', help='CocoonHatch server URL')
+    parser.add_argument('--name', type=str, default=None, help='Display name for link mode')
     args = parser.parse_args()
 
     arch = _decode_data(_ARCHITECTURE_B64)
@@ -10504,6 +10783,37 @@ Examples:
 
     elif args.mode == 'serve':
         run_http_server(agent, port=args.port)
+
+    elif args.mode == 'link':
+        # Cocoon Link - P2P Networking
+        print("\n🔗 COCOON LINK - P2P Networking")
+        print("=" * 60)
+        
+        try:
+            import asyncio
+            import websockets
+            LINK_AVAILABLE = True
+        except ImportError:
+            LINK_AVAILABLE = False
+            print("❌ websockets library required for link mode")
+            print("   Install with: pip install websockets")
+            return
+        
+        # Get display name
+        display_name = args.name
+        if not display_name:
+            # Generate from organism names
+            if hasattr(agent, 'organism_names') and agent.organism_names:
+                display_name = f"{agent.organism_names[0]}'s Cocoon"
+            else:
+                display_name = "Anonymous Cocoon"
+        
+        print(f"Display Name: {display_name}")
+        print(f"Hatch Server: {args.hatch}")
+        print()
+        
+        # Run the link client
+        asyncio.run(run_cocoon_link(agent, display_name, args.hatch))
 
     elif args.mode == 'sphere':
         # Sphere Arena - 3D Swarm Defense Training
