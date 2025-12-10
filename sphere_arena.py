@@ -782,6 +782,11 @@ class SphereArena:
         # Camera rotation
         self.camera_angle = 0
         
+        # Visual effects state
+        self.impact_effects: List[Dict] = []  # Red shockwaves on miss
+        self.catch_effects: List[Dict] = []   # Green flashes on catch
+        self.ball_trails: Dict[int, List[Tuple[float, float, float]]] = {}  # Motion trails
+        
         # Reset training tracking
         self.last_observations = {}
         self.last_actions = {}
@@ -1409,6 +1414,17 @@ class SphereArena:
         4. Commander broadcasts command to entire swarm
         5. All organisms receive the directive
         """
+        # ✨ VISUAL EFFECT: Green ripple on catch
+        catcher_color = self.organisms[catcher_idx].color if catcher_idx < len(self.organisms) else (0.4, 1.0, 0.4)
+        self.catch_effects.append({
+            'position': ball_pos,
+            'frame': self.frame_count,
+            'radius': 0.0,
+            'max_radius': PADDLE_ANGULAR_RADIUS * SPHERE_RADIUS * 2,
+            'color': catcher_color,
+            'intensity': 1.0
+        })
+        
         # Reflect ball
         normal = normalize_vector(ball_pos)
         vel = ball.get_velocity()
@@ -1754,7 +1770,19 @@ class SphereArena:
     def _handle_swarm_miss(self, ball_theta, ball_phi, ball_idx: int = 0):
         """Handle a collective miss - the swarm failed to intercept."""
         self.collective_misses += 1
+        old_streak = self.catch_streak
         self.catch_streak = 0  # Reset streak
+        
+        # 💥 VISUAL EFFECT: Red shockwave on miss
+        impact_pos = spherical_to_cartesian(ball_theta, ball_phi, SPHERE_RADIUS)
+        self.impact_effects.append({
+            'position': impact_pos,
+            'frame': self.frame_count,
+            'radius': 0.0,
+            'max_radius': PADDLE_ANGULAR_RADIUS * SPHERE_RADIUS * 3,
+            'intensity': 1.0,
+            'streak_broken': old_streak
+        })
         
         # Find nearest organism to the miss
         nearest_org = None
@@ -1862,8 +1890,15 @@ class SphereArena:
             if self.enable_training:
                 self.last_actions[org_idx] = action_idx
         
-        # Move all balls
-        for ball in self.balls:
+        # Move all balls and track trails
+        for ball_idx, ball in enumerate(self.balls):
+            # 🎯 VISUAL EFFECT: Track ball trail for motion blur
+            if ball_idx not in self.ball_trails:
+                self.ball_trails[ball_idx] = []
+            self.ball_trails[ball_idx].append(ball.get_position())
+            if len(self.ball_trails[ball_idx]) > 8:
+                self.ball_trails[ball_idx].pop(0)
+            
             ball.move()
         
         # ═══════════════════════════════════════════════════════════════════
@@ -1966,13 +2001,151 @@ class SphereArena:
         ball_colors = [(1.0, 1.0, 0.0), (1.0, 0.5, 0.0), (0.0, 1.0, 1.0), (1.0, 0.0, 1.0), (0.5, 1.0, 0.5)]
         for ball_idx, ball in enumerate(self.balls):
             ball_pos = ball.get_position()
+            color = ball_colors[ball_idx % len(ball_colors)]
+            
+            # 🎯 VISUAL EFFECT 1: Ball motion trail
+            if ball_idx in self.ball_trails and len(self.ball_trails[ball_idx]) > 1:
+                trail = self.ball_trails[ball_idx]
+                for i, trail_pos in enumerate(trail[:-1]):
+                    alpha = (i + 1) / len(trail) * 0.4
+                    trail_radius = BALL_RADIUS * (0.3 + 0.7 * (i + 1) / len(trail))
+                    
+                    glPushMatrix()
+                    glTranslatef(*trail_pos)
+                    glColor4f(color[0], color[1], color[2], alpha)
+                    quad = gluNewQuadric()
+                    gluSphere(quad, trail_radius, 6, 4)
+                    glPopMatrix()
+            
+            # 🎯 VISUAL EFFECT 2: Depth-based shading
+            ball_dist = math.sqrt(ball_pos[0]**2 + ball_pos[1]**2 + ball_pos[2]**2)
+            depth_factor = 0.5 + 0.5 * (1 - ball_dist / (SPHERE_RADIUS * 1.2))
+            depth_factor = max(0.4, min(1.0, depth_factor))
+            
+            # 🎯 VISUAL EFFECT 3: Size scaling with depth
+            size_scale = 0.8 + 0.4 * depth_factor
+            
+            # 🎯 VISUAL EFFECT 4: Pulsing glow
+            pulse = 0.8 + 0.2 * math.sin(self.frame_count * 0.15 + ball_idx)
+            
+            # Draw main ball
             glPushMatrix()
             glTranslatef(*ball_pos)
-            color = ball_colors[ball_idx % len(ball_colors)]
-            glColor3f(*color)
+            glColor3f(color[0] * depth_factor * pulse, color[1] * depth_factor * pulse, color[2] * depth_factor * pulse)
             quad = gluNewQuadric()
-            gluSphere(quad, BALL_RADIUS, 12, 8)
+            gluSphere(quad, BALL_RADIUS * size_scale, 12, 8)
             glPopMatrix()
+            
+            # 🎯 VISUAL EFFECT 5: Ball shadow on sphere surface
+            if ball_dist > 0:
+                shadow_pos = (
+                    ball_pos[0] * SPHERE_RADIUS / ball_dist,
+                    ball_pos[1] * SPHERE_RADIUS / ball_dist,
+                    ball_pos[2] * SPHERE_RADIUS / ball_dist
+                )
+                shadow_alpha = 0.3 * (1 - abs(ball_dist - SPHERE_RADIUS) / SPHERE_RADIUS)
+                shadow_alpha = max(0.05, min(0.3, shadow_alpha))
+                
+                glPushMatrix()
+                glTranslatef(*shadow_pos)
+                glColor4f(0.0, 0.0, 0.0, shadow_alpha)
+                quad = gluNewQuadric()
+                gluSphere(quad, BALL_RADIUS * 0.8, 8, 4)
+                glPopMatrix()
+        
+        # 💥 VISUAL EFFECT 6: Red shockwave on miss
+        effects_to_remove = []
+        for i, effect in enumerate(self.impact_effects):
+            age = self.frame_count - effect['frame']
+            if age > 30:
+                effects_to_remove.append(i)
+                continue
+            
+            progress = age / 30.0
+            effect['radius'] = effect['max_radius'] * progress
+            effect['intensity'] = 1.0 - progress
+            
+            streak_multiplier = 1.0 + 0.2 * min(effect.get('streak_broken', 0), 5)
+            radius = effect['radius'] * streak_multiplier
+            
+            pos = effect['position']
+            normal = normalize_vector(pos)
+            
+            up = (0, 1, 0)
+            if abs(dot_product(normal, up)) > 0.9:
+                up = (1, 0, 0)
+            tangent1 = normalize_vector(cross_product(normal, up))
+            tangent2 = cross_product(normal, tangent1)
+            
+            glColor4f(1.0, 0.2, 0.1, effect['intensity'] * 0.8)
+            glLineWidth(2.0 + 3.0 * effect['intensity'])
+            
+            glBegin(GL_LINE_LOOP)
+            for j in range(48):
+                angle = 2 * math.pi * j / 48
+                offset_x = radius * math.cos(angle)
+                offset_y = radius * math.sin(angle)
+                point = (
+                    pos[0] + tangent1[0]*offset_x + tangent2[0]*offset_y,
+                    pos[1] + tangent1[1]*offset_x + tangent2[1]*offset_y,
+                    pos[2] + tangent1[2]*offset_x + tangent2[2]*offset_y
+                )
+                point = normalize_vector(point)
+                point = (point[0]*SPHERE_RADIUS, point[1]*SPHERE_RADIUS, point[2]*SPHERE_RADIUS)
+                glVertex3f(*point)
+            glEnd()
+            glLineWidth(1.0)
+        
+        for i in reversed(effects_to_remove):
+            self.impact_effects.pop(i)
+        
+        # ✨ VISUAL EFFECT 7: Green ripple on catch
+        effects_to_remove = []
+        for i, effect in enumerate(self.catch_effects):
+            age = self.frame_count - effect['frame']
+            if age > 20:
+                effects_to_remove.append(i)
+                continue
+            
+            progress = age / 20.0
+            effect['radius'] = effect['max_radius'] * progress
+            effect['intensity'] = 1.0 - progress
+            
+            pos = effect['position']
+            dist = math.sqrt(pos[0]**2 + pos[1]**2 + pos[2]**2)
+            if dist > 0:
+                pos = (pos[0]*SPHERE_RADIUS/dist, pos[1]*SPHERE_RADIUS/dist, pos[2]*SPHERE_RADIUS/dist)
+            
+            normal = normalize_vector(pos)
+            
+            up = (0, 1, 0)
+            if abs(dot_product(normal, up)) > 0.9:
+                up = (1, 0, 0)
+            tangent1 = normalize_vector(cross_product(normal, up))
+            tangent2 = cross_product(normal, tangent1)
+            
+            c = effect['color']
+            glColor4f(c[0] * 0.5 + 0.5, c[1] * 0.5 + 0.5, c[2] * 0.3, effect['intensity'] * 0.7)
+            glLineWidth(3.0 * effect['intensity'] + 1.0)
+            
+            glBegin(GL_LINE_LOOP)
+            for j in range(32):
+                angle = 2 * math.pi * j / 32
+                offset_x = effect['radius'] * math.cos(angle)
+                offset_y = effect['radius'] * math.sin(angle)
+                point = (
+                    pos[0] + tangent1[0]*offset_x + tangent2[0]*offset_y,
+                    pos[1] + tangent1[1]*offset_x + tangent2[1]*offset_y,
+                    pos[2] + tangent1[2]*offset_x + tangent2[2]*offset_y
+                )
+                point = normalize_vector(point)
+                point = (point[0]*SPHERE_RADIUS, point[1]*SPHERE_RADIUS, point[2]*SPHERE_RADIUS)
+                glVertex3f(*point)
+            glEnd()
+            glLineWidth(1.0)
+        
+        for i in reversed(effects_to_remove):
+            self.catch_effects.pop(i)
         
         pygame.display.flip()
     
