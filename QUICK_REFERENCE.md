@@ -51,6 +51,18 @@ This creates:
 python distill_vocabulary.py --input data/seeded_knowledge_web_250k.json --output data/knowledge_web_distilled.json --target 50000
 ```
 
+**Optional: Expand knowledge web with ConceptNet + WordNet (HIGHLY RECOMMENDED)**
+```bash
+# Downloads ConceptNet (~1.5GB) and adds 500k+ semantic relations
+python reality_simulator/language/expand_knowledge_web.py --input data/seeded_knowledge_web_250k.json --output data/seeded_knowledge_web_expanded.json --concepts 50000 --min-weight 1.5
+```
+
+This transforms the knowledge web from ~300 relations to **500,000+ relations** including:
+- Synonyms & antonyms (WordNet)
+- Causes, enables, requires (ConceptNet)
+- Is_a, part_of, has_a hierarchies
+- Related_to, similar_to semantic links
+
 **Then run the system:**
 ```bash
 python unified_entry.py
