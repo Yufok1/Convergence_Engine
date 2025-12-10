@@ -48,8 +48,7 @@ This creates:
 **Optional: Distill to smaller vocabulary (faster, less memory)**
 ```bash
 # Distill to 50k words
-python distill_vocabulary.py --input data/seeded_knowledge_web_250k.json \
-    --output data/knowledge_web_distilled.json --target 50000
+python distill_vocabulary.py --input data/seeded_knowledge_web_250k.json --output data/knowledge_web_distilled.json --target 50000
 ```
 
 **Then run the system:**
