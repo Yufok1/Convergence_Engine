@@ -407,20 +407,47 @@
         /* Behavioral fingerprint visualization */
         .fingerprint-viz {
             display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            height: 30px;
+            flex-direction: column;
             margin: 8px 0;
             padding: 4px;
             background: rgba(0, 0, 0, 0.3);
             border-radius: 4px;
         }
         
-        .fingerprint-bar {
+        .fingerprint-bars {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            height: 25px;
+        }
+        
+        .fingerprint-bar-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             width: 14%;
+        }
+        
+        .fingerprint-bar {
+            width: 100%;
             background: linear-gradient(180deg, #0ff, #0088ff);
             border-radius: 2px;
             transition: height 0.3s ease;
+        }
+        
+        .fingerprint-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 2px;
+        }
+        
+        .fingerprint-label {
+            width: 14%;
+            text-align: center;
+            font-size: 0.55em;
+            color: #888;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         
         /* Source badge */
@@ -12171,7 +12198,17 @@
                     </div>
                     
                     <div class="fingerprint-viz" title="Behavioral Fingerprint: Move, Coop, Compete, Rest, Repro, Isolate">
-                        ${fingerprint.map((v, i) => `<div class="fingerprint-bar" style="height: ${Math.round((v / maxFp) * 100)}%"></div>`).join('')}
+                        <div class="fingerprint-bars">
+                            ${fingerprint.map((v, i) => `<div class="fingerprint-bar" style="height: ${Math.round((v / maxFp) * 100)}%"></div>`).join('')}
+                        </div>
+                        <div class="fingerprint-labels">
+                            <span class="fingerprint-label" title="Move">Mv</span>
+                            <span class="fingerprint-label" title="Cooperate">Co</span>
+                            <span class="fingerprint-label" title="Compete">Cm</span>
+                            <span class="fingerprint-label" title="Rest">Rs</span>
+                            <span class="fingerprint-label" title="Reproduce">Rp</span>
+                            <span class="fingerprint-label" title="Isolate">Is</span>
+                        </div>
                     </div>
                     
                     <div class="card-traits">

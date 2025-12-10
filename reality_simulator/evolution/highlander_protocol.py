@@ -739,6 +739,14 @@ class HighlanderProtocol:
                 battles.append(battle_result.to_dict())
                 self.battle_history.append(battle_result)
                 
+                # Update organism battle stats for card display
+                winner_org = organisms.get(winner_id)
+                loser_org = organisms.get(loser_id)
+                if winner_org:
+                    winner_org.battle_wins = getattr(winner_org, 'battle_wins', 0) + 1
+                if loser_org:
+                    loser_org.battle_losses = getattr(loser_org, 'battle_losses', 0) + 1
+                
                 # Winner absorbs loser's traits
                 self._absorb_loser(
                     winner_id, organisms.get(winner_id),
@@ -890,6 +898,10 @@ class HighlanderProtocol:
                 # Execute actual absorption in the arena
                 winner_org = org1 if winner_id == org1_id else org2
                 loser_org = org2 if winner_id == org1_id else org1
+                
+                # Update organism objects' battle stats (for card display)
+                winner_org.battle_wins = getattr(winner_org, 'battle_wins', 0) + 1
+                loser_org.battle_losses = getattr(loser_org, 'battle_losses', 0) + 1
 
                 # DEBUG: Show what will be absorbed
                 transferable_concepts = self._get_transferable_concepts(loser_id, loser_org)
@@ -991,6 +1003,12 @@ class HighlanderProtocol:
         
         if loser_id in self.organism_stats:
             self.organism_stats[loser_id].record_loss()
+        
+        # Update organism objects' battle stats (for card display)
+        winner_org = org1 if winner_id == org1_id else org2
+        loser_org = org2 if winner_id == org1_id else org1
+        winner_org.battle_wins = getattr(winner_org, 'battle_wins', 0) + 1
+        loser_org.battle_losses = getattr(loser_org, 'battle_losses', 0) + 1
         
         self._emit_event('battle_concluded', {
             'winner': winner_id,
