@@ -1286,6 +1286,15 @@ class SymbioticNetwork:
                                   resource_flow=0.0,
                                   is_language_connection=is_language_connection)
 
+        # 🎰 TOKEN TUMBLER: Generate connection tokens for both organisms
+        org_a = self.organisms.get(org_a_id)
+        org_b = self.organisms.get(org_b_id)
+        
+        if org_a and hasattr(org_a, 'tumble_action_tokens'):
+            org_a.tumble_action_tokens(action=0, reward=strength * 0.2, context='social')
+        if org_b and hasattr(org_b, 'tumble_action_tokens'):
+            org_b.tumble_action_tokens(action=0, reward=strength * 0.2, context='social')
+
         return True
 
     def _attempt_connection_formation(self):

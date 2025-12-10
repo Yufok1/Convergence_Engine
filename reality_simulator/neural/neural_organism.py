@@ -192,6 +192,9 @@ class NeuralOrganism(Organism):
             max_seq_len = language_config.get('max_sequence_length', 128)
             self.token_sequence = deque(maxlen=max_seq_len)  # Token IDs for LM training
             
+            # 🎰 TOKEN TUMBLER: Seed full sequence from phenotype for language training
+            self._seed_token_sequence_from_phenotype(max_seq_len)
+            
             # Track previous state for experience recording
             self.prev_state = None
             self.prev_action = None
@@ -223,6 +226,10 @@ class NeuralOrganism(Organism):
             self.action_history = deque(maxlen=128)
             self.state_history = deque(maxlen=128)
             self.token_sequence = deque(maxlen=128)
+            
+            # 🎰 TOKEN TUMBLER: Seed even non-PyTorch organisms
+            self._seed_token_sequence_from_phenotype(128)
+            
             self.prev_state = None
             self.prev_action = None
             self.prev_fitness = self.fitness
@@ -1102,6 +1109,152 @@ class NeuralOrganism(Organism):
         for token_id in token_ids:
             self.token_sequence.append(token_id)
     
+    def _seed_token_sequence_from_phenotype(self, max_seq_len: int = 128) -> None:
+        """
+        🎰 TOKEN TUMBLER: Seed organism with full token sequence from phenotype.
+        
+        This gives every organism initial "self-talk" tokens derived from their
+        phenotype traits, ensuring language loss can train from birth.
+        
+        The tokens encode:
+        - Trait values (speed, size, efficiency, social, aggression)
+        - Special markers for high/low trait values
+        - Repetition creates learnable patterns
+        
+        Args:
+            max_seq_len: Maximum sequence length to fill
+        """
+        import random
+        
+        if not hasattr(self, 'token_sequence'):
+            return
+            
+        # Base vocabulary mapping for phenotype traits
+        # Using token IDs 10-99 for traits (avoiding special tokens 0-9)
+        TRAIT_BASE = 10
+        TRAIT_TOKENS = {
+            'speed': TRAIT_BASE,           # 10-19: speed tokens
+            'size': TRAIT_BASE + 10,       # 20-29: size tokens  
+            'efficiency': TRAIT_BASE + 20, # 30-39: efficiency tokens
+            'social': TRAIT_BASE + 30,     # 40-49: social tokens
+            'aggression': TRAIT_BASE + 40, # 50-59: aggression tokens
+        }
+        
+        # Special marker tokens
+        HIGH_MARKER = 60   # Precedes high trait values (>0.7)
+        LOW_MARKER = 61    # Precedes low trait values (<0.3)
+        IDENTITY_MARKER = 62  # Organism identity token
+        TRAIT_END = 63     # End of trait block
+        ACTION_POTENTIAL = 64  # "Ready to act" marker
+        
+        # Get phenotype traits
+        traits = {
+            'speed': getattr(self.phenotype, 'speed', 0.5),
+            'size': getattr(self.phenotype, 'size', 0.5),
+            'efficiency': getattr(self.phenotype, 'efficiency', 0.5),
+            'social': getattr(self.phenotype, 'social_affinity', 0.5),
+            'aggression': getattr(self.phenotype, 'aggression', 0.5),
+        }
+        
+        # Generate seed from species_id for reproducible but unique sequences
+        seed = hash(self.species_id) % (2**32)
+        rng = random.Random(seed)
+        
+        tokens = []
+        
+        # Start with identity marker
+        tokens.append(IDENTITY_MARKER)
+        
+        # Add organism's "genetic signature" - hash of species_id to tokens
+        species_hash = abs(hash(self.species_id))
+        for i in range(4):
+            tokens.append(70 + (species_hash >> (i * 8)) % 30)  # 70-99: signature tokens
+        
+        # Encode each trait with variation
+        for trait_name, trait_value in traits.items():
+            base_token = TRAIT_TOKENS[trait_name]
+            
+            # Add high/low marker if extreme
+            if trait_value > 0.7:
+                tokens.append(HIGH_MARKER)
+            elif trait_value < 0.3:
+                tokens.append(LOW_MARKER)
+            
+            # Convert trait to token offset (0-9 based on value)
+            token_offset = int(trait_value * 9.99)  # 0-9
+            tokens.append(base_token + token_offset)
+            
+            # Add some variance tokens for learning (repeating traits with noise)
+            for _ in range(rng.randint(1, 3)):
+                noisy_offset = max(0, min(9, token_offset + rng.randint(-1, 1)))
+                tokens.append(base_token + noisy_offset)
+        
+        tokens.append(TRAIT_END)
+        
+        # Fill remaining space with action potential patterns
+        # This creates learnable sequences the organism can build upon
+        while len(tokens) < max_seq_len:
+            # Repeat trait patterns with mutation (creates learnable structure)
+            if rng.random() < 0.6:
+                # Pick a trait and emit tokens based on it
+                trait_name = rng.choice(list(traits.keys()))
+                trait_value = traits[trait_name]
+                base_token = TRAIT_TOKENS[trait_name]
+                offset = int(trait_value * 9.99)
+                tokens.append(base_token + max(0, min(9, offset + rng.randint(-2, 2))))
+            else:
+                # Action potential / ready state
+                tokens.append(ACTION_POTENTIAL + rng.randint(0, 5))
+        
+        # Truncate to max length and add to sequence
+        tokens = tokens[:max_seq_len]
+        for token in tokens:
+            self.token_sequence.append(token)
+    
+    def tumble_action_tokens(self, action: int, reward: float, context: str = 'step') -> None:
+        """
+        🎰 TOKEN TUMBLER: Generate tokens from an action/reward pair.
+        
+        Call this when organism takes an action to grow its token sequence
+        with meaningful patterns that correlate with behavior.
+        
+        Args:
+            action: Action taken (0-5 typically)
+            reward: Reward received
+            context: Context string ('step', 'catch', 'miss', 'move', etc.)
+        """
+        if not hasattr(self, 'token_sequence'):
+            return
+        
+        # Action tokens: 100-109
+        ACTION_BASE = 100
+        # Reward tokens: 110-119 (binned)
+        REWARD_BASE = 110
+        # Context tokens: 120-129
+        CONTEXT_TOKENS = {
+            'step': 120,
+            'catch': 121,
+            'miss': 122,
+            'move': 123,
+            'idle': 124,
+            'success': 125,
+            'failure': 126,
+            'explore': 127,
+            'exploit': 128,
+            'social': 129,
+        }
+        
+        # Emit context token
+        ctx_token = CONTEXT_TOKENS.get(context, 120)
+        self.token_sequence.append(ctx_token)
+        
+        # Emit action token
+        self.token_sequence.append(ACTION_BASE + min(9, action))
+        
+        # Emit reward token (binned to 0-9)
+        reward_bin = int(max(0, min(0.99, (reward + 1) / 2)) * 9.99)  # Normalize -1..1 to 0..9
+        self.token_sequence.append(REWARD_BASE + reward_bin)
+
     def extract_communication_pattern(self, 
                                        network_state: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
@@ -1259,6 +1412,10 @@ class NeuralOrganism(Organism):
 
         # Record experience
         self.record_experience(reward=reward)
+        
+        # 🎰 TOKEN TUMBLER: Generate battle outcome tokens
+        context = 'success' if won else 'failure'
+        self.tumble_action_tokens(action=0, reward=reward, context=context)
 
         # Emit event for Butterfly Engine tracking
         if self.event_emitter:

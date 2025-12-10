@@ -803,6 +803,19 @@ class NeuralTrainer:
                 done=False  # Organisms don't "die" in the same way
             )
             experiences_collected += 1
+            
+            # 🎰 TOKEN TUMBLER: Generate tokens from experience
+            # This ensures language training has material from real gameplay
+            if hasattr(organism, 'tumble_action_tokens'):
+                action = organism.prev_action if hasattr(organism, 'prev_action') else 0
+                # Determine context from reward
+                if reward > 0.1:
+                    ctx = 'success'
+                elif reward < -0.1:
+                    ctx = 'failure'
+                else:
+                    ctx = 'step'
+                organism.tumble_action_tokens(action=action, reward=reward, context=ctx)
 
             # Update fitness history
             self.organism_fitness_history[org_id] = current_fitness

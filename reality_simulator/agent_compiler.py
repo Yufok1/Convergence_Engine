@@ -8214,6 +8214,53 @@ class SphereOrganism:
     target_theta: Optional[float] = None
     target_phi: Optional[float] = None
     command_timer: int = 0
+    # 🎰 TOKEN TUMBLER: Token sequence for language learning
+    token_sequence: Optional[deque] = None
+    
+    def tumble_tokens(self, action: int, reward: float, context: str = 'step'):
+        """
+        🎰 TOKEN TUMBLER: Generate tokens from action/reward.
+        
+        Tokens encode the organism's "internal monologue" about what it's doing.
+        This creates learnable patterns that correlate with successful behaviors.
+        """
+        if self.token_sequence is None:
+            self.token_sequence = deque(maxlen=128)
+        
+        # Token vocabulary for sphere arena
+        ACTION_BASE = 100       # 100-109: Movement actions
+        REWARD_BASE = 110       # 110-119: Reward bins  
+        CONTEXT_TOKENS = {
+            'step': 120,        # Regular step
+            'catch': 121,       # Successful catch!
+            'miss': 122,        # Missed ball
+            'move_toward': 123, # Moving toward target
+            'move_away': 124,   # Moving away
+            'commander': 125,   # Became commander
+            'follower': 126,    # Following command
+            'near_miss': 127,   # Close but didn't catch
+            'defend': 128,      # Defensive action
+            'idle': 129,        # No action taken
+        }
+        STREAK_TOKENS = {       # 130-139: Streak markers
+            'streak_start': 130,
+            'streak_5': 131,
+            'streak_10': 132,
+            'streak_break': 133,
+        }
+        
+        # Emit context token first (what happened)
+        ctx_token = CONTEXT_TOKENS.get(context, 120)
+        self.token_sequence.append(ctx_token)
+        
+        # Emit action token (what organism did)
+        self.token_sequence.append(ACTION_BASE + min(9, max(0, action)))
+        
+        # Emit reward token (how it went)
+        # Normalize reward from typical range (-1 to 1) to 0-9
+        reward_normalized = (reward + 1.0) / 2.0  # -1..1 -> 0..1
+        reward_bin = int(max(0, min(0.999, reward_normalized)) * 10)  # 0-9
+        self.token_sequence.append(REWARD_BASE + reward_bin)
     
     @property
     def position(self) -> Tuple[float, float, float]:
@@ -8584,6 +8631,23 @@ class SphereArena:
             org.theta = (org.theta + d_theta) % (2 * math.pi)
             org.phi = max(0.1, min(math.pi - 0.1, org.phi + d_phi))  # Keep away from poles
             
+            # 🎰 TOKEN TUMBLER: Generate movement tokens every frame
+            movement_magnitude = abs(d_theta) + abs(d_phi)
+            if movement_magnitude > 0.001:
+                # Determine movement context
+                if obs[12] > 0.5:  # In catch range (from observation)
+                    ctx = 'defend'
+                elif movement_magnitude > PANEL_SPEED * 1.5:
+                    ctx = 'move_toward'
+                else:
+                    ctx = 'step'
+                
+                # Only tumble every 5 frames to avoid token flood
+                if self.total_frames % 5 == 0:
+                    # Small step reward based on staying alive
+                    step_reward = 0.01 * (1.0 - self.collective_misses / self.max_misses)
+                    org.tumble_tokens(action=action_idx, reward=step_reward, context=ctx)
+            
             if self.verbose and self.total_frames % 60 == 0:
                 pos = org.position
                 print(f"[SPHERE] Panel #{org.idx}: theta={org.theta:.2f}, phi={org.phi:.2f}, pos=({pos[0]:.0f}, {pos[1]:.0f}, {pos[2]:.0f})")
@@ -8676,12 +8740,23 @@ class SphereArena:
         # Rewards
         rewards[org.idx] += CATCH_REWARD
         
+        # 🎰 TOKEN TUMBLER: Generate catch tokens for catcher!
+        org.tumble_tokens(action=0, reward=CATCH_REWARD, context='catch')
+        
+        # Streak milestone tokens
+        if self.current_streak == 5:
+            org.token_sequence.append(131)  # streak_5
+        elif self.current_streak == 10:
+            org.token_sequence.append(132)  # streak_10
+        
         # Near-miss rewards for nearby organisms
         for other in self.organisms:
             if other.idx != org.idx and other.alive:
                 dist = _sphere_distance(other.position, ball.position)
                 if dist < NEAR_MISS_DISTANCE:
                     rewards[other.idx] += NEAR_MISS_REWARD
+                    # 🎰 TOKEN TUMBLER: Near-miss tokens
+                    other.tumble_tokens(action=0, reward=NEAR_MISS_REWARD, context='near_miss')
         
         # Command chain - catcher becomes new commander
         if self.enable_command_chain:
@@ -8690,10 +8765,15 @@ class SphereArena:
             org.is_commander = True
             org.commands_issued += 1
             
+            # 🎰 TOKEN TUMBLER: Commander transition tokens
+            org.tumble_tokens(action=0, reward=0.5, context='commander')
+            
             # Clear old commander
             for o in self.organisms:
                 if o.idx != org.idx:
                     o.is_commander = False
+                    # 🎰 Follower tokens for all non-commanders
+                    o.tumble_tokens(action=0, reward=0.1, context='follower')
             
             # Log command transition
             self.command_history.append({
@@ -8714,11 +8794,21 @@ class SphereArena:
     def _handle_miss(self, ball: Ball3D, rewards: Dict[int, float]):
         """Handle a miss."""
         self.collective_misses += 1
+        old_streak = self.current_streak
         self.current_streak = 0
         
         # Penalty for all organisms
+        penalty_per_org = MISS_PENALTY / len(rewards)
         for idx in rewards:
-            rewards[idx] += MISS_PENALTY / len(rewards)
+            rewards[idx] += penalty_per_org
+        
+        # 🎰 TOKEN TUMBLER: Generate miss tokens for ALL organisms (collective failure)
+        for org in self.organisms:
+            if org.alive:
+                org.tumble_tokens(action=0, reward=penalty_per_org, context='miss')
+                # Streak break token if there was a streak
+                if old_streak >= 3:
+                    org.token_sequence.append(133)  # streak_break
         
         # Reset ball
         ball.last_catcher = None
