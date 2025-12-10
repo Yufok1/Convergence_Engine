@@ -4617,7 +4617,8 @@ esac
 | `ConversationHistory` | Topic tracking & context memory | ✅ Yes - grows with each conversation |
 | `EnhancedKnowledgeWeb` | Semantic relations between concepts | ✅ Yes - relations added/strengthened |
 | `VPRuntime` | Self-regulation (Vigilance × Plasticity) | ✅ Yes - adapts from state |
-| `ExperienceBuffer` | Learning from past experiences | ✅ Yes - buffer grows with experience |"""
+| `ExperienceBuffer` | Learning from past experiences | ✅ Yes - buffer grows with experience |
+| `SphereArena` | 3D swarm defense training game | ✅ Yes - organisms learn during play |"""
         
         return f'''# 🦋 Butterfly Cocoon - Standalone Agent
 
@@ -4708,6 +4709,12 @@ torch.jit.save(model, "brain_finetuned.pt")
 # Interactive chat mode (default)
 python cocoon.py --mode chat
 
+# 🌐 Sphere Arena - 3D Swarm Defense Training
+python cocoon.py --mode sphere                    # Play with trained organisms
+python cocoon.py --mode sphere --train            # Enable learning during play
+python cocoon.py --mode sphere --balls 3 --train  # Multi-ball chaos mode
+python cocoon.py --mode sphere --demo             # Preview with dummy AI
+
 # Gymnasium environment
 python cocoon.py --mode gym --env CartPole-v1 --episodes 100
 
@@ -4725,6 +4732,44 @@ python cocoon.py --export-torchscript brain.pt
 
 # Verbose mode
 python cocoon.py --mode chat --verbose
+```
+
+---
+
+## 🌐 Sphere Arena Mode
+
+The cocoon includes a fully embedded **3D Swarm Defense Training Environment**!
+
+**Features:**
+- 3D sphere arena with PyGame/OpenGL rendering
+- Command chain system (emergent leadership)
+- Post-snapshot training (organisms learn during play)
+- Multi-ball support (1-5 balls)
+- Save trained weights after playing
+
+**Sphere Arena Options:**
+```bash
+--mode sphere     # Run sphere arena
+--balls N         # Number of balls (1-5, default: 1)
+--train           # Enable post-snapshot training
+--demo            # Run with dummy AI (preview visuals)
+--verbose         # Debug logging
+--headless        # No display (training only)
+```
+
+**How It Works:**
+1. Organisms defend the inside of a 3D sphere
+2. Ball bounces inside - swarm must intercept
+3. Catches = +reward, Misses = -penalty
+4. Commander broadcasts predicted impact point
+5. Best follower becomes new commander
+
+**Training Flow:**
+```bash
+python cocoon.py --mode sphere --train --balls 2
+# Play the game - organisms learn from catches/misses
+# At end: prompted to save trained weights
+# Re-export cocoon to bake in learned improvements
 ```
 
 ---
