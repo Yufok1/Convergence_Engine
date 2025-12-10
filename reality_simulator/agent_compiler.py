@@ -8361,6 +8361,11 @@ class SphereArena:
         self.prev_observations: Dict[int, np.ndarray] = {}
         self.prev_actions: Dict[int, int] = {}
         
+        # Visual effects state
+        self.impact_effects: List[Dict] = []  # Red shockwaves on miss
+        self.catch_effects: List[Dict] = []   # Green flashes on catch
+        self.ball_trails: Dict[int, List[Tuple[float, float, float]]] = {}  # Motion trails
+        
         # Display
         self.screen = None
         self.clock = None
@@ -8787,9 +8792,17 @@ class SphereArena:
                 print(f"[SPHERE] Panel #{org.idx}: theta={org.theta:.2f}, phi={org.phi:.2f}, pos=({pos[0]:.0f}, {pos[1]:.0f}, {pos[2]:.0f})")
         
         # Update balls
-        for ball in self.balls:
+        for ball_idx, ball in enumerate(self.balls):
             if not ball.active:
                 continue
+            
+            # 🎯 VISUAL EFFECT: Track ball trail for motion blur
+            if ball_idx not in self.ball_trails:
+                self.ball_trails[ball_idx] = []
+            self.ball_trails[ball_idx].append(ball.position)
+            # Keep last 8 positions for trail
+            if len(self.ball_trails[ball_idx]) > 8:
+                self.ball_trails[ball_idx].pop(0)
             
             # Move ball
             new_x = ball.position[0] + ball.velocity[0]
@@ -8879,6 +8892,16 @@ class SphereArena:
         self.current_streak += 1
         self.best_streak = max(self.best_streak, self.current_streak)
         org.catches += 1
+        
+        # ✨ VISUAL EFFECT: Green ripple/flash on catch
+        self.catch_effects.append({
+            'position': ball.position,
+            'frame': self.total_frames,
+            'radius': 0.0,
+            'max_radius': PADDLE_ANGULAR_RADIUS * SPHERE_RADIUS * 2,
+            'color': org.color,  # Use catcher's color
+            'intensity': 1.0
+        })
         
         # =================================================================
         # ASSOCIATIVE REWARD SYSTEM
@@ -8998,6 +9021,27 @@ class SphereArena:
         self.collective_misses += 1
         old_streak = self.current_streak
         self.current_streak = 0
+        
+        # 💥 VISUAL EFFECT: Red shockwave on miss impact
+        # Project ball position to sphere surface for impact point
+        dist = math.sqrt(ball.position[0]**2 + ball.position[1]**2 + ball.position[2]**2)
+        if dist > 0:
+            impact_pos = (
+                ball.position[0] * SPHERE_RADIUS / dist,
+                ball.position[1] * SPHERE_RADIUS / dist,
+                ball.position[2] * SPHERE_RADIUS / dist
+            )
+        else:
+            impact_pos = (SPHERE_RADIUS, 0, 0)
+        
+        self.impact_effects.append({
+            'position': impact_pos,
+            'frame': self.total_frames,
+            'radius': 0.0,
+            'max_radius': PADDLE_ANGULAR_RADIUS * SPHERE_RADIUS * 3,  # Bigger shockwave
+            'intensity': 1.0,
+            'streak_broken': old_streak  # Larger effect if streak was broken
+        })
         
         # =================================================================
         # ASSOCIATIVE PENALTY SYSTEM
@@ -9305,16 +9349,166 @@ class SphereArena:
             if not ball.active:
                 continue
             
+            color = ball_colors[ball_idx % len(ball_colors)]
+            
+            # 🎯 VISUAL EFFECT 1: Ball motion trail
+            if ball_idx in self.ball_trails and len(self.ball_trails[ball_idx]) > 1:
+                trail = self.ball_trails[ball_idx]
+                for i, trail_pos in enumerate(trail[:-1]):
+                    alpha = (i + 1) / len(trail) * 0.4  # Fade out older positions
+                    trail_radius = BALL_RADIUS * (0.3 + 0.7 * (i + 1) / len(trail))  # Smaller at tail
+                    
+                    glPushMatrix()
+                    glTranslatef(*trail_pos)
+                    glColor4f(color[0], color[1], color[2], alpha)
+                    quadric = gluNewQuadric()
+                    gluSphere(quadric, trail_radius, 6, 4)
+                    gluDeleteQuadric(quadric)
+                    glPopMatrix()
+            
+            # 🎯 VISUAL EFFECT 2: Depth-based shading (balls darken with distance from camera)
+            cam_dist = SPHERE_RADIUS * 2.5
+            ball_dist = math.sqrt(ball.position[0]**2 + ball.position[1]**2 + ball.position[2]**2)
+            depth_factor = 0.5 + 0.5 * (1 - ball_dist / (SPHERE_RADIUS * 1.2))  # 0.5-1.0 based on depth
+            depth_factor = max(0.4, min(1.0, depth_factor))
+            
+            # 🎯 VISUAL EFFECT 3: Size scaling with depth (perspective)
+            size_scale = 0.8 + 0.4 * depth_factor  # 0.8-1.2x based on depth
+            
+            # 🎯 VISUAL EFFECT 4: Pulsing glow on active balls
+            pulse = 0.8 + 0.2 * math.sin(self.total_frames * 0.15 + ball_idx)  # Subtle pulse
+            
+            # Draw main ball with all effects
             glPushMatrix()
             glTranslatef(*ball.position)
-            color = ball_colors[ball_idx % len(ball_colors)]
-            glColor3f(*color)
+            glColor3f(color[0] * depth_factor * pulse, color[1] * depth_factor * pulse, color[2] * depth_factor * pulse)
             
             quadric = gluNewQuadric()
-            gluSphere(quadric, BALL_RADIUS, 12, 8)
+            gluSphere(quadric, BALL_RADIUS * size_scale, 12, 8)
             gluDeleteQuadric(quadric)
             
             glPopMatrix()
+            
+            # 🎯 VISUAL EFFECT 5: Ball shadow on sphere surface
+            # Project ball onto sphere surface
+            if ball_dist > 0:
+                shadow_pos = (
+                    ball.position[0] * SPHERE_RADIUS / ball_dist,
+                    ball.position[1] * SPHERE_RADIUS / ball_dist,
+                    ball.position[2] * SPHERE_RADIUS / ball_dist
+                )
+                # Shadow is darker and flatter when ball is far from surface
+                shadow_alpha = 0.3 * (1 - abs(ball_dist - SPHERE_RADIUS) / SPHERE_RADIUS)
+                shadow_alpha = max(0.05, min(0.3, shadow_alpha))
+                
+                glPushMatrix()
+                glTranslatef(*shadow_pos)
+                glColor4f(0.0, 0.0, 0.0, shadow_alpha)
+                quadric = gluNewQuadric()
+                gluSphere(quadric, BALL_RADIUS * 0.8, 8, 4)  # Slightly smaller shadow
+                gluDeleteQuadric(quadric)
+                glPopMatrix()
+        
+        # 💥 VISUAL EFFECT 6: Red shockwave on miss impact
+        effects_to_remove = []
+        for i, effect in enumerate(self.impact_effects):
+            age = self.total_frames - effect['frame']
+            if age > 30:  # Effect lasts 30 frames
+                effects_to_remove.append(i)
+                continue
+            
+            # Expanding ring
+            progress = age / 30.0
+            effect['radius'] = effect['max_radius'] * progress
+            effect['intensity'] = 1.0 - progress
+            
+            # Larger effect if streak was broken
+            streak_multiplier = 1.0 + 0.2 * min(effect.get('streak_broken', 0), 5)
+            radius = effect['radius'] * streak_multiplier
+            
+            # Draw expanding red ring on sphere surface
+            pos = effect['position']
+            normal = _sphere_normalize(pos)
+            
+            up = (0, 1, 0)
+            if abs(_sphere_dot(normal, up)) > 0.9:
+                up = (1, 0, 0)
+            tangent1 = _sphere_normalize(_sphere_cross(normal, up))
+            tangent2 = _sphere_cross(normal, tangent1)
+            
+            # Red with fading intensity
+            glColor4f(1.0, 0.2, 0.1, effect['intensity'] * 0.8)
+            glLineWidth(2.0 + 3.0 * effect['intensity'])
+            
+            glBegin(GL_LINE_LOOP)
+            for j in range(48):
+                angle = 2 * math.pi * j / 48
+                offset_x = radius * math.cos(angle)
+                offset_y = radius * math.sin(angle)
+                point = (
+                    pos[0] + tangent1[0]*offset_x + tangent2[0]*offset_y,
+                    pos[1] + tangent1[1]*offset_x + tangent2[1]*offset_y,
+                    pos[2] + tangent1[2]*offset_x + tangent2[2]*offset_y
+                )
+                point = _sphere_normalize(point)
+                point = (point[0]*SPHERE_RADIUS, point[1]*SPHERE_RADIUS, point[2]*SPHERE_RADIUS)
+                glVertex3f(*point)
+            glEnd()
+            glLineWidth(1.0)
+        
+        for i in reversed(effects_to_remove):
+            self.impact_effects.pop(i)
+        
+        # ✨ VISUAL EFFECT 7: Green ripple on catch
+        effects_to_remove = []
+        for i, effect in enumerate(self.catch_effects):
+            age = self.total_frames - effect['frame']
+            if age > 20:  # Catch effect lasts 20 frames
+                effects_to_remove.append(i)
+                continue
+            
+            progress = age / 20.0
+            effect['radius'] = effect['max_radius'] * progress
+            effect['intensity'] = 1.0 - progress
+            
+            # Draw expanding colored ring (uses catcher's color)
+            pos = effect['position']
+            # Project to sphere surface
+            dist = math.sqrt(pos[0]**2 + pos[1]**2 + pos[2]**2)
+            if dist > 0:
+                pos = (pos[0]*SPHERE_RADIUS/dist, pos[1]*SPHERE_RADIUS/dist, pos[2]*SPHERE_RADIUS/dist)
+            
+            normal = _sphere_normalize(pos)
+            
+            up = (0, 1, 0)
+            if abs(_sphere_dot(normal, up)) > 0.9:
+                up = (1, 0, 0)
+            tangent1 = _sphere_normalize(_sphere_cross(normal, up))
+            tangent2 = _sphere_cross(normal, tangent1)
+            
+            # Catcher's color with green tint for success
+            c = effect['color']
+            glColor4f(c[0] * 0.5 + 0.5, c[1] * 0.5 + 0.5, c[2] * 0.3, effect['intensity'] * 0.7)
+            glLineWidth(3.0 * effect['intensity'] + 1.0)
+            
+            glBegin(GL_LINE_LOOP)
+            for j in range(32):
+                angle = 2 * math.pi * j / 32
+                offset_x = effect['radius'] * math.cos(angle)
+                offset_y = effect['radius'] * math.sin(angle)
+                point = (
+                    pos[0] + tangent1[0]*offset_x + tangent2[0]*offset_y,
+                    pos[1] + tangent1[1]*offset_x + tangent2[1]*offset_y,
+                    pos[2] + tangent1[2]*offset_x + tangent2[2]*offset_y
+                )
+                point = _sphere_normalize(point)
+                point = (point[0]*SPHERE_RADIUS, point[1]*SPHERE_RADIUS, point[2]*SPHERE_RADIUS)
+                glVertex3f(*point)
+            glEnd()
+            glLineWidth(1.0)
+        
+        for i in reversed(effects_to_remove):
+            self.catch_effects.pop(i)
         
         # Draw command target
         if self.active_command:
