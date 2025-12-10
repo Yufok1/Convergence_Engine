@@ -8198,6 +8198,22 @@ Examples:
     config = _decode_data(_TRAINING_CONFIG_B64)
     vocab = _decode_data(_VOCABULARY_B64)
 
+    # Handle export commands FIRST - they work without loading the full agent
+    if args.export or args.export_onnx or args.export_package:
+        if not TORCH_AVAILABLE:
+            print("[!] PyTorch required for export")
+            return
+        agent = CocoonAgent(voting=args.voting, max_organisms=args.max_organisms)
+        if args.export:
+            agent.export_cocoon(args.export)
+            return
+        if args.export_onnx:
+            agent.export_onnx(args.export_onnx, organism_idx=args.organism)
+            return
+        if args.export_package:
+            agent.export_package(args.export_package)
+            return
+
     if args.mode == 'info':
         print("\n🦋 BUTTERFLY COCOON")
         print("=" * 50)
@@ -8220,18 +8236,6 @@ Examples:
         return
 
     agent = CocoonAgent(voting=args.voting, max_organisms=args.max_organisms)
-
-    if args.export:
-        agent.export_cocoon(args.export)
-        return
-
-    if args.export_onnx:
-        agent.export_onnx(args.export_onnx, organism_idx=args.organism)
-        return
-
-    if args.export_package:
-        agent.export_package(args.export_package)
-        return
 
     if args.mode == 'chat':
         print("\n🦋 Butterfly Cocoon - Interactive Chat")
