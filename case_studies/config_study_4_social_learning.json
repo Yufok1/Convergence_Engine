@@ -1,7 +1,6 @@
 {
-  "_case_study": "STUDY 4A: SOCIAL DENSE - Maximum social connections, extended foundation time",
-  "_hypothesis": "More organisms = more social pathways, longer staged delay = stronger foundation before vocabulary flood",
-  "_key_changes": "population 120, max_population 180, staged delay 30min, max_alliance_size 40",
+  "_case_study": "STUDY 4: SOCIAL LEARNING - Alliance-based language development",
+  "_hypothesis": "Allied organisms develop shared vocabulary and understanding through cooperation",
   "_hardware_profile_help": "Set to 'beast', 'workstation', 'standard', 'laptop', 'potato', or 'cpu_only' to override auto-detection. null = auto-detect",
   "agency": {
     "confidence_threshold": 0.0001,
@@ -17,7 +16,7 @@
     "embedding_dim": 64,
     "organism_embedding_alpha": 0.1,
     "concept_system_alpha": 0.05,
-    "knowledge_web_influence_interval": 20,
+    "knowledge_web_influence_interval": 25,
     "phenotype_to_vocabulary": true
   },
   "arena": {
@@ -120,7 +119,7 @@
       "initial": 0.04
     },
     "mutation_rate_precision": 0.001,
-    "population_size": 120
+    "population_size": 25
   },
   "feedback": {
     "enabled": true,
@@ -175,20 +174,20 @@
   "highlander": {
     "alliance_warfare": {
       "betrayal_chance": 0.0,
-      "confederation_war_threshold": 0.85,
+      "confederation_war_threshold": 0.8,
       "enabled": true,
-      "existential_war_threshold": 0.95,
-      "max_alliance_size": 40,
-      "max_alliances": 15,
-      "max_confederations": 5,
+      "existential_war_threshold": 0.9,
+      "max_alliance_size": 20,
+      "max_alliances": 10,
+      "max_confederations": 3,
       "min_alliance_size": 2,
-      "war_declaration_threshold": 0.8,
-      "war_frequency": 0.02,
+      "war_declaration_threshold": 0.7,
+      "war_frequency": 0.05,
       "illumination_stability_threshold": 5
     },
     "chaos_factor": 0.0,
-    "competition_intensity": 0.03,
-    "description": "STUDY 4A: SOCIAL DENSE - Maximum social network, extended foundation",
+    "competition_intensity": 0.05,
+    "description": "STUDY 4: SOCIAL LEARNING - Large alliances, minimal competition",
     "enabled": true,
     "extreme_mode": {
       "chaos_factor": 0.0,
@@ -204,17 +203,17 @@
       "rounds_per_cycle": 2,
       "survival_threshold": 0.4
     },
-    "germination_rate": 0.3,
+    "germination_rate": 0.5,
     "max_battle_rounds": 50,
-    "max_capsules": 150,
-    "max_genetic_samples": 150,
-    "max_population": 180,
-    "min_population": 60,
+    "max_capsules": 100,
+    "max_genetic_samples": 100,
+    "max_population": 60,
+    "min_population": 15,
     "mutation_rate": 0.0,
-    "population_size": 120,
+    "population_size": 25,
     "predation_enabled": false,
     "rounds_per_cycle": 1,
-    "survival_threshold": 0.15
+    "survival_threshold": 0.2
   },
   "lattice": {
     "entropy_sensitivity": 5e-05,
@@ -278,10 +277,10 @@
   "network": {
     "connection_strength_resolution": 5e-06,
     "emergence_sensitivity": 1e-06,
-    "max_connections": 50000,
-    "max_organisms": 2000,
+    "max_connections": 32000,
+    "max_organisms": 1200,
     "resource_flow_precision": 0.0001,
-    "resource_pool": 1200,
+    "resource_pool": 800,
     "stability_precision": 1e-07
   },
   "neural": {
@@ -297,7 +296,7 @@
       "concept_loss_weight": 0.1,
       "embed_dim": 64,
       "enabled": true,
-      "num_key_compositions": 25,
+      "num_key_compositions": 20,
       "utility_update_alpha": 0.1
     },
     "device": "cuda",
@@ -348,14 +347,14 @@
       "knowledge_web": {
         "embedding_dim": 64,
         "enabled": true,
-        "max_concepts": 700,
+        "max_concepts": 500,
         "quality_control": {
           "confidence_growth_rate": 0.0005,
           "enabled": true,
           "exploration_decay_generations": 1000,
           "exploration_end": 0.05,
           "exploration_start": 0.2,
-          "max_discoveries_per_generation": 12,
+          "max_discoveries_per_generation": 10,
           "min_confidence_threshold": 0.3,
           "min_discovery_count": 3,
           "pruning_confidence_threshold": 0.2,
@@ -380,10 +379,10 @@
         },
         "semantic_guidance": {
           "enabled": true,
-          "high_strength_boost": 0.12,
-          "max_similar_words": 6,
-          "min_strength_threshold": 0.28,
-          "semantic_boost": 0.25
+          "high_strength_boost": 0.1,
+          "max_similar_words": 5,
+          "min_strength_threshold": 0.3,
+          "semantic_boost": 0.2
         }
       },
       "sequence": {
@@ -440,7 +439,7 @@
       "fitness_improvement": 4.5,
       "resource_gain": 1,
       "resource_loss": -0.3,
-      "survival": 2.5
+      "survival": 2
     },
     "training": {
       "batch_size": 32,
@@ -465,7 +464,7 @@
         "type": "cosine",
         "warmup_steps": 100
       },
-      "memory_size": 25000,
+      "memory_size": 20000,
       "update_frequency": 1
     },
     "vp_aware_planning": {
@@ -496,7 +495,7 @@
       "measurements": 0.25,
       "superposition": 0.25
     },
-    "initial_states": 100,
+    "initial_states": 80,
     "performance_thresholds": {
       "fitness_std_threshold": 0.3,
       "iteration_time_ms": 10,
@@ -554,7 +553,7 @@
     "clustering": {
       "algorithm": "hdbscan",
       "enabled": true,
-      "min_cluster_size": 5,
+      "min_cluster_size": 4,
       "min_samples": 1,
       "use_neural_embeddings": true
     },
