@@ -6,6 +6,41 @@
 
 ## [Unreleased] - 2025-12-10
 
+### 🎓 Staged Knowledge Loading (2025-12-10)
+
+**NEW TRAINING PROTOCOL**: Delay loading expanded knowledge web to let organisms build foundations first.
+
+#### Added - Staged Knowledge Configuration
+- **Config**: `neural.language_model.teacher.staged_knowledge`
+  - `enabled`: true/false (default: true)
+  - `delay_seconds`: seconds before loading expanded web (default: 1800 = 30 min)
+  - `start_with_innate_only`: start with just innate vocab (default: true)
+
+#### How It Works
+1. **Phase 1** (0-30 min): Organisms train with innate vocab only (1700 concepts)
+   - Build robust internal semantic representations
+   - Strong organisms develop efficient abstractions
+2. **Phase 2** (30+ min): Expanded knowledge web loads (137k+ concepts)
+   - Strong organisms integrate new knowledge efficiently
+   - Creates "rich-get-richer" effect - strongest become monsters
+
+#### Changed - Language Teacher (`language_teacher.py`)
+- Added `check_staged_knowledge_loading()` method
+- Logs countdown every 5 minutes
+- Automatic trigger when delay expires
+- 🎓 emoji markers in logs for easy tracking
+
+### 🔧 Elastic Vocabulary Fix (2025-12-10)
+
+**BUG FIX**: Prevent CUDA crashes when vocabulary grows beyond neural network's fixed vocab_size.
+
+#### Fixed
+- `reality_simulator/neural/trainer.py` - Mask out-of-bounds tokens instead of crashing
+- `reality_simulator/agent_compiler.py` - Same fix in cocoon template
+- Tokens exceeding vocab_size are now set to ignore_index (0) during loss calculation
+
+---
+
 ### 🧬 Nuclear Vocabulary & Innate Language System (2025-12-10)
 
 **MAJOR ENHANCEMENT**: Organisms now spawn with rich innate vocabulary from curated semantic extraction.

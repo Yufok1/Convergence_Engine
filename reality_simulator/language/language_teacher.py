@@ -18,6 +18,7 @@ Based on semantic grounding research and emergent language patterns.
 """
 
 import logging
+import time
 from typing import Dict, List, Optional, Any, Set, Tuple
 from collections import defaultdict
 import numpy as np
@@ -267,6 +268,16 @@ class LanguageTeacher:
             raise ImportError("LinguisticKnowledgeWeb is required but not available. Check imports.")
         
         self.use_knowledge_web = teacher_config.get('use_knowledge_web', True)
+        
+        # Staged knowledge loading configuration
+        staged_config = teacher_config.get('staged_knowledge', {})
+        self.staged_knowledge_enabled = staged_config.get('enabled', False)
+        self.staged_knowledge_delay = staged_config.get('delay_seconds', 1800)  # Default 30 minutes
+        self.start_with_innate_only = staged_config.get('start_with_innate_only', True)
+        self.expanded_web_loaded = False
+        self.start_time = time.time()
+        self._pending_expanded_web_path = None
+        
         if self.use_knowledge_web:
             self.knowledge_web = LinguisticKnowledgeWeb(config)
             
@@ -290,10 +301,17 @@ class LanguageTeacher:
             else:
                 web_path = seeded_web_path_50k
             
-            if web_path.exists():
+            # STAGED KNOWLEDGE: Delay loading expanded web if configured
+            if self.staged_knowledge_enabled and self.start_with_innate_only:
+                self._pending_expanded_web_path = web_path
+                logger.info(f"[LANGUAGE_TEACHER] 🎓 STAGED KNOWLEDGE: Delaying expanded web load by {self.staged_knowledge_delay}s")
+                logger.info(f"[LANGUAGE_TEACHER] 🎓 Organisms will build foundations with innate vocab first")
+                # Don't load expanded web yet - will be triggered later
+            elif web_path.exists():
                 logger.info(f"[LANGUAGE_TEACHER] Loading knowledge web from {web_path}")
                 try:
                     self.knowledge_web.load_from_file(str(web_path))
+                    self.expanded_web_loaded = True
                     logger.info(f"[LANGUAGE_TEACHER] Successfully loaded knowledge web with {len(self.knowledge_web.concepts)} concepts")
                 except Exception as e:
                     logger.error(f"[LANGUAGE_TEACHER] Failed to load knowledge web: {e}")
@@ -368,6 +386,40 @@ class LanguageTeacher:
         
         logger.info(f"[LANGUAGE_TEACHER] Initialized (enabled={self.enabled}, knowledge_web={self.use_knowledge_web}, semantic={self.use_semantic_embeddings}, frequency={self.teaching_frequency})")
     
+    def check_staged_knowledge_loading(self) -> bool:
+        """
+        Check if it's time to load the expanded knowledge web (staged loading).
+        
+        Returns True if the expanded web was just loaded.
+        """
+        if not self.staged_knowledge_enabled or self.expanded_web_loaded:
+            return False
+        
+        if self._pending_expanded_web_path is None:
+            return False
+            
+        elapsed = time.time() - self.start_time
+        if elapsed >= self.staged_knowledge_delay:
+            # Time to load the expanded web!
+            logger.info(f"[LANGUAGE_TEACHER] 🎓 STAGED KNOWLEDGE TRIGGER: {elapsed:.0f}s elapsed, loading expanded knowledge web...")
+            try:
+                self.knowledge_web.load_from_file(str(self._pending_expanded_web_path))
+                self.expanded_web_loaded = True
+                self._pending_expanded_web_path = None
+                logger.info(f"[LANGUAGE_TEACHER] 🎓 ✅ Expanded knowledge web loaded: {len(self.knowledge_web.concepts)} concepts!")
+                logger.info(f"[LANGUAGE_TEACHER] 🎓 Organisms can now integrate richer semantic relationships")
+                return True
+            except Exception as e:
+                logger.error(f"[LANGUAGE_TEACHER] Failed to load staged knowledge web: {e}")
+                self._pending_expanded_web_path = None
+                return False
+        else:
+            remaining = self.staged_knowledge_delay - elapsed
+            if int(elapsed) % 300 == 0 and int(elapsed) > 0:  # Log every 5 minutes
+                logger.info(f"[LANGUAGE_TEACHER] 🎓 Staged knowledge: {remaining:.0f}s until expanded web loads")
+        
+        return False
+    
     def teach_organism(self, organism, context_memory, generation: int) -> int:
         """
         Teach words to an organism based on its behavior and state.
@@ -385,6 +437,9 @@ class LanguageTeacher:
         Returns:
             Number of words assigned to this organism
         """
+        # Check for staged knowledge loading
+        self.check_staged_knowledge_loading()
+        
         if not self.enabled:
             return 0
         
