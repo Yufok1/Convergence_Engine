@@ -969,9 +969,29 @@ class BattleArena:
                 ai_selection=True
             )
             
-            # Convert ProtonGameArena result to BattleOutcome
-            winner = organism_1 if proton_result.winner_id == org1_id else organism_2
-            loser = organism_2 if proton_result.winner_id == org1_id else organism_1
+            # ═══════════════════════════════════════════════════════════════
+            # FIX: Handle TIE correctly FIRST - if no winner_id, use fitness to determine
+            # This MUST happen before we determine winner/loser for absorption
+            # ═══════════════════════════════════════════════════════════════
+            if proton_result.winner_id:
+                actual_winner_id = proton_result.winner_id
+            else:
+                # TIE - use fitness to break the tie
+                fitness_1 = getattr(organism_1, 'fitness', 0.5)
+                fitness_2 = getattr(organism_2, 'fitness', 0.5)
+                if fitness_1 != fitness_2:
+                    actual_winner_id = org1_id if fitness_1 > fitness_2 else org2_id
+                else:
+                    # True tie - random coin flip
+                    import random
+                    actual_winner_id = random.choice([org1_id, org2_id])
+                print(f"🎲 TIE resolved: winner={actual_winner_id[:8]} (fitness tiebreaker)")
+            
+            actual_loser_id = org2_id if actual_winner_id == org1_id else org1_id
+            
+            # Convert ProtonGameArena result to BattleOutcome (using resolved winner)
+            winner = organism_1 if actual_winner_id == org1_id else organism_2
+            loser = organism_2 if actual_winner_id == org1_id else organism_1
             
             # Determine absorption based on margin
             margin = abs(proton_result.score_a - proton_result.score_b) / max(
@@ -988,7 +1008,8 @@ class BattleArena:
                 f"⚔️ PROTON GAME: {game_name}\n"
                 f"{org1_id[:8]}: {proton_result.score_a:.1f} vs "
                 f"{org2_id[:8]}: {proton_result.score_b:.1f}\n"
-                f"🏆 Winner: {proton_result.winner_id[:8] if proton_result.winner_id else 'TIE'}"
+                f"🏆 Winner: {actual_winner_id[:8]}"
+                f"{' (TIE resolved)' if not proton_result.winner_id else ''}"
             )
             
             outcome = BattleOutcome(
@@ -996,12 +1017,12 @@ class BattleArena:
                 battle_type=BattleType.PROTON_GAME,
                 combatant_1_id=org1_id,
                 combatant_2_id=org2_id,
-                winner_id=proton_result.winner_id or org1_id,
-                loser_id=org2_id if proton_result.winner_id == org1_id else org1_id,
+                winner_id=actual_winner_id,
+                loser_id=actual_loser_id,
                 rounds=[],  # Gym episodes tracked differently
                 total_rounds=proton_result.total_episodes,
-                winner_final_hp=proton_result.score_a if proton_result.winner_id == org1_id else proton_result.score_b,
-                loser_final_hp=proton_result.score_b if proton_result.winner_id == org1_id else proton_result.score_a,
+                winner_final_hp=proton_result.score_a if actual_winner_id == org1_id else proton_result.score_b,
+                loser_final_hp=proton_result.score_b if actual_winner_id == org1_id else proton_result.score_a,
                 margin_of_victory=margin,
                 concepts_transferred=concepts_transferred,
                 traits_transferred=traits_transferred,

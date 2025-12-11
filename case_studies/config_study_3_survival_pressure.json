@@ -1,6 +1,7 @@
 {
-  "_hardware_profile_help": "H200 140GB VRAM - EDEN MODE - Land of Milk and Honey",
-  "hardware_profile": "beast",
+  "_case_study": "STUDY 3: SURVIVAL PRESSURE - High evolutionary stress on language",
+  "_hypothesis": "High competition produces efficient, precise language - economy of expression",
+  "_hardware_profile_help": "Set to 'beast', 'workstation', 'standard', 'laptop', 'potato', or 'cpu_only' to override auto-detection. null = auto-detect",
   "agency": {
     "confidence_threshold": 0.0001,
     "decision_precision": 1e-05,
@@ -104,21 +105,21 @@
     }
   },
   "evolution": {
-    "adaptation_sensitivity": 0.005,
+    "adaptation_sensitivity": 0.008,
     "diversity_guard": {
       "enabled": true,
       "frequency_threshold": 0.1,
       "hash_similarity_threshold": 0.88,
-      "penalty": 0.05
+      "penalty": 0.08
     },
     "fitness_precision": 1e-07,
     "genotype_length": 48,
-    "max_generations": 1500,
+    "max_generations": 2000,
     "mutation_rate": {
-      "initial": 0.04
+      "initial": 0.05
     },
     "mutation_rate_precision": 0.001,
-    "population_size": 5
+    "population_size": 15
   },
   "feedback": {
     "enabled": true,
@@ -152,6 +153,7 @@
     },
     "rate_limit_frames": 120
   },
+  "hardware_profile": null,
   "health_monitor": {
     "critical_threshold": 0.25,
     "enabled": true,
@@ -171,25 +173,25 @@
   },
   "highlander": {
     "alliance_warfare": {
-      "betrayal_chance": 0.0,
-      "confederation_war_threshold": 0.9,
+      "betrayal_chance": 0.1,
+      "confederation_war_threshold": 0.5,
       "enabled": true,
-      "existential_war_threshold": 0.95,
-      "max_alliance_size": 100,
-      "max_alliances": 20,
-      "max_confederations": 5,
+      "existential_war_threshold": 0.7,
+      "max_alliance_size": 50,
+      "max_alliances": 10,
+      "max_confederations": 3,
       "min_alliance_size": 2,
-      "war_declaration_threshold": 0.8,
-      "war_frequency": 0.05,
-      "illumination_stability_threshold": 10
+      "war_declaration_threshold": 0.5,
+      "war_frequency": 0.4,
+      "illumination_stability_threshold": 5
     },
-    "chaos_factor": 0.0,
-    "competition_intensity": 0.15,
-    "description": "EDEN MODE - Land of Milk and Honey - Gentle battles, massive vocab, high survival",
+    "chaos_factor": 0.1,
+    "competition_intensity": 0.5,
+    "description": "STUDY 3: SURVIVAL PRESSURE - High evolutionary stress",
     "enabled": true,
     "extreme_mode": {
       "chaos_factor": 0.0,
-      "competition_intensity": 0.5,
+      "competition_intensity": 0.4,
       "description": "EXTREME DIFFICULTY - Maximum evolutionary pressure",
       "germination_rate": 1,
       "max_battle_rounds": 15,
@@ -202,26 +204,26 @@
       "survival_threshold": 0.4
     },
     "germination_rate": 1.0,
-    "max_battle_rounds": 15,
+    "max_battle_rounds": 30,
     "max_capsules": 100,
-    "max_genetic_samples": 200,
-    "max_population": 120,
-    "min_population": 50,
+    "max_genetic_samples": 100,
+    "max_population": 50,
+    "min_population": 8,
     "mutation_rate": 0.0,
-    "population_size": 80,
+    "population_size": 15,
     "predation_enabled": false,
-    "rounds_per_cycle": 1,
-    "survival_threshold": 0.15
+    "rounds_per_cycle": 3,
+    "survival_threshold": 0.5
   },
   "lattice": {
     "entropy_sensitivity": 5e-05,
     "interaction_precision": 0.0001,
-    "particles": 500,
+    "particles": 1000,
     "prune_threshold": 0,
     "stability_tolerance": 0.0005
   },
   "logging": {
-    "shared_state_dump_interval": 60
+    "shared_state_dump_interval": 30
   },
   "meta_cognitive": {
     "description": "Meta-cognitive systems: self-awareness, self-tuning, autonomous optimization",
@@ -275,20 +277,20 @@
   "network": {
     "connection_strength_resolution": 5e-06,
     "emergence_sensitivity": 1e-06,
-    "max_connections": 15000,
-    "max_organisms": 150,
+    "max_connections": 32000,
+    "max_organisms": 1200,
     "resource_flow_precision": 0.0001,
-    "resource_pool": 1500,
+    "resource_pool": 600,
     "stability_precision": 1e-07
   },
   "neural": {
     "brain": {
-      "activation": "gelu",
-      "dropout": 0.08,
-      "hidden_dim": 128,
+      "activation": "relu",
+      "dropout": 0.1,
+      "hidden_dim": 64,
       "input_dim": 24,
       "output_dim": 6,
-      "vocab_size": 5000
+      "vocab_size": 20000
     },
     "concept_system": {
       "concept_loss_weight": 0.1,
@@ -339,7 +341,7 @@
       "enabled": true,
       "generation": {
         "max_length": 128,
-        "temperature": 1.2,
+        "temperature": 0.9,
         "vp_gate_threshold": 0.5
       },
       "knowledge_web": {
@@ -391,11 +393,17 @@
         "embedding_dim": 64,
         "enabled": true,
         "min_action_history": 3,
-        "min_confidence": 0.25,
+        "min_confidence": 0.3,
         "teaching_frequency": 1,
         "use_knowledge_web": true,
         "use_semantic_embeddings": true,
-        "vocab_size": 5000
+        "vocab_size": 20000,
+        "staged_knowledge": {
+          "_help": "Delay loading expanded knowledge web to let organisms build foundations with innate vocab first",
+          "enabled": true,
+          "delay_seconds": 1200,
+          "start_with_innate_only": true
+        }
       },
       "training": {
         "alpha": 0.5,
@@ -404,7 +412,7 @@
         "vp_temperature_scale": true
       },
       "vocabulary": {
-        "max_size": 5000,
+        "max_size": 20000,
         "special_tokens": [
           "<PAD>",
           "<UNK>",
@@ -415,6 +423,11 @@
       }
     },
     "optimization": {
+      "amp": {
+        "enabled": true,
+        "dtype": "float16",
+        "description": "Mixed precision training - 2-3x GPU speedup on Tensor Core GPUs"
+      },
       "compile_mode": "reduce-overhead",
       "reuse_optimizers": true,
       "use_compile": false,
@@ -423,26 +436,26 @@
     "rewards": {
       "connection_failure": -0.2,
       "connection_success": 2.5,
-      "fitness_improvement": 4.5,
+      "fitness_improvement": 5.0,
       "resource_gain": 1,
       "resource_loss": -0.3,
-      "survival": 2
+      "survival": 3.0
     },
     "training": {
-      "batch_size": 64,
+      "batch_size": 32,
       "early_stopping": {
         "enabled": true,
         "min_delta": 0.0001,
-        "patience": 20
+        "patience": 10
       },
       "enabled": true,
-      "epsilon": 0.9,
-      "epsilon_decay": 0.995,
-      "epsilon_end": 0.02,
-      "epsilon_start": 0.9,
-      "gamma": 0.99,
-      "language_reward_scaling": 0.4,
-      "learning_rate": 0.003,
+      "epsilon": 0.95,
+      "epsilon_decay": 0.99,
+      "epsilon_end": 0.01,
+      "epsilon_start": 0.8,
+      "gamma": 0.995,
+      "language_reward_scaling": 0.35,
+      "learning_rate": 0.005,
       "lr_scheduler": {
         "enabled": true,
         "gamma": 0.95,
@@ -451,7 +464,7 @@
         "type": "cosine",
         "warmup_steps": 100
       },
-      "memory_size": 50000,
+      "memory_size": 20000,
       "update_frequency": 1
     },
     "vp_aware_planning": {
@@ -494,18 +507,18 @@
     "superposition_tolerance": 0.0005
   },
   "ray": {
-    "actor_pool_size": 4,
-    "batch_inference_size": 64,
-    "description": "Ray distributed computing - H200 140GB VRAM optimized",
+    "actor_pool_size": 2,
+    "batch_inference_size": 32,
+    "description": "Ray distributed computing - parallel organism decisions, training, and analysis",
     "enabled": true,
     "fallback_on_error": true,
     "logging_level": "warning",
     "memory_management": {
       "actor_pool_lru_eviction": true,
       "cleanup_on_organism_death": true,
-      "max_object_refs": 200
+      "max_object_refs": 100
     },
-    "num_cpus": 24,
+    "num_cpus": 4,
     "num_gpus": 1,
     "object_store_memory": null,
     "parallelization_threshold": 100,
@@ -560,9 +573,9 @@
     "log_level": "INFO",
     "max_runtime": 14400.0,
     "measurement_precision": 4,
-    "performance_sampling_rate": 300,
-    "save_interval": 45.0,
-    "target_fps": 5,
+    "performance_sampling_rate": 200,
+    "save_interval": 60.0,
+    "target_fps": 4,
     "time_resolution_ms": 1.0
   },
   "vp_monitoring": {

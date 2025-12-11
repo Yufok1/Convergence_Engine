@@ -1,7 +1,7 @@
 {
-  "_hardware_profile_help": "4x RTX 4090 (96GB VRAM, 327 TFLOPS) - AMD EPYC 7402P 24-Core, 257GB RAM - SWARM PONG SPECIALIST",
-  "_rental_info": "vast.ai Instance 28678682 - $0.015/hr - Optimized for arena training with brain-only movement",
-  "_purpose": "Train organisms to learn ball-tracking from scratch without reactive cheating - proves genuine ML learning",
+  "_case_study": "STUDY 5: CREATIVE SPECIALIST - High temperature, strong semantic guidance",
+  "_hypothesis": "Higher temperature + semantic guidance produces more expressive, creative articulation",
+  "_hardware_profile_help": "Set to 'beast', 'workstation', 'standard', 'laptop', 'potato', or 'cpu_only' to override auto-detection. null = auto-detect",
   "agency": {
     "confidence_threshold": 0.0001,
     "decision_precision": 1e-05,
@@ -13,75 +13,61 @@
     "_help": "Unifies 6 semantic systems for word embedding differentiation",
     "enabled": true,
     "use_learned_embeddings": true,
-    "embedding_dim": 256,
+    "embedding_dim": 64,
     "organism_embedding_alpha": 0.15,
-    "concept_system_alpha": 0.08,
-    "knowledge_web_influence_interval": 20,
+    "concept_system_alpha": 0.1,
+    "knowledge_web_influence_interval": 10,
     "phenotype_to_vocabulary": true
   },
   "arena": {
-    "_mode_help": "SWARM_PONG_SPECIALIST - Organisms learn ball-tracking through pure brain output, no reactive cheating",
-    "_proton_game_probability_help": "Lower to focus more on swarm pong training",
+    "_prefer_native_games_help": "When true, prioritizes language/concept games that use organism's native abilities (no Gym dependency)",
+    "_proton_game_probability_help": "Fraction of battles that use Proton Game Arena (0.0-1.0). Set to 0.5 for 50% Proton Game battles.",
     "battle_consequences": {
-      "fitness_transfer_rate": 1.5,
+      "fitness_transfer_rate": 1,
       "resource_transfer_enabled": true,
-      "resource_transfer_rate": 1.2,
-      "trait_bonus_cap": 0.4,
+      "resource_transfer_rate": 1,
+      "trait_bonus_cap": 0.3,
       "trait_evolution_enabled": true
     },
-    "default_battle_type": "SWARM_PONG",
-    "description": "Swarm Pong Arena - Multi-agent ball defense with command chain learning",
+    "default_battle_type": "PROTON_GAME",
+    "description": "Proton Game Arena - Apprentice Adept style gym battles (Piers Anthony + Highlander inspired)",
     "enabled": true,
     "game_selection": {
       "allow_negotiation": true,
-      "fallback_on_deadlock": "swarm_pong",
+      "fallback_on_deadlock": "random",
       "mode": "ai_driven",
-      "negotiation_rounds": 2
+      "negotiation_rounds": 3
     },
     "grid_weights": {
       "challenge_types": {
-        "ARTS": 0.5,
-        "CHANCE": 0.5,
+        "ARTS": 2.0,
+        "CHANCE": 1.0,
         "MENTAL": 1.5,
-        "PHYSICAL": 2.0
+        "PHYSICAL": 0.5
       },
       "resource_types": {
         "ANIMAL": 1.0,
-        "MACHINE": 1.5,
-        "NAKED": 1.0,
-        "TOOL": 1.5
+        "MACHINE": 1.0,
+        "NAKED": 1.5,
+        "TOOL": 1.0
       }
     },
     "gym_settings": {
-      "default_episodes": 20,
-      "max_episode_steps": 2000,
-      "parallel_envs": 16,
+      "default_episodes": 10,
+      "max_episode_steps": 1000,
+      "parallel_envs": 1,
       "render_mode": null
     },
-    "prefer_native_games": false,
+    "prefer_native_games": true,
     "proton_game_probability": 1.0,
-    "swarm_pong": {
-      "_help": "Swarm pong specific settings for arena training",
-      "enabled": true,
-      "training_episodes_per_generation": 10,
-      "max_misses": 15,
-      "balls": 1,
-      "ball_speed_scale": 0.8,
-      "reward_catch": 2.0,
-      "reward_near_miss": 0.5,
-      "penalty_miss": -1.0,
-      "penalty_game_over": -2.0,
-      "command_chain_enabled": true,
-      "exploration_noise": 0.1
-    },
     "tournament": {
-      "default_format": "round_robin",
-      "round_robin_battles_per_pair": 5,
+      "default_format": "single_elimination",
+      "round_robin_battles_per_pair": 3,
       "seeding_method": "fitness_based"
     }
   },
   "causation_detection": {
-    "correlation_threshold": 0.4,
+    "correlation_threshold": 0.5,
     "direct_causation_time_window": 2,
     "enable_bidirectional_causations": true,
     "enable_language_causations": true,
@@ -91,8 +77,8 @@
     "enable_neural_training_causations": true,
     "enable_phase_transition_causations": true,
     "enabled": true,
-    "phase_transition_time_window": 2.0,
-    "recent_events_window": 300,
+    "phase_transition_time_window": 2.5,
+    "recent_events_window": 150,
     "thresholds": {
       "clustering_coefficient": {
         "collapse": 0.5,
@@ -103,7 +89,7 @@
         "direction": "below"
       },
       "organism_count": {
-        "collapse": 1000,
+        "collapse": 500,
         "direction": "above"
       },
       "violation_pressure": {
@@ -119,136 +105,136 @@
     }
   },
   "evolution": {
-    "adaptation_sensitivity": 0.008,
+    "adaptation_sensitivity": 0.005,
     "diversity_guard": {
       "enabled": true,
-      "frequency_threshold": 0.08,
-      "hash_similarity_threshold": 0.85,
-      "penalty": 0.08
+      "frequency_threshold": 0.1,
+      "hash_similarity_threshold": 0.88,
+      "penalty": 0.05
     },
     "fitness_precision": 1e-07,
-    "genotype_length": 64,
-    "max_generations": 10000,
+    "genotype_length": 48,
+    "max_generations": 1500,
     "mutation_rate": {
-      "initial": 0.05
+      "initial": 0.04
     },
     "mutation_rate_precision": 0.001,
-    "population_size": 16
+    "population_size": 12
   },
   "feedback": {
     "enabled": true,
-    "hysteresis_checks": 4,
-    "interval_frames": 8,
+    "hysteresis_checks": 5,
+    "interval_frames": 10,
     "knobs": {
       "clustering_bias": {
-        "initial": 1.4,
-        "max": 1.8,
-        "min": 0.2,
+        "initial": 1.5,
+        "max": 1.6,
+        "min": 0.3,
         "step": 0.05
       },
       "mutation_rate": {
-        "initial": 0.05,
-        "max": 0.1,
-        "min": 0.005,
-        "step": 0.002
+        "initial": 0.033,
+        "max": 0.06,
+        "min": 0.002,
+        "step": 0.001
       },
       "new_edge_rate": {
-        "initial": 5.0,
-        "max": 8,
-        "min": 0.5,
-        "step": 0.2
+        "initial": 4.8,
+        "max": 6,
+        "min": 0.2,
+        "step": 0.1
       },
       "quantum_pruning": {
-        "initial": 0.3,
+        "initial": 0.35,
         "max": 1,
         "min": 0,
         "step": 0.05
       }
     },
-    "rate_limit_frames": 100
+    "rate_limit_frames": 120
   },
-  "hardware_profile": "4x_rtx4090_swarm_pong",
+  "hardware_profile": null,
   "health_monitor": {
-    "critical_threshold": 0.2,
+    "critical_threshold": 0.25,
     "enabled": true,
-    "healthy_threshold": 0.7,
-    "history_size": 150,
+    "healthy_threshold": 0.75,
+    "history_size": 100,
     "thresholds": {
-      "critical": 0.2,
-      "healthy": 0.7,
-      "warning": 0.4
+      "critical": 0.25,
+      "healthy": 0.65,
+      "warning": 0.45
     },
-    "warning_threshold": 0.5,
-    "weight_adaptability": 0.25,
-    "weight_coherence": 0.25,
-    "weight_diversity": 0.2,
+    "warning_threshold": 0.55,
+    "weight_adaptability": 0.2,
+    "weight_coherence": 0.3,
+    "weight_diversity": 0.25,
     "weight_lawfulness": 0.15,
-    "weight_sustainability": 0.15
+    "weight_sustainability": 0.1
   },
   "highlander": {
     "alliance_warfare": {
       "betrayal_chance": 0.0,
       "confederation_war_threshold": 0.6,
       "enabled": true,
-      "existential_war_threshold": 0.6,
-      "max_alliance_size": 200,
-      "max_alliances": 40,
-      "max_confederations": 10,
+      "existential_war_threshold": 0.8,
+      "max_alliance_size": 100,
+      "max_alliances": 20,
+      "max_confederations": 5,
       "min_alliance_size": 2,
-      "war_declaration_threshold": 0.35,
-      "war_frequency": 0.4,
+      "war_declaration_threshold": 0.6,
+      "war_frequency": 0.2,
       "illumination_stability_threshold": 5
     },
     "chaos_factor": 0.0,
-    "competition_intensity": 0.6,
-    "description": "Highlander Protocol - SWARM PONG SPECIALIST - Learn ball tracking through combat",
+    "competition_intensity": 0.2,
+    "description": "STUDY 5: CREATIVE SPECIALIST - High temperature, semantic boost",
     "enabled": true,
     "extreme_mode": {
       "chaos_factor": 0.0,
-      "competition_intensity": 1.0,
-      "description": "EXTREME - Maximum arena pressure",
+      "competition_intensity": 0.4,
+      "description": "EXTREME DIFFICULTY - Maximum evolutionary pressure",
       "germination_rate": 1,
-      "max_battle_rounds": 20,
-      "max_population": 1500,
-      "min_population": 100,
-      "mutation_rate": 0.2,
-      "population_size": 100,
-      "predation_enabled": true,
-      "rounds_per_cycle": 3,
-      "survival_threshold": 0.85
+      "max_battle_rounds": 15,
+      "max_population": 500,
+      "min_population": 20,
+      "mutation_rate": 0.0,
+      "population_size": 20,
+      "predation_enabled": false,
+      "rounds_per_cycle": 2,
+      "survival_threshold": 0.4
     },
     "germination_rate": 1.0,
-    "max_battle_rounds": 30,
-    "max_capsules": 300,
-    "max_genetic_samples": 300,
-    "max_population": 250,
+    "max_battle_rounds": 50,
+    "max_capsules": 100,
+    "max_genetic_samples": 100,
+    "max_population": 40,
     "min_population": 8,
-    "mutation_rate": 0.06,
-    "population_size": 16,
-    "predation_enabled": true,
+    "mutation_rate": 0.0,
+    "population_size": 12,
+    "predation_enabled": false,
     "rounds_per_cycle": 2,
-    "survival_threshold": 0.35
+    "survival_threshold": 0.4
   },
   "lattice": {
     "entropy_sensitivity": 5e-05,
     "interaction_precision": 0.0001,
-    "particles": 1500,
+    "particles": 1000,
     "prune_threshold": 0,
     "stability_tolerance": 0.0005
   },
   "logging": {
-    "shared_state_dump_interval": 45
+    "shared_state_dump_interval": 30
   },
   "meta_cognitive": {
-    "description": "Meta-cognitive systems for swarm pong learning optimization",
+    "description": "Meta-cognitive systems: self-awareness, self-tuning, autonomous optimization",
     "self_tuning": {
       "enabled": true,
-      "min_confidence_threshold": 0.55,
+      "min_confidence_threshold": 0.6,
       "mode": "autonomous",
       "performance_targets": {
-        "max_anomaly_ratio": 0.15,
-        "min_cluster_diversity": 4,
-        "min_fitness_std": 0.08
+        "max_anomaly_ratio": 0.2,
+        "min_cluster_diversity": 3,
+        "min_fitness_std": 0.05
       },
       "safe_parameters": [
         "evolution.mutation_rate.initial",
@@ -285,40 +271,40 @@
         "meta_cognitive.self_tuning.tuning_interval_frames",
         "meta_cognitive.self_tuning.min_confidence_threshold"
       ],
-      "tuning_interval_frames": 8
+      "tuning_interval_frames": 10
     }
   },
   "network": {
     "connection_strength_resolution": 5e-06,
     "emergence_sensitivity": 1e-06,
-    "max_connections": 25000,
-    "max_organisms": 600,
+    "max_connections": 32000,
+    "max_organisms": 1200,
     "resource_flow_precision": 0.0001,
-    "resource_pool": 1200,
+    "resource_pool": 600,
     "stability_precision": 1e-07
   },
   "neural": {
     "brain": {
       "activation": "relu",
       "dropout": 0.1,
-      "hidden_dim": 256,
-      "input_dim": 32,
-      "output_dim": 8,
-      "vocab_size": 3000
+      "hidden_dim": 64,
+      "input_dim": 24,
+      "output_dim": 6,
+      "vocab_size": 20000
     },
     "concept_system": {
       "concept_loss_weight": 0.15,
-      "embed_dim": 256,
+      "embed_dim": 64,
       "enabled": true,
-      "num_key_compositions": 60,
-      "utility_update_alpha": 0.12
+      "num_key_compositions": 30,
+      "utility_update_alpha": 0.15
     },
     "device": "cuda",
     "enabled": true,
     "inheritance": {
-      "crossover_rate": 0.92,
+      "crossover_rate": 0.9,
       "enabled": true,
-      "mutation_rate": 0.12
+      "mutation_rate": 0.2
     },
     "initialization": {
       "deterministic": false,
@@ -326,101 +312,107 @@
     },
     "language_model": {
       "attention": {
-        "attention_dim": 128,
+        "attention_dim": 32,
         "enabled": true,
-        "num_heads": 8
+        "num_heads": 4
       },
       "curriculum": {
         "enabled": true,
         "ml_quality": {
           "enabled": true,
-          "high_quality_threshold": 0.6,
-          "low_quality_threshold": 0.25,
-          "max_sequence_length": 256,
+          "high_quality_threshold": 0.55,
+          "low_quality_threshold": 0.3,
+          "max_sequence_length": 64,
           "min_sequence_length": 8,
-          "sequence_length_step": 8
+          "sequence_length_step": 2
         },
         "sequence_lengths": {
-          "stage_0": 16,
-          "stage_1": 48,
-          "stage_2": 128,
-          "stage_3": 512
+          "stage_0": 8,
+          "stage_1": 16,
+          "stage_2": 32,
+          "stage_3": 128
         },
         "vp_thresholds": {
-          "stage_1": 0.55,
+          "stage_1": 0.5,
           "stage_2": 0.4,
-          "stage_3": 0.25
+          "stage_3": 0.3
         }
       },
       "enabled": true,
       "generation": {
-        "max_length": 512,
-        "temperature": 1.1,
-        "vp_gate_threshold": 0.45
+        "max_length": 128,
+        "temperature": 1.5,
+        "vp_gate_threshold": 0.5
       },
       "knowledge_web": {
-        "embedding_dim": 256,
+        "embedding_dim": 64,
         "enabled": true,
-        "max_concepts": 2500,
+        "max_concepts": 700,
         "quality_control": {
           "confidence_growth_rate": 0.0008,
           "enabled": true,
-          "exploration_decay_generations": 800,
-          "exploration_end": 0.03,
-          "exploration_start": 0.25,
-          "max_discoveries_per_generation": 30,
+          "exploration_decay_generations": 1000,
+          "exploration_end": 0.08,
+          "exploration_start": 0.3,
+          "max_discoveries_per_generation": 15,
           "min_confidence_threshold": 0.25,
-          "min_discovery_count": 2,
-          "pruning_confidence_threshold": 0.15,
-          "pruning_failure_rate": 0.65,
-          "pruning_unused_generations": 80,
-          "review_frequency": 80,
+          "min_discovery_count": 3,
+          "pruning_confidence_threshold": 0.2,
+          "pruning_failure_rate": 0.7,
+          "pruning_unused_generations": 100,
+          "review_frequency": 100,
           "validation_required": true,
           "vp_boost_exploration": true,
-          "vp_boost_threshold": 0.65
+          "vp_boost_threshold": 0.7
         }
       },
       "relationship_learning": {
         "enabled": true,
         "quality_evaluation": {
           "coherent_threshold": 0.45,
-          "garbled_threshold": 0.15,
-          "max_word_count": 30,
+          "garbled_threshold": 0.25,
+          "max_word_count": 25,
           "min_word_count": 2,
           "min_word_count_for_evaluation": 3,
-          "relationship_strength_threshold": 0.45,
-          "unk_ratio_threshold": 0.25
+          "relationship_strength_threshold": 0.4,
+          "unk_ratio_threshold": 0.35
         },
         "semantic_guidance": {
           "enabled": true,
-          "high_strength_boost": 0.15,
+          "high_strength_boost": 0.2,
           "max_similar_words": 8,
           "min_strength_threshold": 0.25,
-          "semantic_boost": 0.25
+          "semantic_boost": 0.4
         }
       },
       "sequence": {
-        "context_window": 128,
-        "max_length": 512
+        "context_window": 32,
+        "max_length": 128
       },
       "teacher": {
-        "embedding_dim": 256,
+        "embedding_dim": 64,
         "enabled": true,
-        "min_action_history": 2,
+        "min_action_history": 3,
         "min_confidence": 0.25,
         "teaching_frequency": 1,
         "use_knowledge_web": true,
         "use_semantic_embeddings": true,
-        "vocab_size": 5000
+        "vocab_size": 20000,
+        "staged_knowledge": {
+          "_help": "Delay loading expanded knowledge web to let organisms build foundations with innate vocab first",
+          "enabled": true,
+          "delay_seconds": 1200,
+          "start_with_innate_only": true
+        }
       },
       "training": {
         "alpha": 0.5,
-        "beta": 0.35,
-        "gamma": 0.15,
+        "beta": 0.4,
+        "gamma": 0.1,
         "vp_temperature_scale": true
       },
       "vocabulary": {
-        "max_size": 5000,
+        "max_size": 20000,
         "special_tokens": [
           "<PAD>",
           "<UNK>",
@@ -431,38 +423,39 @@
       }
     },
     "optimization": {
-      "compile_mode": "max-autotune",
+      "amp": {
+        "enabled": true,
+        "dtype": "float16",
+        "description": "Mixed precision training - 2-3x GPU speedup on Tensor Core GPUs"
+      },
+      "compile_mode": "reduce-overhead",
       "reuse_optimizers": true,
-      "use_compile": true,
-      "use_scripted_inference": true
+      "use_compile": false,
+      "use_scripted_inference": false
     },
     "rewards": {
-      "connection_failure": -0.15,
-      "connection_success": 3.0,
-      "fitness_improvement": 5.0,
-      "resource_gain": 1.2,
-      "resource_loss": -0.2,
-      "survival": 2.5,
-      "ball_catch": 4.0,
-      "ball_near_miss": 1.0,
-      "ball_miss": -1.5,
-      "command_follow_success": 2.0
+      "connection_failure": -0.2,
+      "connection_success": 2.5,
+      "fitness_improvement": 4.5,
+      "resource_gain": 1,
+      "resource_loss": -0.3,
+      "survival": 2
     },
     "training": {
-      "batch_size": 48,
+      "batch_size": 32,
       "early_stopping": {
         "enabled": true,
         "min_delta": 0.0001,
-        "patience": 12
+        "patience": 10
       },
       "enabled": true,
-      "epsilon": 0.85,
-      "epsilon_decay": 0.995,
+      "epsilon": 0.95,
+      "epsilon_decay": 0.99,
       "epsilon_end": 0.01,
-      "epsilon_start": 0.85,
+      "epsilon_start": 0.8,
       "gamma": 0.995,
-      "language_reward_scaling": 0.35,
-      "learning_rate": 0.002,
+      "language_reward_scaling": 0.4,
+      "learning_rate": 0.005,
       "lr_scheduler": {
         "enabled": true,
         "gamma": 0.95,
@@ -471,77 +464,77 @@
         "type": "cosine",
         "warmup_steps": 100
       },
-      "memory_size": 50000,
+      "memory_size": 20000,
       "update_frequency": 1
     },
     "vp_aware_planning": {
-      "base_boost": 0.2,
+      "base_boost": 0.18,
       "enabled": true,
-      "high_threshold": 0.5,
-      "low_threshold": 0.2,
-      "strong_boost": 0.35
+      "high_threshold": 0.45,
+      "low_threshold": 0.25,
+      "strong_boost": 0.3
     },
     "checkpointing": {
-      "_help": "Auto-save training state - critical for expensive GPU rentals",
+      "_help": "Auto-save training state to prevent data loss. Checkpoint every N generations or minutes.",
       "enabled": true,
-      "auto_save_interval_generations": 25,
-      "auto_save_interval_minutes": 10,
-      "max_checkpoints": 30,
+      "auto_save_interval_generations": 100,
+      "auto_save_interval_minutes": 30,
+      "max_checkpoints": 10,
       "checkpoint_dir": "data/neural_checkpoints",
       "include_experience_buffer": true,
       "include_optimizer_states": true,
-      "compression": true,
+      "compression": false,
       "auto_resume": true
     }
   },
   "quantum": {
-    "entanglement_sensitivity": 2e-06,
+    "entanglement_sensitivity": 2.5e-06,
     "fitness_weights": {
-      "entanglement": 0.35,
+      "entanglement": 0.3,
       "entropy": 0.2,
-      "measurements": 0.2,
+      "measurements": 0.25,
       "superposition": 0.25
     },
-    "initial_states": 300,
+    "initial_states": 80,
     "performance_thresholds": {
-      "fitness_std_threshold": 0.25,
-      "iteration_time_ms": 8,
-      "memory_percentage": 4.0,
-      "min_fitness_to_keep": 0.08
+      "fitness_std_threshold": 0.3,
+      "iteration_time_ms": 10,
+      "memory_percentage": 5.0,
+      "min_fitness_to_keep": 0.1
     },
     "probability_precision": 1e-06,
-    "prune_check_interval": 30,
-    "superposition_tolerance": 0.0004
+    "prune_check_interval": 40,
+    "superposition_tolerance": 0.0005
   },
   "ray": {
-    "actor_pool_size": 16,
-    "batch_inference_size": 256,
-    "description": "Ray distributed computing - 4x RTX 4090 massive parallel training",
+    "actor_pool_size": 2,
+    "batch_inference_size": 32,
+    "description": "Ray distributed computing - parallel organism decisions, training, and analysis",
     "enabled": true,
     "fallback_on_error": true,
     "logging_level": "warning",
     "memory_management": {
       "actor_pool_lru_eviction": true,
       "cleanup_on_organism_death": true,
-      "max_object_refs": 400
+      "max_object_refs": 100
     },
-    "num_cpus": 48,
-    "num_gpus": 4,
-    "object_store_memory": 50000000000,
-    "parallelization_threshold": 32,
+    "num_cpus": 4,
+    "num_gpus": 1,
+    "object_store_memory": null,
+    "parallelization_threshold": 100,
     "state_synchronization": {
       "consistency_model": "sequential",
-      "max_state_age_ms": 80,
+      "max_state_age_ms": 100,
       "snapshot_strategy": "breath_cycle"
     },
-    "training_threshold": 64
+    "training_threshold": 16
   },
   "rendering": {
-    "enable_visualizations": false,
-    "frame_rate": 60,
+    "enable_visualizations": true,
+    "frame_rate": 15,
     "metric_display_precision": 6,
-    "mode": "headless",
-    "performance_monitoring": true,
+    "mode": "god",
+    "performance_monitoring": false,
     "render_quality": "low",
     "resolution": [
       1280,
@@ -553,42 +546,42 @@
   "scikit": {
     "anomaly_detection": {
       "algorithm": "isolation_forest",
-      "contamination": 0.15,
+      "contamination": 0.18,
       "enabled": true,
-      "n_estimators": 1200
+      "n_estimators": 450
     },
     "clustering": {
       "algorithm": "hdbscan",
       "enabled": true,
       "min_cluster_size": 4,
-      "min_samples": 2,
+      "min_samples": 1,
       "use_neural_embeddings": true
     },
     "concept_tracking": {
       "enabled": true,
-      "persistence_threshold": 2,
-      "stale_threshold": 8
+      "persistence_threshold": 3,
+      "stale_threshold": 10
     },
     "dimensionality_reduction": {
       "algorithm": "pca",
       "enabled": true,
-      "n_components": 4
+      "n_components": 3
     },
     "enabled": true
   },
   "simulation": {
     "log_level": "INFO",
-    "max_runtime": 28800.0,
+    "max_runtime": 14400.0,
     "measurement_precision": 4,
-    "performance_sampling_rate": 150,
-    "save_interval": 45.0,
-    "target_fps": 30,
-    "time_resolution_ms": 0.5
+    "performance_sampling_rate": 200,
+    "save_interval": 60.0,
+    "target_fps": 3,
+    "time_resolution_ms": 1.0
   },
   "vp_monitoring": {
     "adaptive_response": {
-      "high_vp_threshold": 0.8,
-      "streak_threshold": 4
+      "high_vp_threshold": 0.85,
+      "streak_threshold": 3
     },
     "adaptive_thresholds": {
       "enabled": true
@@ -596,19 +589,18 @@
     "adaptive_thresholds_enabled": true,
     "component_decomposition_enabled": true,
     "component_weights": {
-      "evolution_pressure": 0.2,
+      "evolution_pressure": 0.15,
       "network_coherence": 0.15,
       "phase_mismatch": 0.1,
       "quantum_entropy": 0.15,
-      "trait_divergence": 0.2,
-      "arena_performance": 0.2
+      "trait_divergence": 0.15
     },
     "diagnostics_enabled": true,
     "stabilization": {
       "enabled": true,
-      "history_size": 20,
-      "max_jump": 0.08,
-      "smoothing_factor": 0.35
+      "history_size": 15,
+      "max_jump": 0.1,
+      "smoothing_factor": 0.4
     },
     "stabilization_enabled": true
   }

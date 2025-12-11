@@ -621,11 +621,8 @@ class HighlanderProtocol:
                 if len(self.battle_history) > 1000:
                     self.battle_history = self.battle_history[-1000:]
                 
-                # Winner absorbs loser's best traits
-                self._absorb_loser(
-                    result.winner_id, organisms.get(result.winner_id),
-                    result.loser_id, organisms.get(result.loser_id)
-                )
+                # NOTE: Absorption already done inside _conduct_battle()
+                # Do NOT call _absorb_loser again here - it causes double absorption!
                 
                 # Loser is eliminated
                 # DEBUG: Elimination logging

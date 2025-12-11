@@ -184,12 +184,12 @@
       "illumination_stability_threshold": 5
     },
     "chaos_factor": 0.0,
-    "competition_intensity": 0.3,
+    "competition_intensity": 0.2,
     "description": "Highlander Protocol - SMALL TRIBE MODE - Start with 9, stack vocabulary, grow naturally",
     "enabled": true,
     "extreme_mode": {
       "chaos_factor": 0.0,
-      "competition_intensity": 0.5,
+      "competition_intensity": 0.4,
       "description": "EXTREME DIFFICULTY - Maximum evolutionary pressure",
       "germination_rate": 1,
       "max_battle_rounds": 15,
@@ -216,7 +216,7 @@
   "lattice": {
     "entropy_sensitivity": 5e-05,
     "interaction_precision": 0.0001,
-    "particles": 800,
+    "particles": 1000,
     "prune_threshold": 0,
     "stability_tolerance": 0.0005
   },
@@ -275,10 +275,10 @@
   "network": {
     "connection_strength_resolution": 5e-06,
     "emergence_sensitivity": 1e-06,
-    "max_connections": 8000,
-    "max_organisms": 300,
+    "max_connections": 32000,
+    "max_organisms": 1200,
     "resource_flow_precision": 0.0001,
-    "resource_pool": 500,
+    "resource_pool": 600,
     "stability_precision": 1e-07
   },
   "neural": {

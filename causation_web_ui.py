@@ -6918,11 +6918,13 @@ def list_organisms():
         # Action names for behavioral analysis
         ACTION_NAMES = ['move', 'cooperate', 'compete', 'rest', 'reproduce', 'isolate']
         
-        # Get config for vocab_size
+        # Get config for vocab_size - read from config, NO hardcoded fallback
         config = app.config.get('config') or {}
-        vocab_size = config.get('neural', {}).get('language_model', {}).get('teacher', {}).get('vocab_size', 1000)
+        vocab_size = config.get('neural', {}).get('brain', {}).get('vocab_size')
         if not vocab_size:
-            vocab_size = config.get('neural', {}).get('brain', {}).get('vocab_size', 1000)
+            vocab_size = config.get('neural', {}).get('language_model', {}).get('teacher', {}).get('vocab_size')
+        if not vocab_size:
+            vocab_size = 20000  # Last resort fallback - matches config.json default
         
         # Get context_memory for word associations
         network = app.config.get('network')
