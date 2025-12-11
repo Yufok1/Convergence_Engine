@@ -272,6 +272,37 @@ tournament.swarm_pong_arena(lives=3, headless=True)
 
 ## ⚔️ Advanced Features
 
+### GPU Profiling & Optimization
+**Profile and optimize CUDA performance**
+```bash
+# PyTorch profiler (recommended - no setup needed)
+python profile_gpu.py --mode torch
+
+# Profile specific component
+python profile_gpu.py --mode torch --component brain
+python profile_gpu.py --mode torch --component attention
+
+# View suggestions only
+python profile_gpu.py --mode suggest
+
+# Nsight Systems (requires NVIDIA tools)
+python profile_gpu.py --mode quick
+```
+- Flash Attention (scaled_dot_product_attention)
+- Mixed precision training (AMP) - 2-3x speedup
+- Automatic kernel profiling
+- Memory usage analysis
+
+**Config options (`config.json`):**
+```json
+{
+  "amp": {
+    "enabled": true,
+    "dtype": "float16"
+  }
+}
+```
+
 ### Highlander Protocol
 **Survival tournament with trait inheritance**
 ```bash

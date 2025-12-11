@@ -7080,6 +7080,19 @@ class CocoonAgent:
         self.training_step = 0
         
         # ═══════════════════════════════════════════════════════════════════
+        # ⚡ AMP (Mixed Precision) - Faster training on modern GPUs
+        # ═══════════════════════════════════════════════════════════════════
+        amp_config = self.config.get('optimization', {}).get('amp', {})
+        self.amp_enabled = amp_config.get('enabled', False) and torch.cuda.is_available()
+        amp_dtype_str = amp_config.get('dtype', 'float16')
+        self.amp_dtype = torch.float16 if amp_dtype_str == 'float16' else torch.bfloat16
+        if self.amp_enabled:
+            self.grad_scaler = torch.amp.GradScaler('cuda')
+            print(f"[AMP] Mixed precision enabled: {amp_dtype_str}")
+        else:
+            self.grad_scaler = None
+        
+        # ═══════════════════════════════════════════════════════════════════
         # 🧬 MONOLITHIC SUBSYSTEMS - Full Butterfly capabilities
         # ═══════════════════════════════════════════════════════════════════
         
@@ -7467,7 +7480,13 @@ class CocoonAgent:
                 continue
 
             brain.train()
-            q_values, lang_logits = brain(states_t, vp_value=vp_val, return_language_logits=True)
+            
+            # Forward pass with optional AMP autocast
+            if self.amp_enabled:
+                with torch.cuda.amp.autocast(dtype=self.amp_dtype):
+                    q_values, lang_logits = brain(states_t, vp_value=vp_val, return_language_logits=True)
+            else:
+                q_values, lang_logits = brain(states_t, vp_value=vp_val, return_language_logits=True)
             
             # Debug: print stats
             q_min = q_values.min().item()
@@ -7553,12 +7572,18 @@ class CocoonAgent:
                 continue
 
             opt.zero_grad()
-            loss.backward()
             
-            # Gradient clipping to prevent exploding gradients
-            torch.nn.utils.clip_grad_norm_(brain.parameters(), max_norm=1.0)
-            
-            opt.step()
+            # Backward pass with optional AMP scaling
+            if self.amp_enabled and self.grad_scaler is not None:
+                self.grad_scaler.scale(loss).backward()
+                self.grad_scaler.unscale_(opt)
+                torch.nn.utils.clip_grad_norm_(brain.parameters(), max_norm=1.0)
+                self.grad_scaler.step(opt)
+                self.grad_scaler.update()
+            else:
+                loss.backward()
+                torch.nn.utils.clip_grad_norm_(brain.parameters(), max_norm=1.0)
+                opt.step()
 
             loss_val = loss.item()
             if math.isnan(loss_val) or math.isinf(loss_val):

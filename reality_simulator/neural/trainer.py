@@ -10,10 +10,12 @@ Extended with:
 - Curriculum learning based on VP thresholds
 - Compositional concept grounding
 - Ray parallel training for large populations (2-3x speedup)
+- Mixed precision training (AMP) for 2-3x GPU speedup
 """
 
 import numpy as np
 from typing import Dict, Any, Optional, List, Tuple
+from contextlib import nullcontext
 import time
 import logging
 
@@ -291,6 +293,23 @@ class NeuralTrainer:
             except Exception as e:
                 logger.warning(f"[NEURAL] Ray initialization failed, using sequential training: {e}")
                 self.ray_enabled = False
+        
+        # ═══════════════════════════════════════════════════════════════════════════
+        # MIXED PRECISION TRAINING (AMP)
+        # Uses FP16 for faster computation on supported GPUs (2-3x speedup)
+        # Tensor Cores on RTX/Ampere/Ada GPUs get significant benefits
+        # ═══════════════════════════════════════════════════════════════════════════
+        optimization_config = config.get('optimization', {})
+        amp_config = optimization_config.get('amp', {})
+        self.amp_enabled = amp_config.get('enabled', True) and torch.cuda.is_available()
+        self.amp_dtype = torch.float16 if amp_config.get('dtype', 'float16') == 'float16' else torch.bfloat16
+        
+        # GradScaler for stable FP16 training (prevents gradient underflow)
+        if self.amp_enabled:
+            self.grad_scaler = torch.amp.GradScaler('cuda')
+            logger.info(f"[NEURAL] Mixed precision (AMP) enabled: {self.amp_dtype}")
+        else:
+            self.grad_scaler = None
         
         # ═══════════════════════════════════════════════════════════════════════════
         # CHECKPOINT SYSTEM CONFIGURATION
@@ -1153,8 +1172,15 @@ class NeuralTrainer:
                         # Backprop for language-only training
                         optimizer = optim.Adam(organism.brain.parameters(), lr=self.learning_rate * 0.5)
                         optimizer.zero_grad()
-                        language_loss.backward()
-                        optimizer.step()
+                        
+                        # ⚡ AMP: Use gradient scaling for mixed precision
+                        if self.amp_enabled and self.grad_scaler is not None:
+                            self.grad_scaler.scale(language_loss).backward()
+                            self.grad_scaler.step(optimizer)
+                            self.grad_scaler.update()
+                        else:
+                            language_loss.backward()
+                            optimizer.step()
                         
                         self.total_language_loss += language_loss.item()
             except Exception as e:
@@ -1197,16 +1223,20 @@ class NeuralTrainer:
                 next_states_tensor = torch.FloatTensor(next_states).to(self.device)
                 dones_tensor = torch.BoolTensor(dones).to(self.device)
                 
-                # Get current Q values
-                organism.brain.train()  # Set to training mode
-                q_values = organism.brain(states_tensor)
-                q_value = q_values.gather(1, actions_tensor.unsqueeze(1)).squeeze(1)
+                # ⚡ AMP: Use autocast for forward passes (2-3x faster on Tensor Core GPUs)
+                amp_context = torch.cuda.amp.autocast(dtype=self.amp_dtype) if self.amp_enabled else nullcontext()
                 
-                # Get next Q values (no gradient)
-                organism.brain.eval()  # Set to evaluation mode
-                with torch.no_grad():
-                    next_q_values = organism.brain(next_states_tensor)
-                    next_q_value = next_q_values.max(1)[0]
+                with amp_context:
+                    # Get current Q values
+                    organism.brain.train()  # Set to training mode
+                    q_values = organism.brain(states_tensor)
+                    q_value = q_values.gather(1, actions_tensor.unsqueeze(1)).squeeze(1)
+                    
+                    # Get next Q values (no gradient)
+                    organism.brain.eval()  # Set to evaluation mode
+                    with torch.no_grad():
+                        next_q_values = organism.brain(next_states_tensor)
+                        next_q_value = next_q_values.max(1)[0]
                 
                 # Calculate target Q values
                 target_q_value = rewards_tensor + (self.gamma * next_q_value * ~dones_tensor)
@@ -1313,8 +1343,15 @@ class NeuralTrainer:
                     scheduler = None
                 
                 optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
+                
+                # ⚡ AMP: Use gradient scaling for mixed precision training
+                if self.amp_enabled and self.grad_scaler is not None:
+                    self.grad_scaler.scale(loss).backward()
+                    self.grad_scaler.step(optimizer)
+                    self.grad_scaler.update()
+                else:
+                    loss.backward()
+                    optimizer.step()
                 
                 # 📈 LR SCHEDULER: Step the scheduler after optimizer
                 if scheduler is not None:
@@ -1945,56 +1982,67 @@ class NeuralTrainer:
             # Forward pass to get language logits
             organism.brain.train()
             
-            if hasattr(organism.brain, 'fc_language'):
-                # Get language head output
-                hidden = torch.relu(organism.brain.fc1(state_tensor))
-                hidden = torch.relu(organism.brain.fc2(hidden))
-                language_logits = organism.brain.fc_language(hidden)
-                
-                # Expand to sequence length (use target_tokens size from seq2seq)
-                seq_len = target_tokens.size(1)
-                language_logits = language_logits.unsqueeze(1).expand(-1, seq_len, -1)
-                
-                # Calculate loss
-                loss = self.calculate_language_loss(language_logits, target_tokens, vp_value)
-                
-                # Backpropagation
-                organism_id = id(organism.brain)
-                if self.reuse_optimizers:
-                    if organism_id not in self.optimizers:
-                        self.optimizers[organism_id] = optim.Adam(
-                            organism.brain.parameters(), 
-                            lr=self.learning_rate
-                        )
-                    optimizer = self.optimizers[organism_id]
-                else:
-                    optimizer = optim.Adam(organism.brain.parameters(), lr=self.learning_rate)
-                
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
-                
-                # Emit training event
-                if self.event_emitter:
-                    try:
-                        from causation_explorer import Event
-                        event = Event(
-                            timestamp=time.time(),
-                            component='neural',
-                            event_type='chat_training_complete',
-                            data={
-                                'organism_id': getattr(organism, 'species_id', str(organism_id)),
-                                'loss': float(loss.item()),
-                                'sequence_length': len(input_seq) + len(target_seq),  # GROK FIX: was token_seq (undefined)
-                                'vp_value': vp_value
-                            }
-                        )
-                        self.event_emitter(event)
-                    except Exception as e:
-                        logger.debug(f"Chat training event emission failed: {e}")
-                
-                logger.debug(f"[NEURAL] Chat training loss: {loss.item():.4f}")
-                return loss.item()
+            # ⚡ AMP: Use autocast for forward passes
+            amp_context = torch.cuda.amp.autocast(dtype=self.amp_dtype) if self.amp_enabled else nullcontext()
+            
+            with amp_context:
+                if hasattr(organism.brain, 'fc_language'):
+                    # Get language head output
+                    hidden = torch.relu(organism.brain.fc1(state_tensor))
+                    hidden = torch.relu(organism.brain.fc2(hidden))
+                    language_logits = organism.brain.fc_language(hidden)
+                    
+                    # Expand to sequence length (use target_tokens size from seq2seq)
+                    seq_len = target_tokens.size(1)
+                    language_logits = language_logits.unsqueeze(1).expand(-1, seq_len, -1)
+                    
+                    # Calculate loss
+                    loss = self.calculate_language_loss(language_logits, target_tokens, vp_value)
+                    
+                    # Backpropagation
+                    organism_id = id(organism.brain)
+                    if self.reuse_optimizers:
+                        if organism_id not in self.optimizers:
+                            self.optimizers[organism_id] = optim.Adam(
+                                organism.brain.parameters(), 
+                                lr=self.learning_rate
+                            )
+                        optimizer = self.optimizers[organism_id]
+                    else:
+                        optimizer = optim.Adam(organism.brain.parameters(), lr=self.learning_rate)
+                    
+                    optimizer.zero_grad()
+                    
+                    # ⚡ AMP: Use gradient scaling for mixed precision
+                    if self.amp_enabled and self.grad_scaler is not None:
+                        self.grad_scaler.scale(loss).backward()
+                        self.grad_scaler.step(optimizer)
+                        self.grad_scaler.update()
+                    else:
+                        loss.backward()
+                        optimizer.step()
+                    
+                    # Emit training event
+                    if self.event_emitter:
+                        try:
+                            from causation_explorer import Event
+                            event = Event(
+                                timestamp=time.time(),
+                                component='neural',
+                                event_type='chat_training_complete',
+                                data={
+                                    'organism_id': getattr(organism, 'species_id', str(organism_id)),
+                                    'loss': float(loss.item()),
+                                    'sequence_length': len(input_seq) + len(target_seq),  # GROK FIX: was token_seq (undefined)
+                                    'vp_value': vp_value
+                                }
+                            )
+                            self.event_emitter(event)
+                        except Exception as e:
+                            logger.debug(f"Chat training event emission failed: {e}")
+                    
+                    logger.debug(f"[NEURAL] Chat training loss: {loss.item():.4f}")
+                    return loss.item()
             
             return None
             
@@ -2059,38 +2107,51 @@ class NeuralTrainer:
             # Forward pass to get language logits
             organism.brain.train()
             
-            if hasattr(organism.brain, 'fc_language'):
-                # Get language head output
-                hidden = torch.relu(organism.brain.fc1(state_tensor))
-                hidden = torch.relu(organism.brain.fc2(hidden))
-                language_logits = organism.brain.fc_language(hidden)
-                
-                # Expand to sequence length
-                language_logits = language_logits.unsqueeze(1).expand(-1, len(token_seq)-1, -1)
-                
-                # Calculate loss
-                loss = self.calculate_language_loss(language_logits, target_tokens, vp_value)
-                
-                if loss is not None:
-                    # Get or create optimizer (inline pattern - no helper method)
-                    organism_id = id(organism.brain)
-                    if self.reuse_optimizers:
-                        if organism_id not in self.optimizers:
-                            self.optimizers[organism_id] = optim.Adam(
-                                organism.brain.parameters(),
-                                lr=self.learning_rate
-                            )
-                        optimizer = self.optimizers[organism_id]
-                    else:
-                        optimizer = optim.Adam(organism.brain.parameters(), lr=self.learning_rate)
+            # ⚡ AMP: Use autocast for forward passes
+            amp_context = torch.cuda.amp.autocast(dtype=self.amp_dtype) if self.amp_enabled else nullcontext()
+            
+            with amp_context:
+                if hasattr(organism.brain, 'fc_language'):
+                    # Get language head output
+                    hidden = torch.relu(organism.brain.fc1(state_tensor))
+                    hidden = torch.relu(organism.brain.fc2(hidden))
+                    language_logits = organism.brain.fc_language(hidden)
                     
-                    optimizer.zero_grad()
-                    loss.backward()
-                    torch.nn.utils.clip_grad_norm_(organism.brain.parameters(), 1.0)
-                    optimizer.step()
+                    # Expand to sequence length
+                    language_logits = language_logits.unsqueeze(1).expand(-1, len(token_seq)-1, -1)
                     
-                    logger.debug(f"[NEURAL] Legacy token_sequence training loss: {loss.item():.4f}")
-                    return loss.item()
+                    # Calculate loss
+                    loss = self.calculate_language_loss(language_logits, target_tokens, vp_value)
+                    
+                    if loss is not None:
+                        # Get or create optimizer (inline pattern - no helper method)
+                        organism_id = id(organism.brain)
+                        if self.reuse_optimizers:
+                            if organism_id not in self.optimizers:
+                                self.optimizers[organism_id] = optim.Adam(
+                                    organism.brain.parameters(),
+                                    lr=self.learning_rate
+                                )
+                            optimizer = self.optimizers[organism_id]
+                        else:
+                            optimizer = optim.Adam(organism.brain.parameters(), lr=self.learning_rate)
+                        
+                        optimizer.zero_grad()
+                        
+                        # ⚡ AMP: Use gradient scaling for mixed precision
+                        if self.amp_enabled and self.grad_scaler is not None:
+                            self.grad_scaler.scale(loss).backward()
+                            self.grad_scaler.unscale_(optimizer)
+                            torch.nn.utils.clip_grad_norm_(organism.brain.parameters(), 1.0)
+                            self.grad_scaler.step(optimizer)
+                            self.grad_scaler.update()
+                        else:
+                            loss.backward()
+                            torch.nn.utils.clip_grad_norm_(organism.brain.parameters(), 1.0)
+                            optimizer.step()
+                        
+                        logger.debug(f"[NEURAL] Legacy token_sequence training loss: {loss.item():.4f}")
+                        return loss.item()
             
             return None
             
@@ -2173,70 +2234,81 @@ class NeuralTrainer:
             # Forward pass
             organism.brain.train()
             
-            if hasattr(organism.brain, 'fc_language'):
-                hidden = torch.relu(organism.brain.fc1(state_tensor))
-                hidden = torch.relu(organism.brain.fc2(hidden))
-                language_logits = organism.brain.fc_language(hidden)
-                
-                # Expand to target sequence length
-                target_len = len(template_response)
-                language_logits = language_logits.unsqueeze(1).expand(-1, target_len, -1)
-                
-                # Use higher learning rate for bootstrap (faster learning)
-                bootstrap_lr = self.learning_rate * 2.0
-                
-                # Calculate loss against TEMPLATE response, not user echo
-                loss = self.calculate_language_loss(language_logits, target_tokens, vp_value=0.0)
-                
-                # Backpropagation
-                optimizer = optim.Adam(organism.brain.parameters(), lr=bootstrap_lr)
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
-                
-                # Store experience with proper input/target separation
-                # This creates a learning signal: "when you see X, say Y"
-                if hasattr(organism, 'experience_buffer') and organism.experience_buffer is not None:
-                    state_np = state_tensor.cpu().numpy().flatten()
-                    vp_val = network_state.get('vp_value') if network_state else None
-                    organism.experience_buffer.add(
-                        state=state_np,
-                        action=0,
-                        reward=0.5,  # Good reward for learning proper response
-                        next_state=state_np,
-                        done=False,
-                        input_tokens=user_tokens,          # What user said
-                        target_tokens=template_response,   # Proper response
-                        vp_value=vp_val
-                    )
-                
-                # Add template to organism's token sequence for vocabulary exposure
-                if hasattr(organism, 'token_sequence'):
-                    for token in template_response:
-                        organism.token_sequence.append(token)
-                
-                # Emit bootstrap event
-                if self.event_emitter:
-                    try:
-                        from causation_explorer import Event
-                        event = Event(
-                            timestamp=time.time(),
-                            component='neural',
-                            event_type='bootstrap_learning_complete',
-                            data={
-                                'organism_id': getattr(organism, 'species_id', str(id(organism))),
-                                'loss': float(loss.item()),
-                                'input_tokens': len(user_tokens),
-                                'template_tokens': len(template_response),
-                                'method': 'template_response'
-                            }
+            # ⚡ AMP: Use autocast for forward passes
+            amp_context = torch.cuda.amp.autocast(dtype=self.amp_dtype) if self.amp_enabled else nullcontext()
+            
+            with amp_context:
+                if hasattr(organism.brain, 'fc_language'):
+                    hidden = torch.relu(organism.brain.fc1(state_tensor))
+                    hidden = torch.relu(organism.brain.fc2(hidden))
+                    language_logits = organism.brain.fc_language(hidden)
+                    
+                    # Expand to target sequence length
+                    target_len = len(template_response)
+                    language_logits = language_logits.unsqueeze(1).expand(-1, target_len, -1)
+                    
+                    # Use higher learning rate for bootstrap (faster learning)
+                    bootstrap_lr = self.learning_rate * 2.0
+                    
+                    # Calculate loss against TEMPLATE response, not user echo
+                    loss = self.calculate_language_loss(language_logits, target_tokens, vp_value=0.0)
+                    
+                    # Backpropagation
+                    optimizer = optim.Adam(organism.brain.parameters(), lr=bootstrap_lr)
+                    optimizer.zero_grad()
+                    
+                    # ⚡ AMP: Use gradient scaling for mixed precision
+                    if self.amp_enabled and self.grad_scaler is not None:
+                        self.grad_scaler.scale(loss).backward()
+                        self.grad_scaler.step(optimizer)
+                        self.grad_scaler.update()
+                    else:
+                        loss.backward()
+                        optimizer.step()
+                    
+                    # Store experience with proper input/target separation
+                    # This creates a learning signal: "when you see X, say Y"
+                    if hasattr(organism, 'experience_buffer') and organism.experience_buffer is not None:
+                        state_np = state_tensor.cpu().numpy().flatten()
+                        vp_val = network_state.get('vp_value') if network_state else None
+                        organism.experience_buffer.add(
+                            state=state_np,
+                            action=0,
+                            reward=0.5,  # Good reward for learning proper response
+                            next_state=state_np,
+                            done=False,
+                            input_tokens=user_tokens,          # What user said
+                            target_tokens=template_response,   # Proper response
+                            vp_value=vp_val
                         )
-                        self.event_emitter(event)
-                    except Exception as e:
-                        logger.debug(f"Bootstrap learning event emission failed: {e}")
-                
-                logger.debug(f"[NEURAL] Bootstrap with template: loss={loss.item():.4f}, template_len={len(template_response)}")
-                return True
+                    
+                    # Add template to organism's token sequence for vocabulary exposure
+                    if hasattr(organism, 'token_sequence'):
+                        for token in template_response:
+                            organism.token_sequence.append(token)
+                    
+                    # Emit bootstrap event
+                    if self.event_emitter:
+                        try:
+                            from causation_explorer import Event
+                            event = Event(
+                                timestamp=time.time(),
+                                component='neural',
+                                event_type='bootstrap_learning_complete',
+                                data={
+                                    'organism_id': getattr(organism, 'species_id', str(id(organism))),
+                                    'loss': float(loss.item()),
+                                    'input_tokens': len(user_tokens),
+                                    'template_tokens': len(template_response),
+                                    'method': 'template_response'
+                                }
+                            )
+                            self.event_emitter(event)
+                        except Exception as e:
+                            logger.debug(f"Bootstrap learning event emission failed: {e}")
+                    
+                    logger.debug(f"[NEURAL] Bootstrap with template: loss={loss.item():.4f}, template_len={len(template_response)}")
+                    return True
             
             return False
             

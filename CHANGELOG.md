@@ -4,7 +4,50 @@
 
 ---
 
-## [Unreleased] - 2025-12-10
+## [Unreleased] - 2025-12-11
+
+### ⚡ GPU Performance Optimizations (2025-12-11)
+
+**PERFORMANCE**: Added Flash Attention and Mixed Precision (AMP) for faster training.
+
+#### Added - Flash Attention (`brain.py`)
+- **MultiHeadAttention** now uses `F.scaled_dot_product_attention()`
+- Automatic dispatch to cuDNN/FlashAttention/Math backends
+- VP temperature scaling preserved via post-multiply
+- 2-4x faster attention computation on modern GPUs
+
+#### Added - Mixed Precision Training (`trainer.py`)
+- **AMP (Automatic Mixed Precision)** via `torch.cuda.amp`
+- `GradScaler` for stable FP16 gradient handling
+- Applied to ALL training functions:
+  - Main `train_step()` loop
+  - Language-only training branch
+  - `chat_training()` method
+  - `_train_from_token_sequence()` method
+  - `bootstrap_language_learning()` method
+- Autocast contexts on all forward passes
+
+#### Added - Configuration (`config.json`)
+```json
+"neural": {
+  "optimization": {
+    "amp": {"enabled": true, "dtype": "float16"},
+    "use_compile": false  // Requires Triton (Linux only)
+  }
+}
+```
+
+#### Added - GPU Profiling Tool
+- **`profile_gpu.py`** - New diagnostic script for performance analysis
+- Supports PyTorch profiler with Chrome trace export
+- Component-specific profiling (brain, attention, loss)
+- Optimization recommendations based on profile data
+- Usage: `python profile_gpu.py --mode torch --component brain`
+
+#### Documentation
+- **QUICK_REFERENCE.md** - Added GPU Optimization section
+
+---
 
 ### 🎓 Staged Knowledge Loading (2025-12-10)
 

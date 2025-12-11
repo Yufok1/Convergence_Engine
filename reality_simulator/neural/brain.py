@@ -105,6 +105,9 @@ class MultiHeadAttention(nn.Module if PYTORCH_AVAILABLE else object):
         """
         Forward pass with optional VP temperature scaling.
         
+        Uses Flash Attention (scaled_dot_product_attention) when available for 
+        significant performance gains on modern GPUs.
+        
         Args:
             x: Input tensor of shape (batch_size, seq_len, embed_dim)
             vp_value: Optional VP value for temperature scaling
@@ -127,23 +130,44 @@ class MultiHeadAttention(nn.Module if PYTORCH_AVAILABLE else object):
         k = k.view(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
         v = v.view(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
         
-        # Scaled dot-product attention
-        scores = torch.matmul(q, k.transpose(-2, -1)) / self.scale
-        
-        # VP temperature scaling: higher VP = lower entropy (more focused attention)
+        # VP temperature scaling factor
+        scale = self.scale
         if vp_value is not None and vp_value > 0:
-            scores = scores / (1.0 + vp_value)
+            # Higher VP = lower entropy (more focused attention)
+            scale = self.scale * (1.0 + vp_value)
         
-        # Apply attention mask if provided
-        if attention_mask is not None:
-            scores = scores.masked_fill(attention_mask == 0, float('-inf'))
+        # Use Flash Attention (PyTorch 2.0+) for better performance
+        # This automatically selects optimal attention implementation:
+        # - Flash Attention (fastest, memory efficient)
+        # - Memory-efficient attention
+        # - Standard attention (fallback)
+        use_flash = hasattr(F, 'scaled_dot_product_attention')
         
-        # Softmax and dropout
-        attn_weights = F.softmax(scores, dim=-1)
-        attn_weights = self.dropout(attn_weights)
-        
-        # Apply attention to values
-        attn_output = torch.matmul(attn_weights, v)
+        if use_flash and attention_mask is None:
+            # Flash attention path - significantly faster on modern GPUs
+            # dropout_p=0.0 during inference, self.dropout.p during training
+            dropout_p = self.dropout.p if self.training else 0.0
+            attn_output = F.scaled_dot_product_attention(
+                q, k, v,
+                attn_mask=None,
+                dropout_p=dropout_p,
+                scale=1.0 / scale,  # scale is applied as 1/scale in SDPA
+                is_causal=False
+            )
+        else:
+            # Fallback path for custom masks or older PyTorch
+            scores = torch.matmul(q, k.transpose(-2, -1)) / scale
+            
+            # Apply attention mask if provided
+            if attention_mask is not None:
+                scores = scores.masked_fill(attention_mask == 0, float('-inf'))
+            
+            # Softmax and dropout
+            attn_weights = F.softmax(scores, dim=-1)
+            attn_weights = self.dropout(attn_weights)
+            
+            # Apply attention to values
+            attn_output = torch.matmul(attn_weights, v)
         
         # Reshape back: (batch, heads, seq, head_dim) -> (batch, seq, embed_dim)
         attn_output = attn_output.transpose(1, 2).contiguous().view(batch_size, seq_len, self.embed_dim)

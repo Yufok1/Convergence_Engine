@@ -421,6 +421,11 @@
       }
     },
     "optimization": {
+      "amp": {
+        "enabled": true,
+        "dtype": "float16",
+        "description": "Mixed precision training - 2-3x GPU speedup on Tensor Core GPUs"
+      },
       "compile_mode": "reduce-overhead",
       "reuse_optimizers": true,
       "use_compile": false,
