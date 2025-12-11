@@ -5,6 +5,119 @@
     <title>🔬 Causation Explorer - Curiosity Trail System</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
+        /* ═══════════════════════════════════════════════════════════════════════════
+           🎨 DESIGN SYSTEM - CSS Variables for Scientific Observatory Theme
+           ═══════════════════════════════════════════════════════════════════════════ */
+        :root {
+            /* ─── Core Colors ─── */
+            --bg-deepest: #030308;
+            --bg-deep: #0a0a12;
+            --bg-panel: #0f0f18;
+            --bg-card: #141420;
+            --bg-elevated: #1a1a28;
+            --bg-hover: #222235;
+            
+            /* ─── Border Colors ─── */
+            --border-subtle: #1f1f30;
+            --border-default: #2a2a40;
+            --border-strong: #3a3a55;
+            --border-accent: #4a4a65;
+            
+            /* ─── Text Colors ─── */
+            --text-primary: #e8e8f0;
+            --text-secondary: #a0a0b8;
+            --text-tertiary: #6a6a82;
+            --text-muted: #4a4a60;
+            
+            /* ─── Accent Colors ─── */
+            --accent-cyan: #00d4ff;
+            --accent-cyan-dim: #0099bb;
+            --accent-cyan-glow: rgba(0, 212, 255, 0.3);
+            --accent-green: #00ff88;
+            --accent-green-dim: #00bb66;
+            --accent-yellow: #ffdd00;
+            --accent-yellow-dim: #bbaa00;
+            --accent-orange: #ff8800;
+            --accent-red: #ff4466;
+            --accent-red-dim: #cc2244;
+            --accent-purple: #aa66ff;
+            --accent-purple-dim: #8844dd;
+            --accent-blue: #4488ff;
+            
+            /* ─── Semantic Colors ─── */
+            --positive: #00ff88;
+            --negative: #ff4466;
+            --warning: #ffdd00;
+            --neutral: #8888aa;
+            
+            /* ─── Rarity Colors ─── */
+            --rarity-legendary: #ffd700;
+            --rarity-legendary-glow: rgba(255, 215, 0, 0.4);
+            --rarity-epic: #aa55ff;
+            --rarity-epic-glow: rgba(170, 85, 255, 0.3);
+            --rarity-rare: #4488ff;
+            --rarity-rare-glow: rgba(68, 136, 255, 0.25);
+            --rarity-uncommon: #00cc66;
+            --rarity-common: #555566;
+            
+            /* ─── Alignment Colors ─── */
+            --align-lawful: #4488ff;
+            --align-neutral: #888899;
+            --align-chaotic: #ff6644;
+            --align-good: #44dd88;
+            --align-evil: #dd4466;
+            
+            /* ─── Typography ─── */
+            --font-mono: 'SF Mono', 'Fira Code', 'Consolas', 'Courier New', monospace;
+            --font-data: 'SF Mono', 'Fira Code', monospace;
+            --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            
+            /* ─── Spacing ─── */
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 12px;
+            --space-lg: 16px;
+            --space-xl: 24px;
+            
+            /* ─── Border Radius ─── */
+            --radius-sm: 4px;
+            --radius-md: 6px;
+            --radius-lg: 8px;
+            
+            /* ─── Transitions ─── */
+            --transition-fast: 0.15s ease;
+            --transition-normal: 0.25s ease;
+            --transition-slow: 0.4s ease;
+        }
+        
+        /* ─── Data Typography Classes ─── */
+        .data-value {
+            font-family: var(--font-data);
+            font-size: 0.9em;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+        }
+        
+        .data-label {
+            font-family: var(--font-mono);
+            font-size: 0.7em;
+            font-weight: 500;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .data-mono {
+            font-family: var(--font-data);
+            font-variant-numeric: tabular-nums;
+        }
+        
+        .data-positive { color: var(--positive); }
+        .data-negative { color: var(--negative); }
+        .data-warning { color: var(--warning); }
+        .data-accent { color: var(--accent-cyan); }
+        
         /* Neural node pulsing animation */
         @keyframes neuralPulse {
             0%, 100% { 
@@ -211,359 +324,1179 @@
             animation: trainingPulse 1.5s ease-in-out infinite;
         }
         
-        /* ═══════════════════════════════════════════════════════════════════
-           🃏 ORGANISM CARD BINDER SYSTEM - Pokémon-style organism viewer
-           ═══════════════════════════════════════════════════════════════════ */
+        /* ═══════════════════════════════════════════════════════════════════════════
+           🔬 ORGANISM OBSERVATORY - Scientific Instrument Panel Design
+           ═══════════════════════════════════════════════════════════════════════════ */
         
+        /* ─── Binder Container ─── */
         .organism-binder {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 15px;
-            max-height: 500px;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: var(--space-md);
+            max-height: 600px;
             overflow-y: auto;
-            padding: 10px;
-            background: linear-gradient(180deg, #0a0810 0%, #050308 100%);
-            border: 1px solid #333;
-            border-radius: 8px;
+            padding: var(--space-md);
+            background: var(--bg-deepest);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md) var(--radius-md) 0 0;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border-default) var(--bg-deep);
         }
         
+        .organism-binder::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .organism-binder::-webkit-scrollbar-track {
+            background: var(--bg-deep);
+        }
+        
+        .organism-binder::-webkit-scrollbar-thumb {
+            background: var(--border-default);
+            border-radius: 3px;
+        }
+        
+        /* ─── Base Card - Instrument Panel ─── */
         .organism-card {
-            background: linear-gradient(145deg, #1a1a2e 0%, #0a0a15 100%);
-            border-radius: 12px;
-            padding: 12px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 0;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: transform var(--transition-fast), 
+                        border-color var(--transition-fast),
+                        box-shadow var(--transition-fast);
             position: relative;
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
         
+        .organism-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--border-strong);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            z-index: 10;
+        }
+        
+        .organism-card.selected {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 0 1px var(--accent-cyan), 0 0 20px var(--accent-cyan-glow);
+        }
+        
+        /* ─── Rarity Indicator - Subtle Left Edge ─── */
         .organism-card::before {
             content: '';
             position: absolute;
             top: 0;
             left: 0;
-            right: 0;
-            height: 4px;
-            border-radius: 12px 12px 0 0;
+            width: 3px;
+            height: 100%;
+            background: var(--rarity-common);
         }
         
-        /* Rarity border colors */
-        .organism-card.rarity-legendary { border: 2px solid #ffd700; box-shadow: 0 0 20px rgba(255, 215, 0, 0.4); }
-        .organism-card.rarity-legendary::before { background: linear-gradient(90deg, #ffd700, #ff8c00, #ffd700); }
-        .organism-card.rarity-epic { border: 2px solid #a855f7; box-shadow: 0 0 15px rgba(168, 85, 247, 0.3); }
-        .organism-card.rarity-epic::before { background: linear-gradient(90deg, #a855f7, #ec4899, #a855f7); }
-        .organism-card.rarity-rare { border: 2px solid #3b82f6; box-shadow: 0 0 10px rgba(59, 130, 246, 0.3); }
-        .organism-card.rarity-rare::before { background: linear-gradient(90deg, #3b82f6, #06b6d4, #3b82f6); }
-        .organism-card.rarity-uncommon { border: 2px solid #22c55e; }
-        .organism-card.rarity-uncommon::before { background: #22c55e; }
-        .organism-card.rarity-common { border: 1px solid #666; }
-        .organism-card.rarity-common::before { background: #666; }
-        
-        .organism-card:hover {
-            transform: translateY(-5px) scale(1.02);
-            z-index: 10;
+        .organism-card.rarity-legendary::before { 
+            background: linear-gradient(180deg, var(--rarity-legendary), #ff8800);
+            box-shadow: 0 0 8px var(--rarity-legendary-glow);
+        }
+        .organism-card.rarity-epic::before { 
+            background: linear-gradient(180deg, var(--rarity-epic), #ff44aa);
+        }
+        .organism-card.rarity-rare::before { 
+            background: linear-gradient(180deg, var(--rarity-rare), #00ccff);
+        }
+        .organism-card.rarity-uncommon::before { 
+            background: var(--rarity-uncommon);
+        }
+        .organism-card.rarity-common::before { 
+            background: var(--rarity-common);
         }
         
-        .organism-card.selected {
-            outline: 3px solid #0ff;
-            outline-offset: 2px;
-        }
-        
-        /* Card worn edges effect for older organisms */
-        .organism-card.aged-veteran {
-            border-image: linear-gradient(135deg, #666 0%, #333 50%, #666 100%) 1;
-        }
-        
-        .organism-card.aged-ancient {
-            filter: sepia(0.1);
-        }
-        
+        /* ─── Card Header Row ─── */
         .card-header {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 8px;
+            align-items: center;
+            padding: var(--space-sm) var(--space-md);
+            padding-left: calc(var(--space-md) + 6px); /* Account for rarity bar */
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        
+        .card-id-section {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
         }
         
         .card-id {
-            font-family: 'Courier New', monospace;
-            font-size: 0.75em;
-            color: #888;
-            letter-spacing: 0.5px;
+            font-family: var(--font-data);
+            font-size: 0.85em;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
         }
         
         .card-rarity-badge {
-            font-size: 0.7em;
+            font-family: var(--font-mono);
+            font-size: 0.6em;
             padding: 2px 6px;
-            border-radius: 10px;
-            font-weight: bold;
+            border-radius: 3px;
+            font-weight: 600;
             text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
         
-        .rarity-legendary .card-rarity-badge { background: linear-gradient(135deg, #ffd700, #ff8c00); color: #000; }
-        .rarity-epic .card-rarity-badge { background: linear-gradient(135deg, #a855f7, #ec4899); color: #fff; }
-        .rarity-rare .card-rarity-badge { background: linear-gradient(135deg, #3b82f6, #06b6d4); color: #fff; }
-        .rarity-uncommon .card-rarity-badge { background: #22c55e; color: #000; }
-        .rarity-common .card-rarity-badge { background: #666; color: #fff; }
+        .rarity-legendary .card-rarity-badge { 
+            background: rgba(255, 215, 0, 0.15); 
+            color: var(--rarity-legendary);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+        }
+        .rarity-epic .card-rarity-badge { 
+            background: rgba(170, 85, 255, 0.15); 
+            color: var(--rarity-epic);
+            border: 1px solid rgba(170, 85, 255, 0.3);
+        }
+        .rarity-rare .card-rarity-badge { 
+            background: rgba(68, 136, 255, 0.15); 
+            color: var(--rarity-rare);
+            border: 1px solid rgba(68, 136, 255, 0.3);
+        }
+        .rarity-uncommon .card-rarity-badge { 
+            background: rgba(0, 204, 102, 0.15); 
+            color: var(--rarity-uncommon);
+            border: 1px solid rgba(0, 204, 102, 0.3);
+        }
+        .rarity-common .card-rarity-badge { 
+            background: rgba(85, 85, 102, 0.3); 
+            color: var(--text-tertiary);
+            border: 1px solid var(--border-subtle);
+        }
+        
+        .card-source-indicator {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .source-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+        
+        .source-dot.live { background: var(--positive); }
+        .source-dot.capsule { background: var(--accent-orange); animation: none; }
+        
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        
+        /* ─── Card Body - Data Grid ─── */
+        .card-body {
+            padding: var(--space-sm) var(--space-md);
+            padding-left: calc(var(--space-md) + 6px);
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-sm);
+            flex: 1;
+        }
+        
+        /* ─── Alignment & Personality Compact Row ─── */
+        .card-identity-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--space-xs) 0;
+        }
+        
+        .card-alignment {
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+            background: none;
+            padding: 0;
+            margin: 0;
+            border: none;
+        }
+        
+        .alignment-icon {
+            font-size: 1.1em;
+        }
+        
+        .alignment-label {
+            font-family: var(--font-mono);
+            font-size: 0.75em;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-shadow: none;
+        }
+        
+        /* Alignment color coding */
+        .alignment-lawful-good .alignment-label { color: #55bbff; }
+        .alignment-neutral-good .alignment-label { color: var(--align-good); }
+        .alignment-chaotic-good .alignment-label { color: #88ddaa; }
+        .alignment-lawful-neutral .alignment-label { color: var(--align-lawful); }
+        .alignment-true-neutral .alignment-label { color: var(--align-neutral); }
+        .alignment-chaotic-neutral .alignment-label { color: var(--align-chaotic); }
+        .alignment-lawful-evil .alignment-label { color: #8866cc; }
+        .alignment-neutral-evil .alignment-label { color: var(--align-evil); }
+        .alignment-chaotic-evil .alignment-label { color: #ff6688; }
         
         .card-personality {
-            text-align: center;
-            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+            margin: 0;
         }
         
         .personality-icon {
-            font-size: 2.5em;
-            display: block;
-            margin-bottom: 5px;
+            font-size: 1.1em;
+            margin: 0;
         }
         
         .personality-label {
-            font-size: 0.85em;
-            color: #f0f;
-            text-transform: capitalize;
-            font-weight: bold;
+            font-family: var(--font-mono);
+            font-size: 0.7em;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            font-weight: 500;
         }
         
+        /* ─── Stats Grid - Instrument Readouts ─── */
         .card-stats {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 6px;
-            margin: 10px 0;
-            font-size: 0.8em;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2px;
+            background: var(--bg-deep);
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            margin: 0;
         }
         
         .stat-item {
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 4px;
-            padding: 4px 6px;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 4px;
-        }
-        
-        .stat-label {
-            color: #888;
+            padding: var(--space-xs) 2px;
+            background: var(--bg-panel);
+            gap: 1px;
         }
         
         .stat-value {
-            color: #0ff;
-            font-weight: bold;
+            font-family: var(--font-data);
+            font-size: 0.9em;
+            font-weight: 600;
+            color: var(--text-primary);
+            line-height: 1;
         }
         
-        .stat-value.positive { color: #0f0; }
-        .stat-value.negative { color: #f66; }
-        .stat-value.warning { color: #ff0; }
+        .stat-label {
+            font-family: var(--font-mono);
+            font-size: 0.55em;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
         
-        /* Fitness bar */
+        .stat-value.positive { color: var(--positive); }
+        .stat-value.negative { color: var(--negative); }
+        .stat-value.warning { color: var(--warning); }
+        
+        /* ─── Fitness Sparkline ─── */
+        .fitness-sparkline-container {
+            height: 24px;
+            background: var(--bg-deep);
+            border-radius: var(--radius-sm);
+            padding: 2px 4px;
+            margin: 0;
+        }
+        
+        .fitness-sparkline {
+            display: block;
+        }
+        
+        .fitness-sparkline path.line {
+            fill: none;
+            stroke: var(--accent-cyan);
+            stroke-width: 1.5;
+        }
+        
+        .fitness-sparkline path.area {
+            fill: var(--accent-cyan-glow);
+        }
+        
+        .fitness-sparkline circle.current {
+            fill: var(--accent-cyan);
+        }
+        
+        /* ─── Action Sequence Visualization ─── */
+        .action-sequence-container {
+            height: 12px;
+            margin: var(--space-xs) 0;
+        }
+        
+        .action-sequence {
+            display: flex;
+            gap: 1px;
+            height: 100%;
+            align-items: flex-end;
+        }
+        
+        .action-bar {
+            flex: 1;
+            min-width: 4px;
+            max-width: 8px;
+            border-radius: 1px 1px 0 0;
+            transition: opacity var(--transition-fast);
+        }
+        
+        .action-bar:hover {
+            opacity: 1 !important;
+        }
+        
+        /* Action colors */
+        .action-bar.action-0 { background: var(--accent-blue); }      /* Move */
+        .action-bar.action-1 { background: var(--positive); }         /* Cooperate */
+        .action-bar.action-2 { background: var(--negative); }         /* Compete */
+        .action-bar.action-3 { background: var(--text-muted); }       /* Rest */
+        .action-bar.action-4 { background: var(--accent-purple); }    /* Reproduce */
+        .action-bar.action-5 { background: var(--accent-orange); }    /* Isolate */
+        
+        /* ─── Fitness Gauge - Horizontal Bar (legacy fallback) ─── */
         .fitness-bar-container {
-            margin: 8px 0;
-            background: #111;
-            border-radius: 4px;
+            height: 4px;
+            background: var(--bg-deep);
+            border-radius: 2px;
             overflow: hidden;
-            height: 8px;
+            margin: 0;
         }
         
         .fitness-bar {
             height: 100%;
-            transition: width 0.3s ease;
-            border-radius: 4px;
+            transition: width var(--transition-normal);
+            border-radius: 2px;
         }
         
-        .fitness-bar.excellent { background: linear-gradient(90deg, #0f0, #7fff00); }
-        .fitness-bar.good { background: linear-gradient(90deg, #7fff00, #ff0); }
-        .fitness-bar.average { background: linear-gradient(90deg, #ff0, #ffa500); }
-        .fitness-bar.poor { background: linear-gradient(90deg, #ffa500, #f00); }
+        .fitness-bar.excellent { background: var(--positive); }
+        .fitness-bar.good { background: linear-gradient(90deg, var(--positive), var(--warning)); }
+        .fitness-bar.average { background: var(--warning); }
+        .fitness-bar.poor { background: var(--negative); }
         
-        /* Battle record */
+        /* ─── Battle Record - Compact Inline ─── */
         .battle-record {
             display: flex;
+            align-items: center;
             justify-content: center;
-            gap: 10px;
-            margin: 8px 0;
-            font-size: 0.85em;
+            gap: var(--space-md);
+            font-family: var(--font-data);
+            font-size: 0.75em;
+            padding: var(--space-xs) 0;
+            margin: 0;
         }
         
-        .battle-wins { color: #0f0; }
-        .battle-losses { color: #f66; }
-        
-        /* Traits section */
-        .card-traits {
-            margin-top: 10px;
-            padding-top: 8px;
-            border-top: 1px solid #333;
+        .battle-stat {
+            display: flex;
+            align-items: center;
+            gap: 3px;
         }
         
-        .trait-tag {
-            display: inline-block;
-            padding: 2px 6px;
-            margin: 2px;
-            border-radius: 8px;
-            font-size: 0.7em;
-        }
+        .battle-wins { color: var(--positive); }
+        .battle-losses { color: var(--negative); }
+        .battle-ratio { color: var(--text-secondary); }
         
-        .trait-strength { background: #0a3a0a; color: #0f0; border: 1px solid #0f0; }
-        .trait-weakness { background: #3a0a0a; color: #f66; border: 1px solid #f66; }
-        
-        /* Behavioral fingerprint visualization */
+        /* ─── Behavioral Fingerprint - Mini Sparkline ─── */
         .fingerprint-viz {
             display: flex;
             flex-direction: column;
-            margin: 8px 0;
-            padding: 4px;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 4px;
+            gap: 2px;
+            padding: 0;
+            margin: 0;
+            background: none;
+            border-radius: 0;
         }
         
         .fingerprint-bars {
             display: flex;
-            justify-content: space-between;
+            gap: 2px;
             align-items: flex-end;
-            height: 25px;
+            height: 20px;
+            padding: 2px;
+            background: var(--bg-deep);
+            border-radius: var(--radius-sm);
         }
         
         .fingerprint-bar-container {
+            flex: 1;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            width: 14%;
+            justify-content: flex-end;
+            height: 100%;
         }
         
         .fingerprint-bar {
             width: 100%;
-            background: linear-gradient(180deg, #0ff, #0088ff);
-            border-radius: 2px;
-            transition: height 0.3s ease;
+            background: var(--accent-cyan);
+            border-radius: 1px;
+            transition: height var(--transition-normal);
+            opacity: 0.8;
+        }
+        
+        .fingerprint-bar:hover {
+            opacity: 1;
         }
         
         .fingerprint-labels {
             display: flex;
-            justify-content: space-between;
-            margin-top: 2px;
+            gap: 2px;
+            padding: 0 2px;
         }
         
         .fingerprint-label {
-            width: 14%;
+            flex: 1;
             text-align: center;
-            font-size: 0.55em;
-            color: #888;
-            overflow: hidden;
+            font-family: var(--font-mono);
+            font-size: 0.5em;
+            color: var(--text-muted);
             text-overflow: ellipsis;
+            overflow: hidden;
+            white-space: nowrap;
         }
         
-        /* Source badge */
+        /* ─── Traits - Minimal Tags ─── */
+        .card-traits {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 3px;
+            padding-top: var(--space-xs);
+            border-top: 1px solid var(--border-subtle);
+            margin: 0;
+        }
+        
+        .trait-tag {
+            font-family: var(--font-mono);
+            font-size: 0.6em;
+            padding: 2px 5px;
+            border-radius: 2px;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+        }
+        
+        .trait-strength { 
+            background: rgba(0, 255, 136, 0.1); 
+            color: var(--positive);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+        }
+        .trait-weakness { 
+            background: rgba(255, 68, 102, 0.1); 
+            color: var(--negative);
+            border: 1px solid rgba(255, 68, 102, 0.2);
+        }
+        
+        /* ─── Source Badge - Repositioned ─── */
         .source-badge {
             position: absolute;
-            top: 8px;
-            right: 8px;
-            font-size: 0.65em;
-            padding: 2px 5px;
-            border-radius: 4px;
+            top: var(--space-sm);
+            right: var(--space-sm);
+            font-family: var(--font-mono);
+            font-size: 0.55em;
+            padding: 2px 4px;
+            border-radius: 2px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
         
-        .source-live { background: #0a3a0a; color: #0f0; border: 1px solid #0f0; }
-        .source-capsule { background: #3a2a0a; color: #ffa500; border: 1px solid #ffa500; }
+        .source-live { 
+            background: rgba(0, 255, 136, 0.1); 
+            color: var(--positive);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+        }
+        .source-capsule { 
+            background: rgba(255, 136, 0, 0.1); 
+            color: var(--accent-orange);
+            border: 1px solid rgba(255, 136, 0, 0.2);
+        }
         
-        /* Organism binder controls */
+        /* ─── Card Age Indicators ─── */
+        .organism-card.aged-veteran {
+            border-color: var(--border-default);
+        }
+        
+        .organism-card.aged-ancient {
+            border-color: var(--border-accent);
+        }
+        
+        .organism-card.aged-ancient::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 0 12px 12px 0;
+            border-color: transparent var(--accent-purple-dim) transparent transparent;
+        }
+
+        /* ─── Rich Data Tooltip System ─── */
+        .data-tooltip {
+            position: fixed;
+            z-index: 10000;
+            max-width: 320px;
+            padding: var(--space-sm) var(--space-md);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-accent);
+            border-radius: var(--radius-md);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 1px var(--accent-cyan);
+            font-family: var(--font-mono);
+            font-size: 0.75em;
+            color: var(--text-primary);
+            pointer-events: none;
+            opacity: 0;
+            transform: translateY(4px);
+            transition: opacity 0.15s ease, transform 0.15s ease;
+        }
+        
+        .data-tooltip.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .data-tooltip .tooltip-title {
+            font-size: 0.85em;
+            font-weight: 600;
+            color: var(--accent-cyan);
+            margin-bottom: var(--space-xs);
+            padding-bottom: var(--space-xs);
+            border-bottom: 1px solid var(--border-subtle);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .data-tooltip .tooltip-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2px 0;
+            gap: var(--space-sm);
+        }
+        
+        .data-tooltip .tooltip-label {
+            color: var(--text-muted);
+            font-size: 0.9em;
+        }
+        
+        .data-tooltip .tooltip-value {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+        
+        .data-tooltip .tooltip-value.positive { color: var(--positive); }
+        .data-tooltip .tooltip-value.negative { color: var(--negative); }
+        .data-tooltip .tooltip-value.warning { color: var(--warning); }
+        .data-tooltip .tooltip-value.accent { color: var(--accent-cyan); }
+        
+        .data-tooltip .tooltip-section {
+            margin-top: var(--space-xs);
+            padding-top: var(--space-xs);
+            border-top: 1px dashed var(--border-subtle);
+        }
+        
+        .data-tooltip .tooltip-mini-chart {
+            height: 30px;
+            background: var(--bg-deep);
+            border-radius: var(--radius-sm);
+            margin: var(--space-xs) 0;
+            padding: 2px;
+        }
+        
+        .data-tooltip .action-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: var(--space-xs);
+        }
+        
+        .data-tooltip .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 0.85em;
+        }
+        
+        .data-tooltip .legend-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 2px;
+        }
+        
+        /* Hoverable elements that show tooltips */
+        .has-tooltip {
+            cursor: help;
+            position: relative;
+        }
+        
+        .fitness-sparkline-container.has-tooltip,
+        .action-sequence-container.has-tooltip,
+        .fingerprint-viz.has-tooltip,
+        .battle-record.has-tooltip,
+        .stat-item.has-tooltip {
+            cursor: help;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════════════
+           🎛️ BINDER CONTROLS - Scientific Query Interface
+           ═══════════════════════════════════════════════════════════════════════════ */
+        
         .binder-controls {
             display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
-            flex-wrap: wrap;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-md);
+            padding: var(--space-sm);
+            background: var(--bg-panel);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
             align-items: center;
         }
         
         .binder-filter, .binder-sort {
-            padding: 6px 10px;
-            background: #111;
-            border: 1px solid #0ff;
-            color: #0ff;
-            font-family: 'Courier New', monospace;
-            font-size: 0.85em;
-            border-radius: 4px;
+            padding: var(--space-xs) var(--space-sm);
+            background: var(--bg-deep);
+            border: 1px solid var(--border-default);
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+            font-size: 0.8em;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: border-color var(--transition-fast), color var(--transition-fast);
+        }
+        
+        .binder-filter:hover, .binder-sort:hover {
+            border-color: var(--accent-cyan-dim);
+            color: var(--accent-cyan);
+        }
+        
+        .binder-filter:focus, .binder-sort:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
         }
         
         .binder-search {
             flex: 1;
-            min-width: 150px;
-            padding: 6px 10px;
-            background: #111;
-            border: 1px solid #666;
-            color: #0f0;
-            font-family: 'Courier New', monospace;
-            font-size: 0.85em;
-            border-radius: 4px;
+            min-width: 180px;
+            padding: var(--space-xs) var(--space-sm);
+            background: var(--bg-deep);
+            border: 1px solid var(--border-default);
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 0.8em;
+            border-radius: var(--radius-sm);
+            transition: border-color var(--transition-fast);
+        }
+        
+        .binder-search::placeholder {
+            color: var(--text-muted);
+        }
+        
+        .binder-search:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
         }
         
         .binder-view-toggle {
             display: flex;
-            gap: 2px;
+            gap: 1px;
+            background: var(--bg-deep);
+            padding: 2px;
+            border-radius: var(--radius-sm);
         }
         
         .view-btn {
-            padding: 6px 10px;
-            background: #222;
-            border: 1px solid #444;
-            color: #888;
+            padding: var(--space-xs) var(--space-sm);
+            background: transparent;
+            border: none;
+            color: var(--text-tertiary);
+            font-family: var(--font-mono);
+            font-size: 0.75em;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all var(--transition-fast);
+            border-radius: var(--radius-sm);
+        }
+        
+        .view-btn:hover {
+            color: var(--text-secondary);
+            background: var(--bg-hover);
         }
         
         .view-btn.active {
-            background: #0ff;
-            color: #000;
-            border-color: #0ff;
+            background: var(--accent-cyan);
+            color: var(--bg-deepest);
+            font-weight: 600;
         }
         
-        .view-btn:first-child { border-radius: 4px 0 0 4px; }
-        .view-btn:last-child { border-radius: 0 4px 4px 0; }
+        /* ═══════════════════════════════════════════════════════════════════════════
+           📋 LIST VIEW - Compact Data Table Mode
+           ═══════════════════════════════════════════════════════════════════════════ */
         
-        /* Compact list view */
         .organism-binder.list-view {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 2px;
         }
         
         .organism-binder.list-view .organism-card {
             display: grid;
-            grid-template-columns: auto 1fr auto auto auto;
-            gap: 10px;
+            grid-template-columns: 3px 100px 1fr 80px 100px 60px;
+            gap: var(--space-sm);
             align-items: center;
-            padding: 8px 12px;
+            padding: var(--space-xs) var(--space-sm);
+            border-radius: var(--radius-sm);
         }
         
+        .organism-binder.list-view .organism-card::before {
+            position: static;
+            height: 100%;
+            width: 3px;
+            border-radius: 2px;
+        }
+        
+        .organism-binder.list-view .card-header {
+            display: contents;
+        }
+        
+        .organism-binder.list-view .card-body,
+        .organism-binder.list-view .card-identity-row,
         .organism-binder.list-view .card-personality,
         .organism-binder.list-view .card-traits,
         .organism-binder.list-view .fingerprint-viz,
-        .organism-binder.list-view .fitness-bar-container {
+        .organism-binder.list-view .fitness-bar-container,
+        .organism-binder.list-view .card-alignment {
             display: none;
         }
         
+        /* ═══════════════════════════════════════════════════════════════════════════
+           📊 SWARM INTELLIGENCE DASHBOARD
+           ═══════════════════════════════════════════════════════════════════════════ */
+        
+        .swarm-dashboard {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: var(--space-md);
+            margin-bottom: var(--space-md);
+        }
+        
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-md);
+            padding-bottom: var(--space-sm);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        
+        .dashboard-title {
+            font-family: var(--font-mono);
+            font-size: 0.8em;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .dashboard-timestamp {
+            font-family: var(--font-data);
+            font-size: 0.7em;
+            color: var(--text-muted);
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: var(--space-sm);
+            margin-bottom: var(--space-md);
+        }
+        
+        .dash-stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: var(--space-sm);
+            background: var(--bg-deep);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-subtle);
+        }
+        
+        .dash-value {
+            font-family: var(--font-data);
+            font-size: 1.4em;
+            font-weight: 600;
+            color: var(--accent-cyan);
+            line-height: 1;
+        }
+        
+        .dash-label {
+            font-family: var(--font-mono);
+            font-size: 0.6em;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 4px;
+        }
+        
+        .dashboard-distributions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-md);
+        }
+        
+        .dist-panel {
+            padding: var(--space-sm);
+            background: var(--bg-deep);
+            border-radius: var(--radius-sm);
+        }
+        
+        .dist-title {
+            display: block;
+            font-family: var(--font-mono);
+            font-size: 0.65em;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: var(--space-sm);
+        }
+        
+        .dist-bars {
+            display: flex;
+            gap: 3px;
+            height: 24px;
+            align-items: flex-end;
+        }
+        
+        .dist-bar-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100%;
+        }
+        
+        .dist-bar {
+            width: 100%;
+            background: var(--accent-cyan);
+            border-radius: 2px 2px 0 0;
+            transition: height var(--transition-normal);
+            min-height: 2px;
+        }
+        
+        .dist-bar-label {
+            font-family: var(--font-mono);
+            font-size: 0.5em;
+            color: var(--text-muted);
+            margin-top: 2px;
+            text-align: center;
+        }
+        
+        /* Rarity colors for bars */
+        .dist-bar.legendary { background: var(--rarity-legendary); }
+        .dist-bar.epic { background: var(--rarity-epic); }
+        .dist-bar.rare { background: var(--rarity-rare); }
+        .dist-bar.uncommon { background: var(--rarity-uncommon); }
+        .dist-bar.common { background: var(--rarity-common); }
+        
+        /* Alignment colors for bars */
+        .dist-bar.lawful { background: var(--align-lawful); }
+        .dist-bar.neutral { background: var(--align-neutral); }
+        .dist-bar.chaotic { background: var(--align-chaotic); }
+        .dist-bar.good { background: var(--align-good); }
+        .dist-bar.evil { background: var(--align-evil); }
+        
+        /* ═══════════════════════════════════════════════════════════════════════════
+           🎯 SELECTION BAR & ACTION CONTROLS
+           ═══════════════════════════════════════════════════════════════════════════ */
+        
+        .selection-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--space-sm) var(--space-md);
+            background: var(--bg-panel);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            margin-bottom: var(--space-md);
+        }
+        
+        .selection-count {
+            font-family: var(--font-mono);
+            font-size: 0.8em;
+            color: var(--text-tertiary);
+        }
+        
+        .selection-value {
+            color: var(--accent-cyan);
+            font-weight: 600;
+        }
+        
+        .selection-actions {
+            display: flex;
+            gap: var(--space-sm);
+        }
+        
+        .action-btn {
+            padding: var(--space-xs) var(--space-sm);
+            background: var(--bg-deep);
+            border: 1px solid var(--border-default);
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+            font-size: 0.75em;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+        
+        .action-btn:hover {
+            border-color: var(--accent-cyan-dim);
+            color: var(--accent-cyan);
+        }
+        
+        .action-btn.action-primary {
+            border-color: var(--accent-cyan-dim);
+            color: var(--accent-cyan);
+        }
+        
+        .action-btn.action-danger {
+            border-color: var(--accent-red-dim);
+            color: var(--negative);
+        }
+        
+        .action-btn.action-danger:hover {
+            border-color: var(--negative);
+            background: rgba(255, 68, 102, 0.1);
+        }
+        
+        .top-n-input {
+            width: 36px;
+            background: var(--bg-deepest);
+            border: 1px solid var(--border-default);
+            color: var(--accent-cyan);
+            font-family: var(--font-data);
+            font-size: 0.9em;
+            text-align: center;
+            border-radius: 2px;
+            padding: 2px;
+            margin-left: 4px;
+        }
+        
+        /* ═══════════════════════════════════════════════════════════════════════════
+           📤 EXPORT CONTROLS
+           ═══════════════════════════════════════════════════════════════════════════ */
+        
+        .export-controls {
+            margin-top: var(--space-lg);
+            padding: var(--space-md);
+            background: var(--bg-panel);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+        }
+        
+        .export-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+            margin-bottom: var(--space-sm);
+        }
+        
+        .export-label {
+            font-family: var(--font-mono);
+            font-size: 0.75em;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            min-width: 100px;
+        }
+        
+        .export-select {
+            flex: 1;
+            padding: var(--space-xs) var(--space-sm);
+            background: var(--bg-deep);
+            border: 1px solid var(--border-default);
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 0.85em;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+        }
+        
+        .export-description {
+            padding: var(--space-sm);
+            background: var(--bg-deep);
+            border-radius: var(--radius-sm);
+            font-family: var(--font-mono);
+            font-size: 0.75em;
+            color: var(--text-muted);
+            margin-bottom: var(--space-md);
+        }
+        
+        .export-description strong {
+            color: var(--text-secondary);
+        }
+        
+        .export-options {
+            display: flex;
+            gap: var(--space-md);
+            margin-bottom: var(--space-md);
+        }
+        
+        .export-checkbox {
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+            font-family: var(--font-mono);
+            font-size: 0.75em;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: var(--space-xs) var(--space-sm);
+            background: var(--bg-deep);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            transition: border-color var(--transition-fast);
+        }
+        
+        .export-checkbox:hover {
+            border-color: var(--border-default);
+        }
+        
+        .export-checkbox input[type="checkbox"] {
+            accent-color: var(--accent-cyan);
+        }
+        
+        .export-button {
+            width: 100%;
+            padding: var(--space-md);
+            background: var(--accent-cyan);
+            border: none;
+            color: var(--bg-deepest);
+            font-family: var(--font-mono);
+            font-size: 0.9em;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+        
+        .export-button:hover {
+            background: var(--accent-cyan-dim);
+            box-shadow: 0 0 20px var(--accent-cyan-glow);
+        }
+        
+        .export-status {
+            margin-top: var(--space-md);
+            padding: var(--space-sm) var(--space-md);
+            background: var(--bg-deep);
+            border-radius: var(--radius-sm);
+            font-family: var(--font-mono);
+            font-size: 0.8em;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+        
+        /* ═══════════════════════════════════════════════════════════════════════════
+           📄 PAGINATION BAR
+           ═══════════════════════════════════════════════════════════════════════════ */
+        
+        .pagination-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--space-sm) var(--space-md);
+            background: var(--bg-panel);
+            border: 1px solid var(--border-subtle);
+            border-top: none;
+            border-radius: 0 0 var(--radius-md) var(--radius-md);
+            font-family: var(--font-mono);
+            font-size: 0.75em;
+        }
+        
+        .pagination-info {
+            color: var(--text-muted);
+        }
+        
+        .pagination-info span {
+            color: var(--text-secondary);
+        }
+        
+        .pagination-filters {
+            color: var(--accent-cyan-dim);
+        }
+        
+        /* ═══════════════════════════════════════════════════════════════════════════
+           ⏳ LOADING STATE
+           ═══════════════════════════════════════════════════════════════════════════ */
+        
+        .binder-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-xl);
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            font-size: 0.85em;
+        }
+        
+        .loading-spinner {
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--border-default);
+            border-top-color: var(--accent-cyan);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: var(--space-md);
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
         body {
-            font-family: 'Courier New', monospace;
-            background: #000;
-            color: #0f0;
+            font-family: var(--font-ui);
+            background: var(--bg-deepest);
+            color: var(--text-primary);
             margin: 0;
-            padding: 20px;
+            padding: var(--space-lg);
+            line-height: 1.5;
         }
 
         .container {
-            max-width: 1400px;
+            max-width: 1600px;
             margin: 0 auto;
         }
 
         h1 {
-            color: #0ff;
-            border-bottom: 2px solid #0ff;
-            padding-bottom: 10px;
+            font-family: var(--font-mono);
+            color: var(--accent-cyan);
+            border-bottom: 1px solid var(--border-default);
+            padding-bottom: var(--space-md);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            font-weight: 500;
+            letter-spacing: -0.02em;
+        }
+
+        h2, h3 {
+            font-family: var(--font-mono);
+            color: var(--text-primary);
+            font-weight: 500;
         }
 
         /* Header controls container - collapsible */
         .header-controls-container {
-            transition: max-height 0.3s ease, opacity 0.3s ease, margin 0.3s ease;
+            transition: max-height var(--transition-normal), opacity var(--transition-normal), margin var(--transition-normal);
             overflow: hidden;
             max-height: 500px;
             opacity: 1;
@@ -2942,29 +3875,86 @@
                     </div>
                     
                     <!-- Agent Exporter Tab Content -->
-                    <div id="agentExporterTabContent" style="display: none; padding: 15px; border: 1px solid #f0f; background: linear-gradient(135deg, #1a0a1a 0%, #0a050a 100%); border-radius: 5px;">
-                        <h4 style="color: #f0f; margin-top: 0; margin-bottom: 15px;">🃏 Organism Binder - Select for Export</h4>
-                        <p style="color: #aaa; font-size: 0.85em; margin-bottom: 15px;">Browse and select organisms like a Pokémon card collection. Click cards to select for export.</p>
+                    <div id="agentExporterTabContent" style="display: none; padding: var(--space-lg); border: 1px solid var(--border-subtle); background: var(--bg-deep); border-radius: var(--radius-md);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md); padding-bottom: var(--space-sm); border-bottom: 1px solid var(--border-subtle);">
+                            <h4 style="font-family: var(--font-mono); color: var(--text-primary); margin: 0; font-weight: 500; font-size: 1.1em;">Organism Observatory</h4>
+                            <span style="font-family: var(--font-mono); font-size: 0.7em; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Population Browser</span>
+                        </div>
+                        
+                        <!-- ═══════════════════════════════════════════════════════════════════
+                             📊 SWARM INTELLIGENCE DASHBOARD - Population Overview
+                             ═══════════════════════════════════════════════════════════════════ -->
+                        <div id="swarmDashboard" class="swarm-dashboard">
+                            <div class="dashboard-header">
+                                <span class="dashboard-title">Population Intelligence</span>
+                                <span class="dashboard-timestamp" id="dashboardTimestamp">—</span>
+                            </div>
+                            <div class="dashboard-grid">
+                                <div class="dash-stat">
+                                    <span class="dash-value" id="dashPopulation">—</span>
+                                    <span class="dash-label">Population</span>
+                                </div>
+                                <div class="dash-stat">
+                                    <span class="dash-value" id="dashAvgFitness">—</span>
+                                    <span class="dash-label">Avg Fitness</span>
+                                </div>
+                                <div class="dash-stat">
+                                    <span class="dash-value" id="dashTopFitness">—</span>
+                                    <span class="dash-label">Top Fitness</span>
+                                </div>
+                                <div class="dash-stat">
+                                    <span class="dash-value" id="dashAvgVocab">—</span>
+                                    <span class="dash-label">Avg Vocab</span>
+                                </div>
+                                <div class="dash-stat">
+                                    <span class="dash-value" id="dashTotalBattles">—</span>
+                                    <span class="dash-label">Battles</span>
+                                </div>
+                                <div class="dash-stat">
+                                    <span class="dash-value" id="dashLiveCount">—</span>
+                                    <span class="dash-label">Live</span>
+                                </div>
+                            </div>
+                            <div class="dashboard-distributions">
+                                <div class="dist-panel">
+                                    <span class="dist-title">Rarity Distribution</span>
+                                    <div class="dist-bars" id="rarityDistBars"></div>
+                                </div>
+                                <div class="dist-panel">
+                                    <span class="dist-title">Alignment Spread</span>
+                                    <div class="dist-bars" id="alignmentDistBars"></div>
+                                </div>
+                            </div>
+                        </div>
                         
                         <!-- Binder Controls -->
                         <div class="binder-controls">
-                            <input type="text" id="binderSearch" class="binder-search" placeholder="🔍 Search organisms..." oninput="filterOrganismBinder()">
+                            <input type="text" id="binderSearch" class="binder-search" placeholder="Search organisms..." oninput="filterOrganismBinder()">
                             <select id="binderFilterRarity" class="binder-filter" onchange="filterOrganismBinder()">
-                                <option value="">All Rarities</option>
-                                <option value="legendary">⭐ Legendary</option>
-                                <option value="epic">💎 Epic</option>
-                                <option value="rare">💠 Rare</option>
-                                <option value="uncommon">🟢 Uncommon</option>
-                                <option value="common">⚪ Common</option>
+                                <option value="">Rarity</option>
+                                <option value="legendary">Legendary</option>
+                                <option value="epic">Epic</option>
+                                <option value="rare">Rare</option>
+                                <option value="uncommon">Uncommon</option>
+                                <option value="common">Common</option>
                             </select>
                             <select id="binderFilterPersonality" class="binder-filter" onchange="filterOrganismBinder()">
-                                <option value="">All Personalities</option>
-                                <option value="diplomat">🤝 Diplomat</option>
-                                <option value="warrior">⚔️ Warrior</option>
-                                <option value="explorer">🧭 Explorer</option>
-                                <option value="hermit">🏔️ Hermit</option>
-                                <option value="balanced">⚖️ Balanced</option>
-                                <option value="opportunist">🎯 Opportunist</option>
+                                <option value="">Personality</option>
+                                <option value="diplomat">Diplomat</option>
+                                <option value="warrior">Warrior</option>
+                                <option value="explorer">Explorer</option>
+                                <option value="hermit">Hermit</option>
+                                <option value="balanced">Balanced</option>
+                                <option value="opportunist">Opportunist</option>
+                            </select>
+                            <select id="binderFilterAlignment" class="binder-filter" onchange="filterOrganismBinder()">
+                                <option value="">Alignment</option>
+                                <option value="lawful">Lawful</option>
+                                <option value="neutral-law">Neutral</option>
+                                <option value="chaotic">Chaotic</option>
+                                <option value="good">Good</option>
+                                <option value="neutral-moral">True Neutral</option>
+                                <option value="evil">Evil</option>
                             </select>
                             <select id="binderSort" class="binder-sort" onchange="sortOrganismBinder()">
                                 <option value="fitness-desc">Fitness ↓</option>
@@ -2981,61 +3971,70 @@
                         </div>
                         
                         <!-- Selected count indicator -->
-                        <div id="binderSelectionInfo" style="margin-bottom: 10px; padding: 8px; background: #0a0a0a; border: 1px solid #333; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
-                            <span style="color: #888;">Selected: <span id="binderSelectedCount" style="color: #0ff; font-weight: bold;">0</span> organisms</span>
-                            <div style="display: flex; gap: 8px;">
-                                <button onclick="selectTopNOrganisms()" style="padding: 4px 10px; background: #111; border: 1px solid #0ff; color: #0ff; cursor: pointer; font-size: 0.8em; font-family: monospace; border-radius: 3px;">
-                                    🏆 Select Top <input type="number" id="binderTopN" value="10" min="1" style="width: 40px; background: #000; border: 1px solid #666; color: #0ff; text-align: center;" onclick="event.stopPropagation()">
+                        <div id="binderSelectionInfo" class="selection-bar">
+                            <span class="selection-count">Selected: <span id="binderSelectedCount" class="selection-value">0</span></span>
+                            <div class="selection-actions">
+                                <button onclick="selectTopNOrganisms()" class="action-btn action-primary">
+                                    Select Top <input type="number" id="binderTopN" value="10" min="1" class="top-n-input" onclick="event.stopPropagation()">
                                 </button>
-                                <button onclick="clearBinderSelection()" style="padding: 4px 10px; background: #111; border: 1px solid #f66; color: #f66; cursor: pointer; font-size: 0.8em; font-family: monospace; border-radius: 3px;">
-                                    ✕ Clear
-                                </button>
+                                <button onclick="clearBinderSelection()" class="action-btn action-danger">Clear</button>
                             </div>
                         </div>
                         
                         <!-- Organism Card Binder -->
                         <div id="organismBinder" class="organism-binder">
-                            <div style="text-align: center; padding: 40px; color: #666;">
-                                <div style="font-size: 3em; margin-bottom: 10px;">🃏</div>
+                            <div class="binder-loading">
+                                <div class="loading-spinner"></div>
                                 <div>Loading organisms...</div>
                             </div>
+                        </div>
+                        
+                        <!-- Pagination Info -->
+                        <div id="binderPagination" class="pagination-bar">
+                            <span class="pagination-info">
+                                Showing <span id="paginationShowing">0</span> of <span id="paginationTotal">0</span> organisms
+                            </span>
+                            <span class="pagination-filters" id="paginationFiltersActive"></span>
                         </div>
                         
                         <!-- Hidden select for backwards compatibility with existing compile logic -->
                         <select id="agentExporterOrganismSelect" multiple style="display: none;"></select>
                         
-                        <div style="margin-top: 15px; margin-bottom: 20px;">
-                            <label for="agentExporterFormat" style="display: block; color: #0f0; margin-bottom: 5px;">Export Format:</label>
-                            <select id="agentExporterFormat" style="width: 100%; padding: 8px; background: #111; color: #0f0; border: 1px solid #0ff; font-family: 'Courier New', monospace;">
-                                <option value="package">🎁 Ultimate Package (.zip) - ALL formats + runners + docs</option>
-                                <option value="cocoon">🐍 Python Cocoon (.py) - Self-contained, embedded weights</option>
-                                <option value="onnx">📊 ONNX Model (.onnx) - Fast inference, Netron viewable</option>
-                                <option value="torchscript">🔥 TorchScript (.pt) - PyTorch native, Netron viewable</option>
-                                <option value="statedict">💾 State Dict (.pth) - PyTorch weights only</option>
-                            </select>
-                            <div id="formatDescription" style="margin-top: 8px; padding: 10px; background: #0a0a0a; border: 1px solid #333; border-radius: 4px; font-size: 0.85em; color: #888;">
-                                <strong style="color: #f0f;">Ultimate Package</strong> includes: brain_ensemble.onnx + brain_ensemble.pt + cocoon.py + bridge.py runner + metadata + README. One export, all formats!
+                        <!-- Export Controls -->
+                        <div class="export-controls">
+                            <div class="export-row">
+                                <label class="export-label">Export Format</label>
+                                <select id="agentExporterFormat" class="export-select">
+                                    <option value="package">Ultimate Package (.zip)</option>
+                                    <option value="cocoon">Python Cocoon (.py)</option>
+                                    <option value="onnx">ONNX Model (.onnx)</option>
+                                    <option value="torchscript">TorchScript (.pt)</option>
+                                    <option value="statedict">State Dict (.pth)</option>
+                                </select>
                             </div>
-                        </div>
-
-                        <div style="margin-bottom: 15px; display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; align-items: center;">
-                            <label style="color:#0ff; display:flex; align-items:center; gap:8px; background:#0a0a0a; border:1px solid #0ff; padding:8px; border-radius:4px;">
-                                <input type="checkbox" id="agentExporterIncludeGym" checked /> Include Gym adapter
-                            </label>
-                            <label style="color:#0ff; display:flex; align-items:center; gap:8px; background:#0a0a0a; border:1px solid #0ff; padding:8px; border-radius:4px;">
-                                <input type="checkbox" id="agentExporterIncludeHttp" checked /> Include HTTP server
-                            </label>
-                            <label style="color:#0ff; display:flex; align-items:center; gap:8px; background:#0a0a0a; border:1px solid #0ff; padding:8px; border-radius:4px;">
-                                <input type="checkbox" id="agentExporterCompress" checked /> Compress embedded data
-                            </label>
-                        </div>
-                        
-                        <button onclick="compileAndExport()" style="width: 100%; padding: 15px; background: linear-gradient(135deg, #f0f 0%, #0ff 50%, #0f0 100%); color: #000; border: 2px solid #fff; font-weight: bold; cursor: pointer; font-family: 'Courier New', monospace; font-size: 1.1em; border-radius: 4px; transition: all 0.2s; text-shadow: 0 0 2px #fff;" onmouseover="this.style.boxShadow='0 0 20px #f0f, 0 0 30px #0ff'" onmouseout="this.style.boxShadow='none'">
-                            🚀 COMPILE & EXPORT SELECTED
-                        </button>
-                        
-                        <div id="agentExporterStatus" style="margin-top: 15px; padding: 12px; background: #0a0a0a; border: 1px solid #333; color: #0ff; min-height: 40px; text-align: center; border-radius: 4px;">
-                            Ready to compile. Select organisms from the binder above.
+                            <div id="formatDescription" class="export-description">
+                                <strong>Ultimate Package</strong> — ONNX + TorchScript + Cocoon + Bridge + Metadata
+                            </div>
+                            
+                            <div class="export-options">
+                                <label class="export-checkbox">
+                                    <input type="checkbox" id="agentExporterIncludeGym" checked /> Gym adapter
+                                </label>
+                                <label class="export-checkbox">
+                                    <input type="checkbox" id="agentExporterIncludeHttp" checked /> HTTP server
+                                </label>
+                                <label class="export-checkbox">
+                                    <input type="checkbox" id="agentExporterCompress" checked /> Compress
+                                </label>
+                            </div>
+                            
+                            <button onclick="compileAndExport()" class="export-button">
+                                COMPILE & EXPORT SELECTED
+                            </button>
+                            
+                            <div id="agentExporterStatus" class="export-status">
+                                Ready to compile.
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -12042,16 +13041,16 @@
             let selectedOrganismIds = new Set();
             let currentBinderView = 'grid';
             
-            // Personality icons mapping
+            // Personality icons mapping - Clean geometric symbols
             const personalityIcons = {
-                diplomat: '🤝',
-                warrior: '⚔️',
-                explorer: '🧭',
-                hermit: '🏔️',
-                balanced: '⚖️',
-                opportunist: '🎯',
-                nascent: '🌱',
-                unknown: '❓'
+                diplomat: '◎',
+                warrior: '◆',
+                explorer: '△',
+                hermit: '□',
+                balanced: '◈',
+                opportunist: '◇',
+                nascent: '○',
+                unknown: '·'
             };
             
             // Populate the organism binder with cards
@@ -12060,7 +13059,7 @@
                 const selector = document.getElementById('agentExporterOrganismSelect');
                 if (!binder) return;
                 
-                binder.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;"><div style="font-size: 3em; margin-bottom: 10px;">⏳</div><div>Loading organisms...</div></div>';
+                binder.innerHTML = '<div class="binder-loading"><div class="loading-spinner"></div><div>Loading organisms...</div></div>';
                 
                 try {
                     const response = await fetch('/api/organisms');
@@ -12072,6 +13071,7 @@
                     
                     if (organisms && organisms.length > 0) {
                         renderOrganismBinder(organisms);
+                        updateSwarmDashboard(organisms);  // Update the dashboard
                         
                         // Update hidden select for backwards compatibility
                         if (selector) {
@@ -12084,21 +13084,78 @@
                             });
                         }
                         
-                        // Update status
-                        const legendaryCount = organisms.filter(o => o.rarity === 'legendary').length;
-                        const epicCount = organisms.filter(o => o.rarity === 'epic').length;
-                        updateCompileAgentStatus(
-                            `🃏 ${organisms.length} organisms loaded | ⭐${legendaryCount} Legendary | 💎${epicCount} Epic`,
-                            '#0ff'
-                        );
+                        // Update status (now using dashboard, minimal status)
+                        updateCompileAgentStatus('Ready to compile.', 'var(--accent-cyan)');
                     } else {
-                        binder.innerHTML = '<div style="text-align: center; padding: 40px; color: #f66;"><div style="font-size: 3em; margin-bottom: 10px;">📭</div><div>No organisms found</div></div>';
-                        updateCompileAgentStatus('No organisms available for export.', '#f66');
+                        binder.innerHTML = '<div class="binder-loading"><div style="font-size:1.5em; margin-bottom:var(--space-sm);">—</div><div>No organisms found</div></div>';
+                        updateCompileAgentStatus('No organisms available for export.', 'var(--negative)');
                     }
                 } catch (error) {
                     console.error('Error loading organisms:', error);
-                    binder.innerHTML = `<div style="text-align: center; padding: 40px; color: #f66;"><div style="font-size: 3em; margin-bottom: 10px;">⚠️</div><div>Error: ${error.message}</div></div>`;
-                    updateCompileAgentStatus(`Error: ${error.message}`, '#f66');
+                    binder.innerHTML = `<div class="binder-loading" style="color:var(--negative);"><div>Error: ${error.message}</div></div>`;
+                    updateCompileAgentStatus(`Error: ${error.message}`, 'var(--negative)');
+                }
+            }
+            
+            // Update the Swarm Intelligence Dashboard
+            function updateSwarmDashboard(organisms) {
+                if (!organisms || organisms.length === 0) return;
+                
+                // Basic stats
+                const population = organisms.length;
+                const avgFitness = organisms.reduce((sum, o) => sum + (o.fitness || 0), 0) / population;
+                const topFitness = Math.max(...organisms.map(o => o.fitness || 0));
+                const avgVocab = organisms.reduce((sum, o) => sum + (o.words_learned || 0), 0) / population;
+                const totalBattles = organisms.reduce((sum, o) => sum + (o.battle_wins || 0) + (o.battle_losses || 0), 0);
+                const liveCount = organisms.filter(o => o.source === 'live_simulation').length;
+                
+                // Update values
+                const setVal = (id, val) => {
+                    const el = document.getElementById(id);
+                    if (el) el.textContent = val;
+                };
+                
+                setVal('dashPopulation', population);
+                setVal('dashAvgFitness', avgFitness.toFixed(2));
+                setVal('dashTopFitness', topFitness.toFixed(2));
+                setVal('dashAvgVocab', Math.round(avgVocab));
+                setVal('dashTotalBattles', totalBattles.toLocaleString());
+                setVal('dashLiveCount', liveCount);
+                setVal('dashboardTimestamp', new Date().toLocaleTimeString());
+                
+                // Rarity distribution
+                const rarities = ['legendary', 'epic', 'rare', 'uncommon', 'common'];
+                const rarityCounts = rarities.map(r => organisms.filter(o => o.rarity === r).length);
+                const maxRarity = Math.max(...rarityCounts, 1);
+                
+                const rarityBarsEl = document.getElementById('rarityDistBars');
+                if (rarityBarsEl) {
+                    rarityBarsEl.innerHTML = rarities.map((r, i) => `
+                        <div class="dist-bar-group">
+                            <div class="dist-bar ${r}" style="height: ${(rarityCounts[i] / maxRarity * 100)}%"></div>
+                            <span class="dist-bar-label">${r.charAt(0).toUpperCase()}</span>
+                        </div>
+                    `).join('');
+                }
+                
+                // Alignment distribution (simplified: law/neutral/chaos)
+                const alignmentGroups = {
+                    lawful: organisms.filter(o => (o.alignment || '').toLowerCase().includes('lawful')).length,
+                    neutral: organisms.filter(o => (o.alignment || '').toLowerCase().includes('neutral') && !(o.alignment || '').toLowerCase().includes('lawful') && !(o.alignment || '').toLowerCase().includes('chaotic')).length,
+                    chaotic: organisms.filter(o => (o.alignment || '').toLowerCase().includes('chaotic')).length,
+                    good: organisms.filter(o => (o.alignment || '').toLowerCase().includes('good')).length,
+                    evil: organisms.filter(o => (o.alignment || '').toLowerCase().includes('evil')).length
+                };
+                const maxAlign = Math.max(...Object.values(alignmentGroups), 1);
+                
+                const alignBarsEl = document.getElementById('alignmentDistBars');
+                if (alignBarsEl) {
+                    alignBarsEl.innerHTML = Object.entries(alignmentGroups).map(([name, count]) => `
+                        <div class="dist-bar-group">
+                            <div class="dist-bar ${name}" style="height: ${(count / maxAlign * 100)}%"></div>
+                            <span class="dist-bar-label">${name.charAt(0).toUpperCase()}</span>
+                        </div>
+                    `).join('');
                 }
             }
             
@@ -12115,18 +13172,690 @@
                     binder.appendChild(card);
                 });
                 
+                // Render sparklines and action bars after DOM is ready
+                requestAnimationFrame(() => {
+                    renderAllSparklines();
+                    renderAllActionBars();
+                });
+                
                 updateSelectedCount();
+                updatePaginationInfo(organisms);
             }
             
-            // Create a single organism card
+            // Update pagination info bar
+            function updatePaginationInfo(filteredOrganisms) {
+                const showingEl = document.getElementById('paginationShowing');
+                const totalEl = document.getElementById('paginationTotal');
+                const filtersEl = document.getElementById('paginationFiltersActive');
+                
+                if (showingEl) showingEl.textContent = filteredOrganisms.length;
+                if (totalEl) totalEl.textContent = allOrganisms.length;
+                
+                // Show active filters
+                const filters = [];
+                if (document.getElementById('binderFilterRarity')?.value) filters.push('rarity');
+                if (document.getElementById('binderFilterPersonality')?.value) filters.push('personality');
+                if (document.getElementById('binderFilterAlignment')?.value) filters.push('alignment');
+                if (document.getElementById('binderSearch')?.value) filters.push('search');
+                
+                if (filtersEl) {
+                    filtersEl.textContent = filters.length > 0 ? `Filtered by: ${filters.join(', ')}` : '';
+                }
+            }
+            
+            // ═══════════════════════════════════════════════════════════════════
+            // 📈 SPARKLINE RENDERER - D3-powered fitness history visualization
+            // ═══════════════════════════════════════════════════════════════════
+            
+            function renderAllSparklines() {
+                document.querySelectorAll('.fitness-sparkline-container').forEach(container => {
+                    try {
+                        const data = JSON.parse(container.dataset.fitnessHistory || '[]');
+                        if (data.length < 2) return;
+                        
+                        const svg = container.querySelector('.fitness-sparkline');
+                        if (!svg) return;
+                        
+                        renderSparkline(svg, data);
+                    } catch (e) {
+                        console.warn('Sparkline render error:', e);
+                    }
+                });
+            }
+            
+            function renderSparkline(svg, data) {
+                const width = svg.clientWidth || 150;
+                const height = svg.clientHeight || 24;
+                const padding = 2;
+                
+                // Clear existing
+                svg.innerHTML = '';
+                
+                // Scales
+                const xScale = d3.scaleLinear()
+                    .domain([0, data.length - 1])
+                    .range([padding, width - padding]);
+                    
+                const yMin = Math.min(...data);
+                const yMax = Math.max(...data);
+                const yPadding = (yMax - yMin) * 0.1 || 0.1;
+                
+                const yScale = d3.scaleLinear()
+                    .domain([yMin - yPadding, yMax + yPadding])
+                    .range([height - padding, padding]);
+                
+                // Line generator
+                const line = d3.line()
+                    .x((d, i) => xScale(i))
+                    .y(d => yScale(d))
+                    .curve(d3.curveMonotoneX);
+                
+                // Area generator
+                const area = d3.area()
+                    .x((d, i) => xScale(i))
+                    .y0(height - padding)
+                    .y1(d => yScale(d))
+                    .curve(d3.curveMonotoneX);
+                
+                // D3 select SVG
+                const d3svg = d3.select(svg);
+                
+                // Draw area fill
+                d3svg.append('path')
+                    .attr('class', 'area')
+                    .attr('d', area(data));
+                
+                // Draw line
+                d3svg.append('path')
+                    .attr('class', 'line')
+                    .attr('d', line(data));
+                
+                // Draw current value dot
+                const lastIdx = data.length - 1;
+                d3svg.append('circle')
+                    .attr('class', 'current')
+                    .attr('cx', xScale(lastIdx))
+                    .attr('cy', yScale(data[lastIdx]))
+                    .attr('r', 2);
+            }
+            
+            // ═══════════════════════════════════════════════════════════════════
+            // 🎬 ACTION BAR RENDERER - Recent action sequence visualization
+            // ═══════════════════════════════════════════════════════════════════
+            
+            const ACTION_NAMES = ['move', 'cooperate', 'compete', 'rest', 'reproduce', 'isolate'];
+            
+            function renderAllActionBars() {
+                document.querySelectorAll('.action-sequence-container').forEach(container => {
+                    try {
+                        const actions = JSON.parse(container.dataset.recentActions || '[]');
+                        if (actions.length === 0) return;
+                        
+                        const sequenceEl = container.querySelector('.action-sequence');
+                        if (!sequenceEl) return;
+                        
+                        renderActionSequence(sequenceEl, actions);
+                    } catch (e) {
+                        console.warn('Action bar render error:', e);
+                    }
+                });
+            }
+            
+            function renderActionSequence(container, actions) {
+                container.innerHTML = '';
+                
+                actions.forEach((action, idx) => {
+                    const actionIdx = typeof action === 'number' ? action : 0;
+                    const bar = document.createElement('div');
+                    bar.className = `action-bar action-${actionIdx}`;
+                    bar.style.height = '100%';
+                    bar.style.opacity = 0.4 + (idx / actions.length) * 0.6; // Fade in over time
+                    bar.title = `${ACTION_NAMES[actionIdx] || 'unknown'} (${idx + 1}/${actions.length})`;
+                    container.appendChild(bar);
+                });
+            }
+            
+            // ═══════════════════════════════════════════════════════════════════
+            // 💡 RICH TOOLTIP SYSTEM - Interactive data exploration
+            // ═══════════════════════════════════════════════════════════════════
+            
+            const ACTION_COLORS = {
+                0: 'var(--accent-blue)',    // Move
+                1: 'var(--positive)',       // Cooperate
+                2: 'var(--negative)',       // Compete
+                3: 'var(--text-muted)',     // Rest
+                4: 'var(--accent-purple)',  // Reproduce
+                5: 'var(--accent-orange)'   // Isolate
+            };
+            
+            const ACTION_DESCRIPTIONS = {
+                0: 'Exploration - seeking resources or new territory',
+                1: 'Social bonding - sharing resources, building alliances',
+                2: 'Competition - resource conflict or dominance assertion',
+                3: 'Conservation - energy preservation, recovery',
+                4: 'Reproduction - passing genes to next generation',
+                5: 'Self-protection - avoiding threats, healing'
+            };
+            
+            // Global tooltip element
+            let tooltipEl = null;
+            
+            function initTooltipSystem() {
+                // Create global tooltip element
+                if (!tooltipEl) {
+                    tooltipEl = document.createElement('div');
+                    tooltipEl.className = 'data-tooltip';
+                    tooltipEl.id = 'organism-data-tooltip';
+                    document.body.appendChild(tooltipEl);
+                }
+            }
+            
+            function showTooltip(content, event) {
+                if (!tooltipEl) initTooltipSystem();
+                
+                tooltipEl.innerHTML = content;
+                tooltipEl.classList.add('visible');
+                
+                // Position near mouse but within viewport
+                const rect = tooltipEl.getBoundingClientRect();
+                const x = Math.min(event.clientX + 12, window.innerWidth - rect.width - 20);
+                const y = Math.min(event.clientY + 12, window.innerHeight - rect.height - 20);
+                
+                tooltipEl.style.left = `${Math.max(10, x)}px`;
+                tooltipEl.style.top = `${Math.max(10, y)}px`;
+            }
+            
+            function hideTooltip() {
+                if (tooltipEl) {
+                    tooltipEl.classList.remove('visible');
+                }
+            }
+            
+            function buildSparklineTooltip(org) {
+                const history = org.fitness_history || [];
+                if (history.length === 0) return '<div class="tooltip-title">Fitness History</div><div class="tooltip-row">No data yet</div>';
+                
+                const current = history[history.length - 1];
+                const min = Math.min(...history);
+                const max = Math.max(...history);
+                const avg = (history.reduce((a, b) => a + b, 0) / history.length);
+                const start = history[0];
+                const change = current - start;
+                const changePercent = start > 0 ? ((change / start) * 100).toFixed(1) : 0;
+                
+                const trend = org.fitness_trend || {};
+                const volatility = (trend.volatility || 0) * 100;
+                
+                return `
+                    <div class="tooltip-title">📈 Fitness History (${history.length} samples)</div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Current</span>
+                        <span class="tooltip-value accent">${(current * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Range</span>
+                        <span class="tooltip-value">${(min * 100).toFixed(1)}% → ${(max * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Average</span>
+                        <span class="tooltip-value">${(avg * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Δ From Start</span>
+                        <span class="tooltip-value ${change > 0 ? 'positive' : change < 0 ? 'negative' : ''}">${change > 0 ? '+' : ''}${changePercent}%</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Volatility</span>
+                        <span class="tooltip-value ${volatility > 20 ? 'warning' : ''}">${volatility.toFixed(1)}%</span>
+                    </div>
+                    <div class="tooltip-section">
+                        <div class="tooltip-row">
+                            <span class="tooltip-label">Trend</span>
+                            <span class="tooltip-value ${trend.trend === 'rising' ? 'positive' : trend.trend === 'falling' ? 'negative' : ''}">${trend.trend || 'stable'} (${(trend.slope * 100 || 0).toFixed(2)}/tick)</span>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            function buildActionTooltip(org) {
+                const actions = org.recent_actions || [];
+                const dist = org.action_distribution || {};
+                
+                if (actions.length === 0) return '<div class="tooltip-title">Action History</div><div class="tooltip-row">No actions recorded</div>';
+                
+                // Count recent actions
+                const counts = {};
+                actions.forEach(a => { counts[a] = (counts[a] || 0) + 1; });
+                
+                const dominant = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+                const dominantIdx = parseInt(dominant[0]);
+                const dominantPct = ((dominant[1] / actions.length) * 100).toFixed(0);
+                
+                // Build action breakdown
+                let breakdown = '';
+                ACTION_NAMES.forEach((name, idx) => {
+                    const count = counts[idx] || 0;
+                    const pct = ((count / actions.length) * 100).toFixed(0);
+                    if (count > 0) {
+                        breakdown += `
+                            <div class="tooltip-row">
+                                <span class="tooltip-label" style="display:flex;align-items:center;gap:4px;">
+                                    <span class="legend-dot" style="background:${ACTION_COLORS[idx]}"></span>
+                                    ${name}
+                                </span>
+                                <span class="tooltip-value">${count} (${pct}%)</span>
+                            </div>
+                        `;
+                    }
+                });
+                
+                return `
+                    <div class="tooltip-title">🎬 Recent Actions (last ${actions.length})</div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Dominant</span>
+                        <span class="tooltip-value" style="color:${ACTION_COLORS[dominantIdx]}">${ACTION_NAMES[dominantIdx]} (${dominantPct}%)</span>
+                    </div>
+                    <div class="tooltip-section">
+                        ${breakdown}
+                    </div>
+                    <div class="tooltip-section">
+                        <div class="tooltip-label" style="font-size:0.85em;margin-bottom:4px;">🔍 ${ACTION_NAMES[dominantIdx]}</div>
+                        <div style="font-size:0.8em;color:var(--text-muted);line-height:1.4;">${ACTION_DESCRIPTIONS[dominantIdx]}</div>
+                    </div>
+                `;
+            }
+            
+            function buildFingerprintTooltip(org) {
+                const fingerprint = org.behavioral_fingerprint || [0, 0, 0, 0, 0, 0];
+                const total = fingerprint.reduce((a, b) => a + b, 0) || 1;
+                
+                let breakdown = '';
+                ACTION_NAMES.forEach((name, idx) => {
+                    const val = fingerprint[idx] || 0;
+                    const pct = ((val / total) * 100).toFixed(1);
+                    breakdown += `
+                        <div class="tooltip-row">
+                            <span class="tooltip-label" style="display:flex;align-items:center;gap:4px;">
+                                <span class="legend-dot" style="background:${ACTION_COLORS[idx]}"></span>
+                                ${name}
+                            </span>
+                            <span class="tooltip-value">${pct}%</span>
+                        </div>
+                    `;
+                });
+                
+                return `
+                    <div class="tooltip-title">🧬 Behavioral DNA</div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Personality</span>
+                        <span class="tooltip-value accent">${org.personality_type || 'Unknown'}</span>
+                    </div>
+                    <div class="tooltip-section">
+                        <div class="tooltip-label" style="margin-bottom:4px;">Lifetime Distribution</div>
+                        ${breakdown}
+                    </div>
+                    <div class="tooltip-section">
+                        <div class="tooltip-row">
+                            <span class="tooltip-label">Cooperation</span>
+                            <span class="tooltip-value ${org.cooperation_ratio > 0.5 ? 'positive' : ''}">${((org.cooperation_ratio || 0) * 100).toFixed(0)}%</span>
+                        </div>
+                        <div class="tooltip-row">
+                            <span class="tooltip-label">Aggression</span>
+                            <span class="tooltip-value ${org.aggression_ratio > 0.5 ? 'negative' : ''}">${((org.aggression_ratio || 0) * 100).toFixed(0)}%</span>
+                        </div>
+                        <div class="tooltip-row">
+                            <span class="tooltip-label">Exploration</span>
+                            <span class="tooltip-value">${((org.exploration_ratio || 0) * 100).toFixed(0)}%</span>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            function buildBattleTooltip(org) {
+                const wins = org.battle_wins || 0;
+                const losses = org.battle_losses || 0;
+                const total = wins + losses;
+                const winRate = total > 0 ? ((wins / total) * 100).toFixed(1) : 0;
+                
+                // Determine combat style
+                let style = 'Pacifist';
+                let styleDesc = 'Avoids conflict entirely';
+                if (total > 20 && winRate > 60) { style = 'Warrior'; styleDesc = 'Aggressive and successful fighter'; }
+                else if (total > 20 && winRate < 40) { style = 'Underdog'; styleDesc = 'Frequently challenged but resilient'; }
+                else if (total > 10 && winRate >= 40 && winRate <= 60) { style = 'Balanced'; styleDesc = 'Fights when necessary'; }
+                else if (total > 5) { style = 'Cautious'; styleDesc = 'Selective about conflicts'; }
+                
+                return `
+                    <div class="tooltip-title">⚔️ Combat Record</div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Win Rate</span>
+                        <span class="tooltip-value ${winRate > 60 ? 'positive' : winRate < 40 ? 'negative' : ''}">${winRate}%</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Victories</span>
+                        <span class="tooltip-value positive">${wins}</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Defeats</span>
+                        <span class="tooltip-value negative">${losses}</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Total Battles</span>
+                        <span class="tooltip-value">${total}</span>
+                    </div>
+                    <div class="tooltip-section">
+                        <div class="tooltip-row">
+                            <span class="tooltip-label">Combat Style</span>
+                            <span class="tooltip-value accent">${style}</span>
+                        </div>
+                        <div style="font-size:0.8em;color:var(--text-muted);margin-top:4px;">${styleDesc}</div>
+                    </div>
+                `;
+            }
+            
+            function buildStatTooltip(statType, org) {
+                switch(statType) {
+                    case 'fitness':
+                        return `
+                            <div class="tooltip-title">💪 Fitness</div>
+                            <div class="tooltip-row">
+                                <span class="tooltip-label">Current</span>
+                                <span class="tooltip-value accent">${((org.fitness || 0) * 100).toFixed(1)}%</span>
+                            </div>
+                            <div class="tooltip-row">
+                                <span class="tooltip-label">Trend</span>
+                                <span class="tooltip-value ${org.fitness_trend?.trend === 'rising' ? 'positive' : org.fitness_trend?.trend === 'falling' ? 'negative' : ''}">${org.fitness_trend?.trend || 'stable'}</span>
+                            </div>
+                            <div style="font-size:0.8em;color:var(--text-muted);margin-top:8px;">
+                                Fitness measures overall survival capability based on resources, health, and adaptability.
+                            </div>
+                        `;
+                    case 'vocab':
+                        return `
+                            <div class="tooltip-title">📚 Vocabulary</div>
+                            <div class="tooltip-row">
+                                <span class="tooltip-label">Words Learned</span>
+                                <span class="tooltip-value accent">${org.words_learned || 0}</span>
+                            </div>
+                            <div class="tooltip-row">
+                                <span class="tooltip-label">Capacity</span>
+                                <span class="tooltip-value">${org.vocab_capacity || 0}</span>
+                            </div>
+                            <div class="tooltip-row">
+                                <span class="tooltip-label">Utilization</span>
+                                <span class="tooltip-value ${(org.vocab_utilization || 0) > 50 ? 'positive' : ''}">${(org.vocab_utilization || 0).toFixed(1)}%</span>
+                            </div>
+                            <div style="font-size:0.8em;color:var(--text-muted);margin-top:8px;">
+                                ${org.has_language_head ? '✓ Has neural language head for communication' : '✗ No language head - limited communication'}
+                            </div>
+                        `;
+                    case 'exp':
+                        return `
+                            <div class="tooltip-title">🧠 Experience Buffer</div>
+                            <div class="tooltip-row">
+                                <span class="tooltip-label">Stored Experiences</span>
+                                <span class="tooltip-value accent">${org.experience_buffer_size || 0}</span>
+                            </div>
+                            <div class="tooltip-row">
+                                <span class="tooltip-label">Action History</span>
+                                <span class="tooltip-value">${org.action_history_length || 0} actions</span>
+                            </div>
+                            <div class="tooltip-row">
+                                <span class="tooltip-label">Epsilon (Exploration)</span>
+                                <span class="tooltip-value">${((org.epsilon || 0) * 100).toFixed(1)}%</span>
+                            </div>
+                            <div style="font-size:0.8em;color:var(--text-muted);margin-top:8px;">
+                                Experience buffer stores (state, action, reward, next_state) tuples for neural learning via experience replay.
+                            </div>
+                        `;
+                    case 'links':
+                        return `
+                            <div class="tooltip-title">🔗 Social Network</div>
+                            <div class="tooltip-row">
+                                <span class="tooltip-label">Connections</span>
+                                <span class="tooltip-value accent">${org.connections_count || 0}</span>
+                            </div>
+                            <div class="tooltip-row">
+                                <span class="tooltip-label">Alliance</span>
+                                <span class="tooltip-value">${org.alliance_id ? org.alliance_id.substring(0, 8) : 'None'}</span>
+                            </div>
+                            <div class="tooltip-row">
+                                <span class="tooltip-label">Reputation</span>
+                                <span class="tooltip-value ${(org.alliance_reputation || 0.5) > 0.6 ? 'positive' : (org.alliance_reputation || 0.5) < 0.4 ? 'negative' : ''}">${((org.alliance_reputation || 0.5) * 100).toFixed(0)}%</span>
+                            </div>
+                            <div class="tooltip-row">
+                                <span class="tooltip-label">Confederation Tier</span>
+                                <span class="tooltip-value">${org.confederation_tier || 0}</span>
+                            </div>
+                        `;
+                    default:
+                        return '';
+                }
+            }
+            
+            function buildIdentityTooltip(org) {
+                return `
+                    <div class="tooltip-title">🆔 Organism Identity</div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Full ID</span>
+                        <span class="tooltip-value" style="font-size:0.8em;">${org.id}</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Generation</span>
+                        <span class="tooltip-value accent">${org.generation || 0}</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Age</span>
+                        <span class="tooltip-value">${org.age || 0} ticks</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Rarity</span>
+                        <span class="tooltip-value">${org.rarity || 'common'}</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Source</span>
+                        <span class="tooltip-value">${org.source === 'live_simulation' ? '🟢 Live' : '📦 Capsule'}</span>
+                    </div>
+                    ${org.parent_ids && org.parent_ids.length > 0 ? `
+                        <div class="tooltip-section">
+                            <div class="tooltip-label">Parent IDs</div>
+                            <div style="font-size:0.75em;color:var(--text-muted);margin-top:2px;">
+                                ${org.parent_ids.map(p => p.substring(0, 8)).join(', ')}
+                            </div>
+                        </div>
+                    ` : ''}
+                    <div class="tooltip-section">
+                        <div class="tooltip-row">
+                            <span class="tooltip-label">Brain Params</span>
+                            <span class="tooltip-value">${(org.brain_params || 0).toLocaleString()}</span>
+                        </div>
+                        <div class="tooltip-row">
+                            <span class="tooltip-label">Hidden Dim</span>
+                            <span class="tooltip-value">${org.hidden_dim || 0}</span>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            function buildAlignmentTooltip(org) {
+                const scores = org.alignment_scores || {};
+                return `
+                    <div class="tooltip-title">${org.alignment_icon || '◇'} D&D Alignment</div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Alignment</span>
+                        <span class="tooltip-value accent">${org.alignment || 'Unknown'}</span>
+                    </div>
+                    <div class="tooltip-section">
+                        <div class="tooltip-label" style="margin-bottom:4px;">Alignment Scores</div>
+                        <div class="tooltip-row">
+                            <span class="tooltip-label">Law ↔ Chaos</span>
+                            <span class="tooltip-value">${((scores.lawful || 0) * 100).toFixed(0)}% / ${((scores.chaotic || 0) * 100).toFixed(0)}%</span>
+                        </div>
+                        <div class="tooltip-row">
+                            <span class="tooltip-label">Good ↔ Evil</span>
+                            <span class="tooltip-value">${((scores.good || 0) * 100).toFixed(0)}% / ${((scores.evil || 0) * 100).toFixed(0)}%</span>
+                        </div>
+                    </div>
+                    <div style="font-size:0.75em;color:var(--text-muted);margin-top:8px;line-height:1.4;">
+                        Alignment derived from cooperation ratio, aggression, exploration patterns, and alliance behavior.
+                    </div>
+                `;
+            }
+            
+            function buildPersonalityTooltip(org) {
+                const persDescriptions = {
+                    'Aggressive': 'Prioritizes competition and dominance. High compete actions.',
+                    'Explorer': 'Prioritizes movement and discovery. High exploration ratio.',
+                    'Social': 'Prioritizes cooperation and alliances. High cooperation ratio.',
+                    'Defensive': 'Prioritizes isolation and self-preservation. High isolate actions.',
+                    'Reproducer': 'Prioritizes passing genes. High reproduce actions.',
+                    'Conservative': 'Prioritizes energy conservation. High rest actions.',
+                    'Balanced': 'No dominant behavioral tendency. Adaptable strategy.'
+                };
+                
+                return `
+                    <div class="tooltip-title">🎭 Personality Type</div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Type</span>
+                        <span class="tooltip-value accent">${org.personality_type || 'Unknown'}</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Dominant Action</span>
+                        <span class="tooltip-value">${org.dominant_action || 'none'}</span>
+                    </div>
+                    <div style="font-size:0.8em;color:var(--text-muted);margin-top:8px;line-height:1.4;">
+                        ${persDescriptions[org.personality_type] || 'Behavioral pattern still developing.'}
+                    </div>
+                `;
+            }
+            
+            function buildTraitsTooltip(org) {
+                const strengths = org.strengths || [];
+                const weaknesses = org.weaknesses || [];
+                
+                let strengthsHtml = strengths.length > 0 
+                    ? strengths.map(s => `<div style="color:var(--positive);">✓ ${s.replace(/_/g, ' ')}</div>`).join('')
+                    : '<div style="color:var(--text-muted);">No notable strengths</div>';
+                    
+                let weaknessesHtml = weaknesses.length > 0
+                    ? weaknesses.map(w => `<div style="color:var(--negative);">✗ ${w.replace(/_/g, ' ')}</div>`).join('')
+                    : '<div style="color:var(--text-muted);">No notable weaknesses</div>';
+                
+                return `
+                    <div class="tooltip-title">⚖️ Traits Analysis</div>
+                    <div class="tooltip-section">
+                        <div class="tooltip-label" style="margin-bottom:4px;">Strengths</div>
+                        ${strengthsHtml}
+                    </div>
+                    <div class="tooltip-section">
+                        <div class="tooltip-label" style="margin-bottom:4px;">Weaknesses</div>
+                        ${weaknessesHtml}
+                    </div>
+                    <div style="font-size:0.75em;color:var(--text-muted);margin-top:8px;line-height:1.4;">
+                        Traits derived from fitness, battle record, social connections, and behavioral patterns.
+                    </div>
+                `;
+            }
+            
+            function attachCardTooltips(card, org) {
+                // Card ID / header tooltip
+                const cardId = card.querySelector('.card-id');
+                if (cardId) {
+                    cardId.classList.add('has-tooltip');
+                    cardId.addEventListener('mouseenter', (e) => { e.stopPropagation(); showTooltip(buildIdentityTooltip(org), e); });
+                    cardId.addEventListener('mousemove', (e) => { e.stopPropagation(); showTooltip(buildIdentityTooltip(org), e); });
+                    cardId.addEventListener('mouseleave', (e) => { e.stopPropagation(); hideTooltip(); });
+                }
+                
+                // Alignment tooltip
+                const cardAlignment = card.querySelector('.card-alignment');
+                if (cardAlignment) {
+                    cardAlignment.classList.add('has-tooltip');
+                    cardAlignment.addEventListener('mouseenter', (e) => { e.stopPropagation(); showTooltip(buildAlignmentTooltip(org), e); });
+                    cardAlignment.addEventListener('mousemove', (e) => { e.stopPropagation(); showTooltip(buildAlignmentTooltip(org), e); });
+                    cardAlignment.addEventListener('mouseleave', (e) => { e.stopPropagation(); hideTooltip(); });
+                }
+                
+                // Personality tooltip
+                const cardPersonality = card.querySelector('.card-personality');
+                if (cardPersonality) {
+                    cardPersonality.classList.add('has-tooltip');
+                    cardPersonality.addEventListener('mouseenter', (e) => { e.stopPropagation(); showTooltip(buildPersonalityTooltip(org), e); });
+                    cardPersonality.addEventListener('mousemove', (e) => { e.stopPropagation(); showTooltip(buildPersonalityTooltip(org), e); });
+                    cardPersonality.addEventListener('mouseleave', (e) => { e.stopPropagation(); hideTooltip(); });
+                }
+                
+                // Traits tooltip
+                const cardTraits = card.querySelector('.card-traits');
+                if (cardTraits) {
+                    cardTraits.classList.add('has-tooltip');
+                    cardTraits.addEventListener('mouseenter', (e) => { e.stopPropagation(); showTooltip(buildTraitsTooltip(org), e); });
+                    cardTraits.addEventListener('mousemove', (e) => { e.stopPropagation(); showTooltip(buildTraitsTooltip(org), e); });
+                    cardTraits.addEventListener('mouseleave', (e) => { e.stopPropagation(); hideTooltip(); });
+                }
+                
+                // Sparkline tooltip
+                const sparklineContainer = card.querySelector('.fitness-sparkline-container');
+                if (sparklineContainer) {
+                    sparklineContainer.classList.add('has-tooltip');
+                    sparklineContainer.addEventListener('mouseenter', (e) => showTooltip(buildSparklineTooltip(org), e));
+                    sparklineContainer.addEventListener('mousemove', (e) => showTooltip(buildSparklineTooltip(org), e));
+                    sparklineContainer.addEventListener('mouseleave', hideTooltip);
+                }
+                
+                // Action sequence tooltip
+                const actionContainer = card.querySelector('.action-sequence-container');
+                if (actionContainer) {
+                    actionContainer.classList.add('has-tooltip');
+                    actionContainer.addEventListener('mouseenter', (e) => showTooltip(buildActionTooltip(org), e));
+                    actionContainer.addEventListener('mousemove', (e) => showTooltip(buildActionTooltip(org), e));
+                    actionContainer.addEventListener('mouseleave', hideTooltip);
+                }
+                
+                // Fingerprint tooltip
+                const fingerprintViz = card.querySelector('.fingerprint-viz');
+                if (fingerprintViz) {
+                    fingerprintViz.classList.add('has-tooltip');
+                    fingerprintViz.addEventListener('mouseenter', (e) => showTooltip(buildFingerprintTooltip(org), e));
+                    fingerprintViz.addEventListener('mousemove', (e) => showTooltip(buildFingerprintTooltip(org), e));
+                    fingerprintViz.addEventListener('mouseleave', hideTooltip);
+                }
+                
+                // Battle record tooltip
+                const battleRecord = card.querySelector('.battle-record');
+                if (battleRecord) {
+                    battleRecord.classList.add('has-tooltip');
+                    battleRecord.addEventListener('mouseenter', (e) => showTooltip(buildBattleTooltip(org), e));
+                    battleRecord.addEventListener('mousemove', (e) => showTooltip(buildBattleTooltip(org), e));
+                    battleRecord.addEventListener('mouseleave', hideTooltip);
+                }
+                
+                // Stat items tooltips
+                const statItems = card.querySelectorAll('.stat-item');
+                const statTypes = ['fitness', 'vocab', 'exp', 'links'];
+                statItems.forEach((stat, idx) => {
+                    if (statTypes[idx]) {
+                        stat.classList.add('has-tooltip');
+                        stat.addEventListener('mouseenter', (e) => showTooltip(buildStatTooltip(statTypes[idx], org), e));
+                        stat.addEventListener('mousemove', (e) => showTooltip(buildStatTooltip(statTypes[idx], org), e));
+                        stat.addEventListener('mouseleave', hideTooltip);
+                    }
+                });
+            }
+
+            // Create a single organism card - Scientific Observatory Design
             function createOrganismCard(org) {
                 const card = document.createElement('div');
                 card.className = `organism-card rarity-${org.rarity || 'common'}`;
                 card.dataset.organismId = org.id;
                 
-                // Add age class for worn edges effect
+                // Add age class
                 if (org.age > 500) card.classList.add('aged-ancient');
                 else if (org.age > 200) card.classList.add('aged-veteran');
+                
+                // Add alignment class for color coding
+                const alignmentClass = (org.alignment || 'true-neutral').toLowerCase().replace(/\s+/g, '-');
+                card.classList.add(`alignment-${alignmentClass}`);
                 
                 // Selection state
                 if (selectedOrganismIds.has(org.id)) {
@@ -12140,82 +13869,107 @@
                 else if (org.fitness >= 0.5) fitnessClass = 'good';
                 else if (org.fitness >= 0.25) fitnessClass = 'average';
                 
-                // Fitness trend icon
-                const trendIcon = org.fitness_trend?.trend === 'rising' ? '📈' : 
-                                  org.fitness_trend?.trend === 'falling' ? '📉' : '➡️';
+                // Fitness trend indicator
+                const trendIcon = org.fitness_trend?.trend === 'rising' ? '↑' : 
+                                  org.fitness_trend?.trend === 'falling' ? '↓' : '−';
+                const trendClass = org.fitness_trend?.trend === 'rising' ? 'positive' : 
+                                   org.fitness_trend?.trend === 'falling' ? 'negative' : '';
                 
                 // Personality icon
-                const persIcon = personalityIcons[org.personality_type] || '❓';
+                const persIcon = personalityIcons[org.personality_type] || '◆';
                 
                 // Fingerprint bars (behavioral distribution)
                 const fingerprint = org.behavioral_fingerprint || [0, 0, 0, 0, 0, 0];
                 const maxFp = Math.max(...fingerprint, 0.01);
-                const fpBars = fingerprint.map(v => Math.round((v / maxFp) * 100)).join(',');
+                
+                // Battle win rate calculation
+                const totalBattles = (org.battle_wins || 0) + (org.battle_losses || 0);
+                const winRate = totalBattles > 0 ? ((org.battle_wins || 0) / totalBattles * 100).toFixed(0) : '—';
                 
                 card.innerHTML = `
-                    <span class="source-badge source-${org.source === 'live_simulation' ? 'live' : 'capsule'}">
-                        ${org.source === 'live_simulation' ? '🔴 LIVE' : '💾 CAPSULE'}
-                    </span>
-                    
                     <div class="card-header">
-                        <span class="card-id">${org.short_id || org.id.substring(0, 8)}</span>
-                        <span class="card-rarity-badge">${org.rarity || 'common'}</span>
-                    </div>
-                    
-                    <div class="card-personality">
-                        <span class="personality-icon">${persIcon}</span>
-                        <span class="personality-label">${org.personality_type || 'Unknown'}</span>
-                    </div>
-                    
-                    <div class="fitness-bar-container" title="Fitness: ${fitnessPercent}%">
-                        <div class="fitness-bar ${fitnessClass}" style="width: ${fitnessPercent}%"></div>
-                    </div>
-                    
-                    <div class="card-stats">
-                        <div class="stat-item">
-                            <span class="stat-label">⚡ Fitness</span>
-                            <span class="stat-value">${(org.fitness || 0).toFixed(2)} ${trendIcon}</span>
+                        <div class="card-id-section">
+                            <span class="card-id">${org.short_id || org.id.substring(0, 8)}</span>
+                            <span class="card-rarity-badge">${org.rarity || 'common'}</span>
                         </div>
-                        <div class="stat-item">
-                            <span class="stat-label">📚 Vocab</span>
-                            <span class="stat-value ${org.vocab_utilization > 50 ? 'positive' : org.vocab_utilization > 20 ? 'warning' : 'negative'}">${org.words_learned || 0}</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">🧠 Exp</span>
-                            <span class="stat-value">${org.experience_buffer_size || 0}</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">🔗 Social</span>
-                            <span class="stat-value">${org.connections_count || 0}</span>
+                        <div class="card-source-indicator">
+                            <span class="source-dot ${org.source === 'live_simulation' ? 'live' : 'capsule'}" 
+                                  title="${org.source === 'live_simulation' ? 'Live Simulation' : 'Time Capsule'}"></span>
                         </div>
                     </div>
                     
-                    <div class="battle-record">
-                        <span class="battle-wins" title="Wins">🏆 ${org.battle_wins || 0}</span>
-                        <span style="color: #666;">|</span>
-                        <span class="battle-losses" title="Losses">💀 ${org.battle_losses || 0}</span>
-                        <span style="color: #888; margin-left: 5px;">(${((org.battle_win_rate || 0) * 100).toFixed(0)}%)</span>
-                    </div>
-                    
-                    <div class="fingerprint-viz" title="Behavioral Fingerprint: Move, Coop, Compete, Rest, Repro, Isolate">
-                        <div class="fingerprint-bars">
-                            ${fingerprint.map((v, i) => `<div class="fingerprint-bar" style="height: ${Math.round((v / maxFp) * 100)}%"></div>`).join('')}
+                    <div class="card-body">
+                        <div class="card-identity-row">
+                            <div class="card-alignment" title="${org.alignment || 'Unknown'}">
+                                <span class="alignment-icon">${org.alignment_icon || '◇'}</span>
+                                <span class="alignment-label">${org.alignment || 'Unknown'}</span>
+                            </div>
+                            <div class="card-personality" title="${org.personality_type || 'Unknown'}">
+                                <span class="personality-icon">${persIcon}</span>
+                                <span class="personality-label">${org.personality_type || 'Unknown'}</span>
+                            </div>
                         </div>
-                        <div class="fingerprint-labels">
-                            <span class="fingerprint-label" title="Move">Mv</span>
-                            <span class="fingerprint-label" title="Cooperate">Co</span>
-                            <span class="fingerprint-label" title="Compete">Cm</span>
-                            <span class="fingerprint-label" title="Rest">Rs</span>
-                            <span class="fingerprint-label" title="Reproduce">Rp</span>
-                            <span class="fingerprint-label" title="Isolate">Is</span>
+                        
+                        <div class="card-stats">
+                            <div class="stat-item">
+                                <span class="stat-value ${trendClass}">${fitnessPercent}<small class="${trendClass}">${trendIcon}</small></span>
+                                <span class="stat-label">Fit%</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value ${org.vocab_utilization > 50 ? 'positive' : ''}">${org.words_learned || 0}</span>
+                                <span class="stat-label">Vocab</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value">${org.experience_buffer_size || 0}</span>
+                                <span class="stat-label">Exp</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value">${org.connections_count || 0}</span>
+                                <span class="stat-label">Links</span>
+                            </div>
                         </div>
-                    </div>
-                    
-                    <div class="card-traits">
-                        ${(org.strengths || []).map(s => `<span class="trait-tag trait-strength">✓ ${s.replace(/_/g, ' ')}</span>`).join('')}
-                        ${(org.weaknesses || []).map(w => `<span class="trait-tag trait-weakness">✗ ${w.replace(/_/g, ' ')}</span>`).join('')}
+                        
+                        <div class="fitness-sparkline-container" data-fitness-history='${JSON.stringify(org.fitness_history || [])}'>
+                            <svg class="fitness-sparkline" width="100%" height="24"></svg>
+                        </div>
+                        
+                        <div class="action-sequence-container" data-recent-actions='${JSON.stringify(org.recent_actions || [])}'>
+                            <div class="action-sequence"></div>
+                        </div>
+                        
+                        <div class="battle-record">
+                            <span class="battle-stat battle-wins" title="Wins">W:${org.battle_wins || 0}</span>
+                            <span class="battle-stat battle-losses" title="Losses">L:${org.battle_losses || 0}</span>
+                            <span class="battle-stat battle-ratio" title="Win Rate">${winRate}%</span>
+                        </div>
+                        
+                        <div class="fingerprint-viz" title="Behavioral Distribution">
+                            <div class="fingerprint-bars">
+                                ${fingerprint.map((v, i) => `
+                                    <div class="fingerprint-bar-container">
+                                        <div class="fingerprint-bar" style="height: ${Math.round((v / maxFp) * 100)}%"></div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div class="fingerprint-labels">
+                                <span class="fingerprint-label">Mv</span>
+                                <span class="fingerprint-label">Co</span>
+                                <span class="fingerprint-label">Cm</span>
+                                <span class="fingerprint-label">Rs</span>
+                                <span class="fingerprint-label">Rp</span>
+                                <span class="fingerprint-label">Is</span>
+                            </div>
+                        </div>
+                        
+                        <div class="card-traits">
+                            ${(org.strengths || []).slice(0, 2).map(s => `<span class="trait-tag trait-strength">${s.replace(/_/g, ' ')}</span>`).join('')}
+                            ${(org.weaknesses || []).slice(0, 2).map(w => `<span class="trait-tag trait-weakness">${w.replace(/_/g, ' ')}</span>`).join('')}
+                        </div>
                     </div>
                 `;
+                
+                // Attach rich tooltips for data exploration
+                attachCardTooltips(card, org);
                 
                 // Click to select/deselect
                 card.addEventListener('click', () => toggleOrganismSelection(org.id));
@@ -12292,17 +14046,28 @@
                 const search = document.getElementById('binderSearch')?.value.toLowerCase() || '';
                 const rarityFilter = document.getElementById('binderFilterRarity')?.value || '';
                 const personalityFilter = document.getElementById('binderFilterPersonality')?.value || '';
+                const alignmentFilter = document.getElementById('binderFilterAlignment')?.value || '';
                 
                 return allOrganisms.filter(org => {
                     // Search filter
                     if (search) {
-                        const searchable = `${org.id} ${org.personality_type} ${org.rarity} ${org.dominant_action}`.toLowerCase();
+                        const searchable = `${org.id} ${org.personality_type} ${org.rarity} ${org.dominant_action} ${org.alignment || ''}`.toLowerCase();
                         if (!searchable.includes(search)) return false;
                     }
                     // Rarity filter
                     if (rarityFilter && org.rarity !== rarityFilter) return false;
                     // Personality filter
                     if (personalityFilter && org.personality_type !== personalityFilter) return false;
+                    // Alignment filter
+                    if (alignmentFilter) {
+                        const alignment = (org.alignment || '').toLowerCase();
+                        if (alignmentFilter === 'lawful' && !alignment.includes('lawful')) return false;
+                        if (alignmentFilter === 'chaotic' && !alignment.includes('chaotic')) return false;
+                        if (alignmentFilter === 'good' && !alignment.includes('good')) return false;
+                        if (alignmentFilter === 'evil' && !alignment.includes('evil')) return false;
+                        if (alignmentFilter === 'neutral-law' && !alignment.includes('neutral') && alignment.includes('lawful') || alignment.includes('chaotic')) return false;
+                        if (alignmentFilter === 'neutral-moral' && alignment !== 'true neutral') return false;
+                    }
                     
                     return true;
                 });

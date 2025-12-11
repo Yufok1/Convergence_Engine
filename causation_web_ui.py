@@ -7025,6 +7025,165 @@ def list_organisms():
                 'volatility': round(volatility, 4)
             }
 
+        def calculate_dnd_alignment(organism_data):
+            """
+            Calculate D&D-style alignment from organism behavioral patterns.
+            
+            This uses RELATIVE metrics rather than absolute counts to determine
+            alignment - comparing an organism's tendencies to what's "normal".
+            
+            LAW vs CHAOS axis:
+            - Action entropy (predictable vs random action choices)
+            - Fitness stability (stable = lawful, volatile = chaotic)
+            - Alliance loyalty (staying in alliance = lawful)
+            
+            GOOD vs EVIL axis:
+            - Cooperation vs competition ratio (WHEN GIVEN CHOICE)
+            - Alliance reputation (earned through actions, not time)
+            - Battle aggression (high battles relative to age = evil tendency)
+            - Social connections (isolated predators vs connected helpers)
+            
+            Returns: {alignment: str, law_chaos: str, good_evil: str, scores: dict}
+            """
+            import math
+            
+            # Extract metrics with defaults
+            coop_ratio = organism_data.get('cooperation_ratio', 0.33)
+            aggro_ratio = organism_data.get('aggression_ratio', 0.33)
+            explore_ratio = organism_data.get('exploration_ratio', 0.33)
+            alliance_rep = organism_data.get('alliance_reputation', 0.5)
+            battle_wins = organism_data.get('battle_wins', 0)
+            battle_losses = organism_data.get('battle_losses', 0)
+            connections = organism_data.get('connections_count', 0)
+            age = max(organism_data.get('age', 1), 1)
+            fitness_volatility = organism_data.get('fitness_volatility', 0.0)
+            fingerprint = organism_data.get('behavioral_fingerprint', [0.17] * 6)
+            has_alliance = organism_data.get('alliance_id') is not None
+            
+            # ═══════════════════════════════════════════════════════════════
+            # LAW-CHAOS AXIS
+            # ═══════════════════════════════════════════════════════════════
+            
+            # 1. Action entropy - how predictable are they?
+            # Low entropy = always does same thing = Lawful
+            # High entropy = random choices = Chaotic
+            entropy = 0.0
+            if fingerprint:
+                for p in fingerprint:
+                    if p > 0:
+                        entropy -= p * math.log2(p + 1e-10)
+                max_entropy = math.log2(len(fingerprint))  # ~2.58 for 6 actions
+                entropy_normalized = entropy / max_entropy if max_entropy > 0 else 0.5
+            else:
+                entropy_normalized = 0.5
+            
+            # 2. Fitness stability (from trend volatility)
+            # Stable fitness = Lawful (consistent strategy)
+            # Volatile fitness = Chaotic (erratic behavior)
+            stability_score = 1.0 - min(fitness_volatility * 5, 1.0)  # vol 0.2+ = chaotic
+            
+            # 3. Alliance loyalty
+            # Being in an alliance = more lawful (following group rules)
+            alliance_loyalty = 0.7 if has_alliance else 0.3
+            
+            # Combine for Law-Chaos (0 = Lawful, 1 = Chaotic)
+            chaos_score = (
+                entropy_normalized * 0.4 +      # Action randomness
+                (1 - stability_score) * 0.35 +  # Fitness volatility
+                (1 - alliance_loyalty) * 0.25   # Alliance membership
+            )
+            
+            if chaos_score < 0.35:
+                law_chaos = 'Lawful'
+            elif chaos_score > 0.65:
+                law_chaos = 'Chaotic'
+            else:
+                law_chaos = 'Neutral'
+            
+            # ═══════════════════════════════════════════════════════════════
+            # GOOD-EVIL AXIS
+            # ═══════════════════════════════════════════════════════════════
+            
+            # 1. Cooperation tendency (adjusted for opportunity)
+            # High coop when compete was an option = Good
+            social_actions = coop_ratio + aggro_ratio
+            if social_actions > 0.1:
+                # They had social opportunities - did they cooperate?
+                coop_tendency = coop_ratio / social_actions
+            else:
+                coop_tendency = 0.5  # No social opportunities = neutral
+            
+            # 2. Battle aggression relative to age
+            # Lots of battles for young organism = actively seeking conflict = Evil
+            # Few battles for old organism = peaceful = Good
+            total_battles = battle_wins + battle_losses
+            battles_per_100_cycles = (total_battles / age) * 100
+            # Expected ~5-10 battles per 100 cycles is "normal"
+            battle_aggression = min(battles_per_100_cycles / 20, 1.0)  # 20+ per 100 = very aggressive
+            
+            # 3. Alliance reputation (earned, not given)
+            # > 0.5 = has done good things, < 0.5 = has done bad things
+            rep_contribution = (alliance_rep - 0.5) * 2  # -1 to +1
+            
+            # 4. Social connectivity
+            # More connections = more community-oriented = Good tendency
+            # Isolated but aggressive = Evil tendency
+            connectivity_score = min(connections / 10, 1.0)  # 10+ connections = max
+            
+            # Combine for Good-Evil (-1 = Evil, +1 = Good)
+            good_evil_score = (
+                (coop_tendency - 0.5) * 0.8 +      # Cooperation when given choice
+                rep_contribution * 0.5 +            # Alliance reputation
+                (connectivity_score - 0.5) * 0.4 + # Social connections
+                (0.5 - battle_aggression) * 0.6    # Battle frequency (inverted)
+            )
+            
+            if good_evil_score > 0.2:
+                good_evil = 'Good'
+            elif good_evil_score < -0.2:
+                good_evil = 'Evil'
+            else:
+                good_evil = 'Neutral'
+            
+            # ═══════════════════════════════════════════════════════════════
+            # COMBINE ALIGNMENTS
+            # ═══════════════════════════════════════════════════════════════
+            
+            if law_chaos == 'Neutral' and good_evil == 'Neutral':
+                alignment = 'True Neutral'
+            else:
+                alignment = f"{law_chaos} {good_evil}"
+            
+            # Alignment icons
+            alignment_icons = {
+                'Lawful Good': '⚖️😇',
+                'Lawful Neutral': '⚖️😐',
+                'Lawful Evil': '⚖️😈',
+                'Neutral Good': '🔘😇',
+                'True Neutral': '🔘😐',
+                'Neutral Evil': '🔘😈',
+                'Chaotic Good': '🌀😇',
+                'Chaotic Neutral': '🌀😐',
+                'Chaotic Evil': '🌀😈'
+            }
+            
+            return {
+                'alignment': alignment,
+                'alignment_icon': alignment_icons.get(alignment, '❓'),
+                'law_chaos': law_chaos,
+                'good_evil': good_evil,
+                'scores': {
+                    'chaos_score': round(chaos_score, 3),
+                    'good_evil_score': round(good_evil_score, 3),
+                    'entropy': round(entropy_normalized, 3),
+                    'stability': round(stability_score, 3),
+                    'coop_tendency': round(coop_tendency, 3),
+                    'battle_aggression': round(battle_aggression, 3),
+                    'alliance_rep': round(alliance_rep, 3),
+                    'connectivity': round(connectivity_score, 3)
+                }
+            }
+
         def determine_rarity(fitness, battle_wins, experience_size, words_learned):
             """Determine organism rarity tier (like Pokémon card rarity)."""
             score = 0
@@ -7132,6 +7291,22 @@ def list_organisms():
                         rarity = determine_rarity(fitness_val, battle_wins, exp_buffer_size, words_learned)
                         traits = determine_strengths_weaknesses(behavior, fitness_val, battle_stats, connection_count)
                         
+                        # D&D Alignment (derived from behavior patterns)
+                        alignment_data = {
+                            'cooperation_ratio': behavior['cooperation_ratio'],
+                            'aggression_ratio': behavior['aggression_ratio'],
+                            'exploration_ratio': behavior['exploration_ratio'],
+                            'alliance_reputation': getattr(organism, 'alliance_reputation', 0.5),
+                            'battle_wins': battle_wins,
+                            'battle_losses': battle_losses,
+                            'connections_count': connection_count,
+                            'age': getattr(organism, 'age', 1),
+                            'fitness_volatility': fitness_trend.get('volatility', 0.0),
+                            'behavioral_fingerprint': behavior['behavioral_fingerprint'],
+                            'alliance_id': getattr(organism, 'alliance_id', None)
+                        }
+                        alignment = calculate_dnd_alignment(alignment_data)
+                        
                         organisms_data.append({
                             # Identity
                             'id': org_id,
@@ -7143,6 +7318,7 @@ def list_organisms():
                             # Fitness
                             'fitness': round(fitness_val, 4),
                             'fitness_trend': fitness_trend,
+                            'fitness_history': [round(f, 3) for f in fitness_history[-30:]],  # Last 30 for sparkline
                             'age': getattr(organism, 'age', 0),
                             
                             # Combat
@@ -7171,6 +7347,7 @@ def list_organisms():
                             # Experience
                             'experience_buffer_size': exp_buffer_size,
                             'action_history_length': action_history_len,
+                            'recent_actions': action_history[-20:],  # Last 20 actions for visualization
                             
                             # Behavior & Personality
                             'dominant_action': behavior['dominant_action'],
@@ -7180,6 +7357,11 @@ def list_organisms():
                             'cooperation_ratio': behavior['cooperation_ratio'],
                             'aggression_ratio': behavior['aggression_ratio'],
                             'exploration_ratio': behavior['exploration_ratio'],
+                            
+                            # D&D Alignment
+                            'alignment': alignment['alignment'],
+                            'alignment_icon': alignment['alignment_icon'],
+                            'alignment_scores': alignment['scores'],
                             
                             # Illumination
                             'illumination_level': getattr(organism, '_illumination_level', 'none'),
@@ -7247,6 +7429,22 @@ def list_organisms():
                     if capsule_connections < 2:
                         weaknesses.append('isolated')
                     
+                    # D&D Alignment for capsules (use stored values or defaults)
+                    alignment_data = {
+                        'cooperation_ratio': info.get('cooperation_ratio', 0.33),
+                        'aggression_ratio': info.get('aggression_ratio', 0.33),
+                        'exploration_ratio': info.get('exploration_ratio', 0.33),
+                        'alliance_reputation': info.get('alliance_reputation', 0.5),
+                        'battle_wins': battle_wins,
+                        'battle_losses': battle_losses,
+                        'connections_count': capsule_connections,
+                        'age': info.get('age', 100),  # Default to some age for capsules
+                        'fitness_volatility': 0.1,  # Unknown for capsules
+                        'behavioral_fingerprint': info.get('behavioral_fingerprint', [0.17] * 6),
+                        'alliance_id': info.get('alliance_id')
+                    }
+                    alignment = calculate_dnd_alignment(alignment_data)
+                    
                     organisms_data.append({
                         # Identity
                         'id': org_id,
@@ -7258,6 +7456,7 @@ def list_organisms():
                         # Fitness
                         'fitness': round(fitness_val, 4),
                         'fitness_trend': {'trend': 'unknown', 'change': 0.0, 'volatility': 0.0},
+                        'fitness_history': info.get('fitness_history', []),  # May be empty for capsules
                         'age': info.get('age', 0),
                         
                         # Combat
@@ -7287,6 +7486,7 @@ def list_organisms():
                         # Experience
                         'experience_buffer_size': capsule_exp_buffer,
                         'action_history_length': info.get('action_count', 0),
+                        'recent_actions': info.get('recent_actions', []),  # May be empty for capsules
                         
                         # Behavior & Personality (limited from capsule)
                         'dominant_action': info.get('dominant_action', 'unknown'),
@@ -7296,6 +7496,11 @@ def list_organisms():
                         'cooperation_ratio': info.get('cooperation_ratio', 0.0),
                         'aggression_ratio': info.get('aggression_ratio', 0.0),
                         'exploration_ratio': info.get('exploration_ratio', 0.0),
+                        
+                        # D&D Alignment
+                        'alignment': alignment['alignment'],
+                        'alignment_icon': alignment['alignment_icon'],
+                        'alignment_scores': alignment['scores'],
                         
                         # Illumination
                         'illumination_level': info.get('illumination_level', 'none'),

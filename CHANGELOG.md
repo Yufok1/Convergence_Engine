@@ -6,6 +6,86 @@
 
 ## [Unreleased] - 2025-12-11
 
+### 🔬 Scientific Organism Observatory UI Overhaul (2025-12-11)
+
+**MAJOR UI REDESIGN**: Complete transformation of Agent Exporter organism viewer from "Pokemon cards" to sleek scientific instrument aesthetic.
+
+#### Phase 1: Visual Design System
+- **CSS Variables**: Comprehensive design tokens for colors, spacing, typography
+- **Card Redesign**: Clean instrument-panel aesthetic with subtle gradients
+- **Rarity Indicators**: Subtle left-border accents (common→legendary color scale)
+- **Age Indicators**: Corner flourishes for veteran/ancient organisms
+- **Alignment Color Coding**: Cards tinted by D&D alignment
+
+#### Phase 2: Data Visualization
+- **Fitness Sparklines**: D3.js SVG mini-charts showing last 30 fitness values
+- **Action Sequence Bars**: Color-coded horizontal bars for last 20 actions
+  - Move (blue), Cooperate (green), Compete (red), Rest (gray), Reproduce (purple), Isolate (orange)
+- **Behavioral Fingerprint**: 6-bar distribution chart showing lifetime action ratios
+
+#### Phase 3: Rich Tooltip System
+Interactive tooltips on hover for deep data exploration:
+
+| Element | Tooltip Data |
+|---------|-------------|
+| **Card ID** | Full ID, generation, age, rarity, source, parent IDs, brain params, hidden dim |
+| **Alignment** | D&D alignment scores (law/chaos, good/evil), calculation explanation |
+| **Personality** | Type description, dominant action, behavioral pattern |
+| **Fitness Sparkline** | Current %, min/max range, average, Δ from start, volatility %, trend slope |
+| **Action Sequence** | Action breakdown with counts/percentages, dominant action description |
+| **Stat: Fit%** | Current fitness, trend direction, fitness explanation |
+| **Stat: Vocab** | Words learned, capacity, utilization %, language head status |
+| **Stat: Exp** | Experience buffer size, action history length, epsilon (exploration rate) |
+| **Stat: Links** | Connections count, alliance ID, reputation %, confederation tier |
+| **Battle Record** | Win rate, victories, defeats, total battles, combat style classification |
+| **Fingerprint** | Full behavioral DNA with percentages, cooperation/aggression/exploration ratios |
+| **Traits** | All strengths and weaknesses with derivation explanation |
+
+#### Backend Enhancements (`causation_web_ui.py`)
+- Added `fitness_history` (last 30 values) to organism API
+- Added `recent_actions` (last 20 action indices) to organism API
+- Data available for both live organisms and saved capsules
+
+#### Technical Implementation
+- D3.js v7 for sparkline SVG generation with area fill
+- `requestAnimationFrame` for smooth post-render visualization
+- Event delegation with `stopPropagation` for nested tooltip targets
+- Viewport-aware tooltip positioning
+
+---
+
+### 🎲 D&D Alignment System for Organisms (2025-12-11)
+
+**NEW FEATURE**: Organisms now have D&D-style alignments displayed on their cards.
+
+#### Alignment Axes
+- **Lawful ↔ Chaotic**: Derived from exploration behavior + fitness volatility
+  - Lawful: Low exploration, stable fitness
+  - Chaotic: High exploration, volatile fitness
+- **Good ↔ Evil**: Derived from social behavior metrics
+  - Good: High cooperation, low aggression, good alliance reputation
+  - Evil: High aggression, predatory, exploitative
+
+#### Nine Alignments
+| Alignment | Icon | Typical Behavior |
+|-----------|------|------------------|
+| Lawful Good | ⚖️😇 | Team player, stable, helpful |
+| Lawful Neutral | ⚖️😐 | Rule follower, predictable |
+| Lawful Evil | ⚖️😈 | Methodical predator |
+| Neutral Good | 🔘😇 | Helpful opportunist |
+| True Neutral | 🔘😐 | Balanced survivalist |
+| Neutral Evil | 🔘😈 | Self-serving |
+| Chaotic Good | 🌀😇 | Unpredictable helper |
+| Chaotic Neutral | 🌀😐 | Wild card |
+| Chaotic Evil | 🌀😈 | Destructive chaos agent |
+
+#### Implementation
+- `causation_web_ui.py`: Added `calculate_dnd_alignment()` function
+- `causation_explorer.html`: Added alignment display on organism cards
+- Works for both live organisms and saved capsules
+
+---
+
 ### ⚡ GPU Performance Optimizations (2025-12-11)
 
 **PERFORMANCE**: Added Flash Attention and Mixed Precision (AMP) for faster training.
