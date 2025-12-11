@@ -948,6 +948,255 @@
         }
 
         /* ═══════════════════════════════════════════════════════════════════════════
+           💬 ORGANISM CHAT INTERFACE - Direct 1:1 Communication
+           ═══════════════════════════════════════════════════════════════════════════ */
+        
+        .card-chat-container {
+            border-top: 1px solid var(--border-subtle);
+            padding: var(--space-sm);
+            padding-left: calc(var(--space-sm) + 6px);
+            background: var(--bg-deep);
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-xs);
+        }
+        
+        .card-chat-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            padding: var(--space-xs) 0;
+            user-select: none;
+        }
+        
+        .card-chat-toggle-label {
+            font-family: var(--font-mono);
+            font-size: 0.7em;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+        }
+        
+        .card-chat-toggle-icon {
+            font-size: 1.1em;
+            transition: transform var(--transition-fast);
+        }
+        
+        .card-chat-container.expanded .card-chat-toggle-icon {
+            transform: rotate(180deg);
+        }
+        
+        .card-chat-content {
+            display: none;
+            flex-direction: column;
+            gap: var(--space-xs);
+        }
+        
+        .card-chat-container.expanded .card-chat-content {
+            display: flex;
+        }
+        
+        .card-chat-messages {
+            max-height: 120px;
+            overflow-y: auto;
+            padding: var(--space-xs);
+            background: var(--bg-panel);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            font-size: 0.75em;
+        }
+        
+        .card-chat-messages:empty::before {
+            content: 'Say hello to this organism...';
+            color: var(--text-tertiary);
+            font-style: italic;
+        }
+        
+        .chat-msg {
+            padding: var(--space-xs);
+            margin-bottom: var(--space-xs);
+            border-radius: var(--radius-sm);
+        }
+        
+        .chat-msg:last-child {
+            margin-bottom: 0;
+        }
+        
+        .chat-msg.user {
+            background: rgba(0, 255, 255, 0.08);
+            border-left: 2px solid var(--accent-cyan);
+        }
+        
+        .chat-msg.organism {
+            background: rgba(255, 0, 255, 0.08);
+            border-left: 2px solid var(--accent-magenta);
+        }
+        
+        .chat-msg-sender {
+            font-family: var(--font-mono);
+            font-size: 0.8em;
+            font-weight: 600;
+            color: var(--text-tertiary);
+            margin-bottom: 2px;
+        }
+        
+        .chat-msg.user .chat-msg-sender { color: var(--accent-cyan); }
+        .chat-msg.organism .chat-msg-sender { color: var(--accent-magenta); }
+        
+        .chat-msg-text {
+            font-family: var(--font-data);
+            font-size: 1em;
+            color: var(--text-primary);
+            line-height: 1.4;
+            word-break: break-word;
+        }
+        
+        .chat-msg-meta {
+            font-family: var(--font-mono);
+            font-size: 0.7em;
+            color: var(--text-tertiary);
+            margin-top: 2px;
+        }
+        
+        .card-chat-input-row {
+            display: flex;
+            gap: var(--space-xs);
+        }
+        
+        .card-chat-input {
+            flex: 1;
+            padding: var(--space-xs);
+            background: var(--bg-panel);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-family: var(--font-data);
+            font-size: 0.8em;
+            resize: none;
+            min-height: 28px;
+            max-height: 56px;
+        }
+        
+        .card-chat-input:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+        }
+        
+        .card-chat-input::placeholder {
+            color: var(--text-tertiary);
+        }
+        
+        .card-chat-send {
+            padding: var(--space-xs) var(--space-sm);
+            background: var(--accent-cyan-dim);
+            border: 1px solid var(--accent-cyan);
+            border-radius: var(--radius-sm);
+            color: var(--accent-cyan);
+            font-family: var(--font-mono);
+            font-size: 0.75em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background var(--transition-fast), color var(--transition-fast);
+        }
+        
+        .card-chat-send:hover {
+            background: var(--accent-cyan);
+            color: var(--bg-deep);
+        }
+        
+        .card-chat-send:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .card-chat-status {
+            font-family: var(--font-mono);
+            font-size: 0.65em;
+            color: var(--text-tertiary);
+            text-align: center;
+        }
+        
+        .card-chat-status.thinking {
+            color: var(--accent-orange);
+            animation: pulse-text 1s ease-in-out infinite;
+        }
+        
+        @keyframes pulse-text {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        /* Debug panel for organism chat */
+        .card-chat-debug {
+            margin-top: var(--space-xs);
+            padding: var(--space-xs);
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            font-family: var(--font-mono);
+            font-size: 0.6em;
+            color: var(--text-tertiary);
+            max-height: 150px;
+            overflow-y: auto;
+            display: none;
+        }
+        
+        .card-chat-debug.visible {
+            display: block;
+        }
+        
+        .card-chat-debug-toggle {
+            font-size: 0.6em;
+            color: var(--text-tertiary);
+            cursor: pointer;
+            text-align: center;
+            padding: 2px;
+            opacity: 0.6;
+        }
+        
+        .card-chat-debug-toggle:hover {
+            opacity: 1;
+            color: var(--accent-cyan);
+        }
+        
+        .debug-line {
+            padding: 1px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .debug-line:last-child {
+            border-bottom: none;
+        }
+        
+        .debug-key {
+            color: var(--accent-cyan);
+        }
+        
+        .debug-value {
+            color: var(--text-secondary);
+        }
+        
+        .debug-value.true { color: var(--positive); }
+        .debug-value.false { color: var(--negative); }
+        .debug-value.zero { color: var(--accent-orange); }
+        
+        .debug-section {
+            margin-top: 4px;
+            padding-top: 4px;
+            border-top: 1px solid var(--border-subtle);
+        }
+        
+        .debug-section-title {
+            color: var(--accent-magenta);
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════════════
            🎛️ BINDER CONTROLS - Scientific Query Interface
            ═══════════════════════════════════════════════════════════════════════════ */
         
@@ -13757,6 +14006,237 @@
                 `;
             }
             
+            // ═══════════════════════════════════════════════════════════════════════════
+            // 💬 ORGANISM DIRECT CHAT - 1:1 Communication Functions
+            // ═══════════════════════════════════════════════════════════════════════════
+            
+            // Store chat histories per organism
+            const organismChatHistories = new Map();
+            
+            // Toggle chat expansion on a card
+            function toggleOrganismChat(event, orgId) {
+                event.stopPropagation(); // Don't trigger card selection
+                const container = document.querySelector(`[data-organism-chat="${orgId}"]`);
+                if (container) {
+                    container.classList.toggle('expanded');
+                    // Focus input when expanding
+                    if (container.classList.contains('expanded')) {
+                        const input = document.getElementById(`chat-input-${orgId}`);
+                        if (input) {
+                            setTimeout(() => input.focus(), 100);
+                        }
+                    }
+                }
+            }
+            
+            // Handle keypress in chat input
+            function handleChatKeypress(event, orgId) {
+                event.stopPropagation();
+                if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    sendOrganismChat(event, orgId);
+                }
+            }
+            
+            // Send chat message to specific organism
+            async function sendOrganismChat(event, orgId) {
+                event.stopPropagation();
+                
+                // Validate orgId
+                if (!orgId || typeof orgId !== 'string') {
+                    console.error('Invalid organism ID:', orgId);
+                    return;
+                }
+                
+                console.log('[ORGANISM_CHAT] Sending to organism:', orgId);
+                
+                const input = document.getElementById(`chat-input-${orgId}`);
+                const messages = document.getElementById(`chat-messages-${orgId}`);
+                const status = document.getElementById(`chat-status-${orgId}`);
+                const sendBtn = event.target.closest('button') || event.target;
+                
+                if (!input || !messages) {
+                    console.error('Chat elements not found for organism:', orgId);
+                    return;
+                }
+                
+                const message = input.value.trim();
+                if (!message) return;
+                
+                // Disable input while sending
+                input.disabled = true;
+                sendBtn.disabled = true;
+                status.className = 'card-chat-status thinking';
+                status.textContent = 'Organism is thinking...';
+                
+                // Add user message to chat
+                addOrganismChatMessage(messages, orgId, 'user', message, 'You');
+                input.value = '';
+                
+                try {
+                    const response = await fetch(`/api/organism/${orgId}/chat`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message })
+                    });
+                    
+                    // Check HTTP status first
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    // Update debug panel with response data
+                    if (data.debug) {
+                        updateOrganismChatDebug(orgId, data.debug);
+                    }
+                    
+                    if (data.error) {
+                        if (status) {
+                            status.className = 'card-chat-status';
+                            status.textContent = data.error;
+                            status.style.color = 'var(--negative)';
+                        }
+                    } else {
+                        // Add organism response
+                        const responseText = data.response || '[no response yet - learning]';
+                        const confidence = data.confidence ? `${(data.confidence * 100).toFixed(0)}% conf` : '';
+                        const shortId = orgId.length > 6 ? orgId.substring(0, 6) : orgId;
+                        addOrganismChatMessage(messages, orgId, 'organism', responseText, `Org #${shortId}`, confidence);
+                        
+                        if (status) {
+                            status.className = 'card-chat-status';
+                            status.textContent = confidence ? `Response confidence: ${confidence}` : '';
+                            status.style.color = '';
+                        }
+                    }
+                } catch (err) {
+                    console.error('Chat error:', err);
+                    if (status) {
+                        status.className = 'card-chat-status';
+                        status.textContent = err.message || 'Failed to reach organism';
+                        status.style.color = 'var(--negative)';
+                    }
+                } finally {
+                    input.disabled = false;
+                    if (sendBtn) sendBtn.disabled = false;
+                    input.focus();
+                }
+            }
+            
+            // Add a message to the organism card chat display
+            function addOrganismChatMessage(container, orgId, type, text, sender, meta = '') {
+                // Store in history
+                if (!organismChatHistories.has(orgId)) {
+                    organismChatHistories.set(orgId, []);
+                }
+                organismChatHistories.get(orgId).push({ type, text, sender, meta, time: Date.now() });
+                
+                // Create message element
+                const msgDiv = document.createElement('div');
+                msgDiv.className = `chat-msg ${type}`;
+                msgDiv.innerHTML = `
+                    <div class="chat-msg-sender">${sender}</div>
+                    <div class="chat-msg-text">${escapeOrganismChatHtml(text)}</div>
+                    ${meta ? `<div class="chat-msg-meta">${meta}</div>` : ''}
+                `;
+                container.appendChild(msgDiv);
+                
+                // Scroll to bottom
+                container.scrollTop = container.scrollHeight;
+            }
+            
+            // Escape HTML to prevent XSS (organism chat specific)
+            function escapeOrganismChatHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+            
+            // Update organism chat debug panel
+            function updateOrganismChatDebug(orgId, debugInfo) {
+                const debugPanel = document.getElementById(`chat-debug-${orgId}`);
+                if (!debugPanel) return;
+                
+                if (!debugInfo) {
+                    debugPanel.innerHTML = '<span style="color:#888">No debug info</span>';
+                    return;
+                }
+                
+                let html = '<table style="width:100%;font-size:10px;border-collapse:collapse;">';
+                
+                // Context memory source
+                html += `<tr><td style="color:#888">ctx_mem:</td><td style="color:#4ecdc4">${debugInfo.context_memory_source || 'unknown'}</td></tr>`;
+                
+                // Organism's personal words learned (matches card)
+                html += `<tr><td style="color:#888">org_vocab:</td><td style="color:#2ecc71">${debugInfo.organism_words_learned || 0}</td></tr>`;
+                
+                // Brain has language head (use organism_has_language_head from backend)
+                html += `<tr><td style="color:#888">lang_head:</td><td style="color:${debugInfo.organism_has_language_head ? '#4ecdc4' : '#e74c3c'}">${debugInfo.organism_has_language_head ? 'yes' : 'no'}</td></tr>`;
+                
+                // Experience count
+                html += `<tr><td style="color:#888">exp_count:</td><td style="color:#9b59b6">${debugInfo.organism_experience_count || 0}</td></tr>`;
+                
+                // VP value
+                html += `<tr><td style="color:#888">vp_value:</td><td style="color:#3498db">${debugInfo.vp_value != null ? Number(debugInfo.vp_value).toFixed(2) : 'N/A'}</td></tr>`;
+                
+                html += '</table>';
+                
+                // Debug logs (router_debug_logs from backend)
+                if (debugInfo.router_debug_logs && debugInfo.router_debug_logs.length > 0) {
+                    html += '<div style="margin-top:4px;padding-top:4px;border-top:1px solid #333;">';
+                    html += '<div style="color:#888;font-size:9px;margin-bottom:2px;">logs:</div>';
+                    debugInfo.router_debug_logs.slice(-10).forEach(log => {
+                        // Handle log objects - extract meaningful info
+                        let logText = '';
+                        if (typeof log === 'object' && log !== null) {
+                            // Format: [step] message {key details}
+                            const step = log.step || log.type || '';
+                            const msg = log.message || log.msg || '';
+                            const details = log.details || log.data || {};
+                            const detailStr = Object.entries(details).slice(0, 3).map(([k,v]) => `${k}:${typeof v === 'number' ? v.toFixed ? v.toFixed(2) : v : v}`).join(' ');
+                            logText = `[${step}] ${msg} ${detailStr}`.trim();
+                        } else {
+                            logText = String(log);
+                        }
+                        html += `<div style="font-size:9px;color:#aaa;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeOrganismChatHtml(JSON.stringify(log))}">${escapeOrganismChatHtml(logText)}</div>`;
+                    });
+                    html += '</div>';
+                }
+                
+                // Errors (router_errors from backend)
+                if (debugInfo.router_errors && debugInfo.router_errors.length > 0) {
+                    html += '<div style="margin-top:4px;padding-top:4px;border-top:1px solid #333;">';
+                    html += '<div style="color:#e74c3c;font-size:9px;margin-bottom:2px;">errors:</div>';
+                    debugInfo.router_errors.forEach(err => {
+                        // Handle error objects
+                        let errText = '';
+                        if (typeof err === 'object' && err !== null) {
+                            errText = err.message || err.error || err.msg || JSON.stringify(err);
+                        } else {
+                            errText = String(err);
+                        }
+                        html += `<div style="font-size:9px;color:#e74c3c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeOrganismChatHtml(JSON.stringify(err))}">${escapeOrganismChatHtml(errText)}</div>`;
+                    });
+                    html += '</div>';
+                }
+                
+                debugPanel.innerHTML = html;
+            }
+            
+            // Toggle chat debug panel visibility
+            function toggleChatDebug(orgId) {
+                const debugPanel = document.getElementById(`chat-debug-${orgId}`);
+                if (!debugPanel) return;
+                
+                if (debugPanel.style.display === 'none' || debugPanel.style.display === '') {
+                    debugPanel.style.display = 'block';
+                } else {
+                    debugPanel.style.display = 'none';
+                }
+            }
+            
             function attachCardTooltips(card, org) {
                 // Card ID / header tooltip
                 const cardId = card.querySelector('.card-id');
@@ -13964,6 +14444,38 @@
                         <div class="card-traits">
                             ${(org.strengths || []).slice(0, 2).map(s => `<span class="trait-tag trait-strength">${s.replace(/_/g, ' ')}</span>`).join('')}
                             ${(org.weaknesses || []).slice(0, 2).map(w => `<span class="trait-tag trait-weakness">${w.replace(/_/g, ' ')}</span>`).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="card-chat-container" data-organism-chat="${org.id}" onclick="event.stopPropagation()">
+                        <div class="card-chat-toggle" onclick="toggleOrganismChat(event, '${org.id}')">
+                            <span class="card-chat-toggle-label">
+                                <span class="card-chat-toggle-icon">▼</span>
+                                CHAT
+                            </span>
+                            <span class="card-chat-toggle-label" style="font-size: 0.6em; opacity: 0.7;">
+                                ${org.words_learned || 0} words
+                            </span>
+                        </div>
+                        <div class="card-chat-content">
+                            <div class="card-chat-messages" id="chat-messages-${org.id}"></div>
+                            <div class="card-chat-input-row">
+                                <input type="text" 
+                                       class="card-chat-input" 
+                                       id="chat-input-${org.id}"
+                                       placeholder="Say something..."
+                                       onkeypress="handleChatKeypress(event, '${org.id}')"
+                                       onclick="event.stopPropagation()">
+                                <button class="card-chat-send" 
+                                        onclick="event.stopPropagation(); sendOrganismChat(event, '${org.id}')">
+                                    →
+                                </button>
+                            </div>
+                            <div class="card-chat-status" id="chat-status-${org.id}"></div>
+                            <div class="card-chat-debug-toggle" onclick="event.stopPropagation(); toggleChatDebug('${org.id}')">
+                                [toggle debug]
+                            </div>
+                            <div class="card-chat-debug" id="chat-debug-${org.id}"></div>
                         </div>
                     </div>
                 `;

@@ -498,6 +498,203 @@ class ButterflyChatRouter:
 
         return selected
 
+    def process_message_through_organism(self, 
+                                          organism: Any, 
+                                          message: str,
+                                          context_memory: Any = None,
+                                          vp_value: Optional[float] = None) -> Dict[str, Any]:
+        """
+        Process a message through a single specific organism.
+        
+        Used for direct 1:1 chat with an individual organism.
+        
+        Args:
+            organism: The organism to chat with
+            message: User's message text
+            context_memory: ContextMemory instance with vocabulary (REQUIRED for token generation!)
+            vp_value: Current VP value for adaptive response length
+            
+        Returns:
+            Dict with response, word_associations, emotional_state, confidence, causation_trail
+        """
+        self.debug_logs = []
+        self.causation_trail = []
+        self.errors = []
+        
+        org_id = getattr(organism, 'id', 'unknown')
+        
+        self._log_debug("DIRECT_CHAT", "Single organism chat started", {
+            "organism_id": org_id,
+            "message": message[:100],
+            "has_language_system": hasattr(organism, 'language_system'),
+            "has_context_memory": context_memory is not None,
+            "vp_value": vp_value
+        })
+        
+        # Tokenize message
+        words = message.lower().split()
+        prompt_tokens = []
+        
+        if self.vocabulary:
+            try:
+                prompt_tokens = self.vocabulary.encode(words, add_special=True)
+            except Exception as e:
+                self._log_error("TOKENIZATION_ERROR", str(e), {"words": words})
+        
+        # Get organism's language system
+        language_system = getattr(organism, 'language_system', None)
+        
+        # Generate response
+        response_tokens = []
+        response_text = ""
+        confidence = 0.0
+        
+        # DIAGNOSTIC: Check brain's language head capacity
+        brain = getattr(organism, 'brain', None)
+        if brain:
+            fc_lang = getattr(brain, 'fc_language', None)
+            if fc_lang:
+                self._log_debug("DIRECT_CHAT", "Brain fc_language check", {
+                    "out_features": fc_lang.out_features,
+                    "use_language_head": getattr(brain, 'use_language_head', False)
+                })
+            else:
+                self._log_debug("DIRECT_CHAT", "Brain has no fc_language", {})
+        else:
+            self._log_debug("DIRECT_CHAT", "Organism has no brain", {})
+        
+        try:
+            if hasattr(organism, 'generate_tokens'):
+                # Calculate adaptive response length
+                try:
+                    experience_count = len(organism.experience_buffer) if hasattr(organism, 'experience_buffer') and organism.experience_buffer else 0
+                except (TypeError, AttributeError):
+                    experience_count = 0
+                    
+                vocab_size = self.vocabulary.vocab_size if self.vocabulary and hasattr(self.vocabulary, 'vocab_size') else 100
+                
+                # Adaptive max_length like route_message uses
+                if experience_count < 10:
+                    max_length = min(8, max(5, vocab_size // 6))
+                elif experience_count < 50:
+                    max_length = min(24, max(12, vocab_size // 4))
+                elif experience_count < 100:
+                    max_length = min(64, max(32, vocab_size // 2))
+                else:
+                    max_length = 128
+                
+                self._log_debug("DIRECT_CHAT", "Generating tokens", {
+                    "organism_id": org_id,
+                    "max_length": max_length,
+                    "experience_count": experience_count,
+                    "has_context_memory": context_memory is not None,
+                    "vp_value": vp_value
+                })
+                
+                # Check brain's language head output size
+                brain = getattr(organism, 'brain', None)
+                if brain and hasattr(brain, 'fc_language'):
+                    fc_lang_out = brain.fc_language.out_features
+                    self._log_debug("DIRECT_CHAT", "Brain language head info", {
+                        "fc_language_out_features": fc_lang_out,
+                        "use_language_head": getattr(brain, 'use_language_head', False)
+                    })
+                
+                # DEBUG: Log what vocabulary is being passed to generate_tokens
+                if context_memory and hasattr(context_memory, 'vocabulary') and context_memory.vocabulary:
+                    cm_vocab = context_memory.vocabulary
+                    word_to_id = getattr(cm_vocab, 'word_to_id', {})
+                    sample_words = list(word_to_id.keys())[:10]
+                    self._log_debug("VOCAB_CHECK", "Vocabulary being passed to generate_tokens", {
+                        "word_to_id_len": len(word_to_id),
+                        "vocab_size_attr": getattr(cm_vocab, 'vocab_size', 'N/A'),
+                        "sample_words": sample_words
+                    })
+                else:
+                    self._log_debug("VOCAB_CHECK", "NO VOCABULARY in context_memory!", {})
+                
+                # CRITICAL: Pass context_memory for vocabulary access!
+                response_tokens = organism.generate_tokens(
+                    context_memory=context_memory,
+                    max_length=max_length,
+                    vp_value=vp_value,
+                    temperature=1.0
+                )
+                
+                self._log_debug("DIRECT_CHAT", "Tokens generated", {
+                    "token_count": len(response_tokens),
+                    "tokens": response_tokens[:10] if response_tokens else []
+                })
+                
+                # Decode tokens
+                if self.vocabulary:
+                    response_words = self.vocabulary.decode(response_tokens, skip_special=True)
+                    response_text = ' '.join(response_words) if isinstance(response_words, list) else str(response_words)
+                else:
+                    response_text = ' '.join(str(t) for t in response_tokens)
+                
+                confidence = self._calculate_confidence(response_tokens, organism=organism)
+                
+            elif hasattr(organism, 'respond'):
+                response_text = organism.respond(message)
+                confidence = 0.5  # Default confidence for simple respond
+                
+        except Exception as e:
+            self._log_error("RESPONSE_ERROR", str(e), {"organism_id": org_id})
+        
+        # Get word associations from organism's vocabulary
+        word_associations = []
+        if language_system and hasattr(language_system, 'vocabulary'):
+            vocab = language_system.vocabulary
+            for word in words:
+                if word in vocab:
+                    # Find related words by looking at co-occurrence or associations
+                    word_info = {
+                        'word': word,
+                        'known': True,
+                        'word_id': vocab.get(word, -1) if isinstance(vocab, dict) else -1
+                    }
+                    word_associations.append(word_info)
+                else:
+                    word_associations.append({'word': word, 'known': False})
+        
+        # Get emotional state if available
+        emotional_state = {}
+        if hasattr(organism, 'emotional_state'):
+            emotional_state = dict(organism.emotional_state)
+        elif hasattr(organism, 'mood'):
+            emotional_state = {'mood': organism.mood}
+        
+        # Store this interaction as learning experience
+        if hasattr(organism, 'experience_buffer'):
+            self._store_chat_experience(
+                organism=organism,
+                user_message=message,
+                user_tokens=prompt_tokens,
+                organism_response=response_text,
+                organism_tokens=response_tokens,
+                confidence=confidence,
+                fitness=getattr(organism, 'fitness', 0.0),
+                network_state=None
+            )
+        
+        self._log_debug("DIRECT_CHAT", "Single organism chat complete", {
+            "organism_id": org_id,
+            "response_length": len(response_text),
+            "confidence": confidence,
+            "token_count": len(response_tokens)
+        })
+        
+        return {
+            'response': response_text,
+            'word_associations': word_associations,
+            'emotional_state': emotional_state,
+            'confidence': confidence,
+            'causation_trail': self.causation_trail,
+            'debug_logs': self.debug_logs,
+            'errors': self.errors
+        }
+
     def _aggregate_responses(self, organism_responses: List[Dict[str, Any]]) -> str:
         if not organism_responses:
             self._log_error("AGGREGATION_ERROR", "No organism responses to aggregate", {})

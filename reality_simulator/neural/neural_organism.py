@@ -1828,12 +1828,18 @@ class NeuralOrganism(Organism):
                     # Vocabulary can grow beyond network capacity - use min to prevent IndexError
                     effective_vocab_size = min(actual_vocab_size, len(logits))
                     
+                    # DEBUG: Log vocab sizes for diagnosis
+                    if len(generated) == 1:  # Only log once at start
+                        # Log sample words to understand what's in vocab
+                        sample_words = list(vocab.word_to_id.keys())[:15]
+                        logger.info(f"[generate_tokens] actual_vocab_size={actual_vocab_size}, logits_len={len(logits)}, effective={effective_vocab_size}, special={len(SPECIAL_TOKENS)}, sample_words={sample_words}")
+                    
                     # CRITICAL FIX: If vocab has no real words (only special tokens), can't generate
                     # Without this check, probs become all-zeros → multinomial throws AssertionError
                     # Special tokens are: <PAD>=0, <UNK>=1, <START>=2, <END>=3, <VP_GATE>=4
                     non_special_count = effective_vocab_size - len(SPECIAL_TOKENS)
                     if non_special_count <= 0:
-                        logger.warning(f"[NeuralOrganism] Cannot generate: no real words in vocab (size={effective_vocab_size}, special={len(SPECIAL_TOKENS)})")
+                        logger.info(f"[NeuralOrganism] Cannot generate: no real words in vocab (actual={actual_vocab_size}, logits={len(logits)}, effective={effective_vocab_size}, special={len(SPECIAL_TOKENS)})")
                         break  # Exit generation loop - return what we have (just START token)
                     
                     if effective_vocab_size < len(logits):

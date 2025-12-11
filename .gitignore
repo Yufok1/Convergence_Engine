@@ -136,3 +136,5 @@ data/causation_explorer/ollama_config.json
 **/*_key*
 **/*api_key*
 
+data/profiles/*.json
+data/profiles/*.json

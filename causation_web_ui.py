@@ -10572,6 +10572,233 @@ def butterfly_chat():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/organism/<organism_id>/chat', methods=['POST'])
+def chat_with_organism(organism_id):
+    """
+    Direct chat with a specific organism by ID.
+    
+    This allows 1:1 conversations with individual organisms,
+    letting users engage directly with a creature's learned language
+    and personality.
+    """
+    try:
+        from reality_simulator.language.butterfly_chat import ButterflyChatRouter
+        
+        data = request.get_json() or {}
+        user_message = data.get('message', '').strip()
+        
+        if not user_message:
+            return jsonify({'error': 'No message provided'}), 400
+        
+        # Get organisms from unified_system (same source as /api/organisms endpoint)
+        unified_system = app.config.get('unified_system')
+        organisms = []
+        organisms_dict = {}
+        
+        if unified_system and hasattr(unified_system, 'get_current_organisms'):
+            live_organisms = unified_system.get_current_organisms()
+            for org_id, org in live_organisms.items():
+                organisms.append(org)
+                organisms_dict[str(org_id)] = org
+        
+        # Fallback to app.config if unified_system not available
+        if not organisms:
+            organisms = app.config.get('organisms', [])
+            for org in organisms:
+                oid = str(getattr(org, 'species_id', None) or getattr(org, 'id', None) or '')
+                organisms_dict[oid] = org
+        
+        vocabulary = app.config.get('vocabulary')
+        
+        if not organisms:
+            return jsonify({'error': 'No organisms available'}), 503
+        
+        # Find the target organism by ID
+        target_organism = organisms_dict.get(str(organism_id))
+        
+        if not target_organism:
+            # Try iterating if dict lookup fails
+            for org in organisms:
+                org_id = str(getattr(org, 'species_id', None) or getattr(org, 'id', None) or '')
+                if org_id == str(organism_id):
+                    target_organism = org
+                    break
+        
+        if not target_organism:
+            available_ids = list(organisms_dict.keys())[:5]
+            return jsonify({'error': f'Organism {organism_id} not found. Available: {available_ids}'}), 404
+        
+        # Get organism metadata for response
+        language_system = getattr(target_organism, 'language_system', None)
+        vocab_size = 0
+        if language_system and hasattr(language_system, 'vocabulary'):
+            try:
+                vocab_size = len(language_system.vocabulary)
+            except (TypeError, AttributeError):
+                vocab_size = 0
+        
+        organism_info = {
+            'id': organism_id,
+            'generation': getattr(target_organism, 'generation', 0),
+            'fitness': round(getattr(target_organism, 'fitness', 0), 3),
+            'vocabulary_size': vocab_size,
+            'personality': getattr(target_organism, 'personality_type', 'unknown')
+        }
+        
+        # Get context_memory from network (CRITICAL for token generation!)
+        network = app.config.get('network')
+        context_memory = None
+        vp_value = None
+        
+        if network and hasattr(network, 'context_memory'):
+            context_memory = network.context_memory
+            # Get VP value
+            if hasattr(network, 'vp_monitor') and network.vp_monitor:
+                vp_value = float(getattr(network.vp_monitor, 'violation_pressure', 0.0))
+            elif hasattr(network, 'violation_pressure'):
+                vp_value = float(network.violation_pressure)
+        
+        # FALLBACK: If no context_memory but we have vocabulary, create minimal wrapper
+        # This enables token generation even when network isn't fully initialized
+        if context_memory is None and vocabulary is not None:
+            class MinimalContextMemory:
+                def __init__(self, vocab):
+                    self.vocabulary = vocab
+            context_memory = MinimalContextMemory(vocabulary)
+            logger.info(f"[ORGANISM_CHAT] Created minimal context_memory wrapper with vocabulary (size={getattr(vocabulary, 'vocab_size', 'unknown')})")
+        
+        # Debug logging to understand token generation context
+        logger.info(f"[ORGANISM_CHAT] organism_id={organism_id}, context_memory={context_memory is not None}, vocab={vocabulary is not None}")
+        if context_memory and hasattr(context_memory, 'vocabulary') and context_memory.vocabulary:
+            cm_vocab = context_memory.vocabulary
+            logger.info(f"[ORGANISM_CHAT] context_memory.vocabulary: vocab_size={getattr(cm_vocab, 'vocab_size', 'N/A')}, word_to_id_len={len(getattr(cm_vocab, 'word_to_id', {}))}")
+        
+        # Build detailed debug info for frontend display - TRACE EVERYTHING
+        debug_info = {
+            # Context sources
+            'context_memory_source': 'network' if (network and hasattr(network, 'context_memory')) else ('fallback' if context_memory else 'none'),
+            'vp_value': vp_value,
+            
+            # Organism brain status
+            'organism_has_brain': hasattr(target_organism, 'brain') and target_organism.brain is not None,
+            'organism_has_language_head': False,
+            'organism_experience_count': 0,
+            
+            # Atomic language status (THE KEY SYSTEM)
+            'has_atomic_language': hasattr(target_organism, 'atomic_language') and target_organism.atomic_language is not None,
+            'atomic_language_atom_count': 0,
+            
+            # Knowledge web status
+            'has_knowledge_web': False,
+            'knowledge_web_concept_count': 0,
+        }
+        
+        # TRACE: Brain details
+        if hasattr(target_organism, 'brain') and target_organism.brain:
+            brain = target_organism.brain
+            debug_info['organism_has_language_head'] = getattr(brain, 'use_language_head', False)
+            fc_lang = getattr(brain, 'fc_language', None)
+            if fc_lang:
+                debug_info['fc_language_out_features'] = fc_lang.out_features
+            debug_info['brain_vocab_size'] = getattr(brain, 'vocab_size', 'N/A')
+        
+        # TRACE: Experience buffer
+        if hasattr(target_organism, 'experience_buffer'):
+            try:
+                debug_info['organism_experience_count'] = len(target_organism.experience_buffer)
+            except:
+                pass
+        
+        # TRACE: Atomic language (THE REAL VOCABULARY)
+        if hasattr(target_organism, 'atomic_language') and target_organism.atomic_language:
+            als = target_organism.atomic_language
+            debug_info['atomic_language_atom_count'] = len(als.atoms)
+            debug_info['atomic_language_sample_atoms'] = list(als.atoms.keys())[:10]
+        
+        # TRACE: Knowledge web
+        if context_memory and hasattr(context_memory, 'knowledge_web') and context_memory.knowledge_web:
+            kw = context_memory.knowledge_web
+            debug_info['has_knowledge_web'] = True
+            debug_info['knowledge_web_concept_count'] = len(kw.concepts) if hasattr(kw, 'concepts') else 0
+        
+        # Context memory vocab - use it for generation
+        if context_memory and hasattr(context_memory, 'vocabulary') and context_memory.vocabulary:
+            vocabulary = context_memory.vocabulary
+            debug_info['vocab_before_population'] = vocabulary.vocab_size
+            
+            # FIX: If vocabulary only has special tokens, populate from organism's ATOMIC LANGUAGE
+            if vocabulary.vocab_size <= 5:  # Only special tokens
+                logger.info(f"[ORGANISM_CHAT] Vocabulary empty (only {vocabulary.vocab_size} tokens)")
+                
+                # Use organism's atomic_language.atoms (the TRUE learned vocabulary) - NO FALLBACKS
+                if hasattr(target_organism, 'atomic_language') and target_organism.atomic_language:
+                    atoms = target_organism.atomic_language.atoms
+                    words_added = 0
+                    for concept_id in atoms.keys():
+                        if vocabulary.add_word(concept_id):
+                            words_added += 1
+                    logger.info(f"[ORGANISM_CHAT] Added {words_added} words from organism.atomic_language.atoms, vocab now {vocabulary.vocab_size}")
+                    debug_info['vocab_source'] = 'atomic_language'
+                    debug_info['vocab_words_added'] = words_added
+                else:
+                    logger.error(f"[ORGANISM_CHAT] Organism has no atomic_language - cannot generate response")
+                    debug_info['vocab_source'] = 'NONE - atomic_language missing'
+            
+            debug_info['vocab_after_population'] = vocabulary.vocab_size
+            debug_info['vocab_sample_words'] = list(vocabulary.word_to_id.keys())[:15]
+        
+        # Get THIS organism's personal word associations (what shows on card as "Vocab")
+        if context_memory and hasattr(context_memory, 'node_word_associations'):
+            org_id_int = hash(organism_id) if isinstance(organism_id, str) else organism_id
+            org_words = context_memory.node_word_associations.get(org_id_int, set())
+            debug_info['organism_words_learned'] = len(org_words)
+        
+        # Create organisms dict for router
+        organisms_dict = {}
+        for i, org in enumerate(organisms):
+            oid = str(getattr(org, 'species_id', None) or getattr(org, 'id', None) or i)
+            organisms_dict[oid] = org
+        
+        # Initialize router with vocabulary (prefer context_memory.vocabulary)
+        router = ButterflyChatRouter(organisms_dict, vocabulary)
+        
+        logger.info(f"[ORGANISM_CHAT_API] Calling process_message_through_organism for {organism_id}, context_memory={context_memory is not None}, vocab={vocabulary is not None}")
+        
+        # Process message through single organism (pass context_memory!)
+        response_data = router.process_message_through_organism(
+            target_organism, 
+            user_message,
+            context_memory=context_memory,
+            vp_value=vp_value
+        )
+        
+        logger.info(f"[ORGANISM_CHAT_API] Got response: {response_data.get('response', '')[:50]}, confidence={response_data.get('confidence', 0)}")
+        
+        # Build conversation response
+        organism_response = response_data.get('response', '')
+        
+        # Add router debug logs to our debug info
+        debug_info['router_debug_logs'] = response_data.get('debug_logs', [])
+        debug_info['router_errors'] = response_data.get('errors', [])
+        
+        return jsonify({
+            'success': True,
+            'organism_id': organism_id,
+            'organism_info': organism_info,
+            'user_message': user_message,
+            'response': organism_response,
+            'word_associations': response_data.get('word_associations', []),
+            'emotional_state': response_data.get('emotional_state', {}),
+            'causation_trail': response_data.get('causation_trail', []),
+            'confidence': response_data.get('confidence', 0),
+            'debug': debug_info
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in organism chat {organism_id}: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/ollama/vision', methods=['POST'])
 def ollama_vision():
     """Analyze graph view with vision model"""
