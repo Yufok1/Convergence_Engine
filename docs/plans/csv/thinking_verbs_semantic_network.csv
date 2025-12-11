@@ -1,0 +1,60 @@
+Word,Synonyms,Antonyms,Causes,Caused_By,Category
+think,"cogitate, ponder, contemplate, reflect","ignore, forget, neglect, dismiss","mental activity, cognition, understanding, decision","problem, question, stimulus, consciousness",THINKING
+ponder,"contemplate, muse, deliberate, consider","ignore, dismiss, overlook, neglect","deep reflection, consideration, understanding","curiosity, problem, uncertainty, contemplation",THINKING
+contemplate,"meditate, ponder, reflect, consider","ignore, dismiss, overlook, neglect","deep thought, understanding, resolution","beauty, problem, desire for understanding",THINKING
+reflect,"ponder, consider, think, contemplate","ignore, act impulsively, dismiss, neglect","self-awareness, understanding, growth","experience, question, self-examination",THINKING
+deliberate,"consider, weigh, contemplate, meditate","act hastily, improvise, ignore, dismiss","careful decision, consideration, judgment","importance, decision-making need, care",THINKING
+speculate,"theorize, conjecture, hypothesize, imagine","know, assert, confirm, verify","theory formation, curiosity, imagination","uncertainty, mystery, creative thinking",THINKING
+cogitate,"think, ponder, contemplate, reflect","ignore, forget, dismiss, neglect","mental activity, thought formation, understanding","problem, question, intellectual stimulus",THINKING
+muse,"ponder, contemplate, think, meditate","ignore, dismiss, act hastily, forget","reflective thought, inspiration, creativity","observation, beauty, contemplative mood",THINKING
+meditate,"contemplate, reflect, ponder, muse","distract, scatter, confuse, ignore","inner peace, clarity, spiritual understanding","intention, practice, spiritual practice",THINKING
+ruminate,"ponder, consider, brood, think","forget, dismiss, act impulsively, ignore","persistent thought, understanding, obsession","worry, problem, persistent stimulus",THINKING
+brood,"ponder, ruminate, worry, contemplate","forget, dismiss, ignore, move on","melancholy thought, obsession, worry","worry, problem, sadness, grievance",THINKING
+reason,"analyze, deduce, infer, conclude","guess, assume randomly, ignore logic","logical conclusion, understanding, decision","evidence, logic, intellectual process",REASONING
+analyze,"examine, inspect, dissect, break down","synthesize, ignore, dismiss, gloss over","understanding, insight, systematic knowledge","problem, complexity, investigation",ANALYZING
+evaluate,"assess, judge, appraise, rate","ignore, dismiss, accept blindly, overlook","judgment, understanding quality, decision","criteria, need for assessment, standards",EVALUATING
+judge,"evaluate, assess, appraise, deem","accept without judgment, overlook, excuse","judgment formation, opinion, conclusion","criteria, evidence, values, experience",EVALUATING
+assess,"evaluate, appraise, judge, measure","ignore, dismiss, assume, guess","evaluation, measurement, judgment","need for evaluation, standards, criteria",EVALUATING
+consider,"think about, contemplate, weigh, regard","ignore, overlook, dismiss, neglect","decision-making, understanding, judgment","question, decision need, importance",THINKING
+deduce,"infer, conclude, reason, derive","assume randomly, guess, ignore, forget","logical conclusion, understanding, knowledge","evidence, premises, logical process",INFERRING
+infer,"deduce, conclude, derive, gather","state explicitly, assume randomly, ignore","logical conclusion, understanding, interpretation","evidence, context, implicit information",INFERRING
+conclude,"infer, deduce, finalize, determine","question, doubt, ignore, begin","final decision, understanding, resolution","evidence, reasoning, thought completion",INFERRING
+assume,"suppose, presume, take for granted, postulate","verify, confirm, question, doubt","working hypothesis, proceeding forward, assumption","lack of information, necessity, convention",INFERRING
+presume,"assume, suppose, believe, conjecture","verify, confirm, doubt, deny","assumption, belief, working hypothesis","likelihood, convention, limited information",INFERRING
+suppose,"assume, presume, imagine, conjecture","verify, confirm, know, prove","hypothesis, imagination, tentative belief","uncertainty, thought experiment, guessing",INFERRING
+hypothesize,"theorize, propose, posit, conjecture","verify, confirm, know, prove","testable theory, research direction, understanding","observation, question, scientific inquiry",REASONING
+theorize,"speculate, hypothesize, propound, postulate","verify, confirm, prove, disprove","theory formation, explanation, understanding","observation, pattern recognition, inquiry",REASONING
+estimate,"calculate, approximate, reckon, judge","measure precisely, ignore, dismiss, exact","approximation, judgment, decision-making","incomplete information, need for value, context",EVALUATING
+calculate,"compute, reckon, figure, estimate","guess randomly, ignore, assume, dismiss","numerical result, decision, understanding","numbers, mathematical need, problem",ANALYZING
+compute,"calculate, reckon, figure, determine","guess, estimate loosely, ignore, assume","calculation result, answer, understanding","mathematical problem, data, computation need",ANALYZING
+figure,"calculate, work out, determine, reckon","guess, assume randomly, ignore, overlook","understanding, answer, solution","problem, question, investigation",ANALYZING
+reckon,"estimate, calculate, suppose, believe","ignore, dismiss, forget, deny","estimation, belief, calculation","information, context, calculation need",EVALUATING
+conjecture,"guess, speculate, suppose, hypothesize","verify, confirm, know, prove","guess, hypothesis, tentative conclusion","uncertainty, limited information, guessing",INFERRING
+gather,"infer, deduce, conclude, understand","ignore, misunderstand, dismiss, overlook","inference, understanding, conclusion","context, hints, implicit information",INFERRING
+apprehend,"understand, perceive, comprehend, grasp","misunderstand, ignore, overlook, confuse","understanding, perception, awareness","observation, learning, explanation",THINKING
+comprehend,"understand, grasp, perceive, apprehend","misunderstand, confuse, ignore, overlook","understanding, awareness, clarity","explanation, learning, observation",THINKING
+conceive,"imagine, envisage, think of, devise","forget, overlook, ignore, dismiss","idea formation, creation, imagination","inspiration, creativity, thought",THINKING
+ideate,"create ideas, conceive, imagine, brainstorm","ignore, dismiss, forget, stifle","idea generation, creativity, innovation","brainstorming, creative thinking, need",THINKING
+conceptualize,"conceive, imagine, formulate, devise","ignore, overlook, dismiss, deny","concept formation, understanding, framework","abstract thinking, observation, learning",THINKING
+weigh,"consider, evaluate, assess, examine","ignore, dismiss, overlook, act hastily","decision-making, judgment, understanding","importance, choice, evaluation need",EVALUATING
+examine,"inspect, analyze, scrutinize, investigate","ignore, dismiss, overlook, gloss over","understanding, knowledge, insight","curiosity, investigation, doubt",ANALYZING
+investigate,"examine, inquire, research, explore","ignore, dismiss, overlook, assume","discovery, understanding, knowledge","curiosity, mystery, question, doubt",ANALYZING
+interrogate,"question, inquire, examine, probe","assume, ignore, overlook, accept","information extraction, understanding, clarity","investigation, curiosity, doubt, need",ANALYZING
+inquire,"ask, question, investigate, wonder","assume, ignore, accept blindly, dismiss","information seeking, understanding, curiosity","question, curiosity, confusion, doubt",REASONING
+surmise,"guess, infer, suppose, conjecture","verify, confirm, know, prove","inference, guess, tentative belief","limited information, context, guessing",INFERRING
+derive,"deduce, infer, trace, obtain","invent, create, deny, ignore","logical conclusion, understanding, knowledge","evidence, sources, reasoning",INFERRING
+appraise,"evaluate, assess, judge, value","ignore, dismiss, overlook, undervalue","judgment, valuation, assessment","criteria, standards, evaluation need",EVALUATING
+critique,"analyze, evaluate, review, assess","praise blindly, accept, ignore, dismiss","critical analysis, improvement, insight","work, performance, evaluation need",ANALYZING
+criticize,"critique, evaluate, fault, judge","praise, approve, ignore, accept","judgment, improvement suggestion, analysis","fault, problem, evaluation need",EVALUATING
+scrutinize,"examine, inspect, study, analyze","ignore, gloss over, dismiss, overlook","detailed understanding, inspection, analysis","doubt, suspicion, careful examination",ANALYZING
+deliberate,"discuss, debate, consider, weigh","decide hastily, ignore, dismiss, avoid","discussion, shared consideration, decision","importance, group process, decision need",REASONING
+debate,"discuss, argue, dispute, discuss","agree automatically, ignore, dismiss, avoid","discussion, exchange of views, decision","disagreement, multiple perspectives, need",REASONING
+discuss,"debate, converse, talk about, deliberate","ignore, avoid, silence, dismiss","shared understanding, decision, clarity","topic, group, need for conversation",REASONING
+perceive,"observe, sense, notice, discern","ignore, overlook, miss, dismiss","awareness, understanding, observation","sensation, observation, attention",THINKING
+discern,"perceive, distinguish, recognize, detect","confuse, miss, overlook, ignore","understanding, distinction, perception","observation, careful attention, awareness",ANALYZING
+recognize,"identify, acknowledge, discern, perceive","ignore, deny, misidentify, overlook","identification, awareness, acknowledgment","familiarity, observation, prior knowledge",THINKING
+intuit,"sense, feel, perceive, guess","ignore, doubt, deny, question","instinctive understanding, insight, belief","intuition, subconscious, gut feeling",THINKING
+rationalize,"explain, justify, reason, defend","deny, ignore, accept irrationally, confuse","justification, explanation, understanding","need to explain, defense, justification",REASONING
+justify,"explain, defend, rationalize, validate","condemn, deny, reject, invalidate","explanation, defense, validation","accusation, need for explanation, defense",EVALUATING
+compare,"contrast, evaluate, examine, assess","ignore differences, conflate, dismiss, overlook","understanding differences, evaluation, insight","comparison need, context, analysis",ANALYZING
+contrast,"compare, distinguish, differentiate, oppose","equate, ignore differences, confuse, blend","distinction, understanding differences, insight","comparison need, contrast desire, analysis",ANALYZING

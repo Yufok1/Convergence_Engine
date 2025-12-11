@@ -1,0 +1,102 @@
+Word,Synonyms,Antonyms,Causes,Caused_By,Category
+touch,"contact, feel, handle, caress","avoid, withdraw, separate, release","physical contact, reaching, grasping","intention, proximity, stimulus",TACTILE
+feel,"sense, touch, perceive, experience","numb, ignore, miss, disconnect","tactile sensation, perception, experience","contact, sensation, nerves",TACTILE
+handle,"touch, hold, grasp, manipulate","avoid, drop, release, withdraw","tactile contact, manipulation, control","intention, grasp, control",TACTILE
+grasp,"grip, hold, seize, clutch","release, drop, loosen, let go","holding, grasping, control","intention, strength, reflex",TACTILE
+grip,"grasp, hold, clutch, seize","release, drop, loosen, let go","holding firmly, control, strength","intention, strength, reflex",TACTILE
+hold,"grasp, grip, keep, maintain","release, drop, let go, abandon","possession, holding, maintenance","intention, strength, contact",TACTILE
+clutch,"grasp, grip, seize, hold tightly","release, drop, loosen, relinquish","desperate holding, grasping, control","fear, desperation, reflex",TACTILE
+seize,"grab, grasp, clutch, snatch","release, drop, abandon, relinquish","grabbing, taking, capturing","intention, speed, opportunity",TACTILE
+grab,"seize, snatch, grasp, take","release, drop, let go, hand over","quick taking, grasping, capturing","urgency, speed, opportunism",TACTILE
+snatch,"grab, seize, take quickly, steal","release, give, hand over, restore","quick taking, theft, capture","urgency, theft, speed",TACTILE
+stroke,"caress, pet, rub gently, glide","hit, strike, jab, slap","gentle touching, caressing, affection","affection, gentleness, care",TACTILE
+caress,"stroke, pet, touch gently, fondle","strike, hit, slap, harm","tender touch, affection, intimacy","affection, intimacy, tenderness",TACTILE
+pet,"stroke, caress, fondle, touch","hit, strike, harm, abuse","affectionate touching, stroking","affection, fondness, care",TACTILE
+fondle,"caress, touch, pet, stroke","strike, hit, harm, abuse","tender touching, intimacy, affection","affection, intimacy, attraction",TACTILE
+rub,"friction, massage, scrub, polish","separate, detach, avoid, withdraw","friction, massage, cleaning","intention, need, effort",TACTILE
+massage,"rub, knead, work muscles, soothe","tense, strike, harm, aggravate","therapeutic rubbing, relaxation","therapeutic intent, muscle tension",TACTILE
+knead,"massage, work, press, squeeze","separate, release, flatten, abandon","working dough, muscle manipulation","effort, preparation, therapy",TACTILE
+scrub,"rub vigorously, clean, wash, brush","dirty, soil, neglect, abandon","vigorous cleaning, friction","cleanliness need, effort, dirt",TACTILE
+brush,"sweep, graze, touch lightly, stroke","avoid, separate, abandon, neglect","light touching, sweeping, grooming","cleaning, grooming, light contact",TACTILE
+press,"push, compress, squeeze, apply force","release, pull, loosen, ease","force application, compression, pushing","intention, force, need",TACTILE
+push,"press, shove, thrust, propel","pull, draw, release, yield","force application, propulsion, movement","intention, force, effort",TACTILE
+squeeze,"compress, press, clench, crush","release, loosen, expand, relax","compression, grasping, force","intention, force, strength",TACTILE
+pull,"draw, haul, tug, yank","push, release, let go, separate","force application, drawing, movement","intention, force, effort",TACTILE
+tug,"pull, yank, jerk, draw","push, release, let go, ease","pulling force, jerking, drawing","intention, effort, urgency",TACTILE
+yank,"pull forcefully, jerk, tug, wrench","push, release, gentle, ease","forceful pulling, jerking, extraction","force, urgency, intention",TACTILE
+poke,"prod, jab, push, pierce","withdraw, avoid, caress, stroke","poking motion, jabbing, prodding","intention, curiosity, aggression",TACTILE
+prod,"poke, jab, push, goad","withdraw, avoid, caress, stop","prodding motion, urging, pushing","intention, urging, aggression",TACTILE
+jab,"poke, prod, strike, thrust","withdraw, avoid, caress, gentle","jabbing motion, striking, attacking","aggression, intention, force",TACTILE
+tickle,"touch lightly, titillate, tease, amuse","ignore, avoid, serious, bore","light touch, amusement, sensation","light contact, intention, sensation",TACTILE
+scratch,"scrape, claw, itch, mark","smooth, heal, soothe, caress","scratching motion, itching, marking","itching, aggression, accident",TACTILE
+scrape,"scratch, abrade, graze, scuff","smooth, polish, caress, soothe","scraping motion, friction, marking","friction, accident, intention",TACTILE
+pinch,"squeeze, nip, compress, grip","release, spread, loosen, gentle","pinching motion, compression, pain","intention, pain, playfulness",TACTILE
+pat,"tap, touch gently, dab, stroke","hit, strike, harm, slap","gentle tapping, touching, affection","affection, approval, gentleness",TACTILE
+tap,"pat, strike lightly, knock, rap","push, hit hard, slam, harm","light striking, knocking, tapping","attention-seeking, rhythm, intention",TACTILE
+slap,"strike, hit, smack, whack","caress, stroke, gentle, soothe","striking motion, punishment, aggression","anger, punishment, aggression",TACTILE
+smack,"slap, hit, strike, whack","caress, stroke, gentle, soothe","striking motion, punishment, sound","anger, punishment, aggression",TACTILE
+strike,"hit, smack, punch, slam","caress, soothe, gentle, protect","striking motion, hitting, attacking","force, anger, aggression",TACTILE
+hit,"strike, punch, smack, whack","caress, soothe, gentle, protect","striking motion, impact, attacking","force, anger, aggression",TACTILE
+punch,"strike, hit, pummel, beat","caress, soothe, gentle, protect","striking with fist, attacking, fighting","anger, force, aggression",TACTILE
+squeeze,"press, compress, clutch, grip","release, loosen, expand, relax","compression, grasping, force","intention, force, strength",TACTILE
+embrace,"hug, hold, clasp, cuddle","push away, reject, separate, abandon","affectionate holding, closeness","affection, greeting, emotion",TACTILE
+hug,"embrace, hold, clasp, cuddle","push away, reject, separate, abandon","affectionate holding, greeting, comfort","affection, greeting, emotion",TACTILE
+cuddle,"snuggle, embrace, hug, hold close","push away, separate, reject, abandon","affectionate closeness, warmth, comfort","affection, intimacy, comfort-seeking",TACTILE
+snuggle,"cuddle, nestle, embrace, huddle","push away, separate, reject, withdraw","seeking warmth, affectionate contact","affection, cold, comfort-seeking",TACTILE
+nestle,"snuggle, settle, cuddle, burrow","push away, separate, withdraw, abandon","settling into comfort, seeking warmth","comfort-seeking, affection, safety",TACTILE
+squeeze,"compress, press, clutch, wring","release, loosen, expand, ease","compression, extraction, force","intention, force, strength",TACTILE
+wring,"squeeze, twist, compress, extract","release, loosen, expand, stretch","twisting compression, extraction, force","force, intention, necessity",TACTILE
+twist,"turn, wring, rotate, spin","straighten, untwist, relax, release","rotational motion, force, torque","force, intention, tightening",TACTILE
+smell,"scent, odor, sniff, perceive","ignore, miss, anosmic, numb","olfactory perception, odor particles","odor, olfactory receptors, attention",OLFACTORY
+sniff,"smell, inhale, detect, scent","ignore, dismiss, anosmic, miss","inhalation, olfactory detection","intention, odor, curiosity",OLFACTORY
+scent,"smell, detect, perceive, odor","ignore, miss, anosmic, numb","odor particles, olfactory perception","odor source, olfactory sensitivity",OLFACTORY
+inhale,"breathe in, sniff, draw in, inspire","exhale, blow out, expel, release","breathing, inhalation, olfactory act","respiration, intention, odor",OLFACTORY
+breathe,"inhale, exhale, respire, draw breath","suffocate, hold breath, asphyxiate","respiration, olfactory perception","biological need, oxygen, life",OLFACTORY
+whiff,"sniff, catch odor, whiff, detect","ignore, miss, anosmic, numb","catching odor, brief detection","odor particles, chance, detection",OLFACTORY
+stink,"reek, smell bad, stench, putrefy","smell good, fragrant, perfumed, fresh","bad odor, decay, pollution","decay, contamination, source material",OLFACTORY
+reek,"stink, smell foul, emit odor, putrefy","smell good, fragrant, perfumed, sweet","strong bad odor, decay, filth","decay, contamination, rot",OLFACTORY
+perfume,"scent, fragrance, aroma, flavor","stink, reek, smell bad, foul","fragrant odor, pleasant scent","fragrance source, pleasant compounds",OLFACTORY
+fragrance,"scent, aroma, perfume, smell","stench, stink, reek, foul odor","pleasant odor, aromatic compounds","source material, aromatic compounds",OLFACTORY
+aroma,"scent, fragrance, smell, odor","stench, stink, reek, foul odor","aromatic odor, pleasant scent","aromatic compounds, source material",OLFACTORY
+odor,"smell, scent, aroma, fragrance","no smell, odorless, unscented","volatile compounds, olfactory stimuli","odor source, volatile compounds",OLFACTORY
+stench,"stink, reek, foul odor, miasma","fragrance, aroma, perfume, sweet smell","strong foul odor, decay, filth","decay, contamination, rot, waste",OLFACTORY
+miasma,"stench, reek, foul air, pollution","fresh air, fragrance, clean aroma","noxious odor, pollution, decay","decay, disease, pollution",OLFACTORY
+taste,"savor, sample, perceive flavor, detect","ignore, miss, ageusia, numb","gustatory perception, taste receptors","taste particles, taste receptors, food",GUSTATORY
+savor,"taste, enjoy, appreciate, relish","gulp, rush, ignore, dislike","appreciative tasting, enjoyment","good taste, intention, appreciation",GUSTATORY
+sample,"taste, try, test, experience","avoid, refuse, ignore, skip","testing, trying, tasting","curiosity, testing need, exploration",GUSTATORY
+sip,"drink slowly, taste, sample, gulp","gulp, chug, spit, refuse","small drinking, slow drinking, tasting","intention, caution, appreciation",GUSTATORY
+gulp,"swallow, drink quickly, consume, guzzle","sip, savor, slowly taste, refuse","quick swallowing, consumption","thirst, urgency, speed",GUSTATORY
+swallow,"ingest, gulp, consume, eat","spit, reject, vomit, regurgitate","ingestion, swallowing reflex, consumption","hunger, acceptance, reflex",GUSTATORY
+lick,"taste, lap, tongue, savor","spit, reject, avoid, repel","tongue contact, tasting, grooming","taste interest, curiosity, affection",GUSTATORY
+suck,"draw in, nurse, extract, consume","spit, blow, reject, release","suction, drawing, consumption","hunger, oral comfort, intention",GUSTATORY
+chew,"masticate, bite, gnaw, munch","swallow, gulp, spit, refuse","mastication, breaking down food","eating, hunger, necessity",GUSTATORY
+bite,"chew, nibble, gnaw, snap","spit, reject, avoid, release","biting action, attacking, eating","hunger, aggression, accident",GUSTATORY
+nibble,"bite, gnaw, pick at, peck","devour, gulp, refuse, reject","small biting, testing, eating lightly","appetite, taste testing, timidity",GUSTATORY
+gnaw,"chew, bite, nibble, erode","spit, reject, swallow, release","persistent chewing, eroding","hunger, boredom, aggression",GUSTATORY
+devour,"consume, eat greedily, gulp, gorge","savor, sip, nibble, refuse","rapid consumption, eating greedily","hunger, greed, urgency",GUSTATORY
+gorge,"eat greedily, devour, stuff, overeat","savor, diet, abstain, nibble","excessive eating, gluttony","greed, hunger, temptation",GUSTATORY
+munch,"chew, eat, crunch, nibble","spit, refrain, refuse, sip","eating, chewing, munching motion","hunger, appetite, habit",GUSTATORY
+crunch,"chew noisily, bite, crackle, munch","sip, swallow, smooth, silent","crunching sound, eating, chewing","eating crispy food, hunger",GUSTATORY
+relish,"enjoy, savor, appreciate, like","dislike, hate, refuse, reject","enjoyment, appreciation, taste","good taste, pleasure, satisfaction",GUSTATORY
+enjoy,"relish, like, appreciate, savor","dislike, hate, reject, suffer","pleasure, satisfaction, happiness","good experience, satisfaction, joy",GUSTATORY
+consume,"eat, drink, devour, ingest","refuse, reject, spit, abstain","consumption, eating, drinking","hunger, thirst, necessity",GUSTATORY
+ingest,"consume, eat, drink, swallow","reject, spit, vomit, refuse","ingestion, eating, consumption","hunger, thirst, medical need",GUSTATORY
+sense,"perceive, feel, detect, intuit","miss, ignore, overlook, numb","sensory perception, awareness","stimulus, sensation, attention",SENSING
+perceive,"sense, feel, detect, observe","miss, ignore, overlook, blind","perception, sensory awareness","stimulus, attention, sensation",SENSING
+detect,"sense, perceive, discover, find","miss, overlook, ignore, hide","detection, discovery, finding","stimulus, search, attention",SENSING
+experience,"undergo, live through, encounter, feel","avoid, escape, miss, deny","sensation, occurrence, event","encounter, event, circumstance",SENSING
+undergo,"experience, endure, suffer, live through","avoid, escape, evade, prevent","experience, endurance, suffering","event, circumstance, necessity",SENSING
+suffer,"endure, bear, experience pain, undergo","enjoy, escape, evade, heal","pain, hardship, ordeal","injury, disease, hardship",SENSING
+endure,"suffer, tolerate, bear, withstand","escape, surrender, give up, heal","pain, ordeal, persistence","strength, will, necessity",SENSING
+tolerate,"endure, bear, accept, allow","reject, refuse, avoid, prevent","acceptance, patience, endurance","acceptance, patience, necessity",SENSING
+bear,"tolerate, endure, suffer, carry","reject, refuse, drop, avoid","endurance, patience, strength","strength, obligation, necessity",SENSING
+tingle,"prickle, sting, thrill, twitch","numb, dull, pain-free, flat","sensation, excitement, nerve stimulation","sensation, excitement, cold",SENSING
+prickle,"tingle, sting, prick, bristle","smooth, numb, dull, pain-free","prickling sensation, irritation","irritant, cold, excitement",SENSING
+sting,"prick, hurt, throb, burn","soothe, heal, numb, pain-free","burning sensation, pain, injury","injury, insect, acid, cold",SENSING
+burn,"sting, throb, ache, hurt","soothe, cool, numb, heal","burning sensation, heat, friction","heat, friction, chemical, illness",SENSING
+ache,"hurt, pain, throb, sting","soothe, heal, numb, relief","dull pain, soreness, discomfort","injury, illness, strain, fatigue",SENSING
+throb,"ache, sting, pulse, beat","still, numb, painless, calm","throbbing pain, pulsing sensation","injury, inflammation, heartbeat",SENSING
+hurt,"ache, pain, sting, harm","heal, soothe, comfort, help","pain, injury, damage, offense","injury, offense, emotion, harm",SENSING
+pain,"hurt, ache, sting, suffering","pleasure, relief, comfort, healing","pain sensation, injury, suffering","injury, illness, emotion, trauma",SENSING
+numb,"insensitive, paralyzed, dull, dead","feel, sense, aware, sensitive","insensitivity, anesthesia, cold","cold, anesthesia, shock, emotion",SENSING
+tingle,"prickle, sting, thrill, twitch","numb, dull, pain-free, flat","sensation, excitement, nerve stimulation","sensation, excitement, cold, anticipation",SENSING

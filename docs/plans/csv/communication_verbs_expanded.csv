@@ -1,0 +1,145 @@
+Word,Synonyms,Antonyms,Causes,Caused_By,Category
+say,"speak,tell,utter,articulate,voice","silence,hush,quiet",information transmission,"thought,intention,voice",VERBAL
+tell,"inform,notify,advise,communicate,relate","conceal,withhold,hide",information received,"knowledge,intention,direct address",VERBAL
+speak,"talk,converse,address,discourse,articulate","silence,quiet,mute",communication,"intention,language,voice",VERBAL
+talk,"converse,speak,discuss,chat,dialogue","silence,listen passively,quiet",conversation,"engagement,interaction,voice",VERBAL
+ask,"inquire,question,request,query,interrogate","answer,ignore,dismiss",information sought,"curiosity,need,doubt",VERBAL
+answer,"respond,reply,react,acknowledge,respond","ignore,avoid,evade",response given,"question,prompt,query",VERBAL
+respond,"reply,answer,react,acknowledge,reciprocate","ignore,neglect,avoid",reaction,"stimulus,question,prompt",VERBAL
+discuss,"talk over,debate,converse,deliberate,explore","ignore,avoid,dismiss",mutual understanding,"shared interest,questions,engagement",VERBAL
+explain,"clarify,describe,elucidate,expound,interpret","confuse,obscure,conceal",understanding,"knowledge,clarity,intention",VERBAL
+describe,"depict,characterize,narrate,recount,portray","abstract,generalize,ignore",detailed account,"observation,knowledge,detail",VERBAL
+inform,"tell,notify,advise,apprise,brief","mislead,deceive,conceal",knowledge transfer,"information,authority,knowledge",VERBAL
+notify,"inform,tell,advise,alert,announce","ignore,conceal,withhold",awareness,"event,knowledge,obligation",VERBAL
+announce,"declare,proclaim,broadcast,publish,report","conceal,hide,suppress",public knowledge,"news,event,decision",VERBAL
+declare,"announce,assert,state,profess,proclaim","deny,conceal,retract",official statement,"authority,conviction,position",VERBAL
+state,"assert,declare,claim,maintain,express","deny,retract,conceal",formal assertion,"conviction,knowledge,position",VERBAL
+report,"describe,narrate,relay,communicate,document","fabricate,distort,hide",account of events,"observation,investigation,fact",INFORMATIVE
+mention,"refer to,cite,allude to,note,remark","ignore,overlook,suppress",brief reference,"thought,relevance,memory",INFORMATIVE
+request,"ask,petition,appeal,seek,solicitation","refuse,deny,reject",favor asked,"need,politeness,hierarchy",VERBAL
+demand,"require,insist,command,claim,compel","grant,give freely,surrender",compliance required,"authority,need,assertion",VERBAL
+command,"order,direct,instruct,mandate,rule","obey,comply,submit",obedience required,"authority,urgency,power",VERBAL
+order,"command,direct,instruct,require,mandate","obey,comply,follow",compliance demanded,"authority,urgency,hierarchy",VERBAL
+instruct,"teach,direct,explain,guide,inform","confuse,mislead,ignore",knowledge/directions given,"expertise,authority,need",INFORMATIVE
+direct,"guide,command,instruct,aim,point","follow,obey,comply",path/action specified,"authority,knowledge,intention",VERBAL
+urge,"encourage,push,persuade,exhort,entreat","discourage,dissuade,deter",action encouraged,"conviction,urgency,care",PERSUASIVE
+encourage,"urge,support,promote,inspire,embolden","discourage,dishearten,demoralize",confidence/action fostered,"belief,support,optimism",PERSUASIVE
+plead,"beg,beseech,implore, appeal,entreat","refuse,deny,ignore",earnest appeal,"desperation,emotion,need",PERSUASIVE
+beg,"plead,beseech,implore,request earnestly","refuse,deny,ignore",earnest request,"desperation,need,emotion",PERSUASIVE
+entreat,"plead,beseech,implore,petition,appeal","refuse,deny,ignore",earnest request,"desperation,emotion,need",PERSUASIVE
+agree,"consent,assent,concur,accept,align","disagree,dissent,reject",consensus,"alignment,understanding,willingness",HONEST
+consent,"agree,permit,authorize,allow,approve","refuse,deny,withhold",permission granted,"willingness,authority,agreement",HONEST
+permit,"allow,authorize,approve,consent,enable","forbid,deny,prevent",allowance,"authority,consent,agreement",HONEST
+approve,"endorse,sanction,ratify,accept,authorize","disapprove,reject,condemn",support/validation,"satisfaction,authority,judgment",HONEST
+disagree,"dissent,differ,dispute,object,oppose","agree,consent,align",disagreement,"difference,conviction,opposition",HONEST
+deny,"refuse,reject,disavow,negate,contradict","admit,confirm,acknowledge",rejection/negation,"opposition,self-defense,dishonesty",DECEPTIVE
+refuse,"reject,decline,deny,rebuff,spurn","accept,consent,agree",rejection,"unwillingness,opposition,boundary",HONEST
+object,"oppose,protest,dissent,demur,dispute","accept,approve,endorse",opposition expressed,"disagreement,concern,principle",HONEST
+oppose,"resist,contest,confront,object to,fight","support,endorse,favor",resistance,"disagreement,principle,self-interest",HONEST
+concede,"admit,acknowledge,accept,yield,surrender","deny,refuse,contest",acknowledgment of defeat,"fairness,logic,acceptance",HONEST
+admit,"acknowledge,confess,own,concede,reveal","deny,hide,conceal",acknowledgment,"honesty,realization,pressure",HONEST
+persuade,"convince,sway,induce,move,influence","dissuade,deter,discourage",belief/action changed,"logic,emotion,authority",PERSUASIVE
+convince,"persuade,satisfy,assure,win over,sway","dissuade,doubt,undermine",belief established,"evidence,logic,demonstration",PERSUASIVE
+manipulate,"control,influence unfairly,exploit,trick,deceive","liberate,empower,deceive not",behavior changed deceptively,"deception,cunning,psychology",DECEPTIVE
+coerce,"force,compel,pressure,intimidate,threaten","permit,allow,liberate",compliance through force,"threat,power,authority",DECEPTIVE
+intimidate,"threaten,frighten,cow,bully,overawe","embolden,encourage,reassure",fear created,"threat,power,aggression",DECEPTIVE
+influence,"affect,sway,move,shape,impact","neglect,ignore,independent",behavior/belief affected,"personality,persuasion,proximity",PERSUASIVE
+inspire,"motivate,encourage,move,stir,kindle","discourage,demoralize,suppress",motivation kindled,"vision,passion,example",PERSUASIVE
+motivate,"drive,impel,inspire,induce,prompt","discourage,inhibit,dissuade",action driven,"incentive,desire,goal",PERSUASIVE
+induce,"persuade,move,cause,bring about,lead","discourage,prevent,inhibit",action prompted,"incentive,persuasion,circumstance",PERSUASIVE
+sway,"influence,convince,persuade,move,bend","steady,resist,oppose",opinion changed,"emotion,evidence,pressure",PERSUASIVE
+seduce,"tempt,entice,lure,attract,lead astray","repel,resist,abstain",temptation accepted,"desire,appeal,cunning",DECEPTIVE
+tempt,"entice,lure,attract,seduce,invite","repel,discourage,resist",desire stimulated,"appeal,weakness,circumstance",DECEPTIVE
+lie,"deceive,fabricate,falsify,misrepresent,fib","truth tell,honesty,confess",false statement,"dishonesty,self-protection,intent",DECEPTIVE
+deceive,"lie,trick,mislead,defraud,fool","enlighten,reveal,honesty",false belief created,"deception,cunning,motive",DECEPTIVE
+mislead,"deceive,trick,misrepresent,confuse,fool","enlighten,clarify,guide correctly",false direction given,"deception,ambiguity,intent",DECEPTIVE
+trick,"deceive,fool,dupe,outwit,hoodwink","reveal,clarify,warn",deception achieved,"cunning,disguise,intent",DECEPTIVE
+fool,"trick,deceive,dupe,outwit,delude","enlighten,reveal,warn",false belief created,"cunning,naivety,misdirection",DECEPTIVE
+defraud,"swindle,cheat,fleece,embezzle,steal","repay,restore,compensate",financial loss,"dishonesty,cunning,greed",DECEPTIVE
+swindle,"defraud,cheat,trick,bilk,fleece","repay,restore,honest deal",financial loss through deception,"dishonesty,cunning,greed",DECEPTIVE
+cheat,"swindle,defraud,trick,deceive,violate rules","honest play,fair dealing,compliance",unfair advantage,"dishonesty,greed,self-interest",DECEPTIVE
+falsify,"fake,forge,fabricate,alter,distort","verify,authenticate,honest",false version created,"intent,dishonesty,motive",DECEPTIVE
+fabricate,"invent,create false,concoct,make up,forge","fact verify,authentic, honest",false version created,"dishonesty,imagination,intent",DECEPTIVE
+misrepresent,"distort,falsify,misstate,present falsely","accurately represent,clarify,honest",false impression created,"dishonesty,intent,deception",DECEPTIVE
+exaggerate,"overstate,magnify,amplify,inflate,embellish","understate,minimize,modest",overstated claim,"emphasis,deception,drama",DECEPTIVE
+downplay,"minimize,understate,soft-pedal,gloss over","emphasize,exaggerate,highlight",diminished importance,"self-protection,deception,intent",DECEPTIVE
+conceal,"hide,cover up,obscure,withhold,suppress","reveal,expose,show,disclose",hidden information,"self-protection,shame,intent",DECEPTIVE
+hide,"conceal,cover up,obscure,suppress,withhold","reveal,expose,show,display",hidden state,"shame,protection,deception",DECEPTIVE
+cover up,"hide,conceal,suppress,obscure,hush up","reveal,expose,disclose,uncover",hidden scandal/truth,"shame,liability,intent",DECEPTIVE
+whitewash,"cover up,gloss over,minimize,sanitize,excuse","expose,criticize,truth tell",false positive image,"self-protection,reputation,dishonesty",DECEPTIVE
+confess,"admit,acknowledge,disclose,own,reveal","deny,hide,conceal",guilt/truth revealed,"conscience,pressure,honesty",HONEST
+acknowledge,"recognize,accept,admit,confirm,concede","deny,ignore,reject",recognition,"truth,acceptance,fairness",HONEST
+disclose,"reveal,divulge,expose,tell,uncover","conceal,hide,suppress",hidden information revealed,"honesty,obligation,pressure",HONEST
+reveal,"disclose,expose,unveil,show,uncover","conceal,hide,cover up",hidden truth shown,"honesty,exposure,evidence",HONEST
+divulge,"reveal,disclose,tell,expose,share","conceal,suppress,withhold",secret shared,"honesty,obligation,trust",HONEST
+expose,"reveal,uncover,show,disclose,lay bare","conceal,hide,cover up",hidden truth revealed,"investigation,evidence,intent",HONEST
+promise,"pledge,vow,guarantee,assure,commit","break promise,renege,fail",future commitment,"intention,conviction,obligation",HONEST
+pledge,"promise,vow,swear,commit,dedicate","break,renege,abandon",solemn promise,"conviction,honor,commitment",HONEST
+vow,"pledge,promise,swear,dedicate,commit","break,renege,abandon",solemn commitment,"conviction,emotion,honor",HONEST
+threaten,"menace,intimidate,warn,jeopardize,endanger","protect,assure,promise safety",danger implied,"hostility,intention,power",DECEPTIVE
+warn,"alert,caution,forewarn,advise,notify","ignore,surprise,endanger",danger/problem communicated,"concern,knowledge,care",INFORMATIVE
+advise,"counsel,recommend,suggest,guide,instruct","mislead,deceive,ignore",guidance offered,"expertise,concern,knowledge",INFORMATIVE
+suggest,"propose,recommend,hint at,imply,offer","insist,demand,suppress",idea proposed,"thought,concern,consideration",INFORMATIVE
+recommend,"suggest,advise,endorse,advocate for,propose","advise against,denounce,condemn",favorable suggestion,"expertise,experience,knowledge",INFORMATIVE
+praise,"commend,applaud,compliment,laud,acclaim","criticize,condemn,denounce",approval expressed,"admiration,satisfaction,appreciation",HONEST
+compliment,"praise,commend,flatter,admire,commend","insult,criticize,demean",favorable comment,"admiration,politeness,truth",HONEST
+commend,"praise,approve,endorse,acclaim,applaud","criticize,condemn,denounce",approval given,"achievement,merit,satisfaction",HONEST
+criticize,"fault,condemn,censure,disapprove,attack","praise,approve,commend",disapproval expressed,"fault,principle,judgment",HONEST
+condemn,"criticize,censure,denounce,damn,blame","absolve,pardon,praise",strong disapproval,"judgment,principle,wrong",HONEST
+disapprove,"condemn,criticize,object to,reject,disfavor","approve,endorse,favor",judgment of wrong,"judgment,principle,standards",HONEST
+censure,"criticize,condemn,rebuke,reprimand,blame","praise,commend,forgive",disapproval formally expressed,"judgment,wrong,authority",HONEST
+flatter,"compliment insincerely,praise falsely,butter up","insult,criticize,demean",false praise,"vanity,intent,manipulation",DECEPTIVE
+insult,"offend,demean,affront,disrespect,attack","compliment,praise,respect",offense given,"contempt,hostility,intent",DECEPTIVE
+demean,"degrade,belittle,humiliate,insult,lower","elevate,respect,honor",respect diminished,"contempt,power,hostility",DECEPTIVE
+mock,"ridicule,deride,taunt,jeer,scoff at","respect,honor,admire",ridicule expressed,"contempt,humor,hostility",DECEPTIVE
+ridicule,"mock,deride,jeer,taunt,laugh at","respect,honor,admire",mockery expressed,"contempt,humor,superiority",DECEPTIVE
+deride,"mock,ridicule,scoff at,taunt,laugh at","respect,honor,admire",contempt expressed,"superiority,contempt,humor",DECEPTIVE
+taunt,"tease,jeer,mock,challenge,provoke","praise,encourage,support",mocking challenge,"contempt,hostility,provocation",DECEPTIVE
+jeer,"taunt,mock,ridicule,hoot at,scoff at","praise,encourage,support",hostile mockery,"contempt,hostility,superiority",DECEPTIVE
+scoff,"mock,jeer,ridicule,sneer,taunt","praise,respect,admire",contemptuous mockery,"contempt,disbelief,hostility",DECEPTIVE
+sneer,"smile contemptously,curl lip,jeer,scoff","smile kindly,respect,admire",contemptuous expression,"contempt,superiority,hostility",NONVERBAL
+gibe,"taunt,jeer,mock,ridicule,insult","praise,encourage,support",mocking remark,"contempt,humor,hostility",DECEPTIVE
+tease,"joke,banter,playfully mock,kid,razz","serious,sincere,praise",playful mockery,"humor,affection,relationship",DECEPTIVE
+gossip,"spread rumors,chat idly,tittle-tattle,chatter","keep silent,discretion,honor",rumor/idle talk,"curiosity,social bonding,malice",DECEPTIVE
+rumor,"spread unverified information,hearsay,gossip","truth verify,authenticate,confirm",unverified claim spread,"uncertainty,social network,malice",DECEPTIVE
+slander,"defame,libel,malign,speak falsely,smear","honor,praise,defend",false defamatory speech,"malice,intent to harm,dishonesty",DECEPTIVE
+defame,"damage reputation,slander,libel,disgrace,vilify","honor,praise,protect reputation",reputation damaged,"malice,false speech,intent",DECEPTIVE
+libel,"slander in writing,defame,malign,smear","honor,praise,defend",written defamation,"malice,dishonesty,intent",DECEPTIVE
+malign,"speak bad of,defame,slander,vilify,revile","praise,honor,defend",harmful speech against,"malice,contempt,hostility",DECEPTIVE
+vilify,"speak badly of,defame,malign,denigrate,revile","praise,honor,celebrate",harsh criticism expressed,"contempt,malice,hostility",DECEPTIVE
+disparage,"belittle,denigrate,criticize,demean,minimize","praise,commend,elevate",worth diminished,"contempt,judgment,hostility",DECEPTIVE
+denigrate,"criticize,disparage,belittle,demean,lower","praise,commend,elevate",reputation/worth harmed,"contempt,judgment,hostility",DECEPTIVE
+gesture,"signal,motion,sign,mime,pantomime","stillness,inaction",communicative movement,"intention,emphasis,emotion",NONVERBAL
+"gesture,signal","indicate,nod,point,wave,beckon","stillness,ignore,opposite gesture",direction/attention indicated,"intention,emphasis,instruction",NONVERBAL
+nod,"agree gesture,acknowledge,affirm with head","shake head,deny,refuse",agreement/acknowledgment shown,"understanding,agreement,respect",NONVERBAL
+shake head,"refuse gesture,deny,disagree,negation","nod,agree,acknowledge",disagreement/refusal shown,"disagreement,negation,denial",NONVERBAL
+wink,"blink one eye,signal,flirt,indicate secret","serious expression,ignore",secret/affection indicated,"complicity,flirtation,humor",NONVERBAL
+smile,"upturned lips,pleasure,friendliness,warmth","frown,grimace,scowl",pleasure/friendliness shown,"happiness,approval,warmth",NONVERBAL
+frown,"downturned lips,disapproval,sadness,displeasure","smile,grin,laugh",displeasure/concern shown,"displeasure,confusion,sadness",NONVERBAL
+grimace,"wince,contort face,show pain,expression","smile,relax,calm",pain/disgust shown,"pain,disgust,discomfort",NONVERBAL
+point,"direct attention,indicate,gesture toward","away,hide,ignore",attention directed,"emphasis,instruction,indication",NONVERBAL
+beckon,"summon gesture,wave toward,invite,signal","turn away,dismiss,refuse",invitation signaled,"invitation,command,desire",NONVERBAL
+wave,"raise hand,gesture greeting,signal,shake hand","stillness,turn away,hide",greeting/goodbye signaled,"greeting,farewell,attention",NONVERBAL
+mime,"act out silently,pantomime,gesture meaning","speak,verbalize,audible",silent action communication,"meaning,instruction,entertainment",NONVERBAL
+pantomime,"mime,silent acting,gesture,act out","speak,verbalize,audible",silent meaning conveyed,"meaning,instruction,entertainment",NONVERBAL
+shout,"yell,cry out loudly,bellow,scream","whisper,murmur,quiet",loud vocalization,"emotion,emergency,anger",VERBAL
+yell,"shout,cry out,scream,bellow,vocalize loudly","whisper,murmur,quiet",loud cry,"emotion,urgency,anger",VERBAL
+scream,"shriek,cry out loudly,wail,yell","whisper,murmur,quiet",loud cry of distress,"fear,pain,emotion",VERBAL
+screech,"shriek,squeal,make high-pitched sound,cry","whisper,murmur,quiet",high-pitched cry,"distress,surprise,fear",VERBAL
+bellow,"roar,shout loudly,thunder,boom","whisper,murmur,quiet",deep loud cry,"emotion,anger,urgency",VERBAL
+roar,"bellow,thunder,boom,cry loudly","whisper,murmur,quiet",deep loud sound,"emotion,power,aggression",VERBAL
+whisper,"speak softly,murmur,breath-sound,secretively","shout,yell,announce",soft speech,"secrecy,intimacy,quiet",VERBAL
+murmur,"speak softly,whisper,hum,utter quietly","shout,yell,announce",soft indistinct sound,"contentment,secrecy,quiet",VERBAL
+mutter,"speak indistinctly,mumble,grumble,murmur","speak clearly,articulate,enunciate",quiet unclear speech,"discontent,thought,complaint",VERBAL
+mumble,"speak indistinctly,mutter,slur,inarticulate","speak clearly,articulate,enunciate",unclear speech,"hesitation,confusion,mumbling",VERBAL
+hiss,"make 's' sound,show anger,sizzle,whisper angrily","acclaim,praise,applaud",hostile sound,"anger,aggression,disapproval",VERBAL
+growl,"make low sound,rumble,snarl,speak angrily","praise,encourage,reward",menacing low sound,"anger,threat,aggression",VERBAL
+snarl,"growl,show teeth,speak hostilely,grimace","praise,encourage,friendly",hostile sound/expression,"anger,threat,hostility",VERBAL
+snap,"speak sharply,reply curtly,rebuke,bite","gentle,patient,kind",sharp response,"irritation,anger,impatience",VERBAL
+interrupt,"break in,interfere,intrude,cut off,disrupt","listen,attend,quiet",conversation interrupted,"impatience,urgency,rudeness",VERBAL
+interject,"interrupt,insert remark,interpose,comment","listen,attend,quiet",remark inserted,"impulse,interjection,interruption",VERBAL
+interpose,"interrupt,insert,place between,intervene","listen,attend,separate",interjection made,"interruption,intervention,opinion",VERBAL
+butt in,"interrupt,interfere,intrude,push in","listen,attend,respectful",interruption/intrusion,"rudeness,impatience,urgency",VERBAL
+chime in,"interrupt positively,contribute,add remark","silent,listening,quiet",contribution added,"agreement,collaboration,enthusiasm",VERBAL
+chip in,"contribute,add comment,participate,intervene","silent,listening,exclude",contribution added,"agreement,participation,collaboration",VERBAL
+heckle,"interrupt speaker,jeer,boo,disrupt","applaud,praise,support",hostile heckling,"disapproval,disruption,hostility",DECEPTIVE

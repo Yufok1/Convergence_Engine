@@ -1,0 +1,91 @@
+Word,Synonyms,Antonyms,Causes,Caused_By,Category
+wait,"pause,remain,await,bide,stay","proceed,advance,hurry,act,go",pause in action,"expectation,dependency,obligation,patience",WAITING
+wait for,"await,expect,remain for,pause for","proceed,hurry,advance,go,abandon",waiting for something,"dependency,expectation,necessity,time",WAITING
+await,"wait for,expect,anticipate,remain for,abide","proceed,hurry,advance,ignore,abandon",awaiting expected event,"expectation,anticipation,dependency,patience",WAITING
+pause,"stop temporarily,wait,hesitate,cease briefly,halt","continue,proceed,resume,advance,persist",temporary stop,"need for thought,breath,consideration,transition",WAITING
+hold,"maintain,grip,detain,keep,pause","release,let go,drop,abandon,continue",held position,"intention,control,force,constraint",WAITING
+hold on,"wait,pause,maintain grip,persist,continue","release,abandon,let go,give up,proceed",waiting maintained,"patience,expectation,determination,hope",WAITING
+linger,"remain longer,delay,stay,loiter,dawdle","depart,hurry,leave,rush,advance",extended stay,"reluctance,enjoyment,indecision,distraction",WAITING
+loiter,"linger,hang about,idle,loaf,dawdle","hurry,proceed,advance,depart,rush",loitering done,"idleness,indecision,distraction,no purpose",WAITING
+idle,"loiter,linger,be inactive,remain unproductive","work,labor,strive,action,productivity",idle time,"lack of work,laziness,waiting,distraction",WAITING
+loaf,"loiter,idle,linger,waste time,slack off","work,labor,strive,productive activity,busy",loafing done,"laziness,idleness,indifference,time",WAITING
+dawdle,"waste time,linger,loiter,delay,idle","hurry,speed up,hasten,proceed,advance",dawdling done,"laziness,indecision,distraction,procrastination",WAITING
+tarry,"delay,linger,remain longer,stay,wait","hurry,proceed,advance,depart,rush",delayed departure,"reluctance,enjoyment,indecision,distraction",WAITING
+dally,"delay,waste time,flirt,play,dwell","hurry,proceed,focus,serious,advance",dallying done,"indecision,distraction,flirtation,procrastination",WAITING
+dilly-dally,"delay,hesitate,waste time,dawdle,vacillate","decide,hurry,proceed,commit,focus",indecision shown,"indecision,hesitation,procrastination,anxiety",WAITING
+stall,"delay,hold up,obstruct,procrastinate,pause","advance,proceed,accelerate,overcome,resolve",stalling tactic used,"obstruction,procrastination,time-buying,evasion",WAITING
+lollygag,"loiter,linger,idle,dawdle,loaf","hurry,proceed,advance,focus,productive",lollygagging done,"idleness,laziness,distraction,procrastination",WAITING
+bide one's time,"wait patiently,wait for opportunity,delay strategically","act hastily,rush,proceed,impulsive,immediate",strategic waiting,"patience,timing,opportunity,strategy",WAITING
+cool one's heels,"wait,delay,be kept waiting,cool down,patient","proceed,active,engaged,involved,impatient",waiting done,"patience,cooling anger,waiting period",WAITING
+twiddle one's thumbs,"wait idly,pass time,be idle,inactive","active,busy,productive,engaged,working",idle waiting,"lack of activity,impatience,boredom,waiting",WAITING
+delay,"postpone,defer,put off,slow,hinder","hurry,advance,accelerate,expedite,proceed",delay caused,"obstruction,procrastination,difficulty,caution",WAITING
+delay,"cause lateness,slow progress,impede,hinder","expedite,hurry,hasten,accelerate,quick",action slowed,"obstacle,slowness,obstruction,hindrance",WAITING
+postpone,"delay,put off,reschedule,defer,adjourn","proceed,advance,expedite,hasten,immediate",postponement made,"need for delay,new arrangement,decision",WAITING
+defer,"delay,postpone,put off,delay decision,yield","decide,proceed,act,advance,immediate",deferral made,"lack of readiness,priority change,strategy",WAITING
+put off,"postpone,delay,procrastinate,defer,avoid","proceed,do,complete,act,decide",postponement made,"procrastination,avoidance,difficulty,reluctance",WAITING
+hold off on,"delay,avoid,postpone,wait to do,strategic delay","proceed,do,immediate,direct,act",delay practiced,"timing,appropriateness,caution,strategy",WAITING
+procrastinate,"delay,postpone,put off,avoid, dally","do,complete,proceed,immediate,action",procrastination exhibited,"avoidance,perfectionism,anxiety,laziness",WAITING
+drag one's heels,"delay,drag,procrastinate,resist,slow progress","move forward,cooperate,accelerate,advance",resistance shown,"reluctance,disagreement,passive resistance",WAITING
+kick the can down the road,"delay decision,postpone,defer,avoid responsibility","decide,address,resolve,immediate,tackle",avoidance practiced,"procrastination,avoidance,delay strategy",WAITING
+shelve,"postpone,put aside,table,delay,defer","resume,return to,pursue,advance,activate",postponement made,"lack of priority,change in focus,time",WAITING
+table,"postpone discussion,defer,shelve,delay","resume,return to,pursue,address,immediate",discussion deferred,"lack of readiness,disagreement,time",WAITING
+hurry,"move quickly,rush,hasten,speed up,make haste","delay,slow down,linger,wait,dawdle",rapid movement,"urgency,need,pressure,time constraint",HURRYING
+hurry up,"speed up,move quickly,accelerate,hasten,rush","slow down,delay,wait,linger,procrastinate",speed increased,"urgency,time pressure,need,impatience",HURRYING
+rush,"hurry,move quickly,hasten,dash,speed","delay,slow down,loiter,linger,wait",rapid action,"urgency,pressure,time constraint,emergency",HURRYING
+hasten,"hurry,move quickly,rush,speed up,accelerate","slow down,delay,loiter,wait,linger",rapid movement,"urgency,need,haste,pressure",HURRYING
+make haste,"hurry,move quickly,speed up,hasten,rush","slow down,delay,wait,linger,procrastinate",haste made,"urgency,pressure,time constraint,emergency",HURRYING
+speed up,"accelerate,hurry,move faster,increase pace","slow down,decelerate,decrease pace,reduce speed",pace increased,"need for speed,pressure,urgency,efficiency",HURRYING
+accelerate,"increase speed,speed up,move faster,quicken","decelerate,slow down,reduce pace,halt,stop",speed increased,"force,pressure,need,momentum",HURRYING
+quicken,"speed up,accelerate,move faster,increase pace","slow down,decrease pace,reduce speed,decelerate",pace quickened,"urgency,momentum,determination,effort",HURRYING
+bolt,"run quickly,dash,bolt off,flee,move fast","slow,stop,pause,idle,wait",rapid departure,"fear,urgency,surprise,escape",HURRYING
+dash,"run quickly,move fast,bolt,hurry,rush","slow,stop,pause,wait,loiter",rapid movement,"urgency,speed, haste,determination",HURRYING
+scurry,"move quickly,hurry,scamper,rush, bustle","slow,stop,pause,idle,wait",hurried movement,"fear,urgency,busy activity,pressure",HURRYING
+hustle,"hurry,move quickly,bustle,rush,push","slow,stop,pause,rest,wait",rapid activity,"urgency,activity,pressure,movement",HURRYING
+bustle,"move busily,hurry,hustle,rush, active movement","slow,idle,lazy,still,pause",busy movement,"activity,purpose,engagement,movement",HURRYING
+tear,"move quickly,rush,hurry,move fast,speed","slow,stop,pause,idle,wait",rapid movement,"urgency,speed,force,momentum",HURRYING
+zip,"move quickly,rush,move fast,zoom,dart","slow,stop,pause,loiter,wait",rapid movement,"speed,urgency,momentum,energy",HURRYING
+zoom,"move fast,move quickly,speed,rush,dart","slow,stop,pause,idle,wait",rapid movement,"speed,momentum,urgency,force",HURRYING
+fly,"move quickly,rush,hurry,speed,move fast","slow,stop,pause,linger,wait",rapid movement,"speed,urgency,momentum,determination",HURRYING
+race,"move quickly,hurry,compete for speed,rush,dart","slow,stop,pause,idle,wait",rapid movement,"speed,urgency,competition,pressure",HURRYING
+precede,"come before,go first,come earlier,introduce","follow,come after,succeed,lag,trail",prior position,"time sequence,order,first position",SEQUENCING
+follow,"come after,go next,succeed,trail,come later","precede,lead,come first,go before,pioneer",subsequent position,"sequence,order,time,guidance",SEQUENCING
+succeed,"come after,follow,replace,inherit,continue after","precede,come before,lead,introduce,first",successor state,"replacement,time passage,inheritance,sequence",SEQUENCING
+come after,"follow,succeed,come later,subsequent,trail","precede,come before,lead,first,pioneer",sequential position,"sequence,order,time,following",SEQUENCING
+come before,"precede,lead,go first,introduce,pioneer","follow,come after,succeed,lag,later",prior position,"precedence,sequence,priority,first",SEQUENCING
+go before,"precede,lead,introduce,come first,pioneer","follow,come after,succeed,trail,later",leadership position,"precedence,priority,guidance,first",SEQUENCING
+go after,"follow,pursue,chase,come next,succeed","precede,lead,come before,pioneer,introduce",following pursuit,"sequence,pursuit,following,continuation",SEQUENCING
+follow on,"follow next,continue after,subsequent,result","precede,lead,come before,introduce,first",subsequent event,"sequence,continuation,time,consequence",SEQUENCING
+lead,"go first,precede,guide,pioneer,introduce","follow,come after,succeed,trail,guide led by",leadership,"direction,priority,first,guidance",SEQUENCING
+lag,"fall behind,move slowly,lose pace,delayed follow","lead,advance,hurry,accelerate,progress",position behind,"slowness,difficulty,delay,hindrance",SEQUENCING
+trail,"lag behind,follow,come after,drag,last","lead,go first,advance,precede,pioneer",last position,"following,slowness,lag,sequence",SEQUENCING
+schedule,"plan,arrange,book,set time,appoint","cancel,unscheduled,random,indefinite,flexible",scheduled event,"planning,time management,organization,decision",SCHEDULING
+plan,"organize,arrange,scheme,prepare,design","improvise,random,spontaneous,cancel,unplan",plan made,"intention,foresight,organization,design",SCHEDULING
+arrange,"organize,plan,put in order,schedule,set up","disarrange,disorder,random,cancel,disorder",arrangement made,"organization,intention,planning,coordination",SCHEDULING
+book,"reserve,schedule,arrange,plan,set aside","cancel,release,free,open,unbooked",booking made,"reservation,organization,planning,demand",SCHEDULING
+reserve,"book,hold,set aside,keep back,allocate","release,cancel,free,open,surrender",reservation made,"planning,allocation,demand,precaution",SCHEDULING
+set a time,"schedule,arrange,plan,decide time,appoint","unscheduled,flexible,indefinite,random,open",time set,"planning,decision,organization,intention",SCHEDULING
+allocate,"assign,distribute,set aside,reserve,portion","withhold,unallocated,flexible,change,cancel",allocation done,"planning,distribution,decision,resource management",SCHEDULING
+allot,"assign,distribute,allocate,set aside,grant","withhold,unallocated,deny,cancel,revoke",allotment made,"distribution,planning,assignment,decision",SCHEDULING
+slot,"assign position,schedule,allocate,assign place","unassigned,flexible,open,remove,displace",slot assigned,"organization,planning,assignment,structure",SCHEDULING
+anticipate,"expect,foresee,predict,prepare for,await","surprise,unexpected,unaware,unprepared,miss",anticipation felt,"preparation,expectation,prediction,caution",ANTICIPATING
+expect,"anticipate,suppose,assume,await,predict","surprise,unexpected,unaware,unprepared",expectation formed,"probability,assumption,basis,experience",ANTICIPATING
+look forward to,"anticipate,expect,eagerly await,excited for","dread,fear,avoid,unhappy about,regret",anticipation shown,"eagerness,pleasure,expectation,excitement",ANTICIPATING
+await,"wait for,expect,anticipate,remain for","ignore,abandon,unexpected,miss,disregard",awaiting continued,"expectation,patience,anticipation,waiting",ANTICIPATING
+predict,"forecast,foresee,prophesy,anticipate,foretell","surprise,unpredictable,random,sudden,miss",prediction made,"analysis,evidence,knowledge,pattern",ANTICIPATING
+forecast,"predict,foresee,estimate future,anticipate","surprise,sudden,unpredictable,miss,random",forecast made,"data,analysis,knowledge,evidence",ANTICIPATING
+foresee,"predict,anticipate,see in advance,foreknow","surprise,unexpected,miss,unpredictable,sudden",foresight gained,"knowledge,perception,wisdom,insight",ANTICIPATING
+prophesy,"predict,foretell,divine future,anticipate","surprise,unpredictable,sudden,miss,random",prophecy made,"divine inspiration,vision,knowledge,insight",ANTICIPATING
+vaticinate,"prophesy,predict,foretell, divine","surprise,unpredictable,sudden,random,miss",vaticination made,"divine inspiration,mystical knowledge,vision",ANTICIPATING
+divine,"predict,foretell,divine will,perceive intuitively","surprise,unpredictable,miss,material,confused",divination made,"intuition,mystical knowledge,perception,insight",ANTICIPATING
+augur,"predict from omens,bode,portend,indicate","surprise,unpredictable,unrelated,random,clear",omen perceived,"signs,omens,intuition,pattern",ANTICIPATING
+bode,"augur,predict,portend,indicate,signal","surprise,unpredictable,unrelated,random,clear",omen perceived,"signs,omens,indication,portent",ANTICIPATING
+portend,"foreshadow,predict,signal,augur,indicate","surprise,unpredictable,unrelated,random,unexpected",portent perceived,"signs,omens,indication,evidence",ANTICIPATING
+prefigure,"foreshadow,predict,suggest beforehand,anticipate","surprise,sudden,unpredictable,unexpected,random",prefiguration made,"indication,foreshadowing,pattern,suggestion",ANTICIPATING
+foreshadow,"portend,predict,indicate,suggest,hint","surprise,sudden,unpredictable,unexpected,random",foreshadowing made,"indication,pattern,signal,suggestion",ANTICIPATING
+prepare,"make ready,get ready,ready,arrange,plan","unprepared,neglect,abandon,disorganize,careless",preparedness achieved,"foresight,intention,readiness,planning",ANTICIPATING
+ready,"prepare,make ready,get ready,willing,prepared","unready,unprepared,unpracticed,unprepared,careless",readiness achieved,"effort,preparation,willingness,readiness",ANTICIPATING
+get ready,"prepare,make ready,ready, stand by,organize","unready,unprepared,disorganize,careless,neglect",readiness achieved,"preparation,intention,organization,effort",ANTICIPATING
+stand by,"be ready,wait prepared,prepare,ready,alert","unready,leave,abandon,unprepared,unaware",standby readiness,"alertness,preparation,expectation,waiting",ANTICIPATING
+brace,"prepare for impact,ready oneself,prepare for difficulty","relax,unaware,unprepared,complacent,careless",braced position,"anticipation,difficulty,impact,challenge",ANTICIPATING
+brace oneself,"prepare mentally,ready oneself,expect difficulty","relax,complacent,unprepared,unaware,careless",mental preparation,"difficulty,challenge,impact,expectation",ANTICIPATING
+prime,"prepare,make ready,brief,introduce,set up","unprepared,neglect,unaware,disorganize,careless",priming done,"preparation,briefing,readiness,setup",ANTICIPATING

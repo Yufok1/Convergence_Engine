@@ -1,0 +1,108 @@
+Word,Synonyms,Antonyms,Causes,Caused_By,Category
+born,"delivered,brought forth,emerge,arrive,born","die,perish,cease,abort",new life begins,"conception,pregnancy,labor,genetics",BIRTH
+birth,"deliver,bring forth,bear,hatch,beget","abort,miscarry,fail",offspring delivered,"pregnancy,labor,genetics,intention",BIRTH
+emerge,"come forth,appear,hatch,develop from,break through","hide,withdraw,disappear",appearance from previous state,"development,breaking point,readiness",BIRTH
+hatch,"emerge from egg,break shell,incubate completion","keep enclosed,prevent emergence",young emerges from egg,"warmth,incubation,development,time",BIRTH
+spawn,"produce eggs,generate offspring,breed,create","abort,fail,cease",offspring produced,"reproduction,mating,biology,genetics",BIRTH
+come into being,"exist start,form,originate,begin","perish,cease,disappear",existence started,"conception,creation,genesis,time",BIRTH
+originate,"begin,arise,start,come from,trace back","end,cease,perish,end",origin/source established,"genesis,creation,causation,time",BIRTH
+commence,"begin,start,initiate,open,launch","end,cease,conclude,finish",beginning marked,"intention,trigger,decision,time",BIRTH
+inception,"beginning,start,origin,genesis,outset","end,conclusion,termination,finale",process initiated,"conception,trigger,creation,time",BIRTH
+initiate,"start,begin,commence,launch,open","conclude,finish,end,terminate",process begun,"intention,decision,trigger,authority",BIRTH
+grow,"increase,develop,expand,enlarge,mature","shrink,decrease,decline,diminish",size/capacity increased,"nutrition,time,genetics,conditions",GROWTH
+develop,"grow,mature,unfold,evolve,progress","regress,decline,stop,stagnate",capabilities expanded,"time,genetics,environment,learning",GROWTH
+expand,"grow,increase,enlarge,extend,spread","contract,shrink,diminish,reduce",size increased,"pressure,growth,abundance,time",GROWTH
+enlarge,"expand,increase,magnify,amplify,swell","shrink,reduce,compress,diminish",size increased,"growth,addition,expansion,time",GROWTH
+extend,"expand,stretch,reach,spread,prolong","contract,shorten,limit,restrict",range/duration increased,"growth,intention,pulling force,time",GROWTH
+spread,"expand,extend,distribute,scatter,proliferate","contract,concentrate,gather,limit",area covered increased,"growth,diffusion,multiplication,time",GROWTH
+increase,"grow,expand,amplify,augment,raise","decrease,reduce,diminish,lower",quantity expanded,"addition,accumulation,growth,time",GROWTH
+swell,"expand,enlarge,puff up,distend,bulge","shrink,deflate,contract,reduce",volume increased,"filling,growth,pressure,inflation",GROWTH
+proliferate,"multiply,expand,increase rapidly,spread,flourish","decline,reduce,stagnate,diminish",rapid multiplication,"growth,reproduction,favorable conditions,time",GROWTH
+branch out,"expand,extend,diversify,spread,grow","concentrate,focus,narrow,contract",new growth areas developed,"growth,opportunity,diversity,intention",GROWTH
+burgeon,"grow,expand,flourish,bud,thrive","wilt,wither,decline,fade",rapid growth,"nutrients,conditions,vitality,time",GROWTH
+sprout,"begin growing,shoot forth,germinate,emerge,bud","wilt,die,cease,stop",new growth emerges,"moisture,warmth,genetics,nutrients",GROWTH
+germinate,"begin growth,sprout,initiate,activate,start","dormancy,fail,cease,sterility",seed begins growing,"moisture,warmth,time,oxygen",GROWTH
+bud,"form bud,begin flowering,develop flower,start growth","fade,wilt,close,cease",bud formed,"season,maturity,sunlight,nutrients",GROWTH
+shoot,"sprout,grow rapidly,extend,push upward","stop,cease,wilt,decline",rapid growth,"vitality,nutrients,season,genetics",GROWTH
+unfold,"develop,open,reveal,expand,mature","fold,close,hide,cease",development/revelation,"growth,time,maturity,readiness",GROWTH
+mature,"reach adulthood,ripened,fully develop,adult,ready","juvenile,immature,young,develop further",full adulthood reached,"time,development,genetics,experience",MATURATION
+ripen,"mature,ready for harvest,develop flavor,age","unripe,immature,raw,sour",fruit fully developed,"time,sunlight,ripeness,chemistry",MATURATION
+flourish,"thrive,bloom,prosper,grow well,blossom","wilt,decline,fail,fade",vigorous growth,"nutrients,conditions,environment,vitality",MATURATION
+thrive,"flourish,grow well,prosper,succeed,excel","decline,fail,wilt,perish",healthy growth,"conditions,genetics,nutrients,time",MATURATION
+bloom,"flower,blossom,flourish,produce flowers","fade,wilt,close,wither",flowering occurs,"season,maturity,warmth,light",MATURATION
+blossom,"flower,bloom,flourish,develop flowers,grow","fade,wilt,wither,decline",flowers produced,"season,maturity,conditions,nutrients",MATURATION
+flower,"bloom,blossom,flourish,show off,develop fully","fade,wilt,wither,diminish",full bloom achieved,"maturity,season,environment,time",MATURATION
+effloresce,"flower,bloom,flourish,reach full development","fade,wilt,decline,disappear",flowering peak reached,"maturity,season,conditions,time",MATURATION
+fructify,"bear fruit,become fruitful,produce,flourish","sterile,barren,fail,cease",fruit production begins,"pollination,maturity,genetics,time",MATURATION
+prosper,"thrive,flourish,succeed,grow well,advance","fail,decline,stagnate,suffer",success achieved,"conditions,effort,circumstances,time",MATURATION
+come of age,"mature,reach adulthood,develop fully,readiness","juvenile,young,undeveloped,immature",adulthood reached,"time,development,experience,readiness",MATURATION
+peak,"reach maximum,zenith,climax,fullest point","decline,descend,decrease,diminish",maximum reached,"development,accumulation,time,circumstances",MATURATION
+culminate,"peak,reach climax,conclude at highest point","begin,start,commence,diminish",climax point reached,"development,time,sequence,buildup",MATURATION
+age,"grow older,mature,advance in years,show age","youth,young,rejuvenate,reverse",advanced years reached,"time passage,oxidation,wear,stress",AGING
+grow old,"age,advance in years,become elderly","young,rejuvenate,restore,reverse age",elderly stage reached,"time passage,senescence,biology,years",AGING
+wither,"shrivel,decline,wilt,become weak,deteriorate","flourish,bloom,thrive,revive",dried and weakened,"age,dehydration,disease,stress",AGING
+wilt,"droop,fade,decline,weaken,diminish","perk up,revive,strengthen,flourish",withered state,"heat,dehydration,stress,damage",AGING
+shrivel,"shrink,wrinkle,dry up,contract,diminish","plump,swell,expand,fill",dried/contracted state,"dehydration,age,heat,disease",AGING
+fade,"diminish,lose color,weaken,decline,deteriorate","brighten,strengthen,revive,enhance",weakened/dimmed state,"time,exposure,stress,disease",AGING
+decline,"decrease,diminish,worsen,fail,deteriorate","improve,increase,strengthen,recover",reduced state,"time,disease,aging,wear,stress",AGING
+deteriorate,"worsen,decline,degenerate,decay,break down","improve,strengthen,restore,enhance",worse condition,"time,damage,wear,disease,stress",AGING
+weaken,"lose strength,diminish,fail,decline,reduce","strengthen,reinforce,fortify,invigorate",reduced strength,"age,disease,strain,stress,damage",AGING
+diminish,"decrease,reduce,lessen,decline,shrink","increase,grow,expand,strengthen",reduced amount,"loss,time,consumption,decay,damage",AGING
+senescence,"aging process,decline,deterioration,weakening","youth,rejuvenation,growth,vitality",biological aging,"time passage,cellular breakdown,aging",AGING
+ossify,"harden,become rigid,stagnate,inflexible","soften,flex,adapt,change",hardened/rigid state,"age,calcium deposition,disease",AGING
+stagnate,"stop growing,cease development,stall,plateau","advance,progress,develop,improve",no progress state,"lack of stimulus,inertia,stasis",AGING
+transform,"change,convert,metamorphose,alter,become","stay same,revert,undo,unchanged",different form/state,"forces,development,intention,time",REGENERATION
+evolve,"develop,change gradually,progress,transform,advance","devolve,regress,degenerate,stagnate",gradual change process,"time,selection,adaptation,genetics",REGENERATION
+metamorphose,"transform,change radically,become different","stay same,unchanged,revert,static",radical transformation,"development,hormones,environment,time",REGENERATION
+mutate,"change genetically,alter DNA,vary,transform","remain same,stable,unchanged,constant",genetic change,"radiation,chemical,error,spontaneous",REGENERATION
+transmute,"transform,convert,change into,transfigure","remain same,unchanged,revert",changed substance/nature,"alchemy,chemistry,intention,magic",REGENERATION
+convert,"change,transform,adapt,alter,modify","maintain,keep,preserve,unchanged",changed state/use,"intention,process,catalyst,force",REGENERATION
+adapt,"adjust,change,modify,fit,accommodate","resist,refuse,remain unchanged,inflexible",adjusted state,"pressure,environment,need,necessity",REGENERATION
+modify,"change,alter,adjust,adapt,refine","keep original,maintain,unchanged,static",altered state,"need,intention,discovery,improvement",REGENERATION
+alter,"change,modify,transform,adjust,differ","maintain,keep,preserve,unchanged",changed state,"intention,force,time,circumstance",REGENERATION
+transfigure,"transform,glorify,change appearance,exalt","disfigure,deface,dim,diminish",changed/enhanced form,"magic,spirituality,light,intention",REGENERATION
+transmorphify,"transform,change shape,convert,metamorphose","remain same,unchanged,static",shape/form changed,"transformation,magic,intention,process",REGENERATION
+pupate,"enter pupal stage,cocoon,encapsulate,transform","emerge,hatch,adult form,leave pupae",pupal stage entered,"metamorphosis,hormones,development,timing",REGENERATION
+molt,"shed outer layer,ecdysis,change exoskeleton","keep covering,remain unchanged",new covering revealed,"growth,hormones,development,time",REGENERATION
+moulting,"shed covering,molt,ecdysis,change skin","keep covering,retain,unchanged",covering changed,"growth,development,hormones,time",REGENERATION
+cocoon,"spin protective covering,encapsulate,pupate","break out,emerge,unwind",protective covering spun,"metamorphosis,instinct,development",REGENERATION
+chrysalis,"protective pupal case,transformation stage,cocoon state","emerge,hatch,adult,break free",protective encasement,"metamorphosis,development,timing",REGENERATION
+die,"cease living,expire,perish,decease,pass away","live,survive,resurrect,revive",life ended,"disease,age,injury,circumstances",DEATH
+die out,"become extinct,disappear,cease,perish,end","revive,restore,persist,survive",extinction reached,"environmental change,competition,decline",DEATH
+perish,"die,cease to exist,be destroyed,succumb,fall","live,survive,persist,endure",life/existence ended,"disaster,disease,age,harm",DEATH
+expire,"die,end,lapse,breathe out,come to end","live,begin,start,renew",life/term ended,"time,disease,natural cause,breath",DEATH
+succumb,"yield to,die from,be overcome,perish,surrender","resist,survive,overcome,recover",death/defeat occurred,"disease,pressure,weakness,enemy",DEATH
+pass away,"die,depart,cease living,go to next world","live,return,resurrect,exist",death occurred,"age,disease,circumstances,time",DEATH
+fall,"die,drop,collapse,perish,be killed","rise,survive,recover,endure",death/defeat occurred,"injury,disease,age,enemy,force",DEATH
+decease,"die,pass away,death occurs,expire","live,survive,resurrect,exist",life ended,"age,disease,circumstance,time",DEATH
+depart,"leave life,die,go away,exit,disappear","return,live,stay,arrive,exist",departure from life,"death,transition,time,departure",DEATH
+exit,"leave,depart,die,exit stage,disappear","enter,arrive,exist,stay,return",departure occurred,"death,leaving,transition,end",DEATH
+degenerate,"decline,worsen,deteriorate,decay,corrupt","improve,regenerate,restore,enhance",worsened state,"age,disease,abuse,neglect,time",AGING
+degeneration,"decline,decay,deterioration,worsening,corruption","improvement,restoration,regeneration,enhancement",declined condition,"time,disease,misuse,natural cause",AGING
+atrophy,"shrink from disuse,wither,weaken,diminish,waste","hypertrophy,grow,enlarge,strengthen",muscle/tissue shrunk,"disuse,disease,age,starvation",AGING
+decay,"rot,decompose,deteriorate,decline,break down","preserve,restore,heal,maintain",decomposed state,"bacteria,fungi,age,oxidation",AGING
+decompose,"break down,decay,rot,dissolve,disintegrate","compose,form,create,stabilize",component separation,"bacteria,fungi,time,oxidation",AGING
+rot,"decay,decompose,putrefy,spoil,corrode","preserve,cure,maintain,protect",decayed state,"bacteria,fungi,moisture,time",AGING
+putrefy,"rot,decay,decompose,become corrupt,corrupt morally","preserve,cure,restore,purify",putrefied state,"bacteria,time,death,disease",AGING
+corrode,"erode,wear away,deteriorate,rust,decay","protect,preserve,maintain,clean",eroded state,"oxidation,chemical,moisture,friction",AGING
+rust,"oxidation of metal,corrode,weaken,deteriorate","protect,polish,maintain,prevent",oxidized state,"oxidation,moisture,oxygen,time",AGING
+crumble,"break apart,disintegrate,collapse,decay,fragment","form,build,solidify,hold together",fragmented state,"age,decay,pressure,brittleness",AGING
+regenerate,"regrow,restore,renew,revive,rebuild","degenerate,decay,destroy,diminish",renewed growth,"cells,tissue,time,vitality,stimulus",REGENERATION
+revive,"restore to consciousness,reactivate,bring back to life","kill,suppress,die,extinguish",consciousness/vitality restored,"stimulus,effort,care,medicine",REGENERATION
+resurrect,"bring back to life,restore from death,revitalize","kill,destroy,bury,extinct",life restored from death,"magic,intervention,miracle,restoration",REGENERATION
+restore,"return to former state,repair,mend,renew","destroy,damage,break,degrade",original state recovered,"repair,care,effort,intention",REGENERATION
+renew,"make new again,refresh,reactivate,restore","age,wear out,exhaust,destroy",renewed state,"effort,care,vitality,intention",REGENERATION
+refresh,"revitalize,restore energy,renew,invigorate,restore","tire,exhaust,weaken,depress",refreshed state,"rest,water,time,care",REGENERATION
+rejuvenate,"make young again,revive,restore youth,invigorate","age,weaken,diminish,exhaust",youthful state restored,"treatment,care,effort,vitality",REGENERATION
+revitalize,"restore vitality,invigorate,enliven,energize","deplete,tire,weaken,drain",vitality restored,"energy,care,stimulus,restoration",REGENERATION
+reinvigorate,"restore vigor,strengthen,energize,enliven","weaken,diminish,tire,deplete",vigor restored,"stimulus,effort,care,energy",REGENERATION
+heal,"mend,cure,recover,restore health,repair","wound,injure,sicken,harm",health restored,"time,medicine,care,tissue repair",REGENERATION
+recover,"regain health,heal,bounce back,restore,improve","sicken,decline,weaken,relapse",health recovered,"time,treatment,rest,healing",REGENERATION
+bounce back,"recover,rebound,resume,resilience,restore","decline,fall,weaken,collapse",recovered state,"resilience,recovery,effort,time",REGENERATION
+rebuild,"construct anew,restore,repair,reconstruct","destroy,dismantle,demolish,damage",rebuilt structure,"materials,effort,intention,time",REGENERATION
+hypertrophy,"enlargement,overgrowth,muscle increase,thickening","atrophy,shrink,diminish,reduce",excessive growth,"overuse,stimulation,training,hormones",GROWTH
+become extinct,"disappear,die out,cease to exist,perish","persist,survive,continue,exist",species disappeared,"environmental change,predation,disease",DEATH
+vanish,"disappear,fade,cease to exist,dissolve","appear,emerge,materialize,exist",disappeared state,"departure,dissolution,time,magic",DEATH
+disappear,"vanish,cease to be visible,end,dissolve","appear,emerge,materialize,show",disappeared state,"departure,concealment,dissolution,time",DEATH
+cease,"stop,end,discontinue,halt,finish","start,begin,commence,continue",stopped state,"completion,decision,force,time",DEATH
+discontinue,"stop,end,cease,halt,abandon","continue,maintain,persist,keep going",stopped state,"decision,completion,change,intention",DEATH

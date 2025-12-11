@@ -1,0 +1,53 @@
+Word,Synonyms,Antonyms,Causes,Caused_By,Category
+see,"perceive, observe, sight, notice","miss, overlook, ignore, blind","visual awareness, perception, recognition","light, open eyes, visual stimulus",VISUAL
+view,"observe, watch, see, look at","ignore, overlook, miss, block","visual observation, understanding, perspective","visual access, positioning, intent",VISUAL
+sight,"see, observe, perceive, spot","miss, overlook, ignore, lose","visual detection, recognition, awareness","appearance, visibility, observation",VISUAL
+perceive,"sense, observe, discern, recognize","miss, overlook, ignore, fail","sensory awareness, understanding, consciousness","stimulus, sensation, attention",VISUAL
+detect,"discover, find, locate, identify","miss, overlook, ignore, hide","discovery, identification, awareness","investigation, evidence, searching",VISUAL
+discern,"perceive, distinguish, detect, observe","miss, confuse, blur, ignore","understanding, distinction, clarity","careful observation, attention, knowledge",VISUAL
+distinguish,"differentiate, discern, recognize, identify","confuse, blur, mix, overlook","understanding difference, clarity, recognition","observation, comparison, focus",VISUAL
+recognize,"identify, know, acknowledge, recall","forget, miss, ignore, mistake","identification, acknowledgment, memory","familiarity, knowledge, observation",VISUAL
+identify,"recognize, determine, classify, name","confuse, mistake, misidentify, conceal","identification, classification, understanding","examination, knowledge, analysis",VISUAL
+look,"gaze, observe, stare, direct eyes","ignore, turn away, overlook, blind","awareness, understanding, observation","attention, curiosity, direction",WATCHING
+watch,"observe, monitor, track, supervise","ignore, overlook, miss, neglect","observation, monitoring, understanding","motion, interest, responsibility",WATCHING
+observe,"watch, see, examine, study","ignore, overlook, miss, neglect","understanding, knowledge, analysis","interest, investigation, responsibility",WATCHING
+examine,"inspect, scrutinize, study, analyze","ignore, overlook, gloss over, miss","understanding, insight, assessment","curiosity, investigation, doubt",WATCHING
+inspect,"examine, check, survey, review","ignore, overlook, skip, neglect","assessment, verification, understanding","need, doubt, responsibility",WATCHING
+scrutinize,"examine closely, inspect, study, analyze","ignore, overlook, gloss over, skip","detailed understanding, judgment, analysis","suspicion, importance, investigation",WATCHING
+survey,"observe, scan, examine, overview","ignore, overlook, miss, detail","overview, assessment, understanding","need, inquiry, evaluation",WATCHING
+monitor,"watch, track, observe, supervise","ignore, neglect, abandon, lose","observation, tracking, control","responsibility, surveillance, need",WATCHING
+track,"follow, monitor, trace, pursue","lose, ignore, miss, abandon","following, location determination, pursuit","target, interest, necessity",WATCHING
+gaze,"stare, look steadily, contemplate, admire","ignore, turn away, overlook, glance","admiration, contemplation, emotional connection","beauty, wonder, emotion, fascination",WATCHING
+stare,"gaze, look fixedly, glare, peer","glance, look away, ignore, blink","intense observation, concentration, emotion","surprise, intensity, anger, focus",WATCHING
+glare,"stare, look angrily, scowl, frown","smile, look away, ignore, soften","anger expression, intensity, disapproval","anger, disapproval, challenge",WATCHING
+peer,"look closely, stare, scrutinize, peer","glance, ignore, overlook, miss","close observation, investigation, clarity","difficulty seeing, doubt, investigation",WATCHING
+peep,"peek, look secretly, glance, sneak","openly observe, ignore, look away, blind","secret observation, curiosity, caution","curiosity, secrecy, caution",WATCHING
+peek,"peep, look quickly, glance, sneak","openly observe, ignore, look away, stare","brief observation, curiosity, caution","curiosity, secrecy, quick interest",WATCHING
+glance,"peek, look briefly, glimpse, scan","stare, gaze, fixate, ignore","quick awareness, casual observation","curiosity, movement, attention",WATCHING
+glimpse,"catch sight of, see briefly, spot, espy","ignore, miss, overlook, stare","momentary awareness, partial observation","movement, visibility, chance",WATCHING
+spot,"notice, see, identify, locate","miss, overlook, ignore, lose","detection, identification, awareness","visibility, searching, observation",WATCHING
+notice,"observe, see, detect, perceive","miss, ignore, overlook, disregard","awareness, attention, recognition","salience, attention, stimulus",WATCHING
+witness,"observe, see, watch, testify","miss, ignore, overlook, deny","awareness, evidence, testimony","presence, event, circumstance",WATCHING
+scan,"examine, survey, browse, sweep","focus narrowly, ignore, miss, detail","overview, rapid search, pattern recognition","search need, information seeking, speed",WATCHING
+browse,"scan, look through, survey, flip","focus deeply, ignore, miss, skip","casual exploration, discovery, overview","curiosity, leisure, exploration",WATCHING
+squint,"peer, narrow eyes, look closely, strain","open eyes wide, ignore, overlook, blind","visual clarity attempt, difficulty seeing","brightness, poor vision, concentration",WATCHING
+ogle,"stare, gawk, eye, admire","ignore, look away, glance, miss","intense observation, attraction, admiration","attraction, interest, desire",WATCHING
+gawk,"stare, gape, gaze, ogle","ignore, look away, miss, glance","amazed observation, surprise expression","surprise, wonder, spectacle",WATCHING
+gape,"gawk, stare, wonder, gaze","close mouth, ignore, look away, miss","amazed observation, mouth opening, surprise","shock, wonder, surprise",WATCHING
+behold,"observe, see, view, contemplate","ignore, miss, overlook, miss","observation, awareness, contemplation","beauty, spectacle, revelation",WATCHING
+eyeball,"stare, examine, look at, inspect","ignore, overlook, miss, look away","close examination, judgment, assessment","evaluation need, suspicion, interest",WATCHING
+hear,"perceive sound, listen, sense, detect","ignore, deafen, miss, overlook","auditory awareness, perception, recognition","sound, ear function, vibration",AUDITORY
+detect,"discover, sense, perceive, identify","miss, overlook, ignore, fail","discovery, awareness, identification","signal, evidence, search",AUDITORY
+listen,"hear attentively, attend, focus, concentrate","ignore, disregard, tune out, miss","understanding, attention, awareness","sound, interest, responsibility",LISTENING
+attend,"listen, focus, concentrate, heed","ignore, disregard, neglect, overlook","awareness, understanding, response","importance, interest, necessity",LISTENING
+heed,"listen to, obey, attend, follow","ignore, disregard, disobey, overlook","compliance, understanding, action","warning, advice, authority",LISTENING
+overhear,"catch, hear accidentally, listen in, eavesdrop","miss, ignore, not hear, overlook","accidental awareness, discovery, knowledge","proximity, accident, chance",LISTENING
+eavesdrop,"listen secretly, overhear, spy, listen in","ignore, not listen, miss, respect privacy","secret knowledge, information gathering","curiosity, spying intent, proximity",LISTENING
+eavesdrop,"listen in, spy, monitor, listen secretly","respect privacy, ignore, not listen, move away","secret information acquisition, discovery","curiosity, spying, proximity, suspicion",LISTENING
+listen in,"eavesdrop, monitor, listen secretly, intercept","respect privacy, ignore, not listen, close off","covert listening, information gathering","curiosity, surveillance, suspicion",LISTENING
+mishear,"misunderstand, misinterpret, hear wrong, confuse","hear correctly, understand, comprehend, clarify","misunderstanding, confusion, error","noise, inattention, similarity",LISTENING
+apprehend,"understand, comprehend, perceive, grasp","misunderstand, miss, ignore, overlook","understanding, comprehension, awareness","clarity, attention, intelligence",LISTENING
+catch,"hear, understand, get, comprehend","miss, fail to hear, overlook, misunderstand","understanding, awareness, reception","attention, clarity, effort",LISTENING
+miss,"fail to see, overlook, ignore, lose","see, notice, spot, observe","lack of awareness, oversight, failure","inattention, speed, distraction",VISUAL
+overlook,"miss, ignore, disregard, forget","notice, observe, see, consider","lack of attention, ignorance, oversight","inattention, busy, carelessness",VISUAL
+ignore,"disregard, overlook, miss, forget","notice, observe, heed, attend","deliberate non-attention, dismissal, avoidance","intention, disinterest, distraction",VISUAL

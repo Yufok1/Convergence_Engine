@@ -1,0 +1,103 @@
+Word,Synonyms,Antonyms,Causes,Caused_By,Category
+continue,"proceed, go on, persist, carry on","stop, cease, interrupt, pause","momentum, persistence, lack of obstacle","intention, momentum, necessity",CONTINUING
+proceed,"continue, advance, move forward, go on","stop, retreat, hesitate, pause","forward motion, continuation, progress","intention, momentum, direction",CONTINUING
+go on,"continue, proceed, keep going, persist","stop, cease, interrupt, quit","continuation, persistence, momentum","intention, momentum, determination",CONTINUING
+carry on,"continue, persist, proceed, maintain","stop, cease, quit, interrupt","persistence, continuation, dedication","determination, obligation, momentum",CONTINUING
+keep on,"continue, persist, proceed, go on","stop, cease, pause, interrupt","persistence, continuation, repetition","determination, habit, momentum",CONTINUING
+advance,"proceed, progress, move forward, go ahead","retreat, regress, go back, stop","forward movement, progress, advancement","intention, opportunity, ability",CONTINUING
+progress,"advance, move forward, develop, improve","regress, decline, retreat, stagnate","forward development, improvement, advancement","effort, time, resources",CONTINUING
+persist,"persevere, continue, endure, keep on","quit, surrender, give up, stop","determination, stubbornness, commitment","will, determination, necessity",PERSISTING
+persevere,"persist, endure, continue steadily, keep on","surrender, quit, give up, abandon","determination, persistence, commitment","will, determination, purpose",PERSISTING
+endure,"persist, last, withstand, bear","surrender, collapse, yield, break","strength, persistence, resilience","resilience, determination, strength",PERSISTING
+withstand,"resist, endure, persist, stand firm","surrender, yield, collapse, break","resistance, strength, determination","strength, determination, stability",PERSISTING
+last,"endure, persist, remain, survive","expire, end, cease, perish","duration, persistence, stability","durability, time, strength",CONTINUING
+survive,"endure, persist, last, remain alive","perish, die, expire, succumb","survival instinct, resilience, strength","resilience, resources, luck",PERSISTING
+remain,"stay, persist, last, continue","leave, depart, disappear, vacate","persistence, stability, lack of departure","choice, circumstance, obligation",CONTINUING
+stay,"remain, abide, linger, lodge","leave, depart, go, abandon","persistence, residence, stability","choice, circumstance, comfort",CONTINUING
+abide,"remain, stay, dwell, persist","leave, depart, vacate, abandon","residence, persistence, dwelling","choice, circumstance, commitment",CONTINUING
+dwell,"stay, reside, remain, live","leave, depart, move away, vacate","habitation, residence, residence","choice, circumstance, home",CONTINUING
+linger,"stay, remain, delay, dawdle","leave, hurry, depart, rush","delay, slowness, reluctance to leave","reluctance, slowness, indecision",CONTINUING
+maintain,"keep, sustain, preserve, support","abandon, neglect, lose, release","preservation, support, continuation","care, effort, intention",CONTINUING
+sustain,"maintain, support, uphold, preserve","abandon, neglect, drop, collapse","support, preservation, continuation","care, effort, resources",CONTINUING
+uphold,"sustain, support, maintain, preserve","abandon, neglect, drop, violate","support, maintenance, defense","commitment, effort, principle",CONTINUING
+preserve,"maintain, keep, protect, conserve","destroy, abandon, neglect, waste","preservation, protection, conservation","care, intention, value",CONTINUING
+conserve,"preserve, protect, maintain, save","waste, squander, destroy, abandon","conservation, protection, preservation","care, necessity, responsibility",CONTINUING
+keep,"maintain, retain, hold, preserve","lose, release, abandon, discard","retention, holding, preservation","intention, care, possession",CONTINUING
+retain,"keep, hold, maintain, preserve","lose, release, abandon, discard","retention, holding, preservation","intention, care, value",CONTINUING
+hold,"keep, grasp, maintain, possess","release, let go, drop, abandon","grasping, possession, holding","strength, intention, control",CONTINUING
+hang on,"persist, hold tight, endure, continue","let go, surrender, quit, release","persistence, grip, determination","will, determination, fear",PERSISTING
+hold fast,"grip tightly, persist, endure, continue","release, let go, surrender, quit","tight grasping, persistence, determination","strength, will, fear",PERSISTING
+stick with,"persist with, continue, stay committed, endure","abandon, quit, give up, switch","commitment, loyalty, persistence","determination, loyalty, commitment",PERSISTING
+pursue,"continue, chase, follow, keep on","abandon, give up, stop, retreat","chase, continuation, goal pursuit","goal, desire, determination",CONTINUING
+follow through,"complete, continue, persist, maintain","abandon, quit, stop, neglect","completion, continuation, follow-up","commitment, determination, responsibility",CONTINUING
+follow up,"pursue, continue, check on, maintain","abandon, neglect, stop, ignore","continuation, check-in, follow-up","responsibility, diligence, interest",CONTINUING
+persist in,"continue with, maintain, endure, pursue","abandon, stop, quit, give up","determination, continuation, stubbornness","will, determination, stubbornness",PERSISTING
+resume,"restart, renew, begin again, recommence","stop, pause, discontinue, interrupt","restarting, continuation after pause","decision, signal, readiness",RESUMING
+restart,"resume, begin again, start over, renew","stop, end, pause, discontinue","restarting, beginning anew, renewal","decision, failure, readiness",RESUMING
+renew,"resume, restart, refresh, revive","expire, lapse, abandon, discontinue","renewal, refreshment, restarting","decision, expiration, choice",RESUMING
+recommence,"resume, restart, begin again, renew","stop, cease, pause, end","restarting, beginning anew, renewal","decision, signal, readiness",RESUMING
+revive,"resurrect, restore, renew, restart","kill, destroy, end, suppress","revival, restoration, renewal","effort, time, stimulus",RESUMING
+resurrect,"revive, restore, bring back, renew","kill, destroy, bury, suppress","resurrection, revival, restoration","effort, decision, magic",RESUMING
+restore,"revive, renew, repair, reconstruct","destroy, damage, abandon, break","restoration, repair, renewal","effort, resources, decision",RESUMING
+pick up,"resume, continue, restart, take up","stop, drop, abandon, pause","resumption, continuation, taking up","decision, readiness, motivation",RESUMING
+take up,"resume, pick up, begin, start","drop, abandon, stop, quit","beginning, resumption, adoption","interest, decision, opportunity",RESUMING
+begin again,"restart, resume, recommence, start over","stop, end, quit, abandon","restarting, beginning anew, renewal","decision, failure, readiness",RESUMING
+change,"alter, modify, transform, shift","remain, stay, persist, freeze","alteration, modification, transformation","decision, necessity, catalyst",CHANGING
+alter,"change, modify, adjust, adapt","preserve, maintain, freeze, lock","alteration, modification, adjustment","decision, necessity, catalyst",CHANGING
+modify,"change, alter, adjust, customize","preserve, maintain, freeze, standardize","modification, adjustment, customization","need, decision, requirement",CHANGING
+adjust,"modify, fine-tune, adapt, calibrate","lock, freeze, maintain, misalign","adjustment, fine-tuning, adaptation","need, feedback, optimization",CHANGING
+adapt,"adjust, modify, change, fit","resist, ignore, freeze, maintain","adaptation, adjustment, modification","circumstance, necessity, evolution",CHANGING
+shift,"change, move, switch, transfer","remain, stay, freeze, persist","change, movement, transition","decision, force, necessity",CHANGING
+switch,"change, shift, exchange, alternate","maintain, persist, stick, continue","change, exchange, alternation","decision, preference, necessity",CHANGING
+exchange,"swap, switch, trade, replace","keep, maintain, hold, persist","exchange, trading, replacement","decision, preference, need",CHANGING
+swap,"exchange, switch, trade, alternate","keep, maintain, hold, persist","exchange, trading, alternation","agreement, preference, necessity",CHANGING
+trade,"exchange, swap, barter, replace","keep, maintain, hold, persist","exchange, trading, business","agreement, preference, commerce",CHANGING
+vary,"differ, change, fluctuate, deviate","remain constant, persist, standardize, freeze","variation, fluctuation, deviation","circumstance, nature, change",CHANGING
+fluctuate,"vary, waver, oscillate, change","stabilize, remain constant, persist, freeze","fluctuation, oscillation, instability","circumstance, forces, volatility",CHANGING
+oscillate,"fluctuate, waver, swing, alternate","stabilize, remain constant, freeze, persist","oscillation, swinging, alternation","forces, instability, alternation",CHANGING
+waver,"fluctuate, hesitate, vacillate, waffle","decide, persist, commit, continue","indecision, uncertainty, hesitation","uncertainty, indecision, doubt",CHANGING
+vacillate,"waver, hesitate, fluctuate, falter","decide, persist, commit, continue","indecision, uncertainty, wavering","doubt, uncertainty, indecision",CHANGING
+transform,"change radically, convert, metamorphose, alter","remain unchanged, persist, freeze, maintain","radical change, transformation, metamorphosis","catalyst, decision, natural process",CHANGING
+convert,"transform, change, alter, switch","remain unchanged, preserve, freeze, maintain","conversion, transformation, change","decision, catalyst, necessity",CHANGING
+transmute,"transform, convert, change, alter","remain unchanged, preserve, freeze, maintain","transmutation, transformation, change","catalyst, chemical reaction, magic",CHANGING
+metamorphose,"transform, change dramatically, evolve, convert","remain unchanged, stagnate, freeze, persist","metamorphosis, radical transformation","natural process, catalyst, time",CHANGING
+evolve,"develop, change, progress, transform","devolve, stagnate, regress, freeze","evolution, development, natural change","natural process, time, selection",CHANGING
+transition,"change, shift, move, transform","remain, stay, persist, freeze","transition, change, movement","decision, circumstance, catalyst",CHANGING
+revert,"return, go back, reverse, regress","progress, advance, change, develop","reversal, return, regression","decision, failure, reset",CHANGING
+reverse,"turn around, invert, revert, undo","proceed, advance, continue, maintain","reversal, inversion, undoing","decision, force, mistake",CHANGING
+invert,"reverse, flip, turn upside down, transpose","maintain, preserve, continue, upright","inversion, flipping, reversal","force, decision, manipulation",CHANGING
+flip,"invert, reverse, turn over, switch","maintain, remain, freeze, persist","flipping, inversion, reversal","force, decision, momentum",CHANGING
+rotate,"turn, spin, revolve, orbit","stay still, remain, freeze, stationary","rotation, turning, spinning","force, momentum, intention",CHANGING
+spin,"rotate, turn, twirl, whirl","stay still, remain, freeze, stationary","spinning, rotation, whirling","force, momentum, intention",CHANGING
+turn,"rotate, pivot, change direction, shift","stay straight, remain, freeze, continue","turning, rotation, direction change","force, intention, steering",CHANGING
+pivot,"turn, rotate, shift, change direction","stay straight, remain, freeze, continue","pivoting, rotation, direction shift","force, intention, strategic shift",CHANGING
+interrupt,"break in, cut off, pause, suspend","continue, persist, allow, maintain","stopping, breaking in, disruption","intrusion, necessity, action",INTERRUPTING
+break,"interrupt, pause, stop, cease","continue, persist, maintain, proceed","breaking, stopping, cessation","force, decision, necessity",INTERRUPTING
+pause,"stop temporarily, interrupt, halt, rest","continue, resume, proceed, maintain","temporary stopping, rest, interruption","decision, need, fatigue",INTERRUPTING
+halt,"stop, cease, pause, stand still","continue, proceed, advance, resume","stopping, cessation, halting","command, obstacle, decision",INTERRUPTING
+stop,"cease, halt, pause, discontinue","continue, proceed, persist, start","cessation, stopping, halting","decision, obstacle, command",INTERRUPTING
+cease,"stop, end, discontinue, terminate","continue, persist, proceed, resume","cessation, ending, termination","decision, completion, command",INTERRUPTING
+suspend,"pause, interrupt, postpone, withhold","continue, resume, restore, proceed","temporary stopping, suspension","decision, necessity, authority",INTERRUPTING
+postpone,"delay, defer, put off, suspend","proceed, continue, advance, execute","delay, deferment, postponement","decision, circumstance, necessity",INTERRUPTING
+defer,"postpone, delay, put off, suspend","proceed, continue, advance, execute","deferment, delay, postponement","decision, respect, necessity",INTERRUPTING
+delay,"postpone, defer, slow down, lag","hurry, proceed, advance, resume","delay, slowing, hindrance","obstacle, choice, circumstance",INTERRUPTING
+slow down,"reduce speed, decelerate, delay, lag","speed up, accelerate, hurry, proceed","deceleration, slowing, reduction","obstacle, braking, intention",INTERRUPTING
+lag,"fall behind, slow down, delay, trail","accelerate, hurry, advance, lead","slowness, falling behind, delay","fatigue, weakness, choice",INTERRUPTING
+trail,"follow, lag behind, drag, slow down","lead, accelerate, hurry, advance","following, lagging, slowness","pace, choice, weakness",INTERRUPTING
+disrupt,"interrupt, disturb, break up, throw off","smooth, maintain, continue, organize","disruption, disturbance, chaos","intrusion, chaos, action",INTERRUPTING
+disturb,"disrupt, interrupt, trouble, bother","calm, soothe, maintain, organize","disturbance, trouble, disruption","intrusion, action, noise",INTERRUPTING
+throw off,"disrupt, confuse, disturb, unsettle","compose, settle, organize, continue","disruption, confusion, disturbance","surprise, unexpected action",INTERRUPTING
+break in,"interrupt, intrude, force entry, insert","continue, allow, maintain, exclude","interruption, intrusion, insertion","urgency, intrusion, force",INTERRUPTING
+cut off,"interrupt, sever, disconnect, truncate","continue, maintain, allow, connect","interruption, severing, stopping","action, decision, force",INTERRUPTING
+cut short,"truncate, interrupt, stop early, abbreviate","continue, extend, prolong, allow","truncation, early stopping, abbreviation","decision, necessity, urgency",INTERRUPTING
+truncate,"cut short, shorten, abbreviate, cut off","extend, lengthen, prolong, continue","truncation, shortening, cutting","decision, necessity, space",INTERRUPTING
+abbreviate,"shorten, cut short, truncate, reduce","extend, lengthen, prolong, expand","abbreviation, shortening, reduction","necessity, space, time",INTERRUPTING
+shorten,"abbreviate, truncate, reduce, compress","extend, lengthen, prolong, expand","shortening, reduction, compression","decision, necessity, space",INTERRUPTING
+terminate,"end, stop, cease, conclude","begin, start, continue, resume","termination, ending, conclusion","decision, completion, command",INTERRUPTING
+conclude,"end, finish, terminate, complete","begin, start, continue, open","conclusion, ending, completion","completion, decision, natural end",INTERRUPTING
+finish,"complete, conclude, end, stop","begin, start, continue, unfinished","completion, ending, finishing","completion, decision, exhaustion",INTERRUPTING
+end,"finish, conclude, terminate, cease","begin, start, continue, open","ending, conclusion, finality","completion, decision, natural conclusion",INTERRUPTING
+abandon,"quit, stop, leave, desert","persist, continue, maintain, stay","abandonment, quitting, desertion","decision, desperation, failure",INTERRUPTING
+quit,"stop, leave, abandon, cease","persist, continue, stay, maintain","quitting, stopping, leaving","decision, dissatisfaction, necessity",INTERRUPTING
+exit,"leave, depart, quit, withdraw","enter, stay, remain, continue","exiting, departure, leaving","decision, conclusion, necessity",INTERRUPTING
+withdraw,"leave, exit, retreat, depart","enter, stay, advance, remain","withdrawal, retreat, departure","decision, defeat, necessity",INTERRUPTING

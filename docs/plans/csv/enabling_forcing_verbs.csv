@@ -1,0 +1,99 @@
+Word,Synonyms,Antonyms,Causes,Caused_By,Category
+enable,"allow, permit, facilitate, empower","prevent, disable, block, forbid","capability, resources, permission","decision, authority, resources",ENABLING
+allow,"permit, let, enable, authorize","forbid, prevent, deny, block","permission, allowance, freedom","authority, permission, acceptance",ALLOWING
+permit,"allow, let, authorize, approve","forbid, deny, block, prevent","permission, approval, authorization","authority, decision, approval",ALLOWING
+let,"allow, permit, enable, authorize","prevent, forbid, stop, block","permission, allowance, freedom","authority, acceptance, choice",ALLOWING
+authorize,"approve, permit, allow, empower","forbid, deny, refuse, revoke","authorization, approval, permission","authority, decision, mandate",ALLOWING
+approve,"authorize, permit, agree to, accept","disapprove, reject, deny, forbid","approval, agreement, acceptance","judgment, decision, satisfaction",ALLOWING
+empower,"enable, authorize, strengthen, facilitate","disable, weaken, restrict, control","empowerment, authority, capability","decision, resources, authority",ENABLING
+facilitate,"enable, help, assist, support","hinder, obstruct, prevent, block","facilitation, assistance, support","intention, resources, capability",ENABLING
+help,"assist, facilitate, aid, support","hinder, obstruct, harm, impede","assistance, help, support","compassion, obligation, capability",ENABLING
+assist,"help, aid, facilitate, support","hinder, obstruct, impede, abandon","assistance, aid, support","obligation, compassion, capability",ENABLING
+support,"aid, assist, help, back","oppose, undermine, abandon, sabotage","support, backing, assistance","agreement, loyalty, compassion",ENABLING
+aid,"help, assist, support, facilitate","hinder, obstruct, harm, sabotage","aid, help, support","compassion, obligation, capability",ENABLING
+back,"support, assist, endorse, champion","oppose, undermine, abandon, betray","backing, support, endorsement","loyalty, agreement, belief",ENABLING
+endorse,"support, approve, back, champion","oppose, reject, denounce, abandon","endorsement, support, approval","belief, agreement, judgment",ENABLING
+champion,"support, advocate, promote, defend","oppose, undermine, abandon, sabotage","championing, support, advocacy","belief, passion, commitment",ENABLING
+promote,"advance, support, encourage, boost","demote, suppress, discourage, hinder","promotion, advancement, support","decision, belief, strategy",ENABLING
+encourage,"inspire, support, promote, embolden","discourage, deter, demoralize, hinder","encouragement, inspiration, support","belief, care, confidence",ENABLING
+inspire,"encourage, motivate, stimulate, excite","discourage, demoralize, deter, dampen","inspiration, motivation, stimulation","example, passion, excellence",ENABLING
+motivate,"inspire, drive, encourage, stimulate","demotivate, discourage, deter, dampen","motivation, incentive, goal","reward, goal, incentive",ENABLING
+incentivize,"motivate, reward, encourage, stimulate","penalize, discourage, deter, dampen","incentive, motivation, reward","reward, goal, benefit",ENABLING
+boost,"enhance, increase, promote, strengthen","reduce, weaken, diminish, suppress","boosting, enhancement, increase","effort, resources, action",ENABLING
+enhance,"improve, strengthen, boost, amplify","diminish, weaken, reduce, degrade","enhancement, improvement, amplification","effort, resources, action",ENABLING
+strengthen,"fortify, reinforce, harden, toughen","weaken, diminish, soften, reduce","strengthening, reinforcement, hardening","effort, training, resources",ENABLING
+reinforce,"strengthen, support, bolster, fortify","weaken, undermine, diminish, reduce","reinforcement, strengthening, support","effort, action, resources",ENABLING
+fortify,"strengthen, reinforce, secure, harden","weaken, expose, undermine, reduce","fortification, strengthening, securing","threat, effort, strategy",ENABLING
+emancipate,"free, liberate, release, unshackle","enslave, confine, restrict, bind","liberation, freedom, release","decision, justice, action",ENABLING
+liberate,"free, emancipate, release, unshackle","enslave, confine, restrict, bind","liberation, freedom, release","decision, justice, action",ENABLING
+free,"liberate, release, unchain, unshackle","imprison, confine, enslave, bind","freedom, release, liberation","decision, action, liberation",ENABLING
+release,"free, let go, discharge, unshackle","confine, imprison, bind, restrain","release, freedom, discharge","decision, completion, action",ENABLING
+unchain,"free, release, liberate, unfasten","chain, bind, confine, restrain","freedom, release, liberation","decision, action, justice",ENABLING
+unshackle,"free, release, liberate, unchain","shackle, bind, confine, restrain","freedom, release, liberation","decision, action, justice",ENABLING
+unfasten,"unbind, loosen, release, undo","fasten, bind, secure, lock","release, loosening, undoing","action, decision, intention",ENABLING
+loosen,"relax, slacken, unfasten, ease","tighten, secure, fasten, bind","loosening, relaxation, easing","action, relaxation, decision",ENABLING
+ease,"relieve, soothe, comfort, loosen","tighten, strain, tension, stress","easing, relief, comfort","action, relief, comfort",ENABLING
+relieve,"ease, alleviate, comfort, soothe","aggravate, worsen, burden, strain","relief, alleviation, comfort","action, care, treatment",ENABLING
+force,"compel, coerce, push, pressure","allow, permit, invite, encourage","coercion, pressure, threat","power, threat, necessity",FORCING
+compel,"force, coerce, oblige, drive","allow, permit, invite, encourage","coercion, pressure, necessity","power, threat, law",COMPELLING
+coerce,"force, compel, pressure, threaten","persuade, invite, allow, encourage","coercion, threat, pressure","threat, power, violence",FORCING
+pressure,"push, force, compel, coerce","relieve, ease, allow, permit","pressure, coercion, force","threat, demand, influence",FORCING
+push,"force, drive, pressure, propel","pull, hold back, restrain, allow","pushing force, propulsion, pressure","intention, force, pressure",FORCING
+drive,"force, push, propel, motivate","restrain, hold back, stop, allow","driving force, propulsion, motivation","intention, power, motivation",FORCING
+propel,"drive, push, force, thrust","restrain, hold back, stop, brake","propulsion, force, momentum","force, energy, momentum",FORCING
+thrust,"push, shove, force, propel","pull, restrain, hold back, ease","thrusting, pushing, force","force, intention, momentum",FORCING
+shove,"push, thrust, force, jostle","pull, restrain, hold back, invite","shoving, pushing, force","aggression, impatience, force",FORCING
+make,"force, compel, oblige, cause","allow, let, permit, prevent","forcing, obligation, causation","power, authority, force",COMPELLING
+oblige,"compel, force, require, oblige","release, permit, free, allow","obligation, necessity, duty","duty, obligation, necessity",COMPELLING
+obligate,"oblige, bind, require, compel","release, free, permit, allow","obligation, binding, necessity","law, contract, duty",REQUIRING
+require,"demand, need, necessitate, oblige","waive, exempt, optional, allow","necessity, demand, obligation","necessity, law, regulation",REQUIRING
+demand,"require, insist, command, require","waive, permit, offer, suggest","demand, insistence, authority","authority, necessity, power",REQUIRING
+insist,"demand, require, assert, maintain","waive, yield, concede, allow","insistence, assertion, demand","determination, principle, authority",REQUIRING
+command,"order, demand, require, direct","suggest, request, permit, allow","ordering, commanding, authority","authority, rank, power",REQUIRING
+order,"command, direct, require, demand","suggest, request, permit, allow","ordering, commanding, direction","authority, rank, power",REQUIRING
+direct,"order, command, guide, control","suggest, advise, allow, freedom","direction, commanding, guidance","authority, knowledge, rank",REQUIRING
+mandate,"require, command, order, obligate","optional, waive, permit, exempt","mandate, requirement, obligation","authority, law, decision",REQUIRING
+necessitate,"require, demand, make necessary","optional, waive, exempt, avoid","necessity, obligation, requirement","circumstance, law, nature",REQUIRING
+enforce,"compel, impose, make binding, ensure","waive, exempt, suspend, relax","enforcement, imposition, ensuring","authority, law, power",FORCING
+impose,"force, enforce, inflict, require","waive, remove, exempt, relax","imposition, enforcement, forcing","authority, power, decision",FORCING
+inflict,"impose, force upon, cause suffering","spare, relieve, remove, ease","infliction, harm, punishment","intention, anger, punishment",FORCING
+burden,"load, encumber, saddle, weigh down","lighten, ease, relieve, unburden","burdening, loading, weight","responsibility, obligation, imposition",FORCING
+encumber,"burden, load, hamper, impede","free, lighten, clear, relieve","encumbrance, burdening, obstruction","obligation, responsibility, impediment",FORCING
+hamper,"hinder, impede, obstruct, encumber","facilitate, help, assist, enable","obstruction, impediment, hindrance","obstacle, interference, obstruction",FORCING
+impede,"obstruct, hinder, block, slow","facilitate, help, assist, enable","obstruction, slowing, hindrance","obstacle, interference, obstruction",FORCING
+obstruct,"block, impede, hinder, prevent","facilitate, help, clear, enable","obstruction, blocking, hindrance","obstacle, interference, intention",FORCING
+block,"obstruct, prevent, bar, impede","unblock, facilitate, allow, enable","blocking, obstruction, prevention","obstacle, intention, barrier",FORCING
+prevent,"block, stop, forbid, hinder","allow, enable, permit, facilitate","prevention, stopping, prohibition","action, authority, intention",FORCING
+forbid,"prohibit, ban, disallow, deny","allow, permit, enable, authorize","prohibition, forbidding, denial","authority, law, rule",FORCING
+prohibit,"forbid, ban, disallow, bar","allow, permit, enable, authorize","prohibition, forbidding, banning","authority, law, rule",FORCING
+ban,"prohibit, forbid, bar, exclude","allow, permit, enable, authorize","banning, prohibition, exclusion","authority, law, decision",FORCING
+bar,"prevent, prohibit, block, exclude","allow, permit, enable, include","barring, prevention, exclusion","action, authority, obstacle",FORCING
+exclude,"bar, remove, shut out, eliminate","include, admit, welcome, accept","exclusion, removal, rejection","decision, rule, bias",FORCING
+confine,"restrict, limit, imprison, bind","free, release, allow, liberate","confinement, restriction, imprisonment","law, safety, punishment",FORCING
+restrict,"limit, confine, constrain, bound","free, allow, expand, liberate","restriction, limitation, constraint","regulation, safety, control",FORCING
+limit,"restrict, bound, confine, cap","expand, increase, free, allow","limitation, restriction, capping","necessity, regulation, boundary",FORCING
+constrain,"restrict, limit, compel, bind","free, allow, expand, relax","constraint, restriction, compulsion","law, necessity, force",FORCING
+bind,"tie, fasten, constrain, obligate","unbind, free, loosen, release","binding, fastening, constraint","action, obligation, contract",FORCING
+tie,"bind, fasten, attach, connect","untie, unbind, loosen, sever","tying, binding, connection","action, intention, knots",FORCING
+fasten,"secure, attach, bind, lock","unfasten, loosen, release, unlock","fastening, securing, attachment","action, security, intention",FORCING
+lock,"secure, fasten, bolt, close","unlock, open, release, unfasten","locking, securing, closure","security, intention, mechanism",FORCING
+chain,"bind, shackle, restrain, confine","unchain, free, liberate, release","chaining, binding, restraint","confinement, punishment, control",FORCING
+shackle,"chain, bind, restrain, confine","unshackle, free, liberate, release","shackling, binding, restraint","confinement, punishment, control",FORCING
+restrain,"hold back, control, curb, limit","release, free, encourage, allow","restraint, control, limiting","control, safety, discipline",FORCING
+control,"govern, command, manage, regulate","free, allow, release, liberate","control, governance, management","authority, power, discipline",FORCING
+govern,"control, rule, manage, direct","free, liberate, allow, abandon","governance, control, ruling","authority, law, responsibility",FORCING
+manage,"control, direct, handle, oversee","mismanage, neglect, abandon, chaos","management, control, oversight","authority, responsibility, skill",FORCING
+regulate,"control, manage, govern, order","deregulate, chaos, free, uncontrolled","regulation, control, order","law, authority, rule",FORCING
+curb,"restrain, limit, control, check","encourage, allow, free, unleash","curbing, restraint, control","discipline, safety, control",FORCING
+check,"stop, examine, verify, control","allow, accelerate, ignore, uncontrolled","checking, stopping, verification","inspection, safety, verification",FORCING
+suppress,"repress, squelch, quash, prevent","express, allow, encourage, promote","suppression, repression, prevention","authority, fear, control",FORCING
+repress,"suppress, squelch, restrain, prevent","express, release, encourage, free","repression, suppression, restraint","authority, psychological, control",FORCING
+squelch,"suppress, crush, quash, silence","encourage, express, promote, voice","suppression, crushing, silencing","authority, force, intention",FORCING
+quash,"suppress, crush, annul, overturn","approve, allow, uphold, promote","quashing, suppression, annulment","authority, decision, legal action",FORCING
+oppress,"suppress, burden, subjugate, dominate","liberate, free, relieve, help","oppression, burden, domination","authority, power, malice",FORCING
+dominate,"control, rule, command, govern","submit, yield, liberate, free","domination, control, ruling","power, authority, aggression",FORCING
+coerce,"force, compel, pressure, threaten","persuade, invite, allow, encourage","coercion, threat, pressure","threat, power, violence",FORCING
+threaten,"menace, intimidate, endanger, warn","reassure, protect, comfort, defend","threat, menace, danger","aggression, danger, hostility",FORCING
+intimidate,"threaten, frighten, bully, coerce","reassure, embolden, comfort, encourage","intimidation, fear, threat","aggression, power, hostility",FORCING
+bully,"intimidate, threaten, harass, coerce","protect, support, defend, comfort","bullying, intimidation, harassment","insecurity, aggression, power imbalance",FORCING
+harass,"bully, pester, hound, torment","protect, support, help, assist","harassment, persecution, torment","hostility, malice, aggression",FORCING

@@ -1,0 +1,59 @@
+Word,Synonyms,Antonyms,Causes,Caused_By,Category
+cause,"create, produce, generate, bring about","prevent, stop, inhibit, block","event occurrence, result production, effect creation","action, force, decision, condition",CAUSING
+create,"produce, generate, make, form","destroy, eliminate, dissolve, erase","new entity production, existence, formation","intention, design, effort, materials",CAUSING
+produce,"generate, make, create, yield","consume, destroy, waste, eliminate","output generation, result creation, yield","process, effort, resources, action",CAUSING
+generate,"produce, create, make, spawn","destroy, consume, dissipate, eliminate","production, creation, emergence, effect","process, force, energy, action",CAUSING
+make,"create, produce, manufacture, construct","break, destroy, unmake, undo","object creation, production, manufacture","materials, skill, effort, intention",CAUSING
+induce,"cause, produce, bring about, lead to","prevent, deter, discourage, inhibit","condition creation, effect induction, consequence","stimulus, influence, persuasion, action",CAUSING
+trigger,"cause, spark, set off, activate","stop, halt, prevent, suppress","event activation, chain reaction, release","stimulus, action, condition, signal",CAUSING
+spark,"trigger, ignite, initiate, provoke","extinguish, suppress, dampen, halt","reaction initiation, ignition, beginning","friction, contact, collision, action",CAUSING
+provoke,"incite, trigger, arouse, elicit","soothe, calm, placate, deter","reaction induction, emotion generation, response","stimulus, challenge, insult, action",CAUSING
+elicit,"draw out, evoke, bring forth, extract","conceal, suppress, hide, withhold","response generation, reaction production, revelation","question, stimulus, action, inquiry",CAUSING
+bring about,"cause, create, produce, effect","prevent, stop, impede, hinder","event creation, result production, consequence","action, decision, effort, circumstance",CAUSING
+result in,"cause, produce, lead to, create","prevent, block, stop, hinder","outcome production, result creation, consequence","action, process, condition, event",CAUSING
+lead to,"cause, result in, produce, create","prevent, block, stop, avert","consequence production, outcome creation, chain","action, process, sequence, logic",CAUSING
+give rise to,"cause, produce, create, generate","prevent, suppress, inhibit, stop","emergence, generation, origin, creation","condition, circumstance, action, factor",CAUSING
+incite,"provoke, urge, encourage, instigate","discourage, deter, dissuade, calm","action encouragement, rebellion incitement, uprising","speech, passion, grievance, propaganda",CAUSING
+instigate,"incite, provoke, stir up, prompt","discourage, deter, pacify, calm","action initiation, rebellion start, trouble creation","desire, malice, intent, influence",CAUSING
+precipitate,"cause, hasten, accelerate, trigger","delay, prevent, postpone, slow","sudden occurrence, acceleration, hastening","action, decision, event, condition",CAUSING
+prompt,"cause, move, inspire, motivate","deter, discourage, dissuade, hinder","action motivation, response generation, stimulus","question, need, desire, thought",CAUSING
+motivate,"prompt, inspire, drive, impel","deter, discourage, demotivate, inhibit","action drive, inspiration, willingness","desire, incentive, emotion, need",CAUSING
+inspire,"motivate, encourage, prompt, impel","discourage, deter, demoralize, dishearten","motivation, creativity, action, aspiration","example, speech, beauty, idea",CAUSING
+arouse,"awaken, stir, provoke, incite","suppress, calm, pacify, lull","emotion stimulation, awakening, interest","stimulus, speech, event, sensation",CAUSING
+prevent,"stop, block, avert, inhibit","cause, allow, permit, enable","cessation, blockage, hindrance, avoidance","barrier, decision, action, intervention",PREVENTING
+stop,"halt, cease, prevent, block","allow, permit, start, enable","cessation, interruption, halt, blockage","barrier, command, decision, obstruction",PREVENTING
+block,"obstruct, prevent, hinder, impede","allow, permit, open, clear","passage prevention, obstruction, hindrance","barrier, action, placement, decision",BLOCKING
+inhibit,"prevent, suppress, restrain, curb","encourage, promote, enable, allow","action prevention, restraint, suppression","constraint, fear, rule, prohibition",PREVENTING
+prohibit,"forbid, ban, disallow, prevent","allow, permit, enable, encourage","action prohibition, rule enforcement, prevention","authority, law, policy, regulation",PREVENTING
+forbid,"prohibit, ban, disallow, interdict","allow, permit, encourage, enable","prohibition enforcement, action prevention","authority, law, parent, rule",PREVENTING
+ban,"prohibit, forbid, bar, exclude","allow, permit, approve, welcome","prohibition enforcement, exclusion, prevention","authority, regulation, decision, law",PREVENTING
+bar,"prohibit, forbid, prevent, exclude","allow, permit, open, welcome","access prevention, exclusion, prevention","decision, regulation, gate, barrier",BLOCKING
+obstruct,"block, hinder, impede, prevent","clear, open, allow, facilitate","passage blockage, hindrance, interference","barrier, action, placement, object",BLOCKING
+impede,"hinder, obstruct, slow, hamper","facilitate, help, assist, speed","slowdown, difficulty, hindrance, resistance","barrier, obstacle, action, condition",BLOCKING
+hinder,"hamper, impede, obstruct, interfere","help, assist, facilitate, enable","difficulty increase, slowdown, interference","obstacle, action, condition, circumstance",BLOCKING
+thwart,"foil, frustrate, defeat, prevent","enable, help, assist, support","plan frustration, defeat, prevention","obstacle, opposition, action, intention",PREVENTING
+foil,"thwart, frustrate, defeat, prevent","enable, help, succeed, support","plan defeat, prevention, frustration","counter-action, obstacle, opposition",PREVENTING
+avert,"prevent, avoid, turn away, ward off","invite, provoke, cause, allow","disaster prevention, threat avoidance","action, intervention, decision, foresight",PREVENTING
+avoid,"evade, sidestep, elude, escape","confront, face, invite, encounter","prevention, escape, avoidance, evasion","intention, fear, caution, decision",PREVENTING
+evade,"avoid, escape, elude, sidestep","confront, face, encounter, meet","escape, evasion, avoidance, prevention","skill, speed, intention, agility",PREVENTING
+deter,"discourage, dissuade, prevent, stop","encourage, entice, invite, motivate","action discouragement, prevention through fear","threat, punishment, consequence, warning",PREVENTING
+discourage,"deter, dissuade, dampen, dispirit","encourage, inspire, motivate, hearten","motivation reduction, action discouragement","doubt, setback, criticism, failure",PREVENTING
+dissuade,"discourage, talk out of, convince not to","persuade, encourage, convince, motivate","decision reversal, action prevention, redirection","argument, reason, consequence, advice",PREVENTING
+hamper,"hinder, impede, obstruct, interfere","help, assist, facilitate, support","difficulty, slowdown, hindrance, interference","obstacle, condition, action, circumstance",BLOCKING
+restrict,"limit, confine, restrain, constrain","allow, permit, liberate, free","limitation, confinement, prevention, restraint","law, regulation, decision, boundary",PREVENTING
+restrain,"hold back, prevent, check, limit","release, free, allow, unleash","control, prevention, containment, restraint","force, choice, law, circumstance",PREVENTING
+suppress,"repress, quell, crush, prevent","encourage, promote, express, allow","elimination, oppression, concealment, cessation","authority, force, decision, oppression",PREVENTING
+stifle,"suppress, suffocate, smother, quell","encourage, express, allow, breathe","suffocation, oppression, elimination, silencing","pressure, oppression, censorship, control",PREVENTING
+quell,"suppress, crush, subdue, quiet","encourage, provoke, incite, ignite","rebellion crushing, suppression, control","force, authority, power, military",PREVENTING
+thwart,"defeat, frustrate, foil, prevent","enable, allow, help, support","plan defeat, expectation frustration, prevention","opposition, obstacle, counter-action",PREVENTING
+frustrate,"thwart, defeat, prevent, foil","enable, satisfy, fulfill, assist","goal prevention, frustration, disappointment","obstacle, opposition, difficulty, failure",PREVENTING
+interfere,"meddle, intervene, obstruct, hamper","assist, support, facilitate, help","interference, obstruction, complication, meddling","intrusion, action, meddling, decision",BLOCKING
+intervene,"interfere, meddle, intercede, interpose","abstain, ignore, avoid, neglect","involvement, interruption, action, mediation","concern, necessity, authority, invitation",BLOCKING
+intercept,"catch, interrupt, block, prevent","allow, permit, pass, facilitate","interception, blocking, capture, prevention","action, placement, timing, skill",BLOCKING
+interdict,"forbid, prohibit, ban, prevent","allow, permit, enable, approve","prohibition, prevention, interdiction","authority, law, military, decision",PREVENTING
+curb,"restrain, check, limit, control","release, encourage, unleash, free","control, limitation, restraint, prevention","decision, discipline, control, regulation",PREVENTING
+check,"stop, halt, verify, restrain","allow, proceed, encourage, accelerate","halt, verification, prevention, restraint","decision, discovery, need, action",PREVENTING
+rein in,"restrain, control, limit, curb","release, free, unleash, accelerate","control, restraint, limitation, prevention","decision, discipline, necessity, control",PREVENTING
+ward off,"prevent, avert, fend off, repel","invite, allow, accept, welcome","threat prevention, defense, protection","action, defense, vigilance, caution",PREVENTING
+fend off,"ward off, repel, defend against, prevent","invite, accept, welcome, allow","threat defense, prevention, protection","action, defense, resistance, skill",PREVENTING
+rebuff,"reject, repulse, refuse, rebuff","accept, welcome, embrace, invite","rejection, repulsion, refusal, prevention","decision, disdain, refusal, resistance",PREVENTING

@@ -1,0 +1,171 @@
+Word,Synonyms,Antonyms,Causes,Caused_By,Category
+cooperate,"collaborate, work together, coordinate, unite","compete, oppose, sabotage, undermine","shared goals, mutual benefit, interdependence","trust, alignment of interests, necessity",COOPERATIVE
+collaborate,"cooperate, partner, team up, combine efforts","compete, antagonize, oppose, divide","joint projects, shared missions, complementary skills","common objectives, mutual respect, interdependence",COOPERATIVE
+share,"distribute, divide, allocate, contribute","hoard, withhold, monopolize, keep","abundance, generosity, fairness, community spirit","altruism, equity, social norms, necessity",COOPERATIVE
+help,"assist, aid, support, facilitate","hinder, obstruct, harm, sabotage","compassion, obligation, reciprocity, capability","empathy, social responsibility, moral duty, request",COOPERATIVE
+assist,"help, support, aid, facilitate, enable","hinder, block, obstruct, interfere","competence, willingness, proximity, relationship","request, reciprocal obligation, compassion, moral duty",COOPERATIVE
+support,"back, endorse, sustain, champion","oppose, undermine, sabotage, betray","belief in cause, loyalty, reciprocal obligation","shared values, trust, emotional connection, alignment",COOPERATIVE
+coordinate,"organize, synchronize, harmonize, align","disorganize, desynchronize, misalign, conflict","complex tasks, multiple actors, efficiency needs","planning, communication, shared objectives, necessity",COOPERATIVE
+participate,"engage, join, contribute, take part","abstain, withdraw, exclude, refrain","invitation, interest, obligation, inclusion","desire to belong, social pressure, interest, duty",COOPERATIVE
+contribute,"provide, supply, offer, donate","withdraw, withhold, retain, deprive","shared needs, collective goals, fairness","generosity, obligation, reciprocity, capability",COOPERATIVE
+partner,"collaborate, team up, unite, ally","separate, oppose, compete, antagonize","complementary skills, mutual benefit, efficiency","strategic alignment, trust, shared interests",COOPERATIVE
+enable,"facilitate, empower, support, allow","prevent, disable, obstruct, block","resources, authority, capability, cooperation","trust, shared goals, moral obligation, capability",COOPERATIVE
+empower,"enable, strengthen, authorize, facilitate","disable, weaken, restrict, constrain","delegation, trust, shared goals, resources","confidence, shared purpose, moral commitment",COOPERATIVE
+unite,"combine, merge, join together, consolidate","divide, separate, split, fragment","common threat, shared goal, efficiency","necessity, mutual interest, leadership, crisis",COOPERATIVE
+synergize,"coordinate, collaborate, integrate, harmonize","isolate, separate, antagonize, conflict","complementary efforts, diversity, shared goals","strategic thinking, trust, integration efforts",COOPERATIVE
+pool,"combine, consolidate, merge, aggregate","divide, separate, distribute, fragment","resource scarcity, efficiency, strength","necessity, mutual benefit, pragmatism",COOPERATIVE
+compete,"contest, rival, vie, race","cooperate, collaborate, assist, support","scarcity, ambition, prizes, status","limited resources, desire for dominance, incentives",COMPETITIVE
+rival,"compete, contest, oppose, challenge","cooperate, ally, support, assist","competing interests, ambition, resources","conflicting goals, scarcity, divergent values",COMPETITIVE
+contest,"compete, challenge, dispute, challenge","accept, concede, yield, withdraw","disagreement, ambition, scarcity, status","conflicting claims, competitive spirit, belief in success",COMPETITIVE
+vie,"compete, contend, strive, race","cooperate, yield, concede, withdraw","desirable goals, limited availability, ambition","aspiration, confidence, scarcity, incentive",COMPETITIVE
+outcompete,"surpass, outperform, overcome, defeat","lose to, underperform, succumb, yield","superior resources, strategy, skill","capability, preparation, advantage, determination",COMPETITIVE
+outshine,"excel, surpass, outperform, exceed","underperform, pale in comparison, lose out","skill, preparation, opportunity, ability","talent, effort, resources, advantage",COMPETITIVE
+contend,"compete, contest, fight, struggle","yield, surrender, cooperate, withdraw","disputes, scarce resources, differing goals","disagreement, ambition, conflicting interests",COMPETITIVE
+strive,"struggle, endeavor, attempt, effort","idle, relax, abandon, give up","goals, ambition, desire for success","motivation, aspiration, challenge, determination",COMPETITIVE
+struggle,"fight, contend, strive, grapple","yield, surrender, relax, accept","adversity, opposition, difficult goals","determination, refusal to accept, challenge",COMPETITIVE
+race,"compete, rush, sprint, dash","cooperate, walk slowly, yield, concede","time pressure, competition, urgency","urgency, competitive spirit, incentive",COMPETITIVE
+oppose,"resist, challenge, contest, contradict","support, agree, accept, endorse","disagreement, conflicting interests, moral stance","different values, conflicting goals, principle",COMPETITIVE
+challenge,"contest, question, dispute, confront","accept, concede, support, endorse","disagreement, skepticism, ambition, doubt","doubt, differing view, competitive spirit, integrity",COMPETITIVE
+overcome,"defeat, conquer, surpass, surmount","succumb, yield, surrender, fall","determination, superior strategy, capability","effort, preparation, strength, advantage",COMPETITIVE
+exceed,"surpass, outdo, outperform, eclipse","underperform, fall short, fail, underachieve","capability, effort, advantage, resources","ability, preparation, motivation, skill",COMPETITIVE
+emulate,"imitate, mimic, copy, match","originate, innovate, differentiate, diverge","admiration, competition, ambition","respect, desire to match, competitive drive",COMPETITIVE
+communicate,"express, convey, transmit, articulate","silence, suppress, conceal, withhold","information sharing, coordination, expression","need to share, intention, stimulus",COMMUNICATIVE
+signal,"indicate, convey, gesture, suggest","conceal, obscure, suppress, hide","need for attention, information transfer, intention","stimulus, urgency, intention, coordination",COMMUNICATIVE
+speak,"talk, converse, articulate, utter","silence, mute, quiet, withhold","thoughts, emotions, information, expression","need to express, stimulus, conversation partner",COMMUNICATIVE
+listen,"hear, attend, heed, pay attention","ignore, disregard, dismiss, tune out","interest, obligation, courtesy, gathering information","respect, curiosity, obligation, engagement",COMMUNICATIVE
+converse,"chat, discuss, talk, dialogue","silence, monologue, ignore, dismiss","social bonding, information exchange, relationship building","mutual interest, proximity, social occasion",COMMUNICATIVE
+discuss,"debate, converse, deliberate, exchange","silence, monologue, avoid, ignore","problem-solving, decision-making, exploration","need for input, interest, collaborative approach",COMMUNICATIVE
+dialogue,"converse, discuss, exchange, interact","monologue, silence, one-way communication, ignore","mutual understanding, problem solving, negotiation","mutual interest, respect, need for exchange",COMMUNICATIVE
+express,"articulate, convey, state, voice","suppress, conceal, withhold, silence","thoughts, emotions, opinions, needs","feeling, realization, stimulus, occasion",COMMUNICATIVE
+articulate,"express, state, voice, pronounce","mumble, suppress, conceal, stammer","clarity, emphasis, communication need","skill, confidence, importance, urgency",COMMUNICATIVE
+narrate,"tell, recount, describe, relate","silence, suppress, omit, withhold","story, events, information, explanation","interest, audience, need to explain, occasion",COMMUNICATIVE
+proclaim,"announce, declare, broadcast, publicize","conceal, suppress, whisper, hide","importance, need for visibility, authority","conviction, authority, urgency, occasion",COMMUNICATIVE
+announce,"declare, proclaim, broadcast, publicize","conceal, suppress, hide, withhold","information, decisions, events, changes","authority, timing, importance, coordination",COMMUNICATIVE
+declare,"announce, proclaim, state, assert","conceal, suppress, deny, retract","position, decision, status, intent","conviction, authority, occasion, necessity",COMMUNICATIVE
+inquire,"ask, question, probe, interrogate","assume, presume, ignore, disregard","curiosity, uncertainty, verification, understanding","lack of knowledge, doubt, interest, necessity",COMMUNICATIVE
+question,"ask, interrogate, probe, inquire","answer, assume, accept, affirm","doubt, curiosity, clarification, challenge","uncertainty, skepticism, interest, investigation",COMMUNICATIVE
+reply,"respond, answer, retort, acknowledge","ignore, silence, disregard, dismiss","question, stimulus, courtesy, obligation","question, expectation, politeness, necessity",COMMUNICATIVE
+respond,"reply, answer, react, acknowledge","ignore, silence, disregard, overlook","stimulus, question, situation, prompt","trigger, obligation, courtesy, need",COMMUNICATIVE
+persuade,"convince, sway, influence, cajole","dissuade, discourage, repel, alienate","argument, logic, appeal, evidence","belief, evidence, charisma, reasoning",COMMUNICATIVE
+convince,"persuade, sway, win over, assure","dissuade, doubt, undermine, question","evidence, logic, appeal, credibility","reasoning, demonstration, credibility, proof",COMMUNICATIVE
+teach,"instruct, educate, explain, coach","conceal, mislead, confuse, suppress","knowledge, skill, ability, experience","expertise, intention, obligation, opportunity",COMMUNICATIVE
+inform,"tell, notify, advise, apprise","conceal, deceive, mislead, withhold","information, event, decision, news","knowledge, responsibility, courtesy, necessity",COMMUNICATIVE
+advise,"counsel, recommend, suggest, guide","mislead, deceive, dissuade, ignore","expertise, concern, obligation, request","knowledge, experience, relationship, request",COMMUNICATIVE
+counsel,"advise, guide, recommend, suggest","mislead, ignore, disregard, oppose","wisdom, experience, concern, relationship","expertise, trust, request, responsibility",COMMUNICATIVE
+suggest,"propose, recommend, hint, imply","demand, insist, forbid, suppress","idea, option, alternative, possibility","thought, observation, helpfulness, consideration",COMMUNICATIVE
+propose,"suggest, put forward, offer, present","withdraw, retract, reject, suppress","idea, solution, action, plan","thought, need, opportunity, intention",COMMUNICATIVE
+debate,"discuss, argue, dispute, contest","agree, accept, concede, yield","disagreement, differing views, issue","difference of opinion, interest, principle",COMMUNICATIVE
+argue,"contend, maintain, assert, dispute","agree, concede, accept, yield","disagreement, difference, position, claim","belief, disagreement, principle, conviction",COMMUNICATIVE
+disclose,"reveal, divulge, expose, uncover","conceal, hide, suppress, withhold","need for transparency, obligation, honesty","necessity, integrity, trust, requirement",COMMUNICATIVE
+reveal,"disclose, divulge, expose, uncover","conceal, hide, suppress, cover","truth, surprise, moment, truth","honesty, occasion, necessity, decision",COMMUNICATIVE
+fight,"battle, combat, struggle, contend","surrender, yield, peace, reconcile","threat, aggression, defense, competition","anger, self-defense, necessity, provocation",AGGRESSIVE
+attack,"assault, strike, assault, strike","defend, protect, retreat, spare","aggression, threat, competition, hostility","anger, hostility, provocation, intent",AGGRESSIVE
+assault,"attack, strike, beat, pummel","defend, protect, retreat, spare","aggression, anger, threat, violence","hostility, rage, provocation, intent",AGGRESSIVE
+strike,"hit, punch, beat, attack","spare, protect, caress, defend","anger, self-defense, attack, provocation","rage, necessity, response, intent",AGGRESSIVE
+punch,"hit, strike, pummel, beat","spare, caress, protect, defend","anger, combat, self-defense, provocation","rage, threat, response, emotion",AGGRESSIVE
+kick,"strike, hit, beat, pummel","spare, caress, help, defend","anger, combat, self-defense, aggression","emotion, threat, response, hostility",AGGRESSIVE
+threaten,"intimidate, menace, endanger, warn","reassure, protect, comfort, defend","power imbalance, intent to harm, intimidation","aggression, dominance-seeking, fear, hostility",AGGRESSIVE
+intimidate,"threaten, frighten, bully, coerce","reassure, embolden, comfort, encourage","power imbalance, intent to control, fear","aggression, need for control, hostility",AGGRESSIVE
+bully,"intimidate, harass, threaten, coerce","protect, support, defend, comfort","power imbalance, cruelty, intent to harm","insecurity, aggression, need for control",AGGRESSIVE
+harass,"annoy, pester, hound, badger","soothe, comfort, leave alone, support","antagonism, intent to disturb, hostility","resentment, aggression, intent, hostility",AGGRESSIVE
+antagonize,"provoke, irritate, offend, hostility","appease, pacify, soothe, reconcile","provocative behavior, hostility, conflict","intent, aggression, lack of empathy",AGGRESSIVE
+provoke,"irritate, incite, antagonize, agitate","appease, pacify, calm, soothe","deliberate irritation, challenge, hostility","intent, hostility, desire for reaction",AGGRESSIVE
+incite,"provoke, instigate, foment, stir up","calm, pacify, suppress, restrain","desire for action, instigation, rebellion","intention, rhetoric, desperation, passion",AGGRESSIVE
+insult,"offend, affront, abuse, demean","praise, honor, respect, compliment","disrespect, anger, intent to wound","contempt, hostility, lack of respect",AGGRESSIVE
+offend,"hurt, insult, affront, displease","please, compliment, honor, respect","disrespectful behavior, words, actions","lack of sensitivity, intent, carelessness",AGGRESSIVE
+taunt,"tease, jeer, mock, ridicule","compliment, praise, respect, honor","mockery, superiority, intent to provoke","contempt, superiority complex, hostility",AGGRESSIVE
+mock,"ridicule, taunt, jeer, scoff","praise, respect, honor, compliment","contempt, superiority, intent to ridicule","contempt, hostility, malice, cruelty",AGGRESSIVE
+ridicule,"mock, taunt, jeer, scorn","praise, respect, honor, admire","contempt, target's weakness, malice","contempt, insecurity, cruelty, humor",AGGRESSIVE
+scorn,"despise, disdain, contemn, mock","respect, honor, admire, praise","contempt, superiority, judgment","contempt, arrogance, moral judgment",AGGRESSIVE
+despise,"hate, loathe, detest, scorn","admire, respect, love, cherish","moral judgment, disagreement, harm","perceived wrong, betrayal, contempt",AGGRESSIVE
+loathe,"hate, despise, abhor, detest","love, admire, cherish, like","strong negativity, harm, repulsion","betrayal, harm, fundamental incompatibility",AGGRESSIVE
+detest,"hate, loathe, abhor, despise","love, admire, cherish, like","strong negative feelings, harm","offense, betrayal, fundamental disagreement",AGGRESSIVE
+dominate,"control, rule, govern, command","submit, yield, serve, obey","power, authority, will, control","strength, authority, position, aggression",AGGRESSIVE
+control,"command, direct, govern, regulate","release, free, allow, enable","authority, desire for order, power","position, capability, will, responsibility",AGGRESSIVE
+oppress,"suppress, burden, subjugate, repress","liberate, free, empower, uplift","power imbalance, cruelty, control","aggression, desire for control, hostility",AGGRESSIVE
+suppress,"repress, quash, prevent, stifle","allow, express, enable, support","fear of freedom, desire for control","authority, fear, control-seeking, hostility",AGGRESSIVE
+coerce,"force, compel, pressure, threaten","persuade, invite, allow, permit","unwilling compliance, threat, force","power, intent, threat, necessity",AGGRESSIVE
+compel,"force, coerce, require, oblige","allow, permit, invite, encourage","necessity, authority, will","power, position, circumstance, authority",AGGRESSIVE
+force,"coerce, compel, press, push","allow, permit, invite, encourage","resistance, unwillingness, will","power, determination, threat, necessity",AGGRESSIVE
+conquer,"vanquish, defeat, overcome, subjugate","surrender, yield, lose, submit","military power, strategy, resources","strength, strategy, determination, advantage",AGGRESSIVE
+vanquish,"defeat, conquer, overcome, crush","surrender, yield, fall, lose","superior force, strategy, determination","strength, skill, advantage, resources",AGGRESSIVE
+crush,"defeat, overwhelm, destroy, obliterate","spare, liberate, preserve, protect","overwhelming force, malice, intent","power, hostility, determination, advantage",AGGRESSIVE
+devastate,"destroy, ruin, ravage, demolish","repair, restore, rebuild, preserve","destructive force, aggression, disaster","destructive power, natural force, intent",AGGRESSIVE
+destroy,"ruin, demolish, annihilate, obliterate","create, build, preserve, restore","hostility, elimination, catastrophe","intent, power, malice, force",AGGRESSIVE
+defend,"protect, guard, shield, safeguard","attack, assault, expose, abandon","threat, obligation, love, property","threat, responsibility, care, principle",DEFENSIVE
+protect,"defend, guard, shield, safeguard","expose, abandon, attack, endanger","threat, care, responsibility, love","duty, care, affection, obligation",DEFENSIVE
+guard,"protect, defend, watch, sentinel","abandon, expose, neglect, endanger","responsibility, threat, property, person","duty, payment, care, vigilance",DEFENSIVE
+shield,"protect, defend, guard, shelter","expose, abandon, reveal, uncover","threat, danger, care, protection","duty, care, love, shelter",DEFENSIVE
+safeguard,"protect, defend, secure, preserve","expose, endanger, abandon, threaten","value, threat, responsibility, care","duty, care, importance, responsibility",DEFENSIVE
+secure,"protect, safeguard, fortify, lock","expose, open, endanger, unlock","vulnerability, value, threat, safety","concern, value, threat, precaution",DEFENSIVE
+shelter,"protect, house, harbor, refuge","expose, abandon, eject, evict","danger, need, compassion, safety","compassion, necessity, care, duty",DEFENSIVE
+harbor,"shelter, protect, house, refuge","expose, eject, abandon, evict","refuge, compassion, solidarity, safety","compassion, principle, care, obligation",DEFENSIVE
+preserve,"protect, maintain, conserve, keep","destroy, abandon, neglect, waste","value, care, conservation, survival","care, responsibility, value, concern",DEFENSIVE
+fortify,"strengthen, reinforce, secure, harden","weaken, expose, undefend, abandon","threat, danger, weakness, vulnerability","concern, danger, necessity, strategy",DEFENSIVE
+resist,"oppose, withstand, defy, counter","surrender, yield, submit, accept","opposition, threat, principle, refusal","determination, principle, defiance, strength",DEFENSIVE
+withstand,"resist, endure, survive, weather","surrender, collapse, succumb, yield","strength, determination, resilience","strength, will, endurance, resilience",DEFENSIVE
+endure,"survive, withstand, persist, bear","succumb, collapse, yield, surrender","hardship, strength, will, time","resilience, strength, determination, necessity",DEFENSIVE
+survive,"endure, persist, outlast, continue","perish, die, collapse, end","strength, will, resources, luck","resilience, adaptation, strength, determination",DEFENSIVE
+counter,"oppose, respond, retaliate, contradict","accept, agree, concede, yield","opposition, defense, response, argument","disagreement, attack, threat, principle",DEFENSIVE
+retaliate,"counter, respond, revenge, strike back","forgive, accept, surrender, yield","harm, attack, injustice, anger","offense, harm, revenge motive, response",DEFENSIVE
+retreat,"withdraw, back down, flee, escape","advance, stand firm, attack, charge","threat, weakness, strategy, defeat","defeat, danger, necessity, strategy",DEFENSIVE
+withdraw,"retreat, remove, pull back, extract","advance, engage, attack, stand firm","danger, defeat, decision, strategy","threat, loss, choice, necessity",DEFENSIVE
+yield,"surrender, submit, give in, concede","resist, stand firm, advance, persist","defeat, weakness, peace, pragmatism","overwhelming force, exhaustion, pragmatism",DEFENSIVE
+submit,"yield, surrender, obey, accept","resist, rebel, defy, oppose","defeat, authority, force, acceptance","overwhelming force, authority, pragmatism",DEFENSIVE
+repel,"drive back, push away, reject, deter","attract, welcome, invite, accept","attack, intrusion, offense, danger","self-defense, strength, determination, repulsion",DEFENSIVE
+repulse,"repel, reject, revolt, disgust","attract, welcome, entice, fascinate","attack, repulsion, disgust, revulsion","disgust, offense, strength, nature",DEFENSIVE
+evade,"avoid, escape, elude, sidestep","confront, face, engage, encounter","threat, danger, pursuit, avoidance","danger, strategy, fear, avoidance",DEFENSIVE
+escape,"flee, evade, get away, elude","capture, confine, trap, restrain","captivity, danger, confinement, threat","will, opportunity, danger, desperation",DEFENSIVE
+flee,"run away, escape, retreat, bolt","stand, stay, face, confront","danger, threat, fear, pursuit","fear, danger, pragmatism, instinct",DEFENSIVE
+hide,"conceal, shelter, obscure, secret","reveal, expose, show, display","danger, shame, privacy, protection","fear, threat, privacy need, safety",DEFENSIVE
+conceal,"hide, obscure, suppress, mask","reveal, expose, show, uncover","secrecy, protection, shame, deception","fear, intent, shame, protection",DEFENSIVE
+bond,"connect, attach, link, unite","separate, sever, break, detach","shared experience, similarity, time, care","connection, commonality, mutual interest, time",AFFILIATIVE
+befriend,"bond with, ally with, fraternize, connect","oppose, antagonize, avoid, shun","similarity, interest, proximity, mutual need","mutual interest, sympathy, commonality, time",AFFILIATIVE
+trust,"believe in, rely on, confide, depend","distrust, doubt, suspect, disbelieve","reliability, honesty, consistency, evidence","reliability, honesty, past experience, integrity",AFFILIATIVE
+confide,"trust, reveal, disclose, entrust","conceal, distrust, doubt, withhold","trust, intimacy, need for advice","trust, intimacy, vulnerability, need",AFFILIATIVE
+love,"adore, cherish, treasure, care for","hate, loathe, despise, detest","connection, similarity, care, intimacy","intimacy, similarity, care, time",AFFILIATIVE
+cherish,"love, treasure, adore, care for","neglect, discard, abandon, hate","value, affection, memory, importance","affection, value, memory, care",AFFILIATIVE
+treasure,"value, cherish, adore, esteem","discard, abandon, neglect, despise","value, rarity, meaning, relationship","value, meaning, memory, affection",AFFILIATIVE
+care for,"love, tend, look after, nurture","neglect, abandon, harm, ignore","affection, responsibility, duty, compassion","affection, obligation, compassion, responsibility",AFFILIATIVE
+nurture,"care for, cultivate, foster, develop","neglect, starve, abandon, harm","growth, development, care, responsibility","compassion, responsibility, love, investment",AFFILIATIVE
+embrace,"hug, accept, adopt, welcome","reject, push away, spurn, shun","affection, acceptance, love, greeting","love, joy, affection, greeting",AFFILIATIVE
+hug,"embrace, clasp, hold, cuddle","push away, shove, reject, repel","affection, greeting, comfort, love","affection, greeting, comfort, emotion",AFFILIATIVE
+comfort,"console, soothe, reassure, ease","distress, disturb, upset, torment","suffering, pain, distress, need","compassion, care, empathy, concern",AFFILIATIVE
+console,"comfort, soothe, ease, relieve","distress, upset, torment, antagonize","suffering, loss, grief, pain","compassion, empathy, care, concern",AFFILIATIVE
+encourage,"support, hearten, inspire, embolden","discourage, dishearten, demoralize, deter","need for confidence, challenge, goal","belief, confidence, care, support",AFFILIATIVE
+inspire,"encourage, motivate, stimulate, excite","discourage, demoralize, deflate, deter","excellence, passion, vision, example","passion, excellence, vision, example",AFFILIATIVE
+motivate,"inspire, drive, encourage, stimulate","demotivate, discourage, deter, paralyze","goal, reward, need, vision","goal, reward, passion, incentive",AFFILIATIVE
+celebrate,"honor, commemorate, party, rejoice","mourn, grieve, lament, deplore","achievement, success, occasion, joy","achievement, joy, occasion, success",AFFILIATIVE
+honor,"respect, celebrate, revere, esteem","dishonor, disrespect, shame, scorn","achievement, merit, virtue, respect","merit, respect, achievement, duty",AFFILIATIVE
+admire,"respect, esteem, revere, honor","despise, scorn, disdain, loathe","quality, excellence, achievement, virtue","quality, excellence, admiration, respect",AFFILIATIVE
+respect,"honor, esteem, admire, regard","disrespect, scorn, contemn, despise","merit, character, achievement, boundary","merit, character, integrity, achievement",AFFILIATIVE
+appreciate,"value, recognize, acknowledge, understand","undervalue, neglect, disregard, ignore","value, quality, effort, goodness","awareness, gratitude, recognition, value",AFFILIATIVE
+gratify,"please, delight, satisfy, indulge","displease, frustrate, disappoint, deny","desire satisfaction, pleasure, achievement","care, generosity, affection, capability",AFFILIATIVE
+please,"delight, gratify, satisfy, content","displease, upset, anger, frustrate","desire, preference, goodness, action","care, effort, generosity, action",AFFILIATIVE
+delight,"please, enchant, charm, thrill","displease, upset, disappoint, anger","joy, pleasure, excellence, surprise","care, effort, talent, intention",AFFILIATIVE
+ally,"partner, unite with, join forces, cooperate","oppose, antagonize, enemy, rival","common cause, shared goal, strategy","common interest, mutual benefit, strategy",AFFILIATIVE
+fraternize,"socialize, mingle, bond, associate","avoid, shun, isolate, exclude","sociability, shared interest, occasion","sociability, commonality, proximity, interest",AFFILIATIVE
+socialize,"fraternize, mingle, interact, associate","isolate, avoid, withdraw, exclude","social need, occasion, interest","sociability, interest, occasion, opportunity",AFFILIATIVE
+mingle,"mix, socialize, fraternize, interact","isolate, separate, segregate, avoid","gathering, sociability, interest","sociability, occasion, interest, presence",AFFILIATIVE
+interact,"engage, communicate, relate, connect","avoid, ignore, isolate, disconnect","proximity, interest, necessity, occasion","interest, proximity, occasion, engagement",AFFILIATIVE
+greet,"welcome, meet, acknowledge, salute","ignore, shun, avoid, snub","arrival, meeting, courtesy, respect","courtesy, interest, obligation, occasion",AFFILIATIVE
+welcome,"greet, embrace, receive, accept","reject, exclude, spurn, shun","arrival, kindness, hospitality, interest","hospitality, interest, kindness, care",AFFILIATIVE
+invite,"ask, request, summon, welcome","exclude, reject, expel, forbid","hospitality, interest, desire, occasion","hospitality, interest, desire, occasion",AFFILIATIVE
+betray,"deceive, sell out, backstab, undermine","loyalty, support, protect, defend","conflicting interest, malice, opportunity","disloyalty, malice, desperation, weakness",AGGRESSIVE
+exclude,"omit, shut out, bar, reject","include, embrace, welcome, invite","judgment, difference, boundaries","prejudice, boundaries, selection, judgment",DEFENSIVE
+isolate,"separate, exclude, cut off, quarantine","include, unite, integrate, connect","difference, danger, punishment, separation","fear, prejudice, punishment, disease",AGGRESSIVE
+include,"embrace, incorporate, add, unite","exclude, reject, omit, eliminate","fairness, belonging, integration","fairness, care, integration effort",COOPERATIVE
+join,"unite, associate, participate, engage","leave, abandon, withdraw, separate","interest, belonging, opportunity","interest, belonging need, opportunity",AFFILIATIVE
+leave,"depart, abandon, exit, withdraw","stay, remain, persist, engage","dissatisfaction, opportunity, necessity","dissatisfaction, opportunity, necessity, choice",DEFENSIVE
+lead,"guide, direct, command, head","follow, obey, serve, submit","authority, knowledge, position","position, knowledge, acceptance, authority",COMPETITIVE
+follow,"obey, pursue, trail, track","lead, rebel, resist, defy","trust, acceptance, necessity, order","trust, acceptance, obedience, necessity",COOPERATIVE
+negotiate,"discuss, bargain, mediate, compromise","demand, dictate, ignore, refuse","conflict, compromise, mutual benefit","conflict, mutual interest, necessity",COMMUNICATIVE
+reconcile,"forgive, make peace, restore, resolve","conflict, feud, estrange, alienate","understanding, time, effort, forgiveness","effort, understanding, time, forgiveness",COOPERATIVE
+forgive,"pardon, excuse, absolve, overlook","blame, condemn, hold grudge, resent","understanding, compassion, time","compassion, understanding, time, growth",AFFILIATIVE
+pardon,"forgive, excuse, absolve, release","blame, condemn, punish, resent","mercy, understanding, authority","compassion, authority, understanding, mercy",AFFILIATIVE
+punish,"discipline, penalize, chastise, sentence","reward, praise, pardon, forgive","transgression, violation, judgment","authority, judgment, violation, justice",AGGRESSIVE
+reward,"praise, honor, compensate, recognize","punish, condemn, penalize, blame","achievement, goodness, merit","merit, achievement, generosity, recognition",AFFILIATIVE
+praise,"commend, compliment, honor, recognize","criticize, condemn, scorn, blame","achievement, quality, excellence","merit, recognition, appreciation, generosity",AFFILIATIVE
+criticize,"condemn, censure, fault, blame","praise, commend, approve, support","flaw, disagreement, judgment","judgment, disagreement, concern, standard",AGGRESSIVE
+blame,"accuse, fault, censure, condemn","praise, excuse, absolve, acquit","responsibility, judgment, accusation","judgment, responsibility, anger, justice",AGGRESSIVE
+forgive,"pardon, excuse, absolve, release","blame, condemn, hold grudge, resent","understanding, time, compassion","compassion, understanding, growth, time",AFFILIATIVE

@@ -1,0 +1,103 @@
+Word,Synonyms,Antonyms,Causes,Caused_By,Category
+detect,"discover,notice,perceive,sense,discern","miss,overlook,ignore,hide,conceal",discovery made,"observation,perception,evidence,signs",DETECTING
+sense,"perceive,feel,detect,intuit,become aware","miss,ignore,overlook,oblivious,blind",sensory awareness,"intuition,perception,signals,experience",DETECTING
+perceive,"notice,sense,see,become aware,discern","miss,overlook,ignore,blind to,oblivious",perception formed,"sensory input,awareness,attention,evidence",DETECTING
+discern,"distinguish,perceive,detect,see clearly,recognize","confuse,overlook,miss,blur,indistinct",distinction made,"perception,observation,clarity,contrast",DETECTING
+recognize,"identify,acknowledge,know,realize,detect","fail to recognize,mistake,confused,deny",recognition made,"familiarity,knowledge,observation,memory",DETECTING
+identify,"recognize,determine,name,establish,pinpoint","confuse,mistake,unknown,anonymous",identification made,"observation,knowledge,comparison,evidence",DETECTING
+identify with,"recognize similarity,relate to,understand,empathize","differ from,distinguish,contrast,separate",identification established,"similarity,empathy,understanding,relation",DETECTING
+diagnose,"identify cause,determine condition,recognize problem","misdiagnose,miss,overlook,guess,wrong",diagnosis established,"symptoms,examination,knowledge,expertise",DETECTING
+pinpoint,"identify exactly,locate precisely,determine exact location","vague,approximate,general,miss,overlook",exact location found,"precision,evidence,analysis,investigation",DETECTING
+spot,"notice,see,detect,observe,locate quickly","miss,overlook,ignore,fail to see,hide",location spotted,"observation,perception,attention,presence",DETECTING
+catch,"notice,see,observe,discover,apprehend","miss,overlook,escape,evade,hide",discovery made,"attention,observation,perception,luck",DETECTING
+catch sight of,"notice,see suddenly,glimpse,observe,spot","miss,overlook,ignore,fail to see,hide",sight caught,"chance,observation,presence,attention",DETECTING
+make out,"perceive,distinguish,see clearly,understand,decipher","blur,confuse,misunderstand,miss,overlook",perception clarified,"effort,clarity,focus,contrast",DETECTING
+make out,"discern with difficulty,barely see,understand,decipher","miss,overlook,unclear,confused,indistinct",unclear perception clarified,"effort,attention,difficulty,contrast",DETECTING
+espy,"catch sight of,see,discover,notice,observe","miss,overlook,fail to see,ignore,hide",sight espied,"observation,chance,vigilance,attention",DETECTING
+descry,"catch sight of from distance,see,discover,perceive","miss,overlook,fail to see,near,ignore",distant object seen,"distance,effort,attention,clarity",DETECTING
+glimpse,"see briefly,catch sight of,perceive partially,quick look","miss,overlook,ignore,full view,ignore",brief sight caught,"chance,speed,partial vision,attention",DETECTING
+smell,"detect odor,perceive scent,sense,discover by smell","not smell,miss scent,blocked nose,ignore",odor detected,"scent particles,olfaction,attention,proximity",DETECTING
+sniff,"detect smell,snuff in,draw smell,detect odor","miss scent,blocked nose,ignore,not smell",scent detected,"olfaction,curiosity,suspicion,proximity",DETECTING
+taste,"perceive flavor,sense,detect taste,experience","tasteless,not taste,miss flavor,numb",flavor detected,"taste receptors,food contact,awareness",DETECTING
+feel,"perceive by touch,sense,become aware,experience","not feel,numb,miss,unaware,oblivious",tactile perception,"touch,nerve signals,contact,awareness",DETECTING
+hear,"perceive sound,listen,detect with ears,auditory","deaf,miss sound,not hear,silent,ignore",sound perceived,"sound waves,ears,attention,auditory",DETECTING
+listen,"try to hear,pay auditory attention,hear carefully","not listen,ignore,deaf,silent,distracted",auditory attention,"attention,intention,sound,effort",DETECTING
+sound,"seem,appear by sound,give impression,sound like","silent,quiet,mute,no sound,unspoken",impression given,"acoustic quality,utterance,perception",DETECTING
+notice,"observe,see,perceive,become aware,observe","overlook,miss,ignore,neglect,disregard",observation made,"attention,presence,change,awareness",NOTICING
+observe,"watch,see,notice,perceive,study","ignore,overlook,miss,neglect,disregard",observation made,"attention,watchfulness,interest,evidence",NOTICING
+watch,"observe,see,pay attention,keep eye on,monitor","ignore,overlook,disregard,neglect,miss",observation made,"attention,care,interest,vigilance",NOTICING
+look,"direct eyes,see,observe,view,examine","look away,ignore,blind,miss,overlook",visual direction,"intention,eye movement,presence,interest",NOTICING
+view,"see,observe,watch,examine,look at","ignore,not see,overlook,miss,obscured",viewing done,"sight,presence,visual access,opportunity",NOTICING
+see,"perceive with eyes,notice,observe,understand","blind,miss,overlook,ignore,unseen",visual perception,"light,eyes,presence,awareness",NOTICING
+sight,"catch sight of,observe,see,notice,glimpse","miss,overlook,ignore,out of sight,hide",sight caught,"visual access,presence,observation,attention",NOTICING
+regard,"look at,observe,consider,pay attention to","ignore,overlook,disregard,not observe",regard given,"attention,observation,intention,notice",NOTICING
+gaze,"look steadily,stare,observe intently,watch","look away,ignore,glance,miss,overlook",steady observation,"intention,interest,fascination,attention",NOTICING
+stare,"look fixedly,gaze,observe intently,watch closely","look away,glance,miss,overlook,ignore",fixed observation,"surprise,fascination,intensity,attention",NOTICING
+glance,"quick look,brief observation,glimpse,peek","stare,gaze,miss,overlook,ignore,long look",quick observation,"speed,attention,direction,casual",NOTICING
+peek,"look quickly,glimpse,sneak look,brief view","miss,overlook,ignore,full view,not look",quick look made,"curiosity,secrecy,brief attention",NOTICING
+glare,"look angrily,stare intensely,observe with anger","look away,smile,friendly,ignore",angry observation,"anger,intensity,fixation,attention",NOTICING
+take notice,"observe,pay attention,become aware,acknowledge","ignore,overlook,disregard,miss,dismiss",notice taken,"awareness,attention,importance,change",NOTICING
+search,"look for,seek,hunt,explore,investigate","stop searching,find,ignore,abandon,miss",search conducted,"intention,need,uncertainty,investigation",SEARCHING
+search for,"look for,seek,hunt for,try to find","find,give up,stop,abandon,ignore",search conducted,"need,desire,intention,uncertainty",SEARCHING
+seek,"search for,look for,try to find,pursue","find,give up,abandon,ignore,stop",search for target,"intention,need,desire,uncertainty",SEARCHING
+hunt,"search for,pursue,track,follow,stalk","stop hunting,flee,escape,release,ignore",hunt conducted,"pursuit,intention,predatory,hunger",SEARCHING
+hunt for,"search for,pursue,look for,track down","find,give up,abandon,escape,hide",target hunted,"intention,predatory,desire,pursuit",SEARCHING
+look for,"search for,seek,try to find,hunt for","find,stop searching,abandon,give up",search conducted,"intention,need,uncertainty,loss",SEARCHING
+look for,"expect,anticipate,prepare for,await","unexpected,surprise,unprepared,absent",search conducted,"anticipation,expectation,awareness,attention",SEARCHING
+forage,"search for food,hunt food,collect,gather","starve,ignore,cultivated food,buy",food found,"hunger,survival,instinct,scavenging",SEARCHING
+scout,"search for,explore,survey,investigate,reconnoiter","ignore,pass over,blind,miss,abandon",scouting done,"exploration,assessment,intention,planning",SEARCHING
+scour,"search thoroughly,sweep,examine carefully,comb","pass over,miss,superficial,quick,ignore",thorough search,"intention,thoroughness,determination,effort",SEARCHING
+rummage,"search disorderly,root around,hunt through,fossick","organize,orderly,ignore,miss,surface",disorderly search,"curiosity,searching,disorganization,urgency",SEARCHING
+rifle through,"search quickly,leaf through,thumb through,scan","careful,thorough,organize,miss,ignore",quick search,"haste,superficiality,searching,curiosity",SEARCHING
+dig into,"search thoroughly,investigate,delve into,probe","surface,ignore,superficial,miss,abandon",deep search,"determination,thoroughness,curiosity,investigation",SEARCHING
+delve into,"search deeply,investigate,explore thoroughly,probe","surface,miss,overlook,superficial,abandon",deep search,"investigation,curiosity,thoroughness,effort",SEARCHING
+ferret out,"search out,uncover,discover hidden,expose,reveal","hide,conceal,ignore,miss,overlook",hidden thing found,"investigation,curiosity,persistence,effort",SEARCHING
+root out,"search for,uncover,remove,eliminate,expose","hide,conceal,overlook,miss,ignore",hidden thing found/removed,"determination,investigation,effort,intention",SEARCHING
+cast about,"search broadly,look around,scout, seek widely","focus,narrow,specific,miss,give up",broad search,"uncertainty,exploration,seeking,desperation",SEARCHING
+fish for,"search for,seek,try to get,angle for","avoid,direct,honest,give,transparent",indirect seeking,"indirectness,intention,subtlety,manipulation",SEARCHING
+track,"follow trail,trace path,monitor,pursue","lose track,abandon,stop,wander",trail followed,"pursuit,evidence,intention,observation",TRACKING
+track down,"find by following,trace,locate,discover","lose,miss,escape,hide,abandon",target found,"persistence,investigation,skill,evidence",TRACKING
+trace,"follow,track,outline,sketch,investigate history","obscure,lose trail,abandon,miss,unclear",trace followed,"investigation,evidence,pursuit,history",TRACKING
+follow,"go after,come after,pursue,track,comply","lead,precede,abandon,lose,depart",pursuit continued,"intention,pursuit,navigation,guidance",TRACKING
+trail,"follow,track,pursue,leave trail,tag along","abandon,lead,lose,escape,diverge",trail left/followed,"following,pursuit,evidence,tracking",TRACKING
+pursue,"follow,chase,go after,seek persistently,continue","abandon,escape,flee,lose,stop",pursuit continued,"intention,determination,chase,persistence",TRACKING
+chase,"pursue,run after,follow quickly,hunt,drive","escape,flee,lose,abandon,stop",chase conducted,"pursuit,speed,intention,determination",TRACKING
+tail,"follow secretly,shadow,pursue covertly,track","lose,escape,abandon,lead,reveal",surveillance done,"secrecy,investigation,surveillance,suspicion",TRACKING
+shadow,"follow secretly,tail,pursue unnoticed,track","escape,reveal,abandon,lose,lead",covert following,"secrecy,surveillance,suspicion,investigation",TRACKING
+stalk,"follow stealthily,pursue predatorily,track prey,hunt","flee,escape,abandon,ignore,lose",stalking done,"predatory,stealth,intention,hunter",TRACKING
+dog,"follow persistently,pursue,track,hound,persist","escape,abandon,lose,lead,flee",persistent following,"persistence,pursuit,determination,dogging",TRACKING
+monitor,"observe,track,watch,oversee,supervise","ignore,neglect,abandon,miss,overlook",monitoring done,"observation,care,vigilance,responsibility",MONITORING
+survey,"examine,look over,observe,assess,investigate","ignore,miss,overlook,dismiss,superficial",survey completed,"observation,assessment,intention,overview",MONITORING
+supervise,"oversee,watch,monitor,direct,manage","neglect,ignore,abandon,miss,unaware",supervision given,"authority,responsibility,oversight,management",MONITORING
+oversee,"supervise,monitor,watch over,manage,direct","neglect,ignore,abandon,miss,unaware",oversight given,"authority,responsibility,management,vision",MONITORING
+keep watch,"monitor,observe,stay vigilant,guard,stand watch","sleep,ignore,abandon,neglect,unaware",watch maintained,"vigilance,responsibility,attention,alertness",MONITORING
+keep tabs on,"monitor,track,watch,observe closely,stay informed","ignore,neglect,unaware,lose track,abandon",tabs kept,"observation,interest,attention,information",MONITORING
+keep an eye on,"watch,monitor,observe,supervise,keep watch","ignore,neglect,unaware,miss,abandon",eye kept,"attention,vigilance,concern,observation",MONITORING
+keep track of,"monitor,follow progress,record,stay informed","lose track,ignore,miss,unaware,abandon",track kept,"attention,awareness,information,organization",MONITORING
+keep up with,"monitor,follow,stay informed,maintain pace,observe","lose track,miss,fall behind,unaware,ignore",pace maintained,"attention,information,effort,observation",MONITORING
+vigil,"watch,keep watch,observe,stand guard,maintain watch","sleep,abandon,ignore,neglect,unaware",vigil maintained,"watchfulness,duty,attention,responsibility",MONITORING
+investigate,"examine,look into,inquire,study,research","ignore,abandon,miss,overlook,superficial",investigation conducted,"curiosity,problem,suspicion,thoroughness",SEARCHING
+inquire,"ask,question,investigate,seek information,wonder","ignore,accept,assume,uncurious,dismiss",inquiry made,"curiosity,doubt,need for information,question",SEARCHING
+inquire into,"investigate,examine,look into,question,research","ignore,accept,assume,superficial,abandon",inquiry conducted,"curiosity,suspicion,need to know,problem",SEARCHING
+research,"investigate,examine,study,inquire,explore","ignore,assume,superficial,guess,abandon",research conducted,"curiosity,knowledge-seeking,investigation,care",SEARCHING
+probe,"investigate,examine,question thoroughly,explore","ignore,superficial,miss,abandon,overlook",probing done,"investigation,curiosity,thoroughness,intensity",SEARCHING
+explore,"examine,investigate,discover,survey,travel through","ignore,settle,known,abandon,superficial",exploration conducted,"curiosity,discovery,adventure,investigation",SEARCHING
+explore,"consider possibilities,examine,discuss, think about","ignore,settle on,decided,dismiss,closed",exploration done,"consideration,openness,curiosity,thinking",SEARCHING
+examine,"look at closely,study,investigate,inspect,check","ignore,miss,overlook,superficial,dismiss",examination completed,"scrutiny,investigation,care,attention",SEARCHING
+inspect,"examine closely,look over,survey, check, review","ignore,miss,overlook,careless,superficial",inspection completed,"attention,care,thoroughness,authority",SEARCHING
+scrutinize,"examine closely,inspect carefully,study intently","ignore,miss,overlook,glance,casual",close examination,"attention,suspicion,thoroughness,intensity",SEARCHING
+study,"examine,investigate,learn,analyze,investigate","ignore,miss,skim,superficial,abandon",study completed,"interest,learning,investigation,attention",SEARCHING
+analyze,"examine carefully,break down,study,investigate","synthesize,assume,ignore,superficial,quick",analysis completed,"investigation,critical thinking,attention, rigor",SEARCHING
+review,"examine,look over,consider,assess, revisit","miss,ignore,overlook,surface,dismiss",review completed,"assessment,attention,thoroughness,evaluation",SEARCHING
+pore over,"examine intently,study closely,concentrate on","skim,miss,glance,superficial,ignore",intensive study,"intensity,attention,determination,focus",SEARCHING
+miss,"fail to see,overlook,not perceive,fail to notice","see,notice,observe,detect,catch",failure to detect,"inattention,speed,obscurity,carelessness",NOTICING
+miss,"fail to hit,overshoot,undershoot,not strike","hit,strike,connect,accurate,direct",missed target,"inaccuracy,distance,movement,error",NOTICING
+fail to notice,"overlook,miss,not perceive,not see","notice,see,observe,detect,attention",detection failed,"inattention,distraction,obscurity,carelessness",NOTICING
+overlook,"fail to notice,disregard,miss,pass over","notice,observe,see,attend,acknowledge",attention bypassed,"oversight,carelessness,indifference,speed",NOTICING
+lose,"be unable to find,misplace,no longer have","find,recover,regain,locate,obtain",possession lost,"misplacement,carelessness,disappearance,theft",NOTICING
+lose track of,"fail to monitor,lose attention to,unaware,miss updates","keep track,monitor,aware,informed,observe",tracking failed,"inattention,complexity,distraction,neglect",NOTICING
+lose sight of,"no longer see,fail to observe,forget about","keep sight of,observe,remember,aware,see",observation lost,"distance,distraction,forgetfulness,inattention",NOTICING
+fail to detect,"not perceive,miss,overlook,not discover","detect,perceive,notice,discover,find",detection failed,"inattention,subtlety,obscurity,equipment",NOTICING
+escape,"elude,avoid being caught,get away,avoid detection","capture,catch,arrest,detect,confine",evasion successful,"speed,cunning,opportunity,inattention",NOTICING
+evade,"escape,avoid,elude,dodge,escape detection","capture,confront,face,caught,direct",evasion successful,"cunning,misdirection,speed,stealth",NOTICING
+elude,"escape,evade,avoid,be uncaught,slip away","capture,catch,confine,grasp,direct",evasion successful,"cunning,speed,skill,opportunity",NOTICING

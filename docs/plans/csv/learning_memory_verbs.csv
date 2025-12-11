@@ -1,0 +1,124 @@
+Word,Synonyms,Antonyms,Causes,Caused_By,Category
+learn,"acquire, study, master, absorb","forget, ignore, unlearn, dismiss","instruction, study, experience, exposure","education, practice, repetition, experience",LEARNING
+study,"examine, investigate, learn, research","ignore, neglect, skip, dismiss","intellectual engagement, research, investigation","curiosity, assignment, necessity, interest",LEARNING
+acquire,"gain, obtain, learn, develop","lose, surrender, abandon, forget","gaining, obtaining, learning","effort, exposure, practice, resources",LEARNING
+absorb,"take in, assimilate, learn, internalize","reject, expel, forget, dismiss","intake, assimilation, learning","exposure, study, repetition, attention",LEARNING
+master,"learn thoroughly, excel at, dominate, command","struggle, fail, forget, bungle","intensive study, practice, dedication","effort, practice, talent, repetition",LEARNING
+grasp,"understand, comprehend, seize, catch","misunderstand, miss, lose, drop","understanding, intellectual capture","clarity, instruction, intelligence, attention",UNDERSTANDING
+comprehend,"understand, grasp, perceive, fathom","misunderstand, miss, confuse, perplex","understanding, perception, intelligence","clarity, instruction, intelligence, analysis",UNDERSTANDING
+understand,"comprehend, grasp, perceive, realize","misunderstand, confuse, perplex, befuddle","understanding, perception, knowledge","clarity, explanation, intelligence, analysis",UNDERSTANDING
+fathom,"understand, comprehend, grasp, decipher","misunderstand, confuse, puzzle, perplex","deep understanding, penetration","analysis, thought, explanation, intelligence",UNDERSTANDING
+perceive,"sense, observe, understand, recognize","ignore, overlook, miss, blindness","sensation, observation, awareness","sensory input, attention, awareness",RECOGNIZING
+observe,"notice, see, watch, perceive","ignore, overlook, miss, blindness","careful attention, observation","attention, presence, awareness, vigilance",RECOGNIZING
+notice,"observe, see, spot, perceive","ignore, overlook, miss, disregard","attention, observation, distinctiveness","attention, salience, awareness",RECOGNIZING
+recognize,"identify, acknowledge, know, discern","ignore, overlook, mistake, fail","familiarity, prior knowledge, identification","memory, previous exposure, pattern matching",RECOGNIZING
+identify,"recognize, determine, classify, name","confuse, mistake, misidentify, miss","determination, classification, naming","analysis, observation, knowledge",RECOGNIZING
+discern,"distinguish, perceive, detect, observe","confuse, blur, miss, overlook","careful observation, discrimination","keen perception, attention, analysis",RECOGNIZING
+distinguish,"differentiate, discern, separate, identify","confuse, blur, mix up, conflate","discrimination, analysis, differentiation","careful observation, knowledge, analysis",RECOGNIZING
+detect,"discover, identify, find, uncover","miss, overlook, hide, conceal","discovery, finding, uncovering","observation, investigation, technology",RECOGNIZING
+spot,"notice, detect, see, identify","miss, overlook, ignore, hide","visual detection, noticing","attention, visibility, observation",RECOGNIZING
+realize,"understand, comprehend, grasp, awaken","misunderstand, ignore, miss, deny","understanding, awareness, enlightenment","thought, reflection, revelation, evidence",UNDERSTANDING
+discover,"find, uncover, detect, learn","miss, overlook, hide, conceal","exploration, investigation, finding","exploration, accident, research, curiosity",LEARNING
+find,"discover, locate, uncover, detect","miss, lose, hide, search","search, discovery, location","search, chance, investigation, guidance",LEARNING
+locate,"find, pinpoint, position, place","lose, misplace, displace, hide","positioning, finding, determination","search, analysis, coordinates, signals",LEARNING
+uncover,"discover, reveal, expose, disclose","cover, hide, conceal, suppress","revelation, exposure, discovery","investigation, removal, revelation",LEARNING
+know,"understand, be aware, comprehend, recognize","ignore, misunderstand, doubt, question","knowledge, awareness, understanding","experience, learning, memory, certainty",UNDERSTANDING
+acknowledge,"recognize, accept, admit, confirm","deny, refuse, reject, ignore","recognition, acceptance, confirmation","evidence, truth, acceptance, honesty",RECOGNIZING
+confirm,"verify, validate, affirm, acknowledge","deny, refute, contradict, question","verification, validation, affirmation","evidence, testing, confirmation",UNDERSTANDING
+verify,"confirm, validate, check, prove","deny, refute, disprove, question","confirmation, validation, checking","evidence, testing, investigation",UNDERSTANDING
+validate,"confirm, verify, authenticate, affirm","invalidate, deny, refute, reject","confirmation, authentication, validation","evidence, authority, testing",UNDERSTANDING
+authenticate,"verify, validate, confirm, certify","forge, fake, invalidate, deny","verification, validation, certification","evidence, authority, testing",UNDERSTANDING
+infer,"deduce, conclude, gather, surmise","refute, deny, contradict, assume","logical reasoning, deduction","evidence, logic, analysis, observation",UNDERSTANDING
+deduce,"infer, conclude, reason, gather","induce, assume, guess, refute","logical reasoning, deduction","evidence, logic, analysis",UNDERSTANDING
+conclude,"deduce, infer, gather, determine","refute, deny, contradict, question","reasoning, determination, conclusion","evidence, analysis, logic",UNDERSTANDING
+analyze,"examine, investigate, study, dissect","ignore, overlook, skip, synthesize","examination, investigation, study","curiosity, necessity, research",LEARNING
+examine,"inspect, study, analyze, investigate","ignore, overlook, skip, dismiss","inspection, study, investigation","curiosity, necessity, protocol",LEARNING
+investigate,"examine, study, research, inquire","ignore, overlook, dismiss, stop","inquiry, investigation, research","curiosity, suspicion, necessity, mystery",LEARNING
+inquire,"ask, question, investigate, probe","ignore, assume, accept, stop","curiosity, questioning, investigation","curiosity, uncertainty, mystery",LEARNING
+probe,"investigate, examine, explore, question","ignore, accept, stop, surface","investigation, exploration, inquiry","curiosity, suspicion, necessity",LEARNING
+explore,"investigate, examine, discover, probe","ignore, avoid, surface, stop","investigation, exploration, discovery","curiosity, adventure, research",LEARNING
+research,"investigate, study, explore, examine","ignore, overlook, abandon, stop","investigation, inquiry, study","curiosity, necessity, academic pursuit",LEARNING
+train,"teach, educate, coach, instruct","neglect, ignore, abandon, untrain","education, instruction, coaching","instruction, practice, repetition",LEARNING
+educate,"teach, instruct, train, inform","mislead, ignore, abandon, deceive","teaching, instruction, information","instruction, curriculum, teachers",LEARNING
+teach,"instruct, educate, train, coach","learn, mislead, confuse, deceive","instruction, education, communication","expertise, intention, curriculum",LEARNING
+instruct,"teach, direct, guide, coach","mislead, confuse, abandon, deceive","instruction, direction, guidance","expertise, authority, intention",LEARNING
+coach,"teach, train, guide, mentor","abandon, neglect, hinder, obstruct","training, guidance, mentoring","expertise, care, intention",LEARNING
+mentor,"guide, coach, teach, advise","abandon, neglect, mislead, hinder","guidance, mentoring, teaching","expertise, care, relationship",LEARNING
+guide,"lead, direct, mentor, teach","mislead, abandon, confuse, obstruct","direction, guidance, leading","expertise, knowledge, intention",LEARNING
+practice,"rehearse, drill, train, exercise","abandon, neglect, stop, ignore","skill development, repetition, training","effort, commitment, repetition",LEARNING
+rehearse,"practice, drill, repeat, exercise","abandon, ignore, stop, forget","repetition, skill development, preparation","effort, preparation, repetition",LEARNING
+drill,"practice, rehearse, repeat, train","abandon, neglect, stop, forget","repetition, skill building, training","discipline, effort, instruction",LEARNING
+condition,"train, habituate, accustom, program","uncondition, break habit, reverse, stop","training, habituation, programming","repetition, stimulus response, conditioning",LEARNING
+habituate,"accustom, familiarize, condition, train","disabuse, unfamiliarize, reverse, stop","repeated exposure, familiarization","repetition, exposure, time",LEARNING
+accustom,"familiarize, habituate, adjust, adapt","alienate, unfamiliarize, reverse, shock","familiarization, adaptation, adjustment","exposure, time, experience",LEARNING
+familiarize,"accustom, introduce, teach, inform","alienate, unfamiliarize, estrange, hide","introduction, exposure, teaching","exposure, instruction, experience",LEARNING
+exercise,"practice, drill, train, work out","abandon, neglect, rest, stop","skill building, physical practice, training","effort, discipline, commitment",LEARNING
+memorize,"commit to memory, learn, remember, retain","forget, abandon, lose, erase","memory encoding, repetition, learning","effort, repetition, intention",REMEMBERING
+remember,"recall, recollect, retrieve, retain","forget, lose, suppress, erase","memory retrieval, recall, recognition","memory trace, cue, effort",REMEMBERING
+recall,"remember, recollect, retrieve, evoke","forget, lose, suppress, erase","memory retrieval, conscious effort","cue, effort, memory trace",REMEMBERING
+recollect,"remember, recall, retrieve, evoke","forget, lose, suppress, erase","memory retrieval, reflection","reflection, effort, memory trace",REMEMBERING
+retrieve,"recall, remember, recover, restore","lose, forget, misplace, suppress","memory access, recovery, restoration","search, cue, effort, technology",REMEMBERING
+evoke,"recall, bring forth, summon, trigger","suppress, repress, forget, erase","memory triggering, stimulation","trigger, stimulus, association",REMEMBERING
+invoke,"evoke, call upon, summon, trigger","suppress, repress, dismiss, erase","invocation, summoning, calling","intention, stimulus, command",REMEMBERING
+summon,"call upon, invoke, evoke, conjure","dismiss, release, erase, suppress","calling forth, summoning, invocation","intention, command, magic",REMEMBERING
+retain,"keep, hold, remember, preserve","forget, lose, release, abandon","memory preservation, holding","memory formation, care, intention",REMEMBERING
+retain,"keep, hold, remember, preserve","forget, lose, release, abandon","memory preservation, holding","memory formation, care, intention",REMEMBERING
+store,"preserve, archive, save, keep","delete, lose, discard, forget","preservation, archiving, storage","intention, organization, necessity",REMEMBERING
+preserve,"keep, maintain, save, retain","destroy, lose, discard, abandon","preservation, maintenance, protection","care, intention, necessity",REMEMBERING
+archive,"store, preserve, save, record","delete, erase, lose, discard","archiving, preservation, recording","organization, documentation, care",REMEMBERING
+forget,"lose memory, abandon, overlook, miss","remember, recall, recollect, retain","memory loss, time, interference, neglect","decay, displacement, retrieval failure",FORGETTING
+misremember,"misrecall, confuse, mix up, distort","remember accurately, recall correctly","memory distortion, confusion, interference","false memories, suggestion, confusion",FORGETTING
+suppress,"repress, bury, hide, exclude","remember, recall, reveal, expose","psychological defense, intentional exclusion","trauma, emotion, intention",FORGETTING
+repress,"suppress, bury, hide, exclude","recall, remember, reveal, express","psychological defense, trauma","trauma, emotion, psychological mechanism",FORGETTING
+discard,"abandon, throw away, disregard, dismiss","keep, preserve, retain, treasure","disposal, rejection, devaluation","decision, disvalue, space constraints",FORGETTING
+dismiss,"disregard, ignore, overlook, reject","consider, acknowledge, remember, respect","rejection, disregard, ignoring","judgment, indifference, dismissal",FORGETTING
+overlook,"ignore, miss, neglect, disregard","notice, observe, acknowledge, remember","inattention, disregard, oversight","carelessness, distraction, oversight",FORGETTING
+neglect,"ignore, disregard, overlook, abandon","remember, care, attend, acknowledge","inattention, abandonment, carelessness","carelessness, indifference, priorities",FORGETTING
+erase,"delete, remove, wipe out, obliterate","record, preserve, retain, restore","deletion, removal, obliteration","intentional action, mechanical removal",FORGETTING
+delete,"erase, remove, wipe out, purge","keep, preserve, restore, recover","deletion, removal, purging","intentional action, system action",FORGETTING
+obscure,"hide, conceal, blur, cloud","clarify, reveal, illuminate, sharpen","hiding, concealment, clouding","intentional action, fog, shadow",FORGETTING
+cloud,"obscure, blur, dim, confuse","clarify, illuminate, sharpen, expose","obscuring, confusion, haziness","confusion, fog, emotion",FORGETTING
+blur,"obscure, dim, cloud, fade","sharpen, clarify, focus, brighten","obscuring, defocusing, fading","motion, lack of focus, time",FORGETTING
+fade,"diminish, wane, weaken, pale","brighten, strengthen, intensify, vivid","diminishing, weakening, passage of time","time, neglect, distance",FORGETTING
+wane,"decline, diminish, decrease, fade","wax, increase, grow, strengthen","diminishing, declining, weakening","time, natural cycle, neglect",FORGETTING
+confuse,"mix up, muddle, perplex, bewilder","clarify, distinguish, clarify, separate","mixing, muddling, perplexity","similarity, poor communication, complexity",FORGETTING
+mistake,"confuse, mix up, misidentify, error","recognize, identify, distinguish, correct","confusion, misidentification, error","similarity, carelessness, error",FORGETTING
+misidentify,"mistake, confuse, misrecognize, error","identify, recognize, correctly name","identification error, confusion","similarity, carelessness, poor attention",FORGETTING
+muddle,"confuse, mix up, perplex, tangle","clarify, organize, sort, distinguish","confusion, mixing, tangling","disorder, complexity, carelessness",FORGETTING
+perplex,"confuse, puzzle, bewilder, mystify","clarify, explain, illuminate, understand","confusion, puzzlement, mystery","complexity, lack of clarity, mystery",FORGETTING
+bewilder,"confuse, perplex, puzzle, mystify","clarify, explain, enlighten, understand","confusion, bewilderment, disorientation","complexity, surprise, confusion",FORGETTING
+mystify,"perplex, puzzle, confuse, bewilder","explain, clarify, solve, understand","mystery, confusion, obscurity","intentional obscurity, mystery, complexity",FORGETTING
+misunderstand,"misinterpret, misconstrue, confuse, misjudge","understand, comprehend, interpret correctly","poor communication, confusion, ambiguity","miscommunication, misinterpretation, bias",FORGETTING
+misinterpret,"misconstrue, misunderstand, misread, misjudge","interpret correctly, understand, clarify","interpretation error, confusion","bias, ambiguity, miscommunication",FORGETTING
+misconstrue,"misinterpret, misunderstand, distort, misread","interpret correctly, understand, clarify","interpretation error, distortion","ambiguity, bias, miscommunication",FORGETTING
+misread,"misinterpret, misconstrue, misunderstand, error","read correctly, understand, interpret","reading error, interpretation error","carelessness, poor visibility, hurry",FORGETTING
+misjudge,"misinterpret, misunderstand, assess incorrectly","judge correctly, understand, assess accurately","judgment error, bias, misunderstanding","bias, prejudice, poor information",FORGETTING
+distort,"twist, warp, misrepresent, exaggerate","clarify, represent accurately, straighten","twisting, warping, misrepresentation","bias, intentional distortion, error",FORGETTING
+exaggerate,"overstate, magnify, distort, embellish","understate, downplay, minimize, simplify","overstatement, magnification, exaggeration","emotion, bias, intention",FORGETTING
+embellish,"exaggerate, enhance, adorn, ornament","simplify, strip down, downplay, minimize","enhancement, ornamentation, embellishment","artistic intent, bias, enhancement",FORGETTING
+deceive,"mislead, trick, fool, dupe","enlighten, inform, reveal, clarify","deception, trickery, misinformation","malice, intention, self-interest",FORGETTING
+mislead,"deceive, trick, misdirect, confuse","enlighten, guide, inform, clarify","deception, misdirection, misinformation","intention, mistake, bias",FORGETTING
+trick,"deceive, fool, dupe, hoodwink","reveal, enlighten, honest, straightforward","deception, trickery, illusion","cunning, intention, illusion",FORGETTING
+fool,"deceive, trick, dupe, hoodwink","enlighten, reveal, honest, sincere","deception, trickery, fooling","cunning, illusion, intention",FORGETTING
+dupe,"trick, fool, deceive, hoodwink","enlighten, reveal, honest, sincere","deception, trickery, duping","cunning, credulity, intention",FORGETTING
+hoodwink,"trick, fool, deceive, dupe","enlighten, reveal, honest, transparent","deception, hoodwinking, trickery","cunning, intention, illusion",FORGETTING
+see,"perceive, observe, notice, view","miss, overlook, ignore, blind","visual perception, observation","vision, presence, attention",RECOGNIZING
+look,"observe, watch, see, view","miss, ignore, blind, overlook","visual observation, attention","intention, curiosity, attention",RECOGNIZING
+watch,"observe, look at, monitor, follow","ignore, miss, blind, overlook","observation, monitoring, following","attention, interest, vigilance",RECOGNIZING
+view,"see, observe, watch, look at","miss, ignore, blind, hide","visual observation, viewing","visibility, attention, presence",RECOGNIZING
+sense,"perceive, feel, detect, intuit","miss, overlook, ignore, blind","sensory perception, intuition","sensation, intuition, awareness",RECOGNIZING
+feel,"sense, perceive, experience, detect","miss, ignore, blind, numb",tactile or emotional perception,"sensation, emotion, contact",RECOGNIZING
+intuit,"sense, feel, perceive, divine","miss, overlook, ignore, deny","intuitive perception, insight","instinct, experience, sensitivity",RECOGNIZING
+divine,"intuit, sense, guess, surmise","miss, overlook, ignore, doubt","divination, intuitive insight","intuition, magic, perception",RECOGNIZING
+notice,"observe, see, spot, perceive","ignore, overlook, miss, disregard","attention, observation, salience","attention, distinctiveness, awareness",RECOGNIZING
+apprehend,"understand, grasp, perceive, comprehend","misunderstand, miss, confuse, lose","understanding, comprehension, perception","clarity, attention, intelligence",UNDERSTANDING
+interpret,"understand, explain, construe, explain","misinterpret, misunderstand, confuse, distort","interpretation, explanation, understanding","analysis, context, meaning",UNDERSTANDING
+explain,"clarify, interpret, expound, elucidate","confuse, obscure, mystify, perplex","clarification, explanation, exposition","clarity, knowledge, intention",UNDERSTANDING
+clarify,"explain, illuminate, elucidate, simplify","obscure, confuse, cloud, mystify","clarification, illumination, simplification","clarity, effort, explanation",UNDERSTANDING
+elucidate,"explain, clarify, illuminate, expound","obscure, confuse, cloud, mystify","clarification, explanation, illumination","clarity, knowledge, effort",UNDERSTANDING
+illuminate,"clarify, explain, lighten, enlighten","obscure, darken, confuse, mystify","illumination, clarification, enlightenment","light, clarity, insight",UNDERSTANDING
+enlighten,"inform, educate, illuminate, teach","mislead, confuse, darken, deceive","enlightenment, information, education","knowledge, teaching, revelation",UNDERSTANDING
+inform,"tell, notify, educate, enlighten","conceal, deceive, mislead, withhold","information sharing, notification","knowledge, intention, responsibility",UNDERSTANDING
+notify,"inform, tell, alert, advise","conceal, hide, deceive, withhold","notification, information, alert","knowledge, responsibility, event",UNDERSTANDING
+alert,"warn, notify, inform, caution","conceal, hide, lull, surprise","warning, notification, alarm","danger, responsibility, urgency",UNDERSTANDING
+warn,"caution, alert, advise, forewarn","encourage, lull, hide, mislead","warning, caution, danger","danger, responsibility, foresight",UNDERSTANDING

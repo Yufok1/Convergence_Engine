@@ -4,6 +4,61 @@
 
 ---
 
+## [Unreleased] - 2025-12-10
+
+### 🧬 Nuclear Vocabulary & Innate Language System (2025-12-10)
+
+**MAJOR ENHANCEMENT**: Organisms now spawn with rich innate vocabulary from curated semantic extraction.
+
+#### Added - Nuclear Vocabulary Pipeline
+- **`merge_nuclear_vocab.py`** - Merges 29 CSV extractions into unified JSON (1700 concepts, 25k relations)
+- **`generate_innate_vocab.py`** - Converts nuclear vocab to tiered innate format with VP affinities
+- **`data/nuclear_vocab.json`** - Merged extraction with weighted nuclear scores
+- **`data/innate_vocab.json`** - Tiered innate vocabulary (50 core + 200 extended + 1450 pool)
+
+#### Added - Innate Vocabulary Tiers
+- **Tier 1 (Core)**: 50 high-value verbs all organisms get (force, stop, release, suppress, etc.)
+- **Tier 2 (Extended)**: 200 verbs, organisms get random 20-50 for diversity
+- **Tier 3 (Pool)**: 1450 verbs, organisms get random 0-10 for rare specializations
+
+#### Changed - AtomicLanguageSystem (`atomic_language.py`)
+- Now loads innate concepts from `data/innate_vocab.json` instead of hardcoded dict
+- Organisms spawn with 70-110 innate concepts (was 26-40)
+- VP affinities assigned based on semantic category (aggressive verbs → high vitality, low pleasure)
+- Pre-wired associations between related concepts (9919 total)
+
+#### Changed - Agent Compiler Cleanup (`agent_compiler.py`)
+- Renamed duplicate classes to avoid confusion:
+  - `SimpleAtomicLanguageSystem` - legacy basic chat
+  - `AtomicLanguageSystemONNX` - legacy ONNX runtime
+  - `AtomicLanguageSystem` - main system with nuclear vocab
+- Main `AtomicLanguageSystem` now loads from `innate_vocab.json`
+
+#### Added - Folder Organization (`docs/plans/`)
+- `csv/` - 29 CSV files with verb extractions
+- `reference/` - 5 MD reference files
+- `raw/` - 2 DOCX original request files
+
+#### Added - Verification Tools
+- **`verify_innate_vocab.py`** - 6-test verification suite for innate system
+- **`test_language_system.py`** - Integration test for GitHub push validation
+
+#### Domain Coverage (10 domains, 3 sweeps each)
+| Domain | Verbs | Categories |
+|--------|-------|------------|
+| LOCOMOTION | ~150 | Aerial, Aquatic, Terrestrial |
+| MANIPULATION | ~120 | Grasping, Moving, Transforming |
+| CONSUMPTION | ~80 | Eating, Drinking, Metabolizing |
+| PRODUCTION | ~75 | Creating, Building, Emitting |
+| SOCIAL | ~200 | Affiliative, Aggressive, Verbal |
+| STATE_CHANGE | ~120 | Physical, Quality, Lifecycle |
+| COGNITIVE | ~150 | Thinking, Memory, Decision |
+| PERCEPTION | ~120 | Visual, Auditory, Tactile |
+| TEMPORAL | ~100 | Beginning, Continuing, Timing |
+| CAUSAL | ~100 | Causing, Enabling, Influencing |
+
+---
+
 ## [Unreleased] - 2025-12-09
 
 ### 🔧 NaN Training Fix & Language Loss Stability (2025-12-09)

@@ -1,0 +1,127 @@
+Word,Synonyms,Antonyms,Causes,Caused_By,Category
+sculpt,"carve,shape,chisel,hew,whittle","destroy,erase,demolish","artistic vision,material removal","vision,tool application",CREATING
+carve,"sculpt,cut,chisel,engrave,incise","smooth,fill,erase","removal,form","chisel,pressure,hand",CREATING
+chisel,"carve,cut,shape,dress,gouge","smooth,fill","removal,edge","tool stroke,force",CREATING
+hew,"carve,cut,chop,split,shape","smooth,join",material separation,"axe,tool,labor",CREATING
+whittle,"carve,pare,shave,reduce,shape","add,accumulate",gradual removal,"blade,hand",CREATING
+gouge,"scoop,carve,hollow,excavate,cut","fill,smooth",concave form,"gouge tool,pressure",CREATING
+engrave,"etch,carve,incise,cut,inscribe","erase,smooth,fill",permanent mark,"engraving tool,pressure",CREATING
+etch,"engrave,carve,incise,bite,cut","fill,smooth,erase",grooved pattern,"acid,needle,tool",CREATING
+weave,"intertwine,interlace,twine,braid,plait","unravel,separate,disentangle",interlocked fabric,"loom,thread,technique",CREATING
+knit,"loop,purl,stitche,interlock,bind","unravel,rip,purl out",fabric formation,"needles,yarn,hand",CREATING
+sew,"stitch,mend,suture,tack,baste","rip,tear,unpick",sewn seam,"needle,thread,hand",CREATING
+stitch,"sew,seam,mend,bind,tack","rip,tear,unpick",sewn seam,"needle,thread,hand",CREATING
+braid,"plait,weave,interlace,twine,bind","unplait,separate,disentangle",braided structure,"hair/thread,hands,technique",CREATING
+plait,"braid,weave,interlace,twine","unplait,separate",plaited form,"strands,hands,technique",CREATING
+crochet,"hook,interlace,loop,bind,create lace","unravel,rip",crocheted fabric,"hook,yarn,technique",CREATING
+embroider,"decorate,ornament,needlework,stitch,adorn","plain,undecorated,simple",embellished fabric,"needle,thread,design",CREATING
+appliqué,"attach,adhere,overlay,sew on,decorate","remove,detach,separate",layered decoration,"glue/thread,fabric,design",CREATING
+quilt,"stitch,piece,layer,patchwork,sew","unquilt,separate",quilted surface,"needle,thread,batting",CREATING
+print,"publish,press,reproduce,imprint,stamp","erase,blank,clear",printed copies,"ink,press,text",CREATING
+publish,"print,issue,release,distribute,disseminate","suppress,withhold,censor",public work,"manuscript,press,distribution",CREATING
+press,"print,stamp,emboss,imprint,compress","release,flatten,separate",imprinted mark,"pressure,mold,heat",CREATING
+reproduce,"copy,duplicate,replicate,print,re-create","destroy,erase,lose",replica,"original,process,medium",CREATING
+offset,"print,transfer,displace","direct,erase",transferred image,"ink,plate,pressure",CREATING
+lithograph,"print,impress,transfer,reproduce",erase,lithographic print,"stone,ink,chemistry",CREATING
+woodblock,"carve,incise,print,cut,sculpt","fill,erase",relief print,"wood,chisel,ink",CREATING
+screen print,"stencil,print,transfer,force ink","erase,bleach,remove",screened image,"ink,mesh,squeegee",CREATING
+write,"compose,author,inscribe,pen,script","erase,delete,blank",written text,"pen,idea,language",EXPRESSING
+author,"write,compose,create,pen,originate","plagiarize,copy,steal",original work,"idea,pen,knowledge",EXPRESSING
+compose,"write,author,create,arrange,orchestrate","disarrange,scatter",composition,"ideas,music,language",EXPRESSING
+inscribe,"write,etch,carve,engrave,record","erase,blank,delete",inscription,"pen,tool,pressure",EXPRESSING
+scribe,"write,record,pen,copy,transcribe","erase,delete",written text,"pen,ink,hand",EXPRESSING
+transcribe,"write,record,copy,transfer,translate","erase,delete",transcribed text,"original,pen,ears",EXPRESSING
+draft,"write,outline,sketch,compose,plan","finalize,erase",rough draft,"pen,idea,intention",EXPRESSING
+edit,"revise,correct,refine,amend,redact","corrupt,muddle,confuse",edited text,"original,judgment,tool",EXPRESSING
+annotate,"note,comment,mark,gloss,explain","erase,ignore,blank",annotations,"text,idea,pen",EXPRESSING
+paint,"apply pigment,color,brush,coat","erase,prime,blank",painted surface,"brush,pigment,intention",EXPRESSING
+draw,"sketch,depict,portray,delineate,trace","erase,blank,obliterate",drawing,"pen,pencil,hand",EXPRESSING
+sketch,"draw,outline,draft,rough,depict","erase,finalize",sketch,"pen,hand,intention",EXPRESSING
+daub,"smear,coat,spread,paint carelessly","wipe,clean,remove",painted surface,"brush,paint,hand",CREATING
+stipple,"dot,speckle,pattern,texture,dab","smooth,blend,erase",stippled surface,"brush/pen,pigment,pressure",EXPRESSING
+glaze,"coat,shine,varnish,finish,seal","dull,matte,rough,strip",glazed surface,"glaze,heat,application",CREATING
+varnish,"coat,seal,protect,shine,finish","strip,dull,rough",varnished surface,"varnish,brush,heat",CREATING
+prime,"prepare,base coat,undercoat,seal","strip,sand,rough",primed surface,"primer,brush,preparation",CREATING
+stain,"color,dye,discolor,mark,tint","bleach,clean,lighten,erase",colored surface,"stain,pigment,pressure",CREATING
+dye,"color,tint,stain,shade,pigment","bleach,fade,lighten",dyed material,"dye,heat,liquid",CREATING
+tint,"shade,color,tone,hue,tinge","bleach,lighten,fade",tinted color,"pigment,liquid,mixing",CREATING
+wash,"apply color thinly,glaze,overlay","strip,erase,remove",color wash,"pigment,water,brush",EXPRESSING
+blend,"mix,merge,soften,harmonize","separate,distinguish,define",blended color,"brush,pigment,technique",EXPRESSING
+layer,"apply successive coats,build up,accumulate","strip,peel,remove",layered surface,"material,application,time",CREATING
+texture,"create surface quality,roughen,pattern","smooth,flatten,plane",textured surface,"tool,medium,pressure",CREATING
+model,"shape,form,sculpt,fashion,create 3D","destroy,flatten",model form,"hands,clay,intention",CREATING
+throw,"form clay,spin on wheel,shape","collapse,flatten,break",thrown form,"wheel,clay,hands",CREATING
+mold,"shape,form,cast,press,fashion","unmold,destroy,flatten",molded form,"mold,pressure,material",CREATING
+hand-build,"construct,form,coil,pinch,join","destroy,disassemble",hand-built form,"hands,clay,technique",CREATING
+coil,"spiral,wind,form,loop,create rings","uncoil,unwind,flatten",coil structure,"clay,hands,technique",CREATING
+pinch,"press,form,shape,indent,manipulate","flatten,smooth,release",pinched form,"fingers,pressure",CREATING
+fire,"kiln,heat,burn,bake,harden","cool,freeze,soften",fired ceramic,"kiln,heat,oxidation",SYNTHESIZING
+kiln,"fire,harden,cure,bake,burn","cool,soften",kiln-fired piece,"kiln,heat,time",SYNTHESIZING
+bisque,"pre-fire,first fire,biscuit fire,harden","unfire,cool,soften",bisque ware,"kiln,heat,oxidation",SYNTHESIZING
+gloss,"shine,burnish,polish,seal,coat","dull,matte,roughen",glossy surface,"glaze,heat,burnish",CREATING
+burnish,"polish,shine,smooth,rub,compress surface","roughen,matte,dull",burnished surface,"tool,pressure,friction",CREATING
+slip,"coat,cover,dip,immerse,apply clay liquid","dry,strip,remove",slipped surface,"slip,immersion,brush",CREATING
+slip-cast,"mold,pour,cast,form with slip","remove,unmold",slip-cast form,"slip,mold,gravity",CREATING
+perform,"act,execute,enact,play,present","abstain,cancel,postpone",performed show,"skill,preparation,stage",EXPRESSING
+enact,"perform,act,portray,play,stage","cancel,abstain,avoid",enacted scene,"actor,direction,intention",EXPRESSING
+play,"perform,act,portray,depict,interpret","refuse,abstain,cancel",played role,"actor,character,intention",EXPRESSING
+portray,"depict,represent,play,enact,show","misrepresent,hide,conceal",portrayal,"actor,interpretation,action",EXPRESSING
+interpret,"perform,render,represent,explain","distort,misrepresent",interpretation,"skill,understanding,presentation",EXPRESSING
+stage,"perform,present,mount,produce,orchestrate","cancel,abstain",staged production,"director,actors,preparation",EXPRESSING
+choreograph,"compose,design,arrange,plan movement","improvise,spontaneous",choreography,"vision,dancers,intention",CREATING
+direct,"guide,oversee,manage,conduct,lead","follow,obey,comply",directed show,"vision,authority,skill",EXPRESSING
+conduct,"lead,direct,manage,orchestrate,guide","follow,participate,obey",conducted performance,"baton,skill,vision",EXPRESSING
+recite,"perform,speak,declaim,repeat aloud","silently read,listen",recited piece,"memorization,voice,intention",EXPRESSING
+chant,"intone,sing,vocalize,rhythmic speech","silence,whisper,quiet",chanted sound,"voice,rhythm,intention",EXPRESSING
+sing,"vocalize,intone,chant,perform musically","silence,whisper,quiet",sung sound,"voice,musicality,intention",EXPRESSING
+cultivate,"grow,farm,foster,nurture,develop","abandon,neglect,ignore",cultivated plant,"care,soil,water,sunlight",GROWING
+nurture,"care,foster,support,encourage,cultivate","neglect,ignore,abandon",nurtured growth,"care,attention,resource",GROWING
+foster,"encourage,develop,promote,nurture,support","hinder,prevent,oppose",fostered growth,"care,support,environment",GROWING
+propagate,"multiply,reproduce,spread,disseminate,clone","reduce,contain,limit",propagated plants,"division,seed,cuttings",GROWING
+germinate,"sprout,begin growth,start,initiate","dormant,sterile,fail",germinated seed,"moisture,warmth,time",GROWING
+transplant,"move,repot,relocate,transfer plant","uproot,remove,extract",transplanted plant,"relocation,roots,soil",GROWING
+graft,"join,attach,fuse,bond,unite","sever,cut,separate",grafted plant,"cutting,technique,union",GROWING
+prune,"trim,cut,remove branches,shape","grow,expand,let wild",pruned form,"shears,technique,intention",GROWING
+deadhead,"remove dead flowers,trim,promote blooming","let seed,allow die,neglect",deadheaded plant,"shears,hand",GROWING
+pollinate,"transfer pollen,fertilize,impregnate","isolate,prevent,sterilize",pollinated flower,"bees,wind,hand,insect",GROWING
+birth,"bear,give birth,deliver,bring forth","kill,abort,miscarry",born offspring,"gestation,labor,time",YIELDING
+calve,"give birth to calf,deliver,bear young","kill,miscarry,prevent",born calf,"pregnancy,labor,biology",YIELDING
+foal,"give birth to foal,deliver horse young","kill,miscarry,abort",born foal,"pregnancy,labor,biology",YIELDING
+lamb,"give birth to lamb,deliver,bear young","kill,miscarry,abort",born lamb,"pregnancy,labor,biology",YIELDING
+kid,"give birth to kid,deliver young goat","kill,miscarry,abort",born kid,"pregnancy,labor,biology",YIELDING
+foetus,"carry in womb,gestate,develop embryo","abort,miscarry,terminate",developing fetus,"pregnancy,time,biology",GROWING
+gestate,"carry pregnancy,develop fetus,be pregnant","abort,miscarry,terminate",gestation period,"pregnancy,time,womb",GROWING
+impregnate,"fertilize,make pregnant,conceive,inseminate","sterilize,prevent,block",pregnant female,"sperm,fertilization,biology",GROWING
+hatch,"emerge from egg,break shell,incubate completion","keep enclosed,prevent emergence,incubate",hatched offspring,"warmth,incubation,development",YIELDING
+incubate,"keep egg warm,brood,sit on eggs,maintain warmth","cool,abandon,expose",incubated egg,"warmth,time,brooding behavior",GROWING
+breed,"reproduce,mate,procreate,produce offspring","sterilize,prevent,isolate",bred offspring,"mating,genetics,selection",YIELDING
+reproduce,"breed,procreate,bear young,multiply","sterilize,prevent reproduction,abort",reproduced offspring,"mating,biology,time",YIELDING
+multiply,"increase number,reproduce,proliferate,expand","reduce,decrease,limit",multiplied population,"reproduction,growth,time",YIELDING
+clone,"genetically replicate,duplicate,asexually reproduce","differentiate,mutate,distinct",cloned organism,"genetic material,laboratory,technology",SYNTHESIZING
+lactate,"produce milk,secrete milk,breast feed","stop lactating,wean,dry",milk,"hormones,pregnancy,glands",EMITTING
+perspire,"sweat,excrete moisture,thermoregulate","dry,cool,retain",sweat,"heat,exertion,stress,glands",EMITTING
+sweat,"perspire,excrete water,secrete moisture","dry,cool,retain",sweat,"heat,exertion,glands",EMITTING
+salivate,"secrete saliva,drool,moisten mouth","dry mouth,xerostomia,stop secreting",saliva,"taste,stimulation,glands",EMITTING
+weep,"cry,produce tears,lacrimation,shed tears","dry eyes,retain,hold back",tears,"emotion,irritation,glands",EMITTING
+cry,"weep,shed tears,produce tears,wail","dry eyes,hold back,suppress",tears,"emotion,pain,sadness,glands",EMITTING
+bleed,"hemorrhage,exude blood,lose blood,flow","coagulate,clot,stop",blood,"injury,rupture,wound,vessel",EMITTING
+hemorrhage,"bleed profusely,lose blood heavily,flow","coagulate,clot,stop",blood,"rupture,injury,severe wound",EMITTING
+menstruate,"shed uterine lining,have period,cycle","amenorrhea,cease,stop",menstrual blood,"hormones,ovulation,cycle,biology",EMITTING
+ovulate,"release egg,discharge ova,produce egg cell","anovulation,cease,stop",egg,"hormones,ovarian cycle,biology",YIELDING
+ejaculate,"expel semen,discharge,orgasm,emit sperm","retain,withhold,cease",semen,"sexual stimulation,arousal,biology",EMITTING
+urinate,"pass urine,void bladder,micturition,pee","retain,hold,suppress",urine,"full bladder,urge,pressure",EMITTING
+defecate,"pass stool,void bowel,evacuate,poop","constipate,retain,suppress",feces,"full bowel,urge,pressure",EMITTING
+evacuate,"expel contents,discharge,void,empty","fill,retain,suppress",evacuated material,"pressure,urgency,muscle action",EMITTING
+vomit,"regurgitate,expel,retch,eject contents","swallow,retain,suppress",vomitus,"nausea,irritation,reflex",EMITTING
+gag,"retch,choke,gag reflex,almost vomit","swallow,suppress,control",gag reaction,"irritation,reflex",EMITTING
+belch,"burp,eruct,expel gas,release","suppress,swallow,retain",gas,"carbonation,air,digestion",EMITTING
+eruct,"belch,burp,expel gas,release wind","suppress,retain,swallow",gas,"carbonation,air,digestion",EMITTING
+hiccup,"involuntary contraction,spasm,phrenic nerve reflex","suppress,hold breath,relax",hiccup sound,"irritation,reflex,diaphragm",EMITTING
+cough,"expel air forcefully,hack,expel mucus","suppress,hold breath,breathe softly",expelled air,"irritation,mucus,reflex",EMITTING
+sneeze,"expel air explosively,achoo,expel droplets","suppress,hold breath,sniffle",expelled air/droplets,"irritation,allergen,reflex",EMITTING
+drool,"salivate excessively,drivel,slobber,dribble","dry,wipe,suppress",saliva,"excess saliva,lazy,sleep",EMITTING
+spit,"expectorate,eject saliva,spit out,expel","swallow,suppress,withhold",saliva,"disgust,force,muscle action",EMITTING
+expectorate,"spit,cough up,expel phlegm,discharge mucus","swallow,suppress,withhold",sputum,"mucus,cough,irritation",EMITTING
+secrete,"produce substance,hide away,conceal,exude","reveal,show,expose",secreted substance,"glands,cells,biological process",EMITTING
+exude,"secrete,ooze,emit,seep,discharge gradually","absorb,retain,suppress",exuded fluid,"pressure,osmosis,secretion",EMITTING
+ooze,"exude slowly,seep,leak,flow gradually","stop,absorb,plug",oozing fluid,"gravity,pressure,leakage",EMITTING

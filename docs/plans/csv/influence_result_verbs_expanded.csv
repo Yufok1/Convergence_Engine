@@ -1,0 +1,117 @@
+Word,Synonyms,Antonyms,Causes,Caused_By,Category
+influence,"affect,sway,impact,shape,persuade","independent,unaffected,immune,resist,oppose",behavior/belief changed,"power,authority,persuasion,proximity",INFLUENCING
+affect,"alter,change,touch,impact,influence","unaffected,unchanged,independent,resistant",emotional/state change,"stimulus,circumstance,event,action",AFFECTING
+impact,"affect,influence,strike,hit,impress","miss,unaffected,bounce off,no effect",significant effect created,"force,collision,importance,weight",AFFECTING
+shape,"form,mold,influence,determine,fashion","unformed,random,chaotic,unchanged,original",form determined,"intention,force,design,skill",INFLUENCING
+mold,"shape,influence,form,fashion,sculpt","unformed,destroy,break,unmold,release",molded form,"pressure,design,intention,material",INFLUENCING
+sway,"influence,persuade,move,convince,bend","steady,firm,unmoved,resistant,fixed",opinion/belief changed,"persuasion,evidence,emotion,pressure",INFLUENCING
+bias,"prejudice,skew,influence unfairly,slant,tilt","impartial,fair,unbiased,neutral,balanced",prejudiced thinking,"prejudice,stereotype,favoritism,intent",INFLUENCING
+skew,"bias,distort,tilt,slant,prejudice","straighten,fair,unbiased,balanced,true",distorted view,"prejudice,intentional distortion,bias",INFLUENCING
+slant,"bias,skew,tilt,lean,angle toward","balance,fair,neutral,perpendicular,true",biased perspective,"prejudice,intent,presentation,angle",INFLUENCING
+bend,"influence,persuade,curve,flex,shape","straighten,resist,unbend,firm,fixed",curved/changed form,"force,persuasion,pressure,flexibility",INFLUENCING
+sway to,"persuade toward,influence toward,bend to","resist,oppose,maintain,steadfast,firm",persuaded action,"persuasion,argument,emotion,pressure",INFLUENCING
+prejudice,"bias,influence against,predispose,jaundice","fair,neutral,unbiased,open-minded,objective",biased opinion formed,"stereotype,previous experience,bias,intent",INFLUENCING
+predispose,"influence toward,incline toward,dispose,bias","neutral,objective,unbiased,open-minded",inclination toward formed,"nature,experience,tendency,bias",INFLUENCING
+incline,"persuade toward,dispose toward,lean toward","repel,discourage,disincline,contrary",inclination shown,"tendency,persuasion,appeal,similarity",INFLUENCING
+dispose,"incline,predispose,influence,arrange, prepare","indispose,arrange otherwise,contrary,resist",disposition formed,"nature,experience,bias,circumstance",INFLUENCING
+govern,"control,regulate,influence,rule,direct","rebel,free,uncontrolled,chaotic,lawless",control established,"authority,law,intention,force",INFLUENCING
+regulate,"control,govern,adjust,manage,influence","unregulated,wild,chaotic,free,uncontrolled",controlled state,"law,authority,intention,mechanism",INFLUENCING
+manipulate,"control,influence unfairly,exploit,manage, handle","liberate,honest,fair,direct,transparent",behavior controlled deceptively,"cunning,deception,psychology,intent",INFLUENCING
+control,"govern,regulate,manage,direct,dominate","rebel,free,loose,uncontrolled,escape",control established,"power,authority,force,intention",INFLUENCING
+direct,"guide,influence,manage,control,steer","follow,obey,abandon guidance,opposite",direction given,"authority,knowledge,intention,power",INFLUENCING
+guide,"direct,lead,influence,steer,shepherd","mislead,abandon, follow,opposite guidance",guidance provided,"knowledge,intention,direction,authority",INFLUENCING
+steer,"guide,direct,influence,navigate,manage","lose control,stray,random,chaotic,wander",direction steered,"control,intention,knowledge,skill",INFLUENCING
+lead,"guide,direct,influence,head,pioneer","follow,lag,trail,last,surrender",leadership given,"knowledge,direction,intention,authority",INFLUENCING
+tempt,"entice,seduce,attract,influence toward wrong","repel,resist,abstain,correct,discourage",temptation offered,"desire,weakness,appeal,opportunity",INFLUENCING
+entice,"tempt,lure,attract,induce, seduce","repel,resist,discourage,deter,abstain",attraction created,"appeal,desire,opportunity,persuasion",INFLUENCING
+seduce,"entice,tempt,attract,mislead,corrupt","repel,resist,abstain,correct,pure",seduction attempted,"desire,appeal,cunning,opportunity",INFLUENCING
+charm,"attract,fascinate,enchant,win over,delight","repel,disgust,bore,alienate,annoy",attraction felt,"appeal,charisma,personality,skill",INFLUENCING
+persuade,"convince,induce,move,sway,bring round","dissuade,deter,discourage,oppose,resist",persuasion achieved,"argument,evidence,emotion,logic",INFLUENCING
+convince,"persuade,satisfy,prove,assure,win over","dissuade,doubt,undermine,skeptical",belief established,"evidence,logic,demonstration,proof",INFLUENCING
+induce,"persuade,cause,move,lead,bring about","discourage,prevent,inhibit,dissuade",action prompted,"incentive,persuasion,circumstance,offer",INFLUENCING
+affect,"influence,impact,change,touch,alter","unaffected,unchanged,immune,independent",state/emotion changed,"stimulus,circumstance,event,impact",AFFECTING
+touch,"affect,move emotionally,impact,influence","untouched,unaffected,cold,unmoved,distant",emotional impact,"emotion,sensitivity,kindness,care",AFFECTING
+move,"affect emotionally,inspire,persuade,touch","unmoved,unaffected,cold,indifferent",emotion evoked,"emotion,empathy,inspiration,event",AFFECTING
+strike,"affect,impress,catch attention,hit,impact","miss,unaffected,overlook,neglect",impression made,"force,importance,timing,attention",AFFECTING
+impress,"affect positively,influence,strike,impact","disappoint,underwhelm,bore,neglect",positive impression,"skill,quality,presentation,impact",AFFECTING
+alter,"change,affect,modify,transform,adjust","maintain,unchanged,original,revert,keep",alteration made,"intention,force,circumstance,decision",AFFECTING
+change,"alter,transform,affect,modify,vary","maintain,unchanged,constant,same,static",changed state,"force,intention,circumstance,decision",AFFECTING
+modify,"alter,change,adjust,affect,refine","original,maintain,unchanged,keep, static",modification made,"need,intention,improvement,decision",AFFECTING
+disturb,"affect negatively,upset,bother,disrupt,agitate","calm,peace,unperturbed,content,smooth",disturbance caused,"concern,intrusion,noise,problem",AFFECTING
+result,"follow,ensue,occur,come about,arise","cause,prevent,negate,reverse,undo",result/outcome,"causation,sequence,completion,consequence",RESULTING
+result from,"arise from,follow from,stem from,originate from","cause,prevent,negate",result/outcome,"causation,sequence,logic",RESULTING
+result in,"lead to,cause,bring about,produce,create","prevent,stop,avoid,escape,undo",consequence produced,"causation,action,sequence,intention",RESULTING
+follow,"result,ensue,come after,succeed,consequent","precede,lead,cause,prevent,contradict",sequence followed,"causation,time,logic,consequence",RESULTING
+follow from,"result from,arise from,stem from,proceed from","cause,prevent,contradict,negate",consequence follows,"causation,logic,reason,antecedent",RESULTING
+ensue,"follow,result,come next,transpire,occur","prevent,precede,antecede,contradict",sequence continued,"time,causation,consequence,logic",RESULTING
+stem from,"originate from,result from,arise from,derive from","cause,prevent,contradict,negate",origin traced,"root cause,source,causation,origin",RESULTING
+arise from,"result from,stem from,originate from,derive from","cause,prevent,contradict,negate",origin established,"cause,source,circumstance,condition",RESULTING
+derive from,"originate from,come from,result from,stem from","generate,produce,cause,negate",origin traced,"source,root,foundation,cause",RESULTING
+originate from,"come from,stem from,arise from,derive from","end at,cause,prevent,negate",origin established,"source,root,cause,creation",RESULTING
+come from,"originate from,derive from,stem from,arise from","go to,lead to,cause,end",origin identified,"source,root,causation,start",RESULTING
+spring from,"originate from,arise from,stem from,derive from","end at,cause,prevent,negate",origin traced,"source,root,cause,generation",RESULTING
+flow from,"result from,originate from,stem from,derive from","cause,prevent,contradict",consequence flows,"source,causation,consequence,logic",RESULTING
+proceed from,"result from,originate from,come from,flow from","cause,prevent,negate,contradict",progress/origin from,"source,causation,logic,motion",RESULTING
+emanate from,"originate from,stem from,derive from,come from","cause,prevent,negate",emission from source,"source,radiation,emanation,origin",RESULTING
+issue from,"originate from,come from,result from,stem from","cause,prevent,contradict",issue/result from,"source,consequence,causation",RESULTING
+occur,"happen,take place,occur,result,transpire","prevent,avoid,not happen,false,negate",event occurrence,"circumstance,sequence,time,condition",RESULTING
+happen,"occur,take place,transpire,result,befall","prevent,avoid,stop,false,negate",event occurrence,"circumstance,chance,sequence,condition",RESULTING
+take place,"occur,happen,transpire,result,eventúate","prevent,avoid,not happen,false,negate",event occurrence,"sequence,timing,circumstance,condition",RESULTING
+transpire,"occur,happen,happen to be revealed,come about","prevent,avoid,not happen,secret,hidden",event occurrence/revelation,"chance,revelation,sequence,time",RESULTING
+come about,"occur,happen,result,come to pass,transpire","prevent,avoid,not happen,false,negate",event occurrence,"sequence,circumstance,chance, timing",RESULTING
+come to pass,"occur,happen,transpire,result,eventúate","prevent,avoid,fail to occur,false",event occurrence,"fate,timing,circumstance,chance",RESULTING
+materialize,"occur,happen,come true,manifest,appear","fail to occur,prevent,disappear,false",materialized reality,"conditions,circumstance,effort,chance",RESULTING
+eventuate,"result,occur,happen,come about,transpire","prevent,avoid,not happen,negate",eventual result,"sequence,time,consequence,logic",RESULTING
+upshot,"result,outcome,consequence,final result","beginning,cause,prevention,first",final result,"sequence,causation,completion",RESULTING
+outcome,"result,consequence,effect,upshot,final state","beginning,cause,cause,input,start",final outcome,"causation,sequence,conclusion",RESULTING
+determine,"decide,establish,ascertain,settle,resolve","waver,hesitate,uncertain,open,flexible",determination made,"evidence,analysis,decision,intention",DETERMINING
+decide,"determine,resolve,conclude,settle,choose","waver,hesitate,postpone,defer,open",decision made,"deliberation,evidence,judgment,choice",DETERMINING
+settle,"decide,determine,establish,resolve,conclude","reopen,dispute,uncertain,unresolved",settled state,"agreement,finality,decision,resolution",DETERMINING
+establish,"determine,prove,set up,found,create","destroy,overturn,disprove,question",established state,"evidence,proof,foundation,intention",DETERMINING
+ascertain,"determine,find out,discover,establish,verify","ignore,overlook,unverified,uncertain",certainty established,"investigation,evidence,verification, discovery",DETERMINING
+resolve,"decide,determine,settle,conclude, clear","waver,irresolution,reopen, conflict",resolution achieved,"determination,evidence,choice, decision",DETERMINING
+conclude,"decide,determine,infer,finish,determine finally","begin,open,question,continue,uncertain",conclusion reached,"evidence,reasoning,analysis, completion",DETERMINING
+fix,"determine,establish,set,attach,decide","unfixed,mobile,loose,uncertain,change",fixed state,"decision,attachment,intention, determination",DETERMINING
+predetermine,"decide in advance,determine beforehand,foreordain","chance,random,flexible,undetermined",predetermined state,"planning,intention,fate,decision",DETERMINING
+determine,"influence outcome,be deciding factor,control","indifferent,effect,secondary,flexible",outcome determined,"condition,cause,circumstance,essence",DETERMINING
+depend,"rely,hinge,be contingent,be determined by","independent,free,unaffected,autonomous",dependence established,"necessity,condition,causation,need",DEPENDING
+depend on,"rely on,hinge on,be contingent on,contingent","independent of,free from,autonomous",dependence on established,"condition,causation,necessity,requirement",DEPENDING
+depend upon,"rely upon,hinge upon,be contingent upon","independent of,free from,autonomous",dependence upon established,"condition,necessity,causation,requirement",DEPENDING
+rely,"depend,count on,have confidence in,trust","distrust,independent,self-sufficient,doubt",reliance shown,"trust,necessity,dependence,need",DEPENDING
+rely on,"depend on,count on,have confidence in,trust","distrust,independent,self-sufficient",reliance on established,"trust,necessity,dependence,need",DEPENDING
+rely upon,"depend upon,count upon,have confidence in","distrust,independent,self-sufficient",reliance upon established,"trust,necessity,dependence,need",DEPENDING
+hinge,"depend,turn,pivot,rest,be contingent","independent,irrelevant,fixed,determined",contingency pivot,"condition,causation,determination,necessity",DEPENDING
+hinge on,"depend on,turn on,pivot on,rest on,contingent","independent of,irrelevant,fixed",contingency established,"condition,causation,determination,factor",DEPENDING
+hinge upon,"depend upon,turn upon,pivot upon,rest upon","independent of,irrelevant,fixed",contingency upon established,"condition,causation,determination,factor",DEPENDING
+contingent,"dependent,conditional,subject to,depends on","absolute,independent,necessary,guaranteed",contingency established,"condition,circumstance,requirement,factor",DEPENDING
+contingent on,"dependent on,conditional on,subject to,relies on","independent of,absolute,necessary",contingency on established,"condition,circumstance,requirement,factor",DEPENDING
+contingent upon,"dependent upon,conditional upon,subject to","independent of,absolute,necessary",contingency upon established,"condition,circumstance,requirement,factor",DEPENDING
+subject to,"dependent on,contingent on,liable to,exposed to","exempt from,independent of,free from",subjection to established,"condition,liability,exposure,authority",DEPENDING
+liable to,"subject to,prone to,likely to,exposed to","exempt from,protected,free from,unlikely",liability established,"risk,exposure,circumstance,weakness",DEPENDING
+turn on,"depend on,hinge on,pivot on,rely on","independent of,irrelevant,fixed",turning point on,"condition,determination,essential factor",DEPENDING
+rest on,"depend on,be based on,hinge on,rest upon","independent of,unfounded,baseless",basis established,"foundation,support,condition, evidence",DEPENDING
+rest upon,"depend upon,be based upon,hinge upon,pivot upon","independent of,unfounded,unsupported",basis upon established,"foundation,support,condition,evidence",DEPENDING
+contribute,"add to,help cause,factor into,supply,provide","subtract,prevent,oppose,detract,diminish",contribution made,"effort,resources,participation,factor",INFLUENCING
+contribute to,"add to,factor into,help cause,affect outcome","subtract from,prevent,detract,oppose",contribution to made,"effort,participation,resources,factor",INFLUENCING
+contribute toward,"add to,work toward,factor into,help achieve","subtract from,prevent,oppose,hinder",contribution toward made,"effort,resources,participation,goal",INFLUENCING
+factor,"contribute,count,matter,be relevant,play part","irrelevant,ignore,negligible,minor",factored element,"importance,calculation,consideration,weight",DETERMINING
+factor in,"include,consider,account for,incorporate,recognize","exclude,ignore,overlook,omit",factoring in done,"importance,calculation,consideration,decision",DETERMINING
+factor into,"include in,consider in,account for in,incorporate","exclude from,ignore,overlook",factoring into done,"importance,calculation,consideration,outcome",DETERMINING
+account for,"explain,comprise,factor into,figure into","overlook,ignore,unaccounted,irrelevant",accounting done,"explanation,consideration,inclusion,portion",DETERMINING
+correlate,"correspond,relate,connect,associate, reciprocal","differ,contrast,separate,unrelated,inverse",correlation shown,"similarity,association,evidence,pattern",AFFECTING
+correlate with,"correspond with,relate to,associate with","differ from,contrast with,unrelated,separate",correlation with shown,"similarity,association,pattern,connection",AFFECTING
+correspond,"match,correlate,relate,correspond to, align","differ,contrast,opposite,unrelated,mismatch",correspondence shown,"similarity,alignment,parallel,connection",AFFECTING
+correspond with,"match with,align with,correlate with,relate to","differ from,contrast,mismatch,unrelated",correspondence with shown,"alignment,similarity,parallel,connection",AFFECTING
+relate,"connect,associate,pertain,concern, correspond","differ,unrelated,separate,irrelevant,distinct",relation shown,"connection,relevance,association, similarity",AFFECTING
+relate to,"connect to,pertain to,concern,apply to","differ from,unrelated,irrelevant,separate",relation to shown,"relevance,connection,application,similarity",AFFECTING
+connect,"link,relate,join,associate,unite","disconnect,separate,sever,unrelated",connection made,"relationship,link,causation,proximity",AFFECTING
+connect with,"link with,relate to,associate with,interact with","disconnect from,separate,unrelated,distinct",connection with made,"relationship,link,association,interaction",AFFECTING
+link,"connect,associate,relate,bind,unite","unlink,disconnect,separate,sever,distinct",link made,"relationship,connection,causation,bond",AFFECTING
+link with,"connect with,associate with,relate to,bind with","disconnect from,separate,unrelated,distinct",link with made,"relationship,connection,association,bond",AFFECTING
+associate,"connect,link,relate,combine,group with","dissociate,separate,unrelated,distinct",association made,"relationship,connection,similarity,proximity",AFFECTING
+associate with,"connect with,link with,relate to,group with","dissociate from,separate,unrelated,distinct",association with made,"relationship,connection,similarity,bond",AFFECTING
+align,"correspond,match,arrange in line,agree,accord","misalign,mismatch,disagree,conflict",alignment achieved,"correspondence,arrangement,agreement,coordination",AFFECTING
+align with,"correspond with,match with,agree with,accord","misalign with,conflict,disagree,mismatch",alignment with achieved,"correspondence,agreement,coordination,similarity",AFFECTING
+gear,"adjust,adapt,arrange,match,coordinate","ungear,mismatch,conflict,inappropriate",gearing achieved,"adaptation,coordination,arrangement,matching",AFFECTING
+gear to,"adapt to,match to,coordinate with,suit","gear away,mismatch,inappropriate,unsuitable",gearing to achieved,"adaptation,coordination,matching,suitability",AFFECTING
+gear toward,"arrange toward,adapt toward,coordinate toward","away,inappropriate,unsuitable,mismatch",gearing toward achieved,"adaptation,coordination,matching,direction",AFFECTING

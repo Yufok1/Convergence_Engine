@@ -1,0 +1,74 @@
+Word,Synonyms,Antonyms,Causes,Caused_By,Category
+love,"adore, cherish, treasure, devotion","hate, despise, loathe, detest","emotional attachment, intimate connection, commitment","affection, shared values, attraction",BONDING
+like,"enjoy, appreciate, prefer, favor","dislike, hate, despise, loathe","positive regard, preference, enjoyment","similarity, positive interaction, attraction",BONDING
+befriend,"make friends, bond, connect, associate","shun, avoid, reject, exclude","friendship formation, social connection, relationship","similarity, mutual interest, proximity",BONDING
+embrace,"hug, hold, accept, welcome","reject, push away, exclude, spurn","physical/emotional closeness, acceptance, affection","love, greeting, acceptance",BONDING
+nurture,"care for, support, foster, develop","neglect, abandon, starve, deprive","growth, development, emotional security","parental/mentor instinct, love, responsibility",BONDING
+marry,"wed, unite, join, betroth","divorce, separate, break up, annul","legal union, commitment, family formation","love, social obligation, legal intent",BONDING
+mentor,"guide, coach, advise, teach","mislead, abandon, ignore, neglect","skill development, knowledge transfer, growth","expertise, responsibility, care",BONDING
+teach,"instruct, educate, train, coach","ignore, withhold, mislead, confuse","knowledge acquisition, skill development, learning","expertise, educational intent, responsibility",BONDING
+support,"help, aid, assist, sustain","undermine, betray, abandon, sabotage","emotional/physical assistance, stability, empowerment","care, loyalty, responsibility",BONDING
+comfort,"console, soothe, ease, reassure","distress, upset, agitate, torment","emotional relief, peace, healing","empathy, care, emotional connection",BONDING
+trust,"believe, rely on, confide, depend","distrust, doubt, suspect, question","relationship security, vulnerability, openness","reliability, consistency, honesty",BONDING
+cherish,"treasure, value, hold dear, prize","discard, disregard, despise, neglect","emotional preservation, affection display, bonding","love, appreciation, importance",BONDING
+adore,"love, revere, idolize, worship","despise, hate, loathe, detest","deep affection, admiration, emotional connection","qualities, performance, attraction",BONDING
+dominate,"control, rule, command, govern","submit, obey, yield, surrender","power establishment, control assumption, hierarchy","strength, position, authority",DOMINANCE
+command,"order, direct, instruct, mandate","obey, comply, submit, follow","action execution, behavior control, hierarchy","authority, leadership, power position",DOMINANCE
+order,"command, direct, instruct, mandate","request, suggest, recommend, propose","obedience requirement, action directive, control","authority, power, necessity",DOMINANCE
+demand,"require, insist, claim, assert","request, suggest, beg, plead","compliance requirement, assertion, control","entitlement, power, need",DOMINANCE
+control,"manage, direct, rule, govern","release, free, empower, liberate","behavioral regulation, power assertion, hierarchy","authority, position, power",DOMINANCE
+govern,"rule, control, manage, regulate","obey, submit, yield, follow","leadership establishment, rule implementation, order","authority, position, power",DOMINANCE
+rule,"govern, control, dominate, reign","obey, serve, submit, yield","authority exercise, order maintenance, power display","position, power, legitimacy",DOMINANCE
+lead,"guide, direct, command, head","follow, obey, submit, serve","direction provision, group movement, authority","skill, position, influence",DOMINANCE
+obey,"comply, follow, submit, yield","disobey, resist, rebel, defy","action compliance, hierarchy acceptance, control","authority recognition, fear, respect",SUBMISSION
+submit,"yield, surrender, capitulate, give in","resist, rebel, defy, oppose","control acceptance, hierarchy acceptance, defeat","force, circumstances, acceptance",SUBMISSION
+surrender,"yield, submit, give up, capitulate","resist, fight, oppose, defy","control transfer, defeat acceptance, peace","force, exhaustion, choice",SUBMISSION
+comply,"obey, follow, conform, adhere","disobey, resist, defy, violate","rule acceptance, action compliance, order","authority, rules, requirement",SUBMISSION
+serve,"assist, work for, obey, attend","command, lead, rule, dominate","assistance provision, submission, hierarchy","obligation, respect, position",SUBMISSION
+yield,"give way, submit, surrender, concede","resist, insist, demand, dominate","control transfer, acceptance, hierarchy","force, wisdom, necessity",SUBMISSION
+defer,"submit, yield, respect, acknowledge","insist, assert, dominate, override","judgment acceptance, respect display, submission","respect, authority, wisdom recognition",SUBMISSION
+follow,"obey, trail, succeed, emulate","lead, precede, resist, rebel","direction acceptance, hierarchy, movement","leadership, authority, choice",SUBMISSION
+hate,"despise, loathe, detest, abhor","love, like, cherish, adore","emotional rejection, hostility, antagonism","wrongdoing, betrayal, disrespect",CONFLICT
+dislike,"hate, detest, loathe, despise","like, love, enjoy, appreciate","emotional rejection, avoidance, distance","negative experience, personality clash, values",CONFLICT
+fight,"battle, combat, struggle, conflict","peace, harmony, cooperate, reconcile","injury, dominance, fear, dispute resolution attempt","disagreement, provocation, defense",CONFLICT
+argue,"quarrel, debate, dispute, contend","agree, concur, harmonize, cooperate","conflict escalation, position assertion, emotion","disagreement, values clash, competition",CONFLICT
+quarrel,"argue, dispute, bicker, wrangle","agree, cooperate, harmonize, reconcile","verbal conflict, relationship strain, emotion","disagreement, irritation, misunderstanding",CONFLICT
+accuse,"blame, charge, allege, indict","exonerate, absolve, forgive, excuse","guilt assignment, conflict, defense attack","perceived wrongdoing, evidence, anger",CONFLICT
+blame,"accuse, fault, censure, criticize","forgive, excuse, pardon, absolve","guilt assignment, conflict, responsibility claim","wrongdoing, frustration, accountability",CONFLICT
+resist,"oppose, defy, reject, withstand","surrender, submit, accept, comply","opposition display, conflict, control prevention","disagreement, disrespect, autonomy assertion",CONFLICT
+oppose,"resist, contest, challenge, defy","support, agree, cooperate, yield","conflict, position assertion, power struggle","disagreement, values clash, competition",CONFLICT
+challenge,"confront, defy, question, dispute","accept, agree, concede, submit","conflict escalation, authority questioning, test","disagreement, confidence, provocation",CONFLICT
+despise,"hate, loathe, detest, abhor","love, respect, admire, cherish","emotional rejection, distance, antagonism","perceived inferiority, betrayal, values clash",CONFLICT
+envy,"begrudge, covet, resent, desire","celebrate, congratulate, appreciate, admire","resentment, desire, jealousy, conflict","comparison, deprivation, inferior status",CONFLICT
+insult,"offend, disrespect, belittle, demean","compliment, respect, honor, praise","emotional harm, offense, relationship damage","disrespect, anger, contempt",CONFLICT
+betray,"deceive, double-cross, abandon, reveal","support, loyalty, faithfulness, protect","trust breach, relationship damage, conflict","self-interest, fear, disrespect",CONFLICT
+forgive,"pardon, excuse, absolve, overlook","condemn, punish, resent, hold grudge","conflict resolution, relationship healing, peace","remorse, apology, compassion",RECONCILIATION
+apologize,"regret, ask pardon, atone, repent","justify, defend, blame, accuse","forgiveness opportunity, relationship repair, peace","regret, shame, responsibility recognition",RECONCILIATION
+reconcile,"make up, reunite, restore, repair","separate, divide, break up, estrange","relationship restoration, conflict resolution, harmony","apology, forgiveness, shared values",RECONCILIATION
+make up,"reconcile, reunite, forgive, restore","break up, separate, fight, argue","conflict resolution, relationship restoration, peace","apology, forgiveness, mutual desire",RECONCILIATION
+heal,"mend, repair, restore, recover","wound, harm, damage, break","emotional recovery, relationship repair, wholeness","time, forgiveness, care",RECONCILIATION
+repair,"fix, restore, mend, rebuild","break, damage, destroy, ruin","relationship restoration, functionality, improvement","effort, willingness, mutual intent",RECONCILIATION
+mend,"repair, fix, heal, restore","break, tear, damage, destroy","relationship restoration, wholeness, healing","effort, care, shared commitment",RECONCILIATION
+cooperate,"collaborate, work together, unite, assist","compete, resist, oppose, isolate","mutual goal achievement, synergy, effectiveness","shared goals, mutual benefit, necessity",GROUP_DYNAMICS
+unite,"join, combine, merge, ally","separate, divide, split, scatter","strength increase, group formation, solidarity","shared purpose, threat, common ground",GROUP_DYNAMICS
+collaborate,"cooperate, work together, partner, team","compete, isolate, oppose, sabotage","combined effort, shared results, synergy","common goals, expertise sharing, efficiency",GROUP_DYNAMICS
+include,"accept, embrace, admit, welcome","exclude, reject, isolate, shun","group membership, belonging, participation","acceptance, openness, values alignment",GROUP_DYNAMICS
+exclude,"ban, reject, isolate, shun","include, accept, welcome, embrace","group boundary, rejection, isolation","disagreement, values clash, judgment",GROUP_DYNAMICS
+isolate,"separate, exclude, quarantine, detach","include, unite, connect, integrate","separation, loneliness, vulnerability","rejection, punishment, disease",GROUP_DYNAMICS
+welcome,"greet, receive, accept, embrace","reject, shun, exclude, rebuff","acceptance, belonging, positive greeting","hospitality, acceptance, shared values",GROUP_DYNAMICS
+participate,"join, contribute, engage, take part","abstain, withdraw, refrain, sit out","group involvement, contribution, membership","interest, invitation, commitment",GROUP_DYNAMICS
+shun,"avoid, reject, exclude, spurn","welcome, embrace, accept, befriend","rejection, isolation, boundary setting","disapproval, disrespect, judgment",GROUP_DYNAMICS
+respect,"honor, admire, esteem, value","disrespect, insult, despise, demean","hierarchy acknowledgment, deference, relationship quality","virtue, achievement, character",BONDING
+admire,"respect, esteem, revere, idolize","despise, disrespect, scorn, mock","emotional connection, positive regard, motivation","achievement, character, qualities",BONDING
+learn,"study, understand, discover, acquire","forget, unlearn, ignore, neglect","knowledge acquisition, growth, development","teaching, experience, study",BONDING
+request,"ask, petition, appeal, solicit","demand, command, order, insist","action request, permission seeking, cooperation","need, politeness, uncertainty",DOMINANCE
+permit,"allow, enable, authorize, consent","forbid, deny, prohibit, prevent","action allowance, freedom, authority exercise","authority, consent, judgment",DOMINANCE
+allow,"permit, enable, tolerate, consent","forbid, deny, prevent, prohibit","action allowance, freedom, consent","authority, tolerance, judgment",DOMINANCE
+forbid,"ban, prohibit, prevent, deny","permit, allow, authorize, enable","action prevention, boundary setting, control","authority, danger, values",DOMINANCE
+deny,"refuse, reject, disallow, prohibit","grant, allow, permit, give","action prevention, refusal, deprivation","judgment, authority, disagreement",DOMINANCE
+accept,"receive, embrace, approve, consent","reject, refuse, decline, deny","relationship acceptance, agreement, bonding","approval, choice, values",BONDING
+reject,"refuse, deny, spurn, decline","accept, embrace, approve, welcome","refusal, exclusion, relationship damage","disapproval, incompatibility, values",CONFLICT
+neglect,"ignore, disregard, abandon, overlook","care for, nurture, support, attend","abandonment, emotional harm, relationship damage","carelessness, disinterest, deprioritization",CONFLICT
+abandon,"desert, forsake, leave, discard","support, stay, commit, embrace","relationship termination, betrayal, harm","choice, fear, disinterest",CONFLICT
+disobey,"defy, rebel, resist, violate","obey, comply, follow, submit","authority challenge, control assertion, conflict","disagreement, autonomy assertion, disrespect",CONFLICT
+beg,"plead, entreat, implore, beseech","demand, command, order, insist","action request, appeal, submission","desperation, need, humility",SUBMISSION

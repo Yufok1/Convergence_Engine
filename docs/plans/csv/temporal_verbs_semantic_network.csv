@@ -1,0 +1,44 @@
+Word,Synonyms,Antonyms,Causes,Caused_By,Category
+begin,"start, commence, initiate, open","end, finish, conclude, stop","process start, action initiation, commencement","decision, opportunity, signal, necessity",BEGINNING
+start,"begin, commence, initiate, launch","end, stop, finish, cease","action initiation, process beginning, motion","command, signal, decision, trigger",BEGINNING
+commence,"begin, start, initiate, open","conclude, stop, end, finish","formal beginning, process start, event initiation","decision, signal, occasion, necessity",BEGINNING
+initiate,"begin, start, launch, introduce","terminate, conclude, finish, stop","process beginning, action start, introduction","decision, necessity, opportunity, intent",INITIATING
+launch,"start, begin, initiate, introduce","terminate, cancel, abort, withdraw","project start, release, beginning, movement","decision, preparation, readiness, signal",BEGINNING
+open,"begin, start, launch, inaugurate","close, end, shut, conclude","access creation, business start, possibility","decision, readiness, opportunity, key",BEGINNING
+introduce,"begin, present, launch, start","withdraw, remove, finish, conclude","new element addition, presentation, beginning","decision, innovation, necessity, occasion",BEGINNING
+originate,"begin, start, arise, emerge","end, terminate, conclude, finish","source establishment, beginning, emergence","creation, condition, event, circumstance",BEGINNING
+emerge,"appear, arise, come forth, originate","disappear, vanish, recede, hide","appearance, visibility, existence","revelation, growth, circumstance",BEGINNING
+arise,"emerge, appear, occur, originate","disappear, cease, end, vanish","occurrence, emergence, beginning","condition, event, circumstance, situation",BEGINNING
+spring,"arise, emerge, originate, bounce","sink, fall, disappear, cease","sudden emergence, beginning, movement","condition, pressure, surprise, source",BEGINNING
+kick off,"begin, start, launch, commence","finish, end, conclude, stop","event start, beginning, initiation","decision, occasion, signal, readiness",BEGINNING
+get underway,"begin, start, commence, get going","stop, end, cease, finish","movement start, process beginning, action","readiness, signal, decision, preparation",BEGINNING
+break out,"erupt, begin, start, commence","end, suppress, contain, finish","sudden beginning, outbreak, eruption","trigger, condition, conflict, surprise",BEGINNING
+embark,"begin, start, commence, undertake","abandon, cease, finish, conclude","journey beginning, undertaking start, action","decision, opportunity, necessity, intent",BEGINNING
+establish,"found, create, set up, institute","dismantle, abolish, close, destroy","founding, creation, organization formation","decision, need, opportunity, resources",BEGINNING
+found,"establish, create, institute, build","abolish, dismantle, destroy, close","organization creation, founding, establishment","decision, vision, resources, opportunity",BEGINNING
+institute,"establish, found, set up, create","abolish, discontinue, end, close","program start, organization creation, system","decision, policy, need, reform",BEGINNING
+end,"finish, conclude, terminate, cease","begin, start, commence, initiate","termination, conclusion, cessation","completion, choice, circumstance, time",ENDING
+finish,"complete, end, conclude, wrap up","begin, start, initiate, commence","completion, conclusion, termination","completion, effort, time, exhaustion",ENDING
+stop,"cease, halt, pause, discontinue","start, begin, continue, proceed","cessation, pause, interruption, blockage","barrier, choice, signal, obstruction",ENDING
+cease,"stop, end, discontinue, terminate","begin, start, continue, persist","ending, cessation, termination, pause","decision, command, completion, necessity",TERMINATING
+conclude,"end, finish, terminate, complete","begin, start, initiate, commence","ending, conclusion, decision, finality","completion, logic, decision, necessity",ENDING
+terminate,"end, cease, conclude, finish","begin, start, initiate, establish","ending, dismissal, expiration, termination","completion, decision, expiration, discharge",TERMINATING
+complete,"finish, end, conclude, accomplish","begin, start, initiate, abandon","completion, accomplishment, fulfillment","effort, persistence, completion, fulfillment",ENDING
+close,"end, finish, conclude, shut","open, begin, start, inaugurate","ending, seal, conclusion, shutdown","decision, time, completion, order",ENDING
+halt,"stop, cease, pause, suspend","proceed, continue, advance, resume","stoppage, pause, suspension, blockage","barrier, command, danger, decision",TERMINATING
+quit,"stop, cease, leave, abandon","continue, persist, stay, resume","departure, abandonment, cessation","choice, frustration, completion, resignation",TERMINATING
+discontinue,"stop, cease, end, terminate","continue, persist, resume, maintain","cessation, ending, discontinuation","decision, completion, necessity, change",TERMINATING
+abort,"cancel, stop, abandon, terminate","continue, proceed, complete, finish","termination, cancellation, failure stop","emergency, decision, danger, problem",TERMINATING
+cancel,"abort, annul, call off, terminate","confirm, schedule, proceed, continue","event cancellation, termination, reversal","decision, emergency, conflict, change",TERMINATING
+expire,"end, terminate, lapse, elapse","renew, extend, continue, activate","expiration, ending, time running out","time limit, deadline, natural end",ENDING
+die,"perish, expire, pass away, decease","live, survive, endure, thrive","death, cessation of life, ending","age, disease, injury, cause",ENDING
+kill,"slay, murder, terminate, execute","spare, save, preserve, protect","death, termination, elimination","violence, execution, intention, action",TERMINATING
+extinguish,"put out, snuff, douse, quench","ignite, light, spark, kindle","fire ending, light cessation, smothering","water, smothering, action, effort",ENDING
+suspend,"pause, hold, postpone, halt","resume, continue, restart, proceed","temporary cessation, pause, interruption","decision, necessity, suspension order",TERMINATING
+postpone,"delay, defer, suspend, reschedule","expedite, advance, proceed, accelerate","delay, rescheduling, temporary stop","necessity, conflict, timing, decision",ENDING
+wrap up,"finish, conclude, complete, end","open, begin, start, expand","completion, conclusion, final stage","time, completion, decision, effort",ENDING
+wind down,"close, reduce, finish, conclude","ramp up, accelerate, begin, initiate","gradual ending, reduction, conclusion","time, effort completion, choice, fatigue",ENDING
+call off,"cancel, abort, postpone, abandon","proceed, continue, schedule, confirm","event cancellation, cessation, reversal","decision, circumstance, emergency, change",TERMINATING
+shut down,"close, cease operations, stop, end","start up, open, activate, commence","operation ending, system cessation, closing","decision, malfunction, command, emergency",TERMINATING
+retire,"withdraw, leave, quit, stop working","work, serve, continue, remain","career ending, withdrawal, cessation","age, choice, completion, health",ENDING
+dissolve,"terminate, end, disband, abolish","form, establish, create, found","ending, dissolution, organization termination","decision, bankruptcy, merging, legal action",TERMINATING

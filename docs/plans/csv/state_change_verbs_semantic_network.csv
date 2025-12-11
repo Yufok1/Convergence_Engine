@@ -1,0 +1,55 @@
+Word,Synonyms,Antonyms,Causes,Caused_By,Category
+grow,"increase, expand, enlarge, develop","shrink, contract, diminish, reduce","size increase, biomass expansion, dimension change","nutrients, time, cell division, growth hormone",SIZE_CHANGE
+shrink,"contract, decrease, diminish, reduce","grow, expand, enlarge, increase","size reduction, volume loss, dehydration","heat, drying, pressure release, age",SIZE_CHANGE
+expand,"enlarge, swell, dilate, distend","contract, shrink, compress, condense","volume increase, space occupation, dimension growth","heat, pressure, moisture, gas",SIZE_CHANGE
+contract,"shrink, compress, reduce, condense","expand, enlarge, swell, dilate","volume decrease, dimension reduction, tightening","cooling, pressure, dehydration, muscle action",SIZE_CHANGE
+swell,"expand, enlarge, inflate, puff","deflate, shrink, contract, reduce","size increase, volume expansion, protuberance","fluid accumulation, inflammation, gas, pressure",SIZE_CHANGE
+inflate,"fill, expand, swell, pump up","deflate, empty, collapse, puncture","volume expansion, air/gas filling, pressure increase","air pressure, pumping action, gas release",SIZE_CHANGE
+deflate,"empty, collapse, reduce, shrink","inflate, fill, expand, pump","volume loss, air escape, pressure decrease","puncture, air release, pressure loss",SIZE_CHANGE
+stretch,"extend, elongate, lengthen, pull","compress, contract, shorten, gather","dimension increase, tension increase, deformation","pulling force, tension, weight, heat",SIZE_CHANGE
+compress,"squeeze, condense, compact, reduce","expand, extend, inflate, release","volume decrease, density increase, space reduction","pressure application, squeezing, force",SIZE_CHANGE
+enlarge,"expand, increase, amplify, magnify","reduce, shrink, diminish, compress","size increase, dimension expansion, scale increase","growth, addition, expansion force",SIZE_CHANGE
+diminish,"decrease, shrink, reduce, lessen","grow, expand, increase, magnify","size reduction, amount decrease, loss","consumption, erosion, decay, use",SIZE_CHANGE
+dilate,"expand, widen, enlarge, open","constrict, narrow, contract, close","opening expansion, aperture widening, space increase","relaxation, pressure, muscle action",SIZE_CHANGE
+constrict,"tighten, narrow, compress, squeeze","dilate, expand, widen, open","opening narrowing, space reduction, tightening","muscle contraction, pressure, cold",SIZE_CHANGE
+heat,"warm, increase temperature, cook, scald","cool, chill, freeze, refrigerate","temperature increase, thermal energy, expansion","fire, sun, friction, energy input",TEMPERATURE
+cool,"chill, refrigerate, lower temperature, fan","heat, warm, scald, ignite","temperature decrease, heat loss, contraction","air circulation, shade, cold environment, refrigeration",TEMPERATURE
+warm,"heat, increase warmth, toast, bake","chill, cool, freeze, refrigerate","moderate temperature increase, comfort, heat","heat source, sun, friction, insulation",TEMPERATURE
+chill,"cool, refrigerate, freeze, lower temperature","heat, warm, scald, toast","temperature decrease, coldness, preservation","refrigeration, ice, cold air, winter",TEMPERATURE
+freeze,"solidify, ice, congeal, crystallize","thaw, melt, heat, liquefy","solidification, ice formation, temperature critical drop","extreme cold, liquid nitrogen, freezing point",TEMPERATURE
+thaw,"melt, defrost, unfreeze, warm","freeze, ice, congeal, solidify","melting, liquid formation, ice disappearance","heat, warming, spring season, sun",TEMPERATURE
+boil,"vaporize, bubble, simmer, heat rapidly","condense, cool, freeze, liquefy","vaporization, bubble formation, steam production","heat, reaching boiling point, flame",TEMPERATURE
+scald,"burn, heat intensely, parboil, blanch","cool, chill, freeze, refrigerate","severe heat damage, temperature critical increase","very hot liquid, extreme heat, steam",TEMPERATURE
+overheat,"overtemperature, superheat, scorch, ignite","cool, chill, refrigerate, freeze","excessive heat, damage, malfunction","continuous use, insufficient cooling, sun exposure",TEMPERATURE
+defrost,"thaw, unfreeze, deice, warm","freeze, frost, ice, congeal","ice removal, thawing, heat circulation","heat application, warming, sun",TEMPERATURE
+evaporate,"vaporize, vanish, dissipate, escape","condense, liquefy, coalesce, collect","liquid to gas conversion, moisture loss, vapor formation","heat, sun exposure, low humidity, pressure",PHASE_CHANGE
+condense,"compress, liquidize, coalesce, precipitate","evaporate, vaporize, disperse, expand","gas to liquid conversion, droplet formation, dew","cooling, pressure increase, cold surface",PHASE_CHANGE
+solidify,"harden, coagulate, congeal, freeze","liquefy, melt, soften, dissolve","liquid to solid conversion, hardening, setting","cooling, chemical reaction, pressure",PHASE_CHANGE
+liquefy,"melt, dissolve, soften, thaw","solidify, freeze, harden, congeal","solid to liquid conversion, melting, dissolution","heat, solvent, pressure, time",PHASE_CHANGE
+melt,"liquefy, thaw, dissolve, soften","freeze, solidify, harden, congeal","solid to liquid conversion, ice loss, softening","heat, friction, pressure, sun",PHASE_CHANGE
+vaporize,"evaporate, gasify, sublimate, vanish","condense, liquefy, solidify, collect","liquid/solid to gas conversion, disappearance, steam","extreme heat, radiation, low pressure",PHASE_CHANGE
+crystallize,"solidify, coagulate, harden, precipitate","dissolve, melt, liquefy, disperse","crystal formation, solid structure, organization","cooling, saturation, nucleation, evaporation",PHASE_CHANGE
+sublimate,"vaporize, evaporate, transform, gasify","deposit, condense, liquefy, solidify","solid to gas direct conversion, disappearance","heat, low pressure, high temperature",PHASE_CHANGE
+deposit,"precipitate, form, condense, solidify","sublimate, vaporize, evaporate, dissolve","gas to solid direct conversion, frost formation","cooling, low temperature, pressure",PHASE_CHANGE
+congeal,"coagulate, solidify, gel, harden","liquefy, melt, dissolve, thaw","liquid to solid gradual conversion, thickening","cooling, chemical reaction, coagulant",PHASE_CHANGE
+coagulate,"clot, curdle, gel, congeal","dissolve, separate, disperse, liquefy","particle aggregation, curdling, clotting","temperature, pH change, coagulant agent",PHASE_CHANGE
+thicken,"densify, concentrate, condense, coagulate","thin, dilute, liquefy, lighten","density increase, viscosity increase, consistency change","evaporation, addition, cooking, starch",DENSITY
+thin,"dilute, weaken, reduce, lighten","thicken, concentrate, densify, condense","density decrease, viscosity decrease, thinning","liquid addition, dissolution, heating",DENSITY
+concentrate,"densify, strengthen, thicken, reduce","dilute, weaken, thin, disperse","density increase, strength increase, reduction","evaporation, removal, focusing",DENSITY
+dilute,"thin, weaken, reduce strength, disperse","concentrate, thicken, strengthen, reduce","density decrease, strength reduction, solution","liquid addition, water, solvent",DENSITY
+compact,"compress, condense, densify, consolidate","loosen, expand, scatter, disperse","density increase, space reduction, hardening","pressure, pounding, vibration, settling",DENSITY
+loosen,"relax, release, separate, scatter","tighten, compact, condense, compress","density decrease, space increase, opening","force, shaking, relaxation, heat",DENSITY
+densify,"compact, thicken, condense, concentrate","lighten, loosen, disperse, expand","density increase, mass concentration, hardening","pressure, heat, settling, chemical reaction",DENSITY
+lighten,"reduce weight, diminish, ease, lessen","darken, densify, weigh, burden","weight reduction, lightness, ease","removal, dissolution, physical change",DENSITY
+pressurize,"compress, pressurize, increase pressure, inflate","depressurize, release, decompress, vent","pressure increase, compression, tightness","pumping, sealing, mechanical force",PRESSURE
+depressurize,"decompress, release, vent, reduce pressure","pressurize, compress, seal, inflate","pressure decrease, release, expansion","opening valve, venting, puncture",PRESSURE
+squeeze,"compress, press, crush, wring","release, expand, loosen, relax","pressure application, compression, extraction","hand pressure, mechanical force, weight",PRESSURE
+pinch,"squeeze, compress, crimp, nip","release, expand, loosen, separate","compression, pain, closing, extraction","fingers, pressure, mechanical action",PRESSURE
+tighten,"compress, clench, strain, constrict","loosen, relax, unfasten, release","tension increase, compression, security","twisting, force, muscle action",PRESSURE
+strain,"stress, tension, force, stretch","relax, ease, loosen, release","tension creation, stress, deformation potential","weight, force, pulling, pressure",PRESSURE
+harden,"solidify, stiffen, calcify, indurate","soften, weaken, liquefy, relax","hardness increase, brittleness, rigidity","cooling, chemical reaction, drying, aging",PHASE_CHANGE
+soften,"weaken, relax, ease, mellow","harden, stiffen, calcify, petrify","hardness decrease, flexibility, gentleness","heat, moisture, time, kneading",PHASE_CHANGE
+stiffen,"harden, rigidify, tense, brace","relax, soften, loosen, flex","rigidity increase, tension, firmness","starch, cold, muscle action, support",PHASE_CHANGE
+gel,"coagulate, solidify, set, congeal","liquefy, dissolve, melt, flow","gelation, semi-solid formation, thickening","cooling, gelatin addition, chemical reaction",PHASE_CHANGE
+curdle,"coagulate, clot, separate, curdle","blend, mix, emulsify, smooth","protein coagulation, separation, curdling","acid, heat, enzyme, time",PHASE_CHANGE
+dissolve,"disperse, liquefy, disintegrate, spread","precipitate, solidify, crystallize, coagulate","liquid formation, disappearance, solution","solvent, heat, stirring, time",PHASE_CHANGE

@@ -1,0 +1,81 @@
+Word,Synonyms,Antonyms,Causes,Caused_By,Category
+eat,"consume, devour, ingest, feed","fast, starve, vomit, abstain","satiation, nutrition, food processing, energy gain","hunger, survival need, pleasure, nutrition desire",EATING
+consume,"eat, devour, ingest, take in","save, preserve, conserve, discard","resource depletion, nutritional intake, satiation","need, hunger, consumption intent",EATING
+devour,"eat, consume, gulp, gobble","sip slowly, abstain, refuse, starve","rapid consumption, food disappearance, satisfaction","intense hunger, greed, speed",EATING
+gobble,"devour, eat quickly, bolt, wolf down","nibble, sip, abstain, chew slowly","rapid food intake, hurried consumption","haste, greed, excessive hunger",EATING
+nibble,"pick at, munch, snack, peck","gobble, devour, bolt, feast","small food consumption, tentative eating","mild hunger, testing taste, casual eating",EATING
+chew,"masticate, munch, crunch, bite","swallow whole, gulp, bolt, abstain","mechanical food breakdown, saliva mixing, digestion preparation","eating action, jaw movement, food texture",EATING
+bite,"nip, snap, chomp, sink teeth","release, spit, avoid, refuse","food separation, mouth closure, eating initiation","appetite, food presence, eating intent",EATING
+gnaw,"chew, nibble, munch, bite repeatedly","release, ignore, refuse, abstain","persistent chewing, food material wear, small consumption","sustained hunger, food toughness, animal behavior",EATING
+munch,"chew, crunch, bite, nibble","sip, fast, abstain, swallow whole","repeated chewing, sound production, food breakdown","eating action, texture, snacking",EATING
+swallow,"gulp, ingest, take down, down","spit out, regurgitate, vomit, refuse","esophageal passage, stomach entry, food movement","eating completion, throat muscles, gravity",EATING
+gulp,"swallow quickly, bolt, guzzle, down","sip slowly, chew thoroughly, abstain, spit","rapid swallowing, food descent, speed consumption","haste, large food pieces, difficulty",EATING
+feast,"banquet, gorge, dine lavishly, splurge","fast, starve, diet, abstain","large consumption, celebration, indulgence","celebration, abundance, luxury",EATING
+gorge,"overeat, stuff, glut, pig out","fast, starve, diet, abstain","excessive consumption, fullness, overindulgence","greed, abundance, compulsion",EATING
+graze,"browse, nibble, feed, pasture","fast, refrain, abstain, ignore","continuous feeding, vegetation consumption, satiation","herbivore behavior, available food, sustained eating",EATING
+feed,"eat, consume, dine, pasture","fast, starve, abstain, diet","nutrition intake, growth support, survival","hunger, feeding instinct, food availability",EATING
+dine,"eat, have dinner, feast, sup","fast, abstain, diet, starve","meal consumption, nutrition, social interaction","mealtime, hunger, social occasion",EATING
+ingest,"eat, consume, swallow, take in","reject, vomit, expel, eject","stomach entry, nutrition absorption, digestion","eating action, swallowing, food intake",EATING
+masticate,"chew, munch, crunch, bite","swallow whole, bolt, gulp, abstain","mechanical food breakdown, saliva mixing, digestion prep","eating action, jaw movement, food presence",EATING
+banquet,"feast, dine lavishly, gorge, indulge","fast, diet, abstain, starve","festive eating, large consumption, celebration","special occasion, abundance, social event",EATING
+snack,"munch, nibble, pick, taste","fast, abstain, meal, feast","light consumption, appetite stimulation, energy boost","mild hunger, time between meals, convenience",EATING
+drink,"imbibe, sip, gulp, consume","refuse, abstain, spit, disgorge","liquid intake, hydration, satiation","thirst, liquid availability, refreshment desire",DRINKING
+sip,"taste, sample, suck, drink slowly","gulp, guzzle, refuse, abstain","small liquid intake, flavor sampling, slow consumption","casual drinking, taste appreciation, caution",DRINKING
+gulp,"swallow quickly, bolt, guzzle, down","sip slowly, abstain, refuse, chew","rapid liquid intake, throat passage, speed drinking","thirst, haste, large quantity",DRINKING
+guzzle,"gulp, drink heavily, quaff, swill","sip, abstain, refrain, refuse","rapid consumption, excessive intake, intoxication","thirst, greed, celebration",DRINKING
+slurp,"sip noisily, gulp, drink audibly, suck","sip quietly, abstain, refuse, chew","liquid intake with sound, suction consumption","straw use, suction, sound enjoyment",DRINKING
+swill,"guzzle, drink greedily, quaff, imbibe","sip, abstain, refuse, teetotal","rapid consumption, excessive intake, indulgence","greed, alcohol, celebration",DRINKING
+quaff,"drink heartily, guzzle, swill, imbibe","sip, abstain, refuse, deny","enthusiastic drinking, consumption, enjoyment","appetite, celebration, pleasure",DRINKING
+imbibe,"drink, absorb, take in, consume","reject, refuse, abstain, deny","liquid/knowledge intake, absorption, assimilation","thirst, learning desire, substance availability",DRINKING
+lap,"lick, drink by lapping, sip, sup","ignore, refuse, abstain, disgorge","tongue-based liquid intake, small consumption","animal behavior, liquid attraction, casual drinking",DRINKING
+swig,"drink quickly, gulp, guzzle, swallow","sip slowly, abstain, refuse, deny","quick liquid consumption, repeated swallows","thirst, refreshment desire, casual drinking",DRINKING
+chug,"gulp, guzzle, chug-a-lug, down","sip, abstain, refuse, teetotal","rapid consumption, complete liquid intake, competition","challenge, competition, celebration",DRINKING
+tipple,"drink alcohol, quaff, imbibe, booze","abstain, teetotal, refrain, deny","alcohol consumption, intoxication, indulgence","thirst, alcohol craving, social occasion",DRINKING
+gargle,"rinse throat, swish, gurgle, wash","swallow, ingest, abstain, spit","throat liquid movement, cleansing, sound production","throat cleansing, health, entertainment",DRINKING
+siphon,"draw off, extract, drain, pump","fill, pour, inject, refill","liquid transfer, container movement, drainage","gravity, pressure, extraction intent",DRINKING
+breathe,"respire, inhale, exhale, take breath","suffocate, asphyxiate, hold breath, choke","oxygen intake, CO2 release, life maintenance","metabolic need, reflex, life requirement",BREATHING
+inhale,"breathe in, inspire, draw in, suck","exhale, expel, blow out, hold breath","oxygen intake, lung filling, air movement","respiration need, reflex, smell detection",BREATHING
+respire,"breathe, inhale, exhale, oxygenate","suffocate, asphyxiate, cease breathing","oxygen-carbon exchange, life maintenance","metabolic requirement, aerobic activity",BREATHING
+gasp,"catch breath, pant, wheeze, gulp air","breathe steadily, relax, calm, hold breath","shocked breathing, rapid air intake, surprise expression","shock, exertion, oxygen need",BREATHING
+pant,"breathe heavily, gasp, huff, wheeze","breathe calmly, rest, relax, hold breath","rapid breathing, oxygen demand, fatigue display","exertion, heat, physical effort",BREATHING
+sniff,"inhale, smell, scent, snort","ignore scent, abstain, hold breath, exhale","olfactory sensation, smell detection, nose air","curiosity, smell presence, investigation",BREATHING
+wheeze,"breathe heavily, gasp, pant, huff","breathe smoothly, relax, calm, silent","labored breathing, respiratory sound, breathing difficulty","asthma, exertion, respiratory condition",BREATHING
+huff,"pant, breathe heavily, blow, gasp","breathe quietly, relax, calm, silent","heavy breathing, indignation expression, exertion","exertion, annoyance, physical effort",BREATHING
+suck,"inhale, draw in, absorb, pull","exhale, blow out, expel, release","air/liquid intake, suction creation, inhalation","suction intent, need, gravity",BREATHING
+absorb,"soak up, assimilate, ingest, take in","reject, repel, expel, disgorge","fluid uptake, knowledge assimilation, material integration","contact, osmosis, learning intent",ABSORBING
+soak,"absorb, immerse, steep, saturate","dry, drain, repel, release","liquid absorption, saturation, softening","liquid contact, time, osmotic pressure",ABSORBING
+imbibe,"absorb, drink, assimilate, take in","reject, expel, deny, refuse","substance intake, knowledge absorption, integration","contact, desire, osmosis",ABSORBING
+assimilate,"absorb, integrate, incorporate, digest","reject, separate, segregate, exclude","metabolic integration, knowledge consolidation, identity change","learning, metabolism, cultural exposure",ABSORBING
+osmose,"diffuse, permeate, filter, seep","block, repel, contain, separate","water movement, concentration equalization, molecular diffusion","concentration gradient, osmotic pressure, membrane",ABSORBING
+permeate,"penetrate, saturate, diffuse, seep","block, seal, contain, repel","substance movement, saturation, complete infiltration","pressure, concentration gradient, molecular motion",ABSORBING
+saturate,"soak, fill completely, impregnate, drench","dry, empty, drain, deplete","complete absorption, capacity limit, total wetness","liquid quantity, contact time, osmosis",ABSORBING
+infuse,"steep, soak, imbue, saturate","remove, extract, drain, deplete","flavor extraction, substance absorption, quality transfer","liquid contact, time, heat",ABSORBING
+extract,"remove, pull out, obtain, harvest","insert, bury, embed, inject","resource removal, material separation, item acquisition","need, tool use, force application",EXTRACTING
+harvest,"gather, collect, reap, pick","plant, sow, scatter, disperse","crop gathering, resource collection, yield realization","crop maturity, season, food need",EXTRACTING
+gather,"collect, assemble, harvest, pick","scatter, disperse, disband, separate","accumulation, collection formation, resource gathering","gathering intent, resource availability, need",EXTRACTING
+collect,"gather, accumulate, compile, assemble","scatter, disperse, distribute, divide","accumulation, collection, aggregation","collection intent, availability, systematic effort",EXTRACTING
+forage,"hunt, search, scavenge, gather","ignore, abandon, discard, scatter","food discovery, resource gathering, survival feeding","hunger, necessity, animal behavior",EXTRACTING
+hunt,"chase, pursue, search, track","abandon, flee, ignore, hide","prey capture, food acquisition, kill","hunger, predatory instinct, sport",EXTRACTING
+scavenge,"forage, search, hunt, rummage","provide, donate, give away, clean","food discovery, waste recovery, survival feeding","hunger, resource scarcity, necessity",EXTRACTING
+mine,"extract, dig, excavate, quarry","fill, plant, bury, cover","ore/resource extraction, material removal, commodity production","industrial need, economic demand, resource location",EXTRACTING
+tap,"extract, draw, drain, access","block, seal, contain, stop","resource flow, material extraction, supply access","need, tool use, pressure difference",EXTRACTING
+drain,"extract, empty, remove, siphon","fill, refill, inject, replenish","complete emptying, resource depletion, fluid removal","gravity, suction, extraction intent",EXTRACTING
+siphon,"extract, drain, draw off, pump","fill, inject, refill, block","liquid transfer, pressure-based extraction, resource theft","gravity, pressure difference, theft intent",EXTRACTING
+leech,"extract, drain, siphon, parasitize","give, provide, contribute, help","resource depletion, energy theft, exploitation","parasitic intent, desperation, exploitation",EXTRACTING
+deplete,"exhaust, drain, empty, consume","replenish, refill, restore, accumulate","resource reduction, supply exhaustion, scarcity","heavy use, extraction, consumption",DEPLETING
+exhaust,"deplete, drain, tire, consume completely","replenish, energize, restore, accumulate","complete depletion, fatigue, resource end","overuse, heavy consumption, energy drain",DEPLETING
+drain,"deplete, exhaust, empty, remove","fill, refill, replenish, restore","resource removal, depletion, energy loss","extraction, use, siphoning",DEPLETING
+empty,"drain, deplete, evacuate, vacate","fill, replenish, load, pack","complete removal, container depletion, evacuation","deliberate removal, use, drainage",DEPLETING
+spend,"consume, use up, expend, deplete","save, preserve, conserve, hoard","resource consumption, money loss, time passage","need, desire, expenditure",DEPLETING
+use up,"consume, deplete, spend, finish","preserve, conserve, save, store","complete resource consumption, supply end, depletion","use, consumption, exhaustion",DEPLETING
+expend,"spend, consume, use, deplete","preserve, conserve, save, store","energy/resource consumption, depletion, loss","necessity, use, effort",DEPLETING
+waste,"squander, misspend, dissipate, deplete","conserve, preserve, save, manage well","resource loss, inefficiency, depletion","carelessness, excess, poor management",DEPLETING
+squander,"waste, dissipate, misspend, fritter","conserve, save, preserve, manage","resource waste, poor use, opportunity loss","recklessness, greed, poor judgment",DEPLETING
+digest,"process, break down, assimilate, metabolize","regurgitate, vomit, reject, abstain","nutrient absorption, food breakdown, energy release","food ingestion, enzyme action, stomach activity",METABOLIZING
+metabolize,"process, digest, break down, convert","abstain, reject, refuse, fast","energy conversion, nutrient processing, cellular activity","food intake, biological process, energy need",METABOLIZING
+process,"metabolize, digest, handle, treat","ignore, neglect, bypass, skip","transformation, material handling, output creation","need, input availability, system operation",METABOLIZING
+break down,"decompose, disintegrate, digest, analyze","assemble, construct, synthesize, integrate","component separation, molecular division, understanding","chemical action, enzyme activity, force",METABOLIZING
+convert,"transform, change, process, adapt","preserve, maintain, keep, sustain","form change, energy transformation, adaptation","force application, metabolic process, intent",METABOLIZING
+synthesize,"create, build, combine, manufacture","decompose, disassemble, break down, separate","compound creation, protein building, energy storage","chemical process, metabolic need, biological intent",METABOLIZING
+ferment,"decompose, break down, culture, convert","preserve, sterilize, prevent decay, inhibit","alcohol production, gas generation, flavor development","microbial action, anaerobic conditions, time",METABOLIZING
+absorb,"assimilate, intake, uptake, ingest","reject, expel, eject, discharge","intestinal uptake, bloodstream entry, nutrient integration","absorption surface, concentration gradient, digestive action",METABOLIZING

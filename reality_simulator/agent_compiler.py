@@ -4962,8 +4962,8 @@ from collections import deque
 
 
 @dataclass
-class LinguisticAtom:
-    """A semantic unit with grounded meaning."""
+class SimpleLinguisticAtom:
+    """A simple semantic unit for basic chat (legacy compilation artifact)."""
     concept_id: str
     definition: str = ""
     emotion_valence: float = 0.0
@@ -4976,15 +4976,19 @@ class LinguisticAtom:
         self.strength = min(1.0, self.strength + 0.01)
 
 
-class AtomicLanguageSystem:
-    """Semantic atom management for grounded language understanding."""
+class SimpleAtomicLanguageSystem:
+    """Simple semantic atom management (legacy compilation artifact).
+    
+    Note: For organism innate vocabulary, use AtomicLanguageSystem from
+    reality_simulator.language.atomic_language instead.
+    """
     
     def __init__(self, state: Dict = None):
-        self.atoms: Dict[str, LinguisticAtom] = {}
+        self.atoms: Dict[str, SimpleLinguisticAtom] = {}
         if state:
             for concept_id, atom_data in state.get('atoms', {}).items():
                 if isinstance(atom_data, dict):
-                    self.atoms[concept_id] = LinguisticAtom(
+                    self.atoms[concept_id] = SimpleLinguisticAtom(
                         concept_id=concept_id,
                         definition=atom_data.get('definition', ''),
                         emotion_valence=atom_data.get('emotion_valence', 0.0),
@@ -4993,19 +4997,19 @@ class AtomicLanguageSystem:
                         strength=atom_data.get('strength', 1.0),
                     )
     
-    def create_atom(self, concept_id: str, definition: str = "", emotion: float = 0.0) -> LinguisticAtom:
-        atom = LinguisticAtom(concept_id=concept_id, definition=definition, emotion_valence=emotion)
+    def create_atom(self, concept_id: str, definition: str = "", emotion: float = 0.0) -> SimpleLinguisticAtom:
+        atom = SimpleLinguisticAtom(concept_id=concept_id, definition=definition, emotion_valence=emotion)
         self.atoms[concept_id] = atom
         return atom
     
-    def get_atom(self, concept_id: str) -> Optional[LinguisticAtom]:
+    def get_atom(self, concept_id: str) -> Optional[SimpleLinguisticAtom]:
         return self.atoms.get(concept_id)
     
     def activate_atom(self, concept_id: str):
         if concept_id in self.atoms:
             self.atoms[concept_id].activate()
     
-    def get_atoms_by_emotion(self, min_valence: float = 0.0) -> List[LinguisticAtom]:
+    def get_atoms_by_emotion(self, min_valence: float = 0.0) -> List[SimpleLinguisticAtom]:
         return [a for a in self.atoms.values() if a.emotion_valence >= min_valence]
     
     def get_state(self) -> Dict:
@@ -5480,7 +5484,8 @@ except ImportError:
 
 
 @dataclass
-class LinguisticAtom:
+class LinguisticAtomONNX:
+    """Lightweight atom for ONNX runtime (legacy compilation artifact)."""
     concept_id: str
     definition: str = ""
     emotion_valence: float = 0.0
@@ -5493,13 +5498,18 @@ class LinguisticAtom:
         self.strength = min(1.0, self.strength + 0.01)
 
 
-class AtomicLanguageSystem:
+class AtomicLanguageSystemONNX:
+    """ONNX-compatible atom system (legacy compilation artifact).
+    
+    Note: For organism innate vocabulary, use AtomicLanguageSystem from
+    reality_simulator.language.atomic_language instead.
+    """
     def __init__(self, state: Dict = None):
-        self.atoms: Dict[str, LinguisticAtom] = {}
+        self.atoms: Dict[str, LinguisticAtomONNX] = {}
         if state:
             for cid, data in state.get('atoms', {}).items():
                 if isinstance(data, dict):
-                    self.atoms[cid] = LinguisticAtom(
+                    self.atoms[cid] = LinguisticAtomONNX(
                         concept_id=cid, definition=data.get('definition', ''),
                         emotion_valence=data.get('emotion_valence', 0.0),
                         context_tags=data.get('context_tags', []),
@@ -5507,7 +5517,7 @@ class AtomicLanguageSystem:
                         strength=data.get('strength', 1.0))
     
     def create_atom(self, concept_id: str, definition: str = "", emotion: float = 0.0):
-        self.atoms[concept_id] = LinguisticAtom(concept_id, definition, emotion)
+        self.atoms[concept_id] = LinguisticAtomONNX(concept_id, definition, emotion)
         return self.atoms[concept_id]
     
     def get_state(self) -> Dict:
@@ -6437,9 +6447,16 @@ class LinguisticAtom:
 
 
 class AtomicLanguageSystem:
-    """Per-organism atomic language representation with trackable discrete atoms."""
+    """Per-organism atomic language representation with trackable discrete atoms.
     
-    INNATE_CONCEPTS = {
+    Now loads innate concepts from data/innate_vocab.json (nuclear vocab).
+    """
+    
+    # Innate vocabulary loaded from data/innate_vocab.json
+    _INNATE_VOCAB_CACHE = None  # Class-level cache
+    
+    # Fallback core concepts if innate_vocab.json not found
+    FALLBACK_INNATE_CONCEPTS = {
         'move': {'frame': 'action', 'level': 0, 'vp': (0.5, 0.5)},
         'rest': {'frame': 'action', 'level': 0, 'vp': (0.3, 0.6)},
         'eat': {'frame': 'action', 'level': 0, 'vp': (0.4, 0.7)},
@@ -6454,10 +6471,25 @@ class AtomicLanguageSystem:
         'energy': {'frame': 'resource', 'level': 0, 'vp': (0.6, 0.5)},
     }
     
-    INNATE_ASSOCIATIONS = [
-        ('hungry', 'food', 0.8), ('hungry', 'eat', 0.9), ('danger', 'attack', 0.5),
-        ('safe', 'rest', 0.7), ('friend', 'cooperate', 0.8), ('enemy', 'attack', 0.6),
-    ]
+    @classmethod
+    def _load_innate_vocab(cls):
+        """Load innate vocabulary from JSON file (cached at class level)."""
+        if cls._INNATE_VOCAB_CACHE is not None:
+            return cls._INNATE_VOCAB_CACHE
+        
+        from pathlib import Path
+        innate_path = Path(__file__).parent.parent / "data" / "innate_vocab.json"
+        
+        try:
+            with open(innate_path, 'r', encoding='utf-8') as f:
+                cls._INNATE_VOCAB_CACHE = json.load(f)
+                return cls._INNATE_VOCAB_CACHE
+        except FileNotFoundError:
+            cls._INNATE_VOCAB_CACHE = None
+            return None
+        except Exception as e:
+            cls._INNATE_VOCAB_CACHE = None
+            return None
     
     def __init__(self, organism_id: str = "cocoon"):
         self.organism_id = organism_id
@@ -6466,21 +6498,66 @@ class AtomicLanguageSystem:
         self._initialize_innate_concepts()
     
     def _initialize_innate_concepts(self):
-        for concept_id, info in self.INNATE_CONCEPTS.items():
-            atom = LinguisticAtom(
-                concept_id=concept_id,
-                strength=0.5 + np.random.uniform(-0.1, 0.1),
-                source='innate',
-                semantic_frame=info['frame'],
-                abstraction_level=info['level'],
-                vp_vitality_affinity=info['vp'][0],
-                vp_pleasure_affinity=info['vp'][1]
-            )
-            self.atoms[concept_id] = atom
-            self._concept_order.append(concept_id)
-        for source, target, strength in self.INNATE_ASSOCIATIONS:
-            if source in self.atoms:
-                self.atoms[source].form_association(target, strength, 'innate')
+        """Initialize with innate concepts from nuclear vocab or fallback."""
+        innate_data = self._load_innate_vocab()
+        
+        if innate_data is None:
+            # Fallback to minimal hardcoded concepts
+            for concept_id, info in self.FALLBACK_INNATE_CONCEPTS.items():
+                self._add_innate_concept(concept_id, info, 'innate', 0.5)
+            return
+        
+        # Load from innate_vocab.json
+        concepts = innate_data.get('concepts', {})
+        tiers = innate_data.get('tiers', {})
+        tier_config = innate_data.get('tier_config', {})
+        associations = innate_data.get('associations', [])
+        
+        # Tier 1: Core concepts (all organisms)
+        for word in tiers.get('core', []):
+            if word in concepts:
+                self._add_innate_concept(word, concepts[word], 'innate_core', 0.6)
+        
+        # Tier 2: Extended concepts (random subset)
+        extended = tiers.get('extended', [])
+        ext_range = tier_config.get('extended_sample_range', [20, 50])
+        num_ext = np.random.randint(ext_range[0], ext_range[1] + 1)
+        if extended:
+            selected = list(np.random.choice(extended, size=min(num_ext, len(extended)), replace=False))
+            for word in selected:
+                if word in concepts and word not in self.atoms:
+                    self._add_innate_concept(word, concepts[word], 'innate_extended', 0.4)
+        
+        # Tier 3: Pool concepts (rare additions)
+        pool = tiers.get('pool', [])
+        pool_range = tier_config.get('pool_sample_range', [0, 10])
+        num_pool = np.random.randint(pool_range[0], pool_range[1] + 1)
+        if pool and num_pool > 0:
+            selected = list(np.random.choice(pool, size=min(num_pool, len(pool)), replace=False))
+            for word in selected:
+                if word in concepts and word not in self.atoms:
+                    self._add_innate_concept(word, concepts[word], 'innate_rare', 0.25)
+        
+        # Initialize associations
+        for assoc in associations:
+            src, tgt = assoc.get('source', ''), assoc.get('target', '')
+            if src in self.atoms and tgt in self.atoms:
+                self.atoms[src].form_association(tgt, assoc.get('strength', 0.5), 'innate')
+    
+    def _add_innate_concept(self, word: str, info: dict, source: str, base_strength: float):
+        """Helper to add an innate concept atom."""
+        vp = info.get('vp', (0.5, 0.5))
+        atom = LinguisticAtom(
+            concept_id=word,
+            strength=base_strength + np.random.uniform(-0.1, 0.1),
+            source=source,
+            semantic_frame=info.get('frame', 'unknown'),
+            abstraction_level=info.get('level', 0),
+            vp_vitality_affinity=vp[0] if isinstance(vp, (list, tuple)) else 0.5,
+            vp_pleasure_affinity=vp[1] if isinstance(vp, (list, tuple)) else 0.5
+        )
+        self.atoms[word] = atom
+        self._concept_order.append(word)
     
     def acquire_concept(self, concept_id: str, source: str = 'discovered', 
                        semantic_frame: str = 'unknown', initial_strength: float = 0.3) -> LinguisticAtom:

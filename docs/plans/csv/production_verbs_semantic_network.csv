@@ -1,0 +1,73 @@
+Word,Synonyms,Antonyms,Causes,Caused_By,Category
+create,"make, produce, generate, form","destroy, demolish, erase, undo","object existence, new entity formation, artifact production","creative intent, imagination, resources",CREATING
+make,"produce, create, build, construct","break, destroy, disassemble, undo","object production, artifact creation, result formation","creative intent, materials, labor",CREATING
+build,"construct, erect, assemble, fabricate","demolish, destroy, tear down, dismantle","structure creation, building completion, spatial occupation","construction intent, materials, labor",CREATING
+construct,"build, erect, assemble, fabricate","demolish, destroy, dismantle, tear down","structure formation, building creation, framework establishment","engineering intent, design, materials",CREATING
+form,"create, shape, mold, fashion","dissolve, disintegrate, break apart, scatter","shape creation, structural formation, entity existence","pressure, intention, materials",CREATING
+produce,"make, create, generate, manufacture","consume, deplete, destroy, waste","object creation, output generation, supply creation","manufacturing intent, resources, labor",CREATING
+generate,"produce, create, cause, bring about","prevent, stop, block, suppress","output creation, result production, effect formation","input, force, intention",CREATING
+manufacture,"produce, make, fabricate, construct","disassemble, destroy, unmake, dismantle","product creation, mass production, supply","industrial process, machinery, labor",CREATING
+craft,"make, create, fashion, construct","unmake, destroy, disassemble, bungle","handmade object, artisanal product, artistic creation","skill, artistic intent, materials",CREATING
+forge,"create, make, craft, shape","break, shatter, destroy, unmake","metal object creation, relationship formation, path creation","heat, pressure, intention",CREATING
+fashion,"create, make, craft, form","destroy, unmake, disassemble, shatter","garment/object creation, shape formation, design realization","skill, materials, creative intent",CREATING
+assemble,"put together, construct, build, combine","disassemble, take apart, separate, scatter","complete object, assembly completion, functional unit","parts availability, instruction, labor",CREATING
+fabricate,"make, construct, build, create","demolish, destroy, dismantle, undo","artifact creation, structure formation, invention","intention, materials, skills",CREATING
+compose,"create, write, produce, arrange","dismantle, decompose, scatter, destroy","musical/literary work creation, arrangement formation","artistic intent, inspiration, skill",CREATING
+concoct,"create, make, devise, invent","destroy, forget, unmake, abandon","mixture creation, scheme formation, plot development","ingredients, intention, creativity",CREATING
+devise,"invent, create, design, plan","destroy, discard, abandon, reject","plan creation, strategy formation, invention","problem, need, creativity",CREATING
+design,"plan, create, devise, conceive","ignore, dismantle, destroy, discard","blueprint creation, plan formation, aesthetic conception","intention, requirements, creativity",CREATING
+invent,"create, devise, conceive, originate","copy, imitate, destroy, forget","new technology, innovation, novelty","problem-solving, creativity, necessity",CREATING
+emit,"release, discharge, radiate, give off","absorb, contain, suppress, retain","substance release, radiation output, environmental dispersal","heat, pressure, chemical process",EMITTING
+release,"emit, discharge, let go, free","hold, retain, suppress, contain","substance discharge, freedom, output","pressure, intention, command",EMITTING
+discharge,"emit, release, expel, eject","retain, contain, hold, suppress","substance output, energy release, function completion","pressure buildup, command, biological process",EMITTING
+excrete,"discharge, expel, eliminate, eject","absorb, retain, consume, ingest","waste removal, metabolic output, toxin elimination","biological metabolism, kidney function, digestive process",EMITTING
+secrete,"emit, discharge, produce, exude","absorb, retain, consume, suppress","substance release, glandular output, fluid production","gland activation, chemical stimulus, biological need",EMITTING
+expel,"discharge, eject, remove, cast out","retain, contain, absorb, intake","object/substance removal, person dismissal, output","force, command, pressure",EMITTING
+radiate,"emit, beam, shine, broadcast","absorb, suppress, contain, darken","light/energy emission, heat dispersal, radiation spread","heat, radioactivity, light source",EMITTING
+exhale,"breathe out, emit, expel, discharge","inhale, absorb, retain, hold","air release, CO2 output, breath emission","respiration, lungs, biological need",EMITTING
+ooze,"leak, drip, seep, discharge","contain, seal, absorb, retain","slow liquid release, seepage, gradual discharge","gravity, pressure difference, porosity",EMITTING
+leak,"drip, ooze, seep, escape","contain, seal, plug, retain","uncontrolled release, fluid loss, escape","opening, pressure, damage",EMITTING
+drip,"leak, ooze, drop, fall","contain, seal, flow, pour","drop formation, gradual liquid loss, sound production","gravity, opening, liquid presence",EMITTING
+spray,"mist, atomize, scatter, disperse","collect, contain, condense, gather","fine mist creation, dispersal, coverage","pressure, nozzle, liquid",EMITTING
+spew,"vomit, eject, discharge, emit","contain, suppress, retain, ingest","violent discharge, unwanted output, dispersal","pressure, disgust, force",EMITTING
+exude,"emit, discharge, ooze, secrete","absorb, retain, suppress, contain","substance emission, presence display, aura creation","biological process, heat, emotion",EMITTING
+grow,"develop, expand, increase, flourish","shrink, wilt, diminish, decline","size increase, biomass expansion, maturation","nutrients, sunlight, time, genetics",GROWING
+develop,"grow, evolve, mature, unfold","regress, decline, stagnate, wither","growth progression, capability emergence, maturation","time, nurture, experience, genetics",GROWING
+sprout,"germinate, shoot, bud, emerge","wilt, die, shrivel, decay","seedling emergence, growth initiation, shoot formation","moisture, warmth, germination trigger",GROWING
+bud,"sprout, bloom, flower, flourish","wilt, fade, die, shrivel","flower development, growth stage, blossom formation","plant maturity, seasonal signal, nutrient availability",GROWING
+bloom,"flower, blossom, flourish, bud","wilt, fade, die, shrivel","flower opening, sexual reproduction, beauty display","maturity, seasonality, pollination readiness",GROWING
+flower,"bloom, blossom, flourish, thrive","wilt, fade, decline, shrivel","reproductive phase, beauty display, seed formation","maturity, seasonality, nutrient availability",GROWING
+germinate,"sprout, shoot, develop, grow","die, wilt, decay, sterile","seedling emergence, growth initiation, life beginning","moisture, warmth, soil nutrients",GROWING
+mature,"ripen, develop, age, grow","juvenile, immature, young, green","adult state, ripeness, readiness","time, growth, development stages",GROWING
+ripen,"mature, develop, age, perfect","unripen, green, young, immature","fruit maturity, sweetness, readiness","sunlight, time, sugar development",GROWING
+regenerate,"regrow, restore, renew, recover","degenerate, decay, die, disappear","tissue regrowth, healing, biological renewal","biological capacity, time, health",GROWING
+reproduce,"breed, spawn, propagate, procreate","sterilize, neuter, prevent, inhibit","offspring creation, population increase, genetic transmission","sexual/asexual drive, mating, conditions",GROWING
+breed,"reproduce, propagate, spawn, cultivate","sterilize, neuter, prevent, inhibit","offspring production, population expansion, selective traits","mating, genetics, environmental conditions",GROWING
+spawn,"breed, reproduce, generate, produce","prevent, inhibit, sterilize, abort","offspring/idea creation, proliferation, new generation","biological drive, conditions, reproduction",GROWING
+synthesize,"combine, fuse, integrate, blend","separate, decompose, analyze, divide","compound creation, unified whole, integrated product","chemical process, combination intent, molecular reaction",SYNTHESIZING
+combine,"blend, mix, merge, unite","separate, divide, sort, scatter","unified product, mixture, integration","mixing intent, chemical affinity, mechanical action",SYNTHESIZING
+compound,"combine, mix, blend, fuse","separate, decompose, analyze, isolate","chemical compound, mixture, amplification","chemical reaction, mixing, combination intent",SYNTHESIZING
+blend,"mix, combine, merge, fuse","separate, divide, scatter, sort","smooth mixture, flavor/property integration","mechanical mixing, chemical affinity",SYNTHESIZING
+fuse,"blend, merge, combine, integrate","separate, divide, split, dissociate","permanent union, integrated whole, bonded material","heat, pressure, chemical reaction",SYNTHESIZING
+mix,"blend, combine, stir, commingle","separate, sort, divide, unmix","mixture, distribution, integration","mechanical action, chemical affinity, stirring",SYNTHESIZING
+integrate,"combine, incorporate, merge, unite","separate, divide, segregate, isolate","unified system, coordination, wholeness","combination intent, system design, assembly",SYNTHESIZING
+amalgamate,"combine, merge, fuse, integrate","separate, divide, segregate, scatter","unified organization, merger completion, integration","combination intent, agreement, strategic move",SYNTHESIZING
+formulate,"create, devise, develop, compose","dismantle, abandon, neglect, forget","formula creation, product development, strategy","scientific/strategic intent, research, planning",SYNTHESIZING
+express,"communicate, convey, articulate, voice","suppress, conceal, hide, silence","idea/emotion communication, message transmission","emotion, need to communicate, intention",EXPRESSING
+utter,"speak, articulate, voice, pronounce","silence, suppress, mute, stifle","sound production, word formation, speech act","vocal intent, idea, emotion",EXPRESSING
+vocalize,"utter, voice, articulate, express","silence, suppress, mute, stifle","sound production, verbal expression, acoustic output","vocal intention, communication need",EXPRESSING
+signal,"indicate, communicate, gesture, broadcast","conceal, hide, ignore, suppress","communication of intent, message transmission","intention to communicate, need for attention",EXPRESSING
+broadcast,"transmit, announce, disseminate, communicate","suppress, conceal, contain, silence","wide distribution, message spread, public announcement","media intent, audience need, information",EXPRESSING
+transmit,"send, broadcast, communicate, convey","suppress, block, withhold, intercept","signal transfer, information delivery, message sending","communication intent, technology, necessity",EXPRESSING
+communicate,"express, convey, impart, transmit","silence, suppress, hide, withhold","information exchange, understanding, connection","message, relationship, need to share",EXPRESSING
+announce,"declare, proclaim, broadcast, reveal","conceal, hide, suppress, withhold","public knowledge, formal declaration, information spread","event, decision, information to share",EXPRESSING
+declare,"announce, proclaim, state, express","conceal, suppress, deny, withhold","formal statement, position establishment, assertion","intention, event, legal/emotional need",EXPRESSING
+yield,"produce, generate, bear, deliver","consume, deplete, waste, lose","crop/result production, output, supply","plant growth, harvest, process completion",YIELDING
+provide,"supply, furnish, offer, deliver","withhold, deprive, deny, take away","supply delivery, resource provision, fulfillment","need, supply availability, intent to help",YIELDING
+supply,"provide, furnish, deliver, stock","deprive, withhold, starve, deny","resource delivery, stock replenishment, need fulfillment","demand, inventory, transportation",YIELDING
+furnish,"provide, supply, deliver, equip","deprive, withhold, strip, bare","provision, equipment provision, supply","need, request, availability",YIELDING
+deliver,"provide, give, hand over, transfer","withhold, retain, take, steal","goods transfer, service provision, result delivery","obligation, request, contract",YIELDING
+bear,"produce, generate, yield, create","lose, deplete, consume, waste","fruit/offspring production, result creation","biology, conditions, maturity",YIELDING
+output,"produce, generate, yield, release","input, consume, absorb, decrease","production result, data/energy release","process, system, input",YIELDING
+render,"provide, give, deliver, offer","withhold, deny, take, retain","service provision, result delivery, transformation","obligation, request, capability",YIELDING
+give,"provide, deliver, grant, offer","take, withhold, deny, steal","transfer, provision, gift","generosity, obligation, intention",YIELDING

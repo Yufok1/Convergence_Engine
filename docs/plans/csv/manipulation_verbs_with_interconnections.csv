@@ -1,0 +1,118 @@
+Word,Synonyms,Antonyms,Causes,Caused_By,Category,Interconnections
+carve,"cut, sculpt, shape, etch","smooth, fill, cover, glue","decorative division, art creation, shape formation","artistic intent, tool use, design creation",CUTTING,3
+chop,"cut, hack, sever, divide","join, glue, assemble, unite","rough piece separation, vegetable processing, axe impact","cooking, wood processing, cutting force",CUTTING,2
+clip,"cut, snip, trim, sever","connect, join, lengthen, extend","small piece removal, quick cutting, separation","scissors use, clipping intent, quick cut",CUTTING,3
+cut,"slice, chop, sever, carve","join, glue, unite, fuse","separation, surface division, injury","sharp tool, cutting intent, force application",CUTTING,13
+gash,"slash, cut, wound, injure","heal, close, seal, mend","deep wound creation, violent separation, bleeding","sharp tool, violent impact, accident",CUTTING,1
+hack,"cut, chop, slash, sever","join, glue, unite, mend","rough cutting, violent separation, material removal","machete use, rough force, material removal",CUTTING,2
+pierce,"puncture, stab, poke, perforate","seal, close, cover, mend","hole creation, membrane penetration, object perforation","sharp object, penetration intent, force application",CUTTING,3
+poke,"pierce, prod, jab, thrust","withdraw, retract, seal, cover","light penetration, surface disturbance, attention getting","stick use, finger action, light force",CUTTING,3
+puncture,"pierce, poke, perforate, stab","seal, patch, close, repair","hole creation, air release, object damage","sharp object, accident, intentional perforation",CUTTING,2
+saw,"cut, slice, sever, divide","join, glue, unite, assemble","tool-based division, plank separation, precise cutting","saw tool, cutting intent, material removal",CUTTING,0
+sever,"cut, separate, sunder, divide","join, unite, fuse, connect","complete separation, connection breaking, object division","cutting intent, tool use, separation goal",CUTTING,9
+shave,"cut, trim, scrape, pare","grow, keep, maintain, preserve","thin layer removal, smooth surface, hair removal","razor use, grooming, smoothing intent",CUTTING,1
+shear,"cut, clip, trim, sever","grow, lengthen, extend, connect","wool removal, hedge shaping, material removal","shears use, sheep shearing, grooming",CUTTING,1
+slash,"cut, gash, slit, hack","heal, mend, close, seal","long cut creation, violent damage, surface division","blade use, violent force, slashing motion",CUTTING,2
+slice,"cut, carve, sever, divide","join, glue, unite, mend","thin piece separation, clean division, portion creation","knife use, portion intent, cutting skill",CUTTING,2
+snip,"clip, cut, trim, sever","join, connect, extend, lengthen","small precise cuts, quick separation, thread removal","scissors use, precision need, quick action",CUTTING,1
+split,"sever, divide, cleave, separate","join, unite, fuse, merge","complete separation, two-part division, fracturing","axe use, natural weakness, force application",CUTTING,0
+stab,"pierce, poke, puncture, thrust","withdraw, pull out, seal, cover","penetrating wound, object perforation, blade entry","knife use, violent intent, force application",CUTTING,2
+trim,"cut, clip, shear, prune","grow, lengthen, extend, allow","neat edge creation, excess removal, size reduction","grooming intent, precision, tidiness desire",CUTTING,4
+whittle,"carve, sculpt, shape, shave","add, build up, restore, glue","gradual removal, shape formation, artistic creation","knife use, artistic intent, gradual process",CUTTING,0
+catch,"grab, seize, capture, snatch","miss, drop, release, let escape","object capture, momentum interruption, acquisition","object motion, capture intent, quick reaction",GRASPING,1
+clamp,"grip, squeeze, hold fast, clench","release, unclasp, loosen, open","vice-like holding, compression, securing","stabilization need, force application, securing intent",GRASPING,0
+clasp,"grip, grasp, embrace, clutch","unclasp, release, open, unlock","secure holding, affectionate contact","affection, security need, connection desire",GRASPING,1
+clench,"grip, squeeze, tighten, gnarl","relax, open, loosen, unclench","tension manifestation, force exertion, anger display","anger, determination, muscle contraction",GRASPING,3
+clutch,"grasp, grip, seize, snatch","release, drop, relinquish, let go","desperate holding, object retention","fear, urgency, possession security",GRASPING,4
+clutches,"grasp, grip, control, possession","freedom, release, escape, liberty","possession control, power exertion","predation, possession, control desire",GRASPING,0
+embrace,"hug, clasp, hold, enfold","release, let go, push away, separate","affectionate contact, encirclement, body contact","affection, greeting, emotional expression",GRASPING,1
+grab,"seize, grasp, snatch, clutch","release, drop, let go, relinquish","object acquisition, quick capture, control","sudden opportunity, urgency, capture intent",GRASPING,4
+grapple,"grip, seize, struggle, wrestle","release, surrender, disengage, separate","physical struggle, object wrestling, control attempt","conflict, wrestling, combat intent",GRASPING,0
+grasp,"grip, clutch, grab, seize","release, drop, loosen, let go","object control, possession, handhold security","prehension intent, object presence, acquisition desire",GRASPING,7
+grip,"grasp, clutch, hold, clench","release, slacken, loosen, unclasp","object securing, force exertion, control establishment","stabilization need, force application, control intent",GRASPING,9
+hold,"grasp, grip, keep, retain","release, drop, surrender, relinquish","possession maintenance, object control, position security","ownership, control desire, retention intent",GRASPING,3
+pinch,"squeeze, compress, nip, tweak","release, spread, expand, open","small object grasping, pain causation, compression","small object handling, attention seeking, force application",GRASPING,0
+seize,"grasp, grab, snatch, catch","release, free, liberate, relinquish","forceful capture, object control, possession","capture intent, urgency, aggression",GRASPING,6
+snatch,"grab, seize, snatch, take","give, return, relinquish, release","quick acquisition, theft, possession","opportunism, urgency, theft intent",GRASPING,6
+squeeze,"compress, press, clench, constrict","release, expand, loosen, open","compression, liquid extraction, pressure application","force application, compression intent, extraction desire",GRASPING,5
+attach,"fasten, connect, join, affix","detach, remove, disconnect, separate","secure connection, object affixing, assembly","fastening intent, adherence method, security need",JOINING,4
+bind,"tie, fasten, secure, constrain","untie, release, loosen, unbind","constraint application, bundle formation, securing","binding intent, constraint need, fastening",JOINING,3
+cement,"glue, bind, affix, bond","separate, sever, disconnect, dissolve","permanent bonding, concrete formation, solid joining","cement application, bonding need, construction",JOINING,1
+clamp,"grip, secure, hold, fasten","release, loosen, open, separate","vice-like holding, temporary securing, compression","stabilization need, securing intent, clamping tool",JOINING,0
+connect,"join, attach, link, fasten","disconnect, sever, separate, detach","connection establishment, unit formation, circuit completion","connection intent, proximity, assembly",JOINING,4
+fasten,"attach, secure, bind, fix","loosen, unfasten, release, disconnect","secure connection, stability increase, safety","security need, fastening method, assembly",JOINING,5
+fuse,"join, merge, unite, blend","separate, split, divide, sever","complete union, melted joining, molecular bonding","heat, pressure, fusion intent",JOINING,2
+glue,"paste, adhere, cement, stick","separate, peel off, unstick, detach","adhesive bonding, surface joining, temporary/permanent bond","adhesive application, bonding intent, surface contact",JOINING,1
+join,"connect, attach, unite, link","separate, sever, disconnect, divide","connection formation, unity creation, assembly","connection intent, proximity, assembly need",JOINING,8
+link,"connect, join, attach, chain","disconnect, separate, sever, unlink","chain formation, connection establishment, unit creation","connection intent, linking action, assembly",JOINING,2
+merge,"join, blend, combine, unite","separate, split, divide, distinguish","unit combination, unity formation, integration","merger intent, integration desire, combination need",JOINING,2
+solder,"weld, fuse, join, seld","separate, unsolder, disconnect, cut","electrical connection, heat-based joining, metal bonding","solder iron, electrical need, metal joining",JOINING,1
+tie,"bind, fasten, secure, knot","untie, loosen, release, unbind","knot formation, binding, constraint","tying intent, binding need, knot creation",JOINING,1
+unite,"join, combine, merge, connect","separate, divide, split, disconnect","group formation, unity achievement, integration","unity intent, collaboration, common goal",JOINING,3
+weld,"fuse, join, solder, seld","separate, cut, sever, divide","heat-based joining, metal fusion, permanent bond","welding torch, heat application, metal joining",JOINING,1
+deposit,"place, put, set, lay","take, remove, withdraw, extract","object placement, accumulation, settling","placement intent, delivery completion, settling action",LIFTING,2
+drop,"fall, plummet, release, lower","lift, raise, catch, hold","gravity action, height loss, object release","release intent, grip loss, gravity",LIFTING,1
+elevate,"raise, lift, heighten, uphold","lower, depress, demote, descend","height increase, status elevation, position improvement","elevation intent, muscle power, mechanical lift",LIFTING,3
+hoist,"lift, raise, elevate, haul up","lower, drop, descend, let down","heavy object elevation, mechanical lifting, height achievement","hoist mechanism, heavy weight, lifting equipment",LIFTING,2
+lift,"raise, elevate, hoist, pick up","drop, lower, place, set down","height increase, object elevation, vertical displacement","muscle power, lifting intent, weight overcoming",LIFTING,4
+lower,"drop, descend, depress, reduce","raise, lift, elevate, ascend","height decrease, gentle descent, position reduction","lowering intent, gravity, controlled descent",LIFTING,1
+place,"put, set, position, deposit","remove, take, lift, pick up","position establishment, object placement, surface contact","placement intent, object availability, location need",LIFTING,3
+put,"place, set, position, deposit","take, remove, lift, carry away","position achievement, object placement, location setting","placement intent, direction, position need",LIFTING,3
+raise,"lift, elevate, hoist, uphold","lower, drop, depress, humble","height increase, position elevation, status increase","lifting force, elevation intent, muscle power",LIFTING,3
+set,"place, put, position, establish","remove, take, unset, rise","position establishment, object setting, configuration","placement intent, setting need, arrangement",LIFTING,3
+drag,"pull, draw, haul, tow","push, thrust, release, drop","ground contact movement, friction opposition, slow motion","heavy load, low friction, sustained force",PUSHING/PULLING,4
+draw,"pull, drag, attract, sketch","push, repel, erase, remove","object attraction, line creation, force transfer","attraction intent, illustration desire, pulling force",PUSHING/PULLING,6
+extract,"pull, draw, remove, take out","insert, push in, embed, place","object removal, separation, extraction completion","removal intent, extraction need, force application",PUSHING/PULLING,1
+haul,"drag, tow, pull, transport","drop, release, abandon, discard","heavy load movement, distance transportation, effort","heavy weight, transportation need, sustained effort",PUSHING/PULLING,4
+heave,"pull, haul, lift, throw","drop, release, ease, gentle handling","heavy object movement, effort display, distance coverage","heavy weight, strength exertion, effort intent",PUSHING/PULLING,0
+pry,"lever, extract, force open, prize","close, seal, insert, embed","forced opening, object extraction, leverage application","opening intent, extraction need, leverage intent",PUSHING/PULLING,0
+pull,"draw, drag, haul, tug","push, shove, thrust, drive","object attraction, directional motion, force transfer","attraction intent, force application, extraction desire",PUSHING/PULLING,10
+push,"shove, thrust, press, drive","pull, drag, draw, haul","object displacement, force application, momentum transfer","force application, propulsion intent, directional need",PUSHING/PULLING,3
+shove,"push, thrust, drive, force","pull, drag, gentle push, nudge gently","forceful displacement, aggression expression, rapid movement","aggression, urgency, forceful intent",PUSHING/PULLING,2
+thrust,"push, shove, drive, force","pull, withdraw, retract, extract","forceful driving, object penetration, force application","penetration intent, force application, urgency",PUSHING/PULLING,4
+tow,"drag, haul, pull, draw","release, drop, push, abandon","vehicle transportation, load movement, distance coverage","vehicle capability, load presence, transportation need",PUSHING/PULLING,2
+tug,"pull, yank, jerk, draw","push, release, let go, slacken","sudden jerk, object movement, attention getting","attention seeking, force application, urgency",PUSHING/PULLING,2
+wrench,"twist, pull, jerk, yank","align, straighten, insert, relax","twisting extraction, violent pulling, force application","extraction intent, force application, violent motion",PUSHING/PULLING,0
+yank,"pull, jerk, tug, snatch","push, release, insert, ease","sudden extraction, violent pulling, rapid movement","extraction intent, urgency, violent motion",PUSHING/PULLING,2
+bend,"curve, flex, bow, fold","straighten, unbend, extend, flatten","curve formation, angle change, shape alteration","force application, flexibility, pressure",SHAPING,1
+compress,"squeeze, compact, press, condense","expand, decompress, inflate, loosen","volume reduction, density increase, compaction","pressure application, compression intent, force",SHAPING,5
+crumple,"wrinkle, scrunch, crease, fold","smooth, flatten, press, unfold","random creasing, volume reduction, disorganization","force application, hand pressure, discard action",SHAPING,1
+crush,"squeeze, compress, smash, squash","expand, inflate, decompress, release","volume reduction, object damage, pulping","force application, pressure, compression intent",SHAPING,1
+flatten,"press, squash, level, compress","raise, inflate, puff, mound","planar surface creation, dimension reduction, leveling","pressure application, flattening intent, smoothing",SHAPING,2
+fold,"crease, bend, double, pleat","unfold, open, extend, flatten","crease formation, surface doubling, compact folding","folding intent, material flexibility, space saving",SHAPING,2
+knead,"work, massage, press, manipulate","relax, unwork, abandon, ignore","dough consistency, texture development, mixture formation","cooking intent, muscle action, dough preparation",SHAPING,0
+mold,"shape, form, sculpt, cast","unmold, reshape, break, distort","shape formation, artistic creation, form casting","molding intent, mold use, artistic vision",SHAPING,1
+shape,"form, mold, fashion, sculpt","deform, reshape, distort, disform","form creation, contour establishment, design formation","shaping intent, tool use, artistic vision",SHAPING,3
+smooth,"flatten, polish, even, refine","roughen, wrinkle, crumple, corrupt","texture refinement, surface evenness, friction reduction","smoothing intent, rubbing action, refinement",SHAPING,0
+squash,"crush, flatten, press, compress","expand, inflate, puff, decompress","volume reduction, flatness, pulping","force application, pressure, crushing intent",SHAPING,2
+stretch,"extend, pull, lengthen, draw","compress, shrink, contract, fold","length increase, tension creation, elongation","pulling force, elongation intent, material elasticity",SHAPING,0
+twist,"rotate, turn, writhe, screw","straighten, untwist, unwind, relax","rotational deformation, spiral formation, shape alteration","twisting force, rotation intent, torque application",SHAPING,1
+wrinkle,"crease, furrow, crumple, corrugate","smooth, flatten, press, iron","crease formation, texture irregularity, aging appearance","aging, pressure, bunching, creasing action",SHAPING,1
+bash,"hit, strike, pound, crash","gentle touch, caress, miss, dodge","violent impact, sound production, damage","violent intent, force application, anger",STRIKING,5
+beat,"strike, hit, pound, thrash","gentle touch, caress, stroke, miss","repeated impact, fatigue, damage, rhythm production","striking intent, rhythm creation, violence",STRIKING,3
+hammer,"pound, strike, beat, bash","gently place, ease down, careful handling, miss","nail driving, surface impact, repeated force","tool use, construction, force application",STRIKING,1
+hit,"strike, knock, bang, thump","miss, evade, dodge, avoid","impact, damage, force transfer, collision","striking intent, force application, target presence",STRIKING,9
+kick,"strike, hit, boot, bash","miss, dodge, evade, avoid","foot impact, distance achievement, force transfer","foot power, striking intent, force application",STRIKING,0
+knock,"tap, rap, bang, hit","miss, avoid, dodge, gentleness","door signaling, impact, sound production","entry intent, attention seeking, strike action",STRIKING,4
+pound,"beat, strike, hammer, thump","caress, stroke, gentle tap, miss","repeated heavy impact, sound production, damage","striking force, rhythm intent, force application",STRIKING,3
+punch,"hit, strike, bash, sock","caress, stroke, gentle touch, miss","blunt force impact, injury, momentum transfer","combat intent, anger, force application",STRIKING,0
+rap,"tap, knock, strike, bang","miss, dodge, gentleness, caress","quick impact, sound production, signaling","attention seeking, knocking, quick strike",STRIKING,2
+slap,"hit, strike, smack, whack","caress, stroke, pat, gentle touch","hand impact, sound production, face contact","anger, punishment, attention getting",STRIKING,1
+smack,"hit, strike, slap, bang","miss, dodge, gentle touch, caress","hand-based impact, sound production, pain","hand strike, attention getting, punishment",STRIKING,2
+smash,"strike, bash, crash, shatter","gentle handling, careful placement, repair, miss","object destruction, violent impact, breakage","destructive intent, anger, force application",STRIKING,1
+strike,"hit, beat, knock, bang","miss, dodge, evade, parry","impact force, damage, collision, sound production","striking intent, anger, combat action",STRIKING,12
+tap,"knock, rap, pat, strike lightly","pound, smash, bash, hard strike","light impact, sound production, attention getting","signal intent, attention seeking, light touch",STRIKING,2
+whack,"hit, strike, bash, smack","miss, dodge, gentle touch, caress","forceful impact, sound production, object movement","striking force, anger, impact intent",STRIKING,1
+cast,"throw, toss, fling, hurl","catch, collect, gather, retrieve","object flight, fishing motion, election participation","fishing intent, voting action, throwing impulse",THROWING,7
+catapult,"throw, launch, propel, fling","catch, stop, brake, slow","rapid projectile, high velocity, sudden motion","catapult mechanism, forceful release, launch system",THROWING,0
+chuck,"throw, toss, fling, hurl","catch, hold, keep, retrieve","casual throwing, object flight, discard","casual intent, object disposal, light throwing",THROWING,0
+fling,"throw, hurl, cast, sling","catch, hold, embrace, clutch","object flight, rapid motion, wild throwing","emotional state, forceful release, wild motion",THROWING,7
+heave,"throw, hurl, toss, cast","catch, hold, keep, secure","forceful throw, heavy object flight, effort display","weight, strength exertion, throwing force",THROWING,0
+hurl,"throw, fling, cast, propel","catch, hold, embrace, secure","forceful projectile, distance achievement, violent motion","anger, force application, violent intent",THROWING,7
+launch,"throw, propel, send, release","catch, hold, retrieve, recover","projectile motion, object initiation, distance travel","launch intent, propulsion mechanism, release trigger",THROWING,2
+lob,"throw, toss, arc, loft","catch, stop, block, intercept","high arc trajectory, distance coverage, soft landing","arc intent, gentle throwing, distance goal",THROWING,1
+pitch,"throw, toss, hurl, lob","catch, hold, receive, keep","baseball flight, object projection, distance coverage","sport intent, throwing skill, release force",THROWING,0
+propel,"push, drive, launch, impel","brake, stop, arrest, hold","object motion, force transfer, directional movement","force application, propulsion intent, driving mechanism",THROWING,3
+sling,"throw, hurl, fling, cast","catch, hold, secure, keep","object flight, sling-based propulsion, distance coverage","sling use, throwing force, projectile intent",THROWING,1
+throw,"toss, hurl, fling, cast","catch, hold, keep, retain","object flight, distance coverage, projectile motion","propulsion intent, object release, force application",THROWING,12
+toss,"throw, fling, flip, cast","catch, hold, secure, clamp","light object flight, arc trajectory, playful motion","casual throwing, playfulness, light object",THROWING,6

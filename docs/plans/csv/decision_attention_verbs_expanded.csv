@@ -1,0 +1,119 @@
+Word,Synonyms,Antonyms,Causes,Caused_By,Category
+decide,"determine,resolve,settle on,choose,make decision","postpone,defer,waver,hesitate",decision made,"deliberation,options,necessity,analysis",DECIDING
+determine,"decide,resolve,establish,ascertain,fix","waver,hesitate,uncertain,undecided",conclusion reached,"evidence,analysis,investigation,intention",DECIDING
+resolve,"decide firmly,settle,determine,conclude,commit","waver,hesitate,postpone,defer",firm decision made,"conviction,determination,necessity,analysis",DECIDING
+settle,"decide finally,establish,agree,conclude,resolved","reopen,reconsider,change,dispute",settled decision,"negotiation,agreement,resolution,finality",DECIDING
+conclude,"decide finally,determine,infer,finish,reach judgment","begin,start,open,question,doubt",conclusion reached,"analysis,evidence,reasoning,completion",DECIDING
+establish,"determine,prove,set up,confirm,create","destroy,overthrow,overturn,question",established fact/decision,"evidence,proof,intention,authority",DECIDING
+judge,"form opinion,evaluate,determine,assess,sentence","refuse,withhold,uncertain,suspend",judgment formed,"evidence,experience,criteria,reasoning",DECIDING
+assess,"evaluate,judge,appraise,estimate,determine value","ignore,overlook,guess,estimate vaguely",assessment completed,"evidence,criteria,analysis,knowledge",DECIDING
+evaluate,"judge,assess,appraise,determine worth,examine","ignore,overlook,guess,dismiss",evaluation completed,"criteria,analysis,measurement,evidence",DECIDING
+make up one's mind,"decide,resolve,commit,determine,finalize","waver,hesitate,postpone,defer",decision made final,"deliberation,conviction,necessity,determination",DECIDING
+commit,"decide firmly,pledge,dedicate,obligate,bind","abandon,renege,escape,evade",commitment made,"conviction,determination,intention,pledge",DECIDING
+commit to,"dedicate to,decide for,pledge to,bind to","abandon,renege,escape,avoid",committed decision,"conviction,pledge,intention,determination",DECIDING
+finalize,"complete,conclude,decide finally,finish,settle","leave open,reopen,continue,defer",final decision,"analysis,agreement,determination,completion",DECIDING
+choose,"select,pick,decide,opt for,prefer","reject,refuse,decline,avoid",selection made,"preference,options,judgment,criteria",CHOOSING
+select,"choose,pick,decide on,elect,designate","reject,refuse,decline,exclude",selection made,"criteria,judgment,preference,intention",CHOOSING
+pick,"choose,select,decide,opt for,choose casually","reject,refuse,decline,avoid",selection made,"preference,inclination,casualness,opportunity",CHOOSING
+pick out,"select from,identify,recognize,notice,choose","miss,overlook,ignore,confuse",selection identified,"observation,preference,recognition,judgment",CHOOSING
+opt,"choose,select,decide on,prefer,elect","reject,refuse,decline,avoid",choice made,"preference,evaluation,judgment,intention",CHOOSING
+opt for,"choose,select,prefer,decide on,go with","reject,refuse,decline,avoid",preference chosen,"evaluation,preference,judgment,intention",CHOOSING
+go for,"choose,select,prefer,opt for,decide on","reject,refuse,decline,avoid",choice made,"preference,appeal,judgment,attraction",CHOOSING
+prefer,"like better,choose over,favor,select,incline towards","reject,avoid,dislike,disfavor",preference expressed,"taste,evaluation,comparison,judgment",CHOOSING
+prefer...to,"like...better,choose...over,favor...over","prefer...to reverse,dislike,avoid",preference established,"comparison,judgment,taste,evaluation",CHOOSING
+election,"selection by voting,choice,decision process","non-selection,rejection,random assignment",selection decided,"voting,preference,nomination,choice",CHOOSING
+elect,"choose by vote,select,decide,pick,appoint","reject,refuse,decline,exclude",elected selection,"voting,choice,nomination,preference",CHOOSING
+designate,"specify,choose,appoint,select,name","reject,refuse,decline,ignore",designation made,"authority,selection,intention,decision",CHOOSING
+single out,"choose from group,identify,select,distinguish","overlook,ignore,miss,group with",selection distinguished,"observation,preference,distinction,judgment",CHOOSING
+cherry-pick,"selectively choose,pick carefully,discriminate","accept all,indiscriminate,random selection",selective choice made,"judgment,criteria,discrimination,preference",CHOOSING
+focus,"concentrate attention,direct,center,zero in on","distract,divert,scatter,disperse",attention focused,"intention,interest,priority,determination",FOCUSING
+concentrate,"focus attention,center,direct,apply mind","distract,disperse,scatter,wander",concentrated attention,"effort,intention,determination,priority",FOCUSING
+focus on,"direct attention to,concentrate on,prioritize","ignore,overlook,distract from,scatter",attention directed,"intention,interest,priority,importance",FOCUSING
+concentrate on,"focus on,direct attention to,prioritize,apply to","ignore,overlook,distract,scatter",attention applied,"effort,intention,priority,importance",FOCUSING
+attend,"pay attention,focus,concentrate,listen,mind","ignore,neglect,overlook,disregard",attention given,"interest,awareness,respect,obligation",FOCUSING
+attend to,"focus on,take care of,address,handle,mind","ignore,neglect,overlook,abandon",attention given to,"responsibility,importance,care,obligation",FOCUSING
+zero in on,"focus on,concentrate on,target,home in on","miss,overlook,ignore,scatter",focus narrowed,"intention,priority,targeting,determination",FOCUSING
+hone in on,"focus on,target,narrow focus,concentrate on","miss,scatter,distract,broaden",focus sharpened,"intention,targeting,determination,priority",FOCUSING
+home in on,"focus on,target,move towards,zero in on","miss,divert,scatter,abandon",target approached,"intention,targeting,determination,precision",FOCUSING
+center on,"focus on,concentrate on,pivot around,emphasize","scatter,divert,ignore,overlook",center established,"priority,emphasis,intention,focus",FOCUSING
+center around,"focus on,pivot around,revolve around,emphasize","scatter,divert,ignore,overlook",center established,"priority,organization,emphasis,structure",FOCUSING
+fixate,"focus excessively,obsess,dwell on,preoccupy","ignore,neglect,overlook,disperse",fixed focus,"obsession,preoccupation,fascination,intensity",FOCUSING
+fixate on,"obsess over,focus excessively on,dwell on","ignore,neglect,overlook,release",obsessive focus,"obsession,fixation,preoccupation,intensity",FOCUSING
+rivet,"capture attention,hold,fascinate,absorb,focus","release,bore,distract,lose attention",attention riveted,"fascination,interest,intensity,captivation",FOCUSING
+rivet attention,"capture focus,hold focus,fascinate,absorb","lose attention,release,bore,distract",attention captured,"fascination,interest,intensity,power",FOCUSING
+engross,"absorb attention,fascinate,engage,preoccupy","bore,distract,release,tire",attention engrossed,"interest,fascination,complexity,engagement",FOCUSING
+apply oneself,"focus effort,concentrate,dedicate,commit","neglect,avoid,distract,withdraw",effort applied,"intention,commitment,determination,priority",FOCUSING
+notice,"observe,perceive,see,detect,become aware","overlook,miss,ignore,neglect",observation made,"attention,perception,presence,change",FOCUSING
+observe,"watch,see,perceive,notice,scrutinize","ignore,overlook,miss,neglect",observation made,"attention,perception,watchfulness,interest",FOCUSING
+perceive,"notice,see,sense,discern,become aware","miss,overlook,ignore,blind to",perception formed,"sensory input,awareness,attention,understanding",FOCUSING
+detect,"discover,notice,find,uncover,sense","miss,overlook,hide,conceal",detection made,"observation,perception,investigation,evidence",FOCUSING
+spot,"notice,see,observe,locate,identify","miss,overlook,fail to see,ignore",location spotted,"observation,perception,attention,presence",FOCUSING
+catch,"notice,see,observe,apprehend,discover","miss,overlook,fail to see,escape",discovery made,"attention,observation,perception,luck",FOCUSING
+catch sight of,"notice suddenly,see,observe,glimpse,spot","miss,overlook,fail to see,ignore",sight caught,"observation,chance,attention,presence",FOCUSING
+eye,"look at,observe,watch,examine,scrutinize","ignore,overlook,look away,dismiss",examination given,"observation,interest,suspicion,attention",FOCUSING
+watch,"observe,see,pay attention,keep eye on,monitor","ignore,overlook,disregard,neglect",observation made,"attention,care,interest,vigilance",FOCUSING
+scan,"examine quickly,look over,survey,peruse,review","ignore,skip,overlook,miss",scan completed,"attention,speed,overview,searching",FOCUSING
+scrutinize,"examine closely,inspect,study,investigate","ignore,overlook,glance,casual look",close examination,"attention,suspicion,thoroughness,care",FOCUSING
+study,"examine carefully,investigate,learn,analyze","ignore,overlook,skim,superficial",study completed,"interest,knowledge-seeking,attention,intention",FOCUSING
+take notice,"observe,pay attention,become aware,note","ignore,overlook,miss,disregard",notice taken,"awareness,attention,importance,change",FOCUSING
+ignore,"disregard,overlook,pay no attention to,dismiss","notice,attend to,acknowledge,respect",attention withheld,"intent,indifference,dismissal,defiance",IGNORING
+overlook,"fail to notice,disregard,ignore,pass over","notice,observe,attend,acknowledge",attention bypassed,"oversight,carelessness,indifference,speed",IGNORING
+neglect,"fail to care for,disregard,ignore,abandon","care for,attend to,cherish,nurture",care withheld,"carelessness,indifference,negligence,failure",IGNORING
+disregard,"ignore,dismiss,pay no attention to,overlook","respect,consider,acknowledge,attend to",attention dismissed,"indifference,dismissal,contempt,intent",IGNORING
+overlook,"ignore,disregard,excuse,forgive,pass over","punish,condemn,focus on,address",error passed over,"generosity,oversight,carelessness,forgiveness",IGNORING
+dismiss,"reject,disregard,send away,brush off,overlook","consider,respect,attend to,take seriously",dismissal made,"judgment,authority,disrespect,intent",IGNORING
+brush aside,"dismiss,ignore,disregard,minimize,wave away","address,attend to,respect,consider",matter dismissed,"impatience,dismissal,indifference,contempt",IGNORING
+brush off,"dismiss,ignore,reject,snub,disregard","welcome,attend to,respect,acknowledge",dismissal made,"rudeness,dismissal,contempt,impatience",IGNORING
+tune out,"ignore,stop listening,disregard,block out","listen,attend,focus,engage",attention blocked,"distraction,indifference,selectivity,overload",IGNORING
+shut out,"exclude,ignore,block,disregard,lock out","include,acknowledge,listen,consider",exclusion made,"rejection,indifference,protection,defense",IGNORING
+turn a blind eye,"deliberately ignore,disregard,overlook,connive","notice,observe,act on,expose",deliberate ignoring,"complicity,negligence,indifference,intent",IGNORING
+turn a deaf ear,"ignore,refuse to listen,disregard,dismiss","listen,hear,heed,attend",refusal to hear,"defiance,indifference,dismissal,stubbornness",IGNORING
+pay no heed,"ignore,disregard,dismiss,overlook,neglect","heed,attend,listen,respect",attention withheld,"indifference,defiance,dismissal,contempt",IGNORING
+pay no mind,"ignore,disregard,dismiss,overlook,neglect","mind,attend,listen,heed",attention withheld,"indifference,dismissal,contempt,nonchalance",IGNORING
+distract,"divert attention,divert,draw away,interrupt","focus,concentrate,attend,engage",attention diverted,"interruption,interference,noise,temptation",IGNORING
+divert,"distract,redirect,draw attention away,detour","focus,direct toward,concentrate on",attention diverted,"interruption,interference,temptation,alternative",IGNORING
+interrupt,"break in,disrupt,intercede,cut off,disturb","listen,attend,complete,continue",interruption made,"urgency,impatience,rudeness,interruption",IGNORING
+disturb,"interrupt,bother,disrupt,agitate,concern","calm,peace,leave undisturbed,ignore",disturbance caused,"interruption,concern,noise,urgency",IGNORING
+preoccupy,"occupy mind,absorb attention,engross,occupy thought","distract,wander,flexible,open",mind preoccupied,"concern,worry,fascination,intensity",IGNORING
+plan,"organize,arrange,scheme,design,prepare","improvise,spontaneous,abandon,cancel",plan created,"intention,foresight,design,organization",PLANNING
+plan for,"prepare for,anticipate,design for,scheme for","improvise,surprise,unprepared,random",planning done,"anticipation,preparation,foresight,intention",PLANNING
+strategize,"plan strategy,design approach,formulate,organize","improvise,spontaneous,reactive,random",strategy formulated,"analysis,foresight,intention,organization",PLANNING
+scheme,"plan, devise,plot, conspire, organize","spontaneous,random,honest,straightforward",scheme devised,"cunning,intention,conspiracy,malice",PLANNING
+plot,"plan,scheme,devise,conspire,plan covertly","spontaneous,honest,straightforward,transparent",plot devised,"intention,secrecy,conspiracy,complexity",PLANNING
+organize,"arrange,plan,systematize,structure,order","chaos,disarray,random,disorganize",organization achieved,"intention,structure,planning,effort",PLANNING
+prepare,"make ready,plan for,organize,arrange,set up","neglect,unprepared,improvise,careless",preparation completed,"foresight,intention,planning,effort",PLANNING
+map out,"plan,outline,design,scheme,delineate","improvise,ignore,spontaneous,vague",plan mapped,"detail,intention,vision,organization",PLANNING
+outline,"sketch plan,summarize,design,structure,define","detail,expand,vague,ignore",outline provided,"simplification,planning,structure,intention",PLANNING
+sketch out,"outline roughly,plan,design, delineate broadly","detail,finalize,vague,ignore",sketch provided,"planning,vision,rough planning,intention",PLANNING
+draft,"sketch plan,outline,design,compose,prepare initial","finalize,detail,ignore,vague",draft created,"planning,composition,preliminary,intention",PLANNING
+formulate,"devise,plan,design,create, compose","abandon,improvise,vague,random",formula/plan created,"intention,thought,design,analysis",PLANNING
+devise,"plan,invent,create,design,devise","abandon,improvise,random,spontaneous",device/plan created,"creativity,intention,ingenuity,analysis",PLANNING
+arrange,"organize,plan,put in order,schedule,prepare","disarrange,disorder,random,improvise",arrangement made,"intention,planning,organization,effort",PLANNING
+solve,"find solution,resolve,work out,figure out","complicate,worsen,ignore,abandon",solution found,"analysis,intelligence,persistence,effort",PROBLEM_SOLVING
+resolve,"solve,settle,determine,overcome,finish","complicate,persist,worsen,abandon",resolution achieved,"understanding,effort,determination,clarity",PROBLEM_SOLVING
+figure out,"understand,solve,determine,work out,discover","confuse,misunderstand,abandon,ignore",solution discovered,"analysis,reasoning,effort,intelligence",PROBLEM_SOLVING
+work out,"solve,figure out,develop,design, exercise","abandon,complicate,ignore,rest",solution developed,"effort,analysis,persistence,intelligence",PROBLEM_SOLVING
+unravel,"solve,untangle,expose,clarify,understand","tangle,obscure,confuse,conceal",solution clarified,"analysis,investigation,effort,intelligence",PROBLEM_SOLVING
+untangle,"solve,unravel,clarify,disentangle, simplify","tangle,complicate,confuse,obscure",problem untangled,"analysis,clarity,effort,simplification",PROBLEM_SOLVING
+get to the bottom of,"discover truth,investigate,solve,understand","surface understanding,ignore,cover up",truth discovered,"investigation,persistence,analysis,truth",PROBLEM_SOLVING
+crack,"solve,break through,understand,decipher","fail,stuck,confused,unable",code/problem cracked,"insight,effort,intelligence,breakthrough",PROBLEM_SOLVING
+decipher,"decode,understand,interpret,solve,clarify","confuse,obscure,misinterpret,ignore",deciphered meaning,"analysis,interpretation,knowledge,effort",PROBLEM_SOLVING
+decode,"decipher,understand,interpret,crack,uncover","confuse,obscure,encode,misinterpret",decoded meaning,"knowledge,analysis,interpretation,intelligence",PROBLEM_SOLVING
+address,"tackle,deal with,handle,solve,confront","ignore,overlook,avoid,escape",issue addressed,"responsibility,confrontation,effort,intention",PROBLEM_SOLVING
+tackle,"address,attempt,deal with,confront,engage","avoid,ignore,escape,flee",problem tackled,"effort,determination,courage,engagement",PROBLEM_SOLVING
+handle,"manage,deal with,address,cope with,process","mishandle,abandon,ignore,avoid",situation managed,"capability,effort,experience,competence",PROBLEM_SOLVING
+cope with,"deal with,manage,handle,endure,survive","fail,collapse,give up,surrender",situation coped with,"resilience,effort,adaptation,survival",PROBLEM_SOLVING
+brainstorm,"generate ideas,ideate,think creatively,problem solve","accept single solution,rigid,closed",ideas generated,"creativity,group collaboration,openness,freedom",PROBLEM_SOLVING
+ideate,"brainstorm,generate ideas,think creatively,invent","reject ideas,rigid,closed-minded",ideas generated,"creativity,freedom,openness,collaboration",PROBLEM_SOLVING
+hesitate,"pause,waver,delay,falter,be uncertain","decide,commit,forge ahead,act",hesitation shown,"doubt,uncertainty,fear,conflict",DECIDING
+waver,"hesitate,be uncertain,vacillate,fluctuate","decide,commit,steady,firm",wavering shown,"doubt,indecision,conflicting emotions",DECIDING
+vacillate,"waver,fluctuate,go back and forth,be indecisive","decide,commit,firm, steadfast",vacillation shown,"indecision,conflict,uncertainty,weakness",DECIDING
+doubt,"question,be uncertain,disbelieve,suspect","trust,believe,confident,certain",doubt expressed,"uncertainty,skepticism,suspicion,evidence",DECIDING
+question,"doubt,ask,inquire,challenge,express uncertainty","accept,trust,believe,affirm",question raised,"skepticism,curiosity,uncertainty,challenge",DECIDING
+deliberate,"consider carefully,ponder,reflect,think about","decide hastily,spontaneous,impulsive",deliberation done,"thought,consideration,analysis,caution",DECIDING
+ponder,"think deeply,reflect,consider,contemplate,muse","act hastily,decide quickly,spontaneous",pondering done,"thought,reflection,contemplation,depth",DECIDING
+contemplate,"think about,consider,reflect, visualize,envisage","act quickly,spontaneous,impulsive",contemplation done,"thought,reflection,meditation,vision",DECIDING
+dither,"hesitate,be indecisive,waver,fuss,be confused","decide,commit,definitive,clear",dithering shown,"indecision,confusion,anxiety,fuss",DECIDING
+agonize,"struggle with decision,worry,suffer, torment","decide easily,peace,resolve,clear",agonized decision,"internal conflict,worry,struggle,intensity",DECIDING
+agonize over,"struggle with,worry about,torment self,struggle","resolve,decide,peace,clarity",agonizing done,"difficulty,struggle,intensity,suffering",DECIDING
+sweat,"worry,suffer,labor,struggle, work hard","peace,rest,easy,comfortable",sweat/worry shown,"difficulty,struggle,effort,stress",DECIDING

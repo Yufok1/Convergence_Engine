@@ -1,0 +1,164 @@
+Word,Synonyms,Antonyms,Causes,Caused_By,Category
+improve,"enhance, better, upgrade, advance","worsen, deteriorate, degrade, decline","effort, resources, skill, intention","motivation, investment, skill, action",IMPROVEMENT
+enhance,"improve, augment, strengthen, amplify","diminish, reduce, weaken, decrease","addition, modification, optimization","intention, resources, capability",IMPROVEMENT
+better,"improve, enhance, upgrade, refine","worsen, deteriorate, decline, degrade","effort, change, optimization","intention, effort, resources",IMPROVEMENT
+upgrade,"improve, enhance, elevate, advance","downgrade, reduce, diminish, lower","investment, replacement, advancement","decision, resources, need",IMPROVEMENT
+advance,"improve, progress, evolve, develop","regress, decline, retreat, backslide","innovation, effort, development","progress, learning, investment",IMPROVEMENT
+refine,"improve, polish, perfect, enhance","coarsen, crude, degrade, worsen","precision, attention to detail, skill","skill, care, iteration",IMPROVEMENT
+perfect,"refine, polish, complete, finalize","mar, damage, spoil, worsen","precision, effort, skill","dedication, skill, iteration",IMPROVEMENT
+strengthen,"fortify, harden, reinforce, toughen","weaken, soften, diminish, reduce","exercise, materials, reinforcement","effort, training, resources",IMPROVEMENT
+fortify,"strengthen, reinforce, harden, secure","weaken, soften, undermine, expose","reinforcement, materials, design","threat, need, strategy",IMPROVEMENT
+reinforce,"strengthen, harden, fortify, brace","weaken, diminish, reduce, expose","addition, support, reinforcement","need, design, safety",IMPROVEMENT
+augment,"increase, enhance, expand, amplify","decrease, reduce, diminish, limit","addition, expansion, growth","need, resources, decision",IMPROVEMENT
+amplify,"strengthen, enhance, magnify, expand","diminish, reduce, muffle, weaken","increase, emphasis, technology","intention, capability, amplification",IMPROVEMENT
+brighten,"illuminate, lighten, shine, glow","darken, dim, dull, shadow","light, cleaning, polish","illumination, cleaning, reflection",IMPROVEMENT
+lighten,"brighten, illuminate, reduce weight, ease","darken, dim, burden, weight","removal, reduction, light","subtraction, cleaning, illumination",IMPROVEMENT
+sharpen,"hone, whet, refine, focus","dull, blunt, blur, soften","friction, honing, intention","grinding, sharpening tool, effort",IMPROVEMENT
+hone,"sharpen, whet, refine, perfect","dull, blunt, coarsen, degrade","practice, refinement, iteration","effort, practice, skill",IMPROVEMENT
+whet,"sharpen, hone, stimulate, excite","dull, blunt, diminish, satisfy","friction, stimulation, desire","sharpening, stimulation, appetite",IMPROVEMENT
+polish,"shine, buff, refine, perfect","tarnish, dull, scratch, degrade","friction, abrasive, intention","effort, materials, skill",IMPROVEMENT
+buff,"polish, shine, smooth, refine","scratch, mar, dull, tarnish","friction, buffing material, effort","abrasive action, intention, skill",IMPROVEMENT
+shine,"brighten, gleam, glow, sparkle","dull, tarnish, darken, shadow","reflection, polish, light","polishing, reflection, illumination",IMPROVEMENT
+gleam,"shine, sparkle, glow, flash","dull, tarnish, fade, darken","reflection, polish, light","reflection, cleanliness, illumination",IMPROVEMENT
+sparkle,"shine, glitter, glimmer, twinkle","dull, tarnish, fade, dim","reflection, cleanliness, light","reflection, polish, illumination",IMPROVEMENT
+clean,"wash, cleanse, purify, sanitize","dirty, soil, contaminate, pollute","dirt removal, hygiene, intent","washing, cleaning action, effort",IMPROVEMENT
+cleanse,"clean, purify, wash, sanitize","contaminate, pollute, soil, dirty","removal, purification, hygiene","washing, purification action, care",IMPROVEMENT
+purify,"cleanse, refine, filter, distill","contaminate, pollute, mix, taint","filtration, refinement, separation","filtering, distillation, separation",IMPROVEMENT
+sanitize,"clean, disinfect, sterilize, decontaminate","contaminate, infect, pollute, soil","disinfection, sterilization, hygiene","chemical treatment, sterilization, heat",IMPROVEMENT
+disinfect,"sanitize, sterilize, clean, treat","infect, contaminate, pollute, soil","pathogen removal, treatment, health","chemical application, heat, treatment",IMPROVEMENT
+sterilize,"disinfect, sanitize, purify, clean","infect, contaminate, soil, pollute","heat, chemicals, pressure","high temperature, chemical treatment, pressure",IMPROVEMENT
+freshen,"revive, refresh, renew, invigorate","stale, age, tire, exhaust","renewal, restoration, freshness","cleaning, renewal action, air",IMPROVEMENT
+refresh,"revive, invigorate, renew, freshen","tire, exhaust, stale, weary","rest, renewal, stimulation","rest, rejuvenation, stimulus",IMPROVEMENT
+revive,"refresh, restore, resurrect, bring back","kill, destroy, deteriorate, die","restoration, renewal, care","treatment, care, effort",IMPROVEMENT
+invigorate,"energize, refresh, stimulate, strengthen","tire, weaken, exhaust, drain","energy input, stimulation, health","exercise, stimulus, food",IMPROVEMENT
+rejuvenate,"revive, restore, renew, refresh","age, tire, weaken, deteriorate","renewal, restoration, treatment","treatment, care, rejuvenation therapy",IMPROVEMENT
+restore,"repair, rebuild, reconstruct, renew","destroy, damage, deteriorate, ruin","repair, reconstruction, intention","repair action, materials, skill",IMPROVEMENT
+renew,"restore, refresh, revive, restart","age, stale, expire, terminate","replacement, refreshment, restart","renewal action, replacement, decision",IMPROVEMENT
+heal,"cure, recover, mend, repair","wound, injure, infect, harm","time, treatment, recovery","biological response, treatment, time",IMPROVEMENT
+cure,"heal, treat, remedy, fix","infect, contaminate, disease, harm","treatment, medication, therapy","medication, treatment, medical action",IMPROVEMENT
+remedy,"cure, fix, treat, correct","aggravate, worsen, infect, harm","treatment, correction, action","treatment, corrective action, medicine",IMPROVEMENT
+treat,"cure, remedy, care for, manage","neglect, ignore, aggravate, infect","therapy, medication, care","medical action, care, intention",IMPROVEMENT
+mend,"repair, fix, heal, restore","break, damage, tear, sever","repair, stitching, bonding","repair action, materials, skill",REPAIR
+fix,"repair, mend, restore, correct","break, damage, destroy, worsen","repair, correction, intention","repair action, parts, skill",REPAIR
+repair,"fix, mend, restore, rebuild","break, damage, destroy, harm","damage, wear, maintenance","repair action, materials, skill",REPAIR
+rebuild,"reconstruct, restore, repair, renovate","destroy, demolish, damage, ruin","destruction, renewal, improvement","reconstruction effort, materials, skill",REPAIR
+reconstruct,"rebuild, restore, recreate, reassemble","destroy, demolish, dismantle, damage","destruction, damage, recreation","reconstruction effort, materials, design",REPAIR
+patch,"repair, mend, fix, cover","tear, rip, expose, open","hole, damage, wear","patching material, sewing, adhesive",REPAIR
+sew,"stitch, mend, patch, join","tear, rip, cut, separate","fabric bonding, repair, joining","needle, thread, effort",REPAIR
+stitch,"sew, mend, join, fasten","tear, rip, separate, cut","fabric bonding, wound closure","needle, thread, surgical action",REPAIR
+bond,"join, attach, fuse, adhere","separate, break, sever, detach","adhesion, fusion, joining","adhesive, heat, chemical reaction",REPAIR
+fasten,"secure, attach, fix, lock","unfasten, loosen, release, detach","attachment, securing, connection","fasteners, tightening, locking",REPAIR
+secure,"fasten, attach, lock, stabilize","loosen, unfasten, release, destabilize","fastening, locking, attachment","fasteners, locks, tightening",REPAIR
+tighten,"secure, fasten, harden, compress","loosen, slacken, relax, ease","compression, fastening, tension","mechanical force, tension, effort",REPAIR
+smooth,"polish, refine, flatten, even","rough, wrinkle, crease, ruffle","friction, pressure, abrasive","sanding, smoothing tool, effort",IMPROVEMENT
+flatten,"smooth, level, press, compress","wrinkle, crease, fold, bulge","pressure, ironing, compression","pressure, heat, mechanical force",IMPROVEMENT
+press,"flatten, iron, compress, smooth","wrinkle, crease, puff, expand","heat, pressure, intention","heat, pressure application, effort",IMPROVEMENT
+iron,"press, smooth, flatten, straighten","wrinkle, crease, rumple, fold","heat, pressure, smoothing","heat, pressure, mechanical action",IMPROVEMENT
+worsen,"deteriorate, decline, degrade, regress","improve, enhance, advance, better","time, neglect, damage, disease","natural processes, decay, lack of care",DETERIORATION
+deteriorate,"decline, worsen, degrade, regress","improve, enhance, better, advance","time, neglect, exposure, wear","natural processes, decay, lack of maintenance",DETERIORATION
+decline,"deteriorate, worsen, diminish, decrease","improve, recover, advance, strengthen","age, disease, wear, time","natural processes, disease, aging",DETERIORATION
+degrade,"reduce, worsen, diminish, lower","improve, enhance, upgrade, elevate","wear, damage, time, neglect","friction, weathering, decay, neglect",DETERIORATION
+regress,"decline, worsen, backslide, revert","progress, advance, improve, develop","setback, reversal, loss","loss, reversal, setback",DETERIORATION
+diminish,"reduce, decrease, lessen, shrink","increase, expand, grow, amplify","loss, consumption, wear","consumption, wear, loss",DETERIORATION
+reduce,"diminish, decrease, lessen, lower","increase, expand, augment, amplify","removal, subtraction, decrease","removal, consumption, decision",DETERIORATION
+decrease,"reduce, diminish, lower, drop","increase, grow, expand, rise","loss, consumption, reduction","consumption, loss, decrease",DETERIORATION
+weaken,"enfeeble, diminish, reduce, undermine","strengthen, fortify, harden, toughen","wear, disease, lack, time","disease, wear, aging, lack of strength",DETERIORATION
+enfeeble,"weaken, diminish, undermine, debilitate","strengthen, fortify, invigorate, empower","illness, wear, deprivation","illness, aging, deprivation",DETERIORATION
+debilitate,"weaken, enfeeble, undermine, cripple","strengthen, invigorate, empower, fortify","illness, injury, exhaustion","illness, injury, exhaustion",DETERIORATION
+dull,"blunt, dim, fade, tarnish","sharpen, brighten, shine, polish","use, friction, time, wear","friction, use, weathering, age",DETERIORATION
+blunt,"dull, wear down, reduce sharpness","sharpen, hone, whet, refine","friction, impact, use, wear","impact, friction, use, wear",DETERIORATION
+darken,"dim, shadow, obscure, dull","brighten, lighten, illuminate, shine","shadow, dirt, oxidation, time","light blocking, oxidation, dirt, staining",DETERIORATION
+dim,"darken, fade, dull, obscure","brighten, lighten, shine, illuminate","light reduction, wear, age","light reduction, dirt, aging",DETERIORATION
+fade,"dim, pale, lose color, weaken","brighten, intensify, deepen, vivid","sunlight, time, wear, exposure","UV exposure, time, weathering, bleaching",DETERIORATION
+pale,"fade, whiten, lose color, weaken","brighten, deepen, intensify, flush","light exposure, sickness, aging","bleaching, sickness, aging",DETERIORATION
+soil,"dirty, stain, contaminate, sully","clean, cleanse, purify, wash","dirt, contamination, contact","dirt contact, staining, contamination",DETERIORATION
+dirty,"soil, stain, sully, taint","clean, cleanse, wash, sanitize","dirt, contamination, use","dirt accumulation, contamination, use",DETERIORATION
+stain,"soil, mark, taint, discolor","clean, cleanse, wash, remove","liquid contact, dirt, contamination","liquid spillage, dirt, contamination",DETERIORATION
+tarnish,"dull, discolor, blacken, oxidize","polish, shine, brighten, gleam","oxidation, air exposure, time","oxidation, air exposure, moisture",DETERIORATION
+discolor,"stain, tarnish, fade, darken","color, brighten, polish, restore","staining, oxidation, decay","staining, oxidation, decay",DETERIORATION
+sully,"soil, tarnish, damage, disgrace","honor, brighten, restore, clean","contamination, damage, dishonor","contamination, damage, dishonor",DETERIORATION
+wrinkle,"crease, fold, pucker, crumple","smooth, flatten, iron, press","wear, pressure, age, drying","pressure, time, moisture loss, age",DETERIORATION
+crease,"wrinkle, fold, crumple, pucker","smooth, flatten, iron, press","folding, pressure, wear","folding, pressure, wear",DETERIORATION
+crack,"fracture, break, fissure, splinter","seal, bond, join, heal","stress, pressure, temperature, age","stress, pressure, thermal cycling, brittleness",DAMAGE
+fracture,"crack, break, snap, splinter","heal, seal, bond, mend","impact, stress, pressure, weakness","impact, stress, pressure, weakness",DAMAGE
+age,"mature, ripen, season, decline","rejuvenate, refresh, restore, renew","time, oxidation, weathering","time, weathering, oxidation, entropy",DETERIORATION
+ripen,"mature, develop, age, season","rot, spoil, decay, wither","time, temperature, ripening","maturation process, time, temperature",IMPROVEMENT
+mature,"ripen, develop, age, season","wither, decay, spoil, deteriorate","time, development, ripening","biological process, time, development",IMPROVEMENT
+damage,"harm, injure, impair, hurt","repair, fix, restore, heal","impact, wear, abuse, misuse","impact, stress, abuse, misuse",DAMAGE
+harm,"damage, injure, hurt, wound","help, protect, heal, aid","attack, accident, abuse, exposure","attack, accident, abuse, exposure",DAMAGE
+injure,"harm, hurt, wound, impair","heal, protect, help, repair","impact, abuse, attack, accident","impact, abuse, attack, accident",DAMAGE
+hurt,"injure, wound, harm, pain","heal, soothe, comfort, help","impact, pain, injury, offense","impact, pain, injury, emotional harm",DAMAGE
+wound,"injure, hurt, cut, lacerate","heal, soothe, mend, treat","cutting, piercing, tearing, violence","cutting, piercing, tearing, violence",DAMAGE
+cut,"sever, slice, wound, lacerate","join, bond, heal, mend","sharp object, friction, shearing","sharp object, shearing force, friction",DAMAGE
+tear,"rip, shred, rend, separate","mend, sew, stitch, bond","force, stress, impact, wear","force, stress, impact, wear",DAMAGE
+rip,"tear, shred, rend, split","mend, sew, patch, bond","force, stress, sharp object, wear","force, stress, sharp object, wear",DAMAGE
+shred,"tear, rip, rend, destroy","mend, sew, bond, repair","force, tearing, grinding, destruction","mechanical force, tearing, grinding",DAMAGE
+lacerate,"cut, wound, tear, gash","heal, mend, suture, treat","sharp object, tearing, violence","sharp object, tearing, violence",DAMAGE
+gash,"wound, cut, lacerate, slash","heal, sew, stitch, treat","sharp object, impact, tearing","sharp object, impact, tearing",DAMAGE
+scratch,"scrape, mark, abrade, graze","polish, smooth, repair, restore","friction, sharp object, abrasion","friction, sharp object, abrasion",DAMAGE
+scrape,"scratch, abrade, graze, mark","smooth, polish, repair, heal","friction, rubbing, contact","friction, rubbing, contact",DAMAGE
+bruise,"contuse, discolor, injure, hurt","heal, treat, soothe, help","impact, blunt force trauma","impact, blunt force, collision",DAMAGE
+shatter,"break, smash, fragment, burst","repair, restore, reconstruct, bond","impact, stress, explosion","impact, stress, explosion, brittleness",DAMAGE
+smash,"break, shatter, destroy, crush","repair, restore, reconstruct, preserve","force, impact, violence","force, impact, violence",DAMAGE
+crush,"compress, destroy, break, shatter","restore, reconstruct, preserve, repair","pressure, force, weight","pressure, force, weight",DAMAGE
+break,"snap, fracture, shatter, crack","repair, mend, fix, restore","impact, stress, weakness, wear","impact, stress, weakness, wear",DAMAGE
+snap,"break, fracture, crack, splinter","repair, bond, mend, fix","stress, tension, brittleness","stress, tension, brittleness",DAMAGE
+splinter,"break, fragment, shatter, crack","bond, smooth, repair, heal","impact, stress, brittleness","impact, stress, brittleness",DAMAGE
+impair,"damage, weaken, diminish, reduce","improve, enhance, strengthen, restore","damage, disease, age, injury","damage, disease, age, injury",DAMAGE
+mar,"damage, blemish, spoil, scar","perfect, polish, restore, enhance","contact, damage, wear","contact, damage, wear",DAMAGE
+scar,"mark, wound, damage, disfigure","heal, restore, smooth, beautiful","injury, wound, damage","injury, wound, damage",DAMAGE
+disfigure,"deform, mar, damage, spoil","beautify, restore, heal, perfect","injury, damage, disease","injury, damage, disease",DAMAGE
+corrupt,"contaminate, spoil, taint, poison","purify, cleanse, restore, sanctify","contamination, pollution, degradation","contamination, pollution, degradation",DAMAGE
+contaminate,"pollute, poison, taint, corrupt","purify, cleanse, sanitize, sterilize","pollution, foreign matter, toxins","pollution, foreign matter, toxins",DAMAGE
+pollute,"contaminate, poison, taint, foul","purify, cleanse, clean, sanitize","pollution, industrial waste, toxins","pollution, industrial waste, toxins",DAMAGE
+poison,"contaminate, toxify, taint, corrupt","cure, treat, cleanse, antidote","toxic substance, contamination","toxic substance, contamination",DAMAGE
+infect,"contaminate, poison, disease, taint","cure, heal, disinfect, treat","pathogen, bacterial growth, contagion","pathogen, bacterial growth, contagion",DAMAGE
+erode,"wear away, corrode, abrade, deteriorate","build, strengthen, restore, repair","weathering, friction, chemical reaction","water, wind, friction, chemical action",DETERIORATION
+corrode,"rust, oxidize, erode, deteriorate","protect, coat, seal, restore","oxidation, moisture, acid","oxidation, moisture, acid",DETERIORATION
+rust,"corrode, oxidize, decay, deteriorate","polish, protect, coat, restore","oxidation, moisture, exposure","oxidation, moisture, iron exposure",DETERIORATION
+oxidize,"rust, corrode, tarnish, deteriorate","reduce, protect, preserve, restore","oxygen exposure, chemical reaction","oxygen exposure, chemical reaction",DETERIORATION
+decay,"rot, decompose, deteriorate, spoil","preserve, pickle, cure, maintain","decomposition, time, bacteria","decomposition, bacterial action, time",DETERIORATION
+rot,"decay, decompose, spoil, putrefy","preserve, cure, can, maintain","decomposition, moisture, bacteria","decomposition, moisture, bacterial action",DETERIORATION
+decompose,"decay, rot, break down, disintegrate","preserve, compose, build, integrate","time, bacteria, chemical reaction","time, bacteria, chemical reaction",DETERIORATION
+spoil,"decay, rot, ruin, damage","preserve, maintain, keep fresh","time, temperature, bacteria","time, temperature, bacterial growth",DETERIORATION
+putrefy,"rot, decay, decompose, fester","preserve, sterilize, cure, mummify","decomposition, bacteria, time","decomposition, bacteria, time",DETERIORATION
+fester,"rot, putrefy, suppurate, worsen","heal, treat, cure, clean","infection, bacteria, time","infection, bacteria, time",DETERIORATION
+wither,"shrivel, wilt, dry up, decline","flourish, bloom, grow, thrive","drought, dehydration, disease, age","water loss, dehydration, disease, age",DETERIORATION
+wilt,"droop, wither, fade, decline","perk up, flourish, bloom, refresh","water loss, heat, stress","water loss, heat, stress",DETERIORATION
+shrivel,"wither, wilt, dry up, shrink","swell, plump, hydrate, refresh","water loss, heat, drying","water loss, heat, drying",DETERIORATION
+droop,"sag, hang, wilt, decline","stand upright, erect, firm, refresh","weight, fatigue, water loss","weight, fatigue, water loss",DETERIORATION
+transform,"change, convert, metamorphose, alter","remain, persist, stagnate, freeze","change, conversion, metamorphosis","catalyst, action, change",TRANSFORMATION
+convert,"transform, change, alter, switch","preserve, maintain, freeze, stagnate","change, conversion, alteration","catalyst, action, decision",TRANSFORMATION
+alter,"change, modify, adjust, amend","preserve, maintain, keep, freeze","change, modification, adjustment","decision, action, catalyst",TRANSFORMATION
+modify,"alter, change, adjust, amend","preserve, maintain, freeze, lock","change, adjustment, customization","decision, action, requirement",TRANSFORMATION
+adjust,"alter, modify, fine-tune, calibrate","lock, freeze, preserve, misalign","fine-tuning, calibration, adjustment","need, calibration action, optimization",TRANSFORMATION
+evolve,"develop, change, transform, advance","devolve, regress, stagnate, decline","change, development, adaptation","natural process, selection, adaptation",TRANSFORMATION
+develop,"grow, evolve, mature, improve","stagnate, decline, regress, wither","growth, maturation, development","natural process, effort, time",IMPROVEMENT
+mutate,"change, alter, transform, modify","preserve, stabilize, freeze, lock","mutation, genetic change, alteration","genetic mutation, radiation, chemical",TRANSFORMATION
+transmute,"transform, convert, change, alter","preserve, stabilize, freeze, restore","chemical reaction, transformation","chemical reaction, catalyst",TRANSFORMATION
+metamorphose,"transform, change, evolve, convert","preserve, freeze, stagnate, maintain","transformation, metamorphosis","biological process, catalyst, time",TRANSFORMATION
+renovate,"restore, rebuild, update, refurbish","abandon, neglect, deteriorate, destroy","aging, desire for renewal","decision, resources, effort",IMPROVEMENT
+refurbish,"renovate, restore, update, renew","neglect, abandon, deteriorate, destroy","aging, improvement, updating","effort, resources, desire",IMPROVEMENT
+overhaul,"renovate, rebuild, restore, reconstruct","neglect, abandon, deteriorate, destroy","comprehensive renewal, improvement","decision, resources, effort",IMPROVEMENT
+customize,"tailor, personalize, adapt, modify","standardize, generalize, uniform, mass-produce","personalization, adaptation","preference, need, decision",TRANSFORMATION
+personalize,"customize, tailor, adapt, modify","standardize, generalize, mass-produce, uniform","customization, personalization","preference, individual need, decision",TRANSFORMATION
+expand,"grow, enlarge, extend, increase","contract, shrink, reduce, diminish","growth, extension, expansion","growth, decision, resources",TRANSFORMATION
+contract,"shrink, reduce, compress, diminish","expand, grow, enlarge, extend","shrinking, compression, reduction","cooling, drying, pressure, loss",TRANSFORMATION
+compress,"compact, squeeze, condense, reduce","expand, decompress, loosen, extend","pressure, force, compaction","pressure, force, mechanical action",TRANSFORMATION
+condense,"compress, compact, concentrate, reduce","expand, dilute, loosen, extend","concentration, compression, reduction","cooling, pressure, concentration",TRANSFORMATION
+dilute,"weaken, reduce concentration, thin","concentrate, condense, intensify, strengthen","addition of solvent, mixing","addition, mixing, dissolution",TRANSFORMATION
+concentrate,"condense, intensify, focus, strengthen","dilute, disperse, weaken, scatter","intensification, focusing, condensation","evaporation, reduction, focusing",TRANSFORMATION
+harden,"solidify, stiffen, strengthen, toughen","soften, liquefy, weaken, melt","cooling, drying, compression","cooling, drying, mechanical compression",TRANSFORMATION
+soften,"weaken, liquefy, relax, ease","harden, stiffen, toughen, solidify","heat, moisture, pressure release","heat, moisture, pressure relief",TRANSFORMATION
+solidify,"harden, set, congeal, coagulate","liquefy, dissolve, melt, thaw","cooling, drying, hardening","cooling, drying, chemical reaction",TRANSFORMATION
+liquefy,"melt, thaw, dissolve, soften","solidify, freeze, harden, congeal","heating, dissolution, melting","heat, solvent, pressure",TRANSFORMATION
+melt,"liquefy, thaw, dissolve, soften","freeze, solidify, harden, congeal","heat, temperature increase","heat, temperature increase",TRANSFORMATION
+thaw,"melt, unfreeze, defrost, liquify","freeze, solidify, congeal, harden","warming, temperature increase","warming, temperature increase, sunlight",TRANSFORMATION
+freeze,"solidify, congeal, harden, ice","thaw, melt, liquefy, warm","cooling, temperature decrease","cooling, temperature decrease, cold",TRANSFORMATION
+blend,"mix, combine, merge, integrate","separate, divide, unmix, segregate","mixing, combining, integration","mixing action, blending, stirring",TRANSFORMATION
+mix,"blend, combine, merge, integrate","separate, divide, unmix, segregate","combining, mixing, integration","stirring, mixing action, shaking",TRANSFORMATION
+separate,"divide, split, partition, segregate","mix, blend, combine, merge","division, separation, segregation","mechanical separation, filtering, selection",TRANSFORMATION
+divide,"separate, split, partition, cut","unite, combine, merge, join","division, cutting, partitioning","cutting, mechanical action, decision",TRANSFORMATION
+dissolve,"liquefy, melt, disintegrate, break apart","solidify, coagulate, crystallize, harden","solvent action, heat, time","solvent, heat, chemical action",TRANSFORMATION
+precipitate,"settle, condense, form, coalesce","dissolve, disperse, evaporate, scatter","chemical reaction, cooling, supersaturation","chemical reaction, cooling, supersaturation",TRANSFORMATION
+crystallize,"solidify, form crystals, harden, set","dissolve, liquefy, melt, scatter","cooling, evaporation, crystallization","cooling, evaporation, crystallization",TRANSFORMATION

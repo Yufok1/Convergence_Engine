@@ -1,0 +1,147 @@
+Word,Synonyms,Antonyms,Causes,Caused_By,Category,Interconnections
+bank,"tilt, lean, turn, incline","level, straighten, right","directional change, altitude adjustment","flight control, turning intent, aerodynamics",AERIAL,0
+flit,"flutter, dart, hop, skip","perch, land, settle","rapid short flight, quick movement","small bird/insect behavior, quick movement",AERIAL,0
+flutter,"flap, wave, beat, vibrate","steady, hold, fix","rapid oscillation, wing movement","wing action, wind, insect flight",AERIAL,1
+fly,"soar, hover, glide, wing","land, sink, crash","airspace displacement, elevation, speed","wings, jet propulsion, lift generation",AERIAL,2
+hover,"float, suspend, hang, poise","land, descend, crash","position maintenance, vertical suspension","hovering flight, rotor power, wind resistance",AERIAL,3
+soar,"fly, glide, hover, wing","dive, plummet, crash","sustained flight, height maintenance, distance","thermal currents, lift forces, wing power",AERIAL,2
+swoop,"dive, plunge, attack, descend","ascend, climb, rise","rapid downward movement, attack execution","predation, diving intent, gravity",AERIAL,0
+breach,"surface, leap, burst, jump","hide, sink, submerge","explosive water exit, height achievement","whale behavior, power, escape intent",AQUATIC,0
+dabble,"dip, immerse, splash, paddle","plunge, submerge, drown","light water contact, shallow engagement","casual contact intent, hand/foot immersion",AQUATIC,0
+dive,"plunge, submerge, descend, nosedive","surface, ascend, float","downward water movement, depth increase","diving intent, water entry, aerial descent",AQUATIC,5
+drift,"float, glide, flow, wander","anchor, fix, hold","passive movement, current transport","water current, wind, lack of propulsion",AQUATIC,3
+float,"drift, bob, hover, buoy","sink, plunge, dive","effortless water movement, buoyancy suspension","buoyancy, water presence, relaxation",AQUATIC,4
+glide,"slide, drift, float, slip","crash, tumble, stick","smooth movement, friction reduction","smooth surface, momentum, reduced friction",AQUATIC,9
+paddle,"swim, row, propel, stir","sink, drift, stop","water propulsion, directional movement","hand/paw movement, water presence, propulsion intent",AQUATIC,2
+plunge,"dive, immerse, submerse, submerge","float, surface, rise","water entry, depth achievement","diving intent, force, gravity",AQUATIC,8
+propel,"push, thrust, drive, impel","resist, stop, anchor","directional motion, force application","muscle power, external force, propulsion",AQUATIC,1
+scuba-dive,"dive, submerge, descend, plunge","surface, float, ascend","underwater exploration, depth access","SCUBA equipment, exploration intent, air supply",AQUATIC,0
+sink,"submerge, descend, plunge, immerse","float, rise, surface","depth increase, water submersion","gravity, weight, buoyancy loss",AQUATIC,1
+splash,"spatter, spray, thrash, wade","glide, float, drift","water dispersal, surface turbulence","impact, movement force, water excitement",AQUATIC,2
+submerge,"immerse, submerge, sink, dive","surface, rise, float","complete water coverage, depth","water entry, diving intent, gravity",AQUATIC,5
+surf,"ride, coast, glide, slide","sink, tumble, wipe out","wave riding, distance coverage","wave presence, balance, board use",AQUATIC,0
+surface,"emerge, rise, bob, break","dive, sink, submerge","water exit, airspace entry","air need, buoyancy, exit intent",AQUATIC,1
+swim,"paddle, float, wade, plunge","sink, drown, stick","water displacement, aquatic travel","aquatic environment, limb movement, buoyancy",AQUATIC,1
+undulate,"wave, ripple, surge, oscillate","still, freeze, hold","wave motion, sinuous movement","body movement, water force, swimming motion",AQUATIC,2
+wade,"splash, trudge, walk shallowly","swim, dive, float","shallow water crossing, water resistance","shallow water presence, shallow crossing intent",AQUATIC,2
+advance,"proceed, progress, move forward, charge","retreat, withdraw, recede","forward progression, goal approach, attack","aggressive intent, progress goal, boldness",EVASIVE/DIRECTIONAL,1
+approach,"advance, near, draw close, move toward","retreat, withdraw, recede","proximity increase, nearness achievement","approach intent, goal, person/object",EVASIVE/DIRECTIONAL,0
+chase,"pursue, hunt, run after, follow","flee, escape, hide","target pursuit, capture attempt","predation, game, enforcement",EVASIVE/DIRECTIONAL,1
+dodge,"evade, sidestep, swerve, avoid","face, meet, confront","obstacle avoidance, escape, side movement","threat avoidance, evasion intent, reflex",EVASIVE/DIRECTIONAL,5
+duck,"dodge, stoop, crouch, sidestep","rise, stand tall, confront","low movement, obstacle avoidance","projectile avoidance, crouching, hiding",EVASIVE/DIRECTIONAL,0
+escape,"flee, bolt, abscond, get away","stay, surrender, capture","freedom achievement, danger evasion","captivity, threat, freedom intent",EVASIVE/DIRECTIONAL,1
+flee,"escape, run away, bolt, abscond","stay, remain, confront","rapid escape, distance increase, survival","danger, fear, threat",EVASIVE/DIRECTIONAL,2
+pursue,"chase, follow, hunt, track","flee, escape, abandon","target following, goal pursuit, capture","hunting, chasing intent, law enforcement",EVASIVE/DIRECTIONAL,1
+retreat,"withdraw, backtrack, retire, flee","advance, attack, charge","backward movement, position loss, escape","defeat, fear, strategic withdrawal",EVASIVE/DIRECTIONAL,1
+sidestep,"dodge, evade, avoid, step aside","confront, face, engage","lateral movement, avoidance, evasion","obstacle avoidance, evasion intent, boxing",EVASIVE/DIRECTIONAL,2
+swerve,"veer, dodge, turn, swerve","straighten, maintain, hold","sudden directional change, obstacle avoidance","obstacle, steering, evasion",EVASIVE/DIRECTIONAL,5
+veer,"swerve, turn, curve, shift","straighten, maintain, continue","directional change, obstacle avoidance","evasion, steering, wind",EVASIVE/DIRECTIONAL,1
+weave,"dodge, zigzag, swerve, wind","straighten, hold course, collide","winding path, obstacle navigation","traffic navigation, evasion, obstacle course",EVASIVE/DIRECTIONAL,1
+withdraw,"retreat, back away, recede, retire","advance, approach, attack","backward movement, distance increase","fear, strategic decision, rejection",EVASIVE/DIRECTIONAL,1
+zigzag,"weave, dodge, swerve, alternate","straighten, maintain course, linearize","angular path progression, unpredictable movement","evasion, drunk walking, path necessity",EVASIVE/DIRECTIONAL,1
+coast,"glide, drift, slide, cruise","accelerate, power, propel","momentum-based movement, distance coverage","momentum, gravity, powered vehicle",PASSIVE/INVOLUNTARY,2
+collapse,"fall, crumble, fail, tumble","stand, rise, hold","sudden body failure, loss of support","exhaustion, structural failure, injury",PASSIVE/INVOLUNTARY,1
+skid,"slide, slip, skitter, screech","grip, brake, stop","loss of traction, uncontrolled sliding","speed, wet surface, friction loss",PASSIVE/INVOLUNTARY,2
+slide,"slip, glide, skid, coast","grip, stick, hold","frictionless movement, smooth progression","gravity, smooth surface, low friction",PASSIVE/INVOLUNTARY,6
+slip,"slide, skid, glide, lose footing","grip, stop, hold","involuntary sliding, loss of traction","friction loss, wet surface, loose footing",PASSIVE/INVOLUNTARY,3
+slither,"slide, glide, crawl, undulate","hop, jump, stride","sinuous ground-hugging movement, snake locomotion","snake anatomy, undulation, ground contact",PASSIVE/INVOLUNTARY,1
+topple,"fall, tip over, tumble, collapse","stand, balance, hold","tipping over, downward collapse","imbalance, gravity, external force",PASSIVE/INVOLUNTARY,1
+trip,"stumble, fall, tumble, pitch","balance, steady, stand","falling motion, balance loss, ground impact","obstacle, inattention, uneven ground",PASSIVE/INVOLUNTARY,1
+wriggle,"squirm, twist, writhe, undulate","hold still, freeze, rest","side-to-side movement, escape attempt","discomfort, escape intent, infant movement",PASSIVE/INVOLUNTARY,0
+cartwheel,"flip, tumble, somersault, roll","stand, walk, hold","sideways rotation, acrobatic display","gymnastics, playfulness, muscle power",ROTATIONAL,2
+circle,"orbit, loop, spiral, swirl","straighten, halt, diverge","curved flight, centripetal motion","pursuit, environmental scanning, turning",ROTATIONAL,1
+orbit,"circle, loop, revolve, gyrate","straighten, diverge, halt","circular path, gravitational balance","gravity, centripetal force, rotational motion",ROTATIONAL,1
+pivot,"turn, spin, rotate, swivel","straighten, hold, fix","rotational movement around point, direction change","axis rotation, steering, rapid turn",ROTATIONAL,2
+roll,"rotate, tumble, pitch, turn over","stick, hold, slide","rotating progression, body rotation","gravity, rolling intent, cylindrical shape",ROTATIONAL,3
+rotate,"spin, turn, revolve, gyrate","still, halt, lock","circular motion, angular displacement","axial rotation, torque, rotational force",ROTATIONAL,8
+somersault,"tumble, flip, cartwheel, roll","stand, walk, balance","complete forward rotation, acrobatic movement","gymnastics, diving, intentional flip",ROTATIONAL,2
+spin,"rotate, turn, twirl, whirl","still, hold, freeze","rotational motion, dizziness, centripetal force","muscle rotation, angular momentum, spin intent",ROTATIONAL,6
+spiral,"twist, coil, whirl, wind","straighten, unwind, linearize","rotating ascent/descent, curved motion","rotational + vertical movement, spiral path",ROTATIONAL,1
+swirl,"twist, curl, swirl, eddy","straighten, settle, still","circular flowing motion, vortex formation","fluid dynamics, air/water movement, spiral path",ROTATIONAL,2
+swivel,"pivot, spin, rotate, turn","lock, hold, fix","rotational movement, axis-based turning","swivel joint, rotation intent, steering",ROTATIONAL,1
+tumble,"roll, somersault, flip, cartwheel","stand, hold, balance","multiple rotations, acrobatic movement","loss of balance, gymnastics, impact",ROTATIONAL,7
+turn,"rotate, pivot, whirl, spin","straighten, hold, fix","directional change, rotational displacement","steering, body rotation, path change",ROTATIONAL,8
+twirl,"spin, whirl, rotate, pirouette","hold, fix, straighten","circular dance motion, playful rotation","dancing, playfulness, joy",ROTATIONAL,3
+twist,"rotate, turn, twirl, writhe","straighten, unwind, release","rotation, contortion, wringing","body rotation, wringing intent, muscle contraction",ROTATIONAL,3
+whirl,"spin, rotate, twirl, gyrate","still, hold, straighten","fast rotational motion, dizziness","emotional state, rapid rotation, vigorous movement",ROTATIONAL,4
+amble,"stroll, saunter, meander, perambulate","sprint, dash, rush","leisure, contemplation, relaxation","lack of urgency, pleasant environment",TERRESTRIAL BIPEDAL,3
+file,"march, troop, process, parade","scatter, disperse, spread","linear progression, organized movement","formation order, organized movement",TERRESTRIAL BIPEDAL,2
+hike,"trek, tramp, trudge, ramble","rest, sit, stay","fitness, nature exposure, destination reach","leisure, recreation, mountain climbing",TERRESTRIAL BIPEDAL,2
+hobble,"limp, shuffle, shamble, drag","sprint, bound, gallop","restricted movement, pain avoidance","leg binding, injury, pain",TERRESTRIAL BIPEDAL,1
+jog,"trot, lope, pace, run","sprint, walk slowly, stop","cardiovascular engagement, distance covered","exercise intention, moderate urgency",TERRESTRIAL BIPEDAL,1
+limp,"hobble, shamble, shuffle, drag","sprint, gallop, bound","slow progression, pain management, mobility limitation","injury, pain, leg dysfunction",TERRESTRIAL BIPEDAL,1
+lumber,"plod, trudge, shamble, stomp","sprint, glide, prance","heavy-footed progression, slow movement","large body size, heaviness, slowness",TERRESTRIAL BIPEDAL,1
+lurch,"stagger, stumble, sway, reel","stride, glide, smoothly move","sudden displacement, loss of control","obstacle, force application, uneven ground",TERRESTRIAL BIPEDAL,2
+march,"stride, troop, trudge, pace","shuffle, amble, meander","progress, noise, procession","military command, determined purpose, group movement",TERRESTRIAL BIPEDAL,7
+meander,"wander, ramble, stroll, roam","rush, sprint, hurry","indirect route, leisurely travel","lack of urgency, scenic contemplation, path wandering",TERRESTRIAL BIPEDAL,5
+mince,"prance, tiptoe, step delicately, toddle","stomp, stride, trudge","dainty movement, careful progression","small steps, affectation, formal posture",TERRESTRIAL BIPEDAL,1
+pace,"stride, step, march, walk","sit, stop, freeze","anxiety reduction, distance measurement","worry, anticipation, measurement need",TERRESTRIAL BIPEDAL,6
+parade,"march, file, troop, procession","hide, scatter, disperse","public display, organized procession","celebration, ceremony, display intent",TERRESTRIAL BIPEDAL,2
+patrol,"march, walk, prowl, pace","rest, stay, settle","security maintenance, area coverage","security duty, surveillance, guard mission",TERRESTRIAL BIPEDAL,0
+plod,"trudge, shuffle, slog, trek","sprint, gallop, bound","slow advancement, perseverance","fatigue, determination, heavy burden",TERRESTRIAL BIPEDAL,4
+prance,"stride, strut, swagger, skip","shuffle, limp, crawl","exuberant movement, energy display, bouncing gait","joy, high spirits, showing off",TERRESTRIAL BIPEDAL,4
+ramble,"wander, roam, trek, traipse","stay, settle, remain","distance coverage, countryside exploration","leisure, aimlessness, love of nature",TERRESTRIAL BIPEDAL,6
+roam,"wander, ramble, meander, rove","stay, settle, remain","distance coverage, exploration","wanderlust, restlessness, freedom",TERRESTRIAL BIPEDAL,5
+rove,"roam, wander, ramble, range","settle, stay, root","territory coverage, exploration","hunting, wanderlust, patrol intent",TERRESTRIAL BIPEDAL,1
+run,"sprint, bolt, dash, race","walk, stop, halt","escape, speed increase, fatigue","urgency, fear, exertion",TERRESTRIAL BIPEDAL,1
+sashay,"strut, swagger, sway, glide","shuffle, limp, crawl","attention attraction, confident movement","confidence, intention to be noticed, fashionable movement",TERRESTRIAL BIPEDAL,1
+saunter,"stroll, amble, meander, wander","rush, sprint, hurry","casual displacement, confidence display","lack of urgency, confidence, leisure",TERRESTRIAL BIPEDAL,2
+scuff,"shuffle, drag, scrape, shamble","stride, skip, bound","foot-ground friction, slow movement","reluctance, tiredness, shoe wear",TERRESTRIAL BIPEDAL,1
+shamble,"shuffle, amble, lumber, waddle","sprint, bound, gallop","slow movement, awkwardness, leisurely pace","tiredness, awkward body, lack of urgency",TERRESTRIAL BIPEDAL,6
+shuffle,"scuff, drag, shamble, plod","stride, sprint, bound","noise, slow progression, fatigue","tiredness, reluctance, age, ground friction",TERRESTRIAL BIPEDAL,8
+slog,"trudge, plod, slog, tramp","sprint, glide, fly","difficult progression, hard work, distance","difficult conditions, tiredness, heavy load",TERRESTRIAL BIPEDAL,3
+sprint,"dash, bolt, fly, race","amble, stroll, saunter","exhaustion, arrival at high speed","danger, competition, maximum effort",TERRESTRIAL BIPEDAL,3
+stagger,"stumble, lurch, wobble, sway","stride, march, bound","near-collapse, disorientation, loss of balance","intoxication, injury, shock",TERRESTRIAL BIPEDAL,2
+stamp,"stomp, tramp, pound, thud","tiptoe, creep, glide","sound production, ground impact, emotion release","anger, emphasis, force application",TERRESTRIAL BIPEDAL,1
+step,"stride, pace, tread, footfall","rest, halt, stay","progression, foot placement, movement unit","ambulation intention, ground awareness",TERRESTRIAL BIPEDAL,4
+stomp,"stamp, tramp, pound, tread heavily","tiptoe, creep, sneak","noise creation, floor impact, anger expression","anger, emphasis, heavy footfall",TERRESTRIAL BIPEDAL,2
+stride,"step, pace, march, troop","shuffle, tiptoe, limp","rapid coverage of distance, confidence display","confidence, long legs, purposeful movement",TERRESTRIAL BIPEDAL,7
+stroll,"amble, saunter, meander, wander","hurry, sprint, dash","passage through space, enjoyment","leisure time, pleasant weather, relaxation intent",TERRESTRIAL BIPEDAL,3
+strut,"swagger, prance, stride, march","skulk, slink, creep","pride display, assertiveness, attention","confidence, pride, desire for admiration",TERRESTRIAL BIPEDAL,4
+stumble,"trip, stagger, lurch, falter","stride, bound, glide","near-fall, loss of balance, collision","obstacle, darkness, inattention",TERRESTRIAL BIPEDAL,3
+swagger,"strut, prance, strut, sashay","shuffle, skulk, slink","attention attraction, confidence display","arrogance, victory, pride",TERRESTRIAL BIPEDAL,3
+tiptoe,"creep, sneak, slink, tread softly","stomp, stamp, thunder","silence, stealth, balance challenge","desire for quietness, sneaking intent, toe elevation",TERRESTRIAL BIPEDAL,1
+toddle,"waddle, shuffle, mince, totter","stride, bound, gallop","infant progression, unsteady movement","infancy, leg development stage, balance issues",TERRESTRIAL BIPEDAL,2
+traipse,"wander, roam, trek, ramble","stay, remain, settle","aimless travel, distance coverage","wanderlust, aimlessness, exploration",TERRESTRIAL BIPEDAL,2
+tramp,"trek, trudge, hike, troop","glide, float, hover","distance coverage, hiking progression","hiking intent, wandering, foot-based travel",TERRESTRIAL BIPEDAL,5
+tread,"step, stride, trample, walk","float, hover, rest","ground contact, pressure exertion","weight, ambulation, contact intent",TERRESTRIAL BIPEDAL,2
+trek,"hike, trudge, tramp, journey","settle, rest, stay","destination reached, distance covered, exhaustion","journey purpose, mountain climbing, long-distance goal",TERRESTRIAL BIPEDAL,6
+troop,"march, stride, file, parade","scatter, disperse, break formation","organized movement, grouped progression","military order, group movement, formation",TERRESTRIAL BIPEDAL,5
+trudge,"plod, slog, shuffle, trek","sprint, skip, bound","exhaustion, slow progress, effort","fatigue, heavy load, difficult terrain",TERRESTRIAL BIPEDAL,8
+waddle,"shamble, toddle, shuffle, wobble","stride, glide, prance","amusing gait, slow progression","wide-legged stance, short legs, obesity",TERRESTRIAL BIPEDAL,2
+walk,"ambulate, perambulate, step, tread","sit, stand, rest","arrival, displacement, progression","desire to move, gravity, muscle contraction",TERRESTRIAL BIPEDAL,3
+wander,"roam, ramble, meander, traipse","stay, settle, plant","aimless travel, distance coverage","aimlessness, curiosity, lack of direction",TERRESTRIAL BIPEDAL,8
+canter,"lope, gallop, trot, pace","walk, stop, halt","rhythmic movement, speed increase","horse three-beat gait, moderate speed",TERRESTRIAL QUADRUPEDAL,2
+crawl,"creep, slither, drag, grovel","sprint, bound, leap","base contact movement, slow progression","body proximity to ground, stealth, infant movement",TERRESTRIAL QUADRUPEDAL,3
+creep,"crawl, slink, sneak, skulk","sprint, bound, gallop","stealth, slow movement, base contact","sneaking intent, fear, predation",TERRESTRIAL QUADRUPEDAL,6
+dart,"dash, bolt, shoot, spring","crawl, creep, plod","rapid movement, directional change","fear, urgency, evasion",TERRESTRIAL QUADRUPEDAL,2
+dash,"dart, bolt, sprint, race","saunter, amble, trudge","rapid movement, escape completion","urgency, fear, competitive spirit",TERRESTRIAL QUADRUPEDAL,6
+gallop,"bolt, race, sprint, dash","walk, trot, plod","high speed achievement, escape, distance coverage","urgency, horse gait, maximum effort",TERRESTRIAL QUADRUPEDAL,2
+lope,"canter, trot, gallop, bound","walk, stop, halt","distance coverage, smooth gait","relaxed speed, western riding, animal movement",TERRESTRIAL QUADRUPEDAL,3
+pounce,"leap, jump, spring, attack","retreat, avoid, evade","prey capture, attack action, spatial movement","predation, attack intent, pouncing moment",TERRESTRIAL QUADRUPEDAL,0
+prowl,"creep, stalk, slink, skulk","charge, gallop, sprint","stealth, predation setup, quiet movement","hunting, stalking, predation intent",TERRESTRIAL QUADRUPEDAL,4
+scamper,"scurry, dash, skitter, scuttle","plod, trudge, amble","rapid playful movement, escape","playfulness, fear, small animal gait",TERRESTRIAL QUADRUPEDAL,1
+scurry,"scamper, dash, hurry, scuttle","plod, saunter, stroll","rapid short-distance travel, fear response","fear, haste, small animal movement",TERRESTRIAL QUADRUPEDAL,2
+skulk,"slink, sneak, lurk, prowl","strut, parade, march","stealthy presence, concealment","evasion, shame, harmful intent",TERRESTRIAL QUADRUPEDAL,4
+slink,"creep, skulk, sneak, prowl","strut, swagger, march","stealthy movement, avoidance","shame, sneaking intent, shameful action",TERRESTRIAL QUADRUPEDAL,5
+sneak,"skulk, slink, creep, steal","announce, broadcast, march","undetected movement, stealth","secrecy intent, theft, evasion",TERRESTRIAL QUADRUPEDAL,5
+stalk,"prowl, creep, sneak, track","rush, sprint, gallop","prey approach, stealth movement","hunting, predation, careful approach",TERRESTRIAL QUADRUPEDAL,1
+trot,"jog, lope, canter, prance","walk, gallop, pace","moderate speed, gait transition","horse intermediate speed, moderate urgency",TERRESTRIAL QUADRUPEDAL,3
+ascend,"climb, rise, lift, soar","descend, fall, dive","altitude gain, height increase","muscle power, lift force, climbing intent",VERTICAL,3
+bounce,"spring, rebound, jump, ricochet","stick, settle, rest","repeated upward movement, energy dissipation","impact, elasticity, surface rebound",VERTICAL,0
+bound,"leap, jump, spring, vault","crawl, creep, shuffle","vertical clearance, distance leap, agile movement","jumping intent, muscle power, escape",VERTICAL,6
+clamber,"climb, scramble, scale, claw","descend, fall, slide","awkward upward movement, height gain","steep terrain, climbing urgency, unstable surface",VERTICAL,3
+climb,"scale, ascend, clamber, scramble","descend, fall, drop","height gain, elevation increase, rock face progress","muscle power, handholds, climbing intent",VERTICAL,5
+descend,"fall, drop, land, lower","ascend, rise, climb","altitude loss, downward movement","gravity, control descent, landing",VERTICAL,5
+drop,"fall, plunge, plummet, descend","rise, ascend, lift","downward movement, altitude loss","gravity, release, descent",VERTICAL,2
+fall,"drop, plunge, tumble, topple","rise, stand, climb","downward motion, gravity action, collision impact","gravity, balance loss, obstacle",VERTICAL,6
+hop,"jump, leap, spring, skip","walk, crawl, stand","short vertical movement, hopping gait","playfulness, single-leg jumping, small creature movement",VERTICAL,2
+jump,"leap, spring, vault, bound","stand, walk, crawl","vertical displacement, obstacle clearance","muscle power, urgency, playfulness",VERTICAL,8
+leap,"jump, spring, vault, bound","crawl, walk, stay","height/distance clearance, grace movement","muscle power, escape intent, agility",VERTICAL,8
+plummet,"dive, plunge, fall, nosedive","ascend, rise, soar","rapid descent, ground impact","gravity, loss of lift, controlled dive",VERTICAL,1
+rise,"ascend, climb, stand, lift","fall, descend, drop","elevation, standing position, height increase","muscle power, buoyancy, standing intention",VERTICAL,2
+scale,"climb, ascend, clamber, mount","descend, drop, fall","vertical surface progression, height gain","climbing intent, rock face, ladder",VERTICAL,2
+scramble,"clamber, climb, crawl, scurry","descend, slide, drop","rapid awkward movement, height gain","steep terrain, haste, difficult conditions",VERTICAL,2
+skip,"hop, spring, leap, bound","walk, trudge, plod","playful movement, distance coverage","joy, playfulness, childhood gait",VERTICAL,3
+spring,"leap, jump, vault, bound","sit, rest, stand","quick vertical movement, energy release","muscle contraction, urgency, springy surface",VERTICAL,9
+vault,"leap, jump, spring, bound","crawl, walk, shuffle","obstacle clearance, height achievement","gymnastics, muscle power, athletic movement",VERTICAL,4

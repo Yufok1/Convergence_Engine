@@ -38,12 +38,18 @@ python check_setup.py
 
 # 3. Build vocabulary & knowledge web (REQUIRED for language systems)
 python build_curated_dataset.py
+
+# 4. Generate innate vocabulary for organisms (REQUIRED)
+python merge_nuclear_vocab.py       # Merges CSVs → data/nuclear_vocab.json
+python generate_innate_vocab.py     # Creates data/innate_vocab.json
 ```
 
 This creates:
 - `data/butterfly_vocabulary_200k_raw.json` - WordNet vocabulary (~141k words)
 - `data/butterfly_vocabulary_250k_curated.json` - Filtered vocabulary
 - `data/seeded_knowledge_web_250k.json` - Semantic relationships
+- `data/nuclear_vocab.json` - 1700 verb concepts, 25k relations (from deep research)
+- `data/innate_vocab.json` - Tiered innate concepts organisms are born with
 
 **Optional: Distill to smaller vocabulary (faster, less memory)**
 ```bash
