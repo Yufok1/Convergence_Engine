@@ -516,7 +516,7 @@ CONFIG_GUARDRAILS = {
     },
     '/neural/language_model/vocabulary/max_size': {
         'min': 128,
-        'max': 10000,
+        'max': 150000,
         'type': int,
         'label': 'neural.language_model.vocabulary.max_size'
     },

@@ -837,11 +837,23 @@ class SymbioticNetwork:
             self.context_memory = context_memory
         else:
             semantic_config = (config or {}).get('semantic_convergence', {})
+            # Get max_vocab_size from config - check multiple locations
+            vocab_config = (config or {}).get('neural', {}).get('language_model', {}).get('vocabulary', {})
+            max_vocab_size = vocab_config.get('max_size')
+            if not max_vocab_size:
+                max_vocab_size = (config or {}).get('neural', {}).get('brain', {}).get('vocab_size')
+            if not max_vocab_size:
+                max_vocab_size = (config or {}).get('neural', {}).get('language_model', {}).get('teacher', {}).get('vocab_size')
+            if not max_vocab_size:
+                max_vocab_size = 20000  # Fallback to match config.json default
+            
             self.context_memory = ContextMemory(
                 use_learned_embeddings=semantic_config.get('use_learned_embeddings', True),
                 embedding_dim=semantic_config.get('embedding_dim', 64),
-                organism_embedding_alpha=semantic_config.get('organism_embedding_alpha', 0.1)
+                organism_embedding_alpha=semantic_config.get('organism_embedding_alpha', 0.1),
+                max_vocab_size=max_vocab_size
             )
+            print(f"[SYMBIOTIC_NETWORK] ContextMemory created with max_vocab_size={max_vocab_size}")
         
         # Initialize event_emitter attribute (will be wired later by unified_entry.py or reality_simulator/main.py)
         # This ensures word_assignment events can be emitted when words are linked
