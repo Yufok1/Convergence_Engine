@@ -10714,6 +10714,19 @@ def chat_with_organism(organism_id):
             als = target_organism.atomic_language
             debug_info['atomic_language_atom_count'] = len(als.atoms)
             debug_info['atomic_language_sample_atoms'] = list(als.atoms.keys())[:10]
+            
+            # TRACE: Detailed atom formation info for tokens used in response
+            atom_details = []
+            for concept_id, atom in list(als.atoms.items())[:20]:  # First 20 atoms
+                atom_details.append({
+                    'word': concept_id,
+                    'strength': round(atom.strength, 3),
+                    'source': atom.source,  # 'innate', 'observed', 'taught', 'discovered'
+                    'usage_count': atom.usage_count,
+                    'associations': len(atom.associations),
+                    'frame': atom.semantic_frame
+                })
+            debug_info['atom_formation_details'] = atom_details
         
         # TRACE: Knowledge web
         if context_memory and hasattr(context_memory, 'knowledge_web') and context_memory.knowledge_web:

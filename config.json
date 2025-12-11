@@ -184,7 +184,7 @@
       "illumination_stability_threshold": 5
     },
     "chaos_factor": 0.0,
-    "competition_intensity": 0.2,
+    "competition_intensity": 0.3,
     "description": "Highlander Protocol - SMALL TRIBE MODE - Start with 9, stack vocabulary, grow naturally",
     "enabled": true,
     "extreme_mode": {
@@ -216,7 +216,7 @@
   "lattice": {
     "entropy_sensitivity": 5e-05,
     "interaction_precision": 0.0001,
-    "particles": 500,
+    "particles": 800,
     "prune_threshold": 0,
     "stability_tolerance": 0.0005
   },
@@ -288,7 +288,7 @@
       "hidden_dim": 64,
       "input_dim": 24,
       "output_dim": 6,
-      "vocab_size": 50000
+      "vocab_size": 20000
     },
     "concept_system": {
       "concept_loss_weight": 0.1,
@@ -395,7 +395,7 @@
         "teaching_frequency": 1,
         "use_knowledge_web": true,
         "use_semantic_embeddings": true,
-        "vocab_size": 50000,
+        "vocab_size": 20000,
         "staged_knowledge": {
           "_help": "Delay loading expanded knowledge web to let organisms build foundations with innate vocab first",
           "enabled": true,
@@ -410,7 +410,7 @@
         "vp_temperature_scale": true
       },
       "vocabulary": {
-        "max_size": 50000,
+        "max_size": 20000,
         "special_tokens": [
           "<PAD>",
           "<UNK>",

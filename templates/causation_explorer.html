@@ -14183,6 +14183,24 @@
                 
                 html += '</table>';
                 
+                // ATOM FORMATION DETAILS - Show how words were learned
+                if (debugInfo.atom_formation_details && debugInfo.atom_formation_details.length > 0) {
+                    html += '<div style="margin-top:4px;padding-top:4px;border-top:1px solid #333;">';
+                    html += '<div style="color:#f39c12;font-size:9px;margin-bottom:2px;">🔤 atom formation:</div>';
+                    debugInfo.atom_formation_details.slice(0, 8).forEach(atom => {
+                        const srcColor = atom.source === 'innate' ? '#27ae60' : 
+                                        atom.source === 'taught' ? '#3498db' : 
+                                        atom.source === 'observed' ? '#9b59b6' : '#e67e22';
+                        html += `<div style="font-size:8px;color:#aaa;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="strength:${atom.strength} usage:${atom.usage_count} assoc:${atom.associations}">`;
+                        html += `<span style="color:${srcColor}">${atom.source}</span>: <b>${atom.word}</b> str:${atom.strength} use:${atom.usage_count}`;
+                        html += `</div>`;
+                    });
+                    if (debugInfo.atom_formation_details.length > 8) {
+                        html += `<div style="font-size:8px;color:#666">...+${debugInfo.atom_formation_details.length - 8} more atoms</div>`;
+                    }
+                    html += '</div>';
+                }
+                
                 // Debug logs (router_debug_logs from backend)
                 if (debugInfo.router_debug_logs && debugInfo.router_debug_logs.length > 0) {
                     html += '<div style="margin-top:4px;padding-top:4px;border-top:1px solid #333;">';
