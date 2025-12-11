@@ -10714,19 +10714,7 @@ def chat_with_organism(organism_id):
             als = target_organism.atomic_language
             debug_info['atomic_language_atom_count'] = len(als.atoms)
             debug_info['atomic_language_sample_atoms'] = list(als.atoms.keys())[:10]
-            
-            # TRACE: Detailed atom formation info for tokens used in response
-            atom_details = []
-            for concept_id, atom in list(als.atoms.items())[:20]:  # First 20 atoms
-                atom_details.append({
-                    'word': concept_id,
-                    'strength': round(atom.strength, 3),
-                    'source': atom.source,  # 'innate', 'observed', 'taught', 'discovered'
-                    'usage_count': atom.usage_count,
-                    'associations': len(atom.associations),
-                    'frame': atom.semantic_frame
-                })
-            debug_info['atom_formation_details'] = atom_details
+            # NOTE: atom_formation_details populated AFTER response to show only used atoms
         
         # TRACE: Knowledge web
         if context_memory and hasattr(context_memory, 'knowledge_web') and context_memory.knowledge_web:
@@ -10789,6 +10777,31 @@ def chat_with_organism(organism_id):
         
         # Build conversation response
         organism_response = response_data.get('response', '')
+        
+        # NOW gather atom formation details for words ACTUALLY USED in response
+        if hasattr(target_organism, 'atomic_language') and target_organism.atomic_language:
+            als = target_organism.atomic_language
+            # Extract unique words from response
+            response_words = set(organism_response.lower().split())
+            atom_details = []
+            seen_words = set()
+            for word in response_words:
+                if word in als.atoms and word not in seen_words:
+                    atom = als.atoms[word]
+                    atom_details.append({
+                        'word': word,
+                        'strength': round(atom.strength, 3),
+                        'source': atom.source,  # 'innate', 'observed', 'taught', 'discovered'
+                        'usage_count': atom.usage_count,
+                        'associations': len(atom.associations),
+                        'frame': atom.semantic_frame
+                    })
+                    seen_words.add(word)
+            # Sort by usage count descending
+            atom_details.sort(key=lambda x: x['usage_count'], reverse=True)
+            debug_info['atom_formation_details'] = atom_details
+            debug_info['response_unique_words'] = len(response_words)
+            debug_info['atoms_found_for_response'] = len(atom_details)
         
         # Add router debug logs to our debug info
         debug_info['router_debug_logs'] = response_data.get('debug_logs', [])
