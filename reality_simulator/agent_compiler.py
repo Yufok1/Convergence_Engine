@@ -7407,6 +7407,14 @@ class CocoonAgent:
             return None
         targets = torch.LongTensor([t[0] if t else 0 for t in target_tokens]).to(self.device)
         
+        # ELASTIC VOCAB: Mask out-of-bounds tokens instead of crashing
+        # This allows vocabulary to grow beyond neural network's fixed vocab_size
+        vocab_size = logits.shape[-1]
+        oob_mask = targets >= vocab_size
+        if oob_mask.any():
+            targets = targets.clone()
+            targets[oob_mask] = 0  # Mark as ignore (ignore_index=0)
+        
         # CRITICAL: Temperature scaling to prevent numerical overflow
         # Logits can be HUGE (thousands) which causes exp() overflow in cross_entropy
         logit_max = logits.abs().max().item()

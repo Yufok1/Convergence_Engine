@@ -1643,6 +1643,14 @@ class NeuralTrainer:
         logits_flat = language_logits.view(-1, vocab_size)
         targets_flat = target_tokens.view(-1)
         
+        # ELASTIC VOCAB: Mask out-of-bounds tokens instead of crashing
+        # This allows vocabulary to grow beyond neural network's fixed vocab_size
+        # Out-of-bounds tokens are set to 0 (ignore_index) so they don't affect loss
+        oob_mask = targets_flat >= vocab_size
+        if oob_mask.any():
+            targets_flat = targets_flat.clone()
+            targets_flat[oob_mask] = 0  # Mark as ignore
+        
         # Calculate cross-entropy loss (ignores padding tokens with index 0)
         loss = F.cross_entropy(logits_flat, targets_flat, ignore_index=0)
         
