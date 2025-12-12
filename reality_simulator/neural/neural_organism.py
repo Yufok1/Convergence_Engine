@@ -209,9 +209,11 @@ class NeuralOrganism(Organism):
             
             # Language epsilon for language exploration (alongside action epsilon)
             # Higher = more random token selection during inference (prevents mode collapse)
-            self.language_epsilon = training_config.get('language_epsilon_start', 0.3)
-            self.language_epsilon_end = training_config.get('language_epsilon_end', 0.05)
-            self.language_epsilon_decay = training_config.get('language_epsilon_decay', 0.998)
+            # NOTE: Read from neural.language_model.training (NOT neural.training)
+            language_training_config = neural_config.get('language_model', {}).get('training', {})
+            self.language_epsilon = language_training_config.get('language_epsilon_start', 0.3)
+            self.language_epsilon_end = language_training_config.get('language_epsilon_end', 0.05)
+            self.language_epsilon_decay = language_training_config.get('language_epsilon_decay', 0.998)
             
             # Battle outcome tracking for learning (Integration: Neural-Alliance)
             self.battle_wins = 0
