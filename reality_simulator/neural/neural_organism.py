@@ -162,7 +162,7 @@ class NeuralOrganism(Organism):
             
             # Experience storage
             self.experience_buffer = ExperienceBuffer(
-                capacity=neural_config.get('training', {}).get('memory_size', 1000)
+                capacity=neural_config.get('training', {}).get('memory_size', 20000)
             )
             
             # Sequence tracking for language model (deque auto-truncates)
