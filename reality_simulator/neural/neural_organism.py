@@ -1900,38 +1900,53 @@ class NeuralOrganism(Organism):
                     if probs.sum().item() <= 1e-10:
                         probs[:effective_vocab_size] = 1.0 / max(1, effective_vocab_size)
                     
-                    # ?? VETERAN RETRY SYSTEM: Multiple attempts for experienced organisms
+                    # 🎲 LANGUAGE EPSILON EXPLORATION: With probability language_epsilon,
+                    # select a random token instead of sampling from the learned distribution.
+                    # This prevents mode collapse during training by forcing exploration.
+                    # Epsilon decays over time as organism learns.
+                    use_random_exploration = (
+                        hasattr(self, 'language_epsilon') and 
+                        self.language_epsilon > 0 and 
+                        random.random() < self.language_epsilon
+                    )
+                    
+                    # 🧬 VETERAN RETRY SYSTEM: Multiple attempts for experienced organisms
                     # Veterans get more chances to successfully sample before falling back
                     next_token = None
                     sampling_success = False
                     
-                    for retry_attempt in range(max_retries):
-                        try:
-                            # Apply veteran temperature adjustment
-                            if retry_attempt == 0:
-                                sampling_probs = probs
-                            else:
-                                # On retries, use progressively cooler temperature for stability
-                                retry_temp = adjusted_temperature * (0.9 ** retry_attempt)
-                                retry_logits = logits / max(0.1, retry_temp)
-                                sampling_probs = torch.softmax(retry_logits, dim=-1)
-                                # Re-validate probabilities
-                                if not (torch.isfinite(sampling_probs).all().item() and sampling_probs.sum().item() > 0):
-                                    sampling_probs = torch.zeros_like(sampling_probs)
-                                    sampling_probs[:effective_vocab_size] = 1.0 / max(1, effective_vocab_size)
-                            
-                            next_token = torch.multinomial(sampling_probs, 1).item()
-                            sampling_success = True
-                            break
-                        except (RuntimeError, AssertionError) as e:
-                            if retry_attempt < max_retries - 1:
-                                # Log retry for veterans (they're worth saving!)
-                                if is_veteran:
-                                    logger.debug(f"[VETERAN] {self.species_id} sampling retry {retry_attempt + 1}/{max_retries}: {e}")
-                                continue
-                            else:
-                                # Final fallback after all retries exhausted
-                                logger.warning(f"[{'VETERAN' if is_veteran else 'ORGANISM'}] {self.species_id} multinomial failed after {max_retries} retries: {e}")
+                    # 🎲 If epsilon exploration triggered, skip sampling entirely
+                    if use_random_exploration:
+                        next_token = random.randint(0, max(1, effective_vocab_size - 1))
+                        sampling_success = True
+                    else:
+                        for retry_attempt in range(max_retries):
+                            try:
+                                # Apply veteran temperature adjustment
+                                if retry_attempt == 0:
+                                    sampling_probs = probs
+                                else:
+                                    # On retries, use progressively cooler temperature for stability
+                                    retry_temp = adjusted_temperature * (0.9 ** retry_attempt)
+                                    retry_logits = logits / max(0.1, retry_temp)
+                                    sampling_probs = torch.softmax(retry_logits, dim=-1)
+                                    # Re-validate probabilities
+                                    if not (torch.isfinite(sampling_probs).all().item() and sampling_probs.sum().item() > 0):
+                                        sampling_probs = torch.zeros_like(sampling_probs)
+                                        sampling_probs[:effective_vocab_size] = 1.0 / max(1, effective_vocab_size)
+                                
+                                next_token = torch.multinomial(sampling_probs, 1).item()
+                                sampling_success = True
+                                break
+                            except (RuntimeError, AssertionError) as e:
+                                if retry_attempt < max_retries - 1:
+                                    # Log retry for veterans (they're worth saving!)
+                                    if is_veteran:
+                                        logger.debug(f"[VETERAN] {self.species_id} sampling retry {retry_attempt + 1}/{max_retries}: {e}")
+                                    continue
+                                else:
+                                    # Final fallback after all retries exhausted
+                                    logger.warning(f"[{'VETERAN' if is_veteran else 'ORGANISM'}] {self.species_id} multinomial failed after {max_retries} retries: {e}")
                     
                     # Ultimate fallback: random token if all retries failed
                     if not sampling_success or next_token is None:
@@ -2049,6 +2064,15 @@ class NeuralOrganism(Organism):
                 
                 # Clear tracked relationships for next generation
                 self._generation_relationships = []
+        
+        # 🎲 DECAY LANGUAGE EPSILON: After each generation, reduce exploration rate
+        # This allows organism to exploit learned knowledge as it matures
+        if hasattr(self, 'language_epsilon') and hasattr(self, 'language_epsilon_end') and hasattr(self, 'language_epsilon_decay'):
+            if self.language_epsilon > self.language_epsilon_end:
+                self.language_epsilon = max(
+                    self.language_epsilon_end, 
+                    self.language_epsilon * self.language_epsilon_decay
+                )
         
         return generated
     

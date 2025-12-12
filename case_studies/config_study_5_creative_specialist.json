@@ -409,7 +409,11 @@
         "alpha": 0.5,
         "beta": 0.4,
         "gamma": 0.1,
-        "vp_temperature_scale": true
+        "vp_temperature_scale": true,
+        "entropy_bonus": 0.015,
+        "label_smoothing": 0.12,
+        "_entropy_bonus_help": "Higher entropy for creative specialist - encourages more diverse, creative output",
+        "_label_smoothing_help": "Slightly higher smoothing for creative exploration"
       },
       "vocabulary": {
         "max_size": 20000,

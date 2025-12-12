@@ -7648,7 +7648,11 @@ class CocoonAgent:
         # This prevents mode collapse to single tokens ("shorten shorten" bug)
         loss = F.cross_entropy(logits, targets, ignore_index=0, label_smoothing=0.1)
         
-        # Entropy bonus: encourage exploration in language generation (default 0.01)
+        # Entropy bonus: encourage exploration in language generation
+        # NOTE: In trainer.py, this is scaled by organism's curiosity trait (0.5x to 2x)
+        # For cocoon exports, we use the base value (0.01) since curiosity is baked into
+        # the exported weights during training. The organism's curiosity influenced training,
+        # so the exported model already reflects that exploration bias.
         entropy_bonus = 0.01
         if entropy_bonus > 0:
             probs = F.softmax(logits, dim=-1)

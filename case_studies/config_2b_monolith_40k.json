@@ -410,7 +410,11 @@
         "alpha": 0.4,
         "beta": 0.5,
         "gamma": 0.1,
-        "vp_temperature_scale": true
+        "vp_temperature_scale": true,
+        "entropy_bonus": 0.01,
+        "label_smoothing": 0.1,
+        "_entropy_bonus_help": "Prevents language mode collapse by rewarding diverse token distributions. 0.01 = subtle exploration",
+        "_label_smoothing_help": "Softens training targets to prevent overconfidence. 0.1 = 10% probability mass distributed to non-target tokens"
       },
       "vocabulary": {
         "max_size": 40000,
