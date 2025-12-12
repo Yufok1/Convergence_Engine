@@ -10816,37 +10816,19 @@ def chat_with_organism(organism_id):
             debug_info['has_knowledge_web'] = True
             debug_info['knowledge_web_concept_count'] = len(kw.concepts) if hasattr(kw, 'concepts') else 0
         
-        # Context memory vocab - use it for generation
-        if context_memory and hasattr(context_memory, 'vocabulary') and context_memory.vocabulary:
+        # NOTE: generate_tokens now builds organism-specific vocab from atomic_language
+        # No need to manipulate shared context_memory.vocabulary here anymore
+        vocabulary = None
+        if context_memory and hasattr(context_memory, 'vocabulary'):
             vocabulary = context_memory.vocabulary
-            debug_info['vocab_before_population'] = vocabulary.vocab_size
-            
-            # FIX: If vocabulary only has special tokens, populate from organism's ATOMIC LANGUAGE
-            if vocabulary.vocab_size <= 5:  # Only special tokens
-                logger.info(f"[ORGANISM_CHAT] Vocabulary empty (only {vocabulary.vocab_size} tokens)")
-                
-                # Use organism's atomic_language.atoms (the TRUE learned vocabulary) - NO FALLBACKS
-                if hasattr(target_organism, 'atomic_language') and target_organism.atomic_language:
-                    atoms = target_organism.atomic_language.atoms
-                    words_added = 0
-                    for concept_id in atoms.keys():
-                        if vocabulary.add_word(concept_id):
-                            words_added += 1
-                    logger.info(f"[ORGANISM_CHAT] Added {words_added} words from organism.atomic_language.atoms, vocab now {vocabulary.vocab_size}")
-                    debug_info['vocab_source'] = 'atomic_language'
-                    debug_info['vocab_words_added'] = words_added
-                else:
-                    logger.error(f"[ORGANISM_CHAT] Organism has no atomic_language - cannot generate response")
-                    debug_info['vocab_source'] = 'NONE - atomic_language missing'
-            
-            debug_info['vocab_after_population'] = vocabulary.vocab_size
-            debug_info['vocab_sample_words'] = list(vocabulary.word_to_id.keys())[:15]
+            debug_info['context_memory_vocab_size'] = vocabulary.vocab_size if vocabulary else 0
         
-        # Get THIS organism's personal word associations (what shows on card as "Vocab")
-        if context_memory and hasattr(context_memory, 'node_word_associations'):
-            org_id_int = hash(organism_id) if isinstance(organism_id, str) else organism_id
-            org_words = context_memory.node_word_associations.get(org_id_int, set())
-            debug_info['organism_words_learned'] = len(org_words)
+        # Log THIS organism's actual vocab (from atomic_language, not shared)
+        if hasattr(target_organism, 'atomic_language') and target_organism.atomic_language:
+            org_vocab_size = len(target_organism.atomic_language.atoms)
+            debug_info['organism_personal_vocab_size'] = org_vocab_size
+            debug_info['organism_sample_words'] = list(target_organism.atomic_language.atoms.keys())[:15]
+            logger.info(f"[ORGANISM_CHAT] Organism {organism_id} has {org_vocab_size} personal words in atomic_language")
         
         # Create organisms dict for router
         organisms_dict = {}
@@ -10854,7 +10836,7 @@ def chat_with_organism(organism_id):
             oid = str(getattr(org, 'species_id', None) or getattr(org, 'id', None) or i)
             organisms_dict[oid] = org
         
-        # Initialize router with vocabulary and config (prefer context_memory.vocabulary)
+        # Initialize router with vocabulary and config
         simulation_config = config_manager.get_config() if config_manager else {}
         router = ButterflyChatRouter(organisms_dict, vocabulary, config=simulation_config)
         

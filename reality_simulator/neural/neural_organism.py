@@ -1624,34 +1624,34 @@ class NeuralOrganism(Organism):
         
         import torch
         
-        # Get vocabulary from context memory
-        if context_memory is None or not hasattr(context_memory, 'vocabulary') or context_memory.vocabulary is None:
-            logger.warning(f"[generate_tokens] {self.species_id}: No vocabulary - cm={context_memory is not None}, has_vocab={hasattr(context_memory, 'vocabulary') if context_memory else False}")
+        # ---------------------------------------------------------------------------
+        # BUILD ORGANISM-SPECIFIC VOCABULARY from atomic_language (NOT shared context_memory!)
+        # Each organism has its OWN learned words - this is the whole point of evolution
+        # ---------------------------------------------------------------------------
+        from ..language_system import LanguageVocabulary, SPECIAL_TOKENS
+        
+        # Create this organism's personal vocabulary from their atomic_language
+        vocab = LanguageVocabulary(max_vocab_size=20000)  # Fresh vocab for THIS organism
+        
+        if self.atomic_language is not None and hasattr(self.atomic_language, 'atoms'):
+            # Add words from organism's OWN learned atoms
+            organism_words = list(self.atomic_language.atoms.keys())
+            for word in organism_words:
+                vocab.add_word(word)
+            logger.info(f"[generate_tokens] {self.species_id}: Built personal vocab from {len(organism_words)} atomic_language atoms")
+        else:
+            logger.warning(f"[generate_tokens] {self.species_id}: No atomic_language - cannot build personal vocab")
             return []
         
-        vocab = context_memory.vocabulary
-        
-        # Verify vocab has required properties
-        if not hasattr(vocab, 'vocab_size') or vocab.vocab_size is None:
-            logger.warning(f"[generate_tokens] {self.species_id}: vocab missing vocab_size attr")
-            return []
-        
-        # CRITICAL: Check vocab has actual words, not just special tokens
-        word_count = len(getattr(vocab, 'word_to_id', {}))
+        # Check vocab has actual words beyond special tokens
+        word_count = len(vocab.word_to_id)
         if word_count <= 5:
             logger.warning(f"[generate_tokens] {self.species_id}: vocab has only {word_count} words (need >5)")
             return []
         
-        logger.info(f"[generate_tokens] {self.species_id}: vocab OK with {word_count} words, vocab_size={vocab.vocab_size}")
-        
-        # Import special tokens for range checking
-        try:
-            from ..language_system import SPECIAL_TOKENS
-        except ImportError:
-            try:
-                from reality_simulator.language_system import SPECIAL_TOKENS
-            except ImportError:
-                SPECIAL_TOKENS = {'<PAD>': 0, '<UNK>': 1, '<START>': 2, '<END>': 3, '<VP_GATE>': 4}
+        # Log THIS organism's unique vocabulary (not the shared one!)
+        sample_words = list(vocab.word_to_id.keys())[:15]
+        logger.info(f"[generate_tokens] {self.species_id}: personal vocab OK with {word_count} words, sample={sample_words}")
         
         # ---------------------------------------------------------------------------
         # ADAPTIVE MAX_LENGTH: Scale response length based on experience
@@ -1825,12 +1825,6 @@ class NeuralOrganism(Organism):
                     # SAFETY: Clamp actual_vocab_size to not exceed logits tensor size
                     # Vocabulary can grow beyond network capacity - use min to prevent IndexError
                     effective_vocab_size = min(actual_vocab_size, len(logits))
-                    
-                    # DEBUG: Log vocab sizes for diagnosis
-                    if len(generated) == 1:  # Only log once at start
-                        # Log sample words to understand what's in vocab
-                        sample_words = list(vocab.word_to_id.keys())[:15]
-                        logger.info(f"[generate_tokens] actual_vocab_size={actual_vocab_size}, logits_len={len(logits)}, effective={effective_vocab_size}, special={len(SPECIAL_TOKENS)}, sample_words={sample_words}")
                     
                     # CRITICAL FIX: If vocab has no real words (only special tokens), can't generate
                     # Without this check, probs become all-zeros → multinomial throws AssertionError
