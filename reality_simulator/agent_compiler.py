@@ -5325,12 +5325,13 @@ class VPRuntime:
         """
         Compute VP components from organism state vector.
         
-        State vector mapping (typical 24-dim):
+        State vector mapping (25-dim, matches config.json):
             0-5: Action probabilities
             6-8: Resource levels (energy, fitness, age)
             9-11: Social signals (cooperation, competition, isolation)
             12-14: Environmental context
             15-23: Additional features
+            24: Illumination level
         
         Returns dict with: vitality, pleasure, violation_pressure, vp_class, components
         """
@@ -6069,7 +6070,7 @@ def http_mode(model, model_type: str, metadata: dict, port: int):
     @app.route('/predict', methods=['POST'])
     def predict():
         data = request.get_json()
-        state = data.get('state', [0.0] * metadata.get('max_input_dim', 24))
+        state = data.get('state', [0.0] * metadata.get('max_input_dim', 25))
         outputs = run_inference(model, model_type, state)
         return jsonify({
             'outputs': [out.tolist() for out in outputs],
@@ -6339,7 +6340,7 @@ python cocoon.py --mode gym --env CartPole-v1
 ## 🔬 Architecture
 
 ```
-                    Input State Vector ({metadata.get('max_input_dim', 24)} dims)
+                    Input State Vector ({metadata.get('max_input_dim', 25)} dims)
                            │
            ┌───────────────┼───────────────┐
            │               │               │
@@ -7024,12 +7025,13 @@ class VPRuntime:
         """
         Compute VP components from organism state vector.
         
-        State vector mapping (typical 24-dim):
+        State vector mapping (25-dim, matches config.json):
             0-5: Action probabilities
             6-8: Resource levels (energy, fitness, age)
             9-11: Social signals (cooperation, competition, isolation)
             12-14: Environmental context
             15-23: Additional features
+            24: Illumination level
         
         Returns dict with: vitality, pleasure, violation_pressure, vp_class, components
         """
@@ -8540,7 +8542,7 @@ import onnxruntime as ort
 import numpy as np
 
 session = ort.InferenceSession("brain_org_001.onnx")
-state = np.random.randn(1, 24).astype(np.float32)
+state = np.random.randn(1, 25).astype(np.float32)  # 25 dims matches config.json
 outputs = session.run(None, {{"state": state}})
 action_probs = outputs[0]
 ```
