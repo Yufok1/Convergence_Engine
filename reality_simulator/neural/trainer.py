@@ -195,14 +195,14 @@ class NeuralTrainer:
         # ═══════════════════════════════════════════════════════════════════════════
         lr_scheduler_config = training_config.get('lr_scheduler', {})
         self.lr_scheduler_enabled = lr_scheduler_config.get('enabled', True)
-        self.lr_scheduler_type = lr_scheduler_config.get('type', 'step')  # 'step', 'exponential', 'plateau'
+        self.lr_scheduler_type = lr_scheduler_config.get('type', 'cosine')  # Default matches config.json
         self.lr_step_size = lr_scheduler_config.get('step_size', 100)  # Steps between LR decay
         self.lr_gamma = lr_scheduler_config.get('gamma', 0.95)  # LR decay factor
-        self.lr_min = lr_scheduler_config.get('min_lr', 1e-6)  # Minimum learning rate
+        self.lr_min = lr_scheduler_config.get('min_lr', 0.0001)  # Default matches config.json
         
         early_stopping_config = training_config.get('early_stopping', {})
         self.early_stopping_enabled = early_stopping_config.get('enabled', True)
-        self.early_stopping_patience = early_stopping_config.get('patience', 50)  # Steps without improvement
+        self.early_stopping_patience = early_stopping_config.get('patience', 10)  # Default matches config.json
         self.early_stopping_min_delta = early_stopping_config.get('min_delta', 1e-4)  # Min loss change
         self.early_stopping_counter = 0
         self.best_loss = float('inf')
