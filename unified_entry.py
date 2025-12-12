@@ -3268,10 +3268,10 @@ def main():
                        help='Enable Highlander Protocol - perpetual survival tournament')
     parser.add_argument('--predation', action='store_true',
                        help='Enable predator/prey mechanics in Highlander mode')
-    parser.add_argument('--survival-threshold', type=float, default=0.3,
-                       help='Fitness threshold for survival (default: 0.3)')
-    parser.add_argument('--competition-intensity', type=float, default=0.5,
-                       help='How many organisms battle per round (default: 0.5)')
+    parser.add_argument('--survival-threshold', type=float, default=None,
+                       help='Fitness threshold for survival (default: from config.json, typically 0.4)')
+    parser.add_argument('--competition-intensity', type=float, default=None,
+                       help='How many organisms battle per round (default: from config.json, typically 0.2)')
     
     args = parser.parse_args()
     
@@ -3315,10 +3315,10 @@ def main():
         survival_thresh = config_highlander.get('survival_threshold', 0.4)  # Default matches config.json
         competition_int = config_highlander.get('competition_intensity', 0.2)  # Default matches config.json
         
-        # Only override with command line if user explicitly set them (different from defaults)
-        if args.survival_threshold != 0.4:  # User explicitly passed --survival-threshold (default changed to 0.4)
+        # Only override with command line if user explicitly set them (not None)
+        if args.survival_threshold is not None:
             survival_thresh = args.survival_threshold
-        if args.competition_intensity != 0.2:  # Default matches config.json
+        if args.competition_intensity is not None:
             competition_int = args.competition_intensity
             
         highlander_config = {

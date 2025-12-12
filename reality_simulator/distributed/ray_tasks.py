@@ -410,8 +410,7 @@ def train_organism_local(
             hidden_dim=hidden_dim,
             output_dim=output_dim,
             vocab_size=vocab_size,
-            use_language_head=use_language_head,
-            device=device
+            use_language_head=use_language_head
         )
         
         # Load weights (strict=False handles architecture changes)
