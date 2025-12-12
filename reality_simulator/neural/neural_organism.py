@@ -347,8 +347,9 @@ class NeuralOrganism(Organism):
         if local_env:
             resource_level = local_env.get('resources', 0.5)
         elif network_state:
-            # Try to get resource from network state
-            resource_level = network_state.get('resource_pool', 200.0) / 200.0
+            # Try to get resource from network state, normalize by config value
+            max_resource = 600.0  # Default matches config.json network.resource_pool
+            resource_level = network_state.get('resource_pool', max_resource) / max_resource
         features.append(np.clip(resource_level, 0.0, 1.0))
         
         # 3. Number of connections (normalized)

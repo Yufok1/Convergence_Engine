@@ -72,7 +72,7 @@ def test_neural_flow():
             'modularity': 0.5,
             'clustering_coefficient': 0.3,
             'max_connections_per_organism': 5,
-            'resource_pool': 200.0,
+            'resource_pool': 600.0,  # Matches config.json network.resource_pool
         }
         
         for org_id, org in organisms.items():
