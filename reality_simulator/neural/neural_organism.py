@@ -128,8 +128,8 @@ class NeuralOrganism(Organism):
             if parent_brains is not None and len(parent_brains) > 0:
                 # Inherit from parent(s) with mutation
                 inheritance_config = neural_config.get('inheritance', {})
-                mutation_rate = inheritance_config.get('mutation_rate', 0.1)
-                crossover_rate = inheritance_config.get('crossover_rate', 0.5)
+                mutation_rate = inheritance_config.get('mutation_rate', 0.2)  # Default matches config.json
+                crossover_rate = inheritance_config.get('crossover_rate', 0.9)  # Default matches config.json
                 
                 if len(parent_brains) >= 2:
                     # Two parents: proper crossover
@@ -2296,8 +2296,8 @@ class NeuralOrganism(Organism):
             return np.zeros(64)  # Return zero vector as fallback
     
     def inherit_brain(self, parent_brain: OrganismBrain, 
-                     mutation_rate: float = 0.1,
-                     crossover_rate: float = 0.5) -> Optional[OrganismBrain]:
+                     mutation_rate: float = 0.2,  # Default matches config.json
+                     crossover_rate: float = 0.9) -> Optional[OrganismBrain]:  # Default matches config.json
         """
         Create new brain by inheriting from parent.
         

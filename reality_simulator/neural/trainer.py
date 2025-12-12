@@ -125,12 +125,12 @@ class NeuralTrainer:
         
         rewards_config = config.get('rewards', {})
         self.reward_weights = {
-            'fitness_improvement': rewards_config.get('fitness_improvement', 1.0),
-            'survival': rewards_config.get('survival', 0.1),
-            'connection_success': rewards_config.get('connection_success', 0.5),
+            'fitness_improvement': rewards_config.get('fitness_improvement', 4.5),  # Default matches config.json
+            'survival': rewards_config.get('survival', 2.0),  # Default matches config.json
+            'connection_success': rewards_config.get('connection_success', 2.5),  # Default matches config.json
             'connection_failure': rewards_config.get('connection_failure', -0.2),
-            'resource_gain': rewards_config.get('resource_gain', 0.3),
-            'resource_loss': rewards_config.get('resource_loss', -0.1),
+            'resource_gain': rewards_config.get('resource_gain', 1.0),  # Default matches config.json
+            'resource_loss': rewards_config.get('resource_loss', -0.3),  # Default matches config.json
         }
         
         # Language model configuration

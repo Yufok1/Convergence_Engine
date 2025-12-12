@@ -537,7 +537,7 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
                 noise = torch.randn_like(param) * mutation_rate
                 param.add_(noise)
     
-    def crossover(self, other_brain: 'OrganismBrain', crossover_rate: float = 0.5):
+    def crossover(self, other_brain: 'OrganismBrain', crossover_rate: float = 0.9):  # Default matches config.json
         """
         Create new brain by combining weights from two parents.
         
