@@ -1,7 +1,7 @@
 {
-  "_case_study": "STUDY 2A: MONOLITH 50K - Create single organism with 50,000 word vocabulary",
-  "_hypothesis": "More organisms to absorb + higher vocab cap + aggressive competition = 50k vocab monster",
-  "_key_changes": "vocab_size 50000, population 25, competition 0.4, memory 60000, max_concepts 1500",
+  "_case_study": "STUDY 2B: MONOLITH 40K - Create ultimate single organism with 40,000 word vocabulary",
+  "_hypothesis": "Massive population feed + extreme vocab cap + ruthless competition = 40k vocab god-organism",
+  "_key_changes": "vocab_size 40000, population 50, competition 0.6, memory 50000, max_concepts 3000, embedding_dim 256",
   "_hardware_profile_help": "Set to 'beast', 'workstation', 'standard', 'laptop', 'potato', or 'cpu_only' to override auto-detection. null = auto-detect",
   "agency": {
     "confidence_threshold": 0.0001,
@@ -14,10 +14,10 @@
     "_help": "Unifies 6 semantic systems for word embedding differentiation",
     "enabled": true,
     "use_learned_embeddings": true,
-    "embedding_dim": 128,
-    "organism_embedding_alpha": 0.25,
-    "concept_system_alpha": 0.12,
-    "knowledge_web_influence_interval": 10,
+    "embedding_dim": 256,
+    "organism_embedding_alpha": 0.3,
+    "concept_system_alpha": 0.15,
+    "knowledge_web_influence_interval": 8,
     "phenotype_to_vocabulary": true
   },
   "arena": {
@@ -27,7 +27,7 @@
       "fitness_transfer_rate": 1,
       "resource_transfer_enabled": true,
       "resource_transfer_rate": 1,
-      "trait_bonus_cap": 0.4,
+      "trait_bonus_cap": 0.5,
       "trait_evolution_enabled": true
     },
     "default_battle_type": "PROTON_GAME",
@@ -41,15 +41,15 @@
     },
     "grid_weights": {
       "challenge_types": {
-        "ARTS": 1.5,
-        "CHANCE": 1.0,
-        "MENTAL": 1.5,
-        "PHYSICAL": 0.5
+        "ARTS": 2.0,
+        "CHANCE": 0.8,
+        "MENTAL": 2.0,
+        "PHYSICAL": 0.3
       },
       "resource_types": {
         "ANIMAL": 1.0,
         "MACHINE": 1.0,
-        "NAKED": 1.5,
+        "NAKED": 2.0,
         "TOOL": 1.0
       }
     },
@@ -79,7 +79,7 @@
     "enable_phase_transition_causations": true,
     "enabled": true,
     "phase_transition_time_window": 2.5,
-    "recent_events_window": 200,
+    "recent_events_window": 300,
     "thresholds": {
       "clustering_coefficient": {
         "collapse": 0.5,
@@ -106,21 +106,21 @@
     }
   },
   "evolution": {
-    "adaptation_sensitivity": 0.006,
+    "adaptation_sensitivity": 0.008,
     "diversity_guard": {
       "enabled": true,
-      "frequency_threshold": 0.15,
-      "hash_similarity_threshold": 0.85,
-      "penalty": 0.06
+      "frequency_threshold": 0.2,
+      "hash_similarity_threshold": 0.82,
+      "penalty": 0.08
     },
     "fitness_precision": 1e-07,
-    "genotype_length": 48,
-    "max_generations": 3000,
+    "genotype_length": 64,
+    "max_generations": 5000,
     "mutation_rate": {
-      "initial": 0.05
+      "initial": 0.06
     },
     "mutation_rate_precision": 0.001,
-    "population_size": 25
+    "population_size": 50
   },
   "feedback": {
     "enabled": true,
@@ -134,14 +134,14 @@
         "step": 0.05
       },
       "mutation_rate": {
-        "initial": 0.04,
-        "max": 0.07,
+        "initial": 0.05,
+        "max": 0.08,
         "min": 0.002,
         "step": 0.001
       },
       "new_edge_rate": {
-        "initial": 5.0,
-        "max": 7,
+        "initial": 5.5,
+        "max": 8,
         "min": 0.2,
         "step": 0.1
       },
@@ -174,25 +174,25 @@
   },
   "highlander": {
     "alliance_warfare": {
-      "betrayal_chance": 0.05,
-      "confederation_war_threshold": 0.5,
+      "betrayal_chance": 0.1,
+      "confederation_war_threshold": 0.4,
       "enabled": true,
-      "existential_war_threshold": 0.7,
-      "max_alliance_size": 50,
-      "max_alliances": 10,
-      "max_confederations": 3,
+      "existential_war_threshold": 0.6,
+      "max_alliance_size": 25,
+      "max_alliances": 8,
+      "max_confederations": 2,
       "min_alliance_size": 2,
-      "war_declaration_threshold": 0.5,
-      "war_frequency": 0.3,
+      "war_declaration_threshold": 0.4,
+      "war_frequency": 0.5,
       "illumination_stability_threshold": 5
     },
     "chaos_factor": 0.0,
-    "competition_intensity": 0.4,
-    "description": "STUDY 2A: MONOLITH 50K - Aggressive consolidation for vocab monster",
+    "competition_intensity": 0.6,
+    "description": "STUDY 2B: MONOLITH 100K - Ruthless consolidation for god-organism",
     "enabled": true,
     "extreme_mode": {
       "chaos_factor": 0.0,
-      "competition_intensity": 0.5,
+      "competition_intensity": 0.7,
       "description": "EXTREME DIFFICULTY - Maximum evolutionary pressure",
       "germination_rate": 1,
       "max_battle_rounds": 15,
@@ -206,20 +206,20 @@
     },
     "germination_rate": 1.0,
     "max_battle_rounds": 50,
-    "max_capsules": 150,
-    "max_genetic_samples": 150,
-    "max_population": 150,
+    "max_capsules": 200,
+    "max_genetic_samples": 200,
+    "max_population": 250,
     "min_population": 1,
     "mutation_rate": 0.0,
-    "population_size": 25,
+    "population_size": 50,
     "predation_enabled": false,
-    "rounds_per_cycle": 3,
-    "survival_threshold": 0.5
+    "rounds_per_cycle": 4,
+    "survival_threshold": 0.6
   },
   "lattice": {
     "entropy_sensitivity": 5e-05,
     "interaction_precision": 0.0001,
-    "particles": 1500,
+    "particles": 2000,
     "prune_threshold": 0,
     "stability_tolerance": 0.0005
   },
@@ -278,34 +278,34 @@
   "network": {
     "connection_strength_resolution": 5e-06,
     "emergence_sensitivity": 1e-06,
-    "max_connections": 50000,
-    "max_organisms": 2000,
+    "max_connections": 80000,
+    "max_organisms": 3000,
     "resource_flow_precision": 0.0001,
-    "resource_pool": 1000,
+    "resource_pool": 1500,
     "stability_precision": 1e-07
   },
   "neural": {
     "brain": {
       "activation": "relu",
-      "dropout": 0.08,
-      "hidden_dim": 128,
+      "dropout": 0.06,
+      "hidden_dim": 256,
       "input_dim": 24,
       "output_dim": 6,
-      "vocab_size": 50000
+      "vocab_size": 40000
     },
     "concept_system": {
-      "concept_loss_weight": 0.15,
-      "embed_dim": 128,
+      "concept_loss_weight": 0.18,
+      "embed_dim": 256,
       "enabled": true,
-      "num_key_compositions": 50,
-      "utility_update_alpha": 0.15
+      "num_key_compositions": 100,
+      "utility_update_alpha": 0.18
     },
     "device": "cuda",
     "enabled": true,
     "inheritance": {
-      "crossover_rate": 0.95,
+      "crossover_rate": 0.98,
       "enabled": true,
-      "mutation_rate": 0.25
+      "mutation_rate": 0.3
     },
     "initialization": {
       "deterministic": false,
@@ -313,25 +313,25 @@
     },
     "language_model": {
       "attention": {
-        "attention_dim": 64,
+        "attention_dim": 128,
         "enabled": true,
-        "num_heads": 8
+        "num_heads": 16
       },
       "curriculum": {
         "enabled": true,
         "ml_quality": {
           "enabled": true,
-          "high_quality_threshold": 0.5,
-          "low_quality_threshold": 0.25,
-          "max_sequence_length": 128,
+          "high_quality_threshold": 0.45,
+          "low_quality_threshold": 0.2,
+          "max_sequence_length": 256,
           "min_sequence_length": 8,
-          "sequence_length_step": 4
+          "sequence_length_step": 8
         },
         "sequence_lengths": {
-          "stage_0": 8,
-          "stage_1": 32,
-          "stage_2": 64,
-          "stage_3": 256
+          "stage_0": 16,
+          "stage_1": 64,
+          "stage_2": 128,
+          "stage_3": 512
         },
         "vp_thresholds": {
           "stage_1": 0.5,
@@ -341,79 +341,79 @@
       },
       "enabled": true,
       "generation": {
-        "max_length": 256,
-        "temperature": 1.2,
-        "vp_gate_threshold": 0.45
+        "max_length": 512,
+        "temperature": 1.3,
+        "vp_gate_threshold": 0.4
       },
       "knowledge_web": {
-        "embedding_dim": 128,
+        "embedding_dim": 256,
         "enabled": true,
-        "max_concepts": 1500,
+        "max_concepts": 3000,
         "quality_control": {
-          "confidence_growth_rate": 0.001,
+          "confidence_growth_rate": 0.0015,
           "enabled": true,
-          "exploration_decay_generations": 800,
-          "exploration_end": 0.1,
-          "exploration_start": 0.4,
-          "max_discoveries_per_generation": 25,
-          "min_confidence_threshold": 0.2,
-          "min_discovery_count": 2,
-          "pruning_confidence_threshold": 0.15,
-          "pruning_failure_rate": 0.8,
-          "pruning_unused_generations": 80,
-          "review_frequency": 80,
+          "exploration_decay_generations": 600,
+          "exploration_end": 0.12,
+          "exploration_start": 0.5,
+          "max_discoveries_per_generation": 50,
+          "min_confidence_threshold": 0.15,
+          "min_discovery_count": 1,
+          "pruning_confidence_threshold": 0.1,
+          "pruning_failure_rate": 0.85,
+          "pruning_unused_generations": 60,
+          "review_frequency": 60,
           "validation_required": true,
           "vp_boost_exploration": true,
-          "vp_boost_threshold": 0.6
+          "vp_boost_threshold": 0.55
         }
       },
       "relationship_learning": {
         "enabled": true,
         "quality_evaluation": {
-          "coherent_threshold": 0.4,
-          "garbled_threshold": 0.3,
-          "max_word_count": 40,
+          "coherent_threshold": 0.35,
+          "garbled_threshold": 0.35,
+          "max_word_count": 60,
           "min_word_count": 2,
           "min_word_count_for_evaluation": 3,
-          "relationship_strength_threshold": 0.35,
-          "unk_ratio_threshold": 0.4
+          "relationship_strength_threshold": 0.3,
+          "unk_ratio_threshold": 0.45
         },
         "semantic_guidance": {
           "enabled": true,
-          "high_strength_boost": 0.25,
-          "max_similar_words": 12,
-          "min_strength_threshold": 0.2,
-          "semantic_boost": 0.45
+          "high_strength_boost": 0.3,
+          "max_similar_words": 16,
+          "min_strength_threshold": 0.15,
+          "semantic_boost": 0.55
         }
       },
       "sequence": {
-        "context_window": 64,
-        "max_length": 256
+        "context_window": 128,
+        "max_length": 512
       },
       "teacher": {
-        "embedding_dim": 128,
+        "embedding_dim": 256,
         "enabled": true,
-        "min_action_history": 2,
-        "min_confidence": 0.2,
+        "min_action_history": 1,
+        "min_confidence": 0.15,
         "teaching_frequency": 1,
         "use_knowledge_web": true,
         "use_semantic_embeddings": true,
-        "vocab_size": 50000,
+        "vocab_size": 40000,
         "staged_knowledge": {
-          "_help": "NO DELAY - Full vocabulary available immediately for monolith building",
+          "_help": "NO DELAY - Full vocabulary available immediately for god-organism creation",
           "enabled": false,
           "delay_seconds": 0,
           "start_with_innate_only": false
         }
       },
       "training": {
-        "alpha": 0.45,
-        "beta": 0.45,
+        "alpha": 0.4,
+        "beta": 0.5,
         "gamma": 0.1,
         "vp_temperature_scale": true
       },
       "vocabulary": {
-        "max_size": 50000,
+        "max_size": 40000,
         "special_tokens": [
           "<PAD>",
           "<UNK>",
@@ -435,52 +435,52 @@
       "use_scripted_inference": false
     },
     "rewards": {
-      "connection_failure": -0.15,
-      "connection_success": 4.0,
-      "fitness_improvement": 6.0,
-      "resource_gain": 1.5,
-      "resource_loss": -0.2,
-      "survival": 3.0
+      "connection_failure": -0.1,
+      "connection_success": 5.0,
+      "fitness_improvement": 8.0,
+      "resource_gain": 2.0,
+      "resource_loss": -0.15,
+      "survival": 4.0
     },
     "training": {
-      "batch_size": 64,
+      "batch_size": 128,
       "early_stopping": {
         "enabled": true,
-        "min_delta": 0.00005,
-        "patience": 15
+        "min_delta": 0.00003,
+        "patience": 20
       },
       "enabled": true,
       "epsilon": 0.95,
-      "epsilon_decay": 0.992,
+      "epsilon_decay": 0.994,
       "epsilon_end": 0.01,
-      "epsilon_start": 0.9,
-      "gamma": 0.997,
-      "language_reward_scaling": 0.5,
-      "learning_rate": 0.006,
+      "epsilon_start": 0.95,
+      "gamma": 0.998,
+      "language_reward_scaling": 0.6,
+      "learning_rate": 0.008,
       "lr_scheduler": {
         "enabled": true,
-        "gamma": 0.94,
+        "gamma": 0.92,
         "min_lr": 0.0001,
-        "step_size": 80,
+        "step_size": 60,
         "type": "cosine",
-        "warmup_steps": 100
+        "warmup_steps": 150
       },
-      "memory_size": 60000,
+      "memory_size": 50000,
       "update_frequency": 1
     },
     "vp_aware_planning": {
-      "base_boost": 0.2,
+      "base_boost": 0.25,
       "enabled": true,
-      "high_threshold": 0.4,
-      "low_threshold": 0.2,
-      "strong_boost": 0.35
+      "high_threshold": 0.35,
+      "low_threshold": 0.15,
+      "strong_boost": 0.4
     },
     "checkpointing": {
       "_help": "Auto-save training state to prevent data loss. Checkpoint every N generations or minutes.",
       "enabled": true,
-      "auto_save_interval_generations": 80,
-      "auto_save_interval_minutes": 20,
-      "max_checkpoints": 15,
+      "auto_save_interval_generations": 60,
+      "auto_save_interval_minutes": 15,
+      "max_checkpoints": 20,
       "checkpoint_dir": "data/neural_checkpoints",
       "include_experience_buffer": true,
       "include_optimizer_states": true,
@@ -496,7 +496,7 @@
       "measurements": 0.25,
       "superposition": 0.25
     },
-    "initial_states": 120,
+    "initial_states": 150,
     "performance_thresholds": {
       "fitness_std_threshold": 0.3,
       "iteration_time_ms": 10,
@@ -508,8 +508,8 @@
     "superposition_tolerance": 0.0005
   },
   "ray": {
-    "actor_pool_size": 3,
-    "batch_inference_size": 64,
+    "actor_pool_size": 4,
+    "batch_inference_size": 128,
     "description": "Ray distributed computing - parallel organism decisions, training, and analysis",
     "enabled": true,
     "fallback_on_error": true,
@@ -517,7 +517,7 @@
     "memory_management": {
       "actor_pool_lru_eviction": true,
       "cleanup_on_organism_death": true,
-      "max_object_refs": 150
+      "max_object_refs": 200
     },
     "num_cpus": 4,
     "num_gpus": 1,
@@ -547,21 +547,21 @@
   "scikit": {
     "anomaly_detection": {
       "algorithm": "isolation_forest",
-      "contamination": 0.2,
+      "contamination": 0.22,
       "enabled": true,
-      "n_estimators": 500
+      "n_estimators": 600
     },
     "clustering": {
       "algorithm": "hdbscan",
       "enabled": true,
-      "min_cluster_size": 3,
+      "min_cluster_size": 2,
       "min_samples": 1,
       "use_neural_embeddings": true
     },
     "concept_tracking": {
       "enabled": true,
-      "persistence_threshold": 2,
-      "stale_threshold": 8
+      "persistence_threshold": 1,
+      "stale_threshold": 6
     },
     "dimensionality_reduction": {
       "algorithm": "pca",
@@ -572,7 +572,7 @@
   },
   "simulation": {
     "log_level": "INFO",
-    "max_runtime": 21600.0,
+    "max_runtime": 28800.0,
     "measurement_precision": 4,
     "performance_sampling_rate": 200,
     "save_interval": 60.0,
