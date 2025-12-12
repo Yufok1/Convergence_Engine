@@ -2014,7 +2014,7 @@ class UnifiedSystem:
             config = self.highlander_config or {}
             population_size = config.get('population_size', 10)
             survival_threshold = config.get('survival_threshold', 0.3)
-            competition_intensity = config.get('competition_intensity', 0.5)
+            competition_intensity = config.get('competition_intensity', 0.2)  # Default matches config.json
             rounds_per_cycle = config.get('rounds_per_cycle', 1)
             
             # Create event emitter for Highlander events
@@ -3313,12 +3313,12 @@ def main():
         # Config file values, command line can override if explicitly passed
         # Check if args were explicitly set (not just default values)
         survival_thresh = config_highlander.get('survival_threshold', 0.3)
-        competition_int = config_highlander.get('competition_intensity', 0.5)
+        competition_int = config_highlander.get('competition_intensity', 0.2)  # Default matches config.json
         
         # Only override with command line if user explicitly set them (different from defaults)
         if args.survival_threshold != 0.3:  # User explicitly passed --survival-threshold
             survival_thresh = args.survival_threshold
-        if args.competition_intensity != 0.5:  # User explicitly passed --competition-intensity
+        if args.competition_intensity != 0.2:  # Default matches config.json
             competition_int = args.competition_intensity
             
         highlander_config = {
