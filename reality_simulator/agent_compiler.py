@@ -10356,7 +10356,12 @@ def _run_internal_tournament(agent: 'CocoonAgent', tournament_type: str, learn: 
                             pad = torch.zeros(1, brain.input_dim - len(obs), device=agent.device)
                             obs_tensor = torch.cat([obs_tensor, pad], dim=1)
                         outputs = brain(obs_tensor)
-                        action = outputs.argmax(dim=-1).item()
+                        # Handle tuple output (action_probs, language_logits)
+                        if isinstance(outputs, tuple):
+                            action_probs = outputs[0]
+                        else:
+                            action_probs = outputs
+                        action = action_probs.argmax(dim=-1).item()
                     
                     # Clamp action to valid range
                     if hasattr(env.action_space, 'n'):
