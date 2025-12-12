@@ -10488,10 +10488,10 @@ def butterfly_chat():
         if not organisms:
             return jsonify({'error': 'No organism networks available. Please ensure the Butterfly system is running.'}), 503
         
-        # FIX: If vocabulary is None or empty, try to build from context_memory
+        # FIX: If vocabulary is None or empty, try to build from context_memory OR innate_vocab.json
         network = app.config.get('network')
         if (not vocabulary or (hasattr(vocabulary, 'vocab_size') and vocabulary.vocab_size <= 5)):
-            logger.warning(f"[BUTTERFLY_CHAT] Vocabulary empty or missing (vocab_size={getattr(vocabulary, 'vocab_size', 'N/A')}), building from context_memory...")
+            logger.warning(f"[BUTTERFLY_CHAT] Vocabulary empty or missing (vocab_size={getattr(vocabulary, 'vocab_size', 'N/A')}), building...")
             
             # Try to get context_memory and build vocabulary from language_anchors
             context_memory = None
@@ -10503,12 +10503,55 @@ def butterfly_chat():
                 try:
                     from reality_simulator.language_system import LanguageVocabulary, create_vocabulary_from_context_memory
                     vocabulary = create_vocabulary_from_context_memory(context_memory)
+                    
+                    # If language_anchors was empty, bootstrap from innate_vocab.json
+                    if vocabulary.vocab_size <= 5:
+                        logger.info("[BUTTERFLY_CHAT] language_anchors empty, loading from innate_vocab.json...")
+                        import json
+                        innate_path = os.path.join(os.path.dirname(__file__), 'data', 'innate_vocab.json')
+                        if os.path.exists(innate_path):
+                            with open(innate_path, 'r', encoding='utf-8') as f:
+                                innate_data = json.load(f)
+                            # innate_vocab.json has 'concepts' list with word dicts
+                            concepts = innate_data.get('concepts', [])
+                            # Build fake language_anchors from concepts
+                            fake_anchors = {c.get('word', c.get('concept', '')): set() for c in concepts if c.get('word') or c.get('concept')}
+                            if fake_anchors:
+                                vocabulary.build_from_language_anchors(language_anchors=fake_anchors)
+                                logger.info(f"[BUTTERFLY_CHAT] Bootstrapped {len(fake_anchors)} words from innate_vocab.json")
+                        else:
+                            # Last resort: load from nuclear_vocab.json or butterfly_vocabulary
+                            for fallback in ['nuclear_vocab.json', 'butterfly_vocabulary_250k_curated.json']:
+                                fallback_path = os.path.join(os.path.dirname(__file__), 'data', fallback)
+                                if os.path.exists(fallback_path):
+                                    try:
+                                        with open(fallback_path, 'r', encoding='utf-8') as f:
+                                            fallback_data = json.load(f)
+                                        # Extract words from various formats
+                                        words = set()
+                                        if isinstance(fallback_data, dict):
+                                            if 'concepts' in fallback_data:
+                                                words = {c.get('word', c.get('concept', '')) for c in fallback_data['concepts']}
+                                            elif 'words' in fallback_data:
+                                                words = set(fallback_data['words'])
+                                            else:
+                                                words = set(fallback_data.keys())
+                                        elif isinstance(fallback_data, list):
+                                            words = set(str(w) for w in fallback_data[:10000])  # Limit to 10k
+                                        if words:
+                                            fake_anchors = {w: set() for w in words if w}
+                                            vocabulary.build_from_language_anchors(language_anchors=fake_anchors)
+                                            logger.info(f"[BUTTERFLY_CHAT] Bootstrapped {len(words)} words from {fallback}")
+                                            break
+                                    except Exception as e:
+                                        logger.warning(f"[BUTTERFLY_CHAT] Failed to load {fallback}: {e}")
+                    
                     app.config['vocabulary'] = vocabulary
                     # CRITICAL: Also set on context_memory so generate_tokens() can access it
                     context_memory.vocabulary = vocabulary
-                    logger.info(f"[BUTTERFLY_CHAT] Built vocabulary from context_memory: {vocabulary.vocab_size} words")
+                    logger.info(f"[BUTTERFLY_CHAT] Built vocabulary: {vocabulary.vocab_size} words")
                 except Exception as e:
-                    logger.error(f"[BUTTERFLY_CHAT] Failed to build vocabulary from context_memory: {e}")
+                    logger.error(f"[BUTTERFLY_CHAT] Failed to build vocabulary: {e}")
         
         # Also ensure context_memory.vocabulary is set if we have both
         if network and hasattr(network, 'context_memory') and vocabulary:
