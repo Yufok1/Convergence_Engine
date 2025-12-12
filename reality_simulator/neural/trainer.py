@@ -120,7 +120,7 @@ class NeuralTrainer:
         self.batch_size = training_config.get('batch_size', 32)
         self._effective_batch_size = self.batch_size  # Will be reduced during early training
         self.learning_rate = training_config.get('learning_rate', 0.001)
-        self.gamma = training_config.get('gamma', 0.99)
+        self.gamma = training_config.get('gamma', 0.995)  # Default matches config.json
         self.update_frequency = training_config.get('update_frequency', 1)
         
         rewards_config = config.get('rewards', {})

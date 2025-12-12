@@ -390,7 +390,7 @@ def train_organism_local(
     try:
         # Extract config
         learning_rate = training_config.get('learning_rate', 0.001)
-        gamma = training_config.get('gamma', 0.99)
+        gamma = training_config.get('gamma', 0.995)  # Default matches config.json
         rl_loss_weight = training_config.get('rl_loss_weight', 0.8)
         language_loss_weight = training_config.get('language_loss_weight', 0.1)
         device = training_config.get('device', 'cpu')
