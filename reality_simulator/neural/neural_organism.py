@@ -1626,13 +1626,23 @@ class NeuralOrganism(Organism):
         
         # Get vocabulary from context memory
         if context_memory is None or not hasattr(context_memory, 'vocabulary') or context_memory.vocabulary is None:
+            logger.warning(f"[generate_tokens] {self.species_id}: No vocabulary - cm={context_memory is not None}, has_vocab={hasattr(context_memory, 'vocabulary') if context_memory else False}")
             return []
         
         vocab = context_memory.vocabulary
         
         # Verify vocab has required properties
         if not hasattr(vocab, 'vocab_size') or vocab.vocab_size is None:
+            logger.warning(f"[generate_tokens] {self.species_id}: vocab missing vocab_size attr")
             return []
+        
+        # CRITICAL: Check vocab has actual words, not just special tokens
+        word_count = len(getattr(vocab, 'word_to_id', {}))
+        if word_count <= 5:
+            logger.warning(f"[generate_tokens] {self.species_id}: vocab has only {word_count} words (need >5)")
+            return []
+        
+        logger.info(f"[generate_tokens] {self.species_id}: vocab OK with {word_count} words, vocab_size={vocab.vocab_size}")
         
         # Import special tokens for range checking
         try:
@@ -1868,10 +1878,11 @@ class NeuralOrganism(Organism):
                     probs = torch.softmax(logits, dim=-1)
                     
                     # Check for NaN/Inf/zero probabilities - if invalid, organism stays silent
-                    probs_valid = torch.isfinite(probs).all().item() and probs.sum().item() > 1e-10
+                    probs_sum = probs.sum().item()
+                    probs_valid = torch.isfinite(probs).all().item() and probs_sum > 1e-10
                     if not probs_valid:
                         # Network produced invalid output - organism stays silent
-                        logger.debug(f"[ORGANISM] {self.species_id} invalid probabilities, staying silent")
+                        logger.warning(f"[ORGANISM] {self.species_id} invalid probs: sum={probs_sum}, finite={torch.isfinite(probs).all().item()}, effective_vocab={effective_vocab_size}")
                         break
                     
                     # NEURAL SAMPLING: Let the network decide or stay silent
@@ -1884,7 +1895,7 @@ class NeuralOrganism(Organism):
                         sampling_success = True
                     except (RuntimeError, AssertionError) as e:
                         # Network couldn't sample - organism stays silent
-                        logger.debug(f"[ORGANISM] {self.species_id} sampling failed: {e}")
+                        logger.warning(f"[ORGANISM] {self.species_id} multinomial FAILED: {e}, probs_sum={probs_sum}, nonzero={torch.count_nonzero(probs).item()}/{len(probs)}")
                         break
                     
                     # If sampling failed, stop generation
