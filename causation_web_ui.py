@@ -6918,19 +6918,24 @@ def list_organisms():
         # Action names for behavioral analysis
         ACTION_NAMES = ['move', 'cooperate', 'compete', 'rest', 'reproduce', 'isolate']
         
-        # Get config for vocab_size - read from config, NO hardcoded fallback
-        config = app.config.get('config') or {}
-        vocab_size = config.get('neural', {}).get('brain', {}).get('vocab_size')
-        if not vocab_size:
-            vocab_size = config.get('neural', {}).get('language_model', {}).get('teacher', {}).get('vocab_size')
-        if not vocab_size:
-            vocab_size = 20000  # Last resort fallback - matches config.json default
-        
-        # Get context_memory for word associations
+        # Get context_memory for word associations and vocab_size
         network = app.config.get('network')
         context_memory = None
         if network and hasattr(network, 'context_memory'):
             context_memory = network.context_memory
+        
+        # Get vocab_size from context_memory first (authoritative), then fallback to config
+        vocab_size = None
+        if context_memory and hasattr(context_memory, 'max_vocab_size'):
+            vocab_size = context_memory.max_vocab_size
+        if not vocab_size:
+            config = app.config.get('config') or {}
+            vocab_size = config.get('neural', {}).get('brain', {}).get('vocab_size')
+        if not vocab_size:
+            config = app.config.get('config') or {}
+            vocab_size = config.get('neural', {}).get('language_model', {}).get('teacher', {}).get('vocab_size')
+        if not vocab_size:
+            vocab_size = 20000  # Last resort fallback
         
         # Get node_word_associations map
         node_word_associations = {}
