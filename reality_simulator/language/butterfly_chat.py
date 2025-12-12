@@ -170,6 +170,15 @@ class ButterflyChatRouter:
         context_memory = network_state.get('context_memory') if network_state else None
         vp_value = network_state.get('vp_value') if network_state else None
         
+        # CRITICAL FIX: Ensure context_memory has vocabulary wired before generation
+        if context_memory and self.vocabulary:
+            cm_vocab = getattr(context_memory, 'vocabulary', None)
+            cm_words = len(getattr(cm_vocab, 'word_to_id', {})) if cm_vocab else 0
+            our_words = len(getattr(self.vocabulary, 'word_to_id', {}))
+            if cm_words <= 5 and our_words > 5:
+                context_memory.vocabulary = self.vocabulary
+                logger.info(f"[ROUTER] Wired vocabulary to context_memory: {our_words} words (was {cm_words})")
+        
         self._log_debug("STEP_4", "Response Generation Setup", {
             "context_memory_available": context_memory is not None,
             "vp_value": vp_value,
