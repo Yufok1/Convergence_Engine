@@ -126,8 +126,17 @@ class LanguageVocabulary:
                 for word in words:
                     self.word_frequencies[word] = self.word_frequencies.get(word, 0) + 1
         
-        # CRITICAL: Sort for deterministic ordering
-        sorted_words = sorted(all_words)
+        # CRITICAL FIX: Sort by FREQUENCY (descending) then alphabetically for determinism
+        # This prevents "A-word bias" where alphabetically-first words like "aalto", "aardvark"
+        # get lowest token IDs and dominate neural network output (which tends to sample low IDs)
+        # Now: most-used words get lowest IDs = more relevant output
+        sorted_words = sorted(
+            all_words,
+            key=lambda w: (
+                -self.word_frequencies.get(w, 0),  # Primary: highest frequency first (negative for descending)
+                w  # Secondary: alphabetical for determinism when frequencies equal
+            )
+        )
         
         # Add words to vocabulary
         words_added = 0

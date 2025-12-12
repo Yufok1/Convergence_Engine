@@ -10519,13 +10519,27 @@ def butterfly_chat():
                         if os.path.exists(innate_path):
                             with open(innate_path, 'r', encoding='utf-8') as f:
                                 innate_data = json.load(f)
-                            # innate_vocab.json has 'concepts' list with word dicts
-                            concepts = innate_data.get('concepts', [])
-                            # Build fake language_anchors from concepts
-                            fake_anchors = {c.get('word', c.get('concept', '')): set() for c in concepts if c.get('word') or c.get('concept')}
+                            # innate_vocab.json has tiered concepts - use tiers for frequency-based ordering
+                            # Tier weights: core=100 (most important), extended=50, pool=10
+                            tiers = innate_data.get('tiers', {})
+                            fake_anchors = {}
+                            tier_weights = {'core': 100, 'extended': 50, 'pool': 10}
+                            
+                            # Add words from each tier with frequency hints
+                            for tier_name, tier_words in tiers.items():
+                                weight = tier_weights.get(tier_name, 1)
+                                for word in tier_words:
+                                    if word:
+                                        fake_anchors[word] = set(range(weight))  # Simulate 'weight' organisms using this word
+                            
+                            # Fallback: if no tiers, use flat concepts list
+                            if not fake_anchors:
+                                concepts = innate_data.get('concepts', [])
+                                fake_anchors = {c: set() for c in concepts if isinstance(c, str) and c}
+                            
                             if fake_anchors:
                                 vocabulary.build_from_language_anchors(language_anchors=fake_anchors)
-                                logger.info(f"[BUTTERFLY_CHAT] Bootstrapped {len(fake_anchors)} words from innate_vocab.json")
+                                logger.info(f"[BUTTERFLY_CHAT] Bootstrapped {len(fake_anchors)} words from innate_vocab.json (tier-weighted)")
                         else:
                             # Last resort: load from nuclear_vocab.json or butterfly_vocabulary
                             for fallback in ['nuclear_vocab.json', 'butterfly_vocabulary_250k_curated.json']:

@@ -4,6 +4,39 @@
 
 ---
 
+## [Unreleased] - 2025-12-12
+
+### 🔤 A-Words Alphabetical Bias Fix (2025-12-12)
+
+**CRITICAL BUG FIX**: Eliminated the "A-words bias" where organisms outputted words like "aalto", "acinic", "achomawi" because vocabulary was sorted alphabetically, giving A-words the lowest token IDs (which neural networks favor).
+
+#### Root Cause
+- `build_from_language_anchors()` in `language_system.py` sorted words alphabetically for "deterministic ordering"
+- Neural networks tend to sample low token IDs during generation
+- Result: A-words dominated all organism output regardless of meaning
+
+#### Fix: Frequency-Based Vocabulary Ordering
+**`reality_simulator/language_system.py`**:
+- Changed sorting from `sorted(all_words)` to frequency-based sorting
+- Primary: Highest frequency first (most-used words get lowest IDs)
+- Secondary: Alphabetical for determinism when frequencies equal
+- Most relevant words now get priority in token sampling
+
+**`causation_web_ui.py`**:
+- Updated fallback vocab loading from `innate_vocab.json` to use tier weights
+- Core tier words: weight=100 (most important)
+- Extended tier: weight=50
+- Pool tier: weight=10
+- Ensures meaningful words get priority even during bootstrap
+
+#### Verification
+```python
+# Before fix: ant, abstract, apple, move, reproduce, zebra (alphabetical)
+# After fix: move (50), reproduce (40), zebra (10), apple (5), ant (2), abstract (0)
+```
+
+---
+
 ## [Unreleased] - 2025-12-11
 
 ### 🔬 Scientific Organism Observatory UI Overhaul (2025-12-11)
