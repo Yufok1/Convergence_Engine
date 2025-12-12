@@ -264,7 +264,7 @@ class HighlanderProtocol:
                 self.battle_arena = None
         
         # Protocol parameters (from atomic config if available)
-        self.survival_threshold = self.config.get('survival_threshold', 0.3)
+        self.survival_threshold = self.config.get('survival_threshold', 0.4)  # Default matches config.json
         self.competition_intensity = self.config.get('competition_intensity', 0.2)  # Default matches config.json
         self.cooperation_bonus = self.config.get('cooperation_bonus', 0.2)
         self.predation_enabled = self.config.get('predation_enabled', False)
@@ -1888,7 +1888,7 @@ class HighlanderProtocol:
 def create_highlander_from_atomic_config(config_system: Any) -> HighlanderProtocol:
     """Create Highlander Protocol from an AtomicConfigSystem."""
     config = {
-        'survival_threshold': config_system.get('survival_threshold', 0.3),
+        'survival_threshold': config_system.get('survival_threshold', 0.4),  # Default matches config.json
         'competition_intensity': config_system.get('competition_intensity', 0.2),  # Default matches config.json
         'cooperation_bonus': config_system.get('cooperation_bonus', 0.2),
         'predation_enabled': config_system.get('predation_enabled', False),
