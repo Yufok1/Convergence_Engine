@@ -2526,12 +2526,26 @@ class UnifiedSystem:
                 print("[UNIFIED] [FAIL] Explorer not available. Cannot run.")
                 return
             
-            # Main loop
+            # Get target FPS from config for hardware-independent timing
+            # This ensures the simulation runs at the same speed regardless of GPU
+            simulation_config = self.config.get('simulation', {})
+            target_fps = simulation_config.get('target_fps', 3)  # Default 3 cycles/second
+            target_cycle_time = 1.0 / max(0.1, target_fps)  # Minimum cycle time in seconds
+            print(f"[UNIFIED] Target FPS: {target_fps} (cycle time: {target_cycle_time:.3f}s)")
+            
+            # Main loop with fixed timestep
             cycle_count = 0
+            cycle_start_time = time.time()
             while True:
+                loop_start = time.time()
+                
                 updated_config = self.config_watcher.check_for_updates()
                 if updated_config is not None:
                     self._apply_runtime_config(updated_config)
+                    # Update target_fps if config changed
+                    simulation_config = self.config.get('simulation', {})
+                    target_fps = simulation_config.get('target_fps', 3)
+                    target_cycle_time = 1.0 / max(0.1, target_fps)
 
                 # Update reality sim (includes neural training and config tuner)
                 if self.reality_sim:
@@ -2679,8 +2693,14 @@ class UnifiedSystem:
                 if getattr(self, '_highlander_enabled', False) and self.highlander_protocol:
                     self._run_highlander_round(cycle_count)
                 
-                # Small delay
-                time.sleep(0.1)
+                # Fixed timestep: Sleep remaining time to hit target FPS
+                # This ensures consistent timing regardless of hardware speed
+                elapsed = time.time() - loop_start
+                sleep_time = target_cycle_time - elapsed
+                if sleep_time > 0:
+                    time.sleep(sleep_time)
+                # else: cycle took longer than target, skip sleep (can't catch up)
+                
                 # Increment cycle counter and break if requested
                 cycle_count += 1
                 if self.max_cycles > 0 and cycle_count >= self.max_cycles:
