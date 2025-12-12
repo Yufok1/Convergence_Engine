@@ -288,9 +288,10 @@
       "activation": "relu",
       "dropout": 0.1,
       "hidden_dim": 64,
-      "input_dim": 24,
+      "input_dim": 25,
       "output_dim": 6,
-      "vocab_size": 20000
+      "vocab_size": 20000,
+      "attention_dim": 32
     },
     "concept_system": {
       "concept_loss_weight": 0.15,
@@ -412,8 +413,12 @@
         "vp_temperature_scale": true,
         "entropy_bonus": 0.015,
         "label_smoothing": 0.12,
+        "language_epsilon_start": 0.4,
+        "language_epsilon_end": 0.08,
+        "language_epsilon_decay": 0.996,
         "_entropy_bonus_help": "Higher entropy for creative specialist - encourages more diverse, creative output",
-        "_label_smoothing_help": "Slightly higher smoothing for creative exploration"
+        "_label_smoothing_help": "Slightly higher smoothing for creative exploration",
+        "_language_epsilon_help": "Higher language epsilon for creative specialist - more random token exploration encourages novel combinations."
       },
       "vocabulary": {
         "max_size": 20000,

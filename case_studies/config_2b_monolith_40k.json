@@ -289,9 +289,10 @@
       "activation": "relu",
       "dropout": 0.06,
       "hidden_dim": 256,
-      "input_dim": 24,
+      "input_dim": 25,
       "output_dim": 6,
-      "vocab_size": 40000
+      "vocab_size": 40000,
+      "attention_dim": 128
     },
     "concept_system": {
       "concept_loss_weight": 0.18,
@@ -413,8 +414,12 @@
         "vp_temperature_scale": true,
         "entropy_bonus": 0.01,
         "label_smoothing": 0.1,
+        "language_epsilon_start": 0.4,
+        "language_epsilon_end": 0.1,
+        "language_epsilon_decay": 0.994,
         "_entropy_bonus_help": "Prevents language mode collapse by rewarding diverse token distributions. 0.01 = subtle exploration",
-        "_label_smoothing_help": "Softens training targets to prevent overconfidence. 0.1 = 10% probability mass distributed to non-target tokens"
+        "_label_smoothing_help": "Softens training targets to prevent overconfidence. 0.1 = 10% probability mass distributed to non-target tokens",
+        "_language_epsilon_help": "Random token exploration during generation. Higher for god-organism to encourage vocabulary breadth."
       },
       "vocabulary": {
         "max_size": 40000,
