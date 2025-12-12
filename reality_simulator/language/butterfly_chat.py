@@ -118,6 +118,97 @@ class ButterflyChatRouter:
             "organisms_count": len(self.organisms),
             "network_state_available": network_state is not None
         })
+
+        # Extract context_memory early so tokenization and generation use the same instance
+        context_memory = network_state.get('context_memory') if network_state else None
+
+        def _vocab_word_count(v: Any) -> int:
+            try:
+                return len(getattr(v, 'word_to_id', {}) or {})
+            except Exception:
+                return 0
+
+        # Make vocab state visible in the debug panel (logger output doesn't show there)
+        router_vocab_words = _vocab_word_count(self.vocabulary) if self.vocabulary else 0
+        cm_vocab = getattr(context_memory, 'vocabulary', None) if context_memory else None
+        cm_vocab_words = _vocab_word_count(cm_vocab) if cm_vocab else 0
+        self._log_debug("STEP_1", "Vocabulary Snapshot", {
+            "router_vocab_words": router_vocab_words,
+            "context_memory_vocab_words": cm_vocab_words,
+            "context_memory_available": context_memory is not None
+        })
+
+        # CRITICAL: Bootstrap router/context_memory vocabulary when it's effectively empty
+        # (fresh instances often only have the 5 special tokens)
+        if context_memory and router_vocab_words <= 5:
+            bootstrapped = False
+            bootstrap_source = None
+            try:
+                from reality_simulator.language_system import create_vocabulary_from_context_memory
+                candidate = create_vocabulary_from_context_memory(context_memory)
+                candidate_words = _vocab_word_count(candidate)
+                if candidate_words > 5:
+                    self.vocabulary = candidate
+                    router_vocab_words = candidate_words
+                    bootstrapped = True
+                    bootstrap_source = "context_memory"
+            except Exception as e:
+                self._log_error("VOCAB_BOOTSTRAP_ERROR", f"Failed to build vocab from context_memory: {e}", {
+                    "error_type": type(e).__name__
+                })
+
+            if not bootstrapped:
+                # Fall back to data/innate_vocab.json (ships with the repo)
+                try:
+                    import json
+                    from pathlib import Path
+                    from reality_simulator.language_system import LanguageVocabulary
+
+                    repo_root = Path(__file__).resolve().parents[2]
+                    innate_path = repo_root / 'data' / 'innate_vocab.json'
+                    if innate_path.exists():
+                        with innate_path.open('r', encoding='utf-8') as f:
+                            innate_data = json.load(f)
+
+                        words: List[str] = []
+                        concepts = innate_data.get('concepts')
+                        if isinstance(concepts, list):
+                            for c in concepts:
+                                if isinstance(c, dict):
+                                    w = c.get('word') or c.get('concept')
+                                    if w:
+                                        words.append(str(w))
+                                elif isinstance(c, str):
+                                    words.append(c)
+                        elif isinstance(innate_data, list):
+                            words = [str(w) for w in innate_data]
+
+                        vocab = LanguageVocabulary()
+                        for w in words:
+                            if w:
+                                vocab.add_word(w.lower())
+
+                        candidate_words = _vocab_word_count(vocab)
+                        if candidate_words > 5:
+                            self.vocabulary = vocab
+                            router_vocab_words = candidate_words
+                            bootstrapped = True
+                            bootstrap_source = "innate_vocab.json"
+                except Exception as e:
+                    self._log_error("VOCAB_BOOTSTRAP_ERROR", f"Failed to bootstrap vocab from innate_vocab.json: {e}", {
+                        "error_type": type(e).__name__
+                    })
+
+            if bootstrapped:
+                # Ensure generation sees the same vocabulary
+                try:
+                    context_memory.vocabulary = self.vocabulary
+                except Exception:
+                    pass
+                self._log_debug("STEP_1", "Vocabulary Bootstrapped", {
+                    "source": bootstrap_source,
+                    "router_vocab_words": router_vocab_words
+                })
         
         # Tokenize user message
         words = message.lower().split()
@@ -132,7 +223,7 @@ class ButterflyChatRouter:
                 self._log_debug("STEP_2", "Tokenization Success", {
                     "tokens": prompt_tokens,
                     "token_count": len(prompt_tokens),
-                    "vocab_size": len(self.vocabulary) if hasattr(self.vocabulary, '__len__') else 'unknown'
+                    "vocab_words": _vocab_word_count(self.vocabulary)
                 })
             except Exception as e:
                 prompt_tokens = []
@@ -166,18 +257,20 @@ class ButterflyChatRouter:
 
         # Generate responses from each organism
         organism_responses = []
-        # Extract context_memory and vp_value from network_state for generate_tokens()
-        context_memory = network_state.get('context_memory') if network_state else None
+        # vp_value from network_state for generate_tokens()
         vp_value = network_state.get('vp_value') if network_state else None
         
         # CRITICAL FIX: Ensure context_memory has vocabulary wired before generation
         if context_memory and self.vocabulary:
             cm_vocab = getattr(context_memory, 'vocabulary', None)
-            cm_words = len(getattr(cm_vocab, 'word_to_id', {})) if cm_vocab else 0
-            our_words = len(getattr(self.vocabulary, 'word_to_id', {}))
+            cm_words = _vocab_word_count(cm_vocab) if cm_vocab else 0
+            our_words = _vocab_word_count(self.vocabulary)
             if cm_words <= 5 and our_words > 5:
                 context_memory.vocabulary = self.vocabulary
-                logger.info(f"[ROUTER] Wired vocabulary to context_memory: {our_words} words (was {cm_words})")
+                self._log_debug("STEP_4", "Wired vocabulary to context_memory", {
+                    "router_vocab_words": our_words,
+                    "context_memory_vocab_words_before": cm_words
+                })
         
         self._log_debug("STEP_4", "Response Generation Setup", {
             "context_memory_available": context_memory is not None,
@@ -213,6 +306,23 @@ class ButterflyChatRouter:
                         "experience_count": experience_count,
                         "adaptive_max_length": adaptive_max_length
                     })
+
+                    # Prove which implementation is running (file + line)
+                    try:
+                        import inspect
+                        fn = getattr(organism, 'generate_tokens')
+                        src_file = inspect.getsourcefile(fn)
+                        _, src_line = inspect.getsourcelines(fn)
+                        self._log_debug("STEP_4", f"generate_tokens implementation for {org_id}", {
+                            "module": getattr(fn, '__module__', None),
+                            "file": src_file,
+                            "line": src_line
+                        })
+                    except Exception as e:
+                        self._log_debug("STEP_4", f"generate_tokens implementation for {org_id}", {
+                            "inspect_error": str(e)
+                        })
+
                     # FIXED: Pass context_memory as first argument (required), then optional params
                     response_tokens = organism.generate_tokens(
                         context_memory=context_memory,
