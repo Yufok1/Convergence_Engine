@@ -143,6 +143,11 @@ class NeuralTrainer:
         self.vp_gate_threshold = language_config.get('vp_gate_threshold', 0.75)
         self.vp_temperature_scaling = training_config.get('vp_temperature_scale', language_config.get('vp_temperature_scaling', True))
         
+        # Language entropy bonus - prevents mode collapse to single tokens ("shorten shorten" bug)
+        # Similar to action head entropy bonus, encourages exploration in language generation
+        self.language_entropy_bonus = training_config.get('entropy_bonus', 0.01)
+        self.language_label_smoothing = training_config.get('label_smoothing', 0.1)
+        
         # Curriculum learning configuration
         self.curriculum_learning = language_config.get('curriculum_learning', True)
         self.current_sequence_length = language_config.get('start_sequence_length', 8)
@@ -1167,7 +1172,9 @@ class NeuralTrainer:
                             language_logits = language_logits.unsqueeze(1).expand(-1, len(token_seq)-1, -1)
                         
                         vp_value = network_state.get('vp_value', 0.0) if network_state else 0.0
-                        language_loss = self.calculate_language_loss(language_logits, target_tokens, vp_value)
+                        # 🧬 Pass organism's curiosity trait to scale entropy bonus
+                        curiosity = getattr(organism.phenotype, 'curiosity', 0.5) if hasattr(organism, 'phenotype') else 0.5
+                        language_loss = self.calculate_language_loss(language_logits, target_tokens, vp_value, curiosity=curiosity)
                         
                         # Backprop for language-only training
                         optimizer = optim.Adam(organism.brain.parameters(), lr=self.learning_rate * 0.5)
@@ -1282,8 +1289,10 @@ class NeuralTrainer:
                                 # Expand logits to match sequence length if needed
                                 if language_logits.dim() == 2:
                                     language_logits = language_logits.unsqueeze(1).expand(-1, len(token_seq)-1, -1)
+                                # 🧬 Pass organism's curiosity trait to scale entropy bonus
+                                curiosity = getattr(organism.phenotype, 'curiosity', 0.5) if hasattr(organism, 'phenotype') else 0.5
                                 language_loss = self.calculate_language_loss(
-                                    language_logits, target_tokens, vp_value
+                                    language_logits, target_tokens, vp_value, curiosity=curiosity
                                 )
                                 self.total_language_loss += language_loss.item()
                         except Exception as e:
@@ -1657,7 +1666,8 @@ class NeuralTrainer:
     def calculate_language_loss(self,
                                 language_logits: 'torch.Tensor',
                                 target_tokens: 'torch.Tensor',
-                                vp_value: Optional[float] = None) -> 'torch.Tensor':
+                                vp_value: Optional[float] = None,
+                                curiosity: Optional[float] = None) -> 'torch.Tensor':
         """
         Calculate next-token prediction loss with VP-aware scaling.
         
@@ -1665,6 +1675,8 @@ class NeuralTrainer:
             language_logits: Predicted logits from language head (batch, seq, vocab)
             target_tokens: Target token IDs (batch, seq)
             vp_value: Current VP value for temperature scaling
+            curiosity: Organism's curiosity trait [0-1]. Scales entropy bonus.
+                       Higher curiosity = more exploration = more diverse language.
             
         Returns:
             Scaled language loss tensor
@@ -1688,8 +1700,34 @@ class NeuralTrainer:
             targets_flat = targets_flat.clone()
             targets_flat[oob_mask] = 0  # Mark as ignore
         
-        # Calculate cross-entropy loss (ignores padding tokens with index 0)
-        loss = F.cross_entropy(logits_flat, targets_flat, ignore_index=0)
+        # Calculate cross-entropy loss with label smoothing (ignores padding tokens with index 0)
+        # Label smoothing reduces overconfidence and helps prevent mode collapse
+        loss = F.cross_entropy(
+            logits_flat, targets_flat, 
+            ignore_index=0, 
+            label_smoothing=self.language_label_smoothing
+        )
+        
+        # Entropy bonus: encourage exploration in language generation
+        # This prevents mode collapse to single tokens ("shorten shorten" bug)
+        # Similar to action head's entropy bonus (0.01 coefficient)
+        # 🧬 CURIOSITY SCALING: Organism's curiosity gene amplifies entropy bonus
+        entropy_value = 0.0
+        effective_entropy_bonus = self.language_entropy_bonus
+        if curiosity is not None:
+            # Curiosity [0-1] scales entropy bonus from 0.5x to 2x base value
+            # Low curiosity (0.0) = 0.5x bonus (less exploration)
+            # High curiosity (1.0) = 2x bonus (more exploration)  
+            curiosity_multiplier = 0.5 + (curiosity * 1.5)  # Range: 0.5 to 2.0
+            effective_entropy_bonus = self.language_entropy_bonus * curiosity_multiplier
+        
+        if effective_entropy_bonus > 0:
+            probs = F.softmax(logits_flat, dim=-1)
+            # Calculate entropy: -sum(p * log(p)), clamping for numerical stability
+            log_probs = torch.log(probs + 1e-9)
+            entropy_value = -(probs * log_probs).sum(dim=-1).mean()
+            # Subtract entropy bonus (maximize entropy = minimize negative entropy)
+            loss = loss - effective_entropy_bonus * entropy_value
         
         # VP gating: if VP > threshold, reduce language loss influence
         if vp_value is not None and vp_value > self.vp_gate_threshold:
@@ -1713,7 +1751,11 @@ class NeuralTrainer:
                         'batch_size': batch_size,
                         'vp_value': vp_value,
                         'vp_gated': vp_value is not None and vp_value > self.vp_gate_threshold,
-                        'current_curriculum_length': self.current_sequence_length
+                        'current_curriculum_length': self.current_sequence_length,
+                        'entropy_bonus': effective_entropy_bonus,
+                        'entropy_value': float(entropy_value.item()) if hasattr(entropy_value, 'item') else float(entropy_value),
+                        'label_smoothing': self.language_label_smoothing,
+                        'curiosity': curiosity
                     }
                 )
                 self.event_emitter(event)
@@ -1996,8 +2038,10 @@ class NeuralTrainer:
                     seq_len = target_tokens.size(1)
                     language_logits = language_logits.unsqueeze(1).expand(-1, seq_len, -1)
                     
-                    # Calculate loss
-                    loss = self.calculate_language_loss(language_logits, target_tokens, vp_value)
+                    # Calculate loss with organism's curiosity
+                    # 🧬 Pass organism's curiosity trait to scale entropy bonus
+                    curiosity = getattr(organism.phenotype, 'curiosity', 0.5) if hasattr(organism, 'phenotype') else 0.5
+                    loss = self.calculate_language_loss(language_logits, target_tokens, vp_value, curiosity=curiosity)
                     
                     # Backpropagation
                     organism_id = id(organism.brain)
@@ -2120,8 +2164,10 @@ class NeuralTrainer:
                     # Expand to sequence length
                     language_logits = language_logits.unsqueeze(1).expand(-1, len(token_seq)-1, -1)
                     
-                    # Calculate loss
-                    loss = self.calculate_language_loss(language_logits, target_tokens, vp_value)
+                    # Calculate loss with organism's curiosity
+                    # 🧬 Pass organism's curiosity trait to scale entropy bonus
+                    curiosity = getattr(organism.phenotype, 'curiosity', 0.5) if hasattr(organism, 'phenotype') else 0.5
+                    loss = self.calculate_language_loss(language_logits, target_tokens, vp_value, curiosity=curiosity)
                     
                     if loss is not None:
                         # Get or create optimizer (inline pattern - no helper method)
@@ -2251,7 +2297,9 @@ class NeuralTrainer:
                     bootstrap_lr = self.learning_rate * 2.0
                     
                     # Calculate loss against TEMPLATE response, not user echo
-                    loss = self.calculate_language_loss(language_logits, target_tokens, vp_value=0.0)
+                    # 🧬 Pass organism's curiosity trait to scale entropy bonus
+                    curiosity = getattr(organism.phenotype, 'curiosity', 0.5) if hasattr(organism, 'phenotype') else 0.5
+                    loss = self.calculate_language_loss(language_logits, target_tokens, vp_value=0.0, curiosity=curiosity)
                     
                     # Backpropagation
                     optimizer = optim.Adam(organism.brain.parameters(), lr=bootstrap_lr)

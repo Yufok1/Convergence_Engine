@@ -207,6 +207,12 @@ class NeuralOrganism(Organism):
             self.epsilon_end = training_config.get('epsilon_end', 0.01)
             self.epsilon_decay = training_config.get('epsilon_decay', 0.995)
             
+            # Language epsilon for language exploration (alongside action epsilon)
+            # Higher = more random token selection during inference (prevents mode collapse)
+            self.language_epsilon = training_config.get('language_epsilon_start', 0.3)
+            self.language_epsilon_end = training_config.get('language_epsilon_end', 0.05)
+            self.language_epsilon_decay = training_config.get('language_epsilon_decay', 0.998)
+            
             # Battle outcome tracking for learning (Integration: Neural-Alliance)
             self.battle_wins = 0
             self.battle_losses = 0
@@ -235,6 +241,7 @@ class NeuralOrganism(Organism):
             self.prev_fitness = self.fitness
             self.last_action = None  # For alliance system to check cooperation
             self.epsilon = 0.0
+            self.language_epsilon = 0.0  # No exploration without PyTorch
             # Battle outcome tracking for learning
             self.battle_wins = 0
             self.battle_losses = 0

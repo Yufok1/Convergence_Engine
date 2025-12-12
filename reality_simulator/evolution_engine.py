@@ -144,11 +144,16 @@ class Phenotype:
     Observable traits and characteristics of an organism
 
     Maps genotype to expressed traits through recursive development
-    Now includes consciousness emergence phenotypes
+    Now includes consciousness emergence phenotypes and cognitive traits
     """
     traits: Dict[str, float] = field(default_factory=dict)
     development_stage: int = 0
     environmental_factors: Dict[str, float] = field(default_factory=dict)
+    
+    # 🧬 NAMED COGNITIVE TRAITS - heritable, affect learning behavior
+    # Curiosity: affects entropy bonus during language training (prevents mode collapse)
+    # High curiosity = more exploration = more diverse language output
+    curiosity: float = 0.5  # Range [0, 1], default moderate curiosity
 
     def express_trait(self, trait_name: str, genotype_value: float,
                      environmental_modifier: float = 1.0) -> float:
@@ -215,6 +220,19 @@ class Organism:
             expressed_value = self.phenotype.express_trait(
                 trait_name, genotype_value, env_modifier
             )
+
+        # 🧬 EXPRESS COGNITIVE TRAITS FROM SPECIFIC GENE POSITIONS
+        # Gene 10 (or last gene if fewer): Curiosity
+        # This affects language exploration (entropy bonus) and is heritable
+        curiosity_gene_idx = min(10, len(self.genotype.genes) - 1)
+        if curiosity_gene_idx >= 0:
+            base_curiosity = self.genotype.genes[curiosity_gene_idx] / 255.0
+            # Environmental modifier for curiosity (e.g., rich environment = more curious)
+            curiosity_env = self.phenotype.environmental_factors.get('curiosity', 1.0)
+            # Apply development stage: young organisms start more curious
+            development_bonus = max(0, 0.2 - (self.phenotype.development_stage * 0.02))
+            self.phenotype.curiosity = min(1.0, base_curiosity * curiosity_env + development_bonus)
+            self.phenotype.traits['curiosity'] = self.phenotype.curiosity
 
         # Increase development stage
         self.phenotype.development_stage += 1

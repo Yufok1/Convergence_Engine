@@ -7644,7 +7644,17 @@ class CocoonAgent:
         # Final clamp to absolutely safe range
         logits = torch.clamp(logits, -50, 50)
         
-        loss = F.cross_entropy(logits, targets, ignore_index=0)
+        # Label smoothing + entropy bonus (same as trainer.py)
+        # This prevents mode collapse to single tokens ("shorten shorten" bug)
+        loss = F.cross_entropy(logits, targets, ignore_index=0, label_smoothing=0.1)
+        
+        # Entropy bonus: encourage exploration in language generation (default 0.01)
+        entropy_bonus = 0.01
+        if entropy_bonus > 0:
+            probs = F.softmax(logits, dim=-1)
+            log_probs = torch.log(probs + 1e-9)
+            entropy = -(probs * log_probs).sum(dim=-1).mean()
+            loss = loss - entropy_bonus * entropy
         
         # Final NaN/Inf check
         if torch.isnan(loss) or torch.isinf(loss):
