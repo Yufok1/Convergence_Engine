@@ -138,9 +138,9 @@ class NeuralTrainer:
         training_config = language_config.get('training', {})
         self.language_model_enabled = language_config.get('enabled', False)
         # AUDIT FIX: Read from training config, ensure alpha+beta+gamma=1.0
-        self.rl_loss_weight = training_config.get('alpha', language_config.get('rl_loss_weight', 0.8))  # alpha
-        self.language_loss_weight = training_config.get('beta', language_config.get('language_loss_weight', 0.1))  # beta
-        self.vp_gate_threshold = language_config.get('vp_gate_threshold', 0.75)
+        self.rl_loss_weight = training_config.get('alpha', language_config.get('rl_loss_weight', 0.5))  # alpha - default matches config.json
+        self.language_loss_weight = training_config.get('beta', language_config.get('language_loss_weight', 0.4))  # beta - default matches config.json
+        self.vp_gate_threshold = language_config.get('generation', {}).get('vp_gate_threshold', 0.5)  # default matches config.json
         self.vp_temperature_scaling = training_config.get('vp_temperature_scale', language_config.get('vp_temperature_scaling', True))
         
         # Language entropy bonus - prevents mode collapse to single tokens ("shorten shorten" bug)
