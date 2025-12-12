@@ -228,7 +228,7 @@ class NeuralTrainer:
         # Integration 2: Neural-ML Symbiosis - ML analysis for language rewards
         self.ml_analysis = None  # Set by main.py when ML analysis is available
         self.context_memory = None  # Set by main.py for vocabulary access
-        self.language_reward_scaling = training_config.get('language_reward_scaling', 0.2)
+        self.language_reward_scaling = training_config.get('language_reward_scaling', 0.35)  # Default matches config.json
         
         # Track language rewards for ConfigTuner analysis
         self.language_reward_total = 0.0  # Cumulative language rewards per training step
@@ -2596,7 +2596,7 @@ class NeuralTrainer:
                     'learning_rate': self.learning_rate,
                     'gamma': self.gamma,
                     'input_dim': self.config.get('brain', {}).get('input_dim', 25),
-                    'hidden_dim': self.config.get('brain', {}).get('hidden_dim', 128),
+                    'hidden_dim': self.config.get('brain', {}).get('hidden_dim', 64),  # Default matches config.json
                     'output_dim': self.config.get('brain', {}).get('output_dim', 6),
                 },
                 'autotune_metrics': self.autotune_metrics_buffer.copy(),

@@ -39,7 +39,8 @@ class ButterflyChatRouter:
                  organisms: Dict[str, Any],
                  vocabulary: Optional[LanguageVocabulary] = None,
                  event_emitter: Optional[callable] = None,
-                 trainer: Optional[Any] = None):
+                 trainer: Optional[Any] = None,
+                 config: Optional[Dict[str, Any]] = None):
         """
         Initialize router.
 
@@ -48,11 +49,17 @@ class ButterflyChatRouter:
             vocabulary: LanguageVocabulary for tokenization (optional)
             event_emitter: Optional function to emit causation events
             trainer: Optional NeuralTrainer for chat-triggered training
+            config: Optional configuration dictionary for settings like temperature
         """
         self.organisms = organisms or {}
         self.vocabulary = vocabulary
         self.event_emitter = event_emitter
         self.trainer = trainer  # For chat-triggered learning
+        self.config = config or {}
+        
+        # Get language generation settings from config
+        language_config = self.config.get('neural', {}).get('language_model', {}).get('generation', {})
+        self.generation_temperature = language_config.get('temperature', 1.2)  # Default matches config.json
         self.conversation_history: List[Dict[str, Any]] = []
         # Debug logging system
         self.debug_logs: List[Dict[str, Any]] = []
@@ -202,7 +209,7 @@ class ButterflyChatRouter:
                         context_memory=context_memory,
                         max_length=adaptive_max_length,
                         vp_value=vp_value,
-                        temperature=1.0
+                        temperature=self.generation_temperature  # Use config value
                     )
                     self._log_debug("STEP_4", f"Tokens generated for {org_id}", {
                         "token_count": len(response_tokens),
@@ -618,7 +625,7 @@ class ButterflyChatRouter:
                     context_memory=context_memory,
                     max_length=max_length,
                     vp_value=vp_value,
-                    temperature=1.0
+                    temperature=self.generation_temperature  # Use config value
                 )
                 
                 self._log_debug("DIRECT_CHAT", "Tokens generated", {

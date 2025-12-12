@@ -10507,7 +10507,9 @@ def butterfly_chat():
         # Otherwise create new one and store it
         router = app.config.get('butterfly_chat_router')
         if router is None:
-            router = ButterflyChatRouter(organisms_dict, vocabulary, event_emitter)
+            # Pass config_manager's config for language generation settings (e.g., temperature)
+            simulation_config = config_manager.get_config() if config_manager else {}
+            router = ButterflyChatRouter(organisms_dict, vocabulary, event_emitter, config=simulation_config)
             app.config['butterfly_chat_router'] = router
             logger.info("[BUTTERFLY_CHAT] Created new persistent ButterflyChatRouter")
         else:
@@ -10767,8 +10769,9 @@ def chat_with_organism(organism_id):
             oid = str(getattr(org, 'species_id', None) or getattr(org, 'id', None) or i)
             organisms_dict[oid] = org
         
-        # Initialize router with vocabulary (prefer context_memory.vocabulary)
-        router = ButterflyChatRouter(organisms_dict, vocabulary)
+        # Initialize router with vocabulary and config (prefer context_memory.vocabulary)
+        simulation_config = config_manager.get_config() if config_manager else {}
+        router = ButterflyChatRouter(organisms_dict, vocabulary, config=simulation_config)
         
         logger.info(f"[ORGANISM_CHAT_API] Calling process_message_through_organism for {organism_id}, context_memory={context_memory is not None}, vocab={vocabulary is not None}")
         
