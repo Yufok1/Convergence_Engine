@@ -31,8 +31,8 @@ def test_neural_flow():
         return False
     
     print(f"Neural config: batch_size={config['neural']['training'].get('batch_size', 32)}")
-    print(f"              epsilon_start={config['neural']['training'].get('epsilon_start', 1.0)}")
-    print(f"              epsilon_decay={config['neural']['training'].get('epsilon_decay', 0.995)}")
+    print(f"              epsilon_start={config['neural']['training'].get('epsilon_start', 0.8)}")
+    print(f"              epsilon_decay={config['neural']['training'].get('epsilon_decay', 0.99)}")
     
     # Import neural components
     try:
@@ -105,7 +105,7 @@ def test_neural_flow():
     # Verify results
     print("\n--- Final State ---")
     sample_org = list(organisms.values())[0]
-    initial_epsilon = config['neural']['training'].get('epsilon_start', 1.0)
+    initial_epsilon = config['neural']['training'].get('epsilon_start', 0.8)
     
     results = {
         'epsilon_decayed': sample_org.epsilon < initial_epsilon,

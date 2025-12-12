@@ -7265,11 +7265,11 @@ class CocoonAgent:
             self.organism_names = self.organism_names[:max_organisms]
             print(f"[INFO] Limiting to {max_organisms} organisms (of {self.architecture.get('ensemble_size', 1)})")
         self.config = _decode_data(_TRAINING_CONFIG_B64)
-        self.learning_rate = self.config.get('learning_rate', 0.001)
+        self.learning_rate = self.config.get('learning_rate', 0.005)  # Default matches config.json
         self.batch_size = self.config.get('batch_size', 32)
-        self.gamma = self.config.get('gamma', 0.99)
+        self.gamma = self.config.get('gamma', 0.995)  # Default matches config.json
         self.epsilon = self.config.get('epsilon', 0.1)
-        self.epsilon_decay = self.config.get('epsilon_decay', 0.995)
+        self.epsilon_decay = self.config.get('epsilon_decay', 0.99)  # Default matches config.json
         self.epsilon_min = self.config.get('epsilon_min', 0.01)
         self.rl_weight = self.config.get('rl_loss_weight', 0.8)
         self.lang_weight = self.config.get('language_loss_weight', 0.1)

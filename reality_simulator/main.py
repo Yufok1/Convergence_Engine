@@ -1097,7 +1097,7 @@ class RealitySimulator:
                     self._neural_metrics = {
                         'enabled': True,
                         'training_loss': None,
-                        'avg_epsilon': self.config.get('neural', {}).get('training', {}).get('epsilon_start', 1.0),
+                        'avg_epsilon': self.config.get('neural', {}).get('training', {}).get('epsilon_start', 0.8),
                         'organisms_tracked': 0,
                         'training_steps': 0,
                         'status': 'initialized'
