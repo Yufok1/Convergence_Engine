@@ -203,9 +203,9 @@ class NeuralOrganism(Organism):
             
             # Epsilon for exploration (starts high, decays)
             training_config = neural_config.get('training', {})
-            self.epsilon = training_config.get('epsilon_start', 1.0)
+            self.epsilon = training_config.get('epsilon_start', 0.8)
             self.epsilon_end = training_config.get('epsilon_end', 0.01)
-            self.epsilon_decay = training_config.get('epsilon_decay', 0.995)
+            self.epsilon_decay = training_config.get('epsilon_decay', 0.99)
             
             # Language epsilon for language exploration (alongside action epsilon)
             # Higher = more random token selection during inference (prevents mode collapse)

@@ -1026,7 +1026,7 @@ class AtomicConfigSystem:
     def get_pytorch_optimizer_kwargs(self) -> Dict[str, Any]:
         """Get kwargs for PyTorch optimizer from config atoms."""
         return {
-            'lr': self.get('learning_rate', 0.001),
+            'lr': self.get('learning_rate', 0.005),  # Default matches config.json
             'weight_decay': self.get('weight_decay', 0.01)
         }
     

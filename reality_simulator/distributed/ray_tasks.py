@@ -81,7 +81,7 @@ def extract_organism_features_local(org_state: dict, context: dict = None) -> Li
     neural_state = org_state.get('neural_state', {})
     features.extend([
         neural_state.get('epsilon', 0.5),
-        neural_state.get('learning_rate', 0.001),
+        neural_state.get('learning_rate', 0.005),  # Default matches config.json
         neural_state.get('experience_count', 0) / 1000.0,  # Normalized
     ])
     
@@ -389,10 +389,10 @@ def train_organism_local(
     
     try:
         # Extract config
-        learning_rate = training_config.get('learning_rate', 0.001)
+        learning_rate = training_config.get('learning_rate', 0.005)  # Default matches config.json
         gamma = training_config.get('gamma', 0.995)  # Default matches config.json
-        rl_loss_weight = training_config.get('rl_loss_weight', 0.8)
-        language_loss_weight = training_config.get('language_loss_weight', 0.1)
+        rl_loss_weight = training_config.get('rl_loss_weight', 0.5)  # Default matches config.json alpha
+        language_loss_weight = training_config.get('language_loss_weight', 0.4)  # Default matches config.json beta
         device = training_config.get('device', 'cpu')
         
         # Import brain class for reconstruction

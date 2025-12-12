@@ -557,9 +557,20 @@ class EvolutionEngine:
         self.max_generations = max_generations
         self.config = config or {}
 
-        # Initialize components
-        self.selection = SelectionEngine()
-        self.mutation = MutationEngine()
+        # Get evolution config for component initialization
+        evolution_config = self.config.get('evolution', {})
+        
+        # Initialize components with config values
+        self.selection = SelectionEngine(
+            tournament_size=evolution_config.get('tournament_size', 5),
+            elitism_rate=evolution_config.get('elitism_rate', 0.1)
+        )
+        mutation_rate_config = evolution_config.get('mutation_rate', {})
+        initial_mutation_rate = mutation_rate_config.get('initial', 0.04) if isinstance(mutation_rate_config, dict) else mutation_rate_config
+        self.mutation = MutationEngine(
+            base_rate=initial_mutation_rate,
+            adaptive=evolution_config.get('adaptive_mutation', True)
+        )
         self.fitness_cache = FitnessCache()
         
         # Initialize diversity guard from config
