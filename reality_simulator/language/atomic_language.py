@@ -86,6 +86,10 @@ class LinguisticAtom:
         usage_count: How often this concept has been "used" by the organism
         last_used_time: Last time this concept was activated
         vp_context: VP state when concept is most relevant
+        curiosity_magnetism: PERSONAL magnetism - how much THIS ORGANISM is drawn to this concept
+                            Starts from base_magnetism but evolves based on outcomes!
+        base_magnetism: Initial/default magnetism (action heads start at 0.9)
+        outcome_history: Recent outcomes when this concept was active (-1 to +1)
     """
     concept_id: str
     strength: float = 0.5
@@ -104,9 +108,152 @@ class LinguisticAtom:
     vp_vitality_affinity: float = 0.5  # Activated at what vitality level?
     vp_pleasure_affinity: float = 0.5  # Activated at what pleasure level?
     
+    # ═══════════════════════════════════════════════════════════════════════════
+    # PERSONAL MAGNETISM SYSTEM - Coax, Don't Trap!
+    # 
+    # Each organism develops their OWN relationship with concepts:
+    # - base_magnetism: Starting attraction (action heads = 0.9, questions = 0.85)
+    # - curiosity_magnetism: CURRENT attraction (evolves based on outcomes!)
+    # - outcome_history: Did referencing this concept help or hurt?
+    # 
+    # If an organism keeps getting BAD outcomes when they think about "compete",
+    # their personal magnetism for "compete" DECREASES. They learn to avoid it.
+    # If they get GOOD outcomes from "cooperate", magnetism INCREASES.
+    # 
+    # This is GENUINE LEARNING - not Pied Piper manipulation.
+    # ═══════════════════════════════════════════════════════════════════════════
+    base_magnetism: float = 0.5  # Starting/default magnetism
+    curiosity_magnetism: float = 0.5  # Current PERSONAL magnetism (can diverge from base)
+    outcome_history: List[float] = field(default_factory=list)  # Recent outcomes (-1 to +1)
+    
+    # Satiation/boredom tracking - overused concepts lose appeal
+    recent_activation_count: int = 0  # Activations in recent window
+    satiation_level: float = 0.0  # 0 = fresh, 1 = completely bored
+    
     # Event emitter callback (set by AtomicLanguageSystem)
     _event_emitter: Optional[Callable] = field(default=None, repr=False)
     _organism_id: Optional[str] = field(default=None, repr=False)
+    
+    def update_magnetism_from_outcome(self, outcome: float, reason: str = ""):
+        """
+        Update personal magnetism based on outcome when this concept was active.
+        
+        This is the ANTI-PIED-PIPER mechanism:
+        - Good outcome (+) → magnetism increases (want to explore more)
+        - Bad outcome (-) → magnetism decreases (learn to avoid)
+        - Neutral (0) → slight decay toward base (regression to mean)
+        
+        Args:
+            outcome: Result of action when this concept was active (-1 to +1)
+            reason: Why this outcome happened (for causation tracking)
+        """
+        # Track outcome history (keep last 10)
+        self.outcome_history.append(outcome)
+        if len(self.outcome_history) > 10:
+            self.outcome_history = self.outcome_history[-10:]
+        
+        # Calculate magnetism adjustment
+        # Good outcomes: +0.05 max, Bad outcomes: -0.08 max (asymmetric - bad is stronger)
+        if outcome > 0:
+            delta = outcome * 0.05  # Positive reinforcement
+        elif outcome < 0:
+            delta = outcome * 0.08  # Negative reinforcement (stronger!)
+        else:
+            # Neutral: regress toward base_magnetism
+            delta = (self.base_magnetism - self.curiosity_magnetism) * 0.02
+        
+        old_magnetism = self.curiosity_magnetism
+        self.curiosity_magnetism = np.clip(self.curiosity_magnetism + delta, 0.1, 1.0)
+        
+        # Emit causation event if significant change
+        if self._event_emitter and abs(delta) > 0.01:
+            self._emit_magnetism_update(old_magnetism, outcome, reason)
+    
+    def update_satiation(self):
+        """
+        Update satiation level based on recent usage.
+        
+        Overused concepts become boring - organisms naturally seek novelty.
+        This prevents getting trapped in loops around the same concepts.
+        """
+        # Increment recent activation count
+        self.recent_activation_count += 1
+        
+        # Satiation increases with use, decays over time
+        # High usage = more satiation = less attractive
+        self.satiation_level = min(1.0, self.satiation_level + 0.1)
+    
+    def decay_satiation(self, amount: float = 0.02):
+        """
+        Decay satiation over time - concepts become fresh again.
+        
+        Called periodically to let organisms "forget" overuse.
+        """
+        self.satiation_level = max(0.0, self.satiation_level - amount)
+        self.recent_activation_count = max(0, self.recent_activation_count - 1)
+    
+    def get_effective_magnetism(self, organism_skepticism: float = 0.5) -> float:
+        """
+        Get the EFFECTIVE magnetism considering skepticism and satiation.
+        
+        This is the key anti-manipulation mechanism:
+        - High skepticism REDUCES magnetism bonus (skeptics aren't easily drawn)
+        - High satiation REDUCES magnetism (boredom protects against loops)
+        - Bad outcome history REDUCES magnetism (learned avoidance)
+        
+        Args:
+            organism_skepticism: The organism's skepticism trait (0-1)
+                                High skepticism = resistant to magnetism
+        
+        Returns:
+            Effective magnetism after all modifiers (0.1 to 1.0)
+        """
+        base = self.curiosity_magnetism
+        
+        # Skepticism reduces magnetism effect (skeptics aren't easily drawn)
+        # At skepticism=1.0, magnetism effect is halved
+        skepticism_modifier = 1.0 - (organism_skepticism * 0.5)
+        
+        # Satiation reduces magnetism (bored with this concept)
+        satiation_modifier = 1.0 - (self.satiation_level * 0.4)
+        
+        # Recent bad outcomes reduce magnetism
+        if self.outcome_history:
+            avg_outcome = sum(self.outcome_history) / len(self.outcome_history)
+            if avg_outcome < 0:
+                outcome_modifier = 1.0 + (avg_outcome * 0.3)  # Up to -30% for bad history
+            else:
+                outcome_modifier = 1.0  # Good history doesn't further boost
+        else:
+            outcome_modifier = 1.0
+        
+        effective = base * skepticism_modifier * satiation_modifier * outcome_modifier
+        return max(0.1, min(1.0, effective))
+    
+    def _emit_magnetism_update(self, old_magnetism: float, outcome: float, reason: str):
+        """Emit causation event for magnetism change."""
+        if not self._event_emitter:
+            return
+        try:
+            from causation_explorer import Event
+            event = Event(
+                timestamp=time.time(),
+                component='language',
+                event_type='magnetism_update',
+                data={
+                    'organism_id': self._organism_id,
+                    'concept': self.concept_id,
+                    'old_magnetism': old_magnetism,
+                    'new_magnetism': self.curiosity_magnetism,
+                    'outcome': outcome,
+                    'reason': reason,
+                    'outcome_history': self.outcome_history[-5:],
+                    'satiation': self.satiation_level
+                }
+            )
+            self._event_emitter(event)
+        except Exception:
+            pass
     
     def update_strength(self, delta: float, reason: str, emit_event: bool = True):
         """
@@ -299,48 +446,229 @@ class AtomicLanguageSystem:
     - Conversion to dense tensors for neural network compatibility
     """
     
+    # ═══════════════════════════════════════════════════════════════════════════
+    # THE 6 ACTION HEADS
+    # Core neural network outputs - every organism action maps to one of these
+    # ═══════════════════════════════════════════════════════════════════════════
+    
+    ACTION_HEADS = ['move', 'rest', 'reproduce', 'cooperate', 'compete', 'isolate']
+    
+    # ═══════════════════════════════════════════════════════════════════════════
+    # FOUNDATIONAL ORIENTATION SYSTEM
+    # Inspired by the Voyager Golden Record (1977) - what humanity chose to
+    # represent itself to the cosmos. These are the BASICS every organism
+    # considers recursively when taking ANY action.
+    #
+    # Like teaching a child: alphabet, numbers, colors, then concepts.
+    # This is embedded INTO each action frame as orientation context.
+    # ═══════════════════════════════════════════════════════════════════════════
+    
+    ORIENTATION = {
+        # THE ALPHABET - Foundation of symbolic communication
+        'alphabet': [
+            'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+            'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'
+        ],
+        
+        # NUMBERS - Foundation of quantity and mathematics
+        'numbers': [
+            'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 
+            'eight', 'nine', 'ten', 'hundred', 'thousand', 'million',
+            'first', 'second', 'third', 'last', 'none', 'all', 'some', 'many', 'few'
+        ],
+        
+        # COLORS - Foundation of perception and differentiation
+        'colors': [
+            'red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink',
+            'black', 'white', 'gray', 'brown', 'gold', 'silver',
+            'light', 'dark', 'bright', 'dim'
+        ],
+        
+        # DIRECTIONS - Foundation of spatial orientation
+        'directions': [
+            'up', 'down', 'left', 'right', 'forward', 'backward',
+            'north', 'south', 'east', 'west', 'near', 'far',
+            'inside', 'outside', 'above', 'below', 'here', 'there'
+        ],
+        
+        # TIME - Foundation of temporal orientation
+        'time': [
+            'now', 'then', 'before', 'after', 'past', 'present', 'future',
+            'begin', 'end', 'start', 'stop', 'continue', 'pause',
+            'fast', 'slow', 'always', 'never', 'sometimes', 'soon', 'later'
+        ],
+        
+        # EXISTENCE - Foundation of being (from Golden Record)
+        'existence': [
+            'yes', 'no', 'true', 'false', 'exist', 'nothing', 'something',
+            'life', 'death', 'birth', 'growth', 'change', 'same', 'different',
+            'self', 'other', 'we', 'they', 'it'
+        ],
+        
+        # RELATIONSHIPS - Foundation of social orientation (from Golden Record)
+        'relationships': [
+            'friend', 'enemy', 'family', 'mother', 'father', 'child',
+            'together', 'alone', 'group', 'pair', 'one', 'many',
+            'love', 'fear', 'trust', 'help', 'harm'
+        ],
+        
+        # NATURE - Sounds of Earth (from Golden Record)
+        'nature': [
+            'sun', 'moon', 'star', 'earth', 'sky', 'water', 'fire', 'air',
+            'wind', 'rain', 'thunder', 'ocean', 'mountain', 'river', 'tree',
+            'animal', 'plant', 'food', 'energy'
+        ],
+        
+        # ACTIONS - The 6 heads + basic verbs
+        'actions': [
+            'move', 'rest', 'reproduce', 'cooperate', 'compete', 'isolate',
+            'go', 'come', 'give', 'take', 'make', 'break', 'find', 'lose',
+            'see', 'hear', 'feel', 'think', 'know', 'want', 'need',
+            'eat', 'drink', 'sleep', 'wake', 'live', 'die'
+        ],
+        
+        # QUALITIES - Basic descriptors
+        'qualities': [
+            'good', 'bad', 'big', 'small', 'strong', 'weak', 'hot', 'cold',
+            'hard', 'soft', 'new', 'old', 'young', 'safe', 'danger',
+            'happy', 'sad', 'angry', 'calm', 'hungry', 'full'
+        ],
+        
+        # QUESTIONS - Foundation of curiosity and learning
+        'questions': [
+            'what', 'who', 'where', 'when', 'why', 'how', 'which',
+            'can', 'will', 'should', 'must', 'may', 'might'
+        ],
+        
+        # UNIVERSALS - What humanity most wanted to convey (Golden Record)
+        'universals': [
+            'hello', 'peace', 'welcome', 'hope', 'curiosity', 'explore',
+            'create', 'share', 'learn', 'teach', 'understand', 'remember',
+            'music', 'dance', 'play', 'work', 'dream'
+        ]
+    }
+    
+    # Flatten for quick lookup
+    ORIENTATION_WORDS = set()
+    for category, words in ORIENTATION.items():
+        ORIENTATION_WORDS.update(words)
+    
+    # ═══════════════════════════════════════════════════════════════════════════
+    # VOYAGER GOLDEN RECORD - Detailed concept definitions
+    # These get special treatment - higher innate strength, marked as foundational
+    # ═══════════════════════════════════════════════════════════════════════════
+    
+    GOLDEN_RECORD_CONCEPTS = {
+        # GREETINGS - First contact, basic communication
+        'hello': {'frame': 'greeting', 'level': 0, 'vp': (0.5, 0.8), 'golden_record': True},
+        'peace': {'frame': 'greeting', 'level': 0, 'vp': (0.4, 0.9), 'golden_record': True},
+        'friend': {'frame': 'greeting', 'level': 0, 'vp': (0.5, 0.8), 'golden_record': True},
+        'welcome': {'frame': 'greeting', 'level': 0, 'vp': (0.5, 0.8), 'golden_record': True},
+        
+        # SOUNDS OF EARTH - Natural world awareness
+        'wind': {'frame': 'nature', 'level': 0, 'vp': (0.5, 0.5), 'golden_record': True},
+        'rain': {'frame': 'nature', 'level': 0, 'vp': (0.5, 0.6), 'golden_record': True},
+        'thunder': {'frame': 'nature', 'level': 0, 'vp': (0.6, 0.4), 'golden_record': True},
+        'fire': {'frame': 'nature', 'level': 0, 'vp': (0.7, 0.3), 'golden_record': True},
+        'ocean': {'frame': 'nature', 'level': 0, 'vp': (0.5, 0.6), 'golden_record': True},
+        'bird': {'frame': 'nature', 'level': 0, 'vp': (0.5, 0.6), 'golden_record': True},
+        'whale': {'frame': 'nature', 'level': 0, 'vp': (0.4, 0.6), 'golden_record': True},
+        'heartbeat': {'frame': 'nature', 'level': 0, 'vp': (0.6, 0.7), 'golden_record': True},
+        
+        # MUSIC - Culture, emotion, expression
+        'music': {'frame': 'culture', 'level': 0, 'vp': (0.5, 0.8), 'golden_record': True},
+        'song': {'frame': 'culture', 'level': 0, 'vp': (0.5, 0.8), 'golden_record': True},
+        'dance': {'frame': 'culture', 'level': 0, 'vp': (0.6, 0.8), 'golden_record': True},
+        'rhythm': {'frame': 'culture', 'level': 0, 'vp': (0.5, 0.7), 'golden_record': True},
+        
+        # IMAGES OF LIFE - Biological existence
+        'birth': {'frame': 'life', 'level': 0, 'vp': (0.7, 0.9), 'golden_record': True},
+        'growth': {'frame': 'life', 'level': 0, 'vp': (0.6, 0.7), 'golden_record': True},
+        'family': {'frame': 'life', 'level': 0, 'vp': (0.5, 0.8), 'golden_record': True},
+        'child': {'frame': 'life', 'level': 0, 'vp': (0.5, 0.8), 'golden_record': True},
+        'mother': {'frame': 'life', 'level': 0, 'vp': (0.5, 0.9), 'golden_record': True},
+        'father': {'frame': 'life', 'level': 0, 'vp': (0.5, 0.8), 'golden_record': True},
+        'eat': {'frame': 'life', 'level': 0, 'vp': (0.5, 0.7), 'golden_record': True},
+        'drink': {'frame': 'life', 'level': 0, 'vp': (0.5, 0.7), 'golden_record': True},
+        'learn': {'frame': 'life', 'level': 0, 'vp': (0.6, 0.7), 'golden_record': True},
+        'teach': {'frame': 'life', 'level': 0, 'vp': (0.5, 0.7), 'golden_record': True},
+        
+        # PIONEER PLAQUE - Scientific understanding
+        'hydrogen': {'frame': 'science', 'level': 1, 'vp': (0.5, 0.5), 'golden_record': True},
+        'star': {'frame': 'science', 'level': 0, 'vp': (0.6, 0.7), 'golden_record': True},
+        'planet': {'frame': 'science', 'level': 0, 'vp': (0.5, 0.6), 'golden_record': True},
+        'sun': {'frame': 'science', 'level': 0, 'vp': (0.7, 0.6), 'golden_record': True},
+        'earth': {'frame': 'science', 'level': 0, 'vp': (0.5, 0.7), 'golden_record': True},
+        'time': {'frame': 'science', 'level': 0, 'vp': (0.5, 0.5), 'golden_record': True},
+        'distance': {'frame': 'science', 'level': 0, 'vp': (0.5, 0.5), 'golden_record': True},
+        'number': {'frame': 'science', 'level': 0, 'vp': (0.5, 0.5), 'golden_record': True},
+        
+        # ARECIBO MESSAGE - Mathematics and biology
+        'one': {'frame': 'math', 'level': 0, 'vp': (0.5, 0.5), 'golden_record': True},
+        'two': {'frame': 'math', 'level': 0, 'vp': (0.5, 0.5), 'golden_record': True},
+        'three': {'frame': 'math', 'level': 0, 'vp': (0.5, 0.5), 'golden_record': True},
+        'life': {'frame': 'biology', 'level': 0, 'vp': (0.7, 0.8), 'golden_record': True},
+        'human': {'frame': 'biology', 'level': 0, 'vp': (0.5, 0.6), 'golden_record': True},
+        
+        # UNIVERSAL CONCEPTS - What we most wanted to convey
+        'love': {'frame': 'universal', 'level': 0, 'vp': (0.5, 0.9), 'golden_record': True},
+        'hope': {'frame': 'universal', 'level': 0, 'vp': (0.6, 0.8), 'golden_record': True},
+        'curiosity': {'frame': 'universal', 'level': 0, 'vp': (0.6, 0.7), 'golden_record': True},
+        'explore': {'frame': 'universal', 'level': 0, 'vp': (0.6, 0.7), 'golden_record': True},
+        'create': {'frame': 'universal', 'level': 0, 'vp': (0.6, 0.8), 'golden_record': True},
+        'together': {'frame': 'universal', 'level': 0, 'vp': (0.5, 0.8), 'golden_record': True},
+        'share': {'frame': 'universal', 'level': 0, 'vp': (0.5, 0.8), 'golden_record': True},
+    }
+    
     # Innate vocabulary loaded from data/innate_vocab.json
     # Generated by generate_innate_vocab.py from nuclear extraction
     _INNATE_VOCAB_CACHE = None  # Class-level cache
     
-    # Fallback core concepts if innate_vocab.json not found
-    # CRITICAL: Must include all 6 action heads + key synonyms
+    # ═══════════════════════════════════════════════════════════════════════════
+    # FALLBACK INNATE CONCEPTS
+    # Used if innate_vocab.json not found
+    # 
+    # CURIOSITY MAGNETISM: The key to coaxing, not forcing!
+    # - Action heads have HIGH magnetism (0.9) - organisms are drawn to explore them
+    # - Questions have HIGH magnetism (0.85) - curiosity begets curiosity  
+    # - Golden Record concepts have MEDIUM-HIGH magnetism (0.7)
+    # - Regular concepts have NEUTRAL magnetism (0.5)
+    # - Boring/negative concepts have LOW magnetism (0.3)
+    # ═══════════════════════════════════════════════════════════════════════════
     FALLBACK_INNATE_CONCEPTS = {
-        # THE 6 ACTION HEADS (required for neural network action outputs)
-        'move': {'frame': 'action', 'level': 0, 'vp': (0.5, 0.5)},
-        'rest': {'frame': 'action', 'level': 0, 'vp': (0.3, 0.6)},
-        'reproduce': {'frame': 'action', 'level': 0, 'vp': (0.6, 0.8)},
-        'cooperate': {'frame': 'action', 'level': 0, 'vp': (0.5, 0.7)},
-        'compete': {'frame': 'action', 'level': 0, 'vp': (0.6, 0.3)},
-        'isolate': {'frame': 'action', 'level': 0, 'vp': (0.4, 0.4)},
-        # Key synonyms for each action head
-        'walk': {'frame': 'action', 'level': 0, 'vp': (0.5, 0.5)},
-        'run': {'frame': 'action', 'level': 0, 'vp': (0.6, 0.5)},
-        'sleep': {'frame': 'action', 'level': 0, 'vp': (0.2, 0.7)},
-        'wait': {'frame': 'action', 'level': 0, 'vp': (0.3, 0.5)},
-        'breed': {'frame': 'action', 'level': 0, 'vp': (0.6, 0.8)},
-        'spawn': {'frame': 'action', 'level': 0, 'vp': (0.6, 0.8)},
-        'help': {'frame': 'action', 'level': 0, 'vp': (0.5, 0.7)},
-        'ally': {'frame': 'action', 'level': 0, 'vp': (0.5, 0.7)},
-        'fight': {'frame': 'action', 'level': 0, 'vp': (0.7, 0.3)},
-        'attack': {'frame': 'action', 'level': 0, 'vp': (0.7, 0.2)},
-        'hide': {'frame': 'action', 'level': 0, 'vp': (0.4, 0.4)},
-        'escape': {'frame': 'action', 'level': 0, 'vp': (0.5, 0.4)},
-        # State concepts
-        'hungry': {'frame': 'state', 'level': 0, 'vp': (0.3, 0.3)},
-        'safe': {'frame': 'state', 'level': 0, 'vp': (0.6, 0.7)},
-        'danger': {'frame': 'state', 'level': 0, 'vp': (0.4, 0.2)},
-        'alive': {'frame': 'state', 'level': 0, 'vp': (0.7, 0.7)},
-        'strong': {'frame': 'state', 'level': 0, 'vp': (0.7, 0.6)},
-        'weak': {'frame': 'state', 'level': 0, 'vp': (0.3, 0.4)},
-        # Relationship concepts
-        'friend': {'frame': 'relationship', 'level': 0, 'vp': (0.5, 0.8)},
-        'enemy': {'frame': 'relationship', 'level': 0, 'vp': (0.5, 0.2)},
-        'alone': {'frame': 'relationship', 'level': 0, 'vp': (0.4, 0.4)},
-        'together': {'frame': 'relationship', 'level': 0, 'vp': (0.5, 0.7)},
-        # Resource concepts
-        'food': {'frame': 'resource', 'level': 0, 'vp': (0.5, 0.7)},
-        'energy': {'frame': 'resource', 'level': 0, 'vp': (0.6, 0.5)},
+        # THE 6 ACTION HEADS - HIGH MAGNETISM (organisms WANT to explore these)
+        'move': {'frame': 'action_head', 'level': 0, 'vp': (0.5, 0.5), 'magnetism': 0.9},
+        'rest': {'frame': 'action_head', 'level': 0, 'vp': (0.3, 0.6), 'magnetism': 0.9},
+        'reproduce': {'frame': 'action_head', 'level': 0, 'vp': (0.6, 0.8), 'magnetism': 0.9},
+        'cooperate': {'frame': 'action_head', 'level': 0, 'vp': (0.5, 0.7), 'magnetism': 0.9},
+        'compete': {'frame': 'action_head', 'level': 0, 'vp': (0.6, 0.3), 'magnetism': 0.9},
+        'isolate': {'frame': 'action_head', 'level': 0, 'vp': (0.4, 0.4), 'magnetism': 0.9},
+        
+        # CURIOSITY CONCEPTS - Also high magnetism (self-reinforcing)
+        'why': {'frame': 'question', 'level': 0, 'vp': (0.5, 0.6), 'magnetism': 0.85},
+        'how': {'frame': 'question', 'level': 0, 'vp': (0.5, 0.6), 'magnetism': 0.85},
+        'what': {'frame': 'question', 'level': 0, 'vp': (0.5, 0.5), 'magnetism': 0.8},
+        'explore': {'frame': 'universal', 'level': 0, 'vp': (0.6, 0.7), 'magnetism': 0.85},
+        'learn': {'frame': 'universal', 'level': 0, 'vp': (0.6, 0.7), 'magnetism': 0.8},
+        'discover': {'frame': 'universal', 'level': 0, 'vp': (0.6, 0.8), 'magnetism': 0.85},
+        
+        # State concepts - medium magnetism
+        'hungry': {'frame': 'state', 'level': 0, 'vp': (0.3, 0.3), 'magnetism': 0.6},
+        'safe': {'frame': 'state', 'level': 0, 'vp': (0.6, 0.7), 'magnetism': 0.5},
+        'danger': {'frame': 'state', 'level': 0, 'vp': (0.4, 0.2), 'magnetism': 0.4},
+        'alive': {'frame': 'state', 'level': 0, 'vp': (0.7, 0.7), 'magnetism': 0.6},
+        'strong': {'frame': 'state', 'level': 0, 'vp': (0.7, 0.6), 'magnetism': 0.55},
+        'weak': {'frame': 'state', 'level': 0, 'vp': (0.3, 0.4), 'magnetism': 0.35},
+        
+        # Relationship concepts - medium-high magnetism (social is interesting)
+        'friend': {'frame': 'relationship', 'level': 0, 'vp': (0.5, 0.8), 'magnetism': 0.7},
+        'enemy': {'frame': 'relationship', 'level': 0, 'vp': (0.5, 0.2), 'magnetism': 0.5},
+        'alone': {'frame': 'relationship', 'level': 0, 'vp': (0.4, 0.4), 'magnetism': 0.4},
+        'together': {'frame': 'relationship', 'level': 0, 'vp': (0.5, 0.7), 'magnetism': 0.7},
+        
+        # Resource concepts - medium magnetism  
+        'food': {'frame': 'resource', 'level': 0, 'vp': (0.5, 0.7), 'magnetism': 0.6},
+        'energy': {'frame': 'resource', 'level': 0, 'vp': (0.6, 0.5), 'magnetism': 0.55},
     }
     
     @classmethod
@@ -414,6 +742,9 @@ class AtomicLanguageSystem:
             # Fallback to minimal hardcoded concepts
             logger.warning(f"[ATOMIC_LANG] Using fallback innate concepts for {self.organism_id}")
             for concept_id, info in self.FALLBACK_INNATE_CONCEPTS.items():
+                # Get curiosity_magnetism - action heads and questions get HIGH magnetism
+                magnetism = info.get('magnetism', 0.5)
+                
                 atom = LinguisticAtom(
                     concept_id=concept_id,
                     strength=0.5 + np.random.uniform(-0.1, 0.1),
@@ -422,7 +753,8 @@ class AtomicLanguageSystem:
                     abstraction_level=info['level'],
                     acquisition_time=current_time,
                     vp_vitality_affinity=info['vp'][0],
-                    vp_pleasure_affinity=info['vp'][1]
+                    vp_pleasure_affinity=info['vp'][1],
+                    curiosity_magnetism=magnetism
                 )
                 atom._event_emitter = self.event_emitter
                 atom._organism_id = self.organism_id
@@ -484,25 +816,321 @@ class AtomicLanguageSystem:
         
         self.total_concepts_acquired = len(self.atoms)
         logger.debug(f"[ATOMIC_LANG] Organism {self.organism_id} initialized with {len(self.atoms)} innate concepts")
+        
+        # Load Voyager Golden Record concepts - humanity's foundational vocabulary
+        self._initialize_golden_record_concepts(current_time)
+        
+        # Initialize foundational orientation concepts (alphabet, numbers, colors)
+        self._initialize_foundational_orientation(current_time)
+        
+        # Make action heads intrinsically interesting (coax, don't force!)
+        self._seed_action_head_curiosity()
+    
+    def _initialize_golden_record_concepts(self, current_time: float):
+        """
+        Initialize Voyager Golden Record concepts - humanity's message to the cosmos.
+        
+        These are the concepts humanity chose to represent itself to unknown
+        intelligences. We use them as foundational teaching material for organisms.
+        """
+        golden_count = 0
+        for word, info in self.GOLDEN_RECORD_CONCEPTS.items():
+            if word not in self.atoms:
+                atom = LinguisticAtom(
+                    concept_id=word,
+                    strength=0.7 + np.random.uniform(-0.1, 0.1),  # High initial strength
+                    source='golden_record',
+                    semantic_frame=info['frame'],
+                    abstraction_level=info.get('level', 0),
+                    acquisition_time=current_time,
+                    vp_vitality_affinity=info['vp'][0],
+                    vp_pleasure_affinity=info['vp'][1],
+                    curiosity_magnetism=0.7  # Golden Record concepts are interesting!
+                )
+                atom._event_emitter = self.event_emitter
+                atom._organism_id = self.organism_id
+                self.atoms[word] = atom
+                self._concept_order.append(word)
+                golden_count += 1
+        
+        if golden_count > 0:
+            logger.debug(f"[ATOMIC_LANG] Organism {self.organism_id}: Added {golden_count} Golden Record concepts")
+    
+    def _seed_action_head_curiosity(self):
+        """
+        Make action heads intrinsically interesting without forcing associations.
+        
+        Philosophy: COAX, DON'T FORCE!
+        
+        Instead of hardcoding links, we just ensure action heads have:
+        1. High BASE magnetism - they START attractive (but can change!)
+        2. Pleasurable VP affinity - they feel good to think about
+        3. Low initial usage - the novelty bonus kicks in
+        
+        CRITICAL: We set BASE magnetism high, but organisms' PERSONAL magnetism
+        can and WILL diverge based on their outcomes. An organism that keeps
+        getting hurt when they think about "compete" will develop LOW personal
+        magnetism for "compete" even though the BASE is high.
+        
+        This is genuine learning, not manipulation.
+        """
+        for action_head in self.ACTION_HEADS:
+            if action_head in self.atoms:
+                atom = self.atoms[action_head]
+                # Set high BASE magnetism (starting point)
+                atom.base_magnetism = max(atom.base_magnetism, 0.9)
+                # Initialize personal magnetism to match base (will evolve!)
+                atom.curiosity_magnetism = atom.base_magnetism
+                # Ensure they feel slightly pleasurable to consider
+                atom.vp_pleasure_affinity = max(atom.vp_pleasure_affinity, 0.6)
+    
+    def _initialize_foundational_orientation(self, current_time: float):
+        """
+        Initialize foundational orientation concepts: alphabet, numbers, colors.
+        
+        These are the basic building blocks of symbolic understanding - not hardcoded
+        meanings, but anchors that organisms can build associations around through
+        experience. Like teaching a child the alphabet before they learn words.
+        """
+        orientation_count = 0
+        
+        # Alphabet - symbolic anchors (letters as orientation points)
+        for letter, info in self.ALPHABET.items():
+            if letter not in self.atoms:
+                atom = LinguisticAtom(
+                    concept_id=letter,
+                    strength=0.3 + np.random.uniform(-0.05, 0.05),  # Low but stable
+                    source='foundational_orientation',
+                    semantic_frame=info['frame'],
+                    abstraction_level=info['level'],
+                    acquisition_time=current_time,
+                    vp_vitality_affinity=0.5,  # Neutral
+                    vp_pleasure_affinity=0.5   # Neutral
+                )
+                atom._event_emitter = self.event_emitter
+                atom._organism_id = self.organism_id
+                self.atoms[letter] = atom
+                self._concept_order.append(letter)
+                orientation_count += 1
+        
+        # Numbers - quantity concepts
+        for number_word, info in self.NUMBERS.items():
+            if number_word not in self.atoms:
+                atom = LinguisticAtom(
+                    concept_id=number_word,
+                    strength=0.4 + np.random.uniform(-0.05, 0.05),
+                    source='foundational_orientation',
+                    semantic_frame=info['frame'],
+                    abstraction_level=info['level'],
+                    acquisition_time=current_time,
+                    vp_vitality_affinity=info['vp'][0],
+                    vp_pleasure_affinity=info['vp'][1]
+                )
+                atom._event_emitter = self.event_emitter
+                atom._organism_id = self.organism_id
+                self.atoms[number_word] = atom
+                self._concept_order.append(number_word)
+                orientation_count += 1
+        
+        # Colors - perceptual anchors
+        for color, info in self.COLORS.items():
+            if color not in self.atoms:
+                atom = LinguisticAtom(
+                    concept_id=color,
+                    strength=0.4 + np.random.uniform(-0.05, 0.05),
+                    source='foundational_orientation',
+                    semantic_frame=info['frame'],
+                    abstraction_level=info['level'],
+                    acquisition_time=current_time,
+                    vp_vitality_affinity=info['vp'][0],
+                    vp_pleasure_affinity=info['vp'][1]
+                )
+                atom._event_emitter = self.event_emitter
+                atom._organism_id = self.organism_id
+                self.atoms[color] = atom
+                self._concept_order.append(color)
+                orientation_count += 1
+        
+        if orientation_count > 0:
+            logger.debug(f"[ATOMIC_LANG] Organism {self.organism_id}: Added {orientation_count} foundational orientation concepts")
     
     def _add_innate_concept(self, word: str, info: dict, current_time: float, 
                            source: str, base_strength: float):
-        """Helper to add an innate concept atom."""
+        """Helper to add an innate concept atom with personal magnetism system."""
         vp = info.get('vp', (0.5, 0.5))
+        
+        # Determine semantic frame - check if it's an action head
+        frame = info.get('frame', 'unknown')
+        if word in self.ACTION_HEADS:
+            frame = 'action_head'
+        
+        # ═══════════════════════════════════════════════════════════════
+        # PERSONAL MAGNETISM SYSTEM - Coax, Don't Trap!
+        #
+        # Set BASE magnetism (starting point) - but personal magnetism
+        # will EVOLVE based on this organism's outcomes!
+        #
+        # Action heads start HIGH but can decrease if they hurt the organism.
+        # Questions start HIGH because curiosity should beget curiosity.
+        # Regular words start NEUTRAL and can go either direction.
+        # ═══════════════════════════════════════════════════════════════
+        if word in self.ACTION_HEADS:
+            base_mag = 0.9  # Action heads START attractive (but can change!)
+        elif frame == 'question' or word in ['why', 'how', 'what', 'where', 'when', 'who']:
+            base_mag = 0.85  # Questions draw curious minds
+        elif word in self.GOLDEN_RECORD_CONCEPTS:
+            base_mag = 0.7  # Golden Record concepts are interesting
+        elif frame in ['universal', 'relationship']:
+            base_mag = 0.65  # Social/universal concepts moderately magnetic
+        else:
+            base_mag = info.get('magnetism', 0.5)  # Default or explicit magnetism
+        
         atom = LinguisticAtom(
             concept_id=word,
             strength=base_strength + np.random.uniform(-0.1, 0.1),
             source=source,
-            semantic_frame=info.get('frame', 'unknown'),
+            semantic_frame=frame,
             abstraction_level=info.get('level', 0),
             acquisition_time=current_time,
             vp_vitality_affinity=vp[0] if isinstance(vp, (list, tuple)) else 0.5,
-            vp_pleasure_affinity=vp[1] if isinstance(vp, (list, tuple)) else 0.5
+            vp_pleasure_affinity=vp[1] if isinstance(vp, (list, tuple)) else 0.5,
+            base_magnetism=base_mag,  # Starting point
+            curiosity_magnetism=base_mag  # Personal magnetism starts at base (will evolve!)
         )
         atom._event_emitter = self.event_emitter
         atom._organism_id = self.organism_id
         self.atoms[word] = atom
         self._concept_order.append(word)
+    
+    def get_action_head(self, word: str) -> Optional[str]:
+        """
+        Get the action head for a word (if it's an action head itself).
+        
+        With the new foundational orientation system, we don't have hardcoded
+        synonyms. This now just returns the word if it's an action head, else None.
+        Organisms learn action-word associations through experience, not hardcoding.
+        
+        Returns:
+            The action head if word is one, else None
+        """
+        return word if word in self.ACTION_HEADS else None
+    
+    def is_action_word(self, word: str) -> bool:
+        """Check if a word is an action head."""
+        return word in self.ACTION_HEADS
+    
+    def get_high_magnetism_concepts(self, threshold: float = 0.7) -> List[str]:
+        """
+        Get concepts with high curiosity magnetism.
+        
+        These are the concepts that naturally attract curious exploration -
+        action heads, questions, Golden Record concepts, etc.
+        
+        Args:
+            threshold: Minimum magnetism level (default 0.7)
+            
+        Returns:
+            List of concept IDs with magnetism >= threshold
+        """
+        return [
+            cid for cid, atom in self.atoms.items()
+            if atom.curiosity_magnetism >= threshold
+        ]
+    
+    def update_magnetism_from_action(self, active_concepts: List[str], outcome: float, 
+                                     action_type: str = "", reason: str = ""):
+        """
+        Update personal magnetism for concepts that were active during an action.
+        
+        THIS IS THE CORE LEARNING MECHANISM!
+        
+        When an organism takes an action while thinking about certain concepts,
+        the outcome of that action shapes their future relationship with those concepts.
+        
+        Good outcome → increased magnetism (want to think about this more)
+        Bad outcome → decreased magnetism (learn to avoid this thought pattern)
+        
+        Args:
+            active_concepts: List of concept IDs that were "active" during action
+            outcome: Result of the action (-1 to +1)
+            action_type: Type of action taken (for context)
+            reason: Why this outcome happened (for causation tracking)
+        """
+        for concept_id in active_concepts:
+            if concept_id in self.atoms:
+                self.atoms[concept_id].update_magnetism_from_outcome(
+                    outcome, 
+                    reason=f"{action_type}: {reason}" if action_type else reason
+                )
+    
+    def decay_all_satiation(self, decay_amount: float = 0.02):
+        """
+        Decay satiation for all concepts - let them become "fresh" again.
+        
+        Call this periodically (e.g., each simulation step) to allow
+        organisms to rediscover concepts they've become bored with.
+        
+        Args:
+            decay_amount: How much satiation to decay (default 0.02)
+        """
+        for atom in self.atoms.values():
+            atom.decay_satiation(decay_amount)
+    
+    def get_magnetism_divergence(self) -> Dict[str, float]:
+        """
+        Get how much each concept's personal magnetism has diverged from base.
+        
+        Useful for understanding what the organism has LEARNED:
+        - Positive divergence = they like this more than default
+        - Negative divergence = they've learned to avoid this
+        
+        Returns:
+            Dict mapping concept_id to (personal - base) magnetism
+        """
+        divergence = {}
+        for cid, atom in self.atoms.items():
+            div = atom.curiosity_magnetism - atom.base_magnetism
+            if abs(div) > 0.05:  # Only report significant divergence
+                divergence[cid] = div
+        return divergence
+    
+    def get_learned_preferences(self) -> Dict[str, Dict]:
+        """
+        Get summary of what this organism has learned to prefer/avoid.
+        
+        Returns:
+            Dict with 'attracted_to' and 'avoiding' lists
+        """
+        attracted = []
+        avoiding = []
+        
+        for cid, atom in self.atoms.items():
+            div = atom.curiosity_magnetism - atom.base_magnetism
+            avg_outcome = sum(atom.outcome_history) / len(atom.outcome_history) if atom.outcome_history else 0
+            
+            if div > 0.1 or (atom.outcome_history and avg_outcome > 0.3):
+                attracted.append({
+                    'concept': cid,
+                    'magnetism': atom.curiosity_magnetism,
+                    'divergence': div,
+                    'avg_outcome': avg_outcome
+                })
+            elif div < -0.1 or (atom.outcome_history and avg_outcome < -0.3):
+                avoiding.append({
+                    'concept': cid,
+                    'magnetism': atom.curiosity_magnetism,
+                    'divergence': div,
+                    'avg_outcome': avg_outcome
+                })
+        
+        # Sort by strength of preference
+        attracted.sort(key=lambda x: x['magnetism'], reverse=True)
+        avoiding.sort(key=lambda x: x['magnetism'])
+        
+        return {
+            'attracted_to': attracted[:10],  # Top 10 attractions
+            'avoiding': avoiding[:10]  # Top 10 avoidances
+        }
 
     
     def acquire_concept(self, concept_id: str, source: str, semantic_frame: str = 'unknown',
@@ -894,6 +1522,9 @@ class AtomicLanguageSystem:
                 word_scores[word] = word_scores.get(word, 0.0) + sim * 0.8
         
         # Step 3: Apply trait-based filtering/boosting
+        # Calculate skepticism from curiosity (they're inversely related)
+        skepticism = 1.0 - curiosity
+        
         for word in list(word_scores.keys()):
             if word not in self.atoms:
                 continue
@@ -913,21 +1544,69 @@ class AtomicLanguageSystem:
             if curiosity > 0.5 and atom.usage_count < 5:
                 word_scores[word] *= (1.0 + (curiosity - 0.5) * 0.4)  # Up to 20% bonus
             
-            # Skepticism (inverse curiosity): prefer well-established words
-            skepticism = 1.0 - curiosity
-            if skepticism > 0.5 and atom.usage_count > 10:
-                word_scores[word] *= (1.0 + (skepticism - 0.5) * 0.3)
+            # ═══════════════════════════════════════════════════════════════
+            # PERSONAL MAGNETISM - Coax, Don't Trap!
+            # 
+            # Uses get_effective_magnetism() which considers:
+            # 1. Personal magnetism (evolved from outcomes)
+            # 2. Skepticism (high skepticism = resistant to magnetism)
+            # 3. Satiation (overused concepts lose appeal)
+            # 4. Outcome history (bad outcomes = learned avoidance)
+            #
+            # This is GENUINE learning, not Pied Piper manipulation.
+            # Organisms can and WILL diverge from base magnetism!
+            # ═══════════════════════════════════════════════════════════════
+            if curiosity > 0.2:
+                # Get EFFECTIVE magnetism considering skepticism, satiation, outcomes
+                effective_magnetism = atom.get_effective_magnetism(skepticism)
+                
+                # Magnetism bonus scales with curiosity and EFFECTIVE (not raw) magnetism
+                # This means skeptical organisms get much smaller bonuses
+                # And concepts with bad outcome history get reduced attraction
+                magnetism_bonus = effective_magnetism * curiosity * 0.5
+                word_scores[word] *= (1.0 + magnetism_bonus)
+                
+                # Update satiation (this concept was considered)
+                atom.update_satiation()
+            
+            # Skepticism defense: prefer well-established, proven words
+            if skepticism > 0.4 and atom.usage_count > 10:
+                # Check outcome history - skeptics trust concepts with good track records
+                if atom.outcome_history:
+                    avg_outcome = sum(atom.outcome_history) / len(atom.outcome_history)
+                    if avg_outcome > 0:
+                        # Good track record + high skepticism = trust this word
+                        word_scores[word] *= (1.0 + skepticism * avg_outcome * 0.4)
+                    elif avg_outcome < -0.3:
+                        # Bad track record + high skepticism = AVOID this word
+                        word_scores[word] *= (1.0 + avg_outcome * skepticism * 0.5)
+                else:
+                    # No track record, slight boost for familiarity
+                    word_scores[word] *= (1.0 + (skepticism - 0.4) * 0.2)
         
-        # Step 4: Exploration - random word injection
+        # Step 4: Exploration - EFFECTIVE magnetism-weighted random word injection
+        # Concepts organisms have learned to like are more likely to be "stumbled upon"
         if exploration_rate > 0 and len(self.atoms) > 0:
             num_random = max(1, int(top_k * exploration_rate))
             all_words = list(self.atoms.keys())
+            
+            # Weight by EFFECTIVE magnetism (considers personal history!)
+            magnetism_weights = np.array([
+                self.atoms[w].get_effective_magnetism(skepticism) for w in all_words
+            ])
+            # Add small epsilon to avoid division by zero
+            magnetism_weights = magnetism_weights + 0.01
+            # Normalize to probability distribution
+            magnetism_probs = magnetism_weights / magnetism_weights.sum()
+            
             for _ in range(num_random):
                 if np.random.random() < exploration_rate:
-                    random_word = np.random.choice(all_words)
+                    # Personal-magnetism-weighted random selection
+                    random_word = np.random.choice(all_words, p=magnetism_probs)
                     if random_word not in word_scores:
-                        # Random words get base score scaled by exploration
-                        word_scores[random_word] = 0.3 * exploration_rate
+                        # Score based on effective magnetism
+                        eff_mag = self.atoms[random_word].get_effective_magnetism(skepticism)
+                        word_scores[random_word] = 0.3 * exploration_rate * (0.5 + eff_mag)
         
         # Step 5: Sort and return
         sorted_results = sorted(word_scores.items(), key=lambda x: x[1], reverse=True)
