@@ -180,7 +180,7 @@ def create_brain(config: Dict[str, Any], silent: bool = False):
         _brain_creation_counter['logged_config'] = True
     
     brain = OrganismBrain(
-        input_dim=brain_config.get('input_dim', 24),
+        input_dim=brain_config.get('input_dim', 25),
         hidden_dim=brain_config.get('hidden_dim', 64),
         output_dim=brain_config.get('output_dim', 6),
         activation=brain_config.get('activation', 'relu'),
@@ -294,7 +294,7 @@ def validate_architecture_config(config: Dict[str, Any], strict: bool = False) -
     # Check each architecture parameter
     # NOTE: Expected values should match config.json defaults
     checks = [
-        ('neural.brain.input_dim', brain_config.get('input_dim'), 24),
+        ('neural.brain.input_dim', brain_config.get('input_dim'), 25),
         ('neural.brain.hidden_dim', brain_config.get('hidden_dim'), 64),
         ('neural.brain.output_dim', brain_config.get('output_dim'), 6),
         ('neural.brain.vocab_size', brain_config.get('vocab_size'), 20000),  # Updated to match config.json

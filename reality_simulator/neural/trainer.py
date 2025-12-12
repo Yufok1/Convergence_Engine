@@ -269,7 +269,7 @@ class NeuralTrainer:
         if self.concept_system_enabled and CONCEPT_SYSTEM_AVAILABLE:
             try:
                 self.concept_system = ConceptSystem(
-                    state_dim=config.get('brain', {}).get('input_dim', 24),
+                    state_dim=config.get('brain', {}).get('input_dim', 25),
                     embed_dim=concept_config.get('embed_dim', 64),
                     device=str(self.device)
                 )
@@ -988,7 +988,7 @@ class NeuralTrainer:
             'rl_loss_weight': self.rl_loss_weight,
             'language_loss_weight': self.language_loss_weight,
             'device': str(self.device),
-            'input_dim': self.config.get('brain', {}).get('input_dim', 24),
+            'input_dim': self.config.get('brain', {}).get('input_dim', 25),
             'hidden_dim': self.config.get('brain', {}).get('hidden_dim', 64),
             'output_dim': self.config.get('brain', {}).get('output_dim', 5),
             'vocab_size': self.config.get('language_model', {}).get('vocab_size', 128),
@@ -2595,7 +2595,7 @@ class NeuralTrainer:
                     'batch_size': self.batch_size,
                     'learning_rate': self.learning_rate,
                     'gamma': self.gamma,
-                    'input_dim': self.config.get('brain', {}).get('input_dim', 24),
+                    'input_dim': self.config.get('brain', {}).get('input_dim', 25),
                     'hidden_dim': self.config.get('brain', {}).get('hidden_dim', 128),
                     'output_dim': self.config.get('brain', {}).get('output_dim', 6),
                 },
@@ -2685,8 +2685,8 @@ class NeuralTrainer:
                 
                 # Check architecture compatibility
                 saved_config = result['metadata'].get('config', {})
-                current_input_dim = self.config.get('brain', {}).get('input_dim', 24)
-                saved_input_dim = saved_config.get('input_dim', 24)
+                current_input_dim = self.config.get('brain', {}).get('input_dim', 25)
+                saved_input_dim = saved_config.get('input_dim', 25)
                 
                 if current_input_dim != saved_input_dim:
                     msg = f"Architecture mismatch: saved input_dim={saved_input_dim}, current={current_input_dim}"

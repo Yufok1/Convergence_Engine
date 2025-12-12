@@ -138,7 +138,7 @@ class NeuralOrganism(Organism):
                     # Single parent: copy weights directly
                     from .brain import OrganismBrain
                     self.brain = OrganismBrain(
-                        input_dim=brain_config.get('input_dim', 24),
+                        input_dim=brain_config.get('input_dim', 25),
                         hidden_dim=brain_config.get('hidden_dim', 64),
                         output_dim=brain_config.get('output_dim', 6),
                         activation=brain_config.get('activation', 'relu'),
@@ -506,7 +506,7 @@ class NeuralOrganism(Organism):
         features.append(illum_val)
         
         # Ensure we have exactly input_dim features
-        input_dim = self.config.get('neural', {}).get('brain', {}).get('input_dim', 24)
+        input_dim = self.config.get('neural', {}).get('brain', {}).get('input_dim', 25)
         feature_array = np.array(features[:input_dim], dtype=np.float32)
         
         # Pad or truncate to match input_dim
@@ -1687,7 +1687,7 @@ class NeuralOrganism(Organism):
         # Get device from brain model (CPU or CUDA)
         device = next(self.brain.parameters()).device
         # Get correct input dimension from config
-        input_dim = self.config.get('neural', {}).get('brain', {}).get('input_dim', 24)
+        input_dim = self.config.get('neural', {}).get('brain', {}).get('input_dim', 25)
         self.brain.eval()
         
         # Early stopping for UNK sequences
@@ -2321,7 +2321,7 @@ class NeuralOrganism(Organism):
             neural_config = self.config.get('neural', {})
             brain_config = neural_config.get('brain', {})
             new_brain = OrganismBrain(
-                input_dim=brain_config.get('input_dim', 24),
+                input_dim=brain_config.get('input_dim', 25),
                 hidden_dim=brain_config.get('hidden_dim', 64),
                 output_dim=brain_config.get('output_dim', 6),
                 activation=brain_config.get('activation', 'relu'),

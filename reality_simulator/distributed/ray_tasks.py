@@ -399,7 +399,7 @@ def train_organism_local(
         from reality_simulator.neural.brain import OrganismBrain
         
         # Reconstruct brain from weights
-        input_dim = training_config.get('input_dim', 24)
+        input_dim = training_config.get('input_dim', 25)
         hidden_dim = training_config.get('hidden_dim', 64)
         output_dim = training_config.get('output_dim', 5)
         vocab_size = training_config.get('vocab_size', 128)

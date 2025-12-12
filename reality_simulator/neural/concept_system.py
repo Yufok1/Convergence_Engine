@@ -729,7 +729,7 @@ def create_concept_system(config: Dict[str, Any], device: str = 'cpu') -> Option
         return None
     
     return ConceptSystem(
-        state_dim=config.get('neural', {}).get('brain', {}).get('input_dim', 24),
+        state_dim=config.get('neural', {}).get('brain', {}).get('input_dim', 25),
         embed_dim=concept_config.get('embed_dim', 64),
         device=device
     )
