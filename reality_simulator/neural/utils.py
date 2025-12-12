@@ -158,7 +158,7 @@ def create_brain(config: Dict[str, Any], silent: bool = False):
     vocab_size = language_config.get('vocabulary', {}).get('max_size', 20000)  # Default matches config.json
     use_attention = language_config.get('attention', {}).get('enabled', False)
     num_attention_heads = language_config.get('attention', {}).get('num_heads', 4)
-    attention_dim = language_config.get('attention', {}).get('attention_dim', 64)
+    attention_dim = language_config.get('attention', {}).get('attention_dim', 32)  # Default matches config.json
     max_sequence_length = language_config.get('sequence', {}).get('max_length', 128)
     
     # Extract concept head settings (RCUS)

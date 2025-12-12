@@ -193,7 +193,7 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
     """
     
     def __init__(self, 
-                 input_dim: int = 24,
+                 input_dim: int = 25,  # Default matches config.json neural.brain.input_dim
                  hidden_dim: int = 64,
                  output_dim: int = 6,
                  activation: str = 'relu',
@@ -201,7 +201,7 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
                  # Language model parameters
                  use_attention: bool = False,
                  num_attention_heads: int = 4,
-                 attention_dim: int = 64,
+                 attention_dim: int = 32,  # Default matches config.json neural.language_model.attention.attention_dim
                  max_sequence_length: int = 32,
                  vocab_size: int = 20000,  # Default matches config.json neural.language_model.vocabulary.max_size
                  use_language_head: bool = False,
