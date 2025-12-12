@@ -1314,6 +1314,14 @@ class SphereArena:
                 'buffer_size': buffer_size,
                 'reason': 'proximity' if abs(reward) < 0.3 else ('catch' if reward > 0 else 'miss'),
             })
+            
+            # TOKEN TUMBLER - Generate tokens for arena experiences  
+            # This links physical arena actions to language model training
+            if hasattr(self.agent, 'organisms') and organism_idx < len(self.agent.organisms):
+                organism = self.agent.organisms[organism_idx]
+                if hasattr(organism, 'tumble_action_tokens'):
+                    context = 'arena_catch' if reward > 0.5 else 'arena_near' if reward > 0 else 'arena_miss' if reward < 0 else 'arena_step'
+                    organism.tumble_action_tokens(action=action, reward=reward, context=context)
     
     def _do_training_step(self):
         """

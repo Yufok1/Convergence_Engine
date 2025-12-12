@@ -2107,6 +2107,159 @@ class LinguisticKnowledgeWeb:
         
         return influenced
     
+    # ═══════════════════════════════════════════════════════════════════════════
+    # VECTOR QUERY + ASSOCIATIVE REASONING
+    # ═══════════════════════════════════════════════════════════════════════════
+    
+    def vector_query(self,
+                     context_memory: Any,
+                     query_word: str = None,
+                     query_embedding: 'np.ndarray' = None,
+                     organism_state: 'np.ndarray' = None,
+                     top_k: int = 10,
+                     expand_associations: bool = True,
+                     expansion_depth: int = 1,
+                     min_relation_strength: float = 0.3) -> List[Tuple[str, float]]:
+        """
+        VECTOR RETRIEVAL + ASSOCIATIVE REASONING for semantic word selection.
+        
+        This is the main entry point for organisms to retrieve semantically
+        relevant words instead of relying on token ID position.
+        
+        Pipeline:
+        1. Vector retrieval: Find words similar to query/state via embeddings
+        2. Associative expansion: Expand results using knowledge web relations
+        3. Scoring: Combine embedding similarity + relation strength
+        
+        Args:
+            context_memory: ContextMemory instance with word_embedding
+            query_word: Optional word to find similar words for
+            query_embedding: Optional direct embedding vector
+            organism_state: Optional organism state for state-based retrieval
+            top_k: Number of words to return
+            expand_associations: Whether to expand via knowledge web relations
+            expansion_depth: How many hops to expand (1 = direct relations)
+            min_relation_strength: Minimum strength for relation expansion
+            
+        Returns:
+            List of (word, score) tuples sorted by relevance
+        """
+        import numpy as np
+        
+        word_scores: Dict[str, float] = {}
+        
+        # Step 1: Vector retrieval from context_memory embeddings
+        if hasattr(context_memory, 'find_similar_words'):
+            if query_word or query_embedding is not None:
+                similar = context_memory.find_similar_words(
+                    query_word=query_word,
+                    query_embedding=query_embedding,
+                    top_k=top_k * 2,  # Get more for expansion filtering
+                    min_similarity=0.1
+                )
+                for word, sim in similar:
+                    word_scores[word] = word_scores.get(word, 0.0) + sim
+            
+            if organism_state is not None and hasattr(context_memory, 'find_words_near_state'):
+                state_words = context_memory.find_words_near_state(
+                    organism_state=organism_state,
+                    top_k=top_k * 2
+                )
+                for word, sim in state_words:
+                    word_scores[word] = word_scores.get(word, 0.0) + sim * 0.8  # Slightly lower weight
+        
+        # Step 2: Associative expansion via knowledge web relations
+        if expand_associations and len(word_scores) > 0:
+            seed_words = list(word_scores.keys())[:top_k]  # Top seeds for expansion
+            
+            for depth in range(expansion_depth):
+                new_words = {}
+                for seed_word in seed_words:
+                    # Get related words from knowledge web
+                    related = self.get_similar_words(seed_word, min_strength=min_relation_strength)
+                    for rel_word in related[:5]:  # Limit expansion per word
+                        if rel_word not in word_scores:
+                            # Score based on seed score * relation strength
+                            relations = self.get_relations(seed_word)
+                            rel_strength = 0.5  # Default
+                            for r in relations:
+                                if r.target == rel_word or r.source == rel_word:
+                                    rel_strength = max(rel_strength, r.strength)
+                                    break
+                            
+                            expansion_score = word_scores.get(seed_word, 0.5) * rel_strength * (0.7 ** (depth + 1))
+                            new_words[rel_word] = max(new_words.get(rel_word, 0.0), expansion_score)
+                
+                # Add expanded words
+                for word, score in new_words.items():
+                    word_scores[word] = word_scores.get(word, 0.0) + score
+                
+                # Update seeds for next depth
+                seed_words = list(new_words.keys())[:top_k]
+        
+        # Step 3: Sort and return top-k
+        sorted_words = sorted(word_scores.items(), key=lambda x: x[1], reverse=True)
+        return sorted_words[:top_k]
+    
+    def get_contextual_vocabulary(self,
+                                  context_memory: Any,
+                                  organism_state: 'np.ndarray',
+                                  organism_action: int = None,
+                                  network_state: Dict[str, Any] = None,
+                                  breath_state: Dict[str, Any] = None,
+                                  max_words: int = 50) -> List[str]:
+        """
+        Get a contextually-appropriate vocabulary subset for an organism.
+        
+        Combines:
+        1. Situational awareness (action/state-based words)
+        2. Vector retrieval (embedding-based similarity)
+        3. Associative reasoning (knowledge web expansion)
+        
+        Use this to BUILD the organism's vocab in generate_tokens() with
+        semantically relevant words ordered by relevance score.
+        
+        Args:
+            context_memory: ContextMemory instance
+            organism_state: Full 18-feature state vector
+            organism_action: Current action (0-5)
+            network_state: Network-level state dict
+            breath_state: Breath engine state dict
+            max_words: Maximum words to return
+            
+        Returns:
+            List of words ordered by contextual relevance (best first)
+        """
+        word_scores: Dict[str, float] = {}
+        
+        # 1. Situational awareness (existing method)
+        situational = self.get_situational_awareness(
+            organism_state=organism_state,
+            organism_action=organism_action,
+            network_state=network_state,
+            breath_state=breath_state,
+            context_memory=context_memory
+        )
+        for i, word in enumerate(situational):
+            # Higher score for earlier (more relevant) situational words
+            word_scores[word] = word_scores.get(word, 0.0) + 1.0 - (i * 0.02)
+        
+        # 2. Vector retrieval + associative expansion
+        if organism_state is not None:
+            vector_results = self.vector_query(
+                context_memory=context_memory,
+                organism_state=organism_state,
+                top_k=max_words,
+                expand_associations=True,
+                expansion_depth=1
+            )
+            for word, score in vector_results:
+                word_scores[word] = word_scores.get(word, 0.0) + score * 0.8
+        
+        # 3. Sort by combined score
+        sorted_words = sorted(word_scores.items(), key=lambda x: x[1], reverse=True)
+        return [word for word, _ in sorted_words[:max_words]]
+    
     def save_to_file(self, filepath: str):
         """Save knowledge web to JSON file."""
         data = {

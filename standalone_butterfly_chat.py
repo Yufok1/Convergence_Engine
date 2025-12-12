@@ -145,6 +145,7 @@ class CapsuleOrganism:
     Represents a neural organism from an exported capsule.
     
     Aligned with NeuralOrganism interface for generate_tokens().
+    Now includes FULL AtomicLanguageSystem and Token Tumbler support.
     """
     organism_id: str
     fitness: float
@@ -158,13 +159,89 @@ class CapsuleOrganism:
     # Runtime state
     experience_buffer: List = field(default_factory=list)
     
+    # 🧬 FULL ATOMIC LANGUAGE SYSTEM (not just JSON dict!)
+    atomic_language: Any = None  # AtomicLanguageSystem instance
+    
+    # 🎰 TOKEN TUMBLER support
+    token_sequence: Any = None  # deque for token sequences
+    
+    def __post_init__(self):
+        """Initialize token sequence deque after dataclass creation."""
+        from collections import deque
+        if self.token_sequence is None:
+            self.token_sequence = deque(maxlen=128)
+    
+    def tumble_action_tokens(self, action: int, reward: float, context: str = 'step') -> None:
+        """
+        🎰 TOKEN TUMBLER: Generate tokens from action/reward.
+        
+        Creates learnable token sequences that correlate with successful behaviors.
+        Aligned with NeuralOrganism.tumble_action_tokens().
+        """
+        from collections import deque
+        if self.token_sequence is None:
+            self.token_sequence = deque(maxlen=128)
+        
+        # Token vocabulary (matches neural_organism.py and agent_compiler.py)
+        ACTION_BASE = 100       # 100-109: Action tokens
+        REWARD_BASE = 110       # 110-119: Reward bins  
+        CONTEXT_TOKENS = {
+            'step': 120,
+            'catch': 121,
+            'miss': 122,
+            'move_toward': 123,
+            'move_away': 124,
+            'social': 125,
+            'learn_concept': 126,
+            'form_association': 127,
+            'chat_response': 128,
+            'idle': 129,
+        }
+        
+        # Emit context token first (what happened)
+        ctx_token = CONTEXT_TOKENS.get(context, 120)
+        self.token_sequence.append(ctx_token)
+        
+        # Emit action token (what organism did)
+        self.token_sequence.append(ACTION_BASE + min(9, max(0, action)))
+        
+        # Emit reward token (how it went)
+        reward_normalized = (reward + 1.0) / 2.0  # -1..1 -> 0..1
+        reward_bin = int(max(0, min(0.999, reward_normalized)) * 10)  # 0-9
+        self.token_sequence.append(REWARD_BASE + reward_bin)
+    
+    def acquire_concept(self, concept_id: str, source: str = 'observed', 
+                       reason: str = 'unknown') -> bool:
+        """Acquire a new concept - aligned with NeuralOrganism."""
+        if self.atomic_language is None:
+            return False
+        was_new = concept_id not in self.atomic_language.atoms
+        self.atomic_language.acquire_concept(concept_id, source, reason=reason)
+        
+        # Generate tokens for learning events (TOKEN TUMBLER)
+        if was_new:
+            source_reward = {'observed': 0.3, 'taught': 0.5, 'discovered': 0.7}
+            reward = source_reward.get(source, 0.3)
+            self.tumble_action_tokens(action=5, reward=reward, context='learn_concept')
+        
+        return was_new
+    
+    def form_concept_association(self, source: str, target: str, 
+                                strength: float, reason: str) -> None:
+        """Form association between concepts - aligned with NeuralOrganism."""
+        if self.atomic_language is not None:
+            self.atomic_language.form_association(source, target, strength, reason)
+            reward = max(0.2, abs(strength) * 0.5)
+            self.tumble_action_tokens(action=6, reward=reward, context='form_association')
+    
     def to_dict(self) -> Dict[str, Any]:
         return {
             'organism_id': self.organism_id,
             'fitness': self.fitness,
             'personality': self.personality,
             'behavioral_tendencies': self.behavioral_tendencies,
-            'has_language_head': self.has_language_head
+            'has_language_head': self.has_language_head,
+            'has_atomic_language': self.atomic_language is not None
         }
 
 
@@ -592,7 +669,7 @@ class StandaloneButterflyChat:
         return [w for w, s in related[:10]]  # Top 10
 
     def _create_organisms(self) -> Dict[str, CapsuleOrganism]:
-        """Create organism objects from metadata."""
+        """Create organism objects from metadata with FULL AtomicLanguageSystem."""
         organisms = {}
         
         # Try different metadata structures
@@ -607,6 +684,9 @@ class StandaloneButterflyChat:
         
         # Debug info
         config_lang = self.config.get('has_language_head', False) if self.config else False
+        
+        # 🧬 Load per-organism atomic language data
+        atomic_data_map = self._load_atomic_language_data()
         
         for idx, member_data in enumerate(members):
             org_id = member_data.get('organism_id', f'org_{idx}')
@@ -629,12 +709,106 @@ class StandaloneButterflyChat:
                 has_language_head=member_has_lang,
                 brain_index=idx
             )
+            
+            # 🧬 Attach AtomicLanguageSystem if available
+            if org_id in atomic_data_map:
+                organism.atomic_language = atomic_data_map[org_id]
+                print(f"    [OK] Loaded AtomicLanguageSystem for {org_id}: {len(organism.atomic_language.atoms)} atoms")
+            elif idx < len(atomic_data_map):
+                # Try by index if org_id doesn't match
+                key = list(atomic_data_map.keys())[idx]
+                organism.atomic_language = atomic_data_map[key]
+                print(f"    [OK] Loaded AtomicLanguageSystem for {org_id} (via index {idx}): {len(organism.atomic_language.atoms)} atoms")
+            
             organisms[org_id] = organism
         
         if organisms:
-            print(f"  [OK] Created {len(organisms)} organisms from metadata")
+            loaded_count = sum(1 for o in organisms.values() if o.atomic_language is not None)
+            print(f"  [OK] Created {len(organisms)} organisms ({loaded_count} with AtomicLanguageSystem)")
         else:
             print(f"  [!] No organisms found in metadata")
+        
+        return organisms
+    
+    def _load_atomic_language_data(self) -> Dict[str, Any]:
+        """
+        🧬 Load AtomicLanguageSystem instances from exported data.
+        
+        Tries multiple export formats:
+        1. atomic_languages/ directory (per-organism JSON files)
+        2. atomic_language.json (single file with all organisms)
+        3. context_memory.json organism_sequences (fallback)
+        """
+        atomic_systems = {}
+        
+        # Try importing AtomicLanguageSystem
+        try:
+            from reality_simulator.language.atomic_language import AtomicLanguageSystem
+        except ImportError:
+            print("  [!] Cannot import AtomicLanguageSystem - atomic language features disabled")
+            return {}
+        
+        # Method 1: Per-organism files in atomic_languages/ directory
+        atomic_dir = self.export_dir / 'atomic_languages'
+        if atomic_dir.exists():
+            for json_file in atomic_dir.glob('*.json'):
+                try:
+                    with open(json_file, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                    org_id = data.get('organism_id', json_file.stem)
+                    atomic_systems[org_id] = AtomicLanguageSystem.from_dict(data)
+                except Exception as e:
+                    print(f"  [!] Failed to load {json_file.name}: {e}")
+            if atomic_systems:
+                print(f"  [OK] Loaded {len(atomic_systems)} AtomicLanguageSystems from atomic_languages/")
+                return atomic_systems
+        
+        # Method 2: Single atomic_language.json file
+        atomic_file = self.export_dir / 'atomic_language.json'
+        if atomic_file.exists():
+            try:
+                with open(atomic_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                
+                # Check if it's a single system or multiple
+                if 'organism_id' in data:
+                    # Single organism format
+                    org_id = data['organism_id']
+                    atomic_systems[org_id] = AtomicLanguageSystem.from_dict(data)
+                    print(f"  [OK] Loaded AtomicLanguageSystem from atomic_language.json")
+                elif 'organisms' in data:
+                    # Multiple organisms format
+                    for org_id, org_data in data['organisms'].items():
+                        org_data['organism_id'] = org_id
+                        atomic_systems[org_id] = AtomicLanguageSystem.from_dict(org_data)
+                    print(f"  [OK] Loaded {len(atomic_systems)} AtomicLanguageSystems from atomic_language.json")
+                elif isinstance(data, list):
+                    # List format (indexed by position)
+                    for idx, org_data in enumerate(data):
+                        org_id = org_data.get('organism_id', f'org_{idx}')
+                        atomic_systems[org_id] = AtomicLanguageSystem.from_dict(org_data)
+                    print(f"  [OK] Loaded {len(atomic_systems)} AtomicLanguageSystems from atomic_language.json (list)")
+                
+                return atomic_systems
+            except Exception as e:
+                print(f"  [!] Failed to load atomic_language.json: {e}")
+        
+        # Method 3: Create fresh AtomicLanguageSystems (fallback)
+        # They'll be empty but functional
+        members = self.metadata.get('ensemble', {}).get('members', [])
+        if not members:
+            members = self.metadata.get('member_profiles', [])
+        if not members:
+            members = self.metadata.get('brain_configs', [])
+        
+        for idx, member_data in enumerate(members):
+            org_id = member_data.get('organism_id', f'org_{idx}')
+            atomic_systems[org_id] = AtomicLanguageSystem(organism_id=org_id)
+        
+        if atomic_systems:
+            print(f"  [!] Created {len(atomic_systems)} fresh AtomicLanguageSystems (no export found)")
+        
+        return atomic_systems
         
         return organisms
     
@@ -883,6 +1057,46 @@ class StandaloneButterflyChat:
                                 if imp_token not in recent_tokens:
                                     logits[imp_token] += tfidf_boost
                     
+                    # ═══════════════════════════════════════════════════════
+                    # 🧬 ATOMIC LANGUAGE TRAIT-DRIVEN WORD SELECTION
+                    # Use organism's AtomicLanguageSystem for trait-modulated
+                    # word selection based on curiosity, aggression, social_affinity
+                    # ═══════════════════════════════════════════════════════
+                    if organism.atomic_language is not None:
+                        # Get traits from behavioral_tendencies or defaults
+                        traits = organism.behavioral_tendencies
+                        curiosity = traits.get('curiosity', 0.5)
+                        aggression = traits.get('aggression', 0.3)
+                        social_affinity = traits.get('cooperation', traits.get('social_affinity', 0.5))
+                        
+                        # Get last word for context
+                        query_word = None
+                        if generated_tokens:
+                            last_token = generated_tokens[-1]
+                            query_word = self.vocabulary.id_to_word.get(last_token)
+                        
+                        # Query atomic vocabulary with traits
+                        if hasattr(organism.atomic_language, 'query_vocabulary'):
+                            try:
+                                atomic_words = organism.atomic_language.query_vocabulary(
+                                    query_word=query_word,
+                                    organism_state=state.flatten() if len(state.shape) > 1 else state,
+                                    curiosity=curiosity,
+                                    aggression=aggression,
+                                    social_affinity=social_affinity,
+                                    top_k=10
+                                )
+                                
+                                # Boost atomic vocabulary words
+                                atomic_boost = 0.6  # Strong - atomic language is core to organism identity
+                                for atomic_word, score in atomic_words:
+                                    atomic_token = self.vocabulary.word_to_id.get(atomic_word.lower())
+                                    if atomic_token is not None and atomic_token < len(logits):
+                                        if atomic_token not in recent_tokens:
+                                            logits[atomic_token] += atomic_boost * score
+                            except Exception:
+                                pass  # Silent fail - atomic query is enhancement not requirement
+                    
                     # CRITICAL FIX: Check if vocab has real words beyond special tokens
                     # Special tokens are: <PAD>=0, <UNK>=1, <START>=2, <END>=3, <VP_GATE>=4
                     non_special_count = self.vocabulary.vocab_size - 5  # 5 special tokens
@@ -1016,6 +1230,38 @@ class StandaloneButterflyChat:
                         if imp_token is not None and imp_token < len(logits):
                             if imp_token not in recent_tokens:
                                 logits[imp_token] += 0.25
+                
+                # 🧬 ATOMIC LANGUAGE TRAIT-DRIVEN WORD SELECTION (ONNX path)
+                if organism.atomic_language is not None:
+                    traits = organism.behavioral_tendencies
+                    curiosity = traits.get('curiosity', 0.5)
+                    aggression = traits.get('aggression', 0.3)
+                    social_affinity = traits.get('cooperation', traits.get('social_affinity', 0.5))
+                    
+                    query_word = None
+                    if generated_tokens:
+                        last_token = generated_tokens[-1]
+                        query_word = self.vocabulary.id_to_word.get(last_token)
+                    
+                    if hasattr(organism.atomic_language, 'query_vocabulary'):
+                        try:
+                            atomic_words = organism.atomic_language.query_vocabulary(
+                                query_word=query_word,
+                                organism_state=state.flatten() if len(state.shape) > 1 else state,
+                                curiosity=curiosity,
+                                aggression=aggression,
+                                social_affinity=social_affinity,
+                                top_k=10
+                            )
+                            
+                            atomic_boost = 0.6
+                            for atomic_word, score in atomic_words:
+                                atomic_token = self.vocabulary.word_to_id.get(atomic_word.lower())
+                                if atomic_token is not None and atomic_token < len(logits):
+                                    if atomic_token not in recent_tokens:
+                                        logits[atomic_token] += atomic_boost * score
+                        except Exception:
+                            pass
                 
                 # Mask special tokens (0-4)
                 logits[:5] = float('-inf')
@@ -1596,6 +1842,15 @@ class StandaloneButterflyChat:
                     'reward': semantic_reward,
                     'timestamp': time.time()
                 })
+                
+                # 🎰 TOKEN TUMBLER: Generate tokens for chat interactions
+                # This links conversation quality to language model token sequences
+                chat_action = min(5, max(0, int(semantic_reward * 5)))  # 0-5 based on reward
+                organism.tumble_action_tokens(
+                    action=chat_action,
+                    reward=semantic_reward,
+                    context='chat_response'
+                )
                 
                 # Optional: trigger neural training periodically
                 self._maybe_trigger_training(organism, None)

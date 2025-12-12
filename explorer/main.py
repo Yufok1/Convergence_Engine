@@ -9,6 +9,12 @@ import uuid
 import math
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+# Add explorer path to allow relative imports when called from outside
+explorer_path = Path(__file__).parent
+if str(explorer_path) not in sys.path:
+    sys.path.insert(0, str(explorer_path))
+
 from sentinel import Sentinel
 from kernel import Kernel
 from diagnostics import Diagnostics

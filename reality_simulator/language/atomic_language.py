@@ -652,6 +652,263 @@ class AtomicLanguageSystem:
         
         return sorted(associations, key=lambda x: abs(x[1]), reverse=True)
     
+    def get_word_vector(self, word: str, embedding_dim: int = 64) -> Optional[np.ndarray]:
+        """
+        Get a semantic vector for a specific word based on its atomic properties.
+        
+        This is THE ROOT for vector retrieval — embeddings derived directly from
+        the organism's learned atomic structure (strength, associations, VP affinity).
+        
+        Vector components (64-dim default):
+        - [0]: strength (salience)
+        - [1]: usage_count normalized
+        - [2]: abstraction_level
+        - [3]: vp_vitality_affinity
+        - [4]: vp_pleasure_affinity
+        - [5-14]: semantic frame one-hot (10 frames)
+        - [15-64]: association vector (top associations hashed to positions)
+        
+        Args:
+            word: The word/concept to get vector for
+            embedding_dim: Desired vector dimension (default 64)
+            
+        Returns:
+            Numpy array of shape (embedding_dim,) or None if word not in atoms
+        """
+        if word not in self.atoms:
+            return None
+        
+        atom = self.atoms[word]
+        vec = np.zeros(embedding_dim, dtype=np.float32)
+        
+        # Core properties [0-4]
+        vec[0] = atom.strength
+        vec[1] = min(atom.usage_count / 100.0, 1.0)  # Normalize usage
+        vec[2] = atom.abstraction_level / 2.0  # 0, 0.5, or 1.0
+        vec[3] = atom.vp_vitality_affinity
+        vec[4] = atom.vp_pleasure_affinity
+        
+        # Semantic frame one-hot [5-14]
+        frame_map = {
+            'action': 5, 'state': 6, 'quality': 7, 'relationship': 8,
+            'temporal': 9, 'spatial': 10, 'resource': 11, 'unknown': 12,
+            'innate_core': 13, 'innate_extended': 14
+        }
+        frame_idx = frame_map.get(atom.semantic_frame, 12)
+        if frame_idx < embedding_dim:
+            vec[frame_idx] = 1.0
+        
+        # Association vector [15-64]: hash associations into remaining dimensions
+        assoc_start = 15
+        assoc_dim = embedding_dim - assoc_start
+        if assoc_dim > 0 and atom.associations:
+            for target, assoc in atom.associations.items():
+                # Hash target word to position in association subspace
+                hash_idx = hash(target) % assoc_dim
+                vec[assoc_start + hash_idx] += assoc.strength * 0.5
+        
+        # Normalize association subspace
+        assoc_slice = vec[assoc_start:]
+        assoc_norm = np.linalg.norm(assoc_slice)
+        if assoc_norm > 0:
+            vec[assoc_start:] = assoc_slice / assoc_norm
+        
+        return vec
+    
+    def find_similar_words(self, query_word: str, top_k: int = 10, 
+                          min_similarity: float = 0.0) -> List[Tuple[str, float]]:
+        """
+        Find words most similar to query using atomic-derived vectors.
+        
+        This is VECTOR RETRIEVAL rooted in the atomic vocabulary itself.
+        
+        Args:
+            query_word: Word to find similar words for
+            top_k: Number of results
+            min_similarity: Minimum cosine similarity threshold
+            
+        Returns:
+            List of (word, similarity) tuples sorted by similarity descending
+        """
+        query_vec = self.get_word_vector(query_word)
+        if query_vec is None:
+            return []
+        
+        # Normalize query
+        query_norm = np.linalg.norm(query_vec)
+        if query_norm < 1e-8:
+            return []
+        query_vec = query_vec / query_norm
+        
+        results = []
+        for word in self.atoms:
+            if word == query_word:
+                continue
+            
+            word_vec = self.get_word_vector(word)
+            if word_vec is None:
+                continue
+            
+            # Cosine similarity
+            word_norm = np.linalg.norm(word_vec)
+            if word_norm < 1e-8:
+                continue
+            
+            similarity = np.dot(query_vec, word_vec / word_norm)
+            if similarity >= min_similarity:
+                results.append((word, float(similarity)))
+        
+        results.sort(key=lambda x: x[1], reverse=True)
+        return results[:top_k]
+    
+    def find_words_for_state(self, organism_state: np.ndarray, top_k: int = 10) -> List[Tuple[str, float]]:
+        """
+        Find words whose atomic vectors are most similar to organism state.
+        
+        Enables ASSOCIATIVE REASONING: organism state → relevant words.
+        
+        Args:
+            organism_state: Organism's state vector (any dimension, will be projected)
+            top_k: Number of results
+            
+        Returns:
+            List of (word, similarity) tuples
+        """
+        if organism_state is None or len(organism_state) == 0:
+            return []
+        
+        # Project state to 64-dim (truncate or pad)
+        embedding_dim = 64
+        state_vec = np.zeros(embedding_dim, dtype=np.float32)
+        copy_len = min(len(organism_state), embedding_dim)
+        state_vec[:copy_len] = organism_state[:copy_len]
+        
+        # Normalize
+        state_norm = np.linalg.norm(state_vec)
+        if state_norm < 1e-8:
+            return []
+        state_vec = state_vec / state_norm
+        
+        results = []
+        for word in self.atoms:
+            word_vec = self.get_word_vector(word, embedding_dim)
+            if word_vec is None:
+                continue
+            
+            word_norm = np.linalg.norm(word_vec)
+            if word_norm < 1e-8:
+                continue
+            
+            similarity = np.dot(state_vec, word_vec / word_norm)
+            results.append((word, float(similarity)))
+        
+        results.sort(key=lambda x: x[1], reverse=True)
+        return results[:top_k]
+    
+    def query_vocabulary(self, 
+                        query_word: str = None,
+                        organism_state: np.ndarray = None,
+                        curiosity: float = 0.5,
+                        aggression: float = 0.5,
+                        social_affinity: float = 0.5,
+                        exploration_rate: float = 0.1,
+                        top_k: int = 10) -> List[Tuple[str, float]]:
+        """
+        TRAIT-DRIVEN SEMANTIC QUERY: Use organism reasoning traits to guide word retrieval.
+        
+        This is THE QUERY MECHANIC that makes vector search behavioral.
+        
+        How traits affect the search:
+        - curiosity (0-1): Higher = broader search, more associations explored, 
+                          more novel/rare words surfaced
+        - aggression (0-1): Higher = prefer action words, competitive concepts
+                           Lower = prefer state words, passive concepts
+        - social_affinity (0-1): Higher = prefer relationship/cooperation words
+                                Lower = prefer solitary/individual concepts  
+        - exploration_rate (0-1): Random exploration - chance to include random words
+                                 for serendipitous discovery
+        
+        Args:
+            query_word: Seed word to expand from (optional)
+            organism_state: State vector to match (optional)
+            curiosity: Organism's curiosity trait [0-1]
+            aggression: Organism's aggression trait [0-1]
+            social_affinity: Organism's social trait [0-1]
+            exploration_rate: Chance of random exploration [0-1]
+            top_k: Number of results to return
+            
+        Returns:
+            List of (word, score) tuples sorted by trait-adjusted relevance
+        """
+        word_scores: Dict[str, float] = {}
+        
+        # Step 1: Seed from query word (if provided)
+        if query_word and query_word in self.atoms:
+            # Base: similar words
+            similar = self.find_similar_words(query_word, top_k=int(top_k * (1 + curiosity)))
+            for word, sim in similar:
+                word_scores[word] = word_scores.get(word, 0.0) + sim
+            
+            # Curiosity: follow more association chains
+            if curiosity > 0.3:
+                atom = self.atoms[query_word]
+                # More curious = explore more associations
+                num_assoc = int(len(atom.associations) * curiosity)
+                for target, assoc in list(atom.associations.items())[:num_assoc]:
+                    if target in self.atoms:
+                        word_scores[target] = word_scores.get(target, 0.0) + abs(assoc.strength) * curiosity
+                        # High curiosity: follow second-order associations
+                        if curiosity > 0.7 and target in self.atoms:
+                            for t2, a2 in list(self.atoms[target].associations.items())[:3]:
+                                if t2 in self.atoms and t2 != query_word:
+                                    word_scores[t2] = word_scores.get(t2, 0.0) + abs(a2.strength) * curiosity * 0.5
+        
+        # Step 2: Seed from organism state (if provided)
+        if organism_state is not None:
+            state_words = self.find_words_for_state(organism_state, top_k=top_k)
+            for word, sim in state_words:
+                word_scores[word] = word_scores.get(word, 0.0) + sim * 0.8
+        
+        # Step 3: Apply trait-based filtering/boosting
+        for word in list(word_scores.keys()):
+            if word not in self.atoms:
+                continue
+            atom = self.atoms[word]
+            
+            # Aggression bias: boost action words, penalize passive
+            if atom.semantic_frame == 'action':
+                word_scores[word] *= (1.0 + aggression * 0.5)  # Up to 50% boost for aggressive
+            elif atom.semantic_frame == 'state':
+                word_scores[word] *= (1.0 - aggression * 0.3)  # Up to 30% penalty for aggressive
+            
+            # Social affinity bias: boost relationship words
+            if atom.semantic_frame == 'relationship':
+                word_scores[word] *= (1.0 + social_affinity * 0.5)
+            
+            # Curiosity bonus for rare/novel words (low usage)
+            if curiosity > 0.5 and atom.usage_count < 5:
+                word_scores[word] *= (1.0 + (curiosity - 0.5) * 0.4)  # Up to 20% bonus
+            
+            # Skepticism (inverse curiosity): prefer well-established words
+            skepticism = 1.0 - curiosity
+            if skepticism > 0.5 and atom.usage_count > 10:
+                word_scores[word] *= (1.0 + (skepticism - 0.5) * 0.3)
+        
+        # Step 4: Exploration - random word injection
+        if exploration_rate > 0 and len(self.atoms) > 0:
+            num_random = max(1, int(top_k * exploration_rate))
+            all_words = list(self.atoms.keys())
+            for _ in range(num_random):
+                if np.random.random() < exploration_rate:
+                    random_word = np.random.choice(all_words)
+                    if random_word not in word_scores:
+                        # Random words get base score scaled by exploration
+                        word_scores[random_word] = 0.3 * exploration_rate
+        
+        # Step 5: Sort and return
+        sorted_results = sorted(word_scores.items(), key=lambda x: x[1], reverse=True)
+        return sorted_results[:top_k]
+    
     def to_embedding(self, embedding_dim: Optional[int] = None) -> np.ndarray:
         """
         Convert atomic representation to dense vector for neural network.

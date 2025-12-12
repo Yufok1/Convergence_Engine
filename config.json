@@ -172,7 +172,7 @@
     "weight_sustainability": 0.1
   },
   "highlander": {
-    "eval_interval_seconds": 900,
+    "eval_interval_seconds": 0,
     "_eval_interval_seconds_help": "Highlander evaluates every N seconds (e.g. 30 = every 30 seconds, 450 = 7.5 minutes)",
     "alliance_warfare": {
       "betrayal_chance": 0.0,
@@ -273,7 +273,7 @@
         "meta_cognitive.self_tuning.tuning_interval_frames",
         "meta_cognitive.self_tuning.min_confidence_threshold"
       ],
-      "tuning_interval_frames": 10
+      "tuning_interval_frames": 5
     }
   },
   "network": {
@@ -350,7 +350,7 @@
       "knowledge_web": {
         "embedding_dim": 64,
         "enabled": true,
-        "max_concepts": 700,
+        "max_concepts": 800,
         "quality_control": {
           "confidence_growth_rate": 0.0008,
           "enabled": true,
@@ -404,7 +404,7 @@
         "staged_knowledge": {
           "_help": "Delay loading expanded knowledge web to let organisms build foundations with innate vocab first",
           "enabled": true,
-          "delay_seconds": 900,
+          "delay_seconds": 0,
           "start_with_innate_only": true
         }
       },
@@ -439,9 +439,9 @@
         "dtype": "float16",
         "description": "Mixed precision training - 2-3x GPU speedup on Tensor Core GPUs"
       },
-      "compile_mode": "reduce-overhead",
+      "compile_mode": "max-autotune",
       "reuse_optimizers": true,
-      "use_compile": false,
+      "use_compile": true,
       "use_scripted_inference": false
     },
     "rewards": {
@@ -453,7 +453,7 @@
       "survival": 2
     },
     "training": {
-      "batch_size": 32,
+      "batch_size": 64,
       "early_stopping": {
         "enabled": true,
         "min_delta": 0.0001,
@@ -475,7 +475,7 @@
         "type": "cosine",
         "warmup_steps": 100
       },
-      "memory_size": 20000,
+      "memory_size": 40000,
       "update_frequency": 1
     },
     "vp_aware_planning": {
@@ -519,7 +519,7 @@
   },
   "ray": {
     "actor_pool_size": 2,
-    "batch_inference_size": 32,
+    "batch_inference_size": 64,
     "description": "Ray distributed computing - parallel organism decisions, training, and analysis",
     "enabled": true,
     "fallback_on_error": true,

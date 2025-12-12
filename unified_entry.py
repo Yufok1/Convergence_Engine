@@ -369,7 +369,12 @@ class PreFlightChecker:
             for failure in self.critical_failures:
                 print(f"   - {failure}")
             print("\n[WARN] System cannot start with critical failures.")
-            return {'can_start': False, 'checks': all_checks, 'failures': self.critical_failures}
+            return {
+                'can_start': False, 
+                'checks': all_checks, 
+                'warnings': self.warnings,
+                'failures': self.critical_failures
+            }
         
         if self.warnings:
             print("[WARN] WARNINGS:")
@@ -1246,39 +1251,7 @@ class UnifiedSystem:
                 pass
         else:
             print(f"[UNIFIED] [WARN] Cannot wire event emitter - reality_sim: {bool(self.reality_sim)}, causation_explorer: {bool(self.causation_explorer)}")
-            
-            # Wire ML event emitter for SymbioticNetwork (clustering, anomaly, phenotype events)
-            network = self.reality_sim.components.get('network')
-            if network and hasattr(network, 'ml_event_emitter'):
-                network.ml_event_emitter = neural_event_emitter  # Reuse same emitter
-                
-                # Configure ML analyzer from config if available
-                if hasattr(network, 'configure_ml_analyzer'):
-                    try:
-                        config_path = Path('config.json')
-                        if config_path.exists():
-                            with open(config_path, 'r') as f:
-                                full_config = json.load(f)
-                                scikit_config = full_config.get('scikit', {})
-                                if scikit_config.get('enabled', False):
-                                    network.configure_ml_analyzer(scikit_config)
-                                    print("[UNIFIED] [PASS] 🧠 ML Analyzer configured (Scikit-learn)")
-                    except Exception as e:
-                        print(f"[UNIFIED] [WARN] ML Analyzer configuration failed: {e}")
-                
-                # Configure Health Monitor (Quick Win #5)
-                if hasattr(network, 'configure_health_monitor'):
-                    try:
-                        config_path = Path('config.json')
-                        if config_path.exists():
-                            with open(config_path, 'r') as f:
-                                full_config = json.load(f)
-                                health_config = full_config.get('health_monitor', {})
-                                if health_config.get('enabled', True):
-                                    network.configure_health_monitor(health_config, event_emitter=neural_event_emitter)
-                                    print("[UNIFIED] [PASS] ❤️ Health Monitor configured")
-                    except Exception as e:
-                        print(f"[UNIFIED] [WARN] Health Monitor configuration failed: {e}")
+            # NOTE: ML wiring skipped when reality_sim is not available
 
         # Initialize Phase Sync Bridge (CRITICAL INTEGRATION!)
         if PHASE_SYNC_AVAILABLE:

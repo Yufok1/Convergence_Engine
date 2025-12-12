@@ -1875,6 +1875,14 @@ class ProtonGameArena:
                 loser.energy = max(loser.energy - resource_transfer, 0.0)
                 consequences['resources_transferred'] = resource_transfer
         
+        # TOKEN TUMBLER - Generate tokens for battle consequences
+        # Winners get rewarded, losers get modest positive (learning from loss)
+        if hasattr(winner, 'tumble_action_tokens'):
+            winner.tumble_action_tokens(action=2, reward=0.8, context='battle_win')
+        if hasattr(loser, 'tumble_action_tokens'):
+            # Learning from loss is valuable too
+            loser.tumble_action_tokens(action=3, reward=0.2, context='battle_lose')
+        
         # Emit causation event for consequences
         self._emit_event('consequences_applied', {
             'winner': winner.organism_id,

@@ -1089,6 +1089,17 @@ class ButterflyChatRouter:
             # Track chat experiences
             self.total_chat_experiences += 1
             
+            # TOKEN TUMBLER - Generate tokens for chat interactions
+            # This links conversation quality to language model token sequences
+            if hasattr(organism, 'tumble_action_tokens'):
+                # Map reward to action: higher reward = more "cooperative" action
+                chat_action = min(5, max(0, int(reward * 5)))  # 0-5 based on reward
+                organism.tumble_action_tokens(
+                    action=chat_action, 
+                    reward=reward, 
+                    context='chat_response'
+                )
+            
             # ═══════════════════════════════════════════════════════════════════════════
             # 🆕 GAP 2 FIX: VOCABULARY LEARNING FROM CHAT
             # Organisms learn words from user messages (low initial strength, must reinforce)

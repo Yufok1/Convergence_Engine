@@ -889,6 +889,15 @@ class SymbioticNetwork:
                     # The knowledge web is a semantic reference database for lookups and teaching,
                     # not a source to pre-populate vocabulary. Organisms start with minimal vocab
                     # and learn words through actions, interactions, and the language teacher.
+                    
+                    # BOOTSTRAP: Seed word embeddings from semantic relations so vector_query()
+                    # has meaningful embeddings from the start (not just random Xavier init)
+                    try:
+                        influenced = self.language_teacher.knowledge_web.influence_context_memory(self.context_memory)
+                        if influenced > 0:
+                            print(f"[SYMBIOTIC_NETWORK] ✅ Bootstrapped {influenced} word embeddings from semantic relations")
+                    except Exception as e:
+                        print(f"[SYMBIOTIC_NETWORK] ⚠️ Could not bootstrap word embeddings: {e}")
                 else:
                     print(f"[SYMBIOTIC_NETWORK] ⚠️ language_teacher has no knowledge_web or it is None")
                     if hasattr(self.language_teacher, '__dict__'):

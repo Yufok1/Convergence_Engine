@@ -642,6 +642,116 @@ class ContextMemory:
 
         return metrics
 
+    # ═══════════════════════════════════════════════════════════════════════════
+    # VECTOR RETRIEVAL: Semantic similarity search over word embeddings
+    # ═══════════════════════════════════════════════════════════════════════════
+    
+    def find_similar_words(self, 
+                          query_word: str = None,
+                          query_embedding: np.ndarray = None,
+                          top_k: int = 10,
+                          exclude_words: Set[str] = None,
+                          min_similarity: float = 0.0) -> List[Tuple[str, float]]:
+        """
+        Find words most similar to query using learned embeddings (cosine similarity).
+        
+        This enables VECTOR RETRIEVAL for semantic word selection instead of
+        relying on token ID position (which caused the A-words bug).
+        
+        Args:
+            query_word: Word to find similar words for (uses its embedding)
+            query_embedding: Direct embedding vector to query with (alternative to word)
+            top_k: Number of similar words to return
+            exclude_words: Set of words to exclude from results
+            min_similarity: Minimum cosine similarity threshold
+            
+        Returns:
+            List of (word, similarity_score) tuples, sorted by similarity descending
+        """
+        if not self.use_learned_embeddings or self.word_embedding is None:
+            return []
+        
+        if self.vocabulary is None:
+            return []
+        
+        exclude_words = exclude_words or set()
+        
+        # Get query embedding
+        if query_embedding is not None:
+            query_vec = torch.from_numpy(query_embedding.astype(np.float32))
+        elif query_word is not None:
+            token_id = self.vocabulary.get_id(query_word)
+            if token_id is None or token_id >= self.max_vocab_size:
+                return []
+            with torch.no_grad():
+                query_vec = self.word_embedding.weight[token_id]
+        else:
+            return []
+        
+        # Compute cosine similarity against all word embeddings
+        with torch.no_grad():
+            # Normalize query
+            query_norm = query_vec / (query_vec.norm() + 1e-8)
+            
+            # Normalize all embeddings
+            all_embeddings = self.word_embedding.weight
+            all_norms = all_embeddings.norm(dim=1, keepdim=True) + 1e-8
+            all_normalized = all_embeddings / all_norms
+            
+            # Cosine similarity
+            similarities = torch.matmul(all_normalized, query_norm)
+        
+        # Convert to list and filter
+        results = []
+        for token_id, sim in enumerate(similarities.tolist()):
+            if token_id >= len(self.vocabulary.id_to_word):
+                continue
+            word = self.vocabulary.id_to_word.get(token_id)
+            if word is None:
+                continue
+            # Skip special tokens and excluded words
+            if word in SPECIAL_TOKENS or word in exclude_words:
+                continue
+            if sim >= min_similarity:
+                results.append((word, sim))
+        
+        # Sort by similarity descending and return top_k
+        results.sort(key=lambda x: x[1], reverse=True)
+        return results[:top_k]
+    
+    def find_words_near_state(self,
+                              organism_state: np.ndarray,
+                              top_k: int = 10,
+                              exclude_words: Set[str] = None) -> List[Tuple[str, float]]:
+        """
+        Find words whose embeddings are similar to an organism's state vector.
+        
+        This enables ASSOCIATIVE REASONING - organisms can retrieve words
+        semantically related to their current state/situation.
+        
+        Args:
+            organism_state: Organism's state/embedding vector (e.g., from brain.fc2)
+            top_k: Number of words to return
+            exclude_words: Words to exclude
+            
+        Returns:
+            List of (word, similarity_score) tuples
+        """
+        if organism_state is None or len(organism_state) == 0:
+            return []
+        
+        # Truncate or pad state to match embedding dimension
+        state_vec = np.zeros(self.embedding_dim, dtype=np.float32)
+        copy_len = min(len(organism_state), self.embedding_dim)
+        state_vec[:copy_len] = organism_state[:copy_len]
+        
+        return self.find_similar_words(
+            query_embedding=state_vec,
+            top_k=top_k,
+            exclude_words=exclude_words,
+            min_similarity=0.1  # Require some similarity
+        )
+
     def __str__(self) -> str:
         """String representation for debugging."""
         return (f"ContextMemory: {len(self.node_embeddings)} nodes, "

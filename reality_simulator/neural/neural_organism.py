@@ -1634,11 +1634,21 @@ class NeuralOrganism(Organism):
         vocab = LanguageVocabulary(max_vocab_size=20000)  # Fresh vocab for THIS organism
         
         if self.atomic_language is not None and hasattr(self.atomic_language, 'atoms'):
-            # Add words from organism's OWN learned atoms
-            organism_words = list(self.atomic_language.atoms.keys())
+            # FIX: Sort words by atom STRENGTH (descending) so most relevant words get lowest IDs
+            # Neural network tends to sample low token IDs, so this ensures important words appear
+            # instead of alphabetically-first words like "aardvark", "aalii", etc.
+            atoms = self.atomic_language.atoms
+            organism_words = sorted(
+                atoms.keys(),
+                key=lambda w: (
+                    -atoms[w].strength,           # Primary: highest strength first
+                    -atoms[w].usage_count,        # Secondary: most used first  
+                    -atoms[w].last_used_time      # Tertiary: most recently used first
+                )
+            )
             for word in organism_words:
                 vocab.add_word(word)
-            logger.info(f"[generate_tokens] {self.species_id}: Built personal vocab from {len(organism_words)} atomic_language atoms")
+            logger.info(f"[generate_tokens] {self.species_id}: Built personal vocab from {len(organism_words)} atomic_language atoms (sorted by strength)")
         else:
             logger.warning(f"[generate_tokens] {self.species_id}: No atomic_language - cannot build personal vocab")
             return []
@@ -1753,6 +1763,68 @@ class NeuralOrganism(Organism):
                                     # QUALITY-CONTROLLED CASCADING: Only use high-confidence semantic relationships
                                     # Use higher strength threshold to prevent garbled chains
                                     similar_words = knowledge_web.get_similar_words(last_word, min_strength=min_strength)
+                                    
+                                    # PRIMARY: ATOMIC VOCABULARY VECTOR RETRIEVAL
+                                    # Use organism's OWN atomic_language for semantic search (the root source)
+                                    if self.atomic_language is not None and hasattr(self.atomic_language, 'find_similar_words'):
+                                        atomic_similar = self.atomic_language.find_similar_words(
+                                            last_word, 
+                                            top_k=max_similar_words * 2,
+                                            min_similarity=0.1
+                                        )
+                                        atomic_word_set = {w for w, _ in atomic_similar}
+                                        similar_words = list(set(similar_words) | atomic_word_set)
+                                        
+                                        # Also get words matching current state
+                                        if len(self.state_history) > 0:
+                                            current_state = self.state_history[-1] if isinstance(self.state_history[-1], np.ndarray) else None
+                                            if current_state is not None:
+                                                state_words = self.atomic_language.find_words_for_state(
+                                                    current_state, 
+                                                    top_k=max_similar_words
+                                                )
+                                                state_word_set = {w for w, _ in state_words}
+                                                similar_words = list(set(similar_words) | state_word_set)
+                                        
+                                        # TRAIT-DRIVEN QUERY: Use organism's reasoning traits
+                                        if hasattr(self.atomic_language, 'query_vocabulary'):
+                                            # Get organism traits for query mechanics
+                                            curiosity = getattr(self.phenotype, 'curiosity', 0.5) if hasattr(self, 'phenotype') else 0.5
+                                            aggression = getattr(self.phenotype, 'aggression', 0.5) if hasattr(self, 'phenotype') else 0.5
+                                            social_affinity = getattr(self.phenotype, 'social_affinity', 0.5) if hasattr(self, 'phenotype') else 0.5
+                                            # Exploration rate from config or default
+                                            exploration_rate = semantic_config.get('exploration_rate', 0.1)
+                                            
+                                            trait_words = self.atomic_language.query_vocabulary(
+                                                query_word=last_word,
+                                                organism_state=current_state,
+                                                curiosity=curiosity,
+                                                aggression=aggression,
+                                                social_affinity=social_affinity,
+                                                exploration_rate=exploration_rate,
+                                                top_k=max_similar_words * 2
+                                            )
+                                            trait_word_set = {w for w, _ in trait_words}
+                                            similar_words = list(set(similar_words) | trait_word_set)
+                                    
+                                    # SECONDARY: Knowledge web expansion (if available)
+                                    elif hasattr(knowledge_web, 'vector_query') and len(self.state_history) > 0:
+                                        current_state = self.state_history[-1] if isinstance(self.state_history[-1], np.ndarray) else None
+                                        if current_state is not None:
+                                            vector_words = knowledge_web.vector_query(
+                                                context_memory=context_memory,
+                                                query_word=last_word,
+                                                organism_state=current_state,
+                                                top_k=max_similar_words * 2,
+                                                expand_associations=True,
+                                                expansion_depth=1,
+                                                min_relation_strength=min_strength
+                                            )
+                                            vector_word_set = {w for w, _ in vector_words}
+                                            similar_words = list(set(similar_words) | vector_word_set)
+                                    
+                                    # Limit total similar words
+                                    similar_words = similar_words[:max_similar_words * 2]
                                     
                                     # Track which relationships we're using for success/failure recording
                                     used_relationships = []
@@ -2315,6 +2387,14 @@ class NeuralOrganism(Organism):
             return False
         was_new = concept_id not in self.atomic_language.atoms
         self.atomic_language.acquire_concept(concept_id, source, reason=reason)
+        
+        # Generate tokens for learning events (TOKEN TUMBLER - concept acquisition)
+        if was_new:
+            # Learning new concepts is rewarding - strengthens language model
+            source_reward = {'observed': 0.3, 'taught': 0.5, 'discovered': 0.7}
+            reward = source_reward.get(source, 0.3)
+            self.tumble_action_tokens(action=5, reward=reward, context='learn_concept')
+        
         return was_new
     
     def form_concept_association(self, source: str, target: str, 
@@ -2330,6 +2410,12 @@ class NeuralOrganism(Organism):
         """
         if self.atomic_language is not None:
             self.atomic_language.form_association(source, target, strength, reason)
+            
+            # Generate tokens for association formation (TOKEN TUMBLER - linking concepts)
+            # Positive associations get positive reward, negative get modest positive
+            # (learning any association is valuable, even negative ones)
+            reward = max(0.2, abs(strength) * 0.5)
+            self.tumble_action_tokens(action=6, reward=reward, context='form_association')
     
     def get_dialect_signature(self) -> np.ndarray:
         """
