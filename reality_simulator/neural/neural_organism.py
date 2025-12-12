@@ -1644,19 +1644,12 @@ class NeuralOrganism(Organism):
                 SPECIAL_TOKENS = {'<PAD>': 0, '<UNK>': 1, '<START>': 2, '<END>': 3, '<VP_GATE>': 4}
         
         # ---------------------------------------------------------------------------
-        # ?? ADAPTIVE MAX_LENGTH: Neural Synapse Mode - scale up for causation chains!
-        # ?? DYNAMIC VETERAN SCALING: Veterans get more resources & retries
+        # ADAPTIVE MAX_LENGTH: Scale response length based on experience
         # ---------------------------------------------------------------------------
         experience_count = len(self.experience_buffer) if hasattr(self, 'experience_buffer') and self.experience_buffer else 0
         vocab_size = vocab.vocab_size
         
-        # VETERAN STATUS: High-experience organisms get special handling
-        is_veteran = experience_count >= 100
-        is_elite = experience_count >= 250
-        
-        # NEURAL SYNAPSE SCALING: Longer responses create more causation edges
-        # Early: cautious short responses to learn safely
-        # Experienced: unleash full neural synapse chains!
+        # Longer responses as organism gains experience
         if experience_count < 10:
             adaptive_max_length = min(8, max(5, vocab_size // 6))
         elif experience_count < 50:
@@ -1664,22 +1657,7 @@ class NeuralOrganism(Organism):
         elif experience_count < 100:
             adaptive_max_length = min(64, max(32, vocab_size // 2))
         else:
-            adaptive_max_length = max_length  # Full synapse length when experienced (default 128)
-        
-        # ?? VETERAN RESOURCE SCALING: Elders get proportionally more retries
-        # This prevents assertion errors from killing experienced organisms
-        base_max_retries = 3
-        veteran_retry_bonus = min(5, experience_count // 50)  # +1 retry per 50 experiences, max +5
-        max_retries = base_max_retries + veteran_retry_bonus
-        
-        # ?? VETERAN TEMPERATURE SCALING: Elders get slightly more conservative sampling
-        # Reduces edge cases that cause multinomial failures
-        veteran_temp_adjustment = 1.0
-        if is_elite:
-            veteran_temp_adjustment = 0.95  # Slightly cooler for elites (more deterministic)
-        elif is_veteran:
-            veteran_temp_adjustment = 0.98  # Slightly cooler for veterans
-        adjusted_temperature = temperature * veteran_temp_adjustment
+            adaptive_max_length = max_length  # Full length when experienced (default 128)
         
         # Don't exceed provided max_length
         effective_max_length = min(adaptive_max_length, max_length)
@@ -1889,82 +1867,29 @@ class NeuralOrganism(Organism):
                     
                     probs = torch.softmax(logits, dim=-1)
                     
-                    # SAFEGUARD: Check for NaN/Inf/zero probabilities before multinomial
-                    # torch.multinomial will throw AssertionError if probs are invalid
-                    # Use .item() to convert tensor booleans to Python booleans
-                    probs_valid = torch.isfinite(probs).all().item() and probs.sum().item() > 0
+                    # Check for NaN/Inf/zero probabilities - if invalid, organism stays silent
+                    probs_valid = torch.isfinite(probs).all().item() and probs.sum().item() > 1e-10
                     if not probs_valid:
-                        # Probabilities are invalid - fall back to uniform distribution over valid vocab
-                        logger.warning(f"Invalid probabilities detected, using uniform fallback")
-                        probs = torch.zeros_like(probs)
-                        probs[:effective_vocab_size] = 1.0 / max(1, effective_vocab_size)
+                        # Network produced invalid output - organism stays silent
+                        logger.debug(f"[ORGANISM] {self.species_id} invalid probabilities, staying silent")
+                        break
                     
-                    # Extra safety: ensure at least some probability mass exists
-                    if probs.sum().item() <= 1e-10:
-                        probs[:effective_vocab_size] = 1.0 / max(1, effective_vocab_size)
-                    
-                    # 🎲 LANGUAGE EPSILON EXPLORATION: With probability language_epsilon,
-                    # select a random token instead of sampling from the learned distribution.
-                    # This prevents mode collapse during training by forcing exploration.
-                    # Epsilon decays over time as organism learns.
-                    use_random_exploration = (
-                        hasattr(self, 'language_epsilon') and 
-                        self.language_epsilon > 0 and 
-                        random.random() < self.language_epsilon
-                    )
-                    
-                    # 🧬 VETERAN RETRY SYSTEM: Multiple attempts for experienced organisms
-                    # Veterans get more chances to successfully sample before falling back
+                    # NEURAL SAMPLING: Let the network decide or stay silent
+                    # No random fallbacks - if the network can't produce valid output, say nothing
                     next_token = None
                     sampling_success = False
                     
-                    # 🎲 If epsilon exploration triggered, skip sampling entirely
-                    if use_random_exploration:
-                        next_token = random.randint(0, max(1, effective_vocab_size - 1))
+                    try:
+                        next_token = torch.multinomial(probs, 1).item()
                         sampling_success = True
-                    else:
-                        for retry_attempt in range(max_retries):
-                            try:
-                                # Apply veteran temperature adjustment
-                                if retry_attempt == 0:
-                                    sampling_probs = probs
-                                else:
-                                    # On retries, use progressively cooler temperature for stability
-                                    retry_temp = adjusted_temperature * (0.9 ** retry_attempt)
-                                    retry_logits = logits / max(0.1, retry_temp)
-                                    sampling_probs = torch.softmax(retry_logits, dim=-1)
-                                    # Re-validate probabilities
-                                    if not (torch.isfinite(sampling_probs).all().item() and sampling_probs.sum().item() > 0):
-                                        sampling_probs = torch.zeros_like(sampling_probs)
-                                        sampling_probs[:effective_vocab_size] = 1.0 / max(1, effective_vocab_size)
-                                
-                                next_token = torch.multinomial(sampling_probs, 1).item()
-                                sampling_success = True
-                                break
-                            except (RuntimeError, AssertionError) as e:
-                                if retry_attempt < max_retries - 1:
-                                    # Log retry for veterans (they're worth saving!)
-                                    if is_veteran:
-                                        logger.debug(f"[VETERAN] {self.species_id} sampling retry {retry_attempt + 1}/{max_retries}: {e}")
-                                    continue
-                                else:
-                                    # Final fallback after all retries exhausted
-                                    logger.warning(f"[{'VETERAN' if is_veteran else 'ORGANISM'}] {self.species_id} multinomial failed after {max_retries} retries: {e}")
+                    except (RuntimeError, AssertionError) as e:
+                        # Network couldn't sample - organism stays silent
+                        logger.debug(f"[ORGANISM] {self.species_id} sampling failed: {e}")
+                        break
                     
-                    # Ultimate fallback: random token if all retries failed
+                    # If sampling failed, stop generation
                     if not sampling_success or next_token is None:
-                        if effective_vocab_size > 0:
-                            # For veterans, prefer higher-probability tokens even in fallback
-                            if is_veteran and len(probs) > 0:
-                                # Get top 5 tokens and randomly select from them
-                                safe_k = min(5, effective_vocab_size)
-                                top_probs, top_indices = torch.topk(probs, safe_k)
-                                next_token = top_indices[random.randint(0, safe_k - 1)].item()
-                            else:
-                                next_token = random.randint(0, effective_vocab_size - 1)
-                        else:
-                            logger.error(f"[NeuralOrganism] Critical: effective_vocab_size=0 in fallback")
-                            break
+                        break
                     
                     next_token = min(next_token, max(0, effective_vocab_size - 1))  # Clamp to valid range
                     
