@@ -10560,11 +10560,18 @@ def butterfly_chat():
                 except Exception as e:
                     logger.error(f"[BUTTERFLY_CHAT] Failed to build vocabulary: {e}")
         
-        # Also ensure context_memory.vocabulary is set if we have both
+        # ALWAYS ensure context_memory.vocabulary is set with a USABLE vocabulary
+        # Even if context_memory already has a vocabulary, replace it if ours is better
         if network and hasattr(network, 'context_memory') and vocabulary:
-            if not hasattr(network.context_memory, 'vocabulary') or network.context_memory.vocabulary is None:
-                network.context_memory.vocabulary = vocabulary
-                logger.info(f"[BUTTERFLY_CHAT] Wired vocabulary to context_memory ({vocabulary.vocab_size} words)")
+            cm = network.context_memory
+            cm_vocab = getattr(cm, 'vocabulary', None)
+            cm_vocab_words = len(getattr(cm_vocab, 'word_to_id', {})) if cm_vocab else 0
+            our_vocab_words = len(getattr(vocabulary, 'word_to_id', {})) if vocabulary else 0
+            
+            # Wire our vocabulary if context_memory has none, or ours is better
+            if cm_vocab is None or cm_vocab_words <= 5 or our_vocab_words > cm_vocab_words:
+                cm.vocabulary = vocabulary
+                logger.info(f"[BUTTERFLY_CHAT] Wired vocabulary to context_memory (ours={our_vocab_words}, was={cm_vocab_words})")
         
         if not vocabulary:
             return jsonify({'error': 'Language vocabulary not available'}), 503
