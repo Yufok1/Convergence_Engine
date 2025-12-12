@@ -453,9 +453,31 @@ class PopulationClusterer:
                 min_cluster_size=self.min_cluster_size,
                 min_samples=self.min_samples
             )
-            labels = clusterer.fit_predict(features_scaled)
-            centroids = None
-            used_algorithm = 'hdbscan'
+            try:
+                labels = clusterer.fit_predict(features_scaled)
+                centroids = None
+                used_algorithm = 'hdbscan'
+            except TypeError as e:
+                # Common failure mode when `hdbscan` and `scikit-learn` versions are incompatible
+                # (e.g., `sklearn.utils.validation.check_array()` signature changed).
+                msg = str(e)
+                if 'force_all_finite' in msg and 'check_array' in msg:
+                    logger.warning(
+                        "[PopulationClusterer] HDBSCAN failed due to sklearn incompatibility (%s). "
+                        "Falling back to KMeans. Consider pinning scikit-learn to a compatible version.",
+                        msg,
+                    )
+                else:
+                    logger.warning(
+                        "[PopulationClusterer] HDBSCAN failed (%s). Falling back to KMeans.",
+                        msg,
+                    )
+
+                n_clusters = min(self.n_clusters, len(organisms))
+                clusterer = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
+                labels = clusterer.fit_predict(features_scaled)
+                centroids = clusterer.cluster_centers_
+                used_algorithm = 'kmeans_hdbscan_fallback'
         elif self.algorithm == 'kmeans':
             n_clusters = min(self.n_clusters, len(organisms))
             clusterer = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
