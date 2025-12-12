@@ -304,17 +304,41 @@ class AtomicLanguageSystem:
     _INNATE_VOCAB_CACHE = None  # Class-level cache
     
     # Fallback core concepts if innate_vocab.json not found
+    # CRITICAL: Must include all 6 action heads + key synonyms
     FALLBACK_INNATE_CONCEPTS = {
+        # THE 6 ACTION HEADS (required for neural network action outputs)
         'move': {'frame': 'action', 'level': 0, 'vp': (0.5, 0.5)},
         'rest': {'frame': 'action', 'level': 0, 'vp': (0.3, 0.6)},
-        'eat': {'frame': 'action', 'level': 0, 'vp': (0.4, 0.7)},
-        'attack': {'frame': 'action', 'level': 0, 'vp': (0.6, 0.3)},
+        'reproduce': {'frame': 'action', 'level': 0, 'vp': (0.6, 0.8)},
         'cooperate': {'frame': 'action', 'level': 0, 'vp': (0.5, 0.7)},
+        'compete': {'frame': 'action', 'level': 0, 'vp': (0.6, 0.3)},
+        'isolate': {'frame': 'action', 'level': 0, 'vp': (0.4, 0.4)},
+        # Key synonyms for each action head
+        'walk': {'frame': 'action', 'level': 0, 'vp': (0.5, 0.5)},
+        'run': {'frame': 'action', 'level': 0, 'vp': (0.6, 0.5)},
+        'sleep': {'frame': 'action', 'level': 0, 'vp': (0.2, 0.7)},
+        'wait': {'frame': 'action', 'level': 0, 'vp': (0.3, 0.5)},
+        'breed': {'frame': 'action', 'level': 0, 'vp': (0.6, 0.8)},
+        'spawn': {'frame': 'action', 'level': 0, 'vp': (0.6, 0.8)},
+        'help': {'frame': 'action', 'level': 0, 'vp': (0.5, 0.7)},
+        'ally': {'frame': 'action', 'level': 0, 'vp': (0.5, 0.7)},
+        'fight': {'frame': 'action', 'level': 0, 'vp': (0.7, 0.3)},
+        'attack': {'frame': 'action', 'level': 0, 'vp': (0.7, 0.2)},
+        'hide': {'frame': 'action', 'level': 0, 'vp': (0.4, 0.4)},
+        'escape': {'frame': 'action', 'level': 0, 'vp': (0.5, 0.4)},
+        # State concepts
         'hungry': {'frame': 'state', 'level': 0, 'vp': (0.3, 0.3)},
         'safe': {'frame': 'state', 'level': 0, 'vp': (0.6, 0.7)},
         'danger': {'frame': 'state', 'level': 0, 'vp': (0.4, 0.2)},
+        'alive': {'frame': 'state', 'level': 0, 'vp': (0.7, 0.7)},
+        'strong': {'frame': 'state', 'level': 0, 'vp': (0.7, 0.6)},
+        'weak': {'frame': 'state', 'level': 0, 'vp': (0.3, 0.4)},
+        # Relationship concepts
         'friend': {'frame': 'relationship', 'level': 0, 'vp': (0.5, 0.8)},
         'enemy': {'frame': 'relationship', 'level': 0, 'vp': (0.5, 0.2)},
+        'alone': {'frame': 'relationship', 'level': 0, 'vp': (0.4, 0.4)},
+        'together': {'frame': 'relationship', 'level': 0, 'vp': (0.5, 0.7)},
+        # Resource concepts
         'food': {'frame': 'resource', 'level': 0, 'vp': (0.5, 0.7)},
         'energy': {'frame': 'resource', 'level': 0, 'vp': (0.6, 0.5)},
     }
