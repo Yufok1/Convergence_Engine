@@ -2092,7 +2092,7 @@ class UnifiedSystem:
                 'battle_randomness': config.get('chaos_factor', 0.0),  # Default matches config.json (disabled)
                 # Include arena battle type and probability settings
                 'default_battle_type': arena_settings.get('default_battle_type', 'FULL_COMBAT'),
-                'proton_game_probability': arena_settings.get('proton_game_probability', 0.5),
+                'proton_game_probability': arena_settings.get('proton_game_probability', 1.0),  # Default matches config.json
                 'prefer_native_games': arena_settings.get('prefer_native_games', True)
             }
             

@@ -384,7 +384,7 @@ def main():
                 print("   ⚠️ default_battle_type != PROTON_GAME")
             
             # Check proton_game_probability (NEW!)
-            proton_prob = arena_config.get('proton_game_probability', 0.0)
+            proton_prob = arena_config.get('proton_game_probability', 1.0)  # Default matches config.json
             if proton_prob > 0:
                 print(f"   ✅ proton_game_probability = {proton_prob:.0%}")
                 if proton_prob >= 0.5:
@@ -393,7 +393,7 @@ def main():
                 print("   ⚠️ proton_game_probability = 0% (not using mixed battles)")
             
             # Check prefer_native_games
-            if arena_config.get('prefer_native_games', False):
+            if arena_config.get('prefer_native_games', True):  # Default matches config.json
                 print("   ✅ prefer_native_games = true (language/concept games prioritized)")
         else:
             print("   ❌ Proton Arena DISABLED in config")

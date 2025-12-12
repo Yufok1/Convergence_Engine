@@ -835,7 +835,7 @@ class HighlanderProtocol:
                 default_battle_type_str = self.config.get('default_battle_type', 'FULL_COMBAT')
                 
                 # Check proton_game_probability for mixed battle selection
-                proton_probability = self.config.get('proton_game_probability', 0.0)
+                proton_probability = self.config.get('proton_game_probability', 1.0)  # Default matches config.json
                 
                 if isinstance(default_battle_type_str, str):
                     try:
