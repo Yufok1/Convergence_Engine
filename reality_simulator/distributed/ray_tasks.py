@@ -495,7 +495,7 @@ def train_organism_local(
 
 
 if RAY_AVAILABLE:
-    @ray.remote(num_cpus=1)
+    @ray.remote(num_cpus=1, num_gpus=0.1)
     def train_organism_remote(
         brain_weights: dict,
         experience_batch: dict,
