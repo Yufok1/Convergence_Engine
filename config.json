@@ -581,7 +581,8 @@
     "measurement_precision": 4,
     "performance_sampling_rate": 200,
     "save_interval": 60.0,
-    "target_fps": 3,
+    "target_fps": 0,
+    "_target_fps_help": "0 = unlimited speed, >0 = rate limit to N cycles/sec",
     "time_resolution_ms": 1.0
   },
   "vp_monitoring": {
