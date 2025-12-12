@@ -155,7 +155,7 @@ def create_brain(config: Dict[str, Any], silent: bool = False):
     
     # Extract language head settings
     use_language_head = language_config.get('enabled', False)
-    vocab_size = language_config.get('vocabulary', {}).get('max_size', 1000)
+    vocab_size = language_config.get('vocabulary', {}).get('max_size', 20000)  # Default matches config.json
     use_attention = language_config.get('attention', {}).get('enabled', False)
     num_attention_heads = language_config.get('attention', {}).get('num_heads', 4)
     attention_dim = language_config.get('attention', {}).get('attention_dim', 64)
@@ -292,14 +292,15 @@ def validate_architecture_config(config: Dict[str, Any], strict: bool = False) -
     teacher_config = language_config.get('teacher', {})
     
     # Check each architecture parameter
+    # NOTE: Expected values should match config.json defaults
     checks = [
         ('neural.brain.input_dim', brain_config.get('input_dim'), 24),
         ('neural.brain.hidden_dim', brain_config.get('hidden_dim'), 64),
         ('neural.brain.output_dim', brain_config.get('output_dim'), 6),
-        ('neural.brain.vocab_size', brain_config.get('vocab_size'), 1000),
+        ('neural.brain.vocab_size', brain_config.get('vocab_size'), 20000),  # Updated to match config.json
         ('neural.concept_system.num_key_compositions', concept_config.get('num_key_compositions'), 20),
         ('neural.concept_system.embed_dim', concept_config.get('embed_dim'), 64),
-        ('neural.language_model.teacher.vocab_size', teacher_config.get('vocab_size'), 1000),
+        ('neural.language_model.teacher.vocab_size', teacher_config.get('vocab_size'), 20000),  # Updated to match config.json
     ]
     
     for param_path, config_value, default_value in checks:

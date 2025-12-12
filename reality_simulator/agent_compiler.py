@@ -216,7 +216,7 @@ class AgentCompiler:
             self.has_language_head = brain.use_language_head
             self.input_dim = brain.input_dim
             self.output_dim = brain.output_dim
-            self.vocab_size = brain.vocab_size if hasattr(brain, 'vocab_size') else 1000
+            self.vocab_size = brain.vocab_size if hasattr(brain, 'vocab_size') else 20000
             
         def forward(self, x: torch.Tensor):
             """Forward pass returning (action_probs, language_logits) if language head exists."""
@@ -395,7 +395,7 @@ class AgentCompiler:
         use_concept_head = any(k.startswith('concept_head.') for k in sd_keys)
 
         # Use .size() instead of .shape[] for robustness
-        vocab_size = state_dict['fc_language.weight'].size(0) if use_language_head else 1000
+        vocab_size = state_dict['fc_language.weight'].size(0) if use_language_head else 20000
 
         # Infer num_attention_heads if attention is used
         if use_attention:
@@ -7185,7 +7185,7 @@ if TORCH_AVAILABLE:
             self.input_dim = config['input_dim']
             self.hidden_dim = config['hidden_dim']
             self.output_dim = config['output_dim']
-            self.vocab_size = config.get('vocab_size', 1000)
+            self.vocab_size = config.get('vocab_size', 20000)
             self.use_language_head = config.get('use_language_head', False)
             self.use_concept_head = config.get('use_concept_head', False)
             self.use_attention = config.get('use_attention', False)

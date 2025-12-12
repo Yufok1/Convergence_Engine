@@ -60,7 +60,7 @@ class LanguageVocabulary:
     id_to_word: Dict[int, str] = field(default_factory=dict)
     word_frequencies: Dict[str, int] = field(default_factory=dict)
     word_last_used: Dict[str, float] = field(default_factory=dict)  # LRU tracking
-    max_vocab_size: int = 1000  # Reduced: ensemble strategy for full coverage
+    max_vocab_size: int = 20000  # Default matches config.json neural.language_model.vocabulary.max_size
     frozen: bool = False
     event_emitter: Any = None  # Optional callback for causation events
     
@@ -441,7 +441,7 @@ class LanguageVocabulary:
             word_to_id=data.get('word_to_id', {}),
             id_to_word={int(k): v for k, v in data.get('id_to_word', {}).items()},
             word_frequencies=data.get('word_frequencies', {}),
-            max_vocab_size=data.get('max_vocab_size', 1000),
+            max_vocab_size=data.get('max_vocab_size', 20000),
             frozen=data.get('frozen', False)
         )
         

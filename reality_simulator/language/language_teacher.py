@@ -60,7 +60,7 @@ class SemanticEmbeddingTeacher(nn.Module if PYTORCH_AVAILABLE else object):
     based on actual organism experiences (state-action-reward sequences).
     """
     
-    def __init__(self, state_dim: int = 24, embedding_dim: int = 64, vocab_size: int = 1000):
+    def __init__(self, state_dim: int = 24, embedding_dim: int = 64, vocab_size: int = 20000):
         """
         Initialize semantic embedding teacher.
         
@@ -249,7 +249,7 @@ class LanguageTeacher:
         # Semantic embedding teacher (Phase 2)
         self.use_semantic_embeddings = teacher_config.get('use_semantic_embeddings', True) and PYTORCH_AVAILABLE
         self.semantic_teacher = None
-        self.vocab_size = teacher_config.get('vocab_size', 1000)  # Ensemble strategy: 1000 per organism
+        self.vocab_size = teacher_config.get('vocab_size', 20000)  # Default matches config.json
         self.embedding_dim = teacher_config.get('embedding_dim', 64)
         self.state_dim = self.config.get('neural', {}).get('brain', {}).get('input_dim', 24)
         

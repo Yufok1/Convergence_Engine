@@ -203,7 +203,7 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
                  num_attention_heads: int = 4,
                  attention_dim: int = 64,
                  max_sequence_length: int = 32,
-                 vocab_size: int = 1000,  # Reduced: ensemble strategy for full coverage
+                 vocab_size: int = 20000,  # Default matches config.json neural.language_model.vocabulary.max_size
                  use_language_head: bool = False,
                  use_concept_head: bool = False,
                  num_key_compositions: int = 20):  # ARCHITECTURE PARAM - must match config.json!
