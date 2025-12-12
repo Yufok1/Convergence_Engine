@@ -56,6 +56,28 @@ ACTION_MAP = {
 
 PORTABLE_AGENT_DIR = Path(__file__).parent / 'portable_agent'
 
+
+def _safe_brain_to_cpu(brain):
+    """Safely move brain to CPU, handling torch.compile() CUDA graph issues.
+    
+    torch.compile() with CUDA graphs caches tensor locations, making direct
+    .cpu() calls fail. This helper handles both compiled and non-compiled models.
+    """
+    # Handle torch.compile() models - get underlying model if compiled
+    if hasattr(brain, '_orig_mod'):
+        brain = brain._orig_mod
+    # Clone to avoid CUDA graph issues
+    try:
+        import copy
+        brain_copy = copy.deepcopy(brain)
+        brain_copy.eval()
+        return brain_copy.cpu()
+    except Exception:
+        # Fallback
+        brain.eval()
+        return brain.cpu()
+
+
 class AgentCompiler:
     """
     Compiles a NeuralOrganism's state, particularly its neural network brain,
@@ -1589,7 +1611,7 @@ if __name__ == "__main__":
                 zf.writestr("atomic_config.json", json.dumps(capsule.config.to_dict(), indent=2))
             
             # 5. Bridge Config (JSON) - Critical for AgentBridge to know state dimensions
-            input_dim = metadata.get('neural_network', {}).get('architecture', {}).get('input_size', 24)
+            input_dim = metadata.get('neural_network', {}).get('architecture', {}).get('input_size', 25)
             arch_info = metadata.get('neural_network', {}).get('architecture', {})
             bridge_config = {
                 'state_dim': input_dim,
@@ -2706,7 +2728,7 @@ done
             zf.writestr("metadata.json", json.dumps(metadata, indent=2))
             
             # Bridge Config (JSON) - Critical for AgentBridge to know state dimensions
-            max_input_dim = metadata.get('ensemble', {}).get('max_input_dim', 24)
+            max_input_dim = metadata.get('ensemble', {}).get('max_input_dim', 25)
             # Check if any brain in ensemble has language head from metadata
             members = metadata.get('ensemble', {}).get('members', [])
             any_language_head = any(m.get('has_language_head', False) for m in members)
@@ -4118,7 +4140,7 @@ if __name__ == '__main__':
             zip_buffer = BytesIO()
             
             brain = self._get_brain_from_entity(capsules[0])
-            brain = brain.cpu()
+            brain = _safe_brain_to_cpu(brain)
             
             with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
                 # 1. ONNX model
@@ -4164,7 +4186,7 @@ if __name__ == '__main__':
                     'generated': datetime.datetime.now().isoformat(),
                     'organism_id': self._get_organism_id(capsules[0]),
                     'brain_config': {
-                        'input_dim': getattr(brain, 'input_dim', 24),
+                        'input_dim': getattr(brain, 'input_dim', 25),
                         'hidden_dim': getattr(brain, 'hidden_dim', 64),
                         'output_dim': getattr(brain, 'output_dim', 6),
                         'use_language_head': getattr(brain, 'use_language_head', False),
@@ -4201,14 +4223,14 @@ if __name__ == '__main__':
             zip_buffer = BytesIO()
             
             brain = self._get_brain_from_entity(capsules[0])
-            brain = brain.cpu()
+            brain = _safe_brain_to_cpu(brain)
             
             with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
                 # 1. TorchScript model
                 ts_buffer = BytesIO()
                 try:
                     brain.eval()
-                    input_dim = getattr(brain, 'input_dim', 24)
+                    input_dim = getattr(brain, 'input_dim', 25)
                     dummy_input = torch.randn(1, input_dim, device='cpu')
                     traced = torch.jit.trace(brain, (dummy_input,))
                     torch.jit.save(traced, ts_buffer)
@@ -4249,7 +4271,7 @@ if __name__ == '__main__':
                     'organism_id': self._get_organism_id(capsules[0]),
                     'organism_count': len(capsules),
                     'brain_config': {
-                        'input_dim': getattr(brain, 'input_dim', 24),
+                        'input_dim': getattr(brain, 'input_dim', 25),
                         'hidden_dim': getattr(brain, 'hidden_dim', 64),
                         'output_dim': getattr(brain, 'output_dim', 6),
                         'use_language_head': getattr(brain, 'use_language_head', False),
@@ -4279,7 +4301,7 @@ if __name__ == '__main__':
         elif export_format == 'statedict':
             # Export first brain state dict
             brain = self._get_brain_from_entity(capsules[0])
-            brain = brain.cpu()  # Move to CPU for export
+            brain = _safe_brain_to_cpu(brain)
             sd_buffer = BytesIO()
             torch.save(brain.state_dict(), sd_buffer)
             logger.info(f"[COCOON] ✅ Generated StateDict: {sd_buffer.tell():,} bytes")
@@ -4308,8 +4330,20 @@ if __name__ == '__main__':
             for entity in capsules:
                 brain = self._get_brain_from_entity(entity)
                 name = self._get_organism_id(entity)
-                # CRITICAL: Move brain to CPU for export (avoids cuda/cpu device mismatch)
-                brain = brain.cpu()
+                # CRITICAL: Handle torch.compile() models - get underlying model if compiled
+                # torch.compile() wraps models and CUDA graphs cause issues on .cpu()
+                if hasattr(brain, '_orig_mod'):
+                    # Compiled model - use the original unwrapped module
+                    brain = brain._orig_mod
+                # Clone state dict to new model to avoid CUDA graph issues
+                try:
+                    brain_copy = brain.__class__.__new__(brain.__class__)
+                    brain_copy.__dict__.update(brain.__dict__)
+                    brain_copy.load_state_dict(brain.state_dict())
+                    brain = brain_copy.cpu()
+                except Exception:
+                    # Fallback: just move to CPU (may fail on compiled models)
+                    brain = brain.cpu()
                 brains.append(brain)
                 names.append(name)
             
@@ -6031,7 +6065,7 @@ def interactive_mode(model, model_type: str, metadata: dict):
     print("=" * 50)
     
     import numpy as np
-    max_dim = metadata.get('max_input_dim', 24)
+    max_dim = metadata.get('max_input_dim', 25)
     
     while True:
         try:
@@ -6094,7 +6128,7 @@ def gym_mode(model, model_type: str, metadata: dict, env_name: str, episodes: in
     """Run in Gymnasium or PLE environment."""
     import numpy as np
     
-    max_dim = metadata.get('max_input_dim', 24)
+    max_dim = metadata.get('max_input_dim', 25)
     
     # Check if this is a PLE game
     if '-PLE-' in env_name:
@@ -6190,7 +6224,7 @@ def run_ple_game(model, model_type: str, metadata: dict, env_name: str, episodes
     p = PLE(game, fps=30, display_screen=render, force_fps=not render)
     p.init()
     
-    max_dim = metadata.get('max_input_dim', 24)
+    max_dim = metadata.get('max_input_dim', 25)
     action_set = p.getActionSet()
     
     print(f"\\n🕹️  Running {game_name} (PLE) for {episodes} episodes")
@@ -7512,7 +7546,7 @@ class CocoonAgent:
 
     def _pad_state(self, state: np.ndarray) -> np.ndarray:
         """Pad state to match brain input_dim. Handles gym envs with smaller state spaces."""
-        expected_dim = self.brains[0].input_dim if self.brains else 24
+        expected_dim = self.brains[0].input_dim if self.brains else 25
         state = np.asarray(state, dtype=np.float32).flatten()
         if len(state) < expected_dim:
             # Pad with zeros to match brain input dimension
@@ -8307,7 +8341,7 @@ class CocoonAgent:
         
         try:
             # Use trace instead of script - more compatible with complex models
-            input_dim = getattr(brain, 'input_dim', 24)
+            input_dim = getattr(brain, 'input_dim', 25)
             dummy_input = torch.randn(1, input_dim)
             traced = torch.jit.trace(brain, (dummy_input,))
             traced.save(output_path)
@@ -8611,7 +8645,7 @@ PADDLE_ANGULAR_RADIUS = 0.25  # Radians - size of circular paddle zone
 BALL_SPEED = 0.03     # Initial ball speed
 MAX_BALL_SPEED = 0.08
 PANEL_SPEED = 0.04    # Radians per frame (organism move speed)
-OBSERVATION_SIZE = 24 # Size of observation vector per organism
+OBSERVATION_SIZE = 25 # Size of observation vector per organism (matches config.json input_dim)
 MIN_SPAWN_DISTANCE = 0.3  # Min distance from sphere center for ball spawn
 
 # Command chain settings
@@ -11674,7 +11708,7 @@ if __name__ == '__main__':
     
     # Setup dummy brain and organism for testing
     dummy_brain_arch = {
-        'input_dim': 24,
+        'input_dim': 25,
         'hidden_dim': 64,
         'output_dim': 6,
         'activation': 'relu',
