@@ -2012,7 +2012,7 @@ class UnifiedSystem:
             
             # Parse config
             config = self.highlander_config or {}
-            population_size = config.get('population_size', 10)
+            population_size = config.get('population_size', 9)  # Default matches config.json
             survival_threshold = config.get('survival_threshold', 0.4)  # Default matches config.json
             competition_intensity = config.get('competition_intensity', 0.2)  # Default matches config.json
             rounds_per_cycle = config.get('rounds_per_cycle', 1)
@@ -3328,10 +3328,10 @@ def main():
             'predation_enabled': args.predation or config_highlander.get('predation_enabled', False),
             # Use config file values as defaults, override with command line if specified
             'germination_rate': config_highlander.get('germination_rate', 0.1),
-            'min_population': config_highlander.get('min_population', 10),
+            'min_population': config_highlander.get('min_population', 5),  # Default matches config.json
             'max_population': config_highlander.get('max_population', 100),
-            'population_size': config_highlander.get('population_size', 10),
-            'max_battle_rounds': config_highlander.get('max_battle_rounds', 10),
+            'population_size': config_highlander.get('population_size', 9),  # Default matches config.json
+            'max_battle_rounds': config_highlander.get('max_battle_rounds', 50),  # Default matches config.json
             'chaos_factor': config_highlander.get('chaos_factor', 0.15),
             'max_capsules': config_highlander.get('max_capsules', 5),
             'max_genetic_samples': config_highlander.get('max_genetic_samples', 100),

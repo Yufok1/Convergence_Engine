@@ -7271,9 +7271,9 @@ class CocoonAgent:
         self.epsilon = self.config.get('epsilon', 0.1)
         self.epsilon_decay = self.config.get('epsilon_decay', 0.99)  # Default matches config.json
         self.epsilon_min = self.config.get('epsilon_min', 0.01)
-        self.rl_weight = self.config.get('rl_loss_weight', 0.8)
-        self.lang_weight = self.config.get('language_loss_weight', 0.1)
-        self.concept_weight = self.config.get('concept_loss_weight', 0.1)
+        self.rl_weight = self.config.get('rl_loss_weight', 0.5)  # Default matches config.json alpha
+        self.lang_weight = self.config.get('language_loss_weight', 0.4)  # Default matches config.json beta
+        self.concept_weight = self.config.get('concept_loss_weight', 0.1)  # Default matches config.json gamma
         self.vocabulary = _decode_data(_VOCABULARY_B64)
         self.knowledge_web = _decode_data(_KNOWLEDGE_WEB_B64)
         self.brains: List[OrganismBrain] = []
