@@ -1,7 +1,7 @@
 {
-  "_case_study": "H100 BEAST TEST - Testing fixed timestep with H100 SXM (80GB VRAM, 53.5 TFLOPS)",
-  "_hypothesis": "Testing hardware-independent timing fix with extreme GPU - should run at same speed as slower hardware",
-  "_key_changes": "Massive scale: vocab 50000, population 100, hidden_dim 512, batch_size 256, memory 100000",
+  "_case_study": "H100 BEAST TEST - Full speed with step-based Highlander evaluation",
+  "_hypothesis": "Fast GPU = more training between Highlander evals, not more evals. H100 should train 10-30x more per evaluation.",
+  "_key_changes": "target_fps=0 (unlimited), eval_interval=30, massive scale: vocab 50k, pop 100, hidden 512, batch 256",
   "_hardware_specs": "H100 SXM: 80GB VRAM, 2876 GB/s bandwidth, 53.5 TFLOPS, Xeon 8481C 26 cores",
   "_hardware_profile_help": "Set to 'beast' for H100-class GPUs",
   "agency": {
@@ -174,6 +174,8 @@
     "weight_sustainability": 0.1
   },
   "highlander": {
+    "eval_interval": 30,
+    "_eval_interval_help": "Highlander evaluates every N cycles. H100 does ~100+ cycles/sec, so 30 = ~3 evals/sec",
     "alliance_warfare": {
       "betrayal_chance": 0.1,
       "confederation_war_threshold": 0.4,
@@ -586,9 +588,9 @@
     "measurement_precision": 4,
     "performance_sampling_rate": 500,
     "save_interval": 60.0,
-    "target_fps": 3,
+    "target_fps": 0,
     "time_resolution_ms": 1.0,
-    "_target_fps_help": "CRITICAL: This controls cycle frequency. 3 = 3 cycles/sec regardless of GPU speed. This is the fixed timestep fix."
+    "_target_fps_help": "0 = UNLIMITED - H100 runs at full speed. Highlander rate controlled by eval_interval instead."
   },
   "vp_monitoring": {
     "adaptive_response": {

@@ -2526,14 +2526,26 @@ class UnifiedSystem:
                 print("[UNIFIED] [FAIL] Explorer not available. Cannot run.")
                 return
             
-            # Get target FPS from config for hardware-independent timing
-            # This ensures the simulation runs at the same speed regardless of GPU
+            # Get simulation timing config
             simulation_config = self.config.get('simulation', {})
-            target_fps = simulation_config.get('target_fps', 3)  # Default 3 cycles/second
-            target_cycle_time = 1.0 / max(0.1, target_fps)  # Minimum cycle time in seconds
-            print(f"[UNIFIED] Target FPS: {target_fps} (cycle time: {target_cycle_time:.3f}s)")
             
-            # Main loop with fixed timestep
+            # Highlander evaluation interval (cycles between evaluations)
+            # This decouples Highlander from main loop rate - faster hardware = more training per eval
+            highlander_config = self.config.get('highlander', {})
+            highlander_eval_interval = highlander_config.get('eval_interval', 1)  # Default: every cycle
+            print(f"[UNIFIED] Highlander eval interval: every {highlander_eval_interval} cycles")
+            
+            # Optional rate limiting (set target_fps > 0 to enable)
+            # When 0 or not set, system runs as fast as hardware allows
+            target_fps = simulation_config.get('target_fps', 0)  # Default 0 = unlimited
+            if target_fps > 0:
+                target_cycle_time = 1.0 / target_fps
+                print(f"[UNIFIED] Rate limit: {target_fps} FPS (cycle time: {target_cycle_time:.3f}s)")
+            else:
+                target_cycle_time = 0
+                print(f"[UNIFIED] Rate limit: UNLIMITED (full hardware speed)")
+            
+            # Main loop
             cycle_count = 0
             cycle_start_time = time.time()
             while True:
@@ -2542,10 +2554,12 @@ class UnifiedSystem:
                 updated_config = self.config_watcher.check_for_updates()
                 if updated_config is not None:
                     self._apply_runtime_config(updated_config)
-                    # Update target_fps if config changed
+                    # Update timing config if changed
                     simulation_config = self.config.get('simulation', {})
-                    target_fps = simulation_config.get('target_fps', 3)
-                    target_cycle_time = 1.0 / max(0.1, target_fps)
+                    highlander_config = self.config.get('highlander', {})
+                    highlander_eval_interval = highlander_config.get('eval_interval', 1)
+                    target_fps = simulation_config.get('target_fps', 0)
+                    target_cycle_time = 1.0 / target_fps if target_fps > 0 else 0
 
                 # Update reality sim (includes neural training and config tuner)
                 if self.reality_sim:
@@ -2689,17 +2703,21 @@ class UnifiedSystem:
                 elif hasattr(self.controller, 'run_sovereign_phase'):
                     self.controller.run_sovereign_phase()
                 
-                # 🗡️ HIGHLANDER PROTOCOL - Run tournament round
+                # 🗡️ HIGHLANDER PROTOCOL - Run tournament round (every N cycles)
+                # This decouples Highlander from raw cycle rate
+                # Fast GPU = more training between evaluations, not more evaluations
                 if getattr(self, '_highlander_enabled', False) and self.highlander_protocol:
-                    self._run_highlander_round(cycle_count)
+                    if cycle_count % highlander_eval_interval == 0:
+                        self._run_highlander_round(cycle_count)
                 
-                # Fixed timestep: Sleep remaining time to hit target FPS
-                # This ensures consistent timing regardless of hardware speed
+                # Optional rate limiting (only if target_fps > 0)
+                # When disabled, system runs at full hardware speed
                 elapsed = time.time() - loop_start
-                sleep_time = target_cycle_time - elapsed
-                if sleep_time > 0:
-                    time.sleep(sleep_time)
-                # else: cycle took longer than target, skip sleep (can't catch up)
+                if target_cycle_time > 0:
+                    sleep_time = target_cycle_time - elapsed
+                    if sleep_time > 0:
+                        time.sleep(sleep_time)
+                # else: running at full speed, no rate limiting
                 
                 # Increment cycle counter and break if requested
                 cycle_count += 1
