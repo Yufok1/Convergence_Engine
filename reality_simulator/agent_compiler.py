@@ -10674,7 +10674,7 @@ def run_http_server(agent: CocoonAgent, port: int = 8080):
         
         # Get current VP value for reward calculation
         vp_info = agent.vp_runtime.compute_from_state(
-            np.zeros(24, dtype=np.float32),  # Default state
+            np.zeros(25, dtype=np.float32),  # Default state (matches config.json input_dim=25)
             agent.reward_history
         )
         current_vp = vp_info.get('violation_pressure', 0.0)
@@ -11171,7 +11171,7 @@ Examples:
             
             # Get VP value for semantic reward calculation (BEFORE generation)
             vp_info = agent.vp_runtime.compute_from_state(
-                np.zeros(24, dtype=np.float32),
+                np.zeros(25, dtype=np.float32),  # Matches config.json input_dim=25
                 agent.reward_history
             )
             current_vp = vp_info.get('violation_pressure', 0.0)

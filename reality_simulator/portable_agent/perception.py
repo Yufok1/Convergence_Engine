@@ -37,8 +37,8 @@ class PerceptionPipeline:
         return self.process(observation)
 
     def process(self, observation: Any) -> np.ndarray:
-        """Return a normalized 24D feature vector."""
-        features = np.zeros(24, dtype=np.float32)
+        """Return a normalized 25D feature vector (matches config.json input_dim=25)."""
+        features = np.zeros(25, dtype=np.float32)
         state = self.agent_state
         buffer = self.experience_buffer
 

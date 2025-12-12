@@ -624,7 +624,7 @@ class StandaloneButterflyChat:
                 fitness=member_data.get('fitness', 1.0),
                 personality=behavioral.get('personality_label', 'unknown'),
                 behavioral_tendencies=behavioral.get('behavioral_tendencies', {}),
-                input_dim=member_data.get('input_dim', 24),
+                input_dim=member_data.get('input_dim', 25),  # Default matches config.json
                 output_dim=member_data.get('output_dim', 6),
                 has_language_head=member_has_lang,
                 brain_index=idx
@@ -1427,11 +1427,11 @@ class StandaloneButterflyChat:
     
     def _build_state_vector(self, message: str) -> np.ndarray:
         """
-        Build a 24D state vector from the message context.
+        Build a 25D state vector from the message context.
         
-        Aligned with the neural system's expected input format.
+        Aligned with the neural system's expected input format (config.json input_dim=25).
         """
-        state = np.zeros(24, dtype=np.float32)
+        state = np.zeros(25, dtype=np.float32)
         
         # Basic state encoding from message
         words = message.lower().split()
@@ -1464,6 +1464,9 @@ class StandaloneButterflyChat:
         # Feature 16-23: Reserved for neural features / padding
         state[16] = 0.5  # Default VP value (stable)
         state[17] = len(self.organisms) / 20.0  # Network density proxy
+        
+        # Feature 24: Illumination level (matches neural_organism.py state features)
+        state[24] = 0.5  # Default illumination level for standalone mode
         
         return state
     

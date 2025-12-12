@@ -153,7 +153,7 @@ class LiveOrganismAdapter:
                 try:
                     # Get some output from the brain
                     import torch
-                    state = torch.zeros(24)  # Standard state size
+                    state = torch.zeros(25)  # Matches config.json input_dim=25
                     with torch.no_grad():
                         q_values = brain(state.unsqueeze(0))
                         action = q_values.argmax().item()

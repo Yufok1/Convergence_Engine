@@ -71,7 +71,7 @@ PADDLE_THICKNESS = 10
 BALL_RADIUS = 10
 BALL_SPEED = 5
 PADDLE_SPEED = 8
-OBSERVATION_SIZE = 24  # Matches cocoon brain default input size
+OBSERVATION_SIZE = 25  # Matches config.json neural.brain.input_dim (includes illumination level)
 
 # =============================================================================
 # DATA STRUCTURES
