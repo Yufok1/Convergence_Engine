@@ -401,8 +401,8 @@ def train_organism_local(
         # Reconstruct brain from weights
         input_dim = training_config.get('input_dim', 25)
         hidden_dim = training_config.get('hidden_dim', 64)
-        output_dim = training_config.get('output_dim', 5)
-        vocab_size = training_config.get('vocab_size', 128)
+        output_dim = training_config.get('output_dim', 6)  # Default matches config.json
+        vocab_size = training_config.get('vocab_size', 20000)  # Default matches config.json
         use_language_head = training_config.get('use_language_head', False)
         
         brain = OrganismBrain(

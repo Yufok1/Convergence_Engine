@@ -5078,7 +5078,7 @@ Learn more: [Convergence Engine on GitHub](https://github.com/Yufok1/Convergence
         """Generate README for package export."""
         org_table = "| Organism | Input | Hidden | Output | Language Head |\n|----------|-------|--------|--------|---------------|\n"
         for cfg in brain_configs:
-            org_table += f"| {cfg.get('organism_id', '?')} | {cfg.get('input_dim', 24)} | {cfg.get('hidden_dim', 64)} | {cfg.get('output_dim', 6)} | {'✅' if cfg.get('use_language_head') else '❌'} |\n"
+            org_table += f"| {cfg.get('organism_id', '?')} | {cfg.get('input_dim', 25)} | {cfg.get('hidden_dim', 64)} | {cfg.get('output_dim', 6)} | {'✅' if cfg.get('use_language_head') else '❌'} |\n"
         
         return f"""# 🦋 Butterfly Cocoon Package
 
@@ -5454,7 +5454,7 @@ class ExperienceBuffer:
     def __init__(self, config: Dict = None):
         config = config or {}
         self.max_size = config.get('max_size', 10000)
-        self.gamma = config.get('gamma', 0.99)
+        self.gamma = config.get('gamma', 0.995)  # Default matches config.json
         self.buffer: deque = deque(maxlen=self.max_size)
         for entry in config.get('entries', []):
             self.buffer.append(entry)
@@ -6274,7 +6274,7 @@ if __name__ == '__main__':
             has_lang = '✅' if cfg.get('use_language_head') else '❌'
             fitness = cfg.get('fitness', 0)
             fitness_str = f"{fitness:.4f}" if isinstance(fitness, float) else str(fitness)
-            org_table += f"| {i+1} | `{org_id}` | {cfg.get('input_dim', 24)} | {cfg.get('hidden_dim', 64)} | {cfg.get('output_dim', 6)} | {has_lang} | {fitness_str} |\n"
+            org_table += f"| {i+1} | `{org_id}` | {cfg.get('input_dim', 25)} | {cfg.get('hidden_dim', 64)} | {cfg.get('output_dim', 6)} | {has_lang} | {fitness_str} |\n"
         
         # Export status
         onnx_status = "✅ Included" if export_results.get('onnx', {}).get('success') else "❌ Failed"
@@ -8438,7 +8438,7 @@ class CocoonAgent:
         for i, cfg in enumerate(metadata['architecture'].get('brain_configs', [])):
             name = cfg.get('organism_id', f'org_{i}')
             fitness = metadata['organism_fitness'][i] if i < len(metadata['organism_fitness']) else 1.0
-            organism_table += f"| {name} | {fitness:.3f} | {cfg.get('input_dim', 24)} | {cfg.get('hidden_dim', 64)} | {cfg.get('output_dim', 6)} | {'✅' if cfg.get('use_language_head') else '❌'} |\n"
+            organism_table += f"| {name} | {fitness:.3f} | {cfg.get('input_dim', 25)} | {cfg.get('hidden_dim', 64)} | {cfg.get('output_dim', 6)} | {'✅' if cfg.get('use_language_head') else '❌'} |\n"
         
         readme = f"""# 🦋 Butterfly Cocoon - Neural Network Model Card
 

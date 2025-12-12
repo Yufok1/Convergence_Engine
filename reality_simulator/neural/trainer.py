@@ -990,8 +990,8 @@ class NeuralTrainer:
             'device': str(self.device),
             'input_dim': self.config.get('brain', {}).get('input_dim', 25),
             'hidden_dim': self.config.get('brain', {}).get('hidden_dim', 64),
-            'output_dim': self.config.get('brain', {}).get('output_dim', 5),
-            'vocab_size': self.config.get('language_model', {}).get('vocab_size', 128),
+            'output_dim': self.config.get('brain', {}).get('output_dim', 6),  # Default matches config.json
+            'vocab_size': self.config.get('language_model', {}).get('vocab_size', 20000),  # Default matches config.json
             'use_language_head': self.language_model_enabled,
         }
         
