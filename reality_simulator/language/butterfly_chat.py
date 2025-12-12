@@ -431,13 +431,17 @@ class ButterflyChatRouter:
                     network_state=network_state
                 )
             except Exception as e:
+                import traceback
                 error_info = {
                     "organism_id": org_id,
                     "error_type": type(e).__name__,
                     "error_message": str(e),
                     "has_generate_tokens": hasattr(organism, 'generate_tokens'),
                     "has_respond": hasattr(organism, 'respond'),
-                    "generation_time_ms": (time.time() - org_start_time) * 1000
+                    "generation_time_ms": (time.time() - org_start_time) * 1000,
+                    "traceback": traceback.format_exc(limit=50),
+                    "router_vocab_words": len(getattr(getattr(self, 'vocabulary', None), 'word_to_id', {}) or {}) if getattr(self, 'vocabulary', None) else 0,
+                    "context_memory_vocab_words": len(getattr(getattr(context_memory, 'vocabulary', None), 'word_to_id', {}) or {}) if context_memory else 0
                 }
                 self._log_error("RESPONSE_GENERATION_ERROR", f"Organism {org_id} failed: {e}", error_info)
                 logger.warning(f"Organism {org_id} failed to generate response: {e}")
