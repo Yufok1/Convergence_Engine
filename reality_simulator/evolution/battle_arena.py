@@ -203,10 +203,10 @@ class BattleArena:
         self.event_emitter = event_emitter
         
         # Battle parameters
-        self.max_rounds = self.config.get('max_rounds', 10)
+        self.max_rounds = self.config.get('max_rounds', 50)  # Default matches config.json
         self.base_hp = self.config.get('base_hp', 100.0)
         self.critical_multiplier = self.config.get('critical_multiplier', 2.0)
-        self.chaos_factor = self.config.get('chaos_factor', 0.15)
+        self.chaos_factor = self.config.get('chaos_factor', 0.0)  # Default matches config.json (disabled)
         self.dimension_weights = self.config.get('dimension_weights', {
             'neural': 0.30,
             'concept': 0.20,

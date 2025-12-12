@@ -169,7 +169,7 @@ def resolve_battle_local(org_a_state: dict, org_b_state: dict,
         Battle result dict with winner, loser, and details
     """
     config = config or {}
-    chaos_factor = config.get('chaos_factor', 0.15)
+    chaos_factor = config.get('chaos_factor', 0.0)  # Default matches config.json (disabled)
     
     import random
     

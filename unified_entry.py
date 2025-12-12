@@ -2043,8 +2043,8 @@ class UnifiedSystem:
             
             # Initialize Battle Arena (combat resolution)
             arena_config = {
-                'max_rounds': config.get('max_battle_rounds', 10),
-                'chaos_factor': config.get('chaos_factor', 0.15)
+                'max_rounds': config.get('max_battle_rounds', 50),  # Default matches config.json
+                'chaos_factor': config.get('chaos_factor', 0.0)  # Default matches config.json (disabled)
             }
             self.battle_arena = BattleArena(
                 config=arena_config,
@@ -2070,10 +2070,10 @@ class UnifiedSystem:
             self.germination_pool = GerminationPool(
                 causation_explorer=self.causation_explorer,
                 max_genetic_samples=config.get('max_genetic_samples', 100),
-                min_population=config.get('min_population', 5),
-                max_population=config.get('max_population', 50),
+                min_population=config.get('min_population', 5),  # Default matches config.json
+                max_population=config.get('max_population', 100),  # Default matches config.json
                 germination_rate=config.get('germination_rate', 0.1),
-                mutation_base_rate=config.get('mutation_rate', 0.05),
+                mutation_base_rate=config.get('mutation_rate', 0.0),  # Default matches config.json
                 context_memory=network_context_memory  # For full vocabulary inheritance
             )
             print("[UNIFIED] [HIGHLANDER] [PASS] 🌱 Germination Pool initialized")
@@ -2088,8 +2088,8 @@ class UnifiedSystem:
                 'predation_enabled': config.get('predation_enabled', False),
                 'germination_rate': config.get('germination_rate', 0.1),
                 'max_population': config.get('max_population', 100),
-                'min_population': config.get('min_population', 10),
-                'battle_randomness': config.get('chaos_factor', 0.15),
+                'min_population': config.get('min_population', 5),  # Default matches config.json
+                'battle_randomness': config.get('chaos_factor', 0.0),  # Default matches config.json (disabled)
                 # Include arena battle type and probability settings
                 'default_battle_type': arena_settings.get('default_battle_type', 'FULL_COMBAT'),
                 'proton_game_probability': arena_settings.get('proton_game_probability', 0.5),
@@ -3332,11 +3332,11 @@ def main():
             'max_population': config_highlander.get('max_population', 100),
             'population_size': config_highlander.get('population_size', 9),  # Default matches config.json
             'max_battle_rounds': config_highlander.get('max_battle_rounds', 50),  # Default matches config.json
-            'chaos_factor': config_highlander.get('chaos_factor', 0.15),
-            'max_capsules': config_highlander.get('max_capsules', 5),
+            'chaos_factor': config_highlander.get('chaos_factor', 0.0),  # Default matches config.json (disabled)
+            'max_capsules': config_highlander.get('max_capsules', 100),  # Default matches config.json
             'max_genetic_samples': config_highlander.get('max_genetic_samples', 100),
-            'mutation_rate': config_highlander.get('mutation_rate', 0.05),
-            'rounds_per_cycle': config_highlander.get('rounds_per_cycle', 1)
+            'mutation_rate': config_highlander.get('mutation_rate', 0.0),  # Default matches config.json
+            'rounds_per_cycle': config_highlander.get('rounds_per_cycle', 2)  # Default matches config.json
         }
         print("⚔️  HIGHLANDER MODE ACTIVATED - There can be only one!")
         if highlander_config.get('predation_enabled', False):
