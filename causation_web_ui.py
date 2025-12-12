@@ -10490,7 +10490,14 @@ def butterfly_chat():
         
         # FIX: If vocabulary is None or empty, try to build from context_memory OR innate_vocab.json
         network = app.config.get('network')
-        if (not vocabulary or (hasattr(vocabulary, 'vocab_size') and vocabulary.vocab_size <= 5)):
+        # Check if vocabulary is usable: must exist, have word_to_id dict, and have real words (not just special tokens)
+        vocab_usable = False
+        if vocabulary:
+            word_count = len(getattr(vocabulary, 'word_to_id', {})) if hasattr(vocabulary, 'word_to_id') else 0
+            vocab_usable = word_count > 5  # More than just special tokens
+            logger.info(f"[BUTTERFLY_CHAT] Vocabulary check: word_to_id has {word_count} entries, usable={vocab_usable}")
+        
+        if not vocab_usable:
             logger.warning(f"[BUTTERFLY_CHAT] Vocabulary empty or missing (vocab_size={getattr(vocabulary, 'vocab_size', 'N/A')}), building...")
             
             # Try to get context_memory and build vocabulary from language_anchors
