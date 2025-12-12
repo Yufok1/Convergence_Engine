@@ -170,8 +170,8 @@
     "weight_sustainability": 0.1
   },
   "highlander": {
-    "eval_interval": 1,
-    "_eval_interval_help": "Highlander evaluates every N cycles. Set higher for boom/bust (e.g. 3000 = ~30sec on fast GPU)",
+    "eval_interval_seconds": 30,
+    "_eval_interval_seconds_help": "Highlander evaluates every N seconds (e.g. 30 = every 30 seconds, 450 = 7.5 minutes)",
     "alliance_warfare": {
       "betrayal_chance": 0.0,
       "confederation_war_threshold": 0.6,

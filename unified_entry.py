@@ -2529,11 +2529,11 @@ class UnifiedSystem:
             # Get simulation timing config
             simulation_config = self.active_config.get('simulation', {})
             
-            # Highlander evaluation interval (cycles between evaluations)
-            # This decouples Highlander from main loop rate - faster hardware = more training per eval
+            # Highlander evaluation interval (time-based)
             highlander_config = self.active_config.get('highlander', {})
-            highlander_eval_interval = highlander_config.get('eval_interval', 1)  # Default: every cycle
-            print(f"[UNIFIED] Highlander eval interval: every {highlander_eval_interval} cycles")
+            highlander_eval_interval_seconds = highlander_config.get('eval_interval_seconds', 30)  # Default: 30 seconds
+            last_highlander_time = time.time()
+            print(f"[UNIFIED] Highlander eval interval: every {highlander_eval_interval_seconds} seconds")
             
             # Optional rate limiting (set target_fps > 0 to enable)
             # When 0 or not set, system runs as fast as hardware allows
@@ -2557,7 +2557,7 @@ class UnifiedSystem:
                     # Update timing config if changed
                     simulation_config = self.active_config.get('simulation', {})
                     highlander_config = self.active_config.get('highlander', {})
-                    highlander_eval_interval = highlander_config.get('eval_interval', 1)
+                    highlander_eval_interval_seconds = highlander_config.get('eval_interval_seconds', 30)
                     target_fps = simulation_config.get('target_fps', 0)
                     target_cycle_time = 1.0 / target_fps if target_fps > 0 else 0
 
@@ -2703,12 +2703,12 @@ class UnifiedSystem:
                 elif hasattr(self.controller, 'run_sovereign_phase'):
                     self.controller.run_sovereign_phase()
                 
-                # 🗡️ HIGHLANDER PROTOCOL - Run tournament round (every N cycles)
-                # This decouples Highlander from raw cycle rate
-                # Fast GPU = more training between evaluations, not more evaluations
+                # 🗡️ HIGHLANDER PROTOCOL - Run tournament round (time-based)
                 if getattr(self, '_highlander_enabled', False) and self.highlander_protocol:
-                    if cycle_count % highlander_eval_interval == 0:
+                    current_time = time.time()
+                    if current_time - last_highlander_time >= highlander_eval_interval_seconds:
                         self._run_highlander_round(cycle_count)
+                        last_highlander_time = current_time
                 
                 # Optional rate limiting (only if target_fps > 0)
                 # When disabled, system runs at full hardware speed
