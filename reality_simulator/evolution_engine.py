@@ -222,11 +222,24 @@ class Organism:
             )
 
         # 🧬 EXPRESS COGNITIVE TRAITS FROM SPECIFIC GENE POSITIONS
-        # Gene 10 (or last gene if fewer): Curiosity
+        # For bit-array genomes: use genes 10-17 (8 bits) to encode curiosity
+        # For real-valued genomes: use gene 10 directly
         # This affects language exploration (entropy bonus) and is heritable
-        curiosity_gene_idx = min(10, len(self.genotype.genes) - 1)
-        if curiosity_gene_idx >= 0:
-            base_curiosity = self.genotype.genes[curiosity_gene_idx] / 255.0
+        if len(self.genotype.genes) >= 11:
+            if self.genotype.encoding == GenotypeEncoding.BIT_ARRAY:
+                # Use 8 bits starting at gene 10 to create a 0-255 value
+                start_idx = min(10, len(self.genotype.genes) - 8)
+                if start_idx >= 0 and start_idx + 8 <= len(self.genotype.genes):
+                    # Convert 8 bits to byte value (0-255)
+                    bit_value = sum(int(self.genotype.genes[start_idx + i]) << i for i in range(8))
+                    base_curiosity = bit_value / 255.0
+                else:
+                    # Not enough genes, use average of available bits
+                    base_curiosity = float(self.genotype.genes[10:].mean()) if len(self.genotype.genes) > 10 else 0.5
+            else:
+                # Real-valued or integer encoding - use directly
+                base_curiosity = self.genotype.genes[10] / 255.0 if self.genotype.genes[10] <= 255 else self.genotype.genes[10]
+            
             # Environmental modifier for curiosity (e.g., rich environment = more curious)
             curiosity_env = self.phenotype.environmental_factors.get('curiosity', 1.0)
             # Apply development stage: young organisms start more curious
@@ -1050,6 +1063,11 @@ class EvolutionEngine:
                 organism = Organism(genotype=genotype)
         else:
             organism = Organism(genotype=genotype)
+        
+        # 🧬 CRITICAL: Develop phenotype immediately after creation
+        # This expresses genetic traits including curiosity (gene 10)
+        # Without this, curiosity and other traits remain at default values!
+        organism.develop_phenotype()
         
         # ✅ FIX: Calculate initial fitness from genotype diversity
         # This creates differentiation from birth, preventing convergence

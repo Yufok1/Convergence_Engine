@@ -1161,6 +1161,66 @@ class SymbioticNetwork:
             return {'available': True, 'enabled': False, 'reason': 'ML analyzer not configured'}
         return self.ml_analyzer.get_status()
 
+    def create_organism(self, organism_id: str, traits: Dict[str, float] = None, 
+                       config: Dict[str, Any] = None) -> Optional[Organism]:
+        """
+        Create a new organism and add it to the network.
+        
+        This is the factory method used by GerminationPool to spawn new organisms.
+        Creates NeuralOrganism if PyTorch is available, otherwise standard Organism.
+        
+        Args:
+            organism_id: Unique ID for the new organism
+            traits: Initial trait values to set on phenotype
+            config: Configuration dict (uses network config if None)
+            
+        Returns:
+            The newly created organism, or None if creation failed
+        """
+        try:
+            import numpy as np
+            from .evolution_engine import Genotype, Phenotype
+            
+            # Create genotype with random binary genes (BIT_ARRAY encoding)
+            # Note: Genotype.__post_init__ will convert to binary anyway
+            genes = np.random.randint(0, 2, 32).astype(np.uint8)
+            genotype = Genotype(genes=genes)
+            
+            # Create phenotype with initial traits
+            phenotype = Phenotype()
+            if traits:
+                phenotype.traits.update(traits)
+            
+            # Use provided config or network's config
+            org_config = config or self.config
+            
+            # Try to create NeuralOrganism if PyTorch available
+            try:
+                from .neural.neural_organism import NeuralOrganism
+                organism = NeuralOrganism(
+                    genotype=genotype,
+                    phenotype=phenotype,
+                    config=org_config
+                )
+            except ImportError:
+                organism = Organism(genotype=genotype, phenotype=phenotype)
+            
+            # Set the species_id to match requested organism_id
+            organism.species_id = organism_id
+            
+            # 🧬 CRITICAL: Develop phenotype to express genetic traits including curiosity
+            organism.develop_phenotype()
+            
+            # Add to network
+            self.add_organism(organism)
+            
+            return organism
+            
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"Failed to create organism {organism_id}: {e}")
+            return None
+
     def add_organism(self, organism: Organism):
         """Add an organism to the network"""
         org_id = organism.species_id

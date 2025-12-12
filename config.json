@@ -410,8 +410,12 @@
         "vp_temperature_scale": true,
         "entropy_bonus": 0.01,
         "label_smoothing": 0.1,
+        "language_epsilon_start": 0.3,
+        "language_epsilon_end": 0.05,
+        "language_epsilon_decay": 0.998,
         "_entropy_bonus_help": "Prevents language mode collapse by rewarding diverse token distributions. 0.01 = subtle exploration, 0.1 = aggressive exploration",
-        "_label_smoothing_help": "Softens training targets to prevent overconfidence. 0.1 = 10% probability mass distributed to non-target tokens"
+        "_label_smoothing_help": "Softens training targets to prevent overconfidence. 0.1 = 10% probability mass distributed to non-target tokens",
+        "_language_epsilon_help": "Random token exploration during generation. Decays from start to end over time. Higher = more random tokens."
       },
       "vocabulary": {
         "max_size": 20000,
