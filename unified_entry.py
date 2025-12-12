@@ -2527,11 +2527,11 @@ class UnifiedSystem:
                 return
             
             # Get simulation timing config
-            simulation_config = self.config.get('simulation', {})
+            simulation_config = self.active_config.get('simulation', {})
             
             # Highlander evaluation interval (cycles between evaluations)
             # This decouples Highlander from main loop rate - faster hardware = more training per eval
-            highlander_config = self.config.get('highlander', {})
+            highlander_config = self.active_config.get('highlander', {})
             highlander_eval_interval = highlander_config.get('eval_interval', 1)  # Default: every cycle
             print(f"[UNIFIED] Highlander eval interval: every {highlander_eval_interval} cycles")
             
@@ -2555,8 +2555,8 @@ class UnifiedSystem:
                 if updated_config is not None:
                     self._apply_runtime_config(updated_config)
                     # Update timing config if changed
-                    simulation_config = self.config.get('simulation', {})
-                    highlander_config = self.config.get('highlander', {})
+                    simulation_config = self.active_config.get('simulation', {})
+                    highlander_config = self.active_config.get('highlander', {})
                     highlander_eval_interval = highlander_config.get('eval_interval', 1)
                     target_fps = simulation_config.get('target_fps', 0)
                     target_cycle_time = 1.0 / target_fps if target_fps > 0 else 0
