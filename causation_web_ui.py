@@ -10488,6 +10488,34 @@ def butterfly_chat():
         if not organisms:
             return jsonify({'error': 'No organism networks available. Please ensure the Butterfly system is running.'}), 503
         
+        # FIX: If vocabulary is None or empty, try to build from context_memory
+        network = app.config.get('network')
+        if (not vocabulary or (hasattr(vocabulary, 'vocab_size') and vocabulary.vocab_size <= 5)):
+            logger.warning(f"[BUTTERFLY_CHAT] Vocabulary empty or missing (vocab_size={getattr(vocabulary, 'vocab_size', 'N/A')}), building from context_memory...")
+            
+            # Try to get context_memory and build vocabulary from language_anchors
+            context_memory = None
+            if network and hasattr(network, 'context_memory'):
+                context_memory = network.context_memory
+            
+            if context_memory:
+                # Import and use the vocabulary builder
+                try:
+                    from reality_simulator.language_system import LanguageVocabulary, create_vocabulary_from_context_memory
+                    vocabulary = create_vocabulary_from_context_memory(context_memory)
+                    app.config['vocabulary'] = vocabulary
+                    # CRITICAL: Also set on context_memory so generate_tokens() can access it
+                    context_memory.vocabulary = vocabulary
+                    logger.info(f"[BUTTERFLY_CHAT] Built vocabulary from context_memory: {vocabulary.vocab_size} words")
+                except Exception as e:
+                    logger.error(f"[BUTTERFLY_CHAT] Failed to build vocabulary from context_memory: {e}")
+        
+        # Also ensure context_memory.vocabulary is set if we have both
+        if network and hasattr(network, 'context_memory') and vocabulary:
+            if not hasattr(network.context_memory, 'vocabulary') or network.context_memory.vocabulary is None:
+                network.context_memory.vocabulary = vocabulary
+                logger.info(f"[BUTTERFLY_CHAT] Wired vocabulary to context_memory ({vocabulary.vocab_size} words)")
+        
         if not vocabulary:
             return jsonify({'error': 'Language vocabulary not available'}), 503
         
