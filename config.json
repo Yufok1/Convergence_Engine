@@ -172,7 +172,7 @@
     "weight_sustainability": 0.1
   },
   "highlander": {
-    "eval_interval_seconds": 0,
+    "eval_interval_seconds": 3,
     "_eval_interval_seconds_help": "Highlander evaluates every N seconds (e.g. 30 = every 30 seconds, 450 = 7.5 minutes)",
     "alliance_warfare": {
       "betrayal_chance": 0.0,
@@ -404,7 +404,7 @@
         "staged_knowledge": {
           "_help": "Delay loading expanded knowledge web to let organisms build foundations with innate vocab first",
           "enabled": true,
-          "delay_seconds": 0,
+          "delay_seconds": 1000,
           "start_with_innate_only": true
         }
       },

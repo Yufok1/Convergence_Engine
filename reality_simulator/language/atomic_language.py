@@ -1753,7 +1753,8 @@ class AtomicLanguageSystem:
             self.update_magnetism_from_action(
                 active_concepts=[action_concept],
                 outcome=outcome,
-                skepticism=context.get('skepticism', 0.0)
+                action_type=action_concept,
+                reason=f"action_outcome_{outcome:.2f}"
             )
             
             # Form associations based on context
