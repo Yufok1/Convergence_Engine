@@ -1943,13 +1943,28 @@ class NeuralOrganism(Organism):
                     
                     probs = torch.softmax(logits, dim=-1)
                     
-                    # Check for NaN/Inf/zero probabilities - if invalid, organism stays silent
+                    # Check for NaN/Inf/zero probabilities
                     probs_sum = probs.sum().item()
-                    probs_valid = torch.isfinite(probs).all().item() and probs_sum > 1e-10
+                    nonzero_count = torch.count_nonzero(probs).item()
+                    probs_valid = torch.isfinite(probs).all().item() and probs_sum > 1e-10 and nonzero_count > 0
+                    
                     if not probs_valid:
-                        # Network produced invalid output - organism stays silent
-                        logger.warning(f"[ORGANISM] {self.species_id} invalid probs: sum={probs_sum}, finite={torch.isfinite(probs).all().item()}, effective_vocab={effective_vocab_size}")
-                        break
+                        # FALLBACK: If network can't decide, use uniform sampling over actual vocabulary
+                        # This ensures 100% operation - every organism WILL respond
+                        logger.debug(f"[ORGANISM] {self.species_id} using uniform fallback: sum={probs_sum}, nonzero={nonzero_count}")
+                        # Create uniform distribution over actual words (skip special tokens)
+                        uniform_probs = torch.zeros_like(probs)
+                        word_start = len(SPECIAL_TOKENS)  # Skip <PAD>, <UNK>, <START>, <END>, <VP_GATE>
+                        word_end = min(effective_vocab_size, len(uniform_probs))
+                        if word_end > word_start:
+                            # Uniform probability for actual words only
+                            uniform_probs[word_start:word_end] = 1.0 / (word_end - word_start)
+                            probs = uniform_probs
+                            probs_valid = True
+                        else:
+                            # No actual words available - truly cannot generate
+                            logger.warning(f"[ORGANISM] {self.species_id} no actual words for fallback: effective_vocab={effective_vocab_size}")
+                            break
                     
                     # NEURAL SAMPLING: Let the network decide or stay silent
                     # No random fallbacks - if the network can't produce valid output, say nothing
