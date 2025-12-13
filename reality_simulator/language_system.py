@@ -750,13 +750,14 @@ class ActionSequenceTokenizer:
     def _initialize_action_tokens(self):
         """Add base action tokens to vocabulary."""
         # Standard action tokens (matching OrganismBrain output_dim=6)
+        # Canonical order: 0=move, 1=cooperate, 2=compete, 3=rest, 4=reproduce, 5=isolate
         action_tokens = [
-            f'{self.ACTION_PREFIX}REST',      # Action 0
-            f'{self.ACTION_PREFIX}MOVE',      # Action 1
-            f'{self.ACTION_PREFIX}EAT',       # Action 2
-            f'{self.ACTION_PREFIX}REPRODUCE', # Action 3
-            f'{self.ACTION_PREFIX}ATTACK',    # Action 4
-            f'{self.ACTION_PREFIX}COOPERATE', # Action 5
+            f'{self.ACTION_PREFIX}MOVE',      # Action 0
+            f'{self.ACTION_PREFIX}COOPERATE', # Action 1
+            f'{self.ACTION_PREFIX}COMPETE',   # Action 2
+            f'{self.ACTION_PREFIX}REST',      # Action 3
+            f'{self.ACTION_PREFIX}REPRODUCE', # Action 4
+            f'{self.ACTION_PREFIX}ISOLATE',   # Action 5
         ]
         
         for token in action_tokens:
@@ -764,7 +765,8 @@ class ActionSequenceTokenizer:
     
     def action_to_token(self, action_idx: int) -> str:
         """Convert action index to token string."""
-        action_names = ['REST', 'MOVE', 'EAT', 'REPRODUCE', 'ATTACK', 'COOPERATE']
+        # Canonical order: 0=move, 1=cooperate, 2=compete, 3=rest, 4=reproduce, 5=isolate
+        action_names = ['MOVE', 'COOPERATE', 'COMPETE', 'REST', 'REPRODUCE', 'ISOLATE']
         if 0 <= action_idx < len(action_names):
             return f'{self.ACTION_PREFIX}{action_names[action_idx]}'
         return f'{self.ACTION_PREFIX}UNKNOWN'

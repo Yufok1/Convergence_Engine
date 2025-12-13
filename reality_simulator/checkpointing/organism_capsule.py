@@ -695,11 +695,13 @@ class OrganismCapsuleManager:
         strongest = [(c, a.strength) for c, a in sorted_atoms[:10]]
         
         # Find unique concepts (not in default innate set)
+        # Includes canonical actions: move, cooperate, compete, rest, reproduce, isolate
+        # Plus common concepts from innate vocabulary
         default_concepts = {
-            'move', 'rest', 'eat', 'reproduce', 'attack', 'flee', 'explore',
-            'cooperate', 'share', 'hoard', 'signal', 'hide', 'seek',
-            'danger', 'safety', 'food', 'mate', 'threat', 'friend', 'enemy',
-            'existence'
+            'move', 'cooperate', 'compete', 'rest', 'reproduce', 'isolate',  # canonical 6 actions
+            'explore', 'share', 'hoard', 'signal', 'hide', 'seek', 'flee',  # common behaviors
+            'danger', 'safety', 'food', 'mate', 'threat', 'friend', 'enemy',  # survival concepts
+            'existence', 'life', 'energy', 'strong', 'weak'  # core states
         }
         unique = [c for c in lang_system.atoms.keys() if c not in default_concepts]
         

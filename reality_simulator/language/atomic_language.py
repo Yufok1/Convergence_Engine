@@ -449,9 +449,10 @@ class AtomicLanguageSystem:
     # ═══════════════════════════════════════════════════════════════════════════
     # THE 6 ACTION HEADS
     # Core neural network outputs - every organism action maps to one of these
+    # Canonical order: 0=move, 1=cooperate, 2=compete, 3=rest, 4=reproduce, 5=isolate
     # ═══════════════════════════════════════════════════════════════════════════
     
-    ACTION_HEADS = ['move', 'rest', 'reproduce', 'cooperate', 'compete', 'isolate']
+    ACTION_HEADS = ['move', 'cooperate', 'compete', 'rest', 'reproduce', 'isolate']
     
     # ═══════════════════════════════════════════════════════════════════════════
     # FOUNDATIONAL ORIENTATION SYSTEM
@@ -886,70 +887,67 @@ class AtomicLanguageSystem:
     
     def _initialize_foundational_orientation(self, current_time: float):
         """
-        Initialize foundational orientation concepts: alphabet, numbers, colors.
+        Initialize foundational orientation concepts from ORIENTATION dict.
         
         These are the basic building blocks of symbolic understanding - not hardcoded
         meanings, but anchors that organisms can build associations around through
         experience. Like teaching a child the alphabet before they learn words.
+        
+        Uses the ORIENTATION class constant which contains categorized word lists.
         """
         orientation_count = 0
         
-        # Alphabet - symbolic anchors (letters as orientation points)
-        for letter, info in self.ALPHABET.items():
-            if letter not in self.atoms:
-                atom = LinguisticAtom(
-                    concept_id=letter,
-                    strength=0.3 + np.random.uniform(-0.05, 0.05),  # Low but stable
-                    source='foundational_orientation',
-                    semantic_frame=info['frame'],
-                    abstraction_level=info['level'],
-                    acquisition_time=current_time,
-                    vp_vitality_affinity=0.5,  # Neutral
-                    vp_pleasure_affinity=0.5   # Neutral
-                )
-                atom._event_emitter = self.event_emitter
-                atom._organism_id = self.organism_id
-                self.atoms[letter] = atom
-                self._concept_order.append(letter)
-                orientation_count += 1
+        # Frame mappings for each category
+        frame_map = {
+            'alphabet': ('symbol', -1, (0.5, 0.5)),  # (frame, level, vp)
+            'numbers': ('quantity', 0, (0.5, 0.5)),
+            'colors': ('perception', 0, (0.5, 0.6)),
+            'directions': ('spatial', 0, (0.5, 0.5)),
+            'time': ('temporal', 0, (0.5, 0.5)),
+            'existence': ('state', 0, (0.5, 0.5)),
+            'relationships': ('relationship', 0, (0.5, 0.6)),
+            'nature': ('nature', 0, (0.5, 0.6)),
+            'actions': ('action', 0, (0.5, 0.5)),
+            'qualities': ('quality', 0, (0.5, 0.5)),
+            'questions': ('question', 0, (0.6, 0.6)),
+            'universals': ('universal', 0, (0.5, 0.7)),
+        }
         
-        # Numbers - quantity concepts
-        for number_word, info in self.NUMBERS.items():
-            if number_word not in self.atoms:
-                atom = LinguisticAtom(
-                    concept_id=number_word,
-                    strength=0.4 + np.random.uniform(-0.05, 0.05),
-                    source='foundational_orientation',
-                    semantic_frame=info['frame'],
-                    abstraction_level=info['level'],
-                    acquisition_time=current_time,
-                    vp_vitality_affinity=info['vp'][0],
-                    vp_pleasure_affinity=info['vp'][1]
-                )
-                atom._event_emitter = self.event_emitter
-                atom._organism_id = self.organism_id
-                self.atoms[number_word] = atom
-                self._concept_order.append(number_word)
-                orientation_count += 1
-        
-        # Colors - perceptual anchors
-        for color, info in self.COLORS.items():
-            if color not in self.atoms:
-                atom = LinguisticAtom(
-                    concept_id=color,
-                    strength=0.4 + np.random.uniform(-0.05, 0.05),
-                    source='foundational_orientation',
-                    semantic_frame=info['frame'],
-                    abstraction_level=info['level'],
-                    acquisition_time=current_time,
-                    vp_vitality_affinity=info['vp'][0],
-                    vp_pleasure_affinity=info['vp'][1]
-                )
-                atom._event_emitter = self.event_emitter
-                atom._organism_id = self.organism_id
-                self.atoms[color] = atom
-                self._concept_order.append(color)
-                orientation_count += 1
+        for category, words in self.ORIENTATION.items():
+            frame_info = frame_map.get(category, ('unknown', 0, (0.5, 0.5)))
+            frame, level, vp = frame_info
+            
+            for word in words:
+                if word not in self.atoms:
+                    # Determine magnetism based on category
+                    if category == 'questions':
+                        base_mag = 0.85  # Questions draw curiosity
+                    elif category == 'universals':
+                        base_mag = 0.7  # Universal concepts are interesting
+                    elif category == 'actions' and word in self.ACTION_HEADS:
+                        base_mag = 0.9  # Action heads get high magnetism
+                    elif category == 'alphabet':
+                        base_mag = 0.3  # Letters are neutral anchors
+                    else:
+                        base_mag = 0.5  # Default
+                    
+                    atom = LinguisticAtom(
+                        concept_id=word,
+                        strength=0.35 + np.random.uniform(-0.05, 0.05),
+                        source='foundational_orientation',
+                        semantic_frame=frame,
+                        abstraction_level=level,
+                        acquisition_time=current_time,
+                        vp_vitality_affinity=vp[0],
+                        vp_pleasure_affinity=vp[1],
+                        base_magnetism=base_mag,
+                        curiosity_magnetism=base_mag
+                    )
+                    atom._event_emitter = self.event_emitter
+                    atom._organism_id = self.organism_id
+                    self.atoms[word] = atom
+                    self._concept_order.append(word)
+                    orientation_count += 1
         
         if orientation_count > 0:
             logger.debug(f"[ATOMIC_LANG] Organism {self.organism_id}: Added {orientation_count} foundational orientation concepts")
@@ -1735,7 +1733,8 @@ class AtomicLanguageSystem:
             outcome: Reward/outcome of action (-1 to 1)
             context: Additional context (VP state, nearby organisms, etc.)
         """
-        action_concepts = ['rest', 'move', 'eat', 'reproduce', 'attack', 'cooperate']
+        # Canonical action order: 0=move, 1=cooperate, 2=compete, 3=rest, 4=reproduce, 5=isolate
+        action_concepts = ['move', 'cooperate', 'compete', 'rest', 'reproduce', 'isolate']
         
         if 0 <= action < len(action_concepts):
             action_concept = action_concepts[action]
@@ -1748,22 +1747,37 @@ class AtomicLanguageSystem:
                 reason = f"negative_outcome_{outcome:.2f}"
                 self.strengthen_concept(action_concept, outcome * 0.05, reason)  # Slower weakening
             
+            # 🆕 UPDATE PERSONAL MAGNETISM - organism learns from outcomes
+            # This is the key learning signal: actions that worked become more attractive
+            # Actions that failed become less attractive (and harder/slower to recover)
+            self.update_magnetism_from_action(
+                active_concepts=[action_concept],
+                outcome=outcome,
+                skepticism=context.get('skepticism', 0.0)
+            )
+            
             # Form associations based on context
             vp_state = context.get('vp_state', (0.5, 0.5))
             
-            # If hungry and ate successfully, strengthen food-eat association
-            if action == 2 and outcome > 0:  # EAT
-                self.form_association('hungry', 'eat', outcome * 0.3, 'successful_eating')
-                self.form_association('food', 'eat', outcome * 0.2, 'successful_eating')
-            
             # If cooperated successfully, strengthen social associations
-            if action == 5 and outcome > 0:  # COOPERATE
+            if action == 1 and outcome > 0:  # COOPERATE
                 self.form_association('friend', 'cooperate', outcome * 0.3, 'successful_cooperation')
                 self.form_association('together', 'cooperate', outcome * 0.2, 'successful_cooperation')
             
-            # If attacked and outcome was positive, strengthen attack associations
-            if action == 4 and outcome > 0:  # ATTACK
-                self.form_association('strong', 'attack', outcome * 0.2, 'successful_attack')
+            # If competed and outcome was positive, strengthen competition associations
+            if action == 2 and outcome > 0:  # COMPETE
+                self.form_association('strong', 'compete', outcome * 0.2, 'successful_competition')
+                self.form_association('win', 'compete', outcome * 0.15, 'successful_competition')
+            
+            # If reproduced successfully, strengthen reproduction associations
+            if action == 4 and outcome > 0:  # REPRODUCE
+                self.form_association('grow', 'reproduce', outcome * 0.2, 'successful_reproduction')
+                self.form_association('life', 'reproduce', outcome * 0.2, 'successful_reproduction')
+        
+        # 🆕 DECAY SATIATION - prevents getting stuck in loops
+        # Small decay each step, so concepts that haven't been used recently 
+        # feel "fresh" again
+        self.decay_all_satiation(decay_amount=0.01)
     
     # =========================================================================
     # 🆕 CONCEPT TRADING - Knowledge propagation between organisms
@@ -1897,7 +1911,8 @@ class AtomicLanguageSystem:
             List of concepts learned/reinforced
         """
         learned = []
-        action_concepts = ['rest', 'move', 'eat', 'reproduce', 'attack', 'cooperate']
+        # Canonical action order: 0=move, 1=cooperate, 2=compete, 3=rest, 4=reproduce, 5=isolate
+        action_concepts = ['move', 'cooperate', 'compete', 'rest', 'reproduce', 'isolate']
         
         if 0 <= observed_action < len(action_concepts):
             action_concept = action_concepts[observed_action]
