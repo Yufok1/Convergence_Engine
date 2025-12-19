@@ -122,13 +122,13 @@ def test_concept_system_export():
         print(f"⚠️ Skipping - PyTorch or ConceptSystem not available: {e}")
         return True
     
-    cs = ConceptSystem(state_dim=25, embed_dim=64, device='cpu')
+    cs = ConceptSystem(state_dim=28, embed_dim=64, device='cpu')
     
     # Check method exists
     assert hasattr(cs, 'export_concept_embeddings'), "Method should exist"
     
     # Create test state
-    state = torch.randn(25)
+    state = torch.randn(28)
     
     # Export embeddings
     axiom_embeds = cs.export_concept_embeddings(state)
@@ -319,7 +319,7 @@ def test_end_to_end_flow():
     kw = LinguisticKnowledgeWeb()
     
     if has_torch:
-        cs = ConceptSystem(state_dim=25, embed_dim=64, device='cpu')
+        cs = ConceptSystem(state_dim=28, embed_dim=64, device='cpu')
         print("   ✅ ContextMemory, KnowledgeWeb, ConceptSystem initialized")
     else:
         print("   ✅ ContextMemory, KnowledgeWeb initialized (no PyTorch)")
@@ -339,7 +339,7 @@ def test_end_to_end_flow():
     # Step 4: Export concept axiom embeddings
     if has_torch:
         print("\n4. Exporting ConceptSystem axiom embeddings...")
-        state = torch.randn(25)
+        state = torch.randn(28)
         axiom_embeds = cs.export_concept_embeddings(state)
         
         # Push axiom embeddings to words

@@ -247,7 +247,7 @@ class TestUnifiedSystem(unittest.TestCase):
         """Test StateLogger functionality"""
         print("\n🧪 Testing StateLogger...")
         
-        logger = StateLogger()
+        logger = StateLogger(config={})  # Empty config uses defaults
         
         # Test logging different states
         logger.log_state('system', {'event': 'test'})
@@ -255,6 +255,9 @@ class TestUnifiedSystem(unittest.TestCase):
         logger.log_reality_sim({'organism_count': 10})
         logger.log_explorer({'phase': 'genesis'})
         logger.log_djinn_kernel({'vp': 0.3})
+        
+        # Clean shutdown
+        logger.shutdown()
         
         self.assertTrue(True, "StateLogger should handle all log calls")
         print("✅ StateLogger works correctly")

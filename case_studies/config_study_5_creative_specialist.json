@@ -290,10 +290,11 @@
       "activation": "relu",
       "dropout": 0.1,
       "hidden_dim": 64,
-      "input_dim": 25,
+      "input_dim": 28,
       "output_dim": 6,
       "vocab_size": 20000,
-      "attention_dim": 32
+      "attention_dim": 32,
+      "_input_dim_help": "28D = 25 base features + oscillation_entropy + coherence_frequency + attractor_proximity"
     },
     "concept_system": {
       "concept_loss_weight": 0.15,
@@ -615,5 +616,29 @@
       "smoothing_factor": 0.4
     },
     "stabilization_enabled": true
+  },
+  "attractor_landscape": {
+    "_help": "Hopfield-inspired attractor dynamics - organisms navigate toward known stable configurations",
+    "enabled": true,
+    "window_size": 20,
+    "fixed_point_persistence": 5,
+    "fixed_point_variance_threshold": 0.02,
+    "bifurcation_coherence_threshold": 0.15,
+    "bifurcation_entropy_threshold": 0.20,
+    "resonance_similarity_threshold": 0.1,
+    "_creative_specialist_note": "Standard settings - creative organisms explore attractor basins freely"
+  },
+  "self_perception": {
+    "_help": "Reward shaping for features 26-28: organisms feel their oscillation, coherence, and proximity to attractors",
+    "enabled": true,
+    "oscillation_entropy_threshold": 0.7,
+    "oscillation_chaos_penalty": -0.08,
+    "coherence_frequency_threshold": 0.6,
+    "coherence_trap_penalty": -0.12,
+    "proximity_near_threshold": 0.3,
+    "proximity_near_bonus": 0.04,
+    "proximity_medium_threshold": 0.6,
+    "proximity_medium_bonus": 0.02,
+    "_creative_specialist_note": "Reduced penalties allow more creative exploration without harsh punishment for oscillation/chaos"
   }
 }

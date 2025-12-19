@@ -290,7 +290,7 @@
       "activation": "relu",
       "dropout": 0.1,
       "hidden_dim": 64,
-      "input_dim": 25,
+      "input_dim": 28,
       "output_dim": 6,
       "vocab_size": 20000,
       "attention_dim": 32
@@ -299,7 +299,7 @@
       "concept_loss_weight": 0.1,
       "embed_dim": 64,
       "enabled": true,
-      "num_key_compositions": 20,
+      "num_key_compositions": 30,
       "utility_update_alpha": 0.1
     },
     "device": "cuda",

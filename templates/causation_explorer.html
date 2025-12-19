@@ -118,6 +118,12 @@
         .data-warning { color: var(--warning); }
         .data-accent { color: var(--accent-cyan); }
         
+        /* Fade-in animation for streaming debug logs */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
         /* Neural node pulsing animation */
         @keyframes neuralPulse {
             0%, 100% { 
@@ -479,6 +485,26 @@
             gap: 4px;
         }
         
+        .dossier-btn {
+            background: transparent;
+            border: 1px solid var(--border-subtle);
+            color: var(--text-muted);
+            font-size: 0.85em;
+            padding: 2px 5px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            opacity: 0.7;
+        }
+        
+        .dossier-btn:hover {
+            background: var(--accent-gold);
+            color: var(--bg-base);
+            border-color: var(--accent-gold);
+            opacity: 1;
+            transform: scale(1.1);
+        }
+        
         .source-dot {
             width: 6px;
             height: 6px;
@@ -686,27 +712,117 @@
         .fitness-bar.average { background: var(--warning); }
         .fitness-bar.poor { background: var(--negative); }
         
-        /* ─── Battle Record - Compact Inline ─── */
-        .battle-record {
+        /* ─── Competition Stats Panel - Tournament & Battle Record ─── */
+        .competition-stats {
+            background: linear-gradient(135deg, rgba(0,20,40,0.8) 0%, rgba(20,0,40,0.6) 100%);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: var(--radius-sm);
+            padding: var(--space-xs);
+            margin: var(--space-xs) 0;
+        }
+        
+        .comp-header {
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: var(--space-md);
+            justify-content: space-between;
+            gap: var(--space-sm);
+            padding-bottom: var(--space-xs);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: var(--space-xs);
+        }
+        
+        .rank-badge {
+            font-size: 1.2em;
+            filter: drop-shadow(0 0 3px currentColor);
+        }
+        .rank-champion { color: #ffd700; }
+        .rank-warrior { color: #ff6b6b; }
+        .rank-fighter { color: #4dabf7; }
+        .rank-trainee { color: #69db7c; }
+        .rank-novice { color: #868e96; }
+        
+        .skill-rating {
             font-family: var(--font-data);
-            font-size: 0.75em;
-            padding: var(--space-xs) 0;
-            margin: 0;
+            font-size: 0.9em;
+            color: var(--accent-cyan);
+            font-weight: bold;
         }
         
-        .battle-stat {
+        .streak-badge {
+            background: linear-gradient(135deg, #ff6b6b, #ffa94d);
+            color: #000;
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-size: 0.7em;
+            font-weight: bold;
+            animation: pulse-streak 1s infinite;
+        }
+        
+        @keyframes pulse-streak {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        /* Tournament Record Row */
+        .tournament-record {
             display: flex;
             align-items: center;
-            gap: 3px;
+            justify-content: space-around;
+            gap: var(--space-xs);
+            font-size: 0.7em;
+            padding: var(--space-xs) 0;
         }
         
-        .battle-wins { color: var(--positive); }
-        .battle-losses { color: var(--negative); }
-        .battle-ratio { color: var(--text-secondary); }
+        .tourn-stat {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            color: var(--text-secondary);
+        }
+        
+        /* Skills Mastered */
+        .skills-mastered {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2px;
+            padding: var(--space-xs) 0;
+            justify-content: center;
+        }
+        
+        .skill-badge {
+            background: rgba(0, 255, 136, 0.15);
+            border: 1px solid rgba(0, 255, 136, 0.4);
+            color: #00ff88;
+            padding: 1px 4px;
+            border-radius: 2px;
+            font-size: 0.6em;
+            font-family: var(--font-mono);
+            text-transform: uppercase;
+        }
+        
+        .skill-badge.skill-more {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+            color: var(--text-muted);
+        }
+        
+        .comp-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.65em;
+            color: var(--text-muted);
+            padding-top: var(--space-xs);
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .exp-badge {
+            color: var(--accent-cyan);
+        }
+        
+        .best-streak {
+            color: #ffa94d;
+        }
         
         /* ─── Behavioral Fingerprint - Mini Sparkline ─── */
         .fingerprint-viz {
@@ -942,7 +1058,6 @@
         .fitness-sparkline-container.has-tooltip,
         .action-sequence-container.has-tooltip,
         .fingerprint-viz.has-tooltip,
-        .battle-record.has-tooltip,
         .stat-item.has-tooltip {
             cursor: help;
         }
@@ -1231,6 +1346,747 @@
         .binder-filter:focus, .binder-sort:focus {
             outline: none;
             border-color: var(--accent-cyan);
+        }
+        
+        /* Multi-Rank Button */
+        .multi-rank-btn {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: var(--space-xs) var(--space-sm);
+            background: var(--bg-deep);
+            border: 1px solid var(--border-default);
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+            font-size: 0.8em;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+        
+        .multi-rank-btn:hover {
+            border-color: var(--accent-gold-dim);
+            color: var(--accent-gold);
+        }
+        
+        .multi-rank-btn.active, .multi-rank-btn.has-criteria {
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+            background: rgba(255, 215, 0, 0.1);
+        }
+        
+        /* Multi-Rank Panel */
+        .multi-rank-panel {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            width: 320px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--accent-gold-dim);
+            border-radius: var(--radius-md);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            margin-top: 4px;
+        }
+        
+        .multi-rank-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--space-sm);
+            border-bottom: 1px solid var(--border-default);
+            color: var(--accent-gold);
+            font-weight: 600;
+        }
+        
+        .multi-rank-header .close-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.2em;
+            cursor: pointer;
+            padding: 0 4px;
+        }
+        
+        .multi-rank-header .close-btn:hover {
+            color: var(--text-primary);
+        }
+        
+        .multi-rank-criteria {
+            padding: var(--space-sm);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .rank-criterion {
+            display: grid;
+            grid-template-columns: auto 1fr auto auto;
+            gap: 8px;
+            align-items: center;
+            padding: 6px 8px;
+            background: var(--bg-deep);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: background var(--transition-fast);
+        }
+        
+        .rank-criterion:hover {
+            background: var(--bg-surface);
+        }
+        
+        .rank-criterion input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--accent-gold);
+        }
+        
+        .criterion-name {
+            font-size: 0.85em;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+        
+        .rank-criterion input[type="checkbox"]:checked + .criterion-name {
+            color: var(--accent-gold);
+        }
+        
+        .weight-slider {
+            width: 80px;
+            height: 4px;
+            accent-color: var(--accent-gold);
+            cursor: pointer;
+        }
+        
+        .weight-value {
+            font-size: 0.75em;
+            color: var(--text-muted);
+            width: 35px;
+            text-align: right;
+            font-family: var(--font-mono);
+        }
+        
+        .multi-rank-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            padding: var(--space-sm);
+            border-top: 1px solid var(--border-default);
+        }
+        
+        .binder-controls {
+            position: relative;
+        }
+        
+        /* ═══════════════════════════════════════════════════════════════════════════
+           📋 ORGANISM DOSSIER - Full Scientific Data Sheet
+           ═══════════════════════════════════════════════════════════════════════════ */
+        
+        .dossier-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+            overflow-y: auto;
+            backdrop-filter: blur(4px);
+        }
+        
+        .dossier-container {
+            width: 100%;
+            max-width: 1200px;
+            background: var(--bg-base);
+            border: 2px solid var(--accent-gold);
+            border-radius: var(--radius-lg);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(255, 215, 0, 0.15);
+            margin: 20px auto;
+        }
+        
+        .dossier-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), transparent);
+            border-bottom: 1px solid var(--accent-gold-dim);
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        }
+        
+        .dossier-title-section {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .dossier-icon {
+            font-size: 2.5em;
+        }
+        
+        .dossier-title {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .dossier-title h2 {
+            margin: 0;
+            font-family: var(--font-mono);
+            font-size: 1.5em;
+            color: var(--accent-gold);
+            letter-spacing: 0.05em;
+        }
+        
+        .dossier-subtitle {
+            font-size: 0.85em;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+        }
+        
+        .dossier-close-btn {
+            background: transparent;
+            border: 1px solid var(--border-default);
+            color: var(--text-muted);
+            font-size: 1.5em;
+            padding: 8px 16px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+        
+        .dossier-close-btn:hover {
+            background: var(--danger);
+            border-color: var(--danger);
+            color: white;
+        }
+        
+        .dossier-content {
+            padding: 24px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        
+        .dossier-section {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+        }
+        
+        .dossier-section.full-width {
+            grid-column: 1 / -1;
+        }
+        
+        .dossier-section.two-thirds {
+            grid-column: span 2;
+        }
+        
+        .dossier-section-header {
+            padding: 12px 16px;
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .dossier-section-header h3 {
+            margin: 0;
+            font-size: 0.9em;
+            font-weight: 600;
+            color: var(--accent-cyan);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+        
+        .dossier-section-header .section-icon {
+            font-size: 1.1em;
+        }
+        
+        .dossier-section-body {
+            padding: 16px;
+        }
+        
+        /* Identity Section - Large hero display */
+        .identity-hero {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        .identity-badge {
+            width: 100px;
+            height: 100px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-deep);
+            border: 2px solid var(--accent-gold-dim);
+            border-radius: 50%;
+        }
+        
+        .identity-badge .rarity-gem {
+            font-size: 2.5em;
+        }
+        
+        .identity-badge .rarity-label {
+            font-size: 0.65em;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+        }
+        
+        .identity-core {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .identity-id {
+            font-family: var(--font-mono);
+            font-size: 1.3em;
+            color: var(--text-primary);
+            letter-spacing: 0.05em;
+        }
+        
+        .identity-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        
+        .identity-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85em;
+            color: var(--text-secondary);
+            background: var(--bg-deep);
+            padding: 4px 10px;
+            border-radius: var(--radius-sm);
+        }
+        
+        .identity-alignment {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 12px;
+            background: var(--bg-deep);
+            border-radius: var(--radius-md);
+        }
+        
+        .identity-alignment .alignment-icon {
+            font-size: 2em;
+        }
+        
+        .identity-alignment .alignment-text {
+            font-size: 0.8em;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+        
+        .stat-box {
+            background: var(--bg-deep);
+            padding: 12px;
+            border-radius: var(--radius-sm);
+            text-align: center;
+            border: 1px solid var(--border-subtle);
+        }
+        
+        .stat-box .value {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: var(--accent-cyan);
+            font-family: var(--font-mono);
+        }
+        
+        .stat-box .label {
+            font-size: 0.7em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 0.05em;
+            margin-top: 4px;
+        }
+        
+        .stat-box.highlight {
+            border-color: var(--accent-gold-dim);
+            background: rgba(255, 215, 0, 0.05);
+        }
+        
+        .stat-box.highlight .value {
+            color: var(--accent-gold);
+        }
+        
+        /* Fitness Trend Chart */
+        .fitness-chart-container {
+            height: 120px;
+            background: var(--bg-deep);
+            border-radius: var(--radius-sm);
+            padding: 8px;
+            position: relative;
+        }
+        
+        .fitness-chart-container svg {
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Behavioral Fingerprint Large */
+        .fingerprint-large {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 8px;
+        }
+        
+        .fingerprint-bar-large {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .fingerprint-bar-large .bar-container {
+            width: 100%;
+            height: 80px;
+            background: var(--bg-deep);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding: 4px;
+        }
+        
+        .fingerprint-bar-large .bar {
+            width: 80%;
+            background: linear-gradient(to top, var(--accent-cyan), var(--accent-cyan-dim));
+            border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+            transition: height 0.3s ease;
+        }
+        
+        .fingerprint-bar-large .bar-label {
+            font-size: 0.7em;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+        
+        .fingerprint-bar-large .bar-value {
+            font-size: 0.85em;
+            color: var(--accent-cyan);
+            font-family: var(--font-mono);
+        }
+        
+        /* Battle Record */
+        .battle-record {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+        
+        .battle-stat {
+            text-align: center;
+            padding: 16px;
+            background: var(--bg-deep);
+            border-radius: var(--radius-md);
+        }
+        
+        .battle-stat .icon {
+            font-size: 1.8em;
+            margin-bottom: 8px;
+        }
+        
+        .battle-stat .value {
+            font-size: 1.8em;
+            font-weight: 600;
+            font-family: var(--font-mono);
+        }
+        
+        .battle-stat .label {
+            font-size: 0.75em;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+        
+        .battle-stat.wins .value { color: var(--positive); }
+        .battle-stat.losses .value { color: var(--danger); }
+        .battle-stat.rate .value { color: var(--accent-orange); }
+        
+        /* Neural Stats */
+        .neural-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        
+        .neural-stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            background: var(--bg-deep);
+            border-radius: var(--radius-sm);
+        }
+        
+        .neural-stat .label {
+            color: var(--text-secondary);
+            font-size: 0.85em;
+        }
+        
+        .neural-stat .value {
+            font-family: var(--font-mono);
+            color: var(--accent-purple);
+            font-weight: 600;
+        }
+        
+        /* Traits List */
+        .traits-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .trait-badge {
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 0.8em;
+            font-weight: 500;
+        }
+        
+        .trait-badge.strength {
+            background: rgba(0, 255, 136, 0.15);
+            color: var(--positive);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+        
+        .trait-badge.weakness {
+            background: rgba(255, 68, 68, 0.15);
+            color: var(--danger);
+            border: 1px solid rgba(255, 68, 68, 0.3);
+        }
+        
+        /* Alignment Breakdown */
+        .alignment-breakdown {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+        
+        .alignment-axis {
+            background: var(--bg-deep);
+            padding: 12px;
+            border-radius: var(--radius-sm);
+        }
+        
+        .alignment-axis .axis-label {
+            font-size: 0.75em;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+        
+        .alignment-axis .axis-bar {
+            height: 8px;
+            background: var(--bg-surface);
+            border-radius: 4px;
+            position: relative;
+            margin-bottom: 4px;
+        }
+        
+        .alignment-axis .axis-marker {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: var(--accent-gold);
+            border-radius: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            border: 2px solid var(--bg-base);
+        }
+        
+        .alignment-axis .axis-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.7em;
+            color: var(--text-muted);
+        }
+        
+        /* Connection Network Mini */
+        .connections-mini {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        
+        .connection-node {
+            padding: 4px 8px;
+            background: var(--bg-deep);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            font-size: 0.75em;
+            font-family: var(--font-mono);
+            color: var(--text-secondary);
+        }
+        
+        .connection-node:hover {
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+            cursor: pointer;
+        }
+        
+        /* Timeline Events */
+        .timeline-events {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .timeline-event {
+            display: flex;
+            gap: 12px;
+            padding: 8px;
+            background: var(--bg-deep);
+            border-radius: var(--radius-sm);
+            font-size: 0.85em;
+        }
+        
+        .timeline-event .event-icon {
+            font-size: 1.2em;
+        }
+        
+        .timeline-event .event-text {
+            flex: 1;
+            color: var(--text-secondary);
+        }
+        
+        .timeline-event .event-time {
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            font-size: 0.8em;
+        }
+        
+        /* Action History Sequence */
+        .action-history-full {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            max-height: 100px;
+            overflow-y: auto;
+            padding: 8px;
+            background: var(--bg-deep);
+            border-radius: var(--radius-sm);
+        }
+        
+        .action-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+            transition: transform 0.1s;
+        }
+        
+        .action-dot:hover {
+            transform: scale(1.5);
+        }
+        
+        .action-dot.action-0 { background: #4ecdc4; } /* Move */
+        .action-dot.action-1 { background: #45b7d1; } /* Cooperate */
+        .action-dot.action-2 { background: #f38181; } /* Compete */
+        .action-dot.action-3 { background: #aa96da; } /* Rest */
+        .action-dot.action-4 { background: #fcbad3; } /* Reproduce */
+        .action-dot.action-5 { background: #95e1d3; } /* Isolate */
+        
+        /* Skills Section */
+        .skills-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .skill-badge-large {
+            padding: 8px 14px;
+            background: linear-gradient(135deg, rgba(170, 0, 255, 0.2), rgba(0, 200, 255, 0.2));
+            border: 1px solid rgba(170, 0, 255, 0.4);
+            border-radius: var(--radius-sm);
+            font-size: 0.85em;
+            color: var(--accent-purple);
+        }
+        
+        /* Strength Bar Row (Alliance Dossier) */
+        .strength-bar-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        /* Alliance Card Hover in Browser */
+        .alliance-card:hover {
+            background: var(--bg-surface) !important;
+            transform: translateX(4px);
+        }
+        
+        /* Quick Actions Footer */
+        .dossier-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            background: var(--bg-surface);
+            border-top: 1px solid var(--border-default);
+            border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+        }
+        
+        .dossier-actions {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .dossier-action-btn {
+            padding: 10px 20px;
+            border-radius: var(--radius-sm);
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            border: 1px solid var(--border-default);
+            background: var(--bg-elevated);
+            color: var(--text-secondary);
+        }
+        
+        .dossier-action-btn:hover {
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+        
+        .dossier-action-btn.primary {
+            background: var(--accent-gold);
+            color: var(--bg-base);
+            border-color: var(--accent-gold);
+        }
+        
+        .dossier-action-btn.primary:hover {
+            background: var(--accent-orange);
+            border-color: var(--accent-orange);
+        }
+        
+        .dossier-timestamp {
+            font-size: 0.75em;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
         }
         
         .binder-search {
@@ -3113,7 +3969,7 @@
                 <div class="filter-section">
                     <h4>Show Controls</h4>
                     <div class="filter-item">
-                        <label><input type="checkbox" id="show-labels" checked onchange="toggleLabels()">
+                        <label><input type="checkbox" id="show-labels" onchange="toggleLabels()">
                             <span>Node Labels</span></label>
                     </div>
                     <div class="filter-item">
@@ -3966,7 +4822,7 @@
                                     </div>
                                     <div style="margin-bottom: 8px;">
                                         <label style="color: #ff0; display: block; margin-bottom: 5px; font-size: 0.9em;">Max Organisms:</label>
-                                        <input type="number" id="butterflyMaxOrganisms" value="10" min="1" max="50"
+                                        <input type="number" id="butterflyMaxOrganisms" value="50" min="1" max="10000"
                                             style="width: 100%; background: #111; color: #ff0; border: 1px solid #ff0; padding: 5px; font-family: 'Courier New', monospace; font-size: 0.9em;">
                                     </div>
                                 </div>
@@ -4205,14 +5061,62 @@
                                 <option value="neutral-moral">True Neutral</option>
                                 <option value="evil">Evil</option>
                             </select>
-                            <select id="binderSort" class="binder-sort" onchange="sortOrganismBinder()">
-                                <option value="fitness-desc">Fitness ↓</option>
-                                <option value="fitness-asc">Fitness ↑</option>
-                                <option value="battles-desc">Battles ↓</option>
-                                <option value="rarity-desc">Rarity ↓</option>
-                                <option value="experience-desc">Experience ↓</option>
-                                <option value="vocab-desc">Vocabulary ↓</option>
-                            </select>
+                            
+                            <!-- Multi-Criteria Rank Button -->
+                            <button id="multiRankBtn" class="binder-sort multi-rank-btn" onclick="toggleMultiRankPanel()" title="Multi-Criteria Ranking">
+                                🏆 Rank
+                            </button>
+                            
+                            <!-- Multi-Rank Panel (hidden by default) -->
+                            <div id="multiRankPanel" class="multi-rank-panel" style="display: none;">
+                                <div class="multi-rank-header">
+                                    <span>🎯 Multi-Criteria Ranking</span>
+                                    <button onclick="toggleMultiRankPanel()" class="close-btn">×</button>
+                                </div>
+                                <div class="multi-rank-criteria">
+                                    <label class="rank-criterion">
+                                        <input type="checkbox" id="rankFitness" checked onchange="applyMultiRank()">
+                                        <span class="criterion-name">💪 Fitness</span>
+                                        <input type="range" id="rankFitnessWeight" min="0" max="100" value="100" class="weight-slider" oninput="applyMultiRank()">
+                                        <span class="weight-value" id="rankFitnessValue">100%</span>
+                                    </label>
+                                    <label class="rank-criterion">
+                                        <input type="checkbox" id="rankLinks" onchange="applyMultiRank()">
+                                        <span class="criterion-name">🔗 Links</span>
+                                        <input type="range" id="rankLinksWeight" min="0" max="100" value="50" class="weight-slider" oninput="applyMultiRank()">
+                                        <span class="weight-value" id="rankLinksValue">50%</span>
+                                    </label>
+                                    <label class="rank-criterion">
+                                        <input type="checkbox" id="rankVocab" onchange="applyMultiRank()">
+                                        <span class="criterion-name">📚 Vocabulary</span>
+                                        <input type="range" id="rankVocabWeight" min="0" max="100" value="50" class="weight-slider" oninput="applyMultiRank()">
+                                        <span class="weight-value" id="rankVocabValue">50%</span>
+                                    </label>
+                                    <label class="rank-criterion">
+                                        <input type="checkbox" id="rankExperience" onchange="applyMultiRank()">
+                                        <span class="criterion-name">🧠 Experience</span>
+                                        <input type="range" id="rankExperienceWeight" min="0" max="100" value="50" class="weight-slider" oninput="applyMultiRank()">
+                                        <span class="weight-value" id="rankExperienceValue">50%</span>
+                                    </label>
+                                    <label class="rank-criterion">
+                                        <input type="checkbox" id="rankBattles" onchange="applyMultiRank()">
+                                        <span class="criterion-name">⚔️ Battles</span>
+                                        <input type="range" id="rankBattlesWeight" min="0" max="100" value="50" class="weight-slider" oninput="applyMultiRank()">
+                                        <span class="weight-value" id="rankBattlesValue">50%</span>
+                                    </label>
+                                    <label class="rank-criterion">
+                                        <input type="checkbox" id="rankRarity" onchange="applyMultiRank()">
+                                        <span class="criterion-name">✨ Rarity</span>
+                                        <input type="range" id="rankRarityWeight" min="0" max="100" value="50" class="weight-slider" oninput="applyMultiRank()">
+                                        <span class="weight-value" id="rankRarityValue">50%</span>
+                                    </label>
+                                </div>
+                                <div class="multi-rank-footer">
+                                    <button onclick="resetMultiRank()" class="action-btn">Reset</button>
+                                    <button onclick="applyMultiRank(); toggleMultiRankPanel()" class="action-btn action-primary">Apply & Close</button>
+                                </div>
+                            </div>
+                            
                             <div class="binder-view-toggle">
                                 <button class="view-btn active" onclick="setBinderView('grid', this)" title="Grid View">▦</button>
                                 <button class="view-btn" onclick="setBinderView('list', this)" title="List View">☰</button>
@@ -4225,6 +5129,12 @@
                             <div class="selection-actions">
                                 <button onclick="selectTopNOrganisms()" class="action-btn action-primary">
                                     Select Top <input type="number" id="binderTopN" value="10" min="1" class="top-n-input" onclick="event.stopPropagation()">
+                                </button>
+                                <button onclick="openComparativeAnalysis()" class="action-btn" title="Compare selected organisms side-by-side">
+                                    📊 Compare
+                                </button>
+                                <button onclick="openAlliancesBrowser()" class="action-btn" title="Browse alliances">
+                                    🏛️ Alliances
                                 </button>
                                 <button onclick="clearBinderSelection()" class="action-btn action-danger">Clear</button>
                             </div>
@@ -6217,7 +7127,7 @@
                     'linguistic': true,  // Linguistic edges (from language_anchors)
                     'unknown': true
                 },
-                showLabels: true,
+                showLabels: false,
                 showLinks: true
             };
 
@@ -11727,9 +12637,22 @@
             // Capture graph as image (SVG to canvas to base64)
             function captureGraphImage() {
                 return new Promise((resolve) => {
+                    // Temporarily disable labels for cleaner snapshot
+                    const showLabelsCheckbox = document.getElementById('show-labels');
+                    const labelsWereEnabled = showLabelsCheckbox ? showLabelsCheckbox.checked : false;
+                    if (showLabelsCheckbox && labelsWereEnabled) {
+                        showLabelsCheckbox.checked = false;
+                        toggleLabels(); // Apply the change
+                    }
+                    
                     // REMOVED: Early return when svg doesn't exist - this was blocking captures
                     // Instead, try to capture container or return placeholder
                     if (!svg || !svg.node()) {
+                        // Restore labels before returning
+                        if (showLabelsCheckbox && labelsWereEnabled) {
+                            showLabelsCheckbox.checked = true;
+                            toggleLabels();
+                        }
                         // Try to capture the graph container as fallback
                         const graphContainer = document.querySelector('.graph-container');
                         if (graphContainer) {
@@ -11905,6 +12828,33 @@
                         resolve(null);
                     }
                 });
+            }
+
+            // 🦋 Capture graph for cocoon export (higher quality, top 1000 nodes)
+            async function captureGraphForCocoon() {
+                // Check if we have nodes to capture
+                if (!allNodes || allNodes.length === 0) {
+                    console.log('[COCOON] No nodes to capture');
+                    return null;
+                }
+                
+                // Log what we're capturing
+                const nodeCount = allNodes.length;
+                const linkCount = allLinks ? allLinks.length : 0;
+                console.log(`[COCOON] Capturing graph: ${nodeCount} nodes, ${linkCount} links`);
+                
+                // If more than 1000 nodes, we'd need to filter - but for now, capture what's visible
+                // The graph already does viewport culling, so we capture the current state
+                if (nodeCount > 1000) {
+                    console.log(`[COCOON] Note: Graph has ${nodeCount} nodes (>1000), capturing visible state`);
+                }
+                
+                // Use the existing capture function
+                const image = await captureGraphImage();
+                if (image) {
+                    console.log(`[COCOON] Graph captured: ${(image.length / 1024).toFixed(1)}KB`);
+                }
+                return image;
             }
 
             // Load available Ollama models
@@ -14169,8 +15119,8 @@
                 // Context memory source
                 html += `<tr><td style="color:#888">ctx_mem:</td><td style="color:#4ecdc4">${debugInfo.context_memory_source || 'unknown'}</td></tr>`;
                 
-                // Organism's personal words learned (matches card)
-                html += `<tr><td style="color:#888">org_vocab:</td><td style="color:#2ecc71">${debugInfo.organism_words_learned || 0}</td></tr>`;
+                // Organism's personal words learned (from atomic_language.atoms)
+                html += `<tr><td style="color:#888">org_vocab:</td><td style="color:#2ecc71">${debugInfo.organism_personal_vocab_size || debugInfo.organism_words_learned || 0}</td></tr>`;
                 
                 // Brain has language head (use organism_has_language_head from backend)
                 html += `<tr><td style="color:#888">lang_head:</td><td style="color:${debugInfo.organism_has_language_head ? '#4ecdc4' : '#e74c3c'}">${debugInfo.organism_has_language_head ? 'yes' : 'no'}</td></tr>`;
@@ -14319,15 +15269,6 @@
                     fingerprintViz.addEventListener('mouseleave', hideTooltip);
                 }
                 
-                // Battle record tooltip
-                const battleRecord = card.querySelector('.battle-record');
-                if (battleRecord) {
-                    battleRecord.classList.add('has-tooltip');
-                    battleRecord.addEventListener('mouseenter', (e) => showTooltip(buildBattleTooltip(org), e));
-                    battleRecord.addEventListener('mousemove', (e) => showTooltip(buildBattleTooltip(org), e));
-                    battleRecord.addEventListener('mouseleave', hideTooltip);
-                }
-                
                 // Stat items tooltips
                 const statItems = card.querySelectorAll('.stat-item');
                 const statTypes = ['fitness', 'vocab', 'exp', 'links'];
@@ -14380,9 +15321,31 @@
                 const fingerprint = org.behavioral_fingerprint || [0, 0, 0, 0, 0, 0];
                 const maxFp = Math.max(...fingerprint, 0.01);
                 
-                // Battle win rate calculation
-                const totalBattles = (org.battle_wins || 0) + (org.battle_losses || 0);
-                const winRate = totalBattles > 0 ? ((org.battle_wins || 0) / totalBattles * 100).toFixed(0) : '—';
+
+                
+                // Competition stats
+                const tournamentWins = org.tournament_wins || 0;
+                const tournamentLosses = org.tournament_losses || 0;
+                const dojoSessions = org.dojo_sessions || 0;
+                const skillsMastered = org.skills_mastered || [];
+                const currentStreak = org.win_streak || 0;
+                const bestStreak = org.best_win_streak || 0;
+                const gymExperiences = org.gym_experiences || 0;
+                const killCount = org.highlander_kills || 0;
+                const warVictories = org.war_victories || 0;
+                
+                // Skill rating calculation (simple ELO-like display)
+                const skillRating = Math.round(1000 + (tournamentWins * 25) - (tournamentLosses * 15) + (killCount * 50));
+                
+                // Rank badge based on skill rating
+                const getRankBadge = (rating) => {
+                    if (rating >= 2000) return { icon: '👑', title: 'Champion', class: 'rank-champion' };
+                    if (rating >= 1500) return { icon: '⚔️', title: 'Warrior', class: 'rank-warrior' };
+                    if (rating >= 1200) return { icon: '🛡️', title: 'Fighter', class: 'rank-fighter' };
+                    if (rating >= 1000) return { icon: '🎯', title: 'Trainee', class: 'rank-trainee' };
+                    return { icon: '🌱', title: 'Novice', class: 'rank-novice' };
+                };
+                const rankBadge = getRankBadge(skillRating);
                 
                 card.innerHTML = `
                     <div class="card-header">
@@ -14391,6 +15354,7 @@
                             <span class="card-rarity-badge">${org.rarity || 'common'}</span>
                         </div>
                         <div class="card-source-indicator">
+                            <button class="dossier-btn" onclick="event.stopPropagation(); openOrganismDossier('${org.id}')" title="Full Dossier">📋</button>
                             <span class="source-dot ${org.source === 'live_simulation' ? 'live' : 'capsule'}" 
                                   title="${org.source === 'live_simulation' ? 'Live Simulation' : 'Time Capsule'}"></span>
                         </div>
@@ -14435,10 +15399,29 @@
                             <div class="action-sequence"></div>
                         </div>
                         
-                        <div class="battle-record">
-                            <span class="battle-stat battle-wins" title="Wins">W:${org.battle_wins || 0}</span>
-                            <span class="battle-stat battle-losses" title="Losses">L:${org.battle_losses || 0}</span>
-                            <span class="battle-stat battle-ratio" title="Win Rate">${winRate}%</span>
+                        <!-- 🏆 COMPETITION STATS PANEL -->
+                        <div class="competition-stats" title="Combat & Tournament Record">
+                            <div class="comp-header">
+                                <span class="rank-badge ${rankBadge.class}" title="${rankBadge.title}">${rankBadge.icon}</span>
+                                <span class="skill-rating" title="Skill Rating">${skillRating}</span>
+                                ${currentStreak > 0 ? `<span class="streak-badge" title="Current Win Streak">🔥${currentStreak}</span>` : ''}
+                            </div>
+                            <div class="tournament-record">
+                                <span class="tourn-stat" title="Tournament Wins">🏆${tournamentWins}</span>
+                                <span class="tourn-stat" title="War Victories">⚔️${warVictories}</span>
+                                <span class="tourn-stat" title="Highlander Kills">💀${killCount}</span>
+                                <span class="tourn-stat" title="Dojo Sessions">🥋${dojoSessions}</span>
+                            </div>
+                            ${skillsMastered.length > 0 ? `
+                            <div class="skills-mastered" title="Games Mastered">
+                                ${skillsMastered.slice(0, 4).map(s => `<span class="skill-badge">${s}</span>`).join('')}
+                                ${skillsMastered.length > 4 ? `<span class="skill-badge skill-more">+${skillsMastered.length - 4}</span>` : ''}
+                            </div>
+                            ` : ''}
+                            <div class="comp-footer">
+                                <span class="exp-badge" title="Gym Experiences Recorded">📚${gymExperiences}</span>
+                                <span class="best-streak" title="Best Win Streak">Best: ${bestStreak}🔥</span>
+                            </div>
                         </div>
                         
                         <div class="fingerprint-viz" title="Behavioral Distribution">
@@ -14605,27 +15588,1971 @@
             
             // Sort organisms based on sort control
             function sortOrganismBinder() {
-                const sortBy = document.getElementById('binderSort')?.value || 'fitness-desc';
+                // Use multi-rank if any criteria selected, otherwise default to fitness
+                applyMultiRank();
+            }
+            
+            // Toggle multi-rank panel visibility
+            function toggleMultiRankPanel() {
+                const panel = document.getElementById('multiRankPanel');
+                const btn = document.getElementById('multiRankBtn');
+                if (panel) {
+                    const isVisible = panel.style.display !== 'none';
+                    panel.style.display = isVisible ? 'none' : 'block';
+                    btn?.classList.toggle('active', !isVisible);
+                }
+            }
+            
+            // Calculate normalized score for an organism
+            function calculateMultiRankScore(org, criteria, maxValues) {
+                let totalScore = 0;
+                let totalWeight = 0;
                 
-                const sortFunctions = {
-                    'fitness-desc': (a, b) => (b.fitness || 0) - (a.fitness || 0),
-                    'fitness-asc': (a, b) => (a.fitness || 0) - (b.fitness || 0),
-                    'battles-desc': (a, b) => (b.total_battles || 0) - (a.total_battles || 0),
-                    'rarity-desc': (a, b) => {
-                        const rarityOrder = { legendary: 5, epic: 4, rare: 3, uncommon: 2, common: 1 };
-                        return (rarityOrder[b.rarity] || 0) - (rarityOrder[a.rarity] || 0);
-                    },
-                    'experience-desc': (a, b) => (b.experience_buffer_size || 0) - (a.experience_buffer_size || 0),
-                    'vocab-desc': (a, b) => (b.words_learned || 0) - (a.words_learned || 0)
-                };
+                for (const criterion of criteria) {
+                    if (!criterion.enabled || criterion.weight === 0) continue;
+                    
+                    let rawValue = 0;
+                    let maxValue = 1;
+                    
+                    switch (criterion.key) {
+                        case 'fitness':
+                            rawValue = org.fitness || 0;
+                            maxValue = maxValues.fitness || 1;
+                            break;
+                        case 'links':
+                            rawValue = org.connections_count || 0;
+                            maxValue = maxValues.links || 1;
+                            break;
+                        case 'vocab':
+                            rawValue = org.words_learned || 0;
+                            maxValue = maxValues.vocab || 1;
+                            break;
+                        case 'experience':
+                            rawValue = org.experience_buffer_size || 0;
+                            maxValue = maxValues.experience || 1;
+                            break;
+                        case 'battles':
+                            rawValue = org.total_battles || 0;
+                            maxValue = maxValues.battles || 1;
+                            break;
+                        case 'rarity':
+                            const rarityScores = { legendary: 5, epic: 4, rare: 3, uncommon: 2, common: 1 };
+                            rawValue = rarityScores[org.rarity] || 1;
+                            maxValue = 5;
+                            break;
+                    }
+                    
+                    // Normalize to 0-1 range and apply weight
+                    const normalizedValue = maxValue > 0 ? rawValue / maxValue : 0;
+                    totalScore += normalizedValue * criterion.weight;
+                    totalWeight += criterion.weight;
+                }
                 
+                // Return weighted average (0-100 scale)
+                return totalWeight > 0 ? (totalScore / totalWeight) * 100 : 0;
+            }
+            
+            // Apply multi-criteria ranking
+            function applyMultiRank() {
+                // Update weight display values
+                ['Fitness', 'Links', 'Vocab', 'Experience', 'Battles', 'Rarity'].forEach(name => {
+                    const slider = document.getElementById(`rank${name}Weight`);
+                    const display = document.getElementById(`rank${name}Value`);
+                    if (slider && display) {
+                        display.textContent = slider.value + '%';
+                    }
+                });
+                
+                // Gather criteria
+                const criteria = [
+                    { key: 'fitness', enabled: document.getElementById('rankFitness')?.checked, weight: parseInt(document.getElementById('rankFitnessWeight')?.value || 0) },
+                    { key: 'links', enabled: document.getElementById('rankLinks')?.checked, weight: parseInt(document.getElementById('rankLinksWeight')?.value || 0) },
+                    { key: 'vocab', enabled: document.getElementById('rankVocab')?.checked, weight: parseInt(document.getElementById('rankVocabWeight')?.value || 0) },
+                    { key: 'experience', enabled: document.getElementById('rankExperience')?.checked, weight: parseInt(document.getElementById('rankExperienceWeight')?.value || 0) },
+                    { key: 'battles', enabled: document.getElementById('rankBattles')?.checked, weight: parseInt(document.getElementById('rankBattlesWeight')?.value || 0) },
+                    { key: 'rarity', enabled: document.getElementById('rankRarity')?.checked, weight: parseInt(document.getElementById('rankRarityWeight')?.value || 0) }
+                ];
+                
+                // Check if any criteria enabled
+                const hasActiveCriteria = criteria.some(c => c.enabled && c.weight > 0);
+                
+                // Get filtered organisms
                 const filtered = getFilteredOrganisms();
-                const sortFn = sortFunctions[sortBy] || sortFunctions['fitness-desc'];
-                filtered.sort(sortFn);
+                
+                if (!hasActiveCriteria) {
+                    // Default: sort by fitness descending
+                    filtered.sort((a, b) => (b.fitness || 0) - (a.fitness || 0));
+                } else {
+                    // Calculate max values for normalization
+                    const maxValues = {
+                        fitness: Math.max(...filtered.map(o => o.fitness || 0), 1),
+                        links: Math.max(...filtered.map(o => o.connections_count || 0), 1),
+                        vocab: Math.max(...filtered.map(o => o.words_learned || 0), 1),
+                        experience: Math.max(...filtered.map(o => o.experience_buffer_size || 0), 1),
+                        battles: Math.max(...filtered.map(o => o.total_battles || 0), 1)
+                    };
+                    
+                    // Calculate composite score for each organism
+                    filtered.forEach(org => {
+                        org._multiRankScore = calculateMultiRankScore(org, criteria, maxValues);
+                    });
+                    
+                    // Sort by composite score
+                    filtered.sort((a, b) => (b._multiRankScore || 0) - (a._multiRankScore || 0));
+                }
+                
+                // Update rank button to show active criteria count
+                const activeCount = criteria.filter(c => c.enabled && c.weight > 0).length;
+                const btn = document.getElementById('multiRankBtn');
+                if (btn) {
+                    btn.textContent = activeCount > 0 ? `🏆 Rank (${activeCount})` : '🏆 Rank';
+                    btn.classList.toggle('has-criteria', activeCount > 0);
+                }
                 
                 renderOrganismBinder(filtered);
             }
             
+            // Reset all ranking criteria
+            function resetMultiRank() {
+                // Uncheck all except fitness
+                document.getElementById('rankFitness').checked = true;
+                document.getElementById('rankLinks').checked = false;
+                document.getElementById('rankVocab').checked = false;
+                document.getElementById('rankExperience').checked = false;
+                document.getElementById('rankBattles').checked = false;
+                document.getElementById('rankRarity').checked = false;
+                
+                // Reset all weights to defaults
+                document.getElementById('rankFitnessWeight').value = 100;
+                document.getElementById('rankLinksWeight').value = 50;
+                document.getElementById('rankVocabWeight').value = 50;
+                document.getElementById('rankExperienceWeight').value = 50;
+                document.getElementById('rankBattlesWeight').value = 50;
+                document.getElementById('rankRarityWeight').value = 50;
+                
+                applyMultiRank();
+            }
+            
+            // ═══════════════════════════════════════════════════════════════════════════════
+            // 📋 ORGANISM DOSSIER - Comprehensive Scientific Data Sheet
+            // ═══════════════════════════════════════════════════════════════════════════════
+            
+            // Open full organism dossier
+            async function openOrganismDossier(orgId) {
+                // Find organism in allOrganisms
+                const org = allOrganisms.find(o => o.id === orgId);
+                if (!org) {
+                    console.error('Organism not found:', orgId);
+                    return;
+                }
+                
+                // Create overlay
+                const overlay = document.createElement('div');
+                overlay.className = 'dossier-overlay';
+                overlay.id = 'organismDossier';
+                overlay.onclick = (e) => { if (e.target === overlay) closeDossier(); };
+                
+                // Rarity gems
+                const rarityGems = {
+                    legendary: '💎',
+                    epic: '🔮',
+                    rare: '💠',
+                    uncommon: '🔹',
+                    common: '⚪'
+                };
+                
+                // Action names for fingerprint
+                const actionNames = ['Move', 'Cooperate', 'Compete', 'Rest', 'Reproduce', 'Isolate'];
+                const actionColors = ['#4ecdc4', '#45b7d1', '#f38181', '#aa96da', '#fcbad3', '#95e1d3'];
+                
+                // Calculate win rate
+                const totalBattles = (org.battle_wins || 0) + (org.battle_losses || 0);
+                const winRate = totalBattles > 0 ? ((org.battle_wins || 0) / totalBattles * 100).toFixed(1) : 'N/A';
+                
+                // Skill rating calculation
+                const tournamentWins = org.tournament_wins || 0;
+                const tournamentLosses = org.tournament_losses || 0;
+                const killCount = org.highlander_kills || 0;
+                const skillRating = Math.round(1000 + (tournamentWins * 25) - (tournamentLosses * 15) + (killCount * 50));
+                
+                // Behavioral fingerprint
+                const fingerprint = org.behavioral_fingerprint || [0, 0, 0, 0, 0, 0];
+                const maxFp = Math.max(...fingerprint, 0.01);
+                
+                // Alignment scores
+                const alignScores = org.alignment_scores || {};
+                const chaosScore = (alignScores.chaos_score || 0.5) * 100;
+                const goodEvilScore = ((alignScores.good_evil_score || 0) + 1) / 2 * 100;
+                
+                // Format number with suffix
+                const formatNum = (n) => {
+                    if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+                    if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+                    return n.toString();
+                };
+                
+                // Build dossier HTML
+                overlay.innerHTML = `
+                    <div class="dossier-container">
+                        <div class="dossier-header">
+                            <div class="dossier-title-section">
+                                <span class="dossier-icon">${rarityGems[org.rarity] || '⚪'}</span>
+                                <div class="dossier-title">
+                                    <h2>ORGANISM DOSSIER</h2>
+                                    <span class="dossier-subtitle">Comprehensive Scientific Profile • Classification: ${(org.rarity || 'common').toUpperCase()}</span>
+                                </div>
+                            </div>
+                            <button class="dossier-close-btn" onclick="closeDossier()">✕</button>
+                        </div>
+                        
+                        <div class="dossier-content">
+                            <!-- ═══ IDENTITY SECTION ═══ -->
+                            <div class="dossier-section full-width">
+                                <div class="dossier-section-header">
+                                    <span class="section-icon">🔬</span>
+                                    <h3>Identity & Classification</h3>
+                                </div>
+                                <div class="dossier-section-body">
+                                    <div class="identity-hero">
+                                        <div class="identity-badge">
+                                            <span class="rarity-gem">${rarityGems[org.rarity] || '⚪'}</span>
+                                            <span class="rarity-label">${org.rarity || 'common'}</span>
+                                        </div>
+                                        <div class="identity-core">
+                                            <div class="identity-id">${org.id}</div>
+                                            <div class="identity-meta">
+                                                <span class="identity-meta-item">🧬 Gen ${org.generation || 0}</span>
+                                                <span class="identity-meta-item">📅 Age ${org.age || 0}</span>
+                                                <span class="identity-meta-item">${org.source === 'live_simulation' ? '🟢 Live' : '📦 Capsule'}</span>
+                                                <span class="identity-meta-item">🎭 ${org.personality_type || 'Unknown'}</span>
+                                                <span class="identity-meta-item">⭐ Skill: ${skillRating}</span>
+                                            </div>
+                                        </div>
+                                        <div class="identity-alignment">
+                                            <span class="alignment-icon">${org.alignment_icon || '◇'}</span>
+                                            <span class="alignment-text">${org.alignment || 'Unknown'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- ═══ VITAL STATS ═══ -->
+                            <div class="dossier-section two-thirds">
+                                <div class="dossier-section-header">
+                                    <span class="section-icon">📊</span>
+                                    <h3>Vital Statistics</h3>
+                                </div>
+                                <div class="dossier-section-body">
+                                    <div class="stats-grid">
+                                        <div class="stat-box highlight">
+                                            <span class="value">${Math.round((org.fitness || 0) * 100)}%</span>
+                                            <span class="label">Fitness</span>
+                                        </div>
+                                        <div class="stat-box">
+                                            <span class="value">${org.words_learned || 0}</span>
+                                            <span class="label">Vocabulary</span>
+                                        </div>
+                                        <div class="stat-box">
+                                            <span class="value">${formatNum(org.experience_buffer_size || 0)}</span>
+                                            <span class="label">Experience</span>
+                                        </div>
+                                        <div class="stat-box">
+                                            <span class="value">${org.connections_count || 0}</span>
+                                            <span class="label">Links</span>
+                                        </div>
+                                        <div class="stat-box">
+                                            <span class="value">${org.vocab_utilization || 0}%</span>
+                                            <span class="label">Vocab Util</span>
+                                        </div>
+                                        <div class="stat-box">
+                                            <span class="value">${org.action_history_length || 0}</span>
+                                            <span class="label">Actions</span>
+                                        </div>
+                                        <div class="stat-box">
+                                            <span class="value">${org.epsilon ? org.epsilon.toFixed(3) : '0.000'}</span>
+                                            <span class="label">Epsilon</span>
+                                        </div>
+                                        <div class="stat-box">
+                                            <span class="value">${formatNum(org.brain_params || 0)}</span>
+                                            <span class="label">Brain Params</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- ═══ FITNESS TREND ═══ -->
+                            <div class="dossier-section">
+                                <div class="dossier-section-header">
+                                    <span class="section-icon">📈</span>
+                                    <h3>Fitness Trend</h3>
+                                </div>
+                                <div class="dossier-section-body">
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                        <span style="color: var(--text-muted);">Trend: <span style="color: ${org.fitness_trend?.trend === 'rising' ? 'var(--positive)' : org.fitness_trend?.trend === 'falling' ? 'var(--danger)' : 'var(--text-secondary)'}">${org.fitness_trend?.trend || 'stable'}</span></span>
+                                        <span style="color: var(--text-muted);">Change: ${(org.fitness_trend?.change || 0).toFixed(3)}</span>
+                                    </div>
+                                    <div class="fitness-chart-container" id="dossierFitnessChart" data-history='${JSON.stringify(org.fitness_history || [])}'>
+                                        <svg width="100%" height="100%"></svg>
+                                    </div>
+                                    <div style="text-align: center; margin-top: 8px; color: var(--text-muted); font-size: 0.8em;">
+                                        Volatility: ${(org.fitness_trend?.volatility || 0).toFixed(4)}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- ═══ BATTLE RECORD ═══ -->
+                            <div class="dossier-section">
+                                <div class="dossier-section-header">
+                                    <span class="section-icon">⚔️</span>
+                                    <h3>Combat Record</h3>
+                                </div>
+                                <div class="dossier-section-body">
+                                    <div class="battle-record">
+                                        <div class="battle-stat wins">
+                                            <div class="icon">🏆</div>
+                                            <div class="value">${org.battle_wins || 0}</div>
+                                            <div class="label">Victories</div>
+                                        </div>
+                                        <div class="battle-stat losses">
+                                            <div class="icon">💀</div>
+                                            <div class="value">${org.battle_losses || 0}</div>
+                                            <div class="label">Defeats</div>
+                                        </div>
+                                        <div class="battle-stat rate">
+                                            <div class="icon">📊</div>
+                                            <div class="value">${winRate}${winRate !== 'N/A' ? '%' : ''}</div>
+                                            <div class="label">Win Rate</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- ═══ TOURNAMENT STATS ═══ -->
+                            <div class="dossier-section">
+                                <div class="dossier-section-header">
+                                    <span class="section-icon">🏅</span>
+                                    <h3>Tournament & Highlander</h3>
+                                </div>
+                                <div class="dossier-section-body">
+                                    <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr);">
+                                        <div class="stat-box">
+                                            <span class="value">${org.tournament_wins || 0}</span>
+                                            <span class="label">Tournament Wins</span>
+                                        </div>
+                                        <div class="stat-box">
+                                            <span class="value">${org.highlander_kills || 0}</span>
+                                            <span class="label">Highlander Kills</span>
+                                        </div>
+                                        <div class="stat-box">
+                                            <span class="value">${org.war_victories || 0}</span>
+                                            <span class="label">War Victories</span>
+                                        </div>
+                                        <div class="stat-box">
+                                            <span class="value">${org.dojo_sessions || 0}</span>
+                                            <span class="label">Dojo Sessions</span>
+                                        </div>
+                                        <div class="stat-box">
+                                            <span class="value">${org.win_streak || 0}🔥</span>
+                                            <span class="label">Current Streak</span>
+                                        </div>
+                                        <div class="stat-box">
+                                            <span class="value">${org.best_win_streak || 0}🔥</span>
+                                            <span class="label">Best Streak</span>
+                                        </div>
+                                    </div>
+                                    ${(org.skills_mastered || []).length > 0 ? `
+                                    <div style="margin-top: 12px;">
+                                        <div style="color: var(--text-muted); font-size: 0.8em; margin-bottom: 8px;">Skills Mastered:</div>
+                                        <div class="skills-grid">
+                                            ${(org.skills_mastered || []).map(s => `<span class="skill-badge-large">${s}</span>`).join('')}
+                                        </div>
+                                    </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                            
+                            <!-- ═══ BEHAVIORAL FINGERPRINT ═══ -->
+                            <div class="dossier-section">
+                                <div class="dossier-section-header">
+                                    <span class="section-icon">🧬</span>
+                                    <h3>Behavioral Fingerprint</h3>
+                                </div>
+                                <div class="dossier-section-body">
+                                    <div class="fingerprint-large">
+                                        ${fingerprint.map((v, i) => `
+                                            <div class="fingerprint-bar-large">
+                                                <div class="bar-container">
+                                                    <div class="bar" style="height: ${Math.round((v / maxFp) * 100)}%; background: ${actionColors[i]}"></div>
+                                                </div>
+                                                <span class="bar-value">${(v * 100).toFixed(1)}%</span>
+                                                <span class="bar-label">${actionNames[i]}</span>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                    <div style="margin-top: 16px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+                                        <div style="text-align: center; padding: 8px; background: var(--bg-deep); border-radius: var(--radius-sm);">
+                                            <div style="font-size: 1.2em; color: var(--positive);">${(org.cooperation_ratio * 100 || 0).toFixed(1)}%</div>
+                                            <div style="font-size: 0.7em; color: var(--text-muted);">Cooperation</div>
+                                        </div>
+                                        <div style="text-align: center; padding: 8px; background: var(--bg-deep); border-radius: var(--radius-sm);">
+                                            <div style="font-size: 1.2em; color: var(--danger);">${(org.aggression_ratio * 100 || 0).toFixed(1)}%</div>
+                                            <div style="font-size: 0.7em; color: var(--text-muted);">Aggression</div>
+                                        </div>
+                                        <div style="text-align: center; padding: 8px; background: var(--bg-deep); border-radius: var(--radius-sm);">
+                                            <div style="font-size: 1.2em; color: var(--accent-cyan);">${(org.exploration_ratio * 100 || 0).toFixed(1)}%</div>
+                                            <div style="font-size: 0.7em; color: var(--text-muted);">Exploration</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- ═══ ALIGNMENT ANALYSIS ═══ -->
+                            <div class="dossier-section">
+                                <div class="dossier-section-header">
+                                    <span class="section-icon">⚖️</span>
+                                    <h3>Alignment Analysis</h3>
+                                </div>
+                                <div class="dossier-section-body">
+                                    <div style="text-align: center; margin-bottom: 16px;">
+                                        <span style="font-size: 2em;">${org.alignment_icon || '◇'}</span>
+                                        <div style="font-size: 1.1em; color: var(--accent-gold); margin-top: 4px;">${org.alignment || 'Unknown'}</div>
+                                    </div>
+                                    <div class="alignment-breakdown">
+                                        <div class="alignment-axis">
+                                            <div class="axis-label">Law ← → Chaos</div>
+                                            <div class="axis-bar">
+                                                <div class="axis-marker" style="left: ${chaosScore}%;"></div>
+                                            </div>
+                                            <div class="axis-labels">
+                                                <span>Lawful</span>
+                                                <span>Chaotic</span>
+                                            </div>
+                                        </div>
+                                        <div class="alignment-axis">
+                                            <div class="axis-label">Evil ← → Good</div>
+                                            <div class="axis-bar">
+                                                <div class="axis-marker" style="left: ${goodEvilScore}%;"></div>
+                                            </div>
+                                            <div class="axis-labels">
+                                                <span>Evil</span>
+                                                <span>Good</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div style="margin-top: 12px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 0.8em;">
+                                        <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
+                                            <span>Entropy:</span><span style="color: var(--text-secondary);">${(alignScores.entropy || 0).toFixed(3)}</span>
+                                        </div>
+                                        <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
+                                            <span>Stability:</span><span style="color: var(--text-secondary);">${(alignScores.stability || 0).toFixed(3)}</span>
+                                        </div>
+                                        <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
+                                            <span>Coop Tendency:</span><span style="color: var(--text-secondary);">${(alignScores.coop_tendency || 0).toFixed(3)}</span>
+                                        </div>
+                                        <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
+                                            <span>Battle Aggro:</span><span style="color: var(--text-secondary);">${(alignScores.battle_aggression || 0).toFixed(3)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- ═══ NEURAL NETWORK ═══ -->
+                            <div class="dossier-section">
+                                <div class="dossier-section-header">
+                                    <span class="section-icon">🧠</span>
+                                    <h3>Neural Architecture</h3>
+                                </div>
+                                <div class="dossier-section-body">
+                                    <div class="neural-grid">
+                                        <div class="neural-stat">
+                                            <span class="label">Parameters</span>
+                                            <span class="value">${formatNum(org.brain_params || 0)}</span>
+                                        </div>
+                                        <div class="neural-stat">
+                                            <span class="label">Hidden Dim</span>
+                                            <span class="value">${org.hidden_dim || 0}</span>
+                                        </div>
+                                        <div class="neural-stat">
+                                            <span class="label">Language Head</span>
+                                            <span class="value">${org.has_language_head ? '✓ Yes' : '✗ No'}</span>
+                                        </div>
+                                        <div class="neural-stat">
+                                            <span class="label">Epsilon</span>
+                                            <span class="value">${org.epsilon ? org.epsilon.toFixed(4) : '0.0000'}</span>
+                                        </div>
+                                        <div class="neural-stat">
+                                            <span class="label">Experience</span>
+                                            <span class="value">${formatNum(org.experience_buffer_size || 0)}</span>
+                                        </div>
+                                        <div class="neural-stat">
+                                            <span class="label">Gym Experiences</span>
+                                            <span class="value">${org.gym_experiences || 0}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- ═══ TRAITS ═══ -->
+                            <div class="dossier-section">
+                                <div class="dossier-section-header">
+                                    <span class="section-icon">✨</span>
+                                    <h3>Traits & Characteristics</h3>
+                                </div>
+                                <div class="dossier-section-body">
+                                    <div style="margin-bottom: 12px;">
+                                        <div style="color: var(--positive); font-size: 0.8em; margin-bottom: 8px;">STRENGTHS</div>
+                                        <div class="traits-list">
+                                            ${(org.strengths || []).length > 0 
+                                                ? (org.strengths || []).map(s => `<span class="trait-badge strength">${s.replace(/_/g, ' ')}</span>`).join('')
+                                                : '<span style="color: var(--text-muted); font-size: 0.85em;">None identified</span>'
+                                            }
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div style="color: var(--danger); font-size: 0.8em; margin-bottom: 8px;">WEAKNESSES</div>
+                                        <div class="traits-list">
+                                            ${(org.weaknesses || []).length > 0 
+                                                ? (org.weaknesses || []).map(w => `<span class="trait-badge weakness">${w.replace(/_/g, ' ')}</span>`).join('')
+                                                : '<span style="color: var(--text-muted); font-size: 0.85em;">None identified</span>'
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- ═══ ACTION HISTORY ═══ -->
+                            <div class="dossier-section two-thirds">
+                                <div class="dossier-section-header">
+                                    <span class="section-icon">🎬</span>
+                                    <h3>Action History</h3>
+                                </div>
+                                <div class="dossier-section-body">
+                                    <div style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                                        <span style="color: var(--text-muted); font-size: 0.85em;">Recent ${(org.recent_actions || []).length} actions (newest → oldest)</span>
+                                        <div style="display: flex; gap: 8px; font-size: 0.7em;">
+                                            ${actionNames.map((name, i) => `<span style="color: ${actionColors[i]};">■ ${name}</span>`).join('')}
+                                        </div>
+                                    </div>
+                                    <div class="action-history-full">
+                                        ${(org.recent_actions || []).map(a => `<div class="action-dot action-${a}" title="${actionNames[a] || 'Unknown'}"></div>`).join('')}
+                                    </div>
+                                    <div style="margin-top: 8px; color: var(--text-muted); font-size: 0.8em;">
+                                        Dominant: <span style="color: var(--accent-cyan);">${org.dominant_action || 'Unknown'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- ═══ SOCIAL & ALLIANCE ═══ -->
+                            <div class="dossier-section">
+                                <div class="dossier-section-header">
+                                    <span class="section-icon">🤝</span>
+                                    <h3>Social & Alliance</h3>
+                                </div>
+                                <div class="dossier-section-body">
+                                    <div class="neural-grid">
+                                        <div class="neural-stat" ${org.alliance_id ? `style="cursor: pointer;" onclick="closeDossier(); openAllianceDossier('${org.alliance_id}')" title="View Alliance Dossier"` : ''}>
+                                            <span class="label">Alliance</span>
+                                            <span class="value" style="${org.alliance_id ? 'color: var(--accent-cyan);' : ''}">${org.alliance_id ? org.alliance_id.substring(0, 8) + ' →' : 'None'}</span>
+                                        </div>
+                                        <div class="neural-stat">
+                                            <span class="label">Reputation</span>
+                                            <span class="value">${(org.alliance_reputation || 0.5).toFixed(2)}</span>
+                                        </div>
+                                        <div class="neural-stat">
+                                            <span class="label">Connections</span>
+                                            <span class="value">${org.connections_count || 0}</span>
+                                        </div>
+                                        <div class="neural-stat">
+                                            <span class="label">Confed Tier</span>
+                                            <span class="value">${org.confederation_tier || 0}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- ═══ LINEAGE ═══ -->
+                            <div class="dossier-section">
+                                <div class="dossier-section-header">
+                                    <span class="section-icon">🌳</span>
+                                    <h3>Lineage & Origin</h3>
+                                </div>
+                                <div class="dossier-section-body">
+                                    <div class="neural-grid">
+                                        <div class="neural-stat">
+                                            <span class="label">Generation</span>
+                                            <span class="value">${org.generation || 0}</span>
+                                        </div>
+                                        <div class="neural-stat">
+                                            <span class="label">Illumination</span>
+                                            <span class="value">${org.illumination_level || 'none'}</span>
+                                        </div>
+                                    </div>
+                                    ${(org.parent_ids || []).length > 0 ? `
+                                    <div style="margin-top: 12px;">
+                                        <div style="color: var(--text-muted); font-size: 0.8em; margin-bottom: 8px;">Parent IDs:</div>
+                                        <div class="connections-mini">
+                                            ${(org.parent_ids || []).map(p => `<span class="connection-node" onclick="openOrganismDossier('${p}')">${p.substring(0, 8)}</span>`).join('')}
+                                        </div>
+                                    </div>
+                                    ` : '<div style="color: var(--text-muted); font-size: 0.85em; margin-top: 8px;">Genesis organism (no parents)</div>'}
+                                </div>
+                            </div>
+                            
+                            <!-- ═══ RAW DATA ═══ -->
+                            <div class="dossier-section full-width">
+                                <div class="dossier-section-header">
+                                    <span class="section-icon">📄</span>
+                                    <h3>Raw Data Export</h3>
+                                </div>
+                                <div class="dossier-section-body">
+                                    <details>
+                                        <summary style="cursor: pointer; color: var(--accent-cyan); margin-bottom: 8px;">Click to expand full JSON data</summary>
+                                        <pre style="background: var(--bg-deep); padding: 12px; border-radius: var(--radius-sm); overflow-x: auto; font-size: 0.75em; max-height: 300px; overflow-y: auto;">${JSON.stringify(org, null, 2)}</pre>
+                                    </details>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="dossier-footer">
+                            <span class="dossier-timestamp">Generated: ${new Date().toISOString()}</span>
+                            <div class="dossier-actions">
+                                <button class="dossier-action-btn" onclick="exportDossierHTML('${org.id}')">📄 Export HTML</button>
+                                <button class="dossier-action-btn" onclick="exportDossierPNG('${org.id}')">🖼️ Export Image</button>
+                                <button class="dossier-action-btn" onclick="copyDossierJSON('${org.id}')">📋 Copy JSON</button>
+                                <button class="dossier-action-btn" onclick="closeDossier(); toggleOrganismSelection('${org.id}')">☑️ Select</button>
+                                <button class="dossier-action-btn primary" onclick="closeDossier()">Close Dossier</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(overlay);
+                
+                // Render fitness chart
+                setTimeout(() => renderDossierFitnessChart(org.fitness_history || []), 100);
+                
+                // Prevent body scroll
+                document.body.style.overflow = 'hidden';
+                
+                // Add keyboard listener for escape
+                const escapeHandler = (e) => {
+                    if (e.key === 'Escape') {
+                        closeDossier();
+                        document.removeEventListener('keydown', escapeHandler);
+                    }
+                };
+                document.addEventListener('keydown', escapeHandler);
+            }
+            
+            // Close dossier
+            function closeDossier() {
+                const overlay = document.getElementById('organismDossier');
+                if (overlay) {
+                    overlay.remove();
+                    document.body.style.overflow = '';
+                }
+            }
+            
+            // Render fitness chart in dossier
+            function renderDossierFitnessChart(history) {
+                if (!history || history.length < 2) return;
+                
+                const container = document.getElementById('dossierFitnessChart');
+                if (!container) return;
+                
+                const svg = container.querySelector('svg');
+                const width = container.clientWidth - 16;
+                const height = container.clientHeight - 16;
+                
+                const min = Math.min(...history);
+                const max = Math.max(...history);
+                const range = max - min || 1;
+                
+                const points = history.map((v, i) => {
+                    const x = (i / (history.length - 1)) * width;
+                    const y = height - ((v - min) / range) * height;
+                    return `${x},${y}`;
+                }).join(' ');
+                
+                svg.innerHTML = `
+                    <defs>
+                        <linearGradient id="fitnessGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:var(--accent-cyan);stop-opacity:0.4" />
+                            <stop offset="100%" style="stop-color:var(--accent-cyan);stop-opacity:0" />
+                        </linearGradient>
+                    </defs>
+                    <polygon points="0,${height} ${points} ${width},${height}" fill="url(#fitnessGradient)" />
+                    <polyline points="${points}" fill="none" stroke="var(--accent-cyan)" stroke-width="2" />
+                `;
+            }
+            
+            // Copy dossier JSON to clipboard
+            function copyDossierJSON(orgId) {
+                const org = allOrganisms.find(o => o.id === orgId);
+                if (org) {
+                    navigator.clipboard.writeText(JSON.stringify(org, null, 2));
+                    alert('Organism JSON copied to clipboard!');
+                }
+            }
+            
+            // Export dossier as beautiful standalone HTML
+            function exportDossierHTML(orgId) {
+                const org = allOrganisms.find(o => o.id === orgId);
+                if (!org) return;
+                
+                // Rarity colors and gems
+                const rarityConfig = {
+                    legendary: { gem: '💎', color: '#ffd700', bg: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #1a1a2e 100%)', accent: '#ffd700' },
+                    epic: { gem: '🔮', color: '#a855f7', bg: 'linear-gradient(135deg, #1a1a2e 0%, #2d1b4e 50%, #1a1a2e 100%)', accent: '#a855f7' },
+                    rare: { gem: '💠', color: '#3b82f6', bg: 'linear-gradient(135deg, #1a1a2e 0%, #1e3a5f 50%, #1a1a2e 100%)', accent: '#3b82f6' },
+                    uncommon: { gem: '🔹', color: '#22c55e', bg: 'linear-gradient(135deg, #1a1a2e 0%, #1a3d2e 50%, #1a1a2e 100%)', accent: '#22c55e' },
+                    common: { gem: '⚪', color: '#9ca3af', bg: 'linear-gradient(135deg, #1a1a2e 0%, #2a2a3e 50%, #1a1a2e 100%)', accent: '#9ca3af' }
+                };
+                const config = rarityConfig[org.rarity] || rarityConfig.common;
+                
+                // Action names and colors
+                const actionNames = ['Move', 'Cooperate', 'Compete', 'Rest', 'Reproduce', 'Isolate'];
+                const actionColors = ['#4ecdc4', '#45b7d1', '#f38181', '#aa96da', '#fcbad3', '#95e1d3'];
+                
+                // Calculate metrics
+                const totalBattles = (org.battle_wins || 0) + (org.battle_losses || 0);
+                const winRate = totalBattles > 0 ? ((org.battle_wins || 0) / totalBattles * 100).toFixed(1) + '%' : 'N/A';
+                const fingerprint = org.behavioral_fingerprint || [0, 0, 0, 0, 0, 0];
+                const maxFp = Math.max(...fingerprint, 0.01);
+                const alignScores = org.alignment_scores || {};
+                const skillRating = Math.round(1000 + (org.tournament_wins || 0) * 25 - (org.tournament_losses || 0) * 15 + (org.highlander_kills || 0) * 50);
+                
+                // Format large numbers
+                const fmt = (n) => {
+                    if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+                    if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+                    return n?.toString() || '0';
+                };
+                
+                // Build standalone HTML
+                const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Organism Dossier - ${org.short_id || org.id.substring(0, 8)}</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+        
+        :root {
+            --bg-base: #0a0a0f;
+            --bg-elevated: #12121a;
+            --bg-surface: #1a1a24;
+            --bg-deep: #08080c;
+            --text-primary: #e8e8ed;
+            --text-secondary: #a0a0b0;
+            --text-muted: #606070;
+            --accent: ${config.accent};
+            --positive: #00ff88;
+            --danger: #ff4444;
+            --warning: #ffaa00;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: ${config.bg};
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 40px;
+        }
+        
+        .dossier {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: var(--bg-elevated);
+            border: 2px solid var(--accent);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 100px ${config.accent}22;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, ${config.accent}22, transparent);
+            padding: 32px;
+            border-bottom: 1px solid ${config.accent}44;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .rarity-badge {
+            width: 80px;
+            height: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-deep);
+            border: 2px solid var(--accent);
+            border-radius: 50%;
+        }
+        
+        .rarity-badge .gem { font-size: 2.5em; }
+        .rarity-badge .label { font-size: 0.6em; text-transform: uppercase; color: var(--accent); letter-spacing: 0.1em; }
+        
+        .title h1 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.8em;
+            color: var(--accent);
+            letter-spacing: 0.05em;
+        }
+        
+        .title .subtitle {
+            color: var(--text-muted);
+            font-size: 0.9em;
+            margin-top: 4px;
+        }
+        
+        .header-right {
+            text-align: right;
+        }
+        
+        .alignment-display {
+            font-size: 2.5em;
+            margin-bottom: 4px;
+        }
+        
+        .alignment-text {
+            color: var(--text-secondary);
+            font-size: 0.9em;
+        }
+        
+        .content {
+            padding: 32px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+        
+        .section {
+            background: var(--bg-surface);
+            border: 1px solid #ffffff11;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .section.full { grid-column: 1 / -1; }
+        .section.two-col { grid-column: span 2; }
+        
+        .section-header {
+            padding: 12px 16px;
+            background: var(--bg-deep);
+            border-bottom: 1px solid #ffffff11;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .section-header h2 {
+            font-size: 0.8em;
+            font-weight: 600;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+        
+        .section-body { padding: 16px; }
+        
+        .id-display {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1em;
+            color: var(--text-primary);
+            background: var(--bg-deep);
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            word-break: break-all;
+        }
+        
+        .meta-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .meta-tag {
+            background: var(--bg-deep);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            color: var(--text-secondary);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+        
+        .stat-box {
+            background: var(--bg-deep);
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-box .value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.6em;
+            font-weight: 600;
+            color: var(--accent);
+        }
+        
+        .stat-box .label {
+            font-size: 0.7em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+        
+        .stat-box.highlight { border: 1px solid var(--accent); }
+        
+        .battle-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+        
+        .battle-stat {
+            text-align: center;
+            padding: 20px;
+            background: var(--bg-deep);
+            border-radius: 12px;
+        }
+        
+        .battle-stat .icon { font-size: 2em; margin-bottom: 8px; }
+        .battle-stat .value { font-family: 'JetBrains Mono', monospace; font-size: 2em; font-weight: 600; }
+        .battle-stat .label { font-size: 0.75em; color: var(--text-muted); text-transform: uppercase; }
+        .battle-stat.wins .value { color: var(--positive); }
+        .battle-stat.losses .value { color: var(--danger); }
+        .battle-stat.rate .value { color: var(--warning); }
+        
+        .fingerprint-bars {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 12px;
+            margin-top: 8px;
+        }
+        
+        .fp-bar {
+            text-align: center;
+        }
+        
+        .fp-bar .bar-container {
+            height: 100px;
+            background: var(--bg-deep);
+            border-radius: 8px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding: 4px;
+            margin-bottom: 8px;
+        }
+        
+        .fp-bar .bar {
+            width: 70%;
+            border-radius: 4px 4px 0 0;
+        }
+        
+        .fp-bar .value { font-family: 'JetBrains Mono', monospace; font-size: 0.9em; color: var(--text-secondary); }
+        .fp-bar .label { font-size: 0.7em; color: var(--text-muted); text-transform: uppercase; }
+        
+        .traits-container { display: flex; flex-wrap: wrap; gap: 8px; }
+        
+        .trait {
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            font-weight: 500;
+        }
+        
+        .trait.strength {
+            background: rgba(0, 255, 136, 0.15);
+            color: var(--positive);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+        
+        .trait.weakness {
+            background: rgba(255, 68, 68, 0.15);
+            color: var(--danger);
+            border: 1px solid rgba(255, 68, 68, 0.3);
+        }
+        
+        .neural-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+        
+        .neural-stat {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 14px;
+            background: var(--bg-deep);
+            border-radius: 6px;
+        }
+        
+        .neural-stat .label { color: var(--text-muted); }
+        .neural-stat .value { font-family: 'JetBrains Mono', monospace; color: #a855f7; font-weight: 600; }
+        
+        .footer {
+            padding: 20px 32px;
+            background: var(--bg-deep);
+            border-top: 1px solid #ffffff11;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8em;
+            color: var(--text-muted);
+        }
+        
+        .footer .logo { color: var(--accent); font-weight: 600; }
+        
+        @media print {
+            body { padding: 0; background: white; }
+            .dossier { box-shadow: none; border: 2px solid ${config.accent}; }
+        }
+    </style>
+</head>
+<body>
+    <div class="dossier">
+        <div class="header">
+            <div class="header-left">
+                <div class="rarity-badge">
+                    <span class="gem">${config.gem}</span>
+                    <span class="label">${org.rarity || 'common'}</span>
+                </div>
+                <div class="title">
+                    <h1>ORGANISM DOSSIER</h1>
+                    <div class="subtitle">Convergence Engine • Scientific Profile</div>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="alignment-display">${org.alignment_icon || '◇'}</div>
+                <div class="alignment-text">${org.alignment || 'Unknown'}</div>
+            </div>
+        </div>
+        
+        <div class="content">
+            <!-- Identity -->
+            <div class="section full">
+                <div class="section-header"><span>🔬</span><h2>Identity & Classification</h2></div>
+                <div class="section-body">
+                    <div class="id-display">${org.id}</div>
+                    <div class="meta-grid">
+                        <span class="meta-tag">🧬 Gen ${org.generation || 0}</span>
+                        <span class="meta-tag">📅 Age ${org.age || 0}</span>
+                        <span class="meta-tag">${org.source === 'live_simulation' ? '🟢 Live' : '📦 Capsule'}</span>
+                        <span class="meta-tag">🎭 ${org.personality_type || 'Unknown'}</span>
+                        <span class="meta-tag">⭐ Skill Rating: ${skillRating}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Vital Stats -->
+            <div class="section two-col">
+                <div class="section-header"><span>📊</span><h2>Vital Statistics</h2></div>
+                <div class="section-body">
+                    <div class="stats-grid">
+                        <div class="stat-box highlight"><span class="value">${Math.round((org.fitness || 0) * 100)}%</span><div class="label">Fitness</div></div>
+                        <div class="stat-box"><span class="value">${org.words_learned || 0}</span><div class="label">Vocabulary</div></div>
+                        <div class="stat-box"><span class="value">${fmt(org.experience_buffer_size || 0)}</span><div class="label">Experience</div></div>
+                        <div class="stat-box"><span class="value">${org.connections_count || 0}</span><div class="label">Links</div></div>
+                        <div class="stat-box"><span class="value">${org.vocab_utilization || 0}%</span><div class="label">Vocab Util</div></div>
+                        <div class="stat-box"><span class="value">${org.action_history_length || 0}</span><div class="label">Actions</div></div>
+                        <div class="stat-box"><span class="value">${org.epsilon?.toFixed(3) || '0.000'}</span><div class="label">Epsilon</div></div>
+                        <div class="stat-box"><span class="value">${fmt(org.brain_params || 0)}</span><div class="label">Brain Params</div></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Combat -->
+            <div class="section">
+                <div class="section-header"><span>⚔️</span><h2>Combat Record</h2></div>
+                <div class="section-body">
+                    <div class="battle-grid">
+                        <div class="battle-stat wins"><div class="icon">🏆</div><div class="value">${org.battle_wins || 0}</div><div class="label">Victories</div></div>
+                        <div class="battle-stat losses"><div class="icon">💀</div><div class="value">${org.battle_losses || 0}</div><div class="label">Defeats</div></div>
+                        <div class="battle-stat rate"><div class="icon">📊</div><div class="value">${winRate}</div><div class="label">Win Rate</div></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Fingerprint -->
+            <div class="section two-col">
+                <div class="section-header"><span>🧬</span><h2>Behavioral Fingerprint</h2></div>
+                <div class="section-body">
+                    <div class="fingerprint-bars">
+                        ${fingerprint.map((v, i) => `
+                            <div class="fp-bar">
+                                <div class="bar-container"><div class="bar" style="height: ${Math.round((v / maxFp) * 100)}%; background: ${actionColors[i]};"></div></div>
+                                <div class="value">${(v * 100).toFixed(1)}%</div>
+                                <div class="label">${actionNames[i]}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Traits -->
+            <div class="section">
+                <div class="section-header"><span>✨</span><h2>Traits</h2></div>
+                <div class="section-body">
+                    <div style="margin-bottom: 12px; color: var(--positive); font-size: 0.75em; text-transform: uppercase;">Strengths</div>
+                    <div class="traits-container" style="margin-bottom: 16px;">
+                        ${(org.strengths || []).length > 0 
+                            ? (org.strengths || []).map(s => `<span class="trait strength">${s.replace(/_/g, ' ')}</span>`).join('')
+                            : '<span style="color: var(--text-muted);">None identified</span>'
+                        }
+                    </div>
+                    <div style="margin-bottom: 12px; color: var(--danger); font-size: 0.75em; text-transform: uppercase;">Weaknesses</div>
+                    <div class="traits-container">
+                        ${(org.weaknesses || []).length > 0 
+                            ? (org.weaknesses || []).map(w => `<span class="trait weakness">${w.replace(/_/g, ' ')}</span>`).join('')
+                            : '<span style="color: var(--text-muted);">None identified</span>'
+                        }
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Neural -->
+            <div class="section">
+                <div class="section-header"><span>🧠</span><h2>Neural Architecture</h2></div>
+                <div class="section-body">
+                    <div class="neural-grid">
+                        <div class="neural-stat"><span class="label">Parameters</span><span class="value">${fmt(org.brain_params || 0)}</span></div>
+                        <div class="neural-stat"><span class="label">Hidden Dim</span><span class="value">${org.hidden_dim || 0}</span></div>
+                        <div class="neural-stat"><span class="label">Language Head</span><span class="value">${org.has_language_head ? '✓ Yes' : '✗ No'}</span></div>
+                        <div class="neural-stat"><span class="label">Epsilon</span><span class="value">${org.epsilon?.toFixed(4) || '0.0000'}</span></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tournament -->
+            <div class="section">
+                <div class="section-header"><span>🏅</span><h2>Tournament & Highlander</h2></div>
+                <div class="section-body">
+                    <div class="neural-grid">
+                        <div class="neural-stat"><span class="label">Tournament W</span><span class="value">${org.tournament_wins || 0}</span></div>
+                        <div class="neural-stat"><span class="label">Highlander Kills</span><span class="value">${org.highlander_kills || 0}</span></div>
+                        <div class="neural-stat"><span class="label">War Victories</span><span class="value">${org.war_victories || 0}</span></div>
+                        <div class="neural-stat"><span class="label">Best Streak</span><span class="value">${org.best_win_streak || 0}🔥</span></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Social -->
+            <div class="section">
+                <div class="section-header"><span>🤝</span><h2>Social & Alliance</h2></div>
+                <div class="section-body">
+                    <div class="neural-grid">
+                        <div class="neural-stat"><span class="label">Alliance</span><span class="value">${org.alliance_id ? org.alliance_id.substring(0, 8) : 'None'}</span></div>
+                        <div class="neural-stat"><span class="label">Reputation</span><span class="value">${(org.alliance_reputation || 0.5).toFixed(2)}</span></div>
+                        <div class="neural-stat"><span class="label">Connections</span><span class="value">${org.connections_count || 0}</span></div>
+                        <div class="neural-stat"><span class="label">Confed Tier</span><span class="value">${org.confederation_tier || 0}</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <div><span class="logo">CONVERGENCE ENGINE</span> • Organism Dossier</div>
+            <div>Generated: ${new Date().toISOString()}</div>
+        </div>
+    </div>
+</body>
+</html>`;
+                
+                // Download HTML file
+                const blob = new Blob([html], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `dossier_${org.short_id || org.id.substring(0, 8)}_${Date.now()}.html`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+            
+            // Export dossier as PNG image
+            async function exportDossierPNG(orgId) {
+                const container = document.querySelector('.dossier-container');
+                if (!container) {
+                    alert('Dossier container not found');
+                    return;
+                }
+                
+                // Check if html2canvas is available, if not load it
+                if (typeof html2canvas === 'undefined') {
+                    // Dynamically load html2canvas
+                    const script = document.createElement('script');
+                    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+                    script.onload = () => captureAndDownload(container, orgId);
+                    script.onerror = () => {
+                        alert('Could not load image capture library. Use "Export HTML" instead and print to PDF.');
+                    };
+                    document.head.appendChild(script);
+                } else {
+                    captureAndDownload(container, orgId);
+                }
+            }
+            
+            // Helper function to capture and download
+            async function captureAndDownload(container, orgId) {
+                try {
+                    const org = allOrganisms.find(o => o.id === orgId);
+                    const canvas = await html2canvas(container, {
+                        backgroundColor: '#0a0a0f',
+                        scale: 2,
+                        logging: false,
+                        useCORS: true
+                    });
+                    
+                    const url = canvas.toDataURL('image/png');
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `dossier_${org?.short_id || orgId.substring(0, 8)}_${Date.now()}.png`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                } catch (err) {
+                    console.error('Error capturing dossier:', err);
+                    alert('Error capturing image. Try "Export HTML" instead.');
+                }
+            }
+
+            // ═══════════════════════════════════════════════════════════════════════════
+            // 🏛️ ALLIANCE DOSSIER - Full Alliance Intelligence Report
+            // ═══════════════════════════════════════════════════════════════════════════
+            
+            let allAlliances = [];
+            
+            async function fetchAlliances() {
+                try {
+                    const response = await fetch('/api/alliances');
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    const data = await response.json();
+                    // Handle error response
+                    if (data.error) {
+                        console.error('Alliance API error:', data.error);
+                        return [];
+                    }
+                    allAlliances = Array.isArray(data) ? data : [];
+                    return allAlliances;
+                } catch (e) {
+                    console.error('Failed to fetch alliances:', e);
+                    return [];
+                }
+            }
+            
+            async function openAllianceDossier(allianceId) {
+                // Fetch fresh alliance data
+                await fetchAlliances();
+                
+                const alliance = allAlliances.find(a => a.alliance_id === allianceId);
+                if (!alliance) {
+                    console.error('Alliance not found:', allianceId);
+                    alert('Alliance not found. It may have been disbanded or dissolved.');
+                    return;
+                }
+                
+                // Create overlay
+                const overlay = document.createElement('div');
+                overlay.className = 'dossier-overlay alliance-dossier';
+                overlay.id = 'allianceDossier';
+                overlay.onclick = (e) => { if (e.target === overlay) closeAllianceDossier(); };
+                
+                // Tier styling
+                const tierConfig = {
+                    legendary: { icon: '👑', color: '#ffd700', bg: 'linear-gradient(135deg, rgba(255,215,0,0.2), transparent)' },
+                    elite: { icon: '⚔️', color: '#a855f7', bg: 'linear-gradient(135deg, rgba(168,85,247,0.2), transparent)' },
+                    veteran: { icon: '🛡️', color: '#3b82f6', bg: 'linear-gradient(135deg, rgba(59,130,246,0.2), transparent)' },
+                    established: { icon: '🏰', color: '#22c55e', bg: 'linear-gradient(135deg, rgba(34,197,94,0.2), transparent)' },
+                    nascent: { icon: '🌱', color: '#9ca3af', bg: 'linear-gradient(135deg, rgba(156,163,175,0.2), transparent)' }
+                };
+                const tier = tierConfig[alliance.tier] || tierConfig.nascent;
+                
+                // Format numbers
+                const formatNum = (n) => {
+                    if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+                    if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+                    return n.toString();
+                };
+                
+                // Build dossier HTML
+                overlay.innerHTML = `
+                    <div class="dossier-container" style="border-color: ${tier.color};">
+                        <div class="dossier-header" style="background: ${tier.bg};">
+                            <div class="dossier-title-section">
+                                <span class="dossier-icon">${tier.icon}</span>
+                                <div class="dossier-title">
+                                    <h2 style="color: ${tier.color};">ALLIANCE DOSSIER</h2>
+                                    <span class="dossier-subtitle">Strategic Intelligence Report • Classification: ${(alliance.tier || 'nascent').toUpperCase()}</span>
+                                </div>
+                            </div>
+                            <button class="dossier-close-btn" onclick="closeAllianceDossier()">✕</button>
+                        </div>
+                        
+                        <div class="dossier-content">
+                            <!-- ═══ ALLIANCE IDENTITY ═══ -->
+                            <div class="dossier-section full-width">
+                                <div class="dossier-section-header">
+                                    <span class="section-icon">🏛️</span>
+                                    <h3>Alliance Identity</h3>
+                                </div>
+                                <div class="dossier-section-body">
+                                    <div class="identity-hero">
+                                        <div class="identity-badge" style="border-color: ${tier.color};">
+                                            <span class="rarity-gem">${tier.icon}</span>
+                                            <span class="rarity-label">${alliance.tier || 'nascent'}</span>
+                                        </div>
+                                        <div class="identity-core">
+                                            <div class="identity-id" style="color: ${tier.color};">${alliance.name || 'Unnamed Alliance'}</div>
+                                            <div class="identity-meta">
+                                                <span class="identity-meta-item">🆔 ${alliance.short_id || allianceId.substring(0, 8)}</span>
+                                                <span class="identity-meta-item">👥 ${alliance.member_count || 0} members (${alliance.alive_members || 0} active)</span>
+                                                <span class="identity-meta-item">⚡ Power: ${alliance.power_score || 0}</span>
+                                                ${alliance.warchief_id ? `<span class="identity-meta-item">⚔️ Warchief: ${alliance.warchief_id.substring(0, 8)}</span>` : ''}
+                                            </div>
+                                        </div>
+                                        <div class="identity-alignment">
+                                            <span class="alignment-icon" style="font-size: 3em;">🏰</span>
+                                            <span class="alignment-text">${alliance.at_war_with?.length > 0 ? '⚔️ AT WAR' : '☮️ AT PEACE'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- ═══ COMBAT RECORD ═══ -->
+                            <div class="dossier-section">
+                                <div class="dossier-section-header">
+                                    <span class="section-icon">⚔️</span>
+                                    <h3>War Record</h3>
+                                </div>
+                                <div class="dossier-section-body">
+                                    <div class="battle-record">
+                                        <div class="battle-stat wins">
+                                            <div class="icon">🏆</div>
+                                            <div class="value">${alliance.wars_won || 0}</div>
+                                            <div class="label">Wars Won</div>
+                                        </div>
+                                        <div class="battle-stat losses">
+                                            <div class="icon">💀</div>
+                                            <div class="value">${alliance.wars_lost || 0}</div>
+                                            <div class="label">Wars Lost</div>
+                                        </div>
+                                        <div class="battle-stat rate">
+                                            <div class="icon">📊</div>
+                                            <div class="value">${((alliance.war_win_rate || 0) * 100).toFixed(1)}%</div>
+                                            <div class="label">Win Rate</div>
+                                        </div>
+                                    </div>
+                                    <div style="margin-top: 16px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
+                                        <div class="stat-box">
+                                            <span class="value">${alliance.wars_declared || 0}</span>
+                                            <span class="label">Wars Declared</span>
+                                        </div>
+                                        <div class="stat-box">
+                                            <span class="value">${alliance.total_battles_won || 0}</span>
+                                            <span class="label">Total Battles Won</span>
+                                        </div>
+                                    </div>
+                                    ${alliance.at_war_with?.length > 0 ? `
+                                    <div style="margin-top: 12px; padding: 8px; background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); border-radius: var(--radius-sm);">
+                                        <div style="color: var(--danger); font-size: 0.8em; margin-bottom: 4px;">⚠️ CURRENTLY AT WAR WITH:</div>
+                                        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                                            ${alliance.at_war_with.map(id => `<span style="background: var(--bg-deep); padding: 2px 8px; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.85em;">${id.substring(0, 8)}</span>`).join('')}
+                                        </div>
+                                    </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                            
+                            <!-- ═══ STRENGTH METRICS ═══ -->
+                            <div class="dossier-section">
+                                <div class="dossier-section-header">
+                                    <span class="section-icon">💪</span>
+                                    <h3>Strength Analysis</h3>
+                                </div>
+                                <div class="dossier-section-body">
+                                    <div class="stats-grid" style="grid-template-columns: repeat(2, 1fr);">
+                                        <div class="stat-box highlight">
+                                            <span class="value">${alliance.power_score || 0}</span>
+                                            <span class="label">Power Score</span>
+                                        </div>
+                                        <div class="stat-box">
+                                            <span class="value">${(alliance.collective_fitness || 0).toFixed(2)}</span>
+                                            <span class="label">Collective Fitness</span>
+                                        </div>
+                                        <div class="stat-box">
+                                            <span class="value">${((alliance.average_fitness || 0) * 100).toFixed(1)}%</span>
+                                            <span class="label">Avg Fitness</span>
+                                        </div>
+                                        <div class="stat-box">
+                                            <span class="value">${((alliance.strength || 0) * 100).toFixed(0)}%</span>
+                                            <span class="label">Cohesion</span>
+                                        </div>
+                                    </div>
+                                    <div style="margin-top: 12px;">
+                                        <div style="margin-bottom: 8px; color: var(--text-muted); font-size: 0.8em;">STRENGTH BREAKDOWN</div>
+                                        <div style="display: grid; gap: 8px;">
+                                            <div class="strength-bar-row">
+                                                <span style="color: var(--text-muted); font-size: 0.85em; min-width: 100px;">Size Bonus</span>
+                                                <div style="flex: 1; height: 12px; background: var(--bg-deep); border-radius: 6px; overflow: hidden;">
+                                                    <div style="height: 100%; width: ${(alliance.size_bonus || 0) * 100}%; background: linear-gradient(90deg, #4ecdc4, #22c55e);"></div>
+                                                </div>
+                                                <span style="color: var(--accent-cyan); font-family: var(--font-mono); font-size: 0.85em; min-width: 50px; text-align: right;">${((alliance.size_bonus || 0) * 100).toFixed(0)}%</span>
+                                            </div>
+                                            <div class="strength-bar-row">
+                                                <span style="color: var(--text-muted); font-size: 0.85em; min-width: 100px;">Cohesion</span>
+                                                <div style="flex: 1; height: 12px; background: var(--bg-deep); border-radius: 6px; overflow: hidden;">
+                                                    <div style="height: 100%; width: ${(alliance.cohesion_bonus || 0) * 100 * 5}%; background: linear-gradient(90deg, #a855f7, #f38181);"></div>
+                                                </div>
+                                                <span style="color: var(--accent-cyan); font-family: var(--font-mono); font-size: 0.85em; min-width: 50px; text-align: right;">${((alliance.cohesion_bonus || 0) * 100).toFixed(0)}%</span>
+                                            </div>
+                                            <div class="strength-bar-row">
+                                                <span style="color: var(--text-muted); font-size: 0.85em; min-width: 100px;">Knowledge</span>
+                                                <div style="flex: 1; height: 12px; background: var(--bg-deep); border-radius: 6px; overflow: hidden;">
+                                                    <div style="height: 100%; width: ${(alliance.knowledge_bonus || 0) * 100 * 6.66}%; background: linear-gradient(90deg, #ffd700, #f59e0b);"></div>
+                                                </div>
+                                                <span style="color: var(--accent-cyan); font-family: var(--font-mono); font-size: 0.85em; min-width: 50px; text-align: right;">${((alliance.knowledge_bonus || 0) * 100).toFixed(0)}%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- ═══ MEMBERS ═══ -->
+                            <div class="dossier-section two-thirds">
+                                <div class="dossier-section-header">
+                                    <span class="section-icon">👥</span>
+                                    <h3>Member Roster (${alliance.member_count || 0})</h3>
+                                </div>
+                                <div class="dossier-section-body">
+                                    <div class="members-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; max-height: 300px; overflow-y: auto;">
+                                        ${(alliance.members || []).map(m => `
+                                            <div class="member-card" onclick="${m.alive ? `closeAllianceDossier(); openOrganismDossier('${m.organism_id}')` : ''}" style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--bg-deep); border-radius: var(--radius-sm); border: 1px solid ${m.alive ? 'var(--border-default)' : 'var(--danger)'}; cursor: ${m.alive ? 'pointer' : 'default'}; opacity: ${m.alive ? 1 : 0.5};">
+                                                <span style="font-size: 1.3em;">${m.role === 'FOUNDER' || m.role === 'founder' ? '👑' : m.role === 'WARCHIEF' || m.role === 'warchief' ? '⚔️' : '🧬'}</span>
+                                                <div style="flex: 1; min-width: 0;">
+                                                    <div style="font-family: var(--font-mono); font-size: 0.9em; color: var(--text-primary);">${m.short_id}</div>
+                                                    <div style="font-size: 0.75em; color: var(--text-muted);">${m.role || 'member'}</div>
+                                                </div>
+                                                ${m.alive ? `
+                                                <div style="text-align: right;">
+                                                    <div style="font-size: 0.85em; color: var(--positive);">${((m.fitness || 0) * 100).toFixed(0)}%</div>
+                                                    <div style="font-size: 0.7em; color: var(--text-muted);">fitness</div>
+                                                </div>
+                                                ` : `<span style="color: var(--danger); font-size: 0.75em;">DECEASED</span>`}
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- ═══ TERRITORY ═══ -->
+                            <div class="dossier-section">
+                                <div class="dossier-section-header">
+                                    <span class="section-icon">🗺️</span>
+                                    <h3>Territory</h3>
+                                </div>
+                                <div class="dossier-section-body">
+                                    ${alliance.controlled_territories?.length > 0 ? `
+                                    <div style="display: grid; gap: 8px;">
+                                        ${alliance.controlled_territories.map(t => `
+                                            <div style="display: flex; align-items: center; gap: 8px; padding: 8px; background: var(--bg-deep); border-radius: var(--radius-sm);">
+                                                <span style="font-size: 1.2em;">🏴</span>
+                                                <span style="font-family: var(--font-mono); color: var(--accent-cyan);">${t}</span>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                    ` : `
+                                    <div style="text-align: center; color: var(--text-muted); padding: 24px;">
+                                        <span style="font-size: 2em; display: block; margin-bottom: 8px;">🏜️</span>
+                                        <span>No territories claimed</span>
+                                    </div>
+                                    `}
+                                </div>
+                            </div>
+                            
+                            <!-- ═══ SHARED KNOWLEDGE ═══ -->
+                            <div class="dossier-section">
+                                <div class="dossier-section-header">
+                                    <span class="section-icon">📚</span>
+                                    <h3>Shared Knowledge</h3>
+                                </div>
+                                <div class="dossier-section-body">
+                                    <div class="stats-grid" style="grid-template-columns: repeat(2, 1fr);">
+                                        <div class="stat-box">
+                                            <span class="value">${alliance.shared_concepts_count || 0}</span>
+                                            <span class="label">Shared Concepts</span>
+                                        </div>
+                                        <div class="stat-box">
+                                            <span class="value">${formatNum(alliance.total_words_learned || 0)}</span>
+                                            <span class="label">Total Words</span>
+                                        </div>
+                                    </div>
+                                    ${alliance.shared_concepts?.length > 0 ? `
+                                    <div style="margin-top: 12px;">
+                                        <div style="color: var(--text-muted); font-size: 0.8em; margin-bottom: 8px;">CONCEPTS:</div>
+                                        <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                                            ${alliance.shared_concepts.slice(0, 15).map(c => `<span style="background: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.3); padding: 2px 8px; border-radius: var(--radius-sm); font-size: 0.85em; color: var(--accent-gold);">${c}</span>`).join('')}
+                                            ${alliance.shared_concepts.length > 15 ? `<span style="color: var(--text-muted); font-size: 0.85em;">+${alliance.shared_concepts.length - 15} more</span>` : ''}
+                                        </div>
+                                    </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                            
+                            <!-- ═══ HISTORY & BETRAYALS ═══ -->
+                            <div class="dossier-section">
+                                <div class="dossier-section-header">
+                                    <span class="section-icon">📜</span>
+                                    <h3>History</h3>
+                                </div>
+                                <div class="dossier-section-body">
+                                    <div class="neural-grid">
+                                        <div class="neural-stat">
+                                            <span class="label">Founding Gen</span>
+                                            <span class="value">${alliance.founding_generation ?? '?'}</span>
+                                        </div>
+                                        <div class="neural-stat">
+                                            <span class="label">Formation Round</span>
+                                            <span class="value">${alliance.formation_round ?? '?'}</span>
+                                        </div>
+                                        <div class="neural-stat">
+                                            <span class="label">Betrayals</span>
+                                            <span class="value" style="color: ${(alliance.betrayal_count || 0) > 0 ? 'var(--danger)' : 'var(--text-secondary)'};">${alliance.betrayal_count || 0}</span>
+                                        </div>
+                                        <div class="neural-stat">
+                                            <span class="label">Founder</span>
+                                            <span class="value">${alliance.founder_id ? alliance.founder_id.substring(0, 8) : 'Unknown'}</span>
+                                        </div>
+                                    </div>
+                                    ${alliance.betrayers?.length > 0 ? `
+                                    <div style="margin-top: 12px; padding: 8px; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); border-radius: var(--radius-sm);">
+                                        <div style="color: var(--danger); font-size: 0.8em; margin-bottom: 4px;">⚠️ BETRAYERS:</div>
+                                        <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                                            ${alliance.betrayers.map(b => `<span style="background: var(--bg-deep); padding: 2px 6px; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.8em; color: var(--danger);">${b.substring(0, 8)}</span>`).join('')}
+                                        </div>
+                                    </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="dossier-footer">
+                            <span class="dossier-timestamp">Generated: ${new Date().toISOString()}</span>
+                            <div class="dossier-actions">
+                                <button class="dossier-action-btn" onclick="copyAllianceJSON('${alliance.alliance_id}')">📋 Copy JSON</button>
+                                <button class="dossier-action-btn primary" onclick="closeAllianceDossier()">Close Dossier</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(overlay);
+                document.body.style.overflow = 'hidden';
+                
+                // ESC handler
+                const escHandler = (e) => {
+                    if (e.key === 'Escape') {
+                        closeAllianceDossier();
+                        document.removeEventListener('keydown', escHandler);
+                    }
+                };
+                document.addEventListener('keydown', escHandler);
+            }
+            
+            function closeAllianceDossier() {
+                const overlay = document.getElementById('allianceDossier');
+                if (overlay) {
+                    overlay.remove();
+                    document.body.style.overflow = '';
+                }
+            }
+            
+            function copyAllianceJSON(allianceId) {
+                const alliance = allAlliances.find(a => a.alliance_id === allianceId);
+                if (alliance) {
+                    navigator.clipboard.writeText(JSON.stringify(alliance, null, 2));
+                    alert('Alliance JSON copied to clipboard!');
+                }
+            }
+
+            // ═══════════════════════════════════════════════════════════════════════════
+            // 📊 COMPARATIVE ANALYSIS - Side-by-Side Organism Comparison
+            // ═══════════════════════════════════════════════════════════════════════════
+            
+            function openComparativeAnalysis() {
+                const selected = Array.from(selectedOrganismIds);
+                if (selected.length < 2) {
+                    alert('Please select at least 2 organisms to compare (click ☑ on cards)');
+                    return;
+                }
+                if (selected.length > 4) {
+                    alert('Maximum 4 organisms for comparison. Please deselect some.');
+                    return;
+                }
+                
+                const organisms = selected.map(id => allOrganisms.find(o => o.id === id)).filter(o => o);
+                if (organisms.length < 2) {
+                    alert('Could not find selected organisms');
+                    return;
+                }
+                
+                // Create overlay
+                const overlay = document.createElement('div');
+                overlay.className = 'dossier-overlay comparison-overlay';
+                overlay.id = 'comparativeAnalysis';
+                overlay.onclick = (e) => { if (e.target === overlay) closeComparativeAnalysis(); };
+                
+                // Metrics to compare (lowerIsBetter = true for metrics where lower is better)
+                const metrics = [
+                    { key: 'fitness', label: 'Fitness', format: v => (v * 100).toFixed(1) + '%', highlight: true },
+                    { key: 'words_learned', label: 'Vocabulary', format: v => v.toString() },
+                    { key: 'experience_buffer_size', label: 'Experience', format: v => v.toString() },
+                    { key: 'connections_count', label: 'Connections', format: v => v.toString() },
+                    { key: 'battle_wins', label: 'Battle Wins', format: v => v.toString() },
+                    { key: 'battle_losses', label: 'Battle Losses', format: v => v.toString(), lowerIsBetter: true },
+                    { key: 'battle_win_rate', label: 'Win Rate', format: v => (v * 100).toFixed(1) + '%' },
+                    { key: 'tournament_wins', label: 'Tournament Wins', format: v => v.toString() },
+                    { key: 'highlander_kills', label: 'Highlander Kills', format: v => v.toString() },
+                    { key: 'war_victories', label: 'War Victories', format: v => v.toString() },
+                    { key: 'dojo_sessions', label: 'Dojo Sessions', format: v => v.toString() },
+                    { key: 'generation', label: 'Generation', format: v => v.toString() },
+                    { key: 'age', label: 'Age (ticks)', format: v => v.toString() },
+                    { key: 'epsilon', label: 'Epsilon', format: v => (v || 0).toFixed(4), lowerIsBetter: true },
+                    { key: 'brain_params', label: 'Brain Params', format: v => v >= 1000 ? (v/1000).toFixed(1) + 'K' : v.toString() },
+                    { key: 'cooperation_ratio', label: 'Cooperation %', format: v => ((v || 0) * 100).toFixed(1) + '%' },
+                    { key: 'aggression_ratio', label: 'Aggression %', format: v => ((v || 0) * 100).toFixed(1) + '%' },
+                    { key: 'exploration_ratio', label: 'Exploration %', format: v => ((v || 0) * 100).toFixed(1) + '%' },
+                ];
+                
+                // Find best values for each metric (max for most, min for lowerIsBetter)
+                const bestValues = {};
+                metrics.forEach(m => {
+                    const values = organisms.map(o => parseFloat(o[m.key]) || 0);
+                    bestValues[m.key] = m.lowerIsBetter ? Math.min(...values) : Math.max(...values);
+                });
+                
+                // Rarity colors
+                const rarityColors = {
+                    legendary: '#ffd700',
+                    epic: '#a855f7',
+                    rare: '#3b82f6',
+                    uncommon: '#22c55e',
+                    common: '#9ca3af'
+                };
+                
+                overlay.innerHTML = `
+                    <div class="dossier-container" style="max-width: 1400px;">
+                        <div class="dossier-header">
+                            <div class="dossier-title-section">
+                                <span class="dossier-icon">📊</span>
+                                <div class="dossier-title">
+                                    <h2>COMPARATIVE ANALYSIS</h2>
+                                    <span class="dossier-subtitle">Side-by-Side Organism Comparison • ${organisms.length} Subjects</span>
+                                </div>
+                            </div>
+                            <button class="dossier-close-btn" onclick="closeComparativeAnalysis()">✕</button>
+                        </div>
+                        
+                        <div class="comparison-content" style="padding: 24px; overflow-x: auto;">
+                            <table class="comparison-table" style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background: var(--bg-surface);">
+                                        <th style="padding: 12px 16px; text-align: left; font-size: 0.9em; color: var(--text-muted); border-bottom: 2px solid var(--border-default);">METRIC</th>
+                                        ${organisms.map(o => `
+                                            <th style="padding: 12px 16px; text-align: center; border-bottom: 2px solid ${rarityColors[o.rarity] || '#666'}; cursor: pointer;" onclick="closeComparativeAnalysis(); openOrganismDossier('${o.id}')">
+                                                <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                                                    <span style="font-size: 1.3em;">${o.alignment_icon || '◇'}</span>
+                                                    <span style="font-family: var(--font-mono); color: ${rarityColors[o.rarity] || '#fff'}; font-size: 0.9em;">${o.short_id || o.id.substring(0, 8)}</span>
+                                                    <span style="font-size: 0.75em; color: var(--text-muted);">${o.rarity || 'common'} • ${o.personality_type || 'unknown'}</span>
+                                                </div>
+                                            </th>
+                                        `).join('')}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${metrics.map((m, idx) => `
+                                        <tr style="background: ${idx % 2 === 0 ? 'var(--bg-elevated)' : 'var(--bg-panel)'};">
+                                            <td style="padding: 10px 16px; font-size: 0.9em; color: var(--text-muted); border-bottom: 1px solid var(--border-subtle);">
+                                                ${m.highlight ? '⭐ ' : ''}${m.label}
+                                            </td>
+                                            ${organisms.map(o => {
+                                                const value = o[m.key] || 0;
+                                                const isBest = Math.abs(value - bestValues[m.key]) < 0.0001 && organisms.length > 1;
+                                                return `
+                                                    <td style="padding: 10px 16px; text-align: center; font-family: var(--font-mono); border-bottom: 1px solid var(--border-subtle); ${isBest ? 'background: rgba(255,215,0,0.1);' : ''}">
+                                                        <span style="color: ${isBest ? 'var(--accent-gold)' : 'var(--text-primary)'}; font-weight: ${isBest ? '600' : '400'};">
+                                                            ${m.format(value)}${isBest ? ' 👑' : ''}
+                                                        </span>
+                                                    </td>
+                                                `;
+                                            }).join('')}
+                                        </tr>
+                                    `).join('')}
+                                    <!-- Alignment Row -->
+                                    <tr style="background: var(--bg-surface);">
+                                        <td style="padding: 10px 16px; font-size: 0.9em; color: var(--text-muted); border-top: 2px solid var(--border-default);">
+                                            ⚖️ Alignment
+                                        </td>
+                                        ${organisms.map(o => `
+                                            <td style="padding: 10px 16px; text-align: center; border-top: 2px solid var(--border-default);">
+                                                <span style="font-size: 1.2em;">${o.alignment_icon || '◇'}</span>
+                                                <div style="font-size: 0.8em; color: var(--text-secondary);">${o.alignment || 'Unknown'}</div>
+                                            </td>
+                                        `).join('')}
+                                    </tr>
+                                    <!-- Behavioral Fingerprint Row -->
+                                    <tr style="background: ${metrics.length % 2 === 0 ? 'var(--bg-elevated)' : 'var(--bg-panel)'};">
+                                        <td style="padding: 10px 16px; font-size: 0.9em; color: var(--text-muted);">
+                                            🧬 Fingerprint
+                                        </td>
+                                        ${organisms.map(o => {
+                                            const fp = o.behavioral_fingerprint || [0,0,0,0,0,0];
+                                            const maxFp = Math.max(...fp, 0.01);
+                                            const actionColors = ['#4ecdc4', '#45b7d1', '#f38181', '#aa96da', '#fcbad3', '#95e1d3'];
+                                            return `
+                                                <td style="padding: 10px 16px; text-align: center;">
+                                                    <div style="display: flex; justify-content: center; gap: 3px; align-items: flex-end; height: 40px;">
+                                                        ${fp.map((v, i) => `<div style="width: 14px; height: ${Math.round((v/maxFp) * 40)}px; background: ${actionColors[i]}; border-radius: 2px 2px 0 0;"></div>`).join('')}
+                                                    </div>
+                                                </td>
+                                            `;
+                                        }).join('')}
+                                    </tr>
+                                </tbody>
+                            </table>
+                            
+                            <!-- Radar Chart Comparison (Visual) -->
+                            <div style="margin-top: 24px; padding: 16px; background: var(--bg-elevated); border-radius: var(--radius-md); border: 1px solid var(--border-default);">
+                                <div style="font-size: 0.9em; color: var(--accent-cyan); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.1em;">
+                                    📈 Normalized Comparison (0-100%)
+                                </div>
+                                <div style="display: grid; grid-template-columns: repeat(${Math.min(organisms.length, 4)}, 1fr); gap: 16px;">
+                                    ${organisms.map(o => {
+                                        const normFitness = (o.fitness || 0) * 100;
+                                        const normVocab = Math.min((o.words_learned || 0) / 500 * 100, 100);
+                                        const normExp = Math.min((o.experience_buffer_size || 0) / 5000 * 100, 100);
+                                        const normCombat = Math.min((o.battle_wins || 0) / 50 * 100, 100);
+                                        const normSocial = Math.min((o.connections_count || 0) / 10 * 100, 100);
+                                        return `
+                                            <div style="background: var(--bg-deep); padding: 12px; border-radius: var(--radius-sm); border: 1px solid ${rarityColors[o.rarity] || '#444'};">
+                                                <div style="text-align: center; margin-bottom: 12px;">
+                                                    <span style="font-family: var(--font-mono); color: ${rarityColors[o.rarity] || '#fff'};">${o.short_id || o.id.substring(0,8)}</span>
+                                                </div>
+                                                <div style="display: flex; flex-direction: column; gap: 8px;">
+                                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                                        <span style="font-size: 0.75em; color: var(--text-muted); width: 60px;">Fitness</span>
+                                                        <div style="flex: 1; height: 8px; background: var(--bg-panel); border-radius: 4px; overflow: hidden;">
+                                                            <div style="height: 100%; width: ${normFitness}%; background: linear-gradient(90deg, #22c55e, #4ecdc4);"></div>
+                                                        </div>
+                                                        <span style="font-size: 0.75em; color: var(--accent-cyan); width: 35px; text-align: right;">${normFitness.toFixed(0)}%</span>
+                                                    </div>
+                                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                                        <span style="font-size: 0.75em; color: var(--text-muted); width: 60px;">Vocab</span>
+                                                        <div style="flex: 1; height: 8px; background: var(--bg-panel); border-radius: 4px; overflow: hidden;">
+                                                            <div style="height: 100%; width: ${normVocab}%; background: linear-gradient(90deg, #a855f7, #f38181);"></div>
+                                                        </div>
+                                                        <span style="font-size: 0.75em; color: var(--accent-cyan); width: 35px; text-align: right;">${normVocab.toFixed(0)}%</span>
+                                                    </div>
+                                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                                        <span style="font-size: 0.75em; color: var(--text-muted); width: 60px;">Exp</span>
+                                                        <div style="flex: 1; height: 8px; background: var(--bg-panel); border-radius: 4px; overflow: hidden;">
+                                                            <div style="height: 100%; width: ${normExp}%; background: linear-gradient(90deg, #3b82f6, #06b6d4);"></div>
+                                                        </div>
+                                                        <span style="font-size: 0.75em; color: var(--accent-cyan); width: 35px; text-align: right;">${normExp.toFixed(0)}%</span>
+                                                    </div>
+                                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                                        <span style="font-size: 0.75em; color: var(--text-muted); width: 60px;">Combat</span>
+                                                        <div style="flex: 1; height: 8px; background: var(--bg-panel); border-radius: 4px; overflow: hidden;">
+                                                            <div style="height: 100%; width: ${normCombat}%; background: linear-gradient(90deg, #ef4444, #f59e0b);"></div>
+                                                        </div>
+                                                        <span style="font-size: 0.75em; color: var(--accent-cyan); width: 35px; text-align: right;">${normCombat.toFixed(0)}%</span>
+                                                    </div>
+                                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                                        <span style="font-size: 0.75em; color: var(--text-muted); width: 60px;">Social</span>
+                                                        <div style="flex: 1; height: 8px; background: var(--bg-panel); border-radius: 4px; overflow: hidden;">
+                                                            <div style="height: 100%; width: ${normSocial}%; background: linear-gradient(90deg, #ffd700, #22c55e);"></div>
+                                                        </div>
+                                                        <span style="font-size: 0.75em; color: var(--accent-cyan); width: 35px; text-align: right;">${normSocial.toFixed(0)}%</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="dossier-footer">
+                            <span class="dossier-timestamp">Generated: ${new Date().toISOString()}</span>
+                            <div class="dossier-actions">
+                                <button class="dossier-action-btn" onclick="copyComparisonJSON()">📋 Copy JSON</button>
+                                <button class="dossier-action-btn primary" onclick="closeComparativeAnalysis()">Close Analysis</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(overlay);
+                document.body.style.overflow = 'hidden';
+                
+                // ESC handler
+                const escHandler = (e) => {
+                    if (e.key === 'Escape') {
+                        closeComparativeAnalysis();
+                        document.removeEventListener('keydown', escHandler);
+                    }
+                };
+                document.addEventListener('keydown', escHandler);
+            }
+            
+            function closeComparativeAnalysis() {
+                const overlay = document.getElementById('comparativeAnalysis');
+                if (overlay) {
+                    overlay.remove();
+                    document.body.style.overflow = '';
+                }
+            }
+            
+            function copyComparisonJSON() {
+                const selected = Array.from(selectedOrganismIds);
+                const organisms = selected.map(id => allOrganisms.find(o => o.id === id)).filter(o => o);
+                navigator.clipboard.writeText(JSON.stringify(organisms, null, 2));
+                alert('Comparison data copied to clipboard!');
+            }
+
+            // ═══════════════════════════════════════════════════════════════════════════
+            // 🏛️ ALLIANCES BROWSER - View and explore all alliances
+            // ═══════════════════════════════════════════════════════════════════════════
+            
+            async function openAlliancesBrowser() {
+                // Fetch alliances
+                const alliances = await fetchAlliances();
+                
+                if (!alliances || alliances.length === 0) {
+                    alert('No alliances found. Alliances form when organisms cooperate during the simulation.');
+                    return;
+                }
+                
+                // Create overlay
+                const overlay = document.createElement('div');
+                overlay.className = 'dossier-overlay';
+                overlay.id = 'alliancesBrowser';
+                overlay.onclick = (e) => { if (e.target === overlay) closeAlliancesBrowser(); };
+                
+                // Tier icons
+                const tierIcons = {
+                    legendary: '👑',
+                    elite: '⚔️',
+                    veteran: '🛡️',
+                    established: '🏰',
+                    nascent: '🌱'
+                };
+                
+                const tierColors = {
+                    legendary: '#ffd700',
+                    elite: '#a855f7',
+                    veteran: '#3b82f6',
+                    established: '#22c55e',
+                    nascent: '#9ca3af'
+                };
+                
+                overlay.innerHTML = `
+                    <div class="dossier-container" style="max-width: 1000px;">
+                        <div class="dossier-header">
+                            <div class="dossier-title-section">
+                                <span class="dossier-icon">🏛️</span>
+                                <div class="dossier-title">
+                                    <h2>ALLIANCE REGISTRY</h2>
+                                    <span class="dossier-subtitle">Coalition Intelligence Database • ${alliances.length} Alliances Detected</span>
+                                </div>
+                            </div>
+                            <button class="dossier-close-btn" onclick="closeAlliancesBrowser()">✕</button>
+                        </div>
+                        
+                        <div class="dossier-content" style="display: flex; flex-direction: column; gap: 12px; max-height: 70vh; overflow-y: auto;">
+                            ${alliances.map(a => `
+                                <div class="alliance-card" onclick="closeAlliancesBrowser(); openAllianceDossier('${a.alliance_id}')" style="display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 16px; padding: 16px; background: var(--bg-elevated); border: 1px solid ${tierColors[a.tier] || '#444'}; border-radius: var(--radius-md); cursor: pointer; transition: all 0.2s ease;">
+                                    <div style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; background: var(--bg-deep); border-radius: 50%; border: 2px solid ${tierColors[a.tier] || '#444'};">
+                                        <span style="font-size: 2em;">${tierIcons[a.tier] || '🏴'}</span>
+                                    </div>
+                                    <div style="min-width: 0;">
+                                        <div style="font-size: 1.2em; font-weight: 600; color: ${tierColors[a.tier] || '#fff'}; margin-bottom: 4px;">${a.name || 'Unnamed Alliance'}</div>
+                                        <div style="display: flex; gap: 12px; flex-wrap: wrap; font-size: 0.85em; color: var(--text-muted);">
+                                            <span>👥 ${a.member_count || 0} members</span>
+                                            <span>⚡ Power: ${a.power_score || 0}</span>
+                                            <span>🏆 ${a.wars_won || 0}W / ${a.wars_lost || 0}L</span>
+                                            ${a.at_war_with?.length > 0 ? '<span style="color: var(--danger);">⚔️ AT WAR</span>' : ''}
+                                        </div>
+                                    </div>
+                                    <div style="text-align: center; padding: 8px 16px; background: var(--bg-deep); border-radius: var(--radius-sm);">
+                                        <div style="font-size: 1.5em; color: var(--accent-cyan); font-family: var(--font-mono);">${((a.average_fitness || 0) * 100).toFixed(0)}%</div>
+                                        <div style="font-size: 0.7em; color: var(--text-muted);">AVG FITNESS</div>
+                                    </div>
+                                    <div style="font-size: 1.5em; color: var(--text-muted);">→</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        
+                        <div class="dossier-footer">
+                            <span class="dossier-timestamp">Last updated: ${new Date().toISOString()}</span>
+                            <div class="dossier-actions">
+                                <button class="dossier-action-btn primary" onclick="closeAlliancesBrowser()">Close Browser</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(overlay);
+                document.body.style.overflow = 'hidden';
+                
+                // Hover effect
+                overlay.querySelectorAll('.alliance-card').forEach(card => {
+                    card.addEventListener('mouseenter', () => {
+                        card.style.background = 'var(--bg-surface)';
+                        card.style.transform = 'translateX(4px)';
+                    });
+                    card.addEventListener('mouseleave', () => {
+                        card.style.background = 'var(--bg-elevated)';
+                        card.style.transform = 'none';
+                    });
+                });
+                
+                // ESC handler
+                const escHandler = (e) => {
+                    if (e.key === 'Escape') {
+                        closeAlliancesBrowser();
+                        document.removeEventListener('keydown', escHandler);
+                    }
+                };
+                document.addEventListener('keydown', escHandler);
+            }
+            
+            function closeAlliancesBrowser() {
+                const overlay = document.getElementById('alliancesBrowser');
+                if (overlay) {
+                    overlay.remove();
+                    document.body.style.overflow = '';
+                }
+            }
+
             // Switch binder view between grid and list
             function setBinderView(view, clickedBtn) {
                 currentBinderView = view;
@@ -14697,9 +17624,12 @@
                     'statedict': '💾 State Dict'
                 };
                 const targetLabel = selected.length > 0 ? `${selected.length} selected organisms` : `top ${topN} organisms`;
-                updateCompileAgentStatus(`⏳ Compiling ${formatLabels[format] || format} with ${targetLabel}...`, '#ff0');
+                updateCompileAgentStatus(`⏳ Capturing graph & compiling ${formatLabels[format] || format}...`, '#ff0');
 
                 try {
+                    // 🦋 Capture HTML graph for README
+                    const graphImage = await captureGraphForCocoon();
+                    
                     const response = await fetch('/api/capsules/compile-cocoon', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -14709,7 +17639,8 @@
                             include_gym: includeGym,
                             include_http: includeHttp,
                             compress: compress,
-                            format: format
+                            format: format,
+                            graph_image: graphImage
                         })
                     });
 
@@ -14868,9 +17799,12 @@
 
                 const formatLabels = {'cocoon': '🦋 Cocoon', 'onnx': 'ONNX', 'torchscript': 'TorchScript', 'package': '📦 Package', 'statedict': 'StateDict'};
                 const targetLabel = selected.length > 0 ? `${selected.length} selected` : `top ${topN}`;
-                updateCompileAgentStatus(`Compiling ${formatLabels[format] || format} (${targetLabel})...`, '#ff0');
+                updateCompileAgentStatus(`Capturing graph & compiling ${formatLabels[format] || format} (${targetLabel})...`, '#ff0');
 
                 try {
+                    // 🦋 Capture HTML graph for README
+                    const graphImage = await captureGraphForCocoon();
+                    
                     const response = await fetch('/api/capsules/compile-cocoon', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -14880,7 +17814,8 @@
                             include_gym: includeGym,
                             include_http: includeHttp,
                             compress: compress,
-                            format: format
+                            format: format,
+                            graph_image: graphImage
                         })
                     });
 
@@ -17310,7 +20245,7 @@
                     });
             }
 
-            // Send butterfly chat message
+            // Send butterfly chat message with real-time streaming debug logs
             async function sendButterflyChatMessage() {
                 const input = document.getElementById('butterflyChatInput');
                 const message = input.value.trim();
@@ -17323,8 +20258,9 @@
                 // Add user message to chat
                 addButterflyChatMessage('user', message);
 
-                // Update status
-                updateButterflyChatStatus('Querying organism networks...');
+                // Clear debug panel and show we're starting
+                clearDebugPanel();
+                updateButterflyChatStatus('Connecting to organisms...');
 
                 // Get routing strategy and max organisms
                 const routingStrategy = document.getElementById('butterflyRoutingSelect').value;
@@ -17336,54 +20272,237 @@
                     max_organisms: maxOrganisms
                 };
 
-                // Send to backend
-                fetch('/api/butterfly/chat', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(requestData)
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        updateButterflyChatStatus('');
+                // Use streaming endpoint for real-time updates
+                try {
+                    const response = await fetch('/api/butterfly/chat/stream', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(requestData)
+                    });
 
-                        if (data.error) {
-                            addButterflyChatMessage('assistant', `Error: ${data.error}`, true);
-                            displayDebugError("API_ERROR", data.error, {});
-                            return;
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
+                    let buffer = '';
+                    let organismResponses = [];
+                    let allLogs = [];
+                    let allErrors = [];
+
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+
+                        buffer += decoder.decode(value, { stream: true });
+                        
+                        // Parse SSE events from buffer
+                        const lines = buffer.split('\n');
+                        buffer = lines.pop(); // Keep incomplete line in buffer
+
+                        for (const line of lines) {
+                            if (line.startsWith('data: ')) {
+                                try {
+                                    const event = JSON.parse(line.slice(6));
+                                    handleStreamEvent(event, organismResponses, allLogs, allErrors);
+                                } catch (e) {
+                                    console.warn('Failed to parse SSE event:', line, e);
+                                }
+                            }
                         }
+                    }
 
-                        // Add response with metadata
-                        const responseText = `${data.response}\n\n[Confidence: ${(data.confidence || 0) * 100}%, Organisms: ${data.organism_count || 0}, Strategy: ${data.routing_strategy || 'unknown'}]`;
+                    // Process any remaining data in buffer
+                    if (buffer.startsWith('data: ')) {
+                        try {
+                            const event = JSON.parse(buffer.slice(6));
+                            handleStreamEvent(event, organismResponses, allLogs, allErrors);
+                        } catch (e) {
+                            // Ignore incomplete final event
+                        }
+                    }
+
+                } catch (err) {
+                    console.error('Error in streaming butterfly chat:', err);
+                    updateButterflyChatStatus('Error: ' + err.message);
+                    addButterflyChatMessage('assistant', `Error: ${err.message}`, true);
+                }
+            }
+
+            // Handle individual stream events
+            function handleStreamEvent(event, organismResponses, allLogs, allErrors) {
+                switch (event.type) {
+                    case 'status':
+                        updateButterflyChatStatus(event.message);
+                        break;
+                        
+                    case 'log':
+                        allLogs.push(event);
+                        appendDebugLog(event);
+                        break;
+                        
+                    case 'organism_response':
+                        organismResponses.push(event);
+                        appendOrganismResponse(event);
+                        break;
+                        
+                    case 'error_log':
+                        allErrors.push(event);
+                        appendDebugError(event);
+                        break;
+                        
+                    case 'error':
+                        updateButterflyChatStatus('');
+                        addButterflyChatMessage('assistant', `Error: ${event.error}`, true);
+                        appendDebugError({ error_type: 'STREAM_ERROR', message: event.error, data: { traceback: event.traceback } });
+                        break;
+                        
+                    case 'complete':
+                        updateButterflyChatStatus('');
+                        const responseText = `${event.response}\n\n[Confidence: ${((event.confidence || 0) * 100).toFixed(1)}%, Organisms: ${event.organism_count || 0}]`;
                         addButterflyChatMessage('assistant', responseText);
                         
-                        // Display debug information
-                        if (data.debug_logs) {
-                            displayDebugLogs(data.debug_logs);
-                        }
-                        if (data.causation_trail) {
-                            displayCausationTrail(data.causation_trail, data.organism_responses || []);
-                        }
-                        if (data.errors) {
-                            displayDebugErrors(data.errors);
-                        }
-                        if (data.performance) {
-                            displayPerformanceMetrics(data.performance);
+                        // Display causation trail
+                        if (event.causation_trail) {
+                            displayCausationTrail(event.causation_trail, organismResponses);
                         }
                         
                         // Store for recon analysis
                         if (!window._butterflyDebugResponses) window._butterflyDebugResponses = [];
-                        window._butterflyDebugResponses.push(data);
+                        window._butterflyDebugResponses.push({
+                            response: event.response,
+                            confidence: event.confidence,
+                            organism_count: event.organism_count,
+                            organism_responses: organismResponses,
+                            debug_logs: allLogs,
+                            errors: allErrors,
+                            performance: event.performance
+                        });
                         if (window._butterflyDebugResponses.length > 50) {
-                            window._butterflyDebugResponses.shift(); // Keep last 50
+                            window._butterflyDebugResponses.shift();
                         }
-                    })
-                    .catch(err => {
-                        console.error('Error sending butterfly chat message:', err);
-                        updateButterflyChatStatus('Error sending message.');
-                        addButterflyChatMessage('assistant', `Error: ${err.message}`, true);
-                    });
+                        break;
+                }
+            }
+
+            // Clear debug panel for new message
+            function clearDebugPanel() {
+                const logsContainer = document.getElementById('debugLogsContent');
+                const errorsContainer = document.getElementById('debugErrorsContent');
+                if (logsContainer) {
+                    logsContainer.innerHTML = '<div style="color: #888; font-style: italic;">Streaming logs...</div>';
+                }
+                if (errorsContainer) {
+                    errorsContainer.innerHTML = '<div style="color: #888; font-style: italic;">No errors yet...</div>';
+                }
+            }
+
+            // Append a single debug log entry (real-time)
+            function appendDebugLog(log) {
+                const container = document.getElementById('debugLogsContent');
+                if (!container) return;
+                
+                // Remove placeholder text if present
+                const placeholder = container.querySelector('div[style*="font-style: italic"]');
+                if (placeholder && placeholder.textContent.includes('Streaming')) {
+                    placeholder.remove();
+                }
+                
+                const logDiv = document.createElement('div');
+                logDiv.style.marginBottom = '6px';
+                logDiv.style.padding = '4px 6px';
+                logDiv.style.borderLeft = '3px solid #ff0';
+                logDiv.style.background = 'rgba(255,255,0,0.05)';
+                logDiv.style.animation = 'fadeIn 0.3s ease-in';
+                
+                const time = new Date(log.timestamp * 1000).toLocaleTimeString();
+                const step = log.step || 'LOG';
+                const action = log.action || 'Update';
+                
+                logDiv.innerHTML = `
+                    <div style="color: #ff0; font-weight: bold; font-size: 0.8em; margin-bottom: 2px;">
+                        [${time}] ${step}: ${action}
+                    </div>
+                    <div style="color: #aaa; font-size: 0.7em; margin-left: 8px;">
+                        ${formatDebugData(log.data || {})}
+                    </div>
+                `;
+                
+                container.appendChild(logDiv);
+                container.scrollTop = container.scrollHeight;
+            }
+
+            // Append organism response to debug (real-time indicator)
+            function appendOrganismResponse(resp) {
+                const container = document.getElementById('debugLogsContent');
+                if (!container) return;
+                
+                const respDiv = document.createElement('div');
+                respDiv.style.marginBottom = '6px';
+                respDiv.style.padding = '4px 6px';
+                respDiv.style.borderLeft = '3px solid #0f0';
+                respDiv.style.background = 'rgba(0,255,0,0.1)';
+                respDiv.style.animation = 'fadeIn 0.3s ease-in';
+                
+                const shortId = (resp.organism_id || 'unknown').substring(0, 8);
+                const fullResponse = resp.response || '(empty)';
+                const conf = ((resp.confidence || 0) * 100).toFixed(1);
+                
+                respDiv.innerHTML = `
+                    <div style="color: #0f0; font-weight: bold; font-size: 0.8em; margin-bottom: 2px;">
+                        🧬 ${shortId}: "${fullResponse}"
+                    </div>
+                    <div style="color: #8f8; font-size: 0.7em; margin-left: 8px;">
+                        Confidence: ${conf}% | Fitness: ${(resp.fitness || 0).toFixed(3)} | Tokens: ${(resp.tokens || []).length}
+                    </div>
+                `;
+                
+                container.appendChild(respDiv);
+                container.scrollTop = container.scrollHeight;
+            }
+
+            // Append error to debug (real-time)
+            function appendDebugError(error) {
+                const container = document.getElementById('debugErrorsContent');
+                if (!container) return;
+                
+                // Remove placeholder
+                const placeholder = container.querySelector('div[style*="font-style: italic"]');
+                if (placeholder && placeholder.textContent.includes('No errors')) {
+                    placeholder.remove();
+                }
+                
+                // Update errors tab to show there are errors
+                const errorsTab = document.getElementById('debugTabErrors');
+                if (errorsTab) {
+                    errorsTab.style.background = '#f00';
+                    errorsTab.style.color = '#fff';
+                    errorsTab.style.fontWeight = 'bold';
+                }
+                
+                const errorDiv = document.createElement('div');
+                errorDiv.style.marginBottom = '6px';
+                errorDiv.style.padding = '4px 6px';
+                errorDiv.style.borderLeft = '3px solid #f00';
+                errorDiv.style.background = 'rgba(255,0,0,0.1)';
+                errorDiv.style.animation = 'fadeIn 0.3s ease-in';
+                
+                const time = new Date((error.timestamp || Date.now() / 1000) * 1000).toLocaleTimeString();
+                
+                errorDiv.innerHTML = `
+                    <div style="color: #f00; font-weight: bold; font-size: 0.8em; margin-bottom: 2px;">
+                        [${time}] ${error.error_type || 'ERROR'}: ${error.message || 'Unknown error'}
+                    </div>
+                    <div style="color: #f88; font-size: 0.7em; margin-left: 8px;">
+                        ${formatDebugData(error.data || {})}
+                    </div>
+                `;
+                
+                container.appendChild(errorDiv);
+                container.scrollTop = container.scrollHeight;
             }
             
             // ═══════════════════════════════════════════════════════════════════════════
