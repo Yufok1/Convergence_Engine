@@ -1278,14 +1278,16 @@ class ButterflyChatRouter:
             return
         
         try:
-            # Calculate reward based on response quality with SEMANTIC AWARENESS
-            # This replaces simple length-based reward with meaning-aware scoring
-            reward = self._calculate_semantic_reward(
+            # Calculate reward using configured mode (grounded, semantic, or hybrid)
+            # This uses action-word consistency (grounded) as primary with optional
+            # semantic bonus at mastery level 4
+            reward = self._calculate_chat_reward(
                 user_message=user_message,
                 user_tokens=user_tokens,
                 organism_response=organism_response,
                 organism_tokens=organism_tokens,
                 confidence=confidence,
+                organism=organism,
                 network_state=network_state
             )
             
@@ -1296,6 +1298,21 @@ class ButterflyChatRouter:
             elif reward == 0.0:
                 reward = 0.2
                 self._log_debug("REWARD_ZERO_ADJUST", "Reward was 0.0, adjusted to 0.2", {})
+            
+            # Record experience for mastery advancement tracking
+            if hasattr(organism, 'atomic_language') and organism.atomic_language:
+                organism.atomic_language.record_experience()
+                # Check and advance mastery if criteria met
+                organism.atomic_language.try_advance_mastery()
+                
+                # Reinforce atoms used in response (grounded learning signal)
+                if reward > 0.4:
+                    response_words = organism_response.lower().split() if organism_response else []
+                    for word in response_words:
+                        if word in organism.atomic_language.atoms:
+                            # Positive reinforcement for good responses
+                            delta = 0.05 * (reward - 0.3)  # Scale by reward above base
+                            organism.atomic_language.atoms[word].update_strength(delta, 'chat_reward')
             
             # Get organism state features for experience storage
             if hasattr(organism, 'get_state_features'):
@@ -1751,6 +1768,192 @@ class ButterflyChatRouter:
             logger.warning(f"Semantic reward calculation failed: {e}, returning 0.3")
             self._log_debug("REWARD_CALC_ERROR", f"Exception in reward calculation: {e}", {"fallback_reward": 0.3})
             return 0.3  # Changed from 0.0 to 0.3 for safe non-zero fallback
+
+    def _calculate_grounded_reward(self,
+                                    user_message: str,
+                                    organism_response: str,
+                                    organism: Any,
+                                    network_state: Optional[Dict[str, Any]] = None) -> float:
+        """
+        Calculate reward based on ACTION-WORD CONSISTENCY (Grounded Language Mode).
+        
+        This rewards organisms for:
+        1. Using words from their AVAILABLE vocabulary (mastery-gated)
+        2. Using words associated with their recent ACTIONS
+        3. Appropriate response length for mastery level
+        4. PENALTY for using unavailable words (must earn vocabulary)
+        
+        Components:
+        - Vocabulary consistency: 0.0 - 0.3
+        - Action relevance: 0.0 - 0.3
+        - Mastery-appropriate length: 0.0 - 0.15
+        - Unavailable word penalty: -0.05 per word
+        
+        Returns:
+            Reward value 0.0 - 1.0
+        """
+        reward = 0.3  # Base participation reward
+        
+        # Need atomic_language for grounded reward
+        if not hasattr(organism, 'atomic_language') or organism.atomic_language is None:
+            self._log_debug("GROUNDED_REWARD", "No atomic_language, using base reward", {"reward": reward})
+            return reward
+        
+        al = organism.atomic_language
+        
+        if not organism_response or len(organism_response.strip()) == 0:
+            return -0.1  # Penalty for empty
+        
+        response_words = organism_response.lower().split()
+        
+        # Get known vocabulary and available vocabulary
+        known_words = set(al.atoms.keys())
+        available_words = set(al.get_available_vocabulary())
+        
+        # 1. VOCABULARY CONSISTENCY (0.0 - 0.3)
+        # Reward using words the organism actually knows
+        words_in_known = sum(1 for w in response_words if w in known_words)
+        words_in_available = sum(1 for w in response_words if w in available_words)
+        
+        vocab_consistency = 0.0
+        if len(response_words) > 0:
+            known_ratio = words_in_known / len(response_words)
+            available_ratio = words_in_available / len(response_words)
+            vocab_consistency = known_ratio * 0.2 + available_ratio * 0.1
+        
+        reward += vocab_consistency
+        
+        # 2. ACTION RELEVANCE (0.0 - 0.3)
+        # Reward using words associated with recent actions
+        action_relevance = 0.0
+        recent_actions = getattr(organism, 'recent_actions', [])[-5:] if hasattr(organism, 'recent_actions') else []
+        action_concepts = ['move', 'cooperate', 'compete', 'rest', 'reproduce', 'isolate']
+        
+        action_associated_words = set()
+        for action_idx in recent_actions:
+            if 0 <= action_idx < len(action_concepts):
+                action = action_concepts[action_idx]
+                # Get words associated with this action
+                if action in al.atoms:
+                    atom = al.atoms[action]
+                    if hasattr(atom, 'associations'):
+                        for assoc in atom.associations.values():
+                            action_associated_words.add(assoc.target_concept)
+        
+        if action_associated_words and response_words:
+            relevant_count = sum(1 for w in response_words if w in action_associated_words)
+            action_relevance = min(0.3, relevant_count * 0.1)
+        
+        reward += action_relevance
+        
+        # 3. MASTERY-APPROPRIATE LENGTH (0.0 - 0.15)
+        # Lower mastery = shorter responses expected
+        expected_lengths = [3, 8, 15, 25, 50]  # Per mastery level
+        expected_length = expected_lengths[al.mastery_level] if al.mastery_level < len(expected_lengths) else 50
+        length_ratio = len(response_words) / max(1, expected_length)
+        
+        length_score = 0.0
+        if 0.5 <= length_ratio <= 1.5:
+            length_score = 0.15  # Perfect range
+        elif 0.25 <= length_ratio <= 2.0:
+            length_score = 0.08  # Acceptable range
+        
+        reward += length_score
+        
+        # 4. PENALTY: Using unavailable words (-0.05 per word)
+        # Organisms shouldn't generate words they haven't "earned"
+        always_allow = {'the', 'a', 'an', 'is', 'are', 'to', 'of', 'in', 'and', 'or', 'but', '.', ',', '!', '?'}
+        unavailable_used = sum(
+            1 for w in response_words 
+            if w not in available_words and w not in always_allow
+        )
+        penalty = unavailable_used * 0.05
+        reward -= penalty
+        
+        final_reward = max(0.0, min(1.0, reward))
+        
+        # Log grounded reward components
+        self._log_debug("GROUNDED_REWARD", "Grounded reward calculated", {
+            "components": {
+                "vocab_consistency": vocab_consistency,
+                "action_relevance": action_relevance,
+                "length_score": length_score,
+                "penalty": penalty
+            },
+            "mastery_level": al.mastery_level,
+            "available_vocab_size": len(available_words),
+            "response_words": len(response_words),
+            "final_reward": final_reward
+        })
+        
+        return final_reward
+    
+    def _calculate_chat_reward(self,
+                               user_message: str,
+                               user_tokens: List[int],
+                               organism_response: str,
+                               organism_tokens: List[int],
+                               confidence: float,
+                               organism: Any,
+                               network_state: Optional[Dict[str, Any]] = None) -> float:
+        """
+        Calculate chat reward using configured mode (grounded, semantic, or hybrid).
+        
+        Mode selection from config:
+        - "grounded": Use only grounded reward (action-word consistency)
+        - "semantic": Use only semantic reward (word embeddings, cosine similarity)
+        - "hybrid": Combine both with semantic as bonus at level 4
+        """
+        lang_config = self.config.get('language', {})
+        mode = lang_config.get('mode', 'hybrid')
+        
+        # Always calculate grounded reward
+        grounded_reward = self._calculate_grounded_reward(
+            user_message=user_message,
+            organism_response=organism_response,
+            organism=organism,
+            network_state=network_state
+        )
+        
+        if mode == 'grounded':
+            return grounded_reward
+        
+        # Calculate semantic reward
+        semantic_reward = self._calculate_semantic_reward(
+            user_message=user_message,
+            user_tokens=user_tokens,
+            organism_response=organism_response,
+            organism_tokens=organism_tokens,
+            confidence=confidence,
+            network_state=network_state
+        )
+        
+        if mode == 'semantic':
+            return semantic_reward
+        
+        # HYBRID mode: grounded primary, semantic bonus at level 4
+        semantic_config = lang_config.get('semantic', {})
+        semantic_at_level_4 = semantic_config.get('semantic_reward_at_level_4', True)
+        semantic_weight = semantic_config.get('semantic_reward_weight', 0.25)
+        
+        # Check mastery level
+        mastery_level = 0
+        if hasattr(organism, 'atomic_language') and organism.atomic_language:
+            mastery_level = organism.atomic_language.mastery_level
+        
+        if semantic_at_level_4 and mastery_level >= 4:
+            # Semantic bonus unlocked!
+            combined = grounded_reward + (semantic_reward * semantic_weight)
+            self._log_debug("HYBRID_REWARD", "Semantic bonus applied (level 4)", {
+                "grounded": grounded_reward,
+                "semantic": semantic_reward,
+                "semantic_weight": semantic_weight,
+                "combined": combined
+            })
+            return min(1.0, combined)
+        
+        # Below level 4: grounded only
+        return grounded_reward
 
     def _trigger_bootstrap_learning(self, organism: Any, user_tokens: List[int], 
                                       network_state: Optional[Dict[str, Any]] = None):

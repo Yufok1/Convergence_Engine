@@ -1006,6 +1006,28 @@ class AtomicLanguageSystem:
         self.creation_time = time.time()
         
         # ═══════════════════════════════════════════════════════════════════════════
+        # GROUNDED LANGUAGE MODE - Mastery Level System
+        # 
+        # Organisms start with minimal vocabulary (6 action heads) and EARN more
+        # through demonstrated competence. This ensures behavioral grounding
+        # before semantic abstraction.
+        # 
+        # Level 0: 6 words   - Action heads only (move, cooperate, compete, rest, reproduce, isolate)
+        # Level 1: 26 words  - +20 core state/relationship words
+        # Level 2: 76 words  - +50 extended concepts
+        # Level 3: 276 words - +200 pool words
+        # Level 4: Unlimited - Semantic graduation (knowledge web unlocks)
+        # ═══════════════════════════════════════════════════════════════════════════
+        lang_config = self.config.get('language', {})
+        grounded_config = lang_config.get('grounded', {})
+        self._mastery_level: int = grounded_config.get('initial_mastery_level', 4)  # Default: no gating
+        self._mastery_vocab_sizes: List[int] = grounded_config.get('mastery_vocab_sizes', [6, 26, 76, 276, 20000])
+        self._mastery_advancement_ratio: float = grounded_config.get('mastery_advancement_ratio', 0.7)
+        self._mastery_depth_ratio: float = grounded_config.get('mastery_depth_ratio', 0.5)
+        self._mastery_min_experiences: List[int] = grounded_config.get('mastery_min_experiences', [50, 200, 500, 1000])
+        self._total_experiences: int = 0
+        
+        # ═══════════════════════════════════════════════════════════════════════════
         # HEALING PROTOCOL - Resonance Tracking
         # 
         # "duration trigger eventual caressing" - isolation = no resonant response for N cycles
@@ -1180,6 +1202,178 @@ class AtomicLanguageSystem:
                 # Ensure they feel slightly pleasurable to consider
                 atom.vp_pleasure_affinity = max(atom.vp_pleasure_affinity, 0.6)
     
+    # ═══════════════════════════════════════════════════════════════════════════
+    # GROUNDED LANGUAGE MODE - Mastery System Properties
+    # ═══════════════════════════════════════════════════════════════════════════
+    
+    @property
+    def mastery_level(self) -> int:
+        """Current mastery level (0-4). Higher = more vocabulary unlocked."""
+        return self._mastery_level
+    
+    @mastery_level.setter
+    def mastery_level(self, value: int):
+        """Set mastery level with bounds checking."""
+        old_level = self._mastery_level
+        self._mastery_level = max(0, min(4, value))
+        if self._mastery_level != old_level:
+            logger.info(f"[ATOMIC_LANG] Organism {self.organism_id}: Mastery level {old_level} → {self._mastery_level}")
+            if self.event_emitter:
+                try:
+                    from causation_explorer import Event
+                    self.event_emitter(Event(
+                        timestamp=time.time(),
+                        component='language',
+                        event_type='mastery_advancement',
+                        data={
+                            'organism_id': self.organism_id,
+                            'old_level': old_level,
+                            'new_level': self._mastery_level,
+                            'vocab_size': self._mastery_vocab_sizes[self._mastery_level]
+                        }
+                    ))
+                except ImportError:
+                    pass
+    
+    @property
+    def total_experiences(self) -> int:
+        """Total chat/game experiences accumulated."""
+        return self._total_experiences
+    
+    def record_experience(self):
+        """Record that organism had a learning experience."""
+        self._total_experiences += 1
+    
+    def get_available_vocabulary(self) -> List[str]:
+        """
+        Get vocabulary available at current mastery level.
+        
+        Level 0: 6 action heads only
+        Level 1: +20 core state/relationship words
+        Level 2: +50 extended concepts  
+        Level 3: +200 pool words
+        Level 4: All atoms (semantic graduation)
+        
+        Returns:
+            List of concept_ids available for generation
+        """
+        if self._mastery_level >= 4:
+            # Level 4: All vocabulary unlocked
+            return list(self.atoms.keys())
+        
+        # Get target vocab size for current level
+        target_size = self._mastery_vocab_sizes[self._mastery_level]
+        
+        # Priority ordering for vocabulary selection:
+        # 1. Action heads (always first)
+        # 2. Core state/relationship words
+        # 3. Extended concepts by strength
+        # 4. Pool words by strength
+        
+        available = []
+        
+        # Level 0+: Always include action heads
+        for head in self.ACTION_HEADS:
+            if head in self.atoms:
+                available.append(head)
+        
+        if self._mastery_level == 0:
+            return available[:target_size]
+        
+        # Level 1+: Add core state/relationship words
+        core_frames = {'state', 'relationship', 'resource', 'question'}
+        core_words = [
+            c for c in self.atoms.keys() 
+            if c not in available 
+            and self.atoms[c].semantic_frame in core_frames
+        ]
+        # Sort by strength (strongest first)
+        core_words.sort(key=lambda w: self.atoms[w].strength, reverse=True)
+        available.extend(core_words[:20])
+        
+        if self._mastery_level == 1:
+            return available[:target_size]
+        
+        # Level 2+: Add extended concepts
+        extended_frames = {'universal', 'perception', 'spatial', 'temporal', 'nature'}
+        extended_words = [
+            c for c in self.atoms.keys()
+            if c not in available
+            and (self.atoms[c].semantic_frame in extended_frames or self.atoms[c].source == 'innate_extended')
+        ]
+        extended_words.sort(key=lambda w: self.atoms[w].strength, reverse=True)
+        available.extend(extended_words[:50])
+        
+        if self._mastery_level == 2:
+            return available[:target_size]
+        
+        # Level 3+: Add pool words
+        remaining = [c for c in self.atoms.keys() if c not in available]
+        remaining.sort(key=lambda w: self.atoms[w].strength, reverse=True)
+        available.extend(remaining[:200])
+        
+        return available[:target_size]
+    
+    def check_mastery_advancement(self) -> bool:
+        """
+        Check if organism should advance to next mastery level.
+        
+        Criteria:
+        - BREADTH: 70% of available words used (usage_count > 5)
+        - DEPTH: 50% of available words have 3+ associations
+        - EXPERIENCE: Minimum interactions at current level
+        
+        Returns:
+            True if organism should advance, False otherwise
+        """
+        if self._mastery_level >= 4:
+            return False  # Already at max
+        
+        vocab = self.get_available_vocabulary()
+        if not vocab:
+            return False
+        
+        # BREADTH: At least 70% of words used
+        # Count words with usage (approximated by update_count on atom)
+        used_words = sum(
+            1 for w in vocab 
+            if w in self.atoms and getattr(self.atoms[w], 'recent_activation_count', 0) > 5
+        )
+        breadth_ratio = used_words / len(vocab)
+        
+        # DEPTH: At least 50% have 3+ associations
+        deep_words = sum(
+            1 for w in vocab
+            if w in self.atoms and len(getattr(self.atoms[w], 'associations', {})) >= 3
+        )
+        depth_ratio = deep_words / len(vocab)
+        
+        # EXPERIENCE: Minimum interactions at current level
+        min_exp = self._mastery_min_experiences[self._mastery_level] if self._mastery_level < len(self._mastery_min_experiences) else 1000
+        
+        should_advance = (
+            breadth_ratio >= self._mastery_advancement_ratio and
+            depth_ratio >= self._mastery_depth_ratio and
+            self._total_experiences >= min_exp
+        )
+        
+        if should_advance:
+            logger.info(f"[ATOMIC_LANG] Organism {self.organism_id} ready to advance! breadth={breadth_ratio:.2f}, depth={depth_ratio:.2f}, exp={self._total_experiences}")
+        
+        return should_advance
+    
+    def try_advance_mastery(self) -> bool:
+        """
+        Check and advance mastery level if criteria met.
+        
+        Returns:
+            True if advanced, False otherwise
+        """
+        if self.check_mastery_advancement():
+            self.mastery_level = self._mastery_level + 1
+            return True
+        return False
+
     def _initialize_foundational_orientation(self, current_time: float):
         """
         Initialize foundational orientation concepts from ORIENTATION dict.
