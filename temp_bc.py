@@ -324,19 +324,12 @@ class ButterflyChatRouter:
                         })
 
                     # FIXED: Pass context_memory as first argument (required), then optional params
-                    result = organism.generate_tokens(
+                    response_tokens = organism.generate_tokens(
                         context_memory=context_memory,
                         max_length=adaptive_max_length,
                         vp_value=vp_value,
                         temperature=self.generation_temperature  # Use config value
                     )
-                    # Handle both old (list) and new (dict with text+tokens) return formats
-                    if isinstance(result, dict):
-                        response_text = result.get('text', '')
-                        response_tokens = result.get('tokens', [])
-                    else:
-                        response_tokens = result if result else []
-                        response_text = ''  # Old format - no text available
                     self._log_debug("STEP_4", f"Tokens generated for {org_id}", {
                         "token_count": len(response_tokens),
                         "tokens": response_tokens[:10]  # First 10 tokens
@@ -350,14 +343,14 @@ class ButterflyChatRouter:
                     response_tokens = self.vocabulary.encode(response_text.split(), add_special=True) if self.vocabulary else []
                 else:
                     response_tokens = []
-                    response_text = ''
                     self._log_error("RESPONSE_GENERATION_WARNING", f"Organism {org_id} has no response method", {
                         "organism_id": org_id,
                         "has_generate_tokens": hasattr(organism, 'generate_tokens'),
                         "has_respond": hasattr(organism, 'respond')
                     })
 
-                # Text comes directly from organism - no decoding needed here
+                response_words = self.vocabulary.decode(response_tokens, skip_special=True) if self.vocabulary else [str(t) for t in response_tokens]
+                response_text = ' '.join(response_words) if isinstance(response_words, list) else str(response_words)
                 
                 # Learn new words from user message (vocabulary expansion)
                 # NO FALLBACKS - organisms must generate their own responses
@@ -393,7 +386,7 @@ class ButterflyChatRouter:
                 weight = fitness * confidence * genetic_weight_modifier
                 
                 self._log_debug("STEP_4", f"Response decoded for {org_id}", {
-                    "response_text": response_text,
+                    "response_text": response_text[:50],  # First 50 chars
                     "token_count": len(response_tokens),
                     "word_count": len(response_words) if isinstance(response_words, list) else 0,
                     "confidence": confidence,
@@ -537,225 +530,6 @@ class ButterflyChatRouter:
             }
         }
 
-    def route_message_streaming(self,
-                                message: str,
-                                routing_strategy: str = "all",
-                                max_organisms: Optional[int] = None,
-                                network_state: Optional[Dict[str, Any]] = None):
-        """
-        Streaming version of route_message - yields events as organisms respond.
-        
-        Yields dicts with 'type' field:
-        - 'status': Progress updates
-        - 'log': Debug log entries  
-        - 'organism_response': Individual organism responses
-        - 'error_log': Error entries
-        - 'complete': Final aggregated response
-        """
-        # Initialize debug logging for this message
-        self.debug_logs = []
-        self.causation_trail = []
-        self.errors = []
-        start_time = time.time()
-        
-        # Helper to yield and log simultaneously
-        def yield_log(step, action, data):
-            log_entry = {
-                'type': 'log',
-                'step': step,
-                'action': action,
-                'data': data,
-                'timestamp': time.time()
-            }
-            self.debug_logs.append(log_entry)
-            return log_entry
-        
-        def yield_error(error_type, error_msg, data):
-            error_entry = {
-                'type': 'error_log',
-                'error_type': error_type,
-                'message': error_msg,
-                'data': data,
-                'timestamp': time.time()
-            }
-            self.errors.append(error_entry)
-            return error_entry
-        
-        yield yield_log("STEP_1", "Message Received", {
-            "message": message,
-            "routing_strategy": routing_strategy,
-            "max_organisms": max_organisms,
-            "vocabulary_available": self.vocabulary is not None,
-            "organisms_count": len(self.organisms),
-            "network_state_available": network_state is not None
-        })
-
-        # Extract context_memory
-        context_memory = network_state.get('context_memory') if network_state else None
-        vp_value = network_state.get('vp_value') if network_state else None
-        
-        # Tokenize message
-        words = message.lower().split()
-        prompt_tokens = []
-        if self.vocabulary:
-            prompt_tokens = self.vocabulary.encode(words, add_special=True)
-        
-        yield yield_log("STEP_2", "Message Tokenized", {
-            "word_count": len(words),
-            "token_count": len(prompt_tokens),
-            "tokens": prompt_tokens[:10]
-        })
-        
-        # Select organisms
-        selected_organisms = self._select_organisms(routing_strategy, max_organisms, words, network_state)
-        
-        yield yield_log("STEP_3", "Organisms Selected", {
-            "strategy": routing_strategy,
-            "selected_count": len(selected_organisms),
-            "organism_ids": list(selected_organisms.keys())[:10]
-        })
-        
-        yield {'type': 'status', 'message': f'Querying {len(selected_organisms)} organisms...', 'organism_count': len(selected_organisms)}
-        
-        # Process each organism and stream results
-        organism_responses = []
-        for org_idx, (org_id, organism) in enumerate(selected_organisms.items()):
-            org_start_time = time.time()
-            
-            yield {'type': 'status', 'message': f'Processing organism {org_idx + 1}/{len(selected_organisms)}: {org_id[:8]}...'}
-            
-            try:
-                if hasattr(organism, 'generate_tokens'):
-                    # Calculate adaptive max_length
-                    experience_count = len(organism.experience_buffer) if hasattr(organism, 'experience_buffer') else 0
-                    vocab_size = self.vocabulary.vocab_size if self.vocabulary else 100
-                    
-                    if experience_count < 10:
-                        adaptive_max_length = min(8, max(5, vocab_size // 6))
-                    elif experience_count < 50:
-                        adaptive_max_length = min(24, max(12, vocab_size // 4))
-                    elif experience_count < 100:
-                        adaptive_max_length = min(64, max(32, vocab_size // 2))
-                    else:
-                        adaptive_max_length = 128
-                    
-                    yield yield_log("STEP_4", f"Generating tokens for {org_id[:8]}", {
-                        "organism_id": org_id,
-                        "organism_index": org_idx + 1,
-                        "total_organisms": len(selected_organisms),
-                        "experience_count": experience_count,
-                        "adaptive_max_length": adaptive_max_length
-                    })
-                    
-                    result = organism.generate_tokens(
-                        context_memory=context_memory,
-                        max_length=adaptive_max_length,
-                        vp_value=vp_value,
-                        temperature=self.generation_temperature
-                    )
-                    # Handle both old (list) and new (dict with text+tokens) return formats
-                    if isinstance(result, dict):
-                        response_text = result.get('text', '')
-                        response_tokens = result.get('tokens', [])
-                    else:
-                        response_tokens = result if result else []
-                        response_text = ''
-                elif hasattr(organism, 'respond'):
-                    response_text = organism.respond(message)
-                    response_tokens = self.vocabulary.encode(response_text.split(), add_special=True) if self.vocabulary else []
-                else:
-                    response_tokens = []
-                    response_text = ''
-                
-                # Text comes directly from organism - no decoding needed
-                
-                # Calculate metrics
-                confidence = self._calculate_confidence(response_tokens, organism=organism)
-                fitness = float(getattr(organism, 'fitness', 0.0))
-                
-                org_time_ms = (time.time() - org_start_time) * 1000
-                
-                response_entry = {
-                    'organism_id': org_id,
-                    'response': response_text,
-                    'tokens': response_tokens,
-                    'fitness': fitness,
-                    'confidence': confidence,
-                    'generation_time_ms': org_time_ms
-                }
-                organism_responses.append(response_entry)
-                
-                yield yield_log("STEP_4", f"Response from {org_id[:8]}", {
-                    "organism_id": org_id,
-                    "response_preview": response_text if response_text else "(empty)",
-                    "token_count": len(response_tokens),
-                    "confidence": confidence,
-                    "fitness": fitness,
-                    "time_ms": org_time_ms
-                })
-                
-                # Yield the organism response immediately
-                yield {'type': 'organism_response', **response_entry}
-                
-                # Store learning experience
-                self._store_chat_experience(
-                    organism=organism,
-                    user_message=message,
-                    user_tokens=prompt_tokens,
-                    organism_response=response_text,
-                    organism_tokens=response_tokens,
-                    confidence=confidence,
-                    fitness=fitness,
-                    network_state=network_state
-                )
-                
-            except Exception as e:
-                import traceback
-                error_info = {
-                    "organism_id": org_id,
-                    "error_type": type(e).__name__,
-                    "error_message": str(e),
-                    "traceback": traceback.format_exc(limit=10)
-                }
-                yield yield_error("RESPONSE_ERROR", f"Organism {org_id[:8]} failed: {e}", error_info)
-        
-        # Aggregate responses
-        yield yield_log("STEP_5", "Aggregating Responses", {
-            "response_count": len(organism_responses)
-        })
-        
-        aggregated_response = self._aggregate_responses(organism_responses)
-        
-        # Emit causation events
-        if self.event_emitter:
-            self._emit_chat_events(message, prompt_tokens, organism_responses, aggregated_response)
-        
-        total_time = (time.time() - start_time) * 1000
-        
-        yield yield_log("STEP_6", "Message Routing Complete", {
-            "total_time_ms": total_time,
-            "response_length": len(aggregated_response)
-        })
-        
-        # Calculate final confidence
-        confidence = 0.0
-        if organism_responses:
-            confidences = [r.get('confidence', 0.0) for r in organism_responses]
-            confidence = sum(confidences) / len(confidences) if confidences else 0.0
-        
-        # Yield final complete event
-        yield {
-            'type': 'complete',
-            'response': aggregated_response,
-            'organism_count': len(organism_responses),
-            'confidence': confidence,
-            'causation_trail': self.causation_trail,
-            'performance': {
-                'total_time_ms': total_time,
-                'avg_response_time_ms': total_time / max(len(organism_responses), 1)
-            }
-        }
-
     def _select_organisms(self,
                          strategy: str,
                          max_organisms: Optional[int],
@@ -877,7 +651,7 @@ class ButterflyChatRouter:
         self.causation_trail = []
         self.errors = []
         
-        org_id = getattr(organism, 'species_id', None) or getattr(organism, 'id', 'unknown')
+        org_id = getattr(organism, 'id', 'unknown')
         
         self._log_debug("DIRECT_CHAT", "Single organism chat started", {
             "organism_id": org_id,
@@ -896,28 +670,6 @@ class ButterflyChatRouter:
                 prompt_tokens = self.vocabulary.encode(words, add_special=True)
             except Exception as e:
                 self._log_error("TOKENIZATION_ERROR", str(e), {"words": words})
-        
-        # BOOTSTRAP: Teach organism user's words BEFORE generation so they have vocab to work with
-        # This solves the chicken-and-egg: can't generate without vocab, can't learn without generating
-        if hasattr(organism, 'atomic_language') and organism.atomic_language is not None:
-            words_taught = 0
-            for word in words:
-                if word not in organism.atomic_language.atoms:
-                    try:
-                        organism.atomic_language.acquire_concept(
-                            word, 
-                            source='chat_heard',
-                            reason=f"heard in user message"
-                        )
-                        words_taught += 1
-                    except Exception as e:
-                        pass  # Non-fatal
-            if words_taught > 0:
-                self._log_debug("DIRECT_CHAT_BOOTSTRAP", f"Taught {words_taught} new words to organism", {
-                    "organism_id": org_id,
-                    "words_taught": words_taught,
-                    "total_vocab": len(organism.atomic_language.atoms)
-                })
         
         # Get organism's language system
         language_system = getattr(organism, 'language_system', None)
@@ -999,21 +751,16 @@ class ButterflyChatRouter:
                     temperature=self.generation_temperature  # Use config value
                 )
                 
-                # Handle both dict return format {'text': ..., 'tokens': ...} and legacy list format
-                if isinstance(response_tokens, dict):
-                    response_text = response_tokens.get('text', '')
-                    response_tokens = response_tokens.get('tokens', [])
-                
                 self._log_debug("DIRECT_CHAT", "Tokens generated", {
-                    "token_count": len(response_tokens) if isinstance(response_tokens, list) else 0,
-                    "tokens": response_tokens[:10] if isinstance(response_tokens, list) and response_tokens else []
+                    "token_count": len(response_tokens),
+                    "tokens": response_tokens[:10] if response_tokens else []
                 })
                 
-                # Decode tokens (only if we don't already have text)
-                if not response_text and self.vocabulary:
+                # Decode tokens
+                if self.vocabulary:
                     response_words = self.vocabulary.decode(response_tokens, skip_special=True)
                     response_text = ' '.join(response_words) if isinstance(response_words, list) else str(response_words)
-                elif not response_text:
+                else:
                     response_text = ' '.join(str(t) for t in response_tokens)
                 
                 confidence = self._calculate_confidence(response_tokens, organism=organism)
@@ -1023,15 +770,7 @@ class ButterflyChatRouter:
                 confidence = 0.5  # Default confidence for simple respond
                 
         except Exception as e:
-            # Get detailed error info - str(e) can be empty for some exceptions
-            error_msg = str(e) if str(e) else f"{type(e).__name__}: {repr(e)}"
-            import traceback
-            error_tb = traceback.format_exc()
-            self._log_error("RESPONSE_ERROR", error_msg, {
-                "organism_id": org_id,
-                "error_type": type(e).__name__,
-                "traceback": error_tb[-500:]  # Last 500 chars of traceback
-            })
+            self._log_error("RESPONSE_ERROR", str(e), {"organism_id": org_id})
         
         # Get word associations from organism's vocabulary
         word_associations = []
@@ -1245,18 +984,6 @@ class ButterflyChatRouter:
         This allows organisms to learn from user interactions and improve
         their language generation over time.
         """
-        # Defensive: handle dict format if organism_tokens is {'text': ..., 'tokens': ...}
-        if isinstance(organism_tokens, dict):
-            organism_tokens = organism_tokens.get('tokens', [])
-        if isinstance(user_tokens, dict):
-            user_tokens = user_tokens.get('tokens', [])
-        
-        # Ensure lists
-        if not isinstance(organism_tokens, list):
-            organism_tokens = []
-        if not isinstance(user_tokens, list):
-            user_tokens = []
-        
         # Only store experiences for neural organisms
         if not hasattr(organism, 'record_experience'):
             return
