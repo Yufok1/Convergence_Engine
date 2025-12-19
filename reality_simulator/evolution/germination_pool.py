@@ -53,6 +53,15 @@ class GeneticMaterial:
     concepts: Dict[str, Any] = field(default_factory=dict)
     vocabulary_sample: List[str] = field(default_factory=list)
     
+    # ═══════════════════════════════════════════════════════════════════════════
+    # MAGNETISM INHERITANCE - Bonds that persist across death
+    # Healed organisms encode their fixed-point attractor in magnetism
+    # ═══════════════════════════════════════════════════════════════════════════
+    magnetism_states: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    # {concept_id: {base_magnetism, curiosity_magnetism, outcome_history, satiation}}
+    association_strengths: Dict[str, Dict[str, float]] = field(default_factory=dict)
+    # {concept_id: {target_id: strength}}
+    
     # Configuration essence
     config_atoms: Dict[str, Any] = field(default_factory=dict)
     
@@ -77,6 +86,63 @@ class GeneticMaterial:
         win_rate = self.victories / max(1, self.victories + self.defeats)
         survival_bonus = min(1.0, self.battles_survived / 10)
         return (win_rate * 0.6 + survival_bonus * 0.4)
+    
+    def semantic_coherence(self) -> float:
+        """
+        Calculate semantic coherence - stability of magnetism landscape.
+        
+        High coherence = stable fixed-point attractor (healed phenotype)
+        Low coherence = oscillating/unstable (trapped phenotype)
+        """
+        if not self.magnetism_states:
+            return 0.5  # Neutral if no magnetism data
+        
+        # Calculate magnetism stability (low variance = high coherence)
+        magnetism_values = [
+            state.get('curiosity_magnetism', 0.5) 
+            for state in self.magnetism_states.values()
+        ]
+        if len(magnetism_values) < 2:
+            return 0.5
+        
+        mean_mag = sum(magnetism_values) / len(magnetism_values)
+        variance = sum((m - mean_mag) ** 2 for m in magnetism_values) / len(magnetism_values)
+        stability = 1.0 / (1.0 + variance * 10)  # Higher variance = lower stability
+        
+        # Calculate outcome history consistency (positive trends = healed)
+        positive_outcomes = 0
+        total_outcomes = 0
+        for state in self.magnetism_states.values():
+            history = state.get('outcome_history', [])
+            for outcome in history:
+                total_outcomes += 1
+                if outcome > 0:
+                    positive_outcomes += 1
+        
+        outcome_positivity = positive_outcomes / max(1, total_outcomes)
+        
+        # Coherence = weighted combination
+        coherence = (stability * 0.6 + outcome_positivity * 0.4)
+        return min(1.0, max(0.0, coherence))
+    
+    def magnetism_stability(self) -> float:
+        """
+        Variance in magnetism values - lower is more stable.
+        Returns 0-1 where 1 = perfectly stable.
+        """
+        if not self.magnetism_states:
+            return 0.5
+        
+        magnetism_values = [
+            state.get('curiosity_magnetism', 0.5) 
+            for state in self.magnetism_states.values()
+        ]
+        if len(magnetism_values) < 2:
+            return 0.5
+        
+        mean_mag = sum(magnetism_values) / len(magnetism_values)
+        variance = sum((m - mean_mag) ** 2 for m in magnetism_values) / len(magnetism_values)
+        return 1.0 / (1.0 + variance * 10)
 
 
 @dataclass
@@ -93,6 +159,18 @@ class GerminationCandidate:
     config_template: Dict[str, Any] = field(default_factory=dict)
     trait_template: Dict[str, float] = field(default_factory=dict)
     vocabulary_words: List[str] = field(default_factory=list)  # RESTORED: Full vocabulary inheritance
+    
+    # ═══════════════════════════════════════════════════════════════════════════
+    # MAGNETISM INHERITANCE - Attractor landscape from parents
+    # ═══════════════════════════════════════════════════════════════════════════
+    magnetism_template: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    # {concept_id: {base_magnetism, curiosity_magnetism, outcome_history}}
+    association_template: Dict[str, Dict[str, float]] = field(default_factory=dict)
+    # {concept_id: {target_id: strength}}
+    
+    # Birth phenotype classification
+    birth_phenotype: str = "unknown"  # "healed", "numb", or "trapped"
+    coherence_at_birth: float = 0.0
     
     # Birth parameters
     mutation_rate: float = 0.1
@@ -150,15 +228,20 @@ class GerminationPool:
         self.generation_counter = 1
         
         # Strategy weights (adaptable)
+        # ═══════════════════════════════════════════════════════════════════════════
+        # CHIMERA @ 100% - Bonds persist across death
+        # Healed organisms encode fixed-point attractors that offspring inherit
+        # "Make survival heritable"
+        # ═══════════════════════════════════════════════════════════════════════════
         self.strategy_weights = {
-            GerminationStrategy.CLONE: 0.10,
-            GerminationStrategy.CROSSOVER: 0.25,
-            GerminationStrategy.CHIMERA: 0.15,
-            GerminationStrategy.NOVA: 0.10,
-            GerminationStrategy.PHOENIX: 0.10,
-            GerminationStrategy.HYBRID: 0.05,
-            GerminationStrategy.REGRESSED: 0.15,    # Earlier developmental state
-            GerminationStrategy.CALIBRATED: 0.10    # Population-calibrated
+            GerminationStrategy.CLONE: 0.0,
+            GerminationStrategy.CROSSOVER: 0.0,
+            GerminationStrategy.CHIMERA: 1.0,       # 100% - All births are chimera
+            GerminationStrategy.NOVA: 0.0,
+            GerminationStrategy.PHOENIX: 0.0,
+            GerminationStrategy.HYBRID: 0.0,
+            GerminationStrategy.REGRESSED: 0.0,
+            GerminationStrategy.CALIBRATED: 0.0
         }
         
         # Champion capsules for phoenix resurrection
@@ -260,6 +343,29 @@ class GerminationPool:
                 'resilience': getattr(organism, 'resilience', 0.5),
                 'innovation': getattr(organism, 'innovation', 0.5)
             }
+        
+        # ═══════════════════════════════════════════════════════════════════════════
+        # EXTRACT MAGNETISM - Bonds that persist across death
+        # Healed organisms encode their fixed-point attractor in magnetism
+        # ═══════════════════════════════════════════════════════════════════════════
+        if hasattr(organism, 'linguistic_atoms') and organism.linguistic_atoms:
+            lang_system = organism.linguistic_atoms
+            if hasattr(lang_system, 'atoms'):
+                for concept_id, atom in lang_system.atoms.items():
+                    # Extract magnetism state
+                    material.magnetism_states[concept_id] = {
+                        'base_magnetism': getattr(atom, 'base_magnetism', 0.5),
+                        'curiosity_magnetism': getattr(atom, 'curiosity_magnetism', 0.5),
+                        'outcome_history': getattr(atom, 'outcome_history', [])[-10:],
+                        'satiation_level': getattr(atom, 'satiation_level', 0.0),
+                        'strength': getattr(atom, 'strength', 0.5)
+                    }
+                    # Extract association strengths
+                    if hasattr(atom, 'associations') and atom.associations:
+                        material.association_strengths[concept_id] = {
+                            target: assoc.strength 
+                            for target, assoc in atom.associations.items()
+                        }
             
         # Extract battle record
         if hasattr(organism, 'victories'):
@@ -427,7 +533,9 @@ class GerminationPool:
             'neural_weights': None,
             'concepts': {},
             'traits': {},
-            'config': {}
+            'config': {},
+            'magnetism_states': {},      # Attractor landscape
+            'association_strengths': {}  # Knowledge web
         }
         
         # Capture neural state
@@ -450,6 +558,24 @@ class GerminationPool:
         # Capture config
         if hasattr(organism, 'config'):
             snapshot['config'] = dict(organism.config)
+        
+        # CAPTURE MAGNETISM - Bonds that persist across death
+        if hasattr(organism, 'linguistic_atoms') and organism.linguistic_atoms:
+            lang_system = organism.linguistic_atoms
+            if hasattr(lang_system, 'atoms'):
+                for concept_id, atom in lang_system.atoms.items():
+                    snapshot['magnetism_states'][concept_id] = {
+                        'base_magnetism': getattr(atom, 'base_magnetism', 0.5),
+                        'curiosity_magnetism': getattr(atom, 'curiosity_magnetism', 0.5),
+                        'outcome_history': getattr(atom, 'outcome_history', [])[-10:],
+                        'satiation_level': getattr(atom, 'satiation_level', 0.0),
+                        'strength': getattr(atom, 'strength', 0.5)
+                    }
+                    if hasattr(atom, 'associations') and atom.associations:
+                        snapshot['association_strengths'][concept_id] = {
+                            target: assoc.strength 
+                            for target, assoc in atom.associations.items()
+                        }
         
         # Store
         if org_id not in self.historical_snapshots:
@@ -636,6 +762,11 @@ class GerminationPool:
         candidate.config_template = dict(parent.config_atoms)
         candidate.trait_template = dict(parent.traits)
         candidate.vocabulary_words = list(parent.vocabulary_sample)  # FULL vocab inheritance
+        
+        # MAGNETISM INHERITANCE - Clone gets parent's attractor landscape
+        candidate.magnetism_template = dict(parent.magnetism_states)
+        candidate.association_template = dict(parent.association_strengths)
+        
         candidate.mutation_rate = 0.05  # Low mutation for clones
         candidate.ancestry_depth = 1
         
@@ -674,6 +805,17 @@ class GerminationPool:
         vocab_union = set(parent1.vocabulary_sample) | set(parent2.vocabulary_sample)
         candidate.vocabulary_words = list(vocab_union)
         
+        # MAGNETISM INHERITANCE - Crossover gets simple union (chimera does weighted merge)
+        merged_magnetism = {}
+        merged_magnetism.update(parent1.magnetism_states)
+        merged_magnetism.update(parent2.magnetism_states)  # parent2 overwrites conflicts
+        candidate.magnetism_template = merged_magnetism
+        
+        merged_associations = {}
+        merged_associations.update(parent1.association_strengths)
+        merged_associations.update(parent2.association_strengths)
+        candidate.association_template = merged_associations
+        
         candidate.mutation_rate = 0.1
         candidate.ancestry_depth = max(
             getattr(parent1, 'ancestry_depth', 0),
@@ -681,60 +823,283 @@ class GerminationPool:
         ) + 1
         
     def _apply_chimera_strategy(self, candidate: GerminationCandidate):
-        """Frankenstein from 3-5 donors"""
-        donor_count = min(len(self.genetic_pool), random.randint(3, 5))
+        """
+        ═══════════════════════════════════════════════════════════════════════════
+        CHIMERA @ 100% - Bonds Persist Across Death
         
-        if donor_count < 3:
-            self._apply_crossover_strategy(candidate)
+        Parent Selection: highest_fitness + semantic_coherence
+        State Merge: weighted_average(fitness_score, magnetism_stability, vocab_overlap)
+        Semantic Inheritance:
+          - linguistic_knowledge_web: merge_both_parents
+          - concept_associations: average_strength  
+          - learned_words: union_with_parent_weighting
+        Phenotype Blend:
+          - curiosity: geometric_mean(parent_a, parent_b)
+          - traits: element_wise_average
+          - development_stage: max(parents)
+        
+        Output:
+          - log_coherence_before: true
+          - log_coherence_after: true
+          - track_healed_vs_trapped: true
+        ═══════════════════════════════════════════════════════════════════════════
+        """
+        import math
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        # Need at least 2 donors for chimera
+        if len(self.genetic_pool) < 2:
+            self._apply_nova_strategy(candidate)
             return
-            
-        pool = list(self.genetic_pool.keys())
-        donor_ids = random.sample(pool, donor_count)
-        donors = [self.genetic_pool[did] for did in donor_ids]
         
-        candidate.parent_ids = donor_ids
+        # ═══════════════════════════════════════════════════════════════════════
+        # PARENT SELECTION: highest_fitness + semantic_coherence
+        # ═══════════════════════════════════════════════════════════════════════
+        pool_items = list(self.genetic_pool.items())
         
-        # Take best neural weights
-        best_neural_donor = max(donors, key=lambda d: d.fitness_score())
-        candidate.neural_template = dict(best_neural_donor.neural_weights or {})
+        # Calculate combined score for each donor
+        scored_donors = []
+        for donor_id, donor in pool_items:
+            fitness = donor.fitness_score()
+            coherence = donor.semantic_coherence()
+            # Combined score: 60% fitness, 40% coherence
+            combined_score = (fitness * 0.6) + (coherence * 0.4)
+            scored_donors.append((donor_id, donor, combined_score, fitness, coherence))
         
-        # Merge all concepts
-        all_concepts = {}
-        for donor in donors:
-            all_concepts.update(donor.concepts)
-        candidate.concept_seed = all_concepts
+        # Sort by combined score, take top 2
+        scored_donors.sort(key=lambda x: x[2], reverse=True)
+        parent1_id, parent1, score1, fit1, coh1 = scored_donors[0]
+        parent2_id, parent2, score2, fit2, coh2 = scored_donors[1] if len(scored_donors) > 1 else scored_donors[0]
         
-        # Merge all vocabulary (chimera gets ALL words from ALL donors)
-        all_vocab = set()
-        for donor in donors:
-            all_vocab.update(donor.vocabulary_sample)
+        candidate.parent_ids = [parent1_id, parent2_id]
+        
+        # Log coherence BEFORE merge
+        logger.info(f"[CHIMERA] Parent selection: {parent1_id[:8]}(fit={fit1:.2f},coh={coh1:.2f}) + {parent2_id[:8]}(fit={fit2:.2f},coh={coh2:.2f})")
+        
+        # ═══════════════════════════════════════════════════════════════════════
+        # STATE MERGE: weighted_average by fitness, magnetism_stability, vocab_overlap
+        # ═══════════════════════════════════════════════════════════════════════
+        
+        # Calculate weights for each parent
+        p1_fitness = parent1.fitness_score()
+        p2_fitness = parent2.fitness_score()
+        p1_stability = parent1.magnetism_stability()
+        p2_stability = parent2.magnetism_stability()
+        
+        # Vocabulary contribution - how much does each parent bring?
+        vocab1 = set(parent1.vocabulary_sample)
+        vocab2 = set(parent2.vocabulary_sample)
+        union_size = len(vocab1 | vocab2)
+        p1_vocab_contribution = len(vocab1) / max(1, union_size)
+        p2_vocab_contribution = len(vocab2) / max(1, union_size)
+        
+        # Parent weights: fitness(40%) + stability(40%) + vocab_contribution(20%)
+        p1_weight = (p1_fitness * 0.4) + (p1_stability * 0.4) + (p1_vocab_contribution * 0.2)
+        p2_weight = (p2_fitness * 0.4) + (p2_stability * 0.4) + (p2_vocab_contribution * 0.2)
+        total_weight = p1_weight + p2_weight
+        
+        w1 = p1_weight / total_weight if total_weight > 0 else 0.5
+        w2 = p2_weight / total_weight if total_weight > 0 else 0.5
+        
+        # ═══════════════════════════════════════════════════════════════════════
+        # NEURAL: Take from higher-fitness parent (neural weights are fragile)
+        # ═══════════════════════════════════════════════════════════════════════
+        best_neural_parent = parent1 if p1_fitness >= p2_fitness else parent2
+        candidate.neural_template = dict(best_neural_parent.neural_weights or {})
+        
+        # ═══════════════════════════════════════════════════════════════════════
+        # SEMANTIC INHERITANCE: merge_both_parents
+        # ═══════════════════════════════════════════════════════════════════════
+        
+        # 1. Vocabulary: union_with_parent_weighting
+        all_vocab = vocab1 | vocab2
         candidate.vocabulary_words = list(all_vocab)
+        
+        # 2. Concepts: merge both
+        merged_concepts = {}
+        merged_concepts.update(parent1.concepts)
+        merged_concepts.update(parent2.concepts)
+        candidate.concept_seed = merged_concepts
+        
+        # 3. MAGNETISM: weighted average of both parents' attractor landscapes
+        merged_magnetism = {}
+        all_concept_ids = set(parent1.magnetism_states.keys()) | set(parent2.magnetism_states.keys())
+        
+        for concept_id in all_concept_ids:
+            state1 = parent1.magnetism_states.get(concept_id, {})
+            state2 = parent2.magnetism_states.get(concept_id, {})
+            
+            # Weighted average of magnetism values
+            base_mag = (
+                state1.get('base_magnetism', 0.5) * w1 +
+                state2.get('base_magnetism', 0.5) * w2
+            )
+            curiosity_mag = (
+                state1.get('curiosity_magnetism', 0.5) * w1 +
+                state2.get('curiosity_magnetism', 0.5) * w2
+            )
+            strength = (
+                state1.get('strength', 0.5) * w1 +
+                state2.get('strength', 0.5) * w2
+            )
+            
+            # Merge outcome histories (interleave, recent bias)
+            hist1 = state1.get('outcome_history', [])
+            hist2 = state2.get('outcome_history', [])
+            # Interleave with bias toward better parent
+            merged_history = []
+            for i in range(max(len(hist1), len(hist2))):
+                if i < len(hist1):
+                    merged_history.append(hist1[i])
+                if i < len(hist2):
+                    merged_history.append(hist2[i])
+            merged_history = merged_history[-10:]  # Keep last 10
+            
+            merged_magnetism[concept_id] = {
+                'base_magnetism': base_mag,
+                'curiosity_magnetism': curiosity_mag,
+                'outcome_history': merged_history,
+                'satiation_level': 0.0,  # Fresh start on satiation
+                'strength': strength
+            }
+        
+        candidate.magnetism_template = merged_magnetism
+        
+        # 4. ASSOCIATIONS: average_strength
+        merged_associations = {}
+        all_source_concepts = set(parent1.association_strengths.keys()) | set(parent2.association_strengths.keys())
+        
+        for source_id in all_source_concepts:
+            assoc1 = parent1.association_strengths.get(source_id, {})
+            assoc2 = parent2.association_strengths.get(source_id, {})
+            all_targets = set(assoc1.keys()) | set(assoc2.keys())
+            
+            merged_associations[source_id] = {}
+            for target_id in all_targets:
+                str1 = assoc1.get(target_id, 0.0)
+                str2 = assoc2.get(target_id, 0.0)
+                # Weighted average
+                merged_associations[source_id][target_id] = str1 * w1 + str2 * w2
+        
+        candidate.association_template = merged_associations
+        
+        # ═══════════════════════════════════════════════════════════════════════
+        # PHENOTYPE BLEND
+        # ═══════════════════════════════════════════════════════════════════════
+        
+        # 1. Curiosity: geometric_mean(parent_a, parent_b)
+        p1_curiosity = parent1.traits.get('curiosity', parent1.traits.get('adaptability', 0.5))
+        p2_curiosity = parent2.traits.get('curiosity', parent2.traits.get('adaptability', 0.5))
+        geometric_curiosity = math.sqrt(max(0.01, p1_curiosity) * max(0.01, p2_curiosity))
+        
+        # 2. Traits: element_wise_average
+        blended_traits = {}
+        all_trait_names = set(parent1.traits.keys()) | set(parent2.traits.keys())
+        for trait_name in all_trait_names:
+            t1 = parent1.traits.get(trait_name, 0.5)
+            t2 = parent2.traits.get(trait_name, 0.5)
+            blended_traits[trait_name] = (t1 + t2) / 2.0
+        
+        # Override curiosity with geometric mean
+        blended_traits['curiosity'] = geometric_curiosity
+        blended_traits['adaptability'] = geometric_curiosity  # Sync both
+        
+        candidate.trait_template = blended_traits
+        
+        # 3. Development stage: max(parents)
+        p1_stage = parent1.developmental_stage
+        p2_stage = parent2.developmental_stage
+        max_stage = max(p1_stage, p2_stage)
         
         # Blend configs
         blended_config = {}
-        for donor in donors:
-            for key, value in donor.config_atoms.items():
-                if key not in blended_config:
-                    blended_config[key] = []
-                blended_config[key].append(value)
-        # Average numeric values
-        for key, values in blended_config.items():
-            if all(isinstance(v, (int, float)) for v in values):
-                blended_config[key] = sum(values) / len(values)
+        for key in set(parent1.config_atoms.keys()) | set(parent2.config_atoms.keys()):
+            v1 = parent1.config_atoms.get(key)
+            v2 = parent2.config_atoms.get(key)
+            if v1 is not None and v2 is not None:
+                if isinstance(v1, (int, float)) and isinstance(v2, (int, float)):
+                    blended_config[key] = v1 * w1 + v2 * w2
+                else:
+                    blended_config[key] = v1 if w1 >= w2 else v2
             else:
-                blended_config[key] = random.choice(values)
+                blended_config[key] = v1 if v1 is not None else v2
         candidate.config_template = blended_config
         
-        # Take extreme traits
-        extreme_traits = {}
-        for trait in ['aggression', 'cooperation', 'adaptability', 'resilience', 'innovation']:
-            values = [d.traits.get(trait, 0.5) for d in donors]
-            # Take the most extreme value (furthest from 0.5)
-            extreme_traits[trait] = max(values, key=lambda x: abs(x - 0.5))
-        candidate.trait_template = extreme_traits
+        # ═══════════════════════════════════════════════════════════════════════
+        # BIRTH PHENOTYPE CLASSIFICATION: healed / numb / trapped
+        # ═══════════════════════════════════════════════════════════════════════
         
-        candidate.mutation_rate = 0.15  # Higher mutation for chimeras
-        candidate.ancestry_depth = max(getattr(d, 'ancestry_depth', 0) for d in donors) + 1
+        # Calculate coherence of the merged state
+        if merged_magnetism:
+            magnetism_values = [s.get('curiosity_magnetism', 0.5) for s in merged_magnetism.values()]
+            mean_mag = sum(magnetism_values) / len(magnetism_values) if magnetism_values else 0.5
+            variance = sum((m - mean_mag) ** 2 for m in magnetism_values) / max(1, len(magnetism_values))
+            stability = 1.0 / (1.0 + variance * 10)
+            
+            # Count positive outcomes in merged history
+            positive_count = 0
+            total_count = 0
+            for state in merged_magnetism.values():
+                for outcome in state.get('outcome_history', []):
+                    total_count += 1
+                    if outcome > 0:
+                        positive_count += 1
+            positivity = positive_count / max(1, total_count)
+            
+            coherence_after = stability * 0.6 + positivity * 0.4
+        else:
+            coherence_after = 0.5
+        
+        candidate.coherence_at_birth = coherence_after
+        
+        # Classify phenotype
+        # healed: high coherence (>0.7) + high mean magnetism (stable +1)
+        # numb: high coherence (>0.7) + low mean magnetism (stable 0)  
+        # trapped: low coherence (<0.5) (oscillating)
+        if coherence_after >= 0.7:
+            if merged_magnetism:
+                mean_mag = sum(s.get('curiosity_magnetism', 0.5) for s in merged_magnetism.values()) / len(merged_magnetism)
+            else:
+                mean_mag = 0.5
+            if mean_mag >= 0.6:
+                candidate.birth_phenotype = "healed"
+            else:
+                candidate.birth_phenotype = "numb"
+        elif coherence_after < 0.5:
+            candidate.birth_phenotype = "trapped"
+        else:
+            candidate.birth_phenotype = "drifting"  # In between
+        
+        # Low mutation for chimera - inheritance is the point
+        candidate.mutation_rate = 0.05
+        candidate.ancestry_depth = max(
+            getattr(parent1, 'ancestry_depth', 0),
+            getattr(parent2, 'ancestry_depth', 0)
+        ) + 1
+        
+        # Log coherence AFTER merge
+        logger.info(
+            f"[CHIMERA] Birth: {candidate.candidate_id[:8]} "
+            f"phenotype={candidate.birth_phenotype} "
+            f"coherence={coherence_after:.2f} "
+            f"vocab={len(candidate.vocabulary_words)} "
+            f"magnetism_concepts={len(merged_magnetism)}"
+        )
+        
+        # Emit causation event
+        self._emit_event('chimera_birth', {
+            'candidate_id': candidate.candidate_id,
+            'parent_ids': candidate.parent_ids,
+            'birth_phenotype': candidate.birth_phenotype,
+            'coherence_at_birth': coherence_after,
+            'vocabulary_size': len(candidate.vocabulary_words),
+            'magnetism_concepts': len(merged_magnetism),
+            'parent1_fitness': fit1,
+            'parent1_coherence': coh1,
+            'parent2_fitness': fit2,
+            'parent2_coherence': coh2
+        })
         
     def _apply_nova_strategy(self, candidate: GerminationCandidate):
         """Create a completely new random organism"""
@@ -790,6 +1155,12 @@ class GerminationPool:
             candidate.vocabulary_words = list(capsule.vocabulary_words)
         elif hasattr(capsule, 'vocabulary_sample'):
             candidate.vocabulary_words = list(capsule.vocabulary_sample)
+        
+        # RESTORE MAGNETISM: Phoenix rises with attractor landscape intact
+        if hasattr(capsule, 'magnetism_states'):
+            candidate.magnetism_template = dict(capsule.magnetism_states)
+        if hasattr(capsule, 'association_strengths'):
+            candidate.association_template = dict(capsule.association_strengths)
             
         candidate.mutation_rate = 0.03  # Very low - champions are proven
         candidate.vigor = 1.2  # Extra vigor for champions
@@ -878,6 +1249,12 @@ class GerminationPool:
                 'innovation': 0.5 + random.random() * 0.3    # Young = innovative
             }
         
+        # MAGNETISM INHERITANCE from snapshot
+        if snapshot.get('magnetism_states'):
+            candidate.magnetism_template = dict(snapshot['magnetism_states'])
+        if snapshot.get('association_strengths'):
+            candidate.association_template = dict(snapshot['association_strengths'])
+        
         # Regressed organisms need room to grow
         candidate.mutation_rate = 0.08
         candidate.vigor = 0.8  # Slightly weaker (younger)
@@ -913,6 +1290,9 @@ class GerminationPool:
                 candidate.concept_seed = dict(parent.concepts)
                 candidate.config_template = dict(parent.config_atoms)
                 candidate.trait_template = dict(parent.traits)
+                # MAGNETISM INHERITANCE
+                candidate.magnetism_template = dict(parent.magnetism_states)
+                candidate.association_template = dict(parent.association_strengths)
         else:
             # No elites, start from scratch
             candidate.parent_ids = []
@@ -1148,6 +1528,69 @@ class GerminationPool:
                             pass  # Word might already exist
                 # Also store for context_memory linking later
                 organism._inherited_vocabulary = candidate.vocabulary_words
+            
+            # ═══════════════════════════════════════════════════════════════════════
+            # APPLY MAGNETISM TEMPLATE - Inherited attractor landscape
+            # "Build bonds that persist across death"
+            # ═══════════════════════════════════════════════════════════════════════
+            if candidate.magnetism_template and hasattr(organism, 'linguistic_atoms'):
+                lang_system = organism.linguistic_atoms
+                if hasattr(lang_system, 'atoms'):
+                    for concept_id, mag_state in candidate.magnetism_template.items():
+                        if concept_id in lang_system.atoms:
+                            atom = lang_system.atoms[concept_id]
+                            # Apply inherited magnetism
+                            atom.base_magnetism = mag_state.get('base_magnetism', atom.base_magnetism)
+                            atom.curiosity_magnetism = mag_state.get('curiosity_magnetism', atom.curiosity_magnetism)
+                            atom.outcome_history = mag_state.get('outcome_history', [])
+                            atom.satiation_level = mag_state.get('satiation_level', 0.0)
+                            if 'strength' in mag_state:
+                                atom.strength = mag_state['strength']
+                        else:
+                            # Create new atom with inherited magnetism
+                            try:
+                                from reality_simulator.language.atomic_language import LinguisticAtom
+                                new_atom = LinguisticAtom(
+                                    concept_id=concept_id,
+                                    strength=mag_state.get('strength', 0.5),
+                                    source='inherited',
+                                    base_magnetism=mag_state.get('base_magnetism', 0.5),
+                                    curiosity_magnetism=mag_state.get('curiosity_magnetism', 0.5)
+                                )
+                                new_atom.outcome_history = mag_state.get('outcome_history', [])
+                                # Wire event emitter from parent system
+                                new_atom._event_emitter = getattr(lang_system, '_event_emitter', None)
+                                new_atom._organism_id = getattr(lang_system, 'organism_id', None)
+                                lang_system.atoms[concept_id] = new_atom
+                            except ImportError:
+                                pass
+            
+            # Apply inherited associations
+            if candidate.association_template and hasattr(organism, 'linguistic_atoms'):
+                lang_system = organism.linguistic_atoms
+                if hasattr(lang_system, 'atoms'):
+                    for source_id, targets in candidate.association_template.items():
+                        if source_id in lang_system.atoms:
+                            atom = lang_system.atoms[source_id]
+                            if hasattr(atom, 'associations'):
+                                for target_id, strength in targets.items():
+                                    if target_id in atom.associations:
+                                        atom.associations[target_id].strength = strength
+                                    else:
+                                        try:
+                                            from reality_simulator.language.atomic_language import ConceptAssociation
+                                            atom.associations[target_id] = ConceptAssociation(
+                                                target_concept=target_id,
+                                                strength=strength,
+                                                formation_reason='inherited'
+                                            )
+                                        except ImportError:
+                                            pass
+            
+            # Store birth phenotype for tracking
+            if hasattr(candidate, 'birth_phenotype'):
+                organism._birth_phenotype = candidate.birth_phenotype
+                organism._coherence_at_birth = candidate.coherence_at_birth
                 
             # Apply vigor
             if hasattr(organism, 'energy'):
@@ -1173,7 +1616,12 @@ class GerminationPool:
                 'parent_ids': candidate.parent_ids,
                 'generation': candidate.generation,
                 'vigor': candidate.vigor,
-                'total_germinated': self.total_germinated
+                'total_germinated': self.total_germinated,
+                # CHIMERA tracking
+                'birth_phenotype': getattr(candidate, 'birth_phenotype', 'unknown'),
+                'coherence_at_birth': getattr(candidate, 'coherence_at_birth', 0.0),
+                'magnetism_concepts_inherited': len(getattr(candidate, 'magnetism_template', {})),
+                'vocabulary_inherited': len(candidate.vocabulary_words)
             })
             
             return organism

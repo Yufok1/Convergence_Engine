@@ -398,7 +398,14 @@ class LinguisticAtom:
             'vp_affinity': {
                 'vitality': self.vp_vitality_affinity,
                 'pleasure': self.vp_pleasure_affinity
-            }
+            },
+            # ═══════════════════════════════════════════════════════════════
+            # MAGNETISM INHERITANCE - Bonds that persist across death
+            # ═══════════════════════════════════════════════════════════════
+            'base_magnetism': self.base_magnetism,
+            'curiosity_magnetism': self.curiosity_magnetism,
+            'outcome_history': self.outcome_history[-10:],  # Last 10 outcomes
+            'satiation_level': self.satiation_level
         }
     
     @classmethod
@@ -427,6 +434,14 @@ class LinguisticAtom:
         vp_data = data.get('vp_affinity', {})
         atom.vp_vitality_affinity = vp_data.get('vitality', 0.5)
         atom.vp_pleasure_affinity = vp_data.get('pleasure', 0.5)
+        
+        # ═══════════════════════════════════════════════════════════════
+        # RESTORE MAGNETISM - Inherited attractor landscape
+        # ═══════════════════════════════════════════════════════════════
+        atom.base_magnetism = data.get('base_magnetism', 0.5)
+        atom.curiosity_magnetism = data.get('curiosity_magnetism', data.get('base_magnetism', 0.5))
+        atom.outcome_history = data.get('outcome_history', [])
+        atom.satiation_level = data.get('satiation_level', 0.0)
         
         return atom
 
