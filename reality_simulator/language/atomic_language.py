@@ -1209,13 +1209,138 @@ class AtomicLanguageSystem:
         
         logger.debug(f"[ATOMIC_LANG] Organism {self.organism_id}: Initialized {len(self.atoms)} action heads")
     
+    # ═══════════════════════════════════════════════════════════════════════════════════════
+    # BEHAVIOR-DRIVEN SPECIALIZATION: Map actions to preferred vocabulary frames
+    # Like Elder Scrolls: use sword → level sword skill. Use compete → get combat vocabulary.
+    # Each organism develops a UNIQUE dialect based on their actual playstyle.
+    # ═══════════════════════════════════════════════════════════════════════════════════════
+    ACTION_FRAME_AFFINITIES = {
+        # action_index: (primary_frames, secondary_frames)
+        # Primary frames get 3x weight, secondary get 2x weight
+        0: (['action', 'perception'], ['state', 'causal']),        # MOVE: action verbs, perception
+        1: (['relationship', 'communication'], ['state', 'quality']),  # COOPERATE: social, communication
+        2: (['action', 'causal'], ['state', 'quality']),           # COMPETE: action, cause-effect
+        3: (['state', 'cognitive'], ['perception', 'quality']),    # REST: states, introspection
+        4: (['causal', 'relationship'], ['state', 'action']),      # REPRODUCE: causation, relationships
+        5: (['perception', 'cognitive'], ['state', 'quality']),    # ISOLATE: perception, cognition
+    }
+    
+    def _get_behavior_profile(self) -> Dict[str, float]:
+        """
+        Get organism's behavior profile based on action history.
+        
+        Returns normalized weights for each frame based on which actions
+        the organism has used most. This drives vocabulary specialization.
+        
+        Returns:
+            Dict mapping frame names to weights (0.0-1.0)
+        """
+        # Count activations for each action head
+        action_counts = {}
+        for i, action_name in enumerate(self.ACTION_HEADS):
+            if action_name in self.atoms:
+                action_counts[i] = getattr(self.atoms[action_name], 'recent_activation_count', 0)
+            else:
+                action_counts[i] = 0
+        
+        total_actions = sum(action_counts.values())
+        if total_actions == 0:
+            # No action history yet - return uniform weights
+            return {frame: 1.0 for frame in ['action', 'causal', 'cognitive', 'communication', 
+                                              'perception', 'quality', 'relationship', 'state']}
+        
+        # Calculate frame weights based on action usage
+        frame_weights = {}
+        for action_idx, count in action_counts.items():
+            if count == 0:
+                continue
+            
+            action_weight = count / total_actions
+            primary_frames, secondary_frames = self.ACTION_FRAME_AFFINITIES.get(action_idx, ([], []))
+            
+            # Primary frames get 3x weight contribution
+            for frame in primary_frames:
+                frame_weights[frame] = frame_weights.get(frame, 0) + action_weight * 3.0
+            
+            # Secondary frames get 2x weight contribution  
+            for frame in secondary_frames:
+                frame_weights[frame] = frame_weights.get(frame, 0) + action_weight * 2.0
+        
+        # Normalize to 0-1 range with minimum floor
+        if frame_weights:
+            max_weight = max(frame_weights.values())
+            if max_weight > 0:
+                for frame in frame_weights:
+                    frame_weights[frame] = max(0.1, frame_weights[frame] / max_weight)
+        
+        # Ensure all frames have at least minimum weight (allows some diversity)
+        for frame in ['action', 'causal', 'cognitive', 'communication', 
+                      'perception', 'quality', 'relationship', 'state']:
+            if frame not in frame_weights:
+                frame_weights[frame] = 0.1  # Minimum floor
+        
+        return frame_weights
+    
+    def _get_dominant_actions(self, top_n: int = 2) -> List[int]:
+        """
+        Get the organism's most-used actions.
+        
+        Returns:
+            List of action indices sorted by usage (highest first)
+        """
+        action_counts = []
+        for i, action_name in enumerate(self.ACTION_HEADS):
+            if action_name in self.atoms:
+                count = getattr(self.atoms[action_name], 'recent_activation_count', 0)
+                action_counts.append((i, count))
+            else:
+                action_counts.append((i, 0))
+        
+        # Sort by count descending
+        action_counts.sort(key=lambda x: x[1], reverse=True)
+        return [idx for idx, count in action_counts[:top_n] if count > 0]
+    
+    def _sort_words_by_behavior_affinity(self, words: List[str], concepts: Dict[str, Any]) -> List[str]:
+        """
+        Sort candidate words by how well they match organism's behavior profile.
+        
+        Words in frames the organism uses most get prioritized.
+        This creates vocabulary specialization based on playstyle.
+        
+        Args:
+            words: List of candidate words
+            concepts: Concept info dict from innate_vocab.json
+            
+        Returns:
+            Words sorted by behavior affinity (highest first)
+        """
+        behavior_profile = self._get_behavior_profile()
+        
+        # Score each word by its frame's weight in behavior profile
+        scored_words = []
+        for word in words:
+            if word in concepts:
+                frame = concepts[word].get('frame', 'universal')
+                score = behavior_profile.get(frame, 0.1)
+                scored_words.append((word, score))
+            else:
+                scored_words.append((word, 0.1))
+        
+        # Sort by score descending, with small random tiebreaker for variety
+        import random
+        scored_words.sort(key=lambda x: (x[1], random.random()), reverse=True)
+        
+        return [word for word, score in scored_words]
+    
     def _expand_vocabulary_for_level(self, new_level: int):
         """
         Expand vocabulary when organism advances to a new mastery level.
         
-        This is called from the mastery_level setter when level increases.
-        Adds the appropriate atoms for the new level without re-initializing
-        existing atoms.
+        BEHAVIOR-DRIVEN SPECIALIZATION (Elder Scrolls style):
+        Words are selected based on organism's action history. An organism
+        that competes a lot gets combat/causal vocabulary. One that cooperates
+        gets social/communication vocabulary. Each organism develops a unique
+        dialect grounded in their actual experience.
         
         Level 1: +20 core state/relationship words (total: 26)
         Level 2: +50 extended concepts (total: 76)  
@@ -1232,56 +1357,77 @@ class AtomicLanguageSystem:
         concepts = innate_data.get('concepts', {})
         tiers = innate_data.get('tiers', {})
         
+        # Get behavior profile for specialization logging
+        behavior_profile = self._get_behavior_profile()
+        dominant_actions = self._get_dominant_actions(top_n=2)
+        dominant_names = [self.ACTION_HEADS[i] for i in dominant_actions] if dominant_actions else ['none']
+        
         added_count = 0
+        added_by_frame = {}  # Track what frames we added for logging
         
         if new_level >= 1:
             # Level 1+: Add core state/relationship words
+            # BEHAVIOR-DRIVEN: Sort by affinity to organism's playstyle
             core_words = tiers.get('core', [])
-            # BUGFIX: Include ALL frames that actually exist in innate_vocab.json core tier
-            # Previous bug: only state/relationship/resource/question matched, missing 42 of 50 core words
-            target_frames = {'state', 'relationship', 'resource', 'question', 'emotion', 'social',
-                            'action', 'causal', 'perception', 'quality', 'cognitive', 'universal'}
             
-            for word in core_words:
-                if word not in self.atoms and word in concepts:
-                    info = concepts[word]
-                    frame = info.get('frame', 'universal')
-                    # Add words that fit level 1 vocabulary
-                    if frame in target_frames or len(self.atoms) < 26:
-                        self._add_innate_concept(word, info, current_time, 'innate_core', 0.5)
-                        added_count += 1
-                        if len(self.atoms) >= 26:
-                            break
+            # Filter to words we don't have yet
+            candidate_words = [w for w in core_words if w not in self.atoms and w in concepts]
+            
+            # Sort by behavior affinity - words matching organism's actions come first
+            sorted_words = self._sort_words_by_behavior_affinity(candidate_words, concepts)
+            
+            for word in sorted_words:
+                if len(self.atoms) >= 26:
+                    break
+                info = concepts[word]
+                frame = info.get('frame', 'universal')
+                self._add_innate_concept(word, info, current_time, 'innate_core', 0.5)
+                added_count += 1
+                added_by_frame[frame] = added_by_frame.get(frame, 0) + 1
         
         if new_level >= 2:
             # Level 2+: Add extended concepts
+            # BEHAVIOR-DRIVEN: Sort by affinity to organism's playstyle
             extended_words = tiers.get('extended', [])
-            num_to_add = min(50, max(0, 76 - len(self.atoms)))
             
-            for word in extended_words[:num_to_add * 2]:  # Try more to filter
-                if word not in self.atoms and word in concepts:
-                    self._add_innate_concept(word, concepts[word], current_time, 'innate_extended', 0.4)
-                    added_count += 1
-                    if len(self.atoms) >= 76:
-                        break
+            candidate_words = [w for w in extended_words if w not in self.atoms and w in concepts]
+            sorted_words = self._sort_words_by_behavior_affinity(candidate_words, concepts)
+            
+            for word in sorted_words:
+                if len(self.atoms) >= 76:
+                    break
+                info = concepts[word]
+                frame = info.get('frame', 'universal')
+                self._add_innate_concept(word, info, current_time, 'innate_extended', 0.4)
+                added_count += 1
+                added_by_frame[frame] = added_by_frame.get(frame, 0) + 1
             
             # Also initialize Golden Record and Orientation at level 2
             self._initialize_golden_record_concepts(current_time)
             self._initialize_foundational_orientation(current_time)
         
         if new_level >= 3:
-            # Level 3+: Add pool words
+            # Level 3+: Add pool words  
+            # BEHAVIOR-DRIVEN: Sort by affinity to organism's playstyle
             pool_words = tiers.get('pool', [])
-            num_to_add = min(200, max(0, 276 - len(self.atoms)))
             
-            for word in pool_words[:num_to_add * 2]:
-                if word not in self.atoms and word in concepts:
-                    self._add_innate_concept(word, concepts[word], current_time, 'innate_rare', 0.25)
-                    added_count += 1
-                    if len(self.atoms) >= 276:
-                        break
+            candidate_words = [w for w in pool_words if w not in self.atoms and w in concepts]
+            sorted_words = self._sort_words_by_behavior_affinity(candidate_words, concepts)
+            
+            for word in sorted_words:
+                if len(self.atoms) >= 276:
+                    break
+                info = concepts[word]
+                frame = info.get('frame', 'universal')
+                self._add_innate_concept(word, info, current_time, 'innate_rare', 0.25)
+                added_count += 1
+                added_by_frame[frame] = added_by_frame.get(frame, 0) + 1
         
-        logger.info(f"[ATOMIC_LANG] Organism {self.organism_id}: Level {new_level} vocabulary expansion - added {added_count} words (total: {len(self.atoms)})")
+        # Log specialization details
+        frame_breakdown = ', '.join(f"{f}:{c}" for f, c in sorted(added_by_frame.items(), key=lambda x: -x[1]))
+        logger.info(f"[ATOMIC_LANG] Organism {self.organism_id}: Level {new_level} SPECIALIZED expansion - "
+                   f"dominant actions: {dominant_names}, added {added_count} words (total: {len(self.atoms)}), "
+                   f"by frame: [{frame_breakdown}]")
     
     def _initialize_golden_record_concepts(self, current_time: float):
         """
