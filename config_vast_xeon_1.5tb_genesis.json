@@ -29,8 +29,8 @@
       "always_allow_tokens": [".", ",", "!", "?", "and", "the", "a", "is", "to", "of", "in"]
     },
     "semantic": {
-      "enabled": true,
-      "knowledge_web_bootstrap": true,
+      "enabled": false,
+      "knowledge_web_bootstrap": false,
       "semantic_reward_at_level_4": true,
       "semantic_reward_weight": 0.25
     },
