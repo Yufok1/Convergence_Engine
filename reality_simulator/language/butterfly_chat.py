@@ -2014,6 +2014,27 @@ class ButterflyChatRouter:
                     loss = self.trainer.train_step(organisms, network_state or {})
                     if loss is not None:
                         self.chat_training_triggered += 1
+
+            # GROUNDED MODE: Update word embeddings from atomic associations
+            # Embeddings learn to cluster based on behavioral associations, not pre-seeded semantics
+            lang_config = self.config.get('language', {})
+            grounded_config = lang_config.get('grounded', {})
+            if grounded_config.get('enabled', True):
+                context_memory = network_state.get('context_memory') if network_state else None
+                if (context_memory and
+                    hasattr(context_memory, 'update_embeddings_from_atomic') and
+                    hasattr(organism, 'atomic_language') and
+                    organism.atomic_language is not None):
+
+                    updates = context_memory.update_embeddings_from_atomic(
+                        atomic_language=organism.atomic_language,
+                        learning_rate=0.01
+                    )
+                    if updates > 0:
+                        self._log_debug("GROUNDED_MODE", f"Updated {updates} embedding pairs from atomic associations", {
+                            "organism_id": getattr(organism, 'species_id', 'unknown'),
+                            "updates": updates
+                        })
         except Exception as e:
             logger.debug(f"Chat training failed: {e}")
     

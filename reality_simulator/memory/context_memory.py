@@ -217,7 +217,73 @@ class ContextMemory:
                 current = self.word_embedding.weight[token_id]
                 org_tensor = torch.from_numpy(organism_embedding.astype(np.float32)).to(current.device)
                 self.word_embedding.weight[token_id] = (1 - alpha) * current + alpha * org_tensor
-    
+
+    def update_embeddings_from_atomic(self, atomic_language: Any, learning_rate: float = 0.01) -> int:
+        """
+        Update word embeddings based on atomic association strengths (GROUNDED MODE).
+
+        Words that are frequently associated in atomic_language should have similar embeddings.
+        This makes semantic similarity EMERGE from behavioral experience, not pre-seeded semantics.
+
+        Uses association strength to nudge embeddings:
+        - Positive associations → pull embeddings closer
+        - Negative associations → push embeddings apart
+
+        Args:
+            atomic_language: AtomicLanguageSystem instance with learned associations
+            learning_rate: Base learning rate for embedding updates (default 0.01)
+
+        Returns:
+            Number of embedding pairs updated
+        """
+        if not self.use_learned_embeddings or self.word_embedding is None:
+            return 0
+        if self.vocabulary is None:
+            return 0
+
+        updates = 0
+
+        with self._embedding_lock:
+            with torch.no_grad():
+                # For each association in atomic_language, nudge embeddings
+                for concept_id, atom in atomic_language.atoms.items():
+                    source_id = self.vocabulary.get_id(concept_id)
+                    if source_id is None or source_id >= self.max_vocab_size:
+                        continue
+                    if source_id == self.vocabulary.get_id('<UNK>'):
+                        continue
+
+                    source_emb = self.word_embedding.weight[source_id]
+
+                    for assoc in atom.associations.values():
+                        target_id = self.vocabulary.get_id(assoc.target_concept)
+                        if target_id is None or target_id >= self.max_vocab_size:
+                            continue
+                        if target_id == self.vocabulary.get_id('<UNK>'):
+                            continue
+
+                        target_emb = self.word_embedding.weight[target_id]
+
+                        # Nudge embeddings based on association strength
+                        # Positive association → embeddings should be similar
+                        # Negative association → embeddings should be dissimilar
+                        strength = assoc.strength
+                        update_rate = learning_rate * abs(strength)
+
+                        if strength > 0:
+                            # Pull together (positive association)
+                            direction = target_emb - source_emb
+                            self.word_embedding.weight[source_id] += update_rate * direction
+                        elif strength < 0:
+                            # Push apart (negative association)
+                            direction = source_emb - target_emb
+                            direction = direction / (direction.norm() + 1e-8)  # Normalize
+                            self.word_embedding.weight[source_id] += update_rate * direction
+
+                        updates += 1
+
+        return updates
+
     def tokenize_sequence(self, words: List[str], add_special: bool = True) -> List[int]:
         """
         Tokenize a sequence of words to token IDs.

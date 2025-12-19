@@ -1945,11 +1945,66 @@ class NeuralOrganism(Organism):
                     else:
                         # Standard 2D: (batch, vocab)
                         logits = language_logits[0] / temperature
+
+                    # ═══════════════════════════════════════════════════════════════
+                    # GROUNDED MODE: Vocabulary Masking by Mastery Level
+                    # ═══════════════════════════════════════════════════════════════
+                    # Enforce that organisms can only generate tokens from their
+                    # available vocabulary based on current mastery level.
+                    # This prevents generating words they haven't "earned" yet.
+                    if hasattr(self, 'atomic_language') and self.atomic_language is not None:
+                        # Get available vocabulary for current mastery level
+                        available_words = self.atomic_language.get_available_vocabulary()
+
+                        # Get masking mode from config
+                        lang_config = self.config.get('language', {})
+                        grounded_config = lang_config.get('grounded', {})
+                        masking_mode = grounded_config.get('vocabulary_masking', 'soft')
+                        always_allow = grounded_config.get('always_allow_tokens', [])
+
+                        if masking_mode != 'none' and available_words:
+                            # Build set of available token IDs
+                            available_token_ids = set()
+
+                            # Add words from mastery-gated vocabulary
+                            for word in available_words:
+                                token_id = vocab.get_id(word)
+                                if token_id is not None and token_id < logits.shape[-1]:
+                                    available_token_ids.add(token_id)
+
+                            # Always allow special tokens
+                            for special in ['<START>', '<END>', '<PAD>', '<UNK>']:
+                                tid = vocab.get_id(special)
+                                if tid is not None and tid < logits.shape[-1]:
+                                    available_token_ids.add(tid)
+
+                            # Always allow connectors and punctuation
+                            for always in always_allow:
+                                tid = vocab.get_id(always)
+                                if tid is not None and tid < logits.shape[-1]:
+                                    available_token_ids.add(tid)
+
+                            # Apply masking
+                            if masking_mode == 'soft':
+                                # Soft mask: Strong penalty but not impossible
+                                penalty = torch.zeros_like(logits)
+                                for idx in range(logits.shape[-1]):
+                                    if idx not in available_token_ids:
+                                        penalty[idx] = -10.0  # Strong penalty
+                                logits = logits + penalty
+                            elif masking_mode == 'hard':
+                                # Hard mask: Impossible to generate unavailable tokens
+                                mask = torch.full_like(logits, float('-inf'))
+                                for tid in available_token_ids:
+                                    mask[tid] = 0.0
+                                logits = logits + mask
+
+                            logger.debug(f"[generate_tokens] {self.species_id}: Vocabulary masked (mode={masking_mode}, level={self.atomic_language.mastery_level}, available={len(available_token_ids)})")
                 else:
                     # Fallback: No language head, just get output
                     output = self.brain.forward(state_tensor, vp_value=vp_value)
                     language_logits = None
-                
+
                 # If brain has language head, process logits
                 if language_logits is not None:
                     
