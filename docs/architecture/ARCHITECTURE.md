@@ -81,6 +81,20 @@ Breath Cycle (Explorer)
     │       └─> Generate governance signal
     │       └─> Apply parameter adjustments
     │
+    ├─> Language System
+    │   └─> atomic_language.check_mastery_advancement()
+    │       └─> Check breadth (usage frequency)
+    │       └─> Check depth (associations formed)
+    │       └─> Advance level if criteria met
+    │       └─> Add behavior-specialized words
+    │
+    ├─> Alliance Warfare (Dune Paradigm)
+    │   └─> alliance_warfare.process_organism_alliance_decisions()
+    │       └─> Calculate behavioral signatures
+    │       └─> Find most divergent alliance
+    │       └─> Neural propose_war decision
+    │       └─> Curiosity drives conflict
+    │
     ├─> Djinn Kernel
     │   └─> vp_monitor.compute_violation_pressure()
     │       └─> VP calculated from traits
@@ -96,6 +110,56 @@ Breath Cycle (Explorer)
 ---
 
 ## 🎯 Component Relationships
+
+### Language Mastery (Vocabulary Progression) ⭐ NEW
+
+**Responsibilities:**
+- Track vocabulary usage (breadth)
+- Track associations formed (depth)
+- Gate vocabulary expansion
+- Behavior-driven word selection
+
+**Mastery Levels:**
+| Level | Name | Words | Breadth | Depth |
+|-------|------|-------|---------|-------|
+| 0 | Novice | 6 | - | - |
+| 1 | Adept | 26 | 50% used 3+ times | 30% have 2+ associations |
+| 2 | Scholar | 76 | same | same |
+| 3 | Master | 276 | same | same |
+| 4 | Grandmaster | ∞ | same | same |
+
+**Behavior-Driven Specialization:**
+- Warriors (high compete) → combat, battle, dominate words
+- Diplomats (high cooperate) → alliance, trust, negotiate words
+- Explorers (high move) → discover, wander, journey words
+- Hermits (high isolate) → solitude, withdraw, meditate words
+
+**Dependencies:**
+- AtomicLanguage (word storage)
+- Neural organism (behavioral fingerprint)
+- Innate vocabulary frames
+
+### Alliance Warfare (Dune Paradigm) ⭐ NEW
+
+**Philosophy:**
+> "Your existence questions mine. Let us resolve through contest."
+
+**Responsibilities:**
+- Calculate behavioral signatures for alliances
+- Measure behavioral divergence (cosine distance)
+- Drive war proposals from curiosity, not resources
+
+**War Driver Formula:**
+```
+score = curiosity*0.35 + divergence*0.35 + compete*0.2 + (1-cooperate)*0.1
+threshold = 0.45 * (1 + skepticism*0.3)
+if score > threshold: propose_war()
+```
+
+**Dependencies:**
+- PlanetaryAlliance (member management)
+- Neural organism (propose_war decision)
+- Organism behavioral fingerprints
 
 ### Antennae (Self-Governance) ⭐ NEW
 

@@ -96,8 +96,11 @@ python causation_web_ui.py
 **📚 [DOCUMENTATION_HUB.md](./docs/DOCUMENTATION_HUB.md)** - Central documentation hub with links to all guides
 
 Recent updates:
-- � **Antennae System** (Dec 17, 2025): ⭐ NEW - Collective sensing apparatus for self-governing ecosystems. Beliefs that learn from evidence + sklearn HealthPredictor (Kleene convergence)
-- 📊 **SystemReport & LiveReporter** (Dec 17, 2025): ⭐ NEW - Real-time population analytics with typed dataclasses and thread-safe live reporting
+- ⚔️ **The Dune Paradigm** (Dec 19, 2025): ⭐ NEW - Curiosity-driven alliance wars. Behavioral divergence triggers conflict - "Your existence questions mine."
+- ⚔️ **The Dune Paradigm** (Dec 19, 2025): ⭐ NEW - Curiosity-driven alliance wars. Behavioral divergence triggers conflict - "Your existence questions mine."
+- 🎓 **Mastery Level System** (Dec 18, 2025): ⭐ NEW - Vocabulary progression (Novice→Grandmaster). Behavior-driven specialization. UI dossiers show mastery badges.
+- 🦋 **Antennae System** (Dec 17, 2025): Collective sensing apparatus for self-governing ecosystems. Beliefs that learn from evidence + sklearn HealthPredictor (Kleene convergence)
+- 📊 **SystemReport & LiveReporter** (Dec 17, 2025): Real-time population analytics with typed dataclasses and thread-safe live reporting
 - 🔧 **CUDA Crossover Fix** (Dec 17, 2025): Fixed NaN/Inf cascade in brain.py crossover with `torch.nan_to_num()` sanitization
 - 🧠 **Hopfield Layer** (Dec 14, 2025): Modern continuous Hopfield network for iterative thought refinement. Organisms can now "think" through multiple iterations before decisions!
 - 🔗 **CocoonHatch P2P Networking** (Dec 10, 2025): Connect cocoons over the internet for battles, trades, and chat! Anyone can host a relay server.
@@ -160,7 +163,12 @@ A multi-layered artificial life simulation system that creates evolving populati
   - Token-based communication between organisms
   - VP-integrated language generation (violation pressure affects communication)
   - Curriculum learning based on VP stability
-  - **🧠 Dynamic Multi-Dimensional Linguistic Awareness**: ⭐ NEW - Context-aware word association framework
+  - **🎓 Mastery Level System**: ⭐ NEW (Dec 18, 2025) - Vocabulary progression gates
+    - 5 levels: Novice (6 words) → Adept (26) → Scholar (76) → Master (276) → Grandmaster (∞)
+    - Advancement requires breadth (50% used 3+ times) AND depth (30% have 2+ associations)
+    - **Behavior-Driven Specialization**: Warriors get combat words, diplomats get social words, etc.
+    - UI dossiers show mastery badge with progress toward next level
+  - **🧠 Dynamic Multi-Dimensional Linguistic Awareness**: Context-aware word association framework
     - 14-dimensional situational assessment (action, fitness, resources, connections, positional, density, VP, coherence, evolution, phase, health, breath, success, age)
     - Dynamic word scoring across dimensions (0.0-1.0)
     - Full 18-feature state vector integration

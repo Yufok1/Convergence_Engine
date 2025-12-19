@@ -4,6 +4,98 @@
 
 ---
 
+## [Unreleased] - 2025-12-19
+
+### ⚔️ The Dune Paradigm - Curiosity-Driven Alliance Wars (2025-12-19)
+
+**PHILOSOPHY**: "Your existence questions mine. Let us resolve through contest."
+
+Alliances now propose war based on **behavioral divergence** - how different they've become from each other. War is driven by **curiosity**, not resources.
+
+#### Why This Matters
+- Alliances that evolve differently become *interesting* to each other
+- Warriors want to test diplomats. Explorers want to understand hermits.
+- Competition emerges from philosophical divergence, not scarcity
+
+#### War Driver Formula
+```
+score = curiosity*0.35 + divergence*0.35 + compete*0.2 + (1-cooperate)*0.1
+if score > threshold (0.45 base, modified by skepticism): propose war
+```
+
+#### Key Components
+- **Behavioral Signature**: 6-element vector [move, coop, compete, rest, reproduce, isolate] aggregated from all alliance members
+- **Behavioral Divergence**: Cosine distance between alliance signatures (0=identical, 1=opposite)
+- **Dominant Behavior**: 'explorers', 'diplomats', 'warriors', 'conservers', 'nurturers', 'hermits'
+- **War Proposal**: Neural `propose_war` decision type uses curiosity + divergence
+
+#### Files Modified
+- `reality_simulator/evolution/alliance_warfare.py`: Added `get_behavioral_signature()`, `calculate_behavioral_divergence()`, `get_most_divergent_alliance()`, `should_propose_war_by_divergence()`, war proposal logic
+- `reality_simulator/neural/neural_organism.py`: Added `propose_war` decision type
+- `causation_web_ui.py`: Added behavioral data to `/api/alliances` endpoint
+- `templates/causation_explorer.html`: Added Behavioral Identity section to alliance dossier with divergence visualization
+
+---
+
+### 🎓 Mastery Level System - Vocabulary Progression (2025-12-18/19)
+
+**EARNED GROWTH**: Organisms must master their current vocabulary before expanding.
+
+#### Mastery Levels
+| Level | Name | Words | Requirement |
+|-------|------|-------|-------------|
+| 0 | Novice | 6 | Starting state (ACTION_HEADS only) |
+| 1 | Adept | 26 | 50% breadth (3+ uses), 30% depth (2+ associations) |
+| 2 | Scholar | 76 | Same ratios, higher thresholds |
+| 3 | Master | 276 | |
+| 4 | Grandmaster | ∞ | Full vocabulary access |
+
+#### Behavior-Driven Vocabulary Specialization
+When organisms advance, they receive words biased by their dominant behavior:
+- **Warriors** (high compete): aggression, battle, conflict, dominate...
+- **Diplomats** (high cooperate): alliance, harmony, trust, negotiate...
+- **Explorers** (high move): discover, wander, search, journey...
+- **Hermits** (high isolate): solitude, silence, withdraw, meditate...
+- **Nurturers** (high reproduce): nurture, grow, birth, create...
+- **Conservers** (high rest): preserve, stability, patience, steady...
+
+#### Mastery Tracking in Live Report
+`data/live_report.json` now includes:
+```json
+"language": {
+  "mastery_level_0": 12,
+  "mastery_level_1": 45,
+  "mastery_level_2": 8,
+  "mastery_level_3": 2,
+  "mastery_level_4": 0,
+  "highest_mastery_achieved": 3,
+  "avg_mastery_level": 1.2,
+  "dominant_behaviors": {"diplomats": 23, "warriors": 18, ...}
+}
+```
+
+#### UI Updates
+- **Organism Dossier**: New "Language Mastery" section with level badge (🌱→👑), progress bar, and words-to-next-level
+- **Alliance Dossier**: New "Behavioral Identity" section with signature visualization and divergence quotes
+- **Alliance Browser**: Shows dominant behavior type icon
+
+#### Files Modified
+- `reality_simulator/language/atomic_language.py`: Mastery level tracking, behavior-driven word selection
+- `system_report.py`: Added mastery distribution to LanguageMetrics
+- `templates/causation_explorer.html`: Mastery and behavioral identity in dossiers
+- `causation_web_ui.py`: Mastery data in organism/alliance APIs
+
+---
+
+### 🐛 Bug Fixes (2025-12-18/19)
+
+- **VP Calculation**: Now uses realistic memory center (~65% vitality, ~45% pleasure)
+- **Vocabulary Frame Filter**: Expanded to include all 18 frames from innate_vocab.json
+- **Related Word Activation**: Fixed to enable Level 1→2 advancement
+- **Double Vocab Loading**: Fixed race condition in vocabulary initialization
+
+---
+
 ## [Unreleased] - 2025-12-17
 
 ### 🦋 Antennae System - Collective Sensing Apparatus (2025-12-17)

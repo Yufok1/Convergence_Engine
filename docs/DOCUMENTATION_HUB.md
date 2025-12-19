@@ -61,7 +61,24 @@ pip install pywin32
   - Integration with AtomicConfigSystem for automatic tuning
 - **[SYSTEM_REPORT.md](./systems/SYSTEM_REPORT.md)** - 📊 Real-time population analytics
   - SystemReport: Typed dataclasses for all metrics
-  - LiveReporter: Thread-safe background reporting
+  - LiveReporter: Thread-safe background reporting (includes mastery distribution)
+
+### Language & Mastery ⭐ NEW (Dec 18-19, 2025)
+
+- **[MASTERY_SYSTEM.md](./systems/MASTERY_SYSTEM.md)** - 🎓 Vocabulary progression system
+  - 5 mastery levels: Novice (6) → Adept (26) → Scholar (76) → Master (276) → Grandmaster (∞)
+  - Breadth (usage frequency) + Depth (associations) requirements
+  - Behavior-driven specialization: Warriors get combat words, diplomats get social words
+  - UI dossiers show mastery badges with progress bars
+
+### Alliance Warfare ⭐ NEW (Dec 19, 2025)
+
+- **The Dune Paradigm** - ⚔️ Curiosity-driven alliance wars
+  - Behavioral signatures: 6-element vector aggregated from alliance members
+  - Behavioral divergence: Cosine distance between alliance identities
+  - War driver: `curiosity*0.35 + divergence*0.35 + compete*0.2 + (1-cooperate)*0.1`
+  - Philosophy: "Your existence questions mine. Let us resolve through contest."
+  - See [CHANGELOG.md](./CHANGELOG.md) for implementation details
 
 ---
 
