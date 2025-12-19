@@ -212,7 +212,7 @@ class MiniEnvironment:
             'system_health': (self.agent_resources / 200.0 + self.agent_energy) / 2.0,
             'position_x': self.agent_x / self.grid_size,
             'position_y': self.agent_y / self.grid_size,
-            # For compatibility with full 24D perception
+            # For compatibility with full 28D perception (with self-perception features)
             'flow_in': 0.0,
             'flow_out': 0.0,
             'parent_fitness': self.agent_fitness,

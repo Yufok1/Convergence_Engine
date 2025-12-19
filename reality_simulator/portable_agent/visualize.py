@@ -137,7 +137,7 @@ class AgentVisualizer:
                 pass
         
         # Default fallback
-        return 24  # Updated default to match current system
+        return 28  # Matches config.json neural.brain.input_dim (25 base + 3 self-perception)
     
     def predict(self, state: list) -> dict:
         """Run inference and return Q-values and action."""
@@ -218,7 +218,7 @@ class AgentVisualizer:
             color = ACTION_COLORS.get(response, '#666')
             scenario_html += f'<div class="scenario"><strong>{scenario.replace("_", " ").title()}:</strong> <span style="color: {color}; font-weight: bold;">{response}</span></div>'
         
-        # Input sliders (24 dimensions to match current neural system)
+        # Input sliders (28 dimensions to match current neural system)
         input_labels = [
             'pos_x', 'pos_y', 'pos_z',                        # 0-2: position
             'vel_x', 'vel_y', 'vel_z',                        # 3-5: velocity
@@ -228,9 +228,13 @@ class AgentVisualizer:
             'social_1', 'social_2', 'social_3',               # 15-17: social
             'alliance', 'battle',                             # 18-19: combat
             'vocab_size', 'comm_activity',                    # 20-21: language
-            'vp', 'coherence'                                 # 22-23: stability
+            'vp', 'coherence',                                # 22-23: stability
+            'illumination',                                   # 24: illumination
+            'oscillation_entropy',                            # 25: self-perception
+            'coherence_frequency',                            # 26: self-perception
+            'attractor_proximity'                             # 27: self-perception
         ]
-        # Extend labels if input_dim > 24
+        # Extend labels if input_dim > 28
         while len(input_labels) < self.input_dim:
             input_labels.append(f'input_{len(input_labels)}')
         

@@ -141,7 +141,7 @@ class BridgeResult:
     response: str                        # Language response (if applicable)
     confidence: float                    # Decision confidence (0-1)
     q_values: List[float]               # Raw Q-values for all actions
-    state_vector: List[float]           # The 24D state used for decision
+    state_vector: List[float]           # The 28D state used for decision
     metadata: Dict[str, Any] = field(default_factory=dict)
     ensemble_result: Optional['EnsembleResult'] = None  # Detailed voting info if ensemble
     
@@ -169,8 +169,8 @@ class AgentConfig:
     ])
     num_actions: int = 6
     
-    # State space (25D to match config.json neural.brain.input_dim)
-    state_dim: int = 25
+    # State space (28D to match config.json neural.brain.input_dim with self-perception)
+    state_dim: int = 28
     
     # Learning
     epsilon: float = 0.1
@@ -225,21 +225,21 @@ class AgentConfig:
 
 
 # =============================================================================
-# INPUT ADAPTERS - Convert various inputs to unified 24D state
+# INPUT ADAPTERS - Convert various inputs to unified 28D state
 # =============================================================================
 
 class InputAdapter:
     """Base class for input adapters."""
     
     def to_state(self, input_data: Any, context: Optional[Dict] = None) -> np.ndarray:
-        """Convert input to 24D state vector."""
+        """Convert input to 28D state vector."""
         raise NotImplementedError
 
 
 class GymInputAdapter(InputAdapter):
     """Adapter for Gymnasium/Gym observations."""
     
-    def __init__(self, state_dim: int = 25):
+    def __init__(self, state_dim: int = 28):
         self.state_dim = state_dim
     
     def to_state(self, obs: Any, context: Optional[Dict] = None) -> np.ndarray:
@@ -312,7 +312,7 @@ class TextInputAdapter(InputAdapter):
         'coherence': (23, 0.5), 'stability': (23, 0.4),
     }
     
-    def __init__(self, state_dim: int = 25, vocabulary: Optional[Dict] = None):
+    def __init__(self, state_dim: int = 28, vocabulary: Optional[Dict] = None):
         self.state_dim = state_dim
         self.vocabulary = vocabulary or {}
         
@@ -366,14 +366,14 @@ class TextInputAdapter(InputAdapter):
 class ContextInputAdapter(InputAdapter):
     """Adapter for structured context dictionaries."""
     
-    def __init__(self, state_dim: int = 24):
+    def __init__(self, state_dim: int = 28):
         self.state_dim = state_dim
         
     def to_state(self, context: Dict[str, Any], _: Optional[Dict] = None) -> np.ndarray:
         """Convert context dict directly to state vector."""
         state = np.zeros(self.state_dim, dtype=np.float32)
         
-        # Direct mapping for known keys (24 dimensions)
+        # Direct mapping for known keys (28 dimensions with self-perception)
         mapping = [
             'energy', 'hunger', 'health',                     # 0-2: vitality
             'danger', 'enemy_distance', 'attack_imminent',    # 3-5: threat
@@ -383,7 +383,11 @@ class ContextInputAdapter(InputAdapter):
             'confidence', 'mood', 'stress',                   # 15-17: emotional
             'alliance_strength', 'battle_performance',        # 18-19: alliance/combat
             'vocabulary_size', 'communication_activity',      # 20-21: language
-            'violation_pressure', 'coherence'                 # 22-23: VP/stability
+            'violation_pressure', 'coherence',                # 22-23: VP/stability
+            'illumination',                                   # 24: illumination
+            'oscillation_entropy',                            # 25: self-perception
+            'coherence_frequency',                            # 26: self-perception
+            'attractor_proximity'                             # 27: self-perception
         ]
         
         for i, key in enumerate(mapping):

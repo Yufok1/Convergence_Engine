@@ -120,7 +120,7 @@ class AgentRuntime:
     - Decision making (via neural brain or ONNX model)
     - Memory (experience buffer)
     - Internal state (fitness, resources, position, etc.)
-    - Perception (convert raw observations to 24D feature vector)
+    - Perception (convert raw observations to 28D feature vector)
     - Learning (experience replay, epsilon-greedy exploration)
     
     The agent can run in any environment that provides:
@@ -248,7 +248,7 @@ class AgentRuntime:
             def _shape(name, dim):
                 return sd[name].shape[dim] if name in sd else None
             
-            in_dim = _shape('fc1.weight', 1) or 24
+            in_dim = _shape('fc1.weight', 1) or 28  # Matches config.json neural.brain.input_dim
             hid_dim = _shape('fc1.weight', 0) or 64
             out_dim = _shape('fc3.weight', 0) or 6
             
@@ -266,7 +266,7 @@ class AgentRuntime:
     
     def perceive(self, observation: Any) -> np.ndarray:
         """
-        Convert raw observation to 24D feature vector.
+        Convert raw observation to 28D feature vector.
         
         This is the perception pipeline that maps any environment's
         observations to the format the brain expects.
@@ -275,7 +275,7 @@ class AgentRuntime:
             observation: Raw observation (dict, array, or scalar)
             
         Returns:
-            24D normalized feature vector
+            28D normalized feature vector
         """
         if not self.perception:
             self.perception = PerceptionPipeline(self.state, self.experience_buffer)
