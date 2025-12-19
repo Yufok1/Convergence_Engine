@@ -642,14 +642,19 @@ class BiphasicController:
             ideal_memory = memories[len(memories) // 4]  # 25th percentile
             
             # Update stability center with learned values
+            # NOTE: The center MUST be within the envelope range for VP calculation to work!
+            # VP = |actual - center| / (envelope_hi - envelope_lo)
+            # If center is outside envelope, VP will always be > 1.0 and certification fails.
             self.stability_center['speed_ms'] = max(10.0, ideal_speed)  # Minimum 10ms
-            # Use reasonable memory ideal based on system (avoid unrealistic tiny values)
-            # Typical PyTorch + neural network baseline is 2-4GB
-            self.stability_center['memory_mb'] = max(2000.0, ideal_memory)  # Minimum 2GB for neural systems
+            self.stability_center['memory_mb'] = max(10.0, ideal_memory)  # Minimum 10MB (reasonable for any process)
             
             # Update envelope based on observed range
             speed_range = max(speeds) - min(speeds)
             memory_range = max(memories) - min(memories)
+            
+            # Ensure minimum envelope width to avoid division by tiny numbers
+            speed_range = max(speed_range, 10.0)  # At least 10ms range
+            memory_range = max(memory_range, 50.0)  # At least 50MB range
             
             # Dynamic envelope that adapts to observed performance
             self.stability_envelope['speed_ms'] = (
