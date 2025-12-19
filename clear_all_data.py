@@ -17,7 +17,10 @@ WHAT GETS CLEARED:
 - data/.simulation_paused - Pause flag
 - data/context_memory.json - Context memory
 - data/context_memory.json.backup - Context memory backup
+- data/context_memory.json.tmp - Context memory temp file
 - data/context_memory_embeddings.pt - Semantic Convergence word embeddings
+- data/live_report.json - Live system report (regenerated on startup)
+- data/profiles/*.txt - Torch brain profiling summaries
 - data/causation_explorer/snapshots/* - Graph snapshots
 - data/causation_explorer/chat_history.json - CRA chat history
 - data/kernel/versions/*.json - Kernel version files
@@ -187,6 +190,17 @@ def clear_all_data():
         else:
             skipped_items.append(f"  ⚠️  Context memory backup - {msg}")
     
+    # 4b2. Clear context memory temp file
+    context_memory_tmp = data_dir / 'context_memory.json.tmp'
+    if context_memory_tmp.exists():
+        success, size, msg = safe_delete_file(context_memory_tmp)
+        if success:
+            total_size += size
+            cleared_items.append(f"  ✅ Context memory temp: {size / 1024:.1f} KB")
+            print("🧠 Cleared context memory temp file")
+        else:
+            skipped_items.append(f"  ⚠️  Context memory temp - {msg}")
+    
     # 4c. Clear word embeddings (Semantic Convergence learned embeddings)
     word_embeddings = data_dir / 'context_memory_embeddings.pt'
     if word_embeddings.exists():
@@ -197,6 +211,32 @@ def clear_all_data():
             print("🔗 Cleared semantic convergence word embeddings")
         else:
             skipped_items.append(f"  ⚠️  Word embeddings - {msg}")
+    
+    # 4d. Clear live_report.json (regenerated automatically on startup)
+    live_report = data_dir / 'live_report.json'
+    if live_report.exists():
+        success, size, msg = safe_delete_file(live_report)
+        if success:
+            total_size += size
+            cleared_items.append(f"  ✅ Live report: {size / 1024:.1f} KB")
+            print("📊 Cleared live report")
+        else:
+            skipped_items.append(f"  ⚠️  Live report - {msg}")
+    
+    # 4e. Clear profiling summaries
+    profiles_dir = data_dir / 'profiles'
+    if profiles_dir.exists():
+        profile_count = 0
+        for profile_file in profiles_dir.glob('*.txt'):
+            success, size, msg = safe_delete_file(profile_file)
+            if success:
+                total_size += size
+                profile_count += 1
+            else:
+                skipped_items.append(f"  ⚠️  Profile: {profile_file.name} - {msg}")
+        if profile_count > 0:
+            cleared_items.append(f"  ✅ Profiling summaries: {profile_count} files")
+            print(f"📈 Cleared {profile_count} profiling summary files")
     
     # 5. Clear simulation control
     sim_control = data_dir / '.simulation_control.json'

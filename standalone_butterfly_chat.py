@@ -704,7 +704,7 @@ class StandaloneButterflyChat:
                 fitness=member_data.get('fitness', 1.0),
                 personality=behavioral.get('personality_label', 'unknown'),
                 behavioral_tendencies=behavioral.get('behavioral_tendencies', {}),
-                input_dim=member_data.get('input_dim', 25),  # Default matches config.json
+                input_dim=member_data.get('input_dim', 28),  # Default matches config.json
                 output_dim=member_data.get('output_dim', 6),
                 has_language_head=member_has_lang,
                 brain_index=idx
@@ -1673,11 +1673,12 @@ class StandaloneButterflyChat:
     
     def _build_state_vector(self, message: str) -> np.ndarray:
         """
-        Build a 25D state vector from the message context.
+        Build a 27D state vector from the message context.
         
-        Aligned with the neural system's expected input format (config.json input_dim=25).
+        Aligned with the neural system's expected input format (config.json input_dim=28).
+        Features 26-27 are self-perception: oscillation_entropy, coherence_frequency.
         """
-        state = np.zeros(25, dtype=np.float32)
+        state = np.zeros(28, dtype=np.float32)
         
         # Basic state encoding from message
         words = message.lower().split()

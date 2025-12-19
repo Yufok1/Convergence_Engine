@@ -60,6 +60,14 @@ from dataclasses import dataclass, field
 from typing import List, Dict, Optional, Tuple, Any
 from enum import Enum
 
+# Try to import Language-Game Bridge
+try:
+    from reality_simulator.language.language_game_bridge import LanguageGameBridge
+    LANGUAGE_BRIDGE_AVAILABLE = True
+except ImportError:
+    LanguageGameBridge = None
+    LANGUAGE_BRIDGE_AVAILABLE = False
+
 # Try to import pygame and OpenGL
 try:
     import pygame
@@ -92,7 +100,7 @@ ORGANISM_MOVE_SPEED = 0.04  # Radians per frame
 # Observation size for neural network
 # Base: 15 (ball state, position, distances, game state)
 # Command chain: 5 (command target, distance to command, is_commander, has_command)
-OBSERVATION_SIZE = 24  # With padding room
+OBSERVATION_SIZE = 28  # Matches config.json neural.brain.input_dim (25 base + 3 self-perception)
 
 # Colors (RGB floats for OpenGL)
 COLORS = [
@@ -326,7 +334,8 @@ class SphereArena:
         num_balls: int = 1,  # Number of balls in play (multi-ball chaos!)
         enable_training: bool = False,  # Enable post-snapshot training during gameplay
         train_interval: int = 100,  # Train every N frames when training enabled
-        verbose: bool = False  # Enable granular debug logging
+        verbose: bool = False,  # Enable granular debug logging
+        global_config: Optional[Dict[str, Any]] = None  # For reading meta-brain tunable settings
     ):
         self.agent = agent
         self.max_misses = max_misses  # Collective miss limit
@@ -335,6 +344,7 @@ class SphereArena:
         self.enable_command_chain = enable_command_chain
         self.num_balls = max(1, min(num_balls, 5))  # 1-5 balls
         self.verbose = verbose  # Granular debug logging
+        self.global_config = global_config or {}  # Store for bridge config lookup
         
         # ═══════════════════════════════════════════════════════════════════
         # DEBUG LOGGING SYSTEM
@@ -430,8 +440,68 @@ class SphereArena:
         if self.teams:
             self._setup_teams()
         
+        # ═══════════════════════════════════════════════════════════════════
+        # LANGUAGE-GAME BRIDGE: Connect vocabulary to gameplay decisions
+        # ═══════════════════════════════════════════════════════════════════
+        self.language_bridge = None
+        if LANGUAGE_BRIDGE_AVAILABLE:
+            try:
+                # Get organism names from agent
+                organism_names = getattr(self.agent, 'organism_names', None)
+                if organism_names is None:
+                    organism_names = [f"organism_{i}" for i in self.organism_indices]
+                else:
+                    organism_names = [organism_names[i] for i in self.organism_indices if i < len(organism_names)]
+                
+                # Get atomic language and knowledge web from agent
+                atomic_language = getattr(self.agent, 'atomic_language', None)
+                knowledge_web = getattr(self.agent, 'knowledge_web', None)
+                
+                if atomic_language or knowledge_web:
+                    # Read config from global_config (meta-brain tunable) with fallbacks
+                    bridge_config = self.global_config.get('neural', {}).get('language_game_bridge', {})
+                    bias_strength = bridge_config.get('bias_strength', 0.25)  # Default lower for sphere
+                    learning_rate = bridge_config.get('learning_rate', 0.1)
+                    
+                    self.language_bridge = LanguageGameBridge(
+                        organism_names=organism_names,
+                        atomic_language=atomic_language,
+                        knowledge_web=knowledge_web,
+                        game_type="sphere_defense",
+                        bias_strength=bias_strength,
+                        learning_rate=learning_rate
+                    )
+                    print(f"   🧠 Language Bridge: ACTIVE (bias={bias_strength}, lr={learning_rate})")
+            except Exception as e:
+                print(f"   ⚠️ Language Bridge init failed: {e}")
+                self.language_bridge = None
+        
         # Initialize
         self.reset()
+        
+    def update_bridge_parameters(self, bias_strength: Optional[float] = None,
+                                  learning_rate: Optional[float] = None) -> Dict[str, float]:
+        """
+        Dynamically update LanguageGameBridge parameters at runtime.
+        
+        Called by ConfigTuner to propagate tuning changes.
+        
+        Args:
+            bias_strength: New bias strength (0.0-1.0), or None to keep current
+            learning_rate: New learning rate (0.01-0.5), or None to keep current
+            
+        Returns:
+            Dict with old and new values for logging
+        """
+        if not self.language_bridge:
+            return {'error': 'No language bridge active'}
+        
+        if hasattr(self.language_bridge, 'update_parameters'):
+            return self.language_bridge.update_parameters(
+                bias_strength=bias_strength,
+                learning_rate=learning_rate
+            )
+        return {}
         
         # Graphics setup
         self.screen = None
@@ -1481,6 +1551,22 @@ class SphereArena:
                     self._add_experience(org_idx, reward=-0.1, done=False)
         
         # ═══════════════════════════════════════════════════════════════════
+        # LANGUAGE BRIDGE: Learn from catch events
+        # ═══════════════════════════════════════════════════════════════════
+        if self.language_bridge:
+            # Catcher learns positive concepts
+            organism_names = getattr(self.agent, 'organism_names', None)
+            if organism_names and catcher_idx < len(organism_names):
+                catcher_name = organism_names[catcher_idx]
+                self.language_bridge.learn_from_step(
+                    organism_name=catcher_name,
+                    action=0,  # Successful intercept
+                    reward=1.0,
+                    done=False,
+                    info={"event": "catch", "streak": self.catch_streak}
+                )
+        
+        # ═══════════════════════════════════════════════════════════════════
         # COMMAND CHAIN LOGIC (single-ball or per-ball commander)
         # ═══════════════════════════════════════════════════════════════════
         if self.enable_command_chain:
@@ -1835,6 +1921,23 @@ class SphereArena:
                 else:
                     # Was far away - bigger penalty for bad positioning
                     self._add_experience(org_idx, reward=-0.8, done=False)
+        
+        # ═══════════════════════════════════════════════════════════════════
+        # LANGUAGE BRIDGE: Learn from miss events
+        # ═══════════════════════════════════════════════════════════════════
+        if self.language_bridge:
+            organism_names = getattr(self.agent, 'organism_names', None)
+            if organism_names:
+                # Learn negative outcome for nearest organism
+                if nearest_org is not None and nearest_org < len(organism_names):
+                    nearest_name = organism_names[nearest_org]
+                    self.language_bridge.learn_from_step(
+                        organism_name=nearest_name,
+                        action=1,  # Failed intercept
+                        reward=-0.5,
+                        done=False,
+                        info={"event": "miss", "distance": nearest_dist}
+                    )
         
         # Check if game over
         is_final = self.collective_misses >= self.max_misses
@@ -2464,6 +2567,42 @@ class SphereArena:
             # Include full debug log in results for post-analysis
             results['debug_log'] = self.debug_log
             print()
+        
+        # ═══════════════════════════════════════════════════════════════════
+        # LANGUAGE BRIDGE: Episode-end learning
+        # ═══════════════════════════════════════════════════════════════════
+        if self.language_bridge:
+            organism_names = getattr(self.agent, 'organism_names', None)
+            if organism_names:
+                # Determine if swarm survived
+                survived = self.collective_misses < self.max_misses
+                
+                for org_idx in self.organism_indices:
+                    if org_idx < len(organism_names):
+                        org_name = organism_names[org_idx]
+                        org = self.organisms.get(org_idx)
+                        if org:
+                            # Calculate final score based on catches and streaks
+                            final_score = org.catches + (self.best_streak * 0.1)
+                            
+                            self.language_bridge.learn_from_episode_end(
+                                organism_name=org_name,
+                                won=survived,
+                                final_score=final_score,
+                                episode_length=self.frame_count,
+                                additional_info={
+                                    "catches": org.catches,
+                                    "best_streak": self.best_streak,
+                                    "collective_catches": self.collective_catches,
+                                    "survived": survived
+                                }
+                            )
+                
+                # Log language bridge stats
+                lang_stats = self.language_bridge.get_stats()
+                print(f"\n🧠 LANGUAGE BRIDGE SUMMARY:")
+                print(f"   Concepts activated: {lang_stats.get('total_concepts_activated', 0)}")
+                print(f"   Learning events: {lang_stats.get('total_learning_events', 0)}")
         
         return results
     
