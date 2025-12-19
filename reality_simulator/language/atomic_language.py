@@ -2314,6 +2314,16 @@ class AtomicLanguageSystem:
         if 0 <= action < len(action_concepts):
             action_concept = action_concepts[action]
             
+            # ═══════════════════════════════════════════════════════════════════════════
+            # MASTERY TRACKING: Update breadth criterion (activation count)
+            # This tracks that the organism USED this action word, not just considered it
+            # ═══════════════════════════════════════════════════════════════════════════
+            if action_concept in self.atoms:
+                self.atoms[action_concept].update_satiation()  # Increments recent_activation_count
+            
+            # Record this as a learning experience for mastery advancement
+            self.record_experience()
+            
             # Strengthen action concept based on outcome
             if outcome > 0:
                 reason = f"positive_outcome_{outcome:.2f}"
@@ -2336,24 +2346,46 @@ class AtomicLanguageSystem:
             vp_state = context.get('vp_state', (0.5, 0.5))
             
             # If cooperated successfully, strengthen social associations
+            # Form 3+ associations per action head for mastery depth criterion
             if action == 1 and outcome > 0:  # COOPERATE
-                self.form_association('friend', 'cooperate', outcome * 0.3, 'successful_cooperation')
-                self.form_association('together', 'cooperate', outcome * 0.2, 'successful_cooperation')
+                self.form_association('cooperate', 'friend', outcome * 0.3, 'successful_cooperation')
+                self.form_association('cooperate', 'together', outcome * 0.2, 'successful_cooperation')
+                self.form_association('cooperate', 'ally', outcome * 0.15, 'successful_cooperation')
             
             # If competed and outcome was positive, strengthen competition associations
             if action == 2 and outcome > 0:  # COMPETE
-                self.form_association('strong', 'compete', outcome * 0.2, 'successful_competition')
-                self.form_association('win', 'compete', outcome * 0.15, 'successful_competition')
+                self.form_association('compete', 'strong', outcome * 0.2, 'successful_competition')
+                self.form_association('compete', 'win', outcome * 0.15, 'successful_competition')
+                self.form_association('compete', 'fight', outcome * 0.1, 'successful_competition')
             
             # If reproduced successfully, strengthen reproduction associations
             if action == 4 and outcome > 0:  # REPRODUCE
-                self.form_association('grow', 'reproduce', outcome * 0.2, 'successful_reproduction')
-                self.form_association('life', 'reproduce', outcome * 0.2, 'successful_reproduction')
+                self.form_association('reproduce', 'grow', outcome * 0.2, 'successful_reproduction')
+                self.form_association('reproduce', 'life', outcome * 0.2, 'successful_reproduction')
+                self.form_association('reproduce', 'child', outcome * 0.15, 'successful_reproduction')
+            
+            # Form associations for move, rest, isolate too (SONNET 7 recommendation)
+            if action == 0 and outcome > 0:  # MOVE
+                self.form_association('move', 'explore', outcome * 0.2, 'successful_movement')
+                self.form_association('move', 'travel', outcome * 0.15, 'successful_movement')
+                self.form_association('move', 'go', outcome * 0.1, 'successful_movement')
+            
+            if action == 3 and outcome > 0:  # REST
+                self.form_association('rest', 'recover', outcome * 0.2, 'successful_rest')
+                self.form_association('rest', 'energy', outcome * 0.15, 'successful_rest')
+                self.form_association('rest', 'sleep', outcome * 0.1, 'successful_rest')
+            
+            if action == 5 and outcome > 0:  # ISOLATE
+                self.form_association('isolate', 'alone', outcome * 0.2, 'successful_isolation')
+                self.form_association('isolate', 'safe', outcome * 0.15, 'successful_isolation')
+                self.form_association('isolate', 'hide', outcome * 0.1, 'successful_isolation')
         
         # 🆕 DECAY SATIATION - prevents getting stuck in loops
         # Small decay each step, so concepts that haven't been used recently 
         # feel "fresh" again
-        self.decay_all_satiation(decay_amount=0.01)
+        # NOTE: Only decay satiation_level, NOT recent_activation_count (needed for mastery)
+        for atom in self.atoms.values():
+            atom.satiation_level = max(0.0, atom.satiation_level - 0.01)
     
     # =========================================================================
     # 🆕 CONCEPT TRADING - Knowledge propagation between organisms

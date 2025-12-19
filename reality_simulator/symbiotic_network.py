@@ -1642,6 +1642,28 @@ class SymbioticNetwork:
 
         self.generation += 1
 
+        # ═══════════════════════════════════════════════════════════════════════════
+        # GROUNDED LANGUAGE MODE: Check mastery advancement for all organisms
+        # Called once per generation - organisms can advance if they meet criteria:
+        # - BREADTH: 70% of available words used (activation_count > 5)
+        # - DEPTH: 50% of available words have 3+ associations
+        # - EXPERIENCE: Minimum interactions at current level
+        # ═══════════════════════════════════════════════════════════════════════════
+        if hasattr(self, 'config') and self.config:
+            grounded_config = self.config.get('language', {}).get('grounded', {})
+            if grounded_config.get('enabled', False):
+                for organism in self.organisms.values():
+                    if hasattr(organism, 'atomic_language') and organism.atomic_language:
+                        try:
+                            if organism.atomic_language.try_advance_mastery():
+                                logging.info(
+                                    f"[MASTERY] Organism {organism.species_id[:8]} advanced to "
+                                    f"level {organism.atomic_language.mastery_level} "
+                                    f"(vocab: {len(organism.atomic_language.get_available_vocabulary())} words)"
+                                )
+                        except Exception as e:
+                            logging.debug(f"[MASTERY] Advancement check failed for {organism.species_id[:8]}: {e}")
+
         elapsed = time.time() - start_time
 
         result = {
