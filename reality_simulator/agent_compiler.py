@@ -78,6 +78,27 @@ def _safe_brain_to_cpu(brain):
         return brain.cpu()
 
 
+def _json_default(obj):
+    """
+    Custom JSON serializer for objects not natively serializable.
+    
+    Handles:
+    - numpy integers/floats/bools -> Python native types
+    - numpy arrays -> lists
+    - Any other non-serializable -> str representation
+    """
+    if isinstance(obj, np.integer):
+        return int(obj)
+    elif isinstance(obj, np.floating):
+        return float(obj)
+    elif isinstance(obj, np.bool_):
+        return bool(obj)
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    else:
+        return str(obj)
+
+
 class AgentCompiler:
     """
     Compiles a NeuralOrganism's state, particularly its neural network brain,
@@ -4060,7 +4081,7 @@ if __name__ == '__main__':
             
             atomic_lang_data.append(organism_data)
             
-        atomic_json = json.dumps(atomic_lang_data)
+        atomic_json = json.dumps(atomic_lang_data, default=_json_default)
         atomic_bytes = zlib.compress(atomic_json.encode('utf-8'), level=9) if compress_data else atomic_json.encode('utf-8')
         atomic_lang_b64 = base64.b64encode(atomic_bytes).decode('ascii')
 
@@ -8249,7 +8270,7 @@ class CocoonAgent:
                 atomic_data.append(als.to_dict() if hasattr(als, 'to_dict') else {})
         elif hasattr(self, 'atomic_language'):
             atomic_data.append(self.atomic_language.to_dict() if hasattr(self.atomic_language, 'to_dict') else {})
-        atomic_json = json.dumps(atomic_data)
+        atomic_json = json.dumps(atomic_data, default=_json_default)
         atomic_compressed = zlib.compress(atomic_json.encode('utf-8'), level=9)
         atomic_b64 = base64.b64encode(atomic_compressed).decode('ascii')
         
