@@ -1237,13 +1237,16 @@ class AtomicLanguageSystem:
         if new_level >= 1:
             # Level 1+: Add core state/relationship words
             core_words = tiers.get('core', [])
-            target_frames = {'state', 'relationship', 'resource', 'question', 'emotion', 'social'}
+            # BUGFIX: Include ALL frames that actually exist in innate_vocab.json core tier
+            # Previous bug: only state/relationship/resource/question matched, missing 42 of 50 core words
+            target_frames = {'state', 'relationship', 'resource', 'question', 'emotion', 'social',
+                            'action', 'causal', 'perception', 'quality', 'cognitive', 'universal'}
             
             for word in core_words:
                 if word not in self.atoms and word in concepts:
                     info = concepts[word]
                     frame = info.get('frame', 'universal')
-                    # Only add words that fit level 1 vocabulary
+                    # Add words that fit level 1 vocabulary
                     if frame in target_frames or len(self.atoms) < 26:
                         self._add_innate_concept(word, info, current_time, 'innate_core', 0.5)
                         added_count += 1
