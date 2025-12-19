@@ -14,15 +14,16 @@ class MockOrganism:
         self._tokens = tokens or [2, 3, 4]
         self.experience_buffer = []  # Required for adaptive max_length calculation
 
-    def generate_tokens(self, context_memory=None, max_length=50, vp_value=None, temperature=1.0):
+    def generate_tokens(self, context_memory=None, max_length=50, vp_value=None, temperature=1.0, input_tokens=None):
         """
         Generate tokens - aligned with NeuralOrganism signature.
-        
+
         Args:
             context_memory: Optional context memory (ignored in mock)
             max_length: Maximum tokens to generate
             vp_value: Violation pressure value (ignored in mock)
             temperature: Sampling temperature (ignored in mock)
+            input_tokens: Optional input token IDs for conditioning (ignored in mock)
         """
         return self._tokens[:max_length]
 

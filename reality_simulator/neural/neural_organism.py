@@ -1748,23 +1748,25 @@ class NeuralOrganism(Organism):
         # Action 2 (compete) means don't connect
         return action == 1
     
-    def generate_tokens(self, 
+    def generate_tokens(self,
                          context_memory: Any = None,
                          max_length: int = 128,
                          vp_value: Optional[float] = None,
-                         temperature: float = 1.0) -> List[int]:
+                         temperature: float = 1.0,
+                         input_tokens: Optional[List[int]] = None) -> List[int]:
         """
         Generate token sequence using the language head (autoregressive).
-        
+
         NEURAL SYNAPSE MODE: Longer responses create richer causation chains!
         Each token generates semantic edges in the knowledge web.
-        
+
         Args:
-            context_memory: ContextMemory instance with vocabulary
+            context_memory: ContextMemory instance with vocabulary and word embeddings
             max_length: Maximum tokens to generate
             vp_value: Current VP value (if None, generates freely)
             temperature: Sampling temperature (higher = more random)
-            
+            input_tokens: Optional list of input token IDs to condition generation on
+
         Returns:
             List of generated token IDs
         """
@@ -1873,16 +1875,61 @@ class NeuralOrganism(Organism):
                     state_tensor = torch.zeros(1, input_dim, device=device)  # Default input dim
             else:
                 state_tensor = torch.zeros(1, input_dim, device=device)
-            
+
+            # ---------------------------------------------------------------------------
+            # INPUT CONDITIONING: Encode user input tokens to condition generation
+            # ---------------------------------------------------------------------------
+            input_context_vector = None
+            if input_tokens and len(input_tokens) > 0 and context_memory is not None:
+                # Use context_memory.word_embedding to encode input tokens
+                if hasattr(context_memory, 'word_embedding') and context_memory.word_embedding is not None:
+                    try:
+                        # Convert to tensor and clamp to valid range
+                        input_token_tensor = torch.LongTensor(input_tokens).to(device)
+                        # Clamp to prevent out-of-range errors
+                        max_vocab = context_memory.word_embedding.num_embeddings
+                        input_token_tensor = torch.clamp(input_token_tensor, 0, max_vocab - 1)
+
+                        # Encode: (seq_len,) -> (seq_len, 64)
+                        input_embeddings = context_memory.word_embedding(input_token_tensor)
+
+                        # Pool to single context vector: (seq_len, 64) -> (1, 64)
+                        input_context_vector = input_embeddings.mean(dim=0, keepdim=True)
+
+                        logger.info(f"[generate_tokens] {self.species_id}: Encoded {len(input_tokens)} input tokens -> context vector {input_context_vector.shape}")
+                    except Exception as e:
+                        logger.warning(f"[generate_tokens] {self.species_id}: Failed to encode input tokens: {e}")
+                        input_context_vector = None
+
             for _ in range(effective_max_length - 1):
                 # If brain has language head, use proper forward path with attention
                 if hasattr(self.brain, 'fc_language') and self.brain.use_language_head:
-                    # Use brain's forward method to properly handle attention
-                    output, language_logits = self.brain.forward(
-                        state_tensor, 
-                        vp_value=vp_value,
-                        return_language_logits=True
-                    )
+                    # CONDITIONED FORWARD PASS: Inject input context into hidden state
+                    if input_context_vector is not None:
+                        # Manual forward to inject context at hidden layer
+                        # fc1: (1, 25) -> (1, 64)
+                        h1 = self.brain._get_activation(self.brain.fc1(state_tensor))
+                        h1 = self.brain.dropout(h1)
+
+                        # Inject input context: (1, 64) + (1, 64) -> (1, 64)
+                        h1_conditioned = h1 + input_context_vector
+
+                        # fc2: (1, 64) -> (1, 64)
+                        h2 = self.brain._get_activation(self.brain.fc2(h1_conditioned))
+                        h2 = self.brain.dropout(h2)
+
+                        # Action head (not used in generation, but for completeness)
+                        output = self.brain.fc3(h2).softmax(dim=-1)
+
+                        # Language head: (1, 64) -> (1, 20000)
+                        language_logits = self.brain.fc_language(h2)
+                    else:
+                        # Standard forward without conditioning
+                        output, language_logits = self.brain.forward(
+                            state_tensor,
+                            vp_value=vp_value,
+                            return_language_logits=True
+                        )
                     
                     # Clamp logits to vocabulary size to avoid out-of-range tokens
                     vocab_size = vocab.vocab_size

@@ -323,12 +323,13 @@ class ButterflyChatRouter:
                             "inspect_error": str(e)
                         })
 
-                    # FIXED: Pass context_memory as first argument (required), then optional params
+                    # FIXED: Pass context_memory and input_tokens for conditioning
                     result = organism.generate_tokens(
                         context_memory=context_memory,
                         max_length=adaptive_max_length,
                         vp_value=vp_value,
-                        temperature=self.generation_temperature  # Use config value
+                        temperature=self.generation_temperature,  # Use config value
+                        input_tokens=prompt_tokens  # Pass user input for conditioning
                     )
                     # Handle both old (list) and new (dict with text+tokens) return formats
                     if isinstance(result, dict):
@@ -651,7 +652,8 @@ class ButterflyChatRouter:
                         context_memory=context_memory,
                         max_length=adaptive_max_length,
                         vp_value=vp_value,
-                        temperature=self.generation_temperature
+                        temperature=self.generation_temperature,
+                        input_tokens=prompt_tokens  # Pass user input for conditioning
                     )
                     # Handle both old (list) and new (dict with text+tokens) return formats
                     if isinstance(result, dict):
@@ -991,12 +993,13 @@ class ButterflyChatRouter:
                 else:
                     self._log_debug("VOCAB_CHECK", "NO VOCABULARY in context_memory!", {})
                 
-                # CRITICAL: Pass context_memory for vocabulary access!
+                # CRITICAL: Pass context_memory and input_tokens for conditioning!
                 response_tokens = organism.generate_tokens(
                     context_memory=context_memory,
                     max_length=max_length,
                     vp_value=vp_value,
-                    temperature=self.generation_temperature  # Use config value
+                    temperature=self.generation_temperature,  # Use config value
+                    input_tokens=prompt_tokens  # Pass user input for conditioning
                 )
                 
                 # Handle both dict return format {'text': ..., 'tokens': ...} and legacy list format
