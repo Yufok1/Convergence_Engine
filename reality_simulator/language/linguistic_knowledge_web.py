@@ -1354,10 +1354,19 @@ class LinguisticKnowledgeWeb:
         Returns:
             Set of seeded words unique to this organism
         """
+        # GROUNDED MODE: Skip semantic seeding if grounded mode enabled
+        lang_config = self.config.get('language', {})
+        grounded_config = lang_config.get('grounded', {})
+        semantic_config = lang_config.get('semantic', {})
+
+        if grounded_config.get('enabled', False) and not semantic_config.get('knowledge_web_bootstrap', True):
+            logger.debug(f"[SEMANTIC_SEED] Skipping seed for {organism_id[:8]} - grounded mode active")
+            return set()
+
         if not self.curated_vocabulary:
             # Fallback to hardcoded words if vocabulary not loaded
             return set()
-        
+
         # Use organism ID as deterministic seed for reproducible but diverse vocabulary
         seed_hash = int(hashlib.md5(organism_id.encode()).hexdigest(), 16) % (2**32)
         rng = random.Random(seed_hash)

@@ -1037,25 +1037,42 @@ class AtomicLanguageSystem:
         self.current_cycle: int = 0    # Current cycle counter
         self.resonance_persistence_window: int = self.config.get('resonance_persistence_window', 5)
         
-        # Initialize with innate concepts
+        # Initialize with innate concepts (respecting mastery level in grounded mode)
         self._initialize_innate_concepts()
-        
-        logger.debug(f"[ATOMIC_LANG] Initialized for organism {organism_id} with {len(self.atoms)} innate concepts")
+
+        logger.debug(f"[ATOMIC_LANG] Initialized for organism {organism_id} with {len(self.atoms)} innate concepts (mastery level {self._mastery_level})")
     
     def _initialize_innate_concepts(self):
         """
         Initialize organism with innate (inherited) concepts from nuclear vocab.
-        
+
+        GROUNDED MODE BEHAVIOR:
+        - Level 0: ONLY action heads (6 words) - no innate loading
+        - Level 1: Action heads + minimal core (26 words target)
+        - Level 2-3: Progressive innate loading
+        - Level 4: Full innate loading (current behavior)
+
         Loads from data/innate_vocab.json which contains:
         - Tier 1 (core): 50 words all organisms get
         - Tier 2 (extended): 200 words, organisms get random 20-50
         - Tier 3 (pool): 1450 words, organisms get random 0-10
-        
+
         This creates vocabulary diversity while ensuring core survival concepts.
         """
         current_time = time.time()
+
+        # ═══════════════════════════════════════════════════════════════
+        # GROUNDED MODE: Mastery-gated initialization
+        # ═══════════════════════════════════════════════════════════════
+        if self._mastery_level == 0:
+            # Level 0: ONLY action heads - no innate vocab loading
+            logger.debug(f"[ATOMIC_LANG] Organism {self.organism_id}: Level 0 - skipping innate concepts (action heads only)")
+            self._seed_action_head_curiosity()  # Just make action heads interesting
+            self.total_concepts_acquired = len(self.atoms)
+            return
+
         innate_data = self._load_innate_vocab()
-        
+
         if innate_data is None:
             # Fallback to minimal hardcoded concepts
             logger.warning(f"[ATOMIC_LANG] Using fallback innate concepts for {self.organism_id}")
@@ -1134,13 +1151,18 @@ class AtomicLanguageSystem:
         
         self.total_concepts_acquired = len(self.atoms)
         logger.debug(f"[ATOMIC_LANG] Organism {self.organism_id} initialized with {len(self.atoms)} innate concepts")
-        
-        # Load Voyager Golden Record concepts - humanity's foundational vocabulary
-        self._initialize_golden_record_concepts(current_time)
-        
-        # Initialize foundational orientation concepts (alphabet, numbers, colors)
-        self._initialize_foundational_orientation(current_time)
-        
+
+        # GROUNDED MODE: Gate Golden Record and Orientation loading by mastery
+        if self._mastery_level >= 2:
+            # Level 2+: Load Voyager Golden Record concepts
+            self._initialize_golden_record_concepts(current_time)
+            logger.debug(f"[ATOMIC_LANG] Organism {self.organism_id}: Level {self._mastery_level} - loaded Golden Record concepts")
+
+        if self._mastery_level >= 2:
+            # Level 2+: Initialize foundational orientation concepts (numbers, colors)
+            self._initialize_foundational_orientation(current_time)
+            logger.debug(f"[ATOMIC_LANG] Organism {self.organism_id}: Level {self._mastery_level} - loaded foundational orientation")
+
         # Make action heads intrinsically interesting (coax, don't force!)
         self._seed_action_head_curiosity()
     

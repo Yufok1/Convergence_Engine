@@ -439,10 +439,18 @@ class LanguageTeacher:
         """
         # Check for staged knowledge loading
         self.check_staged_knowledge_loading()
-        
+
         if not self.enabled:
             return 0
-        
+
+        # GROUNDED MODE: Respect mastery level gating
+        # Don't teach words to organisms below level 4 - they must earn vocabulary
+        if hasattr(organism, 'atomic_language') and organism.atomic_language is not None:
+            mastery_level = organism.atomic_language.mastery_level
+            if mastery_level < 4:
+                # Below level 4: No teaching, organisms earn vocabulary through mastery
+                return 0
+
         words_assigned = 0
         
         # Get organism ID - keep BOTH string and int versions
