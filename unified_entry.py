@@ -1555,10 +1555,6 @@ class UnifiedSystem:
         if self.highlander_config:
             self._initialize_highlander_protocol()
         
-        # Initialize AttractorLandscape (collective magnetism observer)
-        # This watches the population's attractor states as a unified field
-        self._initialize_attractor_landscape()
-        
         self.logger.log_state('system', {'event': 'initialization_complete'})
         print("[UNIFIED] [PASS] All systems initialized\n")
         
@@ -2295,80 +2291,6 @@ class UnifiedSystem:
             except Exception:
                 pass
         
-        # Handler: React to attractor landscape events (bifurcations, fixed points)
-        def on_bifurcation(event):
-            """React to swarm bifurcation - sudden phase transition detected."""
-            if not config_tuner:
-                return
-            try:
-                bif_type = event.data.get('type', 'unknown')
-                # Accept both old key (coherence_shift) and actual key (coherence_delta)
-                coherence = event.data.get('coherence_delta', event.data.get('coherence_shift', 0))
-                
-                # REACTIVE: Bifurcation = swarm is reorganizing
-                # Temporarily increase exploration to help find new stable config
-                if tracker.can_act('bifurcation_explore', cooldown=30.0):
-                    network = self.reality_sim.components.get('network')
-                    if network:
-                        boosted = 0
-                        for org in network.organisms.values():
-                            if hasattr(org, 'epsilon') and org.epsilon is not None:
-                                org.epsilon = min(0.6, org.epsilon + 0.1)  # Boost exploration
-                                boosted += 1
-                        logger.info(f"[LANDSCAPE] Bifurcation ({bif_type}) → epsilon boosted on {boosted} organisms")
-                    
-                    # Also increase mutation rate temporarily
-                    current_mutation = config_tuner.get('mutation_rate')
-                    if current_mutation is not None:
-                        new_val = min(0.15, current_mutation * 1.5)
-                        config_tuner.set('mutation_rate', new_val, reason=f'bifurcation_{bif_type}')
-                        logger.info(f"[LANDSCAPE] Bifurcation → mutation_rate {current_mutation:.3f}→{new_val:.3f}")
-            except Exception:
-                pass
-        
-        def on_fixed_point_reached(event):
-            """React when swarm reaches a stable attractor."""
-            if not config_tuner:
-                return
-            try:
-                stability = event.data.get('stability', 0)
-                fp_type = event.data.get('type', 'unknown')
-                
-                # REACTIVE: Fixed point = swarm found stability
-                # Decrease exploration to exploit the stable configuration
-                if stability > 0.7 and tracker.can_act('fixed_point_exploit', cooldown=60.0):
-                    network = self.reality_sim.components.get('network')
-                    if network:
-                        decayed = 0
-                        for org in network.organisms.values():
-                            if hasattr(org, 'epsilon') and org.epsilon is not None and org.epsilon > 0.05:
-                                org.epsilon = max(0.05, org.epsilon * 0.7)  # Reduce exploration
-                                decayed += 1
-                        logger.info(f"[LANDSCAPE] Fixed point ({fp_type}, stability={stability:.2f}) → epsilon decayed on {decayed} organisms")
-                    
-                    # Record as positive outcome
-                    config_tuner.record_outcome(success=True, context=f'fixed_point_{fp_type}')
-            except Exception:
-                pass
-        
-        def on_fixed_point_broken(event):
-            """React when swarm leaves a stable attractor."""
-            if not config_tuner:
-                return
-            try:
-                # Accept both old key (reason) and actual key (broken_by)
-                reason = event.data.get('broken_by', event.data.get('reason', 'unknown'))
-                
-                # REACTIVE: Left stability - might need more exploration
-                if tracker.can_act('fixed_point_broken', cooldown=45.0):
-                    current_mutation = config_tuner.get('mutation_rate')
-                    if current_mutation is not None:
-                        new_val = min(0.12, current_mutation * 1.25)
-                        config_tuner.set('mutation_rate', new_val, reason=f'fixed_point_broken_{reason}')
-                        logger.info(f"[LANDSCAPE] Fixed point broken ({reason}) → mutation_rate {current_mutation:.3f}→{new_val:.3f}")
-            except Exception:
-                pass
-        
         # Subscribe handlers to ACTUAL event types that are emitted
         # (Audit found mismatches - these are the real event_type values)
         self.causation_explorer.subscribe('neural_training', on_training_complete)  # trainer.py:1276
@@ -2387,12 +2309,7 @@ class UnifiedSystem:
         self.causation_explorer.subscribe('early_stopping_triggered', on_early_stopping)  # trainer.py:366
         self.causation_explorer.subscribe('lr_adjusted', on_lr_adjusted)  # trainer.py:1221
         
-        # Attractor landscape events (swarm dynamics)
-        self.causation_explorer.subscribe('bifurcation_detected', on_bifurcation)  # attractor_landscape.py
-        self.causation_explorer.subscribe('fixed_point_reached', on_fixed_point_reached)  # attractor_landscape.py
-        self.causation_explorer.subscribe('fixed_point_broken', on_fixed_point_broken)  # attractor_landscape.py
-        
-        print("[UNIFIED] [INTEGRATION] ✅ Reactive event handlers wired (17 event types)")
+        print("[UNIFIED] [INTEGRATION] ✅ Reactive event handlers wired (14 event types)")
         print("[UNIFIED] [INTEGRATION]    - Training/LR → Config tuner (adjust LR on loss)")
         print("[UNIFIED] [INTEGRATION]    - ML Analysis → Evolution (adjust mutation on diversity)")
         print("[UNIFIED] [INTEGRATION]    - Battles → Selection pressure (rate-based tuning)")
@@ -2400,7 +2317,6 @@ class UnifiedSystem:
         print("[UNIFIED] [INTEGRATION]    - Neural decisions → Epsilon (confidence-based)")
         print("[UNIFIED] [INTEGRATION]    - Language → Fitness weight (milestone rewards)")
         print("[UNIFIED] [INTEGRATION]    - Config updates → Immediate effect")
-        print("[UNIFIED] [INTEGRATION]    - Landscape → Exploration/mutation (bifurcation-driven)")
         
         # Wire WIKAI Observer - passive listener for pattern capture
         self._wire_wikai_observer()
@@ -2610,12 +2526,11 @@ class UnifiedSystem:
                         traits=initial_traits,
                         config=initial_config
                     )
-                    # Wire Illumination Engine references + Attractor Landscape
+                    # Wire Illumination Engine references
                     if org and hasattr(org, 'set_system_references'):
                         aws = getattr(self, 'alliance_warfare', None)
                         causation_explorer = getattr(self, 'causation_explorer', None)
-                        landscape = getattr(self, 'attractor_landscape', None)
-                        org.set_system_references(aws, causation_explorer, landscape)
+                        org.set_system_references(aws, causation_explorer, None)
                     return org
                 return None
                 
@@ -2706,18 +2621,16 @@ class UnifiedSystem:
                 except Exception as e:
                     print(f"[UNIFIED] [HIGHLANDER] ⚠️ Language Bridge wiring failed: {e}")
             
-            # 🔌 SYSTEM WIRING: Connect NeuralOrganisms to Illumination Engine + Landscape
+            # 🔌 SYSTEM WIRING: Connect NeuralOrganisms to Illumination Engine
             # This enables organisms to query "Why?" and access the Causation Explorer
-            # Also wires AttractorLandscape for proximity sensing
             if network and hasattr(network, 'organisms'):
                 wired_count = 0
-                landscape = getattr(self, 'attractor_landscape', None)
                 for org_id, organism in network.organisms.items():
                     if hasattr(organism, 'set_system_references'):
-                        organism.set_system_references(self.alliance_warfare, self.causation_explorer, landscape)
+                        organism.set_system_references(self.alliance_warfare, self.causation_explorer, None)
                         wired_count += 1
                 if wired_count > 0:
-                    print(f"[UNIFIED] [ILLUMINATION] 👁️ Wired {wired_count} organisms to Causation Engine + Attractor Landscape")
+                    print(f"[UNIFIED] [ILLUMINATION] 👁️ Wired {wired_count} organisms to Causation Engine")
             
             # 🏛️ CONFEDERATION (Super-Alliance) logging
             print("[UNIFIED] [HIGHLANDER] [PASS] 🏛️ Confederation System enabled (CONFEDERATION → EMPIRE → HEGEMONY)")
@@ -2758,57 +2671,6 @@ class UnifiedSystem:
         except Exception as e:
             print(f"[UNIFIED] [HIGHLANDER] ❌ Initialization failed: {e}")
             self._highlander_enabled = False
-            import traceback
-            traceback.print_exc()
-    
-    def _initialize_attractor_landscape(self):
-        """
-        Initialize the AttractorLandscape - collective magnetism observatory.
-        
-        This watches the population's attractor states as a unified field,
-        detecting fixed points (stable configurations) and bifurcations (landscape shifts).
-        
-        "The individual butterflies don't see the swarm pattern.
-         But the pattern sees itself through this observer."
-        """
-        self.attractor_landscape = None
-        
-        try:
-            from reality_simulator.systems.attractor_landscape import AttractorLandscape
-            
-            # Create event emitter for landscape events
-            def landscape_event_emitter(event_data):
-                """Emit landscape events to causation explorer."""
-                if self.causation_explorer:
-                    try:
-                        from causation_explorer import Event
-                        event = Event(
-                            timestamp=event_data.get('timestamp', time.time()),
-                            component='attractor_landscape',
-                            event_type=event_data.get('event_type', 'landscape_event'),
-                            data=event_data.get('data', {})
-                        )
-                        self.causation_explorer.add_event(event, is_historical=False)
-                    except Exception:
-                        pass
-            
-            # Get landscape config if present
-            landscape_config = self.active_config.get('attractor_landscape', {})
-            
-            self.attractor_landscape = AttractorLandscape(
-                config=landscape_config,
-                event_emitter=landscape_event_emitter
-            )
-            
-            print("[UNIFIED] [LANDSCAPE] ✅ AttractorLandscape initialized")
-            print("[UNIFIED] [LANDSCAPE]    - Observing collective magnetism field")
-            print("[UNIFIED] [LANDSCAPE]    - Detecting fixed points and bifurcations")
-            self.logger.log_state('system', {'event': 'attractor_landscape_initialized'})
-            
-        except ImportError as e:
-            print(f"[UNIFIED] [LANDSCAPE] ⚠️ AttractorLandscape import failed: {e}")
-        except Exception as e:
-            print(f"[UNIFIED] [LANDSCAPE] ❌ AttractorLandscape initialization failed: {e}")
             import traceback
             traceback.print_exc()
     
@@ -3178,18 +3040,6 @@ class UnifiedSystem:
                 reality_sim_state = self._get_reality_sim_state()
                 explorer_state = self._get_explorer_state()
                 djinn_kernel_state = self._get_djinn_kernel_state()
-                
-                # 🔭 ATTRACTOR LANDSCAPE - Observe collective magnetism field
-                landscape_state = {}
-                if hasattr(self, 'attractor_landscape') and self.attractor_landscape:
-                    try:
-                        # Get organisms from network
-                        network = self.reality_sim.components.get('network') if hasattr(self.reality_sim, 'components') else None
-                        if network and hasattr(network, 'organisms'):
-                            landscape_analysis = self.attractor_landscape.observe(network.organisms)
-                            landscape_state = self.attractor_landscape.get_landscape_state()
-                    except Exception:
-                        pass  # Don't break main loop if landscape observation fails
 
                 # 🌉 PHASE SYNC INTEGRATION - Update network metrics and get predictions
                 phase_sync_state = {}
@@ -3709,7 +3559,7 @@ class UnifiedSystem:
                                      djinn_kernel_state: Dict[str, Any], phase_sync_state: Dict[str, Any] = None,
                                      landscape_state: Dict[str, Any] = None):
         """
-        Write unified shared state file that includes all three systems + PHASE SYNC DATA + LANDSCAPE.
+        Write unified shared state file that includes all three systems + PHASE SYNC DATA.
         This is the primary source of truth for the Causation Explorer and other viewers.
 
         NOW INCLUDES:
@@ -3717,7 +3567,6 @@ class UnifiedSystem:
         - exploration_tracking: 10:1 ratio tracking, progress monitoring
         - unified_health: multi-system health metrics
         - transition_status: readiness of all three systems
-        - attractor_landscape: collective magnetism field observation (fixed points, bifurcations)
 
         Uses snapshot-based approach: writes discrete state snapshots that the HTML can handle efficiently.
         Throttled to write at most once per second to reduce I/O overhead.
@@ -3857,21 +3706,6 @@ class UnifiedSystem:
                     'estimated_time_to_transition': f"~{phase_sync_state.get('network', {}).get('estimated_generations_to_collapse', float('inf')):.0f} cycles"
                 }
                 unified_data['transition_status'] = transition_status
-            
-            # ✨ ADD ATTRACTOR LANDSCAPE DATA (magnetism field state, fixed points, bifurcations)
-            if landscape_state:
-                unified_data['attractor_landscape'] = landscape_state
-                
-                # Add derived metrics for CRA visibility
-                # NOTE: Keys must match what get_landscape_state() actually returns
-                unified_data['magnetism_field'] = {
-                    'collective_magnitude': landscape_state.get('field_coherence', 0.0),
-                    'synchronization': 1.0 - landscape_state.get('field_entropy', 1.0),  # Low entropy = high sync
-                    'field_entropy': landscape_state.get('field_entropy', 1.0),
-                    'is_stable': landscape_state.get('field_stability', 0.0) > 0.6,
-                    'has_fixed_point': landscape_state.get('at_fixed_point', False),
-                    'recent_bifurcations': landscape_state.get('total_bifurcations', 0)
-                }
             
             # Add VP monitoring configuration to shared state for CRA
             try:

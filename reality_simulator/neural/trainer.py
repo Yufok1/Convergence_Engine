@@ -757,49 +757,7 @@ class NeuralTrainer:
             sp_enabled = False  # Disable if dimensions don't support it
         
         if sp_enabled:
-            try:
-                state = organism.get_state_features() if hasattr(organism, 'get_state_features') else None
-                if state is not None and len(state) >= 28:
-                    # Feature 26: oscillation_entropy - penalize high chaos
-                    osc_threshold = sp_config.get('oscillation_entropy_threshold', 0.7)
-                    osc_penalty = sp_config.get('oscillation_chaos_penalty', -0.1)
-                    
-                    oscillation_entropy = state[25]
-                    if oscillation_entropy > osc_threshold:
-                        entropy_penalty = osc_penalty * (oscillation_entropy - osc_threshold) / (1.0 - osc_threshold)
-                        reward += entropy_penalty
-                    
-                    # Feature 27: coherence_frequency - penalize feeling "trapped"
-                    coh_threshold = sp_config.get('coherence_frequency_threshold', 0.6)
-                    coh_penalty = sp_config.get('coherence_trap_penalty', -0.15)
-                    
-                    coherence_frequency = state[26]
-                    if coherence_frequency > coh_threshold:
-                        # High coherence = stuck in loop = bad
-                        coherence_penalty = coh_penalty * (coherence_frequency - coh_threshold) / (1.0 - coh_threshold)
-                        reward += coherence_penalty
-                    elif coherence_frequency < 0.2:
-                        # Very low coherence = drifting freely = slight bonus
-                        freedom_bonus = 0.03
-                        reward += freedom_bonus
-                    
-                    # Feature 28: attractor_proximity - reward being near known stable configs
-                    if len(state) >= 28:
-                        prox_near = sp_config.get('proximity_near_threshold', 0.3)
-                        prox_near_bonus = sp_config.get('proximity_near_bonus', 0.05)
-                        prox_med = sp_config.get('proximity_medium_threshold', 0.6)
-                        prox_med_bonus = sp_config.get('proximity_medium_bonus', 0.02)
-                        
-                        attractor_proximity = state[27]
-                        # Low proximity = close to attractor = good (stability)
-                        if prox_near < attractor_proximity < prox_med:
-                            # Near but not at attractor - exploring basin
-                            reward += prox_near_bonus
-                        elif attractor_proximity < prox_near:
-                            # Very close to attractor - stable but might be stuck
-                            reward += prox_med_bonus
-            except Exception:
-                pass  # Don't break reward calculation if self-perception fails
+            # NOTE: Self-perception reward shaping removed - 28D system deprecated (now 25D)
         
         # Integration 2: Add language reward (if ML analysis available)
         language_reward = self._calculate_language_reward(organism)

@@ -743,30 +743,5 @@
       "smoothing_factor": 0.35
     },
     "stabilization_enabled": true
-  },
-
-  "attractor_landscape": {
-    "enabled": true,
-    "window_size": 15,
-    "fixed_point_persistence": 4,
-    "fixed_point_variance_threshold": 0.025,
-    "bifurcation_coherence_threshold": 0.18,
-    "bifurcation_entropy_threshold": 0.22,
-    "resonance_similarity_threshold": 0.12,
-    "comment": "Genesis attractor detection - watch for boom/bust bifurcations"
-  },
-
-  "self_perception": {
-    "comment": "Reward shaping for features 26-28 (oscillation_entropy, coherence_frequency, attractor_proximity)",
-    "enabled": true,
-    "oscillation_entropy_threshold": 0.65,
-    "oscillation_chaos_penalty": -0.12,
-    "coherence_frequency_threshold": 0.55,
-    "coherence_trap_penalty": -0.18,
-    "proximity_near_threshold": 0.28,
-    "proximity_near_bonus": 0.06,
-    "proximity_medium_threshold": 0.55,
-    "proximity_medium_bonus": 0.03,
-    "_genesis_note": "Stronger rewards/penalties - each perception signal matters more"
   }
 }
