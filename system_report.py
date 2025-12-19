@@ -94,12 +94,37 @@ class NeuralMetrics:
 
 @dataclass
 class LanguageMetrics:
-    """Language/Vocabulary state"""
+    """Language/Vocabulary state with mastery tracking"""
     total_vocabulary_words: int = 0
     unique_words_across_pop: int = 0
     avg_vocab_per_organism: float = 0.0
     word_adoptions_total: int = 0
     semantic_associations: int = 0
+    
+    # ═══════════════════════════════════════════════════════════════════════════
+    # 🎓 MASTERY LEVEL DISTRIBUTION - THE HEART OF VOCABULARY EVOLUTION
+    # ═══════════════════════════════════════════════════════════════════════════
+    # Level 0: 6 words (foundation)
+    # Level 1: 26 words (specialization begins)
+    # Level 2: 76 words (expertise)
+    # Level 3: 276 words (mastery)
+    # Level 4: unlimited (transcendence)
+    # ═══════════════════════════════════════════════════════════════════════════
+    mastery_level_0: int = 0  # Foundation (6 words)
+    mastery_level_1: int = 0  # Specialized (26 words)
+    mastery_level_2: int = 0  # Expert (76 words)
+    mastery_level_3: int = 0  # Master (276 words)
+    mastery_level_4: int = 0  # Transcendent (unlimited)
+    highest_mastery_achieved: int = 0
+    avg_mastery_level: float = 0.0
+    
+    # Progress tracking for organisms working toward next level
+    avg_breadth_ratio: float = 0.0  # How diverse is word usage across frames
+    avg_depth_ratio: float = 0.0   # How deep is mastery within frames
+    avg_experience_progress: float = 0.0  # Progress toward next level's experience req
+    
+    # Behavioral specialization tracking
+    dominant_behaviors: Dict[str, int] = field(default_factory=dict)  # e.g., {'warriors': 5, 'diplomats': 12}
 
 
 @dataclass
@@ -499,6 +524,105 @@ class SystemReporter:
                 
                 if organisms:
                     metrics.avg_vocab_per_organism = total_vocab / len(organisms)
+            
+            # ═══════════════════════════════════════════════════════════════════════════
+            # 🎓 GATHER MASTERY LEVEL DATA - THE HEART OF VOCABULARY EVOLUTION
+            # ═══════════════════════════════════════════════════════════════════════════
+            organisms = self.unified_system.get_current_organisms()
+            if organisms:
+                mastery_counts = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0}
+                total_mastery = 0
+                breadth_sum = 0.0
+                depth_sum = 0.0
+                exp_progress_sum = 0.0
+                behavior_counts = {}
+                valid_count = 0
+                
+                # Experience thresholds for each level
+                exp_thresholds = {0: 25, 1: 100, 2: 500, 3: 2000, 4: float('inf')}
+                
+                for org_id, org in organisms.items():
+                    # Get mastery level from atomic_language system
+                    mastery_level = 0
+                    breadth = 0.0
+                    depth = 0.0
+                    exp_count = 0
+                    
+                    if hasattr(org, 'atomic_language') and org.atomic_language:
+                        al = org.atomic_language
+                        mastery_level = getattr(al, '_mastery_level', 0)
+                        
+                        # Get progress metrics if available
+                        if hasattr(al, '_calculate_breadth'):
+                            try:
+                                breadth = al._calculate_breadth()
+                            except:
+                                pass
+                        if hasattr(al, '_calculate_depth'):
+                            try:
+                                depth = al._calculate_depth()
+                            except:
+                                pass
+                        
+                        exp_count = len(getattr(al, 'experience_log', [])) if hasattr(al, 'experience_log') else 0
+                        
+                        # Get dominant behavior for specialization tracking
+                        if hasattr(al, '_get_dominant_actions'):
+                            try:
+                                dom_actions = al._get_dominant_actions(top_n=1)
+                                if dom_actions:
+                                    action_names = ['explorer', 'diplomat', 'warrior', 'conserver', 'nurturer', 'hermit']
+                                    action_idx = dom_actions[0]
+                                    if 0 <= action_idx < len(action_names):
+                                        behavior = action_names[action_idx]
+                                        behavior_counts[behavior] = behavior_counts.get(behavior, 0) + 1
+                            except:
+                                pass
+                    
+                    # Fallback: check _mastery_level attribute directly
+                    elif hasattr(org, '_mastery_level'):
+                        mastery_level = org._mastery_level
+                    
+                    # Count mastery levels
+                    mastery_level = min(4, max(0, mastery_level))
+                    mastery_counts[mastery_level] += 1
+                    total_mastery += mastery_level
+                    
+                    # Accumulate progress metrics
+                    breadth_sum += breadth
+                    depth_sum += depth
+                    
+                    # Calculate experience progress toward next level
+                    if mastery_level < 4:
+                        threshold = exp_thresholds[mastery_level]
+                        exp_progress_sum += min(1.0, exp_count / threshold)
+                    else:
+                        exp_progress_sum += 1.0  # Already at max
+                    
+                    valid_count += 1
+                
+                # Set mastery distribution
+                metrics.mastery_level_0 = mastery_counts[0]
+                metrics.mastery_level_1 = mastery_counts[1]
+                metrics.mastery_level_2 = mastery_counts[2]
+                metrics.mastery_level_3 = mastery_counts[3]
+                metrics.mastery_level_4 = mastery_counts[4]
+                
+                # Find highest achieved
+                for level in [4, 3, 2, 1, 0]:
+                    if mastery_counts[level] > 0:
+                        metrics.highest_mastery_achieved = level
+                        break
+                
+                # Calculate averages
+                if valid_count > 0:
+                    metrics.avg_mastery_level = total_mastery / valid_count
+                    metrics.avg_breadth_ratio = breadth_sum / valid_count
+                    metrics.avg_depth_ratio = depth_sum / valid_count
+                    metrics.avg_experience_progress = exp_progress_sum / valid_count
+                
+                # Set dominant behaviors
+                metrics.dominant_behaviors = behavior_counts
                         
         except Exception as e:
             pass
