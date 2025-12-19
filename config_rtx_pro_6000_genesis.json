@@ -366,7 +366,7 @@
       "_dropout_note": "Higher dropout for small populations - prevents overfitting to limited experiences",
       "hidden_dim": 384,
       "_hidden_dim_note": "2x base (192→384) - 96GB VRAM handles larger brains",
-      "input_dim": 28,
+      "input_dim": 25,
       "output_dim": 6,
       "vocab_size": 25000,
       "_vocab_size_note": "2x base - larger vocabulary capacity",

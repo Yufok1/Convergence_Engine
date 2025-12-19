@@ -316,7 +316,7 @@
       "activation": "relu",
       "dropout": 0.1,
       "hidden_dim": 64,
-      "input_dim": 28,
+      "input_dim": 25,
       "output_dim": 6,
       "vocab_size": 20000,
       "attention_dim": 32

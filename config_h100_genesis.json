@@ -323,7 +323,7 @@
       "_dropout_note": "Higher dropout - prevents overfitting in small populations",
       "hidden_dim": 256,
       "_hidden_dim_note": "4x base for H100 80GB",
-      "input_dim": 28,
+      "input_dim": 25,
       "output_dim": 6,
       "vocab_size": 25000,
       "attention_dim": 64,
