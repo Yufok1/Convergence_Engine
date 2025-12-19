@@ -1022,9 +1022,9 @@ class AtomicLanguageSystem:
         grounded_config = lang_config.get('grounded', {})
         self._mastery_level: int = grounded_config.get('initial_mastery_level', 4)  # Default: no gating
         self._mastery_vocab_sizes: List[int] = grounded_config.get('mastery_vocab_sizes', [6, 26, 76, 276, 20000])
-        self._mastery_advancement_ratio: float = grounded_config.get('mastery_advancement_ratio', 0.7)
-        self._mastery_depth_ratio: float = grounded_config.get('mastery_depth_ratio', 0.5)
-        self._mastery_min_experiences: List[int] = grounded_config.get('mastery_min_experiences', [50, 200, 500, 1000])
+        self._mastery_advancement_ratio: float = grounded_config.get('mastery_advancement_ratio', 0.5)
+        self._mastery_depth_ratio: float = grounded_config.get('mastery_depth_ratio', 0.3)
+        self._mastery_min_experiences: List[int] = grounded_config.get('mastery_min_experiences', [25, 100, 300, 600])
         self._total_experiences: int = 0
         
         # ═══════════════════════════════════════════════════════════════════════════
@@ -1495,18 +1495,18 @@ class AtomicLanguageSystem:
         if not vocab:
             return False
         
-        # BREADTH: At least 70% of words used
-        # Count words with usage (approximated by update_count on atom)
+        # BREADTH: At least 50% of words used (lowered from 70%)
+        # Count words with usage - threshold of 3 uses (was 5)
         used_words = sum(
             1 for w in vocab 
-            if w in self.atoms and getattr(self.atoms[w], 'recent_activation_count', 0) > 5
+            if w in self.atoms and getattr(self.atoms[w], 'recent_activation_count', 0) > 2
         )
         breadth_ratio = used_words / len(vocab)
         
-        # DEPTH: At least 50% have 3+ associations
+        # DEPTH: At least 30% have 2+ associations (lowered from 3)
         deep_words = sum(
             1 for w in vocab
-            if w in self.atoms and len(getattr(self.atoms[w], 'associations', {})) >= 3
+            if w in self.atoms and len(getattr(self.atoms[w], 'associations', {})) >= 2
         )
         depth_ratio = deep_words / len(vocab)
         
@@ -1518,6 +1518,16 @@ class AtomicLanguageSystem:
             depth_ratio >= self._mastery_depth_ratio and
             self._total_experiences >= min_exp
         )
+        
+        # Debug logging to help diagnose why organisms aren't advancing
+        if self._total_experiences > 10 and not should_advance:
+            logger.debug(
+                f"[MASTERY_CHECK] {self.organism_id[:8]} Level {self._mastery_level}: "
+                f"breadth={breadth_ratio:.2f}/{self._mastery_advancement_ratio} "
+                f"depth={depth_ratio:.2f}/{self._mastery_depth_ratio} "
+                f"exp={self._total_experiences}/{min_exp} "
+                f"vocab={len(vocab)}"
+            )
         
         if should_advance:
             logger.info(f"[ATOMIC_LANG] Organism {self.organism_id} ready to advance! breadth={breadth_ratio:.2f}, depth={depth_ratio:.2f}, exp={self._total_experiences}")

@@ -14,9 +14,9 @@
       "initial_mastery_level": 0,
       "_initial_mastery_level_help": "0=6 words, 1=26 words, 2=76 words, 3=276 words, 4=unlimited (semantic graduation)",
       "mastery_vocab_sizes": [6, 26, 76, 276, 20000],
-      "mastery_advancement_ratio": 0.7,
-      "mastery_depth_ratio": 0.5,
-      "mastery_min_experiences": [50, 200, 500, 1000],
+      "mastery_advancement_ratio": 0.5,
+      "mastery_depth_ratio": 0.3,
+      "mastery_min_experiences": [25, 100, 300, 600],
       "always_allow_tokens": [".", ",", "!", "?", "and", "the", "a", "is", "to", "of", "in"]
     },
     "semantic": {

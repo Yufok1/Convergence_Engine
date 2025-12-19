@@ -7191,13 +7191,15 @@ def list_organisms():
                 }
             }
 
-        def determine_rarity(fitness, battle_wins, experience_size, words_learned):
-            """Determine organism rarity tier (like Pokémon card rarity)."""
+        def determine_rarity(fitness, battle_wins, experience_size, words_learned, mastery_level=0):
+            """Determine organism rarity tier - balanced across ALL factors."""
             score = 0
-            score += min(fitness * 40, 40)  # Up to 40 points for fitness
-            score += min(battle_wins * 2, 20)  # Up to 20 points for wins
-            score += min(experience_size / 100, 20)  # Up to 20 points for experience
-            score += min(words_learned / 50, 20)  # Up to 20 points for vocabulary
+            # BALANCED: 20 points each category (100 total)
+            score += min(fitness * 20, 20)  # Up to 20 points for fitness (was 40!)
+            score += min(battle_wins * 3, 20)  # Up to 20 points for wins (~7 wins = max)
+            score += min(experience_size / 500, 20)  # Up to 20 points for experience (scaled up)
+            score += min(words_learned / 15, 20)  # Up to 20 points for vocabulary (300 words = max)
+            score += mastery_level * 5  # Up to 20 points for mastery (level 4 = 20)
             
             if score >= 80:
                 return 'legendary'
@@ -7309,7 +7311,7 @@ def list_organisms():
                         
                         # Rarity and strengths/weaknesses
                         battle_stats = {'win_rate': win_rate, 'total': total_battles}
-                        rarity = determine_rarity(fitness_val, battle_wins, exp_buffer_size, words_learned)
+                        rarity = determine_rarity(fitness_val, battle_wins, exp_buffer_size, words_learned, mastery_level)
                         traits = determine_strengths_weaknesses(behavior, fitness_val, battle_stats, connection_count)
                         
                         # D&D Alignment (derived from behavior patterns)
@@ -7448,9 +7450,10 @@ def list_organisms():
                     battle_losses = info.get('battle_losses', 0)
                     total_battles = battle_wins + battle_losses
                     win_rate = round(battle_wins / total_battles, 3) if total_battles > 0 else 0.0
+                    capsule_mastery = info.get('mastery_level', 0)
                     
                     # Determine rarity for capsule
-                    rarity = determine_rarity(fitness_val, battle_wins, capsule_exp_buffer, words_learned)
+                    rarity = determine_rarity(fitness_val, battle_wins, capsule_exp_buffer, words_learned, capsule_mastery)
                     
                     # Basic traits from capsule (limited info)
                     strengths = []
