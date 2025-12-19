@@ -924,19 +924,9 @@ class NeuralTrainer:
                 print(f"  - Skipped (no record_experience): {skipped_no_record}")
                 print(f"  - Skipped (no prev_state): {skipped_no_prev_state}")
         
-        # AGGRESSIVE DEBUG: Log every step for first 10 steps
+        # DEBUG: Log first 10 steps at debug level
         if self.training_step_count <= 10:
-            logger.warning(f"[NEURAL DEBUG] Step {self.training_step_count}: orgs={len(organisms)}, collected={experiences_collected}, no_brain={skipped_no_brain}, no_record={skipped_no_record}, no_prev={skipped_no_prev_state}")
-            # Also write to file for reliability
-            try:
-                with open('D:/end-GAME/butterfly/data/logs/neural_debug.txt', 'a') as f:
-                    f.write(f"Step {self.training_step_count}: orgs={len(organisms)}, collected={experiences_collected}, no_brain={skipped_no_brain}, no_record={skipped_no_record}, no_prev={skipped_no_prev_state}\n")
-                    # Sample one organism
-                    if organisms:
-                        sample_org = next(iter(organisms.values()))
-                        f.write(f"  Sample org: brain={'OK' if sample_org.brain else 'NONE'}, buffer={'OK' if getattr(sample_org, 'experience_buffer', None) else 'NONE'}, prev_state={'OK' if getattr(sample_org, 'prev_state', None) is not None else 'NONE'}\n")
-            except Exception as e:
-                pass
+            logger.debug(f"[NEURAL DEBUG] Step {self.training_step_count}: orgs={len(organisms)}, collected={experiences_collected}, no_brain={skipped_no_brain}, no_record={skipped_no_record}, no_prev={skipped_no_prev_state}")
         
         # Update autotune buffer_size metric
         total_buffer_size = sum(
