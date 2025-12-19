@@ -92,8 +92,8 @@ def extract_organism_features_local(org_state: dict, context: dict = None) -> Li
     else:
         features.extend([0.0, 0.0])
     
-    # Ensure consistent length (pad or truncate to 24 dimensions)
-    target_len = 24
+    # Ensure consistent length (pad or truncate to 28 dimensions)
+    target_len = 28
     if len(features) < target_len:
         features.extend([0.0] * (target_len - len(features)))
     elif len(features) > target_len:
@@ -399,7 +399,7 @@ def train_organism_local(
         from reality_simulator.neural.brain import OrganismBrain
         
         # Reconstruct brain from weights
-        input_dim = training_config.get('input_dim', 25)
+        input_dim = training_config.get('input_dim', 27)
         hidden_dim = training_config.get('hidden_dim', 64)
         output_dim = training_config.get('output_dim', 6)  # Default matches config.json
         vocab_size = training_config.get('vocab_size', 20000)  # Default matches config.json

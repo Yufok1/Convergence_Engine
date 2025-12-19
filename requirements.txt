@@ -1,53 +1,69 @@
 # Reality Simulator Dependencies
 
 # Core Scientific Computing (REQUIRED)
-numpy>=2.0.0
-scipy>=1.14.0
+# NOTE: numpy<2.0 required for PyFlyt drone support
+numpy>=1.24.0,<2.0
+scipy>=1.11.0,<1.14      # scipy 1.14+ wants numpy 2.x
 
 # Network/Graph Analysis (REQUIRED)
-networkx>=3.0
+networkx>=3.0,<4.0
 
 # System Monitoring (REQUIRED)
-psutil>=5.9.0
+psutil>=5.9.0,<6.0
 
 # Visualization (RECOMMENDED)
-matplotlib>=3.8.0   # For visualization plots and composite image generation
+matplotlib>=3.9.0,<3.10   # Pin to 3.9.x for stability
 
 # Web UI (RECOMMENDED)
-flask>=3.0.0        # For Causation Explorer web interface
-flask-socketio>=5.3.0  # For CRA real-time streaming support
-gunicorn>=21.0.0    # For production WSGI server (Render deployment)
-requests>=2.31.0    # For Ollama API communication (cloud and local)
-Pillow>=10.0.0      # For image compression in vision model analysis
+flask>=3.0.0,<4.0        # For Causation Explorer web interface
+flask-socketio>=5.3.0,<6.0  # For CRA real-time streaming support
+gunicorn>=21.0.0,<24.0    # For production WSGI server (Render deployment)
+requests>=2.31.0,<3.0    # For Ollama API communication (cloud and local)
+Pillow>=10.0.0,<13.0      # For image compression in vision model analysis
 
 # Explorer (Windows only)
 pywin32>=306; sys_platform == 'win32'  # For Explorer process isolation (Windows only)
 
 # Neural & ML Systems (OPTIONAL - system works without these)
-hdbscan>=0.8.38     # HDBSCAN density-based clustering for phenotype detection
-torch>=2.5.0        # Core Neural Engine - DQN reinforcement learning for organisms
-scikit-learn>=1.5.0,<1.6.0 # ML utilities - keep compatible with hdbscan check_array(force_all_finite=...)
-onnx>=1.15.0        # ONNX format for neural model export (agent compilation)
-onnxscript>=0.1.0   # Required by PyTorch 2.5+ for ONNX export
-onnxruntime>=1.15.0 # For running exported ONNX models (agent compilation)
+# NOTE: Default torch installs CPU-only. For GPU, use requirements-cuda.txt or:
+#   pip install torch --index-url https://download.pytorch.org/whl/cu121
+hdbscan==0.8.40          # Pin exact - fights with scikit-learn
+torch>=2.5.0,<3.0        # Core Neural Engine - DQN reinforcement learning for organisms (CPU by default!)
+scikit-learn>=1.5.0,<1.6.0 # Pin range - hdbscan compat
+onnx>=1.16.0,<1.18  # ONNX format - pinned for onnxscript compatibility
+onnxscript>=0.1.0,<0.2  # Required by PyTorch 2.5+ for ONNX export - pin to avoid onnx_ir conflicts
+onnxruntime>=1.17.0,<1.20 # For running exported ONNX models - pinned for compatibility
+
+# GPU Acceleration (OPTIONAL - for torch.compile with Triton backend)
+# NOTE: Official triton only supports Linux. For Windows, use triton-windows community build:
+#   pip install triton-windows
+# triton>=3.0.0     # Linux only - Triton GPU compiler for torch.compile (2-3x speedup)
+
 
 # Gaming Environments (OPTIONAL - for cocoon exported agents)
-gymnasium>=0.29.0   # OpenAI Gym successor for standard RL environments
-pygame>=2.5.0       # PyGame for PLE games rendering
+gymnasium==0.29.1        # Pin exact - PyFlyt 0.29 needs this
+# gymnasium[mujoco]      # DISABLED - causes dep hell, install separately if needed
+# box2d-py>=2.3.8        # DISABLED - requires swig: apt-get install swig build-essential
+pygame>=2.5.0,<3.0       # PyGame for PLE games rendering
+# tmrl>=0.7.0       # TrackMania RL - see cocoon_tmrl_adapter.py (pip install tmrl)
 # ple                 # PyGame Learning Environment (pip install ple or git install)
 # ale-py>=0.8.1       # Atari Learning Environment for Atari games (large download)
 
+# Drone Warfare Arena (8 game modes with NASA JSBSim 6-DOF physics)
+# matplotlib is already included above for visualization
+PyFlyt==0.29.0        # Pin exact - requires gymnasium 0.29.x
+
 # P2P Networking (OPTIONAL - for cocoon link mode)
-websockets>=12.0    # WebSocket client/server for CocoonHatch P2P battles
+websockets>=12.0,<16.0    # WebSocket client/server for CocoonHatch P2P battles
 
 # Language & Vocabulary (REQUIRED for curated vocabulary pipeline)
-nltk>=3.8.1         # WordNet lexical database for zero-proper-noun vocabulary (120k+ words)
+nltk>=3.8.1,<4.0         # WordNet lexical database for zero-proper-noun vocabulary (120k+ words)
 
-# Distributed Computing (OPTIONAL - graceful fallback to sequential)
-ray>=2.10.0         # Parallel processing for ML features, battles, neural decisions, training (2-5x speedup)
+# Distributed Computing (DISABLED - Ray metrics agent causes hangs)
+# ray>=2.10.0       # DISABLED - metrics agent spam blocks startup for 10+ minutes
 
 # Kernel Dependencies (required if using Djinn Kernel features)
-cryptography>=42.0.0  # Used in kernel/security_compliance.py for security features
+cryptography>=42.0.0,<47.0  # Used in kernel/security_compliance.py for security features
 
 # External (not installed via pip here): FFmpeg required for video export (see README)
 

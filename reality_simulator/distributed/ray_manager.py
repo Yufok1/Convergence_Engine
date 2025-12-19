@@ -124,10 +124,11 @@ class RayManager:
             return False
         
         try:
-            # Build init kwargs
+            # Build init kwargs (metrics agent disabled in __init__.py before ray import)
             init_kwargs = {
                 'ignore_reinit_error': True,
                 'logging_level': getattr(logging, self.config.logging_level.upper(), logging.WARNING),
+                'include_dashboard': False,  # Disable dashboard (not needed)
             }
             
             if self.config.num_cpus is not None:

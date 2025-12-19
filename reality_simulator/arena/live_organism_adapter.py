@@ -3,14 +3,16 @@ Live Organism Adapter for Proton Game Arena
 
 This adapter wraps live simulation organisms to work with the ProtonGameArena
 battle system. It provides a bridge-like interface that uses the organism's
-native abilities (language, neural processing) without requiring exported
-ONNX models.
+native abilities (language, neural processing) for REAL GAME BATTLES.
 
 Key Features:
 1. Adapts organisms to Proton Game's expected interface
-2. Prioritizes native ability games (ARTS challenges) - no Gym dependency
-3. Falls back to fitness-based scoring for Gym environments without full Gym
-4. Provides causation tracking for all battles
+2. ACTUALLY RUNS real Gymnasium environments (CartPole, LunarLander, etc.)
+3. Organisms LEARN from gameplay - experiences recorded to replay buffer
+4. Falls back to native language games when Gym unavailable
+5. Provides causation tracking for all battles
+
+The organisms ACTUALLY PLAY the games headlessly and gain training!
 """
 
 import logging
@@ -20,6 +22,15 @@ from typing import Dict, Any, Optional, List, Tuple
 from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
+
+# Import the REAL gym runner
+try:
+    from .gym_runner import get_gym_runner, GymRunner, GYM_AVAILABLE
+    REAL_GYM_ENABLED = GYM_AVAILABLE
+except ImportError:
+    REAL_GYM_ENABLED = False
+    get_gym_runner = None
+    logger.warning("GymRunner not available - will use simulated battles")
 
 
 @dataclass
@@ -153,7 +164,7 @@ class LiveOrganismAdapter:
                 try:
                     # Get some output from the brain
                     import torch
-                    state = torch.zeros(25)  # Matches config.json input_dim=25
+                    state = torch.zeros(28)  # Matches config.json input_dim=28
                     with torch.no_grad():
                         q_values = brain(state.unsqueeze(0))
                         action = q_values.argmax().item()
@@ -171,29 +182,110 @@ class LiveOrganismAdapter:
     
     def run_gym(self, env_spec: str, episodes: int = 10, 
                 max_steps: int = 1000, render: bool = False,
-                learn: bool = False, verbose: bool = False) -> Dict[str, Any]:
+                learn: bool = True, verbose: bool = False) -> Dict[str, Any]:
         """
-        Run organism in a Gym environment.
+        Run organism in a Gym environment - FOR REAL!
         
-        For native language games, this uses the organism's actual abilities.
-        For standard Gym envs, this estimates scores based on organism traits.
+        This ACTUALLY runs the Gymnasium environment headlessly.
+        The organism's neural network makes decisions, and experiences
+        are recorded for training.
+        
+        Args:
+            env_spec: Gymnasium environment specification
+            episodes: Number of episodes to play
+            max_steps: Maximum steps per episode
+            render: Whether to render (False = headless)
+            learn: Whether to record experiences for training
+            verbose: Whether to log detailed output
         """
-        # Check for native games that don't need actual Gym
+        # ═══════════════════════════════════════════════════════════════
+        # REAL GYMNASIUM EXECUTION
+        # ═══════════════════════════════════════════════════════════════
+        if REAL_GYM_ENABLED and get_gym_runner is not None:
+            # Check if this is a standard Gym env that we can actually run
+            runner = get_gym_runner()
+            
+            # Map native game names to real Gym envs
+            gym_mappable = {
+                'pole_balance': 'CartPole-v1',
+                'cart_pole': 'CartPole-v1',
+                'mountain_climb': 'MountainCar-v0',
+                'robot_swing': 'Acrobot-v1',
+                'pendulum_control': 'Pendulum-v1',
+                'lunar_landing': 'LunarLander-v3',
+                'space_landing': 'LunarLander-v3',
+                'ice_navigation': 'FrozenLake-v1',
+                'taxi_service': 'Taxi-v3',
+                'cliff_walk': 'CliffWalking-v0',
+                'card_game': 'Blackjack-v1',
+                'blackjack': 'Blackjack-v1',
+            }
+            
+            # Check if we can run this for real
+            actual_env = gym_mappable.get(env_spec, env_spec)
+            
+            # Accept any environment that looks like a Gym env (has version suffix like -v0, -v1, etc.)
+            # This allows MuJoCo envs, Box2D envs, and all standard Gymnasium envs
+            is_gym_env = (
+                actual_env in runner.ENV_CONFIGS or 
+                env_spec.startswith(('CartPole', 'Mountain', 'Lunar', 'Acrobot', 'Frozen', 'Taxi', 'Cliff', 'Black', 'Pendulum')) or
+                # MuJoCo environments
+                env_spec.startswith(('Walker', 'Ant', 'Swimmer', 'Hopper', 'HalfCheetah', 'Humanoid', 'Inverted', 'Reacher', 'Pusher')) or
+                # Box2D environments
+                env_spec.startswith(('Bipedal', 'CarRacing')) or
+                # Generic version pattern (any env with -v suffix)
+                any(f'-v{i}' in env_spec for i in range(10))
+            )
+            
+            if is_gym_env:
+                logger.info(f"🎮 REAL GYM BATTLE: {actual_env} for {self.organism_id[:8]}")
+                
+                try:
+                    result = runner.run_organism(
+                        self.organism,
+                        actual_env,
+                        episodes=episodes,
+                        max_steps=max_steps,
+                        learn=learn,
+                        render=render
+                    )
+                    
+                    return {
+                        'mean_reward': result.mean_reward,
+                        'total_reward': result.total_reward,
+                        'episodes': result.episodes,
+                        'total_steps': result.total_steps,
+                        'max_reward': result.max_reward,
+                        'min_reward': result.min_reward,
+                        'experiences_recorded': result.experiences_recorded,
+                        'REAL_GYM': True  # Flag that this was REAL
+                    }
+                except Exception as e:
+                    logger.warning(f"Real Gym run failed: {e}, falling back to native")
+        
+        # ═══════════════════════════════════════════════════════════════
+        # NATIVE LANGUAGE GAMES (no Gym needed)
+        # ═══════════════════════════════════════════════════════════════
         native_games = {
             'language_coherence': self._run_language_coherence,
             'concept_linking': self._run_concept_linking,
             'vocabulary_duel': self._run_vocabulary_duel,
             'dialogue_quality': self._run_dialogue_quality,
-            'inter_organism_chat': self._run_dialogue_quality,  # Same as dialogue
+            'inter_organism_chat': self._run_dialogue_quality,
             'collaborative_creation': self._run_collaborative_creation,
             'coin_flip': self._run_coin_flip,
         }
         
         if env_spec in native_games:
+            logger.info(f"🗣️ Native game: {env_spec} for {self.organism_id[:8]}")
             return native_games[env_spec](episodes)
         
-        # For standard Gym envs, estimate based on organism traits
-        return self._estimate_gym_performance(env_spec, episodes)
+        # ═══════════════════════════════════════════════════════════════
+        # NO FALLBACK - FAIL LOUD - NO FAKE SIMULATIONS
+        # ═══════════════════════════════════════════════════════════════
+        error_msg = f"❌ UNSUPPORTED GYM ENV: {env_spec} - No real handler exists! Remove from game matrix."
+        logger.error(error_msg)
+        raise NotImplementedError(error_msg)
     
     def _run_language_coherence(self, episodes: int) -> Dict[str, Any]:
         """Evaluate language coherence using atomic language system."""
@@ -302,62 +394,8 @@ class LiveOrganismAdapter:
             'wins': wins
         }
     
-    def _estimate_gym_performance(self, env_spec: str, episodes: int) -> Dict[str, Any]:
-        """
-        Estimate Gym performance based on organism traits.
-        
-        This allows Proton Game battles for standard Gym environments
-        even without full Gym integration, by scoring based on relevant traits.
-        """
-        # Base score from fitness
-        base_score = self.fitness * 50
-        
-        # Environment-specific bonuses
-        physical_envs = ['CartPole', 'MountainCar', 'Acrobot', 'LunarLander', 
-                        'BipedalWalker', 'Pendulum', 'Ant', 'HalfCheetah']
-        
-        mental_envs = ['FrozenLake', 'CliffWalking', 'Taxi']
-        
-        chance_envs = ['Blackjack']
-        
-        # Check traits if available
-        trait_bonus = 0
-        if self.has_phenotype and hasattr(self.organism.phenotype, 'traits'):
-            traits = self.organism.phenotype.traits
-            
-            if any(p in env_spec for p in physical_envs):
-                trait_bonus += traits.get('physical', 0) * 20
-                trait_bonus += traits.get('coordination', 0) * 15
-                
-            elif any(m in env_spec for m in mental_envs):
-                trait_bonus += traits.get('mental', 0) * 20
-                trait_bonus += traits.get('strategy', 0) * 15
-                
-            elif any(c in env_spec for c in chance_envs):
-                trait_bonus += traits.get('luck', 0) * 20
-        
-        # Add neural complexity bonus
-        if self.has_brain:
-            brain = self.organism.brain
-            params = getattr(brain, 'parameter_count', 0)
-            if params == 0 and hasattr(brain, 'parameters'):
-                try:
-                    params = sum(p.numel() for p in brain.parameters())
-                except:
-                    pass
-            trait_bonus += min(params / 10000, 10)  # Up to 10 bonus points
-        
-        # Calculate final score with some randomness
-        total = (base_score + trait_bonus) * episodes
-        total += random.uniform(-10, 10) * episodes  # Natural variance
-        
-        return {
-            'mean_reward': total / episodes,
-            'total_reward': total,
-            'episodes': episodes,
-            'estimated': True,
-            'base_fitness': self.fitness
-        }
+    # NOTE: _estimate_gym_performance DELETED - NO FAKE SIMULATIONS ALLOWED
+    # If an environment isn't supported, it should raise NotImplementedError
 
 
 @dataclass

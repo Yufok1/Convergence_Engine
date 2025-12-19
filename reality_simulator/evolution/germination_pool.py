@@ -235,13 +235,13 @@ class GerminationPool:
         # ═══════════════════════════════════════════════════════════════════════════
         self.strategy_weights = {
             GerminationStrategy.CLONE: 0.0,
-            GerminationStrategy.CROSSOVER: 0.0,
-            GerminationStrategy.CHIMERA: 1.0,       # 100% - All births are chimera
-            GerminationStrategy.NOVA: 0.0,
+            GerminationStrategy.CROSSOVER: 0.25,    # 25% - Structural novelty
+            GerminationStrategy.CHIMERA: 0.40,      # 40% - Multi-parent blending (powerful, not dominant)
+            GerminationStrategy.NOVA: 0.18,         # 18% - Fresh genetic material
             GerminationStrategy.PHOENIX: 0.0,
             GerminationStrategy.HYBRID: 0.0,
             GerminationStrategy.REGRESSED: 0.0,
-            GerminationStrategy.CALIBRATED: 0.0
+            GerminationStrategy.CALIBRATED: 0.17   # 17% - Targeted variations
         }
         
         # Champion capsules for phoenix resurrection
@@ -874,6 +874,23 @@ class GerminationPool:
         
         candidate.parent_ids = [parent1_id, parent2_id]
         
+        # ═══════════════════════════════════════════════════════════════════════
+        # HEALING PROTOCOL: Check if parents are trapped, clean before inheritance
+        # "trapped" parents have high oscillation - we don't want to pass that on
+        # ═══════════════════════════════════════════════════════════════════════
+        parent1_trapped = coh1 < 0.5  # Low coherence = trapped/oscillating
+        parent2_trapped = coh2 < 0.5
+        trapped_filter_active = parent1_trapped or parent2_trapped
+        
+        if trapped_filter_active:
+            # Log warning about trapped parents
+            trapped_info = []
+            if parent1_trapped:
+                trapped_info.append(f"{parent1_id[:8]}(coh={coh1:.2f})")
+            if parent2_trapped:
+                trapped_info.append(f"{parent2_id[:8]}(coh={coh2:.2f})")
+            logger.info(f"[CHIMERA] ⚠️ TRAPPED PARENTS detected: {', '.join(trapped_info)} - applying healing filter")
+        
         # Log coherence BEFORE merge
         logger.info(f"[CHIMERA] Parent selection: {parent1_id[:8]}(fit={fit1:.2f},coh={coh1:.2f}) + {parent2_id[:8]}(fit={fit2:.2f},coh={coh2:.2f})")
         
@@ -955,6 +972,40 @@ class GerminationPool:
                 if i < len(hist2):
                     merged_history.append(hist2[i])
             merged_history = merged_history[-10:]  # Keep last 10
+            
+            # ═══════════════════════════════════════════════════════════════════
+            # HEALING FILTER: Skip highly oscillating states from trapped parents
+            # "vulnerability spreads faster than strength" - don't inherit the trap
+            # ═══════════════════════════════════════════════════════════════════
+            skip_concept = False
+            if trapped_filter_active:
+                # Check if this concept's magnetism was oscillating in either parent
+                state1_variance = 0.0
+                state2_variance = 0.0
+                if state1.get('outcome_history'):
+                    hist = state1['outcome_history']
+                    if len(hist) >= 3:
+                        mean_h = sum(hist) / len(hist)
+                        state1_variance = sum((h - mean_h) ** 2 for h in hist) / len(hist)
+                if state2.get('outcome_history'):
+                    hist = state2['outcome_history']
+                    if len(hist) >= 3:
+                        mean_h = sum(hist) / len(hist)
+                        state2_variance = sum((h - mean_h) ** 2 for h in hist) / len(hist)
+                
+                # High variance = oscillating = skip from trapped parent's contribution
+                if parent1_trapped and state1_variance > 0.3:
+                    # Don't trust parent1's state for this concept
+                    base_mag = state2.get('base_magnetism', 0.5)
+                    curiosity_mag = state2.get('curiosity_magnetism', 0.5)
+                    strength = state2.get('strength', 0.5)
+                    merged_history = state2.get('outcome_history', [])[-10:]
+                if parent2_trapped and state2_variance > 0.3:
+                    # Don't trust parent2's state for this concept
+                    base_mag = state1.get('base_magnetism', 0.5)
+                    curiosity_mag = state1.get('curiosity_magnetism', 0.5)
+                    strength = state1.get('strength', 0.5)
+                    merged_history = state1.get('outcome_history', [])[-10:]
             
             merged_magnetism[concept_id] = {
                 'base_magnetism': base_mag,
@@ -1779,8 +1830,8 @@ def integrate_germination_with_highlander(
         """
         Called after each tournament round.
         
-        Updates population state for calibration and takes
-        periodic developmental snapshots.
+        Updates population state for calibration, takes periodic developmental
+        snapshots, and runs HEALING PROTOCOL on trapped organisms.
         """
         # Update population state (BOARD CORRELATION)
         germination_pool.update_population_state(organisms)
@@ -1790,6 +1841,13 @@ def integrate_germination_with_highlander(
         if frame_counter[0] % snapshot_interval == 0:
             for org in organisms:
                 germination_pool.snapshot_organism(org)
+        
+        # ═══════════════════════════════════════════════════════════════════════
+        # HEALING PROTOCOL - DISABLED
+        # Was causing issues with language generation - organisms need to learn
+        # from their own patterns, not have them "healed" away
+        # ═══════════════════════════════════════════════════════════════════════
+        # NOTE: Code preserved but disabled - can re-enable if needed
         
     def check_and_germinate() -> List[Any]:
         """Check if germination is needed and spawn new organisms"""
@@ -1829,8 +1887,9 @@ def integrate_germination_with_highlander(
         for candidate in candidates:
             organism = germination_pool.germinate(candidate, organism_factory)
             if organism:
-                # Register with highlander protocol
-                highlander_protocol.register_organism(organism)
+                # Register with highlander protocol (pass ID, not object)
+                org_id = organism.id if hasattr(organism, 'id') else str(id(organism))
+                highlander_protocol.register_organism(org_id)
                 new_organisms.append(organism)
                 
                 # RESTORE VOCABULARY: Link inherited words to new organism in context_memory
@@ -1848,7 +1907,7 @@ def integrate_germination_with_highlander(
 
                 # DEBUG: Reincarnation logging
                 reincarnation_logger = logging.getLogger(__name__)
-                reincarnation_logger.info(f"🌱 REINCARNATION: New organism {organism.id}")
+                reincarnation_logger.info(f"🌱 REINCARNATION: New organism {org_id}")
                 reincarnation_logger.info(f"   Strategy: {candidate.strategy}")
                 reincarnation_logger.info(f"   Parent lineage: {', '.join(candidate.parent_ids[:2])}{'...' if len(candidate.parent_ids) > 2 else ''}")
                 if hasattr(organism, 'atomic_language') and organism.atomic_language:

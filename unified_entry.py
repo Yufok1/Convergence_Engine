@@ -20,12 +20,17 @@ Usage:
     python unified_entry.py --web-only         # Run web UI only (no simulation)
 """
 
-import sys
+# MUST be set before ANY imports that might touch Ray
 import os
+os.environ['RAY_METRICS_AGENT_DISABLED'] = '1'
+os.environ['RAY_ENABLE_WINDOWS_OR_OSX_CLUSTER'] = '1'
+
+import sys
 import time
 import json
 import logging
 import threading
+import queue
 import random
 from pathlib import Path
 from typing import Dict, Any, Optional, List
@@ -34,8 +39,150 @@ from datetime import datetime
 import datetime as dt_module
 import traceback
 import webbrowser
+import subprocess
+import shutil
+import re
 
 from runtime_config import ConfigHotReloadWatcher
+
+
+def _is_colab_runtime() -> bool:
+    """Best-effort detection for Google Colab runtime."""
+    if os.environ.get('COLAB_GPU') or os.environ.get('COLAB_TPU_ADDR'):
+        return True
+    try:
+        import google.colab  # type: ignore
+        _ = google.colab
+        return True
+    except Exception:
+        return False
+
+
+def _try_get_colab_proxy_url(port: int) -> Optional[str]:
+    """Return a Colab-proxied URL for a localhost port, or None if unavailable."""
+    if not _is_colab_runtime():
+        return None
+    try:
+        from google.colab.output import eval_js  # type: ignore
+        url = eval_js(f"google.colab.kernel.proxyPort({int(port)})")
+        return str(url) if url else None
+    except Exception:
+        return None
+
+
+def _maybe_start_localhostrun_tunnel(local_port: int, remote_port: int = 80) -> Optional[subprocess.Popen]:
+    """Optionally start an ssh reverse tunnel to localhost.run.
+
+    Opt-in only: set UNIFIED_TUNNEL=localhostrun.
+    This is intentionally conservative to avoid impacting local/dev behavior.
+    """
+    if os.environ.get('UNIFIED_TUNNEL', '').strip().lower() != 'localhostrun':
+        return None
+    if shutil.which('ssh') is None:
+        print("[UNIFIED] [WEB] [TUNNEL] ssh not found; cannot start localhost.run tunnel")
+        return None
+
+    # Avoid interactive host-key prompt.
+    # Note: this bypasses host key verification; only enable if you understand the risk.
+    ssh_cmd = [
+        'ssh',
+        '-T',
+        '-o', 'StrictHostKeyChecking=no',
+        '-o', 'UserKnownHostsFile=/dev/null',
+        '-o', 'LogLevel=ERROR',
+        '-o', 'ExitOnForwardFailure=yes',
+        '-o', 'ServerAliveInterval=30',
+        '-R', f"{int(remote_port)}:localhost:{int(local_port)}",
+        'nokey@localhost.run',
+    ]
+
+    try:
+        proc = subprocess.Popen(
+            ssh_cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+        )
+        print(f"[UNIFIED] [WEB] [TUNNEL] Starting localhost.run tunnel: remote :{remote_port} -> localhost:{local_port}")
+        print("[UNIFIED] [WEB] [TUNNEL] Waiting for tunnel URL in logs...")
+        return proc
+    except Exception as e:
+        print(f"[UNIFIED] [WEB] [TUNNEL] Failed to start tunnel: {e}")
+        return None
+
+
+def _maybe_start_cloudflared_tunnel(local_port: int) -> Optional[subprocess.Popen]:
+    """Optionally start a Cloudflare quick tunnel via cloudflared.
+
+    Opt-in only: set UNIFIED_TUNNEL=cloudflared.
+    """
+    if os.environ.get('UNIFIED_TUNNEL', '').strip().lower() != 'cloudflared':
+        return None
+    if shutil.which('cloudflared') is None:
+        print("[UNIFIED] [WEB] [TUNNEL] cloudflared not found; cannot start Cloudflare tunnel")
+        return None
+
+    # cloudflared prints the public URL to stdout; no interactive prompts.
+    cmd = ['cloudflared', 'tunnel', '--url', f"http://localhost:{int(local_port)}"]
+    try:
+        proc = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+        )
+        print(f"[UNIFIED] [WEB] [TUNNEL] Starting cloudflared tunnel -> localhost:{local_port}")
+        print("[UNIFIED] [WEB] [TUNNEL] Waiting for tunnel URL in logs...")
+        return proc
+    except Exception as e:
+        print(f"[UNIFIED] [WEB] [TUNNEL] Failed to start cloudflared tunnel: {e}")
+        return None
+
+
+def _select_auto_tunnel_mode() -> str:
+    """Select a tunnel mode when UNIFIED_TUNNEL=auto.
+
+    Preference order:
+      1) Colab proxy (handled separately)
+      2) cloudflared (if installed)
+      3) localhostrun (if ssh installed)
+    """
+    if shutil.which('cloudflared') is not None:
+        return 'cloudflared'
+    if shutil.which('ssh') is not None:
+        return 'localhostrun'
+    return 'none'
+
+
+def _extract_first_url(text_line: str) -> Optional[str]:
+    m = re.search(r"https?://\S+", text_line)
+    if not m:
+        return None
+    # Trim common trailing punctuation
+    url = m.group(0).rstrip(').,;\"\'')
+    # localhost.run prints docs/help URLs that are not the actual public tunnel.
+    # Ignore those so we keep scanning for the real session URL.
+    if url.startswith('https://localhost.run/docs') or url.startswith('http://localhost.run/docs'):
+        return None
+    return url
+
+
+def _write_tunnel_url(url: str) -> None:
+    """Optionally write the current public URL to a file for easy retrieval."""
+    out_path = os.environ.get('UNIFIED_TUNNEL_URL_FILE', '').strip()
+    if not out_path:
+        return
+    try:
+        # If relative, anchor to project directory
+        if not os.path.isabs(out_path):
+            out_path = str(Path(__file__).parent / out_path)
+        Path(os.path.dirname(out_path)).mkdir(parents=True, exist_ok=True)
+        with open(out_path, 'w', encoding='utf-8') as f:
+            f.write(url + "\n")
+    except Exception as e:
+        print(f"[UNIFIED] [WEB] [TUNNEL] Could not write URL file: {e}")
 
 # Fix for Windows console encoding issues
 if sys.platform == 'win32':
@@ -45,7 +192,7 @@ if sys.platform == 'win32':
 # Setup logging early (before imports that may fail)
 try:
     from logging_config import setup_logging, get_logger
-    setup_logging(level=logging.DEBUG, debug=True, console=True)
+    setup_logging(level=logging.INFO, debug=False, console=True)
     logger = get_logger(__name__)
 except ImportError:
     # Fallback if logging_config not available
@@ -125,7 +272,7 @@ class PreFlightChecker:
         """Check all Python dependencies
         
         Args:
-            require_visualization: If False, tkinter is optional (for headless runs)
+            require_visualization: If False, matplotlib/tkinter are optional (for headless runs)
         """
         checks = []
         
@@ -133,7 +280,6 @@ class PreFlightChecker:
         core_deps = {
             'numpy': 'numpy',
             'networkx': 'networkx',
-            'matplotlib': 'matplotlib',
         }
         
         for dep_name, import_name in core_deps.items():
@@ -151,6 +297,30 @@ class PreFlightChecker:
                     message=f"{dep_name} missing"
                 ))
                 self.critical_failures.append(f"Missing dependency: {dep_name}")
+        
+        # Visualization dependencies - optional for headless runs
+        try:
+            __import__('matplotlib')
+            checks.append(SystemCheck(
+                name="dep_matplotlib",
+                status='pass',
+                message="matplotlib available"
+            ))
+        except ImportError:
+            if require_visualization:
+                checks.append(SystemCheck(
+                    name="dep_matplotlib",
+                    status='fail',
+                    message="matplotlib missing (required for visualization)"
+                ))
+                self.critical_failures.append("Missing dependency: matplotlib (required for visualization)")
+            else:
+                checks.append(SystemCheck(
+                    name="opt_matplotlib",
+                    status='warn',
+                    message="matplotlib missing (optional for headless runs)"
+                ))
+                self.warnings.append("Optional dependency missing: matplotlib (only needed for visualization)")
         
         # Visualization dependencies (optional for headless runs)
         if require_visualization:
@@ -398,12 +568,27 @@ class PreFlightChecker:
 # ============================================================================
 
 class StateLogger:
-    """Extensive, granular, terse, information-saturated state logging"""
+    """Extensive, granular, terse, information-saturated state logging
     
-    def __init__(self, log_dir: Path = None, causation_explorer=None):
+    Uses async queue for non-blocking disk I/O - main thread never waits on file writes.
+    Queue is bounded (fail-open): if full, drops log entries rather than blocking.
+    """
+    
+    def __init__(self, log_dir: Path = None, causation_explorer=None, config: Dict = None):
         self.log_dir = log_dir or (parent_path / 'data' / 'logs')
         self.log_dir.mkdir(parents=True, exist_ok=True)
         self.causation_explorer = causation_explorer  # For live event tracking
+        
+        # Configuration
+        config = config or {}
+        logging_config = config.get('logging', {})
+        self.sample_rate = logging_config.get('sample_rate', 1)  # 1 = log all, 10 = log 1/10
+        self._sample_counter = 0
+        
+        # Async logging queue (bounded, fail-open)
+        self._log_queue = queue.Queue(maxsize=10000)
+        self._drop_count = 0
+        self._shutdown = False
         
         # Create loggers
         self.loggers = {
@@ -416,10 +601,14 @@ class StateLogger:
             'system': self._create_logger('system', 'system.log'),
         }
         
-        # State tracking
+        # State tracking (always full rate - memory is fast)
         self.state_history = []
         self.max_history = 10000
         self.last_event_time = 0  # Track last event timestamp
+        
+        # Start background writer thread
+        self._writer_thread = threading.Thread(target=self._async_writer, daemon=True, name="StateLogger-Writer")
+        self._writer_thread.start()
     
     def _create_logger(self, name: str, filename: str) -> logging.Logger:
         """Create a logger with terse, information-saturated format"""
@@ -445,16 +634,41 @@ class StateLogger:
         
         return logger
     
+    def _async_writer(self):
+        """Background thread that writes log entries to disk."""
+        while True:
+            try:
+                entry = self._log_queue.get(timeout=1.0)
+                if entry is None:  # Sentinel for shutdown
+                    break
+                
+                component, state_str = entry
+                logger = self.loggers.get(component, self.loggers['system'])
+                logger.debug(state_str)
+                
+            except queue.Empty:
+                if self._shutdown:
+                    break
+            except Exception:
+                pass  # Never crash the writer thread
+    
+    def shutdown(self):
+        """Graceful shutdown - drain queue and stop writer thread."""
+        self._shutdown = True
+        try:
+            self._log_queue.put_nowait(None)  # Sentinel
+        except queue.Full:
+            pass
+        self._writer_thread.join(timeout=5.0)
+        
+        if self._drop_count > 0:
+            print(f"[StateLogger] Dropped {self._drop_count} log entries during session")
+    
     def log_state(self, component: str, state: Dict[str, Any], causation_explorer=None):
-        """Log state in terse, information-saturated format"""
-        # Format: metric:value|metric:value|...
-        state_str = '|'.join([f"{k}:{v}" for k, v in state.items()])
-        
-        logger = self.loggers.get(component, self.loggers['system'])
-        logger.debug(state_str)
-        
-        # Store in history
+        """Log state in terse, information-saturated format (non-blocking)"""
         timestamp = time.time()
+        
+        # Always update in-memory state (fast path - never sampled)
         history_entry = {
             'timestamp': timestamp,
             'component': component,
@@ -470,7 +684,6 @@ class StateLogger:
         self.last_event_time = timestamp
         
         # Feed to Causation Explorer in real-time if available
-        # These are TRULY new real-time events (not historical)
         if self.causation_explorer:
             try:
                 from causation_explorer import Event
@@ -480,11 +693,23 @@ class StateLogger:
                     event_type=state.get('event', 'state_change'),
                     data=state
                 )
-                # is_historical=False because these are new real-time events from the backend
                 self.causation_explorer.add_event(event, is_historical=False)
-            except Exception as e:
-                # Don't let causation tracking break logging
+            except Exception:
                 pass
+        
+        # Sample-based disk logging (async, non-blocking)
+        self._sample_counter += 1
+        if self._sample_counter >= self.sample_rate:
+            self._sample_counter = 0
+            state_str = '|'.join([f"{k}:{v}" for k, v in state.items()])
+            
+            try:
+                self._log_queue.put_nowait((component, state_str))
+            except queue.Full:
+                # Fail-open: drop log entry rather than block
+                self._drop_count += 1
+                if self._drop_count % 1000 == 0:
+                    print(f"[StateLogger] Warning: dropped {self._drop_count} log entries (queue full)")
     
     def log_breath(self, breath_data: Dict[str, Any]):
         """Log breath state"""
@@ -1050,11 +1275,13 @@ class UnifiedSystem:
         # Store config path for use throughout the system
         self.config_path = Path(config_path)
         
-        # Initialize logging
-        self.logger = StateLogger()
-        self.logger.log_state('system', {'event': 'initialization_start'})
+        # Load config first so we can pass it to StateLogger
         self.config_watcher = ConfigHotReloadWatcher(self.config_path)
         self.active_config = self.config_watcher.get_current_config()
+        
+        # Initialize logging with config (for sample_rate etc)
+        self.logger = StateLogger(config=self.active_config)
+        self.logger.log_state('system', {'event': 'initialization_start'})
         
         # Apply Hardware Governor - MUST happen before any other system uses config
         # Hardware envelope supersedes CRA self-tuning for hardware-critical params
@@ -1074,7 +1301,7 @@ class UnifiedSystem:
         # Explorer (body)
         if EXPLORER_AVAILABLE:
             try:
-                self.controller = BiphasicController()
+                self.controller = BiphasicController(config_path=str(self.config_path))
                 if hasattr(self.controller, 'apply_runtime_config'):
                     try:
                         applied = self.controller.apply_runtime_config(self.active_config)
@@ -1119,12 +1346,11 @@ class UnifiedSystem:
         # Initialize Causation Explorer
         try:
             from causation_explorer import CausationExplorer
-            # Load config for causation detection
-            config_path = Path('config.json')
+            # Load config for causation detection (use self.config_path from CLI)
             causation_config = {}
-            if config_path.exists():
+            if self.config_path.exists():
                 try:
-                    with open(config_path, 'r') as f:
+                    with open(self.config_path, 'r') as f:
                         full_config = json.load(f)
                         causation_config = full_config
                 except Exception:
@@ -1156,13 +1382,40 @@ class UnifiedSystem:
         # Wire event emitter for neural/ML visualization (AFTER causation_explorer is initialized)
         if self.reality_sim and self.causation_explorer:
             from causation_explorer import Event
+            
+            # ═══════════════════════════════════════════════════════════════════════════
+            # UNIFIED EVENT EMITTER - Routes events to ALL consumers:
+            # 1. CausationExplorer - for visualization and root cause analysis
+            # 2. ConfigTuner (legacy) - for cross-system correlation analysis
+            # 3. AtomicConfigSystem - for atomic config tracking
+            # ═══════════════════════════════════════════════════════════════════════════
+            
+            # Get reference to legacy ConfigTuner for track_event (cross-system correlation)
+            legacy_config_tuner = None
+            try:
+                from reality_simulator.config_tuner_legacy import ConfigTuner
+                # Initialize legacy config tuner if it exists
+                if hasattr(self.reality_sim, 'config') and self.reality_sim.config:
+                    legacy_config_tuner = ConfigTuner(self.reality_sim.config, enabled=True)
+                    self.reality_sim.legacy_config_tuner = legacy_config_tuner  # Store reference
+                    print("[UNIFIED] [INTEGRATION] ✅ Initialized legacy ConfigTuner for cross-system correlation")
+            except ImportError:
+                pass  # Legacy tuner not available
+            
             def neural_event_emitter(event_input):
-                """Emit neural/ML events to causation explorer - handles both dicts and Event objects"""
+                """Emit neural/ML events to ALL consumers - handles both dicts and Event objects"""
                 try:
                     # Handle both Event objects and dicts
                     if isinstance(event_input, Event):
                         # Already an Event object, use it directly
                         event = event_input
+                        event_dict = {
+                            'timestamp': event.timestamp,
+                            'component': event.component,
+                            'event_type': event.event_type,
+                            'data': event.data,
+                            'event_id': getattr(event, 'event_id', None)
+                        }
                     elif isinstance(event_input, dict):
                         # Convert dict to Event object
                         event = Event(
@@ -1171,11 +1424,19 @@ class UnifiedSystem:
                             event_type=event_input.get('event_type', 'unknown'),
                             data=event_input.get('data', {})
                         )
+                        event_dict = event_input
                     else:
                         # Unknown type, skip
                         return
                     
+                    # 1. Send to CausationExplorer (visualization)
                     self.causation_explorer.add_event(event, is_historical=False)
+                    
+                    # 2. Send to legacy ConfigTuner track_event (cross-system correlation)
+                    # This populates recent_events for _find_recent_event() calls
+                    if legacy_config_tuner is not None:
+                        legacy_config_tuner.track_event(event_dict)
+                        
                 except Exception as e:
                     # Don't break if event emission fails, but log for debugging
                     if not hasattr(self, '_event_emitter_error_logged'):
@@ -1222,9 +1483,8 @@ class UnifiedSystem:
                     # Configure ML analyzer from config if available and enabled
                     if hasattr(network, 'configure_ml_analyzer'):
                         try:
-                            config_path = Path('config.json')
-                            if config_path.exists():
-                                with open(config_path, 'r') as f:
+                            if self.config_path.exists():
+                                with open(self.config_path, 'r') as f:
                                     full_config = json.load(f)
                                     scikit_config = full_config.get('scikit', {})
                                     if scikit_config.get('enabled', False):
@@ -1236,9 +1496,8 @@ class UnifiedSystem:
                     # Configure Health Monitor (Quick Win #5)
                     if hasattr(network, 'configure_health_monitor'):
                         try:
-                            config_path = Path('config.json')
-                            if config_path.exists():
-                                with open(config_path, 'r') as f:
+                            if self.config_path.exists():
+                                with open(self.config_path, 'r') as f:
                                     full_config = json.load(f)
                                     health_config = full_config.get('health_monitor', {})
                                     if health_config.get('enabled', True):
@@ -1296,8 +1555,54 @@ class UnifiedSystem:
         if self.highlander_config:
             self._initialize_highlander_protocol()
         
+        # Initialize AttractorLandscape (collective magnetism observer)
+        # This watches the population's attractor states as a unified field
+        self._initialize_attractor_landscape()
+        
         self.logger.log_state('system', {'event': 'initialization_complete'})
         print("[UNIFIED] [PASS] All systems initialized\n")
+        
+        # Initialize Live Reporter - your informational wealth dashboard
+        try:
+            from system_report import LiveReporter
+            self.live_reporter = LiveReporter(unified_system=self, update_interval=10.0)
+            
+            # Wire live_report → ConfigTuner for meta-brain analysis
+            # This completes the feedback loop: config.json → runtime → live_report → tuning → config.json
+            if hasattr(self, 'reality_sim') and self.reality_sim:
+                legacy_tuner = getattr(self.reality_sim, 'legacy_config_tuner', None)
+                if legacy_tuner is not None:
+                    self.live_reporter.add_report_callback(legacy_tuner.ingest_live_report)
+                    print("[UNIFIED] [META] 🧠 Live report → ConfigTuner feedback loop connected!")
+                else:
+                    # ConfigTuner not found on reality_sim - try to initialize it here
+                    try:
+                        from reality_simulator.config_tuner_legacy import ConfigTuner
+                        if hasattr(self.reality_sim, 'config') and self.reality_sim.config:
+                            legacy_tuner = ConfigTuner(self.reality_sim.config, enabled=True)
+                            self.reality_sim.legacy_config_tuner = legacy_tuner
+                            self.live_reporter.add_report_callback(legacy_tuner.ingest_live_report)
+                            print("[UNIFIED] [META] 🧠 Live report → ConfigTuner feedback loop connected (late init)!")
+                    except Exception as ct_err:
+                        print(f"[UNIFIED] [WARN] ConfigTuner late init failed: {ct_err}")
+            
+            self.live_reporter.start()
+            print("[UNIFIED] [REPORT] 📊 Live system reporter started → data/live_report.json")
+        except Exception as e:
+            print(f"[UNIFIED] [WARN] Live reporter not available: {e}")
+            self.live_reporter = None
+        
+        # Initialize Antennae - collective sensing apparatus
+        try:
+            from reality_simulator.antennae import Antennae
+            self.antennae = Antennae(history_size=100)
+            self.antennae.sensitivity = 1.0
+            self.antennae.signal_cooldown = 10.0  # Don't tune too frequently
+            print("[UNIFIED] [ANTENNAE] 🦋 Collective sensing apparatus initialized")
+        except Exception as e:
+            print(f"[UNIFIED] [WARN] Antennae not available: {e}")
+            self.antennae = None
+        
         # Max cycles (0 means run indefinitely)
         self.max_cycles = int(max_cycles or 0)
     
@@ -1441,9 +1746,108 @@ class UnifiedSystem:
             print("[UNIFIED] [WEB] ✅ Web UI started in background thread (same process for live organism access)")
             
             print("[UNIFIED] [WEB] 🌐 Web interface available at http://localhost:5000")
+
+            # If we're in Colab, localhost isn't directly reachable.
+            # Colab provides a built-in port proxy that yields a clickable public-ish URL.
+            colab_url = _try_get_colab_proxy_url(5000)
+            if colab_url:
+                print(f"[UNIFIED] [WEB] 🌐 Colab proxied URL: {colab_url}")
+                print("[UNIFIED] [WEB] (Colab) Open that URL to view the dashboard.")
+                # If a URL file is configured, persist the proxy URL so it isn't lost in fast logs.
+                _write_tunnel_url(colab_url)
+                out_path = os.environ.get('UNIFIED_TUNNEL_URL_FILE', '').strip()
+                if out_path:
+                    print(f"[UNIFIED] [WEB] (Colab) Saved URL to: {out_path}")
+
+            # Optional: start a localhost.run reverse tunnel (opt-in via env var).
+            # Example:
+            #   UNIFIED_TUNNEL=localhostrun
+            #   UNIFIED_TUNNEL_REMOTE_PORT=80
+            #   UNIFIED_TUNNEL_URL_FILE=tunnel_url.txt
+            # Note: localhost.run URLs can rotate/expire; this supervisor auto-reconnects and reprints.
+            try:
+                remote_port = int(os.environ.get('UNIFIED_TUNNEL_REMOTE_PORT', '80'))
+            except Exception:
+                remote_port = 80
+
+            def _supervise_localhostrun():
+                # Run on any platform including Colab (Colab proxy doesn't work from subprocess).
+                last_url = None
+                while os.environ.get('UNIFIED_TUNNEL', '').strip().lower() == 'localhostrun':
+                    proc = _maybe_start_localhostrun_tunnel(local_port=5000, remote_port=remote_port)
+                    if not proc:
+                        time.sleep(5)
+                        continue
+
+                    # Tail output until process exits; extract and surface URL.
+                    try:
+                        if proc.stdout:
+                            for raw in proc.stdout:
+                                line = (raw or '').strip()
+                                if not line:
+                                    continue
+                                url = _extract_first_url(line)
+                                if url and url != last_url:
+                                    last_url = url
+                                    print(f"[UNIFIED] [WEB] [TUNNEL] ✅ Public URL: {url}")
+                                    _write_tunnel_url(url)
+                                else:
+                                    # Keep some logs for debugging, but don’t spam.
+                                    if os.environ.get('UNIFIED_TUNNEL_VERBOSE', '').strip() == '1':
+                                        print(f"[UNIFIED] [WEB] [TUNNEL] {line}")
+                    except Exception as e:
+                        print(f"[UNIFIED] [WEB] [TUNNEL] Tunnel log reader error: {e}")
+
+                    # If we got here, ssh exited or stdout ended. Restart after short backoff.
+                    time.sleep(2)
+
+
+            def _supervise_cloudflared():
+                # Run on any platform including Colab (Colab proxy doesn't work from subprocess).
+                last_url = None
+                while os.environ.get('UNIFIED_TUNNEL', '').strip().lower() == 'cloudflared':
+                    proc = _maybe_start_cloudflared_tunnel(local_port=5000)
+                    if not proc:
+                        time.sleep(5)
+                        continue
+                    try:
+                        if proc.stdout:
+                            for raw in proc.stdout:
+                                line = (raw or '').strip()
+                                if not line:
+                                    continue
+                                url = _extract_first_url(line)
+                                if url and url != last_url:
+                                    last_url = url
+                                    print(f"[UNIFIED] [WEB] [TUNNEL] ✅ Public URL: {url}")
+                                    _write_tunnel_url(url)
+                                else:
+                                    if os.environ.get('UNIFIED_TUNNEL_VERBOSE', '').strip() == '1':
+                                        print(f"[UNIFIED] [WEB] [TUNNEL] {line}")
+                    except Exception as e:
+                        print(f"[UNIFIED] [WEB] [TUNNEL] Tunnel log reader error: {e}")
+                    time.sleep(2)
+
+            tunnel_mode = os.environ.get('UNIFIED_TUNNEL', '').strip().lower()
+            if tunnel_mode == 'auto':
+                chosen = _select_auto_tunnel_mode()
+                if chosen == 'none':
+                    print("[UNIFIED] [WEB] [TUNNEL] UNIFIED_TUNNEL=auto but no tunnel backend found (install cloudflared or ensure ssh exists)")
+                else:
+                    os.environ['UNIFIED_TUNNEL'] = chosen
+                    tunnel_mode = chosen
+                    print(f"[UNIFIED] [WEB] [TUNNEL] Auto-selected tunnel backend: {chosen}")
+
+            if tunnel_mode == 'localhostrun':
+                threading.Thread(target=_supervise_localhostrun, daemon=True).start()
+            elif tunnel_mode == 'cloudflared':
+                threading.Thread(target=_supervise_cloudflared, daemon=True).start()
             
             # Auto-launch browser in a separate thread to avoid GIL issues
             def launch_browser():
+                # Skip browser auto-launch in Colab (no local browser to open).
+                if _is_colab_runtime():
+                    return
                 import requests
                 # Wait for server to be ready
                 for _ in range(20):
@@ -1891,6 +2295,80 @@ class UnifiedSystem:
             except Exception:
                 pass
         
+        # Handler: React to attractor landscape events (bifurcations, fixed points)
+        def on_bifurcation(event):
+            """React to swarm bifurcation - sudden phase transition detected."""
+            if not config_tuner:
+                return
+            try:
+                bif_type = event.data.get('type', 'unknown')
+                # Accept both old key (coherence_shift) and actual key (coherence_delta)
+                coherence = event.data.get('coherence_delta', event.data.get('coherence_shift', 0))
+                
+                # REACTIVE: Bifurcation = swarm is reorganizing
+                # Temporarily increase exploration to help find new stable config
+                if tracker.can_act('bifurcation_explore', cooldown=30.0):
+                    network = self.reality_sim.components.get('network')
+                    if network:
+                        boosted = 0
+                        for org in network.organisms.values():
+                            if hasattr(org, 'epsilon') and org.epsilon is not None:
+                                org.epsilon = min(0.6, org.epsilon + 0.1)  # Boost exploration
+                                boosted += 1
+                        logger.info(f"[LANDSCAPE] Bifurcation ({bif_type}) → epsilon boosted on {boosted} organisms")
+                    
+                    # Also increase mutation rate temporarily
+                    current_mutation = config_tuner.get('mutation_rate')
+                    if current_mutation is not None:
+                        new_val = min(0.15, current_mutation * 1.5)
+                        config_tuner.set('mutation_rate', new_val, reason=f'bifurcation_{bif_type}')
+                        logger.info(f"[LANDSCAPE] Bifurcation → mutation_rate {current_mutation:.3f}→{new_val:.3f}")
+            except Exception:
+                pass
+        
+        def on_fixed_point_reached(event):
+            """React when swarm reaches a stable attractor."""
+            if not config_tuner:
+                return
+            try:
+                stability = event.data.get('stability', 0)
+                fp_type = event.data.get('type', 'unknown')
+                
+                # REACTIVE: Fixed point = swarm found stability
+                # Decrease exploration to exploit the stable configuration
+                if stability > 0.7 and tracker.can_act('fixed_point_exploit', cooldown=60.0):
+                    network = self.reality_sim.components.get('network')
+                    if network:
+                        decayed = 0
+                        for org in network.organisms.values():
+                            if hasattr(org, 'epsilon') and org.epsilon is not None and org.epsilon > 0.05:
+                                org.epsilon = max(0.05, org.epsilon * 0.7)  # Reduce exploration
+                                decayed += 1
+                        logger.info(f"[LANDSCAPE] Fixed point ({fp_type}, stability={stability:.2f}) → epsilon decayed on {decayed} organisms")
+                    
+                    # Record as positive outcome
+                    config_tuner.record_outcome(success=True, context=f'fixed_point_{fp_type}')
+            except Exception:
+                pass
+        
+        def on_fixed_point_broken(event):
+            """React when swarm leaves a stable attractor."""
+            if not config_tuner:
+                return
+            try:
+                # Accept both old key (reason) and actual key (broken_by)
+                reason = event.data.get('broken_by', event.data.get('reason', 'unknown'))
+                
+                # REACTIVE: Left stability - might need more exploration
+                if tracker.can_act('fixed_point_broken', cooldown=45.0):
+                    current_mutation = config_tuner.get('mutation_rate')
+                    if current_mutation is not None:
+                        new_val = min(0.12, current_mutation * 1.25)
+                        config_tuner.set('mutation_rate', new_val, reason=f'fixed_point_broken_{reason}')
+                        logger.info(f"[LANDSCAPE] Fixed point broken ({reason}) → mutation_rate {current_mutation:.3f}→{new_val:.3f}")
+            except Exception:
+                pass
+        
         # Subscribe handlers to ACTUAL event types that are emitted
         # (Audit found mismatches - these are the real event_type values)
         self.causation_explorer.subscribe('neural_training', on_training_complete)  # trainer.py:1276
@@ -1909,7 +2387,12 @@ class UnifiedSystem:
         self.causation_explorer.subscribe('early_stopping_triggered', on_early_stopping)  # trainer.py:366
         self.causation_explorer.subscribe('lr_adjusted', on_lr_adjusted)  # trainer.py:1221
         
-        print("[UNIFIED] [INTEGRATION] ✅ Reactive event handlers wired (14 event types)")
+        # Attractor landscape events (swarm dynamics)
+        self.causation_explorer.subscribe('bifurcation_detected', on_bifurcation)  # attractor_landscape.py
+        self.causation_explorer.subscribe('fixed_point_reached', on_fixed_point_reached)  # attractor_landscape.py
+        self.causation_explorer.subscribe('fixed_point_broken', on_fixed_point_broken)  # attractor_landscape.py
+        
+        print("[UNIFIED] [INTEGRATION] ✅ Reactive event handlers wired (17 event types)")
         print("[UNIFIED] [INTEGRATION]    - Training/LR → Config tuner (adjust LR on loss)")
         print("[UNIFIED] [INTEGRATION]    - ML Analysis → Evolution (adjust mutation on diversity)")
         print("[UNIFIED] [INTEGRATION]    - Battles → Selection pressure (rate-based tuning)")
@@ -1917,6 +2400,7 @@ class UnifiedSystem:
         print("[UNIFIED] [INTEGRATION]    - Neural decisions → Epsilon (confidence-based)")
         print("[UNIFIED] [INTEGRATION]    - Language → Fitness weight (milestone rewards)")
         print("[UNIFIED] [INTEGRATION]    - Config updates → Immediate effect")
+        print("[UNIFIED] [INTEGRATION]    - Landscape → Exploration/mutation (bifurcation-driven)")
         
         # Wire WIKAI Observer - passive listener for pattern capture
         self._wire_wikai_observer()
@@ -2055,6 +2539,7 @@ class UnifiedSystem:
             arena_settings = self.active_config.get('arena', {})
             
             # Initialize Highlander Protocol (tournament orchestration)
+            # IMPORTANT: Include 'neural' section for LanguageGameBridge config (meta-tunable)
             highlander_config = {
                 'survival_threshold': survival_threshold,
                 'competition_intensity': competition_intensity,
@@ -2066,7 +2551,10 @@ class UnifiedSystem:
                 # Include arena battle type and probability settings
                 'default_battle_type': arena_settings.get('default_battle_type', 'FULL_COMBAT'),
                 'proton_game_probability': arena_settings.get('proton_game_probability', 1.0),  # Default matches config.json
-                'prefer_native_games': arena_settings.get('prefer_native_games', True)
+                'prefer_native_games': arena_settings.get('prefer_native_games', True),
+                # Include neural config for LanguageGameBridge parameters (bias_strength, learning_rate)
+                # This allows ConfigTuner to propagate tuning changes to the bridge
+                'neural': self.active_config.get('neural', {})
             }
             
             # Log battle type selection
@@ -2086,6 +2574,12 @@ class UnifiedSystem:
                 battle_arena=self.battle_arena
             )
             print("[UNIFIED] [HIGHLANDER] [PASS] Tournament Protocol initialized")
+            
+            # WIRE INTO REALITY_SIM.COMPONENTS for system_report.py discovery
+            # This enables live_report.json to find the language_game_bridge
+            if self.reality_sim and hasattr(self.reality_sim, 'components'):
+                self.reality_sim.components['highlander'] = self.highlander_protocol
+                print("[UNIFIED] [HIGHLANDER] [PASS] Registered into reality_sim.components['highlander']")
             
             # Register existing organisms
             network = self.reality_sim.components.get('network') if self.reality_sim else None
@@ -2114,11 +2608,12 @@ class UnifiedSystem:
                         traits=initial_traits,
                         config=initial_config
                     )
-                    # Wire Illumination Engine references
+                    # Wire Illumination Engine references + Attractor Landscape
                     if org and hasattr(org, 'set_system_references'):
                         aws = getattr(self, 'alliance_warfare', None)
                         causation_explorer = getattr(self, 'causation_explorer', None)
-                        org.set_system_references(aws, causation_explorer)
+                        landscape = getattr(self, 'attractor_landscape', None)
+                        org.set_system_references(aws, causation_explorer, landscape)
                     return org
                 return None
                 
@@ -2132,13 +2627,19 @@ class UnifiedSystem:
             
             # ⚔️🪐 INITIALIZE ALLIANCE WARFARE SYSTEM
             # Beyond individual battles - collective warfare for existential dominance
+            # Read alliance_warfare directly from config (which IS the highlander config)
+            aw_config = config.get('alliance_warfare', {})
             alliance_config = {
-                'min_alliance_size': config.get('min_alliance_size', 3),
-                'max_alliances': config.get('max_alliances', 10),
-                'war_frequency': config.get('war_frequency', 0.3),
-                'war_chaos_factor': config.get('chaos_factor', 0.15),
-                'existential_war_threshold': config.get('existential_war_threshold', 0.8)
+                'min_alliance_size': aw_config.get('min_alliance_size', 3),
+                'max_alliances': aw_config.get('max_alliances', 10),
+                'max_alliance_size': aw_config.get('max_alliance_size', 50),
+                'max_confederations': aw_config.get('max_confederations', 10),
+                'war_frequency': aw_config.get('war_frequency', 0.3),
+                'war_chaos_factor': aw_config.get('chaos_factor', 0.15),
+                'existential_war_threshold': aw_config.get('existential_war_threshold', 0.8),
+                'illumination_stability_threshold': aw_config.get('illumination_stability_threshold', 5)
             }
+            print(f"[UNIFIED] [ALLIANCE] Config loaded: max_alliances={alliance_config['max_alliances']}, max_confederations={alliance_config['max_confederations']}")
             self.alliance_warfare = AllianceWarfareSystem(
                 highlander_protocol=self.highlander_protocol,
                 config=alliance_config,
@@ -2176,16 +2677,45 @@ class UnifiedSystem:
                 self.highlander_protocol.set_context_memory(network.context_memory)
                 print("[UNIFIED] [HIGHLANDER] 📚 Vocabulary transfer enabled - winners absorb loser's words!")
             
-            # 🔌 SYSTEM WIRING: Connect NeuralOrganisms to Illumination Engine
+            # ═══════════════════════════════════════════════════════════════════
+            # 🧠 LANGUAGE-GAME BRIDGE: Connect vocabulary to battle decisions
+            # This is THE MISSING LINK - 62,000+ concepts now influence games!
+            # ═══════════════════════════════════════════════════════════════════
+            if network and hasattr(network, 'organisms'):
+                try:
+                    organism_names = list(network.organisms.keys())
+                    
+                    # Get atomic language and knowledge web if available
+                    atomic_language = None
+                    knowledge_web = None
+                    first_org = next(iter(network.organisms.values()), None)
+                    if first_org:
+                        atomic_language = getattr(first_org, 'atomic_language', None)
+                        knowledge_web = getattr(network, 'knowledge_web', 
+                                               getattr(first_org, 'knowledge_web', None))
+                    
+                    # Wire the language bridge
+                    self.highlander_protocol.set_language_bridge(
+                        organism_names=organism_names,
+                        atomic_language=atomic_language,
+                        knowledge_web=knowledge_web
+                    )
+                    print("[UNIFIED] [HIGHLANDER] 🧠 Language-Game Bridge: VOCABULARY NOW AFFECTS BATTLES!")
+                except Exception as e:
+                    print(f"[UNIFIED] [HIGHLANDER] ⚠️ Language Bridge wiring failed: {e}")
+            
+            # 🔌 SYSTEM WIRING: Connect NeuralOrganisms to Illumination Engine + Landscape
             # This enables organisms to query "Why?" and access the Causation Explorer
+            # Also wires AttractorLandscape for proximity sensing
             if network and hasattr(network, 'organisms'):
                 wired_count = 0
+                landscape = getattr(self, 'attractor_landscape', None)
                 for org_id, organism in network.organisms.items():
                     if hasattr(organism, 'set_system_references'):
-                        organism.set_system_references(self.alliance_warfare, self.causation_explorer)
+                        organism.set_system_references(self.alliance_warfare, self.causation_explorer, landscape)
                         wired_count += 1
                 if wired_count > 0:
-                    print(f"[UNIFIED] [ILLUMINATION] 👁️ Wired {wired_count} organisms to Causation Engine")
+                    print(f"[UNIFIED] [ILLUMINATION] 👁️ Wired {wired_count} organisms to Causation Engine + Attractor Landscape")
             
             # 🏛️ CONFEDERATION (Super-Alliance) logging
             print("[UNIFIED] [HIGHLANDER] [PASS] 🏛️ Confederation System enabled (CONFEDERATION → EMPIRE → HEGEMONY)")
@@ -2202,6 +2732,12 @@ class UnifiedSystem:
             if network and hasattr(network, 'organisms') and self.alliance_warfare:
                 self.alliance_warfare.set_neural_organisms(network.organisms)
                 print("[UNIFIED] [HIGHLANDER] 🧠 Neural feedback loop connected (alliance → neural)")
+            
+            # 🔗 WIRE ConfigTuner to HighlanderProtocol for parameter propagation
+            # This enables tuning changes (bias_strength, learning_rate) to reach the bridge
+            if hasattr(self.reality_sim, 'legacy_config_tuner') and self.reality_sim.legacy_config_tuner:
+                self.reality_sim.legacy_config_tuner.set_highlander_protocol(self.highlander_protocol)
+                print("[UNIFIED] [HIGHLANDER] 🔗 ConfigTuner wired to HighlanderProtocol for bridge propagation")
             
             print(f"[UNIFIED] [HIGHLANDER] ✅ Protocol active with {self.highlander_protocol.get_population_count()} organisms")
             print(f"[UNIFIED] [HIGHLANDER] 📊 Config: survival={survival_threshold}, intensity={competition_intensity}")
@@ -2223,6 +2759,57 @@ class UnifiedSystem:
             import traceback
             traceback.print_exc()
     
+    def _initialize_attractor_landscape(self):
+        """
+        Initialize the AttractorLandscape - collective magnetism observatory.
+        
+        This watches the population's attractor states as a unified field,
+        detecting fixed points (stable configurations) and bifurcations (landscape shifts).
+        
+        "The individual butterflies don't see the swarm pattern.
+         But the pattern sees itself through this observer."
+        """
+        self.attractor_landscape = None
+        
+        try:
+            from reality_simulator.systems.attractor_landscape import AttractorLandscape
+            
+            # Create event emitter for landscape events
+            def landscape_event_emitter(event_data):
+                """Emit landscape events to causation explorer."""
+                if self.causation_explorer:
+                    try:
+                        from causation_explorer import Event
+                        event = Event(
+                            timestamp=event_data.get('timestamp', time.time()),
+                            component='attractor_landscape',
+                            event_type=event_data.get('event_type', 'landscape_event'),
+                            data=event_data.get('data', {})
+                        )
+                        self.causation_explorer.add_event(event, is_historical=False)
+                    except Exception:
+                        pass
+            
+            # Get landscape config if present
+            landscape_config = self.active_config.get('attractor_landscape', {})
+            
+            self.attractor_landscape = AttractorLandscape(
+                config=landscape_config,
+                event_emitter=landscape_event_emitter
+            )
+            
+            print("[UNIFIED] [LANDSCAPE] ✅ AttractorLandscape initialized")
+            print("[UNIFIED] [LANDSCAPE]    - Observing collective magnetism field")
+            print("[UNIFIED] [LANDSCAPE]    - Detecting fixed points and bifurcations")
+            self.logger.log_state('system', {'event': 'attractor_landscape_initialized'})
+            
+        except ImportError as e:
+            print(f"[UNIFIED] [LANDSCAPE] ⚠️ AttractorLandscape import failed: {e}")
+        except Exception as e:
+            print(f"[UNIFIED] [LANDSCAPE] ❌ AttractorLandscape initialization failed: {e}")
+            import traceback
+            traceback.print_exc()
+    
     def _run_highlander_round(self, cycle_count: int):
         """Run a Highlander Protocol tournament round.
         
@@ -2231,13 +2818,11 @@ class UnifiedSystem:
         - Alliance formation and betrayal
         - Predation of weak by strong
         - Champion checkpointing
+        
+        NOTE: Time-based gating is handled by the caller (eval_interval_seconds).
+        The rounds_per_cycle config is IGNORED here to avoid double-gating.
         """
         try:
-            # Only run tournament every N cycles
-            rounds_per_cycle = getattr(self, '_highlander_rounds_per_cycle', 1)
-            if cycle_count % max(1, rounds_per_cycle) != 0:
-                return
-            
             # Get organisms from network component
             network = getattr(self, '_highlander_network', None)
             if not network or not hasattr(network, 'organisms'):
@@ -2473,12 +3058,12 @@ class UnifiedSystem:
                                 other_cooperative = True
                         
                         if other_cooperative and len(alliance.members) < 10:
-                            proposal_id = aws.organism_invite(org_id, other_id)
+                            proposal_id = aws.organism_propose_invite(org_id, other_id)
                             if proposal_id:
                                 results['invites_sent'] += 1
                                 
                                 # Auto-accept if cooperative (organism's "decision")
-                                if aws.organism_accept_invite(other_id, proposal_id):
+                                if aws.organism_respond_to_invite(other_id, proposal_id, accept=True):
                                     results['invites_accepted'] += 1
                                     print(f"[ALLIANCE] 🤝 {other_id[:8]} joined '{alliance.name}'")
                             
@@ -2552,10 +3137,46 @@ class UnifiedSystem:
                                 pass  # Don't break if VP injection fails
                         
                         self.reality_sim._update_simulation_components()
+                        
+                        # 📊 ORGANISM STATS UPDATE - Track age and fitness history for viewer
+                        network = self.reality_sim.components.get('network') if hasattr(self.reality_sim, 'components') else None
+                        if network and hasattr(network, 'organisms'):
+                            for org in network.organisms.values():
+                                # Increment organism age
+                                if hasattr(org, 'age'):
+                                    org.age += 1
+                                # Track fitness history (limit to last 30 values for memory)
+                                if hasattr(org, 'fitness_history') and hasattr(org, 'fitness'):
+                                    org.fitness_history.append(org.fitness)
+                                    if len(org.fitness_history) > 30:
+                                        org.fitness_history = org.fitness_history[-30:]
                     except Exception as e:
                         print(f"[ERROR] Reality sim update failed: {e}")
                         import traceback
                         traceback.print_exc()
+                
+                # 🦋 ANTENNAE - Collective sensing and governance
+                if hasattr(self, 'antennae') and self.antennae:
+                    try:
+                        network = self.reality_sim.components.get('network') if hasattr(self.reality_sim, 'components') else None
+                        if network and hasattr(network, 'organisms'):
+                            # Generate report for context (if reporter available)
+                            report = None
+                            if hasattr(self, 'live_reporter') and self.live_reporter:
+                                try:
+                                    report = self.live_reporter.reporter.generate()
+                                except Exception:
+                                    pass
+                            
+                            # Sense the collective state
+                            self.antennae.sense(network.organisms, report)
+                            
+                            # Let perception influence tuning
+                            config_tuner = getattr(self.reality_sim, 'config_tuner', None)
+                            if config_tuner:
+                                changes = self.antennae.influence(config_tuner)
+                    except Exception:
+                        pass  # Don't break main loop if antennae fails
                 
                 # 🦋 UPDATE WEB UI ORGANISMS - Keep Butterfly Chat in sync with live organisms
                 self._update_web_ui_organisms()
@@ -2564,6 +3185,18 @@ class UnifiedSystem:
                 reality_sim_state = self._get_reality_sim_state()
                 explorer_state = self._get_explorer_state()
                 djinn_kernel_state = self._get_djinn_kernel_state()
+                
+                # 🔭 ATTRACTOR LANDSCAPE - Observe collective magnetism field
+                landscape_state = {}
+                if hasattr(self, 'attractor_landscape') and self.attractor_landscape:
+                    try:
+                        # Get organisms from network
+                        network = self.reality_sim.components.get('network') if hasattr(self.reality_sim, 'components') else None
+                        if network and hasattr(network, 'organisms'):
+                            landscape_analysis = self.attractor_landscape.observe(network.organisms)
+                            landscape_state = self.attractor_landscape.get_landscape_state()
+                    except Exception:
+                        pass  # Don't break main loop if landscape observation fails
 
                 # 🌉 PHASE SYNC INTEGRATION - Update network metrics and get predictions
                 phase_sync_state = {}
@@ -2654,9 +3287,9 @@ class UnifiedSystem:
                 
                 self.logger.log_state('state', unified_state)
                 
-                # Write unified shared state file (includes all three systems + phase sync!)
+                # Write unified shared state file (includes all three systems + phase sync + landscape!)
                 # This is the primary source of truth for the Causation Explorer
-                self._write_unified_shared_state(reality_sim_state, explorer_state, djinn_kernel_state, phase_sync_state)
+                self._write_unified_shared_state(reality_sim_state, explorer_state, djinn_kernel_state, phase_sync_state, landscape_state)
                 
                 # Phase 2: Feed events to Causation Explorer in real-time
                 if self.causation_explorer:
@@ -2693,22 +3326,38 @@ class UnifiedSystem:
                 # else: running at full speed, no rate limiting
                 
                 # Increment cycle counter and break if requested
+                # Use BREATH cycles, not loop iterations
+                actual_breath_cycle = 0
+                if self.controller and hasattr(self.controller, 'breath_engine'):
+                    breath_state = self.controller.breath_engine.get_breath_state()
+                    actual_breath_cycle = breath_state.get('cycle_count', cycle_count)
+                else:
+                    actual_breath_cycle = cycle_count
+                    
                 cycle_count += 1
-                if self.max_cycles > 0 and cycle_count >= self.max_cycles:
-                    print(f"[UNIFIED] Reached max cycles ({self.max_cycles}). Exiting loop.")
+                if self.max_cycles > 0 and actual_breath_cycle >= self.max_cycles:
+                    print(f"[UNIFIED] Reached max breath cycles ({self.max_cycles}). Exiting loop.")
                     break
                 
         except KeyboardInterrupt:
             print("\n[UNIFIED] Shutting down gracefully...")
+            # Stop live reporter
+            if hasattr(self, 'live_reporter') and self.live_reporter:
+                self.live_reporter.stop()
             # Save neural checkpoint before exit
             self._save_shutdown_checkpoint("user_interrupt")
             self.logger.log_state('system', {'event': 'shutdown'})
+            self.logger.shutdown()  # Drain async queue
         except Exception as e:
             print(f"\n[UNIFIED] [FAIL] Error: {e}")
             traceback.print_exc()
+            # Stop live reporter
+            if hasattr(self, 'live_reporter') and self.live_reporter:
+                self.live_reporter.stop()
             # Try to save checkpoint even on error
             self._save_shutdown_checkpoint("error_recovery")
             self.logger.log_state('system', {'event': 'error', 'error': str(e)})
+            self.logger.shutdown()  # Drain async queue
     
     def _save_shutdown_checkpoint(self, reason: str = "shutdown"):
         """
@@ -2825,6 +3474,25 @@ class UnifiedSystem:
                         logger.debug(f"[UNIFIED→ATOMIC] Synced {synced_params} params from hot reload")
                 except Exception as atomic_err:
                     logger.debug(f"[UNIFIED] AtomicConfigSystem sync failed: {atomic_err}")
+            
+            # 🌉 Propagate language_game_bridge parameter changes to running bridge
+            # This enables ConfigTuner changes to reach the active bridge without direct wiring
+            if self.highlander_protocol and hasattr(self.highlander_protocol, 'language_bridge'):
+                bridge = self.highlander_protocol.language_bridge
+                if bridge and hasattr(bridge, 'update_parameters'):
+                    try:
+                        neural_config = new_config.get('neural', {})
+                        lgb_config = neural_config.get('language_game_bridge', {})
+                        if lgb_config:
+                            changes = bridge.update_parameters(
+                                bias_strength=lgb_config.get('bias_strength'),
+                                learning_rate=lgb_config.get('learning_rate')
+                            )
+                            if changes:
+                                applied_sections.append('language_game_bridge')
+                                print(f"[UNIFIED] [BRIDGE] 🌉 Parameters updated: {changes}")
+                    except Exception as bridge_err:
+                        logger.debug(f"[UNIFIED] Bridge parameter sync failed: {bridge_err}")
             
             self.active_config = new_config
             summary = ', '.join(applied_sections) if applied_sections else 'no-op'
@@ -3045,9 +3713,10 @@ class UnifiedSystem:
         return {'violation_pressure': 0, 'vp_classification': 'VP0', 'vp_calculations': 0, 'trait_count': 0, 'tape_cells': 0, 'tape_position': 0}
     
     def _write_unified_shared_state(self, reality_sim_state: Dict[str, Any], explorer_state: Dict[str, Any],
-                                     djinn_kernel_state: Dict[str, Any], phase_sync_state: Dict[str, Any] = None):
+                                     djinn_kernel_state: Dict[str, Any], phase_sync_state: Dict[str, Any] = None,
+                                     landscape_state: Dict[str, Any] = None):
         """
-        Write unified shared state file that includes all three systems + PHASE SYNC DATA.
+        Write unified shared state file that includes all three systems + PHASE SYNC DATA + LANDSCAPE.
         This is the primary source of truth for the Causation Explorer and other viewers.
 
         NOW INCLUDES:
@@ -3055,6 +3724,7 @@ class UnifiedSystem:
         - exploration_tracking: 10:1 ratio tracking, progress monitoring
         - unified_health: multi-system health metrics
         - transition_status: readiness of all three systems
+        - attractor_landscape: collective magnetism field observation (fixed points, bifurcations)
 
         Uses snapshot-based approach: writes discrete state snapshots that the HTML can handle efficiently.
         Throttled to write at most once per second to reduce I/O overhead.
@@ -3195,12 +3865,26 @@ class UnifiedSystem:
                 }
                 unified_data['transition_status'] = transition_status
             
+            # ✨ ADD ATTRACTOR LANDSCAPE DATA (magnetism field state, fixed points, bifurcations)
+            if landscape_state:
+                unified_data['attractor_landscape'] = landscape_state
+                
+                # Add derived metrics for CRA visibility
+                # NOTE: Keys must match what get_landscape_state() actually returns
+                unified_data['magnetism_field'] = {
+                    'collective_magnitude': landscape_state.get('field_coherence', 0.0),
+                    'synchronization': 1.0 - landscape_state.get('field_entropy', 1.0),  # Low entropy = high sync
+                    'field_entropy': landscape_state.get('field_entropy', 1.0),
+                    'is_stable': landscape_state.get('field_stability', 0.0) > 0.6,
+                    'has_fixed_point': landscape_state.get('at_fixed_point', False),
+                    'recent_bifurcations': landscape_state.get('total_bifurcations', 0)
+                }
+            
             # Add VP monitoring configuration to shared state for CRA
             try:
                 import json as json_module
-                config_path = parent_path / 'config.json'
-                if config_path.exists():
-                    with open(config_path, 'r') as f:
+                if self.config_path.exists():
+                    with open(self.config_path, 'r') as f:
                         config = json_module.load(f)
                         unified_data['config'] = config  # Include full config for CRA
             except Exception as e:
@@ -3273,6 +3957,37 @@ def main():
     parser.add_argument('--max-cycles', type=int, default=0, help='Number of breath cycles to run (0 = unlimited)')
     parser.add_argument('--config', type=str, default='config.json',
                        help='Path to config file (default: config.json)')
+
+    # 🌐 Optional public URL support for cloud notebooks / rented GPUs
+    # Default is OFF so local behavior never changes.
+    parser.add_argument(
+        '--tunnel',
+        type=str,
+        default='none',
+        choices=['none', 'auto', 'cloudflared', 'localhostrun'],
+        help=(
+            'Expose the Web UI (port 5000) via a public URL. '
+            "Choices: none|auto|cloudflared|localhostrun. "
+            "Colab uses its built-in proxy automatically."
+        )
+    )
+    parser.add_argument(
+        '--tunnel-url-file',
+        type=str,
+        default='',
+        help='Optional: write the current public tunnel URL to a file (e.g. tunnel_url.txt)'
+    )
+    parser.add_argument(
+        '--tunnel-remote-port',
+        type=int,
+        default=80,
+        help='localhost.run only: remote port to bind on localhost.run (default: 80)'
+    )
+    parser.add_argument(
+        '--tunnel-verbose',
+        action='store_true',
+        help='Print full tunnel logs (useful for debugging)'
+    )
     
     # 🆕 Highlander Mode - Survival of the fittest
     parser.add_argument('--highlander', action='store_true', 
@@ -3283,8 +3998,64 @@ def main():
                        help='Fitness threshold for survival (default: from config.json, typically 0.4)')
     parser.add_argument('--competition-intensity', type=float, default=None,
                        help='How many organisms battle per round (default: from config.json, typically 0.2)')
+    parser.add_argument('--debug', action='store_true',
+                       help='Enable DEBUG level logging for maximum scrutiny')
+    parser.add_argument('--no-cloud-setup', action='store_true',
+                       help='Skip automatic cloud environment setup')
+    parser.add_argument('--auto-config', action='store_true',
+                       help='Automatically select best config based on detected hardware')
     
     args = parser.parse_args()
+
+    # ========================================
+    # 🌩️ AUTO CLOUD SETUP
+    # ========================================
+    # Automatically configures storage paths for cloud environments
+    # (Vast.ai, Colab, Lambda Labs, etc.)
+    if not args.no_cloud_setup:
+        try:
+            from cloud_setup import setup_cloud_environment, is_cloud_environment
+            if is_cloud_environment():
+                cloud_info = setup_cloud_environment(Path(__file__).parent, verbose=True)
+                
+                # Auto-select config if requested or using default
+                if args.auto_config or args.config == 'config.json':
+                    recommended = cloud_info.get('recommended_config', 'config.json')
+                    if recommended != 'config.json' and Path(recommended).exists():
+                        print(f"🎯 Auto-selected config: {recommended}")
+                        args.config = recommended
+        except Exception as e:
+            print(f"⚠️ Cloud setup skipped: {e}")
+
+    # Apply tunnel settings (env-var bridge) BEFORE system init.
+    # Keep the tunnel implementation centralized in the web-ui startup.
+    if args.tunnel and args.tunnel != 'none':
+        # Start a real tunnel on ALL platforms (including Colab).
+        # Colab's built-in proxy doesn't work from subprocess, so we use localhost.run/cloudflared.
+        os.environ['UNIFIED_TUNNEL'] = args.tunnel
+        os.environ['UNIFIED_TUNNEL_REMOTE_PORT'] = str(int(args.tunnel_remote_port))
+        # If user didn't specify a URL file, pick a sane default.
+        # This avoids needing to hunt the URL in scrollback after a tunnel refresh.
+        url_file = (args.tunnel_url_file or '').strip()
+        if not url_file:
+            url_file = 'data/tunnel_url.txt'
+        os.environ['UNIFIED_TUNNEL_URL_FILE'] = url_file
+        if args.tunnel_verbose:
+            os.environ['UNIFIED_TUNNEL_VERBOSE'] = '1'
+    
+    # Enable debug logging if requested
+    if args.debug:
+        try:
+            from logging_config import setup_logging
+            setup_logging(level=logging.DEBUG, debug=True, console=True)
+            print("🔬 DEBUG LOGGING ENABLED - Maximum scrutiny mode!")
+        except ImportError:
+            logging.basicConfig(
+                level=logging.DEBUG,
+                format='%(asctime)s | %(levelname)-8s | %(name)s | %(message)s',
+                datefmt='%H:%M:%S.%f'
+            )
+            print("🔬 DEBUG LOGGING ENABLED (fallback mode)")
     
     # Use specified config file
     config_file = Path(args.config)
@@ -3347,7 +4118,9 @@ def main():
             'max_capsules': config_highlander.get('max_capsules', 100),  # Default matches config.json
             'max_genetic_samples': config_highlander.get('max_genetic_samples', 100),
             'mutation_rate': config_highlander.get('mutation_rate', 0.0),  # Default matches config.json
-            'rounds_per_cycle': config_highlander.get('rounds_per_cycle', 2)  # Default matches config.json
+            'rounds_per_cycle': config_highlander.get('rounds_per_cycle', 2),  # Default matches config.json
+            # CRITICAL: Pass the alliance_warfare nested config!
+            'alliance_warfare': config_highlander.get('alliance_warfare', {})
         }
         print("⚔️  HIGHLANDER MODE ACTIVATED - There can be only one!")
         if highlander_config.get('predation_enabled', False):

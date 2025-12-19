@@ -36,10 +36,19 @@ Created: 2024
 import numpy as np
 import torch
 import time
+import logging
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any, Tuple, Callable
 from enum import Enum
 import random
+
+# Try to import Language-Game Bridge
+try:
+    from reality_simulator.language.language_game_bridge import LanguageGameBridge
+    LANGUAGE_BRIDGE_AVAILABLE = True
+except ImportError:
+    LanguageGameBridge = None
+    LANGUAGE_BRIDGE_AVAILABLE = False
 
 
 class BattleType(Enum):
@@ -52,6 +61,7 @@ class BattleType(Enum):
     PREDATOR_HUNT = "predator_hunt"     # Asymmetric hunt scenario
     COOPERATIVE_TEST = "cooperative"    # Can they work together?
     PROTON_GAME = "proton_game"         # Apprentice Adept style gym battles
+    DRONE_COMBAT = "drone_combat"       # Aerial drone warfare battles
 
 
 class TraitAdvantage(Enum):
@@ -231,6 +241,18 @@ class BattleArena:
         # Battle history
         self.battle_count = 0
         self.battle_history: List[BattleOutcome] = []
+        
+        # ═══════════════════════════════════════════════════════════════════
+        # LANGUAGE-GAME BRIDGE: Connect vocabulary to battle outcomes
+        # ═══════════════════════════════════════════════════════════════════
+        self.language_bridge = None
+        self._logger = logging.getLogger(__name__)
+    
+    def set_language_bridge(self, bridge: 'LanguageGameBridge') -> None:
+        """Set the language bridge for vocabulary-enhanced battle learning."""
+        self.language_bridge = bridge
+        self._logger.info("🧠 Language Bridge connected to Battle Arena")
+        print("🧠 Language Bridge connected to Battle Arena")
     
     def calculate_combat_stats(self, organism: Any) -> CombatStats:
         """
@@ -380,6 +402,14 @@ class BattleArena:
         # ═══════════════════════════════════════════════════════════════
         if battle_type == BattleType.PROTON_GAME:
             return self._resolve_proton_game_battle(
+                organism_1, organism_2, bridge_1, bridge_2
+            )
+        
+        # ═══════════════════════════════════════════════════════════════
+        # DRONE COMBAT (Aerial warfare battles)
+        # ═══════════════════════════════════════════════════════════════
+        if battle_type == BattleType.DRONE_COMBAT:
+            return self._resolve_drone_combat_battle(
                 organism_1, organism_2, bridge_1, bridge_2
             )
         
@@ -552,6 +582,39 @@ class BattleArena:
             winner_org.record_alliance_event("battle_won", True)
         if hasattr(loser_org, 'record_alliance_event'):
             loser_org.record_alliance_event("battle_lost", False)
+        
+        # ═══════════════════════════════════════════════════════════════
+        # LANGUAGE BRIDGE: Learn from battle outcomes
+        # ═══════════════════════════════════════════════════════════════
+        if self.language_bridge and LANGUAGE_BRIDGE_AVAILABLE:
+            try:
+                # Winner learns positive outcome
+                self.language_bridge.learn_from_episode_end(
+                    organism_name=winner_id,
+                    won=True,
+                    final_score=winner_hp,
+                    episode_length=len(rounds),
+                    additional_info={
+                        "battle_type": battle_type.value,
+                        "margin": margin,
+                        "concepts_gained": concepts_transferred
+                    }
+                )
+                
+                # Loser learns from defeat
+                self.language_bridge.learn_from_episode_end(
+                    organism_name=loser_id,
+                    won=False,
+                    final_score=max(0, loser_hp),
+                    episode_length=len(rounds),
+                    additional_info={
+                        "battle_type": battle_type.value,
+                        "margin": -margin,
+                        "concepts_lost": concepts_transferred
+                    }
+                )
+            except Exception as e:
+                pass  # Don't break battle flow on bridge errors
         
         return outcome
     
@@ -950,7 +1013,10 @@ class BattleArena:
         
         try:
             from reality_simulator.arena import ProtonGameArena
-            proton_arena = ProtonGameArena()
+            
+            # Get gym_only setting from config (default False for backward compat)
+            gym_only = self.config.get('gym_only', False)
+            proton_arena = ProtonGameArena(gym_only=gym_only)
             
             # Check if we have bridges
             if bridge_1 is None or bridge_2 is None:
@@ -1035,6 +1101,62 @@ class BattleArena:
             self.battle_history.append(outcome)
             self._emit_battle_event(outcome)
             
+            # === LANGUAGE BRIDGE LEARNING FOR PROTON GAMES ===
+            if self.language_bridge and LANGUAGE_BRIDGE_AVAILABLE:
+                try:
+                    # Create synthetic observation from battle state for concept interpretation
+                    # This populates episode_concepts so correlation metrics work
+                    import numpy as np
+                    battle_obs = np.array([
+                        proton_result.score_a / 100.0,  # Normalized score
+                        proton_result.score_b / 100.0,
+                        margin,  # Victory margin
+                        1.0 if actual_winner_id == org1_id else 0.0,  # Who won
+                        proton_result.total_episodes / 10.0,  # Episode count normalized
+                        getattr(organism_1, 'fitness', 0.5),
+                        getattr(organism_2, 'fitness', 0.5),
+                        0.5  # Padding to reach reasonable observation size
+                    ], dtype=np.float32)
+                    
+                    # Interpret observation to populate episode_concepts
+                    try:
+                        self.language_bridge.interpret_observation(battle_obs)
+                    except Exception as interp_err:
+                        self._logger.debug(f"Concept interpretation skipped: {interp_err}")
+                    
+                    # Winner learns from victory
+                    self.language_bridge.learn_from_episode_end(
+                        organism_name=actual_winner_id,
+                        won=True,
+                        final_score=proton_result.score_a if actual_winner_id == org1_id else proton_result.score_b,
+                        episode_length=proton_result.total_episodes,
+                        additional_info={
+                            'opponent_name': actual_loser_id,
+                            'total_reward': margin * 100,  # Scale margin to reward
+                            'battle_type': 'proton_game',
+                            'game': proton_result.game_name if hasattr(proton_result, 'game_name') else 'unknown'
+                        }
+                    )
+                    # Loser learns from defeat
+                    self.language_bridge.learn_from_episode_end(
+                        organism_name=actual_loser_id,
+                        won=False,
+                        final_score=proton_result.score_b if actual_winner_id == org1_id else proton_result.score_a,
+                        episode_length=proton_result.total_episodes,
+                        additional_info={
+                            'opponent_name': actual_winner_id,
+                            'total_reward': -margin * 100,  # Negative reward for loss
+                            'battle_type': 'proton_game',
+                            'game': proton_result.game_name if hasattr(proton_result, 'game_name') else 'unknown'
+                        }
+                    )
+                    self._logger.debug(f"📊 Language bridge recorded proton game: {actual_winner_id[:8]} vs {actual_loser_id[:8]}")
+                except Exception as lb_err:
+                    self._logger.warning(f"⚠️ Language bridge learning failed in proton game: {lb_err}")
+            else:
+                # Diagnostic: Why is bridge not available?
+                self._logger.debug(f"📊 Language bridge not active for proton game (bridge={self.language_bridge is not None}, available={LANGUAGE_BRIDGE_AVAILABLE})")
+            
             return outcome
             
         except ImportError as e:
@@ -1045,6 +1167,130 @@ class BattleArena:
             )
         except Exception as e:
             print(f"⚠️ Proton Game battle failed: {e}")
+            return self.resolve_battle(
+                organism_1, organism_2,
+                battle_type=BattleType.FULL_COMBAT
+            )
+    
+    def _resolve_drone_combat_battle(self,
+                                      organism_1: Any,
+                                      organism_2: Any,
+                                      bridge_1: Any = None,
+                                      bridge_2: Any = None) -> 'BattleOutcome':
+        """
+        Resolve a battle using drone aerial combat.
+        
+        Each organism controls a team of drones.
+        Last team with surviving drones wins.
+        Uses realistic physics and tag mechanics.
+        """
+        self.battle_count += 1
+        battle_id = f"drone_{self.battle_count}_{int(time.time())}"
+        
+        org1_id = getattr(organism_1, 'organism_id', getattr(organism_1, 'id', 'organism_1'))
+        org2_id = getattr(organism_2, 'organism_id', getattr(organism_2, 'id', 'organism_2'))
+        
+        try:
+            from reality_simulator.arena.swarm_battle import SwarmBattle, BattleConfig, BattleOutcome as DroneOutcome
+            
+            print(f"\n🛸 DRONE COMBAT: {org1_id[:8]} vs {org2_id[:8]}")
+            
+            # Configure battle
+            config = BattleConfig(
+                arena_size=30.0,
+                max_duration=45.0,  # 45 second rounds
+                tag_damage=0.25,    # 4 tags to eliminate
+            )
+            
+            # Create teams (each organism controls its own drones)
+            # For highlander, it's 1v1 with multiple rounds
+            blue_team = [organism_1]
+            red_team = [organism_2]
+            
+            # Run battle
+            battle = SwarmBattle(blue_team, red_team, config, self.event_emitter)
+            stats = battle.run()
+            battle.close()
+            
+            # Determine winner
+            if stats.outcome == DroneOutcome.BLUE_WINS:
+                winner_id, loser_id = org1_id, org2_id
+                winner, loser = organism_1, organism_2
+                winner_hp = stats.blue_total_health * 100
+                loser_hp = stats.red_total_health * 100
+            elif stats.outcome == DroneOutcome.RED_WINS:
+                winner_id, loser_id = org2_id, org1_id
+                winner, loser = organism_2, organism_1
+                winner_hp = stats.red_total_health * 100
+                loser_hp = stats.blue_total_health * 100
+            else:
+                # Draw - use fitness as tiebreaker
+                fitness_1 = getattr(organism_1, 'fitness', 0.5)
+                fitness_2 = getattr(organism_2, 'fitness', 0.5)
+                if fitness_1 >= fitness_2:
+                    winner_id, loser_id = org1_id, org2_id
+                    winner, loser = organism_1, organism_2
+                else:
+                    winner_id, loser_id = org2_id, org1_id
+                    winner, loser = organism_2, organism_1
+                winner_hp = loser_hp = 50.0
+                print(f"🎲 Drone draw resolved by fitness: {winner_id[:8]}")
+            
+            # Calculate margin
+            margin = (winner_hp - loser_hp) / 100.0
+            
+            # Determine absorption
+            concepts_transferred = self._determine_concept_transfer(loser, margin)
+            traits_transferred = self._determine_trait_transfer(loser, margin)
+            config_changes = self._determine_config_transfer(loser, margin)
+            
+            # Generate narrative
+            narrative = (
+                f"🛸 DRONE COMBAT\n"
+                f"{org1_id[:8]} (Blue) vs {org2_id[:8]} (Red)\n"
+                f"Duration: {stats.duration:.1f}s\n"
+                f"Tags: {stats.total_tags}\n"
+                f"🏆 Winner: {winner_id[:8]}"
+            )
+            
+            print(f"🏆 WINNER: {winner_id[:8]}")
+            print(f"   Duration: {stats.duration:.1f}s, Tags: {stats.total_tags}")
+            
+            outcome = BattleOutcome(
+                battle_id=battle_id,
+                battle_type=BattleType.DRONE_COMBAT,
+                combatant_1_id=org1_id,
+                combatant_2_id=org2_id,
+                winner_id=winner_id,
+                loser_id=loser_id,
+                rounds=[],
+                total_rounds=1,
+                winner_final_hp=winner_hp,
+                loser_final_hp=max(0, loser_hp),
+                margin_of_victory=margin,
+                concepts_transferred=concepts_transferred,
+                traits_transferred=traits_transferred,
+                config_changes=config_changes,
+                neural_transfer_rate=min(0.1 + margin * 0.2, 0.5),
+                duration_rounds=1,
+                narrative_summary=narrative
+            )
+            
+            self.battle_history.append(outcome)
+            self._emit_battle_event(outcome)
+            
+            return outcome
+            
+        except ImportError as e:
+            print(f"⚠️ Drone combat not available: {e}")
+            return self.resolve_battle(
+                organism_1, organism_2,
+                battle_type=BattleType.FULL_COMBAT
+            )
+        except Exception as e:
+            print(f"⚠️ Drone combat failed: {e}")
+            import traceback
+            traceback.print_exc()
             return self.resolve_battle(
                 organism_1, organism_2,
                 battle_type=BattleType.FULL_COMBAT

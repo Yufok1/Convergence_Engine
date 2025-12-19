@@ -93,15 +93,19 @@ python causation_web_ui.py
 
 ### Documentation
 
-**📚 [DOCUMENTATION_HUB.md](./DOCUMENTATION_HUB.md)** - Central documentation hub with links to all guides
+**📚 [DOCUMENTATION_HUB.md](./docs/DOCUMENTATION_HUB.md)** - Central documentation hub with links to all guides
 
 Recent updates:
-- 🔗 **CocoonHatch P2P Networking** (Dec 10, 2025): ⭐ NEW - Connect cocoons over the internet for battles, trades, and chat! Anyone can host a relay server.
-- 🎴 **Organism Card Binder** (Dec 10, 2025): ⭐ NEW - Pokémon-style card viewer for organisms with rarity, personality, strengths/weaknesses, behavioral fingerprints
+- � **Antennae System** (Dec 17, 2025): ⭐ NEW - Collective sensing apparatus for self-governing ecosystems. Beliefs that learn from evidence + sklearn HealthPredictor (Kleene convergence)
+- 📊 **SystemReport & LiveReporter** (Dec 17, 2025): ⭐ NEW - Real-time population analytics with typed dataclasses and thread-safe live reporting
+- 🔧 **CUDA Crossover Fix** (Dec 17, 2025): Fixed NaN/Inf cascade in brain.py crossover with `torch.nan_to_num()` sanitization
+- 🧠 **Hopfield Layer** (Dec 14, 2025): Modern continuous Hopfield network for iterative thought refinement. Organisms can now "think" through multiple iterations before decisions!
+- 🔗 **CocoonHatch P2P Networking** (Dec 10, 2025): Connect cocoons over the internet for battles, trades, and chat! Anyone can host a relay server.
+- 🎴 **Organism Card Binder** (Dec 10, 2025): Pokémon-style card viewer for organisms with rarity, personality, strengths/weaknesses, behavioral fingerprints
 - 💾 **Neural Checkpointing System**: Auto-save/restore training state with rotation, graceful shutdown saves, API control
-- 🏰 **Confederation System** (Dec 1, 2025): ⭐ NEW - Super-alliances with 3-tier hierarchy (Confederation → Empire → Hegemony), mega-wars, full ML/CRA/neural integration
+- 🏰 **Confederation System** (Dec 1, 2025): Super-alliances with 3-tier hierarchy (Confederation → Empire → Hegemony), mega-wars, full ML/CRA/neural integration
 - ⚔️ **Alliance Warfare Visualization** (Dec 1, 2025): Full graph visualization for alliance/combat events with shapes, colors, and legend
-- 🧠 **Neural System Expansion** (Dec 1, 2025): 24-dimensional input (was 18), alliance/combat/language integration features
+- 🧠 **Neural System Expansion** (Dec 12, 2025): 28-dimensional input with self-perception features (oscillation_entropy, coherence_frequency, attractor_proximity)
 - 🔧 **Config Tuner Cross-System Correlation** (Dec 1, 2025): 4 new correlation analyzers (quantum-language, network-alliance, neural-battle, vocabulary-fitness)
 - 📊 **CRA Documentation Update** (Dec 1, 2025): Updated prompts for all new integration features and visualization controls
 - ⚡ **Butterfly Chat Optimizations** (Dec 1, 2025): Adaptive generation length, early stopping, 5-10x faster early-stage performance
@@ -137,7 +141,7 @@ A multi-layered artificial life simulation system that creates evolving populati
 - **Subatomic Lattice**: Particle interactions with entropy pruning
 - **Genetic Evolution Engine**: Darwinian natural selection with fitness-based selection
 - **🧠 Neural System**: PyTorch-based neural networks for organisms (DQN reinforcement learning)
-  - Deep Q-Network (DQN) with **24-dimensional input** (expanded from 18)
+  - Deep Q-Network (DQN) with **28-dimensional input** (25 base + 3 self-perception)
   - Dual inheritance (genetic + learned neural weights)
   - Breath-synchronized training cycles
   - Configurable reward system and exploration/exploitation balance
@@ -196,11 +200,12 @@ A multi-layered artificial life simulation system that creates evolving populati
 - **🤖 Meta-Cognitive Layer**: Autonomous self-tuning based on ML/Neural insights
   - **33 tunable parameters** across Evolution, Neural, Network, ML, Quantum, VP systems
   - **13 intelligent tuning rules** (cluster diversity, neural loss, network density, etc.)
-  - **4 Cross-System Correlation Analyzers**: ⭐ NEW
+  - **5 Cross-System Correlation Analyzers**: ⭐ ENHANCED
     - Quantum-Language correlation (coherence → vocabulary)
     - Network-Alliance correlation (density → formation rate)
     - Neural-Battle correlation (training success → combat outcomes)
     - Vocabulary-Fitness correlation (linguistic complexity → survival)
+    - **Language-Game correlation** ⭐ NEW (vocabulary → game decisions → outcomes)
   - **Meta-meta-learning**: The tuner can tune itself!
   - Safety bounds, confidence thresholds, meta-learning tracking
   - See [SELF_TUNING_GUIDE.md](./SELF_TUNING_GUIDE.md) for full details
@@ -926,6 +931,41 @@ python unified_entry.py --highlander --predation --survival-threshold 0.8 --comp
 [GERMINATION] 🌱 REINCARNATION: New organism reborn_001
 ```
 
+### 🧠 Language-Game Bridge - Vocabulary Meets Gameplay
+**"The 62,000 concepts now AFFECT gameplay - bilateral learning at last!"**
+
+The Language-Game Bridge connects the vocabulary/knowledge systems to game decision-making:
+
+#### The Problem (Solved):
+- Previously: 62,000+ vocabulary concepts sat IDLE during gym battles
+- Games and language systems were completely disconnected
+- Organisms could speak about "victory" but the word didn't influence actions
+
+#### The Solution:
+```python
+# Language-Game Bridge creates bilateral benefit:
+# 1. LANGUAGE → GAMES: Vocabulary biases action selection
+# 2. GAMES → LANGUAGE: Outcomes reinforce/weaken concepts
+
+# When organism "sees" a threat:
+observation → "enemy close" → activates "threat", "attack", "danger"
+                           → biases toward aggressive actions
+
+# When organism wins:
+victory → strengthens "success", "strategy", "dominance"
+       → weakens "failure", "retreat"
+```
+
+#### Integration Points:
+- **Drone Combat Arena**: Vocabulary influences combat decisions
+- **Sphere Defense Arena**: Concepts guide swarm coordination  
+- **Proton Game Arena**: Language affects game selection strategy
+- **Highlander Protocol**: Battle outcomes teach vocabulary
+
+#### Key Files:
+- `reality_simulator/language/language_game_bridge.py` - The core bridge
+- Wired into: `cocoon_drone_arena.py`, `sphere_arena.py`, `proton_game.py`, `battle_arena.py`
+
 ### 🎮 Proton Game Arena - Apprentice Adept Style Battles
 **"Choose your game. Master your domain. Absorb the fallen."**
 
@@ -1003,6 +1043,36 @@ python sphere_arena.py --train --headless
 - Distributed sensor networks
 - Multi-agent reinforcement learning
 - Collective intelligence evaluation
+
+### 🛸 Drone Warfare Arena - NASA JSBSim-Grade Flight Combat
+**Exported cocoons can fly drones in 8 game modes!**
+
+```bash
+# In exported cocoon folder (after `python cocoon.py --unpack ./my_cocoon`)
+python cocoon_drone_adapter.py                     # Interactive mode picker
+python cocoon_drone_adapter.py --mode tag_battle   # Combat mode
+python cocoon_drone_adapter.py --mode survival     # Last drone wins
+python cocoon_drone_adapter.py --all               # All 8 modes
+python cocoon_drone_adapter.py --visual            # 3D PyFlyt visualization
+```
+
+#### Game Modes:
+| Mode | Description |
+|------|-------------|
+| `free_fly` | Basic flight training, learn controls |
+| `formation` | Maintain swarm formation (team coordination) |
+| `pursuit` | Chase moving targets |
+| `tag_battle` | Combat: tag enemies, avoid being tagged |
+| `zone_control` | Control airspace zones |
+| `capture_flag` | Team objective game |
+| `survival` | Last drone flying wins |
+| `escort` | Protect VIP drone |
+
+#### Features:
+- **NASA JSBSim-Grade Physics**: 6-DOF rigid body dynamics, realistic thrust
+- **Language-Game Bridge**: Vocabulary influences combat decisions
+- **One Organism = One Drone**: Full neural swarm combat
+- **PyFlyt 3D Visualization**: Optional realistic rendering
 
 ### 🧊 Consciousness Capsules - AI Preservation System
 **Complete organism state snapshots for research and backup.**

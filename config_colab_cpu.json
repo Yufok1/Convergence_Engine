@@ -1,7 +1,14 @@
 {
-  "_case_study": "STUDY 5: CREATIVE SPECIALIST - High temperature, strong semantic guidance",
-  "_hypothesis": "Higher temperature + semantic guidance produces more expressive, creative articulation",
-  "_hardware_profile_help": "Set to 'beast', 'workstation', 'standard', 'laptop', 'potato', or 'cpu_only' to override auto-detection. null = auto-detect",
+  "_case_study": "COLAB PRO CPU - 51GB RAM Big Brain Config",
+  "_hypothesis": "Maximize swarm size on CPU with 51GB RAM - slower but massive populations",
+  "_hardware_profile_help": "CPU-optimized config for Google Colab Pro. Works with existing PyTorch code!",
+  "_colab_notes": {
+    "ram_gb": 51.0,
+    "disk_gb": 225.8,
+    "compute_units_per_hour": 0.24,
+    "runtime": "CPU",
+    "advantage": "14x cheaper than TPU, works with existing code"
+  },
   "agency": {
     "confidence_threshold": 0.0001,
     "decision_precision": 1e-05,
@@ -116,12 +123,12 @@
     },
     "fitness_precision": 1e-07,
     "genotype_length": 48,
-    "max_generations": 1500,
+    "max_generations": 3000,
     "mutation_rate": {
       "initial": 0.04
     },
     "mutation_rate_precision": 0.001,
-    "population_size": 25
+    "population_size": 1000
   },
   "feedback": {
     "enabled": true,
@@ -155,7 +162,7 @@
     },
     "rate_limit_frames": 120
   },
-  "hardware_profile": null,
+  "hardware_profile": "colab_cpu",
   "hardware_governor": {
     "_auto_scale_help": "Set to false to disable auto-scaling of config values. Governor will only clamp to max, not scale up.",
     "auto_scale": false
@@ -178,16 +185,16 @@
     "weight_sustainability": 0.1
   },
   "highlander": {
-    "eval_interval_seconds": 10,
-    "_eval_interval_seconds_help": "Highlander evaluates every N seconds (e.g. 30 = every 30 seconds, 450 = 7.5 minutes)",
+    "eval_interval_seconds": 15,
+    "_eval_interval_seconds_help": "CPU: Slightly slower eval cycles",
     "alliance_warfare": {
       "betrayal_chance": 0.0,
       "confederation_war_threshold": 0.6,
       "enabled": true,
       "existential_war_threshold": 0.8,
-      "max_alliance_size": 999,
-      "max_alliances": 9999,
-      "max_confederations": 9999,
+      "max_alliance_size": 2500,
+      "max_alliances": 25000,
+      "max_confederations": 5000,
       "min_alliance_size": 2,
       "war_declaration_threshold": 0.6,
       "war_frequency": 0.5,
@@ -195,28 +202,28 @@
     },
     "chaos_factor": 0.0,
     "competition_intensity": 0.4,
-    "description": "STUDY 5: CREATIVE SPECIALIST - High temperature, semantic boost",
+    "description": "COLAB CPU - 25K organism swarms",
     "enabled": true,
     "extreme_mode": {
       "chaos_factor": 0.0,
       "competition_intensity": 0.4,
-      "description": "EXTREME DIFFICULTY - Maximum evolutionary pressure",
-      "germination_rate": 0.1,
-      "max_battle_rounds": 15,
-      "max_population": 25,
-      "min_population": 15,
+      "description": "CPU EXTREME - 25K organism battles",
+      "germination_rate": 1,
+      "max_battle_rounds": 20,
+      "max_population": 25000,
+      "min_population": 50,
       "mutation_rate": 0.0,
-      "population_size": 200,
+      "population_size": 1000,
       "predation_enabled": true,
-      "rounds_per_cycle": 2,
+      "rounds_per_cycle": 3,
       "survival_threshold": 0.4
     },
-    "germination_rate": 0.1,
-    "max_battle_rounds": 50,
-    "max_capsules": 100,
-    "max_genetic_samples": 100,
-    "max_population": 25,
-    "min_population": 15,
+    "germination_rate": 1.0,
+    "max_battle_rounds": 40,
+    "max_capsules": 500,
+    "max_genetic_samples": 500,
+    "max_population": 25000,
+    "min_population": 50,
     "mutation_rate": 0.0,
     "population_size": 200,
     "predation_enabled": true,
@@ -226,7 +233,8 @@
   "lattice": {
     "entropy_sensitivity": 5e-05,
     "interaction_precision": 0.0001,
-    "particles": 1000,
+    "particles": 5000,
+    "_particles_help": "CPU: 5x particles (1K->5K) for 51GB RAM",
     "prune_threshold": 0,
     "stability_tolerance": 0.0005
   },
@@ -287,10 +295,10 @@
   "network": {
     "connection_strength_resolution": 5e-06,
     "emergence_sensitivity": 1e-06,
-    "max_connections": 48000,
-    "max_organisms": 5000,
+    "max_connections": 250000,
+    "max_organisms": 25000,
     "resource_flow_precision": 0.0001,
-    "resource_pool": 1000,
+    "resource_pool": 5000,
     "stability_precision": 1e-07
   },
   "neural": {
@@ -317,7 +325,8 @@
       "num_key_compositions": 30,
       "utility_update_alpha": 0.15
     },
-    "device": "cuda",
+    "device": "cpu",
+    "_device_help": "CPU mode - works with existing PyTorch code, no GPU/TPU needed.",
     "enabled": true,
     "inheritance": {
       "crossover_rate": 0.9,
@@ -469,7 +478,8 @@
       "survival": 2
     },
     "training": {
-      "batch_size": 64,
+      "batch_size": 128,
+      "_batch_size_help": "CPU: 2x batch size (64->128) - larger than local but not GPU-scale",
       "early_stopping": {
         "enabled": true,
         "min_delta": 0.0001,
@@ -491,7 +501,8 @@
         "type": "cosine",
         "warmup_steps": 100
       },
-      "memory_size": 40000,
+      "memory_size": 200000,
+      "_memory_size_help": "CPU: 5x replay buffer (40K->200K) for 51GB RAM",
       "update_frequency": 1
     },
     "vp_aware_planning": {
@@ -522,7 +533,8 @@
       "measurements": 0.25,
       "superposition": 0.25
     },
-    "initial_states": 80,
+    "initial_states": 250,
+    "_initial_states_help": "CPU: 3x initial states (80->250) for 51GB RAM",
     "performance_thresholds": {
       "fitness_std_threshold": 0.3,
       "iteration_time_ms": 10,
@@ -535,26 +547,28 @@
   },
   "ray": {
     "enabled": false,
-    "actor_pool_size": 2,
-    "batch_inference_size": 64,
-    "description": "Ray DISABLED",
+    "actor_pool_size": 8,
+    "batch_inference_size": 128,
+    "description": "Ray DISABLED - CPU overhead not worth it",
     "fallback_on_error": true,
     "logging_level": "warning",
     "memory_management": {
       "actor_pool_lru_eviction": true,
       "cleanup_on_organism_death": true,
-      "max_object_refs": 100
+      "max_object_refs": 500
     },
-    "num_cpus": 4,
-    "num_gpus": 1,
+    "num_cpus": 8,
+    "num_gpus": 0,
+    "_num_gpus_help": "CPU runtime - no GPU available.",
     "object_store_memory": null,
-    "parallelization_threshold": 100,
+    "parallelization_threshold": 200,
+    "_parallelization_threshold_help": "CPU: Moderate threshold for CPU parallelism",
     "state_synchronization": {
       "consistency_model": "sequential",
       "max_state_age_ms": 100,
       "snapshot_strategy": "breath_cycle"
     },
-    "training_threshold": 16
+    "training_threshold": 64
   },
   "rendering": {
     "enable_visualizations": true,

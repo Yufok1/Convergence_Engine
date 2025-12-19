@@ -1,7 +1,9 @@
 {
-  "_case_study": "STUDY 5: CREATIVE SPECIALIST - High temperature, strong semantic guidance",
-  "_hypothesis": "Higher temperature + semantic guidance produces more expressive, creative articulation",
+  "_mode": "A100_POLIS",
+  "_case_study": "POLIS - Political Evolution: From warrior bands to hegemonic civilizations",
+  "_hypothesis": "Brutal solo survival + alliance incentives = emergent political structures and civilization",
   "_hardware_profile_help": "Set to 'beast', 'workstation', 'standard', 'laptop', 'potato', or 'cpu_only' to override auto-detection. null = auto-detect",
+  "hardware_profile": "beast",
   "agency": {
     "confidence_threshold": 0.0001,
     "decision_precision": 1e-05,
@@ -10,6 +12,7 @@
     "performance_tracking_precision": 0.0001
   },
   "semantic_convergence": {
+
     "_help": "Unifies 6 semantic systems for word embedding differentiation",
     "enabled": true,
     "use_learned_embeddings": true,
@@ -23,10 +26,10 @@
     "_prefer_native_games_help": "When true, prioritizes language/concept games that use organism's native abilities (no Gym dependency)",
     "_proton_game_probability_help": "Fraction of battles that use Proton Game Arena (0.0-1.0). Set to 0.5 for 50% Proton Game battles.",
     "battle_consequences": {
-      "fitness_transfer_rate": 1,
+      "fitness_transfer_rate": 0.5,
       "resource_transfer_enabled": true,
-      "resource_transfer_rate": 1,
-      "trait_bonus_cap": 0.3,
+      "resource_transfer_rate": 0.5,
+      "trait_bonus_cap": 0.4,
       "trait_evolution_enabled": true
     },
     "default_battle_type": "PROTON_GAME",
@@ -58,10 +61,8 @@
       "parallel_envs": 1,
       "render_mode": null
     },
-    "prefer_native_games": false,
+    "prefer_native_games": true,
     "proton_game_probability": 1.0,
-    "gym_only": true,
-    "_gym_only_help": "When true, ONLY real Gymnasium environments (CartPole, Acrobot, etc). No native/custom games.",
     "tournament": {
       "default_format": "single_elimination",
       "round_robin_battles_per_pair": 3,
@@ -107,21 +108,21 @@
     }
   },
   "evolution": {
-    "adaptation_sensitivity": 0.005,
+    "adaptation_sensitivity": 0.008,
     "diversity_guard": {
       "enabled": true,
-      "frequency_threshold": 0.1,
-      "hash_similarity_threshold": 0.88,
-      "penalty": 0.05
+      "frequency_threshold": 0.12,
+      "hash_similarity_threshold": 0.85,
+      "penalty": 0.06
     },
     "fitness_precision": 1e-07,
-    "genotype_length": 48,
-    "max_generations": 1500,
+    "genotype_length": 64,
+    "max_generations": 10000,
     "mutation_rate": {
-      "initial": 0.04
+      "initial": 0.05
     },
     "mutation_rate_precision": 0.001,
-    "population_size": 25
+    "population_size": 150
   },
   "feedback": {
     "enabled": true,
@@ -155,7 +156,6 @@
     },
     "rate_limit_frames": 120
   },
-  "hardware_profile": null,
   "hardware_governor": {
     "_auto_scale_help": "Set to false to disable auto-scaling of config values. Governor will only clamp to max, not scale up.",
     "auto_scale": false
@@ -178,50 +178,50 @@
     "weight_sustainability": 0.1
   },
   "highlander": {
-    "eval_interval_seconds": 10,
-    "_eval_interval_seconds_help": "Highlander evaluates every N seconds (e.g. 30 = every 30 seconds, 450 = 7.5 minutes)",
+    "eval_interval_seconds": 3,
+    "_eval_interval_seconds_help": "Fast battles drive political pressure",
     "alliance_warfare": {
       "betrayal_chance": 0.0,
-      "confederation_war_threshold": 0.6,
+      "confederation_war_threshold": 0.4,
       "enabled": true,
-      "existential_war_threshold": 0.8,
-      "max_alliance_size": 999,
-      "max_alliances": 9999,
-      "max_confederations": 9999,
+      "existential_war_threshold": 0.6,
+      "max_alliance_size": 200,
+      "max_alliances": 50,
+      "max_confederations": 10,
       "min_alliance_size": 2,
-      "war_declaration_threshold": 0.6,
-      "war_frequency": 0.5,
-      "illumination_stability_threshold": 5
+      "war_declaration_threshold": 0.4,
+      "war_frequency": 0.8,
+      "illumination_stability_threshold": 3
     },
     "chaos_factor": 0.0,
-    "competition_intensity": 0.4,
-    "description": "STUDY 5: CREATIVE SPECIALIST - High temperature, semantic boost",
+    "competition_intensity": 0.8,
+    "description": "POLIS - Political evolution through alliance warfare",
     "enabled": true,
     "extreme_mode": {
       "chaos_factor": 0.0,
-      "competition_intensity": 0.4,
-      "description": "EXTREME DIFFICULTY - Maximum evolutionary pressure",
-      "germination_rate": 0.1,
-      "max_battle_rounds": 15,
-      "max_population": 25,
-      "min_population": 15,
-      "mutation_rate": 0.0,
-      "population_size": 200,
+      "competition_intensity": 0.9,
+      "description": "HEGEMONY MODE - Total political domination",
+      "germination_rate": 2.0,
+      "max_battle_rounds": 25,
+      "max_population": 5000,
+      "min_population": 100,
+      "mutation_rate": 0.05,
+      "population_size": 100,
       "predation_enabled": true,
-      "rounds_per_cycle": 2,
-      "survival_threshold": 0.4
+      "rounds_per_cycle": 4,
+      "survival_threshold": 0.5
     },
-    "germination_rate": 0.1,
-    "max_battle_rounds": 50,
-    "max_capsules": 100,
-    "max_genetic_samples": 100,
-    "max_population": 25,
-    "min_population": 15,
-    "mutation_rate": 0.0,
-    "population_size": 200,
+    "germination_rate": 1.5,
+    "max_battle_rounds": 20,
+    "max_capsules": 1000,
+    "max_genetic_samples": 1000,
+    "max_population": 5000,
+    "min_population": 50,
+    "mutation_rate": 0.05,
+    "population_size": 150,
     "predation_enabled": true,
-    "rounds_per_cycle": 2,
-    "survival_threshold": 0.4
+    "rounds_per_cycle": 3,
+    "survival_threshold": 0.5
   },
   "lattice": {
     "entropy_sensitivity": 5e-05,
@@ -287,21 +287,21 @@
   "network": {
     "connection_strength_resolution": 5e-06,
     "emergence_sensitivity": 1e-06,
-    "max_connections": 48000,
-    "max_organisms": 5000,
+    "max_connections": 250000,
+    "max_organisms": 10000,
     "resource_flow_precision": 0.0001,
-    "resource_pool": 1000,
+    "resource_pool": 5000,
     "stability_precision": 1e-07
   },
   "neural": {
     "brain": {
       "activation": "relu",
-      "dropout": 0.1,
-      "hidden_dim": 64,
+      "dropout": 0.15,
+      "hidden_dim": 192,
       "input_dim": 28,
       "output_dim": 6,
-      "vocab_size": 20000,
-      "attention_dim": 32
+      "vocab_size": 35000,
+      "attention_dim": 64
     },
     "hopfield": {
       "_help": "Modern continuous Hopfield network for iterative thought refinement",
@@ -365,7 +365,7 @@
       "knowledge_web": {
         "embedding_dim": 64,
         "enabled": true,
-        "max_concepts": 2400,
+        "max_concepts": 800,
         "quality_control": {
           "confidence_growth_rate": 0.0008,
           "enabled": true,
@@ -469,29 +469,29 @@
       "survival": 2
     },
     "training": {
-      "batch_size": 64,
+      "batch_size": 256,
       "early_stopping": {
         "enabled": true,
         "min_delta": 0.0001,
-        "patience": 10
+        "patience": 15
       },
       "enabled": true,
       "epsilon": 0.95,
-      "epsilon_decay": 0.99,
-      "epsilon_end": 0.01,
-      "epsilon_start": 0.8,
-      "gamma": 0.995,
-      "language_reward_scaling": 0.4,
-      "learning_rate": 0.005,
+      "epsilon_decay": 0.995,
+      "epsilon_end": 0.05,
+      "epsilon_start": 0.9,
+      "gamma": 0.99,
+      "language_reward_scaling": 0.5,
+      "learning_rate": 0.003,
       "lr_scheduler": {
         "enabled": true,
         "gamma": 0.95,
         "min_lr": 0.0001,
-        "step_size": 100,
+        "step_size": 150,
         "type": "cosine",
-        "warmup_steps": 100
+        "warmup_steps": 200
       },
-      "memory_size": 40000,
+      "memory_size": 300000,
       "update_frequency": 1
     },
     "vp_aware_planning": {
@@ -535,20 +535,20 @@
   },
   "ray": {
     "enabled": false,
-    "actor_pool_size": 2,
-    "batch_inference_size": 64,
-    "description": "Ray DISABLED",
+    "actor_pool_size": 4,
+    "batch_inference_size": 128,
+    "description": "Ray DISABLED - sequential execution",
     "fallback_on_error": true,
     "logging_level": "warning",
     "memory_management": {
       "actor_pool_lru_eviction": true,
       "cleanup_on_organism_death": true,
-      "max_object_refs": 100
+      "max_object_refs": 200
     },
-    "num_cpus": 4,
+    "num_cpus": 12,
     "num_gpus": 1,
     "object_store_memory": null,
-    "parallelization_threshold": 100,
+    "parallelization_threshold": 50,
     "state_synchronization": {
       "consistency_model": "sequential",
       "max_state_age_ms": 100,

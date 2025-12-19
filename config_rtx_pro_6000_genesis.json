@@ -1,0 +1,821 @@
+{
+  "_mode": "GENESIS_PROTOCOL",
+  "_case_study": "Adam & Eve Progenation - Boom/Bust from Minimal Seeds",
+  "_hypothesis": "5 progenitors → exponential growth → resource collapse → survival bottleneck → rebirth. Kleene fixed points: minimal self-sustaining units bootstrap infinite complexity.",
+  "_philosophy": "Hattori Hanzo efficiency. Start small. Fold steel. Care for the blade. Let it breathe.",
+  "_hardware": "RTX PRO 6000 Ada (96GB VRAM, 119 TFLOPS, 1398 GB/s) + AMD EPYC 9B14 96-Core (24 cores allocated)",
+  "_hardware_profile_help": "Set to 'beast', 'workstation', 'standard', 'laptop', 'potato', or 'cpu_only' to override auto-detection. null = auto-detect",
+  "hardware_profile": "beast",
+  "agency": {
+    "confidence_threshold": 0.0001,
+    "decision_precision": 1e-05,
+    "initial_mode": "manual_only",
+    "learning_rate_resolution": 1e-06,
+    "performance_tracking_precision": 0.0001
+  },
+  "semantic_convergence": {
+    "_help": "Unifies 6 semantic systems for word embedding differentiation",
+    "enabled": true,
+    "use_learned_embeddings": true,
+    "embedding_dim": 128,
+    "_embedding_dim_note": "2x base - 96GB VRAM allows larger embeddings",
+    "organism_embedding_alpha": 0.15,
+    "concept_system_alpha": 0.1,
+    "knowledge_web_influence_interval": 10,
+    "phenotype_to_vocabulary": true
+  },
+  "arena": {
+    "_prefer_native_games_help": "When true, prioritizes language/concept games that use organism's native abilities (no Gym dependency)",
+    "_proton_game_probability_help": "Fraction of battles that use Proton Game Arena (0.0-1.0). Set to 0.5 for 50% Proton Game battles.",
+    "battle_consequences": {
+      "fitness_transfer_rate": 1,
+      "resource_transfer_enabled": true,
+      "resource_transfer_rate": 1,
+      "trait_bonus_cap": 0.3,
+      "trait_evolution_enabled": true
+    },
+    "default_battle_type": "PROTON_GAME",
+    "description": "Proton Game Arena - Apprentice Adept style gym battles (Piers Anthony + Highlander inspired)",
+    "enabled": true,
+    "game_selection": {
+      "allow_negotiation": true,
+      "fallback_on_deadlock": "random",
+      "mode": "ai_driven",
+      "negotiation_rounds": 3
+    },
+    "grid_weights": {
+      "challenge_types": {
+        "ARTS": 2.0,
+        "CHANCE": 1.0,
+        "MENTAL": 1.5,
+        "PHYSICAL": 0.5
+      },
+      "resource_types": {
+        "ANIMAL": 1.0,
+        "MACHINE": 1.0,
+        "NAKED": 1.5,
+        "TOOL": 1.0
+      }
+    },
+    "gym_settings": {
+      "default_episodes": 10,
+      "max_episode_steps": 1000,
+      "parallel_envs": 4,
+      "_parallel_envs_note": "4 parallel envs - can handle more with 96GB VRAM",
+      "render_mode": null
+    },
+    "prefer_native_games": false,
+    "proton_game_probability": 1.0,
+    "gym_only": true,
+    "_gym_only_help": "100% REAL GYM BATTLES - no marginal native games.",
+    "tournament": {
+      "default_format": "single_elimination",
+      "round_robin_battles_per_pair": 3,
+      "seeding_method": "fitness_based"
+    }
+  },
+  "causation_detection": {
+    "correlation_threshold": 0.5,
+    "direct_causation_time_window": 2,
+    "enable_bidirectional_causations": true,
+    "enable_language_causations": true,
+    "enable_ml_causations": true,
+    "enable_neural_causations": true,
+    "enable_neural_decision_causations": true,
+    "enable_neural_training_causations": true,
+    "enable_phase_transition_causations": true,
+    "enabled": true,
+    "phase_transition_time_window": 2.5,
+    "recent_events_window": 300,
+    "_recent_events_window_note": "2x base - more memory for causation tracking",
+    "thresholds": {
+      "clustering_coefficient": {
+        "collapse": 0.5,
+        "direction": "above"
+      },
+      "modularity": {
+        "collapse": 0.3,
+        "direction": "below"
+      },
+      "organism_count": {
+        "_genesis_note": "Lower threshold - we START small, collapse early is expected",
+        "collapse": 200,
+        "direction": "above"
+      },
+      "violation_pressure": {
+        "vp0": 0.25,
+        "vp1": 0.5,
+        "vp2": 0.75,
+        "vp3": 0.99
+      },
+      "vp_calculations": {
+        "direction": "above",
+        "transition": 50
+      }
+    }
+  },
+  "evolution": {
+    "_genesis_philosophy": "Start with 5 progenitors. Let them multiply. Let them die. Let the cycle breathe.",
+    "_boom_bust_design": "High mutation + high crossover = genetic diversity from tiny gene pool. Inbreeding penalty prevents monoculture.",
+    "adaptation_sensitivity": 0.008,
+    "diversity_guard": {
+      "_genesis_note": "CRITICAL for small populations - prevent genetic monoculture from 5 founders",
+      "enabled": true,
+      "frequency_threshold": 0.25,
+      "hash_similarity_threshold": 0.75,
+      "penalty": 0.12
+    },
+    "fitness_precision": 1e-07,
+    "genotype_length": 64,
+    "_genotype_length_note": "Longer genotypes - 96GB VRAM can handle more complex organisms",
+    "max_generations": 10000,
+    "mutation_rate": {
+      "_genesis_note": "Higher mutation for genetic diversity from small founder population",
+      "initial": 0.08
+    },
+    "mutation_rate_precision": 0.001,
+    "population_size": 5
+  },
+  "feedback": {
+    "enabled": true,
+    "hysteresis_checks": 5,
+    "interval_frames": 10,
+    "knobs": {
+      "clustering_bias": {
+        "initial": 1.5,
+        "max": 1.6,
+        "min": 0.3,
+        "step": 0.05
+      },
+      "mutation_rate": {
+        "_genesis_note": "Wider range - can spike during bottlenecks",
+        "initial": 0.06,
+        "max": 0.15,
+        "min": 0.01,
+        "step": 0.005
+      },
+      "new_edge_rate": {
+        "initial": 4.8,
+        "max": 6,
+        "min": 0.2,
+        "step": 0.1
+      },
+      "quantum_pruning": {
+        "initial": 0.35,
+        "max": 1,
+        "min": 0,
+        "step": 0.05
+      }
+    },
+    "rate_limit_frames": 120
+  },
+  "hardware_governor": {
+    "_auto_scale_help": "Set to false to disable auto-scaling of config values. Governor will only clamp to max, not scale up.",
+    "auto_scale": false
+  },
+  "health_monitor": {
+    "critical_threshold": 0.20,
+    "enabled": true,
+    "healthy_threshold": 0.70,
+    "history_size": 200,
+    "_history_size_note": "2x base - more history tracking with 97GB RAM",
+    "thresholds": {
+      "_genesis_note": "Lower thresholds - small populations are inherently more volatile",
+      "critical": 0.20,
+      "healthy": 0.60,
+      "warning": 0.40
+    },
+    "warning_threshold": 0.50,
+    "weight_adaptability": 0.25,
+    "weight_coherence": 0.25,
+    "weight_diversity": 0.30,
+    "weight_lawfulness": 0.10,
+    "weight_sustainability": 0.10
+  },
+  "highlander": {
+    "eval_interval_seconds": 30,
+    "_eval_interval_seconds_help": "Faster evaluation - RTX PRO 6000 can handle it",
+    "_genesis_design": "Low survival threshold + high germination = exponential growth potential. High competition = bust trigger.",
+    "alliance_warfare": {
+      "_genesis_note": "Small tribes, not empires. Betrayal happens. Dynasties rise and fall.",
+      "betrayal_chance": 0.03,
+      "confederation_war_threshold": 0.5,
+      "enabled": true,
+      "existential_war_threshold": 0.7,
+      "max_alliance_size": 15,
+      "max_alliances": 30,
+      "_max_alliances_note": "More alliances - 96GB VRAM handles larger social graphs",
+      "max_confederations": 8,
+      "min_alliance_size": 2,
+      "war_declaration_threshold": 0.5,
+      "war_frequency": 0.25,
+      "illumination_stability_threshold": 3
+    },
+    "chaos_factor": 0.10,
+    "_chaos_factor_note": "Some randomness - underdogs can win, upsets happen",
+    "competition_intensity": 0.15,
+    "_competition_intensity_note": "Lower for small populations - each battle matters more",
+    "description": "GENESIS PROTOCOL - Boom/Bust emergence from minimal seeds",
+    "enabled": true,
+    "extreme_mode": {
+      "chaos_factor": 0.15,
+      "competition_intensity": 0.25,
+      "description": "EXTINCTION EVENT - Maximum evolutionary pressure",
+      "germination_rate": 0.5,
+      "max_battle_rounds": 10,
+      "max_population": 1000,
+      "_max_population_note": "Higher ceiling - 96GB VRAM handles larger populations",
+      "min_population": 3,
+      "mutation_rate": 0.12,
+      "population_size": 5,
+      "predation_enabled": true,
+      "rounds_per_cycle": 3,
+      "survival_threshold": 0.4
+    },
+    "germination_rate": 0.8,
+    "_germination_rate_note": "High germination = exponential growth during boom",
+    "max_battle_rounds": 30,
+    "max_capsules": 200,
+    "_max_capsules_note": "2x base - more capsule storage with 96GB VRAM",
+    "max_genetic_samples": 400,
+    "_max_genetic_samples_note": "2x base - more genetic history",
+    "max_population": 1500,
+    "_max_population_note": "Higher ceiling before resource collapse - 96GB VRAM allows larger swarms",
+    "min_population": 3,
+    "_min_population_note": "Absolute floor - below this, emergency germination kicks in",
+    "mutation_rate": 0.05,
+    "population_size": 5,
+    "_population_size_note": "THE KLEENE FIXED POINT - 5 progenitors, the minimal self-sustaining unit",
+    "predation_enabled": true,
+    "rounds_per_cycle": 3,
+    "survival_threshold": 0.25,
+    "_survival_threshold_note": "Lower threshold = more survivors = longer boom phase",
+    "lineage_tracking": {
+      "_help": "Track family trees from the 5 founders",
+      "enabled": true,
+      "track_ancestry": true,
+      "founder_bonus": 0.08,
+      "genetic_diversity_pressure": 0.1,
+      "inbreeding_penalty": 0.20,
+      "dynasty_bonus": 0.05,
+      "max_lineage_depth": 200,
+      "_max_lineage_depth_note": "2x base - deeper lineage tracking"
+    },
+    "boom_bust_dynamics": {
+      "_help": "Emergent economic cycles from resource/population feedback",
+      "enabled": true,
+      "boom_detection_threshold": 0.7,
+      "bust_detection_threshold": 0.25,
+      "resource_scarcity_multiplier": 1.5,
+      "abundance_germination_boost": 2.0,
+      "scarcity_competition_boost": 1.5,
+      "cycle_memory_generations": 40,
+      "_cycle_memory_generations_note": "2x base - longer cycle memory",
+      "seasonal_amplitude": 0.4,
+      "seasonal_period_generations": 200
+    }
+  },
+  "lattice": {
+    "entropy_sensitivity": 5e-05,
+    "interaction_precision": 0.0001,
+    "particles": 600,
+    "_particles_note": "2x base - 96GB VRAM handles larger lattice simulations",
+    "prune_threshold": 0,
+    "stability_tolerance": 0.0005
+  },
+  "logging": {
+    "shared_state_dump_interval": 30,
+    "sample_rate": 3,
+    "_sample_rate_help": "Log 1 in N state entries to disk (1=all, 10=10%). More frequent for genesis tracking.",
+    "track_lineage": true,
+    "track_extinctions": true,
+    "boom_bust_log": true
+  },
+  "meta_cognitive": {
+    "description": "Meta-cognitive systems: self-awareness, self-tuning, autonomous optimization",
+    "self_tuning": {
+      "enabled": true,
+      "min_confidence_threshold": 0.5,
+      "_min_confidence_note": "Lower confidence threshold - small populations have higher variance",
+      "mode": "autonomous",
+      "performance_targets": {
+        "max_anomaly_ratio": 0.25,
+        "min_cluster_diversity": 2,
+        "_min_cluster_diversity_note": "Lower - small populations may have fewer clusters",
+        "min_fitness_std": 0.08
+      },
+      "safe_parameters": [
+        "evolution.mutation_rate.initial",
+        "evolution.diversity_guard.penalty",
+        "evolution.diversity_guard.frequency_threshold",
+        "evolution.diversity_guard.hash_similarity_threshold",
+        "evolution.population_size",
+        "evolution.adaptation_sensitivity",
+        "feedback.knobs.mutation_rate.initial",
+        "feedback.knobs.new_edge_rate.initial",
+        "feedback.knobs.clustering_bias.initial",
+        "feedback.knobs.quantum_pruning.initial",
+        "neural.training.learning_rate",
+        "neural.training.gamma",
+        "neural.training.epsilon_decay",
+        "neural.training.batch_size",
+        "neural.rewards.fitness_improvement",
+        "neural.rewards.connection_success",
+        "neural.rewards.survival",
+        "neural.inheritance.crossover_rate",
+        "neural.inheritance.mutation_rate",
+        "network.max_organisms",
+        "network.max_connections",
+        "network.resource_pool",
+        "scikit.clustering.min_cluster_size",
+        "scikit.anomaly_detection.contamination",
+        "scikit.anomaly_detection.n_estimators",
+        "quantum.initial_states",
+        "quantum.entanglement_sensitivity",
+        "quantum.prune_check_interval",
+        "vp_monitoring.adaptive_response.high_vp_threshold",
+        "vp_monitoring.stabilization.smoothing_factor",
+        "causation_detection.correlation_threshold",
+        "meta_cognitive.self_tuning.tuning_interval_frames",
+        "meta_cognitive.self_tuning.min_confidence_threshold",
+        "highlander.germination_rate",
+        "highlander.survival_threshold",
+        "highlander.competition_intensity"
+      ],
+      "tuning_interval_frames": 5
+    }
+  },
+  "network": {
+    "connection_strength_resolution": 5e-06,
+    "emergence_sensitivity": 1e-06,
+    "max_connections": 150000,
+    "_max_connections_note": "3x base - 96GB VRAM handles massive connection graphs",
+    "max_organisms": 2000,
+    "_max_organisms_note": "2x base - higher ceiling for organism count",
+    "resource_flow_precision": 0.001,
+    "resource_pool": 3000,
+    "_resource_pool_note": "2x base - larger resource pool scales with higher max_population",
+    "stability_precision": 1e-07
+  },
+  "neural": {
+    "_genesis_philosophy": "Each brain is precious. Quality over quantity. Deep learning from few examples.",
+    "_rtx_pro_note": "96GB VRAM allows significantly larger neural networks",
+    "brain": {
+      "activation": "relu",
+      "dropout": 0.15,
+      "_dropout_note": "Higher dropout for small populations - prevents overfitting to limited experiences",
+      "hidden_dim": 384,
+      "_hidden_dim_note": "2x base (192→384) - 96GB VRAM handles larger brains",
+      "input_dim": 28,
+      "output_dim": 6,
+      "vocab_size": 25000,
+      "_vocab_size_note": "2x base - larger vocabulary capacity",
+      "attention_dim": 112,
+      "_attention_dim_note": "2x base - deeper attention mechanisms"
+    },
+    "hopfield": {
+      "_help": "Modern continuous Hopfield network for iterative thought refinement",
+      "enabled": true,
+      "patterns": 128,
+      "_patterns_note": "2x base - more memory patterns",
+      "iterations": 7,
+      "_iterations_note": "More iterations for deeper thought",
+      "beta": 1.0
+    },
+    "concept_system": {
+      "concept_loss_weight": 0.15,
+      "embed_dim": 128,
+      "_embed_dim_note": "2x base - richer concept embeddings",
+      "enabled": true,
+      "num_key_compositions": 100,
+      "_num_key_compositions_note": "2x base - more concept compositions",
+      "utility_update_alpha": 0.15
+    },
+    "device": "cuda",
+    "enabled": true,
+    "inheritance": {
+      "_genesis_note": "High crossover preserves good genes from small founder pool",
+      "crossover_rate": 0.95,
+      "enabled": true,
+      "mutation_rate": 0.25
+    },
+    "initialization": {
+      "deterministic": false,
+      "seed": null
+    },
+    "language_model": {
+      "attention": {
+        "attention_dim": 128,
+        "_attention_dim_note": "2x base - deeper attention",
+        "enabled": true,
+        "num_heads": 16,
+        "_num_heads_note": "2x base - more attention heads"
+      },
+      "curriculum": {
+        "enabled": true,
+        "ml_quality": {
+          "enabled": true,
+          "high_quality_threshold": 0.55,
+          "low_quality_threshold": 0.3,
+          "max_sequence_length": 128,
+          "_max_sequence_length_note": "2x base - longer sequences",
+          "min_sequence_length": 8,
+          "sequence_length_step": 4
+        },
+        "sequence_lengths": {
+          "stage_0": 16,
+          "stage_1": 32,
+          "stage_2": 64,
+          "stage_3": 256,
+          "_stage_3_note": "2x base - longer final stage sequences"
+        },
+        "vp_thresholds": {
+          "stage_1": 0.5,
+          "stage_2": 0.4,
+          "stage_3": 0.3
+        }
+      },
+      "enabled": true,
+      "generation": {
+        "max_length": 256,
+        "_max_length_note": "2x base - longer generation capacity",
+        "temperature": 1.3,
+        "_temperature_note": "Slightly lower temp - small populations need more coherent communication",
+        "vp_gate_threshold": 0.5
+      },
+      "knowledge_web": {
+        "embedding_dim": 128,
+        "_embedding_dim_note": "2x base - richer knowledge embeddings",
+        "enabled": true,
+        "max_concepts": 6000,
+        "_max_concepts_note": "2x base - larger knowledge web",
+        "quality_control": {
+          "confidence_growth_rate": 0.001,
+          "_confidence_growth_note": "Faster confidence growth - small populations learn faster",
+          "enabled": true,
+          "exploration_decay_generations": 800,
+          "exploration_end": 0.08,
+          "exploration_start": 0.35,
+          "_exploration_start_note": "Higher exploration for small populations - need to discover more",
+          "max_discoveries_per_generation": 100,
+          "_max_discoveries_note": "2x base - more discoveries per generation",
+          "min_confidence_threshold": 0.20,
+          "min_discovery_count": 2,
+          "pruning_confidence_threshold": 0.15,
+          "pruning_failure_rate": 0.6,
+          "pruning_unused_generations": 80,
+          "review_frequency": 80,
+          "validation_required": true,
+          "vp_boost_exploration": true,
+          "vp_boost_threshold": 0.7
+        }
+      },
+      "relationship_learning": {
+        "enabled": true,
+        "quality_evaluation": {
+          "coherent_threshold": 0.45,
+          "garbled_threshold": 0.25,
+          "max_word_count": 50,
+          "_max_word_count_note": "2x base - longer utterances",
+          "min_word_count": 2,
+          "min_word_count_for_evaluation": 3,
+          "relationship_strength_threshold": 0.4,
+          "unk_ratio_threshold": 0.35
+        },
+        "semantic_guidance": {
+          "enabled": true,
+          "high_strength_boost": 0.2,
+          "max_similar_words": 16,
+          "_max_similar_words_note": "2x base - more semantic connections",
+          "min_strength_threshold": 0.25,
+          "semantic_boost": 0.4
+        }
+      },
+      "sequence": {
+        "context_window": 128,
+        "_context_window_note": "2x base - longer context",
+        "max_length": 512,
+        "_max_length_note": "2x base - longer sequences"
+      },
+      "teacher": {
+        "embedding_dim": 128,
+        "_embedding_dim_note": "2x base - richer teacher embeddings",
+        "enabled": true,
+        "min_action_history": 3,
+        "min_confidence": 0.25,
+        "teaching_frequency": 1,
+        "use_knowledge_web": true,
+        "use_semantic_embeddings": true,
+        "vocab_size": 25000,
+        "_vocab_size_note": "2x base - larger teacher vocabulary",
+        "staged_knowledge": {
+          "_help": "Delay loading expanded knowledge web to let organisms build foundations with innate vocab first",
+          "enabled": true,
+          "delay_seconds": 16,
+          "start_with_innate_only": true
+        }
+      },
+      "training": {
+        "alpha": 0.5,
+        "beta": 0.4,
+        "gamma": 0.1,
+        "vp_temperature_scale": true,
+        "entropy_bonus": 0.012,
+        "label_smoothing": 0.10,
+        "language_epsilon_start": 0.35,
+        "language_epsilon_end": 0.06,
+        "language_epsilon_decay": 0.994,
+        "_epsilon_note": "Slightly faster decay - small populations converge faster"
+      },
+      "vocabulary": {
+        "max_size": 30000,
+        "_max_size_note": "2x base - larger vocabulary",
+        "special_tokens": [
+          "<PAD>",
+          "<UNK>",
+          "<START>",
+          "<END>",
+          "<VP_GATE>"
+        ]
+      }
+    },
+    "optimization": {
+      "amp": {
+        "enabled": true,
+        "dtype": "bfloat16",
+        "_dtype_help": "BF16 optimal for Ada Lovelace (RTX PRO 6000)",
+        "description": "Mixed precision training - 2-3x GPU speedup on Tensor Core GPUs"
+      },
+      "compile_mode": "max-autotune",
+      "_compile_mode_note": "max-autotune for best performance on dedicated GPU",
+      "reuse_optimizers": true,
+      "use_compile": true,
+      "use_scripted_inference": false
+    },
+    "rewards": {
+      "_genesis_note": "Higher survival reward - each life is precious in small populations",
+      "connection_failure": -0.2,
+      "connection_success": 2.5,
+      "fitness_improvement": 4.5,
+      "resource_gain": 1.5,
+      "resource_loss": -0.4,
+      "survival": 3.0,
+      "reproduction_success": 2.0,
+      "lineage_continuation": 1.0
+    },
+    "training": {
+      "batch_size": 64,
+      "_batch_size_note": "2x base - 96GB VRAM handles larger batches",
+      "early_stopping": {
+        "enabled": true,
+        "min_delta": 0.0001,
+        "patience": 15,
+        "_patience_note": "More patience - small populations have more variance"
+      },
+      "enabled": true,
+      "epsilon": 0.95,
+      "epsilon_decay": 0.992,
+      "_epsilon_decay_note": "Faster decay - small populations need to exploit earlier",
+      "epsilon_end": 0.02,
+      "epsilon_start": 0.85,
+      "gamma": 0.995,
+      "language_reward_scaling": 0.4,
+      "learning_rate": 0.0015,
+      "_learning_rate_note": "Slightly lower LR - careful learning from limited data",
+      "lr_scheduler": {
+        "enabled": true,
+        "gamma": 0.95,
+        "min_lr": 0.0001,
+        "step_size": 100,
+        "type": "cosine",
+        "warmup_steps": 100
+      },
+      "memory_size": 150000,
+      "_memory_size_note": "3x base - 96GB VRAM + 97GB RAM handles massive replay buffers",
+      "update_frequency": 1
+    },
+    "vp_aware_planning": {
+      "base_boost": 0.18,
+      "enabled": true,
+      "high_threshold": 0.45,
+      "low_threshold": 0.25,
+      "strong_boost": 0.3
+    },
+    "checkpointing": {
+      "_help": "Auto-save training state to prevent data loss. Checkpoint every N generations or minutes.",
+      "_genesis_note": "More frequent checkpoints - every generation is precious",
+      "enabled": true,
+      "auto_save_interval_generations": 25,
+      "auto_save_interval_minutes": 10,
+      "max_checkpoints": 50,
+      "_max_checkpoints_note": "More checkpoints - 3TB+ storage available",
+      "checkpoint_dir": "data/neural_checkpoints",
+      "include_experience_buffer": true,
+      "include_optimizer_states": true,
+      "compression": false,
+      "auto_resume": true
+    }
+  },
+  "quantum": {
+    "entanglement_sensitivity": 2.5e-06,
+    "fitness_weights": {
+      "entanglement": 0.3,
+      "entropy": 0.2,
+      "measurements": 0.25,
+      "superposition": 0.25
+    },
+    "initial_states": 300,
+    "_initial_states_note": "2x base - more quantum states with 96GB VRAM",
+    "performance_thresholds": {
+      "fitness_std_threshold": 0.3,
+      "iteration_time_ms": 3,
+      "_iteration_time_ms_note": "Faster iterations - 119 TFLOPS",
+      "memory_percentage": 10.0,
+      "min_fitness_to_keep": 0.1
+    },
+    "probability_precision": 1e-06,
+    "prune_check_interval": 40,
+    "superposition_tolerance": 0.0005
+  },
+  "ray": {
+    "enabled": true,
+    "_enabled_note": "Enable Ray for 24-core EPYC - parallel training across organisms",
+    "actor_pool_size": 16,
+    "_actor_pool_size_note": "16 actors - good for 24 allocated cores",
+    "batch_inference_size": 1024,
+    "_batch_inference_size_note": "2x base - 96GB VRAM handles larger batches",
+    "description": "Ray ENABLED - 24-core EPYC benefits from parallelization",
+    "fallback_on_error": true,
+    "logging_level": "warning",
+    "memory_management": {
+      "actor_pool_lru_eviction": true,
+      "cleanup_on_organism_death": true,
+      "max_object_refs": 2000,
+      "_max_object_refs_note": "2x base - more memory available"
+    },
+    "num_cpus": 20,
+    "_num_cpus_note": "20 of 24 allocated cores - leave headroom for system",
+    "num_gpus": 1,
+    "object_store_memory": 16000000000,
+    "_object_store_memory_note": "16GB object store - plenty of RAM available",
+    "parallelization_threshold": 30,
+    "_parallelization_threshold_note": "Lower threshold - parallelize more with 24 cores",
+    "state_synchronization": {
+      "consistency_model": "sequential",
+      "max_state_age_ms": 50,
+      "snapshot_strategy": "breath_cycle"
+    },
+    "training_threshold": 6,
+    "_training_threshold_note": "Lower threshold - parallelize training earlier"
+  },
+  "rendering": {
+    "enable_visualizations": false,
+    "frame_rate": 5,
+    "metric_display_precision": 6,
+    "mode": "god",
+    "performance_monitoring": true,
+    "render_quality": "minimal",
+    "resolution": [
+      800,
+      600
+    ],
+    "text_interface": true,
+    "visualization_update_precision": 0.001
+  },
+  "scikit": {
+    "anomaly_detection": {
+      "algorithm": "isolation_forest",
+      "contamination": 0.20,
+      "_contamination_note": "Higher contamination - small populations have more variance",
+      "enabled": true,
+      "n_estimators": 200,
+      "_n_estimators_note": "2x base - more estimators for better detection"
+    },
+    "clustering": {
+      "algorithm": "hdbscan",
+      "enabled": true,
+      "min_cluster_size": 3,
+      "_min_cluster_size_note": "Lower - small populations need smaller clusters",
+      "min_samples": 2,
+      "use_neural_embeddings": true
+    },
+    "concept_tracking": {
+      "enabled": true,
+      "persistence_threshold": 2,
+      "stale_threshold": 8
+    },
+    "dimensionality_reduction": {
+      "algorithm": "pca",
+      "enabled": true,
+      "n_components": 3
+    },
+    "enabled": true
+  },
+  "simulation": {
+    "log_level": "INFO",
+    "_log_level_note": "INFO level - we want to see the genesis unfold",
+    "max_runtime": 518400.0,
+    "_max_runtime_note": "6 days - matches 6 month max duration rental",
+    "measurement_precision": 4,
+    "performance_sampling_rate": 500,
+    "save_interval": 60.0,
+    "_save_interval_note": "More frequent saves - every organism is precious",
+    "target_fps": 0,
+    "_target_fps_help": "0 = unlimited speed, >0 = rate limit to N cycles/sec",
+    "time_resolution_ms": 0.5
+  },
+  "vp_monitoring": {
+    "adaptive_response": {
+      "high_vp_threshold": 0.80,
+      "streak_threshold": 2,
+      "_streak_threshold_note": "Lower streak - small populations react faster"
+    },
+    "adaptive_thresholds": {
+      "enabled": true
+    },
+    "adaptive_thresholds_enabled": true,
+    "component_decomposition_enabled": true,
+    "component_weights": {
+      "evolution_pressure": 0.20,
+      "network_coherence": 0.15,
+      "phase_mismatch": 0.10,
+      "quantum_entropy": 0.15,
+      "trait_divergence": 0.20,
+      "_trait_divergence_note": "Higher weight - diversity is critical for small populations"
+    },
+    "diagnostics_enabled": true,
+    "stabilization": {
+      "enabled": true,
+      "history_size": 20,
+      "_history_size_note": "2x base - more history tracking",
+      "max_jump": 0.15,
+      "_max_jump_note": "Higher max jump - small populations are more volatile",
+      "smoothing_factor": 0.35
+    },
+    "stabilization_enabled": true
+  },
+  "attractor_landscape": {
+    "enabled": true,
+    "window_size": 15,
+    "_window_size_note": "Smaller window - faster response to boom/bust cycles",
+    "fixed_point_persistence": 3,
+    "fixed_point_variance_threshold": 0.04,
+    "_fixed_point_variance_note": "Higher tolerance - small populations have more variance",
+    "bifurcation_coherence_threshold": 0.12,
+    "bifurcation_entropy_threshold": 0.18,
+    "resonance_similarity_threshold": 0.08,
+    "comment": "Collective magnetism field observatory for swarm attractor dynamics"
+  },
+  "self_perception": {
+    "comment": "Reward shaping for features 26-28 (oscillation_entropy, coherence_frequency, attractor_proximity)",
+    "enabled": true,
+    "oscillation_entropy_threshold": 0.65,
+    "oscillation_chaos_penalty": -0.08,
+    "coherence_frequency_threshold": 0.55,
+    "coherence_trap_penalty": -0.12,
+    "proximity_near_threshold": 0.25,
+    "proximity_near_bonus": 0.08,
+    "proximity_medium_threshold": 0.55,
+    "proximity_medium_bonus": 0.03
+  },
+  "genesis_specific": {
+    "_comment": "Genesis-specific parameters for boom/bust emergence from minimal seeds",
+    "progenitor_count": 5,
+    "founder_names": ["Alpha", "Beta", "Gamma", "Delta", "Epsilon"],
+    "dynasty_tracking": {
+      "enabled": true,
+      "track_all_descendants": true,
+      "extinction_logging": true,
+      "rebirth_logging": true
+    },
+    "resource_dynamics": {
+      "initial_abundance": 1.0,
+      "depletion_rate_per_organism": 0.002,
+      "regeneration_rate": 0.01,
+      "scarcity_threshold": 0.3,
+      "abundance_threshold": 0.7,
+      "seasonal_variation": {
+        "enabled": true,
+        "amplitude": 0.4,
+        "period_generations": 200
+      }
+    },
+    "population_dynamics": {
+      "exponential_growth_phase_threshold": 50,
+      "carrying_capacity_soft": 800,
+      "_carrying_capacity_soft_note": "2x base - 96GB VRAM handles larger populations",
+      "carrying_capacity_hard": 1500,
+      "_carrying_capacity_hard_note": "~2x base - matches max_population",
+      "bust_trigger_density": 0.9,
+      "recovery_threshold": 0.2
+    },
+    "genetic_diversity": {
+      "minimum_viable_diversity": 0.15,
+      "emergency_mutation_boost": 2.0,
+      "founder_effect_generations": 10,
+      "inbreeding_detection": true,
+      "inbreeding_threshold": 0.5,
+      "outbreeding_bonus": 0.1
+    }
+  }
+}

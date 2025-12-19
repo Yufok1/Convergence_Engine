@@ -35,6 +35,13 @@ from .proton_game import (
     
     # Data
     GAME_GRID,
+    DRONE_WARFARE_GAMES,
+    ASYMMETRIC_PAIRINGS,
+    CONTINUOUS_ACTION_ENVS,
+    
+    # Helper functions
+    is_discrete_game,
+    get_discrete_games,
     
     # Convenience functions
     create_arena,
@@ -56,6 +63,13 @@ __all__ = [
     
     # Data
     'GAME_GRID',
+    'DRONE_WARFARE_GAMES',
+    'ASYMMETRIC_PAIRINGS',
+    'CONTINUOUS_ACTION_ENVS',
+    
+    # Helper functions
+    'is_discrete_game',
+    'get_discrete_games',
     
     # Convenience functions
     'create_arena',
@@ -64,7 +78,36 @@ __all__ = [
     # Live organism adapter
     'LiveOrganismAdapter',
     'create_adapter',
-    'create_adapter_pair'
+    'create_adapter_pair',
+    
+    # Real Gym runner
+    'GymRunner',
+    'get_gym_runner',
+    'run_organism_in_gym',
+    'GYM_AVAILABLE',
+    
+    # Drone warfare system
+    'OrganismDroneAdapter',
+    'DroneState',
+    'DroneAction',
+    'SingleDroneArena',
+    'PYFLYT_AVAILABLE',
+    'SwarmBattle',
+    'BattleConfig',
+    'BattleStatistics',
+    'BattleOutcome',
+    'run_alliance_battle',
+    'DroneWarfareArena',
+    'WarfareConfig',
+    'create_drone_warfare_arena',
+    
+    # JSBSim Quadcopter physics (no C++ needed)
+    'QuadcopterFDM',
+    'QuadcopterEnv', 
+    'MultiQuadcopterEnv',
+    'QuadcopterConfig',
+    'QuadcopterState',
+    'QUADCOPTER_FDM_AVAILABLE',
 ]
 
 # Import live organism adapter
@@ -79,3 +122,73 @@ except ImportError:
     LiveOrganismAdapter = None
     create_adapter = None
     create_adapter_pair = None
+
+# Import REAL gym runner
+try:
+    from .gym_runner import (
+        GymRunner,
+        get_gym_runner,
+        run_organism_in_gym,
+        GYM_AVAILABLE
+    )
+except ImportError:
+    GymRunner = None
+    get_gym_runner = None
+    run_organism_in_gym = None
+    GYM_AVAILABLE = False
+
+# Import JSBSim quadcopter physics (no C++ required!)
+try:
+    from .jsbsim_quadcopter import (
+        QuadcopterFDM,
+        QuadcopterEnv,
+        MultiQuadcopterEnv,
+        QuadcopterConfig,
+        QuadcopterState,
+        JSBSIM_AVAILABLE as QUADCOPTER_FDM_AVAILABLE
+    )
+except ImportError:
+    QuadcopterFDM = None
+    QuadcopterEnv = None
+    MultiQuadcopterEnv = None
+    QuadcopterConfig = None
+    QuadcopterState = None
+    QUADCOPTER_FDM_AVAILABLE = False
+
+# Import drone warfare system
+try:
+    from .drone_adapter import (
+        OrganismDroneAdapter,
+        DroneState,
+        DroneAction,
+        SingleDroneArena,
+        PYFLYT_AVAILABLE,
+        QUADCOPTER_FDM_AVAILABLE as _QUAD_AVAIL  # Re-check from adapter
+    )
+    from .swarm_battle import (
+        SwarmBattle,
+        BattleConfig,
+        BattleStatistics,
+        BattleOutcome,
+        run_alliance_battle
+    )
+    from .drone_warfare import (
+        DroneWarfareArena,
+        WarfareConfig,
+        create_drone_warfare_arena
+    )
+except ImportError as e:
+    # Graceful degradation if PyFlyt not installed
+    OrganismDroneAdapter = None
+    DroneState = None
+    DroneAction = None
+    SingleDroneArena = None
+    PYFLYT_AVAILABLE = False
+    SwarmBattle = None
+    BattleConfig = None
+    BattleStatistics = None
+    BattleOutcome = None
+    run_alliance_battle = None
+    DroneWarfareArena = None
+    WarfareConfig = None
+    create_drone_warfare_arena = None

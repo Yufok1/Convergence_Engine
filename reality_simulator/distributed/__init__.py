@@ -23,35 +23,27 @@ Usage:
         results = [func(item) for item in items]
 """
 
+import os
 import logging
+
+# MUST set before importing ray to disable metrics agent spam
+os.environ['RAY_METRICS_AGENT_DISABLED'] = '1'
+os.environ['RAY_ENABLE_WINDOWS_OR_OSX_CLUSTER'] = '1'  # Suppress cluster warnings
 
 logger = logging.getLogger(__name__)
 
-# Check Ray availability - do this lazily to avoid caching issues after crashes
-RAY_AVAILABLE = None
+# Check Ray availability - DISABLED to stop metrics agent spam
+# Ray causes more trouble than it's worth in single-node setups
+RAY_AVAILABLE = False
 RAY_VERSION = None
 ray = None
 
 def _check_ray_available():
-    """Check if Ray is available - called lazily to avoid stale cache issues."""
-    global RAY_AVAILABLE, RAY_VERSION, ray
-    if RAY_AVAILABLE is not None:
-        return RAY_AVAILABLE
-    try:
-        import ray as _ray
-        ray = _ray
-        RAY_AVAILABLE = True
-        RAY_VERSION = ray.__version__
-        logger.info(f"[Distributed] Ray {RAY_VERSION} available")
-    except ImportError:
-        RAY_AVAILABLE = False
-        RAY_VERSION = None
-        ray = None
-        logger.info("[Distributed] Ray not available - using sequential fallback")
-    return RAY_AVAILABLE
+    """Ray is disabled - always return False."""
+    return False
 
-# Perform initial check
-_check_ray_available()
+# Don't check - Ray is disabled
+# _check_ray_available()
 
 
 def get_ray_manager(config: dict = None):

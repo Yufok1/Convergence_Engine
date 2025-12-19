@@ -1,7 +1,11 @@
 {
-  "_case_study": "STUDY 5: CREATIVE SPECIALIST - High temperature, strong semantic guidance",
-  "_hypothesis": "Higher temperature + semantic guidance produces more expressive, creative articulation",
+  "_mode": "H100_GENESIS_PROTOCOL",
+  "_case_study": "Adam & Eve Progenation - Boom/Bust from Minimal Seeds",
+  "_hypothesis": "5 progenitors → exponential growth → resource collapse → survival bottleneck → rebirth",
+  "_philosophy": "Organic growth. Start small. Let it breathe.",
+  "_hardware": "NVIDIA H100 PCIe 80GB - Vast.ai $1.15/hr",
   "_hardware_profile_help": "Set to 'beast', 'workstation', 'standard', 'laptop', 'potato', or 'cpu_only' to override auto-detection. null = auto-detect",
+  "hardware_profile": "beast",
   "agency": {
     "confidence_threshold": 0.0001,
     "decision_precision": 1e-05,
@@ -13,7 +17,8 @@
     "_help": "Unifies 6 semantic systems for word embedding differentiation",
     "enabled": true,
     "use_learned_embeddings": true,
-    "embedding_dim": 64,
+    "embedding_dim": 96,
+    "_embedding_dim_note": "1.5x base for H100 80GB",
     "organism_embedding_alpha": 0.15,
     "concept_system_alpha": 0.1,
     "knowledge_web_influence_interval": 10,
@@ -55,7 +60,8 @@
     "gym_settings": {
       "default_episodes": 10,
       "max_episode_steps": 1000,
-      "parallel_envs": 1,
+      "parallel_envs": 8,
+      "_parallel_envs_note": "H100 handles heavy parallelism",
       "render_mode": null
     },
     "prefer_native_games": false,
@@ -107,21 +113,24 @@
     }
   },
   "evolution": {
-    "adaptation_sensitivity": 0.005,
+    "_genesis_philosophy": "Start with 5 progenitors. Let them multiply. Let them die. Let the cycle breathe.",
+    "adaptation_sensitivity": 0.008,
     "diversity_guard": {
+      "_genesis_note": "CRITICAL for small populations - prevent genetic monoculture",
       "enabled": true,
-      "frequency_threshold": 0.1,
-      "hash_similarity_threshold": 0.88,
-      "penalty": 0.05
+      "frequency_threshold": 0.25,
+      "hash_similarity_threshold": 0.75,
+      "penalty": 0.12
     },
     "fitness_precision": 1e-07,
-    "genotype_length": 48,
-    "max_generations": 1500,
+    "genotype_length": 64,
+    "max_generations": 10000,
     "mutation_rate": {
-      "initial": 0.04
+      "_genesis_note": "Higher mutation for genetic diversity from small founder population",
+      "initial": 0.08
     },
     "mutation_rate_precision": 0.001,
-    "population_size": 25
+    "population_size": 5
   },
   "feedback": {
     "enabled": true,
@@ -178,55 +187,65 @@
     "weight_sustainability": 0.1
   },
   "highlander": {
-    "eval_interval_seconds": 10,
-    "_eval_interval_seconds_help": "Highlander evaluates every N seconds (e.g. 30 = every 30 seconds, 450 = 7.5 minutes)",
+    "eval_interval_seconds": 20,
+    "_eval_interval_seconds_help": "H100 is fast - evaluate more frequently",
+    "_genesis_design": "Low survival threshold + high germination = exponential growth. High competition = bust trigger.",
     "alliance_warfare": {
-      "betrayal_chance": 0.0,
-      "confederation_war_threshold": 0.6,
+      "_genesis_note": "Small tribes, not empires. Betrayal happens. Dynasties rise and fall.",
+      "betrayal_chance": 0.03,
+      "confederation_war_threshold": 0.5,
       "enabled": true,
-      "existential_war_threshold": 0.8,
-      "max_alliance_size": 999,
-      "max_alliances": 9999,
-      "max_confederations": 9999,
+      "existential_war_threshold": 0.7,
+      "max_alliance_size": 15,
+      "max_alliances": 30,
+      "max_confederations": 8,
       "min_alliance_size": 2,
-      "war_declaration_threshold": 0.6,
-      "war_frequency": 0.5,
-      "illumination_stability_threshold": 5
+      "war_declaration_threshold": 0.5,
+      "war_frequency": 0.25,
+      "illumination_stability_threshold": 3
     },
-    "chaos_factor": 0.0,
-    "competition_intensity": 0.4,
-    "description": "STUDY 5: CREATIVE SPECIALIST - High temperature, semantic boost",
+    "chaos_factor": 0.10,
+    "_chaos_factor_note": "Some randomness - underdogs can win",
+    "competition_intensity": 0.15,
+    "_competition_intensity_note": "Lower for small populations - each battle matters more",
+    "description": "H100 GENESIS - Boom/Bust from minimal seeds",
     "enabled": true,
     "extreme_mode": {
-      "chaos_factor": 0.0,
-      "competition_intensity": 0.4,
-      "description": "EXTREME DIFFICULTY - Maximum evolutionary pressure",
-      "germination_rate": 0.1,
-      "max_battle_rounds": 15,
-      "max_population": 25,
-      "min_population": 15,
-      "mutation_rate": 0.0,
-      "population_size": 200,
+      "chaos_factor": 0.15,
+      "competition_intensity": 0.25,
+      "description": "EXTINCTION EVENT - Maximum evolutionary pressure",
+      "germination_rate": 0.5,
+      "max_battle_rounds": 10,
+      "max_population": 1200,
+      "min_population": 3,
+      "mutation_rate": 0.12,
+      "population_size": 5,
       "predation_enabled": true,
-      "rounds_per_cycle": 2,
+      "rounds_per_cycle": 3,
       "survival_threshold": 0.4
     },
-    "germination_rate": 0.1,
-    "max_battle_rounds": 50,
-    "max_capsules": 100,
-    "max_genetic_samples": 100,
-    "max_population": 25,
-    "min_population": 15,
-    "mutation_rate": 0.0,
-    "population_size": 200,
+    "germination_rate": 0.8,
+    "_germination_rate_note": "High germination = exponential growth during boom",
+    "max_battle_rounds": 30,
+    "max_capsules": 200,
+    "max_genetic_samples": 400,
+    "max_population": 1200,
+    "_max_population_note": "H100 80GB ceiling",
+    "min_population": 3,
+    "_min_population_note": "Absolute floor - emergency germination kicks in below this",
+    "mutation_rate": 0.05,
+    "population_size": 5,
+    "_population_size_note": "THE KLEENE FIXED POINT - 5 progenitors",
     "predation_enabled": true,
-    "rounds_per_cycle": 2,
-    "survival_threshold": 0.4
+    "rounds_per_cycle": 3,
+    "survival_threshold": 0.25,
+    "_survival_threshold_note": "Lower = more survivors = longer boom phase"
   },
   "lattice": {
     "entropy_sensitivity": 5e-05,
     "interaction_precision": 0.0001,
-    "particles": 1000,
+    "particles": 500,
+    "_particles_note": "Scaled for 80GB VRAM",
     "prune_threshold": 0,
     "stability_tolerance": 0.0005
   },
@@ -287,34 +306,44 @@
   "network": {
     "connection_strength_resolution": 5e-06,
     "emergence_sensitivity": 1e-06,
-    "max_connections": 48000,
-    "max_organisms": 5000,
-    "resource_flow_precision": 0.0001,
-    "resource_pool": 1000,
+    "max_connections": 100000,
+    "_max_connections_note": "Scaled for H100 80GB",
+    "max_organisms": 1500,
+    "resource_flow_precision": 0.001,
+    "resource_pool": 3000,
+    "_resource_pool_note": "Larger pool for boom/bust dynamics",
     "stability_precision": 1e-07
   },
   "neural": {
+    "_genesis_philosophy": "Each brain is precious. Quality over quantity.",
+    "_h100_note": "H100 80GB Hopper architecture - tensor cores love BF16",
     "brain": {
       "activation": "relu",
-      "dropout": 0.1,
-      "hidden_dim": 64,
+      "dropout": 0.15,
+      "_dropout_note": "Higher dropout - prevents overfitting in small populations",
+      "hidden_dim": 256,
+      "_hidden_dim_note": "4x base for H100 80GB",
       "input_dim": 28,
       "output_dim": 6,
-      "vocab_size": 20000,
-      "attention_dim": 32
+      "vocab_size": 25000,
+      "attention_dim": 64,
+      "_attention_dim_note": "2x base for H100"
     },
     "hopfield": {
       "_help": "Modern continuous Hopfield network for iterative thought refinement",
       "enabled": true,
-      "patterns": 32,
-      "iterations": 5,
+      "patterns": 64,
+      "_patterns_note": "2x base for H100",
+      "iterations": 6,
       "beta": 1.0
     },
     "concept_system": {
       "concept_loss_weight": 0.15,
-      "embed_dim": 64,
+      "embed_dim": 96,
+      "_embed_dim_note": "1.5x base for H100",
       "enabled": true,
-      "num_key_compositions": 30,
+      "num_key_compositions": 60,
+      "_num_key_compositions_note": "2x base",
       "utility_update_alpha": 0.15
     },
     "device": "cuda",
@@ -330,9 +359,11 @@
     },
     "language_model": {
       "attention": {
-        "attention_dim": 32,
+        "attention_dim": 64,
+        "_attention_dim_note": "2x base for H100",
         "enabled": true,
-        "num_heads": 4
+        "num_heads": 8,
+        "_num_heads_note": "2x base for H100"
       },
       "curriculum": {
         "enabled": true,
@@ -363,9 +394,11 @@
         "vp_gate_threshold": 0.5
       },
       "knowledge_web": {
-        "embedding_dim": 64,
+        "embedding_dim": 96,
+        "_embedding_dim_note": "1.5x base for H100",
         "enabled": true,
-        "max_concepts": 2400,
+        "max_concepts": 4000,
+        "_max_concepts_note": "Larger knowledge web",
         "quality_control": {
           "confidence_growth_rate": 0.0008,
           "enabled": true,
@@ -404,18 +437,22 @@
         }
       },
       "sequence": {
-        "context_window": 32,
-        "max_length": 128
+        "context_window": 64,
+        "_context_window_note": "2x base for H100",
+        "max_length": 256,
+        "_max_length_note": "2x base"
       },
       "teacher": {
-        "embedding_dim": 64,
+        "embedding_dim": 96,
+        "_embedding_dim_note": "1.5x base for H100",
         "enabled": true,
         "min_action_history": 3,
         "min_confidence": 0.25,
         "teaching_frequency": 1,
         "use_knowledge_web": true,
         "use_semantic_embeddings": true,
-        "vocab_size": 20000,
+        "vocab_size": 25000,
+        "_vocab_size_note": "Larger vocab for H100",
         "staged_knowledge": {
           "_help": "Delay loading expanded knowledge web to let organisms build foundations with innate vocab first",
           "enabled": true,
@@ -451,9 +488,9 @@
     "optimization": {
       "amp": {
         "enabled": true,
-        "dtype": "auto",
-        "_dtype_help": "'auto' detects optimal dtype (BF16 for Ampere+, FP16 for older). Can also be 'float16' or 'bfloat16'",
-        "description": "Mixed precision training - 2-3x GPU speedup on Tensor Core GPUs"
+        "dtype": "bfloat16",
+        "_dtype_help": "BF16 optimal for H100 Hopper architecture",
+        "description": "Mixed precision training - H100 tensor cores are INSANE with BF16"
       },
       "compile_mode": "max-autotune",
       "reuse_optimizers": true,
@@ -461,28 +498,35 @@
       "use_scripted_inference": false
     },
     "rewards": {
+      "_genesis_note": "Higher survival reward - each life is precious in small populations",
       "connection_failure": -0.2,
       "connection_success": 2.5,
       "fitness_improvement": 4.5,
-      "resource_gain": 1,
-      "resource_loss": -0.3,
-      "survival": 2
+      "resource_gain": 1.5,
+      "resource_loss": -0.4,
+      "survival": 3.0,
+      "reproduction_success": 2.0,
+      "lineage_continuation": 1.0
     },
     "training": {
-      "batch_size": 64,
+      "batch_size": 128,
+      "_batch_size_note": "H100 tensor cores love big batches",
       "early_stopping": {
         "enabled": true,
         "min_delta": 0.0001,
-        "patience": 10
+        "patience": 15,
+        "_patience_note": "More patience - small populations have more variance"
       },
       "enabled": true,
       "epsilon": 0.95,
-      "epsilon_decay": 0.99,
-      "epsilon_end": 0.01,
-      "epsilon_start": 0.8,
+      "epsilon_decay": 0.992,
+      "_epsilon_decay_note": "Faster decay - small populations exploit earlier",
+      "epsilon_end": 0.02,
+      "epsilon_start": 0.85,
       "gamma": 0.995,
       "language_reward_scaling": 0.4,
-      "learning_rate": 0.005,
+      "learning_rate": 0.002,
+      "_learning_rate_note": "Slightly higher LR - H100 can handle it",
       "lr_scheduler": {
         "enabled": true,
         "gamma": 0.95,
@@ -491,7 +535,8 @@
         "type": "cosine",
         "warmup_steps": 100
       },
-      "memory_size": 40000,
+      "memory_size": 150000,
+      "_memory_size_note": "Large replay buffer",
       "update_frequency": 1
     },
     "vp_aware_planning": {
@@ -502,11 +547,12 @@
       "strong_boost": 0.3
     },
     "checkpointing": {
-      "_help": "Auto-save training state to prevent data loss. Checkpoint every N generations or minutes.",
+      "_help": "Auto-save training state to prevent data loss.",
+      "_genesis_note": "More frequent checkpoints - every generation is precious",
       "enabled": true,
-      "auto_save_interval_generations": 100,
-      "auto_save_interval_minutes": 30,
-      "max_checkpoints": 10,
+      "auto_save_interval_generations": 25,
+      "auto_save_interval_minutes": 10,
+      "max_checkpoints": 50,
       "checkpoint_dir": "data/neural_checkpoints",
       "include_experience_buffer": true,
       "include_optimizer_states": true,
@@ -522,11 +568,13 @@
       "measurements": 0.25,
       "superposition": 0.25
     },
-    "initial_states": 80,
+    "initial_states": 200,
+    "_initial_states_note": "2.5x base for H100",
     "performance_thresholds": {
       "fitness_std_threshold": 0.3,
-      "iteration_time_ms": 10,
-      "memory_percentage": 5.0,
+      "iteration_time_ms": 5,
+      "_iteration_time_ms_note": "H100 is fast",
+      "memory_percentage": 8.0,
       "min_fitness_to_keep": 0.1
     },
     "probability_precision": 1e-06,
@@ -534,38 +582,43 @@
     "superposition_tolerance": 0.0005
   },
   "ray": {
-    "enabled": false,
-    "actor_pool_size": 2,
-    "batch_inference_size": 64,
-    "description": "Ray DISABLED",
+    "enabled": true,
+    "_enabled_note": "Enable Ray - H100 hosts usually have beefy CPUs",
+    "actor_pool_size": 12,
+    "batch_inference_size": 256,
+    "_batch_inference_size_note": "H100 loves big batches",
+    "description": "Ray ENABLED for parallel organism training",
     "fallback_on_error": true,
     "logging_level": "warning",
     "memory_management": {
       "actor_pool_lru_eviction": true,
       "cleanup_on_organism_death": true,
-      "max_object_refs": 100
+      "max_object_refs": 1000
     },
-    "num_cpus": 4,
+    "num_cpus": 16,
+    "_num_cpus_note": "Adjust based on your Vast.ai instance",
     "num_gpus": 1,
-    "object_store_memory": null,
-    "parallelization_threshold": 100,
+    "object_store_memory": 8000000000,
+    "_object_store_memory_note": "8GB object store",
+    "parallelization_threshold": 30,
     "state_synchronization": {
       "consistency_model": "sequential",
-      "max_state_age_ms": 100,
+      "max_state_age_ms": 50,
       "snapshot_strategy": "breath_cycle"
     },
-    "training_threshold": 16
+    "training_threshold": 6
   },
   "rendering": {
-    "enable_visualizations": true,
-    "frame_rate": 15,
+    "enable_visualizations": false,
+    "_enable_visualizations_note": "Disabled for headless Vast.ai",
+    "frame_rate": 5,
     "metric_display_precision": 6,
     "mode": "god",
-    "performance_monitoring": false,
-    "render_quality": "low",
+    "performance_monitoring": true,
+    "render_quality": "minimal",
     "resolution": [
-      1280,
-      720
+      800,
+      600
     ],
     "text_interface": true,
     "visualization_update_precision": 0.001
@@ -573,15 +626,18 @@
   "scikit": {
     "anomaly_detection": {
       "algorithm": "isolation_forest",
-      "contamination": 0.18,
+      "contamination": 0.20,
+      "_contamination_note": "Higher - small populations have more variance",
       "enabled": true,
-      "n_estimators": 450
+      "n_estimators": 200,
+      "_n_estimators_note": "Scaled down from 450 - genesis is small"
     },
     "clustering": {
       "algorithm": "hdbscan",
       "enabled": true,
-      "min_cluster_size": 4,
-      "min_samples": 1,
+      "min_cluster_size": 3,
+      "_min_cluster_size_note": "Lower - small populations need smaller clusters",
+      "min_samples": 2,
       "use_neural_embeddings": true
     },
     "concept_tracking": {
@@ -598,13 +654,16 @@
   },
   "simulation": {
     "log_level": "INFO",
-    "max_runtime": 14400.0,
+    "_log_level_note": "INFO - we want to see genesis unfold",
+    "max_runtime": 604800.0,
+    "_max_runtime_note": "7 days max",
     "measurement_precision": 4,
-    "performance_sampling_rate": 200,
+    "performance_sampling_rate": 500,
     "save_interval": 60.0,
+    "_save_interval_note": "Frequent saves",
     "target_fps": 0,
-    "_target_fps_help": "0 = unlimited speed, >0 = rate limit to N cycles/sec",
-    "time_resolution_ms": 1.0
+    "_target_fps_help": "0 = unlimited speed",
+    "time_resolution_ms": 0.5
   },
   "vp_monitoring": {
     "adaptive_response": {

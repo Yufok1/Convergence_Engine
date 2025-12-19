@@ -1,7 +1,14 @@
 {
-  "_case_study": "STUDY 5: CREATIVE SPECIALIST - High temperature, strong semantic guidance",
-  "_hypothesis": "Higher temperature + semantic guidance produces more expressive, creative articulation",
-  "_hardware_profile_help": "Set to 'beast', 'workstation', 'standard', 'laptop', 'potato', or 'cpu_only' to override auto-detection. null = auto-detect",
+  "_case_study": "VAST.AI XEON 1.5TB - 5000 Organism Intense Battles",
+  "_hypothesis": "1.5TB RAM + 88 threads + cheap rate = long intense battle sessions",
+  "_hardware_profile_help": "Vast.ai Intel Xeon E5-2699 v4 (88 threads) + 1548GB RAM + RTX 3060 12GB",
+  "_vast_notes": {
+    "ram_gb": 1548,
+    "cpu": "Intel Xeon E5-2699 v4 (88 threads)",
+    "gpu": "RTX 3060 12GB",
+    "cost_per_hour": 0.28,
+    "strategy": "5000 organism battles - stable intense combat for long sessions"
+  },
   "agency": {
     "confidence_threshold": 0.0001,
     "decision_precision": 1e-05,
@@ -116,12 +123,13 @@
     },
     "fitness_precision": 1e-07,
     "genotype_length": 48,
-    "max_generations": 1500,
+    "max_generations": 10000,
     "mutation_rate": {
       "initial": 0.04
     },
     "mutation_rate_precision": 0.001,
-    "population_size": 25
+    "population_size": 5000,
+    "_population_size_help": "5K organisms for intense battles"
   },
   "feedback": {
     "enabled": true,
@@ -142,7 +150,7 @@
       },
       "new_edge_rate": {
         "initial": 4.8,
-        "max": 6,
+        "max": 8,
         "min": 0.2,
         "step": 0.1
       },
@@ -155,7 +163,7 @@
     },
     "rate_limit_frames": 120
   },
-  "hardware_profile": null,
+  "hardware_profile": "vast_xeon_1.5tb_genesis",
   "hardware_governor": {
     "_auto_scale_help": "Set to false to disable auto-scaling of config values. Governor will only clamp to max, not scale up.",
     "auto_scale": false
@@ -178,16 +186,15 @@
     "weight_sustainability": 0.1
   },
   "highlander": {
-    "eval_interval_seconds": 10,
-    "_eval_interval_seconds_help": "Highlander evaluates every N seconds (e.g. 30 = every 30 seconds, 450 = 7.5 minutes)",
+    "eval_interval_seconds": 3,
     "alliance_warfare": {
       "betrayal_chance": 0.0,
       "confederation_war_threshold": 0.6,
       "enabled": true,
       "existential_war_threshold": 0.8,
-      "max_alliance_size": 999,
-      "max_alliances": 9999,
-      "max_confederations": 9999,
+      "max_alliance_size": 10000,
+      "max_alliances": 100000,
+      "max_confederations": 25000,
       "min_alliance_size": 2,
       "war_declaration_threshold": 0.6,
       "war_frequency": 0.5,
@@ -195,30 +202,34 @@
     },
     "chaos_factor": 0.0,
     "competition_intensity": 0.4,
-    "description": "STUDY 5: CREATIVE SPECIALIST - High temperature, semantic boost",
+    "description": "XEON 1.5TB - 5000 organism intense battles",
     "enabled": true,
     "extreme_mode": {
       "chaos_factor": 0.0,
       "competition_intensity": 0.4,
-      "description": "EXTREME DIFFICULTY - Maximum evolutionary pressure",
-      "germination_rate": 0.1,
-      "max_battle_rounds": 15,
-      "max_population": 25,
-      "min_population": 15,
+      "description": "XEON EXTREME - 5K organism battles",
+      "germination_rate": 1.0,
+      "max_battle_rounds": 30,
+      "max_population": 50000,
+      "min_population": 500,
       "mutation_rate": 0.0,
-      "population_size": 200,
+      "population_size": 5000,
       "predation_enabled": true,
-      "rounds_per_cycle": 2,
+      "rounds_per_cycle": 5,
       "survival_threshold": 0.4
     },
-    "germination_rate": 0.1,
-    "max_battle_rounds": 50,
-    "max_capsules": 100,
-    "max_genetic_samples": 100,
-    "max_population": 25,
-    "min_population": 15,
+    "germination_rate": 1.0,
+    "_germination_rate_help": "Stable germination for 5K battles",
+    "max_battle_rounds": 100,
+    "max_capsules": 10000,
+    "_max_capsules_help": "Large capsule storage for long runs",
+    "max_genetic_samples": 10000,
+    "max_population": 100000,
+    "_max_population_help": "1.5TB RAM = 100K organisms at ~10MB each",
+    "min_population": 500,
     "mutation_rate": 0.0,
-    "population_size": 200,
+    "population_size": 5000,
+    "_population_size_help": "5K organisms for intense battles",
     "predation_enabled": true,
     "rounds_per_cycle": 2,
     "survival_threshold": 0.4
@@ -226,7 +237,8 @@
   "lattice": {
     "entropy_sensitivity": 5e-05,
     "interaction_precision": 0.0001,
-    "particles": 1000,
+    "particles": 40000,
+    "_particles_help": "40K particles for rich quantum substrate",
     "prune_threshold": 0,
     "stability_tolerance": 0.0005
   },
@@ -279,7 +291,10 @@
         "vp_monitoring.stabilization.smoothing_factor",
         "causation_detection.correlation_threshold",
         "meta_cognitive.self_tuning.tuning_interval_frames",
-        "meta_cognitive.self_tuning.min_confidence_threshold"
+        "meta_cognitive.self_tuning.min_confidence_threshold",
+        "highlander.competition_intensity",
+        "highlander.survival_threshold",
+        "highlander.germination_rate"
       ],
       "tuning_interval_frames": 5
     }
@@ -287,10 +302,13 @@
   "network": {
     "connection_strength_resolution": 5e-06,
     "emergence_sensitivity": 1e-06,
-    "max_connections": 48000,
-    "max_organisms": 5000,
+    "max_connections": 5000000,
+    "_max_connections_help": "5M connections for massive political networks",
+    "max_organisms": 100000,
+    "_max_organisms_help": "1.5TB RAM = 100K organisms",
     "resource_flow_precision": 0.0001,
-    "resource_pool": 1000,
+    "resource_pool": 100000,
+    "_resource_pool_help": "Large resource pool for boom/bust economics",
     "stability_precision": 1e-07
   },
   "neural": {
@@ -317,7 +335,8 @@
       "num_key_compositions": 30,
       "utility_update_alpha": 0.15
     },
-    "device": "cuda",
+    "device": "cpu",
+    "_device_help": "CPU-only mode - 1.5TB RAM beats 12GB VRAM. RTX 3060 too small for 100K organisms.",
     "enabled": true,
     "inheritance": {
       "crossover_rate": 0.9,
@@ -432,10 +451,7 @@
         "label_smoothing": 0.12,
         "language_epsilon_start": 0.4,
         "language_epsilon_end": 0.08,
-        "language_epsilon_decay": 0.996,
-        "_entropy_bonus_help": "Higher entropy for creative specialist - encourages more diverse, creative output",
-        "_label_smoothing_help": "Slightly higher smoothing for creative exploration",
-        "_language_epsilon_help": "Higher language epsilon for creative specialist - more random token exploration encourages novel combinations."
+        "language_epsilon_decay": 0.996
       },
       "vocabulary": {
         "max_size": 20000,
@@ -450,14 +466,16 @@
     },
     "optimization": {
       "amp": {
-        "enabled": true,
+        "enabled": false,
+        "_enabled_help": "AMP disabled for CPU mode - no GPU tensor cores",
         "dtype": "auto",
         "_dtype_help": "'auto' detects optimal dtype (BF16 for Ampere+, FP16 for older). Can also be 'float16' or 'bfloat16'",
         "description": "Mixed precision training - 2-3x GPU speedup on Tensor Core GPUs"
       },
-      "compile_mode": "max-autotune",
+      "compile_mode": "default",
       "reuse_optimizers": true,
-      "use_compile": true,
+      "use_compile": false,
+      "_use_compile_help": "Disabled for CPU mode - torch.compile with cudagraph spams warnings on CPU",
       "use_scripted_inference": false
     },
     "rewards": {
@@ -469,7 +487,7 @@
       "survival": 2
     },
     "training": {
-      "batch_size": 64,
+      "batch_size": 128,
       "early_stopping": {
         "enabled": true,
         "min_delta": 0.0001,
@@ -491,7 +509,8 @@
         "type": "cosine",
         "warmup_steps": 100
       },
-      "memory_size": 40000,
+      "memory_size": 1500000,
+      "_memory_size_help": "1.5TB RAM = massive replay buffer",
       "update_frequency": 1
     },
     "vp_aware_planning": {
@@ -522,7 +541,8 @@
       "measurements": 0.25,
       "superposition": 0.25
     },
-    "initial_states": 80,
+    "initial_states": 1500,
+    "_initial_states_help": "Moderate quantum states - scales with population",
     "performance_thresholds": {
       "fitness_std_threshold": 0.3,
       "iteration_time_ms": 10,
@@ -534,27 +554,29 @@
     "superposition_tolerance": 0.0005
   },
   "ray": {
-    "enabled": false,
-    "actor_pool_size": 2,
-    "batch_inference_size": 64,
-    "description": "Ray DISABLED",
+    "enabled": true,
+    "actor_pool_size": 44,
+    "_actor_pool_size_help": "Half of 88 threads for actors",
+    "batch_inference_size": 256,
+    "description": "Ray ENABLED - Xeon 88 threads",
     "fallback_on_error": true,
     "logging_level": "warning",
     "memory_management": {
       "actor_pool_lru_eviction": true,
       "cleanup_on_organism_death": true,
-      "max_object_refs": 100
+      "max_object_refs": 10000
     },
-    "num_cpus": 4,
+    "num_cpus": 88,
     "num_gpus": 1,
     "object_store_memory": null,
-    "parallelization_threshold": 100,
+    "parallelization_threshold": 500,
+    "_parallelization_threshold_help": "Lower threshold - parallelize earlier during boom",
     "state_synchronization": {
       "consistency_model": "sequential",
       "max_state_age_ms": 100,
       "snapshot_strategy": "breath_cycle"
     },
-    "training_threshold": 16
+    "training_threshold": 64
   },
   "rendering": {
     "enable_visualizations": true,

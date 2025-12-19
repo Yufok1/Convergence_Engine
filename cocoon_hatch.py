@@ -660,21 +660,211 @@ class CocoonHatch:
 # CLI
 # =============================================================================
 
+def spawn_asset(cocoon_path: str, asset_type: str, output_dir: str = "."):
+    """
+    Extract/compile assets from a cocoon file.
+    
+    Asset types:
+        readme   - Extract embedded README
+        adapter  - Extract TMRL adapter (if embedded)
+        onnx     - Compile brain(s) to ONNX format
+        weights  - Export raw PyTorch state dicts
+        vocab    - Export vocabulary JSON
+        all      - Extract everything
+    """
+    import os
+    import sys
+    import importlib.util
+    
+    print(f"🥚 COCOON HATCH - Asset Spawner")
+    print("=" * 50)
+    print()
+    
+    if not os.path.exists(cocoon_path):
+        print(f"❌ Cocoon not found: {cocoon_path}")
+        return False
+    
+    # Load the cocoon module
+    print(f"⏳ Loading cocoon: {cocoon_path}")
+    try:
+        spec = importlib.util.spec_from_file_location("cocoon_spawn", cocoon_path)
+        cocoon_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cocoon_module)
+    except Exception as e:
+        print(f"❌ Failed to load cocoon: {e}")
+        return False
+    
+    print(f"✅ Cocoon loaded")
+    
+    os.makedirs(output_dir, exist_ok=True)
+    spawned = []
+    
+    # README
+    if asset_type in ('readme', 'all'):
+        if hasattr(cocoon_module, '_README_B64') and cocoon_module._README_B64:
+            import base64
+            try:
+                readme_text = base64.b64decode(cocoon_module._README_B64).decode('utf-8', errors='ignore')
+                readme_path = os.path.join(output_dir, "README.md")
+                with open(readme_path, 'w', encoding='utf-8') as f:
+                    f.write(readme_text)
+                print(f"   📄 Spawned: {readme_path}")
+                spawned.append(readme_path)
+            except Exception as e:
+                print(f"   ⚠️ README extraction failed: {e}")
+        elif asset_type == 'readme':
+            print("   ⚠️ No README embedded in this cocoon")
+    
+    # TMRL Adapter (if embedded)
+    if asset_type in ('adapter', 'all'):
+        if hasattr(cocoon_module, '_TMRL_ADAPTER_B64') and cocoon_module._TMRL_ADAPTER_B64:
+            import base64
+            try:
+                adapter_code = base64.b64decode(cocoon_module._TMRL_ADAPTER_B64).decode('utf-8')
+                adapter_path = os.path.join(output_dir, "cocoon_tmrl_adapter.py")
+                with open(adapter_path, 'w', encoding='utf-8') as f:
+                    f.write(adapter_code)
+                print(f"   🏎️ Spawned: {adapter_path}")
+                spawned.append(adapter_path)
+            except Exception as e:
+                print(f"   ⚠️ Adapter extraction failed: {e}")
+        elif asset_type == 'adapter':
+            print("   ⚠️ No TMRL adapter embedded in this cocoon")
+            print("      Copy from: Convergence_Engine/cocoon_tmrl_adapter.py")
+    
+    # Vocabulary JSON
+    if asset_type in ('vocab', 'all'):
+        if hasattr(cocoon_module, '_VOCABULARY_B64') and cocoon_module._VOCABULARY_B64:
+            import base64
+            import zlib
+            try:
+                compressed = hasattr(cocoon_module, '_DATA_COMPRESSED') and cocoon_module._DATA_COMPRESSED
+                raw = base64.b64decode(cocoon_module._VOCABULARY_B64)
+                if compressed:
+                    raw = zlib.decompress(raw)
+                vocab_path = os.path.join(output_dir, "vocabulary.json")
+                with open(vocab_path, 'wb') as f:
+                    f.write(raw)
+                print(f"   📚 Spawned: {vocab_path}")
+                spawned.append(vocab_path)
+            except Exception as e:
+                print(f"   ⚠️ Vocabulary extraction failed: {e}")
+    
+    # ONNX export (single ensemble file)
+    if asset_type in ('onnx', 'all'):
+        if hasattr(cocoon_module, 'CocoonAgent'):
+            try:
+                import torch
+                import torch.nn as nn
+                print("   ⏳ Instantiating CocoonAgent for ONNX export...")
+                agent = cocoon_module.CocoonAgent()
+                
+                # Create unified ensemble wrapper that handles tuple outputs
+                class EnsembleWrapper(nn.Module):
+                    def __init__(self, brains):
+                        super().__init__()
+                        self.brains = nn.ModuleList(brains)
+                        self.n_brains = len(brains)
+                    
+                    def forward(self, x):
+                        # Run all brains and average outputs
+                        outputs = []
+                        for brain in self.brains:
+                            out = brain(x)
+                            # Handle tuple returns (action, extras)
+                            if isinstance(out, tuple):
+                                out = out[0]
+                            outputs.append(out)
+                        # Stack and mean across ensemble
+                        stacked = torch.stack(outputs, dim=0)  # [n_brains, batch, output_dim]
+                        return stacked.mean(dim=0)  # [batch, output_dim]
+                
+                ensemble = EnsembleWrapper(agent.brains)
+                ensemble.eval()
+                
+                # Determine input size from first brain
+                input_dim = agent.brains[0].input_dim if hasattr(agent.brains[0], 'input_dim') else 256
+                dummy_input = torch.randn(1, input_dim, device=agent.device)
+                
+                # Test forward pass first
+                with torch.no_grad():
+                    test_out = ensemble(dummy_input)
+                
+                onnx_path = os.path.join(output_dir, "ensemble.onnx")
+                torch.onnx.export(
+                    ensemble.cpu(),
+                    dummy_input.cpu(),
+                    onnx_path,
+                    input_names=['observation'],
+                    output_names=['action'],
+                    dynamic_axes={
+                        'observation': {0: 'batch_size'},
+                        'action': {0: 'batch_size'}
+                    },
+                    opset_version=14
+                )
+                print(f"   🧬 Spawned: {onnx_path} ({len(agent.brains)} brains unified)")
+                spawned.append(onnx_path)
+            except Exception as e:
+                print(f"   ⚠️ ONNX export failed: {e}")
+    
+    # Weights (single combined state dict)
+    if asset_type in ('weights', 'all'):
+        if hasattr(cocoon_module, 'CocoonAgent'):
+            try:
+                import torch
+                print("   ⏳ Extracting brain weights...")
+                agent = cocoon_module.CocoonAgent()
+                
+                # Bundle all brains into one file
+                bundle = {
+                    'n_brains': len(agent.brains),
+                    'brains': [brain.state_dict() for brain in agent.brains],
+                    'config': {
+                        'input_dim': getattr(agent.brains[0], 'input_dim', None),
+                        'hidden_dim': getattr(agent.brains[0], 'hidden_dim', None),
+                        'output_dim': getattr(agent.brains[0], 'output_dim', None),
+                    }
+                }
+                weights_path = os.path.join(output_dir, "ensemble_weights.pt")
+                torch.save(bundle, weights_path)
+                print(f"   🧠 Spawned: {weights_path} ({len(agent.brains)} brains bundled)")
+                spawned.append(weights_path)
+            except Exception as e:
+                print(f"   ⚠️ Weights extraction failed: {e}")
+    
+    print()
+    if spawned:
+        print(f"✅ Spawned {len(spawned)} asset(s) to: {output_dir}")
+    else:
+        print(f"⚠️ No assets spawned for type '{asset_type}'")
+    
+    return len(spawned) > 0
+
+
 def main():
     parser = argparse.ArgumentParser(
-        description="🥚 CocoonHatch - Decentralized relay server for cocoon battles",
+        description="🥚 CocoonHatch - Relay server + Asset spawner for cocoons",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-Examples:
+RELAY SERVER:
   python cocoon_hatch.py                    Start on localhost:9000
   python cocoon_hatch.py --port 8080        Custom port
   python cocoon_hatch.py --public           Accessible from internet
 
-Cocoons connect with:
-  python cocoon.py --link --hatch ws://your-server:9000
+ASSET SPAWNER:
+  python cocoon_hatch.py --spawn <cocoon.py> --asset readme
+  python cocoon_hatch.py --spawn <cocoon.py> --asset onnx --output ./exports/
+  python cocoon_hatch.py --spawn <cocoon.py> --asset all
+
+ULTIMATE UNPACK (convenience):
+    python cocoon_hatch.py --unpack <cocoon.py> --output ./ultimate_package/
+
+Asset types: readme, adapter, vocab, onnx, weights, all
         """
     )
     
+    # Relay server options
     parser.add_argument('--port', '-p', type=int, default=9000,
                         help='Port to listen on (default: 9000)')
     parser.add_argument('--public', action='store_true',
@@ -682,8 +872,27 @@ Cocoons connect with:
     parser.add_argument('--host', type=str, default=None,
                         help='Specific host to bind to')
     
+    # Asset spawner options
+    parser.add_argument('--spawn', type=str, metavar='COCOON',
+                        help='Path to cocoon.py file to extract assets from')
+    parser.add_argument('--unpack', type=str, metavar='COCOON',
+                        help='Convenience alias for --spawn <cocoon.py> --asset all (unpacks the full package)')
+    parser.add_argument('--asset', type=str, default='all',
+                        choices=['readme', 'adapter', 'vocab', 'onnx', 'weights', 'all'],
+                        help='Asset type to spawn (default: all)')
+    parser.add_argument('--output', '-o', type=str, default='.',
+                        help='Output directory for spawned assets (default: current dir)')
+    
     args = parser.parse_args()
     
+    # Asset spawner mode
+    spawn_path = args.spawn or args.unpack
+    if spawn_path:
+        asset_type = 'all' if args.unpack else args.asset
+        success = spawn_asset(spawn_path, asset_type, args.output)
+        return 0 if success else 1
+    
+    # Relay server mode
     # Determine host
     if args.host:
         host = args.host

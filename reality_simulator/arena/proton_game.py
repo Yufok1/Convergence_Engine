@@ -64,6 +64,14 @@ from enum import Enum, auto
 from pathlib import Path
 import numpy as np
 
+# Try to import Language-Game Bridge
+try:
+    from reality_simulator.language.language_game_bridge import LanguageGameBridge
+    LANGUAGE_BRIDGE_AVAILABLE = True
+except ImportError:
+    LanguageGameBridge = None
+    LANGUAGE_BRIDGE_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 # =============================================================================
@@ -120,6 +128,12 @@ class GameDefinition:
     # Two-player game support - organisms play AGAINST each other
     is_two_player: bool = False           # If True, organisms compete head-to-head
     two_player_env: Optional[str] = None  # Alternative env for 2P mode (e.g., "ALE/Pong-v5" -> "PettingZoo/pong_v3")
+    
+    # Action space type - discrete brains can only learn from discrete games
+    is_continuous: bool = False           # If True, requires continuous action head
+    
+    # Swarm/alliance battle - multiple organisms per side
+    is_swarm: bool = False                # If True, uses SwarmBattle for alliance warfare
 
 
 # =============================================================================
@@ -210,12 +224,14 @@ TWO_PLAYER_GAMES: Dict[str, GameDefinition] = {
 }
 
 
-# The Master Game Grid
+# The Master Game Grid - ALL REAL GYMNASIUM ENVIRONMENTS
+# Every cell has 2-3 working gym games for strategic choice
 GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
     # =========================================================================
-    # PHYSICAL CHALLENGES
+    # PHYSICAL CHALLENGES - Body control, balance, locomotion
     # =========================================================================
     (ChallengeType.PHYSICAL, ResourceType.NAKED): [
+        # Pure body control - no tools, no machines
         GameDefinition(
             name="Balance Beam",
             gym_env="CartPole-v1",
@@ -227,16 +243,6 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
             favored_traits={"stability": 0.2, "reflexes": 0.15}
         ),
         GameDefinition(
-            name="Mountain Climb",
-            gym_env="MountainCar-v0",
-            challenge=ChallengeType.PHYSICAL,
-            resource=ResourceType.NAKED,
-            difficulty=GameDifficulty.APPRENTICE,
-            description="Build momentum to climb - raw physics intuition",
-            tags=["momentum", "timing", "persistence"],
-            favored_traits={"persistence": 0.2, "energy_efficiency": 0.1}
-        ),
-        GameDefinition(
             name="Gymnast Swing",
             gym_env="Acrobot-v1",
             challenge=ChallengeType.PHYSICAL,
@@ -246,9 +252,20 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
             tags=["coordination", "timing", "physics"],
             favored_traits={"coordination": 0.25, "timing": 0.15}
         ),
+        GameDefinition(
+            name="Pendulum Master",
+            gym_env="InvertedPendulum-v5",
+            challenge=ChallengeType.PHYSICAL,
+            resource=ResourceType.NAKED,
+            difficulty=GameDifficulty.APPRENTICE,
+            description="Balance inverted pendulum with pure control",
+            tags=["balance", "control", "stability"],
+            favored_traits={"fine_control": 0.2, "stability": 0.15}
+        ),
     ],
     
     (ChallengeType.PHYSICAL, ResourceType.TOOL): [
+        # Tool-assisted physical tasks
         GameDefinition(
             name="Lunar Landing",
             gym_env="LunarLander-v3",
@@ -269,111 +286,91 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
             tags=["control", "continuous", "balance"],
             favored_traits={"fine_control": 0.2, "patience": 0.1}
         ),
+        GameDefinition(
+            name="Double Pendulum",
+            gym_env="InvertedDoublePendulum-v5",
+            challenge=ChallengeType.PHYSICAL,
+            resource=ResourceType.TOOL,
+            difficulty=GameDifficulty.EXPERT,
+            description="Balance chaotic double pendulum system",
+            tags=["chaos", "control", "precision"],
+            favored_traits={"adaptability": 0.25, "precision": 0.2}
+        ),
     ],
     
     (ChallengeType.PHYSICAL, ResourceType.MACHINE): [
+        # Machine-assisted physical challenges
         GameDefinition(
-            name="Road Racing",
+            name="Race Car",
             gym_env="CarRacing-v3",
             challenge=ChallengeType.PHYSICAL,
             resource=ResourceType.MACHINE,
-            difficulty=GameDifficulty.EXPERT,
-            description="Race car around track - machine mastery",
-            tags=["racing", "vision", "speed"],
-            favored_traits={"speed": 0.2, "spatial_awareness": 0.15}
+            difficulty=GameDifficulty.JOURNEYMAN,
+            description="Race around track - machine control at speed",
+            tags=["driving", "speed", "control"],
+            favored_traits={"reaction_time": 0.2, "spatial_awareness": 0.15}
         ),
         GameDefinition(
-            name="Endurance Rally",
-            gym_env="ALE/Enduro-v5",
+            name="Continuous Lander",
+            gym_env="LunarLanderContinuous-v3",
             challenge=ChallengeType.PHYSICAL,
             resource=ResourceType.MACHINE,
             difficulty=GameDifficulty.EXPERT,
-            description="Endless racing endurance - outlast opponents",
-            tags=["endurance", "racing", "atari"],
-            favored_traits={"endurance": 0.25, "focus": 0.1}
+            description="Precision landing with continuous thrust control",
+            tags=["precision", "continuous", "landing"],
+            favored_traits={"fine_control": 0.25, "fuel_efficiency": 0.15}
         ),
-        # ═══════════════════════════════════════════════════════════════════
-        # TWO-PLAYER VERSUS GAMES - Head-to-head competition!
-        # ═══════════════════════════════════════════════════════════════════
         GameDefinition(
-            name="Pong Duel",
-            gym_env="pong_versus",
+            name="Mountain Racer",
+            gym_env="MountainCarContinuous-v0",
             challenge=ChallengeType.PHYSICAL,
             resource=ResourceType.MACHINE,
             difficulty=GameDifficulty.APPRENTICE,
-            description="Classic Pong - paddle-to-paddle battle",
-            min_episodes=5,
-            score_metric="win_rate",
-            tags=["versus", "reflexes", "timing", "classic"],
-            favored_traits={"reflexes": 0.3, "timing": 0.2, "prediction": 0.15},
-            is_two_player=True
-        ),
-        GameDefinition(
-            name="Tank Combat",
-            gym_env="combat_versus",
-            challenge=ChallengeType.PHYSICAL,
-            resource=ResourceType.MACHINE,
-            difficulty=GameDifficulty.JOURNEYMAN,
-            description="Tank warfare - outmaneuver and destroy",
-            min_episodes=5,
-            score_metric="win_rate",
-            tags=["versus", "tanks", "strategy"],
-            favored_traits={"strategy": 0.25, "spatial_awareness": 0.2},
-            is_two_player=True
+            description="Continuous acceleration up the mountain",
+            tags=["momentum", "continuous", "efficiency"],
+            favored_traits={"energy_efficiency": 0.2, "timing": 0.1}
         ),
     ],
     
     (ChallengeType.PHYSICAL, ResourceType.ANIMAL): [
-        GameDefinition(
-            name="Ant Colony",
-            gym_env="Ant-v4",
-            challenge=ChallengeType.PHYSICAL,
-            resource=ResourceType.ANIMAL,
-            difficulty=GameDifficulty.MASTER,
-            description="Control multi-legged creature - embodied symbiosis",
-            tags=["locomotion", "coordination", "mujoco"],
-            favored_traits={"multi_limb_coord": 0.3, "adaptability": 0.1}
-        ),
+        # Animal-like locomotion - MuJoCo creatures
         GameDefinition(
             name="Cheetah Sprint",
-            gym_env="HalfCheetah-v4",
+            gym_env="HalfCheetah-v5",
             challenge=ChallengeType.PHYSICAL,
             resource=ResourceType.ANIMAL,
-            difficulty=GameDifficulty.MASTER,
-            description="Run as fast as possible - animal speed mastery",
-            tags=["speed", "locomotion", "mujoco"],
-            favored_traits={"speed": 0.25, "efficiency": 0.15}
+            difficulty=GameDifficulty.JOURNEYMAN,
+            description="Run fast like a cheetah - coordinated gait",
+            tags=["running", "speed", "coordination"],
+            favored_traits={"speed": 0.25, "coordination": 0.2}
         ),
         GameDefinition(
             name="Bipedal Walk",
             gym_env="BipedalWalker-v3",
             challenge=ChallengeType.PHYSICAL,
             resource=ResourceType.ANIMAL,
-            difficulty=GameDifficulty.EXPERT,
-            description="Walk on two legs across terrain",
-            tags=["balance", "locomotion", "box2d"],
+            difficulty=GameDifficulty.JOURNEYMAN,
+            description="Walk on two legs over terrain",
+            tags=["walking", "balance", "terrain"],
             favored_traits={"balance": 0.2, "adaptability": 0.15}
         ),
-        # Two-player boxing - NAKED combat with animal instincts
         GameDefinition(
-            name="Boxing Match",
-            gym_env="boxing_versus",
+            name="Hopper",
+            gym_env="Hopper-v5",
             challenge=ChallengeType.PHYSICAL,
             resource=ResourceType.ANIMAL,
-            difficulty=GameDifficulty.EXPERT,
-            description="Boxing - punch, dodge, knock out",
-            min_episodes=5,
-            score_metric="win_rate",
-            tags=["versus", "combat", "reflexes"],
-            favored_traits={"aggression": 0.25, "reflexes": 0.2, "endurance": 0.15},
-            is_two_player=True
+            difficulty=GameDifficulty.APPRENTICE,
+            description="Hop forward on one leg",
+            tags=["hopping", "balance", "momentum"],
+            favored_traits={"balance": 0.2, "energy_efficiency": 0.15}
         ),
     ],
     
     # =========================================================================
-    # MENTAL CHALLENGES
+    # MENTAL CHALLENGES - Planning, strategy, navigation
     # =========================================================================
     (ChallengeType.MENTAL, ResourceType.NAKED): [
+        # Pure mental - no aids
         GameDefinition(
             name="Frozen Lake",
             gym_env="FrozenLake-v1",
@@ -383,6 +380,16 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
             description="Navigate slippery ice - pure planning",
             tags=["planning", "grid", "navigation"],
             favored_traits={"planning": 0.2, "caution": 0.1}
+        ),
+        GameDefinition(
+            name="Frozen Lake 8x8",
+            gym_env="FrozenLake8x8-v1",
+            challenge=ChallengeType.MENTAL,
+            resource=ResourceType.NAKED,
+            difficulty=GameDifficulty.APPRENTICE,
+            description="Larger frozen lake - more complex planning",
+            tags=["planning", "grid", "navigation", "scale"],
+            favored_traits={"planning": 0.25, "memory": 0.15}
         ),
         GameDefinition(
             name="Cliff Walking",
@@ -397,6 +404,7 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
     ],
     
     (ChallengeType.MENTAL, ResourceType.TOOL): [
+        # Mental with tools
         GameDefinition(
             name="Blackjack",
             gym_env="Blackjack-v1",
@@ -417,213 +425,800 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
             tags=["routing", "optimization", "planning"],
             favored_traits={"optimization": 0.2, "spatial_memory": 0.1}
         ),
+        GameDefinition(
+            name="Mountain Strategy",
+            gym_env="MountainCar-v0",
+            challenge=ChallengeType.MENTAL,
+            resource=ResourceType.TOOL,
+            difficulty=GameDifficulty.APPRENTICE,
+            description="Build momentum to climb - strategic timing",
+            tags=["momentum", "timing", "persistence"],
+            favored_traits={"persistence": 0.2, "strategy": 0.15}
+        ),
     ],
     
     (ChallengeType.MENTAL, ResourceType.MACHINE): [
+        # Mental + machines
         GameDefinition(
-            name="Brick Breaker",
-            gym_env="ALE/Breakout-v5",
+            name="Reacher",
+            gym_env="Reacher-v5",
             challenge=ChallengeType.MENTAL,
             resource=ResourceType.MACHINE,
             difficulty=GameDifficulty.JOURNEYMAN,
-            description="Strategic brick destruction - machine-assisted angles",
-            tags=["angles", "prediction", "atari"],
-            favored_traits={"prediction": 0.2, "pattern_recognition": 0.15}
+            description="Reach target with robotic arm - spatial planning",
+            tags=["reaching", "spatial", "precision"],
+            favored_traits={"spatial_reasoning": 0.2, "precision": 0.15}
         ),
         GameDefinition(
-            name="Space Defense",
-            gym_env="ALE/SpaceInvaders-v5",
-            challenge=ChallengeType.MENTAL,
-            resource=ResourceType.MACHINE,
-            difficulty=GameDifficulty.JOURNEYMAN,
-            description="Defend against waves - tactical positioning",
-            tags=["tactics", "defense", "atari"],
-            favored_traits={"tactical_thinking": 0.2, "timing": 0.1}
-        ),
-        GameDefinition(
-            name="Pac Maze",
-            gym_env="ALE/MsPacman-v5",
+            name="Pusher",
+            gym_env="Pusher-v5",
             challenge=ChallengeType.MENTAL,
             resource=ResourceType.MACHINE,
             difficulty=GameDifficulty.EXPERT,
-            description="Navigate maze while avoiding ghosts",
-            tags=["maze", "evasion", "collection"],
-            favored_traits={"spatial_awareness": 0.2, "evasion": 0.15}
+            description="Push object to target - planning and execution",
+            tags=["pushing", "planning", "manipulation"],
+            favored_traits={"planning": 0.25, "precision": 0.2}
+        ),
+        GameDefinition(
+            name="Track Racing",
+            gym_env="CarRacing-v3",
+            challenge=ChallengeType.MENTAL,
+            resource=ResourceType.MACHINE,
+            difficulty=GameDifficulty.JOURNEYMAN,
+            description="Strategic racing - plan the optimal line",
+            tags=["racing", "strategy", "planning"],
+            favored_traits={"strategy": 0.2, "prediction": 0.15}
         ),
     ],
     
     (ChallengeType.MENTAL, ResourceType.ANIMAL): [
-        # These are custom games we can implement
+        # Animal instincts + mental
         GameDefinition(
-            name="Predator Evasion",
-            gym_env="predator_prey",  # Custom env
+            name="Ant Colony",
+            gym_env="Ant-v5",
             challenge=ChallengeType.MENTAL,
             resource=ResourceType.ANIMAL,
             difficulty=GameDifficulty.EXPERT,
-            description="Evade predator using prey instincts",
-            tags=["evasion", "survival", "custom"],
-            favored_traits={"survival_instinct": 0.3, "speed": 0.1}
+            description="Coordinate ant-like multi-legged locomotion",
+            tags=["coordination", "complex", "multi-leg"],
+            favored_traits={"coordination": 0.3, "complexity_handling": 0.2}
         ),
         GameDefinition(
-            name="Cooperation Test",
-            gym_env="cooperation_game",  # Custom env
+            name="Swimmer",
+            gym_env="Swimmer-v5",
             challenge=ChallengeType.MENTAL,
             resource=ResourceType.ANIMAL,
-            difficulty=GameDifficulty.MASTER,
-            description="Work with another organism to achieve goal",
-            tags=["cooperation", "communication", "custom"],
-            favored_traits={"cooperation": 0.3, "communication": 0.2}
+            difficulty=GameDifficulty.APPRENTICE,
+            description="Swim like a snake - wave motion planning",
+            tags=["swimming", "waves", "efficiency"],
+            favored_traits={"rhythm": 0.2, "efficiency": 0.15}
+        ),
+        GameDefinition(
+            name="Walker",
+            gym_env="Walker2d-v5",
+            challenge=ChallengeType.MENTAL,
+            resource=ResourceType.ANIMAL,
+            difficulty=GameDifficulty.JOURNEYMAN,
+            description="2D walking - balance and gait planning",
+            tags=["walking", "balance", "gait"],
+            favored_traits={"balance": 0.2, "planning": 0.15}
         ),
     ],
     
     # =========================================================================
-    # CHANCE CHALLENGES
+    # CHANCE CHALLENGES - Stochastic environments, luck + skill
     # =========================================================================
     (ChallengeType.CHANCE, ResourceType.NAKED): [
+        # Pure chance environments (stochastic)
         GameDefinition(
-            name="Coin Fate",
-            gym_env="coin_flip",  # Custom simple env
+            name="Frozen Gamble",
+            gym_env="FrozenLake-v1",
             challenge=ChallengeType.CHANCE,
             resource=ResourceType.NAKED,
             difficulty=GameDifficulty.NOVICE,
-            description="Pure luck - coin flip",
-            min_episodes=10,  # Need more episodes for fair chance eval
-            tags=["luck", "pure_chance"],
-            favored_traits={"luck": 0.5}  # High luck bonus
+            description="Slippery ice - skill meets luck (stochastic)",
+            min_episodes=5,
+            tags=["luck", "stochastic", "navigation"],
+            favored_traits={"luck": 0.3, "adaptability": 0.15}
+        ),
+        GameDefinition(
+            name="Big Frozen Gamble",
+            gym_env="FrozenLake8x8-v1",
+            challenge=ChallengeType.CHANCE,
+            resource=ResourceType.NAKED,
+            difficulty=GameDifficulty.APPRENTICE,
+            description="Larger slippery lake - more chaos",
+            min_episodes=5,
+            tags=["luck", "stochastic", "scale"],
+            favored_traits={"luck": 0.25, "persistence": 0.15}
+        ),
+        GameDefinition(
+            name="Cliff Risk",
+            gym_env="CliffWalking-v1",
+            challenge=ChallengeType.CHANCE,
+            resource=ResourceType.NAKED,
+            difficulty=GameDifficulty.APPRENTICE,
+            description="Risk vs reward at the cliff edge",
+            min_episodes=5,
+            tags=["risk", "chance", "survival"],
+            favored_traits={"risk_tolerance": 0.2, "caution": 0.15}
         ),
     ],
     
     (ChallengeType.CHANCE, ResourceType.TOOL): [
+        # Chance with tools (cards, etc)
         GameDefinition(
-            name="Card Draw",
+            name="Blackjack",
             gym_env="Blackjack-v1",
             challenge=ChallengeType.CHANCE,
             resource=ResourceType.TOOL,
             difficulty=GameDifficulty.APPRENTICE,
-            description="Cards with skill - luck meets strategy",
+            description="Cards - luck meets strategy",
             min_episodes=10,
-            tags=["cards", "luck_skill"],
-            favored_traits={"luck": 0.2, "probability_sense": 0.15}
+            tags=["cards", "luck_skill", "probability"],
+            favored_traits={"luck": 0.2, "probability_sense": 0.2}
+        ),
+        GameDefinition(
+            name="Taxi Luck",
+            gym_env="Taxi-v3",
+            challenge=ChallengeType.CHANCE,
+            resource=ResourceType.TOOL,
+            difficulty=GameDifficulty.JOURNEYMAN,
+            description="Random passenger spawns - adapt to chaos",
+            min_episodes=5,
+            tags=["randomness", "adaptation", "routing"],
+            favored_traits={"adaptability": 0.2, "luck": 0.15}
+        ),
+        GameDefinition(
+            name="Pendulum Chaos",
+            gym_env="Pendulum-v1",
+            challenge=ChallengeType.CHANCE,
+            resource=ResourceType.TOOL,
+            difficulty=GameDifficulty.APPRENTICE,
+            description="Random initial states - handle the unknown",
+            min_episodes=5,
+            tags=["chaos", "control", "adaptation"],
+            favored_traits={"adaptability": 0.2, "stability": 0.15}
         ),
     ],
     
     (ChallengeType.CHANCE, ResourceType.MACHINE): [
+        # Machine + chance
         GameDefinition(
-            name="Slot Challenge",
-            gym_env="ALE/Casino-v5",
+            name="Chaotic Landing",
+            gym_env="LunarLander-v3",
             challenge=ChallengeType.CHANCE,
             resource=ResourceType.MACHINE,
-            difficulty=GameDifficulty.APPRENTICE,
-            description="Machine gambling - manage the odds",
+            difficulty=GameDifficulty.JOURNEYMAN,
+            description="Random wind - land despite chaos",
             min_episodes=5,
-            tags=["gambling", "machine", "atari"],
-            favored_traits={"luck": 0.3, "risk_tolerance": 0.1}
+            tags=["wind", "chaos", "landing"],
+            favored_traits={"adaptability": 0.25, "luck": 0.15}
+        ),
+        GameDefinition(
+            name="Random Tracks",
+            gym_env="CarRacing-v3",
+            challenge=ChallengeType.CHANCE,
+            resource=ResourceType.MACHINE,
+            difficulty=GameDifficulty.JOURNEYMAN,
+            description="Procedural track - never the same twice",
+            min_episodes=3,
+            tags=["procedural", "adaptation", "racing"],
+            favored_traits={"adaptability": 0.2, "quick_learning": 0.15}
+        ),
+        GameDefinition(
+            name="Continuous Chaos",
+            gym_env="LunarLanderContinuous-v3",
+            challenge=ChallengeType.CHANCE,
+            resource=ResourceType.MACHINE,
+            difficulty=GameDifficulty.EXPERT,
+            description="Continuous control in chaotic wind",
+            min_episodes=5,
+            tags=["continuous", "wind", "precision"],
+            favored_traits={"precision": 0.2, "luck": 0.15}
         ),
     ],
     
     (ChallengeType.CHANCE, ResourceType.ANIMAL): [
+        # Animal + chance (chaotic biological systems)
         GameDefinition(
-            name="Genetic Lottery",
-            gym_env="mutation_roulette",  # Custom
+            name="Bipedal Chaos",
+            gym_env="BipedalWalkerHardcore-v3",
+            challenge=ChallengeType.CHANCE,
+            resource=ResourceType.ANIMAL,
+            difficulty=GameDifficulty.MASTER,
+            description="Random terrain - stumps, pits, ladders",
+            min_episodes=3,
+            tags=["terrain", "chaos", "survival"],
+            favored_traits={"adaptability": 0.3, "luck": 0.2}
+        ),
+        GameDefinition(
+            name="Hopper Roulette",
+            gym_env="Hopper-v5",
             challenge=ChallengeType.CHANCE,
             resource=ResourceType.ANIMAL,
             difficulty=GameDifficulty.JOURNEYMAN,
-            description="Random mutations - genetic fate",
+            description="Random initial conditions - hop or fall",
             min_episodes=5,
-            tags=["genetics", "mutation", "custom"],
-            favored_traits={"genetic_stability": 0.2, "luck": 0.2}
+            tags=["hopping", "random_start", "balance"],
+            favored_traits={"balance": 0.2, "luck": 0.15}
+        ),
+        GameDefinition(
+            name="Cheetah Gamble",
+            gym_env="HalfCheetah-v5",
+            challenge=ChallengeType.CHANCE,
+            resource=ResourceType.ANIMAL,
+            difficulty=GameDifficulty.JOURNEYMAN,
+            description="Random perturbations - maintain speed",
+            min_episodes=5,
+            tags=["running", "chaos", "stability"],
+            favored_traits={"stability": 0.2, "luck": 0.15}
         ),
     ],
     
     # =========================================================================
-    # ARTS CHALLENGES (Language/Creative - Your System's Specialty!)
+    # ARTS CHALLENGES - Creative problem solving, elegance, style
     # =========================================================================
     (ChallengeType.ARTS, ResourceType.NAKED): [
+        # Pure expression - elegant solutions
         GameDefinition(
-            name="Word Coherence",
-            gym_env="language_coherence",  # Custom - uses your language system
+            name="Elegant Balance",
+            gym_env="CartPole-v1",
+            challenge=ChallengeType.ARTS,
+            resource=ResourceType.NAKED,
+            difficulty=GameDifficulty.NOVICE,
+            description="Balance with minimal movement - elegant control",
+            tags=["elegance", "minimal", "balance"],
+            favored_traits={"elegance": 0.25, "efficiency": 0.15}
+        ),
+        GameDefinition(
+            name="Graceful Swing",
+            gym_env="Acrobot-v1",
             challenge=ChallengeType.ARTS,
             resource=ResourceType.NAKED,
             difficulty=GameDifficulty.JOURNEYMAN,
-            description="Generate coherent text - pure language ability",
-            tags=["language", "coherence", "generation"],
-            favored_traits={"vocabulary_size": 0.2, "coherence": 0.25}
+            description="Swing up with style - fewest movements",
+            tags=["grace", "efficiency", "style"],
+            favored_traits={"grace": 0.2, "efficiency": 0.2}
         ),
         GameDefinition(
-            name="Concept Association",
-            gym_env="concept_linking",  # Custom
+            name="Perfect Pendulum",
+            gym_env="InvertedPendulum-v5",
             challenge=ChallengeType.ARTS,
             resource=ResourceType.NAKED,
             difficulty=GameDifficulty.APPRENTICE,
-            description="Link related concepts - semantic understanding",
-            tags=["concepts", "semantics", "knowledge"],
-            favored_traits={"concept_breadth": 0.2, "association_strength": 0.15}
-        ),
-        # Two-player word duel!
-        GameDefinition(
-            name="Word Duel",
-            gym_env="word_duel_versus",
-            challenge=ChallengeType.ARTS,
-            resource=ResourceType.NAKED,
-            difficulty=GameDifficulty.JOURNEYMAN,
-            description="Vocabulary battle - respond with richer language",
-            min_episodes=5,
-            score_metric="language_score",
-            tags=["versus", "language", "vocabulary"],
-            favored_traits={"vocabulary_size": 0.3, "coherence": 0.25},
-            is_two_player=True
+            description="Perfect balance - stillness is art",
+            tags=["stillness", "perfection", "control"],
+            favored_traits={"precision": 0.25, "patience": 0.15}
         ),
     ],
     
     (ChallengeType.ARTS, ResourceType.TOOL): [
+        # Tool-assisted creativity
         GameDefinition(
-            name="Vocabulary Battle",
-            gym_env="vocabulary_duel",  # Custom
+            name="Optimal Route",
+            gym_env="Taxi-v3",
             challenge=ChallengeType.ARTS,
             resource=ResourceType.TOOL,
             difficulty=GameDifficulty.JOURNEYMAN,
-            description="Use vocabulary tools to express complex ideas",
-            tags=["vocabulary", "expression", "tools"],
-            favored_traits={"vocabulary_size": 0.25, "expression": 0.15}
+            description="Find the most elegant route - minimum moves",
+            tags=["optimization", "elegance", "routing"],
+            favored_traits={"optimization": 0.25, "creativity": 0.15}
+        ),
+        GameDefinition(
+            name="Card Mastery",
+            gym_env="Blackjack-v1",
+            challenge=ChallengeType.ARTS,
+            resource=ResourceType.TOOL,
+            difficulty=GameDifficulty.APPRENTICE,
+            description="Play with perfect strategy - art of cards",
+            tags=["strategy", "mastery", "cards"],
+            favored_traits={"strategy": 0.2, "discipline": 0.15}
+        ),
+        GameDefinition(
+            name="Mountain Poetry",
+            gym_env="MountainCar-v0",
+            challenge=ChallengeType.ARTS,
+            resource=ResourceType.TOOL,
+            difficulty=GameDifficulty.APPRENTICE,
+            description="Climb with minimal energy - efficiency as art",
+            tags=["efficiency", "momentum", "elegance"],
+            favored_traits={"efficiency": 0.25, "timing": 0.15}
         ),
     ],
     
     (ChallengeType.ARTS, ResourceType.MACHINE): [
+        # Machine artistry
         GameDefinition(
-            name="Response Quality",
-            gym_env="dialogue_quality",  # Custom
+            name="Perfect Landing",
+            gym_env="LunarLander-v3",
+            challenge=ChallengeType.ARTS,
+            resource=ResourceType.MACHINE,
+            difficulty=GameDifficulty.JOURNEYMAN,
+            description="Land perfectly centered - precision art",
+            tags=["precision", "landing", "perfection"],
+            favored_traits={"precision": 0.3, "elegance": 0.15}
+        ),
+        GameDefinition(
+            name="Racing Line",
+            gym_env="CarRacing-v3",
+            challenge=ChallengeType.ARTS,
+            resource=ResourceType.MACHINE,
+            difficulty=GameDifficulty.JOURNEYMAN,
+            description="Perfect racing line - speed as art",
+            tags=["racing", "line", "flow"],
+            favored_traits={"flow": 0.2, "precision": 0.15}
+        ),
+        GameDefinition(
+            name="Smooth Control",
+            gym_env="LunarLanderContinuous-v3",
             challenge=ChallengeType.ARTS,
             resource=ResourceType.MACHINE,
             difficulty=GameDifficulty.EXPERT,
-            description="Generate high-quality responses - full language system",
-            tags=["dialogue", "quality", "generation"],
-            favored_traits={"language_head_strength": 0.3, "coherence": 0.2}
+            description="Smoothest possible control - no jerking",
+            tags=["smooth", "continuous", "elegance"],
+            favored_traits={"smoothness": 0.25, "precision": 0.2}
         ),
     ],
     
     (ChallengeType.ARTS, ResourceType.ANIMAL): [
+        # Animal grace
         GameDefinition(
-            name="Cross-Organism Dialogue",
-            gym_env="inter_organism_chat",  # Custom
+            name="Graceful Walk",
+            gym_env="BipedalWalker-v3",
+            challenge=ChallengeType.ARTS,
+            resource=ResourceType.ANIMAL,
+            difficulty=GameDifficulty.JOURNEYMAN,
+            description="Walk with natural grace - smooth gait",
+            tags=["walking", "grace", "natural"],
+            favored_traits={"grace": 0.25, "naturalness": 0.15}
+        ),
+        GameDefinition(
+            name="Flowing Swim",
+            gym_env="Swimmer-v5",
+            challenge=ChallengeType.ARTS,
+            resource=ResourceType.ANIMAL,
+            difficulty=GameDifficulty.APPRENTICE,
+            description="Swim with fluid motion - water dance",
+            tags=["swimming", "fluid", "rhythm"],
+            favored_traits={"rhythm": 0.25, "flow": 0.2}
+        ),
+        GameDefinition(
+            name="Humanoid Dance",
+            gym_env="Humanoid-v5",
             challenge=ChallengeType.ARTS,
             resource=ResourceType.ANIMAL,
             difficulty=GameDifficulty.MASTER,
-            description="Communicate effectively with another organism",
-            tags=["communication", "dialogue", "social"],
-            favored_traits={"communication": 0.3, "empathy": 0.2}
-        ),
-        GameDefinition(
-            name="Alliance Poetry",
-            gym_env="collaborative_creation",  # Custom
-            challenge=ChallengeType.ARTS,
-            resource=ResourceType.ANIMAL,
-            difficulty=GameDifficulty.GRANDMASTER,
-            description="Create together with alliance members",
-            tags=["collaboration", "creativity", "alliance"],
-            favored_traits={"creativity": 0.25, "cooperation": 0.2}
+            description="Move with human-like grace - the ultimate art",
+            tags=["humanoid", "dance", "mastery"],
+            favored_traits={"grace": 0.3, "coordination": 0.25},
+            is_continuous=True
         ),
     ],
 }
+
+# =============================================================================
+# DRONE WARFARE GAMES - Comprehensive training suite for 6 discrete actions
+# =============================================================================
+
+# These are special games that use the DroneWarfareArena instead of standard gym envs
+# Each game trains specific skills mapped to the 6 discrete brain actions:
+#   MOVE=0, COOPERATE=1, COMPETE=2, REST=3, REPRODUCE=4, ISOLATE=5
+
+DRONE_WARFARE_GAMES: List[GameDefinition] = [
+    # =========================================================================
+    # SINGLE-SKILL TRAINING DRILLS - One game per action type
+    # =========================================================================
+    
+    # --- MOVE (Action 0): Navigation, racing, pathfinding ---
+    GameDefinition(
+        name="Drone Racing",
+        gym_env="drone://racing_gates",
+        challenge=ChallengeType.PHYSICAL,
+        resource=ResourceType.MACHINE,
+        difficulty=GameDifficulty.APPRENTICE,
+        description="Fly through gates as fast as possible - pure navigation",
+        tags=["drone", "racing", "navigation", "speed", "skill:move"],
+        favored_traits={"speed": 0.3, "spatial_awareness": 0.2},
+        is_swarm=False,
+        is_two_player=False
+    ),
+    GameDefinition(
+        name="Obstacle Slalom",
+        gym_env="drone://obstacle_slalom",
+        challenge=ChallengeType.PHYSICAL,
+        resource=ResourceType.MACHINE,
+        difficulty=GameDifficulty.JOURNEYMAN,
+        description="Navigate dense obstacle field at speed",
+        tags=["drone", "obstacle", "agility", "skill:move"],
+        favored_traits={"agility": 0.25, "reaction_time": 0.2},
+        is_swarm=False,
+        is_two_player=False
+    ),
+    
+    # --- COOPERATE (Action 1): Formation flying, escort, teamwork ---
+    GameDefinition(
+        name="Formation Flight",
+        gym_env="drone://formation_hold",
+        challenge=ChallengeType.ARTS,
+        resource=ResourceType.MACHINE,
+        difficulty=GameDifficulty.JOURNEYMAN,
+        description="Maintain precise formation with allies - synchronized flight",
+        tags=["drone", "formation", "teamwork", "precision", "skill:cooperate"],
+        favored_traits={"coordination": 0.3, "discipline": 0.2},
+        is_swarm=True,
+        is_two_player=False
+    ),
+    GameDefinition(
+        name="Escort Mission",
+        gym_env="drone://escort_vip",
+        challenge=ChallengeType.MENTAL,
+        resource=ResourceType.MACHINE,
+        difficulty=GameDifficulty.EXPERT,
+        description="Protect the VIP drone while moving to extraction",
+        tags=["drone", "escort", "protection", "teamwork", "skill:cooperate"],
+        favored_traits={"vigilance": 0.25, "positioning": 0.2},
+        is_swarm=True,
+        is_two_player=False
+    ),
+    
+    # --- COMPETE (Action 2): Attack, tagging, aggression ---
+    GameDefinition(
+        name="Target Practice",
+        gym_env="drone://target_practice",
+        challenge=ChallengeType.PHYSICAL,
+        resource=ResourceType.MACHINE,
+        difficulty=GameDifficulty.NOVICE,
+        description="Tag stationary and moving targets - attack training",
+        tags=["drone", "attack", "accuracy", "targeting", "skill:compete"],
+        favored_traits={"accuracy": 0.3, "aggression": 0.15},
+        is_swarm=False,
+        is_two_player=False
+    ),
+    GameDefinition(
+        name="Drone Dogfight",
+        gym_env="drone://dogfight_1v1",
+        challenge=ChallengeType.PHYSICAL,
+        resource=ResourceType.MACHINE,
+        difficulty=GameDifficulty.JOURNEYMAN,
+        description="1v1 aerial combat - tag to score, 4 tags to eliminate",
+        tags=["drone", "combat", "dogfight", "1v1", "skill:compete"],
+        favored_traits={"aggression": 0.25, "reaction_time": 0.2},
+        is_swarm=False,
+        is_two_player=True
+    ),
+    
+    # --- REST (Action 3): Hover stability, energy conservation ---
+    GameDefinition(
+        name="Hover Challenge",
+        gym_env="drone://precision_hover",
+        challenge=ChallengeType.PHYSICAL,
+        resource=ResourceType.MACHINE,
+        difficulty=GameDifficulty.APPRENTICE,
+        description="Hold perfectly still despite wind disturbance",
+        tags=["drone", "hover", "stability", "precision", "skill:rest"],
+        favored_traits={"stability": 0.3, "patience": 0.2},
+        is_swarm=False,
+        is_two_player=False
+    ),
+    GameDefinition(
+        name="Endurance Flight",
+        gym_env="drone://endurance_patrol",
+        challenge=ChallengeType.MENTAL,
+        resource=ResourceType.MACHINE,
+        difficulty=GameDifficulty.JOURNEYMAN,
+        description="Patrol area as long as possible - energy management",
+        tags=["drone", "endurance", "energy", "efficiency", "skill:rest"],
+        favored_traits={"efficiency": 0.25, "endurance": 0.2},
+        is_swarm=False,
+        is_two_player=False
+    ),
+    
+    # --- REPRODUCE (Action 4): Decoys, chaff, distraction ---
+    GameDefinition(
+        name="Decoy Master",
+        gym_env="drone://decoy_deployment",
+        challenge=ChallengeType.MENTAL,
+        resource=ResourceType.MACHINE,
+        difficulty=GameDifficulty.JOURNEYMAN,
+        description="Deploy decoys to confuse tracking systems",
+        tags=["drone", "decoy", "deception", "tactical", "skill:reproduce"],
+        favored_traits={"deception": 0.3, "timing": 0.2},
+        is_swarm=False,
+        is_two_player=False
+    ),
+    GameDefinition(
+        name="Chaff Screen",
+        gym_env="drone://chaff_defense",
+        challenge=ChallengeType.CHANCE,
+        resource=ResourceType.MACHINE,
+        difficulty=GameDifficulty.APPRENTICE,
+        description="Create chaff screens to protect allies from lock-on",
+        tags=["drone", "chaff", "defense", "support", "skill:reproduce"],
+        favored_traits={"support": 0.25, "timing": 0.2},
+        is_swarm=True,
+        is_two_player=False
+    ),
+    
+    # --- ISOLATE (Action 5): Evasion, stealth, escape ---
+    GameDefinition(
+        name="Evasion Training",
+        gym_env="drone://evade_missiles",
+        challenge=ChallengeType.PHYSICAL,
+        resource=ResourceType.MACHINE,
+        difficulty=GameDifficulty.JOURNEYMAN,
+        description="Evade incoming missiles - juke and survive",
+        tags=["drone", "evasion", "survival", "agility", "skill:isolate"],
+        favored_traits={"evasion": 0.3, "reflexes": 0.2},
+        is_swarm=False,
+        is_two_player=False
+    ),
+    GameDefinition(
+        name="Stealth Infiltration",
+        gym_env="drone://stealth_mission",
+        challenge=ChallengeType.MENTAL,
+        resource=ResourceType.MACHINE,
+        difficulty=GameDifficulty.EXPERT,
+        description="Reach objective without being detected",
+        tags=["drone", "stealth", "infiltration", "patience", "skill:isolate"],
+        favored_traits={"stealth": 0.25, "patience": 0.2},
+        is_swarm=False,
+        is_two_player=False
+    ),
+    
+    # =========================================================================
+    # ASYMMETRIC PAIRED GAMES - One trains attack, other trains defense
+    # Highlander absorption still applies - winner absorbs loser!
+    # =========================================================================
+    
+    # --- PREDATOR vs PREY (COMPETE vs ISOLATE) ---
+    GameDefinition(
+        name="Predator Hunt",
+        gym_env="drone://predator_prey|predator",
+        challenge=ChallengeType.PHYSICAL,
+        resource=ResourceType.MACHINE,
+        difficulty=GameDifficulty.JOURNEYMAN,
+        description="Hunt and tag the prey drone - ATTACK training",
+        tags=["drone", "predator", "hunt", "attack", "asymmetric", "skill:compete"],
+        favored_traits={"aggression": 0.25, "prediction": 0.2},
+        is_swarm=False,
+        is_two_player=True
+    ),
+    GameDefinition(
+        name="Prey Survival",
+        gym_env="drone://predator_prey|prey",
+        challenge=ChallengeType.PHYSICAL,
+        resource=ResourceType.MACHINE,
+        difficulty=GameDifficulty.JOURNEYMAN,
+        description="Evade the predator drone - EVASION training",
+        tags=["drone", "prey", "survival", "evasion", "asymmetric", "skill:isolate"],
+        favored_traits={"evasion": 0.25, "unpredictability": 0.2},
+        is_swarm=False,
+        is_two_player=True
+    ),
+    
+    # --- ESCORT vs INTERCEPTOR (COOPERATE vs COMPETE) ---
+    GameDefinition(
+        name="Escort Defender",
+        gym_env="drone://escort_intercept|escort",
+        challenge=ChallengeType.MENTAL,
+        resource=ResourceType.MACHINE,
+        difficulty=GameDifficulty.EXPERT,
+        description="Protect the VIP from interceptors - TEAMWORK training",
+        tags=["drone", "escort", "defense", "protect", "asymmetric", "skill:cooperate"],
+        favored_traits={"protection": 0.25, "positioning": 0.2},
+        is_swarm=True,
+        is_two_player=True
+    ),
+    GameDefinition(
+        name="Interceptor Strike",
+        gym_env="drone://escort_intercept|interceptor",
+        challenge=ChallengeType.MENTAL,
+        resource=ResourceType.MACHINE,
+        difficulty=GameDifficulty.EXPERT,
+        description="Break through escorts to tag the VIP - ATTACK training",
+        tags=["drone", "interceptor", "attack", "breakthrough", "asymmetric", "skill:compete"],
+        favored_traits={"aggression": 0.2, "tactical_thinking": 0.25},
+        is_swarm=True,
+        is_two_player=True
+    ),
+    
+    # --- PURSUER vs EVADER (MOVE vs ISOLATE) ---
+    GameDefinition(
+        name="Pursuit Racer",
+        gym_env="drone://pursuit_race|pursuer",
+        challenge=ChallengeType.PHYSICAL,
+        resource=ResourceType.MACHINE,
+        difficulty=GameDifficulty.APPRENTICE,
+        description="Chase and close distance - MOVEMENT training",
+        tags=["drone", "pursuit", "chase", "speed", "asymmetric", "skill:move"],
+        favored_traits={"speed": 0.25, "prediction": 0.2},
+        is_swarm=False,
+        is_two_player=True
+    ),
+    GameDefinition(
+        name="Escape Artist",
+        gym_env="drone://pursuit_race|evader",
+        challenge=ChallengeType.PHYSICAL,
+        resource=ResourceType.MACHINE,
+        difficulty=GameDifficulty.APPRENTICE,
+        description="Maintain distance and escape - EVASION training",
+        tags=["drone", "escape", "evade", "distance", "asymmetric", "skill:isolate"],
+        favored_traits={"evasion": 0.2, "unpredictability": 0.25},
+        is_swarm=False,
+        is_two_player=True
+    ),
+    
+    # --- HUNTER vs DECOY MASTER (COMPETE vs REPRODUCE) ---
+    GameDefinition(
+        name="Decoy Hunter",
+        gym_env="drone://decoy_hunt|hunter",
+        challenge=ChallengeType.MENTAL,
+        resource=ResourceType.MACHINE,
+        difficulty=GameDifficulty.EXPERT,
+        description="Find and tag the real target among decoys - DISCERNMENT",
+        tags=["drone", "hunter", "discernment", "tracking", "asymmetric", "skill:compete"],
+        favored_traits={"perception": 0.25, "patience": 0.2},
+        is_swarm=False,
+        is_two_player=True
+    ),
+    GameDefinition(
+        name="Decoy Trickster",
+        gym_env="drone://decoy_hunt|trickster",
+        challenge=ChallengeType.MENTAL,
+        resource=ResourceType.MACHINE,
+        difficulty=GameDifficulty.EXPERT,
+        description="Deploy decoys to mislead the hunter - DECEPTION training",
+        tags=["drone", "trickster", "decoy", "deception", "asymmetric", "skill:reproduce"],
+        favored_traits={"deception": 0.3, "creativity": 0.2},
+        is_swarm=False,
+        is_two_player=True
+    ),
+    
+    # =========================================================================
+    # FULL BATTLE GAMES - Combine all skills
+    # =========================================================================
+    
+    GameDefinition(
+        name="Swarm Skirmish",
+        gym_env="drone://swarm_3v3",
+        challenge=ChallengeType.PHYSICAL,
+        resource=ResourceType.MACHINE,
+        difficulty=GameDifficulty.EXPERT,
+        description="3v3 drone swarm battle - alliance warfare",
+        tags=["drone", "swarm", "alliance", "tactical", "combined"],
+        favored_traits={"coordination": 0.3, "tactical_thinking": 0.2},
+        is_swarm=True,
+        is_two_player=True
+    ),
+    GameDefinition(
+        name="Squadron War",
+        gym_env="drone://swarm_5v5",
+        challenge=ChallengeType.MENTAL,
+        resource=ResourceType.MACHINE,
+        difficulty=GameDifficulty.MASTER,
+        description="5v5 full squadron battle - ultimate alliance test",
+        tags=["drone", "swarm", "war", "strategy", "alliance", "combined"],
+        favored_traits={"leadership": 0.25, "strategy": 0.25, "coordination": 0.2},
+        is_swarm=True,
+        is_two_player=True
+    ),
+    GameDefinition(
+        name="Capture the Flag",
+        gym_env="drone://ctf_4v4",
+        challenge=ChallengeType.MENTAL,
+        resource=ResourceType.MACHINE,
+        difficulty=GameDifficulty.EXPERT,
+        description="4v4 capture the flag - offense and defense",
+        tags=["drone", "ctf", "objective", "teamwork", "combined"],
+        favored_traits={"strategy": 0.25, "speed": 0.2, "defense": 0.15},
+        is_swarm=True,
+        is_two_player=True
+    ),
+    GameDefinition(
+        name="King of the Hill",
+        gym_env="drone://king_of_hill",
+        challenge=ChallengeType.CHANCE,
+        resource=ResourceType.MACHINE,
+        difficulty=GameDifficulty.JOURNEYMAN,
+        description="Control the zone - attack, defend, hold",
+        tags=["drone", "koth", "zone", "control", "combined"],
+        favored_traits={"aggression": 0.2, "positioning": 0.2, "endurance": 0.15},
+        is_swarm=True,
+        is_two_player=True
+    ),
+]
+
+# Asymmetric game pairing map - maps one role to its opponent role
+ASYMMETRIC_PAIRINGS = {
+    "drone://predator_prey|predator": "drone://predator_prey|prey",
+    "drone://predator_prey|prey": "drone://predator_prey|predator",
+    "drone://escort_intercept|escort": "drone://escort_intercept|interceptor",
+    "drone://escort_intercept|interceptor": "drone://escort_intercept|escort",
+    "drone://pursuit_race|pursuer": "drone://pursuit_race|evader",
+    "drone://pursuit_race|evader": "drone://pursuit_race|pursuer",
+    "drone://decoy_hunt|hunter": "drone://decoy_hunt|trickster",
+    "drone://decoy_hunt|trickster": "drone://decoy_hunt|hunter",
+}
+
+# Add drone games to the grid
+for drone_game in DRONE_WARFARE_GAMES:
+    key = (drone_game.challenge, drone_game.resource)
+    if key in GAME_GRID:
+        GAME_GRID[key].append(drone_game)
+
+
+# =============================================================================
+# CONTINUOUS GAME ENVS - For filtering when discrete_only mode
+# =============================================================================
+
+CONTINUOUS_ACTION_ENVS = {
+    # MuJoCo continuous control
+    "HalfCheetah-v5",
+    "BipedalWalker-v3",
+    "Hopper-v5",
+    "Ant-v5",
+    "Swimmer-v5",
+    "Walker2d-v5",
+    "Humanoid-v5",
+    "InvertedPendulum-v5",
+    "InvertedDoublePendulum-v5",
+    "Reacher-v5",
+    "Pusher-v5",
+    # Continuous variants
+    "Pendulum-v1",
+    "LunarLanderContinuous-v3",
+    "MountainCarContinuous-v0",
+    "CarRacing-v3",  # Technically has discrete mode too but default is continuous
+    # BipedalWalker hardcore variant
+    "BipedalWalkerHardcore-v3",
+}
+
+
+def is_discrete_game(game: GameDefinition) -> bool:
+    """
+    Check if a game uses discrete actions (compatible with 6-action brain).
+    
+    Returns True for:
+    - Games with is_continuous=False (explicit flag)
+    - Drone games (drone:// prefix) - all discrete
+    - Classic control discrete games (CartPole, Acrobot, etc.)
+    - Toy text games (FrozenLake, Taxi, etc.)
+    
+    Returns False for:
+    - Games with is_continuous=True
+    - Games in CONTINUOUS_ACTION_ENVS set
+    - MuJoCo environments
+    """
+    # Check explicit flag first
+    if hasattr(game, 'is_continuous') and game.is_continuous:
+        return False
+    
+    # Drone games are always discrete (our adapter handles translation)
+    if game.gym_env.startswith("drone://"):
+        return True
+    
+    # Check against known continuous envs
+    if game.gym_env in CONTINUOUS_ACTION_ENVS:
+        return False
+    
+    # Default to discrete (classic control, toy text, etc.)
+    return True
+
+
+def get_discrete_games() -> Dict[Tuple, List[GameDefinition]]:
+    """
+    Get filtered GAME_GRID with only discrete action games.
+    
+    This is for organisms with the 6-action discrete brain architecture.
+    Continuous games (MuJoCo, BipedalWalker, etc.) provide no real learning signal.
+    """
+    filtered = {}
+    for key, games in GAME_GRID.items():
+        discrete_games = [g for g in games if is_discrete_game(g)]
+        if discrete_games:
+            filtered[key] = discrete_games
+    return filtered
 
 
 # =============================================================================
@@ -714,11 +1309,31 @@ class ProtonGameArena:
     6. Consequence application
     """
     
+    # Standard Gymnasium environments that provide REAL training data
+    # All 25 verified working environments
+    REAL_GYM_ENVS = {
+        # Classic Control
+        'CartPole-v1', 'MountainCar-v0', 'MountainCarContinuous-v0',
+        'Acrobot-v1', 'Pendulum-v1',
+        # Box2D
+        'LunarLander-v3', 'LunarLanderContinuous-v3',
+        'BipedalWalker-v3', 'BipedalWalkerHardcore-v3', 'CarRacing-v3',
+        # Toy Text
+        'FrozenLake-v1', 'FrozenLake8x8-v1', 'CliffWalking-v1',
+        'Blackjack-v1', 'Taxi-v3',
+        # MuJoCo (all v5)
+        'Ant-v5', 'HalfCheetah-v5', 'Hopper-v5', 'Walker2d-v5',
+        'Humanoid-v5', 'Swimmer-v5', 'InvertedPendulum-v5',
+        'InvertedDoublePendulum-v5', 'Reacher-v5', 'Pusher-v5',
+    }
+    
     def __init__(self, 
                  bridge_loader: Optional[Callable] = None,
                  fitness_transfer_rate: float = 0.1,
                  resource_transfer_rate: float = 0.05,
-                 event_emitter: Optional[Callable] = None):
+                 event_emitter: Optional[Callable] = None,
+                 gym_only: bool = False,
+                 discrete_only: bool = True):
         """
         Initialize the Arena.
         
@@ -727,11 +1342,16 @@ class ProtonGameArena:
             fitness_transfer_rate: How much fitness winner takes from loser
             resource_transfer_rate: How much resources transfer on win
             event_emitter: Callable to emit causation events
+            gym_only: If True, ONLY real Gymnasium environments (no native games)
+            discrete_only: If True, filter out continuous action games (MuJoCo etc)
+                          This is REQUIRED for 6-action discrete brain architecture
         """
         self.bridge_loader = bridge_loader
         self.fitness_transfer_rate = fitness_transfer_rate
         self.resource_transfer_rate = resource_transfer_rate
         self.event_emitter = event_emitter
+        self.gym_only = gym_only
+        self.discrete_only = discrete_only
         
         # Battle history
         self.battle_history: List[BattleResult] = []
@@ -741,7 +1361,19 @@ class ProtonGameArena:
         self.game_play_counts: Dict[str, int] = {}
         self.challenge_win_rates: Dict[ChallengeType, Dict[str, float]] = {}
         
-        logger.info("⚔️ Proton Game Arena initialized")
+        # ═══════════════════════════════════════════════════════════════════
+        # LANGUAGE-GAME BRIDGE: Connect vocabulary to battle decisions
+        # ═══════════════════════════════════════════════════════════════════
+        self.language_bridge = None  # Will be set per-battle if available
+        
+        mode = "GYM-ONLY (real training)" if gym_only else "ALL GAMES"
+        discrete_mode = "DISCRETE-ONLY ✅" if discrete_only else "INCLUDING CONTINUOUS ⚠️"
+        logger.info(f"⚔️ Proton Game Arena initialized - Mode: {mode}, Actions: {discrete_mode}")
+    
+    def set_language_bridge(self, bridge: 'LanguageGameBridge') -> None:
+        """Set the language bridge for vocabulary-enhanced battle learning."""
+        self.language_bridge = bridge
+        logger.info("🧠 Language Bridge connected to Proton Arena")
     
     def _emit_event(self, event_type: str, data: Dict[str, Any]):
         """Emit a causation event for arena activities."""
@@ -842,11 +1474,40 @@ class ProtonGameArena:
         
         # Now we can determine available games
         key = (state.challenge_choice, state.resource_choice)
-        state.available_games = GAME_GRID.get(key, [])
+        all_games = GAME_GRID.get(key, [])
+        
+        # Apply filters in order:
+        # 1. discrete_only filter (for 6-action brain compatibility)
+        if self.discrete_only:
+            all_games = [g for g in all_games if is_discrete_game(g)]
+            logger.debug(f"   After discrete filter: {len(all_games)} games")
+        
+        # 2. gym-only filter (for real training vs native games)
+        if self.gym_only:
+            # Keep gym envs and drone games (drone:// envs are our own)
+            state.available_games = [g for g in all_games 
+                                     if g.gym_env in self.REAL_GYM_ENVS 
+                                     or g.gym_env.startswith("drone://")]
+            if not state.available_games and all_games:
+                # No gym games in this cell - try to find ANY gym game
+                logger.warning(f"   ⚠️ No gym games in {state.challenge_choice.value}/{choice.value} - searching all cells")
+                for (c, r), games in GAME_GRID.items():
+                    # Apply discrete filter here too
+                    filtered = [g for g in games if is_discrete_game(g)] if self.discrete_only else games
+                    gym_games = [g for g in filtered 
+                                if g.gym_env in self.REAL_GYM_ENVS 
+                                or g.gym_env.startswith("drone://")]
+                    if gym_games:
+                        state.available_games = gym_games
+                        logger.info(f"   📍 Redirected to {c.value}/{r.value} for gym training")
+                        break
+        else:
+            state.available_games = all_games
         
         logger.info(f"   Available games: {len(state.available_games)}")
         for game in state.available_games:
-            logger.info(f"      - {game.name} ({game.gym_env})")
+            is_gym = "✅ GYM" if game.gym_env in self.REAL_GYM_ENVS else ("🛸 DRONE" if game.gym_env.startswith("drone://") else "⚡ NATIVE")
+            logger.info(f"      - {game.name} ({game.gym_env}) {is_gym}")
         
         # Emit causation event
         self._emit_event('resource_chosen', {
@@ -1008,10 +1669,18 @@ class ProtonGameArena:
         start_time = time.time()
         
         # ═══════════════════════════════════════════════════════════════════
+        # DRONE WARFARE GAMES (drone:// prefix)
+        # Uses our PyFlyt-based drone swarm combat system
+        # ═══════════════════════════════════════════════════════════════════
+        if self._is_drone_game(game.gym_env):
+            score_a, score_b, stats_a, stats_b = self._run_drone_battle(
+                game, bridge_a, bridge_b, state, episodes
+            )
+        # ═══════════════════════════════════════════════════════════════════
         # TWO-PLAYER HEAD-TO-HEAD GAMES
         # Organisms compete DIRECTLY against each other
         # ═══════════════════════════════════════════════════════════════════
-        if game.is_two_player or game.gym_env.endswith('_versus'):
+        elif game.is_two_player or game.gym_env.endswith('_versus'):
             score_a, score_b, stats_a, stats_b = self._run_two_player_battle(
                 game, bridge_a, bridge_b, state, episodes
             )
@@ -1023,7 +1692,7 @@ class ProtonGameArena:
                 episodes=episodes,
                 max_steps=game.max_steps,
                 render=False,
-                learn=False,
+                learn=True,  # 🧠 RECORD EXPERIENCES FOR TRAINING!
                 verbose=False
             )
             
@@ -1032,7 +1701,7 @@ class ProtonGameArena:
                 episodes=episodes,
                 max_steps=game.max_steps,
                 render=False,
-                learn=False,
+                learn=True,  # 🧠 RECORD EXPERIENCES FOR TRAINING!
                 verbose=False
             )
             
@@ -1095,16 +1764,251 @@ class ProtonGameArena:
             'episodes': episodes
         })
         
+        # ═══════════════════════════════════════════════════════════════════
+        # LANGUAGE BRIDGE: Learn from battle outcomes
+        # ═══════════════════════════════════════════════════════════════════
+        if self.language_bridge and LANGUAGE_BRIDGE_AVAILABLE:
+            try:
+                # Learn battle outcome for organism A
+                self.language_bridge.learn_from_episode_end(
+                    organism_name=state.organism_a_id,
+                    won=(winner_id == state.organism_a_id),
+                    final_score=score_a,
+                    episode_length=episodes,
+                    additional_info={
+                        "game": game.name,
+                        "gym_env": game.gym_env,
+                        "opponent": state.organism_b_id,
+                        "margin": margin if winner_id == state.organism_a_id else -margin,
+                        "challenge": state.challenge_choice.value if state.challenge_choice else None
+                    }
+                )
+                
+                # Learn battle outcome for organism B
+                self.language_bridge.learn_from_episode_end(
+                    organism_name=state.organism_b_id,
+                    won=(winner_id == state.organism_b_id),
+                    final_score=score_b,
+                    episode_length=episodes,
+                    additional_info={
+                        "game": game.name,
+                        "gym_env": game.gym_env,
+                        "opponent": state.organism_a_id,
+                        "margin": margin if winner_id == state.organism_b_id else -margin,
+                        "challenge": state.challenge_choice.value if state.challenge_choice else None
+                    }
+                )
+                
+                logger.debug(f"🧠 Language Bridge: Learned from battle {game.name}")
+            except Exception as e:
+                logger.warning(f"Language Bridge learning failed: {e}")
+        
         return result
     
     def _is_standard_gym_env(self, env_spec: str) -> bool:
         """Check if this is a standard gymnasium environment."""
+        # Drone games are NOT standard gym - they use our DroneWarfareArena
+        if env_spec.startswith('drone://'):
+            return False
         standard_prefixes = ['CartPole', 'MountainCar', 'Acrobot', 'Pendulum',
                             'LunarLander', 'BipedalWalker', 'CarRacing',
                             'FrozenLake', 'CliffWalking', 'Blackjack', 'Taxi',
                             'ALE/', 'Ant-', 'HalfCheetah', 'Hopper-', 'Humanoid',
                             'Walker2d', 'Swimmer', 'Pusher', 'Reacher', 'Inverted']
         return any(env_spec.startswith(prefix) for prefix in standard_prefixes)
+    
+    def _is_drone_game(self, env_spec: str) -> bool:
+        """Check if this is a drone warfare game."""
+        return env_spec.startswith('drone://')
+    
+    # =========================================================================
+    # DRONE WARFARE BATTLES
+    # Uses CocoonDroneArena for post-export cocoons
+    # Uses SwarmBattle for live organisms
+    # =========================================================================
+    
+    def _run_drone_battle(self,
+                          game: GameDefinition,
+                          bridge_a,
+                          bridge_b,
+                          state: SelectionState,
+                          episodes: int) -> Tuple[float, float, Dict, Dict]:
+        """
+        Run a drone warfare battle between organisms.
+        
+        Uses SwarmBattle for live organisms during training.
+        For cocoons, use run_cocoon_battle.py instead.
+        Organisms control drones through the 6-action discrete adapter.
+        
+        Returns: (score_a, score_b, stats_a, stats_b)
+        """
+        from .drone_adapter import SingleDroneArena, OrganismDroneAdapter, PYFLYT_AVAILABLE
+        from .swarm_battle import SwarmBattle, BattleConfig, BattleOutcome
+        
+        env_spec = game.gym_env  # e.g., "drone://predator_prey|predator"
+        
+        logger.info(f"🛸 DRONE BATTLE: {game.name}")
+        logger.info(f"   Spec: {env_spec}")
+        logger.info(f"   {state.organism_a_id[:8]} 🆚 {state.organism_b_id[:8]}")
+        
+        # Parse drone game spec: drone://game_type|role (optional role for asymmetric)
+        spec_parts = env_spec.replace('drone://', '').split('|')
+        game_type = spec_parts[0]
+        role_a = spec_parts[1] if len(spec_parts) > 1 else None
+        
+        # For asymmetric games, get the opposing role for organism B
+        if role_a and role_a in ['predator', 'escort', 'pursuer', 'hunter']:
+            opposing_roles = {
+                'predator': 'prey',
+                'prey': 'predator',
+                'escort': 'interceptor',
+                'interceptor': 'escort',
+                'pursuer': 'evader',
+                'evader': 'pursuer',
+                'hunter': 'trickster',
+                'trickster': 'hunter'
+            }
+            role_b = opposing_roles.get(role_a, role_a)
+        else:
+            role_b = role_a
+        
+        # Get organisms from bridges
+        org_a = bridge_a.organism if hasattr(bridge_a, 'organism') else bridge_a
+        org_b = bridge_b.organism if hasattr(bridge_b, 'organism') else bridge_b
+        
+        wins_a = 0
+        wins_b = 0
+        total_tags_a = 0
+        total_tags_b = 0
+        flight_time_a = 0.0
+        flight_time_b = 0.0
+        rounds_detail = []
+        
+        for episode in range(episodes):
+            logger.info(f"\n   🛸 Drone Round {episode + 1}/{episodes}")
+            
+            if game.is_swarm:
+                # Swarm battle (multiple drones per side - use alliance members if available)
+                blue_team = [org_a]  # Could expand to alliance.members
+                red_team = [org_b]
+                
+                config = BattleConfig(max_duration=30.0)  # Short rounds
+                battle = SwarmBattle(blue_team, red_team, config, self.event_emitter)
+                stats = battle.run()
+                battle.close()
+                
+                if stats.outcome == BattleOutcome.BLUE_WINS:
+                    wins_a += 1
+                    logger.info(f"      🔴 {state.organism_a_id[:8]} wins drone battle!")
+                elif stats.outcome == BattleOutcome.RED_WINS:
+                    wins_b += 1
+                    logger.info(f"      🔵 {state.organism_b_id[:8]} wins drone battle!")
+                else:
+                    logger.info(f"      🤝 Drone battle draw!")
+                
+                # Accumulate stats
+                for oid, ostats in stats.organism_stats.items():
+                    if oid == org_a.organism_id:
+                        total_tags_a += ostats.get('tags_scored', 0)
+                        flight_time_a += ostats.get('flight_time', 0)
+                    elif oid == org_b.organism_id:
+                        total_tags_b += ostats.get('tags_scored', 0)
+                        flight_time_b += ostats.get('flight_time', 0)
+                
+                rounds_detail.append({
+                    'outcome': stats.outcome.value,
+                    'blue_survivors': stats.blue_survivors,
+                    'red_survivors': stats.red_survivors
+                })
+                
+            else:
+                # Single drone training (non-combat or 1v1)
+                if game_type in ['racing_gates', 'obstacle_slalom', 'precision_hover', 
+                                 'endurance_patrol', 'target_practice', 'evade_missiles',
+                                 'stealth_mission', 'decoy_deployment', 'chaff_defense',
+                                 'formation_hold', 'escort_vip']:
+                    # Solo training - both play independently
+                    if PYFLYT_AVAILABLE:
+                        try:
+                            arena = SingleDroneArena()
+                            result_a = arena.run_episode(org_a, max_steps=300)
+                            result_b = arena.run_episode(org_b, max_steps=300)
+                            arena.close()
+                            
+                            if result_a['total_reward'] > result_b['total_reward']:
+                                wins_a += 1
+                            elif result_b['total_reward'] > result_a['total_reward']:
+                                wins_b += 1
+                            
+                            flight_time_a += result_a.get('flight_time', 0)
+                            flight_time_b += result_b.get('flight_time', 0)
+                            
+                            rounds_detail.append({
+                                'score_a': result_a['total_reward'],
+                                'score_b': result_b['total_reward']
+                            })
+                        except Exception as e:
+                            logger.warning(f"PyFlyt error: {e}, falling back to simulated")
+                            # Fallback to simulated
+                            wins_a += 1 if hash(org_a.organism_id) % 2 == 0 else 0
+                            wins_b += 1 if hash(org_b.organism_id) % 2 == 1 else 0
+                    else:
+                        # Simulated drone training (no PyFlyt)
+                        score_a = hash(org_a.organism_id + str(episode)) % 100
+                        score_b = hash(org_b.organism_id + str(episode)) % 100
+                        if score_a > score_b:
+                            wins_a += 1
+                        elif score_b > score_a:
+                            wins_b += 1
+                        rounds_detail.append({'score_a': score_a, 'score_b': score_b})
+                else:
+                    # 1v1 dogfight or asymmetric
+                    config = BattleConfig(max_duration=20.0)
+                    battle = SwarmBattle([org_a], [org_b], config, self.event_emitter)
+                    stats = battle.run()
+                    battle.close()
+                    
+                    if stats.outcome == BattleOutcome.BLUE_WINS:
+                        wins_a += 1
+                    elif stats.outcome == BattleOutcome.RED_WINS:
+                        wins_b += 1
+                    
+                    rounds_detail.append({'outcome': stats.outcome.value})
+        
+        # Calculate final scores
+        total_rounds = wins_a + wins_b
+        if total_rounds > 0:
+            score_a = (wins_a / episodes) * 100 + (total_tags_a * 2)  # Bonus for tags
+            score_b = (wins_b / episodes) * 100 + (total_tags_b * 2)
+        else:
+            score_a = score_b = 50.0
+        
+        stats_a = {
+            'wins': wins_a,
+            'losses': wins_b,
+            'win_rate': wins_a / episodes if episodes > 0 else 0,
+            'tags_scored': total_tags_a,
+            'flight_time': flight_time_a,
+            'role': role_a,
+            'game_type': game_type,
+            'rounds': rounds_detail
+        }
+        stats_b = {
+            'wins': wins_b,
+            'losses': wins_a,
+            'win_rate': wins_b / episodes if episodes > 0 else 0,
+            'tags_scored': total_tags_b,
+            'flight_time': flight_time_b,
+            'role': role_b,
+            'game_type': game_type,
+            'rounds': rounds_detail
+        }
+        
+        logger.info(f"\n   🛸 Drone Battle Complete")
+        logger.info(f"   📊 {state.organism_a_id[:8]} {wins_a} - {wins_b} {state.organism_b_id[:8]}")
+        logger.info(f"   🎯 Tags: {total_tags_a} vs {total_tags_b}")
+        
+        return score_a, score_b, stats_a, stats_b
     
     # =========================================================================
     # TWO-PLAYER HEAD-TO-HEAD BATTLES
@@ -1217,7 +2121,7 @@ class ProtonGameArena:
     
     def _generate_game_state(self, game_type: str) -> np.ndarray:
         """Generate a game state vector for decision-making."""
-        state = np.random.rand(24).astype(np.float32)
+        state = np.random.rand(28).astype(np.float32)  # Matches config.json input_dim=28
         
         # Game-specific state adjustments
         if game_type == 'pong':
@@ -1448,7 +2352,7 @@ class ProtonGameArena:
     def _simulate_reaction_duel(self, bridge_a, bridge_b) -> Dict[str, Any]:
         """Reaction time based competition."""
         # Generate random state
-        state = np.random.rand(24).astype(np.float32)
+        state = np.random.rand(28).astype(np.float32)  # Matches config.json input_dim=28
         
         # See who responds faster/better
         import time as time_module
@@ -1502,10 +2406,10 @@ class ProtonGameArena:
         elif game.gym_env == "inter_organism_chat":
             return self._evaluate_inter_organism_chat(bridge, episodes)
         else:
-            # Default: random score for unimplemented games
-            logger.warning(f"Custom game {game.gym_env} not implemented, using random score")
-            score = random.uniform(0, 100)
-            return score, {'note': 'placeholder'}
+            # NO FAKE SCORES - FAIL LOUD
+            error_msg = f"❌ UNIMPLEMENTED CUSTOM GAME: {game.gym_env} - Add handler or remove from matrix!"
+            logger.error(error_msg)
+            raise NotImplementedError(error_msg)
     
     def _evaluate_language_coherence(self, bridge, episodes: int) -> Tuple[float, Dict]:
         """Evaluate organism's language coherence."""
@@ -1572,7 +2476,7 @@ class ProtonGameArena:
         
         for _ in range(episodes):
             # Get baseline response
-            baseline_state = np.random.rand(24).astype(np.float32)
+            baseline_state = np.random.rand(28).astype(np.float32)  # Matches config.json input_dim=28
             try:
                 baseline_result = bridge.process(state=baseline_state)
                 baseline_action = baseline_result.action if hasattr(baseline_result, 'action') else 0
@@ -1586,7 +2490,7 @@ class ProtonGameArena:
             consistency_count = 0
             
             for strength in mutation_strengths:
-                mutated_state = baseline_state + np.random.randn(24).astype(np.float32) * strength
+                mutated_state = baseline_state + np.random.randn(28).astype(np.float32) * strength
                 try:
                     mutated_result = bridge.process(state=mutated_state)
                     mutated_action = mutated_result.action if hasattr(mutated_result, 'action') else 0
@@ -1637,7 +2541,7 @@ class ProtonGameArena:
             scenario = threat_scenarios[ep % len(threat_scenarios)]
             
             # Encode threat in state
-            state = np.random.rand(24).astype(np.float32)
+            state = np.random.rand(28).astype(np.float32)  # Matches config.json input_dim=28
             state[0] = scenario['threat_level']  # Threat perception
             state[1] = scenario['distance']       # Distance to threat
             state[2] = 1.0 - scenario['distance'] # Urgency

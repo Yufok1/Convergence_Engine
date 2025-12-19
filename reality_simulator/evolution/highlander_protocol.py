@@ -52,6 +52,14 @@ from typing import Dict, List, Optional, Any, Tuple, Callable, Set
 from enum import Enum
 from collections import defaultdict
 
+# Try to import Language-Game Bridge
+try:
+    from reality_simulator.language.language_game_bridge import LanguageGameBridge
+    LANGUAGE_BRIDGE_AVAILABLE = True
+except ImportError:
+    LanguageGameBridge = None
+    LANGUAGE_BRIDGE_AVAILABLE = False
+
 # Ray distributed computing - optional, graceful fallback
 RAY_DISTRIBUTED_AVAILABLE = False
 try:
@@ -257,7 +265,8 @@ class HighlanderProtocol:
                 from reality_simulator.evolution.battle_arena import BattleArena
                 arena_config = {
                     'chaos_factor': self.config.get('battle_randomness', 0.15),
-                    'max_rounds': self.config.get('max_battle_rounds', 10)
+                    'max_rounds': self.config.get('max_battle_rounds', 10),
+                    'gym_only': self.config.get('gym_only', False)  # 100% real gym battles when True
                 }
                 self.battle_arena = BattleArena(config=arena_config, event_emitter=event_emitter)
             except ImportError:
@@ -295,6 +304,53 @@ class HighlanderProtocol:
         
         # Context memory for vocabulary transfer on battle death
         self.context_memory: Optional[Any] = None
+        
+        # ═══════════════════════════════════════════════════════════════════
+        # LANGUAGE-GAME BRIDGE: Connect vocabulary to battle decisions
+        # ═══════════════════════════════════════════════════════════════════
+        self.language_bridge = None
+    
+    def set_language_bridge(self, organism_names: List[str], 
+                           atomic_language: Any = None,
+                           knowledge_web: Any = None) -> None:
+        """
+        Initialize and connect the Language-Game Bridge.
+        
+        This connects the 62,000+ vocabulary concepts to game decision making,
+        enabling bilateral learning:
+        - Language helps games (vocabulary biases action selection)
+        - Games help language (outcomes reinforce/weaken concepts)
+        """
+        if not LANGUAGE_BRIDGE_AVAILABLE:
+            self.logger.warning("Language Bridge not available - vocabulary disconnected from games")
+            return
+        
+        try:
+            # Read config from self.config (meta-brain tunable) with fallbacks
+            bridge_config = self.config.get('neural', {}).get('language_game_bridge', {})
+            bias_strength = bridge_config.get('bias_strength', 0.3)
+            learning_rate = bridge_config.get('learning_rate', 0.1)
+            
+            self.language_bridge = LanguageGameBridge(
+                organism_names=organism_names,
+                atomic_language=atomic_language,
+                knowledge_web=knowledge_web,
+                game_type="highlander_battle",
+                bias_strength=bias_strength,
+                learning_rate=learning_rate
+            )
+            
+            # Wire to battle arena
+            if self.battle_arena and hasattr(self.battle_arena, 'set_language_bridge'):
+                self.battle_arena.set_language_bridge(self.language_bridge)
+                self.logger.info(f"🔗 Language Bridge wired to Battle Arena")
+            else:
+                self.logger.warning(f"⚠️ Battle Arena NOT available for language bridge wiring (battle_arena={self.battle_arena is not None})")
+            
+            self.logger.info(f"🧠 Language Bridge: ACTIVE - {len(organism_names)} organisms (bias={bias_strength}, lr={learning_rate})")
+        except Exception as e:
+            self.logger.warning(f"Language Bridge init failed: {e}")
+            self.language_bridge = None
     
     def set_context_memory(self, context_memory) -> None:
         """
@@ -754,8 +810,14 @@ class HighlanderProtocol:
                 loser_org = organisms.get(loser_id)
                 if winner_org:
                     winner_org.battle_wins = getattr(winner_org, 'battle_wins', 0) + 1
+                    # 🏆 Competition stats
+                    winner_org.highlander_kills = getattr(winner_org, 'highlander_kills', 0) + 1
+                    winner_org.win_streak = getattr(winner_org, 'win_streak', 0) + 1
+                    if winner_org.win_streak > getattr(winner_org, 'best_win_streak', 0):
+                        winner_org.best_win_streak = winner_org.win_streak
                 if loser_org:
                     loser_org.battle_losses = getattr(loser_org, 'battle_losses', 0) + 1
+                    loser_org.win_streak = 0  # Reset streak on death
                 
                 # Winner absorbs loser's traits
                 self._absorb_loser(
@@ -834,8 +896,9 @@ class HighlanderProtocol:
                 # Determine battle type from config (respects arena.default_battle_type)
                 default_battle_type_str = self.config.get('default_battle_type', 'FULL_COMBAT')
                 
-                # Check proton_game_probability for mixed battle selection
-                proton_probability = self.config.get('proton_game_probability', 1.0)  # Default matches config.json
+                # Check probabilities for mixed battle selection
+                proton_probability = self.config.get('proton_game_probability', 1.0)
+                drone_probability = self.config.get('drone_combat_probability', 0.0)  # Drone combat chance
                 
                 if isinstance(default_battle_type_str, str):
                     try:
@@ -845,17 +908,19 @@ class HighlanderProtocol:
                 else:
                     battle_type = BattleType.FULL_COMBAT
                 
-                # Apply proton_game_probability if set (for mixed battles)
-                # If probability > 0, randomly select between PROTON_GAME and FULL_COMBAT
-                if proton_probability > 0 and battle_type != BattleType.PROTON_GAME:
-                    if rng.random() < proton_probability:
+                # Mixed battle selection: Drone > Proton > FullCombat
+                roll = rng.random()
+                if drone_probability > 0 and roll < drone_probability:
+                    battle_type = BattleType.DRONE_COMBAT
+                    self.logger.info(f"🛸 Drone Combat selected (probability: {drone_probability})")
+                elif proton_probability > 0 and roll < (drone_probability + proton_probability):
+                    if battle_type != BattleType.PROTON_GAME:
                         battle_type = BattleType.PROTON_GAME
                         self.logger.info(f"🎮 Proton Game selected (probability: {proton_probability})")
-                elif proton_probability < 1.0 and battle_type == BattleType.PROTON_GAME:
-                    # Even if default is PROTON_GAME, respect probability
+                elif battle_type == BattleType.PROTON_GAME and proton_probability < 1.0:
                     if rng.random() > proton_probability:
                         battle_type = BattleType.FULL_COMBAT
-                        self.logger.info(f"⚔️ Full Combat selected (probability: {1.0 - proton_probability})")
+                        self.logger.info(f"⚔️ Full Combat selected")
                 
                 self.logger.info(f"⚔️ Battle type: {battle_type.value}")
                 
@@ -912,6 +977,13 @@ class HighlanderProtocol:
                 # Update organism objects' battle stats (for card display)
                 winner_org.battle_wins = getattr(winner_org, 'battle_wins', 0) + 1
                 loser_org.battle_losses = getattr(loser_org, 'battle_losses', 0) + 1
+                
+                # 🏆 Competition stats
+                winner_org.highlander_kills = getattr(winner_org, 'highlander_kills', 0) + 1
+                winner_org.win_streak = getattr(winner_org, 'win_streak', 0) + 1
+                if winner_org.win_streak > getattr(winner_org, 'best_win_streak', 0):
+                    winner_org.best_win_streak = winner_org.win_streak
+                loser_org.win_streak = 0  # Reset streak on death
 
                 # DEBUG: Show what will be absorbed
                 transferable_concepts = self._get_transferable_concepts(loser_id, loser_org)
@@ -1029,6 +1101,13 @@ class HighlanderProtocol:
         winner_org.battle_wins = getattr(winner_org, 'battle_wins', 0) + 1
         loser_org.battle_losses = getattr(loser_org, 'battle_losses', 0) + 1
         
+        # 🏆 Competition stats
+        winner_org.highlander_kills = getattr(winner_org, 'highlander_kills', 0) + 1
+        winner_org.win_streak = getattr(winner_org, 'win_streak', 0) + 1
+        if winner_org.win_streak > getattr(winner_org, 'best_win_streak', 0):
+            winner_org.best_win_streak = winner_org.win_streak
+        loser_org.win_streak = 0  # Reset streak on death
+        
         self._emit_event('battle_concluded', {
             'winner': winner_id,
             'loser': loser_id,
@@ -1113,6 +1192,12 @@ class HighlanderProtocol:
         # ═══════════════════════════════════════════════════════════════
         linguistic_inheritance = self._inherit_linguistic_traits(winner, loser)
         linguistic_traits_inherited = linguistic_inheritance.get('traits_inherited', 0)
+        
+        # 🏆 Transfer skills_mastered from loser to winner
+        loser_skills = getattr(loser, 'skills_mastered', set())
+        if loser_skills:
+            winner_skills = getattr(winner, 'skills_mastered', set())
+            winner.skills_mastered = winner_skills | loser_skills
         
         # Absorb configs
         if hasattr(winner, 'config_system') and hasattr(loser, 'config_system'):
@@ -1360,6 +1445,9 @@ class HighlanderProtocol:
                 for member in alliance.members:
                     if member in self.organism_stats:
                         self.organism_stats[member].alliance_id = None
+                    # 🔧 FIX: Also clear alliance_id on actual organism object
+                    if member in organisms and hasattr(organisms[member], 'alliance_id'):
+                        organisms[member].alliance_id = None
                 del self.alliances[alliance_id]
         
         # ═══════════════════════════════════════════════════════════════
@@ -1442,6 +1530,9 @@ class HighlanderProtocol:
                     if oid not in self.organism_stats:
                         self.organism_stats[oid] = OrganismStats()
                     self.organism_stats[oid].alliance_id = alliance_id
+                    # 🔧 FIX: Also set alliance_id on actual organism object for frontend display
+                    if oid in organisms and hasattr(organisms[oid], 'alliance_id'):
+                        organisms[oid].alliance_id = alliance_id
                 
                 # Share concepts immediately
                 self._share_alliance_concepts(alliance, organisms, org_id, best_partner)

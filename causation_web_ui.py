@@ -3342,7 +3342,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "     * **Enable/Disable**: `/neural/enabled` (true/false) - Turn neural system on/off\n"
         prompt += "     * **Device**: `/neural/device` (\"cpu\" or \"cuda\") - Select computation device\n"
         prompt += "     * **Brain Architecture**:\n"
-        prompt += "       - `/neural/brain/input_dim` (integer, default: 24) - Input feature dimensions (18 base + 6 integration features)\n"
+        prompt += "       - `/neural/brain/input_dim` (integer, default: 28) - Input feature dimensions (25 base + 3 self-perception)\n"
         prompt += "       - `/neural/brain/hidden_dim` (integer, typically 64) - Hidden layer size\n"
         prompt += "       - `/neural/brain/output_dim` (integer, typically 6) - Action space size\n"
         prompt += "       - `/neural/brain/vocab_size` (integer, default: 12288) - Vocabulary size for language head token generation\n"
@@ -4583,7 +4583,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "  13. **Action Success**: Behavioral feedback context (success, effective, failure, ineffective)\n"
         prompt += "  14. **Generation Age**: Temporal/evolutionary context (mature, experienced, young, new)\n"
         prompt += "- **Dynamic Word Scoring**: Words are scored across dimensions (0.0-1.0) and prioritized by contextual relevance\n"
-        prompt += "- **Full State Integration**: Uses all 24 state features (18 base + 6 integration) plus network and breath state for comprehensive context\n"
+        prompt += "- **Full State Integration**: Uses all 28 state features (25 base + 3 self-perception) plus network and breath state for comprehensive context\n"
         prompt += "- **Associative Complexity**: Semantic relationships expand high-scoring words for rich word networks\n"
         prompt += "- **Precision**: Context-aware word selection based on comprehensive data\n"
         prompt += "- **Responsiveness**: Real-time adaptation to changing conditions\n"
@@ -4595,7 +4595,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "- **Phase 3**: Linguistic Knowledge Web for situational awareness and associative complexity (PRIMARY METHOD)\n"
         prompt += "- **Hybrid Approach**: Currently uses Knowledge Web exclusively. Semantic embeddings are collected but not yet primary.\n"
         prompt += "- **Teaching Process** (`teach_organism` method):\n"
-        prompt += "  1. Get organism's full 24-feature state vector (via `get_state_features()`)\n"
+        prompt += "  1. Get organism's full 28-feature state vector (via `get_state_features()`)\n"
         prompt += "  2. Get current/recent action from organism\n"
         prompt += "  3. Call `knowledge_web.get_situational_awareness()` with full state, action, network_state, breath_state\n"
         prompt += "  4. Knowledge web evaluates all 14 dimensions and returns prioritized word list\n"
@@ -7250,8 +7250,15 @@ def list_organisms():
                 for org_id, organism in live_organisms.items():
                     if org_id not in organism_ids:
                         # Get word count for this organism
-                        org_id_int = hash(org_id) if isinstance(org_id, str) else org_id
-                        words_learned = len(node_word_associations.get(org_id_int, set()))
+                        # PRIMARY: Check atomic_language.atoms (the organism's actual learned vocabulary)
+                        words_learned = 0
+                        if hasattr(organism, 'atomic_language') and organism.atomic_language:
+                            words_learned = len(organism.atomic_language.atoms)
+                        
+                        # FALLBACK: Check node_word_associations if atomic_language not available
+                        if words_learned == 0:
+                            org_hash = hash(org_id) if isinstance(org_id, str) else org_id
+                            words_learned = len(node_word_associations.get(org_hash, set()) or node_word_associations.get(str(org_hash), set()))
                         
                         # Get brain stats
                         brain = getattr(organism, 'brain', None)
@@ -7376,7 +7383,18 @@ def list_organisms():
                             # Card display
                             'rarity': rarity,
                             'strengths': traits['strengths'],
-                            'weaknesses': traits['weaknesses']
+                            'weaknesses': traits['weaknesses'],
+                            
+                            # 🏆 Competition Stats (Tournament, Dojo, Highlander)
+                            'tournament_wins': getattr(organism, 'tournament_wins', 0),
+                            'tournament_losses': getattr(organism, 'tournament_losses', 0),
+                            'dojo_sessions': getattr(organism, 'dojo_sessions', 0),
+                            'skills_mastered': list(getattr(organism, 'skills_mastered', [])),
+                            'win_streak': getattr(organism, 'win_streak', 0),
+                            'best_win_streak': getattr(organism, 'best_win_streak', 0),
+                            'gym_experiences': getattr(organism, 'gym_experiences', 0),
+                            'highlander_kills': getattr(organism, 'highlander_kills', 0),
+                            'war_victories': getattr(organism, 'war_victories', 0)
                         })
                         organism_ids.add(org_id)
             else:
@@ -7409,8 +7427,9 @@ def list_organisms():
                 org_id = info.get('organism_id')
                 if org_id and org_id not in organism_ids:
                     # Get word count for this organism from context_memory
-                    org_id_int = hash(org_id) if isinstance(org_id, str) else org_id
-                    words_learned = len(node_word_associations.get(org_id_int, set()))
+                    # Keys in node_word_associations are hash integers (stored as strings after JSON serialization)
+                    org_hash = hash(org_id) if isinstance(org_id, str) else org_id
+                    words_learned = len(node_word_associations.get(org_hash, set()) or node_word_associations.get(str(org_hash), set()))
                     
                     # Get capsule-specific stats if available
                     capsule_exp_buffer = info.get('experience_count', 0)
@@ -7533,6 +7552,212 @@ def list_organisms():
 
     except Exception as e:
         logger.error(f"Error listing organisms: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/alliances', methods=['GET'])
+def list_alliances():
+    """
+    List all alliances with comprehensive "Alliance Dossier" style data.
+    
+    Each alliance includes:
+    - Identity: alliance_id, name, founder
+    - Members: list of member organisms with roles
+    - Combat: wars_declared, wars_won, wars_lost, total_battles_won
+    - Reputation: average member reputation, trust score
+    - Strength: collective_fitness, size_bonus, cohesion
+    - Territory: controlled domains
+    - History: formation_time, betrayers, war history
+    """
+    try:
+        alliances_data = []
+        
+        # Get alliance system from unified_system
+        unified_system = getattr(app, 'unified_system', None)
+        alliance_system = None
+        if unified_system:
+            alliance_system = getattr(unified_system, 'alliance_warfare', None)
+        
+        if not alliance_system:
+            logger.info("No alliance system available")
+            return jsonify([])
+        
+        # Get live organisms for member stats lookup
+        live_organisms = {}
+        if unified_system and hasattr(unified_system, 'get_current_organisms'):
+            live_organisms = unified_system.get_current_organisms() or {}
+        
+        # Get network connections
+        network = app.config.get('network')
+        network_connections = {}
+        if network and hasattr(network, 'connections'):
+            network_connections = network.connections
+        
+        # Process PlanetaryAlliance objects (from alliance_warfare.py)
+        if hasattr(alliance_system, 'alliances') and alliance_system.alliances:
+            for alliance_id, alliance in alliance_system.alliances.items():
+                try:
+                    # Get member data with roles
+                    members_data = []
+                    total_fitness = 0.0
+                    total_battles_won = 0
+                    total_words_learned = 0
+                    member_count = 0
+                    
+                    # Handle both dict (PlanetaryAlliance) and set (Alliance) member formats
+                    members_raw = getattr(alliance, 'members', {})
+                    logger.debug(f"Alliance {alliance_id}: members_raw type={type(members_raw)}, live_organisms keys sample={list(live_organisms.keys())[:3]}")
+                    if isinstance(members_raw, dict):
+                        member_items = members_raw.items()
+                    elif isinstance(members_raw, set):
+                        member_items = [(m, 'member') for m in members_raw]
+                    else:
+                        member_items = []
+                    
+                    for member_id, role in member_items:
+                        member_info = {
+                            'organism_id': str(member_id),
+                            'short_id': str(member_id)[:8],
+                            'role': str(role) if hasattr(role, 'value') else str(role)
+                        }
+                        
+                        # Get live organism data if available
+                        if str(member_id) in live_organisms:
+                            org = live_organisms[str(member_id)]
+                            logger.debug(f"  Member {member_id}: org type={type(org)}, has atomic_language={hasattr(org, 'atomic_language')}")
+                            member_info['fitness'] = round(getattr(org, 'fitness', 0.0), 4)
+                            member_info['battle_wins'] = getattr(org, 'battle_wins', 0)
+                            # Get words learned from atomic_language.atoms
+                            words = 0
+                            if hasattr(org, 'atomic_language') and org.atomic_language:
+                                al = org.atomic_language
+                                logger.debug(f"    atomic_language type={type(al)}, has atoms={hasattr(al, 'atoms')}")
+                                if hasattr(al, 'atoms'):
+                                    words = len(al.atoms) if al.atoms else 0
+                                else:
+                                    logger.warning(f"    atomic_language has no 'atoms' attribute, attrs={dir(al)[:10]}")
+                            member_info['words_learned'] = words
+                            member_info['alive'] = True
+                            
+                            total_fitness += member_info['fitness']
+                            total_battles_won += member_info['battle_wins']
+                            total_words_learned += words
+                            member_count += 1
+                        else:
+                            member_info['alive'] = False
+                        
+                        members_data.append(member_info)
+                    
+                    # Calculate alliance-level metrics
+                    avg_fitness = total_fitness / member_count if member_count > 0 else 0.0
+                    
+                    # War stats
+                    wars_declared = getattr(alliance, 'wars_declared', 0)
+                    wars_won = getattr(alliance, 'wars_won', 0)
+                    wars_lost = getattr(alliance, 'wars_lost', 0)
+                    total_wars = wars_won + wars_lost
+                    war_win_rate = wars_won / total_wars if total_wars > 0 else 0.0
+                    
+                    # Collective stats from Alliance dataclass
+                    collective_fitness = getattr(alliance, 'collective_fitness', total_fitness)
+                    strength = getattr(alliance, 'strength', 1.0)
+                    shared_concepts = list(getattr(alliance, 'shared_concepts', set()))
+                    betrayal_count = getattr(alliance, 'betrayal_count', 0)
+                    
+                    # Territory (from PlanetaryAlliance)
+                    controlled_territories = []
+                    if hasattr(alliance, 'controlled_territories'):
+                        for territory in alliance.controlled_territories:
+                            if hasattr(territory, 'value'):
+                                controlled_territories.append(territory.value)
+                            else:
+                                controlled_territories.append(str(territory))
+                    
+                    # Betrayers (from PlanetaryAlliance)
+                    betrayers = list(getattr(alliance, 'betrayers', set()))
+                    
+                    # Get warchief if exists
+                    warchief_id = getattr(alliance, 'warchief_id', None)
+                    
+                    # Calculate alliance power score
+                    size_bonus = min(1.0, len(members_data) * 0.15)
+                    cohesion_bonus = strength * 0.2
+                    knowledge_bonus = min(0.15, len(shared_concepts) * 0.01)
+                    power_score = round((size_bonus + cohesion_bonus + knowledge_bonus + avg_fitness) * 25, 1)
+                    
+                    # Determine alliance tier based on performance
+                    if power_score >= 80 and wars_won >= 5:
+                        tier = 'legendary'
+                    elif power_score >= 60 and wars_won >= 3:
+                        tier = 'elite'
+                    elif power_score >= 40 and wars_won >= 1:
+                        tier = 'veteran'
+                    elif member_count >= 3:
+                        tier = 'established'
+                    else:
+                        tier = 'nascent'
+                    
+                    alliances_data.append({
+                        # Identity
+                        'alliance_id': str(alliance_id),
+                        'short_id': str(alliance_id)[:8],
+                        'name': getattr(alliance, 'name', f'Alliance_{str(alliance_id)[:8]}'),
+                        'founder_id': getattr(alliance, 'founder_id', None),
+                        'warchief_id': warchief_id,
+                        
+                        # Members
+                        'member_count': len(members_data),
+                        'alive_members': member_count,
+                        'members': members_data,
+                        
+                        # Combat
+                        'wars_declared': wars_declared,
+                        'wars_won': wars_won,
+                        'wars_lost': wars_lost,
+                        'war_win_rate': round(war_win_rate, 3),
+                        'total_battles_won': total_battles_won,
+                        'at_war_with': list(getattr(alliance, 'at_war_with', set())),
+                        
+                        # Strength metrics
+                        'collective_fitness': round(collective_fitness, 4),
+                        'average_fitness': round(avg_fitness, 4),
+                        'strength': round(strength, 3),
+                        'power_score': power_score,
+                        'size_bonus': round(size_bonus, 3),
+                        'cohesion_bonus': round(cohesion_bonus, 3),
+                        'knowledge_bonus': round(knowledge_bonus, 3),
+                        
+                        # Knowledge
+                        'shared_concepts': shared_concepts[:20],  # Limit for display
+                        'shared_concepts_count': len(shared_concepts),
+                        'total_words_learned': total_words_learned,
+                        
+                        # Territory
+                        'controlled_territories': controlled_territories,
+                        'territory_count': len(controlled_territories),
+                        
+                        # History
+                        'formation_time': getattr(alliance, 'formation_time', 0),
+                        'formation_round': getattr(alliance, 'formation_round', 0),
+                        'founding_generation': getattr(alliance, 'founding_generation', 0),
+                        'betrayal_count': betrayal_count,
+                        'betrayers': betrayers[:10],  # Limit for display
+                        
+                        # Classification
+                        'tier': tier
+                    })
+                except Exception as e:
+                    logger.warning(f"Error processing alliance {alliance_id}: {e}")
+                    continue
+        
+        # Sort by power score
+        alliances_data.sort(key=lambda x: x['power_score'], reverse=True)
+        
+        logger.info(f"Returning {len(alliances_data)} alliances")
+        return jsonify(alliances_data)
+        
+    except Exception as e:
+        logger.error(f"Error listing alliances: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 
@@ -8104,8 +8329,9 @@ def compile_cocoon():
         compress = data.get('compress', True)
         export_format = data.get('format', 'cocoon')  # cocoon, onnx, torchscript, package
         training_config = data.get('training_config', {})
+        graph_image_base64 = data.get('graph_image')  # HTML graph capture from client
         
-        logger.info(f"[COCOON] Export format: {export_format}")
+        logger.info(f"[COCOON] Export format: {export_format}, graph_image: {'yes' if graph_image_base64 else 'no'}")
         
         # Get unified system and checkpoint manager
         unified_system = app.config.get('unified_system') or getattr(app, 'unified_system', None)
@@ -8252,6 +8478,22 @@ def compile_cocoon():
         if alliance_system is None and unified_system:
             alliance_system = getattr(unified_system, 'alliance_warfare', None)
         
+        # 🧬 Get attractor_landscape for formation fingerprint
+        attractor_landscape = app.config.get('attractor_landscape')
+        if attractor_landscape is None and unified_system:
+            attractor_landscape = getattr(unified_system, 'attractor_landscape', None)
+        
+        # 📊 Get shared_state for simulation snapshot
+        shared_state = None
+        try:
+            shared_state_path = Path('data/.shared_simulation_state.json')
+            if shared_state_path.exists():
+                import json
+                with open(shared_state_path, 'r') as f:
+                    shared_state = json.load(f)
+        except Exception:
+            pass
+        
         # Compile cocoon with specified format
         compiler = AgentCompiler()
         
@@ -8274,7 +8516,7 @@ def compile_cocoon():
             # This is a ZIP archive - always save as .zip for ensemble binary exports
             model_bytes = ensemble_archive.read()
             # Generate cocoon source separately for reference (not used for binary exports)
-            cocoon_source, _ = compiler.compile_cocoon(
+            cocoon_result = compiler.compile_cocoon(
                 capsules=organisms,
                 vocabulary=vocabulary,
                 knowledge_web=knowledge_web,
@@ -8286,12 +8528,24 @@ def compile_cocoon():
                 include_http=include_http,
                 compress_data=compress,
                 export_format='cocoon',  # Just get the Python source
-                conversation_history=conversation_history
+                conversation_history=conversation_history,
+                attractor_landscape=attractor_landscape,
+                shared_state=shared_state,
+                graph_image_base64=graph_image_base64
             )
+            # Unpack result - cocoon format returns (source, readme, graph_bytes)
+            if isinstance(cocoon_result, tuple) and len(cocoon_result) == 3:
+                cocoon_source, _, _ = cocoon_result  # We only need source for ensemble binary
+            else:
+                cocoon_source, _ = cocoon_result  # Backward compatibility
             # Override extension for ensemble binary - it's always a zip archive
             export_format = 'ensemble_' + export_format  # ensemble_onnx or ensemble_torchscript
+            # Set these for consistency (not used for ensemble binary)
+            readme_text = None
+            graph_bytes = None
+            model_bytes = None
         else:
-            cocoon_source, model_bytes = compiler.compile_cocoon(
+            result = compiler.compile_cocoon(
                 capsules=organisms,
                 vocabulary=vocabulary,
                 knowledge_web=knowledge_web,
@@ -8303,8 +8557,21 @@ def compile_cocoon():
                 include_http=include_http,
                 compress_data=compress,
                 export_format=export_format,
-                conversation_history=conversation_history
+                conversation_history=conversation_history,
+                attractor_landscape=attractor_landscape,
+                shared_state=shared_state,
+                graph_image_base64=graph_image_base64
             )
+            # Unpack result based on format
+            # - 'cocoon' format returns (source, readme_text, graph_bytes)
+            # - other formats return (source, binary_bytes)
+            if export_format == 'cocoon':
+                cocoon_source, readme_text, graph_bytes = result
+                model_bytes = None  # No binary for cocoon format
+            else:
+                cocoon_source, model_bytes = result
+                readme_text = None
+                graph_bytes = None
         
         # Generate filename based on format
         mode = "ensemble" if len(organisms) > 1 else "solo"
@@ -8347,17 +8614,29 @@ def compile_cocoon():
             with open(download_path, 'w', encoding='utf-8') as f:
                 f.write(cocoon_source)
             
-            # Save README if provided (model_bytes contains README for cocoon format)
-            if model_bytes and isinstance(model_bytes, str):
+            # Save README if provided
+            if readme_text:
                 readme_path = downloads_dir / filename.replace('.py', '_README.md')
                 with open(readme_path, 'w', encoding='utf-8') as f:
-                    f.write(model_bytes)
+                    f.write(readme_text)
                 additional_files.append({
                     'filename': readme_path.name,
                     'size': readme_path.stat().st_size,
                     'download_url': f'/api/download/{readme_path.name}'
                 })
                 logger.info(f"[COCOON] Saved README: {readme_path.name} ({readme_path.stat().st_size:,} bytes)")
+            
+            # Save interactive topology HTML visualization
+            if graph_bytes:  # Now this is actually topology_html (string)
+                topology_path = downloads_dir / 'ensemble_topology.html'
+                with open(topology_path, 'w', encoding='utf-8') as f:
+                    f.write(graph_bytes)
+                additional_files.append({
+                    'filename': topology_path.name,
+                    'size': topology_path.stat().st_size,
+                    'download_url': f'/api/download/{topology_path.name}'
+                })
+                logger.info(f"[COCOON] Saved topology visualization: {topology_path.name} ({topology_path.stat().st_size:,} bytes)")
                 
         elif export_format in ('package', 'ensemble_onnx', 'ensemble_torchscript', 'onnx', 'torchscript'):
             # Save ZIP package/archive (ONNX and TorchScript are now complete packages!)
@@ -10678,6 +10957,135 @@ def butterfly_chat():
     except Exception as e:
         logger.error(f"Error in butterfly chat: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/butterfly/chat/stream', methods=['POST'])
+def butterfly_chat_stream():
+    """
+    Streaming version of butterfly chat - sends debug logs in real-time as organisms respond.
+    Uses Server-Sent Events (SSE) to push updates to the frontend.
+    """
+    import json as json_module
+    
+    data = request.get_json()
+    message = data.get('message', '')
+    routing_strategy = data.get('routing_strategy', 'all')
+    max_organisms = data.get('max_organisms', 10)
+    
+    if not message:
+        def error_gen():
+            yield f"data: {json_module.dumps({'type': 'error', 'error': 'Message is required'})}\n\n"
+        return Response(error_gen(), mimetype='text/event-stream')
+    
+    def generate():
+        try:
+            # Get stored references
+            organisms = app.config.get('organisms', [])
+            vocabulary = app.config.get('vocabulary')
+            event_emitter = app.config.get('event_emitter')
+            network = app.config.get('network')
+            
+            if not organisms:
+                yield f"data: {json_module.dumps({'type': 'error', 'error': 'No organism networks available'})}\n\n"
+                return
+            
+            # Send initial status
+            yield f"data: {json_module.dumps({'type': 'status', 'message': 'Starting organism query...', 'organism_count': len(organisms)})}\n\n"
+            
+            # Build vocabulary if needed (same as non-streaming version)
+            context_memory = None
+            if network and hasattr(network, 'context_memory'):
+                context_memory = network.context_memory
+            
+            # Get or create router
+            router = app.config.get('butterfly_chat_router')
+            organisms_dict = {}
+            for i, org in enumerate(organisms):
+                org_id = getattr(org, 'species_id', None) or getattr(org, 'id', None) or str(i)
+                organisms_dict[str(org_id)] = org
+            
+            if router is None:
+                simulation_config = config_manager.get_config() if config_manager else {}
+                router = ButterflyChatRouter(organisms_dict, vocabulary, event_emitter, config=simulation_config)
+                app.config['butterfly_chat_router'] = router
+            else:
+                router.organisms = organisms_dict
+                router.vocabulary = vocabulary
+            
+            # Wire trainer
+            neural_trainer = app.config.get('neural_trainer')
+            if neural_trainer:
+                router.trainer = neural_trainer
+            
+            # Build network_state
+            network_state = None
+            vp_value = None
+            if network and hasattr(network, 'context_memory'):
+                connections = {}
+                if hasattr(network, 'graph') and network.graph:
+                    for edge in network.graph.edges():
+                        source_id = str(edge[0])
+                        target_id = str(edge[1])
+                        edge_data = network.graph.get_edge_data(edge[0], edge[1], {})
+                        connections[(source_id, target_id)] = {
+                            'strength': edge_data.get('strength', 1.0),
+                            'type': edge_data.get('type', 'symbiotic')
+                        }
+                
+                if hasattr(network, 'vp_monitor') and network.vp_monitor:
+                    vp_value = float(getattr(network.vp_monitor, 'violation_pressure', 0.0))
+                elif hasattr(network, 'violation_pressure'):
+                    vp_value = float(network.violation_pressure)
+                
+                network_state = {
+                    'language_anchors': {k: list(v) for k, v in network.context_memory.language_anchors.items()},
+                    'connections': connections,
+                    'context_memory': network.context_memory,
+                    'vp_value': vp_value
+                }
+            
+            # Use streaming route_message if available, otherwise fall back to regular
+            if hasattr(router, 'route_message_streaming'):
+                for event in router.route_message_streaming(message, routing_strategy, max_organisms, network_state=network_state):
+                    yield f"data: {json_module.dumps(event)}\n\n"
+            else:
+                # Fallback: process organisms one by one and stream updates
+                yield f"data: {json_module.dumps({'type': 'log', 'step': 'STEP_1', 'action': 'Message Received', 'data': {'message': message, 'routing_strategy': routing_strategy}})}\n\n"
+                
+                # Do the full route_message but stream intermediate results
+                response = router.route_message(message, routing_strategy, max_organisms, network_state=network_state)
+                
+                # Stream each debug log as it was captured
+                for log in response.get('debug_logs', []):
+                    yield f"data: {json_module.dumps({'type': 'log', **log})}\n\n"
+                
+                # Stream each organism response
+                for resp in response.get('organism_responses', []):
+                    yield f"data: {json_module.dumps({'type': 'organism_response', **resp})}\n\n"
+                
+                # Stream errors
+                for err in response.get('errors', []):
+                    yield f"data: {json_module.dumps({'type': 'error_log', **err})}\n\n"
+                
+                # Send final response
+                organism_responses = response.get('organism_responses', [])
+                confidence = 0.0
+                if organism_responses:
+                    confidences = [r.get('confidence', 0.0) for r in organism_responses]
+                    confidence = sum(confidences) / len(confidences) if confidences else 0.0
+                
+                yield f"data: {json_module.dumps({'type': 'complete', 'response': response.get('response', '<no response>'), 'organism_count': len(organism_responses), 'confidence': confidence, 'causation_trail': response.get('causation_trail', []), 'performance': response.get('performance', {})})}\n\n"
+            
+        except Exception as e:
+            import traceback
+            logger.error(f"Error in butterfly chat stream: {e}", exc_info=True)
+            yield f"data: {json_module.dumps({'type': 'error', 'error': str(e), 'traceback': traceback.format_exc()})}\n\n"
+    
+    return Response(generate(), mimetype='text/event-stream', headers={
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'X-Accel-Buffering': 'no'
+    })
 
 
 @app.route('/api/organism/<organism_id>/chat', methods=['POST'])

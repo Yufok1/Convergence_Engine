@@ -1,7 +1,9 @@
 {
-  "_case_study": "STUDY 5: CREATIVE SPECIALIST - High temperature, strong semantic guidance",
-  "_hypothesis": "Higher temperature + semantic guidance produces more expressive, creative articulation",
+  "_mode": "H200_QUALITY",
+  "_case_study": "H200 QUALITY RUN - Deeper networks, richer knowledge, longer sequences",
+  "_hypothesis": "141GB VRAM + 4.8TB/s enables deeper organisms with more sophisticated cognition",
   "_hardware_profile_help": "Set to 'beast', 'workstation', 'standard', 'laptop', 'potato', or 'cpu_only' to override auto-detection. null = auto-detect",
+  "hardware_profile": "beast",
   "agency": {
     "confidence_threshold": 0.0001,
     "decision_precision": 1e-05,
@@ -10,10 +12,11 @@
     "performance_tracking_precision": 0.0001
   },
   "semantic_convergence": {
+
     "_help": "Unifies 6 semantic systems for word embedding differentiation",
     "enabled": true,
     "use_learned_embeddings": true,
-    "embedding_dim": 64,
+    "embedding_dim": 192,
     "organism_embedding_alpha": 0.15,
     "concept_system_alpha": 0.1,
     "knowledge_web_influence_interval": 10,
@@ -58,10 +61,8 @@
       "parallel_envs": 1,
       "render_mode": null
     },
-    "prefer_native_games": false,
+    "prefer_native_games": true,
     "proton_game_probability": 1.0,
-    "gym_only": true,
-    "_gym_only_help": "When true, ONLY real Gymnasium environments (CartPole, Acrobot, etc). No native/custom games.",
     "tournament": {
       "default_format": "single_elimination",
       "round_robin_battles_per_pair": 3,
@@ -121,7 +122,7 @@
       "initial": 0.04
     },
     "mutation_rate_precision": 0.001,
-    "population_size": 25
+    "population_size": 5000
   },
   "feedback": {
     "enabled": true,
@@ -156,10 +157,6 @@
     "rate_limit_frames": 120
   },
   "hardware_profile": null,
-  "hardware_governor": {
-    "_auto_scale_help": "Set to false to disable auto-scaling of config values. Governor will only clamp to max, not scale up.",
-    "auto_scale": false
-  },
   "health_monitor": {
     "critical_threshold": 0.25,
     "enabled": true,
@@ -178,14 +175,14 @@
     "weight_sustainability": 0.1
   },
   "highlander": {
-    "eval_interval_seconds": 10,
+    "eval_interval_seconds": 32,
     "_eval_interval_seconds_help": "Highlander evaluates every N seconds (e.g. 30 = every 30 seconds, 450 = 7.5 minutes)",
     "alliance_warfare": {
       "betrayal_chance": 0.0,
       "confederation_war_threshold": 0.6,
       "enabled": true,
       "existential_war_threshold": 0.8,
-      "max_alliance_size": 999,
+      "max_alliance_size": 500,
       "max_alliances": 9999,
       "max_confederations": 9999,
       "min_alliance_size": 2,
@@ -201,24 +198,24 @@
       "chaos_factor": 0.0,
       "competition_intensity": 0.4,
       "description": "EXTREME DIFFICULTY - Maximum evolutionary pressure",
-      "germination_rate": 0.1,
+      "germination_rate": 1,
       "max_battle_rounds": 15,
-      "max_population": 25,
-      "min_population": 15,
+      "max_population": 500,
+      "min_population": 20,
       "mutation_rate": 0.0,
-      "population_size": 200,
+      "population_size": 20,
       "predation_enabled": true,
       "rounds_per_cycle": 2,
       "survival_threshold": 0.4
     },
-    "germination_rate": 0.1,
+    "germination_rate": 1.0,
     "max_battle_rounds": 50,
-    "max_capsules": 100,
-    "max_genetic_samples": 100,
-    "max_population": 25,
-    "min_population": 15,
+    "max_capsules": 1000,
+    "max_genetic_samples": 1000,
+    "max_population": 15000,
+    "min_population": 800,
     "mutation_rate": 0.0,
-    "population_size": 200,
+    "population_size": 5000,
     "predation_enabled": true,
     "rounds_per_cycle": 2,
     "survival_threshold": 0.4
@@ -226,7 +223,7 @@
   "lattice": {
     "entropy_sensitivity": 5e-05,
     "interaction_precision": 0.0001,
-    "particles": 1000,
+    "particles": 15000,
     "prune_threshold": 0,
     "stability_tolerance": 0.0005
   },
@@ -287,34 +284,34 @@
   "network": {
     "connection_strength_resolution": 5e-06,
     "emergence_sensitivity": 1e-06,
-    "max_connections": 48000,
-    "max_organisms": 5000,
+    "max_connections": 1500000,
+    "max_organisms": 150000,
     "resource_flow_precision": 0.0001,
-    "resource_pool": 1000,
+    "resource_pool": 40000,
     "stability_precision": 1e-07
   },
   "neural": {
     "brain": {
       "activation": "relu",
       "dropout": 0.1,
-      "hidden_dim": 64,
+      "hidden_dim": 384,
       "input_dim": 28,
       "output_dim": 6,
-      "vocab_size": 20000,
-      "attention_dim": 32
+      "vocab_size": 25000,
+      "attention_dim": 96
     },
     "hopfield": {
       "_help": "Modern continuous Hopfield network for iterative thought refinement",
       "enabled": true,
-      "patterns": 32,
-      "iterations": 5,
+      "patterns": 192,
+      "iterations": 7,
       "beta": 1.0
     },
     "concept_system": {
       "concept_loss_weight": 0.15,
-      "embed_dim": 64,
+      "embed_dim": 192,
       "enabled": true,
-      "num_key_compositions": 30,
+      "num_key_compositions": 150,
       "utility_update_alpha": 0.15
     },
     "device": "cuda",
@@ -330,9 +327,9 @@
     },
     "language_model": {
       "attention": {
-        "attention_dim": 32,
+        "attention_dim": 96,
         "enabled": true,
-        "num_heads": 4
+        "num_heads": 12
       },
       "curriculum": {
         "enabled": true,
@@ -363,16 +360,16 @@
         "vp_gate_threshold": 0.5
       },
       "knowledge_web": {
-        "embedding_dim": 64,
+        "embedding_dim": 192,
         "enabled": true,
-        "max_concepts": 2400,
+        "max_concepts": 8000,
         "quality_control": {
           "confidence_growth_rate": 0.0008,
           "enabled": true,
           "exploration_decay_generations": 1000,
           "exploration_end": 0.08,
           "exploration_start": 0.3,
-          "max_discoveries_per_generation": 15,
+          "max_discoveries_per_generation": 150,
           "min_confidence_threshold": 0.25,
           "min_discovery_count": 3,
           "pruning_confidence_threshold": 0.2,
@@ -404,22 +401,22 @@
         }
       },
       "sequence": {
-        "context_window": 32,
-        "max_length": 128
+        "context_window": 96,
+        "max_length": 384
       },
       "teacher": {
-        "embedding_dim": 64,
+        "embedding_dim": 192,
         "enabled": true,
         "min_action_history": 3,
         "min_confidence": 0.25,
         "teaching_frequency": 1,
         "use_knowledge_web": true,
         "use_semantic_embeddings": true,
-        "vocab_size": 20000,
+        "vocab_size": 25000,
         "staged_knowledge": {
           "_help": "Delay loading expanded knowledge web to let organisms build foundations with innate vocab first",
           "enabled": true,
-          "delay_seconds": 0,
+          "delay_seconds": 16,
           "start_with_innate_only": true
         }
       },
@@ -438,7 +435,7 @@
         "_language_epsilon_help": "Higher language epsilon for creative specialist - more random token exploration encourages novel combinations."
       },
       "vocabulary": {
-        "max_size": 20000,
+        "max_size": 25000,
         "special_tokens": [
           "<PAD>",
           "<UNK>",
@@ -451,7 +448,7 @@
     "optimization": {
       "amp": {
         "enabled": true,
-        "dtype": "auto",
+        "dtype": "bfloat16",
         "_dtype_help": "'auto' detects optimal dtype (BF16 for Ampere+, FP16 for older). Can also be 'float16' or 'bfloat16'",
         "description": "Mixed precision training - 2-3x GPU speedup on Tensor Core GPUs"
       },
@@ -469,7 +466,7 @@
       "survival": 2
     },
     "training": {
-      "batch_size": 64,
+      "batch_size": 768,
       "early_stopping": {
         "enabled": true,
         "min_delta": 0.0001,
@@ -482,16 +479,16 @@
       "epsilon_start": 0.8,
       "gamma": 0.995,
       "language_reward_scaling": 0.4,
-      "learning_rate": 0.005,
+      "learning_rate": 0.003,
       "lr_scheduler": {
         "enabled": true,
         "gamma": 0.95,
         "min_lr": 0.0001,
         "step_size": 100,
         "type": "cosine",
-        "warmup_steps": 100
+        "warmup_steps": 200
       },
-      "memory_size": 40000,
+      "memory_size": 800000,
       "update_frequency": 1
     },
     "vp_aware_planning": {
@@ -504,9 +501,9 @@
     "checkpointing": {
       "_help": "Auto-save training state to prevent data loss. Checkpoint every N generations or minutes.",
       "enabled": true,
-      "auto_save_interval_generations": 100,
-      "auto_save_interval_minutes": 30,
-      "max_checkpoints": 10,
+      "auto_save_interval_generations": 50,
+      "auto_save_interval_minutes": 15,
+      "max_checkpoints": 20,
       "checkpoint_dir": "data/neural_checkpoints",
       "include_experience_buffer": true,
       "include_optimizer_states": true,
@@ -522,11 +519,11 @@
       "measurements": 0.25,
       "superposition": 0.25
     },
-    "initial_states": 80,
+    "initial_states": 750,
     "performance_thresholds": {
       "fitness_std_threshold": 0.3,
-      "iteration_time_ms": 10,
-      "memory_percentage": 5.0,
+      "iteration_time_ms": 4,
+      "memory_percentage": 12.0,
       "min_fitness_to_keep": 0.1
     },
     "probability_precision": 1e-06,
@@ -535,37 +532,37 @@
   },
   "ray": {
     "enabled": false,
-    "actor_pool_size": 2,
-    "batch_inference_size": 64,
+    "actor_pool_size": 8,
+    "batch_inference_size": 256,
     "description": "Ray DISABLED",
     "fallback_on_error": true,
     "logging_level": "warning",
     "memory_management": {
       "actor_pool_lru_eviction": true,
       "cleanup_on_organism_death": true,
-      "max_object_refs": 100
+      "max_object_refs": 1000
     },
-    "num_cpus": 4,
+    "num_cpus": 32,
     "num_gpus": 1,
     "object_store_memory": null,
-    "parallelization_threshold": 100,
+    "parallelization_threshold": 50,
     "state_synchronization": {
       "consistency_model": "sequential",
-      "max_state_age_ms": 100,
+      "max_state_age_ms": 50,
       "snapshot_strategy": "breath_cycle"
     },
-    "training_threshold": 16
+    "training_threshold": 8
   },
   "rendering": {
-    "enable_visualizations": true,
-    "frame_rate": 15,
+    "enable_visualizations": false,
+    "frame_rate": 5,
     "metric_display_precision": 6,
     "mode": "god",
-    "performance_monitoring": false,
-    "render_quality": "low",
+    "performance_monitoring": true,
+    "render_quality": "minimal",
     "resolution": [
-      1280,
-      720
+      800,
+      600
     ],
     "text_interface": true,
     "visualization_update_precision": 0.001
@@ -575,13 +572,13 @@
       "algorithm": "isolation_forest",
       "contamination": 0.18,
       "enabled": true,
-      "n_estimators": 450
+      "n_estimators": 1000
     },
     "clustering": {
       "algorithm": "hdbscan",
       "enabled": true,
-      "min_cluster_size": 4,
-      "min_samples": 1,
+      "min_cluster_size": 30,
+      "min_samples": 5,
       "use_neural_embeddings": true
     },
     "concept_tracking": {
@@ -597,14 +594,14 @@
     "enabled": true
   },
   "simulation": {
-    "log_level": "INFO",
-    "max_runtime": 14400.0,
+    "log_level": "WARNING",
+    "max_runtime": 86400.0,
     "measurement_precision": 4,
-    "performance_sampling_rate": 200,
-    "save_interval": 60.0,
+    "performance_sampling_rate": 500,
+    "save_interval": 120.0,
     "target_fps": 0,
     "_target_fps_help": "0 = unlimited speed, >0 = rate limit to N cycles/sec",
-    "time_resolution_ms": 1.0
+    "time_resolution_ms": 0.5
   },
   "vp_monitoring": {
     "adaptive_response": {

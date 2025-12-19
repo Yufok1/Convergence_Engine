@@ -1,7 +1,17 @@
 {
-  "_case_study": "STUDY 5: CREATIVE SPECIALIST - High temperature, strong semantic guidance",
-  "_hypothesis": "Higher temperature + semantic guidance produces more expressive, creative articulation",
-  "_hardware_profile_help": "Set to 'beast', 'workstation', 'standard', 'laptop', 'potato', or 'cpu_only' to override auto-detection. null = auto-detect",
+  "_case_study": "VAST.AI RTX 3060 743GB GENESIS - From 5 Founders to Empire",
+  "_hypothesis": "743GB RAM + 104 threads = Genesis boom/bust into civilizations (48% scale of 1.5TB)",
+  "_hardware_profile_help": "Vast.ai 104-core CPU + 743GB RAM + RTX 3060",
+  "_vast_notes": {
+    "ram_gb": 743,
+    "cpu": "104 threads",
+    "gpu": "RTX 3060 12GB",
+    "cost_per_hour": 0.16,
+    "strategy": "Genesis boom/bust - start with 5 founders, explode to 20K, concentrate via Highlander",
+    "value_proposition": "Great RAM per dollar - 4.6TB RAM per $1/hr",
+    "scaling_factor": 0.48,
+    "_scaling_note": "All population/memory values scaled to 48% of 1.5TB config"
+  },
   "agency": {
     "confidence_threshold": 0.0001,
     "decision_precision": 1e-05,
@@ -91,7 +101,8 @@
         "direction": "below"
       },
       "organism_count": {
-        "collapse": 500,
+        "collapse": 200,
+        "_collapse_help": "Scaled to 48% of 1.5TB config (400 * 0.48)",
         "direction": "above"
       },
       "violation_pressure": {
@@ -107,21 +118,28 @@
     }
   },
   "evolution": {
-    "adaptation_sensitivity": 0.005,
+    "adaptation_sensitivity": 0.008,
+    "_adaptation_sensitivity_help": "Higher sensitivity for genesis - responds faster to small population changes",
     "diversity_guard": {
       "enabled": true,
-      "frequency_threshold": 0.1,
-      "hash_similarity_threshold": 0.88,
-      "penalty": 0.05
+      "frequency_threshold": 0.25,
+      "_frequency_threshold_help": "Higher threshold - more aggressive anti-clone for small founder pool",
+      "hash_similarity_threshold": 0.75,
+      "_hash_similarity_threshold_help": "Lower threshold = detect inbreeding early from 5 founders",
+      "penalty": 0.12,
+      "_penalty_help": "Stronger penalty to force diversity from limited gene pool"
     },
     "fitness_precision": 1e-07,
     "genotype_length": 48,
-    "max_generations": 1500,
+    "max_generations": 50000,
+    "_max_generations_help": "Long runs for genesis evolution",
     "mutation_rate": {
-      "initial": 0.04
+      "initial": 0.08,
+      "_initial_help": "High initial mutation - 5 founders need genetic diversity injection"
     },
     "mutation_rate_precision": 0.001,
-    "population_size": 25
+    "population_size": 5,
+    "_population_size_help": "GENESIS: Start with 5 progenitors, explode to 20K"
   },
   "feedback": {
     "enabled": true,
@@ -135,10 +153,11 @@
         "step": 0.05
       },
       "mutation_rate": {
-        "initial": 0.033,
-        "max": 0.06,
-        "min": 0.002,
-        "step": 0.001
+        "initial": 0.08,
+        "max": 0.15,
+        "_max_help": "Wide range for boom/bust - can spike during bottlenecks",
+        "min": 0.01,
+        "step": 0.002
       },
       "new_edge_rate": {
         "initial": 4.8,
@@ -155,96 +174,146 @@
     },
     "rate_limit_frames": 120
   },
-  "hardware_profile": null,
+  "hardware_profile": "vast_rtx3060_743gb_genesis",
   "hardware_governor": {
     "_auto_scale_help": "Set to false to disable auto-scaling of config values. Governor will only clamp to max, not scale up.",
     "auto_scale": false
   },
   "health_monitor": {
-    "critical_threshold": 0.25,
+    "critical_threshold": 0.20,
+    "_critical_threshold_help": "Lower threshold - genesis populations are volatile",
     "enabled": true,
-    "healthy_threshold": 0.75,
+    "healthy_threshold": 0.60,
     "history_size": 100,
     "thresholds": {
-      "critical": 0.25,
-      "healthy": 0.65,
-      "warning": 0.45
+      "critical": 0.20,
+      "healthy": 0.60,
+      "warning": 0.40
     },
-    "warning_threshold": 0.55,
-    "weight_adaptability": 0.2,
-    "weight_coherence": 0.3,
-    "weight_diversity": 0.25,
-    "weight_lawfulness": 0.15,
-    "weight_sustainability": 0.1
+    "warning_threshold": 0.40,
+    "weight_adaptability": 0.25,
+    "_weight_adaptability_help": "Higher weight on adaptability for genesis - need to adapt fast",
+    "weight_coherence": 0.25,
+    "weight_diversity": 0.30,
+    "_weight_diversity_help": "Highest weight - diversity critical with 5 founders",
+    "weight_lawfulness": 0.10,
+    "weight_sustainability": 0.10
   },
   "highlander": {
-    "eval_interval_seconds": 10,
-    "_eval_interval_seconds_help": "Highlander evaluates every N seconds (e.g. 30 = every 30 seconds, 450 = 7.5 minutes)",
+    "eval_interval_seconds": 5,
+    "_eval_interval_seconds_help": "Faster evals during genesis growth phase",
     "alliance_warfare": {
       "betrayal_chance": 0.0,
-      "confederation_war_threshold": 0.6,
+      "confederation_war_threshold": 0.5,
       "enabled": true,
-      "existential_war_threshold": 0.8,
-      "max_alliance_size": 999,
-      "max_alliances": 9999,
-      "max_confederations": 9999,
+      "existential_war_threshold": 0.7,
+      "max_alliance_size": 2000,
+      "_max_alliance_size_help": "Large alliances for political mega-structures (48% of 1.5TB)",
+      "max_alliances": 20000,
+      "_max_alliances_help": "MASSIVE political capacity - 20K alliances possible",
+      "max_confederations": 4000,
+      "_max_confederations_help": "4K confederations = mega empires",
       "min_alliance_size": 2,
-      "war_declaration_threshold": 0.6,
-      "war_frequency": 0.5,
-      "illumination_stability_threshold": 5
+      "war_declaration_threshold": 0.5,
+      "war_frequency": 0.3,
+      "_war_frequency_help": "Lower war frequency during boom phase, increases as population grows",
+      "illumination_stability_threshold": 3,
+      "_illumination_stability_threshold_help": "Faster illumination unlock for genesis"
+    },
+    "boom_bust_dynamics": {
+      "enabled": true,
+      "boom_detection_threshold": 0.7,
+      "bust_detection_threshold": 0.25,
+      "resource_scarcity_multiplier": 1.5,
+      "abundance_germination_boost": 3.0,
+      "_abundance_germination_boost_help": "HIGH boost - explode from 5 to 20K",
+      "scarcity_competition_boost": 2.0,
+      "_scarcity_competition_boost_help": "Intense competition during bust phase",
+      "cycle_memory_generations": 30,
+      "seasonal_amplitude": 0.5,
+      "_seasonal_amplitude_help": "Strong seasonal swings for dramatic boom/bust",
+      "seasonal_period_generations": 150
+    },
+    "lineage_tracking": {
+      "enabled": true,
+      "track_ancestry": true,
+      "founder_bonus": 0.10,
+      "_founder_bonus_help": "Bonus for founding lineages - 5 original bloodlines",
+      "genetic_diversity_pressure": 0.15,
+      "_genetic_diversity_pressure_help": "Strong pressure to avoid inbreeding",
+      "inbreeding_penalty": 0.25,
+      "_inbreeding_penalty_help": "Severe penalty for inbred offspring",
+      "dynasty_bonus": 0.08,
+      "max_lineage_depth": 500,
+      "_max_lineage_depth_help": "Deep lineage tracking for epic family trees"
     },
     "chaos_factor": 0.0,
-    "competition_intensity": 0.4,
-    "description": "STUDY 5: CREATIVE SPECIALIST - High temperature, semantic boost",
+    "competition_intensity": 0.15,
+    "_competition_intensity_help": "Low initial intensity - let population boom first",
+    "description": "RTX3060 743GB GENESIS - 5 founders to 20K civilization",
     "enabled": true,
     "extreme_mode": {
       "chaos_factor": 0.0,
-      "competition_intensity": 0.4,
-      "description": "EXTREME DIFFICULTY - Maximum evolutionary pressure",
-      "germination_rate": 0.1,
-      "max_battle_rounds": 15,
-      "max_population": 25,
-      "min_population": 15,
-      "mutation_rate": 0.0,
-      "population_size": 200,
+      "competition_intensity": 0.5,
+      "_competition_intensity_help": "Extreme mode kicks in during bust - 50% battle",
+      "description": "GENESIS EXTREME - Extinction event mode",
+      "germination_rate": 0.3,
+      "max_battle_rounds": 20,
+      "max_population": 20000,
+      "min_population": 3,
+      "_min_population_help": "Can drop to just 3 survivors during extinction",
+      "mutation_rate": 0.15,
+      "_mutation_rate_help": "Maximum mutation during extinction for rapid adaptation",
+      "population_size": 5,
       "predation_enabled": true,
-      "rounds_per_cycle": 2,
-      "survival_threshold": 0.4
+      "rounds_per_cycle": 5,
+      "survival_threshold": 0.5
     },
-    "germination_rate": 0.1,
-    "max_battle_rounds": 50,
-    "max_capsules": 100,
-    "max_genetic_samples": 100,
-    "max_population": 25,
-    "min_population": 15,
-    "mutation_rate": 0.0,
-    "population_size": 200,
+    "germination_rate": 2.0,
+    "_germination_rate_help": "HIGH germination - rapid population explosion from 5 founders",
+    "max_battle_rounds": 100,
+    "max_capsules": 2000,
+    "_max_capsules_help": "Capsule storage scaled for 743GB",
+    "max_genetic_samples": 2000,
+    "max_population": 20000,
+    "_max_population_help": "743GB RAM = 20K organisms (48% of 1.5TB target)",
+    "min_population": 3,
+    "_min_population_help": "Allow near-extinction for dramatic recovery arcs",
+    "mutation_rate": 0.05,
+    "population_size": 5,
+    "_population_size_help": "GENESIS: 5 progenitor organisms",
     "predation_enabled": true,
     "rounds_per_cycle": 2,
-    "survival_threshold": 0.4
+    "survival_threshold": 0.25,
+    "_survival_threshold_help": "Low threshold during boom - let population grow"
   },
   "lattice": {
     "entropy_sensitivity": 5e-05,
     "interaction_precision": 0.0001,
-    "particles": 1000,
+    "particles": 20000,
+    "_particles_help": "20K particles for rich quantum substrate (scaled from 40K)",
     "prune_threshold": 0,
     "stability_tolerance": 0.0005
   },
   "logging": {
-    "shared_state_dump_interval": 30,
-    "sample_rate": 5,
-    "_sample_rate_help": "Log 1 in N state entries to disk (1=all, 10=10%). Memory history always full rate."
+    "shared_state_dump_interval": 60,
+    "_shared_state_dump_interval_help": "Less frequent dumps - long running genesis",
+    "sample_rate": 10,
+    "_sample_rate_help": "Log 1 in 10 - save disk space on long runs",
+    "track_lineage": true
   },
   "meta_cognitive": {
     "description": "Meta-cognitive systems: self-awareness, self-tuning, autonomous optimization",
     "self_tuning": {
       "enabled": true,
-      "min_confidence_threshold": 0.6,
+      "min_confidence_threshold": 0.5,
+      "_min_confidence_threshold_help": "Lower confidence threshold for genesis volatility",
       "mode": "autonomous",
       "performance_targets": {
-        "max_anomaly_ratio": 0.2,
+        "max_anomaly_ratio": 0.25,
+        "_max_anomaly_ratio_help": "Higher tolerance for anomalies during boom/bust",
         "min_cluster_diversity": 3,
-        "min_fitness_std": 0.05
+        "min_fitness_std": 0.08
       },
       "safe_parameters": [
         "evolution.mutation_rate.initial",
@@ -279,7 +348,10 @@
         "vp_monitoring.stabilization.smoothing_factor",
         "causation_detection.correlation_threshold",
         "meta_cognitive.self_tuning.tuning_interval_frames",
-        "meta_cognitive.self_tuning.min_confidence_threshold"
+        "meta_cognitive.self_tuning.min_confidence_threshold",
+        "highlander.competition_intensity",
+        "highlander.survival_threshold",
+        "highlander.germination_rate"
       ],
       "tuning_interval_frames": 5
     }
@@ -287,10 +359,13 @@
   "network": {
     "connection_strength_resolution": 5e-06,
     "emergence_sensitivity": 1e-06,
-    "max_connections": 48000,
-    "max_organisms": 5000,
+    "max_connections": 1000000,
+    "_max_connections_help": "1M connections for political networks (48% of 1.5TB)",
+    "max_organisms": 20000,
+    "_max_organisms_help": "743GB RAM = 20K organisms",
     "resource_flow_precision": 0.0001,
-    "resource_pool": 1000,
+    "resource_pool": 20000,
+    "_resource_pool_help": "Resource pool scaled for 20K max population",
     "stability_precision": 1e-07
   },
   "neural": {
@@ -317,12 +392,14 @@
       "num_key_compositions": 30,
       "utility_update_alpha": 0.15
     },
-    "device": "cuda",
+    "device": "cpu",
+    "_device_help": "CPU-only mode - 743GB RAM beats 12GB VRAM bottleneck. RTX 3060 available but not needed.",
     "enabled": true,
     "inheritance": {
       "crossover_rate": 0.9,
       "enabled": true,
-      "mutation_rate": 0.2
+      "mutation_rate": 0.25,
+      "_mutation_rate_help": "Higher neural mutation for genesis diversity"
     },
     "initialization": {
       "deterministic": false,
@@ -365,19 +442,22 @@
       "knowledge_web": {
         "embedding_dim": 64,
         "enabled": true,
-        "max_concepts": 2400,
+        "max_concepts": 2000,
+        "_max_concepts_help": "Concept space scaled for 743GB (48% of 1.5TB)",
         "quality_control": {
-          "confidence_growth_rate": 0.0008,
+          "confidence_growth_rate": 0.001,
           "enabled": true,
-          "exploration_decay_generations": 1000,
+          "exploration_decay_generations": 2000,
           "exploration_end": 0.08,
-          "exploration_start": 0.3,
-          "max_discoveries_per_generation": 15,
-          "min_confidence_threshold": 0.25,
+          "exploration_start": 0.4,
+          "_exploration_start_help": "High initial exploration for genesis founders",
+          "max_discoveries_per_generation": 10,
+          "_max_discoveries_per_generation_help": "Scaled for 743GB",
+          "min_confidence_threshold": 0.20,
           "min_discovery_count": 3,
-          "pruning_confidence_threshold": 0.2,
+          "pruning_confidence_threshold": 0.15,
           "pruning_failure_rate": 0.7,
-          "pruning_unused_generations": 100,
+          "pruning_unused_generations": 150,
           "review_frequency": 100,
           "validation_required": true,
           "vp_boost_exploration": true,
@@ -428,14 +508,13 @@
         "beta": 0.4,
         "gamma": 0.1,
         "vp_temperature_scale": true,
-        "entropy_bonus": 0.015,
+        "entropy_bonus": 0.02,
+        "_entropy_bonus_help": "Higher entropy for creative genesis exploration",
         "label_smoothing": 0.12,
-        "language_epsilon_start": 0.4,
+        "language_epsilon_start": 0.5,
+        "_language_epsilon_start_help": "Higher epsilon for genesis exploration",
         "language_epsilon_end": 0.08,
-        "language_epsilon_decay": 0.996,
-        "_entropy_bonus_help": "Higher entropy for creative specialist - encourages more diverse, creative output",
-        "_label_smoothing_help": "Slightly higher smoothing for creative exploration",
-        "_language_epsilon_help": "Higher language epsilon for creative specialist - more random token exploration encourages novel combinations."
+        "language_epsilon_decay": 0.998
       },
       "vocabulary": {
         "max_size": 20000,
@@ -450,36 +529,42 @@
     },
     "optimization": {
       "amp": {
-        "enabled": true,
+        "enabled": false,
+        "_enabled_help": "AMP disabled for CPU mode - no GPU tensor cores",
         "dtype": "auto",
         "_dtype_help": "'auto' detects optimal dtype (BF16 for Ampere+, FP16 for older). Can also be 'float16' or 'bfloat16'",
         "description": "Mixed precision training - 2-3x GPU speedup on Tensor Core GPUs"
       },
-      "compile_mode": "max-autotune",
+      "compile_mode": "default",
       "reuse_optimizers": true,
-      "use_compile": true,
+      "use_compile": false,
+      "_use_compile_help": "Disabled for CPU mode - torch.compile with cudagraph spams warnings on CPU",
       "use_scripted_inference": false
     },
     "rewards": {
       "connection_failure": -0.2,
       "connection_success": 2.5,
-      "fitness_improvement": 4.5,
-      "resource_gain": 1,
+      "fitness_improvement": 5.0,
+      "_fitness_improvement_help": "Higher reward for fitness - drive evolution",
+      "resource_gain": 1.5,
       "resource_loss": -0.3,
-      "survival": 2
+      "survival": 3.0,
+      "_survival_help": "Higher survival reward - genesis is dangerous"
     },
     "training": {
-      "batch_size": 64,
+      "batch_size": 128,
+      "_batch_size_help": "RTX 3060 12GB VRAM - moderate batch size",
       "early_stopping": {
         "enabled": true,
         "min_delta": 0.0001,
-        "patience": 10
+        "patience": 15
       },
       "enabled": true,
       "epsilon": 0.95,
-      "epsilon_decay": 0.99,
+      "epsilon_decay": 0.995,
       "epsilon_end": 0.01,
-      "epsilon_start": 0.8,
+      "epsilon_start": 0.9,
+      "_epsilon_start_help": "High exploration for genesis",
       "gamma": 0.995,
       "language_reward_scaling": 0.4,
       "learning_rate": 0.005,
@@ -491,7 +576,8 @@
         "type": "cosine",
         "warmup_steps": 100
       },
-      "memory_size": 40000,
+      "memory_size": 750000,
+      "_memory_size_help": "743GB RAM = 750K replay buffer (scaled from 1.5M)",
       "update_frequency": 1
     },
     "vp_aware_planning": {
@@ -522,7 +608,8 @@
       "measurements": 0.25,
       "superposition": 0.25
     },
-    "initial_states": 80,
+    "initial_states": 750,
+    "_initial_states_help": "743GB: Scaled quantum states (48% of 1.5TB)",
     "performance_thresholds": {
       "fitness_std_threshold": 0.3,
       "iteration_time_ms": 10,
@@ -534,27 +621,31 @@
     "superposition_tolerance": 0.0005
   },
   "ray": {
-    "enabled": false,
-    "actor_pool_size": 2,
-    "batch_inference_size": 64,
-    "description": "Ray DISABLED",
+    "enabled": true,
+    "actor_pool_size": 52,
+    "_actor_pool_size_help": "104 threads: Half for actors",
+    "batch_inference_size": 256,
+    "_batch_inference_size_help": "Scaled for 743GB throughput",
+    "description": "Ray ENABLED - 104 threads GENESIS",
     "fallback_on_error": true,
     "logging_level": "warning",
     "memory_management": {
       "actor_pool_lru_eviction": true,
       "cleanup_on_organism_death": true,
-      "max_object_refs": 100
+      "max_object_refs": 5000
     },
-    "num_cpus": 4,
+    "num_cpus": 104,
     "num_gpus": 1,
     "object_store_memory": null,
-    "parallelization_threshold": 100,
+    "parallelization_threshold": 400,
+    "_parallelization_threshold_help": "Scaled threshold for 743GB populations",
     "state_synchronization": {
       "consistency_model": "sequential",
       "max_state_age_ms": 100,
       "snapshot_strategy": "breath_cycle"
     },
-    "training_threshold": 16
+    "training_threshold": 64,
+    "_training_threshold_help": "Training threshold scaled for 743GB"
   },
   "rendering": {
     "enable_visualizations": true,
@@ -573,14 +664,17 @@
   "scikit": {
     "anomaly_detection": {
       "algorithm": "isolation_forest",
-      "contamination": 0.18,
+      "contamination": 0.20,
+      "_contamination_help": "Higher contamination - genesis has more outliers",
       "enabled": true,
-      "n_estimators": 450
+      "n_estimators": 200,
+      "_n_estimators_help": "Scaled for 743GB"
     },
     "clustering": {
       "algorithm": "hdbscan",
       "enabled": true,
-      "min_cluster_size": 4,
+      "min_cluster_size": 3,
+      "_min_cluster_size_help": "Small clusters during genesis phase",
       "min_samples": 1,
       "use_neural_embeddings": true
     },
@@ -598,17 +692,20 @@
   },
   "simulation": {
     "log_level": "INFO",
-    "max_runtime": 14400.0,
+    "max_runtime": 86400.0,
+    "_max_runtime_help": "24 hours max - designed for long genesis runs",
     "measurement_precision": 4,
     "performance_sampling_rate": 200,
-    "save_interval": 60.0,
+    "save_interval": 120.0,
+    "_save_interval_help": "Less frequent saves for long runs",
     "target_fps": 0,
     "_target_fps_help": "0 = unlimited speed, >0 = rate limit to N cycles/sec",
     "time_resolution_ms": 1.0
   },
   "vp_monitoring": {
     "adaptive_response": {
-      "high_vp_threshold": 0.85,
+      "high_vp_threshold": 0.80,
+      "_high_vp_threshold_help": "Lower threshold - genesis is volatile",
       "streak_threshold": 3
     },
     "adaptive_thresholds": {
@@ -626,29 +723,33 @@
     "diagnostics_enabled": true,
     "stabilization": {
       "enabled": true,
-      "history_size": 15,
-      "max_jump": 0.1,
-      "smoothing_factor": 0.4
+      "history_size": 20,
+      "max_jump": 0.15,
+      "_max_jump_help": "Higher max jump tolerance for genesis volatility",
+      "smoothing_factor": 0.3
     },
     "stabilization_enabled": true
   },
   "attractor_landscape": {
     "enabled": true,
-    "window_size": 20,
-    "fixed_point_persistence": 5,
-    "fixed_point_variance_threshold": 0.02,
+    "window_size": 25,
+    "fixed_point_persistence": 4,
+    "fixed_point_variance_threshold": 0.04,
+    "_fixed_point_variance_threshold_help": "Higher variance threshold for genesis volatility",
     "bifurcation_coherence_threshold": 0.15,
-    "bifurcation_entropy_threshold": 0.20,
+    "bifurcation_entropy_threshold": 0.25,
     "resonance_similarity_threshold": 0.1,
-    "comment": "Collective magnetism field observatory for swarm attractor dynamics"
+    "comment": "Genesis attractor landscape - higher tolerance for chaotic dynamics"
   },
   "self_perception": {
     "comment": "Reward shaping for features 26-28 (oscillation_entropy, coherence_frequency, attractor_proximity)",
     "enabled": true,
-    "oscillation_entropy_threshold": 0.7,
-    "oscillation_chaos_penalty": -0.1,
-    "coherence_frequency_threshold": 0.6,
-    "coherence_trap_penalty": -0.15,
+    "oscillation_entropy_threshold": 0.75,
+    "_oscillation_entropy_threshold_help": "Higher tolerance for chaos during genesis",
+    "oscillation_chaos_penalty": -0.05,
+    "_oscillation_chaos_penalty_help": "Lighter penalty - chaos is normal during boom",
+    "coherence_frequency_threshold": 0.5,
+    "coherence_trap_penalty": -0.10,
     "proximity_near_threshold": 0.3,
     "proximity_near_bonus": 0.05,
     "proximity_medium_threshold": 0.6,

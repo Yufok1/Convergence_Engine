@@ -838,8 +838,8 @@ class RealitySimulator:
 
             # 4. Symbiotic Network
             print(ColorScheme.log_component("network", "Creating symbiotic network..."))
-            # Initialize with some organisms from evolution
-            initial_organisms = evolution_engine.population[:10] if evolution_engine.population else []
+            # Initialize with ALL organisms from evolution (not just first 10!)
+            initial_organisms = evolution_engine.population if evolution_engine.population else []
             network = create_symbiotic_network(
                 organisms=initial_organisms,
                 max_connections=self.config['network']['max_connections'],
@@ -947,8 +947,12 @@ class RealitySimulator:
                             torch.backends.cudnn.benchmark = False
                     
                     device = get_device(self.config['neural'].get('device', 'cpu'))
+                    # Inject self_perception config into neural config for trainer access
+                    neural_config = self.config['neural'].copy()
+                    if 'self_perception' in self.config:
+                        neural_config['self_perception'] = self.config['self_perception']
                     self.neural_trainer = NeuralTrainer(
-                        config=self.config['neural'],
+                        config=neural_config,
                         device=device
                     )
                     # Wire up event emitter for neural trainer
@@ -1332,13 +1336,15 @@ class RealitySimulator:
                 if self.config['rendering']['performance_monitoring'] and frame_count % 10 == 0:
                     self._monitor_performance()
 
-                # Frame rate limiting
-                target_frame_time = 1.0 / self.config['simulation']['target_fps']
-                elapsed = time.time() - self.start_time
-                if elapsed < frame_count * target_frame_time:
-                    sleep_time = (frame_count * target_frame_time) - elapsed
-                    if sleep_time > 0:
-                        time.sleep(sleep_time)
+                # Frame rate limiting (only if target_fps > 0, else unlimited)
+                target_fps = self.config['simulation'].get('target_fps', 0)
+                if target_fps > 0:
+                    target_frame_time = 1.0 / target_fps
+                    elapsed = time.time() - self.start_time
+                    if elapsed < frame_count * target_frame_time:
+                        sleep_time = (frame_count * target_frame_time) - elapsed
+                        if sleep_time > 0:
+                            time.sleep(sleep_time)
                 
                 # Additional delay if specified (for CPU sharing with other processes)
                 if hasattr(self, 'frame_delay') and self.frame_delay > 0:
@@ -1842,6 +1848,11 @@ class RealitySimulator:
                         'modularity': network.metrics.modularity,
                         'clustering_coefficient': network.metrics.clustering_coefficient
                     }
+                    
+                    # Add Language-Game Bridge metrics if available
+                    language_game_metrics = self._collect_language_game_metrics(network)
+                    if language_game_metrics:
+                        network_metrics['language_game_bridge'] = language_game_metrics
 
                 # NEW: Pass full ML analysis to evolution engine for language fitness bonuses
                 evolution = self.components.get('evolution')
@@ -1863,7 +1874,34 @@ class RealitySimulator:
                 if self.neural_trainer and hasattr(network, '_last_ml_analysis') and network._last_ml_analysis:
                     self.neural_trainer.adjust_curriculum_from_ml_quality(network._last_ml_analysis)
                 
-                # Analyze and get tuning recommendation
+                # ═══════════════════════════════════════════════════════════════
+                # INTEGRATION: Legacy ConfigTuner Cross-System Analyzers
+                # The legacy tuner has 5 specialized correlation analyzers:
+                # 1. Quantum-Language, 2. Network-Alliance, 3. Neural-Battle
+                # 4. Vocabulary-Fitness, 5. Language-Game Bridge
+                # We run these and forward any proposals to AtomicConfigSystem
+                # ═══════════════════════════════════════════════════════════════
+                legacy_tuning_action = None
+                if hasattr(self, 'legacy_config_tuner') and self.legacy_config_tuner:
+                    try:
+                        legacy_tuning_action = self.legacy_config_tuner.analyze_and_tune(
+                            ml_metrics=ml_metrics or {},
+                            neural_metrics=neural_metrics or {},
+                            evolution_metrics=evolution_metrics,
+                            network_metrics=network_metrics,
+                            frame_count=self.frame_count
+                        )
+                        if legacy_tuning_action:
+                            # Convert legacy TuningAction to AtomicConfigSystem format
+                            logger.info(f"[LEGACY_TUNER] Cross-system analysis proposed: "
+                                       f"{legacy_tuning_action.parameter_path} "
+                                       f"({legacy_tuning_action.current_value:.4f} → "
+                                       f"{legacy_tuning_action.proposed_value:.4f}) "
+                                       f"Reason: {legacy_tuning_action.reason}")
+                    except Exception as e:
+                        logger.debug(f"[LEGACY_TUNER] Analysis failed: {e}")
+
+                # Analyze and get tuning recommendation from AtomicConfigSystem
                 tuning_action = self.config_tuner.analyze_and_tune(
                     ml_metrics=ml_metrics or {},
                     neural_metrics=neural_metrics or {},
@@ -1872,8 +1910,8 @@ class RealitySimulator:
                     frame_count=self.frame_count
                 )
 
-                # Apply tuning action if recommended
-                if tuning_action:
+                # Apply tuning action if recommended (prefer AtomicConfigSystem, fallback to legacy)
+                if tuning_action or legacy_tuning_action:
                     # Record baseline metrics for confirmation loop
                     baseline_metrics = {
                         **(ml_metrics or {}),
@@ -1881,10 +1919,21 @@ class RealitySimulator:
                         **(evolution_metrics or {}),
                         **(network_metrics or {})
                     }
-                    self.config_tuner.apply_action(tuning_action)
-                    # Record pending action for confirmation
-                    if hasattr(self.config_tuner, 'record_pending_action'):
-                        self.config_tuner.record_pending_action(tuning_action, baseline_metrics)
+                    
+                    # Apply AtomicConfigSystem action if available
+                    if tuning_action:
+                        self.config_tuner.apply_action(tuning_action)
+                        # Record pending action for confirmation
+                        if hasattr(self.config_tuner, 'record_pending_action'):
+                            self.config_tuner.record_pending_action(tuning_action, baseline_metrics)
+                    
+                    # Also apply legacy tuning action (cross-system correlations)
+                    # This ensures the 5 specialized analyzers actually affect config
+                    if legacy_tuning_action and hasattr(self, 'legacy_config_tuner'):
+                        self.legacy_config_tuner.apply_action(legacy_tuning_action)
+                        # Emit event for causation tracking
+                        if hasattr(self.legacy_config_tuner, '_emit_tuning_event'):
+                            self.legacy_config_tuner._emit_tuning_event(legacy_tuning_action)
                 
                 # Confirm pending actions (meta-cognitive loop closure)
                 if hasattr(self.config_tuner, 'confirm_pending_actions'):
@@ -1901,6 +1950,75 @@ class RealitySimulator:
                 import traceback
                 traceback.print_exc()
 
+    def _collect_language_game_metrics(self, network) -> Dict[str, Any]:
+        """
+        Collect Language-Game Bridge correlation metrics.
+        
+        The bridge exists at arena/network level, NOT per-organism.
+        We look in multiple places:
+        1. network.language_game_bridge (if attached to network)
+        2. self.components arenas that have bridges
+        3. legacy: per-organism bridges (unlikely to exist)
+        
+        Aggregates metrics for ConfigTuner cross-system correlation analysis.
+        """
+        all_metrics = []
+        
+        try:
+            # Method 1: Check if network has a language_game_bridge directly
+            if network and hasattr(network, 'language_game_bridge') and network.language_game_bridge:
+                bridge = network.language_game_bridge
+                if hasattr(bridge, 'get_correlation_metrics'):
+                    metrics = bridge.get_correlation_metrics()
+                    if metrics.get('episodes_tracked', 0) > 0:
+                        all_metrics.append(metrics)
+            
+            # Method 2: Check arenas in components for bridges
+            for arena_name in ['drone_arena', 'sphere_arena', 'battle_arena', 'proton_arena']:
+                arena = self.components.get(arena_name)
+                if arena and hasattr(arena, 'language_bridge') and arena.language_bridge:
+                    bridge = arena.language_bridge
+                    if hasattr(bridge, 'get_correlation_metrics'):
+                        metrics = bridge.get_correlation_metrics()
+                        if metrics.get('episodes_tracked', 0) > 0:
+                            all_metrics.append(metrics)
+            
+            # Method 3: Check highlander protocol for bridge
+            highlander = self.components.get('highlander')
+            if highlander and hasattr(highlander, 'language_bridge') and highlander.language_bridge:
+                bridge = highlander.language_bridge
+                if hasattr(bridge, 'get_correlation_metrics'):
+                    metrics = bridge.get_correlation_metrics()
+                    if metrics.get('episodes_tracked', 0) > 0:
+                        all_metrics.append(metrics)
+            
+            # Method 4: Legacy - check per-organism (backward compat)
+            if network and hasattr(network, 'organisms'):
+                for org_id, org in network.organisms.items():
+                    bridge = getattr(org, 'language_game_bridge', None)
+                    if bridge and hasattr(bridge, 'get_correlation_metrics'):
+                        metrics = bridge.get_correlation_metrics()
+                        if metrics.get('episodes_tracked', 0) > 0:
+                            all_metrics.append(metrics)
+            
+            if not all_metrics:
+                return {}
+            
+            # Aggregate metrics across all sources
+            n = len(all_metrics)
+            return {
+                'source_count': n,
+                'episodes_tracked': sum(m.get('episodes_tracked', 0) for m in all_metrics),
+                'avg_win_rate': sum(m.get('win_rate', 0.5) for m in all_metrics) / n,
+                'avg_reward': sum(m.get('avg_reward', 0) for m in all_metrics) / n,
+                'vocabulary_game_alignment': sum(m.get('vocabulary_game_alignment', 0) for m in all_metrics) / n,
+                'language_decision_influence': sum(m.get('language_decision_influence', 0) for m in all_metrics) / n,
+                'concept_diversity': sum(m.get('concept_diversity', 0) for m in all_metrics) / n,
+                'unique_concepts_total': sum(m.get('unique_concepts_total', 0) for m in all_metrics),
+            }
+        except Exception as e:
+            logger.warning(f"[LANGUAGE_GAME] Metrics collection failed: {e}")
+            return {}
 
     def _perform_consciousness_analysis(self):
         """Perform consciousness emergence analysis"""
@@ -2895,6 +3013,13 @@ def log_multidom_metrics(network, generation):
 
 def main():
     """Main entry point"""
+    # Enable TensorFloat32 for better performance on Ampere+ GPUs
+    try:
+        import torch
+        torch.set_float32_matmul_precision('high')
+    except Exception:
+        pass  # Ignore if torch not available or older version
+    
     parser = create_argument_parser()
     args = parser.parse_args()
 

@@ -1783,10 +1783,10 @@ class AllianceWarfareSystem:
         
         alliance = self.alliances[alliance_id]
         
-        # Only warchief or founder can invite
+        # Any member can invite - organic growth
         role = alliance.members.get(proposer_id)
-        if role not in [AllianceRole.FOUNDER, AllianceRole.WARCHIEF, AllianceRole.DIPLOMAT]:
-            self.logger.info(f"⚠️ {proposer_id} lacks authority to invite")
+        if role is None:
+            self.logger.info(f"⚠️ {proposer_id} not in alliance members dict")
             return None
         
         # Target must not be in an alliance
@@ -3559,6 +3559,292 @@ class AllianceWarfareSystem:
             self.logger.info(f"⚔️ War continues: {winner.name} leads by {margin:.1%}")
         
         return result
+    
+    # ═══════════════════════════════════════════════════════════════════════
+    # WAR RESOLUTION BY TOURNAMENT (skill-based, not fitness-based!)
+    # ═══════════════════════════════════════════════════════════════════════
+    
+    def resolve_war_by_tournament(self, alliance_id: str, enemy_id: str,
+                                  get_organism_brain: Callable,
+                                  participating_organisms: Dict[str, bool],
+                                  severity: str = "border_war") -> Optional[Dict[str, Any]]:
+        """
+        🏆 RESOLVE WAR THROUGH PROTON TOURNAMENT - SKILL-BASED WARFARE
+        
+        Instead of summing fitness values, alliances send champions to a
+        bracketed Proton Game tournament. The alliance with more tournament
+        victories wins the war round.
+        
+        "Early 1900's warfare - formal, skill-based, not random."
+        
+        Args:
+            alliance_id: First alliance
+            enemy_id: Enemy alliance  
+            get_organism_brain: Function(org_id) -> organism neural network
+            participating_organisms: Dict mapping org_id -> willing to fight
+            severity: "skirmish", "border_war", or "total_war"
+            
+        Returns:
+            War result dict with tournament details
+        """
+        if alliance_id not in self.alliances or enemy_id not in self.alliances:
+            return None
+        
+        alliance = self.alliances[alliance_id]
+        enemy = self.alliances[enemy_id]
+        
+        if enemy_id not in alliance.at_war_with:
+            return None
+        
+        # Get fighters who CHOSE to participate
+        alliance_fighters = [
+            org_id for org_id in alliance.members
+            if participating_organisms.get(org_id, False)
+        ]
+        enemy_fighters = [
+            org_id for org_id in enemy.members
+            if participating_organisms.get(org_id, False)
+        ]
+        
+        # No one fighting = stalemate
+        if not alliance_fighters and not enemy_fighters:
+            return {'result': 'stalemate', 'reason': 'no_combatants', 'tournament': False}
+        
+        # If only one side has fighters, they win by default
+        if not enemy_fighters:
+            return self._award_default_victory(alliance, enemy, alliance_id, enemy_id, 'opponent_forfeit')
+        if not alliance_fighters:
+            return self._award_default_victory(enemy, alliance, enemy_id, alliance_id, 'self_forfeit')
+        
+        # Import tournament system
+        try:
+            from .alliance_tournament import AllianceTournamentSystem, WarSeverity
+            HAS_TOURNAMENT = True
+        except ImportError:
+            self.logger.warning("⚠️ Alliance Tournament System not available, falling back to fitness-based")
+            HAS_TOURNAMENT = False
+        
+        if not HAS_TOURNAMENT:
+            # Fallback to old method
+            return self.resolve_war_round(
+                alliance_id, enemy_id,
+                lambda org_id: getattr(get_organism_brain(org_id), 'fitness', 0.5),
+                participating_organisms
+            )
+        
+        # Map severity string to enum
+        severity_map = {
+            'skirmish': WarSeverity.SKIRMISH,
+            'border_war': WarSeverity.BORDER_WAR,
+            'total_war': WarSeverity.TOTAL_WAR
+        }
+        war_severity = severity_map.get(severity, WarSeverity.BORDER_WAR)
+        
+        # Run tournament!
+        self.logger.info(f"\n⚔️🏆💀 LETHAL ALLIANCE WAR TOURNAMENT")
+        self.logger.info(f"   {alliance.name} vs {enemy.name}")
+        self.logger.info(f"   Severity: {severity}")
+        self.logger.info(f"   ⚠️  BATTLES ARE TO THE DEATH")
+        
+        # Create kill and absorb callbacks for lethal tournament
+        def on_kill(winner_id: str, loser_id: str) -> None:
+            """Called when a tournament battle results in death."""
+            self.logger.info(f"   💀 Tournament Kill: {winner_id[:8]} kills {loser_id[:8]}")
+            # Track the kill in reputation
+            winner_rep = self._get_or_create_reputation(winner_id)
+            winner_rep.highlander_kills = getattr(winner_rep, 'highlander_kills', 0) + 1
+            
+            # 🏆 Update actual organism stats
+            try:
+                winner_org = get_organism_brain(winner_id)
+                if hasattr(winner_org, 'highlander_kills'):
+                    winner_org.highlander_kills = getattr(winner_org, 'highlander_kills', 0) + 1
+                if hasattr(winner_org, 'win_streak'):
+                    winner_org.win_streak = getattr(winner_org, 'win_streak', 0) + 1
+                    if winner_org.win_streak > getattr(winner_org, 'best_win_streak', 0):
+                        winner_org.best_win_streak = winner_org.win_streak
+                if hasattr(winner_org, 'tournament_wins'):
+                    winner_org.tournament_wins = getattr(winner_org, 'tournament_wins', 0) + 1
+            except Exception as e:
+                self.logger.debug(f"Could not update winner organism stats: {e}")
+            
+            # Reset loser's win streak (before they die)
+            try:
+                loser_org = get_organism_brain(loser_id)
+                if hasattr(loser_org, 'win_streak'):
+                    loser_org.win_streak = 0
+                if hasattr(loser_org, 'tournament_losses'):
+                    loser_org.tournament_losses = getattr(loser_org, 'tournament_losses', 0) + 1
+            except Exception:
+                pass
+            
+            # Mark organism as fallen (if we have highlander reference)
+            if hasattr(self, 'highlander_protocol') and self.highlander_protocol:
+                if loser_id not in self.highlander_protocol.fallen:
+                    self.highlander_protocol.fallen.append(loser_id)
+                    self.highlander_protocol.unregister_organism(loser_id)
+        
+        def on_absorb(winner_id: str, loser_id: str) -> Dict:
+            """Called to perform Highlander absorption after a kill."""
+            result = {'vocabulary_transferred': 0, 'skills_transferred': []}
+            
+            if hasattr(self, 'highlander_protocol') and self.highlander_protocol:
+                try:
+                    winner_org = get_organism_brain(winner_id)
+                    loser_org = get_organism_brain(loser_id)
+                    
+                    # Use highlander's absorption
+                    self.highlander_protocol._absorb_loser(winner_id, winner_org, loser_id, loser_org)
+                    
+                    # Try to get absorption details
+                    if hasattr(loser_org, 'atomic_language') and hasattr(loser_org.atomic_language, 'vocabulary_size'):
+                        result['vocabulary_transferred'] = loser_org.atomic_language.vocabulary_size()
+                    
+                    # Transfer skills mastered from loser to winner
+                    loser_skills = getattr(loser_org, 'skills_mastered', set())
+                    if loser_skills:
+                        result['skills_transferred'] = list(loser_skills)
+                        if hasattr(winner_org, 'skills_mastered'):
+                            winner_org.skills_mastered = getattr(winner_org, 'skills_mastered', set()) | loser_skills
+                    
+                    self.logger.info(f"   🧬 Absorption: {winner_id[:8]} absorbs {loser_id[:8]}")
+                except Exception as e:
+                    self.logger.warning(f"Absorption failed: {e}")
+                except Exception as e:
+                    self.logger.warning(f"Absorption failed: {e}")
+            
+            return result
+        
+        tournament = AllianceTournamentSystem(
+            logger=self.logger,
+            on_kill=on_kill,
+            on_absorb=on_absorb
+        )
+        tournament_result = tournament.resolve_war(
+            alliance_a_id=alliance_id,
+            alliance_b_id=enemy_id,
+            alliance_a_members=alliance_fighters,
+            alliance_b_members=enemy_fighters,
+            get_organism_brain=get_organism_brain,
+            severity=war_severity
+        )
+        
+        # Convert tournament result to war result format
+        if tournament_result.winner_alliance == alliance_id:
+            winner, loser = alliance, enemy
+        else:
+            winner, loser = enemy, alliance
+        
+        result = {
+            'winner': winner.name,
+            'loser': loser.name,
+            'winner_power': tournament_result.alliance_a_wins if winner == alliance else tournament_result.alliance_b_wins,
+            'loser_power': tournament_result.alliance_b_wins if winner == alliance else tournament_result.alliance_a_wins,
+            'margin': tournament_result.winning_margin,
+            'alliance_fighters': len(alliance_fighters),
+            'enemy_fighters': len(enemy_fighters),
+            'tournament': True,
+            'tournament_id': tournament_result.tournament_id,
+            'battles_fought': len(tournament_result.battles),
+            'skills_unlocked': tournament_result.skills_unlocked,
+            'experiences_recorded': tournament_result.experiences_recorded,
+            # 💀 LETHAL BATTLE RESULTS
+            'total_deaths': tournament_result.total_deaths,
+            'fallen': tournament_result.fallen,
+            'alliance_deaths': tournament_result.alliance_a_deaths if winner == alliance else tournament_result.alliance_b_deaths,
+            'enemy_deaths': tournament_result.alliance_b_deaths if winner == alliance else tournament_result.alliance_a_deaths,
+            'absorptions': tournament_result.total_absorptions,
+            'vocabulary_transferred': tournament_result.vocabulary_transferred
+        }
+        
+        # Decisive victory ends war (same threshold as original)
+        if tournament_result.is_decisive:
+            # War ends
+            alliance.at_war_with.discard(enemy_id)
+            enemy.at_war_with.discard(alliance_id)
+            
+            winner.wars_won += 1
+            loser.wars_lost += 1
+            
+            # Winner takes territory
+            if loser.controlled_territories:
+                stolen = loser.controlled_territories.pop()
+                winner.controlled_territories.add(stolen)
+                self.territory_control[stolen] = winner.alliance_id
+                result['territory_stolen'] = stolen.value
+            
+            # Update reputations AND neural feedback AND organism stats
+            for org_id in winner.members:
+                rep = self._get_or_create_reputation(org_id)
+                rep.alliances_honored += 1
+                rep.wars_fought += 1
+                rep.wars_won += 1
+                self._record_neural_feedback(org_id, "war_won_tournament", True)
+                
+                # 🏆 Update organism war_victories stat
+                try:
+                    org = get_organism_brain(org_id)
+                    if hasattr(org, 'war_victories'):
+                        org.war_victories = getattr(org, 'war_victories', 0) + 1
+                except Exception:
+                    pass
+            
+            for org_id in loser.members:
+                rep = self._get_or_create_reputation(org_id)
+                rep.alliances_honored += 1
+                rep.wars_fought += 1
+                self._record_neural_feedback(org_id, "war_lost_tournament", False)
+            
+            result['war_ended'] = True
+            
+            self.logger.info(f"🏆💀 '{winner.name}' DEFEATS '{loser.name}' IN LETHAL TOURNAMENT!")
+            self.logger.info(f"   💀 Total Deaths: {result['total_deaths']}")
+            self.logger.info(f"   🧬 Absorptions: {result['absorptions']}")
+            self._emit_event('war_ended_tournament', result)
+            
+            # Record to alliance history
+            self.record_historical_event(
+                alliance_id=winner.alliance_id,
+                event_type=HistoricalEventType.WAR_WON,
+                description=f"Tournament victory over {loser.name}! {result['battles_fought']} battles, {result['enemy_deaths']} enemies killed.",
+                enemy_alliance_id=loser.alliance_id,
+                outcome="success",
+                lesson=f"Skill prevailed in lethal combat. Champions killed {result['enemy_deaths']} enemies and absorbed their knowledge."
+            )
+            
+            self.record_historical_event(
+                alliance_id=loser.alliance_id,
+                event_type=HistoricalEventType.WAR_LOST,
+                description=f"Tournament defeat by {winner.name}. Lost {result['alliance_deaths']} warriors.",
+                enemy_alliance_id=winner.alliance_id,
+                outcome="failure",
+                lesson=f"Our champions fought bravely but {result['alliance_deaths']} fell. Their knowledge was absorbed by the enemy."
+            )
+        else:
+            result['war_ended'] = False
+            self.logger.info(f"⚔️ War continues: {winner.name} leads by {tournament_result.winning_margin:.1%}")
+        
+        return result
+    
+    def _award_default_victory(self, winner, loser, winner_id: str, loser_id: str, 
+                               reason: str) -> Dict[str, Any]:
+        """Award victory when opponent forfeits or has no fighters."""
+        winner.at_war_with.discard(loser_id if reason == 'opponent_forfeit' else winner_id)
+        loser.at_war_with.discard(winner_id if reason == 'opponent_forfeit' else loser_id)
+        
+        winner.wars_won += 1
+        loser.wars_lost += 1
+        
+        self.logger.info(f"🏳️ '{loser.name}' FORFEITS to '{winner.name}' ({reason})")
+        
+        return {
+            'winner': winner.name,
+            'loser': loser.name,
+            'reason': reason,
+            'war_ended': True,
+            'tournament': False,
+            'margin': 1.0
+        }
     
     # ═══════════════════════════════════════════════════════════════════════
     # ROUND PROCESSING
