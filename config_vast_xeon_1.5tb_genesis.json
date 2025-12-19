@@ -1,7 +1,7 @@
 {
-  "_case_study": "VAST.AI XEON 1.5TB GENESIS - From 5 Founders to Empire",
-  "_hypothesis": "1.5TB RAM + 88 threads = Genesis boom/bust into mega-civilizations (75% scale of EPYC)",
-  "_hardware_profile_help": "Vast.ai Intel Xeon Gold 6330 (88 threads) + 1548GB RAM + RTX 3060",
+  "_case_study": "VAST.AI XEON 1.5TB GENESIS - CPU-Only Massive Boom-Bust Waves",
+  "_hypothesis": "1.5TB RAM + 88 CPU threads = 20-min wave cycles with mega-populations (CPU-parallel, no GPU)",
+  "_hardware_profile_help": "Vast.ai Intel Xeon Gold 6330 (88 threads) + 1548GB RAM - CPU ONLY",
   "_vast_notes": {
     "ram_gb": 1548,
     "cpu": "Intel Xeon Gold 6330 (88 threads)",
@@ -228,8 +228,8 @@
     "weight_sustainability": 0.10
   },
   "highlander": {
-    "eval_interval_seconds": 5,
-    "_eval_interval_seconds_help": "Faster evals during genesis growth phase",
+    "eval_interval_seconds": 1200,
+    "_eval_interval_seconds_help": "BOOM-BUST WAVES: 20-minute growth periods between Highlander concentration waves (aligned with Shadow config). Mega-RAM + 88 CPU threads.",
     "alliance_warfare": {
       "betrayal_chance": 0.0,
       "confederation_war_threshold": 0.5,
@@ -278,6 +278,7 @@
     "chaos_factor": 0.0,
     "competition_intensity": 0.15,
     "_competition_intensity_help": "Low initial intensity - let population boom first",
+    "description": "VAST XEON GENESIS - 20-min wave cycles: 5 progenitors → CPU-parallel mega-boom to 40K → learn → Highlander culling → regenerate",
     "description": "XEON GENESIS - 5 founders to 40K civilization",
     "enabled": true,
     "extreme_mode": {

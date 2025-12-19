@@ -515,21 +515,22 @@ class GymRunner:
             return action_space.sample()
         
         try:
-            # Convert observation to tensor
+            # Convert observation to tensor (25D to match config)
+            input_dim = 25
             if isinstance(obs, (int, np.integer)):
                 # Discrete observation (like FrozenLake position)
-                obs_tensor = torch.zeros(28)  # Pad to expected input dim
+                obs_tensor = torch.zeros(input_dim)  # Pad to expected input dim
                 obs_tensor[0] = float(obs) / 100.0  # Normalize
             elif isinstance(obs, tuple):
                 # Tuple observation (like Blackjack)
-                obs_tensor = torch.zeros(28)
-                for i, val in enumerate(obs[:28]):
+                obs_tensor = torch.zeros(input_dim)
+                for i, val in enumerate(obs[:input_dim]):
                     obs_tensor[i] = float(val) if isinstance(val, (int, float, bool)) else 0.0
             else:
                 # Array observation (including images - flatten them)
                 obs_array = np.array(obs).flatten()
-                obs_tensor = torch.zeros(28)
-                obs_tensor[:min(len(obs_array), 28)] = torch.FloatTensor(obs_array[:28])
+                obs_tensor = torch.zeros(input_dim)
+                obs_tensor[:min(len(obs_array), input_dim)] = torch.FloatTensor(obs_array[:input_dim])
             
             obs_tensor = obs_tensor.unsqueeze(0).to(self.device)
             

@@ -371,7 +371,7 @@ class NeuralOrganism(Organism):
             Feature array of shape (input_dim,)
         """
         if self.brain is None:
-            return np.zeros(28, dtype=np.float32)  # 28D with self-perception
+            return np.zeros(25, dtype=np.float32)  # 25D base features
         
         features = []
         
@@ -568,7 +568,7 @@ class NeuralOrganism(Organism):
                 pass
         features.append(np.clip(coherence_frequency, 0.0, 1.0))
         
-        # 28. Attractor Proximity (swarm's distance to nearest known stable configuration)
+        # 28. Attractor Proximity (optional self-perception: swarm's distance to nearest known stable configuration)
         # High proximity (close to 1.0) = far from known attractors (unexplored territory)
         # Low proximity (close to 0.0) = near known attractor (stable basin)
         # This enables goal-directed collective behavior toward known stability
@@ -581,7 +581,7 @@ class NeuralOrganism(Organism):
         features.append(np.clip(attractor_proximity, 0.0, 1.0))
         
         # Ensure we have exactly input_dim features
-        input_dim = self.config.get('neural', {}).get('brain', {}).get('input_dim', 28)
+        input_dim = self.config.get('neural', {}).get('brain', {}).get('input_dim', 25)
         feature_array = np.array(features[:input_dim], dtype=np.float32)
         
         # Pad or truncate to match input_dim
@@ -840,8 +840,10 @@ class NeuralOrganism(Organism):
                 # Get the device from the brain's parameters
                 device = next(self.brain.parameters()).device
                 state_tensor = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
+                # Get VP value for attention scaling
+                vp_val = network_state.get('vp_value', 0.0) if network_state else 0.0
                 with torch.no_grad():
-                    action_probs = self.brain.forward(state_tensor).cpu().numpy()[0]
+                    action_probs = self.brain.forward(state_tensor, vp_value=vp_val).cpu().numpy()[0]
         else:
             # Exploitation: use neural network with optional VP adjustments
             self.brain.eval()
@@ -849,7 +851,9 @@ class NeuralOrganism(Organism):
                 # Get the device from the brain's parameters
                 device = next(self.brain.parameters()).device
                 state_tensor = torch.FloatTensor(state).to(device).unsqueeze(0)
-                action_probs = self.brain.forward(state_tensor).cpu().numpy()[0]
+                # Get VP value for attention scaling
+                vp_val = network_state.get('vp_value', 0.0) if network_state else 0.0
+                action_probs = self.brain.forward(state_tensor, vp_value=vp_val).cpu().numpy()[0]
             
             # Apply VP-aware adjustments if enabled
             if vp_planning_enabled and network_state:
@@ -1486,7 +1490,7 @@ class NeuralOrganism(Organism):
         for external gym environment integration.
         
         Args:
-            state: Observation from gym environment (will be padded/truncated to 28)
+            state: Observation from gym environment (will be padded/truncated to input_dim)
             action: Action taken (MUST be 0-5 for our 6-action brain)
             reward: Reward received
             next_state: Next observation
@@ -1515,19 +1519,19 @@ class NeuralOrganism(Organism):
             _logger.debug(f"[GYM-EXP] Skipping experience with invalid action {action} (must be 0-5)")
             return
         
-        # Normalize state to 28-dim (our standard input dimension)
+        # Normalize state to match input_dim (from config)
         def normalize_state(obs):
-            state_28 = np.zeros(28, dtype=np.float32)
+            state_norm = np.zeros(self.input_dim, dtype=np.float32)
             if isinstance(obs, (int, np.integer)):
-                state_28[0] = float(obs) / 100.0
+                state_norm[0] = float(obs) / 100.0
             elif isinstance(obs, tuple):
-                for i, val in enumerate(obs[:28]):
+                for i, val in enumerate(obs[:self.input_dim]):
                     if isinstance(val, (int, float, bool)):
-                        state_28[i] = float(val)
+                        state_norm[i] = float(val)
             else:
                 obs_flat = np.array(obs).flatten()
-                state_28[:min(len(obs_flat), 28)] = obs_flat[:28]
-            return state_28
+                state_norm[:min(len(obs_flat), self.input_dim)] = obs_flat[:self.input_dim]
+            return state_norm
         
         state_norm = normalize_state(state)
         next_state_norm = normalize_state(next_state)
@@ -2808,7 +2812,9 @@ class NeuralOrganism(Organism):
         with torch.no_grad():
             device = next(self.brain.parameters()).device
             state_tensor = torch.FloatTensor(base_state).to(device).unsqueeze(0)
-            action_probs = self.brain.forward(state_tensor).cpu().numpy()[0]
+            # Get VP value for attention scaling
+            vp_val = network_state.get('vp_value', 0.0) if network_state else 0.0
+            action_probs = self.brain.forward(state_tensor, vp_value=vp_val).cpu().numpy()[0]
         
         # Map brain outputs to alliance decision
         # Actions: 0=move, 1=cooperate, 2=compete, 3=rest, 4=reproduce, 5=isolate

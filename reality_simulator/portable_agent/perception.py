@@ -1,7 +1,7 @@
 """
 Perception pipeline utilities for the portable agent runtime.
 
-The exported agent needs a consistent 28D feature vector regardless of the
+The exported agent needs a consistent feature vector regardless of the
 source environment. This module centralizes the transformation logic so the
 runtime, Gym adapter, and future integrations can share the same behavior.
 """
@@ -17,11 +17,13 @@ if TYPE_CHECKING:  # Avoid circular imports at runtime
 
 
 class PerceptionPipeline:
-    """Converts arbitrary observations into 28D feature vectors."""
+    """Converts arbitrary observations into feature vectors (default 25D)."""
 
     def __init__(self,
+                 state_dim: int = 25,
                  agent_state: Optional["AgentState"] = None,
                  experience_buffer: Optional["ExperienceBuffer"] = None):
+        self.state_dim = state_dim
         self.agent_state = agent_state
         self.experience_buffer = experience_buffer
 
@@ -37,8 +39,8 @@ class PerceptionPipeline:
         return self.process(observation)
 
     def process(self, observation: Any) -> np.ndarray:
-        """Return a normalized 28D feature vector (matches config.json input_dim=28)."""
-        features = np.zeros(28, dtype=np.float32)
+        """Return a normalized feature vector (default 25D base features)."""
+        features = np.zeros(self.state_dim, dtype=np.float32)
         state = self.agent_state
         buffer = self.experience_buffer
 
@@ -88,19 +90,19 @@ class PerceptionPipeline:
                 features[23] = 0.5
             
             # Feature 24: Reserved / VP pressure proxy
-            features[24] = float(observation.get('vp_pressure', 0.5))
+            if self.state_dim > 24:
+                features[24] = float(observation.get('vp_pressure', 0.5))
             
-            # Feature 25-26: Self-perception (oscillation_entropy, coherence_frequency)
+            # Features 25-27: Optional self-perception (enabled when state_dim >= 28)
             # These let the agent sense its own stability and coherence
-            features[25] = float(observation.get('oscillation_entropy', 0.0))  # Chaos/stability self-sense
-            features[26] = float(observation.get('coherence_frequency', 0.0))  # Trap/freedom self-sense
-            
-            # Feature 27: Attractor proximity (distance to nearest known stable configuration)
-            features[27] = float(observation.get('attractor_proximity', 0.5))  # Collective stability sense
+            if self.state_dim >= 28:
+                features[25] = float(observation.get('oscillation_entropy', 0.0))  # Chaos/stability self-sense
+                features[26] = float(observation.get('coherence_frequency', 0.0))  # Trap/freedom self-sense
+                features[27] = float(observation.get('attractor_proximity', 0.5))  # Collective stability sense
 
         elif isinstance(observation, (list, np.ndarray)):
             obs = np.array(observation, dtype=np.float32).flatten()
-            features[:min(len(obs), 28)] = obs[:28]
+            features[:min(len(obs), self.state_dim)] = obs[:self.state_dim]
         else:
             features[0] = float(observation)
 

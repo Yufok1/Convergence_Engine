@@ -1336,6 +1336,27 @@ class AtomicLanguageSystem:
         
         return available[:target_size]
     
+    def can_use_word(self, word: str) -> bool:
+        """
+        Check if organism has earned the right to use this word at current mastery level.
+        
+        In grounded mode, organisms must demonstrate competence before accessing vocabulary.
+        This prevents premature word assignment from external systems (concept tracker, etc).
+        
+        Args:
+            word: The word/concept to check
+            
+        Returns:
+            True if word is in organism's earned vocabulary, False otherwise
+        """
+        # Level 4+: Full vocabulary access (semantic graduation)
+        if self._mastery_level >= 4:
+            return True
+        
+        # Check if word is in current available vocabulary
+        available = self.get_available_vocabulary()
+        return word in available
+    
     def check_mastery_advancement(self) -> bool:
         """
         Check if organism should advance to next mastery level.

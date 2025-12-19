@@ -62,15 +62,17 @@ class ExperienceBuffer:
     Set capacity=0 or None for UNLIMITED growth (no experience loss).
     """
     
-    def __init__(self, capacity: int = 0):
+    def __init__(self, capacity: int = 0, state_dim: int = 25):
         """
         Initialize experience buffer.
         
         Args:
             capacity: Maximum number of experiences to store.
                       0 or None = UNLIMITED (recommended for maximum learning)
+            state_dim: Dimension of state vectors (default: 25)
         """
         self.capacity = capacity if capacity and capacity > 0 else None
+        self.state_dim = state_dim
         # None maxlen = unlimited growth, no experience is ever lost
         self.buffer: deque = deque(maxlen=self.capacity)
         self.size = 0
@@ -132,20 +134,20 @@ class ExperienceBuffer:
         """
         experiences = self.sample(batch_size)
         
-        # Normalize states to consistent shape (28-dim) to prevent inhomogeneous array errors
+        # Normalize states to consistent shape to prevent inhomogeneous array errors
         def normalize_state(state):
-            """Ensure state is exactly 28-dim float32 array."""
+            """Ensure state is exactly state_dim float32 array."""
             if state is None:
-                return np.zeros(28, dtype=np.float32)
+                return np.zeros(self.state_dim, dtype=np.float32)
             state_arr = np.asarray(state, dtype=np.float32).flatten()
-            if len(state_arr) < 28:
+            if len(state_arr) < self.state_dim:
                 # Pad with zeros
-                padded = np.zeros(28, dtype=np.float32)
+                padded = np.zeros(self.state_dim, dtype=np.float32)
                 padded[:len(state_arr)] = state_arr
                 return padded
-            elif len(state_arr) > 28:
+            elif len(state_arr) > self.state_dim:
                 # Truncate
-                return state_arr[:28]
+                return state_arr[:self.state_dim]
             return state_arr
         
         def normalize_action(action):
@@ -183,14 +185,14 @@ class ExperienceBuffer:
         # Reuse normalize_state from sample_batch
         def normalize_state(state):
             if state is None:
-                return np.zeros(28, dtype=np.float32)
+                return np.zeros(self.state_dim, dtype=np.float32)
             state_arr = np.asarray(state, dtype=np.float32).flatten()
-            if len(state_arr) < 28:
-                padded = np.zeros(28, dtype=np.float32)
+            if len(state_arr) < self.state_dim:
+                padded = np.zeros(self.state_dim, dtype=np.float32)
                 padded[:len(state_arr)] = state_arr
                 return padded
-            elif len(state_arr) > 28:
-                return state_arr[:28]
+            elif len(state_arr) > self.state_dim:
+                return state_arr[:self.state_dim]
             return state_arr
         
         def normalize_action(action):
@@ -240,14 +242,14 @@ class ExperienceBuffer:
         # Normalize states to prevent inhomogeneous array errors
         def normalize_state(state):
             if state is None:
-                return np.zeros(28, dtype=np.float32)
+                return np.zeros(self.state_dim, dtype=np.float32)
             state_arr = np.asarray(state, dtype=np.float32).flatten()
-            if len(state_arr) < 28:
-                padded = np.zeros(28, dtype=np.float32)
+            if len(state_arr) < self.state_dim:
+                padded = np.zeros(self.state_dim, dtype=np.float32)
                 padded[:len(state_arr)] = state_arr
                 return padded
-            elif len(state_arr) > 28:
-                return state_arr[:28]
+            elif len(state_arr) > self.state_dim:
+                return state_arr[:self.state_dim]
             return state_arr
         
         def normalize_action(action):

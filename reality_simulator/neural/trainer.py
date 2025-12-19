@@ -749,12 +749,17 @@ class NeuralTrainer:
         # Organisms can now FEEL their oscillation and coherence - make this matter
         # Config values from self_perception section (with hardcoded fallbacks)
         sp_config = self.config.get('self_perception', {})
-        sp_enabled = sp_config.get('enabled', True)
+        sp_enabled = sp_config.get('enabled', False)  # Default disabled - requires input_dim >= 28
+        
+        # Self-perception requires input_dim >= 28 (features 25-27)
+        input_dim = self.config.get('neural', {}).get('brain', {}).get('input_dim', 25)
+        if sp_enabled and input_dim < 28:
+            sp_enabled = False  # Disable if dimensions don't support it
         
         if sp_enabled:
             try:
                 state = organism.get_state_features() if hasattr(organism, 'get_state_features') else None
-                if state is not None and len(state) >= 27:
+                if state is not None and len(state) >= 28:
                     # Feature 26: oscillation_entropy - penalize high chaos
                     osc_threshold = sp_config.get('oscillation_entropy_threshold', 0.7)
                     osc_penalty = sp_config.get('oscillation_chaos_penalty', -0.1)

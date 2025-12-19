@@ -2523,6 +2523,7 @@ class UnifiedSystem:
             
             # Initialize Germination Pool (new life from the fallen)
             # Pass context_memory for vocabulary extraction from dying organisms
+            # Pass config for grounded mode checking during vocabulary inheritance
             network_context_memory = network.context_memory if network and hasattr(network, 'context_memory') else None
             self.germination_pool = GerminationPool(
                 causation_explorer=self.causation_explorer,
@@ -2531,7 +2532,8 @@ class UnifiedSystem:
                 max_population=config.get('max_population', 100),  # Default matches config.json
                 germination_rate=config.get('germination_rate', 0.1),
                 mutation_base_rate=config.get('mutation_rate', 0.0),  # Default matches config.json
-                context_memory=network_context_memory  # For full vocabulary inheritance
+                context_memory=network_context_memory,  # For full vocabulary inheritance
+                config=self.active_config  # For grounded mode checking
             )
             print("[UNIFIED] [HIGHLANDER] [PASS] 🌱 Germination Pool initialized")
             
@@ -2859,16 +2861,7 @@ class UnifiedSystem:
                 champion_id = champion.get('id', 'unknown')
                 print(f"\n⚔️ [HIGHLANDER] THE CHAMPION EMERGES: {champion_id}")
                 print(f"   Stats: {champion.get('stats', {})}")
-                
-                # Checkpoint the champion organism
-                if self.capsule_manager and champion_id in organisms:
-                    champion_org = organisms[champion_id]
-                    capsule = self.capsule_manager.capture_organism(
-                        champion_org, 
-                        reason='HIGHLANDER_CHAMPION'
-                    )
-                    if capsule:
-                        print(f"   📦 Champion capsule saved: {capsule.capsule_id}")
+                # NOTE: Capsule saving handled by highlander_protocol._crown_champion()
             
             # Log round results
             if results:
@@ -3089,7 +3082,7 @@ class UnifiedSystem:
             
             # Highlander evaluation interval (time-based)
             highlander_config = self.active_config.get('highlander', {})
-            highlander_eval_interval_seconds = highlander_config.get('eval_interval_seconds', 30)  # Default: 30 seconds
+            highlander_eval_interval_seconds = highlander_config.get('eval_interval_seconds', 600)  # Default: 600 seconds (10 min boom-bust waves)
             last_highlander_time = time.time()
             print(f"[UNIFIED] Highlander eval interval: every {highlander_eval_interval_seconds} seconds")
             
@@ -3115,7 +3108,7 @@ class UnifiedSystem:
                     # Update timing config if changed
                     simulation_config = self.active_config.get('simulation', {})
                     highlander_config = self.active_config.get('highlander', {})
-                    highlander_eval_interval_seconds = highlander_config.get('eval_interval_seconds', 30)
+                    highlander_eval_interval_seconds = highlander_config.get('eval_interval_seconds', 600)
                     target_fps = simulation_config.get('target_fps', 0)
                     target_cycle_time = 1.0 / target_fps if target_fps > 0 else 0
 

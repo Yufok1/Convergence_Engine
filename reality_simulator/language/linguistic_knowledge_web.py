@@ -2039,12 +2039,21 @@ class LinguisticKnowledgeWeb:
         """
         Add all words from knowledge web to vocabulary.
         
+        GROUNDED MODE: This method is disabled when grounded learning is enabled.
+        Organisms must earn vocabulary through mastery, not bulk loading.
+        
         Args:
             vocabulary: LanguageVocabulary instance
             
         Returns:
-            Number of new words added
+            Number of new words added (0 if grounded mode enabled)
         """
+        # GROUNDED MODE CHECK: organisms must earn vocabulary through mastery
+        grounded_enabled = self.config.get('language', {}).get('grounded', {}).get('enabled', False)
+        if grounded_enabled:
+            logger.info("[LINGUISTIC_WEB] Grounded mode enabled - bulk vocabulary expansion disabled")
+            return 0
+        
         words_added = 0
         for word in self.concepts.keys():
             if word not in vocabulary.word_to_id:

@@ -55,7 +55,8 @@ class ContextMemory:
                  use_learned_embeddings: bool = True,
                  embedding_dim: int = 64,
                  max_vocab_size: int = 20000,  # Default matches config.json
-                 organism_embedding_alpha: float = 0.1):
+                 organism_embedding_alpha: float = 0.1,
+                 config: Optional[Dict] = None):
         """
         Initialize context memory.
         
@@ -65,6 +66,7 @@ class ContextMemory:
             embedding_dim: Dimension for learned embeddings
             max_vocab_size: Maximum vocabulary size
             organism_embedding_alpha: Alpha for blending organism embeddings (0.1 = 90% keep, 10% new)
+            config: Full system config for grounded mode checking
         """
         # Convert relative paths to absolute paths based on project root
         if not os.path.isabs(persistence_path):
@@ -80,6 +82,13 @@ class ContextMemory:
         self.embedding_dim = embedding_dim
         self.max_vocab_size = max_vocab_size
         self.organism_embedding_alpha = organism_embedding_alpha  # SEMANTIC CONVERGENCE: Config-driven alpha
+        
+        # Store config for grounded mode checking
+        self.config = config or {}
+        lang_config = self.config.get('language', {})
+        grounded_config = lang_config.get('grounded', {})
+        self.grounded_mode_enabled = grounded_config.get('enabled', False)
+        self.mastery_gating_enabled = grounded_config.get('mastery_gating', False)
         
         # Core data structures
         self.node_embeddings: Dict[int, List[float]] = {}  # organism_id -> embedding vector
@@ -497,7 +506,8 @@ class ContextMemory:
         self._save_persistence()
 
     def link_word_to_node(self, word: str, organism_id: int, generation: int = None,
-                          organism_embedding: Optional[np.ndarray] = None) -> None:
+                          organism_embedding: Optional[np.ndarray] = None,
+                          organism: Optional[Any] = None) -> bool:
         """
         Create language anchor linking a word to an organism node.
 
@@ -507,7 +517,32 @@ class ContextMemory:
             generation: Optional generation when this link was made
             organism_embedding: Optional 64-dim neural embedding from organism.brain.fc2
                                 If provided, blends into word embedding for semantic differentiation
+            organism: Optional organism object for mastery level checking in grounded mode
+        
+        Returns:
+            True if word was linked, False if rejected by mastery gating
         """
+        # ═══════════════════════════════════════════════════════════════════════════
+        # GROUNDED MODE: Enforce mastery gating - organisms must EARN vocabulary
+        # This is a safety net check. Primary validation happens in callers:
+        # - language_teacher.py returns early if level < 4 in grounded mode
+        # - concept_tracker.py skips linking entirely in grounded mode
+        # - germination_pool.py skips inheritance in grounded mode
+        # ═══════════════════════════════════════════════════════════════════════════
+        if self.grounded_mode_enabled and self.mastery_gating_enabled:
+            # If organism is explicitly provided, verify mastery level
+            if organism is not None and hasattr(organism, 'atomic_language'):
+                mastery_level = getattr(organism.atomic_language, 'mastery_level', 0)
+                if mastery_level < 4:
+                    # Below level 4: Check if word is in organism's earned vocabulary
+                    if hasattr(organism.atomic_language, 'can_use_word'):
+                        if not organism.atomic_language.can_use_word(word):
+                            return False  # Word not yet earned - reject silently
+                    else:
+                        # No can_use_word method - conservative rejection
+                        return False
+            # If organism=None, trust that caller has already validated (e.g., language_teacher)
+        
         # Update language anchors
         self.language_anchors[word].add(organism_id)
 
@@ -560,6 +595,8 @@ class ContextMemory:
         # Persist changes much less frequently (every 500 links) to avoid I/O bottleneck
         if len(self.language_anchors) % 500 == 0:
             self._save_persistence()
+        
+        return True  # Word was successfully linked
 
     def _update_node_embedding(self, organism_id: int, word: str) -> None:
         """

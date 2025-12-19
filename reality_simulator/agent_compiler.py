@@ -1148,7 +1148,7 @@ class AgentCompiler:
             org_id = self._get_organism_id(capsule)
             
             # Get architecture details
-            input_dim = getattr(brain, 'input_dim', config.get('input_dim', 28))
+            input_dim = getattr(brain, 'input_dim', config.get('input_dim', 25))
             hidden_dim = getattr(brain, 'hidden_dim', config.get('hidden_dim', 64))
             output_dim = getattr(brain, 'output_dim', config.get('output_dim', 6))
             use_language = getattr(brain, 'use_language_head', False)
@@ -2924,7 +2924,7 @@ if __name__ == "__main__":
                 zf.writestr("atomic_config.json", json.dumps(capsule.config.to_dict(), indent=2))
             
             # 5. Bridge Config (JSON) - Critical for AgentBridge to know state dimensions
-            input_dim = metadata.get('neural_network', {}).get('architecture', {}).get('input_size', 28)
+            input_dim = metadata.get('neural_network', {}).get('architecture', {}).get('input_size', 25))
             arch_info = metadata.get('neural_network', {}).get('architecture', {})
             bridge_config = {
                 'state_dim': input_dim,
@@ -3474,7 +3474,7 @@ ARTS       Language     Vocabulary   Dialogue     Cross-
 ```python
 # Your custom environment
 class RobotEnv:
-    def reset(self): return np.zeros({metadata['neural_network']['architecture'].get('input_size', 28)})  # Match input dim (28D with self-perception)
+    def reset(self): return np.zeros({metadata['neural_network']['architecture'].get('input_size', 25)})  # Match input dim (25D base features)
     def step(self, action): return state, reward, done, info
 
 # Wrap and use
@@ -4033,7 +4033,7 @@ done
             zf.writestr("metadata.json", json.dumps(metadata, indent=2))
             
             # Bridge Config (JSON) - Critical for AgentBridge to know state dimensions
-            max_input_dim = metadata.get('ensemble', {}).get('max_input_dim', 28)
+            max_input_dim = metadata.get('ensemble', {}).get('max_input_dim', 25)
             # Check if any brain in ensemble has language head from metadata
             members = metadata.get('ensemble', {}).get('members', [])
             any_language_head = any(m.get('has_language_head', False) for m in members)
@@ -5549,7 +5549,7 @@ if __name__ == '__main__':
                     'generated': datetime.datetime.now().isoformat(),
                     'organism_id': self._get_organism_id(capsules[0]),
                     'brain_config': {
-                        'input_dim': getattr(brain, 'input_dim', 28),
+                        'input_dim': getattr(brain, 'input_dim', 25),
                         'hidden_dim': getattr(brain, 'hidden_dim', 64),
                         'output_dim': getattr(brain, 'output_dim', 6),
                         'use_language_head': getattr(brain, 'use_language_head', False),
@@ -5593,7 +5593,7 @@ if __name__ == '__main__':
                 ts_buffer = BytesIO()
                 try:
                     brain.eval()
-                    input_dim = getattr(brain, 'input_dim', 28)
+                    input_dim = getattr(brain, 'input_dim', 25)
                     dummy_input = torch.randn(1, input_dim, device='cpu')
                     traced = torch.jit.trace(brain, (dummy_input,))
                     torch.jit.save(traced, ts_buffer)
@@ -5635,7 +5635,7 @@ if __name__ == '__main__':
                     'organism_id': self._get_organism_id(capsules[0]),
                     'organism_count': len(capsules),
                     'brain_config': {
-                        'input_dim': getattr(brain, 'input_dim', 28),
+                        'input_dim': getattr(brain, 'input_dim', 25),
                         'hidden_dim': getattr(brain, 'hidden_dim', 64),
                         'output_dim': getattr(brain, 'output_dim', 6),
                         'use_language_head': getattr(brain, 'use_language_head', False),
@@ -6726,7 +6726,7 @@ import numpy as np
 session = ort.InferenceSession("brain_ensemble.onnx")
 
 # Run inference
-state = np.random.randn(1, 28).astype(np.float32)  # Adjust dims
+state = np.random.randn(1, 25).astype(np.float32)  # 25 dims (base features)
 outputs = session.run(None, {{"input": state}})
 action_probs = outputs[0]  # Shape: [num_organisms, batch, output_dim]
 
@@ -6741,7 +6741,7 @@ action = np.argmax(avg_probs, axis=-1)
 import * as ort from 'onnxruntime-web';
 
 const session = await ort.InferenceSession.create('brain_ensemble.onnx');
-const state = new ort.Tensor('float32', new Float32Array(28), [1, 28]);
+const state = new ort.Tensor('float32', new Float32Array(25), [1, 25]);
 const results = await session.run({{ input: state }});
 const actionProbs = results.output.data;
 ```
@@ -6752,7 +6752,7 @@ const actionProbs = results.output.data;
 #include <onnxruntime/core/session/onnxruntime_cxx_api.h>
 
 Ort::Session session(env, "brain_ensemble.onnx", session_options);
-std::vector<float> input_data(28, 0.0f);
+std::vector<float> input_data(25, 0.0f);
 // ... run inference
 ```
 
@@ -6773,7 +6773,7 @@ std::vector<float> input_data(28, 0.0f);
 ## 🔬 Architecture
 
 ```
-Input [{metadata.get('max_input_dim', 28)} dims]
+Input [{metadata.get('max_input_dim', 25)} dims]
      │
      ├── Brain 1 ──→ Q-values [{metadata.get('max_output_dim', 6)} actions]
      ├── Brain 2 ──→ Q-values
@@ -6997,15 +6997,14 @@ class VPRuntime:
         """
         Compute VP components from organism state vector.
         
-        State vector mapping (28-dim with self-perception):
+        State vector mapping (25-dim base features):
             0-5: Action probabilities
             6-8: Resource levels (energy, fitness, age)
             9-11: Social signals (cooperation, competition, isolation)
             12-14: Environmental context
             15-24: Additional features + illumination
-            25: oscillation_entropy (self-perception)
-            26: coherence_frequency (self-perception)
-            27: attractor_proximity (self-perception)
+            
+            (Optional 25-27: Self-perception features when enabled)
         
         Returns dict with: vitality, pleasure, violation_pressure, vp_class, components
         """
@@ -8214,7 +8213,7 @@ The tournament runs round-robin matches between all organisms, tracking wins/los
 ## 🔬 Architecture
 
 ```
-                    Input State Vector ({metadata.get('max_input_dim', 28)} dims)
+                    Input State Vector ({metadata.get('max_input_dim', 25)} dims)
                            │
            ┌───────────────┼───────────────┐
            │               │               │
@@ -8605,7 +8604,7 @@ pygame>=2.5.0        # Visual rendering
 
             # Build ONNX ensemble
             ensemble = EnsembleMeanWrapper(agent.brains).eval().cpu()
-            input_dim = getattr(agent.brains[0], 'input_dim', 28) if agent.brains else 28
+            input_dim = getattr(agent.brains[0], 'input_dim', 25) if agent.brains else 25
             dummy = torch.randn(1, input_dim, device='cpu')
             onnx_path = os.path.join(output_dir, 'ensemble.onnx')
             torch.onnx.export(
@@ -9192,15 +9191,14 @@ class VPRuntime:
         """
         Compute VP components from organism state vector.
         
-        State vector mapping (28-dim with self-perception):
+        State vector mapping (25-dim base features):
             0-5: Action probabilities
             6-8: Resource levels (energy, fitness, age)
             9-11: Social signals (cooperation, competition, isolation)
             12-14: Environmental context
             15-24: Additional features + illumination
-            25: oscillation_entropy (self-perception)
-            26: coherence_frequency (self-perception)
-            27: attractor_proximity (self-perception)
+            
+            (Optional 25-27: Self-perception features when enabled)
         
         Returns dict with: vitality, pleasure, violation_pressure, vp_class, components
         """
@@ -10914,7 +10912,7 @@ class CocoonAgent:
         
         try:
             # Use trace instead of script - more compatible with complex models
-            input_dim = getattr(brain, 'input_dim', 28)
+            input_dim = getattr(brain, 'input_dim', 25)
             dummy_input = torch.randn(1, input_dim)
             traced = torch.jit.trace(brain, (dummy_input,))
             traced.save(output_path)
@@ -11213,7 +11211,7 @@ import onnxruntime as ort
 import numpy as np
 
 session = ort.InferenceSession("brain_org_001.onnx")
-state = np.random.randn(1, 28).astype(np.float32)  # 28 dims matches config.json
+state = np.random.randn(1, 25).astype(np.float32)  # 25 dims matches config.json
 outputs = session.run(None, {{"state": state}})
 action_probs = outputs[0]
 ```
@@ -11282,7 +11280,7 @@ PADDLE_ANGULAR_RADIUS = 0.25  # Radians - size of circular paddle zone
 BALL_SPEED = 0.03     # Initial ball speed
 MAX_BALL_SPEED = 0.08
 PANEL_SPEED = 0.04    # Radians per frame (organism move speed)
-OBSERVATION_SIZE = 28 # Size of observation vector per organism (matches config.json input_dim: 25 base + 3 self-perception)
+OBSERVATION_SIZE = 25 # Size of observation vector per organism (matches config.json input_dim: 25 base features)
 MIN_SPAWN_DISTANCE = 0.3  # Min distance from sphere center for ball spawn
 
 # Command chain settings
@@ -13346,7 +13344,7 @@ def run_http_server(agent: CocoonAgent, port: int = 8080):
         learn = data.get('learn', True)
         
         # Get current VP value for reward calculation
-        input_dim = agent.brains[0].input_dim if agent.brains else 28
+        input_dim = agent.brains[0].input_dim if agent.brains else 25
         vp_info = agent.vp_runtime.compute_from_state(
             np.zeros(input_dim, dtype=np.float32),  # Dynamic input_dim from brain config
             agent.reward_history
@@ -13864,7 +13862,7 @@ Examples:
             print("└────────────────────────────────────────────────────────────┘")
             
             # Get VP value for semantic reward calculation (BEFORE generation)
-            input_dim = agent.brains[0].input_dim if agent.brains else 28
+            input_dim = agent.brains[0].input_dim if agent.brains else 25
             vp_info = agent.vp_runtime.compute_from_state(
                 np.zeros(input_dim, dtype=np.float32),  # Dynamic input_dim from brain config
                 agent.reward_history

@@ -400,8 +400,19 @@ class SwarmBattle:
     
     def _emit_event(self, event_type: str, data: Dict[str, Any]):
         """Emit battle event if emitter available."""
-        if self.event_emitter and hasattr(self.event_emitter, 'emit'):
-            self.event_emitter.emit(f'swarm_battle_{event_type}', data)
+        if self.event_emitter:
+            try:
+                # Standard pattern: event_emitter is callable, not object with .emit()
+                from causation_explorer import Event
+                event = Event(
+                    timestamp=__import__('time').time(),
+                    component='swarm_battle',
+                    event_type=f'swarm_battle_{event_type}',
+                    data=data
+                )
+                self.event_emitter(event)
+            except Exception:
+                pass  # Silent failure for event emission
     
     def run(self, render: bool = False) -> BattleStatistics:
         """

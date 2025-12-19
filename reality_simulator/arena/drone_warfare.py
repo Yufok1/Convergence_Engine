@@ -257,8 +257,19 @@ class DroneWarfareArena:
     
     def _emit_event(self, event_type: str, data: Dict[str, Any]):
         """Emit warfare event."""
-        if self.event_emitter and hasattr(self.event_emitter, 'emit'):
-            self.event_emitter.emit(f'drone_warfare_{event_type}', data)
+        if self.event_emitter:
+            try:
+                # Standard pattern: event_emitter is callable, not object with .emit()
+                from causation_explorer import Event
+                event = Event(
+                    timestamp=__import__('time').time(),
+                    component='drone_warfare',
+                    event_type=f'drone_warfare_{event_type}',
+                    data=data
+                )
+                self.event_emitter(event)
+            except Exception:
+                pass  # Silent failure for event emission
     
     def can_drone_battle(self, alliance_a, alliance_b) -> bool:
         """

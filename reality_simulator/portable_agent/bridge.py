@@ -169,8 +169,8 @@ class AgentConfig:
     ])
     num_actions: int = 6
     
-    # State space (28D to match config.json neural.brain.input_dim with self-perception)
-    state_dim: int = 28
+    # State space (25D to match config.json neural.brain.input_dim base features)
+    state_dim: int = 25
     
     # Learning
     epsilon: float = 0.1
@@ -239,7 +239,7 @@ class InputAdapter:
 class GymInputAdapter(InputAdapter):
     """Adapter for Gymnasium/Gym observations."""
     
-    def __init__(self, state_dim: int = 28):
+    def __init__(self, state_dim: int = 25):
         self.state_dim = state_dim
     
     def to_state(self, obs: Any, context: Optional[Dict] = None) -> np.ndarray:
@@ -312,7 +312,7 @@ class TextInputAdapter(InputAdapter):
         'coherence': (23, 0.5), 'stability': (23, 0.4),
     }
     
-    def __init__(self, state_dim: int = 28, vocabulary: Optional[Dict] = None):
+    def __init__(self, state_dim: int = 25, vocabulary: Optional[Dict] = None):
         self.state_dim = state_dim
         self.vocabulary = vocabulary or {}
         
@@ -366,14 +366,14 @@ class TextInputAdapter(InputAdapter):
 class ContextInputAdapter(InputAdapter):
     """Adapter for structured context dictionaries."""
     
-    def __init__(self, state_dim: int = 28):
+    def __init__(self, state_dim: int = 25):
         self.state_dim = state_dim
         
     def to_state(self, context: Dict[str, Any], _: Optional[Dict] = None) -> np.ndarray:
         """Convert context dict directly to state vector."""
         state = np.zeros(self.state_dim, dtype=np.float32)
         
-        # Direct mapping for known keys (28 dimensions with self-perception)
+        # Direct mapping for known keys (25 base dimensions)
         mapping = [
             'energy', 'hunger', 'health',                     # 0-2: vitality
             'danger', 'enemy_distance', 'attack_imminent',    # 3-5: threat

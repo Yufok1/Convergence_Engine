@@ -1678,7 +1678,7 @@ class StandaloneButterflyChat:
         Aligned with the neural system's expected input format (config.json input_dim=25).
         Features 26-27 are self-perception: oscillation_entropy, coherence_frequency.
         """
-        state = np.zeros(28, dtype=np.float32)
+        state = np.zeros(25, dtype=np.float32)
         
         # Basic state encoding from message
         words = message.lower().split()

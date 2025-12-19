@@ -1268,52 +1268,57 @@ class HighlanderProtocol:
                     result['traits_inherited'] += 1
         
         # Transfer word associations (if context memory available)
-        try:
-            winner_id = getattr(winner, 'species_id', getattr(winner, 'organism_id', str(id(winner))))
-            loser_id = getattr(loser, 'species_id', getattr(loser, 'organism_id', str(id(loser))))
-            
-            # Use HighlanderProtocol's wired context_memory (FIXED - don't go through organism)
-            context_memory = self.context_memory
-            if context_memory and hasattr(context_memory, 'node_word_associations'):
-                # Convert IDs to the format context_memory uses
-                # CRITICAL: Must match language_teacher.py line 398: hash(species_id_str)
-                def normalize_id(org_id):
-                    # Language teacher uses: hash(species_id_str) - full hash, can be negative
-                    if isinstance(org_id, str):
-                        return hash(org_id)
-                    return org_id  # Already an int
+        # GROUNDED MODE: Skip vocabulary transfer - organisms must earn vocabulary through mastery
+        grounded_enabled = self.config.get('language', {}).get('grounded', {}).get('enabled', False)
+        if grounded_enabled:
+            self.logger.info(f"🚫 GROUNDED MODE: Vocabulary transfer disabled - organisms must earn words")
+        else:
+            try:
+                winner_id = getattr(winner, 'species_id', getattr(winner, 'organism_id', str(id(winner))))
+                loser_id = getattr(loser, 'species_id', getattr(loser, 'organism_id', str(id(loser))))
                 
-                loser_id_int = normalize_id(loser_id)
-                winner_id_int = normalize_id(winner_id)
-                
-                # DEBUG: Log what IDs we're looking for
-                all_stored_ids = list(context_memory.node_word_associations.keys())[:10]
-                self.logger.debug(f"🔍 VOCAB DEBUG: loser={loser_id} → int={loser_id_int}, winner={winner_id} → int={winner_id_int}")
-                self.logger.debug(f"🔍 VOCAB DEBUG: stored IDs sample: {all_stored_ids}")
-                
-                # Get loser's word associations BEFORE they might be cleaned up
-                loser_words = context_memory.node_word_associations.get(loser_id_int, set())
-                winner_words = context_memory.node_word_associations.get(winner_id_int, set())
-                
-                # Only transfer NEW words the winner doesn't already have
-                new_words = loser_words - winner_words
-                
-                self.logger.debug(f"🔍 VOCAB DEBUG: loser has {len(loser_words)} words, winner has {len(winner_words)}, new={len(new_words)}")
-                
-                if new_words:
-                    # Transfer only new word associations to winner
-                    if winner_id_int not in context_memory.node_word_associations:
-                        context_memory.node_word_associations[winner_id_int] = set()
+                # Use HighlanderProtocol's wired context_memory (FIXED - don't go through organism)
+                context_memory = self.context_memory
+                if context_memory and hasattr(context_memory, 'node_word_associations'):
+                    # Convert IDs to the format context_memory uses
+                    # CRITICAL: Must match language_teacher.py line 398: hash(species_id_str)
+                    def normalize_id(org_id):
+                        # Language teacher uses: hash(species_id_str) - full hash, can be negative
+                        if isinstance(org_id, str):
+                            return hash(org_id)
+                        return org_id  # Already an int
                     
-                    # Inherit only NEW words from loser
-                    context_memory.node_word_associations[winner_id_int].update(new_words)
+                    loser_id_int = normalize_id(loser_id)
+                    winner_id_int = normalize_id(winner_id)
                     
-                    result['patterns_inherited'] = len(new_words)
-                    result['traits_inherited'] += 1
+                    # DEBUG: Log what IDs we're looking for
+                    all_stored_ids = list(context_memory.node_word_associations.keys())[:10]
+                    self.logger.debug(f"🔍 VOCAB DEBUG: loser={loser_id} → int={loser_id_int}, winner={winner_id} → int={winner_id_int}")
+                    self.logger.debug(f"🔍 VOCAB DEBUG: stored IDs sample: {all_stored_ids}")
                     
-                    self.logger.info(f"📚 VOCABULARY ABSORBED: {len(new_words)} NEW words transferred to {winner_id[:8]}")
-        except Exception as e:
-            self.logger.warning(f"Word association transfer failed: {e}")
+                    # Get loser's word associations BEFORE they might be cleaned up
+                    loser_words = context_memory.node_word_associations.get(loser_id_int, set())
+                    winner_words = context_memory.node_word_associations.get(winner_id_int, set())
+                    
+                    # Only transfer NEW words the winner doesn't already have
+                    new_words = loser_words - winner_words
+                    
+                    self.logger.debug(f"🔍 VOCAB DEBUG: loser has {len(loser_words)} words, winner has {len(winner_words)}, new={len(new_words)}")
+                    
+                    if new_words:
+                        # Transfer only new word associations to winner
+                        if winner_id_int not in context_memory.node_word_associations:
+                            context_memory.node_word_associations[winner_id_int] = set()
+                        
+                        # Inherit only NEW words from loser
+                        context_memory.node_word_associations[winner_id_int].update(new_words)
+                        
+                        result['patterns_inherited'] = len(new_words)
+                        result['traits_inherited'] += 1
+                        
+                        self.logger.info(f"📚 VOCABULARY ABSORBED: {len(new_words)} NEW words transferred to {winner_id[:8]}")
+            except Exception as e:
+                self.logger.warning(f"Word association transfer failed: {e}")
         
         # ═══════════════════════════════════════════════════════════════════════════
         # FULL BRAIN TRANSFER - Winner absorbs ALL neural weights from loser!

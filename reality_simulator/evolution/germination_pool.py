@@ -204,10 +204,12 @@ class GerminationPool:
         germination_rate: float = 0.1,
         mutation_base_rate: float = 0.05,
         crossover_bias: float = 0.3,
-        context_memory: Optional[Any] = None  # For vocabulary extraction
+        context_memory: Optional[Any] = None,  # For vocabulary extraction
+        config: Optional[Dict[str, Any]] = None  # For grounded mode checking
     ):
         self.causation_explorer = causation_explorer
         self.context_memory = context_memory  # For extracting organism vocabularies
+        self.config = config or {}  # Store config for grounded mode checks
         self.max_genetic_samples = max_genetic_samples
         self.min_population = min_population
         self.max_population = max_population
@@ -761,7 +763,13 @@ class GerminationPool:
         candidate.concept_seed = dict(parent.concepts)
         candidate.config_template = dict(parent.config_atoms)
         candidate.trait_template = dict(parent.traits)
-        candidate.vocabulary_words = list(parent.vocabulary_sample)  # FULL vocab inheritance
+        
+        # GROUNDED MODE: Skip vocabulary inheritance - organisms must earn vocabulary
+        grounded_enabled = self.config.get('language', {}).get('grounded', {}).get('enabled', False)
+        if grounded_enabled:
+            candidate.vocabulary_words = []  # Empty - must earn through mastery
+        else:
+            candidate.vocabulary_words = list(parent.vocabulary_sample)  # Full inheritance in non-grounded mode
         
         # MAGNETISM INHERITANCE - Clone gets parent's attractor landscape
         candidate.magnetism_template = dict(parent.magnetism_states)
@@ -801,9 +809,14 @@ class GerminationPool:
         # Crossover traits (weighted average)
         candidate.trait_template = self._crossover_traits(parent1, parent2)
         
-        # Crossover vocabulary (union of both parents' words)
-        vocab_union = set(parent1.vocabulary_sample) | set(parent2.vocabulary_sample)
-        candidate.vocabulary_words = list(vocab_union)
+        # GROUNDED MODE: Skip vocabulary inheritance - organisms must earn vocabulary
+        grounded_enabled = self.config.get('language', {}).get('grounded', {}).get('enabled', False)
+        if grounded_enabled:
+            candidate.vocabulary_words = []  # Empty - must earn through mastery
+        else:
+            # Crossover vocabulary (union of both parents' words)
+            vocab_union = set(parent1.vocabulary_sample) | set(parent2.vocabulary_sample)
+            candidate.vocabulary_words = list(vocab_union)
         
         # MAGNETISM INHERITANCE - Crossover gets simple union (chimera does weighted merge)
         merged_magnetism = {}
@@ -929,9 +942,13 @@ class GerminationPool:
         # SEMANTIC INHERITANCE: merge_both_parents
         # ═══════════════════════════════════════════════════════════════════════
         
-        # 1. Vocabulary: union_with_parent_weighting
-        all_vocab = vocab1 | vocab2
-        candidate.vocabulary_words = list(all_vocab)
+        # 1. Vocabulary: GROUNDED MODE - organisms must earn vocabulary
+        grounded_enabled = self.config.get('language', {}).get('grounded', {}).get('enabled', False)
+        if grounded_enabled:
+            candidate.vocabulary_words = []  # Empty - must earn through mastery
+        else:
+            all_vocab = vocab1 | vocab2
+            candidate.vocabulary_words = list(all_vocab)  # Union inheritance in non-grounded mode
         
         # 2. Concepts: merge both
         merged_concepts = {}
@@ -1176,6 +1193,13 @@ class GerminationPool:
             'resilience': random.random(),
             'innovation': random.random()
         }
+        
+        # GROUNDED MODE: Nova organisms start with empty vocabulary - must earn through mastery
+        grounded_enabled = self.config.get('language', {}).get('grounded', {}).get('enabled', False)
+        if grounded_enabled:
+            candidate.vocabulary_words = []  # Empty - must earn through mastery
+        else:
+            candidate.vocabulary_words = []  # Nova starts fresh regardless
         
         candidate.mutation_rate = 0.2  # High mutation for novelty
         candidate.vigor = 0.7  # Slightly weaker starting position
@@ -1761,16 +1785,17 @@ class GerminationPool:
             return
             
         try:
-            from causation_explorer import CausationEvent
-            event = CausationEvent(
+            from causation_explorer import Event  # Correct class name
+            event = Event(
                 timestamp=time.time(),
                 component='germination_pool',
                 event_type=event_type,
                 data=data
             )
             self.causation_explorer.add_event(event, is_historical=False)
-        except Exception:
-            pass
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).debug(f"Event emission failed: {e}")
 
 
 # ============================================================================
@@ -1908,9 +1933,11 @@ def integrate_germination_with_highlander(
                     cm = context_memory_ref[0]  # Use the reference from closure
                     if cm:
                         org_id = organism.id if hasattr(organism, 'id') else hash(str(id(organism)))
+                        generation = germination_pool.generation_counter if hasattr(germination_pool, 'generation_counter') else 0
                         for word in organism._inherited_vocabulary:
                             try:
-                                cm.link_word_to_node(word, org_id)
+                                # Pass organism for mastery gating in grounded mode
+                                cm.link_word_to_node(word, org_id, generation=generation, organism=organism)
                             except Exception:
                                 pass  # Word linking failed, but organism still lives
                         reincarnation_logger = logging.getLogger(__name__)

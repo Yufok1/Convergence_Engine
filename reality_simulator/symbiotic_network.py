@@ -851,7 +851,8 @@ class SymbioticNetwork:
                 use_learned_embeddings=semantic_config.get('use_learned_embeddings', True),
                 embedding_dim=semantic_config.get('embedding_dim', 64),
                 organism_embedding_alpha=semantic_config.get('organism_embedding_alpha', 0.1),
-                max_vocab_size=max_vocab_size
+                max_vocab_size=max_vocab_size,
+                config=config  # Pass full config for grounded mode checking
             )
             print(f"[SYMBIOTIC_NETWORK] ContextMemory created with max_vocab_size={max_vocab_size}")
         
@@ -1252,6 +1253,13 @@ class SymbioticNetwork:
 
             for conn_key in connections_to_remove:
                 del self.connections[conn_key]
+            
+            # MEMORY LEAK FIX: Clean up dead organism data from context memory
+            if self.context_memory and hasattr(self.context_memory, 'cleanup_dead_organism'):
+                try:
+                    self.context_memory.cleanup_dead_organism(organism_id)
+                except Exception:
+                    pass  # Don't crash on cleanup failure
 
     def propose_connection(self, org_a_id: str, org_b_id: str, allow_bypass_limits: bool = False) -> bool:
         """
@@ -1500,6 +1508,8 @@ class SymbioticNetwork:
             if 'vp_components' not in network_state:
                 network_state['vp_components'] = vp_components_default
             if vp_total is not None:
+                # FIX: Set BOTH vp_value (consumed by neural/language code) AND vp_total (legacy)
+                network_state['vp_value'] = float(vp_total)
                 network_state['vp_total'] = float(vp_total)
         except Exception:
             # Never let VP enrichment break simulation; fall back silently

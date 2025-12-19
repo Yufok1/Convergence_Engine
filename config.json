@@ -1,6 +1,6 @@
 {
-  "_case_study": "STUDY 5: CREATIVE SPECIALIST - High temperature, strong semantic guidance",
-  "_hypothesis": "Higher temperature + semantic guidance produces more expressive, creative articulation",
+  "_case_study": "STUDY 6: BOOM-BUST WAVES - Grounded learning with periodic Highlander concentration",
+  "_hypothesis": "Organisms that build foundations (6→26→76→276 words) before facing Highlander waves develop more coherent intelligence than those thrown into instant chaos",
   "_hardware_profile_help": "Set to 'beast', 'workstation', 'standard', 'laptop', 'potato', or 'cpu_only' to override auto-detection. null = auto-detect",
   "language": {
     "_help": "Grounded Language Mode: Organisms learn language through action-outcome associations before semantic understanding",
@@ -207,8 +207,8 @@
     "weight_sustainability": 0.1
   },
   "highlander": {
-    "eval_interval_seconds": 10,
-    "_eval_interval_seconds_help": "Highlander evaluates every N seconds (e.g. 30 = every 30 seconds, 450 = 7.5 minutes)",
+    "eval_interval_seconds": 600,
+    "_eval_interval_seconds_help": "BOOM-BUST WAVE SYSTEM: Highlander concentration happens every N seconds (600 = 10 min waves, 1200 = 20 min waves). Organisms grow/learn between waves, then face culling.",
     "alliance_warfare": {
       "betrayal_chance": 0.0,
       "confederation_war_threshold": 0.6,
@@ -224,7 +224,7 @@
     },
     "chaos_factor": 0.0,
     "competition_intensity": 0.4,
-    "description": "STUDY 5: CREATIVE SPECIALIST - High temperature, semantic boost",
+    "description": "BOOM-BUST WAVES: 10-minute growth → Highlander culling → regeneration → repeat. Selects for learning competence over chaos survival.",
     "enabled": true,
     "extreme_mode": {
       "chaos_factor": 0.0,
@@ -240,17 +240,17 @@
       "rounds_per_cycle": 2,
       "survival_threshold": 0.4
     },
-    "germination_rate": 0.1,
-    "max_battle_rounds": 50,
+    "germination_rate": 0.15,
+    "max_battle_rounds": 30,
     "max_capsules": 100,
     "max_genetic_samples": 100,
-    "max_population": 25,
-    "min_population": 15,
+    "max_population": 50,
+    "min_population": 10,
     "mutation_rate": 0.0,
     "population_size": 200,
     "predation_enabled": true,
-    "rounds_per_cycle": 2,
-    "survival_threshold": 0.4
+    "rounds_per_cycle": 3,
+    "survival_threshold": 0.5
   },
   "lattice": {
     "entropy_sensitivity": 5e-05,
@@ -673,7 +673,7 @@
   },
   "self_perception": {
     "comment": "Reward shaping for features 26-28 (oscillation_entropy, coherence_frequency, attractor_proximity)",
-    "enabled": true,
+    "enabled": false,
     "oscillation_entropy_threshold": 0.7,
     "oscillation_chaos_penalty": -0.1,
     "coherence_frequency_threshold": 0.6,

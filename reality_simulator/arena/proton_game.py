@@ -2121,7 +2121,7 @@ class ProtonGameArena:
     
     def _generate_game_state(self, game_type: str) -> np.ndarray:
         """Generate a game state vector for decision-making."""
-        state = np.random.rand(28).astype(np.float32)  # Matches config.json input_dim=28
+        state = np.random.rand(25).astype(np.float32)  # Matches config.json input_dim=25
         
         # Game-specific state adjustments
         if game_type == 'pong':
@@ -2352,7 +2352,7 @@ class ProtonGameArena:
     def _simulate_reaction_duel(self, bridge_a, bridge_b) -> Dict[str, Any]:
         """Reaction time based competition."""
         # Generate random state
-        state = np.random.rand(28).astype(np.float32)  # Matches config.json input_dim=28
+        state = np.random.rand(25).astype(np.float32)  # Matches config.json input_dim=25
         
         # See who responds faster/better
         import time as time_module
@@ -2476,7 +2476,7 @@ class ProtonGameArena:
         
         for _ in range(episodes):
             # Get baseline response
-            baseline_state = np.random.rand(28).astype(np.float32)  # Matches config.json input_dim=28
+            baseline_state = np.random.rand(25).astype(np.float32)  # Matches config.json input_dim=25
             try:
                 baseline_result = bridge.process(state=baseline_state)
                 baseline_action = baseline_result.action if hasattr(baseline_result, 'action') else 0
@@ -2490,7 +2490,7 @@ class ProtonGameArena:
             consistency_count = 0
             
             for strength in mutation_strengths:
-                mutated_state = baseline_state + np.random.randn(28).astype(np.float32) * strength
+                mutated_state = baseline_state + np.random.randn(25).astype(np.float32) * strength
                 try:
                     mutated_result = bridge.process(state=mutated_state)
                     mutated_action = mutated_result.action if hasattr(mutated_result, 'action') else 0
@@ -2541,7 +2541,7 @@ class ProtonGameArena:
             scenario = threat_scenarios[ep % len(threat_scenarios)]
             
             # Encode threat in state
-            state = np.random.rand(28).astype(np.float32)  # Matches config.json input_dim=28
+            state = np.random.rand(25).astype(np.float32)  # Matches config.json input_dim=25
             state[0] = scenario['threat_level']  # Threat perception
             state[1] = scenario['distance']       # Distance to threat
             state[2] = 1.0 - scenario['distance'] # Urgency

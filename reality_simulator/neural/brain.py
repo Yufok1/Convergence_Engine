@@ -365,7 +365,7 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
     """
     
     def __init__(self, 
-                 input_dim: int = 28,  # Default matches config.json neural.brain.input_dim (25 base + 3 attractor)
+                 input_dim: int = 25,  # Default matches config.json neural.brain.input_dim (25 base features)
                  hidden_dim: int = 64,
                  output_dim: int = 6,
                  activation: str = 'relu',
@@ -392,7 +392,7 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
         after training will break saved model loading.
         
         Args:
-            input_dim: Number of input features (28 with VP + extended features + self-perception)
+            input_dim: Number of input features (25 base features, expandable to 28 with self-perception)
             hidden_dim: Hidden layer dimension
             output_dim: Number of output actions
             activation: Activation function ('relu', 'tanh', 'sigmoid')

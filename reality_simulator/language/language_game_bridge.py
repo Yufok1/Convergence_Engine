@@ -823,7 +823,7 @@ if __name__ == "__main__":
     bridge = LanguageGameBridge(context="drone")
     
     # Simulate drone observation
-    obs = np.zeros(28)
+    obs = np.zeros(25)
     obs[13] = 0.1   # Enemy very close
     obs[16] = 0.8   # High health
     obs[2] = 0.5    # Medium altitude

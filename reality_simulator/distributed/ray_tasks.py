@@ -92,8 +92,8 @@ def extract_organism_features_local(org_state: dict, context: dict = None) -> Li
     else:
         features.extend([0.0, 0.0])
     
-    # Ensure consistent length (pad or truncate to 28 dimensions)
-    target_len = 28
+    # Ensure consistent length (pad or truncate to 25 dimensions)
+    target_len = 25
     if len(features) < target_len:
         features.extend([0.0] * (target_len - len(features)))
     elif len(features) > target_len:

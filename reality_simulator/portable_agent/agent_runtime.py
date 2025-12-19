@@ -248,7 +248,7 @@ class AgentRuntime:
             def _shape(name, dim):
                 return sd[name].shape[dim] if name in sd else None
             
-            in_dim = _shape('fc1.weight', 1) or 28  # Matches config.json neural.brain.input_dim
+            in_dim = _shape('fc1.weight', 1) or 25  # Matches config.json neural.brain.input_dim
             hid_dim = _shape('fc1.weight', 0) or 64
             out_dim = _shape('fc3.weight', 0) or 6
             

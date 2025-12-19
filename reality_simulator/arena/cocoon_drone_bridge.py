@@ -62,8 +62,8 @@ class CocoonDroneState:
     altitude_danger: float  # 0=safe, 1=dangerous
     
     def to_observation(self) -> np.ndarray:
-        """Convert to 28-dim observation for cocoon."""
-        obs = np.zeros(28, dtype=np.float32)
+        """Convert to 25-dim observation for cocoon."""
+        obs = np.zeros(25, dtype=np.float32)
         
         # Position (0-2)
         obs[0:3] = np.clip(self.position / 10.0, -1, 1)

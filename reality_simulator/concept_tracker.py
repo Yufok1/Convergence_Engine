@@ -208,12 +208,9 @@ class ConceptTracker:
         # SEMANTIC CONVERGENCE: Feed phenotype name to language vocabulary
         # GROUNDED MODE: Skip concept linking - organisms earn vocabulary through mastery, not concept emergence
         grounded_mode_enabled = False
-        if self.context_memory is not None and hasattr(self.context_memory, 'config'):
-            config = getattr(self.context_memory, 'config', {})
-            if config:
-                lang_config = config.get('language', {})
-                grounded_config = lang_config.get('grounded', {})
-                grounded_mode_enabled = grounded_config.get('enabled', False)
+        if self.context_memory is not None:
+            # Use instance variable if available (properly set via config), fallback to config dict
+            grounded_mode_enabled = getattr(self.context_memory, 'grounded_mode_enabled', False)
         
         if self.context_memory is not None and not grounded_mode_enabled:
             try:

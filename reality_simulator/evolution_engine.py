@@ -547,7 +547,7 @@ class EvolutionEngine:
     """
 
     def __init__(self,
-                 population_size: int = 100,
+                 population_size: int = 25,
                  genotype_length: int = 32,
                  max_generations: int = 1000,
                  fitness_targets: Optional[Dict[str, float]] = None,
@@ -1136,7 +1136,7 @@ class EvolutionEngine:
 
 
 # Utility functions for easy use
-def create_evolution_engine(population_size: int = 100,
+def create_evolution_engine(population_size: int = 25,
                           genotype_length: int = 32,
                           fitness_targets: Optional[Dict[str, float]] = None,
                           config: Optional[Dict[str, Any]] = None) -> EvolutionEngine:

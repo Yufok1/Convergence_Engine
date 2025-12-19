@@ -97,8 +97,8 @@ class DroneState:
     tag_cooldown: float = 0.0
     
     def to_observation(self) -> np.ndarray:
-        """Convert to 28-dim observation for organism's brain."""
-        obs = np.zeros(28, dtype=np.float32)
+        """Convert to 25-dim observation for organism's brain."""
+        obs = np.zeros(25, dtype=np.float32)
         
         # Position (normalized to arena bounds ~[-10, 10])
         obs[0:3] = np.clip(self.position / 10.0, -1, 1)

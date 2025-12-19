@@ -243,8 +243,8 @@
   },
 
   "highlander": {
-    "eval_interval_seconds": 15,
-    "_eval_interval_seconds_help": "Genesis: Faster evaluation - small populations need rapid selection cycles",
+    "eval_interval_seconds": 1200,
+    "_eval_interval_seconds_help": "BOOM-BUST WAVES: 20-minute growth periods between Highlander concentration waves. Organisms learn/master vocabulary before culling.",
     "alliance_warfare": {
       "betrayal_chance": 0.03,
       "confederation_war_threshold": 0.50,
@@ -261,7 +261,7 @@
     },
     "chaos_factor": 0.08,
     "competition_intensity": 0.55,
-    "description": "SHADOW EPYC GENESIS - Boom/bust evolution from 5 progenitors (CPU-parallel)",
+    "description": "SHADOW EPYC GENESIS - 20-min wave cycles: 5 progenitors → boom → learn → Highlander culling → regenerate",
     "enabled": true,
     "lineage_tracking": {
       "enabled": true,

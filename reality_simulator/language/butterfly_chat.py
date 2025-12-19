@@ -368,16 +368,25 @@ class ButterflyChatRouter:
                 # Text comes directly from organism - no decoding needed here
                 
                 # Learn new words from user message (vocabulary expansion)
-                # NO FALLBACKS - organisms must generate their own responses
-                if self.vocabulary and words:
-                    for word in words:
-                        if word not in self.vocabulary.word_to_id:
-                            self.vocabulary.add_word(word)
-                            self._log_debug("STEP_4", f"Learned new word: {word}", {
-                                "organism_id": org_id,
-                                "word": word,
-                                "vocab_size": self.vocabulary.vocab_size
-                            })
+                # GROUNDED MODE: Skip direct vocabulary expansion - organisms must earn words through mastery
+                grounded_enabled = self.config.get('language', {}).get('grounded', {}).get('enabled', False)
+                if not grounded_enabled:
+                    # Non-grounded mode: allow direct vocabulary expansion from user messages
+                    if self.vocabulary and words:
+                        for word in words:
+                            if word not in self.vocabulary.word_to_id:
+                                self.vocabulary.add_word(word)
+                                self._log_debug("STEP_4", f"Learned new word: {word}", {
+                                    "organism_id": org_id,
+                                    "word": word,
+                                    "vocab_size": self.vocabulary.vocab_size
+                                })
+                else:
+                    # Grounded mode: organisms must learn words through mastery, not chat exposure
+                    self._log_debug("STEP_4", "Grounded mode: vocabulary expansion disabled", {
+                        "organism_id": org_id,
+                        "words_in_message": len(words) if words else 0
+                    })
                 
                 # If response is empty, that's fine - organism couldn't generate yet
                 # NO FALLBACKS - we want real organism responses, not automated fake ones
