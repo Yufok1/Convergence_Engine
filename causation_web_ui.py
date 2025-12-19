@@ -7756,11 +7756,88 @@ def list_alliances():
                         'betrayers': betrayers[:10],  # Limit for display
                         
                         # Classification
-                        'tier': tier
+                        'tier': tier,
+                        
+                        # Behavioral Identity (Dune Paradigm)
+                        'behavioral_signature': [],  # Will be filled below
+                        'dominant_behavior': 'unknown',
+                        'max_divergence': 0.0,
+                        'most_divergent_from': None
                     })
                 except Exception as e:
                     logger.warning(f"Error processing alliance {alliance_id}: {e}")
                     continue
+        
+        # Second pass: calculate behavioral signatures and divergences
+        # This requires knowing all alliances first
+        try:
+            # Get behavioral fingerprint function from alliance_system
+            def get_organism_fingerprint(org_id: str):
+                """Get behavioral fingerprint for an organism."""
+                if str(org_id) in live_organisms:
+                    org = live_organisms[str(org_id)]
+                    if hasattr(org, 'behavioral_fingerprint'):
+                        fp = org.behavioral_fingerprint
+                        if callable(fp):
+                            fp = fp()
+                        if isinstance(fp, (list, tuple)) and len(fp) >= 6:
+                            return list(fp)[:6]
+                    # Fallback: calculate from action history
+                    if hasattr(org, 'action_history') and org.action_history:
+                        from collections import Counter
+                        counts = Counter(org.action_history)
+                        total = len(org.action_history)
+                        return [
+                            counts.get(0, 0) / total,  # move
+                            counts.get(1, 0) / total,  # cooperate
+                            counts.get(2, 0) / total,  # compete
+                            counts.get(3, 0) / total,  # rest
+                            counts.get(4, 0) / total,  # reproduce
+                            counts.get(5, 0) / total   # isolate
+                        ]
+                return [0.0] * 6
+            
+            # Calculate signatures for each alliance
+            alliance_signatures = {}
+            for alliance_data in alliances_data:
+                alliance_id = alliance_data['alliance_id']
+                if alliance_id in alliance_system.alliances:
+                    alliance = alliance_system.alliances[alliance_id]
+                    signature = alliance.get_behavioral_signature(get_organism_fingerprint)
+                    alliance_signatures[alliance_id] = signature
+                    alliance_data['behavioral_signature'] = [round(v, 4) for v in signature]
+                    alliance_data['dominant_behavior'] = alliance.get_dominant_behavior(get_organism_fingerprint)
+            
+            # Calculate divergences between alliances
+            import math
+            def cosine_distance(a, b):
+                if not a or not b:
+                    return 0.0
+                dot = sum(x*y for x, y in zip(a, b))
+                mag_a = math.sqrt(sum(x*x for x in a))
+                mag_b = math.sqrt(sum(x*x for x in b))
+                if mag_a == 0 or mag_b == 0:
+                    return 0.0
+                return 1.0 - (dot / (mag_a * mag_b))
+            
+            for alliance_data in alliances_data:
+                alliance_id = alliance_data['alliance_id']
+                sig_a = alliance_signatures.get(alliance_id, [])
+                max_div = 0.0
+                most_divergent = None
+                
+                for other_id, sig_b in alliance_signatures.items():
+                    if other_id != alliance_id:
+                        div = cosine_distance(sig_a, sig_b)
+                        if div > max_div:
+                            max_div = div
+                            most_divergent = other_id
+                
+                alliance_data['max_divergence'] = round(max_div, 4)
+                alliance_data['most_divergent_from'] = most_divergent[:8] if most_divergent else None
+                
+        except Exception as e:
+            logger.warning(f"Error calculating behavioral signatures: {e}")
         
         # Sort by power score
         alliances_data.sort(key=lambda x: x['power_score'], reverse=True)

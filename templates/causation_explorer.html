@@ -15806,6 +15806,20 @@
                     return n.toString();
                 };
                 
+                // Mastery Level System (Dune Paradigm)
+                const masteryLevel = org.mastery_level || 0;
+                const masteryVocabLimit = org.mastery_vocab_limit || 6;
+                const masteryLevelNames = ['Novice', 'Adept', 'Scholar', 'Master', 'Grandmaster'];
+                const masteryLevelIcons = ['🌱', '🌿', '🌳', '🎓', '👑'];
+                const masteryLevelColors = ['#9ca3af', '#4ade80', '#22c55e', '#a855f7', '#ffd700'];
+                const masteryThresholds = [6, 26, 76, 276, Infinity]; // Words needed for next level
+                const currentWords = org.words_learned || 0;
+                const nextThreshold = masteryThresholds[masteryLevel] || Infinity;
+                const prevThreshold = masteryLevel > 0 ? masteryThresholds[masteryLevel - 1] : 0;
+                const masteryProgress = masteryLevel < 4 
+                    ? Math.min(100, ((currentWords - prevThreshold) / (nextThreshold - prevThreshold)) * 100)
+                    : 100;
+                
                 // Build dossier HTML
                 overlay.innerHTML = `
                     <div class="dossier-container">
@@ -15846,6 +15860,41 @@
                                         <div class="identity-alignment">
                                             <span class="alignment-icon">${org.alignment_icon || '◇'}</span>
                                             <span class="alignment-text">${org.alignment || 'Unknown'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- ═══ MASTERY LEVEL ═══ -->
+                            <div class="dossier-section">
+                                <div class="dossier-section-header">
+                                    <span class="section-icon">${masteryLevelIcons[masteryLevel]}</span>
+                                    <h3>Language Mastery</h3>
+                                </div>
+                                <div class="dossier-section-body">
+                                    <div style="text-align: center; margin-bottom: 16px;">
+                                        <div style="font-size: 3em; margin-bottom: 8px;">${masteryLevelIcons[masteryLevel]}</div>
+                                        <div style="font-size: 1.4em; color: ${masteryLevelColors[masteryLevel]}; font-weight: 600; margin-bottom: 4px;">${masteryLevelNames[masteryLevel]}</div>
+                                        <div style="font-size: 0.9em; color: var(--text-muted);">Level ${masteryLevel}</div>
+                                    </div>
+                                    <div style="background: var(--bg-deep); border-radius: var(--radius-sm); padding: 12px;">
+                                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.85em;">
+                                            <span style="color: var(--text-muted);">Progress to ${masteryLevel < 4 ? masteryLevelNames[masteryLevel + 1] : 'Max'}</span>
+                                            <span style="color: ${masteryLevelColors[masteryLevel]};">${currentWords}/${masteryLevel < 4 ? nextThreshold : '∞'}</span>
+                                        </div>
+                                        <div style="height: 10px; background: var(--bg-surface); border-radius: 5px; overflow: hidden;">
+                                            <div style="height: 100%; width: ${masteryProgress}%; background: linear-gradient(90deg, ${masteryLevelColors[masteryLevel]}, ${masteryLevel < 4 ? masteryLevelColors[masteryLevel + 1] : '#ffd700'}); transition: width 0.3s ease;"></div>
+                                        </div>
+                                        <div style="text-align: center; margin-top: 8px; font-size: 0.8em; color: var(--text-muted);">
+                                            ${masteryLevel < 4 ? `${nextThreshold - currentWords} words to next level` : '✨ Maximum mastery achieved!'}
+                                        </div>
+                                    </div>
+                                    <div style="margin-top: 12px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 0.8em;">
+                                        <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
+                                            <span>Vocab Limit:</span><span style="color: var(--accent-cyan);">${masteryVocabLimit === Infinity || masteryVocabLimit > 9999 ? '∞' : masteryVocabLimit}</span>
+                                        </div>
+                                        <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
+                                            <span>Utilization:</span><span style="color: var(--accent-cyan);">${org.vocab_utilization || 0}%</span>
                                         </div>
                                     </div>
                                 </div>
@@ -17132,6 +17181,62 @@
                                 </div>
                             </div>
                             
+                            <!-- ═══ BEHAVIORAL IDENTITY (Dune Paradigm) ═══ -->
+                            <div class="dossier-section two-thirds">
+                                <div class="dossier-section-header">
+                                    <span class="section-icon">🧬</span>
+                                    <h3>Behavioral Identity</h3>
+                                </div>
+                                <div class="dossier-section-body">
+                                    ${(() => {
+                                        const sig = alliance.behavioral_signature || [0,0,0,0,0,0];
+                                        const maxSig = Math.max(...sig, 0.01);
+                                        const behaviorNames = ['Explore', 'Cooperate', 'Compete', 'Conserve', 'Nurture', 'Isolate'];
+                                        const behaviorColors = ['#4ecdc4', '#45b7d1', '#f38181', '#aa96da', '#fcbad3', '#95e1d3'];
+                                        const dominantIcons = {
+                                            'explorers': '🧭', 'diplomats': '🤝', 'warriors': '⚔️',
+                                            'conservers': '🛡️', 'nurturers': '🌱', 'hermits': '🏔️', 'unknown': '❓'
+                                        };
+                                        return `
+                                        <div style="text-align: center; margin-bottom: 16px;">
+                                            <div style="font-size: 2.5em; margin-bottom: 4px;">${dominantIcons[alliance.dominant_behavior] || '❓'}</div>
+                                            <div style="font-size: 1.2em; color: var(--accent-gold); text-transform: capitalize;">${alliance.dominant_behavior || 'unknown'}</div>
+                                            <div style="font-size: 0.8em; color: var(--text-muted);">Dominant Behavioral Pattern</div>
+                                        </div>
+                                        <div style="display: flex; justify-content: space-around; align-items: flex-end; height: 100px; padding: 0 8px; margin-bottom: 12px;">
+                                            ${sig.map((v, i) => `
+                                                <div style="display: flex; flex-direction: column; align-items: center; flex: 1;">
+                                                    <div style="width: 100%; max-width: 32px; height: ${Math.round((v / maxSig) * 80)}px; background: ${behaviorColors[i]}; border-radius: 4px 4px 0 0; min-height: 4px;"></div>
+                                                    <div style="font-size: 0.7em; color: var(--text-muted); margin-top: 4px; text-align: center;">${behaviorNames[i]}</div>
+                                                    <div style="font-size: 0.65em; color: ${behaviorColors[i]};">${(v * 100).toFixed(0)}%</div>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                        ${alliance.max_divergence > 0 ? `
+                                        <div style="margin-top: 16px; padding: 12px; background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.3); border-radius: var(--radius-sm);">
+                                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                                <div>
+                                                    <div style="font-size: 0.75em; color: var(--text-muted); margin-bottom: 4px;">🔮 BEHAVIORAL DIVERGENCE</div>
+                                                    <div style="font-size: 0.9em; color: var(--text-secondary);">
+                                                        Most different from: <span style="color: var(--accent-cyan); font-family: var(--font-mono);">${alliance.most_divergent_from || '???'}</span>
+                                                    </div>
+                                                </div>
+                                                <div style="text-align: right;">
+                                                    <div style="font-size: 1.5em; color: ${alliance.max_divergence > 0.5 ? '#f38181' : alliance.max_divergence > 0.25 ? '#ffd700' : '#4ade80'};">${(alliance.max_divergence * 100).toFixed(1)}%</div>
+                                                    <div style="font-size: 0.7em; color: var(--text-muted);">divergence</div>
+                                                </div>
+                                            </div>
+                                            <div style="margin-top: 8px; font-size: 0.75em; color: var(--text-muted); font-style: italic;">
+                                                ${alliance.max_divergence > 0.5 ? '"Your existence questions ours. Perhaps we should resolve this through contest."' : 
+                                                  alliance.max_divergence > 0.25 ? '"Our ways differ. We watch with curiosity."' : 
+                                                  '"We are not so different, they and we."'}
+                                            </div>
+                                        </div>
+                                        ` : ''}`;
+                                    })()}
+                                </div>
+                            </div>
+                            
                             <!-- ═══ HISTORY & BETRAYALS ═══ -->
                             <div class="dossier-section">
                                 <div class="dossier-section-header">
@@ -17503,7 +17608,12 @@
                         </div>
                         
                         <div class="dossier-content" style="display: flex; flex-direction: column; gap: 12px; max-height: 70vh; overflow-y: auto;">
-                            ${alliances.map(a => `
+                            ${alliances.map(a => {
+                                const dominantIcons = {
+                                    'explorers': '🧭', 'diplomats': '🤝', 'warriors': '⚔️',
+                                    'conservers': '🛡️', 'nurturers': '🌱', 'hermits': '🏔️', 'unknown': '❓'
+                                };
+                                return `
                                 <div class="alliance-card" onclick="closeAlliancesBrowser(); openAllianceDossier('${a.alliance_id}')" style="display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 16px; padding: 16px; background: var(--bg-elevated); border: 1px solid ${tierColors[a.tier] || '#444'}; border-radius: var(--radius-md); cursor: pointer; transition: all 0.2s ease;">
                                     <div style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; background: var(--bg-deep); border-radius: 50%; border: 2px solid ${tierColors[a.tier] || '#444'};">
                                         <span style="font-size: 2em;">${tierIcons[a.tier] || '🏴'}</span>
@@ -17514,6 +17624,7 @@
                                             <span>👥 ${a.member_count || 0} members</span>
                                             <span>⚡ Power: ${a.power_score || 0}</span>
                                             <span>🏆 ${a.wars_won || 0}W / ${a.wars_lost || 0}L</span>
+                                            <span title="Dominant Behavior">${dominantIcons[a.dominant_behavior] || '❓'} ${a.dominant_behavior || 'unknown'}</span>
                                             ${a.at_war_with?.length > 0 ? '<span style="color: var(--danger);">⚔️ AT WAR</span>' : ''}
                                         </div>
                                     </div>
@@ -17523,7 +17634,7 @@
                                     </div>
                                     <div style="font-size: 1.5em; color: var(--text-muted);">→</div>
                                 </div>
-                            `).join('')}
+                            `}).join('')}
                         </div>
                         
                         <div class="dossier-footer">
