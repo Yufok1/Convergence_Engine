@@ -17,6 +17,37 @@
     "_shadow_note": "Lower boom target - 16GB RAM constrains max population"
   },
 
+  "language": {
+    "_help": "Grounded Language Mode: Organisms learn language through action-outcome associations before semantic understanding",
+    "_genesis_note": "Start at level 0 - progenitors must earn vocabulary through behavioral mastery",
+    "mode": "grounded",
+    "_mode_options": "grounded | semantic | hybrid",
+    "grounded": {
+      "enabled": true,
+      "mastery_gating": true,
+      "vocabulary_masking": "soft",
+      "_vocabulary_masking_options": "soft | hard | none",
+      "initial_mastery_level": 0,
+      "_initial_mastery_level_help": "0=6 words, 1=26 words, 2=76 words, 3=276 words, 4=unlimited",
+      "mastery_vocab_sizes": [6, 26, 76, 276, 20000],
+      "mastery_advancement_ratio": 0.7,
+      "mastery_depth_ratio": 0.5,
+      "mastery_min_experiences": [50, 200, 500, 1000],
+      "always_allow_tokens": [".", ",", "!", "?", "and", "the", "a", "is", "to", "of", "in"]
+    },
+    "semantic": {
+      "enabled": true,
+      "knowledge_web_bootstrap": true,
+      "semantic_reward_at_level_4": true,
+      "semantic_reward_weight": 0.25
+    },
+    "action_hints": {
+      "enabled": true,
+      "bias_strength": 0.3,
+      "expectation_window_seconds": 10.0
+    }
+  },
+
   "agency": {
     "confidence_threshold": 0.0001,
     "decision_precision": 1e-05,
