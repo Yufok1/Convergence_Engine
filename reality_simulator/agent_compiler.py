@@ -193,55 +193,79 @@ class AgentCompiler:
     
     def _build_full_knowledge_web_export(self, runtime_knowledge_web: Any = None) -> Dict[str, Any]:
         """
-        🌐 Build a complete knowledge web export combining base pool + runtime discoveries.
+        🌐 Build knowledge web export with ONLY learned concepts (not base pool dump).
+        
+        FIXED: Organisms should LEARN concepts, not have 62k+ WordNet concepts dumped on them.
+        We only export concepts that were actually discovered/learned at runtime.
         
         Args:
-            runtime_knowledge_web: The runtime knowledge web object (may have discovered concepts)
+            runtime_knowledge_web: The runtime knowledge web object (contains learned concepts)
             
         Returns:
-            Dict with full knowledge web data for export
+            Dict with ONLY learned/discovered concepts for export
         """
-        base_pool = self._load_base_vocabulary_pool()
+        # FIXED: Don't dump the entire base_pool into exports!
+        # Organisms should learn concepts, not have them pre-loaded
         
-        # Start with base pool concepts
+        # Start with empty knowledge web - organisms earn their knowledge
         full_kw = {
             'version': '2.0',
-            'source': 'base_pool + runtime',
+            'source': 'runtime_learned',
             'concepts': {},
-            'relations': base_pool.get('relations', []),
+            'relations': [],
             'concept_count': 0,
-            'relation_count': len(base_pool.get('relations', [])),
+            'relation_count': 0,
         }
         
-        # Add base concepts (full structure preserved)
-        for word, concept_data in base_pool.get('concepts', {}).items():
-            full_kw['concepts'][word] = concept_data
+        # REMOVED: The old code dumped 62k+ base_pool concepts here
+        # for word, concept_data in base_pool.get('concepts', {}).items():
+        #     full_kw['concepts'][word] = concept_data
         
-        # Merge runtime discoveries (override with learned confidence/discovery_count)
+        # ONLY export runtime discoveries - what the organism actually learned
         if runtime_knowledge_web is not None:
             try:
-                runtime_concepts = getattr(runtime_knowledge_web, 'concepts', {})
-                runtime_relations = getattr(runtime_knowledge_web, 'relations', [])
-                
-                for concept in runtime_concepts.values():
-                    word = getattr(concept, 'word', str(concept))
-                    # Merge/update with runtime data
-                    existing = full_kw['concepts'].get(word, {})
-                    full_kw['concepts'][word] = {
-                        **existing,  # Base pool data
-                        'word': word,
-                        'category': getattr(concept, 'category', existing.get('semantic_frame', 'unknown')),
-                        'confidence': getattr(concept, 'confidence', existing.get('organism_relevance', 0.5)),
-                        'discovery_count': getattr(concept, 'discovery_count', 0),
-                        'learned': True,  # Flag that this was learned at runtime
-                    }
-                
-                # Add runtime relations
-                for rel in runtime_relations:
-                    if hasattr(rel, 'to_dict'):
-                        full_kw['relations'].append(rel.to_dict())
-                    elif isinstance(rel, dict):
-                        full_kw['relations'].append(rel)
+                # Handle dict-style knowledge web (from CocoonAgent)
+                if isinstance(runtime_knowledge_web, dict):
+                    runtime_concepts = runtime_knowledge_web.get('concepts', {})
+                    runtime_relations = runtime_knowledge_web.get('relations', [])
+                    
+                    for word, concept_data in runtime_concepts.items():
+                        if isinstance(concept_data, dict):
+                            full_kw['concepts'][word] = {
+                                'word': word,
+                                **concept_data,
+                                'learned': True,
+                            }
+                        else:
+                            full_kw['concepts'][word] = {
+                                'word': word,
+                                'category': 'learned',
+                                'confidence': 0.5,
+                                'learned': True,
+                            }
+                    
+                    full_kw['relations'] = runtime_relations if isinstance(runtime_relations, list) else []
+                else:
+                    # Handle object-style knowledge web
+                    runtime_concepts = getattr(runtime_knowledge_web, 'concepts', {})
+                    runtime_relations = getattr(runtime_knowledge_web, 'relations', [])
+                    
+                    for concept in runtime_concepts.values():
+                        word = getattr(concept, 'word', str(concept))
+                        full_kw['concepts'][word] = {
+                            'word': word,
+                            'category': getattr(concept, 'category', 'learned'),
+                            'confidence': getattr(concept, 'confidence', 0.5),
+                            'discovery_count': getattr(concept, 'discovery_count', 0),
+                            'learned': True,
+                        }
+                    
+                    # Add runtime relations
+                    for rel in runtime_relations:
+                        if hasattr(rel, 'to_dict'):
+                            full_kw['relations'].append(rel.to_dict())
+                        elif isinstance(rel, dict):
+                            full_kw['relations'].append(rel)
             except Exception as e:
                 logger.warning(f"[COMPILER] Error merging runtime knowledge: {e}")
         
@@ -249,6 +273,218 @@ class AgentCompiler:
         full_kw['relation_count'] = len(full_kw['relations'])
         
         return full_kw
+
+    def _extract_alliance_data_for_cocoon(self, capsules: List['OrganismCapsule'], 
+                                           alliance_system: Any,
+                                           organism_names: List[str]) -> Dict[str, Any]:
+        """
+        🤝 Extract FULL alliance social structure for cocoon export.
+        
+        "Connections formed are causeways for rationality" - the alliance graph
+        represents the emergent social brain. Without it, cocoons lose the
+        cooperative intelligence that organisms developed together.
+        
+        This exports:
+        - Alliance memberships (who is allied with whom)
+        - Trust scores (earned through cooperation/defection history)
+        - Reputation data (how organisms are perceived)
+        - Competition stats (wins/losses that establish credibility)
+        - Social graph (connections between organisms)
+        
+        Args:
+            capsules: List of organism capsules being exported
+            alliance_system: AllianceWarfareSystem or LiveAllianceSystem (or None)
+            organism_names: List of organism IDs
+            
+        Returns:
+            Alliance data structure for cocoon embedding
+        """
+        alliance_data = {
+            'version': '1.0',
+            'source': 'emergent_social_structure',
+            'alliances': {},              # alliance_id -> {members, trust, wars_won, ...}
+            'organism_to_alliance': {},   # organism_id -> alliance_id
+            'organism_trust': {},         # organism_id -> trust_score (0.0-1.0)
+            'organism_reputation': {},    # organism_id -> OrganismReputation data
+            'organism_stats': {},         # organism_id -> competition stats
+            'social_graph': {},           # organism_id -> [connected_organism_ids]
+        }
+        
+        org_ids_set = set(organism_names)
+        
+        # 1) Extract competition stats from capsules (these are EARNED achievements)
+        for capsule in capsules:
+            org_id = self._get_organism_id(capsule)
+            
+            # Get competition stats from organism
+            stats = {}
+            
+            # Tournament stats
+            tournament_wins = getattr(capsule, 'tournament_wins', None) or getattr(capsule, 'battles_won', 0)
+            tournament_losses = getattr(capsule, 'tournament_losses', None) or getattr(capsule, 'battles_lost', 0)
+            
+            if tournament_wins is not None:
+                stats['tournament_wins'] = int(tournament_wins)
+            if tournament_losses is not None:
+                stats['tournament_losses'] = int(tournament_losses)
+                
+            # Proton game stats
+            proton_wins = getattr(capsule, 'proton_wins', 0)
+            proton_losses = getattr(capsule, 'proton_losses', 0)
+            if proton_wins or proton_losses:
+                stats['proton_wins'] = int(proton_wins)
+                stats['proton_losses'] = int(proton_losses)
+            
+            # Skills unlocked (proof of capability)
+            skills = getattr(capsule, 'skills_mastered', None) or getattr(capsule, 'skills_unlocked', [])
+            if skills:
+                stats['skills_mastered'] = list(skills) if hasattr(skills, '__iter__') else []
+            
+            # Win streak (momentum)
+            win_streak = getattr(capsule, 'win_streak', 0)
+            if win_streak:
+                stats['win_streak'] = int(win_streak)
+            
+            # Illumination level (enlightenment)
+            illumination = getattr(capsule, 'illumination_level', None)
+            if illumination is not None:
+                stats['illumination_level'] = float(illumination)
+            
+            # Alliance reputation
+            alliance_rep = getattr(capsule, 'alliance_reputation', 0.5)
+            stats['alliance_reputation'] = float(alliance_rep)
+            
+            # Alliance ID from organism
+            alliance_id = getattr(capsule, 'alliance_id', None)
+            if alliance_id:
+                alliance_data['organism_to_alliance'][org_id] = str(alliance_id)
+            
+            if stats:
+                alliance_data['organism_stats'][org_id] = stats
+        
+        # 2) Extract alliance structure from alliance_system
+        if alliance_system is not None:
+            try:
+                # Handle AllianceWarfareSystem (has PlanetaryAlliance objects)
+                if hasattr(alliance_system, 'alliances'):
+                    alliances_dict = alliance_system.alliances
+                    for alliance_id, alliance in alliances_dict.items():
+                        # Only include alliances that contain our organisms
+                        members = []
+                        if hasattr(alliance, 'members'):
+                            if isinstance(alliance.members, dict):
+                                members = list(alliance.members.keys())
+                            else:
+                                members = list(alliance.members)
+                        
+                        # Filter to only organisms in this cocoon
+                        relevant_members = [m for m in members if str(m) in org_ids_set]
+                        if not relevant_members:
+                            continue
+                        
+                        # Extract alliance data
+                        alliance_export = {
+                            'alliance_id': str(alliance_id),
+                            'name': getattr(alliance, 'name', f'Alliance_{alliance_id}'),
+                            'members': relevant_members,
+                            'founder_id': getattr(alliance, 'founder_id', None),
+                            'warchief_id': getattr(alliance, 'warchief_id', None),
+                            'wars_won': getattr(alliance, 'wars_won', 0),
+                            'wars_lost': getattr(alliance, 'wars_lost', 0),
+                            'formation_time': getattr(alliance, 'formation_time', 0),
+                        }
+                        
+                        # Controlled territories (proof of power)
+                        territories = getattr(alliance, 'controlled_territories', [])
+                        if territories:
+                            alliance_export['territories'] = [str(t.value) if hasattr(t, 'value') else str(t) for t in territories]
+                        
+                        # Betrayers (trust violations)
+                        betrayers = getattr(alliance, 'betrayers', set())
+                        if betrayers:
+                            alliance_export['betrayers'] = list(betrayers)
+                        
+                        alliance_data['alliances'][str(alliance_id)] = alliance_export
+                        
+                        # Update organism_to_alliance mapping
+                        for member_id in relevant_members:
+                            alliance_data['organism_to_alliance'][str(member_id)] = str(alliance_id)
+                
+                # 3) Extract reputation data
+                if hasattr(alliance_system, 'reputations'):
+                    for org_id, rep in alliance_system.reputations.items():
+                        if str(org_id) in org_ids_set:
+                            if hasattr(rep, 'get_trust_score'):
+                                # OrganismReputation object
+                                alliance_data['organism_trust'][str(org_id)] = rep.get_trust_score()
+                                alliance_data['organism_reputation'][str(org_id)] = {
+                                    'alliances_honored': getattr(rep, 'alliances_honored', 0),
+                                    'alliances_betrayed': getattr(rep, 'alliances_betrayed', 0),
+                                    'wars_fought': getattr(rep, 'wars_fought', 0),
+                                    'wars_won': getattr(rep, 'wars_won', 0),
+                                    'trust_score': rep.get_trust_score(),
+                                    'threat_level': rep.get_threat_level() if hasattr(rep, 'get_threat_level') else 0.3,
+                                }
+                            elif isinstance(rep, (int, float)):
+                                # Simple reputation score
+                                alliance_data['organism_trust'][str(org_id)] = float(rep)
+                
+                # 4) Build social graph (who trusts whom)
+                if hasattr(alliance_system, 'organism_to_alliance'):
+                    # Same-alliance members are connected
+                    for org_id, ally_id in alliance_system.organism_to_alliance.items():
+                        if str(org_id) not in org_ids_set:
+                            continue
+                        
+                        alliance = alliance_system.alliances.get(ally_id)
+                        if alliance:
+                            members = []
+                            if hasattr(alliance, 'members'):
+                                if isinstance(alliance.members, dict):
+                                    members = list(alliance.members.keys())
+                                else:
+                                    members = list(alliance.members)
+                            
+                            # Connect to other members in same alliance
+                            connected = [str(m) for m in members if str(m) != str(org_id) and str(m) in org_ids_set]
+                            if connected:
+                                alliance_data['social_graph'][str(org_id)] = connected
+                                
+            except Exception as e:
+                logger.warning(f"[COMPILER] Error extracting alliance data: {e}")
+        
+        # 5) Handle LiveAllianceSystem format (from portable_agent/bridge.py)
+        if alliance_system is not None and not alliance_data['alliances']:
+            try:
+                # LiveAllianceSystem uses different attribute names
+                if hasattr(alliance_system, 'organism_to_alliance') and hasattr(alliance_system, 'reputations'):
+                    # Extract mappings
+                    for org_id, ally_id in getattr(alliance_system, 'organism_to_alliance', {}).items():
+                        if str(org_id) in org_ids_set:
+                            alliance_data['organism_to_alliance'][str(org_id)] = str(ally_id)
+                    
+                    # Extract reputations
+                    for org_id, rep in getattr(alliance_system, 'reputations', {}).items():
+                        if str(org_id) in org_ids_set:
+                            alliance_data['organism_trust'][str(org_id)] = float(rep)
+                    
+                    # Extract alliances
+                    for ally_id, ally_data in getattr(alliance_system, 'alliances', {}).items():
+                        members = ally_data.get('members', set())
+                        if isinstance(members, set):
+                            members = list(members)
+                        relevant = [m for m in members if str(m) in org_ids_set]
+                        if relevant:
+                            alliance_data['alliances'][str(ally_id)] = {
+                                'alliance_id': str(ally_id),
+                                'members': relevant,
+                                'tier': ally_data.get('tier', 1),
+                                'reputation': ally_data.get('reputation', 0.5),
+                            }
+            except Exception as e:
+                logger.warning(f"[COMPILER] Error extracting LiveAllianceSystem data: {e}")
+        
+        return alliance_data
 
     class LanguageHeadWrapper(torch.nn.Module):
         """Wrapper that exports both action and language heads together."""
@@ -458,7 +694,7 @@ class AgentCompiler:
         dropout = 0.15
 
         # Infer num_key_compositions from concept_head if present
-        num_key_compositions = 20  # Default
+        num_key_compositions = 30  # Default (matches config.json)
         if use_concept_head and 'concept_head.composition_value.weight' in state_dict:
             # composition_value.weight shape is (num_key_compositions, hidden_dim)
             num_key_compositions = state_dict['concept_head.composition_value.weight'].size(0)
@@ -644,7 +880,7 @@ class AgentCompiler:
         if hasattr(entity, 'get_fitness'):
             try:
                 return float(entity.get_fitness())
-            except:
+            except Exception:
                 pass
         
         return None
@@ -741,6 +977,1062 @@ class AgentCompiler:
             }
         }
         return metadata
+
+    def _generate_formation_fingerprint(self, 
+                                         capsules: List['OrganismCapsule'],
+                                         causation_explorer: Any = None,
+                                         alliance_system: Any = None,
+                                         attractor_landscape: Any = None,
+                                         shared_state: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        🧬 Generate a "Formation Fingerprint" - a condensed history of the cocoon's formation.
+        
+        This captures the emergent story of how these organisms came to be:
+        - Key events from causation system
+        - Alliance structure at export time
+        - Attractor landscape state (fixed points, bifurcations)
+        - Population dynamics summary
+        - Behavioral emergence milestones
+        
+        This fingerprint is embedded in the README and metadata for provenance.
+        """
+        fingerprint = {
+            'version': '1.0',
+            'organisms_count': len(capsules),
+            'organism_ids': [getattr(c, 'organism_id', None) or getattr(c, 'species_id', 'unknown') for c in capsules],
+            'export_timestamp': datetime.datetime.now().isoformat(),
+        }
+        
+        # Organism stats
+        fitnesses = []
+        ages = []
+        for cap in capsules:
+            fitness = self._extract_fitness_value(cap)
+            if fitness is not None:
+                fitnesses.append(fitness)
+            age = getattr(cap, 'organism_age', None)
+            if age is not None:
+                ages.append(age)
+        
+        if fitnesses:
+            fingerprint['fitness_stats'] = {
+                'min': round(min(fitnesses), 4),
+                'max': round(max(fitnesses), 4),
+                'mean': round(sum(fitnesses) / len(fitnesses), 4),
+            }
+        if ages:
+            fingerprint['age_stats'] = {
+                'min': min(ages),
+                'max': max(ages),
+                'mean': round(sum(ages) / len(ages), 1),
+            }
+        
+        # Causation system summary
+        if causation_explorer is not None:
+            try:
+                events = getattr(causation_explorer, 'events', {})
+                event_types = {}
+                for event in events.values():
+                    et = getattr(event, 'event_type', 'unknown')
+                    event_types[et] = event_types.get(et, 0) + 1
+                
+                fingerprint['causation_summary'] = {
+                    'total_events': len(events),
+                    'event_types': dict(sorted(event_types.items(), key=lambda x: -x[1])[:10]),
+                }
+            except Exception:
+                pass
+        
+        # Alliance structure
+        if alliance_system is not None:
+            try:
+                org_ids = set(fingerprint['organism_ids'])
+                alliance_memberships = []
+                for alliance_id, alliance in getattr(alliance_system, 'alliances', {}).items():
+                    members = list(getattr(alliance, 'members', []))
+                    for m in members:
+                        if str(m) in org_ids or m in org_ids:
+                            alliance_memberships.append({
+                                'alliance_id': str(alliance_id),
+                                'tier': getattr(alliance, 'tier', 1),
+                                'size': len(members),
+                            })
+                            break
+                fingerprint['alliance_structure'] = {
+                    'memberships': alliance_memberships,
+                    'total_alliances': len(getattr(alliance_system, 'alliances', {})),
+                }
+            except Exception:
+                pass
+        
+        # Attractor landscape state
+        if attractor_landscape is not None:
+            try:
+                landscape_state = attractor_landscape.get_landscape_state() if hasattr(attractor_landscape, 'get_landscape_state') else {}
+                fingerprint['attractor_landscape'] = {
+                    'field_coherence': round(landscape_state.get('field_coherence', 0), 4),
+                    'field_entropy': round(landscape_state.get('field_entropy', 0), 4),
+                    'field_stability': round(landscape_state.get('field_stability', 0), 4),
+                    'at_fixed_point': landscape_state.get('at_fixed_point', False),
+                    'fixed_point_type': landscape_state.get('fixed_point_type'),
+                    'total_fixed_points': landscape_state.get('total_fixed_points', 0),
+                    'total_bifurcations': landscape_state.get('total_bifurcations', 0),
+                }
+            except Exception:
+                pass
+        
+        # Shared state snapshot
+        if shared_state is not None:
+            try:
+                fingerprint['simulation_snapshot'] = {
+                    'population_count': shared_state.get('population_count', 0),
+                    'cycle_count': shared_state.get('cycle_count', 0),
+                    'generation': shared_state.get('generation', 0),
+                    'vp_current': round(shared_state.get('vp_current', 0), 4) if shared_state.get('vp_current') else None,
+                    'health_score': round(shared_state.get('health_score', 0), 4) if shared_state.get('health_score') else None,
+                }
+            except Exception:
+                pass
+        
+        return fingerprint
+
+    def _generate_ensemble_topology_html(self, capsules: List['OrganismCapsule'], 
+                                          brain_configs: List[Dict]) -> str:
+        """
+        🔬 Neural Lab - Interactive Ensemble Topology Explorer.
+        
+        A comprehensive science lab for exploring neural architectures:
+        
+        VIEW MODES:
+        ├── Overlay: All organisms superimposed with adjustable opacity
+        ├── Radial: Circular arrangement showing ensemble unity  
+        ├── Stacked: Horizontal strips for direct visual comparison
+        ├── Grid: Side-by-side matrix for detailed analysis
+        └── Weights: Heatmap visualization of weight matrices
+        
+        INTERACTIVE FEATURES:
+        ├── Per-organism toggle filters with shift-click isolation
+        ├── Opacity slider for overlay blending
+        ├── Animation speed control
+        ├── Hover tooltips with neuron/organism details
+        └── Screenshot export to PNG
+        
+        KEYBOARD SHORTCUTS:
+        ├── 1-9: Toggle organism visibility
+        ├── Space: Toggle animation
+        ├── A: Select all organisms
+        ├── C: Clear selection
+        └── R: Switch to radial view
+        
+        ANALYSIS PANELS:
+        ├── Architecture comparison charts
+        ├── Fitness distribution visualization
+        └── Real-time ensemble metrics
+        
+        Returns:
+            Complete standalone HTML string for the Neural Lab
+        """
+        import json
+        
+        # Collect comprehensive organism data
+        organisms_data = []
+        colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7', 
+                  '#dfe6e9', '#fd79a8', '#a29bfe', '#00b894', '#e17055',
+                  '#74b9ff', '#ff7675', '#55efc4', '#fdcb6e', '#81ecec']
+        
+        total_params = 0
+        total_neurons = 0
+        
+        for i, (capsule, config) in enumerate(zip(capsules, brain_configs)):
+            brain = self._get_brain_from_entity(capsule)
+            org_id = self._get_organism_id(capsule)
+            
+            # Get architecture details
+            input_dim = getattr(brain, 'input_dim', config.get('input_dim', 28))
+            hidden_dim = getattr(brain, 'hidden_dim', config.get('hidden_dim', 64))
+            output_dim = getattr(brain, 'output_dim', config.get('output_dim', 6))
+            use_language = getattr(brain, 'use_language_head', False)
+            vocab_size = getattr(brain, 'vocab_size', 0) if use_language else 0
+            fitness = config.get('fitness', 0.5)
+            
+            # Calculate parameter count estimate
+            params = (input_dim * hidden_dim) + (hidden_dim * output_dim) + hidden_dim + output_dim
+            if use_language:
+                params += hidden_dim * vocab_size
+            
+            neurons = input_dim + hidden_dim + output_dim + (vocab_size if use_language else 0)
+            total_params += params
+            total_neurons += neurons
+            
+            # 🔬 EXTRACT ACTUAL WEIGHT DATA for visualization
+            weight_data = {'ih': [], 'ho': [], 'stats': {}}
+            try:
+                import torch
+                ih_weights = None
+                ho_weights = None
+                
+                for name, param in brain.named_parameters():
+                    if param.dim() >= 2:
+                        if ih_weights is None and param.shape[0] >= hidden_dim * 0.5:
+                            ih_weights = param.detach().cpu()
+                        elif ih_weights is not None and ho_weights is None:
+                            ho_weights = param.detach().cpu()
+                
+                if ih_weights is not None:
+                    ih_sample = ih_weights[:min(20, ih_weights.shape[0]), :min(20, ih_weights.shape[1] if ih_weights.dim() > 1 else 1)]
+                    ih_abs = torch.abs(ih_sample).tolist()
+                    weight_data['ih'] = [[round(w, 4) for w in row] if isinstance(row, list) else [round(row, 4)] for row in ih_abs]
+                    weight_data['stats']['ih_mean'] = round(float(torch.abs(ih_weights).mean()), 4)
+                    weight_data['stats']['ih_max'] = round(float(torch.abs(ih_weights).max()), 4)
+                    weight_data['stats']['ih_std'] = round(float(ih_weights.std()), 4)
+                
+                if ho_weights is not None:
+                    ho_sample = ho_weights[:min(20, ho_weights.shape[0]), :min(20, ho_weights.shape[1] if ho_weights.dim() > 1 else 1)]
+                    ho_abs = torch.abs(ho_sample).tolist()
+                    weight_data['ho'] = [[round(w, 4) for w in row] if isinstance(row, list) else [round(row, 4)] for row in ho_abs]
+                    weight_data['stats']['ho_mean'] = round(float(torch.abs(ho_weights).mean()), 4)
+                    weight_data['stats']['ho_max'] = round(float(torch.abs(ho_weights).max()), 4)
+                    weight_data['stats']['ho_std'] = round(float(ho_weights.std()), 4)
+            except Exception as e:
+                weight_data['error'] = str(e)[:50]
+            
+            organisms_data.append({
+                'id': org_id[:20] if len(org_id) > 20 else org_id,
+                'index': i,
+                'color': colors[i % len(colors)],
+                'input_dim': input_dim,
+                'hidden_dim': hidden_dim,
+                'output_dim': output_dim,
+                'use_language': use_language,
+                'vocab_size': vocab_size,
+                'fitness': round(fitness, 4),
+                'params': params,
+                'neurons': neurons,
+                'weights': weight_data,
+            })
+        
+        num_organisms = len(organisms_data)
+        avg_fitness = sum(o['fitness'] for o in organisms_data) / max(num_organisms, 1)
+        max_hidden = max(o['hidden_dim'] for o in organisms_data) if organisms_data else 0
+        min_hidden = min(o['hidden_dim'] for o in organisms_data) if organisms_data else 0
+        
+        # Generate the Neural Lab HTML
+        html = f'''<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔬 Neural Lab - Ensemble Topology Explorer</title>
+    <style>
+        :root {{
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-tertiary: #1a1a25;
+            --accent-cyan: #00ffff;
+            --accent-magenta: #ff00ff;
+            --accent-yellow: #ffff00;
+            --accent-green: #00ff88;
+            --text-primary: #e0e0e0;
+            --text-secondary: #888;
+            --border-color: rgba(255,255,255,0.1);
+        }}
+        
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        
+        body {{
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }}
+        
+        /* === HEADER === */
+        .header {{
+            background: linear-gradient(180deg, var(--bg-secondary) 0%, transparent 100%);
+            padding: 20px 30px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }}
+        
+        .header h1 {{
+            font-size: 1.8em;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-magenta));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }}
+        
+        .header .subtitle {{ color: var(--text-secondary); font-size: 0.9em; margin-top: 5px; }}
+        
+        .header-stats {{ display: flex; gap: 25px; }}
+        .header-stat {{ text-align: center; }}
+        .header-stat .value {{ font-size: 1.5em; font-weight: bold; color: var(--accent-cyan); }}
+        .header-stat .label {{ font-size: 0.75em; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; }}
+        
+        /* === MAIN LAYOUT === */
+        .main-container {{ display: grid; grid-template-columns: 280px 1fr 280px; min-height: calc(100vh - 100px); }}
+        
+        /* === PANELS === */
+        .control-panel, .analysis-panel {{
+            background: var(--bg-secondary);
+            padding: 20px;
+            overflow-y: auto;
+        }}
+        .control-panel {{ border-right: 1px solid var(--border-color); }}
+        .analysis-panel {{ border-left: 1px solid var(--border-color); }}
+        
+        .panel-section {{ margin-bottom: 25px; }}
+        .panel-section h3 {{
+            font-size: 0.8em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }}
+        
+        /* === ORGANISM LIST === */
+        .organism-list {{ display: flex; flex-direction: column; gap: 8px; }}
+        
+        .organism-item {{
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }}
+        .organism-item:hover {{ background: rgba(255,255,255,0.05); }}
+        .organism-item.active {{ border-color: var(--org-color); box-shadow: 0 0 15px color-mix(in srgb, var(--org-color) 30%, transparent); }}
+        
+        .organism-item .color-indicator {{ width: 14px; height: 14px; border-radius: 50%; background: var(--org-color); flex-shrink: 0; }}
+        .organism-item .org-info {{ flex: 1; min-width: 0; }}
+        .organism-item .org-name {{ font-size: 0.85em; font-family: 'Consolas', monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}
+        .organism-item .org-meta {{ font-size: 0.7em; color: var(--text-secondary); }}
+        .organism-item .fitness-bar {{ width: 40px; height: 4px; background: var(--bg-primary); border-radius: 2px; overflow: hidden; }}
+        .organism-item .fitness-fill {{ height: 100%; background: var(--org-color); transition: width 0.3s; }}
+        
+        /* === VIEW MODES === */
+        .view-modes {{ display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }}
+        
+        .view-btn {{
+            padding: 12px 8px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.8em;
+            text-align: center;
+        }}
+        .view-btn:hover {{ background: rgba(255,255,255,0.05); }}
+        .view-btn.active {{ background: linear-gradient(135deg, rgba(0,255,255,0.15), rgba(255,0,255,0.15)); border-color: var(--accent-cyan); }}
+        .view-btn .icon {{ font-size: 1.2em; display: block; margin-bottom: 4px; }}
+        
+        /* === SLIDERS === */
+        .slider-control {{ margin: 12px 0; }}
+        .slider-control label {{ display: flex; justify-content: space-between; font-size: 0.8em; color: var(--text-secondary); margin-bottom: 6px; }}
+        .slider-control input[type="range"] {{ width: 100%; height: 4px; -webkit-appearance: none; background: var(--bg-tertiary); border-radius: 2px; outline: none; }}
+        .slider-control input[type="range"]::-webkit-slider-thumb {{ -webkit-appearance: none; width: 14px; height: 14px; background: var(--accent-cyan); border-radius: 50%; cursor: pointer; }}
+        
+        /* === ACTION BUTTONS === */
+        .action-buttons {{ display: flex; flex-direction: column; gap: 8px; }}
+        .action-btn {{
+            padding: 10px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }}
+        .action-btn:hover {{ background: rgba(255,255,255,0.05); border-color: var(--accent-cyan); }}
+        .action-btn.animate-active {{ background: rgba(0,255,255,0.1); border-color: var(--accent-cyan); }}
+        
+        /* === VISUALIZATION === */
+        .visualization-area {{
+            position: relative;
+            background: radial-gradient(ellipse at center, var(--bg-tertiary) 0%, var(--bg-primary) 70%);
+            overflow: hidden;
+        }}
+        #topology-svg {{ width: 100%; height: 100%; min-height: 600px; }}
+        
+        /* === TOOLTIP === */
+        .tooltip {{
+            position: absolute;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px 15px;
+            font-size: 0.85em;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }}
+        .tooltip.visible {{ opacity: 1; }}
+        .tooltip h4 {{ color: var(--accent-cyan); margin-bottom: 8px; font-size: 1em; }}
+        .tooltip .tip-row {{ display: flex; justify-content: space-between; gap: 15px; margin: 4px 0; }}
+        .tooltip .tip-label {{ color: var(--text-secondary); }}
+        .tooltip .tip-value {{ color: var(--text-primary); font-family: monospace; }}
+        
+        /* === CHARTS === */
+        .chart-container {{ background: var(--bg-tertiary); border-radius: 12px; padding: 15px; margin-bottom: 20px; }}
+        .chart-container h4 {{ font-size: 0.85em; color: var(--text-secondary); margin-bottom: 15px; }}
+        .bar-chart {{ display: flex; flex-direction: column; gap: 8px; }}
+        .bar-row {{ display: flex; align-items: center; gap: 10px; }}
+        .bar-label {{ width: 60px; font-size: 0.7em; color: var(--text-secondary); text-align: right; overflow: hidden; text-overflow: ellipsis; }}
+        .bar-track {{ flex: 1; height: 18px; background: var(--bg-primary); border-radius: 4px; overflow: hidden; }}
+        .bar-fill {{ height: 100%; border-radius: 4px; transition: width 0.5s ease-out; display: flex; align-items: center; justify-content: flex-end; padding-right: 6px; }}
+        .bar-value {{ font-size: 0.7em; color: rgba(0,0,0,0.7); font-weight: bold; }}
+        
+        /* === METRICS === */
+        .metrics-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }}
+        .metric-card {{ background: var(--bg-tertiary); border-radius: 10px; padding: 15px; text-align: center; }}
+        .metric-card .metric-value {{ font-size: 1.4em; font-weight: bold; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-magenta)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }}
+        .metric-card .metric-label {{ font-size: 0.7em; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 5px; }}
+        
+        /* === KEYBOARD HINTS === */
+        .keyboard-hints {{ background: var(--bg-tertiary); border-radius: 8px; padding: 12px; font-size: 0.75em; }}
+        .keyboard-hints h4 {{ color: var(--text-secondary); margin-bottom: 8px; font-size: 1em; }}
+        .key-hint {{ display: flex; gap: 8px; margin: 4px 0; color: var(--text-secondary); }}
+        .key {{ background: var(--bg-primary); padding: 2px 6px; border-radius: 4px; font-family: monospace; color: var(--accent-cyan); }}
+        
+        /* === ANIMATIONS === */
+        @keyframes pulse {{ 0%, 100% {{ opacity: 0.6; }} 50% {{ opacity: 1; }} }}
+
+        .node-pulse {{ animation: pulse 1.5s ease-in-out infinite; }}
+        
+        /* === FOOTER === */
+        .footer {{ text-align: center; padding: 15px; color: var(--text-secondary); font-size: 0.8em; border-top: 1px solid var(--border-color); }}
+        .footer a {{ color: var(--accent-cyan); text-decoration: none; }}
+        
+        /* === RESPONSIVE === */
+        @media (max-width: 1200px) {{ .main-container {{ grid-template-columns: 250px 1fr; }} .analysis-panel {{ display: none; }} }}
+        @media (max-width: 800px) {{ .main-container {{ grid-template-columns: 1fr; }} .control-panel {{ display: none; }} }}
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div>
+            <h1>🔬 Neural Lab</h1>
+            <p class="subtitle">Ensemble Topology Explorer • {num_organisms} organisms</p>
+        </div>
+        <div class="header-stats">
+            <div class="header-stat"><div class="value">{num_organisms}</div><div class="label">Organisms</div></div>
+            <div class="header-stat"><div class="value">{total_neurons:,}</div><div class="label">Neurons</div></div>
+            <div class="header-stat"><div class="value">{total_params:,}</div><div class="label">Parameters</div></div>
+            <div class="header-stat"><div class="value">{avg_fitness:.3f}</div><div class="label">Avg Fitness</div></div>
+        </div>
+    </header>
+    
+    <div class="main-container">
+        <!-- Left Panel - Controls -->
+        <aside class="control-panel">
+            <div class="panel-section">
+                <h3>🧬 Organisms</h3>
+                <div class="organism-list" id="organism-list"></div>
+            </div>
+            
+            <div class="panel-section">
+                <h3>👁️ View Mode</h3>
+                <div class="view-modes">
+                    <button class="view-btn active" data-view="overlay"><span class="icon">◉</span>Overlay</button>
+                    <button class="view-btn" data-view="radial"><span class="icon">◎</span>Radial</button>
+                    <button class="view-btn" data-view="stack"><span class="icon">≡</span>Stacked</button>
+                    <button class="view-btn" data-view="grid"><span class="icon">▦</span>Grid</button>
+                    <button class="view-btn" data-view="weights"><span class="icon">🔥</span>Weights</button>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <h3>⚙️ Settings</h3>
+                <div class="slider-control">
+                    <label><span>Opacity</span><span id="opacity-value">70%</span></label>
+                    <input type="range" id="opacity-slider" min="20" max="100" value="70">
+                </div>
+                <div class="slider-control">
+                    <label><span>Animation Speed</span><span id="speed-value">1x</span></label>
+                    <input type="range" id="speed-slider" min="1" max="10" value="5">
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <h3>🎬 Actions</h3>
+                <div class="action-buttons">
+                    <button class="action-btn" id="toggle-animate"><span>▶️</span> Toggle Animation</button>
+                    <button class="action-btn" id="select-all"><span>✓</span> Select All</button>
+                    <button class="action-btn" id="select-none"><span>✗</span> Clear Selection</button>
+                    <button class="action-btn" id="screenshot"><span>📷</span> Screenshot</button>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="keyboard-hints">
+                    <h4>⌨️ Shortcuts</h4>
+                    <div class="key-hint"><span class="key">1-9</span> Toggle organism</div>
+                    <div class="key-hint"><span class="key">Space</span> Animate</div>
+                    <div class="key-hint"><span class="key">A</span> Select all</div>
+                    <div class="key-hint"><span class="key">C</span> Clear</div>
+                    <div class="key-hint"><span class="key">R</span> Radial view</div>
+                </div>
+            </div>
+        </aside>
+        
+        <!-- Main Visualization -->
+        <main class="visualization-area">
+            <svg id="topology-svg"></svg>
+            <div class="tooltip" id="tooltip"></div>
+        </main>
+        
+        <!-- Right Panel - Analysis -->
+        <aside class="analysis-panel">
+            <div class="panel-section">
+                <h3>📊 Architecture</h3>
+                <div class="chart-container">
+                    <h4>Hidden Layer Size</h4>
+                    <div class="bar-chart" id="hidden-chart"></div>
+                </div>
+                <div class="chart-container">
+                    <h4>Fitness Distribution</h4>
+                    <div class="bar-chart" id="fitness-chart"></div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <h3>🔢 Metrics</h3>
+                <div class="metrics-grid">
+                    <div class="metric-card"><div class="metric-value">{max_hidden}</div><div class="metric-label">Max Hidden</div></div>
+                    <div class="metric-card"><div class="metric-value">{min_hidden}</div><div class="metric-label">Min Hidden</div></div>
+                    <div class="metric-card"><div class="metric-value">{round(total_params/1000, 1)}K</div><div class="metric-label">Tot Params</div></div>
+                    <div class="metric-card"><div class="metric-value" id="active-count">{num_organisms}</div><div class="metric-label">Active</div></div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <h3>📋 Legend</h3>
+                <div style="font-size: 0.85em;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin: 8px 0;"><svg width="16" height="16"><circle cx="8" cy="8" r="6" fill="#00ffff"/></svg><span>Input</span></div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin: 8px 0;"><svg width="16" height="16"><circle cx="8" cy="8" r="6" fill="#ff00ff"/></svg><span>Hidden</span></div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin: 8px 0;"><svg width="16" height="16"><circle cx="8" cy="8" r="6" fill="#ffff00"/></svg><span>Output</span></div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin: 8px 0;"><svg width="16" height="16"><circle cx="8" cy="8" r="6" fill="#00ff88"/></svg><span>Language</span></div>
+                </div>
+            </div>
+        </aside>
+    </div>
+    
+    <footer class="footer">
+        Generated by 🦋 <a href="https://github.com/Yufok1/Convergence_Engine">Butterfly Convergence Engine</a> • Neural Lab v1.0
+    </footer>
+    
+    <script>
+        // ═══════════════════════════════════════════════════════════════
+        // 🔬 NEURAL LAB - Interactive Ensemble Topology Explorer
+        // ═══════════════════════════════════════════════════════════════
+        
+        const organisms = {json.dumps(organisms_data)};
+        
+        // State
+        let activeOrganisms = new Set(organisms.map(o => o.index));
+        let viewMode = 'overlay';
+        let isAnimating = false;
+        let animationFrame = null;
+        let opacity = 0.7;
+        let animationSpeed = 1;
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {{
+            createOrganismList();
+            createCharts();
+            setupEventListeners();
+            render();
+        }});
+        
+        // ─────────────────────────────────────────────────────────────
+        // UI SETUP
+        // ─────────────────────────────────────────────────────────────
+        
+        function createOrganismList() {{
+            const container = document.getElementById('organism-list');
+            organisms.forEach(org => {{
+                const item = document.createElement('div');
+                item.className = 'organism-item active';
+                item.style.setProperty('--org-color', org.color);
+                item.dataset.index = org.index;
+                item.innerHTML = `
+                    <div class="color-indicator"></div>
+                    <div class="org-info">
+                        <div class="org-name">${{org.id}}</div>
+                        <div class="org-meta">${{org.hidden_dim}}h • ${{org.params.toLocaleString()}} params</div>
+                    </div>
+                    <div class="fitness-bar"><div class="fitness-fill" style="width: ${{org.fitness * 100}}%"></div></div>
+                `;
+                item.addEventListener('click', (e) => {{
+                    if (e.shiftKey) {{ activeOrganisms.clear(); activeOrganisms.add(org.index); updateOrganismUI(); }}
+                    else {{ toggleOrganism(org.index); }}
+                }});
+                container.appendChild(item);
+            }});
+        }}
+        
+        function createCharts() {{
+            const maxHidden = Math.max(...organisms.map(o => o.hidden_dim));
+            const hiddenChart = document.getElementById('hidden-chart');
+            const fitnessChart = document.getElementById('fitness-chart');
+            
+            organisms.forEach(org => {{
+                hiddenChart.innerHTML += `<div class="bar-row"><div class="bar-label">${{org.id.slice(0,8)}}</div><div class="bar-track"><div class="bar-fill" style="width: ${{(org.hidden_dim/maxHidden)*100}}%; background: ${{org.color}}"><span class="bar-value">${{org.hidden_dim}}</span></div></div></div>`;
+                fitnessChart.innerHTML += `<div class="bar-row"><div class="bar-label">${{org.id.slice(0,8)}}</div><div class="bar-track"><div class="bar-fill" style="width: ${{org.fitness*100}}%; background: ${{org.color}}"><span class="bar-value">${{org.fitness.toFixed(3)}}</span></div></div></div>`;
+            }});
+        }}
+        
+        function setupEventListeners() {{
+            // View mode buttons
+            document.querySelectorAll('.view-btn').forEach(btn => {{
+                btn.addEventListener('click', () => {{
+                    document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    viewMode = btn.dataset.view;
+                    render();
+                }});
+            }});
+            
+            // Sliders
+            document.getElementById('opacity-slider').addEventListener('input', (e) => {{
+                opacity = e.target.value / 100;
+                document.getElementById('opacity-value').textContent = e.target.value + '%';
+                render();
+            }});
+            document.getElementById('speed-slider').addEventListener('input', (e) => {{
+                animationSpeed = e.target.value / 5;
+                document.getElementById('speed-value').textContent = animationSpeed.toFixed(1) + 'x';
+            }});
+            
+            // Action buttons
+            document.getElementById('toggle-animate').addEventListener('click', toggleAnimation);
+            document.getElementById('select-all').addEventListener('click', selectAll);
+            document.getElementById('select-none').addEventListener('click', selectNone);
+            document.getElementById('screenshot').addEventListener('click', takeScreenshot);
+            
+            // Keyboard shortcuts
+            document.addEventListener('keydown', (e) => {{
+                if (e.key >= '1' && e.key <= '9') {{ const idx = parseInt(e.key) - 1; if (idx < organisms.length) toggleOrganism(idx); }}
+                else if (e.key === ' ') {{ e.preventDefault(); toggleAnimation(); }}
+                else if (e.key.toLowerCase() === 'a') {{ selectAll(); }}
+                else if (e.key.toLowerCase() === 'c') {{ selectNone(); }}
+                else if (e.key.toLowerCase() === 'r') {{ document.querySelector('[data-view="radial"]').click(); }}
+            }});
+            
+            window.addEventListener('resize', render);
+        }}
+        
+        // ─────────────────────────────────────────────────────────────
+        // ORGANISM CONTROLS
+        // ─────────────────────────────────────────────────────────────
+        
+        function toggleOrganism(index) {{
+            if (activeOrganisms.has(index)) activeOrganisms.delete(index);
+            else activeOrganisms.add(index);
+            updateOrganismUI();
+            render();
+        }}
+        
+        function updateOrganismUI() {{
+            document.querySelectorAll('.organism-item').forEach(item => {{
+                item.classList.toggle('active', activeOrganisms.has(parseInt(item.dataset.index)));
+            }});
+            document.getElementById('active-count').textContent = activeOrganisms.size;
+        }}
+        
+        function selectAll() {{ organisms.forEach(o => activeOrganisms.add(o.index)); updateOrganismUI(); render(); }}
+        function selectNone() {{ activeOrganisms.clear(); updateOrganismUI(); render(); }}
+        
+        function toggleAnimation() {{
+            isAnimating = !isAnimating;
+            document.getElementById('toggle-animate').classList.toggle('animate-active', isAnimating);
+            if (isAnimating) animate();
+            else if (animationFrame) cancelAnimationFrame(animationFrame);
+        }}
+        
+        function animate() {{
+            if (!isAnimating) return;
+            render(true);
+            animationFrame = requestAnimationFrame(animate);
+        }}
+        
+        function takeScreenshot() {{
+            const svg = document.getElementById('topology-svg');
+            const svgData = new XMLSerializer().serializeToString(svg);
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            canvas.width = svg.clientWidth * 2;
+            canvas.height = svg.clientHeight * 2;
+            ctx.scale(2, 2);
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            img.onload = () => {{
+                ctx.drawImage(img, 0, 0);
+                const link = document.createElement('a');
+                link.download = 'neural_topology.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            }};
+            img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+        }}
+        
+        // ─────────────────────────────────────────────────────────────
+        // RENDERING ENGINE
+        // ─────────────────────────────────────────────────────────────
+        
+        function render(animating = false) {{
+            const svg = document.getElementById('topology-svg');
+            const rect = svg.getBoundingClientRect();
+            const width = rect.width || 800;
+            const height = rect.height || 600;
+            
+            svg.innerHTML = '';
+            svg.setAttribute('viewBox', `0 0 ${{width}} ${{height}}`);
+            
+            const active = organisms.filter(o => activeOrganisms.has(o.index));
+            if (active.length === 0) return;
+            
+            switch(viewMode) {{
+                case 'overlay': renderOverlay(svg, width, height, active, animating); break;
+                case 'radial': renderRadial(svg, width, height, active, animating); break;
+                case 'stack': renderStacked(svg, width, height, active); break;
+                case 'grid': renderGrid(svg, width, height, active); break;
+                case 'weights': renderWeights(svg, width, height, active); break;
+            }}
+        }}
+        
+        function renderOverlay(svg, width, height, active, animating) {{
+            const padding = 80;
+            const layerX = [padding, width * 0.35, width * 0.65, width - padding];
+            
+            ['INPUT', 'HIDDEN', 'OUTPUT', 'LANGUAGE'].forEach((label, i) => addText(svg, layerX[i], 30, label, '#444', 11));
+            
+            active.forEach((org, idx) => {{
+                const g = createGroup(svg, opacity - (idx * 0.03));
+                const nodes = {{
+                    input: createLayerNodes(org.input_dim, layerX[0], height, padding),
+                    hidden: createLayerNodes(org.hidden_dim, layerX[1], height, padding),
+                    output: createLayerNodes(org.output_dim, layerX[2], height, padding),
+                    language: org.use_language ? createLayerNodes(Math.min(org.vocab_size, 15), layerX[3], height, padding) : []
+                }};
+                
+                drawConnections(g, nodes.input, nodes.hidden, org.color, 0.15, animating);
+                drawConnections(g, nodes.hidden, nodes.output, org.color, 0.2, animating);
+                if (nodes.language.length) drawConnections(g, nodes.hidden, nodes.language, org.color, 0.1, animating);
+                
+                nodes.input.forEach(n => drawNode(g, n.x, n.y, 5, '#00ffff', org.color, org, 'input', animating));
+                nodes.hidden.forEach(n => drawNode(g, n.x, n.y, 6, '#ff00ff', org.color, org, 'hidden', animating));
+                nodes.output.forEach(n => drawNode(g, n.x, n.y, 7, '#ffff00', org.color, org, 'output', animating));
+                nodes.language.forEach(n => drawNode(g, n.x, n.y, 4, '#00ff88', org.color, org, 'language', animating));
+            }});
+        }}
+        
+        function renderRadial(svg, width, height, active, animating) {{
+            const cx = width / 2, cy = height / 2;
+            const maxRadius = Math.min(width, height) * 0.4;
+            
+            [0.25, 0.5, 0.75, 1].forEach(r => {{
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', cx); circle.setAttribute('cy', cy);
+                circle.setAttribute('r', maxRadius * r);
+                circle.setAttribute('fill', 'none'); circle.setAttribute('stroke', '#222'); circle.setAttribute('stroke-dasharray', '5,5');
+                svg.appendChild(circle);
+            }});
+            
+            active.forEach((org, idx) => {{
+                const g = createGroup(svg, opacity);
+                const angleOffset = (idx / active.length) * Math.PI * 2;
+                const inputNodes = createRadialNodes(org.input_dim, cx, cy, maxRadius * 0.25, angleOffset);
+                const hiddenNodes = createRadialNodes(org.hidden_dim, cx, cy, maxRadius * 0.55, angleOffset);
+                const outputNodes = createRadialNodes(org.output_dim, cx, cy, maxRadius * 0.85, angleOffset);
+                
+                drawConnections(g, inputNodes, hiddenNodes, org.color, 0.1, animating);
+                drawConnections(g, hiddenNodes, outputNodes, org.color, 0.15, animating);
+                
+                inputNodes.forEach(n => drawNode(g, n.x, n.y, 4, '#00ffff', org.color, org, 'input', animating));
+                hiddenNodes.forEach(n => drawNode(g, n.x, n.y, 5, '#ff00ff', org.color, org, 'hidden', animating));
+                outputNodes.forEach(n => drawNode(g, n.x, n.y, 6, '#ffff00', org.color, org, 'output', animating));
+            }});
+            
+            addText(svg, cx, cy, '🧠', '#fff', 24);
+        }}
+        
+        function renderStacked(svg, width, height, active) {{
+            const rowHeight = height / active.length;
+            active.forEach((org, idx) => renderOrganism(svg, org, 0, idx * rowHeight, width, rowHeight * 0.9));
+        }}
+        
+        function renderGrid(svg, width, height, active) {{
+            const cols = Math.ceil(Math.sqrt(active.length));
+            const rows = Math.ceil(active.length / cols);
+            const cellW = width / cols, cellH = height / rows;
+            active.forEach((org, idx) => {{
+                const col = idx % cols, row = Math.floor(idx / cols);
+                renderOrganism(svg, org, col * cellW, row * cellH, cellW * 0.95, cellH * 0.95);
+            }});
+        }}
+        
+        // ─────────────────────────────────────────────────────────────
+        // WEIGHT HEATMAP VIEW - The Soul of the Network
+        // ─────────────────────────────────────────────────────────────
+        function renderWeights(svg, width, height, active) {{
+            if (active.length === 0) return;
+            
+            const org = active[0];
+            const weights = org.weights;
+            
+            if (!weights || (!weights.ih.length && !weights.ho.length)) {{
+                addText(svg, width/2, height/2, 'No weight data available', '#666', 16);
+                addText(svg, width/2, height/2 + 25, '(Weights extracted during cocoon compilation)', '#555', 12);
+                return;
+            }}
+            
+            addText(svg, width/2, 35, `🧠 ${{org.id}} - Weight Heatmap`, org.color, 16);
+            
+            const matrixGap = 60;
+            const ihWidth = Math.min(weights.ih[0]?.length || 0, 20);
+            const ihHeight = weights.ih.length;
+            const hoWidth = Math.min(weights.ho[0]?.length || 0, 20);
+            const hoHeight = weights.ho.length;
+            
+            const cellSize = Math.min(20, (width - 200) / Math.max(ihWidth + hoWidth + 4, 10), (height - 200) / Math.max(ihHeight, hoHeight, 8));
+            
+            if (weights.ih.length > 0) {{
+                const ihStartX = 80;
+                const ihStartY = 80;
+                addText(svg, ihStartX + ihWidth * cellSize / 2, ihStartY - 15, 'Input → Hidden', '#00ffff', 12);
+                
+                weights.ih.forEach((row, i) => {{
+                    row.forEach((val, j) => {{
+                        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                        rect.setAttribute('x', ihStartX + j * cellSize);
+                        rect.setAttribute('y', ihStartY + i * cellSize);
+                        rect.setAttribute('width', cellSize - 1);
+                        rect.setAttribute('height', cellSize - 1);
+                        rect.setAttribute('fill', weightToColor(val, weights.stats.ih_max));
+                        rect.setAttribute('rx', 2);
+                        const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+                        title.textContent = `[${{i}},${{j}}] = ${{val.toFixed(4)}}`;
+                        rect.appendChild(title);
+                        svg.appendChild(rect);
+                    }});
+                }});
+                
+                const ihStatsY = ihStartY + ihHeight * cellSize + 20;
+                addText(svg, ihStartX, ihStatsY, `μ=${{weights.stats.ih_mean?.toFixed(3) || '?'}}  max=${{weights.stats.ih_max?.toFixed(3) || '?'}}  σ=${{weights.stats.ih_std?.toFixed(3) || '?'}}`, '#888', 10, 'start');
+            }}
+            
+            if (weights.ho.length > 0) {{
+                const hoStartX = 80 + (ihWidth + 4) * cellSize + matrixGap;
+                const hoStartY = 80;
+                addText(svg, hoStartX + hoWidth * cellSize / 2, hoStartY - 15, 'Hidden → Output', '#ff00ff', 12);
+                
+                weights.ho.forEach((row, i) => {{
+                    row.forEach((val, j) => {{
+                        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                        rect.setAttribute('x', hoStartX + j * cellSize);
+                        rect.setAttribute('y', hoStartY + i * cellSize);
+                        rect.setAttribute('width', cellSize - 1);
+                        rect.setAttribute('height', cellSize - 1);
+                        rect.setAttribute('fill', weightToColor(val, weights.stats.ho_max));
+                        rect.setAttribute('rx', 2);
+                        const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+                        title.textContent = `[${{i}},${{j}}] = ${{val.toFixed(4)}}`;
+                        rect.appendChild(title);
+                        svg.appendChild(rect);
+                    }});
+                }});
+                
+                const hoStatsY = hoStartY + hoHeight * cellSize + 20;
+                addText(svg, hoStartX, hoStatsY, `μ=${{weights.stats.ho_mean?.toFixed(3) || '?'}}  max=${{weights.stats.ho_max?.toFixed(3) || '?'}}  σ=${{weights.stats.ho_std?.toFixed(3) || '?'}}`, '#888', 10, 'start');
+            }}
+            
+            const legendX = width - 100;
+            const legendY = 80;
+            addText(svg, legendX + 30, legendY - 10, 'Magnitude', '#666', 10);
+            
+            for (let i = 0; i < 10; i++) {{
+                const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                rect.setAttribute('x', legendX);
+                rect.setAttribute('y', legendY + i * 15);
+                rect.setAttribute('width', 20);
+                rect.setAttribute('height', 14);
+                rect.setAttribute('fill', weightToColor((10 - i) / 10, 1));
+                rect.setAttribute('rx', 2);
+                svg.appendChild(rect);
+                addText(svg, legendX + 35, legendY + i * 15 + 10, ((10 - i) / 10).toFixed(1), '#555', 9, 'start');
+            }}
+            
+            addText(svg, width/2, height - 30, `Network: ${{org.input_dim}}→${{org.hidden_dim}}→${{org.output_dim}} | Fitness: ${{org.fitness.toFixed(4)}}`, '#555', 11);
+        }}
+        
+        function weightToColor(value, maxVal) {{
+            const normalized = Math.min(Math.abs(value) / Math.max(maxVal, 0.001), 1);
+            if (normalized < 0.25) {{
+                const t = normalized / 0.25;
+                return `rgb(${{Math.round(t * 150)}}, 0, ${{Math.round(t * 50)}})`;
+            }} else if (normalized < 0.5) {{
+                const t = (normalized - 0.25) / 0.25;
+                return `rgb(${{Math.round(150 + t * 105)}}, ${{Math.round(t * 80)}}, ${{Math.round(50 - t * 50)}})`;
+            }} else if (normalized < 0.75) {{
+                const t = (normalized - 0.5) / 0.25;
+                return `rgb(255, ${{Math.round(80 + t * 120)}}, 0)`;
+            }} else {{
+                const t = (normalized - 0.75) / 0.25;
+                return `rgb(255, ${{Math.round(200 + t * 55)}}, ${{Math.round(t * 100)}})`;
+            }}
+        }}
+        
+        function renderOrganism(svg, org, x, y, w, h) {{
+            const g = createGroup(svg, 1);
+            g.setAttribute('transform', `translate(${{x}}, ${{y}})`);
+            
+            const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            bg.setAttribute('x', 5); bg.setAttribute('y', 5);
+            bg.setAttribute('width', w - 10); bg.setAttribute('height', h - 10);
+            bg.setAttribute('rx', 10); bg.setAttribute('fill', 'rgba(255,255,255,0.02)');
+            bg.setAttribute('stroke', org.color); bg.setAttribute('stroke-opacity', 0.3);
+            g.appendChild(bg);
+            
+            addText(g, 15, 25, `${{org.id}} (f=${{org.fitness.toFixed(3)}})`, org.color, 11, 'start');
+            
+            const padding = 40;
+            const layers = org.use_language ? 4 : 3;
+            const layerW = (w - padding * 2) / layers;
+            
+            const nodes = {{
+                input: createLayerNodes(Math.min(org.input_dim, 12), padding, h - 40, padding),
+                hidden: createLayerNodes(Math.min(org.hidden_dim, 12), padding + layerW, h - 40, padding),
+                output: createLayerNodes(Math.min(org.output_dim, 8), padding + layerW * 2, h - 40, padding)
+            }};
+            
+            drawConnections(g, nodes.input, nodes.hidden, org.color, 0.2, false);
+            drawConnections(g, nodes.hidden, nodes.output, org.color, 0.25, false);
+            
+            nodes.input.forEach(n => drawNode(g, n.x, n.y, 4, '#00ffff', org.color, org, 'input', false));
+            nodes.hidden.forEach(n => drawNode(g, n.x, n.y, 5, '#ff00ff', org.color, org, 'hidden', false));
+            nodes.output.forEach(n => drawNode(g, n.x, n.y, 6, '#ffff00', org.color, org, 'output', false));
+        }}
+        
+        // ─────────────────────────────────────────────────────────────
+        // DRAWING HELPERS
+        // ─────────────────────────────────────────────────────────────
+        
+        function createGroup(parent, opacity) {{
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('opacity', opacity);
+            parent.appendChild(g);
+            return g;
+        }}
+        
+        function createLayerNodes(count, x, totalHeight, padding) {{
+            const nodes = [];
+            const displayCount = Math.min(count, 25);
+            const spacing = (totalHeight - padding * 2) / Math.max(displayCount - 1, 1);
+            for (let i = 0; i < displayCount; i++) {{
+                nodes.push({{ x: x + (Math.random() - 0.5) * 10, y: padding + i * spacing }});
+            }}
+            return nodes;
+        }}
+        
+        function createRadialNodes(count, cx, cy, radius, angleOffset) {{
+            const nodes = [];
+            const displayCount = Math.min(count, 20);
+            const angleStep = (Math.PI * 0.8) / Math.max(displayCount - 1, 1);
+            for (let i = 0; i < displayCount; i++) {{
+                const angle = angleOffset + i * angleStep - Math.PI * 0.4;
+                nodes.push({{ x: cx + Math.cos(angle) * radius, y: cy + Math.sin(angle) * radius }});
+            }}
+            return nodes;
+        }}
+        
+        function drawConnections(parent, from, to, color, baseOpacity, animating) {{
+            const step = Math.max(1, Math.floor(from.length / 8), Math.floor(to.length / 8));
+            for (let i = 0; i < from.length; i += step) {{
+                for (let j = 0; j < to.length; j += step) {{
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', from[i].x); line.setAttribute('y1', from[i].y);
+                    line.setAttribute('x2', to[j].x); line.setAttribute('y2', to[j].y);
+                    line.setAttribute('stroke', color); line.setAttribute('stroke-width', 0.8);
+                    line.setAttribute('stroke-opacity', baseOpacity);
+                    if (animating) line.classList.add('signal-path');
+                    parent.appendChild(line);
+                }}
+            }}
+        }}
+        
+        function drawNode(parent, x, y, r, fill, stroke, org, layerType, animating) {{
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', x); circle.setAttribute('cy', y); circle.setAttribute('r', r);
+            circle.setAttribute('fill', fill); circle.setAttribute('stroke', stroke); circle.setAttribute('stroke-width', 1.5);
+            if (animating) circle.classList.add('node-pulse');
+            circle.addEventListener('mouseenter', (e) => showTooltip(e, org, layerType));
+            circle.addEventListener('mouseleave', hideTooltip);
+            parent.appendChild(circle);
+        }}
+        
+        function addText(parent, x, y, text, fill, size, anchor = 'middle') {{
+            const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            t.setAttribute('x', x); t.setAttribute('y', y);
+            t.setAttribute('fill', fill); t.setAttribute('font-size', size);
+            t.setAttribute('font-family', 'system-ui, sans-serif'); t.setAttribute('text-anchor', anchor);
+            t.textContent = text;
+            parent.appendChild(t);
+        }}
+        
+        function addLine(parent, x1, y1, x2, y2, stroke) {{
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+            line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+            line.setAttribute('stroke', stroke); line.setAttribute('stroke-width', 1);
+            parent.appendChild(line);
+        }}
+        
+        // ─────────────────────────────────────────────────────────────
+        // TOOLTIP
+        // ─────────────────────────────────────────────────────────────
+        
+        function showTooltip(e, org, layerType) {{
+            const tooltip = document.getElementById('tooltip');
+            const layerDim = {{'input': org.input_dim, 'hidden': org.hidden_dim, 'output': org.output_dim, 'language': org.vocab_size}}[layerType];
+            tooltip.innerHTML = `
+                <h4 style="color: ${{org.color}}">${{org.id}}</h4>
+                <div class="tip-row"><span class="tip-label">Layer:</span><span class="tip-value">${{layerType.toUpperCase()}}</span></div>
+                <div class="tip-row"><span class="tip-label">Neurons:</span><span class="tip-value">${{layerDim}}</span></div>
+                <div class="tip-row"><span class="tip-label">Fitness:</span><span class="tip-value">${{org.fitness.toFixed(4)}}</span></div>
+                <div class="tip-row"><span class="tip-label">Params:</span><span class="tip-value">${{org.params.toLocaleString()}}</span></div>
+            `;
+            tooltip.style.left = (e.clientX + 15) + 'px';
+            tooltip.style.top = (e.clientY - 10) + 'px';
+            tooltip.classList.add('visible');
+        }}
+        
+        function hideTooltip() {{ document.getElementById('tooltip').classList.remove('visible'); }}
+    </script>
+</body>
+</html>'''
+        
+        return html
 
     def _compute_behavioral_fingerprint(self, brain: OrganismBrain, num_samples: int = 100) -> Dict[str, Any]:
         """
@@ -1632,7 +2924,7 @@ if __name__ == "__main__":
                 zf.writestr("atomic_config.json", json.dumps(capsule.config.to_dict(), indent=2))
             
             # 5. Bridge Config (JSON) - Critical for AgentBridge to know state dimensions
-            input_dim = metadata.get('neural_network', {}).get('architecture', {}).get('input_size', 25)
+            input_dim = metadata.get('neural_network', {}).get('architecture', {}).get('input_size', 28)
             arch_info = metadata.get('neural_network', {}).get('architecture', {})
             bridge_config = {
                 'state_dim': input_dim,
@@ -1731,6 +3023,11 @@ if __name__ == "__main__":
             requirements += "# MuJoCo Robotics (Humanoid, Ant, HalfCheetah, etc)\n"
             requirements += "# pip install gymnasium[mujoco]\n"
             requirements += "# mujoco>=2.3.0\n\n"
+            requirements += "# ========================================\n"
+            requirements += "# DRONE WARFARE ARENA (8 Game Modes)\n"
+            requirements += "# ========================================\n"
+            requirements += "matplotlib>=3.8.0    # Trajectory visualization\n"
+            requirements += "# PyFlyt>=1.0.0      # Optional: 3D drone viz\n\n"
             requirements += "# ========================================\n"
             requirements += "# USAGE EXAMPLES:\n"
             requirements += "# ========================================\n"
@@ -1921,20 +3218,7 @@ python run_agent.py --gym-env CartPole-v1 --episodes 10
 python portable_agent/visualize.py
 ```
 
-### Option 5: 🖱️ VS Code Click-to-Run (if viewing in VS Code)
-
-> **Tip**: If you're reading this in VS Code, click these links to run commands directly!
-
-| Action | Click to Run |
-|--------|--------------|
-| 💬 Chat Mode | [Run Interactive Chat](command:workbench.action.terminal.sendSequence?%7B%22text%22%3A%22python%20-m%20portable_agent.bridge%20--mode%20interactive%5Cn%22%7D) |
-| 🌐 Start Server | [Launch HTTP API](command:workbench.action.terminal.sendSequence?%7B%22text%22%3A%22python%20-m%20portable_agent.bridge%20--mode%20serve%20--port%208080%5Cn%22%7D) |
-| 🎮 CartPole | [Play CartPole](command:workbench.action.terminal.sendSequence?%7B%22text%22%3A%22python%20-m%20portable_agent.bridge%20--mode%20gym%20--gym-env%20CartPole-v1%20--render%5Cn%22%7D) |
-| 🚀 LunarLander | [Play LunarLander](command:workbench.action.terminal.sendSequence?%7B%22text%22%3A%22python%20-m%20portable_agent.bridge%20--mode%20gym%20--gym-env%20LunarLander-v3%20--render%5Cn%22%7D) |
-| 🔬 Visualizer | [Launch Visualizer](command:workbench.action.terminal.sendSequence?%7B%22text%22%3A%22python%20portable_agent/visualize.py%5Cn%22%7D) |
-| 📦 Install Deps | [Install Requirements](command:workbench.action.terminal.sendSequence?%7B%22text%22%3A%22pip%20install%20-r%20requirements.txt%5Cn%22%7D) |
-
-### Option 6: Python Integration (Direct)
+### Option 5: Python Integration (Direct)
 ```python
 from portable_agent import AgentRuntime, MiniEnvironment
 
@@ -2190,7 +3474,7 @@ ARTS       Language     Vocabulary   Dialogue     Cross-
 ```python
 # Your custom environment
 class RobotEnv:
-    def reset(self): return np.zeros({metadata['neural_network']['architecture'].get('input_size', 18)})  # Match input dim
+    def reset(self): return np.zeros({metadata['neural_network']['architecture'].get('input_size', 28)})  # Match input dim (28D with self-perception)
     def step(self, action): return state, reward, done, info
 
 # Wrap and use
@@ -2749,7 +4033,7 @@ done
             zf.writestr("metadata.json", json.dumps(metadata, indent=2))
             
             # Bridge Config (JSON) - Critical for AgentBridge to know state dimensions
-            max_input_dim = metadata.get('ensemble', {}).get('max_input_dim', 25)
+            max_input_dim = metadata.get('ensemble', {}).get('max_input_dim', 28)
             # Check if any brain in ensemble has language head from metadata
             members = metadata.get('ensemble', {}).get('members', [])
             any_language_head = any(m.get('has_language_head', False) for m in members)
@@ -3071,20 +4355,7 @@ python run_agent.py
 python portable_agent/visualize.py
 ```
 
-### Option 4: 🖱️ VS Code Click-to-Run (if viewing in VS Code)
-
-> **Tip**: If you're reading this in VS Code, click these links to run commands directly!
-
-| Action | Click to Run |
-|--------|--------------|
-| 💬 Chat Mode | [Run Interactive Chat](command:workbench.action.terminal.sendSequence?%7B%22text%22%3A%22python%20-m%20portable_agent.bridge%20--mode%20interactive%5Cn%22%7D) |
-| 🌐 Start Server | [Launch HTTP API](command:workbench.action.terminal.sendSequence?%7B%22text%22%3A%22python%20-m%20portable_agent.bridge%20--mode%20serve%20--port%208080%5Cn%22%7D) |
-| 🎮 CartPole | [Play CartPole](command:workbench.action.terminal.sendSequence?%7B%22text%22%3A%22python%20-m%20portable_agent.bridge%20--mode%20gym%20--gym-env%20CartPole-v1%20--render%5Cn%22%7D) |
-| 🚀 LunarLander | [Play LunarLander](command:workbench.action.terminal.sendSequence?%7B%22text%22%3A%22python%20-m%20portable_agent.bridge%20--mode%20gym%20--gym-env%20LunarLander-v3%20--render%5Cn%22%7D) |
-| 🔬 Visualizer | [Launch Visualizer](command:workbench.action.terminal.sendSequence?%7B%22text%22%3A%22python%20portable_agent/visualize.py%5Cn%22%7D) |
-| 📦 Install Deps | [Install Requirements](command:workbench.action.terminal.sendSequence?%7B%22text%22%3A%22pip%20install%20-r%20requirements.txt%5Cn%22%7D) |
-
-### Option 5: Python Integration
+### Option 4: Python Integration
 ```python
 from run_agent import EnsembleRunner
 import numpy as np
@@ -3928,7 +5199,10 @@ if __name__ == '__main__':
                        include_http: bool = True,
                        compress_data: bool = True,
                        export_format: str = 'cocoon',
-                       conversation_history: List[Dict] = None) -> Tuple[str, Optional[bytes]]:
+                       conversation_history: List[Dict] = None,
+                       attractor_landscape: Any = None,
+                       shared_state: Dict[str, Any] = None,
+                       graph_image_base64: str = None) -> Tuple[str, Optional[bytes]]:
         """
         🦋 COCOON COMPILER - Single-file deployable agent
         Compiles organism(s) into a SINGLE self-contained Python file that can run solo or ensemble.
@@ -3938,6 +5212,12 @@ if __name__ == '__main__':
             - 'onnx': ONNX model file (Netron-viewable)
             - 'torchscript': TorchScript model file (Netron-viewable)
             - 'package': Full package (cocoon.py + ONNX + README + metadata)
+        
+        New in v2.1:
+            - attractor_landscape: AttractorLandscape instance for fixed point/bifurcation state
+            - shared_state: Current shared_simulation_state dict for snapshot data
+            - Formation fingerprint embedded in README
+            - Knowledge graph visualization embedded in README
         
         Returns:
             (cocoon_source, model_bytes) - model_bytes is None for 'cocoon' format
@@ -3986,20 +5266,25 @@ if __name__ == '__main__':
                 'num_key_compositions': getattr(brain, 'num_key_compositions', 15),
                 'dropout': getattr(brain, 'dropout_rate', 0.1),
                 'fitness': fitness,  # Include organism fitness for decision matrix
+                # Hopfield layer params
+                'use_hopfield': getattr(brain, 'use_hopfield', False),
+                'hopfield_patterns': getattr(brain, 'hopfield_patterns', 32),
+                'hopfield_iterations': getattr(brain, 'hopfield_iterations', 5),
+                'hopfield_beta': getattr(brain, 'hopfield_beta', 1.0),
             }
             brain_configs.append(config)
 
         # 2) Vocabulary - FULL BASE POOL + runtime learned
         vocab_data = self._build_full_vocabulary_export(vocabulary)
         logger.info(f"[COCOON] Vocabulary export: {vocab_data['vocab_size']:,} words ({vocab_data.get('base_pool_size', 0):,} base + runtime)")
-        vocab_json = json.dumps(vocab_data)
+        vocab_json = json.dumps(vocab_data, default=_json_default)
         vocab_bytes = zlib.compress(vocab_json.encode('utf-8'), level=9) if compress_data else vocab_json.encode('utf-8')
         vocab_b64 = base64.b64encode(vocab_bytes).decode('ascii')
 
         # 3) Knowledge web - FULL BASE POOL + runtime discoveries
         kw_data = self._build_full_knowledge_web_export(knowledge_web)
         logger.info(f"[COCOON] Knowledge web export: {kw_data['concept_count']:,} concepts, {kw_data['relation_count']:,} relations")
-        kw_json = json.dumps(kw_data)
+        kw_json = json.dumps(kw_data, default=_json_default)
         kw_bytes = zlib.compress(kw_json.encode('utf-8'), level=9) if compress_data else kw_json.encode('utf-8')
         kw_b64 = base64.b64encode(kw_bytes).decode('ascii')
 
@@ -4114,7 +5399,71 @@ if __name__ == '__main__':
         conv_bytes = zlib.compress(conv_json.encode('utf-8'), level=9) if compress_data else conv_json.encode('utf-8')
         conversation_b64 = base64.b64encode(conv_bytes).decode('ascii')
 
+        # 8) Alliance System - preserve FULL social structure (CRITICAL for emergent behavior)
+        # "Connections formed are causeways for rationality" - alliances ARE the social brain
+        alliance_data = self._extract_alliance_data_for_cocoon(capsules, alliance_system, organism_names)
+        if alliance_data.get('alliances'):
+            logger.info(f"[COCOON] 🤝 Alliance structure: {len(alliance_data['alliances'])} alliances, "
+                       f"{len(alliance_data['organism_trust'])} trust records, "
+                       f"{len(alliance_data['organism_stats'])} competition stats")
+        else:
+            logger.info(f"[COCOON] 🤝 No alliance structure to export (organisms may form alliances at runtime)")
+        alliance_json = json.dumps(alliance_data, default=_json_default)
+        alliance_bytes = zlib.compress(alliance_json.encode('utf-8'), level=9) if compress_data else alliance_json.encode('utf-8')
+        alliance_b64 = base64.b64encode(alliance_bytes).decode('ascii')
+
         # Generate cocoon source (always needed for 'cocoon' and 'package' formats)
+        cocoon_source_shell = self._generate_cocoon_source(
+            brain_data_list=brain_data_list,
+            arch_b64=arch_b64,
+            vocab_b64=vocab_b64,
+            kw_b64=kw_b64,
+            config_b64=config_b64,
+            atomic_lang_b64=atomic_lang_b64,
+            conversation_b64=conversation_b64,
+            alliance_b64=alliance_b64,
+            compressed=compress_data,
+            include_gym=include_gym,
+            include_http=include_http,
+            is_ensemble=is_ensemble,
+            organism_names=organism_names,
+            readme_b64="",
+        )
+
+        # 🧬 Generate Formation Fingerprint - the emergent history of this cocoon
+        formation_fingerprint = self._generate_formation_fingerprint(
+            capsules=capsules,
+            causation_explorer=causation_explorer,
+            alliance_system=alliance_system,
+            attractor_landscape=attractor_landscape,
+            shared_state=shared_state
+        )
+        if formation_fingerprint:
+            logger.info(f"[COCOON] 🧬 Formation fingerprint: {len(formation_fingerprint)} sections")
+        
+        # 🧠 Generate interactive ensemble topology HTML visualization
+        topology_html = None
+        try:
+            topology_html = self._generate_ensemble_topology_html(capsules, brain_configs)
+            logger.info(f"[COCOON] 🧠 Generated topology visualization: {len(topology_html):,} chars")
+        except Exception as e:
+            logger.warning(f"[COCOON] Could not generate topology HTML: {e}")
+
+        readme = self._generate_cocoon_readme(
+            organism_names=organism_names,
+            brain_configs=brain_configs,
+            metadata={
+                'generated': datetime.datetime.now().isoformat(),
+                'template_size': f"{len(cocoon_source_shell):,} chars (code only)",
+                'num_organisms': len(capsules),
+            },
+            is_ensemble=is_ensemble,
+            formation_fingerprint=formation_fingerprint,
+            has_topology_html=topology_html is not None,
+        )
+
+        readme_b64 = base64.b64encode(readme.encode('utf-8')).decode('ascii') if readme else ""
+
         cocoon_source = self._generate_cocoon_source(
             brain_data_list=brain_data_list,
             arch_b64=arch_b64,
@@ -4123,28 +5472,20 @@ if __name__ == '__main__':
             config_b64=config_b64,
             atomic_lang_b64=atomic_lang_b64,
             conversation_b64=conversation_b64,
+            alliance_b64=alliance_b64,
             compressed=compress_data,
             include_gym=include_gym,
             include_http=include_http,
             is_ensemble=is_ensemble,
             organism_names=organism_names,
+            readme_b64=readme_b64,
         )
 
         # Handle different export formats
         if export_format == 'cocoon':
-            # Generate README for the cocoon
-            readme = self._generate_cocoon_readme(
-                organism_names=organism_names,
-                brain_configs=brain_configs,
-                metadata={
-                    'generated': datetime.datetime.now().isoformat(),
-                    'template_size': f"{len(cocoon_source):,} chars",
-                    'num_organisms': len(capsules),
-                },
-                is_ensemble=is_ensemble,
-            )
             logger.info(f"[COCOON] ✅ Generated cocoon: {len(cocoon_source):,} characters + README ({len(readme):,} chars)")
-            return cocoon_source, readme
+            # Return tuple: (source, readme, topology_html) for separate file saving
+            return cocoon_source, readme, topology_html
         
         elif export_format == 'onnx':
             # ═══════════════════════════════════════════════════════════════════════
@@ -4186,6 +5527,7 @@ if __name__ == '__main__':
                     'atomic_language': atomic_lang_data if atomic_lang_data else {},
                     'conversation_history': conversation_data if conversation_data else {},
                     'knowledge_web': kw_data,
+                    'alliance_system': alliance_data,  # Social structure for alliance-weighted voting
                     'vp_config': {
                         'vigilance_base': 0.5,
                         'plasticity_base': 0.5,
@@ -4197,7 +5539,7 @@ if __name__ == '__main__':
                     'experience_buffer': {'max_size': 10000, 'gamma': 0.99, 'entries': []},
                 }
                 zf.writestr('subsystems.json', json.dumps(subsystems, indent=2, default=str))
-                logger.info(f"[ONNX] ✅ Subsystems: AtomicLang, KnowledgeWeb, ConvHistory, VP, ExpBuffer")
+                logger.info(f"[ONNX] ✅ Subsystems: AtomicLang, KnowledgeWeb, ConvHistory, Alliance, VP, ExpBuffer")
                 
                 # 3. Vocabulary
                 zf.writestr('vocabulary.json', vocab_json)
@@ -4207,13 +5549,13 @@ if __name__ == '__main__':
                     'generated': datetime.datetime.now().isoformat(),
                     'organism_id': self._get_organism_id(capsules[0]),
                     'brain_config': {
-                        'input_dim': getattr(brain, 'input_dim', 25),
+                        'input_dim': getattr(brain, 'input_dim', 28),
                         'hidden_dim': getattr(brain, 'hidden_dim', 64),
                         'output_dim': getattr(brain, 'output_dim', 6),
                         'use_language_head': getattr(brain, 'use_language_head', False),
                     },
                     'subsystems_included': ['AtomicLanguageSystem', 'ConversationHistory', 
-                                           'EnhancedKnowledgeWeb', 'VPRuntime', 'ExperienceBuffer'],
+                                           'EnhancedKnowledgeWeb', 'AllianceSystem', 'VPRuntime', 'ExperienceBuffer'],
                     'continued_learning': False,  # ONNX neural is inference-only
                     'symbolic_learning': True,    # But symbolic systems CAN grow
                     'format_version': '2.0',
@@ -4251,7 +5593,7 @@ if __name__ == '__main__':
                 ts_buffer = BytesIO()
                 try:
                     brain.eval()
-                    input_dim = getattr(brain, 'input_dim', 25)
+                    input_dim = getattr(brain, 'input_dim', 28)
                     dummy_input = torch.randn(1, input_dim, device='cpu')
                     traced = torch.jit.trace(brain, (dummy_input,))
                     torch.jit.save(traced, ts_buffer)
@@ -4266,6 +5608,7 @@ if __name__ == '__main__':
                     'atomic_language': atomic_lang_data if atomic_lang_data else {},
                     'conversation_history': conversation_data if conversation_data else {},
                     'knowledge_web': kw_data,
+                    'alliance_system': alliance_data,  # Social structure for alliance-weighted voting
                     'vp_config': {
                         'vigilance_base': 0.5,
                         'plasticity_base': 0.5,
@@ -4281,7 +5624,7 @@ if __name__ == '__main__':
                     },
                 }
                 zf.writestr('subsystems.json', json.dumps(subsystems, indent=2, default=str))
-                logger.info(f"[TORCHSCRIPT] ✅ Subsystems: AtomicLang, KnowledgeWeb, ConvHistory, VP, ExpBuffer")
+                logger.info(f"[TORCHSCRIPT] ✅ Subsystems: AtomicLang, KnowledgeWeb, ConvHistory, Alliance, VP, ExpBuffer")
                 
                 # 3. Vocabulary
                 zf.writestr('vocabulary.json', vocab_json)
@@ -4292,7 +5635,7 @@ if __name__ == '__main__':
                     'organism_id': self._get_organism_id(capsules[0]),
                     'organism_count': len(capsules),
                     'brain_config': {
-                        'input_dim': getattr(brain, 'input_dim', 25),
+                        'input_dim': getattr(brain, 'input_dim', 28),
                         'hidden_dim': getattr(brain, 'hidden_dim', 64),
                         'output_dim': getattr(brain, 'output_dim', 6),
                         'use_language_head': getattr(brain, 'use_language_head', False),
@@ -4302,6 +5645,7 @@ if __name__ == '__main__':
                         'AtomicLanguageSystem',
                         'ConversationHistory', 
                         'EnhancedKnowledgeWeb',
+                        'AllianceSystem',
                         'VPRuntime',
                         'ExperienceBuffer',
                     ],
@@ -4542,6 +5886,15 @@ pygame>=2.5.0          # Visual rendering
 # mujoco>=2.3.0
 
 # ═══════════════════════════════════════════════════════════════
+# DRONE WARFARE ARENA (NASA JSBSim 6-DOF Physics)
+# ═══════════════════════════════════════════════════════════════
+# 8 game modes: free_fly, formation, pursuit, tag_battle,
+#               zone_control, capture_flag, survival, escort
+
+matplotlib>=3.8.0      # Trajectory visualization
+# PyFlyt>=1.0.0        # Optional: 3D drone viz (pip install PyFlyt)
+
+# ═══════════════════════════════════════════════════════════════
 # QUICK START COMMANDS
 # ═══════════════════════════════════════════════════════════════
 # 
@@ -4553,6 +5906,10 @@ pygame>=2.5.0          # Visual rendering
 #
 # Direct gym environment:
 #   python cocoon.py --mode gym --env CartPole-v1 --episodes 100
+#
+# Drone warfare (extract + run):
+#   python cocoon.py --unpack ./my_export
+#   cd my_export && python cocoon_drone_adapter.py
 #
 # Tournament (multi-organism battles):
 #   python cocoon.py --mode gym
@@ -4580,22 +5937,27 @@ pygame>=2.5.0          # Visual rendering
                 # Windows batch
                 start_bat = """@echo off
 echo ═══════════════════════════════════════════════════════════════
-echo  🦋 Butterfly Ensemble - Quick Start
+echo  Butterfly Ensemble - Quick Start
 echo ═══════════════════════════════════════════════════════════════
 echo.
-echo 1. Interactive Chat (TorchScript)
-echo 2. Interactive Chat (ONNX)
-echo 3. Gymnasium - CartPole
-echo 4. HTTP Server
+echo 1. Interactive Chat
+echo 2. Gymnasium Games (CartPole, etc)
+echo 3. HTTP API Server
+echo 4. Drone Warfare Arena (extract first)
 echo 5. View Metadata
 echo 0. Exit
 echo.
 set /p choice="Select option: "
 
-if "%choice%"=="1" python bridge.py --model brain_ensemble.pt --mode interactive
-if "%choice%"=="2" python bridge.py --model brain_ensemble.onnx --mode interactive
-if "%choice%"=="3" python bridge.py --model brain_ensemble.onnx --mode gym --env CartPole-v1 --render
-if "%choice%"=="4" python bridge.py --model brain_ensemble.onnx --mode http --port 8080
+if "%choice%"=="1" python cocoon.py --mode chat
+if "%choice%"=="2" python cocoon.py --mode gym
+if "%choice%"=="3" python cocoon.py --mode serve --port 8080
+if "%choice%"=="4" (
+    echo Extracting drone suite...
+    python cocoon.py --unpack .
+    echo.
+    echo Run: python cocoon_drone_adapter.py
+)
 if "%choice%"=="5" type metadata.json
 if "%choice%"=="0" exit /b
 
@@ -4606,23 +5968,23 @@ pause
                 # Unix shell
                 start_sh = """#!/bin/bash
 echo "═══════════════════════════════════════════════════════════════"
-echo " 🦋 Butterfly Ensemble - Quick Start"
+echo " Butterfly Ensemble - Quick Start"
 echo "═══════════════════════════════════════════════════════════════"
 echo ""
-echo "1. Interactive Chat (TorchScript)"
-echo "2. Interactive Chat (ONNX)"
-echo "3. Gymnasium - CartPole"
-echo "4. HTTP Server"
+echo "1. Interactive Chat"
+echo "2. Gymnasium Games (CartPole, etc)"
+echo "3. HTTP API Server"
+echo "4. Drone Warfare Arena (extract first)"
 echo "5. View Metadata"
 echo "0. Exit"
 echo ""
 read -p "Select option: " choice
 
 case $choice in
-    1) python bridge.py --model brain_ensemble.pt --mode interactive ;;
-    2) python bridge.py --model brain_ensemble.onnx --mode interactive ;;
-    3) python bridge.py --model brain_ensemble.onnx --mode gym --env CartPole-v1 --render ;;
-    4) python bridge.py --model brain_ensemble.onnx --mode http --port 8080 ;;
+    1) python cocoon.py --mode chat ;;
+    2) python cocoon.py --mode gym ;;
+    3) python cocoon.py --mode serve --port 8080 ;;
+    4) python cocoon.py --unpack . && echo "Run: python cocoon_drone_adapter.py" ;;
     5) cat metadata.json ;;
     0) exit 0 ;;
 esac
@@ -4695,7 +6057,9 @@ esac
             logger.warning(f"[COCOON] Unknown format '{export_format}', defaulting to cocoon")
             return cocoon_source, None
 
-    def _generate_cocoon_readme(self, organism_names: List[str], brain_configs: List[Dict], metadata: Dict, is_ensemble: bool) -> str:
+    def _generate_cocoon_readme(self, organism_names: List[str], brain_configs: List[Dict], metadata: Dict, is_ensemble: bool,
+                                 formation_fingerprint: Dict[str, Any] = None,
+                                 has_topology_html: bool = False) -> str:
         """Generate comprehensive README for single cocoon.py export.
         
         This README explains:
@@ -4703,12 +6067,19 @@ esac
         - How to use (chat, gym, serve, export)
         - Continued learning capabilities
         - API reference
+        - Formation fingerprint (emergent history)
+        - Neural topology visualization link (if available)
+        
+        Returns:
+            str: Complete README markdown text
         """
         org_list = "\n".join([f"  - `{name}`" for name in organism_names])
         
         subsystem_table = """| Subsystem | Purpose | Continued Learning |
 |-----------|---------|-------------------|
 | `OrganismBrain` | Neural network (action + language) | ✅ Yes - weights updated via backprop |
+| `HopfieldLayer` | Iterative thought refinement (energy-based) | ✅ Yes - pattern memory learns |
+| `MultiHeadAttention` | VP-aware self-attention | ✅ Yes - attention weights updated |
 | `AtomicLanguageSystem` | Semantic units with emotion/context | ✅ Yes - atoms can be created/reinforced |
 | `ConversationHistory` | Topic tracking & context memory | ✅ Yes - grows with each conversation |
 | `EnhancedKnowledgeWeb` | Semantic relations between concepts | ✅ Yes - relations added/strengthened |
@@ -4716,12 +6087,106 @@ esac
 | `ExperienceBuffer` | Learning from past experiences | ✅ Yes - buffer grows with experience |
 | `SphereArena` | 3D swarm defense training game | ✅ Yes - organisms learn during play |"""
         
+        # Build formation fingerprint section
+        fingerprint_section = ""
+        if formation_fingerprint:
+            fp = formation_fingerprint
+            fingerprint_lines = [
+                "---",
+                "",
+                "## 🧬 Formation Fingerprint",
+                "",
+                "This cocoon's emergent history - how these organisms came to be:",
+                "",
+            ]
+            
+            # Organism stats
+            if 'fitness_stats' in fp:
+                fs = fp['fitness_stats']
+                fingerprint_lines.append(f"**Fitness:** min={fs['min']}, max={fs['max']}, mean={fs['mean']}")
+            if 'age_stats' in fp:
+                ages = fp['age_stats']
+                fingerprint_lines.append(f"**Age (cycles):** min={ages['min']}, max={ages['max']}, mean={ages['mean']}")
+            fingerprint_lines.append("")
+            
+            # Causation summary
+            if 'causation_summary' in fp:
+                cs = fp['causation_summary']
+                fingerprint_lines.append(f"**Events Witnessed:** {cs['total_events']:,} total")
+                if cs.get('event_types'):
+                    top_types = list(cs['event_types'].items())[:5]
+                    types_str = ", ".join([f"{t[0]} ({t[1]})" for t in top_types])
+                    fingerprint_lines.append(f"**Top Event Types:** {types_str}")
+                fingerprint_lines.append("")
+            
+            # Alliance structure
+            if 'alliance_structure' in fp:
+                al = fp['alliance_structure']
+                fingerprint_lines.append(f"**Alliance Landscape:** {al['total_alliances']} total alliances")
+                if al.get('memberships'):
+                    for m in al['memberships'][:3]:
+                        fingerprint_lines.append(f"  - Alliance `{m['alliance_id']}` (tier {m['tier']}, {m['size']} members)")
+                fingerprint_lines.append("")
+            
+            # Attractor landscape
+            if 'attractor_landscape' in fp:
+                al = fp['attractor_landscape']
+                fingerprint_lines.append("**Attractor Landscape State:**")
+                fingerprint_lines.append(f"  - Field Coherence: {al['field_coherence']}")
+                fingerprint_lines.append(f"  - Field Entropy: {al['field_entropy']}")
+                fingerprint_lines.append(f"  - Field Stability: {al['field_stability']}")
+                if al['at_fixed_point']:
+                    fingerprint_lines.append(f"  - 🎯 **At Fixed Point:** {al['fixed_point_type']}")
+                fingerprint_lines.append(f"  - Total Fixed Points: {al['total_fixed_points']}")
+                fingerprint_lines.append(f"  - Total Bifurcations: {al['total_bifurcations']}")
+                fingerprint_lines.append("")
+            
+            # Simulation snapshot
+            if 'simulation_snapshot' in fp:
+                ss = fp['simulation_snapshot']
+                fingerprint_lines.append("**Simulation Snapshot:**")
+                if ss.get('population_count'):
+                    fingerprint_lines.append(f"  - Population: {ss['population_count']}")
+                if ss.get('cycle_count'):
+                    fingerprint_lines.append(f"  - Cycles: {ss['cycle_count']}")
+                if ss.get('generation'):
+                    fingerprint_lines.append(f"  - Generation: {ss['generation']}")
+                if ss.get('vp_current'):
+                    fingerprint_lines.append(f"  - VP: {ss['vp_current']}")
+                if ss.get('health_score'):
+                    fingerprint_lines.append(f"  - Health: {ss['health_score']}")
+                fingerprint_lines.append("")
+            
+            fingerprint_section = "\n".join(fingerprint_lines)
+        
+        # Build topology visualization section (reference external HTML file)
+        topology_section = ""
+        if has_topology_html:
+            topology_section = """
+---
+
+## 🧠 Neural Topology Visualization
+
+**[📊 Open Interactive Topology Viewer](ensemble_topology.html)**
+
+The topology visualization provides:
+- **Per-organism layers** - Toggle individual neural networks on/off
+- **Overlay mode** - See all organisms' architectures superimposed
+- **Stacked mode** - View organisms in horizontal strips
+- **Grid mode** - Compare organisms side-by-side
+- **Color-coded neurons** - Input (cyan), Hidden (magenta), Output (yellow), Language (green)
+
+*Open the HTML file in a browser for the full interactive experience.*
+
+"""
+        
         return f'''# 🦋 Butterfly Cocoon - Standalone Agent
 
 **Generated:** {metadata.get('generated', 'Unknown')}
 **Mode:** {"ENSEMBLE" if is_ensemble else "SOLO"} ({len(organism_names)} organism{"s" if len(organism_names) > 1 else ""})
 **Template Size:** {metadata.get('template_size', '~80KB')}
 **Classes:** 15 (Neural + Language + Memory + Knowledge + VP)
+{fingerprint_section}{topology_section}
 
 ---
 
@@ -4801,238 +6266,313 @@ torch.jit.save(model, "brain_finetuned.pt")
 
 ## 🚀 Quick Start
 
-### 🖱️ VS Code Click-to-Run (if viewing in VS Code)
-
-> **Tip**: Click these links to run commands directly in your terminal!
-
-| Action | Click to Run |
-|--------|--------------|
-| 💬 Chat Mode | [Start Chat](command:workbench.action.terminal.sendSequence?%7B%22text%22%3A%22python%20cocoon.py%20--mode%20chat%5Cn%22%7D) |
-| 🌐 Sphere Arena | [Play Sphere](command:workbench.action.terminal.sendSequence?%7B%22text%22%3A%22python%20cocoon.py%20--mode%20sphere%5Cn%22%7D) |
-| 🎓 Train in Sphere | [Train Mode](command:workbench.action.terminal.sendSequence?%7B%22text%22%3A%22python%20cocoon.py%20--mode%20sphere%20--train%5Cn%22%7D) |
-| 🎮 CartPole | [Play CartPole](command:workbench.action.terminal.sendSequence?%7B%22text%22%3A%22python%20cocoon.py%20--mode%20gym%20--env%20CartPole-v1%20--episodes%20100%5Cn%22%7D) |
-| 🌐 HTTP Server | [Start Server](command:workbench.action.terminal.sendSequence?%7B%22text%22%3A%22python%20cocoon.py%20--mode%20serve%20--port%208080%5Cn%22%7D) |
-| 🔬 Export ONNX | [Export Model](command:workbench.action.terminal.sendSequence?%7B%22text%22%3A%22python%20cocoon.py%20--export-onnx%20brain.onnx%5Cn%22%7D) |
-
-### Command Reference
-
 ```bash
-# Interactive chat mode (default)
+# View cocoon info
+python cocoon.py --mode info
+
+# Start chatting
 python cocoon.py --mode chat
 
-# 🌐 Sphere Arena - 3D Swarm Defense Training
-python cocoon.py --mode sphere                    # Play with trained organisms
-python cocoon.py --mode sphere --train            # Enable learning during play
-python cocoon.py --mode sphere --balls 3 --train  # Multi-ball chaos mode
-python cocoon.py --mode sphere --demo             # Preview with dummy AI
+# Play games
+python cocoon.py --mode gym --env CartPole-v1
 
-# Gymnasium environment
-python cocoon.py --mode gym --env CartPole-v1 --episodes 100
+# 3D sphere arena
+python cocoon.py --mode sphere --train
 
-# HTTP API server
-python cocoon.py --mode serve --port 8080
-
-# Single inference
-python cocoon.py --mode infer --state "[1.0, 0.5, -0.3, 0.2]"
-
-# Export neural model to ONNX
-python cocoon.py --export-onnx brain.onnx
-
-# Export neural model to TorchScript
-python cocoon.py --export-torchscript brain.pt
-
-# Verbose mode
-python cocoon.py --mode chat --verbose
+# 🛸 Drone warfare (extract adapter first)
+python cocoon.py --unpack ./my_cocoon
+python cocoon_drone_adapter.py --mode tag_battle
 ```
 
 ---
 
-## 📚 Command Compendium
+## 📚 Complete Command Reference
 
-<details>
-<summary><b>💬 Chat & Interaction</b></summary>
+### Mode Selection
+
+| Mode | Command | Description |
+|------|---------|-------------|
+| **info** | `python cocoon.py --mode info` | Show organism metadata, vocabulary, architecture (default) |
+| **chat** | `python cocoon.py --mode chat` | Interactive conversation with learning |
+| **gym** | `python cocoon.py --mode gym` | Train/test in Gymnasium environments |
+| **serve** | `python cocoon.py --mode serve` | HTTP API server |
+| **sphere** | `python cocoon.py --mode sphere` | 3D Sphere Arena swarm defense |
+| **link** | `python cocoon.py --mode link` | P2P networking for cocoon battles |
+| **drone** | `python cocoon_drone_adapter.py` | 🛸 Drone warfare arena (companion script) |
+
+---
+
+### 💬 Chat Mode
+
+Interactive conversation with the neural organisms. Learns from every interaction.
+
+```bash
+python cocoon.py --mode chat
+python cocoon.py --mode chat --verbose
+```
+
+**In-Chat Commands:**
 
 | Command | Description |
 |---------|-------------|
-| `python cocoon.py --mode chat` | Interactive conversation mode |
-| `python cocoon.py --mode chat --verbose` | Chat with debug output |
-| `python cocoon.py --mode infer --state "[1,2,3]"` | Single inference on state vector |
+| `quit` | Exit chat mode |
+| `export <file.py>` | Save current state to new cocoon file |
 
-**Chat Commands (inside chat mode):**
-| Command | Description |
-|---------|-------------|
-| `/help` | Show available commands |
-| `/state` | Display agent internal state |
-| `/vocab` | Show vocabulary statistics |
-| `/quit` | Exit chat mode |
+---
 
-</details>
+### 🌐 Sphere Arena (3D Training)
 
-<details>
-<summary><b>🌐 Sphere Arena (3D Training)</b></summary>
+Swarm defense game where organisms cooperate to catch falling balls.
 
 | Command | Description |
 |---------|-------------|
-| `python cocoon.py --mode sphere` | Play sphere defense game |
+| `python cocoon.py --mode sphere` | Play sphere defense |
 | `python cocoon.py --mode sphere --train` | Play + learn from experience |
 | `python cocoon.py --mode sphere --demo` | Preview with dummy AI |
 | `python cocoon.py --mode sphere --headless` | Train without display |
+| `python cocoon.py --mode sphere --balls 3 --train` | Multi-ball training |
+| `python cocoon.py --mode sphere --misses 5 --train` | Harder difficulty |
 
-**Options:**
+**Sphere Arena Flags:**
+
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--balls N` | 1 | Number of balls (1-5) |
-| `--misses N` | 10 | Max misses before game over |
-| `--train` | off | Enable learning during play |
-| `--demo` | off | Use dummy AI for preview |
+| `--misses N` | 10 | Max collective misses before game over |
+| `--train` | off | Enable post-snapshot training |
+| `--demo` | off | Run with dummy AI for preview |
 | `--headless` | off | No display (training only) |
-| `--verbose` | off | Debug logging |
+| `--verbose` | off | Verbose debug logging |
 
-**Example Combinations:**
+---
+
+### 🛸 Drone Warfare Arena (Companion Script)
+
+NASA JSBSim-grade drone combat simulation. **Complete system embedded - extract with --unpack.**
+
+**Setup:** 
 ```bash
-python cocoon.py --mode sphere --balls 3 --train      # Multi-ball training
-python cocoon.py --mode sphere --misses 5 --train     # Harder difficulty
-python cocoon.py --mode sphere --headless --train     # Background training
+python cocoon.py --unpack ./my_cocoon    # Extracts full drone suite:
+#   - cocoon_drone_adapter.py    (main entry point)
+#   - cocoon_drone_arena.py      (8-mode arena)
+#   - jsbsim_quadcopter.py       (6-DOF physics)
+cd my_cocoon
+python cocoon_drone_adapter.py           # Run the adapter
 ```
 
-</details>
+| Command | Description |
+|---------|-------------|
+| `python cocoon_drone_adapter.py` | Interactive mode picker |
+| `python cocoon_drone_adapter.py --mode free_fly` | Basic flight training |
+| `python cocoon_drone_adapter.py --mode tag_battle` | Combat: tag enemies |
+| `python cocoon_drone_adapter.py --mode survival` | Last drone flying wins |
+| `python cocoon_drone_adapter.py --all` | Run all 8 modes |
+| `python cocoon_drone_adapter.py --visual` | 3D visualization (requires PyFlyt) |
 
-<details>
-<summary><b>🎮 Gymnasium Environments</b></summary>
+**Game Modes:** `free_fly`, `formation`, `pursuit`, `tag_battle`, `zone_control`, `capture_flag`, `survival`, `escort`
+
+**Requirements:** `pip install numpy matplotlib` (PyFlyt optional: `pip install PyFlyt`)
+
+---
+
+### 🎮 Gymnasium Environments
+
+**Built-in (always available):**
 
 | Command | Description |
 |---------|-------------|
 | `python cocoon.py --mode gym --env CartPole-v1` | Classic pole balancing |
-| `python cocoon.py --mode gym --env LunarLander-v3` | Moon landing |
 | `python cocoon.py --mode gym --env MountainCar-v0` | Drive up hill |
 | `python cocoon.py --mode gym --env Acrobot-v1` | Double pendulum |
+| `python cocoon.py --mode gym --env FrozenLake-v1` | Navigate slippery ice |
+| `python cocoon.py --mode gym --env Taxi-v3` | Pickup & delivery |
+| `python cocoon.py --mode gym --env Blackjack-v1` | Beat the dealer |
 
-**Options:**
+**Box2D (`pip install gymnasium[box2d]`):**
+- `LunarLander-v3`, `BipedalWalker-v3`, `CarRacing-v3`
+
+**Atari (`pip install ale-py`):**
+- `ALE/Pong-v5`, `ALE/Breakout-v5`, `ALE/SpaceInvaders-v5`
+
+**MuJoCo (`pip install gymnasium[mujoco]`):**
+- `Ant-v4`, `HalfCheetah-v4`
+
+**Gym Flags:**
+
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--env NAME` | CartPole-v1 | Gymnasium environment name |
-| `--episodes N` | 10 | Number of episodes to run |
+| `--episodes N` | 100 | Number of episodes to run |
 | `--render` | off | Show visual window |
-| `--learn` | off | Online learning during play |
-
-**Advanced Environments (require extra packages):**
-```bash
-# Atari (pip install ale-py)
-python cocoon.py --mode gym --env ALE/Breakout-v5
-python cocoon.py --mode gym --env ALE/Pong-v5
-
-# Box2D (pip install gymnasium[box2d])
-python cocoon.py --mode gym --env BipedalWalker-v3
-python cocoon.py --mode gym --env CarRacing-v3
-
-# MuJoCo (pip install gymnasium[mujoco])
-python cocoon.py --mode gym --env Humanoid-v4
-python cocoon.py --mode gym --env Ant-v4
-```
-
-</details>
-
-<details>
-<summary><b>🌐 HTTP API Server</b></summary>
-
-| Command | Description |
-|---------|-------------|
-| `python cocoon.py --mode serve` | Start on default port 8080 |
-| `python cocoon.py --mode serve --port 3000` | Custom port |
-
-**API Endpoints:**
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/act` | Get action for state/text |
-| `POST` | `/chat` | Chat endpoint |
-| `POST` | `/reward` | Provide learning reward |
-| `GET` | `/state` | Get agent state |
-| `GET` | `/health` | Health check |
-
-**Example Usage:**
-```bash
-# Start server
-python cocoon.py --mode serve --port 8080
-
-# Query from another terminal
-curl -X POST http://localhost:8080/chat -H "Content-Type: application/json" -d '{{"text": "Hello!"}}'
-curl -X POST http://localhost:8080/act -H "Content-Type: application/json" -d '{{"state": [1,2,3,4]}}'
-```
-
-</details>
-
-<details>
-<summary><b>🔬 Export & Conversion</b></summary>
-
-| Command | Description |
-|---------|-------------|
-| `python cocoon.py --export-onnx brain.onnx` | Export to ONNX format |
-| `python cocoon.py --export-torchscript brain.pt` | Export to TorchScript |
-
-**ONNX Benefits:**
-- 10-100x faster inference
-- Works with ONNX Runtime (CPU/GPU)
-- Compatible with many deployment targets
-
-**TorchScript Benefits:**
-- Native PyTorch format
-- Preserves training capability
-- C++ deployment ready
-
-**View Models:**
-- Open `.onnx` files at [netron.app](https://netron.app/)
-
-</details>
-
-<details>
-<summary><b>⚙️ Global Options</b></summary>
-
-These flags work with any mode:
-
-| Flag | Description |
-|------|-------------|
-| `--verbose` | Enable debug logging |
-| `--help` | Show all available options |
-
-</details>
+| `--no-learn` | off | Disable online learning (inference only) |
 
 ---
 
-## 🌐 Sphere Arena Mode
+### �️ TrackMania 2020 (TMRL Integration)
 
-The cocoon includes a fully embedded **3D Swarm Defense Training Environment**!
+Drive TrackMania 2020 with your cocoon organisms using the embedded TMRL adapter!
 
-**Features:**
-- 3D sphere arena with PyGame/OpenGL rendering
-- Command chain system (emergent leadership)
-- Post-snapshot training (organisms learn during play)
-- Multi-ball support (1-5 balls)
-- Save trained weights after playing
+**Requirements:**
+1. TrackMania 2020 (Ubisoft/Epic)
+2. OpenPlanet plugin installed (openplanet.dev)
+3. TMRL Python package: `pip install tmrl`
+4. Extract `cocoon_tmrl_adapter.py` via `--unpack`
 
-**Sphere Arena Options:**
+**Quick Start:**
 ```bash
---mode sphere     # Run sphere arena
---balls N         # Number of balls (1-5, default: 1)
---misses N        # Max collective misses before game over (default: 10)
---train           # Enable post-snapshot training
---demo            # Run with dummy AI (preview visuals)
---verbose         # Debug logging
---headless        # No display (training only)
+# Extract adapter from cocoon
+python cocoon.py --unpack ./my_tmrl
+
+# Run the adapter
+python cocoon_tmrl_adapter.py --cocoon path/to/cocoon.py --drive --episodes 4
 ```
 
-**How It Works:**
-1. Organisms defend the inside of a 3D sphere
-2. Ball bounces inside - swarm must intercept
-3. Catches = +reward, Misses = -penalty
-4. Commander broadcasts predicted impact point
-5. Best follower becomes new commander
+**Important:**
+- Play on the **"tmrl-test"** track for proper rewards (search in TrackMania)
+- The adapter uses LIDAR observations + speed data
+- Ensembles use majority voting for actions
 
-**Training Flow:**
+**TMRL Adapter Commands:**
+
+| Flag | Description |
+|------|-------------|
+| `--drive` | Inference mode (watch it play) |
+| `--train` | Learning mode (organisms improve) |
+| `--episodes N` | Number of races to run |
+| `--organism N` | Use specific organism (0 = ensemble) |
+
+---
+
+### �🌐 HTTP API Server
+
 ```bash
-python cocoon.py --mode sphere --train --balls 2
-# Play the game - organisms learn from catches/misses
-# At end: prompted to save trained weights
-# Re-export cocoon to bake in learned improvements
+python cocoon.py --mode serve --port 8080
+```
+
+**Endpoints:**
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/health` | Health check - returns organism count |
+| `POST` | `/act` | Get action for state vector |
+| `POST` | `/learn` | Add experience + train step |
+| `POST` | `/chat` | Chat with learning (returns all organism responses) |
+| `POST` | `/teach` | Teach new words/concepts |
+| `GET` | `/vocab` | Get current vocabulary |
+
+**Example `/chat` request:**
+```bash
+curl -X POST http://localhost:8080/chat \\
+  -H "Content-Type: application/json" \\
+  -d '{{"prompt": "Hello!", "learn": true}}'
+```
+
+---
+
+### 🔗 Link Mode (P2P Networking)
+
+Connect to other cocoons for battles and chat.
+
+```bash
+python cocoon.py --mode link --hatch ws://server:9000 --name "Champion"
+```
+
+**Link Mode Flags:**
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--hatch URL` | ws://localhost:9000 | CocoonHatch relay server URL |
+| `--name NAME` | auto | Display name |
+
+**In-Link Commands:**
+
+| Command | Description |
+|---------|-------------|
+| `/users` | List online cocoons |
+| `/challenge <name>` | Challenge a user to battle |
+| `/accept <id>` | Accept a challenge |
+| `/decline <id>` | Decline a challenge |
+| `/chat <message>` | Send message to lobby |
+| `/quit` | Disconnect |
+
+**Requirements:** `pip install websockets`
+
+---
+
+### 🔬 Export & Conversion
+
+| Command | Description |
+|---------|-------------|
+| `python cocoon.py --export evolved.py` | Export updated cocoon with learned state |
+| `python cocoon.py --export-onnx brain.onnx` | Export to ONNX (all brains as ensemble) |
+| `python cocoon.py --export-torchscript brain.pt` | Export to TorchScript (all brains as ensemble) |
+| `python cocoon.py --export-onnx brain.onnx --organism 0` | Export single organism to ONNX |
+| `python cocoon.py --export-torchscript brain.pt --organism 0` | Export single organism to TorchScript |
+| `python cocoon.py --export-package ./my_model` | Export full package (ONNX + README + metadata) |
+| `python cocoon.py --unpack ./output_dir` | Unpack ultimate package assets |
+| `python cocoon.py --readme` | Print embedded README and exit |
+
+**TorchScript vs ONNX:**
+| Format | Continued Learning | Portability | Best For |
+|--------|-------------------|-------------|----------|
+| `.pt` (TorchScript) | ✅ Yes - can fine-tune | PyTorch/LibTorch/C++ | Research, fine-tuning |
+| `.onnx` (ONNX) | ❌ Inference only | Universal (C++, JS, Rust, etc.) | Production deployment |
+
+---
+
+### 📦 Files Created by `--unpack`
+
+Spawns a complete deployment package:
+
+```
+output_dir/
+├── README.md                # This documentation
+├── cocoon_tmrl_adapter.py   # TrackMania 2020 adapter (if embedded)
+├── cocoon_drone_adapter.py  # Drone Warfare adapter (if embedded)
+├── cocoon_drone_arena.py    # Full 8-mode drone arena (if embedded)
+├── jsbsim_quadcopter.py     # NASA JSBSim 6-DOF physics (if embedded)
+├── vocabulary.json          # Token vocabulary
+├── metadata.json            # Export metadata + organism info
+├── requirements.txt         # Python dependencies
+├── ensemble.onnx            # ONNX model (all brains unified)
+└── ensemble_weights.pt      # PyTorch weights bundle
+```
+
+---
+
+### 📦 Files Created by `--export-package`
+
+Netron-viewable package with ONNX models and model card:
+
+```
+my_model/
+├── brain_ensemble.onnx    # Combined ONNX (all brains unified)
+├── brain_*.onnx           # Individual organism ONNX files
+├── vocabulary.json        # Token vocabulary
+├── metadata.json          # Full configuration + fitness + architecture
+└── README.md              # Model card documentation
+```
+
+*Note: To get the full cocoon.py + requirements.txt, use `--unpack` instead.*
+
+---
+
+### ⚙️ Global Options
+
+These flags work with any mode:
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--voting MODE` | confidence | Ensemble voting: `majority`, `weighted`, `confidence` |
+| `--max-organisms N` | all | Limit organisms loaded (saves VRAM) |
+| `--verbose` / `-v` | off | Enable verbose debug logging |
+| `--help` | - | Show all available options |
+
+**Examples:**
+```bash
+python cocoon.py --mode chat --max-organisms 5    # Load only 5 organisms
+python cocoon.py --mode gym --voting majority     # Use majority voting
+python cocoon.py --mode chat --verbose            # Debug output
 ```
 
 ---
@@ -5130,65 +6670,142 @@ Learn more: [Convergence Engine on GitHub](https://github.com/Yufok1/Convergence
 '''
 
     def _generate_package_readme(self, organism_names: List[str], brain_configs: List[Dict], metadata: Dict) -> str:
-        """Generate README for package export."""
-        org_table = "| Organism | Input | Hidden | Output | Language Head |\n|----------|-------|--------|--------|---------------|\n"
-        for cfg in brain_configs:
-            org_table += f"| {cfg.get('organism_id', '?')} | {cfg.get('input_dim', 25)} | {cfg.get('hidden_dim', 64)} | {cfg.get('output_dim', 6)} | {'✅' if cfg.get('use_language_head') else '❌'} |\n"
+        """Generate README for --export-package (ONNX model card)."""
+        num_orgs = len(organism_names)
+        mode = "ENSEMBLE" if num_orgs > 1 else "SOLO"
+        vocab_size = metadata.get('vocab_size', 0)
         
-        return f"""# 🦋 Butterfly Cocoon Package
+        org_table = "| # | Organism ID | Input | Hidden | Output | Language | Fitness |\n"
+        org_table += "|---|-------------|-------|--------|--------|----------|--------|\n"
+        for i, cfg in enumerate(brain_configs):
+            org_id = cfg.get('organism_id', '?')[:16]
+            has_lang = '✅' if cfg.get('use_language_head') else '❌'
+            fitness = cfg.get('fitness', 0)
+            fitness_str = f"{fitness:.4f}" if isinstance(fitness, float) else str(fitness)
+            org_table += f"| {i+1} | `{org_id}` | {cfg.get('input_dim', 25)} | {cfg.get('hidden_dim', 64)} | {cfg.get('output_dim', 6)} | {has_lang} | {fitness_str} |\n"
+        
+        return f"""# 🦋 Butterfly Cocoon - ONNX Package
 
-**Generated:** {metadata.get('generated', 'Unknown')}
-**Mode:** {metadata.get('mode', 'SOLO')}
-**Organisms:** {metadata.get('num_organisms', 1)}
+**Generated:** {metadata.get('generated', 'Unknown')}  
+**Mode:** {mode} ({num_orgs} organism{"s" if num_orgs > 1 else ""})  
+**Vocabulary:** {vocab_size:,} tokens
 
-## 📁 Contents
+---
+
+## 📁 Package Contents
 
 | File | Description |
 |------|-------------|
-| `cocoon.py` | Standalone Python agent (run with `python cocoon.py --mode chat`) |
-| `brain_*.onnx` | ONNX models - view at [netron.app](https://netron.app/) |
+| `brain_ensemble.onnx` | Combined ONNX model (all organisms unified) |
+| `brain_*.onnx` | Individual organism ONNX files |
 | `vocabulary.json` | Token vocabulary |
-| `metadata.json` | Full configuration |
-| `README.md` | This file |
+| `metadata.json` | Full configuration + architecture |
+| `README.md` | This file (model card) |
+
+---
 
 ## 🧠 Organisms
 
 {org_table}
 
+---
+
 ## 🚀 Quick Start
 
-### 🖱️ VS Code Click-to-Run (if viewing in VS Code)
+### View Model Architecture
 
-| Action | Click to Run |
-|--------|--------------|
-| 💬 Chat Mode | [Start Chat](command:workbench.action.terminal.sendSequence?%7B%22text%22%3A%22python%20cocoon.py%20--mode%20chat%5Cn%22%7D) |
-| 🎮 CartPole | [Play CartPole](command:workbench.action.terminal.sendSequence?%7B%22text%22%3A%22python%20cocoon.py%20--mode%20gym%20--env%20CartPole-v1%5Cn%22%7D) |
-| 🌐 HTTP Server | [Start Server](command:workbench.action.terminal.sendSequence?%7B%22text%22%3A%22python%20cocoon.py%20--mode%20serve%20--port%208080%5Cn%22%7D) |
-| 🔬 Export ONNX | [Export Model](command:workbench.action.terminal.sendSequence?%7B%22text%22%3A%22python%20cocoon.py%20--export-onnx%20brain.onnx%5Cn%22%7D) |
+Open any `.onnx` file at [netron.app](https://netron.app/)
 
-### Command Reference
+### Python Inference (onnxruntime)
 
-```bash
-# View model architecture
-# Open any .onnx file at https://netron.app/
+```python
+import onnxruntime as ort
+import numpy as np
 
-# Interactive chat
-python cocoon.py --mode chat
+# Load model
+session = ort.InferenceSession("brain_ensemble.onnx")
 
-# Export ONNX from cocoon
-python cocoon.py --export-onnx brain.onnx
+# Run inference
+state = np.random.randn(1, 28).astype(np.float32)  # Adjust dims
+outputs = session.run(None, {{"input": state}})
+action_probs = outputs[0]  # Shape: [num_organisms, batch, output_dim]
 
-# Run in Gym environment  
-python cocoon.py --mode gym --env CartPole-v1
-
-# HTTP API server
-python cocoon.py --mode serve --port 8080
+# Get best action (ensemble average)
+avg_probs = action_probs.mean(axis=0)
+action = np.argmax(avg_probs, axis=-1)
 ```
+
+### JavaScript Inference (onnxruntime-web)
+
+```javascript
+import * as ort from 'onnxruntime-web';
+
+const session = await ort.InferenceSession.create('brain_ensemble.onnx');
+const state = new ort.Tensor('float32', new Float32Array(28), [1, 28]);
+const results = await session.run({{ input: state }});
+const actionProbs = results.output.data;
+```
+
+### C++ Inference (ONNX Runtime)
+
+```cpp
+#include <onnxruntime/core/session/onnxruntime_cxx_api.h>
+
+Ort::Session session(env, "brain_ensemble.onnx", session_options);
+std::vector<float> input_data(28, 0.0f);
+// ... run inference
+```
+
+---
+
+## 🔥 Continued Learning
+
+**ONNX is inference-only.** For continued learning, use:
+
+| Format | Learning | How to Get |
+|--------|----------|------------|
+| `cocoon.py` | ✅ Full | `python cocoon.py --export evolved.py` |
+| `.pt` (TorchScript) | ✅ Neural | `python cocoon.py --export-torchscript brain.pt` |
+| `.onnx` (this) | ❌ None | Inference only |
+
+---
+
+## 🔬 Architecture
+
+```
+Input [{metadata.get('max_input_dim', 28)} dims]
+     │
+     ├── Brain 1 ──→ Q-values [{metadata.get('max_output_dim', 6)} actions]
+     ├── Brain 2 ──→ Q-values
+     └── ...
+     
+Output: Stacked [num_organisms, batch, output_dim]
+```
+
+---
+
+## 📡 Deployment Options
+
+| Platform | Runtime | Install |
+|----------|---------|---------|
+| Python | onnxruntime | `pip install onnxruntime` |
+| Python GPU | onnxruntime-gpu | `pip install onnxruntime-gpu` |
+| JavaScript | onnxruntime-web | `npm install onnxruntime-web` |
+| Node.js | onnxruntime-node | `npm install onnxruntime-node` |
+| C++ | ONNX Runtime | [github.com/microsoft/onnxruntime](https://github.com/microsoft/onnxruntime) |
+| Rust | ort | `cargo add ort` |
+
+---
 
 ## 🔗 Links
 
-- [Netron Model Viewer](https://netron.app/)
-- [Convergence Engine](https://github.com/Yufok1/Convergence_Engine)
+- 📊 [Netron Model Viewer](https://netron.app/)
+- 🦋 [Convergence Engine](https://github.com/Yufok1/Convergence_Engine)
+- 📦 [ONNX Runtime](https://onnxruntime.ai/)
+
+---
+
+*Generated by 🦋 Butterfly Agent Compiler*
 """
 
     def _generate_torchscript_loader(self) -> str:
@@ -5380,13 +6997,15 @@ class VPRuntime:
         """
         Compute VP components from organism state vector.
         
-        State vector mapping (25-dim, matches config.json):
+        State vector mapping (28-dim with self-perception):
             0-5: Action probabilities
             6-8: Resource levels (energy, fitness, age)
             9-11: Social signals (cooperation, competition, isolation)
             12-14: Environmental context
-            15-23: Additional features
-            24: Illumination level
+            15-24: Additional features + illumination
+            25: oscillation_entropy (self-perception)
+            26: coherence_frequency (self-perception)
+            27: attractor_proximity (self-perception)
         
         Returns dict with: vitality, pleasure, violation_pressure, vp_class, components
         """
@@ -5505,15 +7124,28 @@ class VPRuntime:
 
 
 class ExperienceBuffer:
-    """Replay buffer for continued learning."""
+    """Replay buffer for continued learning - UNLIMITED by default."""
     
     def __init__(self, config: Dict = None):
         config = config or {}
-        self.max_size = config.get('max_size', 10000)
+        # max_size of 0 or None = unlimited (no cap on experiences)
+        raw_max = config.get('max_size', 0)
+        self.max_size = raw_max if raw_max and raw_max > 0 else None  # None = unlimited
         self.gamma = config.get('gamma', 0.995)  # Default matches config.json
-        self.buffer: deque = deque(maxlen=self.max_size)
+        self.buffer: deque = deque(maxlen=self.max_size)  # maxlen=None = unlimited
         for entry in config.get('entries', []):
             self.buffer.append(entry)
+    
+    @staticmethod
+    def format_count(count: int) -> str:
+        """Format experience count for display (shorthand for large numbers)."""
+        if count >= 1_000_000_000:
+            return f"{count / 1_000_000_000:.1f}B"
+        elif count >= 1_000_000:
+            return f"{count / 1_000_000:.1f}M"
+        elif count >= 1_000:
+            return f"{count / 1_000:.1f}K"
+        return str(count)
     
     def add(self, state, action, reward, next_state=None, done=False):
         self.buffer.append({'state': state, 'action': action, 'reward': reward, 
@@ -5546,6 +7178,7 @@ class TorchScriptAgent:
         self.knowledge_web = EnhancedKnowledgeWeb(subsystems.get('knowledge_web', {}))
         self.vp_runtime = VPRuntime(subsystems.get('vp_config', {}))
         self.experience_buffer = ExperienceBuffer(subsystems.get('experience_buffer', {}))
+        self.alliance_system = subsystems.get('alliance_system', {})  # Social structure for voting
         
         # Load vocabulary
         with open(package_dir / 'vocabulary.json') as f:
@@ -5612,6 +7245,7 @@ class TorchScriptAgent:
             'conversation_history': self.conversation_history.get_state(),
             'knowledge_web': self.knowledge_web.get_state(),
             'vp_config': self.vp_runtime.get_state(),  # Full VP state with history!
+            'alliance_system': self.alliance_system,  # Preserve social structure
             'experience_buffer': {
                 'max_size': self.experience_buffer.max_size,
                 'gamma': self.experience_buffer.gamma,
@@ -5634,7 +7268,8 @@ if __name__ == '__main__':
     print(f"Subsystems: {agent.metadata.get('subsystems_included', [])}")
     print(f"Atoms: {len(agent.atomic_lang.atoms)}")
     print(f"Relations: {len(agent.knowledge_web.relations)}")
-    print(f"Experience buffer: {len(agent.experience_buffer)} entries")
+    exp_count = len(agent.experience_buffer)
+    print(f"Experience buffer: {ExperienceBuffer.format_count(exp_count)} entries ({exp_count:,} total)")
 '''
 
     def _generate_torchscript_readme(self, metadata: Dict) -> str:
@@ -5928,6 +7563,7 @@ class ONNXAgent:
         self.knowledge_web = EnhancedKnowledgeWeb(subsystems.get('knowledge_web', {}))
         self.vp_runtime = VPRuntime(subsystems.get('vp_config', {}))
         self.experience_buffer = ExperienceBuffer(subsystems.get('experience_buffer', {}))
+        self.alliance_system = subsystems.get('alliance_system', {})  # Social structure for voting
         
         with open(package_dir / 'vocabulary.json') as f:
             self.vocabulary = json.load(f)
@@ -5966,6 +7602,7 @@ class ONNXAgent:
             'conversation_history': self.conversation_history.get_state(),
             'knowledge_web': self.knowledge_web.get_state(),
             'vp_config': self.vp_runtime.get_state(),  # Full VP with history!
+            'alliance_system': self.alliance_system,  # Preserve social structure
             'experience_buffer': {'entries': list(self.experience_buffer.buffer)[-1000:]},
         }
         with open(package_dir / 'subsystems.json', 'w') as f:
@@ -6337,23 +7974,39 @@ if __name__ == '__main__':
         ts_status = "✅ Included" if export_results.get('torchscript', {}).get('success') else "❌ Failed"
         onnx_size = export_results.get('onnx', {}).get('size', 0)
         ts_size = export_results.get('torchscript', {}).get('size', 0)
+        cocoon_size = export_results.get('cocoon', {}).get('size', 0)
+        vocab_size = metadata.get('vocab_size', 0)
+        kw_concepts = metadata.get('knowledge_web_concepts', 0)
+        kw_relations = metadata.get('knowledge_web_relations', 0)
         
         return f'''# 🦋🦋 Butterfly Ensemble - Ultimate Package
 
 > **{num_orgs} evolved AI organisms** unified into a single deployable intelligence
 
+**Generated:** {metadata.get('generated', 'Unknown')}  
+**Mode:** {mode} ({num_orgs} organisms)  
+**Vocabulary:** {vocab_size:,} tokens  
+**Knowledge Web:** {kw_concepts:,} concepts, {kw_relations:,} relations
+
+---
+
 ## 📦 Package Contents
 
 | File | Description | Size |
 |------|-------------|------|
-| `brain_ensemble.onnx` | ONNX model (all organisms) | {onnx_size:,} bytes {onnx_status} |
-| `brain_ensemble.pt` | TorchScript model (all organisms) | {ts_size:,} bytes {ts_status} |
-| `cocoon.py` | Self-contained Python (embedded weights) | - |
-| `bridge.py` | Universal runner (Gym/HTTP/CLI) | - |
-| `metadata.json` | Complete configuration | - |
+| `cocoon.py` | 🦋 **Full Python agent** - chat, gym, HTTP, sphere arena | {cocoon_size:,} bytes |
+| `brain_ensemble.onnx` | ONNX model (all organisms) - inference only | {onnx_size:,} bytes {onnx_status} |
+| `brain_ensemble.pt` | TorchScript model (all organisms) - can fine-tune | {ts_size:,} bytes {ts_status} |
+| `bridge.py` | Universal runner (Gym/HTTP/CLI) for ONNX/TorchScript | - |
+| `proton_tournament.py` | 🎮 Proton Game Arena - organism battles | - |
 | `vocabulary.json` | Token vocabulary | - |
+| `knowledge_web.json` | Semantic knowledge graph | - |
+| `context_memory.json` | Conversation context | - |
+| `metadata.json` | Complete configuration | - |
 | `requirements.txt` | Python dependencies | - |
 | `start.bat` / `start.sh` | Quick-start launcher | - |
+
+---
 
 ## 🚀 Quick Start
 
@@ -6361,17 +8014,43 @@ if __name__ == '__main__':
 - **Windows:** Run `start.bat`
 - **Linux/Mac:** Run `./start.sh`
 
-### Option 2: Command Line
+### Option 2: cocoon.py (RECOMMENDED - Full Features)
+
+The `cocoon.py` is the **gold standard** - it has ALL features:
 
 ```bash
 # Install dependencies
 pip install -r requirements.txt
 
-# Interactive mode (TorchScript)
-python bridge.py --model brain_ensemble.pt --mode interactive
+# Interactive chat with learning
+python cocoon.py --mode chat
 
-# Interactive mode (ONNX - faster)
+# View organism info
+python cocoon.py --mode info
+
+# Play Gymnasium environments
+python cocoon.py --mode gym --env CartPole-v1
+
+# 3D Sphere Arena
+python cocoon.py --mode sphere --train
+
+# HTTP API server
+python cocoon.py --mode serve --port 8080
+
+# P2P networking (battle other cocoons)
+python cocoon.py --mode link --hatch ws://server:9000
+```
+
+### Option 3: bridge.py (ONNX/TorchScript)
+
+For deployment where you only need inference:
+
+```bash
+# Interactive mode (ONNX - fastest)
 python bridge.py --model brain_ensemble.onnx --mode interactive
+
+# Interactive mode (TorchScript - can fine-tune later)
+python bridge.py --model brain_ensemble.pt --mode interactive
 
 # Gymnasium environment
 python bridge.py --model brain_ensemble.onnx --mode gym --env CartPole-v1 --render
@@ -6380,22 +8059,162 @@ python bridge.py --model brain_ensemble.onnx --mode gym --env CartPole-v1 --rend
 python bridge.py --model brain_ensemble.onnx --mode http --port 8080
 ```
 
-### Option 3: Pure Python (No Dependencies)
+---
 
-```bash
-# The cocoon.py has embedded weights - runs standalone!
-python cocoon.py --mode chat
-python cocoon.py --mode gym --env CartPole-v1
+## 🔥 Continued Learning
+
+**YES, this package supports continued learning!**
+
+| Format | File | Learning | Subsystems | Best For |
+|--------|------|----------|------------|----------|
+| `cocoon.py` | Python | ✅ Full (neural + symbolic) | ✅ All (VP, language, knowledge web) | Research, chat, games |
+| `.pt` (TorchScript) | brain_ensemble.pt | ✅ Neural only | ❌ None | Fine-tuning, C++ deployment |
+| `.onnx` (ONNX) | brain_ensemble.onnx | ❌ Inference only | ❌ None | Production deployment |
+
+**Fine-tuning TorchScript:**
+```python
+import torch
+
+model = torch.jit.load("brain_ensemble.pt")
+model.train()
+
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+for state, target in new_data:
+    optimizer.zero_grad()
+    output = model(state)
+    loss = criterion(output, target)
+    loss.backward()
+    optimizer.step()
+
+torch.jit.save(model, "brain_finetuned.pt")
 ```
+
+---
 
 ## 🧠 Ensemble Members
 
 {org_table}
 
+---
+
+## 📚 cocoon.py Command Reference
+
+### Mode Selection
+
+| Mode | Command | Description |
+|------|---------|-------------|
+| **info** | `python cocoon.py --mode info` | Show organism metadata, vocabulary, architecture |
+| **chat** | `python cocoon.py --mode chat` | Interactive conversation with learning |
+| **gym** | `python cocoon.py --mode gym --env CartPole-v1` | Train/test in Gymnasium environments |
+| **serve** | `python cocoon.py --mode serve --port 8080` | HTTP API server |
+| **sphere** | `python cocoon.py --mode sphere --train` | 3D Sphere Arena swarm defense |
+| **link** | `python cocoon.py --mode link` | P2P networking for cocoon battles |
+
+### 💬 Chat Mode
+
+```bash
+python cocoon.py --mode chat
+python cocoon.py --mode chat --verbose
+```
+
+**In-Chat Commands:** `quit`, `export <file.py>`
+
+### 🌐 Sphere Arena (3D Training)
+
+```bash
+python cocoon.py --mode sphere              # Play
+python cocoon.py --mode sphere --train      # Play + learn
+python cocoon.py --mode sphere --headless   # Train without display
+python cocoon.py --mode sphere --balls 3    # Multi-ball
+```
+
+### 🎮 Gymnasium Environments
+
+```bash
+# Classic Control (built-in)
+python cocoon.py --mode gym --env CartPole-v1
+python cocoon.py --mode gym --env MountainCar-v0
+python cocoon.py --mode gym --env Acrobot-v1
+python cocoon.py --mode gym --env LunarLander-v3  # pip install gymnasium[box2d]
+
+# With visual rendering
+python cocoon.py --mode gym --env CartPole-v1 --render
+
+# Training run
+python cocoon.py --mode gym --env CartPole-v1 --episodes 100
+```
+
+### 🏎️ TrackMania 2020 (TMRL)
+
+```bash
+# The cocoon_tmrl_adapter.py should be in this package or use:
+python cocoon.py --unpack ./tmrl_setup
+
+# Then run:
+python cocoon_tmrl_adapter.py --cocoon cocoon.py --drive --episodes 4
+python cocoon_tmrl_adapter.py --cocoon cocoon.py --train --episodes 10
+```
+
+**Requirements:** TrackMania 2020 + OpenPlanet + `pip install tmrl`
+
+### 🌐 HTTP API Server
+
+```bash
+python cocoon.py --mode serve --port 8080
+```
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/health` | Health check |
+| `POST` | `/act` | Get action for state |
+| `POST` | `/learn` | Add experience + train |
+| `POST` | `/chat` | Chat with learning |
+| `POST` | `/teach` | Teach new concepts |
+| `GET` | `/vocab` | Get vocabulary |
+
+```bash
+curl -X POST http://localhost:8080/chat \\
+  -H "Content-Type: application/json" \\
+  -d '{{"prompt": "Hello!", "learn": true}}'
+```
+
+### 🔗 Link Mode (P2P Battles)
+
+```bash
+python cocoon.py --mode link --hatch ws://server:9000 --name "Champion"
+```
+
+**Commands:** `/users`, `/challenge <name>`, `/accept <id>`, `/chat <msg>`, `/quit`
+
+### 🔬 Export & Conversion
+
+```bash
+python cocoon.py --export evolved.py                      # Export updated cocoon
+python cocoon.py --export-onnx brain.onnx                 # ONNX (ensemble)
+python cocoon.py --export-torchscript brain.pt            # TorchScript (ensemble)
+python cocoon.py --export-onnx brain.onnx --organism 0    # Single organism
+python cocoon.py --export-package ./my_model              # Full package
+python cocoon.py --readme                                 # Print README
+```
+
+---
+
+## 🎮 Proton Tournament
+
+Battle your organisms against each other!
+
+```bash
+python proton_tournament.py
+```
+
+The tournament runs round-robin matches between all organisms, tracking wins/losses.
+
+---
+
 ## 🔬 Architecture
 
 ```
-                    Input State Vector ({metadata.get('max_input_dim', 25)} dims)
+                    Input State Vector ({metadata.get('max_input_dim', 28)} dims)
                            │
            ┌───────────────┼───────────────┐
            │               │               │
@@ -6407,58 +8226,64 @@ python cocoon.py --mode gym --env CartPole-v1
            │               │               │
            ▼               ▼               ▼
       ┌─────────┐     ┌─────────┐     ┌─────────┐
-      │Action Q │     │Action Q │     │Action Q │
-      │ values  │     │ values  │     │ values  │
+      │ Q-vals  │     │ Q-vals  │     │ Q-vals  │
       └─────────┘     └─────────┘     └─────────┘
+           │               │               │
+           └───────────────┼───────────────┘
+                           │
+                    Ensemble Voting
+                    (majority/weighted/confidence)
+                           │
+                           ▼
+                    Final Action
 ```
-
-The `MultiOrganismWrapper` feeds the same input to all brains and returns
-all their Q-value outputs. You can then:
-- **Majority vote** - Most common action
-- **Weighted vote** - Weight by fitness scores
-- **Ensemble average** - Average Q-values, then argmax
-
-## 🌐 HTTP API
-
-Start server: `python bridge.py --model brain_ensemble.onnx --mode http --port 8080`
-
-### Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/predict` | POST | Run inference on state |
-| `/metadata` | GET | Get ensemble info |
-| `/health` | GET | Health check |
-
-### Example
-
-```bash
-curl -X POST http://localhost:8080/predict \\
-  -H "Content-Type: application/json" \\
-  -d '{{"state": [0.1, 0.2, 0.3, 0.4]}}'
-```
-
-## 🎮 Gymnasium Environments
-
-```bash
-# Classic Control
-python bridge.py -m brain_ensemble.onnx --mode gym --env CartPole-v1 --render
-python bridge.py -m brain_ensemble.onnx --mode gym --env MountainCar-v0 --render
-python bridge.py -m brain_ensemble.onnx --mode gym --env LunarLander-v3 --render
-
-# With training
-python bridge.py -m brain_ensemble.onnx --mode gym --env CartPole-v1 --episodes 100
-```
-
-## 🔗 Links
-
-- 📊 [View Model in Netron](https://netron.app/) - Drag & drop any `.onnx` or `.pt` file
-- 🦋 [Convergence Engine](https://github.com/Yufok1/Convergence_Engine)
-- 📚 [Gymnasium Docs](https://gymnasium.farama.org/)
 
 ---
 
-*Generated: {metadata.get('generated', 'Unknown')}*
+## 📡 API Reference (cocoon.py)
+
+```python
+from cocoon import CocoonAgent
+
+agent = CocoonAgent()
+
+# Get action from state
+action, outputs = agent.get_action(state_vector)
+# outputs = {{'action_probs': [...], 'value': float, 'vp': float}}
+
+# Chat
+response = agent.process_input("Hello!")
+
+# Access subsystems
+agent.atomic_lang.get_atoms_by_emotion(min_valence=0.5)
+agent.knowledge_web.get_related("concept", min_strength=0.3)
+agent.vp_runtime.compute_from_state(state)
+```
+
+---
+
+## 🔗 Links
+
+- 📊 [View Model in Netron](https://netron.app/) - Drag & drop `.onnx` or `.pt`
+- 🦋 [Convergence Engine](https://github.com/Yufok1/Convergence_Engine)
+- 📚 [Gymnasium Docs](https://gymnasium.farama.org/)
+- 🏎️ [TMRL (TrackMania)](https://github.com/trackmania-rl/tmrl)
+
+---
+
+## 🦋 About the Butterfly System
+
+This package was generated by the **Butterfly Convergence Engine** - a neuro-symbolic AI framework combining:
+
+- **Neural networks** for pattern recognition and action selection
+- **Atomic language** for grounded semantic understanding
+- **VP regulation** (Vigilance × Plasticity) for adaptive attention
+- **Knowledge webs** for relational reasoning
+- **Distributed ensembles** for robust decision-making
+
+---
+
+*Generated by 🦋 Butterfly Agent Compiler v2.0*
 '''
 
     def _generate_cocoon_source(self,
@@ -6469,11 +8294,13 @@ python bridge.py -m brain_ensemble.onnx --mode gym --env CartPole-v1 --episodes 
                                 config_b64: str,
                                 atomic_lang_b64: str,
                                 conversation_b64: str,
+                                alliance_b64: str,
                                 compressed: bool,
                                 include_gym: bool,
                                 include_http: bool,
                                 is_ensemble: bool,
-                                organism_names: List[str]) -> str:
+                                organism_names: List[str],
+                                readme_b64: str) -> str:
         """Generate the complete cocoon Python source code with MONOLITHIC subsystems."""
 
         brain_data_py = "[\n" + ",\n".join(f'    "{b}"' for b in brain_data_list) + "\n]"
@@ -6528,17 +8355,32 @@ _KNOWLEDGE_WEB_B64 = "$KW_B64"
 _TRAINING_CONFIG_B64 = "$CONFIG_B64"
 _ATOMIC_LANG_B64 = "$ATOMIC_LANG_B64"
 _CONVERSATION_HISTORY_B64 = "$CONVERSATION_B64"
+_ALLIANCE_B64 = "$ALLIANCE_B64"
 _DATA_COMPRESSED = $DATA_COMPRESSED
+_README_B64 = "$README_B64"
+_TMRL_ADAPTER_B64 = "$TMRL_ADAPTER_B64"
+_DRONE_ADAPTER_B64 = "$DRONE_ADAPTER_B64"
+_DRONE_ARENA_B64 = "$DRONE_ARENA_B64"
+_DRONE_PHYSICS_B64 = "$DRONE_PHYSICS_B64"
 
 
 def _decode_data(b64_str: str, is_json: bool = True) -> Any:
-    raw = base64.b64decode(b64_str)
-    if _DATA_COMPRESSED:
-        import zlib
-        raw = zlib.decompress(raw)
-    if is_json:
-        return json.loads(raw.decode('utf-8'))
-    return raw
+    """Decode base64 encoded data with error handling for corrupted/placeholder values."""
+    try:
+        # Check for placeholder strings (not yet substituted)
+        if b64_str.startswith('$$') or not b64_str:
+            return None
+        raw = base64.b64decode(b64_str)
+        if _DATA_COMPRESSED:
+            import zlib
+            raw = zlib.decompress(raw)
+        if is_json:
+            return json.loads(raw.decode('utf-8'))
+        return raw
+    except Exception as e:
+        # Return None for any decode failure - callers should provide fallback defaults
+        print(f"[WARN] Failed to decode embedded data: {e}")
+        return None
 
 
 def _decode_brain(b64_str: str) -> bytes:
@@ -6547,6 +8389,271 @@ def _decode_brain(b64_str: str) -> bytes:
         import zlib
         raw = zlib.decompress(raw)
     return raw
+
+
+def _print_embedded_readme():
+    if not _README_B64:
+        print("[INFO] No README embedded in this cocoon.")
+        return
+    try:
+        text = base64.b64decode(_README_B64).decode('utf-8', errors='ignore')
+    except Exception as exc:
+        print(f"[!] Failed to decode embedded README: {exc}")
+        return
+    print(text)
+
+
+def _unpack_ultimate(output_dir: str, voting: str = 'confidence', max_organisms: Optional[int] = None) -> bool:
+    """Spawn a self-contained "ultimate package" from this cocoon.
+
+    Writes (when available):
+      - README.md (embedded)
+      - cocoon_tmrl_adapter.py (embedded)
+      - vocabulary.json
+      - metadata.json
+      - requirements.txt
+      - ensemble.onnx (requires torch)
+      - ensemble_weights.pt (requires torch)
+    """
+    os.makedirs(output_dir, exist_ok=True)
+
+    spawned = []
+
+    # 1) README
+    if _README_B64:
+        try:
+            readme_text = base64.b64decode(_README_B64).decode('utf-8', errors='ignore')
+            readme_path = os.path.join(output_dir, 'README.md')
+            with open(readme_path, 'w', encoding='utf-8') as f:
+                f.write(readme_text)
+            spawned.append(readme_path)
+            print(f"[OK] Unpacked README: {readme_path}")
+        except Exception as exc:
+            print(f"[!] README unpack failed: {exc}")
+    else:
+        print("[INFO] No README embedded; skipping README.md")
+
+    # 2) TMRL adapter
+    if _TMRL_ADAPTER_B64:
+        try:
+            adapter_code = base64.b64decode(_TMRL_ADAPTER_B64).decode('utf-8', errors='ignore')
+            adapter_path = os.path.join(output_dir, 'cocoon_tmrl_adapter.py')
+            with open(adapter_path, 'w', encoding='utf-8') as f:
+                f.write(adapter_code)
+            spawned.append(adapter_path)
+            print(f"[OK] Unpacked adapter: {adapter_path}")
+        except Exception as exc:
+            print(f"[!] Adapter unpack failed: {exc}")
+    else:
+        print("[INFO] No TMRL adapter embedded; skipping cocoon_tmrl_adapter.py")
+
+    # 2b) Drone adapter
+    if _DRONE_ADAPTER_B64:
+        try:
+            drone_code = base64.b64decode(_DRONE_ADAPTER_B64).decode('utf-8', errors='ignore')
+            drone_path = os.path.join(output_dir, 'cocoon_drone_adapter.py')
+            with open(drone_path, 'w', encoding='utf-8') as f:
+                f.write(drone_code)
+            spawned.append(drone_path)
+            print(f"[OK] Unpacked drone adapter: {drone_path}")
+        except Exception as exc:
+            print(f"[!] Drone adapter unpack failed: {exc}")
+    else:
+        print("[INFO] No drone adapter embedded; skipping cocoon_drone_adapter.py")
+
+    # 2c) Drone arena (full NASA physics)
+    if _DRONE_ARENA_B64:
+        try:
+            arena_code = base64.b64decode(_DRONE_ARENA_B64).decode('utf-8', errors='ignore')
+            arena_path = os.path.join(output_dir, 'cocoon_drone_arena.py')
+            with open(arena_path, 'w', encoding='utf-8') as f:
+                f.write(arena_code)
+            spawned.append(arena_path)
+            print(f"[OK] Unpacked drone arena: {arena_path}")
+        except Exception as exc:
+            print(f"[!] Drone arena unpack failed: {exc}")
+    else:
+        print("[INFO] No drone arena embedded; skipping cocoon_drone_arena.py")
+
+    # 2d) Drone physics (JSBSim quadcopter)
+    if _DRONE_PHYSICS_B64:
+        try:
+            physics_code = base64.b64decode(_DRONE_PHYSICS_B64).decode('utf-8', errors='ignore')
+            physics_path = os.path.join(output_dir, 'jsbsim_quadcopter.py')
+            with open(physics_path, 'w', encoding='utf-8') as f:
+                f.write(physics_code)
+            spawned.append(physics_path)
+            print(f"[OK] Unpacked drone physics: {physics_path}")
+        except Exception as exc:
+            print(f"[!] Drone physics unpack failed: {exc}")
+    else:
+        print("[INFO] No drone physics embedded; skipping jsbsim_quadcopter.py")
+
+    # 3) Vocabulary
+    try:
+        vocab_obj = _decode_data(_VOCABULARY_B64, is_json=True)
+        vocab_path = os.path.join(output_dir, 'vocabulary.json')
+        with open(vocab_path, 'w', encoding='utf-8') as f:
+            json.dump(vocab_obj, f, indent=2, default=_json_default)
+        spawned.append(vocab_path)
+        print(f"[OK] Unpacked vocab: {vocab_path}")
+    except Exception as exc:
+        print(f"[!] Vocabulary unpack failed: {exc}")
+
+    # 4) Metadata - handles existing metadata.json from package exports
+    try:
+        arch_obj = _decode_data(_ARCHITECTURE_B64, is_json=True)
+        cfg_obj = _decode_data(_TRAINING_CONFIG_B64, is_json=True)
+        cocoon_meta = {
+            'generated': arch_obj.get('generated') if isinstance(arch_obj, dict) else None,
+            'mode': 'ENSEMBLE' if (isinstance(arch_obj, dict) and arch_obj.get('is_ensemble')) else 'SOLO',
+            'ensemble_size': arch_obj.get('ensemble_size') if isinstance(arch_obj, dict) else None,
+            'organism_names': arch_obj.get('organism_names') if isinstance(arch_obj, dict) else None,
+            'training_config': cfg_obj,
+            'data_compressed': bool(_DATA_COMPRESSED),
+            'includes_readme': bool(_README_B64),
+            'includes_tmrl_adapter': bool(_TMRL_ADAPTER_B64),
+            'unpack_outputs': {
+                'onnx': 'ensemble.onnx',
+                'weights': 'ensemble_weights.pt',
+            },
+        }
+        meta_path = os.path.join(output_dir, 'metadata.json')
+        
+        # Check if metadata.json already exists (e.g., from package export)
+        if os.path.exists(meta_path):
+            try:
+                with open(meta_path, 'r', encoding='utf-8') as f:
+                    existing_meta = json.load(f)
+                # Merge: add cocoon_metadata to existing, preserving package metadata
+                existing_meta['cocoon_metadata'] = cocoon_meta
+                meta = existing_meta
+                print(f"[OK] Merged cocoon metadata into existing metadata.json")
+            except Exception:
+                # If read fails, just use cocoon metadata
+                meta = cocoon_meta
+        else:
+            meta = cocoon_meta
+        
+        with open(meta_path, 'w', encoding='utf-8') as f:
+            json.dump(meta, f, indent=2, default=_json_default)
+        spawned.append(meta_path)
+        print(f"[OK] Unpacked metadata: {meta_path}")
+    except Exception as exc:
+        print(f"[!] Metadata unpack failed: {exc}")
+
+    # 5) Requirements (minimal, offline-friendly)
+    try:
+        reqs = """# Cocoon Ultimate Package Dependencies
+# Install with: pip install -r requirements.txt
+
+# Core
+numpy>=1.21.0
+
+# Neural network weights + ONNX export
+torch>=2.0.0
+onnx>=1.14.0
+onnxruntime>=1.15.0  # Runtime (CPU)
+# onnxruntime-gpu>=1.15.0  # Uncomment for NVIDIA GPU
+
+# P2P Networking (for CocoonLink battles)
+websockets>=11.0
+
+# Drone Warfare Arena
+matplotlib>=3.8.0    # Trajectory visualization
+# PyFlyt>=1.0.0      # Optional: 3D drone visualization (pip install PyFlyt)
+
+# Gymnasium Environments (Proton Game Arena)
+gymnasium>=0.29.0    # Core RL environments
+pygame>=2.5.0        # Visual rendering
+"""
+        req_path = os.path.join(output_dir, 'requirements.txt')
+        with open(req_path, 'w', encoding='utf-8') as f:
+            f.write(reqs)
+        spawned.append(req_path)
+        print(f"[OK] Unpacked requirements: {req_path}")
+    except Exception as exc:
+        print(f"[!] Requirements write failed: {exc}")
+
+    # 6) ONNX + weights bundle (requires torch)
+    if not TORCH_AVAILABLE:
+        print("[WARN] torch not available; skipping ensemble.onnx and ensemble_weights.pt")
+        print("       Install: pip install torch onnx")
+    else:
+        try:
+            # Instantiate agent on demand (may take time)
+            agent = CocoonAgent(voting=voting, max_organisms=max_organisms)
+
+            import torch
+            import torch.nn as nn
+
+            class EnsembleMeanWrapper(nn.Module):
+                def __init__(self, brains):
+                    super().__init__()
+                    self.brains = nn.ModuleList(brains)
+
+                def forward(self, x: torch.Tensor):
+                    outs = []
+                    for b in self.brains:
+                        out = b(x)
+                        # handle tuple outputs (action_probs, language_logits, ...)
+                        if isinstance(out, tuple):
+                            out = out[0]
+                        outs.append(out)
+                    stacked = torch.stack(outs, dim=0)
+                    return stacked.mean(dim=0)
+
+            # Build ONNX ensemble
+            ensemble = EnsembleMeanWrapper(agent.brains).eval().cpu()
+            input_dim = getattr(agent.brains[0], 'input_dim', 28) if agent.brains else 28
+            dummy = torch.randn(1, input_dim, device='cpu')
+            onnx_path = os.path.join(output_dir, 'ensemble.onnx')
+            torch.onnx.export(
+                ensemble,
+                dummy,
+                onnx_path,
+                input_names=['observation'],
+                output_names=['action'],
+                dynamic_axes={'observation': {0: 'batch_size'}, 'action': {0: 'batch_size'}},
+                opset_version=14,
+                do_constant_folding=True,
+            )
+            spawned.append(onnx_path)
+            print(f"[OK] Unpacked ONNX: {onnx_path} ({len(agent.brains)} brains unified)")
+
+            # Bundle weights
+            bundle = {
+                'n_brains': len(agent.brains),
+                'brains': [b.state_dict() for b in agent.brains],
+                'config': {
+                    'input_dim': getattr(agent.brains[0], 'input_dim', None) if agent.brains else None,
+                    'hidden_dim': getattr(agent.brains[0], 'hidden_dim', None) if agent.brains else None,
+                    'output_dim': getattr(agent.brains[0], 'output_dim', None) if agent.brains else None,
+                },
+            }
+            weights_path = os.path.join(output_dir, 'ensemble_weights.pt')
+            torch.save(bundle, weights_path)
+            spawned.append(weights_path)
+            print(f"[OK] Unpacked weights: {weights_path} ({len(agent.brains)} brains bundled)")
+        except Exception as exc:
+            print(f"[!] Torch export failed: {exc}")
+
+    print("\n✅ Ultimate package unpack complete")
+    print(f"   Output: {os.path.abspath(output_dir)}")
+    return len(spawned) > 0
+
+
+def _json_default(obj):
+    """Fallback serializer for numpy/torch objects when exporting cocoons."""
+    if hasattr(obj, 'item'):  # numpy scalar or torch tensor scalar
+        return obj.item()
+    if hasattr(obj, 'tolist'):  # numpy array or torch tensor
+        return obj.tolist()
+    if isinstance(obj, set):
+        return list(obj)
+    if hasattr(obj, '__dict__'):
+        return obj.__dict__
+    return str(obj)
 
 
 # Torch imports
@@ -6871,12 +8978,17 @@ class AtomicLanguageSystem:
     def from_dict(cls, data: Dict[str, Any]) -> 'AtomicLanguageSystem':
         system = cls(organism_id=data.get('organism_id', 'cocoon'))
         loaded_atoms = data.get('atoms', {})
-        # ONLY clear innate concepts if we have actual data to replace them with
+        # FIXED: MERGE loaded atoms with innate concepts instead of replacing
+        # This preserves innate concepts while adding/updating learned ones
         if loaded_atoms:
-            system.atoms.clear()
-            system._concept_order = data.get('concept_order', [])
+            # Merge loaded atoms over innate (loaded takes precedence)
             for concept_id, atom_data in loaded_atoms.items():
                 system.atoms[concept_id] = LinguisticAtom.from_dict(atom_data)
+            # Update concept order to include both innate and loaded
+            loaded_order = data.get('concept_order', [])
+            # Merge orders: loaded order first, then any innate not in loaded
+            innate_not_in_loaded = [c for c in system._concept_order if c not in loaded_order]
+            system._concept_order = loaded_order + innate_not_in_loaded
         # If no atoms were loaded, keep the innate concepts initialized by __init__
         return system
 
@@ -7080,13 +9192,15 @@ class VPRuntime:
         """
         Compute VP components from organism state vector.
         
-        State vector mapping (25-dim, matches config.json):
+        State vector mapping (28-dim with self-perception):
             0-5: Action probabilities
             6-8: Resource levels (energy, fitness, age)
             9-11: Social signals (cooperation, competition, isolation)
             12-14: Environmental context
-            15-23: Additional features
-            24: Illumination level
+            15-24: Additional features + illumination
+            25: oscillation_entropy (self-perception)
+            26: coherence_frequency (self-perception)
+            27: attractor_proximity (self-perception)
         
         Returns dict with: vitality, pleasure, violation_pressure, vp_class, components
         """
@@ -7217,6 +9331,93 @@ if TORCH_AVAILABLE:
             return self.out_proj(out)
 
 
+    class HopfieldLayer(nn.Module):
+        """
+        Modern Continuous Hopfield Network for iterative thought refinement.
+        
+        Implements energy-based pattern retrieval with learnable memory patterns.
+        E(ξ) = -β⁻¹ log Σᵢ exp(β xᵢᵀ ξ)
+        Update: ξ' = softmax(β Xᵀ ξ) · X
+        """
+        def __init__(self, hidden_dim: int = 64, num_patterns: int = 32,
+                     max_iterations: int = 5, beta: float = 1.0, dropout: float = 0.1):
+            super().__init__()
+            self.hidden_dim = hidden_dim
+            self.num_patterns = num_patterns
+            self.max_iterations = max_iterations
+            self.beta = beta
+            self.convergence_threshold = 1e-3
+            
+            # Learnable pattern memory
+            self.patterns = nn.Parameter(torch.randn(num_patterns, hidden_dim) * 0.02)
+            
+            # Projections for attention mechanism
+            self.query_proj = nn.Linear(hidden_dim, hidden_dim)
+            self.key_proj = nn.Linear(hidden_dim, hidden_dim)
+            self.out_proj = nn.Linear(hidden_dim, hidden_dim)
+            
+            self.norm = nn.LayerNorm(hidden_dim)
+            self.dropout = nn.Dropout(dropout)
+            
+            # Convergence tracking
+            self._last_iterations = 0
+            self._last_converged = False
+            self._last_delta = 0.0
+
+        def forward(self, x: torch.Tensor, vp_value: Optional[float] = None) -> torch.Tensor:
+            # VP-aware temperature: higher VP = sharper retrieval
+            beta = self.beta
+            if vp_value is not None and vp_value > 0:
+                beta = self.beta * (1.0 + vp_value * 0.5)
+            
+            # Handle 3D input (batch, seq, hidden)
+            if x.dim() == 3:
+                batch_size, seq_len, _ = x.size()
+                x_flat = x.view(-1, self.hidden_dim)
+                out_flat = self._iterate(x_flat, beta)
+                return out_flat.view(batch_size, seq_len, self.hidden_dim)
+            
+            return self._iterate(x, beta)
+        
+        def _iterate(self, xi: torch.Tensor, beta: float) -> torch.Tensor:
+            keys = self.key_proj(self.patterns)
+            
+            converged = False
+            delta = 0.0
+            for i in range(self.max_iterations):
+                xi_prev = xi
+                queries = self.query_proj(xi)
+                scores = torch.matmul(queries, keys.t()) * beta
+                attention = F.softmax(scores, dim=-1)
+                retrieved = torch.matmul(attention, self.patterns)
+                xi = xi + self.dropout(self.out_proj(retrieved))
+                xi = self.norm(xi)
+                
+                delta = (xi - xi_prev).abs().mean().item()
+                if delta < self.convergence_threshold:
+                    converged = True
+                    self._last_iterations = i + 1
+                    self._last_converged = True
+                    self._last_delta = delta
+                    break
+            
+            if not converged:
+                self._last_iterations = self.max_iterations
+                self._last_converged = False
+                self._last_delta = delta
+            
+            return xi
+        
+        def get_convergence_info(self) -> Dict[str, Any]:
+            return {
+                'iterations': self._last_iterations,
+                'converged': self._last_converged,
+                'final_delta': self._last_delta,
+                'max_iterations': self.max_iterations,
+                'threshold': self.convergence_threshold
+            }
+
+
     class ConceptHead(nn.Module):
         """Concept prediction head for compositional understanding (RCUS)."""
         def __init__(self, hidden_dim: int = 64, num_axioms: int = 18, num_compositions: int = 15):
@@ -7249,10 +9450,22 @@ if TORCH_AVAILABLE:
             self.dropout_rate = config.get('dropout', 0.1)
             self.num_attention_heads = config.get('num_attention_heads', 4)
             self.num_key_compositions = config.get('num_key_compositions', 15)
+            
+            # Hopfield layer params
+            self.use_hopfield = config.get('use_hopfield', False)
+            self.hopfield_patterns = config.get('hopfield_patterns', 32)
+            self.hopfield_iterations = config.get('hopfield_iterations', 5)
+            self.hopfield_beta = config.get('hopfield_beta', 1.0)
+            
             self.fc1 = nn.Linear(self.input_dim, self.hidden_dim)
             if self.use_attention:
                 self.attention = MultiHeadAttention(self.hidden_dim, self.num_attention_heads, self.dropout_rate)
                 self.attention_norm = nn.LayerNorm(self.hidden_dim)
+            if self.use_hopfield:
+                self.hopfield = HopfieldLayer(
+                    self.hidden_dim, self.hopfield_patterns,
+                    self.hopfield_iterations, self.hopfield_beta, self.dropout_rate
+                )
             self.fc2 = nn.Linear(self.hidden_dim, self.hidden_dim)
             self.fc3 = nn.Linear(self.hidden_dim, self.output_dim)
             if self.use_language_head:
@@ -7278,6 +9491,10 @@ if TORCH_AVAILABLE:
                 attn_out = self.attention(h, vp_value=vp_value)
                 h = self.attention_norm(h + attn_out)
                 h = h.squeeze(1)
+            
+            # Hopfield iterative refinement
+            if self.use_hopfield:
+                h = self.hopfield(h, vp_value=vp_value)
 
             h = F.relu(self.fc2(h))
             h = self.dropout(h)
@@ -7289,6 +9506,210 @@ if TORCH_AVAILABLE:
             if self.use_language_head and return_language_logits:
                 language_logits = self.fc_language(h)
             return action_probs, language_logits
+        
+        def get_hidden_state(self, x: torch.Tensor, vp_value: Optional[float] = None) -> torch.Tensor:
+            """Get hidden state after full pipeline (fc1 → attention → hopfield → fc2)."""
+            if x.shape[-1] < self.input_dim:
+                pad = torch.zeros(*x.shape[:-1], self.input_dim - x.shape[-1], device=x.device)
+                x = torch.cat([x, pad], dim=-1)
+            elif x.shape[-1] > self.input_dim:
+                x = x[..., :self.input_dim]
+            
+            h = F.relu(self.fc1(x))
+            h = self.dropout(h)
+            
+            if self.use_attention:
+                if h.dim() == 2:
+                    h = h.unsqueeze(1)
+                attn_out = self.attention(h, vp_value=vp_value)
+                h = self.attention_norm(h + attn_out)
+                if h.dim() == 3 and h.size(1) == 1:
+                    h = h.squeeze(1)
+            
+            if self.use_hopfield:
+                h = self.hopfield(h, vp_value=vp_value)
+            
+            h = F.relu(self.fc2(h))
+            h = self.dropout(h)
+            return h
+        
+        def get_thought_info(self) -> Optional[Dict[str, Any]]:
+            """Get Hopfield convergence info."""
+            if self.use_hopfield:
+                return self.hopfield.get_convergence_info()
+            return None
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 🤝 COCOON ALLIANCE SYSTEM - Preserved Social Structure
+# ═══════════════════════════════════════════════════════════════════════════════
+# "Connections formed are causeways for rationality"
+# 
+# The alliance graph represents the emergent social brain. Organisms that formed
+# alliances in the engine trusted each other, shared concepts, defended each other.
+# This class preserves that relational structure so cocoons can make alliance-aware
+# decisions without the full engine.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class CocoonAlliance:
+    """
+    Lightweight alliance system for standalone cocoons.
+    
+    Loads pre-computed alliance graph from training and provides:
+    - Trust-weighted voting (allies vote together)
+    - Alliance membership queries
+    - Reputation-based decision weights
+    - Social graph traversal
+    """
+    
+    def __init__(self):
+        # Load alliance data from embedded payload
+        self.alliance_data = _decode_data(_ALLIANCE_B64) or {}
+        
+        # Core alliance structures
+        self.alliances = self.alliance_data.get('alliances', {})
+        self.organism_to_alliance = self.alliance_data.get('organism_to_alliance', {})
+        self.organism_trust = self.alliance_data.get('organism_trust', {})
+        self.organism_reputation = self.alliance_data.get('organism_reputation', {})
+        self.organism_stats = self.alliance_data.get('organism_stats', {})
+        self.social_graph = self.alliance_data.get('social_graph', {})
+        
+        # Track alliance-based trust weights for voting
+        self._trust_cache = {}
+        
+        if self.alliances:
+            print(f"[ALLIANCE] Loaded social structure: {len(self.alliances)} alliances, "
+                  f"{len(self.organism_trust)} trust records")
+    
+    def get_alliance_id(self, organism_id: str) -> Optional[str]:
+        """Get the alliance ID for an organism."""
+        return self.organism_to_alliance.get(str(organism_id))
+    
+    def get_alliance_members(self, organism_id: str) -> List[str]:
+        """Get all alliance members for an organism's alliance."""
+        alliance_id = self.get_alliance_id(organism_id)
+        if not alliance_id:
+            return [str(organism_id)]  # Solo - just self
+        
+        alliance = self.alliances.get(alliance_id, {})
+        return alliance.get('members', [str(organism_id)])
+    
+    def get_trust_score(self, organism_id: str) -> float:
+        """Get trust score for an organism (0.0-1.0). Higher = more trustworthy."""
+        return self.organism_trust.get(str(organism_id), 0.5)
+    
+    def get_competition_stats(self, organism_id: str) -> Dict[str, Any]:
+        """Get competition stats for an organism."""
+        return self.organism_stats.get(str(organism_id), {})
+    
+    def get_social_connections(self, organism_id: str) -> List[str]:
+        """Get organisms this organism is socially connected to."""
+        return self.social_graph.get(str(organism_id), [])
+    
+    def are_allies(self, org1_id: str, org2_id: str) -> bool:
+        """Check if two organisms are in the same alliance."""
+        alliance1 = self.get_alliance_id(org1_id)
+        alliance2 = self.get_alliance_id(org2_id)
+        if alliance1 and alliance2:
+            return alliance1 == alliance2
+        return False
+    
+    def get_alliance_trust_weight(self, organism_ids: List[str]) -> Dict[str, float]:
+        """
+        Calculate trust-based voting weights for a group of organisms.
+        
+        Organisms in the same alliance amplify each other's influence.
+        Organisms with higher trust scores get more vote weight.
+        Organisms with better competition stats get credibility boosts.
+        
+        Returns:
+            Dict mapping organism_id -> vote_weight (sum to ~1.0)
+        """
+        cache_key = tuple(sorted(organism_ids))
+        if cache_key in self._trust_cache:
+            return self._trust_cache[cache_key]
+        
+        weights = {}
+        for org_id in organism_ids:
+            org_str = str(org_id)
+            base_weight = 1.0
+            
+            # Trust score factor (0.5-1.5x)
+            trust = self.get_trust_score(org_str)
+            base_weight *= (0.5 + trust)
+            
+            # Competition stats factor (wins boost credibility)
+            stats = self.get_competition_stats(org_str)
+            wins = stats.get('tournament_wins', 0) + stats.get('proton_wins', 0)
+            losses = stats.get('tournament_losses', 0) + stats.get('proton_losses', 0)
+            if wins + losses > 0:
+                win_rate = wins / (wins + losses)
+                base_weight *= (0.8 + win_rate * 0.4)  # 0.8-1.2x based on win rate
+            
+            # Alliance cohesion factor - allies boost each other
+            alliance_members = self.get_alliance_members(org_str)
+            alliance_bonus = 0.0
+            for other_id in organism_ids:
+                if other_id != org_str and other_id in alliance_members:
+                    # Same alliance = mutual trust boost
+                    other_trust = self.get_trust_score(other_id)
+                    alliance_bonus += 0.1 * other_trust
+            
+            base_weight += min(0.5, alliance_bonus)  # Cap alliance boost at 50%
+            
+            weights[org_str] = max(0.1, base_weight)  # Minimum 10% weight
+        
+        # Normalize to sum to 1.0
+        total = sum(weights.values())
+        if total > 0:
+            weights = {k: v / total for k, v in weights.items()}
+        
+        self._trust_cache[cache_key] = weights
+        return weights
+    
+    def get_alliance_consensus_threshold(self, organism_ids: List[str]) -> float:
+        """
+        Calculate consensus threshold for alliance-based voting.
+        
+        Strong alliances require less consensus (they trust each other).
+        Weak/no alliances require higher consensus (everyone must agree).
+        
+        Returns:
+            Threshold between 0.5 (simple majority) and 0.9 (strong consensus)
+        """
+        if not organism_ids:
+            return 0.5
+        
+        # Calculate average alliance strength
+        alliance_count = 0
+        total_trust = 0.0
+        
+        for org_id in organism_ids:
+            alliance_id = self.get_alliance_id(org_id)
+            if alliance_id:
+                alliance_count += 1
+                total_trust += self.get_trust_score(org_id)
+        
+        # High alliance membership + high trust = lower threshold
+        alliance_ratio = alliance_count / len(organism_ids)
+        avg_trust = total_trust / max(1, alliance_count) if alliance_count > 0 else 0.5
+        
+        # Strong alliances: 0.5 threshold (simple majority)
+        # Weak/no alliances: 0.8 threshold (need more agreement)
+        threshold = 0.8 - (0.3 * alliance_ratio * avg_trust)
+        
+        return max(0.5, min(0.8, threshold))
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Export alliance state for saving."""
+        return {
+            'alliances': self.alliances,
+            'organism_to_alliance': self.organism_to_alliance,
+            'organism_trust': self.organism_trust,
+            'organism_reputation': self.organism_reputation,
+            'organism_stats': self.organism_stats,
+            'social_graph': self.social_graph,
+        }
 
 
 class EnsembleVoting:
@@ -7304,6 +9725,48 @@ class EnsembleVoting:
         for p, w in zip(action_probs_list, weights):
             weighted += p * w
         return int(np.argmax(weighted / max(1e-9, sum(weights))))
+    
+    @staticmethod
+    def alliance_weighted(action_probs_list: List[np.ndarray], 
+                          organism_ids: List[str],
+                          alliance_system: 'CocoonAlliance') -> int:
+        """
+        Alliance-weighted voting: organisms in same alliance amplify each other.
+        
+        This preserves the emergent social structure - organisms that formed
+        alliances during training vote together as a coalition.
+        
+        Args:
+            action_probs_list: Action probabilities from each organism
+            organism_ids: List of organism IDs (parallel to action_probs_list)
+            alliance_system: CocoonAlliance instance with trust data
+            
+        Returns:
+            Selected action (int)
+        """
+        if not alliance_system or not organism_ids:
+            # Fallback to standard confidence voting
+            return EnsembleVoting.confidence(action_probs_list)
+        
+        # Get alliance-based trust weights
+        trust_weights = alliance_system.get_alliance_trust_weight(organism_ids)
+        
+        # Weight by both confidence AND alliance trust
+        weighted = np.zeros_like(action_probs_list[0])
+        total_weight = 0.0
+        
+        for probs, org_id in zip(action_probs_list, organism_ids):
+            # Combine confidence weight with alliance trust weight
+            confidence_weight = float(np.max(probs))
+            alliance_weight = trust_weights.get(str(org_id), 1.0 / len(organism_ids))
+            
+            # Final weight = sqrt(confidence * alliance) for balanced influence
+            combined_weight = np.sqrt(confidence_weight * alliance_weight)
+            
+            weighted += probs * combined_weight
+            total_weight += combined_weight
+        
+        return int(np.argmax(weighted / max(1e-9, total_weight)))
 
 
 class CocoonAgent:
@@ -7311,7 +9774,7 @@ class CocoonAgent:
         if not TORCH_AVAILABLE:
             raise RuntimeError("PyTorch required")
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.architecture = _decode_data(_ARCHITECTURE_B64)
+        self.architecture = _decode_data(_ARCHITECTURE_B64) or {'brain_configs': [], 'organism_names': [], 'is_ensemble': False}
         self.is_ensemble = self.architecture.get('is_ensemble', False)
         self.organism_names = self.architecture.get('organism_names', [])
         # Limit organisms if requested (saves VRAM)
@@ -7319,7 +9782,7 @@ class CocoonAgent:
         if max_organisms and len(self.organism_names) > max_organisms:
             self.organism_names = self.organism_names[:max_organisms]
             print(f"[INFO] Limiting to {max_organisms} organisms (of {self.architecture.get('ensemble_size', 1)})")
-        self.config = _decode_data(_TRAINING_CONFIG_B64)
+        self.config = _decode_data(_TRAINING_CONFIG_B64) or {}
         self.learning_rate = self.config.get('learning_rate', 0.005)  # Default matches config.json
         self.batch_size = self.config.get('batch_size', 32)
         self.gamma = self.config.get('gamma', 0.995)  # Default matches config.json
@@ -7329,8 +9792,9 @@ class CocoonAgent:
         self.rl_weight = self.config.get('rl_loss_weight', 0.5)  # Default matches config.json alpha
         self.lang_weight = self.config.get('language_loss_weight', 0.4)  # Default matches config.json beta
         self.concept_weight = self.config.get('concept_loss_weight', 0.1)  # Default matches config.json gamma
-        self.vocabulary = _decode_data(_VOCABULARY_B64)
-        self.knowledge_web = _decode_data(_KNOWLEDGE_WEB_B64)
+        # Add null checks in case decode fails (corrupted data)
+        self.vocabulary = _decode_data(_VOCABULARY_B64) or {'word_to_id': {}, 'id_to_word': {}, 'vocab_size': 0}
+        self.knowledge_web = _decode_data(_KNOWLEDGE_WEB_B64) or {'concepts': {}, 'relations': []}
         self.brains: List[OrganismBrain] = []
         self.optimizers: List[optim.Adam] = []
         self.experience_buffers: List[ExperienceBuffer] = []
@@ -7389,7 +9853,7 @@ class CocoonAgent:
                 self.conversation = ConversationHistory.from_dict(conv_data)
             else:
                 self.conversation = ConversationHistory()
-        except:
+        except Exception:
             self.conversation = ConversationHistory()
         
         # Enhanced Knowledge Web - semantic relations
@@ -7401,12 +9865,59 @@ class CocoonAgent:
         self.vp_runtime = VPRuntime(smoothing_factor=0.3, history_size=20)
         self.reward_history: List[float] = []  # For VP stagnation calculation
         
+        # ═══════════════════════════════════════════════════════════════════
+        # 🤝 ALLIANCE SYSTEM - Preserved Social Structure
+        # ═══════════════════════════════════════════════════════════════════
+        # "Connections formed are causeways for rationality"
+        # Alliances that formed during training represent emergent trust.
+        # This enables alliance-weighted voting for coherent ensemble decisions.
+        self.alliance_system = CocoonAlliance()
+        
+        # Update organism fitness with alliance trust weights
+        if self.alliance_system.organism_trust and self.is_ensemble:
+            self._apply_alliance_trust_to_fitness()
+        
+        # Default to alliance-weighted voting if alliances exist
+        if self.alliance_system.alliances and voting == 'confidence':
+            self.voting = 'alliance'
+            print(f"[ALLIANCE] Auto-switching to alliance-weighted voting (found {len(self.alliance_system.alliances)} alliances)")
+        
         mode = "ENSEMBLE" if self.is_ensemble else "SOLO"
-        print(f"[OK] CocoonAgent loaded: {mode}, {len(self.brains)} organism(s), device={self.device}")
+        alliance_info = f", {len(self.alliance_system.alliances)} alliances" if self.alliance_system.alliances else ""
+        print(f"[OK] CocoonAgent loaded: {mode}, {len(self.brains)} organism(s){alliance_info}, device={self.device}")
         print(f"     Atomic concepts: {len(self.atomic_language.atoms)}")
         print(f"     Knowledge web: {len(self.enhanced_kb.concepts)} concepts, {len(self.enhanced_kb.relations)} relations")
         print(f"     Conversation history: {self.conversation.turn_count} turns")
         print(f"     VP Runtime: enabled (smoothing={self.vp_runtime.smoothing_factor})")
+    
+    def _apply_alliance_trust_to_fitness(self):
+        """
+        Adjust organism fitness based on alliance trust scores.
+        
+        Organisms with higher trust scores and good competition records
+        get their base fitness boosted. This affects voting influence.
+        """
+        for idx, org_name in enumerate(self.organism_names):
+            if idx >= len(self.organism_fitness):
+                break
+            
+            trust = self.alliance_system.get_trust_score(org_name)
+            stats = self.alliance_system.get_competition_stats(org_name)
+            
+            # Trust factor: 0.8-1.2x (centered on 1.0 for 0.5 trust)
+            trust_factor = 0.8 + (trust * 0.4)
+            
+            # Competition factor: based on win record
+            wins = stats.get('tournament_wins', 0) + stats.get('proton_wins', 0)
+            losses = stats.get('tournament_losses', 0) + stats.get('proton_losses', 0)
+            if wins + losses > 5:  # Only apply if significant record
+                win_rate = wins / (wins + losses)
+                competition_factor = 0.9 + (win_rate * 0.2)  # 0.9-1.1x
+            else:
+                competition_factor = 1.0
+            
+            # Apply combined factor
+            self.organism_fitness[idx] *= trust_factor * competition_factor
 
     def _load_brains(self):
         brain_configs = self.architecture.get('brain_configs', [])
@@ -7497,15 +10008,25 @@ class CocoonAgent:
             if len(clean_word) < 2:
                 continue
                 
-            # Gate: only learn words in knowledge_web (matching butterfly_chat)
+            # FIXED: Learn ALL words, not just those in knowledge_web
+            # The knowledge_web gate was causing semantic lesson words to be skipped
+            # and tokenized as <UNK>, preventing organisms from learning new vocabulary
             if kw_concepts is not None and clean_word not in kw_concepts:
-                # Word not in knowledge_web - still tokenize but don't add to vocab
-                word_to_id = self.vocabulary.get('word_to_id', {})
-                token_id = word_to_id.get(clean_word, word_to_id.get('<UNK>', 1))
-                tokens.append(token_id)
-                continue
+                # Word not in knowledge_web - ADD IT to knowledge_web first, then learn it
+                if 'concepts' not in self.knowledge_web:
+                    self.knowledge_web['concepts'] = {}
+                concept_data = {
+                    'category': 'learned',
+                    'confidence': 0.3,
+                    'source': 'text_learning'
+                }
+                self.knowledge_web['concepts'][clean_word] = concept_data
+                
+                # FIXED: Also sync to enhanced_kb so semantic queries see learned concepts
+                if hasattr(self, 'enhanced_kb') and self.enhanced_kb is not None:
+                    self.enhanced_kb.concepts[clean_word] = concept_data
             
-            # Word passes knowledge_web gate - learn it
+            # Learn all words (removed gate that was skipping words)
             token_id = self.add_word(clean_word)
             tokens.append(token_id)
             learned_count += 1
@@ -7585,6 +10106,9 @@ class CocoonAgent:
         
         If vp_value is None, computes it automatically using VPRuntime.
         State is automatically padded to match brain.input_dim.
+        
+        For ensembles, uses alliance-weighted voting if alliance data exists,
+        otherwise falls back to confidence-weighted voting.
         """
         # Pad state to match brain input dimension
         state = self._pad_state(state)
@@ -7610,7 +10134,19 @@ class CocoonAgent:
                     p = p[:action_space_size]
                     p = p / (p.sum() + 1e-9)  # Re-normalize
                 probs_list.append(p)
-            return EnsembleVoting.confidence(probs_list)
+            
+            # Use alliance-weighted voting if available
+            if self.voting == 'alliance' and self.alliance_system.alliances:
+                return EnsembleVoting.alliance_weighted(
+                    probs_list, 
+                    self.organism_names[:len(probs_list)],
+                    self.alliance_system
+                )
+            elif self.voting == 'majority':
+                actions = [int(np.argmax(p)) for p in probs_list]
+                return EnsembleVoting.majority(actions)
+            else:
+                return EnsembleVoting.confidence(probs_list)
         brain = self.brains[0]
         brain.eval()
         with torch.no_grad():
@@ -7812,17 +10348,21 @@ class CocoonAgent:
             concept_loss = None
             if hasattr(brain, 'use_concept_head') and brain.use_concept_head and hasattr(brain, 'concept_head'):
                 brain.train()
-                # Get hidden state for concept head
-                h = F.relu(brain.fc1(states_t))
-                h = brain.dropout(h)
-                if brain.use_attention:
-                    if h.dim() == 2:
-                        h = h.unsqueeze(1)
-                    attn_out = brain.attention(h, vp_value=vp_val)
-                    h = brain.attention_norm(h + attn_out)
-                    h = h.squeeze(1)
-                h = F.relu(brain.fc2(h))
-                h = brain.dropout(h)
+                # Get hidden state for concept head - use helper for proper Hopfield routing
+                if hasattr(brain, 'get_hidden_state'):
+                    h = brain.get_hidden_state(states_t, vp_value=vp_val)
+                else:
+                    # Fallback for older brains without helper
+                    h = F.relu(brain.fc1(states_t))
+                    h = brain.dropout(h)
+                    if brain.use_attention:
+                        if h.dim() == 2:
+                            h = h.unsqueeze(1)
+                        attn_out = brain.attention(h, vp_value=vp_val)
+                        h = brain.attention_norm(h + attn_out)
+                        h = h.squeeze(1)
+                    h = F.relu(brain.fc2(h))
+                    h = brain.dropout(h)
                 concept_out = brain.concept_head(h)
                 composition_values = concept_out['composition_value']
                 predicted_reward = composition_values.mean(dim=-1)
@@ -8253,13 +10793,13 @@ class CocoonAgent:
             new_brain_data.append(base64.b64encode(compressed).decode('ascii'))
         
         # 2) Vocabulary (may have grown via learn_from_text)
-        vocab_json = json.dumps(self.vocabulary)
+        vocab_json = json.dumps(self.vocabulary, default=_json_default)
         vocab_compressed = zlib.compress(vocab_json.encode('utf-8'), level=9)
         vocab_b64 = base64.b64encode(vocab_compressed).decode('ascii')
         
         # 3) Conversation history (accumulated during chat)
         conv_data = self.conversation.to_dict() if hasattr(self, 'conversation') else {'messages': [], 'topics': {}, 'turn_count': 0}
-        conv_json = json.dumps(conv_data)
+        conv_json = json.dumps(conv_data, default=_json_default)
         conv_compressed = zlib.compress(conv_json.encode('utf-8'), level=9)
         conv_b64 = base64.b64encode(conv_compressed).decode('ascii')
         
@@ -8274,12 +10814,17 @@ class CocoonAgent:
         atomic_compressed = zlib.compress(atomic_json.encode('utf-8'), level=9)
         atomic_b64 = base64.b64encode(atomic_compressed).decode('ascii')
         
+        # 5) Knowledge web (may have grown via learn_from_text - FIXED: was missing!)
+        kw_json = json.dumps(self.knowledge_web, default=_json_default)
+        kw_compressed = zlib.compress(kw_json.encode('utf-8'), level=9)
+        kw_b64 = base64.b64encode(kw_compressed).decode('ascii')
+        
         # Read original source
         with open(__file__, 'r', encoding='utf-8') as f:
             source = f.read()
         
         # Replace brain data - use string find/replace instead of regex to avoid issues with large data
-        brain_data_py = "[\\n" + ",\\n".join(f'    "{b}"' for b in new_brain_data) + "\\n]"
+        brain_data_py = "[\n" + ",\n".join(f'    "{b}"' for b in new_brain_data) + "\n]"
         
         # Find the start of _BRAIN_DATA
         brain_start = source.find('_BRAIN_DATA = [')
@@ -8315,11 +10860,18 @@ class CocoonAgent:
             atomic_end = source.find('"', atomic_start + len('_ATOMIC_LANG_B64 = "')) + 1
             source = source[:atomic_start] + f'_ATOMIC_LANG_B64 = "{atomic_b64}"' + source[atomic_end:]
         
+        # Replace knowledge web (FIXED: was missing - learned concepts were lost!)
+        kw_start = source.find('_KNOWLEDGE_WEB_B64 = "')
+        if kw_start != -1:
+            kw_end = source.find('"', kw_start + len('_KNOWLEDGE_WEB_B64 = "')) + 1
+            source = source[:kw_start] + f'_KNOWLEDGE_WEB_B64 = "{kw_b64}"' + source[kw_end:]
+        
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(source)
         
         print(f"[OK] Exported updated cocoon to: {output_path}")
         print(f"     Preserved: brain weights, vocabulary ({len(self.vocabulary.get('word_to_id', {}))} words),")
+        print(f"     knowledge_web ({len(self.knowledge_web.get('concepts', {}))} concepts),")
         print(f"     conversation ({conv_data.get('turn_count', 0)} turns), atomic language states")
 
     def export_onnx(self, output_path: str, organism_idx: int = 0):
@@ -8362,7 +10914,7 @@ class CocoonAgent:
         
         try:
             # Use trace instead of script - more compatible with complex models
-            input_dim = getattr(brain, 'input_dim', 25)
+            input_dim = getattr(brain, 'input_dim', 28)
             dummy_input = torch.randn(1, input_dim)
             traced = torch.jit.trace(brain, (dummy_input,))
             traced.save(output_path)
@@ -8431,6 +10983,57 @@ class CocoonAgent:
             print(f"[!] Ensemble ONNX export failed: {e}")
             return False
 
+    def export_ensemble_torchscript(self, output_path: str):
+        """Export ALL brains as a SINGLE combined TorchScript model."""
+        if len(self.brains) == 0:
+            print("[!] No brains to export")
+            return False
+        
+        # Create MultiOrganismWrapper that runs all brains and returns all outputs
+        class MultiOrganismWrapper(nn.Module):
+            def __init__(self, brains, names):
+                super().__init__()
+                self.brains = nn.ModuleList(brains)
+                self.names = names
+                self.input_dims = [b.input_dim for b in brains]
+                self.max_input_dim = max(self.input_dims)
+            
+            def forward(self, x: torch.Tensor):
+                # x shape: [batch, max_input_dim]
+                # Returns stacked action probs for all organisms
+                outputs = []
+                for brain, in_dim in zip(self.brains, self.input_dims):
+                    x_i = x[..., :in_dim] if x.shape[-1] >= in_dim else F.pad(x, (0, in_dim - x.shape[-1]))
+                    action_probs, _ = brain(x_i, return_language_logits=False)
+                    outputs.append(action_probs)
+                # Stack outputs: [num_organisms, batch, output_dim]
+                return torch.stack(outputs, dim=0)
+        
+        wrapper = MultiOrganismWrapper(self.brains, self.organism_names)
+        wrapper.eval()
+        
+        # Move wrapper to CPU for export (more portable)
+        wrapper = wrapper.cpu()
+        
+        try:
+            dummy_input = torch.randn(1, wrapper.max_input_dim)  # CPU tensor
+            traced = torch.jit.trace(wrapper, (dummy_input,))
+            traced.save(output_path)
+            
+            print(f"[OK] Exported ENSEMBLE TorchScript ({len(self.brains)} brains) to: {output_path}")
+            print(f"     Output shape: [{len(self.brains)}, batch, output_dim]")
+            print(f"     View at: https://netron.app/")
+            
+            # Move brains back to original device
+            device = 'cuda' if torch.cuda.is_available() else 'cpu'
+            for brain in self.brains:
+                brain.to(device)
+            
+            return True
+        except Exception as e:
+            print(f"[!] Ensemble TorchScript export failed: {e}")
+            return False
+
     def export_package(self, output_dir: str):
         """
         Export a complete Netron-viewable package:
@@ -8471,6 +11074,19 @@ class CocoonAgent:
             'training_config': self.config,
         }
         meta_path = os.path.join(output_dir, "metadata.json")
+        
+        # Handle existing metadata.json (merge if present)
+        if os.path.exists(meta_path):
+            try:
+                with open(meta_path, 'r', encoding='utf-8') as f:
+                    existing_meta = json.load(f)
+                # Merge: update existing with new metadata
+                existing_meta.update(metadata)
+                metadata = existing_meta
+                print(f"[OK] Merged with existing metadata.json")
+            except Exception:
+                pass  # If read fails, just overwrite
+        
         with open(meta_path, 'w', encoding='utf-8') as f:
             json.dump(metadata, f, indent=2)
         print(f"[OK] Exported metadata to: {meta_path}")
@@ -8597,7 +11213,7 @@ import onnxruntime as ort
 import numpy as np
 
 session = ort.InferenceSession("brain_org_001.onnx")
-state = np.random.randn(1, 25).astype(np.float32)  # 25 dims matches config.json
+state = np.random.randn(1, 28).astype(np.float32)  # 28 dims matches config.json
 outputs = session.run(None, {{"state": state}})
 action_probs = outputs[0]
 ```
@@ -8666,7 +11282,7 @@ PADDLE_ANGULAR_RADIUS = 0.25  # Radians - size of circular paddle zone
 BALL_SPEED = 0.03     # Initial ball speed
 MAX_BALL_SPEED = 0.08
 PANEL_SPEED = 0.04    # Radians per frame (organism move speed)
-OBSERVATION_SIZE = 25 # Size of observation vector per organism (matches config.json input_dim)
+OBSERVATION_SIZE = 28 # Size of observation vector per organism (matches config.json input_dim: 25 base + 3 self-perception)
 MIN_SPAWN_DISTANCE = 0.3  # Min distance from sphere center for ball spawn
 
 # Command chain settings
@@ -8966,7 +11582,7 @@ class SphereArena:
         
         try:
             self.font = pygame.font.Font(None, 36)
-        except:
+        except Exception:
             self.font = None
     
     def _setup_teams(self):
@@ -9016,7 +11632,7 @@ class SphereArena:
                         first_weights = params[0].data.flatten()[:16].tolist()
                         weight_str = ','.join(f'{w:.4f}' for w in first_weights)
                         brain_hash = int(hashlib.md5(weight_str.encode()).hexdigest()[:8], 16)
-                except:
+                except Exception:
                     brain_hash = org_idx * 12345
         else:
             brain_hash = org_idx * 12345
@@ -9216,7 +11832,7 @@ class SphereArena:
             try:
                 vp_data = self.agent.vp_runtime.compute_from_state(observation, [])
                 vp_value = vp_data.get('violation_pressure', 0.5)
-            except:
+            except Exception:
                 pass
         
         try:
@@ -10730,8 +13346,9 @@ def run_http_server(agent: CocoonAgent, port: int = 8080):
         learn = data.get('learn', True)
         
         # Get current VP value for reward calculation
+        input_dim = agent.brains[0].input_dim if agent.brains else 28
         vp_info = agent.vp_runtime.compute_from_state(
-            np.zeros(25, dtype=np.float32),  # Default state (matches config.json input_dim=25)
+            np.zeros(input_dim, dtype=np.float32),  # Dynamic input_dim from brain config
             agent.reward_history
         )
         current_vp = vp_info.get('violation_pressure', 0.0)
@@ -10990,7 +13607,7 @@ async def run_cocoon_link(agent, display_name: str, hatch_url: str):
                     opp_data = msg_queue.get_nowait()
                     opp_action = opp_data.get('action', 0)
                     break
-                except:
+                except Exception:
                     await asyncio.sleep(0.1)
             
             if opp_action is None:
@@ -11115,6 +13732,7 @@ Examples:
   python cocoon.py --export updated_cocoon.py
   python cocoon.py --export-onnx brain.onnx
   python cocoon.py --export-package ./my_model
+    python cocoon.py --unpack ./ultimate_package
         """)
     parser.add_argument('--mode', choices=['chat', 'gym', 'serve', 'link', 'sphere', 'info'], default='info')
     parser.add_argument('--env', type=str, default='CartPole-v1')
@@ -11123,11 +13741,14 @@ Examples:
     parser.add_argument('--no-learn', action='store_true')
     parser.add_argument('--port', type=int, default=8080)
     parser.add_argument('--export', type=str, help='Export cocoon Python file')
-    parser.add_argument('--export-onnx', type=str, help='Export ONNX model (ensemble exports all brains, use --organism N to export single)')
+    parser.add_argument('--export-onnx', type=str, help='Export ONNX model (ensemble exports all brains combined)')
+    parser.add_argument('--export-torchscript', type=str, help='Export TorchScript model (ensemble exports all brains combined)')
     parser.add_argument('--export-package', type=str, help='Export full package (ONNX + README + metadata)')
+    parser.add_argument('--unpack', type=str, help='Unpack ultimate package assets to a directory (README/adapter/vocab/ensemble.onnx/ensemble_weights.pt)')
     parser.add_argument('--organism', type=int, default=0, help='Organism index for single-brain ONNX export (default: export all as ensemble)')
     parser.add_argument('--voting', choices=['majority', 'weighted', 'confidence'], default='confidence')
     parser.add_argument('--max-organisms', type=int, default=None, help='Limit number of organisms to load (saves VRAM)')
+    parser.add_argument('--readme', action='store_true', help='Print the embedded README and exit')
     # Sphere arena arguments
     parser.add_argument('--balls', type=int, default=1, help='Number of balls in sphere arena (1-5)')
     parser.add_argument('--misses', type=int, default=10, help='Max collective misses before game over')
@@ -11140,12 +13761,20 @@ Examples:
     parser.add_argument('--name', type=str, default=None, help='Display name for link mode')
     args = parser.parse_args()
 
-    arch = _decode_data(_ARCHITECTURE_B64)
-    config = _decode_data(_TRAINING_CONFIG_B64)
-    vocab = _decode_data(_VOCABULARY_B64)
+    if args.readme:
+        _print_embedded_readme()
+        return
+
+    if args.unpack:
+        _unpack_ultimate(args.unpack, voting=args.voting, max_organisms=args.max_organisms)
+        return
+
+    arch = _decode_data(_ARCHITECTURE_B64) or {}
+    config = _decode_data(_TRAINING_CONFIG_B64) or {}
+    vocab = _decode_data(_VOCABULARY_B64) or {'word_to_id': {}, 'id_to_word': {}}
 
     # Handle export commands FIRST - they work without loading the full agent
-    if args.export or args.export_onnx or args.export_package:
+    if args.export or args.export_onnx or args.export_torchscript or args.export_package:
         if not TORCH_AVAILABLE:
             print("[!] PyTorch required for export")
             return
@@ -11159,6 +13788,13 @@ Examples:
                 agent.export_ensemble_onnx(args.export_onnx)
             else:
                 agent.export_onnx(args.export_onnx, organism_idx=args.organism)
+            return
+        if args.export_torchscript:
+            # For ensembles, export ALL brains as combined TorchScript unless specific organism requested
+            if len(agent.brains) > 1 and args.organism == 0:
+                agent.export_ensemble_torchscript(args.export_torchscript)
+            else:
+                agent.export_torchscript(args.export_torchscript, organism_idx=args.organism)
             return
         if args.export_package:
             agent.export_package(args.export_package)
@@ -11178,6 +13814,7 @@ Examples:
         print("  --export <file.py>      Export updated cocoon")
         print("  --export-onnx <file>    Export ONNX for Netron")
         print("  --export-package <dir>  Export full package")
+        print("  --unpack <dir>          Unpack ultimate package assets")
         print("\nUse --mode chat/gym/serve to run the agent")
         return
 
@@ -11227,8 +13864,9 @@ Examples:
             print("└────────────────────────────────────────────────────────────┘")
             
             # Get VP value for semantic reward calculation (BEFORE generation)
+            input_dim = agent.brains[0].input_dim if agent.brains else 28
             vp_info = agent.vp_runtime.compute_from_state(
-                np.zeros(25, dtype=np.float32),  # Matches config.json input_dim=25
+                np.zeros(input_dim, dtype=np.float32),  # Dynamic input_dim from brain config
                 agent.reward_history
             )
             current_vp = vp_info.get('violation_pressure', 0.0)
@@ -11588,21 +14226,21 @@ Examples:
                 ep_input = input(f"Episodes [{args.episodes}]: ").strip()
                 if ep_input:
                     args.episodes = int(ep_input)
-            except:
+            except Exception:
                 pass
             
             # Ask for render
             try:
                 render_input = input("Render visually? (Y/n): ").strip().lower()
                 args.render = render_input != 'n'
-            except:
+            except Exception:
                 args.render = True
             
             # Ask for training (default ON now)
             try:
                 learn_input = input("Train while playing? (Y/n): ").strip().lower()
                 args.no_learn = (learn_input == 'n')
-            except:
+            except Exception:
                 args.no_learn = False
             
             print()
@@ -11707,6 +14345,46 @@ if __name__ == "__main__":
     main()
 ''')
 
+        # Embed TMRL adapter if available
+        tmrl_adapter_b64 = ""
+        tmrl_adapter_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'cocoon_tmrl_adapter.py')
+        if os.path.exists(tmrl_adapter_path):
+            try:
+                with open(tmrl_adapter_path, 'r', encoding='utf-8') as f:
+                    tmrl_adapter_b64 = base64.b64encode(f.read().encode('utf-8')).decode('ascii')
+            except Exception:
+                pass
+        
+        # Embed Drone adapter if available
+        drone_adapter_b64 = ""
+        drone_adapter_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'cocoon_drone_adapter.py')
+        if os.path.exists(drone_adapter_path):
+            try:
+                with open(drone_adapter_path, 'r', encoding='utf-8') as f:
+                    drone_adapter_b64 = base64.b64encode(f.read().encode('utf-8')).decode('ascii')
+            except Exception:
+                pass
+        
+        # Embed Drone arena (full 8-mode arena for --unpack)
+        drone_arena_b64 = ""
+        drone_arena_path = os.path.join(os.path.dirname(__file__), 'arena', 'cocoon_drone_arena.py')
+        if os.path.exists(drone_arena_path):
+            try:
+                with open(drone_arena_path, 'r', encoding='utf-8') as f:
+                    drone_arena_b64 = base64.b64encode(f.read().encode('utf-8')).decode('ascii')
+            except Exception:
+                pass
+        
+        # Embed JSBSim quadcopter physics (NASA-grade 6-DOF)
+        drone_physics_b64 = ""
+        drone_physics_path = os.path.join(os.path.dirname(__file__), 'arena', 'jsbsim_quadcopter.py')
+        if os.path.exists(drone_physics_path):
+            try:
+                with open(drone_physics_path, 'r', encoding='utf-8') as f:
+                    drone_physics_b64 = base64.b64encode(f.read().encode('utf-8')).decode('ascii')
+            except Exception:
+                pass
+        
         source = template.substitute(
             MODE_COMMENT=mode_comment,
             ORGANISMS=", ".join(organism_names),
@@ -11718,7 +14396,13 @@ if __name__ == "__main__":
             CONFIG_B64=config_b64,
             ATOMIC_LANG_B64=atomic_lang_b64,
             CONVERSATION_B64=conversation_b64,
-            DATA_COMPRESSED=str(compressed)
+            ALLIANCE_B64=alliance_b64,
+            DATA_COMPRESSED=str(compressed),
+            README_B64=readme_b64 or "",
+            TMRL_ADAPTER_B64=tmrl_adapter_b64,
+            DRONE_ADAPTER_B64=drone_adapter_b64,
+            DRONE_ARENA_B64=drone_arena_b64,
+            DRONE_PHYSICS_B64=drone_physics_b64
         )
         return source
 

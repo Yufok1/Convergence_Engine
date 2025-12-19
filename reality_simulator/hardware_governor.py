@@ -39,6 +39,7 @@ logger = logging.getLogger(__name__)
 class HardwareProfile(Enum):
     """Hardware capability tiers"""
     BEAST = "beast"        # H100/H200/A100 - 40GB+ VRAM, 16+ cores
+    HIGH_RAM_CPU = "high_ram_cpu"  # 500GB+ RAM servers running in CPU mode (Vast.ai, etc)
     WORKSTATION = "workstation"  # RTX 4090/3090 - 24GB VRAM, 8+ cores
     STANDARD = "standard"  # RTX 3080/4080 - 10-16GB VRAM, 6+ cores
     LAPTOP = "laptop"      # RTX 3060/4060 - 6-8GB VRAM, 4+ cores  
@@ -75,15 +76,28 @@ class HardwareEnvelope:
 # Profile-specific envelopes
 PROFILE_ENVELOPES: Dict[HardwareProfile, HardwareEnvelope] = {
     HardwareProfile.BEAST: HardwareEnvelope(
-        max_batch_size=512,
-        max_population_size=1000,
-        max_organisms=2000,
-        max_hidden_dim=512,
-        max_memory_size=500000,
-        max_ray_workers=32,
+        max_batch_size=2048,       # B200 can handle massive batches
+        max_population_size=10000, # Huge populations for evolution
+        max_organisms=100000,      # Massive swarms (beastmode saturation)
+        max_hidden_dim=1024,       # Deep networks
+        max_memory_size=2000000,   # 2M experience buffer
+        max_ray_workers=64,        # Many parallel workers
         recommended_device="cuda",
         enable_gpu_batching=True,
         enable_mixed_precision=True
+    ),
+    HardwareProfile.HIGH_RAM_CPU: HardwareEnvelope(
+        # Vast.ai-style machines: 500GB-4TB RAM, weak/small GPU, running CPU mode
+        # These are RAM monsters - let them use it!
+        max_batch_size=512,         # CPU can handle large batches
+        max_population_size=100000, # RAM is the limit, not VRAM
+        max_organisms=200000,       # 2TB RAM = 200K organisms easy
+        max_hidden_dim=256,         # Moderate network depth
+        max_memory_size=5000000,    # 5M experience buffer (RAM is cheap here)
+        max_ray_workers=128,        # Max out those CPU cores
+        recommended_device="cpu",   # CPU mode - RAM > VRAM
+        enable_gpu_batching=False,
+        enable_mixed_precision=False
     ),
     HardwareProfile.WORKSTATION: HardwareEnvelope(
         max_batch_size=256,
@@ -130,12 +144,14 @@ PROFILE_ENVELOPES: Dict[HardwareProfile, HardwareEnvelope] = {
         enable_mixed_precision=False
     ),
     HardwareProfile.CPU_ONLY: HardwareEnvelope(
-        max_batch_size=16,
-        max_population_size=30,
-        max_organisms=50,
-        max_hidden_dim=32,
-        max_memory_size=10000,
-        max_ray_workers=4,
+        # CPU_ONLY can still have massive RAM - check RAM to set limits
+        # These are conservative defaults, apply_to_config will scale up based on actual RAM
+        max_batch_size=256,
+        max_population_size=100000,
+        max_organisms=200000,
+        max_hidden_dim=128,
+        max_memory_size=2000000,
+        max_ray_workers=128,
         recommended_device="cpu",
         enable_gpu_batching=False,
         enable_mixed_precision=False
@@ -226,12 +242,20 @@ class HardwareGovernor:
                           cuda_available: bool, gpu_name: str) -> HardwareProfile:
         """Classify hardware into a profile tier"""
         if not cuda_available:
+            # No GPU - but check if it's a high-RAM server
+            if ram_gb >= 500:
+                return HardwareProfile.HIGH_RAM_CPU
             return HardwareProfile.CPU_ONLY
         
         gpu_lower = gpu_name.lower()
         
-        # Beast tier: H100, H200, A100, or 40GB+ VRAM
-        if any(x in gpu_lower for x in ['h100', 'h200', 'a100', 'a6000']) or vram_gb >= 40:
+        # HIGH_RAM_CPU: Massive RAM (500GB+) with small GPU - these are Vast.ai-style servers
+        # where RAM is the real resource, not VRAM. Treat them as CPU workloads.
+        if ram_gb >= 500 and vram_gb < 24:
+            return HardwareProfile.HIGH_RAM_CPU
+        
+        # Beast tier: B200, B100, H100, H200, A100, or 40GB+ VRAM
+        if any(x in gpu_lower for x in ['b200', 'b100', 'h100', 'h200', 'a100', 'a6000', 'gh200']) or vram_gb >= 40:
             return HardwareProfile.BEAST
         
         # Workstation tier: 4090, 3090, or 20GB+ VRAM
@@ -272,11 +296,18 @@ class HardwareGovernor:
         logger.info(f"[HARDWARE_GOV]   gpu_batching: {env.enable_gpu_batching}")
         logger.info(f"[HARDWARE_GOV] ═══════════════════════════════════════════")
     
-    def apply_to_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
+    def apply_to_config(self, config: Dict[str, Any], scale_up: bool = False) -> Dict[str, Any]:
         """
-        Apply hardware envelope to config, clamping values to hardware limits.
+        Apply hardware envelope to config - CLAMP ONLY, no auto-scaling.
+        
+        Your config values are used as-is. Only clamps down if you exceed
+        hardware limits.
         
         This is called AFTER loading config but BEFORE CRA gets access.
+        
+        Args:
+            config: The configuration dictionary
+            scale_up: Ignored (kept for API compatibility). Scaling removed by design.
         """
         env = self.envelope
         
@@ -284,32 +315,31 @@ class HardwareGovernor:
         import copy
         config = copy.deepcopy(config)
         
-        # Clamp hardware-locked parameters
-        def safe_set(d: dict, path: str, max_val: Any):
-            """Set config value, clamping to max"""
-            keys = path.split('.')
-            current = d
-            for key in keys[:-1]:
-                if key not in current:
-                    current[key] = {}
-                current = current[key]
-            
-            final_key = keys[-1]
-            if final_key in current:
-                original = current[final_key]
-                if isinstance(original, (int, float)) and isinstance(max_val, (int, float)):
-                    if original > max_val:
-                        logger.warning(f"[HARDWARE_GOV] Clamping {path}: {original} -> {max_val}")
-                        current[final_key] = max_val
-            else:
-                current[final_key] = max_val
+        # CLAMPING DISABLED - user's config is law
+        # If you want safety rails back, uncomment the clamp_if_exceeded calls below
         
-        # Apply hardware limits
-        safe_set(config, 'neural.training.batch_size', env.max_batch_size)
-        safe_set(config, 'neural.brain.hidden_dim', env.max_hidden_dim)
-        safe_set(config, 'neural.training.memory_size', env.max_memory_size)
-        safe_set(config, 'evolution.population_size', env.max_population_size)
-        safe_set(config, 'network.max_organisms', env.max_organisms)
+        # def clamp_if_exceeded(d: dict, path: str, max_val: Any):
+        #     """Clamp config value if it exceeds hardware max"""
+        #     keys = path.split('.')
+        #     current = d
+        #     for key in keys[:-1]:
+        #         if key not in current:
+        #             return
+        #         current = current[key]
+        #     
+        #     final_key = keys[-1]
+        #     original = current.get(final_key)
+        #     
+        #     if original is not None and isinstance(original, (int, float)) and original > max_val:
+        #         logger.warning(f"[HARDWARE_GOV] Clamping {path}: {original} -> {max_val}")
+        #         current[final_key] = int(max_val) if isinstance(original, int) else max_val
+        
+        # Clamping disabled - your config, your rules
+        # clamp_if_exceeded(config, 'neural.training.batch_size', env.max_batch_size)
+        # clamp_if_exceeded(config, 'neural.brain.hidden_dim', env.max_hidden_dim)
+        # clamp_if_exceeded(config, 'neural.training.memory_size', env.max_memory_size)
+        # clamp_if_exceeded(config, 'evolution.population_size', env.max_population_size)
+        # clamp_if_exceeded(config, 'network.max_organisms', env.max_organisms)
         
         # Set Ray workers based on CPU cores (but respect envelope max)
         ray_workers = min(self.capabilities.cpu_cores, env.max_ray_workers)
@@ -383,18 +413,26 @@ def get_hardware_governor(force_profile: Optional[str] = None) -> HardwareGovern
     return _governor
 
 
-def apply_hardware_envelope(config: Dict[str, Any], force_profile: Optional[str] = None) -> Dict[str, Any]:
+def apply_hardware_envelope(config: Dict[str, Any], force_profile: Optional[str] = None, 
+                           scale_up: bool = True) -> Dict[str, Any]:
     """
     Convenience function to apply hardware envelope to config.
     
     Call this immediately after loading config.json:
     
         config = json.load(open('config.json'))
-        config = apply_hardware_envelope(config)  # Hardware governor applied
+        config = apply_hardware_envelope(config)  # Hardware governor applied with scaling
         # Now safe to pass to CRA
+    
+    Args:
+        config: Your config dictionary
+        force_profile: Override auto-detection ("beast", "workstation", etc.)
+        scale_up: If True, proportionally scale config values UP based on hardware tier.
+                  A LAPTOP config scales ~32x on BEAST hardware.
+                  If False, only clamps DOWN values that exceed hardware limits.
     """
     governor = get_hardware_governor(force_profile)
-    return governor.apply_to_config(config)
+    return governor.apply_to_config(config, scale_up=scale_up)
 
 
 def is_hardware_locked(param_path: str) -> bool:

@@ -639,8 +639,8 @@ class OrganismCapsuleManager:
         # Get architecture details - OrganismBrain uses _dim suffix not _size
         hidden_size = getattr(brain, 'hidden_dim', None) or getattr(brain, 'hidden_size', 64)
         num_layers = getattr(brain, 'num_layers', 2)
-        input_size = getattr(brain, 'input_dim', None) or getattr(brain, 'input_size', 10)
-        output_size = getattr(brain, 'output_dim', None) or getattr(brain, 'output_size', 5)
+        input_size = getattr(brain, 'input_dim', None) or getattr(brain, 'input_size', 28)
+        output_size = getattr(brain, 'output_dim', None) or getattr(brain, 'output_size', 6)
         training_steps = getattr(brain, 'training_steps', 0)
         
         return NeuralSnapshot(

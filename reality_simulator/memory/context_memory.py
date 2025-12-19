@@ -66,7 +66,16 @@ class ContextMemory:
             max_vocab_size: Maximum vocabulary size
             organism_embedding_alpha: Alpha for blending organism embeddings (0.1 = 90% keep, 10% new)
         """
+        # Convert relative paths to absolute paths based on project root
+        if not os.path.isabs(persistence_path):
+            # Get project root (Convergence_Engine directory)
+            project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            persistence_path = os.path.join(project_root, persistence_path)
         self.persistence_path = persistence_path
+        
+        # Create the data directory NOW - don't wait for save
+        os.makedirs(os.path.dirname(self.persistence_path), exist_ok=True)
+        
         self.use_learned_embeddings = use_learned_embeddings and PYTORCH_AVAILABLE
         self.embedding_dim = embedding_dim
         self.max_vocab_size = max_vocab_size
@@ -364,13 +373,12 @@ class ContextMemory:
                     print(f"[CONTEXT_MEMORY] Warning: Could not load word embeddings: {e}")
 
     def _save_persistence(self) -> None:
-        """Save context memory to disk using atomic writes and a backup copy."""
+        """Save context memory to disk."""
         directory = os.path.dirname(self.persistence_path) or '.'
-        tmp_path = f"{self.persistence_path}.tmp"
-        backup_path = f"{self.persistence_path}.backup"
-
+        
         try:
             os.makedirs(directory, exist_ok=True)
+            
             data = {
                 'node_embeddings': self.node_embeddings,
                 'language_anchors': {k: list(v) for k, v in self.language_anchors.items()},
@@ -380,13 +388,9 @@ class ContextMemory:
                 'last_updated': datetime.now().isoformat()
             }
 
-            with open(tmp_path, 'w') as tmp_file:
-                json.dump(data, tmp_file)  # No indent for faster writes
-                tmp_file.flush()
-                os.fsync(tmp_file.fileno())
-
-            os.replace(tmp_path, self.persistence_path)
-            shutil.copy2(self.persistence_path, backup_path)
+            # Direct write - atomic rename can fail on network filesystems
+            with open(self.persistence_path, 'w') as f:
+                json.dump(data, f)
             
             # SEMANTIC CONVERGENCE: Save learned word embeddings
             if self.use_learned_embeddings and self.word_embedding is not None and PYTORCH_AVAILABLE:
@@ -398,11 +402,6 @@ class ContextMemory:
                     
         except Exception as e:
             print(f"[CONTEXT_MEMORY] Warning: Could not save persistence data: {e}")
-            if os.path.exists(tmp_path):
-                try:
-                    os.remove(tmp_path)
-                except OSError:
-                    pass
 
     def record_generation_state(self, generation: int, metrics: Dict[str, Any],
                                   max_episodes: int = 1000) -> None:

@@ -105,6 +105,10 @@ class ConfigTuner:
             'neural.language_model.curriculum.ml_quality.max_sequence_length': (8, 128),
             'neural.language_model.curriculum.ml_quality.min_sequence_length': (4, 32),
             'neural.language_model.curriculum.ml_quality.sequence_length_step': (1, 8),
+            
+            # Language-Game Bridge ⭐ Cross-system correlation tuning
+            'neural.language_game_bridge.bias_strength': (0.1, 0.7),  # How much vocab biases actions
+            'neural.language_game_bridge.learning_rate': (0.01, 0.3),  # How fast bridge learns from outcomes
 
             # Quantum Substrate (Phase 5)
             'quantum.initial_states': (20, 200),
@@ -167,6 +171,10 @@ class ConfigTuner:
             'neural.language_model.curriculum.ml_quality.max_sequence_length': 4,
             'neural.language_model.curriculum.ml_quality.min_sequence_length': 2,
             'neural.language_model.curriculum.ml_quality.sequence_length_step': 1,
+            
+            # Language-Game Bridge ⭐ Cross-system correlation tuning
+            'neural.language_game_bridge.bias_strength': 0.05,  # Gentle adjustments
+            'neural.language_game_bridge.learning_rate': 0.02,  # Careful learning rate changes
 
             # Quantum
             'quantum.initial_states': 10,
@@ -210,8 +218,133 @@ class ConfigTuner:
         
         # Track recent events for causation linking (last 10 events)
         self.recent_events: List[Dict[str, Any]] = []  # Store recent ML/neural events for causation
+        
+        # Live report data storage for meta-brain analysis
+        self._live_report_cache: Optional[Dict[str, Any]] = None
+        self._live_report_timestamp: float = 0.0
 
-        logger.info(f"[CONFIG_TUNER] Initialized ({'ENABLED' if enabled else 'DISABLED'})")
+        # Reference to HighlanderProtocol for propagating bridge parameter changes
+        self._highlander_protocol: Optional[Any] = None
+
+    def set_highlander_protocol(self, highlander) -> None:
+        """
+        Wire the HighlanderProtocol for propagating bridge parameter updates.
+        
+        This enables ConfigTuner to push bias_strength/learning_rate changes
+        directly to the running LanguageGameBridge.
+        """
+        self._highlander_protocol = highlander
+        if highlander and hasattr(highlander, 'language_bridge') and highlander.language_bridge:
+            logger.info("[CONFIG_TUNER] 🔗 Wired to HighlanderProtocol.language_bridge for parameter propagation")
+
+    def ingest_live_report(self, report_data: Dict[str, Any]) -> None:
+        """
+        Accept live_report data for meta-brain analysis.
+        
+        The live_report is the OUTPUT of system monitoring - it contains
+        runtime observations that the ConfigTuner uses to make tuning decisions.
+        This completes the loop: config.json → runtime → live_report → tuning → config.json
+        
+        Args:
+            report_data: Full live_report data (timestamp, frame_count, all metric sections)
+        """
+        import time
+        self._live_report_cache = report_data
+        self._live_report_timestamp = time.time()
+        
+        # Log receipt of live report for debugging feedback loop
+        lgb = report_data.get('language_game_bridge', {}) if report_data else {}
+        if lgb.get('episodes_tracked', 0) > 0:
+            logger.debug(f"[CONFIG_TUNER] 📊 Live report ingested: "
+                        f"episodes={lgb.get('episodes_tracked', 0)}, "
+                        f"alignment={lgb.get('vocabulary_game_alignment', 0):.3f}, "
+                        f"diversity={lgb.get('concept_diversity', 0):.3f}")
+        
+        # Extract and integrate metrics into our analysis histories
+        if not report_data:
+            return
+            
+        # Extract Language-Game Bridge metrics for correlation analysis
+        lgb_metrics = report_data.get('language_game_bridge', {})
+        if lgb_metrics and lgb_metrics.get('active'):
+            # Track vocabulary-game alignment trend
+            alignment = lgb_metrics.get('vocabulary_game_alignment', 0.0)
+            if not hasattr(self, 'vocab_game_alignment_history'):
+                self.vocab_game_alignment_history: List[float] = []
+            self.vocab_game_alignment_history.append(alignment)
+            if len(self.vocab_game_alignment_history) > 100:
+                self.vocab_game_alignment_history.pop(0)
+            
+            # Track language decision influence
+            influence = lgb_metrics.get('language_decision_influence', 0.0)
+            if not hasattr(self, 'lang_decision_influence_history'):
+                self.lang_decision_influence_history: List[float] = []
+            self.lang_decision_influence_history.append(influence)
+            if len(self.lang_decision_influence_history) > 100:
+                self.lang_decision_influence_history.pop(0)
+                
+        # Extract evolution metrics for fitness tracking
+        evolution = report_data.get('evolution', {})
+        if evolution:
+            best_fitness = evolution.get('best_fitness', 0.0)
+            if best_fitness > 0:
+                self.fitness_history.append(best_fitness)
+                if len(self.fitness_history) > 100:
+                    self.fitness_history.pop(0)
+        
+        # Extract ML metrics
+        ml = report_data.get('ml_metrics', {})
+        if ml and ml.get('enabled'):
+            clustering = ml.get('clustering', {})
+            n_clusters = clustering.get('n_clusters', 0)
+            if n_clusters > 0:
+                self.cluster_count_history.append(n_clusters)
+                if len(self.cluster_count_history) > 100:
+                    self.cluster_count_history.pop(0)
+        
+        # Extract network health
+        network = report_data.get('network', {})
+        if network:
+            density = network.get('density', 0.0)
+            if density > 0:
+                self.network_density_history.append(density)
+                if len(self.network_density_history) > 100:
+                    self.network_density_history.pop(0)
+
+    def get_cached_live_report(self) -> Optional[Dict[str, Any]]:
+        """Return the most recent live_report data for analysis."""
+        return self._live_report_cache
+
+    def analyze_with_live_report(self, frame_count: int) -> Optional['TuningAction']:
+        """
+        Run analysis using cached live_report data.
+        
+        This is an alternative entry point that uses live_report data
+        instead of requiring explicit metric dictionaries.
+        """
+        if not self._live_report_cache:
+            return None
+            
+        report = self._live_report_cache
+        
+        # Convert live_report structure to analyze_and_tune parameters
+        ml_metrics = report.get('ml_metrics', {})
+        neural_metrics = report.get('neural', {})
+        evolution_metrics = report.get('evolution', {})
+        network_metrics = report.get('network', {})
+        
+        # Merge language_game_bridge into network_metrics for analyzer access
+        lgb = report.get('language_game_bridge', {})
+        if lgb:
+            network_metrics['language_game_bridge'] = lgb
+        
+        return self.analyze_and_tune(
+            ml_metrics=ml_metrics,
+            neural_metrics=neural_metrics,
+            evolution_metrics=evolution_metrics,
+            network_metrics=network_metrics,
+            frame_count=frame_count
+        )
 
     def should_tune(self, frame_count: int) -> bool:
         """Determine if it's time to consider tuning"""
@@ -303,6 +436,15 @@ class ConfigTuner:
         vocab_fitness_action = self._analyze_vocabulary_fitness_correlation(language_metrics, evolution_metrics)
         if vocab_fitness_action:
             actions.append(vocab_fitness_action)
+        
+        # Language-Game Bridge correlation ⭐ NEW 5th Analyzer
+        # Use live report cache since language_game_bridge is at TOP LEVEL, not under network_metrics
+        language_game_metrics = {}
+        if self._live_report_cache:
+            language_game_metrics = self._live_report_cache.get('language_game_bridge', {})
+        lang_game_action = self._analyze_language_game_correlation(language_game_metrics, battle_metrics)
+        if lang_game_action:
+            actions.append(lang_game_action)
 
         # Phase 5 - Quantum (placeholder for now)
         # quantum_action = self._analyze_quantum_stability(quantum_metrics)
@@ -1378,6 +1520,169 @@ class ConfigTuner:
         
         return None
 
+    def _analyze_language_game_correlation(self,
+                                            language_game_metrics: Dict[str, Any],
+                                            battle_metrics: Dict[str, Any]) -> Optional[TuningAction]:
+        """
+        Analyze correlation between Language-Game Bridge performance and battle/game outcomes.
+        
+        ⭐ NEW - 5th Cross-System Correlation Analyzer
+        
+        The Language-Game Bridge connects vocabulary concepts to gameplay decisions.
+        This analyzer ensures the correlation is productive:
+        - High vocabulary-game alignment + high win rate = working well
+        - High alignment + low win rate = language misleading decisions
+        - Low alignment + high win rate = language not contributing (unused)
+        - Low alignment + low win rate = both systems struggling
+        
+        Also uses HISTORY TRENDS to detect:
+        - Declining alignment = vocabulary losing relevance
+        - Declining influence = language being ignored
+        """
+        if not language_game_metrics:
+            return None
+        
+        # Get Language-Game Bridge metrics
+        vocab_game_alignment = language_game_metrics.get('vocabulary_game_alignment', 0.0)
+        lang_decision_influence = language_game_metrics.get('language_decision_influence', 0.0)
+        concept_diversity = language_game_metrics.get('concept_diversity', 0.0)
+        episodes_tracked = language_game_metrics.get('episodes_tracked', 0)
+        
+        if episodes_tracked < 20:
+            return None  # Need more data
+        
+        # Get battle/game outcomes
+        battle_metrics = battle_metrics or {}
+        avg_win_rate = battle_metrics.get('avg_win_rate', 
+                       language_game_metrics.get('win_rate', 0.5))
+        
+        # ⭐ NEW: Analyze TRENDS from history arrays
+        alignment_trend = self._compute_trend(getattr(self, 'vocab_game_alignment_history', []))
+        influence_trend = self._compute_trend(getattr(self, 'lang_decision_influence_history', []))
+        
+        # Case 0: DECLINING alignment trend = vocabulary losing relevance to games
+        # Solution: Increase learning rate to re-learn what matters
+        if alignment_trend < -0.1 and len(getattr(self, 'vocab_game_alignment_history', [])) >= 10:
+            param = 'neural.language_game_bridge.learning_rate'
+            current = self._get_param_value(param) or 0.1
+            proposed = min(current + 0.03, 0.3)
+            
+            if proposed > current:
+                return TuningAction(
+                    parameter_path=param,
+                    current_value=current,
+                    proposed_value=proposed,
+                    reason=f"Vocabulary-game alignment DECLINING (trend={alignment_trend:.3f}) - concepts losing relevance. Boosting learning rate to re-adapt.",
+                    confidence=0.75,
+                    trigger_metrics={
+                        'alignment_trend': float(alignment_trend),
+                        'current_alignment': float(vocab_game_alignment),
+                        'history_length': len(self.vocab_game_alignment_history)
+                    },
+                    causation_event_id=self._find_recent_event('language_game_bridge', 'correlation_update'),
+                    expected_impact="Should help vocabulary re-learn from current game patterns"
+                )
+        
+        # Case 0b: DECLINING influence trend = language being ignored
+        # Solution: Increase bias strength to make vocabulary more impactful
+        if influence_trend < -0.05 and len(getattr(self, 'lang_decision_influence_history', [])) >= 10:
+            param = 'neural.language_game_bridge.bias_strength'
+            current = self._get_param_value(param) or 0.3
+            proposed = min(current + 0.05, 0.6)
+            
+            if proposed > current:
+                return TuningAction(
+                    parameter_path=param,
+                    current_value=current,
+                    proposed_value=proposed,
+                    reason=f"Language decision influence DECLINING (trend={influence_trend:.3f}) - vocabulary being ignored. Increasing bias strength.",
+                    confidence=0.65,
+                    trigger_metrics={
+                        'influence_trend': float(influence_trend),
+                        'current_influence': float(lang_decision_influence),
+                        'history_length': len(self.lang_decision_influence_history)
+                    },
+                    causation_event_id=self._find_recent_event('language_game_bridge', 'bias_event'),
+                    expected_impact="Should increase vocabulary's weight in decision-making"
+                )
+        
+        # Case 1: High alignment but LOW win rate = vocabulary is MISLEADING decisions
+        # Solution: Reduce bias strength so neural network has more control
+        if vocab_game_alignment > 0.3 and avg_win_rate < 0.3:
+            param = 'neural.language_game_bridge.bias_strength'
+            current = self._get_param_value(param) or 0.3
+            proposed = max(current - 0.05, 0.05)  # Reduce bias
+            
+            if proposed < current:
+                return TuningAction(
+                    parameter_path=param,
+                    current_value=current,
+                    proposed_value=proposed,
+                    reason=f"High vocab-game alignment ({vocab_game_alignment:.2f}) but low win rate ({avg_win_rate:.1%}) - vocabulary may be MISLEADING decisions. Reducing bias strength.",
+                    confidence=0.7,
+                    trigger_metrics={
+                        'vocabulary_game_alignment': float(vocab_game_alignment),
+                        'avg_win_rate': float(avg_win_rate),
+                        'language_decision_influence': float(lang_decision_influence),
+                        'concept_diversity': float(concept_diversity)
+                    },
+                    causation_event_id=self._find_recent_event('language_game_bridge', 'correlation_update'),
+                    expected_impact="Should reduce vocabulary's negative influence on game decisions"
+                )
+        
+        # Case 2: LOW alignment but high win rate = vocabulary NOT contributing
+        # Solution: Increase bias strength to get language involved
+        if vocab_game_alignment < -0.1 and avg_win_rate > 0.6:
+            param = 'neural.language_game_bridge.bias_strength'
+            current = self._get_param_value(param) or 0.3
+            proposed = min(current + 0.05, 0.5)  # Increase bias
+            
+            if proposed > current:
+                return TuningAction(
+                    parameter_path=param,
+                    current_value=current,
+                    proposed_value=proposed,
+                    reason=f"Low vocab-game alignment ({vocab_game_alignment:.2f}) but high win rate ({avg_win_rate:.1%}) - vocabulary is UNUSED. Increasing bias to integrate language.",
+                    confidence=0.6,
+                    trigger_metrics={
+                        'vocabulary_game_alignment': float(vocab_game_alignment),
+                        'avg_win_rate': float(avg_win_rate),
+                        'language_decision_influence': float(lang_decision_influence)
+                    },
+                    causation_event_id=self._find_recent_event('language_game_bridge', 'correlation_update'),
+                    expected_impact="Should increase vocabulary's contribution to decision-making"
+                )
+        
+        # Case 3: Low concept diversity = vocabulary too narrow
+        # Solution: Increase learning rate to acquire new concepts faster
+        if concept_diversity < 0.2 and episodes_tracked > 50:
+            param = 'neural.language_game_bridge.learning_rate'
+            current = self._get_param_value(param) or 0.1
+            proposed = min(current + 0.02, 0.3)
+            
+            if proposed > current:
+                return TuningAction(
+                    parameter_path=param,
+                    current_value=current,
+                    proposed_value=proposed,
+                    reason=f"Low concept diversity ({concept_diversity:.2f}) after {episodes_tracked} episodes - vocabulary too narrow. Increasing learning rate.",
+                    confidence=0.55,
+                    trigger_metrics={
+                        'concept_diversity': float(concept_diversity),
+                        'episodes_tracked': int(episodes_tracked),
+                        'vocabulary_game_alignment': float(vocab_game_alignment)
+                    },
+                    causation_event_id=self._find_recent_event('language_game_bridge', 'learning_event'),
+                    expected_impact="Should accelerate vocabulary expansion from game experiences"
+                )
+        
+        # Case 4: Both working well (positive alignment + high win rate)
+        if vocab_game_alignment > 0.2 and avg_win_rate > 0.5:
+            # Optimal state - language and games are synergizing
+            pass  # Log only in debug
+        
+        return None
+
     def _get_param_value(self, path: str) -> float:
         """Get current value of a config parameter by path"""
         parts = path.split('.')
@@ -1385,6 +1690,37 @@ class ConfigTuner:
         for part in parts:
             value = value.get(part, {})
         return float(value) if isinstance(value, (int, float)) else 0.0
+    
+    def _compute_trend(self, history: List[float], window: int = 10) -> float:
+        """
+        Compute trend (slope) of a history array using linear regression.
+        
+        Returns:
+            Positive = increasing trend
+            Negative = decreasing trend
+            Near zero = stable
+            
+        Uses last `window` samples for trend calculation.
+        """
+        if len(history) < 3:
+            return 0.0
+        
+        # Use last N samples
+        samples = history[-window:] if len(history) > window else history
+        n = len(samples)
+        
+        # Simple linear regression slope: (n*Σxy - Σx*Σy) / (n*Σx² - (Σx)²)
+        sum_x = sum(range(n))  # 0 + 1 + ... + (n-1)
+        sum_y = sum(samples)
+        sum_xy = sum(i * y for i, y in enumerate(samples))
+        sum_x2 = sum(i * i for i in range(n))
+        
+        denominator = n * sum_x2 - sum_x * sum_x
+        if abs(denominator) < 1e-10:
+            return 0.0
+        
+        slope = (n * sum_xy - sum_x * sum_y) / denominator
+        return slope
     
     def _find_recent_event(self, component: str, event_type: str) -> Optional[str]:
         """
@@ -1423,6 +1759,9 @@ class ConfigTuner:
 
         Note: This modifies self.config in-memory. For persistent changes,
         the config should be written to disk.
+        
+        For language_game_bridge parameters, also propagates changes to the
+        running LanguageGameBridge via update_parameters().
         """
         parts = action.parameter_path.split('.')
 
@@ -1440,7 +1779,39 @@ class ConfigTuner:
         logger.info(f"[CONFIG_TUNER] Applied: {action.parameter_path} "
                    f"{old_value:.4f} → {action.proposed_value:.4f}")
 
+        # Propagate language_game_bridge changes to running bridge
+        if 'language_game_bridge' in action.parameter_path:
+            self._propagate_bridge_parameter(action.parameter_path, action.proposed_value)
+
         return True
+
+    def _propagate_bridge_parameter(self, parameter_path: str, new_value: float) -> None:
+        """
+        Propagate a language_game_bridge parameter change to the running bridge.
+        
+        This ensures ConfigTuner changes actually affect organism behavior.
+        """
+        if not self._highlander_protocol:
+            logger.debug("[CONFIG_TUNER] No HighlanderProtocol wired - cannot propagate bridge change")
+            return
+            
+        bridge = getattr(self._highlander_protocol, 'language_bridge', None)
+        if not bridge:
+            logger.debug("[CONFIG_TUNER] HighlanderProtocol has no language_bridge - cannot propagate")
+            return
+            
+        # Check if bridge has update_parameters method
+        if not hasattr(bridge, 'update_parameters'):
+            logger.warning("[CONFIG_TUNER] LanguageGameBridge missing update_parameters method")
+            return
+        
+        # Determine which parameter changed
+        if 'bias_strength' in parameter_path:
+            changes = bridge.update_parameters(bias_strength=new_value)
+            logger.info(f"[CONFIG_TUNER] 🔗 Propagated bias_strength to bridge: {changes}")
+        elif 'learning_rate' in parameter_path:
+            changes = bridge.update_parameters(learning_rate=new_value)
+            logger.info(f"[CONFIG_TUNER] 🔗 Propagated learning_rate to bridge: {changes}")
 
     def _emit_tuning_event(self, action: TuningAction):
         """

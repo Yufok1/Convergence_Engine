@@ -155,8 +155,10 @@ class BiphasicController:
             'desc': 'Seeking self-referential primitive recursive function.'
         })
         return triggers
-    def __init__(self):
+    def __init__(self, config_path: str = None):
         # Initialize systems
+        # Store config path (can be passed from unified_entry.py)
+        self._config_path = config_path or str(parent_path / 'config.json')
         self.kernel = Kernel()
         self.sentinel = Sentinel()
         self.diagnostics = Diagnostics()
@@ -168,13 +170,17 @@ class BiphasicController:
         
         # Initialize Reality Simulator (if available)
         self.current_config = {}
+        
+        # Initialize optional components to None (may be set later if available)
+        self.utm_kernel = None
+        self.vp_monitor = None
+        self.lawfold_orchestrator = None
 
         if REALITY_SIM_AVAILABLE:
             try:
-                config_path = str(parent_path / 'config.json')
-                self.reality_sim = RealitySimulator(config_path=config_path)
+                self.reality_sim = RealitySimulator(config_path=self._config_path)
                 try:
-                    with open(config_path, 'r') as cfg_file:
+                    with open(self._config_path, 'r') as cfg_file:
                         self.current_config = json.load(cfg_file)
                 except Exception:
                     self.current_config = {}
@@ -201,12 +207,11 @@ class BiphasicController:
             try:
                 self.utm_kernel = UTMKernel()
                 
-                # Load VP monitoring configuration from config.json
+                # Load VP monitoring configuration from config
                 vp_config = {}
                 try:
-                    config_path = str(parent_path / 'config.json')
                     import json
-                    with open(config_path, 'r') as f:
+                    with open(self._config_path, 'r') as f:
                         config = json.load(f)
                         self.current_config = config
                         vp_config = config.get('vp_monitoring', {})
