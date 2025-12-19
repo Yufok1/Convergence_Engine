@@ -1065,9 +1065,10 @@ class AtomicLanguageSystem:
         # GROUNDED MODE: Mastery-gated initialization
         # ═══════════════════════════════════════════════════════════════
         if self._mastery_level == 0:
-            # Level 0: ONLY action heads - no innate vocab loading
-            logger.debug(f"[ATOMIC_LANG] Organism {self.organism_id}: Level 0 - skipping innate concepts (action heads only)")
-            self._seed_action_head_curiosity()  # Just make action heads interesting
+            # Level 0: ONLY action heads - load them explicitly, skip all other innate vocab
+            logger.debug(f"[ATOMIC_LANG] Organism {self.organism_id}: Level 0 - loading ACTION_HEADS only")
+            self._initialize_action_heads_only(current_time)
+            self._seed_action_head_curiosity()  # Make them interesting
             self.total_concepts_acquired = len(self.atoms)
             return
 
@@ -1165,6 +1166,48 @@ class AtomicLanguageSystem:
 
         # Make action heads intrinsically interesting (coax, don't force!)
         self._seed_action_head_curiosity()
+    
+    def _initialize_action_heads_only(self, current_time: float):
+        """
+        Initialize ONLY the 6 action heads for level 0 organisms.
+        
+        GROUNDED LANGUAGE PHILOSOPHY:
+        Level 0 organisms get ONLY the foundational action vocabulary:
+        - move, cooperate, compete, rest, reproduce, isolate
+        
+        These are the behavioral primitives that ground language in action.
+        Organisms must earn more vocabulary through demonstrated mastery.
+        """
+        # Load innate_vocab.json to get proper concept definitions for action heads
+        innate_data = self._load_innate_vocab()
+        concepts = innate_data.get('concepts', {}) if innate_data else {}
+        
+        for action_head in self.ACTION_HEADS:
+            if action_head not in self.atoms:
+                # Get definition from innate_vocab if available, else use defaults
+                info = concepts.get(action_head, {})
+                frame = info.get('frame', 'action')
+                level = info.get('level', 0)
+                vp = info.get('vp', [0.5, 0.5])
+                
+                atom = LinguisticAtom(
+                    concept_id=action_head,
+                    strength=0.7 + np.random.uniform(-0.1, 0.1),  # Strong initial strength
+                    source='innate_action_head',
+                    semantic_frame=frame,
+                    abstraction_level=level,
+                    acquisition_time=current_time,
+                    vp_vitality_affinity=vp[0] if isinstance(vp, (list, tuple)) else 0.5,
+                    vp_pleasure_affinity=vp[1] if isinstance(vp, (list, tuple)) else 0.5,
+                    base_magnetism=0.9,  # High magnetism - these are CORE concepts
+                    curiosity_magnetism=0.9
+                )
+                atom._event_emitter = self.event_emitter
+                atom._organism_id = self.organism_id
+                self.atoms[action_head] = atom
+                self._concept_order.append(action_head)
+        
+        logger.debug(f"[ATOMIC_LANG] Organism {self.organism_id}: Initialized {len(self.atoms)} action heads")
     
     def _initialize_golden_record_concepts(self, current_time: float):
         """
