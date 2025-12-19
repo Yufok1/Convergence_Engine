@@ -634,69 +634,85 @@ class HighlanderProtocol:
         if len(active_list) < 2:
             return battles
         
-        # Number of battles based on intensity
-        num_battles = int(len(active_list) * self.competition_intensity)
-        num_battles = max(1, min(num_battles, len(active_list) // 2))
+        # MASTERY MATCHMAKING: Group by tier so vocab transfer always fits
+        def get_mastery(org_id):
+            org = organisms.get(org_id)
+            if org and hasattr(org, 'atomic_language') and org.atomic_language:
+                return getattr(org.atomic_language, '_mastery_level', 0)
+            return 0
         
-        # Select battle pairs (avoid allies fighting each other)
-        for _ in range(num_battles):
-            if len(active_list) < 2:
-                break
-            
-            # Select first combatant
-            idx1 = np.random.randint(len(active_list))
-            org1_id = active_list[idx1]
-            
-            # Select second combatant (preferring non-allies)
-            candidates = [
-                oid for oid in active_list 
-                if oid != org1_id and not self._are_allied(org1_id, oid)
-            ]
-            
-            if not candidates:
-                # Must fight ally
-                candidates = [oid for oid in active_list if oid != org1_id]
-            
-            if not candidates:
+        mastery_pools = {}
+        for org_id in active_list:
+            level = get_mastery(org_id)
+            if level not in mastery_pools:
+                mastery_pools[level] = []
+            mastery_pools[level].append(org_id)
+        
+        self.logger.info(f"🎯 MASTERY MATCHMAKING: {{{', '.join(f'{k}:{len(v)}' for k,v in sorted(mastery_pools.items()))}}}")
+        
+        # Battle within each mastery tier
+        for mastery_level, pool in mastery_pools.items():
+            if len(pool) < 2:
                 continue
             
-            org2_id = np.random.choice(candidates)
+            pool_battles = int(len(pool) * self.competition_intensity)
+            pool_battles = max(1, min(pool_battles, len(pool) // 2))
+            available = pool.copy()
             
-            # Conduct battle
-            result = self._conduct_battle(
-                org1_id, organisms[org1_id],
-                org2_id, organisms[org2_id],
-                get_fitness
-            )
-            
-            if result:
-                battles.append(result.to_dict())
-                self.battle_history.append(result)
+            for _ in range(pool_battles):
+                if len(available) < 2:
+                    break
                 
-                # Limit battle history to prevent memory growth
-                if len(self.battle_history) > 1000:
-                    self.battle_history = self.battle_history[-1000:]
+                idx1 = np.random.randint(len(available))
+                org1_id = available[idx1]
                 
-                # NOTE: Absorption already done inside _conduct_battle()
-                # Do NOT call _absorb_loser again here - it causes double absorption!
+                candidates = [
+                    oid for oid in available 
+                    if oid != org1_id and not self._are_allied(org1_id, oid)
+                ]
                 
-                # Loser is eliminated
-                # DEBUG: Elimination logging
-                loser_org = organisms.get(result.loser_id)
-                if loser_org:
-                    concepts_had = 0
-                    if hasattr(loser_org, 'atomic_language') and loser_org.atomic_language:
-                        concepts_had = len(loser_org.atomic_language.atoms) if hasattr(loser_org.atomic_language, 'atoms') else 0
+                if not candidates:
+                    candidates = [oid for oid in available if oid != org1_id]
+                
+                if not candidates:
+                    continue
+                
+                org2_id = np.random.choice(candidates)
+                
+                if org1_id in available:
+                    available.remove(org1_id)
+                if org2_id in available:
+                    available.remove(org2_id)
+                
+                    # Conduct battle
+                result = self._conduct_battle(
+                    org1_id, organisms[org1_id],
+                    org2_id, organisms[org2_id],
+                    get_fitness
+                )
+                
+                if result:
+                    battles.append(result.to_dict())
+                    self.battle_history.append(result)
+                    
+                    if len(self.battle_history) > 1000:
+                        self.battle_history = self.battle_history[-1000:]
+                    
+                    loser_org = organisms.get(result.loser_id)
+                    if loser_org:
+                        concepts_had = 0
+                        if hasattr(loser_org, 'atomic_language') and loser_org.atomic_language:
+                            concepts_had = len(loser_org.atomic_language.atoms) if hasattr(loser_org.atomic_language, 'atoms') else 0
 
-                    self.logger.info(f"💀 ELIMINATED: {result.loser_id}")
-                    self.logger.info(f"   Final fitness: {result.loser_fitness:.3f}")
-                    self.logger.info(f"   Concepts lost: {concepts_had}")
-                    self.logger.info(f"   Winner: {result.winner_id} (fitness: {result.winner_fitness:.3f})")
-                    self.logger.info(f"   Will reincarnate via germination pool")
+                        self.logger.info(f"💀 ELIMINATED: {result.loser_id}")
+                        self.logger.info(f"   Final fitness: {result.loser_fitness:.3f}")
+                        self.logger.info(f"   Concepts lost: {concepts_had}")
+                        self.logger.info(f"   Winner: {result.winner_id} (fitness: {result.winner_fitness:.3f})")
+                        self.logger.info(f"   Will reincarnate via germination pool")
 
-                self.unregister_organism(result.loser_id, reason="defeated_in_battle")
-                if result.loser_id in active_list:
-                    active_list.remove(result.loser_id)
+                    self.unregister_organism(result.loser_id, reason="defeated_in_battle")
+                    if result.loser_id in active_list:
+                        active_list.remove(result.loser_id)
         
         return battles
     
@@ -727,45 +743,64 @@ class HighlanderProtocol:
             return self._run_competition(organisms, get_fitness)
         
         try:
-            # Phase 1: Collect all battle pairs (sequential - needs alliance checks)
+            # MASTERY MATCHMAKING: Group by tier so vocab transfer always fits
+            def get_mastery(org_id):
+                org = organisms.get(org_id)
+                if org and hasattr(org, 'atomic_language') and org.atomic_language:
+                    return getattr(org.atomic_language, '_mastery_level', 0)
+                return 0
+            
+            mastery_pools = {}
+            for org_id in active_list:
+                level = get_mastery(org_id)
+                if level not in mastery_pools:
+                    mastery_pools[level] = []
+                mastery_pools[level].append(org_id)
+            
+            self.logger.info(f"🎯 RAY MASTERY MATCHMAKING: {{{', '.join(f'{k}:{len(v)}' for k,v in sorted(mastery_pools.items()))}}}")
+            
+            # Phase 1: Collect all battle pairs within mastery tiers
             battle_pairs = []
             battle_pair_ids = []
             
-            available = active_list.copy()
-            for _ in range(num_battles):
-                if len(available) < 2:
-                    break
-                
-                # Select first combatant
-                idx1 = np.random.randint(len(available))
-                org1_id = available[idx1]
-                
-                # Select second combatant (preferring non-allies)
-                candidates = [
-                    oid for oid in available 
-                    if oid != org1_id and not self._are_allied(org1_id, oid)
-                ]
-                
-                if not candidates:
-                    candidates = [oid for oid in available if oid != org1_id]
-                
-                if not candidates:
+            for mastery_level, pool in mastery_pools.items():
+                if len(pool) < 2:
                     continue
                 
-                org2_id = np.random.choice(candidates)
+                pool_battles = int(len(pool) * self.competition_intensity)
+                pool_battles = max(1, min(pool_battles, len(pool) // 2))
+                available = pool.copy()
                 
-                # Extract serializable state for Ray
-                org1_state = self._extract_battle_state(org1_id, organisms[org1_id], get_fitness)
-                org2_state = self._extract_battle_state(org2_id, organisms[org2_id], get_fitness)
-                
-                battle_pairs.append((org1_state, org2_state))
-                battle_pair_ids.append((org1_id, org2_id))
-                
-                # Remove both from available to avoid double-booking
-                if org1_id in available:
-                    available.remove(org1_id)
-                if org2_id in available:
-                    available.remove(org2_id)
+                for _ in range(pool_battles):
+                    if len(available) < 2:
+                        break
+                    
+                    idx1 = np.random.randint(len(available))
+                    org1_id = available[idx1]
+                    
+                    candidates = [
+                        oid for oid in available 
+                        if oid != org1_id and not self._are_allied(org1_id, oid)
+                    ]
+                    
+                    if not candidates:
+                        candidates = [oid for oid in available if oid != org1_id]
+                    
+                    if not candidates:
+                        continue
+                    
+                    org2_id = np.random.choice(candidates)
+                    
+                    org1_state = self._extract_battle_state(org1_id, organisms[org1_id], get_fitness)
+                    org2_state = self._extract_battle_state(org2_id, organisms[org2_id], get_fitness)
+                    
+                    battle_pairs.append((org1_state, org2_state))
+                    battle_pair_ids.append((org1_id, org2_id))
+                    
+                    if org1_id in available:
+                        available.remove(org1_id)
+                    if org2_id in available:
+                        available.remove(org2_id)
             
             if not battle_pairs:
                 return battles
