@@ -445,10 +445,20 @@ class LanguageTeacher:
 
         # GROUNDED MODE: Respect mastery level gating
         # Don't teach words to organisms below level 4 - they must earn vocabulary
-        if hasattr(organism, 'atomic_language') and organism.atomic_language is not None:
-            mastery_level = organism.atomic_language.mastery_level
-            if mastery_level < 4:
-                # Below level 4: No teaching, organisms earn vocabulary through mastery
+        lang_config = self.config.get('language', {})
+        grounded_config = lang_config.get('grounded', {})
+        grounded_enabled = grounded_config.get('enabled', False)
+        
+        if grounded_enabled:
+            # Grounded mode is ON - check mastery level
+            if hasattr(organism, 'atomic_language') and organism.atomic_language is not None:
+                mastery_level = organism.atomic_language.mastery_level
+                if mastery_level < 4:
+                    # Below level 4: No teaching, organisms earn vocabulary through mastery
+                    return 0
+            else:
+                # Organism doesn't have atomic_language - in grounded mode, skip teaching entirely
+                # Organisms must have atomic_language to participate in grounded learning
                 return 0
 
         words_assigned = 0

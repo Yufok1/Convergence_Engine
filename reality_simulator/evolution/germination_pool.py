@@ -1893,7 +1893,18 @@ def integrate_germination_with_highlander(
                 new_organisms.append(organism)
                 
                 # RESTORE VOCABULARY: Link inherited words to new organism in context_memory
-                if hasattr(organism, '_inherited_vocabulary') and organism._inherited_vocabulary:
+                # GROUNDED MODE: Skip vocabulary inheritance - organisms must earn words through mastery
+                should_inherit_vocab = True
+                if hasattr(organism, 'config') and organism.config:
+                    lang_config = organism.config.get('language', {})
+                    grounded_config = lang_config.get('grounded', {})
+                    if grounded_config.get('enabled', False):
+                        # Grounded mode: No vocabulary inheritance
+                        should_inherit_vocab = False
+                        reincarnation_logger = logging.getLogger(__name__)
+                        reincarnation_logger.debug(f"   🔒 GROUNDED MODE: Skipping vocabulary inheritance")
+                
+                if should_inherit_vocab and hasattr(organism, '_inherited_vocabulary') and organism._inherited_vocabulary:
                     cm = context_memory_ref[0]  # Use the reference from closure
                     if cm:
                         org_id = organism.id if hasattr(organism, 'id') else hash(str(id(organism)))

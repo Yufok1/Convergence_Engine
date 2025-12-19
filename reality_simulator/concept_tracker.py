@@ -206,7 +206,16 @@ class ConceptTracker:
         self.total_concepts_created += 1
         
         # SEMANTIC CONVERGENCE: Feed phenotype name to language vocabulary
-        if self.context_memory is not None:
+        # GROUNDED MODE: Skip concept linking - organisms earn vocabulary through mastery, not concept emergence
+        grounded_mode_enabled = False
+        if self.context_memory is not None and hasattr(self.context_memory, 'config'):
+            config = getattr(self.context_memory, 'config', {})
+            if config:
+                lang_config = config.get('language', {})
+                grounded_config = lang_config.get('grounded', {})
+                grounded_mode_enabled = grounded_config.get('enabled', False)
+        
+        if self.context_memory is not None and not grounded_mode_enabled:
             try:
                 # Register concept name (e.g., "social_thrivers") as language anchor
                 for org_id in cluster_organism_ids[:10]:  # Limit to avoid flooding
