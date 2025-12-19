@@ -1880,6 +1880,8 @@ class NeuralOrganism(Organism):
             # INPUT CONDITIONING: Encode user input tokens to condition generation
             # ---------------------------------------------------------------------------
             input_context_vector = None
+            # DEBUG: Log what we received
+            logger.info(f"[generate_tokens] {self.species_id}: input_tokens={len(input_tokens) if input_tokens else 0}, context_memory={context_memory is not None}, has_word_embedding={hasattr(context_memory, 'word_embedding') if context_memory else False}")
             if input_tokens and len(input_tokens) > 0 and context_memory is not None:
                 # Use context_memory.word_embedding to encode input tokens
                 if hasattr(context_memory, 'word_embedding') and context_memory.word_embedding is not None:

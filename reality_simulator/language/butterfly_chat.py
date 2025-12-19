@@ -324,6 +324,13 @@ class ButterflyChatRouter:
                         })
 
                     # FIXED: Pass context_memory and input_tokens for conditioning
+                    # DEBUG: Log what we're passing to generate_tokens
+                    self._log_debug("STEP_4", f"Calling generate_tokens for {org_id}", {
+                        "has_context_memory": context_memory is not None,
+                        "context_memory_has_word_embedding": hasattr(context_memory, 'word_embedding') if context_memory else False,
+                        "input_tokens_count": len(prompt_tokens) if prompt_tokens else 0,
+                        "prompt_tokens_sample": prompt_tokens[:5] if prompt_tokens else []
+                    })
                     result = organism.generate_tokens(
                         context_memory=context_memory,
                         max_length=adaptive_max_length,
@@ -393,10 +400,13 @@ class ButterflyChatRouter:
                 
                 weight = fitness * confidence * genetic_weight_modifier
                 
+                # Calculate word count from response_text since response_words may not be defined
+                response_word_count = len(response_text.split()) if response_text else 0
+                
                 self._log_debug("STEP_4", f"Response decoded for {org_id}", {
                     "response_text": response_text,
                     "token_count": len(response_tokens),
-                    "word_count": len(response_words) if isinstance(response_words, list) else 0,
+                    "word_count": response_word_count,
                     "confidence": confidence,
                     "fitness": fitness,
                     "weight": weight,
@@ -1580,6 +1590,41 @@ class ButterflyChatRouter:
                 overlap_score = 0.1  # Increased base for having any response
             
             reward += overlap_score
+            
+            # 1b. SEMANTIC SIMILARITY (0.0 - 0.25) - Using word embeddings
+            # If context_memory has word embeddings, compute semantic similarity
+            semantic_score = 0.0
+            context_memory = network_state.get('context_memory') if network_state else None
+            if context_memory and hasattr(context_memory, 'word_embedding') and context_memory.word_embedding is not None:
+                try:
+                    import torch
+                    # Get embeddings for user content words and response content words
+                    vocab = getattr(context_memory, 'vocabulary', None)
+                    if vocab and hasattr(vocab, 'get_id'):
+                        # Encode user words
+                        user_ids = [vocab.get_id(w) for w in user_content_words if w in getattr(vocab, 'word_to_id', {})]
+                        response_ids = [vocab.get_id(w) for w in response_content_words if w in getattr(vocab, 'word_to_id', {})]
+                        
+                        if user_ids and response_ids:
+                            with torch.no_grad():
+                                device = next(context_memory.word_embedding.parameters()).device
+                                user_emb = context_memory.word_embedding(torch.LongTensor(user_ids).to(device))
+                                resp_emb = context_memory.word_embedding(torch.LongTensor(response_ids).to(device))
+                                
+                                # Mean pool and compute cosine similarity
+                                user_vec = user_emb.mean(dim=0)
+                                resp_vec = resp_emb.mean(dim=0)
+                                
+                                cos_sim = torch.nn.functional.cosine_similarity(
+                                    user_vec.unsqueeze(0), resp_vec.unsqueeze(0)
+                                ).item()
+                                
+                                # Convert to 0-0.25 range (cos_sim is -1 to 1)
+                                semantic_score = max(0.0, (cos_sim + 1) / 2) * 0.25
+                except Exception as e:
+                    self._log_debug("REWARD_CALC", f"Semantic similarity failed: {e}", {})
+            
+            reward += semantic_score
             
             # 2. COHERENCE SCORE (0.0 - 0.25)
             # Measures structural quality of the response
