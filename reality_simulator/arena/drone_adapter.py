@@ -132,19 +132,22 @@ class DroneState:
             if dist > 0:
                 obs[19:22] = direction / dist  # Unit vector to enemy
         
-        # Direction to nearest ally (if exists)
+        # Direction to nearest ally (if exists) - uses indices 22-24
         if self.allies_positions and len(self.allies_positions) > 0:
             nearest_ally = min(self.allies_positions,
                               key=lambda p: np.linalg.norm(p - self.position))
             direction = nearest_ally - self.position
             dist = np.linalg.norm(direction)
             if dist > 0:
-                obs[22:25] = direction / dist  # Unit vector to ally
+                # Only use first 2 components to leave room for altitude
+                obs[22:24] = (direction / dist)[:2]  # XY direction to ally
         
-        # Altitude danger (too low or too high)
-        obs[25] = np.clip(self.position[2] / 5.0, 0, 1)  # Height
-        obs[26] = 1.0 if self.position[2] < 0.5 else 0.0  # Ground danger
-        obs[27] = 1.0 if self.position[2] > 9.0 else 0.0  # Ceiling danger
+        # Altitude info packed into index 24 (last element)
+        # Encode: height normalized + danger flags as sign/magnitude
+        height_norm = np.clip(self.position[2] / 5.0, 0, 1)
+        ground_danger = 1.0 if self.position[2] < 0.5 else 0.0
+        ceiling_danger = 1.0 if self.position[2] > 9.0 else 0.0
+        obs[24] = height_norm - ground_danger * 0.5 - ceiling_danger * 0.3
         
         return obs
 

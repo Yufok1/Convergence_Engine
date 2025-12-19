@@ -1519,18 +1519,25 @@ class NeuralOrganism(Organism):
             _logger.debug(f"[GYM-EXP] Skipping experience with invalid action {action} (must be 0-5)")
             return
         
-        # Normalize state to match input_dim (from config)
+        # Get input_dim from brain or config (NOT from self.input_dim which doesn't exist)
+        input_dim = 25  # Default
+        if self.brain is not None and hasattr(self.brain, 'input_dim'):
+            input_dim = self.brain.input_dim
+        elif hasattr(self, 'config') and self.config:
+            input_dim = self.config.get('neural', {}).get('brain', {}).get('input_dim', 25)
+        
+        # Normalize state to match input_dim
         def normalize_state(obs):
-            state_norm = np.zeros(self.input_dim, dtype=np.float32)
+            state_norm = np.zeros(input_dim, dtype=np.float32)
             if isinstance(obs, (int, np.integer)):
                 state_norm[0] = float(obs) / 100.0
             elif isinstance(obs, tuple):
-                for i, val in enumerate(obs[:self.input_dim]):
+                for i, val in enumerate(obs[:input_dim]):
                     if isinstance(val, (int, float, bool)):
                         state_norm[i] = float(val)
             else:
                 obs_flat = np.array(obs).flatten()
-                state_norm[:min(len(obs_flat), self.input_dim)] = obs_flat[:self.input_dim]
+                state_norm[:min(len(obs_flat), input_dim)] = obs_flat[:input_dim]
             return state_norm
         
         state_norm = normalize_state(state)

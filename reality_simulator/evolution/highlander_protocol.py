@@ -1026,11 +1026,14 @@ class HighlanderProtocol:
                 )
                 
             except Exception as e:
-                # Fall back to fitness-based if arena fails
-                print(f"Arena battle failed, using fitness fallback: {e}")
+                # Re-raise arena errors - no silent fallbacks!
+                import traceback
+                self.logger.error(f"Arena battle FAILED: {e}")
+                self.logger.error(traceback.format_exc())
+                raise  # Propagate error - fix the root cause!
         
         # ═══════════════════════════════════════════════════════════════
-        # FALLBACK: FITNESS-BASED COMPARISON
+        # FALLBACK: FITNESS-BASED COMPARISON (only if arena not configured)
         # ═══════════════════════════════════════════════════════════════
         fitness1 = get_fitness(org1)
         fitness2 = get_fitness(org2)

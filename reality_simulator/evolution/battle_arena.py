@@ -576,8 +576,8 @@ class BattleArena:
         
         # 🧠 NEURAL FEEDBACK: Record individual battle outcomes for learning
         # This wires up the previously orphaned BATTLE_FOUGHT concept
-        winner_org = org1 if winner_id == org1_id else org2
-        loser_org = org2 if winner_id == org1_id else org1
+        winner_org = organism_1 if winner_id == org1_id else organism_2
+        loser_org = organism_2 if winner_id == org1_id else organism_1
         if hasattr(winner_org, 'record_alliance_event'):
             winner_org.record_alliance_event("battle_won", True)
         if hasattr(loser_org, 'record_alliance_event'):
