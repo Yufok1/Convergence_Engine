@@ -1421,8 +1421,10 @@ class AtomicLanguageSystem:
         if self._mastery_level == 0:
             return available[:target_size]
         
-        # Level 1+: Add core state/relationship words
-        core_frames = {'state', 'relationship', 'resource', 'question'}
+        # Level 1+: Add core words (expanded frame set to match innate_vocab.json)
+        # Core tier includes: relationship, state, action, causal, perception, quality, cognitive, etc.
+        core_frames = {'state', 'relationship', 'resource', 'question', 'action', 'causal', 
+                       'perception', 'quality', 'cognitive', 'emotion', 'social', 'universal'}
         core_words = [
             c for c in self.atoms.keys() 
             if c not in available 
@@ -1537,153 +1539,18 @@ class AtomicLanguageSystem:
     def try_advance_mastery(self) -> bool:
         """
         Check and advance mastery level if criteria met.
-        When advancing, load new vocabulary appropriate to the new level.
+        
+        Note: Vocabulary expansion is handled by the mastery_level setter
+        via _expand_vocabulary_for_level() - no need to call it here.
         
         Returns:
             True if advanced, False otherwise
         """
         if self.check_mastery_advancement():
-            old_level = self._mastery_level
             self.mastery_level = self._mastery_level + 1
-            
-            # Load vocabulary appropriate to new level based on organism's behavior
-            self._load_level_vocabulary(old_level, self._mastery_level)
-            
             return True
         return False
     
-    def _load_level_vocabulary(self, old_level: int, new_level: int):
-        """
-        Load vocabulary when advancing mastery level.
-        Vocabulary is selected based on organism's action patterns (not random).
-        
-        Args:
-            old_level: Previous mastery level
-            new_level: New mastery level
-        """
-        current_time = time.time()
-        innate_data = self._load_innate_vocab()
-        if not innate_data:
-            return
-            
-        concepts = innate_data.get('concepts', {})
-        tiers = innate_data.get('tiers', {})
-        
-        # Analyze organism's action patterns to personalize vocabulary
-        action_weights = self._get_action_weights()
-        
-        if new_level >= 1 and old_level < 1:
-            # Level 1: Add core words weighted by organism's behavioral tendencies
-            core_words = tiers.get('core', [])
-            self._add_behavior_weighted_vocab(
-                core_words, concepts, current_time, 
-                'innate_core', 0.6, action_weights, max_words=20
-            )
-        
-        if new_level >= 2 and old_level < 2:
-            # Level 2: Add extended concepts
-            extended_words = tiers.get('extended', [])
-            self._add_behavior_weighted_vocab(
-                extended_words, concepts, current_time,
-                'innate_extended', 0.4, action_weights, max_words=50
-            )
-        
-        if new_level >= 3 and old_level < 3:
-            # Level 3: Add pool words
-            pool_words = tiers.get('pool', [])
-            self._add_behavior_weighted_vocab(
-                pool_words, concepts, current_time,
-                'innate_pool', 0.25, action_weights, max_words=200
-            )
-        
-        logger.info(f"[ATOMIC_LANG] {self.organism_id[:8]} advanced to level {new_level}: now has {len(self.atoms)} atoms")
-    
-    def _get_action_weights(self) -> Dict[str, float]:
-        """
-        Get organism's action preference weights based on their atom strengths.
-        Used to personalize vocabulary selection.
-        """
-        weights = {}
-        total = 0.0
-        for action in self.ACTION_HEADS:
-            if action in self.atoms:
-                strength = self.atoms[action].strength
-                weights[action] = strength
-                total += strength
-        
-        # Normalize
-        if total > 0:
-            for action in weights:
-                weights[action] /= total
-        else:
-            # Equal weights if no differentiation yet
-            for action in self.ACTION_HEADS:
-                weights[action] = 1.0 / len(self.ACTION_HEADS)
-        
-        return weights
-    
-    def _add_behavior_weighted_vocab(self, word_list: List[str], concepts: Dict, 
-                                      current_time: float, source: str, 
-                                      base_strength: float, action_weights: Dict[str, float],
-                                      max_words: int):
-        """
-        Add vocabulary words weighted by organism's behavioral tendencies.
-        
-        Organisms who cooperate more get more social/relationship words.
-        Organisms who compete more get more conflict/resource words.
-        Organisms who explore (move) more get more spatial/nature words.
-        etc.
-        """
-        # Frame preferences based on action tendencies
-        frame_scores = {}
-        
-        # Map actions to semantic frames they relate to
-        action_frame_map = {
-            'cooperate': ['relationship', 'social', 'greeting', 'state'],
-            'compete': ['resource', 'conflict', 'state', 'quantity'],
-            'move': ['spatial', 'nature', 'temporal', 'perception'],
-            'rest': ['state', 'temporal', 'nature'],
-            'reproduce': ['relationship', 'nature', 'state'],
-            'isolate': ['state', 'spatial', 'perception']
-        }
-        
-        # Calculate frame preference scores
-        for action, weight in action_weights.items():
-            if action in action_frame_map:
-                for frame in action_frame_map[action]:
-                    frame_scores[frame] = frame_scores.get(frame, 0) + weight
-        
-        # Score each word based on how well it matches organism's behavioral profile
-        word_scores = []
-        for word in word_list:
-            if word in self.atoms:
-                continue  # Skip words we already have
-            if word not in concepts:
-                continue
-                
-            info = concepts[word]
-            frame = info.get('frame', 'universal')
-            
-            # Base score from frame match
-            score = frame_scores.get(frame, 0.1)
-            
-            # Bonus for question words (all organisms should be curious)
-            if frame == 'question' or word in ['why', 'how', 'what', 'where', 'when', 'who']:
-                score += 0.3
-            
-            word_scores.append((word, score, info))
-        
-        # Sort by score (highest first) - no randomization!
-        word_scores.sort(key=lambda x: x[1], reverse=True)
-        
-        # Add top words up to max
-        added = 0
-        for word, score, info in word_scores:
-            if added >= max_words:
-                break
-            self._add_innate_concept(word, info, current_time, source, base_strength)
-            added += 1
-
     def _initialize_foundational_orientation(self, current_time: float):
         """
         Initialize foundational orientation concepts from ORIENTATION dict.
