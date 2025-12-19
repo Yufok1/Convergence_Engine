@@ -415,7 +415,7 @@ bridge = AgentBridge.load('./my_champion_agent')
 
 # Test on target environment
 results = bridge.run_gym(
-    env_name='LunarLander-v2',
+    env_name='LunarLander-v3',
     episodes=100,
     save_video=True,
     video_dir='./submission_videos'

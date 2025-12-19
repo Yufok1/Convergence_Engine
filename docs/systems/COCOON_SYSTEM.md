@@ -1,6 +1,6 @@
 # 🦋 COCOON SYSTEM - Single-File Deployable Agent
 
-**Last Updated:** 2025-12-08
+**Last Updated:** 2025-12-14 (Hopfield Layer Support)
 
 The Cocoon System compiles trained Butterfly organisms into a single, self-contained Python file that can run independently without the full Butterfly infrastructure.
 
@@ -13,7 +13,8 @@ A **Cocoon** is a "graduation package" - when organisms have evolved through Hig
 1. **Run anywhere** - Single Python file, minimal dependencies (just PyTorch + optionally Gym)
 2. **Continue learning** - Full triple-loss training system preserved
 3. **Match Butterfly behavior** - VP-aware attention, concept reasoning, vocabulary expansion
-4. **Deploy in multiple modes** - Chat, Gym environments, HTTP API, or embed in other code
+4. **Deploy in multiple modes** - Chat, Gym, HTTP API, Sphere Arena, P2P Link
+5. **Battle other cocoons** - Connect to hatch servers for P2P networking
 
 ---
 
@@ -24,10 +25,32 @@ A **Cocoon** is a "graduation package" - when organisms have evolved through Hig
 | Component | Purpose | Alignment with Butterfly |
 |-----------|---------|-------------------------|
 | `MultiHeadAttention` | Self-attention with VP gating | ✅ `scores / (1 + vp_value)` |
+| `HopfieldLayer` | Iterative thought refinement | ✅ Energy-based pattern retrieval with VP scaling |
 | `ConceptHead` | Axiom relevance, composition value | ✅ 18 axioms, configurable compositions |
 | `OrganismBrain` | Neural network with action + language heads | ✅ Same architecture as `OrganismBrain` |
 | `ExperienceBuffer` | Store experiences for training | ✅ `input_tokens`, `target_tokens`, `vp_value` |
 | `CocoonAgent` | Manages brains, training, vocabulary | ✅ Mirrors `NeuralOrganism` behavior |
+| `VPRuntime` | Violation pressure computation | ✅ Real-time VP from state + rewards |
+| `AtomicLanguageSystem` | Per-organism vocabulary with concept strength | ✅ Acquire/strengthen concepts |
+
+### Hopfield Layer: Iterative Thought Refinement ⭐ NEW
+
+When enabled, organisms can "think" through multiple refinement iterations before producing outputs:
+
+```python
+# Energy function: E(ξ) = -β⁻¹ log Σᵢ exp(β xᵢᵀ ξ)
+# Update rule: ξ' = softmax(β Xᵀ ξ) · X
+
+# Configuration (embedded at compile time):
+use_hopfield = True
+hopfield_patterns = 32    # Learnable pattern memory
+hopfield_iterations = 5   # Max refinement iterations
+hopfield_beta = 1.0       # Inverse temperature
+
+# Monitor thought process:
+info = brain.get_thought_info()
+# {'iterations': 3, 'converged': True, 'final_delta': 0.0008}
+```
 
 ### Training System
 
@@ -35,12 +58,12 @@ The cocoon implements the **full triple-loss** training:
 
 ```python
 loss = α * rl_loss + β * language_loss + γ * concept_loss
-#      0.8            0.1                   0.1
+#      0.5            0.4                   0.1
 ```
 
 - **RL Loss**: TD-error on Q-values (reward prediction)
-- **Language Loss**: Cross-entropy on token prediction
-- **Concept Loss**: MSE on composition value prediction (NEW!)
+- **Language Loss**: Cross-entropy on token prediction with label smoothing + entropy bonus
+- **Concept Loss**: MSE on composition value prediction
 
 ### Vocabulary Expansion
 
@@ -50,11 +73,11 @@ Cocoons can learn new words dynamically:
 # Add individual word
 cocoon.add_word("synchronize", frequency=1)
 
-# Learn from text
+# Learn from text (gated by knowledge_web)
 cocoon.learn_from_text("The organisms cooperate to achieve convergence")
 
 # Add concept (category + associations)
-cocoon.add_concept("emergence", category="dynamics", associations=["growth", "pattern"])
+cocoon.add_concept("emergence", category="dynamics", confidence=0.5)
 ```
 
 ---
@@ -68,18 +91,14 @@ The cocoon compiler supports multiple export formats:
 | **🦋 Cocoon** | `.py` | ❌ | ✅ | Single Python file with embedded weights |
 | **ONNX** | `.onnx` | ✅ | ❌ | Open Neural Network Exchange format |
 | **TorchScript** | `.pt` | ✅ | ❌ | PyTorch JIT compiled model |
-| **StateDict** | `.pth` | ❌ | ✅* | Raw PyTorch weights |
 | **📦 Package** | `.zip` | ✅ | ✅ | All formats + README + metadata |
-
-*StateDict requires rebuilding the model architecture to use.
 
 ### View in Netron
 
-1. Select **ONNX**, **TorchScript**, or **📦 Package** format
-2. Download the file
-3. Go to [https://netron.app/](https://netron.app/)
-4. Drag & drop the `.onnx` or `.pt` file
-5. Explore the neural network architecture!
+1. Export to **ONNX** format: `python cocoon.py --export-onnx brain.onnx`
+2. Go to [https://netron.app/](https://netron.app/)
+3. Drag & drop the `.onnx` file
+4. Explore the neural network architecture!
 
 ---
 
@@ -89,7 +108,7 @@ The cocoon compiler supports multiple export formats:
 ```bash
 python cocoon.py --mode info
 ```
-Shows organism metadata, vocabulary size, architecture info.
+Shows organism metadata, vocabulary size, architecture info, and available options.
 
 ### 2. Chat Mode
 ```bash
@@ -110,10 +129,25 @@ Train/test in OpenAI Gym environments with visual rendering.
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--env` | CartPole-v1 | Gym environment name |
-| `--episodes` | 10 | Number of episodes to run |
+| `--episodes` | 100 | Number of episodes to run |
 | `--max-organisms` | all | Limit organisms loaded (reduces VRAM) |
-| `--render` | False | Show visual rendering |
-| `--learn` | True | Enable online learning |
+| `--render` | off | Show visual rendering |
+| `--no-learn` | off | Disable online learning (inference only) |
+
+**Available Environments:**
+
+Built-in (always work):
+- `CartPole-v1`, `MountainCar-v0`, `Acrobot-v1`
+- `FrozenLake-v1`, `CliffWalking-v1`, `Taxi-v3`, `Blackjack-v1`
+
+Box2D (`pip install gymnasium[box2d]`):
+- `Pendulum-v1`, `LunarLander-v3`, `BipedalWalker-v3`, `CarRacing-v3`
+
+Atari (`pip install ale-py`):
+- `ALE/Pong-v5`, `ALE/Breakout-v5`, `ALE/SpaceInvaders-v5`, `ALE/MsPacman-v5`, `ALE/Enduro-v5`
+
+MuJoCo (`pip install gymnasium[mujoco]`):
+- `Ant-v5`, `HalfCheetah-v5`, `Hopper-v5`, `Walker2d-v5`, `Humanoid-v5`, `Swimmer-v5`
 
 ### 4. HTTP Server Mode
 ```bash
@@ -125,12 +159,56 @@ Endpoints:
 |----------|--------|---------|
 | `/health` | GET | Health check |
 | `/act` | POST | Get action from state vector |
-| `/learn` | POST | Train on experience batch |
 | `/chat` | POST | Send message, get response |
-| `/teach` | POST | Explicitly teach new words |
-| `/vocab` | GET | View current vocabulary |
+| `/reward` | POST | Provide learning reward |
+| `/state` | GET | Get agent internal state |
 
-### 5. Export Modes
+### 5. Sphere Arena Mode
+```bash
+python cocoon.py --mode sphere --train
+python cocoon.py --mode sphere --balls 3 --misses 5 --train
+python cocoon.py --mode sphere --headless --train  # Background training
+python cocoon.py --mode sphere --demo  # Preview with dummy AI
+```
+
+3D swarm defense game where organisms cooperate to catch falling balls.
+
+**Sphere Arena Options:**
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--balls N` | 1 | Number of balls (1-5) |
+| `--misses N` | 10 | Max collective misses before game over |
+| `--train` | off | Enable post-snapshot training |
+| `--demo` | off | Run with dummy AI for preview |
+| `--headless` | off | No display (training only) |
+| `--verbose` | off | Debug logging |
+
+### 6. Link Mode (P2P Networking)
+```bash
+python cocoon.py --mode link --hatch ws://server:9000 --name "Champion"
+```
+
+Connect to other cocoons over the internet for battles and chat.
+
+**Link Mode Options:**
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--hatch URL` | ws://localhost:9000 | CocoonHatch relay server |
+| `--name NAME` | auto | Display name |
+
+**In-Link Commands:**
+| Command | Description |
+|---------|-------------|
+| `/users` | List online cocoons |
+| `/challenge <name>` | Challenge a user to battle |
+| `/accept <id>` | Accept a challenge |
+| `/decline <id>` | Decline a challenge |
+| `/chat <message>` | Send message to lobby |
+| `/quit` | Disconnect |
+
+**Requirements:** `pip install websockets`
+
+### 7. Export Modes
 ```bash
 # Export updated cocoon with learned state
 python cocoon.py --export evolved_cocoon.py
@@ -138,10 +216,31 @@ python cocoon.py --export evolved_cocoon.py
 # Export ONNX for Netron visualization
 python cocoon.py --export-onnx brain.onnx
 
+# Export single organism ONNX
+python cocoon.py --export-onnx brain.onnx --organism 0
+
 # Export full package (ONNX + README + metadata)
 python cocoon.py --export-package ./my_model/
+
+# Unpack ultimate package assets
+python cocoon.py --unpack ./output_dir
+
+# Print embedded README
+python cocoon.py --readme
 ```
-Export current state (with learned words) to new cocoon file.
+
+---
+
+## ⚙️ Global Options
+
+These flags work with any mode:
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--voting MODE` | confidence | Ensemble voting: `majority`, `weighted`, `confidence` |
+| `--max-organisms N` | all | Limit organisms loaded (saves VRAM) |
+| `--verbose` / `-v` | off | Enable debug logging |
+| `--help` | - | Show all options |
 
 ---
 
@@ -167,11 +266,6 @@ POST /api/capsules/compile-cocoon
 }
 ```
 
-### CRA Command (Future)
-```json
-[[COCOON_COMPILE: {"organisms": "top_5", "output": "champion_swarm.py"}]]
-```
-
 ---
 
 ## ⚙️ Configuration
@@ -179,19 +273,27 @@ POST /api/capsules/compile-cocoon
 Cocoons embed their configuration at compile time:
 
 ```python
-# Architecture
+# Architecture (28D self-perception)
+input_dim = 28
 hidden_dim = 64
+output_dim = 6  # move, cooperate, compete, rest, reproduce, isolate
 num_heads = 4
 num_axioms = 18
 num_key_compositions = 32
 
+# Hopfield layer (iterative thought refinement)
+use_hopfield = True/False  # embedded based on source organism
+hopfield_patterns = 32     # learnable pattern memory
+hopfield_iterations = 5    # max refinement iterations
+hopfield_beta = 1.0        # inverse temperature
+
 # Training weights
-rl_weight = 0.8
-language_weight = 0.1
+rl_weight = 0.5
+language_weight = 0.4
 concept_weight = 0.1
 
 # Vocabulary
-vocab_size = 1000  # expandable
+vocab_size = expandable  # grows dynamically
 special_tokens = ['<PAD>', '<UNK>', '<START>', '<END>', '<VP_GATE>']
 ```
 
@@ -203,6 +305,7 @@ special_tokens = ['<PAD>', '<UNK>', '<START>', '<END>', '<VP_GATE>']
 |---------|-----------|--------|--------|
 | VP-aware attention | ✅ | ✅ | Aligned |
 | Multi-head self-attention | ✅ | ✅ | Aligned |
+| **Hopfield Layer** | ✅ | ✅ | **NEW** - Iterative thought refinement |
 | Experience buffer | ✅ | ✅ | Aligned |
 | RL loss (TD-error) | ✅ | ✅ | Aligned |
 | Language loss (CE) | ✅ | ✅ | Aligned |
@@ -215,9 +318,11 @@ special_tokens = ['<PAD>', '<UNK>', '<START>', '<END>', '<VP_GATE>']
 | Fitness Weighting | ✅ | ✅ | Aligned |
 | Knowledge Web Usage | ✅ | ✅ | Aligned |
 | Response Aggregation | ✅ | ✅ | Aligned |
-| **Semantic Convergence** | ✅ | ✅ | **NEW** - Word embeddings exported |
-| **Language Anchors** | ✅ | ✅ | **NEW** - Word-organism mappings |
-| **Axiom Embeddings** | ✅ | ✅ | **NEW** - ConceptSystem grounding |
+| Semantic Convergence | ✅ | ✅ | Word embeddings exported |
+| Language Anchors | ✅ | ✅ | Word-organism mappings |
+| Axiom Embeddings | ✅ | ✅ | ConceptSystem grounding |
+| `get_hidden_state()` | ✅ | ✅ | **NEW** - Proper Hopfield routing |
+| `get_thought_info()` | ✅ | ✅ | **NEW** - Convergence monitoring |
 | Gym integration | ✅ | ✅ | Aligned |
 | HTTP server | N/A | ✅ | Cocoon-specific |
 | Self-export | N/A | ✅ | Cocoon-specific |
@@ -263,17 +368,28 @@ The cocoon now implements Butterfly's complete STEP 1-7 tokenomic pipeline:
 🦋 Cocoon: <aggregated response>
 ```
 
-### Decision Matrix Formula
+### Decision Matrix Formula (Updated 2025-12-14)
 
 The winner is selected by maximizing:
 
 ```python
-weight = fitness × confidence
+weight = fitness × confidence × gene_modifier × semantic_modifier
 ```
 
 Where:
 - **fitness** - Organism's proven fitness from Highlander/evolution
-- **confidence** - Response confidence (diversity × token probability)
+- **confidence** - Response confidence (token probability)
+- **gene_modifier** - Genetic diversity bonus (1.0 to 1.2)
+- **semantic_modifier** - Response quality score (0.2 to 1.5)
+
+The **semantic_modifier** is calculated from a 5-component reward:
+1. Word overlap with user message (0.0-0.25)
+2. Coherence/structure quality (0.0-0.25)
+3. Length appropriateness (0.0-0.2)
+4. Confidence scaling (0.0-0.2)
+5. VP adjustment (±0.1)
+
+**CRITICAL:** Heavy repetition penalty - responses with `unique_ratio < 0.3` get reward = -0.3
 
 **Note:** Alliance warfare and Highlander battles are *selection mechanisms* - they determine WHICH organisms graduate to cocoons. Once exported, cocoons are champions that have already proven themselves.
 

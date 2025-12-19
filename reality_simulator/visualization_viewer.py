@@ -15,6 +15,7 @@ import time
 import json
 import os
 import sys
+import logging
 from typing import Dict, Any, Optional, List
 import matplotlib
 matplotlib.use('TkAgg')
@@ -25,6 +26,8 @@ from matplotlib import colors as mcolors
 import numpy as np
 import tkinter as tk
 from tkinter import ttk
+
+logger = logging.getLogger(__name__)
 
 # Import visualization modules (but they'll only render, not compute)
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

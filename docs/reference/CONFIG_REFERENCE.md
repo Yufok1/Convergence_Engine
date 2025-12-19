@@ -1,10 +1,23 @@
 # Configuration Reference – Butterfly System
 
-**Last Updated:** 2025-12-03
+**Last Updated:** 2025-12-16
 
 This document mirrors `config.json` so you can keep the file itself machine-valid (no inline comments) while still knowing what each knob does. Open `config.json` side-by-side with this reference.
 
 > **Editing tip:** Because the config is pure JSON, keep comments out of the file. Instead, jot notes in this guide or create git commit messages that highlight why a tweak was made.
+
+---
+
+## Available Config Files
+
+| Config | Purpose | Population | Target Hardware |
+|--------|---------|------------|------------------|
+| `config.json` | Default balanced settings | 200 | Auto-detect |
+| `config_beastmode_saturation.json` | H100 stress test | 600 | H100 80GB |
+| `config_colab_l4.json` | Google Colab L4 GPU | 150 | L4 24GB |
+| `config_genesis.json` | Boom/bust from 5 progenitors | 5→800 | Any GPU |
+
+Usage: `python unified_entry.py --config config_genesis.json`
 
 ---
 
@@ -13,9 +26,12 @@ This document mirrors `config.json` so you can keep the file itself machine-vali
 | Section | Purpose |
 |---------|---------|
 | `agency` | Autonomous agent decision parameters |
+| `arena` | Proton Game Arena battle system |
+| `attractor_landscape` | Swarm attractor dynamics observatory |
 | `causation_detection` | Real-time causation graph settings |
 | `evolution` | Genetic algorithm parameters |
 | `feedback` | Closed-loop mutation/edge tuning |
+| `hardware_governor` | Hardware auto-scaling controls |
 | `health_monitor` | System health classification |
 | `highlander` | Survival tournament + Alliance Warfare |
 | `lattice` | Micro lattice simulation |
@@ -27,6 +43,8 @@ This document mirrors `config.json` so you can keep the file itself machine-vali
 | `ray` | Distributed computing (Ray) |
 | `rendering` | Visualization settings |
 | `scikit` | Classical ML analytics |
+| `self_perception` | Reward shaping for attractor features |
+| `semantic_convergence` | Unified embedding differentiation |
 | `simulation` | Global runtime settings |
 | `vp_monitoring` | Violation Pressure dashboards |
 
@@ -43,6 +61,81 @@ Autonomous agent decision parameters.
 | `initial_mode` | string | "manual_only" | Startup autonomy mode (`manual_only`, `assisted`, `autonomous`) |
 | `learning_rate_resolution` | float | 1e-06 | Step size when tuning adaptive learning rates |
 | `performance_tracking_precision` | float | 0.0001 | Decimal precision for KPI logging |
+
+---
+
+## `arena`
+
+Proton Game Arena - Apprentice Adept style gym battles (Piers Anthony + Highlander inspired).
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `enabled` | bool | true | Master toggle for battle arena |
+| `default_battle_type` | string | "PROTON_GAME" | Default battle type |
+| `prefer_native_games` | bool | true | Prioritize language/concept games over Gym |
+| `proton_game_probability` | float | 1.0 | Fraction of battles using Proton Game (0.0-1.0) |
+
+### `arena.battle_consequences`
+
+What happens to losers and winners.
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `fitness_transfer_rate` | float | 1.0 | How much fitness winner takes from loser |
+| `resource_transfer_enabled` | bool | true | Enable resource absorption |
+| `resource_transfer_rate` | float | 1.0 | Percentage of resources transferred |
+| `trait_evolution_enabled` | bool | true | Allow trait changes from battle |
+| `trait_bonus_cap` | float | 0.3 | Maximum trait bonus from single battle |
+
+### `arena.game_selection`
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `mode` | string | "ai_driven" | How game type is chosen |
+| `allow_negotiation` | bool | true | Allow organisms to negotiate game type |
+| `negotiation_rounds` | int | 3 | Rounds of negotiation before deadlock |
+| `fallback_on_deadlock` | string | "random" | What happens on negotiation failure |
+
+### `arena.grid_weights`
+
+Weighting for different challenge and resource types.
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `challenge_types.MENTAL` | float | 1.5 | Weight for mental challenges |
+| `challenge_types.PHYSICAL` | float | 0.5 | Weight for physical challenges |
+| `challenge_types.ARTS` | float | 2.0 | Weight for creative challenges |
+| `challenge_types.CHANCE` | float | 1.0 | Weight for random challenges |
+| `resource_types.NAKED` | float | 1.5 | Weight for unaided challenges |
+| `resource_types.TOOL` | float | 1.0 | Weight for tool-assisted |
+| `resource_types.MACHINE` | float | 1.0 | Weight for machine-assisted |
+| `resource_types.ANIMAL` | float | 1.0 | Weight for animal-assisted |
+
+### `arena.tournament`
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `default_format` | string | "single_elimination" | Tournament structure |
+| `seeding_method` | string | "fitness_based" | How brackets are seeded |
+| `round_robin_battles_per_pair` | int | 3 | Battles per pair in round-robin |
+
+---
+
+## `attractor_landscape`
+
+Collective magnetism field observatory for swarm attractor dynamics.
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `enabled` | bool | true | Enable attractor landscape tracking |
+| `window_size` | int | 20 | Snapshot history size |
+| `fixed_point_persistence` | int | 5 | Snapshots to confirm stable state |
+| `fixed_point_variance_threshold` | float | 0.02 | Max variance for "fixed" point |
+| `bifurcation_coherence_threshold` | float | 0.15 | Detect sudden coherence shifts |
+| `bifurcation_entropy_threshold` | float | 0.20 | Detect sudden entropy shifts |
+| `resonance_similarity_threshold` | float | 0.1 | Threshold for resonance detection |
+
+**Genesis Note:** For small populations, increase `fixed_point_variance_threshold` to 0.03-0.04 as they have inherently more variance.
 
 ---
 
@@ -94,16 +187,20 @@ Genetic algorithm and mutation settings.
 | `mutation_rate_precision` | float | 0.001 | Tuning precision for mutation rate |
 | `population_size` | int | 200 | Base population per generation |
 
+**Genesis Protocol Note:** For 5-progenitor scenarios, set `population_size: 5` and increase `mutation_rate.initial` to 0.08+ to ensure genetic diversity from the small founder pool.
+
 ### `evolution.diversity_guard`
 
-Anti-clone guardrails to prevent population collapse.
+Anti-clone guardrails to prevent population collapse. **CRITICAL for small populations.**
 
-| Key | Type | Default | Description |
-|-----|------|---------|-------------|
-| `enabled` | bool | true | Enable diversity protection |
-| `frequency_threshold` | float | 0.1 | Threshold for frequency-based penalties |
-| `hash_similarity_threshold` | float | 0.92 | Similarity threshold for clone detection |
-| `penalty` | float | 0.05 | Fitness penalty for clones |
+| Key | Type | Default | Description | Genesis Value |
+|-----|------|---------|-------------|---------------|
+| `enabled` | bool | true | Enable diversity protection | true |
+| `frequency_threshold` | float | 0.1 | Threshold for frequency-based penalties | 0.25 |
+| `hash_similarity_threshold` | float | 0.92 | Similarity threshold for clone detection | 0.75 |
+| `penalty` | float | 0.05 | Fitness penalty for clones | 0.12 |
+
+**⚠️ Inbreeding Risk:** With 5 founders, aggressive diversity guard is essential. Lower `hash_similarity_threshold` to 0.75-0.80 to detect inbreeding early.
 
 ---
 
@@ -117,6 +214,8 @@ Closed-loop controllers for mutation/new-edge tuning.
 | `interval_frames` | int | 10 | How frequently feedback checks run |
 | `hysteresis_checks` | int | 3 | Confirmations before change is accepted |
 | `rate_limit_frames` | int | 60 | Cool-down between adjustments |
+
+**Genesis Note:** For boom/bust dynamics, widen `mutation_rate` range to `min: 0.01, max: 0.15` to allow spikes during bottlenecks.
 
 ### `feedback.knobs`
 
@@ -150,55 +249,131 @@ System health classification and monitoring.
 
 ---
 
-## `highlander`
+## `hardware_governor`
 
-Tournament survival system with Alliance Warfare.
+Controls automatic hardware-based config scaling.
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| `enabled` | bool | true | Enable Highlander Protocol |
-| `competition_intensity` | float | 0.8 | Battle difficulty (0-1) |
-| `chaos_factor` | float | 0.4 | Random event probability |
-| `population_size` | int | 100 | Initial population |
-| `max_population` | int | 30 | Maximum organisms |
-| `min_population` | int | 5 | Minimum before germination |
-| `mutation_rate` | float | 0.15 | Mutation rate for offspring |
-| `germination_rate` | float | 0.1 | Probability capsules respawn |
-| `max_capsules` | int | 10 | Champion checkpoint capacity |
-| `max_genetic_samples` | int | 100 | Genetic sample vault capacity |
-| `max_battle_rounds` | int | 50 | Maximum rounds per battle |
-| `rounds_per_cycle` | int | 2 | Battle rounds per cycle |
-| `survival_threshold` | float | 0.5 | Minimum fitness to survive |
-| `predation_enabled` | bool | true | Enable predator-prey dynamics |
+| `auto_scale` | bool | true | Enable auto-scaling of config values to hardware |
+
+When `auto_scale` is `false`, Governor will only clamp values to maximum (won't scale UP small configs).
+
+---
+
+## `highlander`
+
+Tournament survival system with Alliance Warfare. Controls the core population dynamics including boom/bust cycles.
+
+| Key | Type | Default | Description | Genesis Value |
+|-----|------|---------|-------------|---------------|
+| `enabled` | bool | true | Enable Highlander Protocol | true |
+| `eval_interval_seconds` | int | 60 | Seconds between tournament evaluations | 45 |
+| `competition_intensity` | float | 0.4 | Fraction of population that battles (0-1) | 0.15 |
+| `chaos_factor` | float | 0.0 | Battle randomness (0=deterministic, >0.15=upsets) | 0.10 |
+| `population_size` | int | 600 | Initial population to spawn | 5 |
+| `max_population` | int | 1200 | Ceiling before resource collapse | 800 |
+| `min_population` | int | 20 | Floor that triggers emergency germination | 3 |
+| `mutation_rate` | float | 0.0 | Mutation rate for offspring | 0.05 |
+| `germination_rate` | float | 1.0 | Rate of spawning new organisms (higher = faster boom) | 0.8 |
+| `max_capsules` | int | 300 | Champion checkpoint capacity | 100 |
+| `max_genetic_samples` | int | 300 | Genetic sample vault capacity | 200 |
+| `max_battle_rounds` | int | 50 | Maximum rounds per battle | 30 |
+| `rounds_per_cycle` | int | 2 | Battle rounds per breath cycle | 3 |
+| `survival_threshold` | float | 0.4 | Minimum fitness to survive culling | 0.25 |
+| `predation_enabled` | bool | true | High-fitness hunts low-fitness | true |
+
+### Population Dynamics
+
+**Highlander Tournament Flow (per round):**
+1. **CULLING**: Remove organisms below `survival_threshold`
+2. **COMPETITION**: `competition_intensity` fraction battles
+3. **COOPERATION**: Alliance formation/maintenance
+4. **PREDATION**: High-fitness hunts low-fitness (if enabled)
+5. **GERMINATION**: If below `min_population`, spawn new organisms
+
+**Boom/Bust Triggers:**
+- **BOOM**: High `germination_rate` + low `survival_threshold` → exponential growth
+- **BUST**: Resource scarcity + high `competition_intensity` → mass extinction
+- **RECOVERY**: `min_population` floor triggers emergency germination
 
 ### `highlander.alliance_warfare` ⭐
 
-Collective warfare for existential dominance.
+Collective warfare for existential dominance. Small tribes that form, fight, betray, and dissolve.
 
-| Key | Type | Default | Description |
-|-----|------|---------|-------------|
-| `enabled` | bool | true | Enable alliance system |
-| `min_alliance_size` | int | 3 | Minimum organisms for alliance |
-| `max_alliance_size` | int | 10 | Maximum organisms per alliance |
-| `max_alliances` | int | 1000 | Maximum concurrent alliances |
-| `max_confederations` | int | 50 | Maximum super-alliances |
-| `war_frequency` | float | 0.3 | War probability each cycle |
-| `war_declaration_threshold` | float | 0.4 | Threshold for war declaration |
-| `existential_war_threshold` | float | 0.8 | Threshold for total annihilation |
-| `confederation_war_threshold` | float | 0.7 | Vote ratio for mega-war |
-| `betrayal_chance` | float | 0.05 | Probability of alliance betrayal |
+| Key | Type | Default | Description | Genesis Value |
+|-----|------|---------|-------------|---------------|
+| `enabled` | bool | true | Enable alliance system | true |
+| `min_alliance_size` | int | 2 | Minimum organisms for alliance | 2 |
+| `max_alliance_size` | int | 500 | Maximum organisms per alliance | 15 |
+| `max_alliances` | int | 9999 | Maximum concurrent alliances | 20 |
+| `max_confederations` | int | 9999 | Maximum super-alliances | 5 |
+| `war_frequency` | float | 0.5 | War probability each cycle | 0.25 |
+| `war_declaration_threshold` | float | 0.6 | Confidence to declare war | 0.5 |
+| `existential_war_threshold` | float | 0.8 | Threshold for total annihilation war | 0.7 |
+| `confederation_war_threshold` | float | 0.6 | Vote ratio for mega-war | 0.5 |
+| `betrayal_chance` | float | 0.0 | Probability of alliance betrayal | 0.03 |
+| `illumination_stability_threshold` | int | 5 | Rounds before illumination unlocks | 3 |
+
+**Alliance Benefits:**
+- **Survival bonus**: Alliance members get fitness boost for culling
+- **Combat bonus**: Up to 100% at 7 members + cohesion + knowledge synergy
+- **Concept sharing**: Members share vocabulary freely
+- **Collective defense**: Allies avoid fighting each other
+
+**Betrayal Mechanics:**
+- Tracks `cooperation_count` vs `defection_count` per organism
+- Trust score = `cooperation / (cooperation + defection)`
+- Betrayers marked and excluded from future alliances
+
+**Genesis Note:** For small populations, limit `max_alliance_size` to prevent one alliance from dominating. Set `betrayal_chance` > 0 to prevent immortal dynasties.
 
 ### `highlander.extreme_mode`
 
-Override settings for EXTREME difficulty.
+Override settings for EXTREME difficulty. Activates during extinction events.
 
-| Key | Value | Description |
-|-----|-------|-------------|
-| `competition_intensity` | 1.0 | Maximum pressure |
-| `survival_threshold` | 0.8 | Very high survival bar |
-| `max_population` | 20 | Small arena |
-| `min_population` | 2 | Near extinction allowed |
-| `germination_rate` | 0.05 | Rare respawns |
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `competition_intensity` | float | 0.6 | Maximum pressure |
+| `survival_threshold` | float | 0.5 | Very high survival bar |
+| `max_population` | int | 500 | Small arena |
+| `min_population` | int | 3 | Near extinction allowed |
+| `germination_rate` | float | 0.5 | Reduced respawns |
+| `mutation_rate` | float | 0.12 | Higher mutation for diversity |
+| `chaos_factor` | float | 0.15 | More upsets allowed |
+| `max_battle_rounds` | int | 10 | Shorter battles |
+| `rounds_per_cycle` | int | 3 | More rounds per cycle |
+| `predation_enabled` | bool | true | Hunting enabled |
+
+### `highlander.lineage_tracking` (Genesis Protocol)
+
+Track family trees from founder organisms. Essential for preventing inbreeding from small populations.
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `enabled` | bool | true | Enable lineage tracking |
+| `track_ancestry` | bool | true | Track full family tree |
+| `founder_bonus` | float | 0.08 | Fitness bonus for founding lineage |
+| `genetic_diversity_pressure` | float | 0.1 | Pressure toward diverse mating |
+| `inbreeding_penalty` | float | 0.20 | Fitness penalty for inbred offspring |
+| `dynasty_bonus` | float | 0.05 | Bonus for long-surviving lineages |
+| `max_lineage_depth` | int | 100 | Maximum ancestry depth to track |
+
+### `highlander.boom_bust_dynamics` (Genesis Protocol)
+
+Emergent economic cycles from resource/population feedback.
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `enabled` | bool | true | Enable boom/bust cycle detection |
+| `boom_detection_threshold` | float | 0.7 | Resource abundance = boom |
+| `bust_detection_threshold` | float | 0.25 | Resource scarcity = bust |
+| `resource_scarcity_multiplier` | float | 1.5 | Competition boost during scarcity |
+| `abundance_germination_boost` | float | 2.0 | Germination boost during abundance |
+| `scarcity_competition_boost` | float | 1.5 | Competition boost during scarcity |
+| `cycle_memory_generations` | int | 20 | Generations to track cycle history |
+| `seasonal_amplitude` | float | 0.4 | Resource oscillation amplitude |
+| `seasonal_period_generations` | int | 200 | Generations per seasonal cycle |
 
 ---
 
@@ -220,7 +395,11 @@ Micro lattice simulation constants.
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| `shared_state_dump_interval` | int | 300 | Seconds between state snapshots |
+| `shared_state_dump_interval` | int | 30 | Seconds between state snapshots |
+| `sample_rate` | int | 5 | Log 1 in N state entries to disk (1=all, 10=10%) |
+| `track_lineage` | bool | true | Enable lineage tracking in logs |
+| `track_extinctions` | bool | true | Log extinction events |
+| `boom_bust_log` | bool | true | Log boom/bust cycle transitions |
 
 ---
 
@@ -253,17 +432,23 @@ Array of config paths the tuner may modify. See config.json for full list.
 
 ## `network`
 
-Graph limits for organism interaction network.
+Graph limits for organism interaction network. Controls resource economics.
 
-| Key | Type | Default | Description |
-|-----|------|---------|-------------|
-| `max_organisms` | int | 500 | Hard cap on organism count |
-| `max_connections` | int | 1000000 | Hard cap on edge count |
-| `resource_pool` | int | 550 | Total shared resources |
-| `connection_strength_resolution` | float | 5e-06 | Decimal precision for edge weights |
-| `resource_flow_precision` | float | 0.0001 | Decimal precision for resource flow |
-| `stability_precision` | float | 1e-07 | Decimal precision for stability |
-| `emergence_sensitivity` | float | 1e-06 | Sensitivity for emergence detection |
+| Key | Type | Default | Description | Genesis Value |
+|-----|------|---------|-------------|---------------|
+| `max_organisms` | int | 2000 | Hard cap on organism count | 1000 |
+| `max_connections` | int | 50000 | Hard cap on edge count | 50000 |
+| `resource_pool` | int | 5000 | Total shared ecosystem resources | 1500 |
+| `connection_strength_resolution` | float | 5e-06 | Decimal precision for edge weights | 5e-06 |
+| `resource_flow_precision` | float | 0.0001 | Decimal precision for resource flow | 0.001 |
+| `stability_precision` | float | 1e-07 | Decimal precision for stability | 1e-07 |
+| `emergence_sensitivity` | float | 1e-06 | Sensitivity for emergence detection | 1e-06 |
+
+**Resource Economics:**
+- `resource_pool` is the total ecosystem carrying capacity
+- Lower pool = faster scarcity = triggers bust cycles
+- Rule of thumb: Set `resource_pool` ≥ 50 × expected average population
+- For Genesis Protocol: 1500 pool supports boom to ~800, then triggers bust
 
 ---
 
@@ -282,29 +467,43 @@ DQN architecture settings.
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| `input_dim` | int | 24 | Input feature dimensions |
-| `hidden_dim` | int | 64 | Hidden layer size |
+| `input_dim` | int | 28 | Input feature dimensions (includes attractor features) |
+| `hidden_dim` | int | 192 | Hidden layer size (192 for H100, 64 for smaller) |
 | `output_dim` | int | 6 | Action space size |
 | `activation` | string | "relu" | Activation function |
-| `dropout` | float | 0.1 | Dropout rate |
-| `vocab_size` | int | 50000 | Vocabulary size for language head |
+| `dropout` | float | 0.1 | Dropout rate (0.15 for small populations) |
+| `vocab_size` | int | 25000 | Vocabulary size for language head |
+| `attention_dim` | int | 56 | Attention dimension |
+
+### `neural.hopfield`
+
+Modern continuous Hopfield network for iterative thought refinement.
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `enabled` | bool | true | Enable Hopfield network |
+| `patterns` | int | 64 | Number of stored patterns |
+| `iterations` | int | 5 | Refinement iterations |
+| `beta` | float | 1.0 | Inverse temperature |
 
 ### `neural.training`
 
 DQN training hyperparameters.
 
-| Key | Type | Default | Description |
-|-----|------|---------|-------------|
-| `enabled` | bool | true | Enable training |
-| `learning_rate` | float | 0.008 | DQN learning rate |
-| `batch_size` | int | 64 | Training batch size |
-| `gamma` | float | 0.995 | Discount factor |
-| `epsilon_start` | float | 0.8 | Initial exploration rate |
-| `epsilon_end` | float | 0.01 | Final exploration rate |
-| `epsilon_decay` | float | 0.985 | Epsilon decay per step |
-| `memory_size` | int | 20000 | Replay buffer size |
-| `update_frequency` | int | 1 | Steps between updates |
-| `language_reward_scaling` | float | 0.25 | Language reward weight |
+| Key | Type | Default | Description | Genesis Value |
+|-----|------|---------|-------------|---------------|
+| `enabled` | bool | true | Enable training | true |
+| `learning_rate` | float | 0.002 | DQN learning rate | 0.0015 |
+| `batch_size` | int | 256 | Training batch size | 32 |
+| `gamma` | float | 0.995 | Discount factor | 0.995 |
+| `epsilon_start` | float | 0.8 | Initial exploration rate | 0.85 |
+| `epsilon_end` | float | 0.01 | Final exploration rate | 0.02 |
+| `epsilon_decay` | float | 0.99 | Epsilon decay per step | 0.992 |
+| `memory_size` | int | 300000 | Replay buffer size | 50000 |
+| `update_frequency` | int | 1 | Steps between updates | 1 |
+| `language_reward_scaling` | float | 0.4 | Language reward weight | 0.4 |
+
+**⚠️ Genesis Warning:** With 5 organisms, experience accumulates slowly. If `batch_size` > total experiences, training never triggers. Rule: `batch_size` ≤ `population × 10` for first training step.
 
 ### `neural.training.lr_scheduler` ⭐
 
@@ -613,6 +812,24 @@ Classical ML analytics with scikit-learn.
 
 ---
 
+## `self_perception`
+
+Reward shaping for attractor landscape features (state features 26-28: oscillation_entropy, coherence_frequency, attractor_proximity).
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `enabled` | bool | true | Enable self-perception rewards |
+| `oscillation_entropy_threshold` | float | 0.7 | Entropy threshold for chaos detection |
+| `oscillation_chaos_penalty` | float | -0.1 | Penalty for chaotic oscillations |
+| `coherence_frequency_threshold` | float | 0.6 | Coherence threshold for trap detection |
+| `coherence_trap_penalty` | float | -0.15 | Penalty for coherence traps |
+| `proximity_near_threshold` | float | 0.3 | Near-attractor proximity threshold |
+| `proximity_near_bonus` | float | 0.05 | Bonus for being near attractor |
+| `proximity_medium_threshold` | float | 0.6 | Medium proximity threshold |
+| `proximity_medium_bonus` | float | 0.02 | Bonus for medium proximity |
+
+---
+
 ## `semantic_convergence`
 
 Unifies 6 semantic systems for word embedding differentiation. Enables words used by differently-tuned organisms to occupy different regions of embedding space.
@@ -622,9 +839,9 @@ Unifies 6 semantic systems for word embedding differentiation. Enables words use
 | `enabled` | bool | true | Master toggle for semantic convergence |
 | `use_learned_embeddings` | bool | true | Use nn.Embedding for learned word representations |
 | `embedding_dim` | int | 64 | Dimension for learned embeddings (matches OrganismBrain.fc2) |
-| `organism_embedding_alpha` | float | 0.1 | EMA blending factor (0.1 = 90% keep, 10% new from organism) |
-| `concept_system_alpha` | float | 0.05 | Alpha for ConceptSystem axiom embeddings |
-| `knowledge_web_influence_interval` | int | 25 | Generations between KnowledgeWeb semantic influence passes |
+| `organism_embedding_alpha` | float | 0.15 | EMA blending factor (0.1 = 90% keep, 10% new from organism) |
+| `concept_system_alpha` | float | 0.1 | Alpha for ConceptSystem axiom embeddings |
+| `knowledge_web_influence_interval` | int | 10 | Generations between KnowledgeWeb semantic influence passes |
 | `phenotype_to_vocabulary` | bool | true | Auto-register phenotype names ("social_thrivers") as vocabulary |
 
 **Data Flow:**
@@ -823,6 +1040,125 @@ data/neural_checkpoints/
 - `OrganismCapsuleManager` - Saves individual champion organisms (Highlander mode)
 - `ConfigManager` - 10-snapshot rollback for config (in-memory, lost on restart)
 - `NeuralTrainer.save_concept_system()` - Manual concept system persistence
+
+---
+
+## Quick Reference: Genesis Protocol (Boom/Bust)
+
+### Starting from 5 Progenitors
+
+```json
+{
+  "highlander": {
+    "population_size": 5,
+    "min_population": 3,
+    "max_population": 800,
+    "survival_threshold": 0.25,
+    "competition_intensity": 0.15,
+    "germination_rate": 0.8,
+    "chaos_factor": 0.10
+  },
+  "evolution": {
+    "population_size": 5,
+    "mutation_rate": { "initial": 0.08 },
+    "diversity_guard": {
+      "hash_similarity_threshold": 0.75,
+      "penalty": 0.12
+    }
+  },
+  "neural.training": {
+    "batch_size": 32,
+    "memory_size": 50000,
+    "epsilon_decay": 0.992
+  },
+  "network": {
+    "resource_pool": 1500
+  }
+}
+```
+
+### Phase Controls
+
+| Phase | Key Parameters |
+|-------|----------------|
+| **BOOM** | ↑ `germination_rate`, ↓ `survival_threshold`, ↓ `competition_intensity` |
+| **BUST** | ↑ `competition_intensity`, ↑ `survival_threshold`, `predation_enabled: true` |
+| **RECOVERY** | `min_population` floor triggers emergency germination |
+
+### Extinction Prevention
+
+| Risk | Mitigation |
+|------|------------|
+| Mass culling | Keep `survival_threshold` ≤ 0.3 for small pops |
+| Battle extinction | Keep `competition_intensity` ≤ 0.2 |
+| Genetic monoculture | Enforce `diversity_guard` with low threshold |
+| Training starvation | Use `batch_size` ≤ population × 2 |
+| Resource collapse | Set `resource_pool` ≥ 50 × population |
+
+### Runaway Growth Prevention
+
+| Risk | Mitigation |
+|------|------------|
+| Population explosion | Enforce `max_population` ceiling |
+| Immortal dynasties | Enable `betrayal_chance` > 0.02 |
+| Alliance domination | Limit `max_alliance_size` |
+
+---
+
+## System Interaction Map
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     UNIFIED_ENTRY.PY                            │
+│                    (Main orchestrator)                          │
+└─────────────────────────────┬───────────────────────────────────┘
+                              │
+         ┌────────────────────┼────────────────────┐
+         ▼                    ▼                    ▼
+┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
+│   HIGHLANDER    │  │  GERMINATION    │  │    ALLIANCE     │
+│   PROTOCOL      │◄─┤     POOL        │◄─┤    WARFARE      │
+│                 │  │                 │  │                 │
+│ • run_round()   │  │ • collect_essence│ │ • propose_war() │
+│ • _run_culling()│  │ • prepare_germ..│  │ • vote_proposal()│
+│ • _run_battle() │  │ • _apply_chimera│  │ • resolve_war() │
+└────────┬────────┘  └────────┬────────┘  └────────┬────────┘
+         │                    │                    │
+         ▼                    ▼                    ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    NEURAL_ORGANISM                              │
+│                                                                 │
+│  • brain (OrganismBrain)      • experience_buffer               │
+│  • atomic_language            • magnetism states                │
+│  • alliance_id                • illumination_level              │
+└─────────────────────────────────────────────────────────────────┘
+         │                    │                    │
+         ▼                    ▼                    ▼
+┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
+│  BATTLE_ARENA   │  │ NEURAL_TRAINER  │  │ HEALTH_MONITOR  │
+│                 │  │                 │  │                 │
+│ • resolve_battle│  │ • train_step()  │  │ • compute_health│
+│ • combat_stats  │  │ • batch_sample()│  │ • emit_alerts() │
+└─────────────────┘  └─────────────────┘  └─────────────────┘
+```
+
+### Germination Strategies
+
+| Strategy | Weight | Description |
+|----------|--------|-------------|
+| `TWO_PARENT_BLEND` | 25% | Two-parent trait combination |
+| `CHIMERA_MAGNETISM` | 40% | Multi-parent weighted blending with magnetism inheritance |
+| `NOVA` | 18% | Completely random new organism |
+| `ADAPTIVE_CHALLENGER` | 17% | Population-fitness-calibrated challengers |
+
+### Inheritance Chain
+
+When a new organism is born:
+1. **Neural template**: Brain weights inherited/blended from parents
+2. **Concept seed**: Vocabulary and concepts passed down
+3. **Magnetism template**: Attractor landscape states (healed/trapped phenotype)
+4. **Association template**: Knowledge web relationships
+5. **Trait template**: Behavioral tendencies
 
 ---
 

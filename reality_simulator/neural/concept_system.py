@@ -46,12 +46,12 @@ class AxiomDefinition:
     """Definition of a primitive axiom with grounding information."""
     name: str
     category: str  # existence, comparison, agency, value, action, time, space
-    feature_indices: List[int]  # Which 24D state features ground this axiom
+    feature_indices: List[int]  # Which 28D state features ground this axiom
     grounding_fn: str  # How to compute grounding: 'direct', 'inverse', 'diff', 'mean'
     description: str
 
 
-# The 18 axioms mapped to actual 24D organism state features
+# The 18 axioms mapped to actual 28D organism state features
 # Features (from neural_organism.py get_state_features):
 #  0: fitness
 #  1: resource_level
@@ -264,7 +264,7 @@ class ConceptSystem(nn.Module):
     """
     
     def __init__(self,
-                 state_dim: int = 24,
+                 state_dim: int = 28,
                  embed_dim: int = 64,
                  device: str = 'cpu',
                  max_concept_memory: int = 1000):  # GAP FIX C7: Memory limit
@@ -714,7 +714,7 @@ def get_concept_config_defaults() -> Dict[str, Any]:
         'concept_loss_weight': 0.1,  # Weight in triple-loss
         'utility_update_alpha': 0.1,
         'key_compositions': KEY_COMPOSITIONS,
-        'num_key_compositions': 20,  # ARCHITECTURE PARAM - must match config.json!
+        'num_key_compositions': 30,  # ARCHITECTURE PARAM - must match config.json!
     }
 
 
@@ -729,7 +729,7 @@ def create_concept_system(config: Dict[str, Any], device: str = 'cpu') -> Option
         return None
     
     return ConceptSystem(
-        state_dim=config.get('neural', {}).get('brain', {}).get('input_dim', 25),
+        state_dim=config.get('neural', {}).get('brain', {}).get('input_dim', 27),
         embed_dim=concept_config.get('embed_dim', 64),
         device=device
     )

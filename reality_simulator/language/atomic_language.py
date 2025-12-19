@@ -24,7 +24,7 @@ import time
 import logging
 from typing import Dict, List, Optional, Set, Tuple, Any, Callable
 from dataclasses import dataclass, field
-from collections import defaultdict, Counter
+from collections import defaultdict, Counter, deque
 import numpy as np
 import json
 
@@ -44,6 +44,11 @@ class ConceptAssociation:
     Association between two concepts - a trackable link.
     
     Like a synapse between linguistic neurons.
+    
+    HEALING PROTOCOL EXTENSION:
+    - strength_history: Track strength over time for oscillation detection
+    - resonance_frequency(): Measure coherence (high = forbidden bond)
+    - is_forbidden(): Bonds with coherence > 0.8 are locked in feedback loops
     """
     target_concept: str
     strength: float = 0.0  # -1.0 to 1.0 (negative = inhibition)
@@ -56,14 +61,88 @@ class ConceptAssociation:
     success_count: int = 0  # Times this association led to good outcome
     failure_count: int = 0  # Times this association led to bad outcome
     
+    # ═══════════════════════════════════════════════════════════════════════════
+    # HEALING PROTOCOL - Forbidden Bond Detection
+    # 
+    # "centimeter daub orchestrate" - measure distance between oscillation peaks
+    # High-frequency resonance pairs are FORBIDDEN - locked in feedback loops
+    # Low coherence bonds are safe to preserve (just weak, not trapped)
+    # ═══════════════════════════════════════════════════════════════════════════
+    
+    def __post_init__(self):
+        # Track strength history for oscillation detection (not a field to avoid dataclass issues)
+        object.__setattr__(self, '_strength_history', deque(maxlen=10))
+    
+    def record_strength(self):
+        """Record current strength to history for oscillation tracking."""
+        if not hasattr(self, '_strength_history'):
+            object.__setattr__(self, '_strength_history', deque(maxlen=10))
+        self._strength_history.append(self.strength)
+    
+    def resonance_frequency(self) -> float:
+        """
+        Measure coherence frequency of this bond.
+        
+        "centimeter" = measure the distance between oscillation peaks
+        High coherence (>0.8) = forbidden bond (locked in feedback loop)
+        Low coherence = safe to preserve
+        
+        Returns:
+            Coherence frequency 0.0-1.0 (higher = more synchronized oscillation)
+        """
+        if not hasattr(self, '_strength_history') or len(self._strength_history) < 3:
+            return 0.0
+        
+        history = list(self._strength_history)
+        
+        # Count sign changes (oscillation frequency)
+        sign_changes = 0
+        deltas = [history[i+1] - history[i] for i in range(len(history)-1)]
+        for i in range(len(deltas)-1):
+            if deltas[i] * deltas[i+1] < 0:  # Sign changed
+                sign_changes += 1
+        
+        # Normalize: many sign changes = high resonance frequency
+        max_changes = len(deltas) - 1
+        if max_changes <= 0:
+            return 0.0
+        
+        frequency = sign_changes / max_changes
+        
+        # Also consider amplitude of oscillation
+        amplitude = max(history) - min(history) if history else 0.0
+        
+        # High frequency + high amplitude = strong resonance (forbidden)
+        coherence = frequency * (0.5 + amplitude * 0.5)
+        return min(1.0, coherence)
+    
+    def is_forbidden(self, threshold: float = 0.8) -> bool:
+        """
+        Check if this bond is forbidden (trapped in feedback loop).
+        
+        Forbidden bonds have high coherence - they oscillate in sync.
+        These need to be weakened for healing.
+        
+        Args:
+            threshold: Coherence above this = forbidden (default 0.8)
+        
+        Returns:
+            True if bond is trapped in high-frequency resonance
+        """
+        return self.resonance_frequency() > threshold
+    
     def to_dict(self) -> Dict[str, Any]:
+        history = list(self._strength_history) if hasattr(self, '_strength_history') else []
         return {
             'target': self.target_concept,
             'strength': self.strength,
             'formation_time': self.formation_time,
             'formation_reason': self.formation_reason,
             'update_count': self.update_count,
-            'success_rate': self.success_count / max(1, self.success_count + self.failure_count)
+            'success_rate': self.success_count / max(1, self.success_count + self.failure_count),
+            'strength_history': history,
+            'resonance_frequency': self.resonance_frequency(),
+            'is_forbidden': self.is_forbidden()
         }
 
 
@@ -130,6 +209,15 @@ class LinguisticAtom:
     recent_activation_count: int = 0  # Activations in recent window
     satiation_level: float = 0.0  # 0 = fresh, 1 = completely bored
     
+    # ═══════════════════════════════════════════════════════════════════════════
+    # HEALING PROTOCOL - Oscillation Tracking
+    # 
+    # "sick cleavable edge wait opening" - detect oscillation, find breaking point
+    # Track magnetism trajectory over time to detect trapped states
+    # Entropy spikes trigger verification tests
+    # ═══════════════════════════════════════════════════════════════════════════
+    magnetism_history: List[float] = field(default_factory=list)  # Trajectory for oscillation detection (max 20)
+    
     # Event emitter callback (set by AtomicLanguageSystem)
     _event_emitter: Optional[Callable] = field(default=None, repr=False)
     _organism_id: Optional[str] = field(default=None, repr=False)
@@ -164,6 +252,35 @@ class LinguisticAtom:
         
         old_magnetism = self.curiosity_magnetism
         self.curiosity_magnetism = np.clip(self.curiosity_magnetism + delta, 0.1, 1.0)
+        
+        # ═══════════════════════════════════════════════════════════════════════
+        # HEALING PROTOCOL - Track magnetism trajectory for oscillation detection
+        # ═══════════════════════════════════════════════════════════════════════
+        was_oscillating = self.is_oscillating() if len(self.magnetism_history) >= 5 else False
+        
+        self.magnetism_history.append(self.curiosity_magnetism)
+        if len(self.magnetism_history) > 20:
+            self.magnetism_history = self.magnetism_history[-20:]
+        
+        # Detect oscillation onset - emit event when atom becomes trapped
+        now_oscillating = self.is_oscillating()
+        if not was_oscillating and now_oscillating and self._event_emitter:
+            try:
+                from causation_explorer import Event
+                self._event_emitter(Event(
+                    timestamp=time.time(),
+                    component='healing_protocol',
+                    event_type='oscillation_detected',
+                    data={
+                        'organism_id': self._organism_id,
+                        'concept_id': self.concept_id,
+                        'coherence_frequency': self.coherence_frequency(),
+                        'oscillation_entropy': self.oscillation_entropy(),
+                        'magnetism_trajectory': self.magnetism_history[-10:]
+                    }
+                ))
+            except ImportError:
+                pass
         
         # Emit causation event if significant change
         if self._event_emitter and abs(delta) > 0.01:
@@ -229,6 +346,137 @@ class LinguisticAtom:
         
         effective = base * skepticism_modifier * satiation_modifier * outcome_modifier
         return max(0.1, min(1.0, effective))
+    
+    # ═════════════════════════════════════════════════════════════════════════════
+    # HEALING PROTOCOL - Oscillation Detection Methods
+    # 
+    # "centimeter daub orchestrate" = measure peak distances, test gently, find resonance
+    # "sick cleavable edge" = detect oscillation, find breaking point
+    # ═════════════════════════════════════════════════════════════════════════════
+    
+    def coherence_frequency(self) -> float:
+        """
+        Measure coherence frequency of this atom's magnetism trajectory.
+        
+        "centimeter" = measure the distance between oscillation peaks
+        High coherence (>0.8) = trapped in oscillation loop
+        Low coherence = stable or drifting (not trapped)
+        
+        Returns:
+            Coherence frequency 0.0-1.0 (higher = more trapped in oscillation)
+        """
+        if len(self.magnetism_history) < 5:
+            return 0.0
+        
+        history = self.magnetism_history
+        
+        # Count sign changes in deltas (oscillation frequency)
+        deltas = [history[i+1] - history[i] for i in range(len(history)-1)]
+        sign_changes = 0
+        for i in range(len(deltas)-1):
+            if deltas[i] * deltas[i+1] < 0:  # Direction reversed
+                sign_changes += 1
+        
+        # Normalize: many sign changes = high oscillation frequency
+        max_changes = len(deltas) - 1
+        if max_changes <= 0:
+            return 0.0
+        
+        frequency = sign_changes / max_changes
+        
+        # Also consider amplitude - small wiggles don't count as trapped
+        amplitude = max(history) - min(history) if history else 0.0
+        
+        # High frequency + high amplitude = trapped oscillation
+        # Low amplitude oscillation = just noise, not trapped
+        coherence = frequency * min(1.0, amplitude * 2.0)  # Amplitude > 0.5 counts full
+        return min(1.0, coherence)
+    
+    def oscillation_entropy(self) -> float:
+        """
+        Calculate entropy of magnetism oscillation pattern.
+        
+        "wait opening mediate disconcertingly" - when entropy SPIKES, run verification
+        High entropy = chaotic/unpredictable changes (good time to test healing)
+        Low entropy = stable or regular pattern (not the right moment)
+        
+        Returns:
+            Oscillation entropy 0.0-1.0 (spike above 0.3 triggers verification)
+        """
+        if len(self.magnetism_history) < 5:
+            return 0.0
+        
+        history = self.magnetism_history
+        
+        # Calculate variance of deltas (how unpredictable are the changes?)
+        deltas = [abs(history[i+1] - history[i]) for i in range(len(history)-1)]
+        if not deltas:
+            return 0.0
+        
+        mean_delta = sum(deltas) / len(deltas)
+        if mean_delta < 0.001:
+            return 0.0  # No movement = no entropy
+        
+        # Variance of deltas normalized by mean
+        variance = sum((d - mean_delta) ** 2 for d in deltas) / len(deltas)
+        
+        # Also check for sudden large jumps (entropy spikes)
+        max_delta = max(deltas)
+        spike_factor = max_delta / mean_delta if mean_delta > 0.001 else 0
+        
+        # Combine variance and spike detection
+        # High variance + large spikes = high entropy (the "opening" moment)
+        entropy = min(1.0, (variance ** 0.5) * 2 + (spike_factor - 1) * 0.1)
+        return max(0.0, entropy)
+    
+    def is_oscillating(self, threshold: float = 0.5) -> bool:
+        """
+        Check if this atom is trapped in oscillation.
+        
+        "trapped" phenotype = coherence_frequency > threshold
+        
+        Args:
+            threshold: Coherence above this = trapped (default 0.5)
+        
+        Returns:
+            True if atom is oscillating/trapped
+        """
+        return self.coherence_frequency() > threshold
+    
+    def should_verify_healing(self, entropy_threshold: float = 0.3) -> bool:
+        """
+        Check if now is the right time to run healing verification.
+        
+        "wait opening" - only test when entropy spikes (the system offers an opening)
+        NOT clock-based, NOT state-change-based. ENTROPY-triggered.
+        
+        Args:
+            entropy_threshold: Entropy above this = run verification (default 0.3)
+        
+        Returns:
+            True if entropy spike detected (good moment to test)
+        """
+        return self.oscillation_entropy() > entropy_threshold
+    
+    def get_state_signature(self) -> Dict[str, Any]:
+        """
+        Get state signature for broadcast.
+        
+        "rollback specialize compare journey" - share your trajectory, not your conclusion
+        Broadcast = state-signature sharing, receivers compare to their own patterns
+        
+        Returns:
+            State signature dict with trajectory, frequencies, current state
+        """
+        return {
+            'concept_id': self.concept_id,
+            'oscillation_trajectory': list(self.magnetism_history),
+            'coherence_frequency': self.coherence_frequency(),
+            'oscillation_entropy': self.oscillation_entropy(),
+            'current_magnetism': self.curiosity_magnetism,
+            'is_oscillating': self.is_oscillating(),
+            'outcome_trend': sum(self.outcome_history) / len(self.outcome_history) if self.outcome_history else 0.0
+        }
     
     def _emit_magnetism_update(self, old_magnetism: float, outcome: float, reason: str):
         """Emit causation event for magnetism change."""
@@ -327,6 +575,8 @@ class LinguisticAtom:
             )
             self.associations[target_concept].update_count += 1
             self.associations[target_concept].last_update_time = current_time
+            # Track for resonance/forbidden bond detection
+            self.associations[target_concept].record_strength()
         else:
             # Create new association
             old_strength = 0.0
@@ -336,6 +586,8 @@ class LinguisticAtom:
                 formation_time=current_time,
                 formation_reason=reason
             )
+            # Initial strength recording
+            self.associations[target_concept].record_strength()
         
         # Emit causation event
         if emit_event and self._event_emitter:
@@ -405,7 +657,14 @@ class LinguisticAtom:
             'base_magnetism': self.base_magnetism,
             'curiosity_magnetism': self.curiosity_magnetism,
             'outcome_history': self.outcome_history[-10:],  # Last 10 outcomes
-            'satiation_level': self.satiation_level
+            'satiation_level': self.satiation_level,
+            # ═══════════════════════════════════════════════════════════════
+            # HEALING PROTOCOL - Oscillation trajectory
+            # ═══════════════════════════════════════════════════════════════
+            'magnetism_history': self.magnetism_history[-20:],  # Last 20 trajectory points
+            'coherence_frequency': self.coherence_frequency(),
+            'oscillation_entropy': self.oscillation_entropy(),
+            'is_oscillating': self.is_oscillating()
         }
     
     @classmethod
@@ -423,12 +682,21 @@ class LinguisticAtom:
         
         # Restore associations
         for target, assoc_data in data.get('associations', {}).items():
-            atom.associations[target] = ConceptAssociation(
+            assoc = ConceptAssociation(
                 target_concept=target,
                 strength=assoc_data.get('strength', 0.0),
                 formation_time=assoc_data.get('formation_time', 0.0),
                 formation_reason=assoc_data.get('formation_reason', 'loaded')
             )
+            # Restore strength history for resonance detection
+            strength_history = assoc_data.get('strength_history', [])
+            for s in strength_history:
+                assoc.record_strength() if s == assoc.strength else None
+            # Re-record current to populate history
+            if strength_history:
+                for s in strength_history[-10:]:
+                    assoc._strength_history.append(s)
+            atom.associations[target] = assoc
         
         # Restore VP affinity
         vp_data = data.get('vp_affinity', {})
@@ -442,6 +710,11 @@ class LinguisticAtom:
         atom.curiosity_magnetism = data.get('curiosity_magnetism', data.get('base_magnetism', 0.5))
         atom.outcome_history = data.get('outcome_history', [])
         atom.satiation_level = data.get('satiation_level', 0.0)
+        
+        # ═══════════════════════════════════════════════════════════════
+        # RESTORE HEALING PROTOCOL - Oscillation trajectory
+        # ═══════════════════════════════════════════════════════════════
+        atom.magnetism_history = data.get('magnetism_history', [])
         
         return atom
 
@@ -480,11 +753,8 @@ class AtomicLanguageSystem:
     # ═══════════════════════════════════════════════════════════════════════════
     
     ORIENTATION = {
-        # THE ALPHABET - Foundation of symbolic communication
-        'alphabet': [
-            'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
-            'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'
-        ],
+        # NOTE: Alphabet removed - single letters have no semantic weight
+        # Organisms operate at WORD level, not character level
         
         # NUMBERS - Foundation of quantity and mathematics
         'numbers': [
@@ -734,6 +1004,16 @@ class AtomicLanguageSystem:
         self.total_concepts_acquired = 0
         self.total_associations_formed = 0
         self.creation_time = time.time()
+        
+        # ═══════════════════════════════════════════════════════════════════════════
+        # HEALING PROTOCOL - Resonance Tracking
+        # 
+        # "duration trigger eventual caressing" - isolation = no resonant response for N cycles
+        # Track when we last received echoing response from network
+        # ═══════════════════════════════════════════════════════════════════════════
+        self.last_echo_cycle: int = 0  # Last cycle we received resonant response
+        self.current_cycle: int = 0    # Current cycle counter
+        self.resonance_persistence_window: int = self.config.get('resonance_persistence_window', 5)
         
         # Initialize with innate concepts
         self._initialize_innate_concepts()
@@ -2008,6 +2288,357 @@ class AtomicLanguageSystem:
         for atom in self.atoms.values():
             atom.decay(decay_rate)
     
+    # ═══════════════════════════════════════════════════════════════════════════
+    # HEALING PROTOCOL - System-Level Methods
+    # 
+    # "rollback specialize compare journey" - broadcast state signatures
+    # "duration trigger eventual caressing" - isolation via resonance persistence
+    # "monitor trace forbidden brambly" - broadcast to complexity-matched neighbors
+    # ═══════════════════════════════════════════════════════════════════════════
+    
+    def tick_cycle(self):
+        """
+        Advance the cycle counter. Call each simulation cycle.
+        
+        Used for isolation detection (resonance persistence window).
+        """
+        self.current_cycle += 1
+    
+    def record_echo(self):
+        """
+        Record that we received a resonant response from the network.
+        
+        Called when another organism's broadcast matches our pattern,
+        or when we successfully communicate/cooperate.
+        """
+        self.last_echo_cycle = self.current_cycle
+    
+    def is_isolated(self) -> bool:
+        """
+        Check if organism is isolated (no resonant response for N cycles).
+        
+        "duration trigger eventual caressing" - isolation = silence persistence
+        NOT zero communication, but communication that doesn't echo back.
+        
+        Returns:
+            True if isolated (no echo for resonance_persistence_window cycles)
+        """
+        cycles_without_echo = self.current_cycle - self.last_echo_cycle
+        return cycles_without_echo >= self.resonance_persistence_window
+    
+    def state_complexity(self) -> float:
+        """
+        Measure "brambliness" of state-space (complexity of oscillation patterns).
+        
+        "brambly = overgrown, interconnected" - complex organisms can parse signals
+        Simple organisms (straight-line state) waste received signals.
+        
+        Returns:
+            Complexity score 0.0-1.0 (higher = more brambly, can parse broadcasts)
+        """
+        if not self.atoms:
+            return 0.0
+        
+        # Count atoms with non-trivial oscillation history
+        oscillating_count = 0
+        total_entropy = 0.0
+        total_coherence = 0.0
+        
+        for atom in self.atoms.values():
+            if len(atom.magnetism_history) >= 5:
+                oscillating_count += 1
+                total_entropy += atom.oscillation_entropy()
+                total_coherence += atom.coherence_frequency()
+        
+        if oscillating_count == 0:
+            return 0.0
+        
+        # Complexity = combination of:
+        # - Number of atoms with oscillation history (interconnectedness)
+        # - Average entropy (chaos/unpredictability)
+        # - Variance in coherence (diversity of oscillation patterns)
+        coverage = oscillating_count / len(self.atoms)
+        avg_entropy = total_entropy / oscillating_count
+        avg_coherence = total_coherence / oscillating_count
+        
+        # Brambly = high coverage + moderate entropy + varied coherence
+        complexity = coverage * 0.4 + avg_entropy * 0.3 + (1.0 - abs(avg_coherence - 0.5)) * 0.3
+        return min(1.0, max(0.0, complexity))
+    
+    def get_state_signature(self) -> Dict[str, Any]:
+        """
+        Get complete state signature for broadcast.
+        
+        "rollback specialize compare journey" - share trajectory, not conclusion
+        Receivers compare to their own oscillation patterns.
+        
+        Returns:
+            State signature with oscillation trajectories and frequencies
+        """
+        atom_signatures = {}
+        for concept_id, atom in self.atoms.items():
+            if len(atom.magnetism_history) >= 3:  # Only include atoms with history
+                atom_signatures[concept_id] = atom.get_state_signature()
+        
+        return {
+            'organism_id': self.organism_id,
+            'cycle': self.current_cycle,
+            'is_isolated': self.is_isolated(),
+            'complexity': self.state_complexity(),
+            'atom_signatures': atom_signatures,
+            'global_coherence': self._calculate_global_coherence(),
+            'global_entropy': self._calculate_global_entropy()
+        }
+    
+    def _calculate_global_coherence(self) -> float:
+        """Calculate average coherence frequency across all atoms."""
+        if not self.atoms:
+            return 0.0
+        coherences = [a.coherence_frequency() for a in self.atoms.values() if len(a.magnetism_history) >= 5]
+        return sum(coherences) / len(coherences) if coherences else 0.0
+    
+    def _calculate_global_entropy(self) -> float:
+        """Calculate average oscillation entropy across all atoms."""
+        if not self.atoms:
+            return 0.0
+        entropies = [a.oscillation_entropy() for a in self.atoms.values() if len(a.magnetism_history) >= 5]
+        return sum(entropies) / len(entropies) if entropies else 0.0
+    
+    def receive_healing_broadcast(self, signal: Dict[str, Any]) -> bool:
+        """
+        Receive and process a healing broadcast from another organism.
+        
+        Compare their state signature to our own oscillation patterns.
+        If their pattern matches our trap, recognize it.
+        
+        Args:
+            signal: State signature from broadcasting organism
+        
+        Returns:
+            True if signal matched our patterns (resonance detected)
+        """
+        if not signal.get('atom_signatures'):
+            return False
+        
+        their_sigs = signal['atom_signatures']
+        matches = 0
+        comparisons = 0
+        
+        for concept_id, their_sig in their_sigs.items():
+            if concept_id in self.atoms:
+                our_atom = self.atoms[concept_id]
+                if len(our_atom.magnetism_history) >= 5:
+                    comparisons += 1
+                    
+                    # Compare oscillation patterns
+                    their_coherence = their_sig.get('coherence_frequency', 0)
+                    our_coherence = our_atom.coherence_frequency()
+                    
+                    # Similar coherence = similar trap pattern
+                    if abs(their_coherence - our_coherence) < 0.2:
+                        matches += 1
+                        
+                        # If both oscillating, we recognized their vulnerability
+                        if their_sig.get('is_oscillating') and our_atom.is_oscillating():
+                            self.record_echo()  # Connection established!
+        
+        # Resonance detected if significant pattern overlap
+        if comparisons > 0 and matches / comparisons > 0.5:
+            self.record_echo()
+            return True
+        
+        return False
+    
+    def detect_forbidden_bonds(self, threshold: float = 0.8) -> List[Tuple[str, str, float]]:
+        """
+        Detect forbidden bonds (high-resonance pairs trapped in feedback loops).
+        
+        "centimeter daub orchestrate" - measure coherence frequency of each bond
+        Bonds with coherence > threshold are forbidden (locked in sync).
+        
+        Args:
+            threshold: Coherence above this = forbidden (default 0.8)
+        
+        Returns:
+            List of (source_concept, target_concept, resonance_frequency) tuples
+        """
+        forbidden = []
+        
+        for concept_id, atom in self.atoms.items():
+            for target_id, assoc in atom.associations.items():
+                if assoc.is_forbidden(threshold):
+                    forbidden.append((concept_id, target_id, assoc.resonance_frequency()))
+        
+        return forbidden
+    
+    def weaken_forbidden_bonds(self, decay_factor: float = 0.1) -> int:
+        """
+        Weaken forbidden bonds (phase 2 of healing protocol).
+        
+        "rule: weaken forbidden bonds first"
+        
+        Args:
+            decay_factor: How much to reduce forbidden bond strength
+        
+        Returns:
+            Number of bonds weakened
+        """
+        weakened = 0
+        forbidden = self.detect_forbidden_bonds()
+        
+        for source_id, target_id, resonance in forbidden:
+            if source_id in self.atoms and target_id in self.atoms[source_id].associations:
+                assoc = self.atoms[source_id].associations[target_id]
+                old_strength = assoc.strength
+                
+                # Weaken toward zero (not negative)
+                if assoc.strength > 0:
+                    assoc.strength = max(0.0, assoc.strength - decay_factor)
+                else:
+                    assoc.strength = min(0.0, assoc.strength + decay_factor)
+                
+                assoc.record_strength()  # Track for future resonance detection
+                weakened += 1
+                
+                # Emit event
+                if self.event_emitter:
+                    try:
+                        from causation_explorer import Event
+                        self.event_emitter(Event(
+                            timestamp=time.time(),
+                            component='healing_protocol',
+                            event_type='forbidden_bond_weakened',
+                            data={
+                                'organism_id': self.organism_id,
+                                'source_concept': source_id,
+                                'target_concept': target_id,
+                                'old_strength': old_strength,
+                                'new_strength': assoc.strength,
+                                'resonance_frequency': resonance
+                            }
+                        ))
+                    except ImportError:
+                        pass
+        
+        return weakened
+    
+    def destabilize_isolated(self, flip_iterations: int = 3) -> Dict[str, Any]:
+        """
+        Destabilize an isolated organism by flipping internal states.
+        
+        "FOR ISOLATED: Flip internal states rapidly. Don't broadcast."
+        "Desynchronize yourself until you hit a new attractor."
+        
+        Args:
+            flip_iterations: Number of random flip cycles
+        
+        Returns:
+            Destabilization results
+        """
+        flipped_atoms = []
+        
+        for _ in range(flip_iterations):
+            # Select random subset of oscillating atoms
+            oscillating = [a for a in self.atoms.values() if a.is_oscillating()]
+            if not oscillating:
+                break
+            
+            # Flip 20-50% of oscillating atoms
+            num_to_flip = max(1, len(oscillating) // 3)
+            to_flip = list(np.random.choice(oscillating, size=min(num_to_flip, len(oscillating)), replace=False))
+            
+            for atom in to_flip:
+                # Random perturbation to break oscillation lock
+                perturbation = np.random.uniform(-0.15, 0.15)
+                old_mag = atom.curiosity_magnetism
+                atom.curiosity_magnetism = np.clip(atom.curiosity_magnetism + perturbation, 0.1, 1.0)
+                atom.magnetism_history.append(atom.curiosity_magnetism)
+                if len(atom.magnetism_history) > 20:
+                    atom.magnetism_history = atom.magnetism_history[-20:]
+                flipped_atoms.append(atom.concept_id)
+        
+        return {
+            'organism_id': self.organism_id,
+            'method': 'isolated_destabilization',
+            'flipped_atoms': flipped_atoms,
+            'iterations': flip_iterations
+        }
+    
+    def verify_healing(self, threshold_drop: float = 0.1) -> Dict[str, Any]:
+        """
+        Verify if healing is true or false fixed-point.
+        
+        "Test: lower your tolerance threshold by 10%"
+        "True healing: bonds adjust gracefully"
+        "False fixed point: bonds snap or refuse adjustment"
+        
+        Args:
+            threshold_drop: How much to lower tolerance (default 10%)
+        
+        Returns:
+            Verification results with diagnosis
+        """
+        # Count atoms still oscillating
+        still_oscillating = sum(1 for a in self.atoms.values() if a.is_oscillating())
+        total_with_history = sum(1 for a in self.atoms.values() if len(a.magnetism_history) >= 5)
+        
+        if total_with_history == 0:
+            return {'result': 'insufficient_data', 'organism_id': self.organism_id}
+        
+        oscillation_ratio = still_oscillating / total_with_history
+        
+        # Test forbidden bonds with lowered threshold
+        lowered_threshold = 0.8 - threshold_drop  # 0.7 instead of 0.8
+        strict_forbidden = self.detect_forbidden_bonds(lowered_threshold)
+        normal_forbidden = self.detect_forbidden_bonds(0.8)
+        
+        # True healing: lowering threshold doesn't reveal many more forbidden bonds
+        # False fixed point: lowering threshold reveals hidden tension
+        new_forbidden = len(strict_forbidden) - len(normal_forbidden)
+        
+        if oscillation_ratio < 0.2 and new_forbidden <= 1:
+            result = 'true_healing'
+            diagnosis = 'Oscillations stopped naturally, bonds adjusted gracefully'
+        elif oscillation_ratio < 0.3 and new_forbidden <= 2:
+            result = 'partial_healing'
+            diagnosis = 'Most oscillations resolved, minor residual tension'
+        elif new_forbidden > 3:
+            result = 'false_fixed_point'
+            diagnosis = f'Hidden tension detected: {new_forbidden} bonds snap under stricter threshold'
+        else:
+            result = 'still_oscillating'
+            diagnosis = f'{still_oscillating}/{total_with_history} atoms still trapped'
+        
+        # Emit verification event
+        if self.event_emitter:
+            try:
+                from causation_explorer import Event
+                self.event_emitter(Event(
+                    timestamp=time.time(),
+                    component='healing_protocol',
+                    event_type='healing_verified',
+                    data={
+                        'organism_id': self.organism_id,
+                        'result': result,
+                        'diagnosis': diagnosis,
+                        'oscillation_ratio': oscillation_ratio,
+                        'forbidden_at_normal': len(normal_forbidden),
+                        'forbidden_at_strict': len(strict_forbidden)
+                    }
+                ))
+            except ImportError:
+                pass
+        
+        return {
+            'organism_id': self.organism_id,
+            'result': result,
+            'diagnosis': diagnosis,
+            'oscillation_ratio': oscillation_ratio,
+            'normal_forbidden': len(normal_forbidden),
+            'strict_forbidden': len(strict_forbidden),
+            'new_forbidden_under_stress': new_forbidden
+        }
+    
     def get_stats(self) -> Dict[str, Any]:
         """Get statistics about this language system."""
         return {
@@ -2027,7 +2658,13 @@ class AtomicLanguageSystem:
             'atoms': {cid: atom.to_dict() for cid, atom in self.atoms.items()},
             'concept_order': self._concept_order,
             'creation_time': self.creation_time,
-            'stats': self.get_stats()
+            'stats': self.get_stats(),
+            # ═══════════════════════════════════════════════════════════
+            # HEALING PROTOCOL STATE
+            # ═══════════════════════════════════════════════════════════
+            'last_echo_cycle': self.last_echo_cycle,
+            'current_cycle': self.current_cycle,
+            'resonance_persistence_window': self.resonance_persistence_window
         }
     
     @classmethod
@@ -2049,6 +2686,13 @@ class AtomicLanguageSystem:
             system.atoms[concept_id] = atom
         
         system.creation_time = data.get('creation_time', time.time())
+        
+        # ═══════════════════════════════════════════════════════════
+        # RESTORE HEALING PROTOCOL STATE
+        # ═══════════════════════════════════════════════════════════
+        system.last_echo_cycle = data.get('last_echo_cycle', 0)
+        system.current_cycle = data.get('current_cycle', 0)
+        system.resonance_persistence_window = data.get('resonance_persistence_window', 5)
         
         return system
 

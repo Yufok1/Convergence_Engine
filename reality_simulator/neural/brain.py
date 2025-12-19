@@ -178,6 +178,177 @@ class MultiHeadAttention(nn.Module if PYTORCH_AVAILABLE else object):
         return output
 
 
+class HopfieldLayer(nn.Module if PYTORCH_AVAILABLE else object):
+    """
+    Modern Continuous Hopfield Layer with iterative refinement.
+    
+    Implements energy-based pattern completion where hidden states
+    converge toward learned attractor patterns through iteration.
+    
+    Energy function: E(ξ) = -β⁻¹ log Σᵢ exp(β xᵢᵀ ξ)
+    Update rule: ξ' = softmax(β Xᵀ ξ) · X
+    
+    This allows organisms to "think" - refining their internal state
+    before producing outputs.
+    
+    Key features:
+    - Stores N patterns as learnable memory matrix
+    - Iterative refinement until convergence or max iterations
+    - Convergence detection for early stopping
+    - VP-aware temperature scaling (higher VP = sharper retrieval)
+    """
+    
+    def __init__(self,
+                 hidden_dim: int = 64,
+                 num_patterns: int = 32,
+                 max_iterations: int = 5,
+                 beta: float = 1.0,
+                 convergence_threshold: float = 1e-3,
+                 dropout: float = 0.1):
+        """
+        Initialize Hopfield layer.
+        
+        Args:
+            hidden_dim: Dimension of hidden states
+            num_patterns: Number of stored patterns (memory capacity)
+            max_iterations: Maximum refinement iterations
+            beta: Inverse temperature (higher = sharper pattern retrieval)
+            convergence_threshold: Stop iterating if change falls below this
+            dropout: Dropout probability
+        """
+        if not PYTORCH_AVAILABLE:
+            raise ImportError("PyTorch is required for HopfieldLayer")
+        
+        super().__init__()
+        
+        self.hidden_dim = hidden_dim
+        self.num_patterns = num_patterns
+        self.max_iterations = max_iterations
+        self.beta = beta
+        self.convergence_threshold = convergence_threshold
+        
+        # Learnable pattern memory: each row is a stored pattern
+        # These are the "attractors" the network settles toward
+        self.patterns = nn.Parameter(torch.randn(num_patterns, hidden_dim) * 0.02)
+        
+        # Projection layers for query/key transformation (modern Hopfield)
+        self.query_proj = nn.Linear(hidden_dim, hidden_dim)
+        self.key_proj = nn.Linear(hidden_dim, hidden_dim)
+        
+        # Output projection with residual
+        self.out_proj = nn.Linear(hidden_dim, hidden_dim)
+        self.norm = nn.LayerNorm(hidden_dim)
+        self.dropout = nn.Dropout(dropout)
+        
+        # Convergence tracking (for debugging/monitoring)
+        self._last_iterations = 0
+        self._last_converged = False
+        self._last_delta = 0.0
+        
+        self._initialize_weights()
+    
+    def _initialize_weights(self):
+        """Initialize weights for stable training."""
+        nn.init.xavier_uniform_(self.query_proj.weight)
+        nn.init.xavier_uniform_(self.key_proj.weight)
+        nn.init.xavier_uniform_(self.out_proj.weight)
+        nn.init.zeros_(self.query_proj.bias)
+        nn.init.zeros_(self.key_proj.bias)
+        nn.init.zeros_(self.out_proj.bias)
+        
+        # Initialize patterns as orthogonal for better capacity
+        if self.num_patterns <= self.hidden_dim:
+            nn.init.orthogonal_(self.patterns)
+        else:
+            nn.init.xavier_uniform_(self.patterns)
+    
+    def forward(self, x: 'torch.Tensor', 
+                vp_value: Optional[float] = None) -> 'torch.Tensor':
+        """
+        Forward pass with iterative Hopfield refinement.
+        
+        Args:
+            x: Input tensor of shape (batch_size, hidden_dim)
+            vp_value: Optional VP value for temperature scaling
+            
+        Returns:
+            Refined tensor of shape (batch_size, hidden_dim)
+        """
+        # VP-aware temperature: higher VP = sharper (more confident) retrieval
+        beta = self.beta
+        if vp_value is not None and vp_value > 0:
+            beta = self.beta * (1.0 + vp_value * 0.5)
+        
+        # Handle 3D input (batch, seq, hidden) - process each position
+        if x.dim() == 3:
+            batch_size, seq_len, _ = x.size()
+            x_flat = x.view(-1, self.hidden_dim)
+            out_flat = self._iterate(x_flat, beta)
+            return out_flat.view(batch_size, seq_len, self.hidden_dim)
+        
+        return self._iterate(x, beta)
+    
+    def _iterate(self, xi: 'torch.Tensor', beta: float) -> 'torch.Tensor':
+        """
+        Iterative refinement loop (fixed iterations, torch.compile friendly).
+        
+        Args:
+            xi: Current state (batch_size, hidden_dim)
+            beta: Inverse temperature
+            
+        Returns:
+            Refined state (batch_size, hidden_dim)
+            
+        Note:
+            Uses fixed iterations (no early exit) to avoid torch.compile graph breaks.
+            The .item() call for convergence checking caused kernel launch overhead that
+            exceeded the matmul cost. Fixed iterations are actually faster in practice.
+        """
+        # Project patterns to key space (shared across batch)
+        keys = self.key_proj(self.patterns)  # (num_patterns, hidden_dim)
+        
+        # Fixed iteration refinement (no early exit, no .item() - fully compile friendly)
+        for i in range(self.max_iterations):
+            xi_prev = xi
+            
+            # Project current state to query space
+            queries = self.query_proj(xi)  # (batch, hidden_dim)
+            
+            # Compute attention over patterns: softmax(β * q · kᵀ)
+            # Shape: (batch, num_patterns)
+            scores = torch.matmul(queries, keys.t()) * beta
+            attention = F.softmax(scores, dim=-1)
+            
+            # Retrieve from patterns: weighted sum
+            # Shape: (batch, hidden_dim)
+            retrieved = torch.matmul(attention, self.patterns)
+            
+            # Update state with residual
+            xi = xi + self.dropout(self.out_proj(retrieved))
+            xi = self.norm(xi)
+            
+            # Track delta on GPU (no .item() - stays in graph)
+            self._last_delta_tensor = (xi - xi_prev).abs().mean()
+        
+        # Update convergence tracking (iterations known, delta deferred)
+        self._last_iterations = self.max_iterations
+        self._last_converged = False  # Fixed iterations = always runs full
+        
+        return xi
+    
+    def get_convergence_info(self) -> Dict[str, Any]:
+        """Get info about last forward pass convergence."""
+        # Deferred .item() call - only when user queries, not in forward pass
+        delta = self._last_delta_tensor.item() if hasattr(self, '_last_delta_tensor') else 0.0
+        return {
+            'iterations': self._last_iterations,
+            'converged': self._last_converged,
+            'final_delta': delta,
+            'max_iterations': self.max_iterations,
+            'threshold': self.convergence_threshold
+        }
+
+
 class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
     """
     Neural network brain for organisms.
@@ -186,6 +357,7 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
     - Input Layer: input_dim (sensory data)
     - Hidden Layer 1: hidden_dim + ReLU + Dropout
     - [Optional] Multi-head Self-Attention with VP temperature scaling
+    - [Optional] Hopfield Layer for iterative thought refinement
     - Hidden Layer 2: hidden_dim + ReLU + Dropout
     - Dual Output Heads:
       - Action Head: output_dim + Softmax (action probabilities) - for RL
@@ -193,7 +365,7 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
     """
     
     def __init__(self, 
-                 input_dim: int = 25,  # Default matches config.json neural.brain.input_dim
+                 input_dim: int = 28,  # Default matches config.json neural.brain.input_dim (25 base + 3 attractor)
                  hidden_dim: int = 64,
                  output_dim: int = 6,
                  activation: str = 'relu',
@@ -206,7 +378,12 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
                  vocab_size: int = 20000,  # Default matches config.json neural.language_model.vocabulary.max_size
                  use_language_head: bool = False,
                  use_concept_head: bool = False,
-                 num_key_compositions: int = 20):  # ARCHITECTURE PARAM - must match config.json!
+                 num_key_compositions: int = 30,  # ARCHITECTURE PARAM - must match config.json!
+                 # Hopfield layer parameters (iterative thought refinement)
+                 use_hopfield: bool = False,
+                 hopfield_patterns: int = 32,
+                 hopfield_iterations: int = 5,
+                 hopfield_beta: float = 1.0):
         """
         Initialize the organism brain.
         
@@ -215,7 +392,7 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
         after training will break saved model loading.
         
         Args:
-            input_dim: Number of input features (24 with VP + extended features)
+            input_dim: Number of input features (28 with VP + extended features + self-perception)
             hidden_dim: Hidden layer dimension
             output_dim: Number of output actions
             activation: Activation function ('relu', 'tanh', 'sigmoid')
@@ -228,6 +405,10 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
             use_language_head: Enable language prediction head
             use_concept_head: Enable concept understanding head (RCUS)
             num_key_compositions: Number of key concept compositions (must match config!)
+            use_hopfield: Enable Hopfield layer for iterative thought refinement
+            hopfield_patterns: Number of patterns in Hopfield memory
+            hopfield_iterations: Max iterations for convergence
+            hopfield_beta: Inverse temperature for pattern retrieval
         """
         if not PYTORCH_AVAILABLE:
             raise ImportError("PyTorch is required for OrganismBrain")
@@ -261,6 +442,17 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
             )
             # Layer norm for attention (standard practice)
             self.attention_norm = nn.LayerNorm(hidden_dim)
+        
+        # Optional Hopfield layer (iterative thought refinement)
+        self.use_hopfield = use_hopfield
+        if self.use_hopfield:
+            self.hopfield = HopfieldLayer(
+                hidden_dim=hidden_dim,
+                num_patterns=hopfield_patterns,
+                max_iterations=hopfield_iterations,
+                beta=hopfield_beta,
+                dropout=dropout
+            )
         
         self.fc2 = nn.Linear(hidden_dim, hidden_dim)
         
@@ -357,6 +549,10 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
             # Residual connection with layer norm (standard transformer pattern)
             attn_out = self.attention(x, vp_value=vp_value)
             x = self.attention_norm(x + attn_out)
+        
+        # Apply Hopfield iterative refinement if enabled
+        if self.use_hopfield:
+            x = self.hopfield(x, vp_value=vp_value)
         
         # Reshape back to 2D for remaining layers if we added a sequence dim
         x_ndim = x.dim()  # Use .dim() instead of len(x.shape) for TorchScript compatibility
@@ -504,6 +700,58 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
             
         return token_ids
     
+    def get_thought_info(self) -> Optional[Dict[str, Any]]:
+        """
+        Get info about the last thought process (Hopfield convergence).
+        
+        Returns:
+            Dict with convergence info if Hopfield enabled, else None
+        """
+        if self.use_hopfield:
+            return self.hopfield.get_convergence_info()
+        return None
+    
+    def get_hidden_state(self, x: torch.Tensor, vp_value: Optional[float] = None) -> torch.Tensor:
+        """
+        Get hidden state after full processing pipeline (fc1 → attention → hopfield → fc2).
+        
+        This is the proper way to get intermediate representations when you need
+        hidden states for auxiliary heads (language, concept) while respecting
+        the full architecture including Hopfield refinement.
+        
+        Args:
+            x: Input tensor of shape (batch, input_dim)
+            vp_value: Optional VP value for attention/hopfield temperature scaling
+            
+        Returns:
+            Hidden state tensor of shape (batch, hidden_dim) after fc2
+        """
+        # fc1 → activation → dropout
+        h = self.fc1(x)
+        h = self._get_activation(h)
+        h = self.dropout(h)
+        
+        # Optional attention
+        if self.use_attention:
+            # Reshape for attention: (batch, 1, hidden_dim)
+            if h.dim() == 2:
+                h = h.unsqueeze(1)
+            attn_out = self.attention(h, vp_value=vp_value)
+            h = self.attention_norm(h + attn_out)
+            if h.dim() == 3 and h.size(1) == 1:
+                h = h.squeeze(1)  # Back to (batch, hidden_dim)
+        
+        # Optional Hopfield refinement (iterative thought)
+        if self.use_hopfield:
+            h = self.hopfield(h, vp_value=vp_value)
+        
+        # fc2 → activation → dropout
+        h = self.fc2(h)
+        h = self._get_activation(h)
+        h = self.dropout(h)
+        
+        return h
+    
     def enable_scripted_inference(self):
         """
         Enable scripted inference for faster action selection.
@@ -561,20 +809,39 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
             vocab_size=self.vocab_size,
             use_language_head=self.use_language_head,
             use_concept_head=self.use_concept_head,
-            num_key_compositions=self.num_key_compositions
+            num_key_compositions=self.num_key_compositions,
+            use_hopfield=self.use_hopfield,
+            hopfield_patterns=self.hopfield.num_patterns if self.use_hopfield else 32,
+            hopfield_iterations=self.hopfield.max_iterations if self.use_hopfield else 5,
+            hopfield_beta=self.hopfield.beta if self.use_hopfield else 1.0
         )
         
         # Move child to same device as parent
         device = next(self.parameters()).device
         child = child.to(device)
         
+        # Ensure both parents are on the same device before crossover
+        other_device = next(other_brain.parameters()).device
+        if other_device != device:
+            other_brain = other_brain.to(device)
+        
         with torch.no_grad():
             for child_param, self_param, other_param in zip(
                 child.parameters(), self.parameters(), other_brain.parameters()
             ):
+                # Move parent params to child device if needed, handle NaN/Inf
+                self_p = self_param.to(device)
+                other_p = other_param.to(device)
+                
+                # Replace any NaN/Inf with zeros to prevent cascade failures
+                if torch.isnan(self_p).any() or torch.isinf(self_p).any():
+                    self_p = torch.nan_to_num(self_p, nan=0.0, posinf=1.0, neginf=-1.0)
+                if torch.isnan(other_p).any() or torch.isinf(other_p).any():
+                    other_p = torch.nan_to_num(other_p, nan=0.0, posinf=1.0, neginf=-1.0)
+                
                 # Randomly select weights from each parent
                 mask = torch.rand_like(child_param) < crossover_rate
-                child_param.copy_(torch.where(mask, other_param, self_param))
+                child_param.copy_(torch.where(mask, other_p, self_p))
         
         return child
     

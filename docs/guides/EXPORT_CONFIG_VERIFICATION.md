@@ -50,7 +50,7 @@ User downloads agent.zip
   "brain": {
     "hidden_dim": 128,      // ← CHANGED from 64
     "dropout": 0.15,        // ← CHANGED from 0.1
-    "input_dim": 24,
+    "input_dim": 28,
     "output_dim": 6,
     "vocab_size": 50000
   },
@@ -68,7 +68,7 @@ User downloads agent.zip
 
 ```python
 brain = OrganismBrain(
-    input_dim=24,              # From config.neural.brain.input_dim
+    input_dim=28,              # From config.neural.brain.input_dim
     hidden_dim=128,            # From config.neural.brain.hidden_dim ✅
     output_dim=6,              # From config.neural.brain.output_dim
     dropout=0.15,              # From config.neural.brain.dropout ✅

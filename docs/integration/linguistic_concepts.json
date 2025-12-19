@@ -1,0 +1,7028 @@
+{
+  "content_words": [
+    {
+      "word": "move",
+      "definition": "To change position or location in space",
+      "semantic_frame": "action",
+      "organism_relevance": 1.0,
+      "associations": [
+        "travel",
+        "journey",
+        "wander",
+        "migrate",
+        "roam"
+      ],
+      "contexts": [
+        "exploration",
+        "resource_seeking",
+        "survival"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "explore",
+      "definition": "To search and discover new areas",
+      "semantic_frame": "action",
+      "organism_relevance": 0.95,
+      "associations": [
+        "discover",
+        "search",
+        "venture",
+        "investigate"
+      ],
+      "contexts": [
+        "genesis_phase",
+        "low_density",
+        "resource_seeking"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "travel",
+      "definition": "To move over a distance",
+      "semantic_frame": "action",
+      "organism_relevance": 0.9,
+      "associations": [
+        "move",
+        "journey",
+        "migrate",
+        "traverse"
+      ],
+      "contexts": [
+        "exploration",
+        "movement"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "wander",
+      "definition": "To move without fixed direction",
+      "semantic_frame": "action",
+      "organism_relevance": 0.85,
+      "associations": [
+        "roam",
+        "drift",
+        "explore",
+        "meander"
+      ],
+      "contexts": [
+        "exploration",
+        "isolation",
+        "resource_seeking"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "approach",
+      "definition": "To move closer to something",
+      "semantic_frame": "action",
+      "organism_relevance": 0.9,
+      "associations": [
+        "near",
+        "advance",
+        "reach",
+        "come"
+      ],
+      "contexts": [
+        "social_interaction",
+        "cooperation",
+        "resource_seeking"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "retreat",
+      "definition": "To move away from danger or others",
+      "semantic_frame": "action",
+      "organism_relevance": 0.9,
+      "associations": [
+        "withdraw",
+        "flee",
+        "escape",
+        "back"
+      ],
+      "contexts": [
+        "danger",
+        "isolation",
+        "competition"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "flee",
+      "definition": "To run away quickly from danger",
+      "semantic_frame": "action",
+      "organism_relevance": 0.85,
+      "associations": [
+        "escape",
+        "run",
+        "retreat",
+        "evade"
+      ],
+      "contexts": [
+        "danger",
+        "low_fitness",
+        "crisis"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "cooperate",
+      "definition": "To work together for mutual benefit",
+      "semantic_frame": "action",
+      "organism_relevance": 1.0,
+      "associations": [
+        "collaborate",
+        "share",
+        "help",
+        "unite",
+        "team"
+      ],
+      "contexts": [
+        "social",
+        "network",
+        "mutual_benefit"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "collaborate",
+      "definition": "To work jointly with others",
+      "semantic_frame": "action",
+      "organism_relevance": 0.95,
+      "associations": [
+        "cooperate",
+        "partner",
+        "team",
+        "work"
+      ],
+      "contexts": [
+        "social",
+        "cooperation",
+        "network"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "help",
+      "definition": "To assist or support others",
+      "semantic_frame": "action",
+      "organism_relevance": 1.0,
+      "associations": [
+        "assist",
+        "aid",
+        "support",
+        "serve"
+      ],
+      "contexts": [
+        "cooperation",
+        "social",
+        "mutual_benefit"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "share",
+      "definition": "To distribute resources with others",
+      "semantic_frame": "action",
+      "organism_relevance": 1.0,
+      "associations": [
+        "distribute",
+        "give",
+        "exchange",
+        "offer"
+      ],
+      "contexts": [
+        "cooperation",
+        "resource_sharing",
+        "social"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "give",
+      "definition": "To transfer something to another",
+      "semantic_frame": "action",
+      "organism_relevance": 0.9,
+      "associations": [
+        "share",
+        "offer",
+        "provide",
+        "donate"
+      ],
+      "contexts": [
+        "cooperation",
+        "resource_sharing"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "support",
+      "definition": "To provide assistance or backing",
+      "semantic_frame": "action",
+      "organism_relevance": 0.9,
+      "associations": [
+        "help",
+        "assist",
+        "back",
+        "sustain"
+      ],
+      "contexts": [
+        "cooperation",
+        "social",
+        "network"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "compete",
+      "definition": "To strive against others for resources",
+      "semantic_frame": "action",
+      "organism_relevance": 1.0,
+      "associations": [
+        "fight",
+        "rival",
+        "contest",
+        "struggle"
+      ],
+      "contexts": [
+        "competition",
+        "resource_scarcity",
+        "survival"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "fight",
+      "definition": "To engage in conflict or struggle",
+      "semantic_frame": "action",
+      "organism_relevance": 0.95,
+      "associations": [
+        "battle",
+        "struggle",
+        "conflict",
+        "oppose"
+      ],
+      "contexts": [
+        "competition",
+        "survival",
+        "resource_scarcity"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "challenge",
+      "definition": "To confront or test another",
+      "semantic_frame": "action",
+      "organism_relevance": 0.9,
+      "associations": [
+        "contest",
+        "compete",
+        "defy",
+        "face"
+      ],
+      "contexts": [
+        "competition",
+        "dominance"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "defend",
+      "definition": "To protect against threats",
+      "semantic_frame": "action",
+      "organism_relevance": 0.9,
+      "associations": [
+        "protect",
+        "guard",
+        "shield",
+        "resist"
+      ],
+      "contexts": [
+        "survival",
+        "competition",
+        "safety"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "resist",
+      "definition": "To withstand or oppose force",
+      "semantic_frame": "action",
+      "organism_relevance": 0.85,
+      "associations": [
+        "oppose",
+        "withstand",
+        "fight",
+        "endure"
+      ],
+      "contexts": [
+        "competition",
+        "pressure",
+        "survival"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "rest",
+      "definition": "To cease activity and recover energy",
+      "semantic_frame": "action",
+      "organism_relevance": 1.0,
+      "associations": [
+        "pause",
+        "recover",
+        "sleep",
+        "recharge"
+      ],
+      "contexts": [
+        "recovery",
+        "energy_conservation",
+        "stability"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "pause",
+      "definition": "To temporarily stop activity",
+      "semantic_frame": "action",
+      "organism_relevance": 0.9,
+      "associations": [
+        "rest",
+        "stop",
+        "halt",
+        "wait"
+      ],
+      "contexts": [
+        "recovery",
+        "safety",
+        "preparation"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "recover",
+      "definition": "To regain strength or health",
+      "semantic_frame": "action",
+      "organism_relevance": 0.95,
+      "associations": [
+        "heal",
+        "restore",
+        "regain",
+        "rejuvenate"
+      ],
+      "contexts": [
+        "recovery",
+        "low_fitness",
+        "stability"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "wait",
+      "definition": "To remain in place for something",
+      "semantic_frame": "action",
+      "organism_relevance": 0.85,
+      "associations": [
+        "pause",
+        "stay",
+        "remain",
+        "linger"
+      ],
+      "contexts": [
+        "preparation",
+        "safety",
+        "observation"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "sleep",
+      "definition": "To enter a state of deep rest",
+      "semantic_frame": "action",
+      "organism_relevance": 0.8,
+      "associations": [
+        "rest",
+        "recharge",
+        "dormant",
+        "inactive"
+      ],
+      "contexts": [
+        "recovery",
+        "night",
+        "energy_conservation"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "reproduce",
+      "definition": "To create offspring and propagate",
+      "semantic_frame": "action",
+      "organism_relevance": 1.0,
+      "associations": [
+        "multiply",
+        "grow",
+        "propagate",
+        "spread"
+      ],
+      "contexts": [
+        "growth",
+        "expansion",
+        "high_fitness",
+        "abundant_resources"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "grow",
+      "definition": "To increase in size or number",
+      "semantic_frame": "action",
+      "organism_relevance": 1.0,
+      "associations": [
+        "expand",
+        "develop",
+        "increase",
+        "flourish"
+      ],
+      "contexts": [
+        "growth",
+        "high_fitness",
+        "abundant_resources"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "multiply",
+      "definition": "To increase in number rapidly",
+      "semantic_frame": "action",
+      "organism_relevance": 0.95,
+      "associations": [
+        "reproduce",
+        "spread",
+        "proliferate",
+        "expand"
+      ],
+      "contexts": [
+        "growth",
+        "expansion",
+        "high_fitness"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "spread",
+      "definition": "To extend over a larger area",
+      "semantic_frame": "action",
+      "organism_relevance": 0.9,
+      "associations": [
+        "expand",
+        "scatter",
+        "disperse",
+        "extend"
+      ],
+      "contexts": [
+        "growth",
+        "expansion",
+        "exploration"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "create",
+      "definition": "To bring something into existence",
+      "semantic_frame": "action",
+      "organism_relevance": 0.9,
+      "associations": [
+        "make",
+        "produce",
+        "generate",
+        "form"
+      ],
+      "contexts": [
+        "reproduction",
+        "growth",
+        "genesis_phase"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "isolate",
+      "definition": "To separate from others",
+      "semantic_frame": "action",
+      "organism_relevance": 1.0,
+      "associations": [
+        "withdraw",
+        "separate",
+        "detach",
+        "retreat"
+      ],
+      "contexts": [
+        "protection",
+        "independence",
+        "isolation"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "withdraw",
+      "definition": "To remove oneself from a situation",
+      "semantic_frame": "action",
+      "organism_relevance": 0.9,
+      "associations": [
+        "retreat",
+        "leave",
+        "exit",
+        "depart"
+      ],
+      "contexts": [
+        "isolation",
+        "safety",
+        "independence"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "separate",
+      "definition": "To move apart from others",
+      "semantic_frame": "action",
+      "organism_relevance": 0.9,
+      "associations": [
+        "divide",
+        "split",
+        "part",
+        "disconnect"
+      ],
+      "contexts": [
+        "isolation",
+        "independence"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "leave",
+      "definition": "To go away from a place",
+      "semantic_frame": "action",
+      "organism_relevance": 0.85,
+      "associations": [
+        "depart",
+        "exit",
+        "go",
+        "abandon"
+      ],
+      "contexts": [
+        "movement",
+        "isolation",
+        "exploration"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "hide",
+      "definition": "To conceal oneself from others",
+      "semantic_frame": "action",
+      "organism_relevance": 0.85,
+      "associations": [
+        "conceal",
+        "shelter",
+        "cover",
+        "protect"
+      ],
+      "contexts": [
+        "safety",
+        "danger",
+        "isolation"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "adapt",
+      "definition": "To adjust to changing conditions",
+      "semantic_frame": "action",
+      "organism_relevance": 1.0,
+      "associations": [
+        "adjust",
+        "change",
+        "evolve",
+        "modify"
+      ],
+      "contexts": [
+        "evolution_pressure",
+        "change",
+        "survival"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "evolve",
+      "definition": "To develop and change over time",
+      "semantic_frame": "action",
+      "organism_relevance": 1.0,
+      "associations": [
+        "develop",
+        "adapt",
+        "transform",
+        "progress"
+      ],
+      "contexts": [
+        "evolution_pressure",
+        "growth",
+        "development"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "change",
+      "definition": "To become different",
+      "semantic_frame": "action",
+      "organism_relevance": 0.9,
+      "associations": [
+        "modify",
+        "adapt",
+        "transform",
+        "shift"
+      ],
+      "contexts": [
+        "evolution_pressure",
+        "adaptation"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "learn",
+      "definition": "To acquire knowledge through experience",
+      "semantic_frame": "action",
+      "organism_relevance": 1.0,
+      "associations": [
+        "understand",
+        "discover",
+        "acquire",
+        "absorb"
+      ],
+      "contexts": [
+        "experience",
+        "training",
+        "adaptation"
+      ],
+      "abstraction_level": 2
+    },
+    {
+      "word": "observe",
+      "definition": "To watch and notice carefully",
+      "semantic_frame": "action",
+      "organism_relevance": 0.9,
+      "associations": [
+        "watch",
+        "see",
+        "notice",
+        "monitor"
+      ],
+      "contexts": [
+        "awareness",
+        "learning",
+        "safety"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "sense",
+      "definition": "To perceive through awareness",
+      "semantic_frame": "action",
+      "organism_relevance": 0.9,
+      "associations": [
+        "feel",
+        "detect",
+        "perceive",
+        "notice"
+      ],
+      "contexts": [
+        "awareness",
+        "environment",
+        "response"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "thrive",
+      "definition": "To prosper and flourish with high fitness",
+      "semantic_frame": "state",
+      "organism_relevance": 1.0,
+      "associations": [
+        "flourish",
+        "prosper",
+        "excel",
+        "succeed"
+      ],
+      "contexts": [
+        "high_fitness",
+        "abundant_resources",
+        "stability"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "flourish",
+      "definition": "To grow vigorously and successfully",
+      "semantic_frame": "state",
+      "organism_relevance": 0.95,
+      "associations": [
+        "thrive",
+        "bloom",
+        "prosper",
+        "blossom"
+      ],
+      "contexts": [
+        "high_fitness",
+        "abundant_resources",
+        "growth"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "prosper",
+      "definition": "To succeed and do well",
+      "semantic_frame": "state",
+      "organism_relevance": 0.9,
+      "associations": [
+        "thrive",
+        "flourish",
+        "succeed",
+        "advance"
+      ],
+      "contexts": [
+        "high_fitness",
+        "success",
+        "stability"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "struggle",
+      "definition": "To face difficulty with low fitness",
+      "semantic_frame": "state",
+      "organism_relevance": 1.0,
+      "associations": [
+        "suffer",
+        "decline",
+        "weaken",
+        "strain"
+      ],
+      "contexts": [
+        "low_fitness",
+        "scarce_resources",
+        "instability"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "suffer",
+      "definition": "To experience pain or hardship",
+      "semantic_frame": "state",
+      "organism_relevance": 0.9,
+      "associations": [
+        "struggle",
+        "hurt",
+        "ache",
+        "endure"
+      ],
+      "contexts": [
+        "low_fitness",
+        "crisis",
+        "decline"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "decline",
+      "definition": "To deteriorate or weaken",
+      "semantic_frame": "state",
+      "organism_relevance": 0.9,
+      "associations": [
+        "weaken",
+        "fade",
+        "diminish",
+        "worsen"
+      ],
+      "contexts": [
+        "low_fitness",
+        "sick",
+        "instability"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "survive",
+      "definition": "To continue to exist despite difficulty",
+      "semantic_frame": "state",
+      "organism_relevance": 1.0,
+      "associations": [
+        "endure",
+        "persist",
+        "live",
+        "last"
+      ],
+      "contexts": [
+        "survival",
+        "medium_fitness",
+        "resilience"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "endure",
+      "definition": "To continue despite hardship",
+      "semantic_frame": "state",
+      "organism_relevance": 0.95,
+      "associations": [
+        "persist",
+        "survive",
+        "withstand",
+        "bear"
+      ],
+      "contexts": [
+        "survival",
+        "struggle",
+        "resilience"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "persist",
+      "definition": "To continue firmly despite obstacles",
+      "semantic_frame": "state",
+      "organism_relevance": 0.9,
+      "associations": [
+        "endure",
+        "continue",
+        "remain",
+        "last"
+      ],
+      "contexts": [
+        "stability",
+        "survival",
+        "resilience"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "stable",
+      "definition": "To maintain consistent state",
+      "semantic_frame": "state",
+      "organism_relevance": 1.0,
+      "associations": [
+        "steady",
+        "consistent",
+        "balanced",
+        "secure"
+      ],
+      "contexts": [
+        "medium_fitness",
+        "equilibrium",
+        "vp_low"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "steady",
+      "definition": "Firm and unchanging",
+      "semantic_frame": "state",
+      "organism_relevance": 0.9,
+      "associations": [
+        "stable",
+        "constant",
+        "even",
+        "regular"
+      ],
+      "contexts": [
+        "stability",
+        "equilibrium"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "exist",
+      "definition": "To be or have being",
+      "semantic_frame": "state",
+      "organism_relevance": 1.0,
+      "associations": [
+        "be",
+        "live",
+        "persist",
+        "remain"
+      ],
+      "contexts": [
+        "basic",
+        "fundamental"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "live",
+      "definition": "To be alive and active",
+      "semantic_frame": "state",
+      "organism_relevance": 1.0,
+      "associations": [
+        "exist",
+        "survive",
+        "thrive",
+        "be"
+      ],
+      "contexts": [
+        "basic",
+        "fundamental",
+        "survival"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "social",
+      "definition": "Connected and integrated with others",
+      "semantic_frame": "state",
+      "organism_relevance": 1.0,
+      "associations": [
+        "connected",
+        "networked",
+        "together",
+        "cooperative"
+      ],
+      "contexts": [
+        "many_connections",
+        "cooperation",
+        "network"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "connected",
+      "definition": "Linked or joined with others",
+      "semantic_frame": "state",
+      "organism_relevance": 1.0,
+      "associations": [
+        "linked",
+        "united",
+        "networked",
+        "joined"
+      ],
+      "contexts": [
+        "many_connections",
+        "coherence",
+        "network"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "networked",
+      "definition": "Part of an interconnected group",
+      "semantic_frame": "state",
+      "organism_relevance": 0.9,
+      "associations": [
+        "connected",
+        "linked",
+        "integrated",
+        "joined"
+      ],
+      "contexts": [
+        "many_connections",
+        "social",
+        "cooperation"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "united",
+      "definition": "Joined together as one",
+      "semantic_frame": "state",
+      "organism_relevance": 0.9,
+      "associations": [
+        "together",
+        "connected",
+        "joined",
+        "allied"
+      ],
+      "contexts": [
+        "cooperation",
+        "coherence",
+        "social"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "isolated",
+      "definition": "Separated and disconnected from others",
+      "semantic_frame": "state",
+      "organism_relevance": 1.0,
+      "associations": [
+        "alone",
+        "separate",
+        "solitary",
+        "detached"
+      ],
+      "contexts": [
+        "no_connections",
+        "independence",
+        "isolation"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "alone",
+      "definition": "Without others nearby",
+      "semantic_frame": "state",
+      "organism_relevance": 1.0,
+      "associations": [
+        "isolated",
+        "solitary",
+        "single",
+        "lone"
+      ],
+      "contexts": [
+        "isolation",
+        "independence",
+        "sparse"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "solitary",
+      "definition": "Existing alone without companions",
+      "semantic_frame": "state",
+      "organism_relevance": 0.9,
+      "associations": [
+        "alone",
+        "isolated",
+        "lone",
+        "single"
+      ],
+      "contexts": [
+        "isolation",
+        "independence"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "lonely",
+      "definition": "Feeling isolated and alone",
+      "semantic_frame": "state",
+      "organism_relevance": 0.85,
+      "associations": [
+        "alone",
+        "isolated",
+        "forlorn",
+        "solitary"
+      ],
+      "contexts": [
+        "isolation",
+        "few_connections",
+        "struggle"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "together",
+      "definition": "In association with others",
+      "semantic_frame": "state",
+      "organism_relevance": 1.0,
+      "associations": [
+        "united",
+        "connected",
+        "cooperative",
+        "joined"
+      ],
+      "contexts": [
+        "cooperation",
+        "social",
+        "many_connections"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "rich",
+      "definition": "Having abundant resources",
+      "semantic_frame": "state",
+      "organism_relevance": 1.0,
+      "associations": [
+        "abundant",
+        "wealthy",
+        "plentiful",
+        "prosperous"
+      ],
+      "contexts": [
+        "high_resources",
+        "security",
+        "stability"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "abundant",
+      "definition": "Existing in large quantities",
+      "semantic_frame": "state",
+      "organism_relevance": 0.95,
+      "associations": [
+        "plentiful",
+        "rich",
+        "ample",
+        "bountiful"
+      ],
+      "contexts": [
+        "high_resources",
+        "stability",
+        "growth"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "plentiful",
+      "definition": "Available in large amounts",
+      "semantic_frame": "state",
+      "organism_relevance": 0.9,
+      "associations": [
+        "abundant",
+        "ample",
+        "copious",
+        "generous"
+      ],
+      "contexts": [
+        "high_resources",
+        "stability"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "poor",
+      "definition": "Having scarce resources",
+      "semantic_frame": "state",
+      "organism_relevance": 1.0,
+      "associations": [
+        "scarce",
+        "depleted",
+        "lacking",
+        "needy"
+      ],
+      "contexts": [
+        "low_resources",
+        "vulnerability",
+        "struggle"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "scarce",
+      "definition": "In short supply or rare",
+      "semantic_frame": "state",
+      "organism_relevance": 0.95,
+      "associations": [
+        "rare",
+        "limited",
+        "sparse",
+        "insufficient"
+      ],
+      "contexts": [
+        "low_resources",
+        "competition",
+        "struggle"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "depleted",
+      "definition": "Used up or exhausted",
+      "semantic_frame": "state",
+      "organism_relevance": 0.9,
+      "associations": [
+        "exhausted",
+        "drained",
+        "empty",
+        "spent"
+      ],
+      "contexts": [
+        "low_resources",
+        "low_fitness",
+        "crisis"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "hungry",
+      "definition": "Needing food or resources",
+      "semantic_frame": "state",
+      "organism_relevance": 0.9,
+      "associations": [
+        "starving",
+        "needy",
+        "wanting",
+        "craving"
+      ],
+      "contexts": [
+        "low_resources",
+        "survival",
+        "resource_seeking"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "pressure",
+      "definition": "System stress or violation pressure",
+      "semantic_frame": "state",
+      "organism_relevance": 1.0,
+      "associations": [
+        "stress",
+        "tension",
+        "strain",
+        "force"
+      ],
+      "contexts": [
+        "vp_high",
+        "instability",
+        "crisis"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "crisis",
+      "definition": "Critical system instability",
+      "semantic_frame": "state",
+      "organism_relevance": 1.0,
+      "associations": [
+        "emergency",
+        "danger",
+        "unstable",
+        "critical"
+      ],
+      "contexts": [
+        "vp_high",
+        "instability",
+        "danger"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "stress",
+      "definition": "State of mental or physical tension",
+      "semantic_frame": "state",
+      "organism_relevance": 0.9,
+      "associations": [
+        "pressure",
+        "tension",
+        "strain",
+        "anxiety"
+      ],
+      "contexts": [
+        "vp_high",
+        "instability",
+        "struggle"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "tension",
+      "definition": "State of strain or tightness",
+      "semantic_frame": "state",
+      "organism_relevance": 0.85,
+      "associations": [
+        "stress",
+        "pressure",
+        "strain",
+        "conflict"
+      ],
+      "contexts": [
+        "vp_high",
+        "competition",
+        "instability"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "calm",
+      "definition": "Peaceful and stable state",
+      "semantic_frame": "state",
+      "organism_relevance": 0.9,
+      "associations": [
+        "peaceful",
+        "serene",
+        "quiet",
+        "tranquil"
+      ],
+      "contexts": [
+        "vp_low",
+        "stability",
+        "equilibrium"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "peaceful",
+      "definition": "Free from disturbance",
+      "semantic_frame": "state",
+      "organism_relevance": 0.85,
+      "associations": [
+        "calm",
+        "serene",
+        "tranquil",
+        "harmonious"
+      ],
+      "contexts": [
+        "vp_low",
+        "stability",
+        "safety"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "balanced",
+      "definition": "In equilibrium or harmony",
+      "semantic_frame": "state",
+      "organism_relevance": 0.9,
+      "associations": [
+        "equilibrium",
+        "stable",
+        "even",
+        "harmonious"
+      ],
+      "contexts": [
+        "vp_low",
+        "stability",
+        "coherence"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "coherent",
+      "definition": "Logically consistent and integrated",
+      "semantic_frame": "state",
+      "organism_relevance": 0.9,
+      "associations": [
+        "consistent",
+        "unified",
+        "integrated",
+        "logical"
+      ],
+      "contexts": [
+        "high_coherence",
+        "stability"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "fragmented",
+      "definition": "Broken into disconnected parts",
+      "semantic_frame": "state",
+      "organism_relevance": 0.9,
+      "associations": [
+        "broken",
+        "scattered",
+        "divided",
+        "separated"
+      ],
+      "contexts": [
+        "low_coherence",
+        "instability"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "disconnected",
+      "definition": "Not linked or separated",
+      "semantic_frame": "state",
+      "organism_relevance": 0.9,
+      "associations": [
+        "separated",
+        "detached",
+        "isolated",
+        "apart"
+      ],
+      "contexts": [
+        "low_coherence",
+        "isolation"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "healthy",
+      "definition": "In good condition or wellness",
+      "semantic_frame": "state",
+      "organism_relevance": 1.0,
+      "associations": [
+        "well",
+        "fit",
+        "strong",
+        "vital"
+      ],
+      "contexts": [
+        "system_health",
+        "high_fitness",
+        "wellness"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "thriving",
+      "definition": "Prospering and flourishing",
+      "semantic_frame": "state",
+      "organism_relevance": 1.0,
+      "associations": [
+        "flourish",
+        "prosper",
+        "bloom",
+        "succeed"
+      ],
+      "contexts": [
+        "system_health",
+        "high_fitness",
+        "success"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "sick",
+      "definition": "In poor condition or unwell",
+      "semantic_frame": "state",
+      "organism_relevance": 0.9,
+      "associations": [
+        "ill",
+        "unwell",
+        "weak",
+        "ailing"
+      ],
+      "contexts": [
+        "system_health",
+        "low_fitness",
+        "decline"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "declining",
+      "definition": "Deteriorating or decreasing",
+      "semantic_frame": "state",
+      "organism_relevance": 0.9,
+      "associations": [
+        "deteriorating",
+        "weakening",
+        "fading",
+        "worsening"
+      ],
+      "contexts": [
+        "system_health",
+        "low_fitness",
+        "decline"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "recovering",
+      "definition": "Getting better after difficulty",
+      "semantic_frame": "state",
+      "organism_relevance": 0.9,
+      "associations": [
+        "healing",
+        "improving",
+        "restoring",
+        "mending"
+      ],
+      "contexts": [
+        "recovery",
+        "medium_fitness",
+        "improvement"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "success",
+      "definition": "Achievement of desired outcome",
+      "semantic_frame": "state",
+      "organism_relevance": 0.9,
+      "associations": [
+        "achievement",
+        "victory",
+        "triumph",
+        "accomplishment"
+      ],
+      "contexts": [
+        "action_success",
+        "high_fitness",
+        "achievement"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "failure",
+      "definition": "Lack of success or effectiveness",
+      "semantic_frame": "state",
+      "organism_relevance": 0.9,
+      "associations": [
+        "defeat",
+        "loss",
+        "setback",
+        "miss"
+      ],
+      "contexts": [
+        "action_failure",
+        "low_fitness",
+        "struggle"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "effective",
+      "definition": "Producing desired result",
+      "semantic_frame": "state",
+      "organism_relevance": 0.9,
+      "associations": [
+        "successful",
+        "efficient",
+        "productive",
+        "working"
+      ],
+      "contexts": [
+        "action_success",
+        "efficiency"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "ineffective",
+      "definition": "Not producing desired result",
+      "semantic_frame": "state",
+      "organism_relevance": 0.9,
+      "associations": [
+        "unsuccessful",
+        "useless",
+        "futile",
+        "failing"
+      ],
+      "contexts": [
+        "action_failure",
+        "inefficiency"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "strong",
+      "definition": "Having high fitness and capability",
+      "semantic_frame": "quality",
+      "organism_relevance": 1.0,
+      "associations": [
+        "powerful",
+        "capable",
+        "robust",
+        "mighty"
+      ],
+      "contexts": [
+        "high_fitness",
+        "success",
+        "advantage"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "powerful",
+      "definition": "Having great strength or force",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.95,
+      "associations": [
+        "strong",
+        "mighty",
+        "forceful",
+        "dominant"
+      ],
+      "contexts": [
+        "high_fitness",
+        "dominance",
+        "success"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "capable",
+      "definition": "Having ability or competence",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.9,
+      "associations": [
+        "able",
+        "competent",
+        "skilled",
+        "proficient"
+      ],
+      "contexts": [
+        "high_fitness",
+        "success",
+        "effective"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "robust",
+      "definition": "Strong and healthy in constitution",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.9,
+      "associations": [
+        "strong",
+        "sturdy",
+        "hardy",
+        "resilient"
+      ],
+      "contexts": [
+        "high_fitness",
+        "stability",
+        "resilience"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "resilient",
+      "definition": "Able to recover from difficulties",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.95,
+      "associations": [
+        "tough",
+        "flexible",
+        "adaptable",
+        "hardy"
+      ],
+      "contexts": [
+        "survival",
+        "adaptation",
+        "recovery"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "weak",
+      "definition": "Having low fitness or capability",
+      "semantic_frame": "quality",
+      "organism_relevance": 1.0,
+      "associations": [
+        "fragile",
+        "feeble",
+        "frail",
+        "vulnerable"
+      ],
+      "contexts": [
+        "low_fitness",
+        "struggle",
+        "disadvantage"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "fragile",
+      "definition": "Easily broken or damaged",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.9,
+      "associations": [
+        "delicate",
+        "brittle",
+        "weak",
+        "vulnerable"
+      ],
+      "contexts": [
+        "low_fitness",
+        "vulnerability",
+        "danger"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "vulnerable",
+      "definition": "Susceptible to harm or attack",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.95,
+      "associations": [
+        "exposed",
+        "defenseless",
+        "weak",
+        "unprotected"
+      ],
+      "contexts": [
+        "low_fitness",
+        "danger",
+        "risk"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "fast",
+      "definition": "Moving or acting with high speed",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.9,
+      "associations": [
+        "quick",
+        "rapid",
+        "swift",
+        "speedy"
+      ],
+      "contexts": [
+        "exploration",
+        "competition",
+        "response"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "quick",
+      "definition": "Happening in a short time",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.9,
+      "associations": [
+        "fast",
+        "rapid",
+        "speedy",
+        "prompt"
+      ],
+      "contexts": [
+        "response",
+        "action",
+        "competition"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "slow",
+      "definition": "Moving or acting with low speed",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.8,
+      "associations": [
+        "gradual",
+        "unhurried",
+        "leisurely",
+        "sluggish"
+      ],
+      "contexts": [
+        "conservation",
+        "stability",
+        "safety"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "active",
+      "definition": "Engaged in action or activity",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.9,
+      "associations": [
+        "busy",
+        "energetic",
+        "dynamic",
+        "lively"
+      ],
+      "contexts": [
+        "action",
+        "movement",
+        "energy"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "inactive",
+      "definition": "Not engaged in activity",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.8,
+      "associations": [
+        "idle",
+        "dormant",
+        "passive",
+        "still"
+      ],
+      "contexts": [
+        "rest",
+        "recovery",
+        "conservation"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "energetic",
+      "definition": "Having or showing energy",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.85,
+      "associations": [
+        "vigorous",
+        "lively",
+        "dynamic",
+        "spirited"
+      ],
+      "contexts": [
+        "high_fitness",
+        "action",
+        "activity"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "big",
+      "definition": "Large in size or amount",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.8,
+      "associations": [
+        "large",
+        "huge",
+        "great",
+        "enormous"
+      ],
+      "contexts": [
+        "size",
+        "quantity",
+        "growth"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "small",
+      "definition": "Little in size or amount",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.8,
+      "associations": [
+        "little",
+        "tiny",
+        "minor",
+        "slight"
+      ],
+      "contexts": [
+        "size",
+        "quantity",
+        "limitation"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "many",
+      "definition": "A large number of",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.9,
+      "associations": [
+        "numerous",
+        "multiple",
+        "several",
+        "countless"
+      ],
+      "contexts": [
+        "quantity",
+        "abundance",
+        "connections"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "few",
+      "definition": "A small number of",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.9,
+      "associations": [
+        "scarce",
+        "limited",
+        "rare",
+        "sparse"
+      ],
+      "contexts": [
+        "quantity",
+        "scarcity",
+        "isolation"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "more",
+      "definition": "A greater amount or degree",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.9,
+      "associations": [
+        "additional",
+        "extra",
+        "greater",
+        "further"
+      ],
+      "contexts": [
+        "comparison",
+        "increase",
+        "growth"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "less",
+      "definition": "A smaller amount or degree",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.9,
+      "associations": [
+        "fewer",
+        "reduced",
+        "smaller",
+        "lower"
+      ],
+      "contexts": [
+        "comparison",
+        "decrease",
+        "decline"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "good",
+      "definition": "Of high quality or positive value",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.95,
+      "associations": [
+        "positive",
+        "favorable",
+        "beneficial",
+        "fine"
+      ],
+      "contexts": [
+        "evaluation",
+        "success",
+        "benefit"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "bad",
+      "definition": "Of low quality or negative value",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.95,
+      "associations": [
+        "negative",
+        "harmful",
+        "poor",
+        "unfavorable"
+      ],
+      "contexts": [
+        "evaluation",
+        "danger",
+        "harm"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "better",
+      "definition": "Of higher quality than another",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.9,
+      "associations": [
+        "superior",
+        "improved",
+        "greater",
+        "finer"
+      ],
+      "contexts": [
+        "comparison",
+        "improvement",
+        "progress"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "worse",
+      "definition": "Of lower quality than another",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.9,
+      "associations": [
+        "inferior",
+        "poorer",
+        "lesser",
+        "deteriorated"
+      ],
+      "contexts": [
+        "comparison",
+        "decline",
+        "regression"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "best",
+      "definition": "Of the highest quality",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.85,
+      "associations": [
+        "optimal",
+        "finest",
+        "greatest",
+        "top"
+      ],
+      "contexts": [
+        "comparison",
+        "excellence",
+        "success"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "safe",
+      "definition": "Free from danger or risk",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.95,
+      "associations": [
+        "secure",
+        "protected",
+        "sheltered",
+        "guarded"
+      ],
+      "contexts": [
+        "safety",
+        "stability",
+        "protection"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "dangerous",
+      "definition": "Able to cause harm or injury",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.9,
+      "associations": [
+        "risky",
+        "hazardous",
+        "perilous",
+        "threatening"
+      ],
+      "contexts": [
+        "danger",
+        "risk",
+        "threat"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "young",
+      "definition": "Early in development or age",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.8,
+      "associations": [
+        "new",
+        "fresh",
+        "early",
+        "juvenile"
+      ],
+      "contexts": [
+        "generation_age",
+        "development",
+        "beginning"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "new",
+      "definition": "Recently created or beginning",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.8,
+      "associations": [
+        "fresh",
+        "recent",
+        "novel",
+        "modern"
+      ],
+      "contexts": [
+        "generation_age",
+        "creation",
+        "genesis_phase"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "old",
+      "definition": "Having lived or existed long",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.8,
+      "associations": [
+        "aged",
+        "ancient",
+        "mature",
+        "veteran"
+      ],
+      "contexts": [
+        "generation_age",
+        "experience",
+        "maturity"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "mature",
+      "definition": "Fully developed or experienced",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.8,
+      "associations": [
+        "developed",
+        "grown",
+        "adult",
+        "seasoned"
+      ],
+      "contexts": [
+        "generation_age",
+        "development",
+        "experience"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "experienced",
+      "definition": "Having knowledge from experience",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.8,
+      "associations": [
+        "skilled",
+        "knowledgeable",
+        "veteran",
+        "seasoned"
+      ],
+      "contexts": [
+        "generation_age",
+        "learning",
+        "maturity"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "precise",
+      "definition": "Exact and accurate",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.8,
+      "associations": [
+        "accurate",
+        "exact",
+        "specific",
+        "definite"
+      ],
+      "contexts": [
+        "sovereign_phase",
+        "precision",
+        "focus"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "focused",
+      "definition": "Concentrated and directed",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.8,
+      "associations": [
+        "concentrated",
+        "attentive",
+        "directed",
+        "targeted"
+      ],
+      "contexts": [
+        "sovereign_phase",
+        "precision",
+        "attention"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "chaotic",
+      "definition": "In a state of disorder",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.8,
+      "associations": [
+        "disordered",
+        "confused",
+        "turbulent",
+        "unstable"
+      ],
+      "contexts": [
+        "instability",
+        "vp_high",
+        "crisis"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "ordered",
+      "definition": "Arranged in a systematic way",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.8,
+      "associations": [
+        "organized",
+        "structured",
+        "systematic",
+        "regular"
+      ],
+      "contexts": [
+        "stability",
+        "vp_low",
+        "coherence"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "neighbor",
+      "definition": "One who is near or adjacent",
+      "semantic_frame": "relationship",
+      "organism_relevance": 1.0,
+      "associations": [
+        "adjacent",
+        "nearby",
+        "close",
+        "surrounding"
+      ],
+      "contexts": [
+        "spatial_proximity",
+        "social",
+        "network"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "friend",
+      "definition": "One who cooperates positively",
+      "semantic_frame": "relationship",
+      "organism_relevance": 0.9,
+      "associations": [
+        "ally",
+        "companion",
+        "partner",
+        "associate"
+      ],
+      "contexts": [
+        "cooperation",
+        "social",
+        "positive_connection"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "ally",
+      "definition": "One united with another",
+      "semantic_frame": "relationship",
+      "organism_relevance": 0.9,
+      "associations": [
+        "partner",
+        "friend",
+        "supporter",
+        "associate"
+      ],
+      "contexts": [
+        "cooperation",
+        "social",
+        "alliance"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "rival",
+      "definition": "One who competes against another",
+      "semantic_frame": "relationship",
+      "organism_relevance": 0.9,
+      "associations": [
+        "competitor",
+        "opponent",
+        "adversary",
+        "challenger"
+      ],
+      "contexts": [
+        "competition",
+        "conflict"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "enemy",
+      "definition": "One who opposes or threatens",
+      "semantic_frame": "relationship",
+      "organism_relevance": 0.85,
+      "associations": [
+        "foe",
+        "adversary",
+        "opponent",
+        "threat"
+      ],
+      "contexts": [
+        "competition",
+        "danger",
+        "conflict"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "partner",
+      "definition": "One who works together with another",
+      "semantic_frame": "relationship",
+      "organism_relevance": 0.9,
+      "associations": [
+        "collaborator",
+        "associate",
+        "ally",
+        "companion"
+      ],
+      "contexts": [
+        "cooperation",
+        "social",
+        "mutual_benefit"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "other",
+      "definition": "A different or distinct entity",
+      "semantic_frame": "relationship",
+      "organism_relevance": 1.0,
+      "associations": [
+        "another",
+        "different",
+        "separate",
+        "distinct"
+      ],
+      "contexts": [
+        "comparison",
+        "distinction",
+        "social"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "same",
+      "definition": "Identical or alike",
+      "semantic_frame": "relationship",
+      "organism_relevance": 0.8,
+      "associations": [
+        "identical",
+        "equal",
+        "alike",
+        "similar"
+      ],
+      "contexts": [
+        "comparison",
+        "similarity"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "different",
+      "definition": "Not the same as another",
+      "semantic_frame": "relationship",
+      "organism_relevance": 0.85,
+      "associations": [
+        "distinct",
+        "unlike",
+        "varied",
+        "diverse"
+      ],
+      "contexts": [
+        "comparison",
+        "distinction",
+        "diversity"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "similar",
+      "definition": "Resembling without being identical",
+      "semantic_frame": "relationship",
+      "organism_relevance": 0.8,
+      "associations": [
+        "alike",
+        "comparable",
+        "like",
+        "analogous"
+      ],
+      "contexts": [
+        "comparison",
+        "similarity"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "opposite",
+      "definition": "Completely different or contrary",
+      "semantic_frame": "relationship",
+      "organism_relevance": 0.8,
+      "associations": [
+        "contrary",
+        "reverse",
+        "opposed",
+        "conflicting"
+      ],
+      "contexts": [
+        "comparison",
+        "contrast"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "self",
+      "definition": "One's own being or identity",
+      "semantic_frame": "relationship",
+      "organism_relevance": 1.0,
+      "associations": [
+        "me",
+        "own",
+        "individual",
+        "personal"
+      ],
+      "contexts": [
+        "identity",
+        "awareness",
+        "self_reference"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "now",
+      "definition": "At the present moment",
+      "semantic_frame": "temporal",
+      "organism_relevance": 0.9,
+      "associations": [
+        "present",
+        "current",
+        "immediate",
+        "today"
+      ],
+      "contexts": [
+        "decision_making",
+        "action",
+        "awareness"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "before",
+      "definition": "Earlier in time or sequence",
+      "semantic_frame": "temporal",
+      "organism_relevance": 0.9,
+      "associations": [
+        "earlier",
+        "past",
+        "previous",
+        "prior"
+      ],
+      "contexts": [
+        "memory",
+        "sequence",
+        "causation"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "after",
+      "definition": "Later in time or sequence",
+      "semantic_frame": "temporal",
+      "organism_relevance": 0.9,
+      "associations": [
+        "later",
+        "next",
+        "subsequent",
+        "following"
+      ],
+      "contexts": [
+        "planning",
+        "sequence",
+        "consequence"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "always",
+      "definition": "At all times continuously",
+      "semantic_frame": "temporal",
+      "organism_relevance": 0.8,
+      "associations": [
+        "forever",
+        "constantly",
+        "continuously",
+        "perpetually"
+      ],
+      "contexts": [
+        "stability",
+        "persistence",
+        "pattern"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "never",
+      "definition": "At no time ever",
+      "semantic_frame": "temporal",
+      "organism_relevance": 0.8,
+      "associations": [
+        "not",
+        "none",
+        "zero",
+        "absence"
+      ],
+      "contexts": [
+        "impossibility",
+        "constraint",
+        "negation"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "sometimes",
+      "definition": "On certain occasions",
+      "semantic_frame": "temporal",
+      "organism_relevance": 0.8,
+      "associations": [
+        "occasionally",
+        "periodically",
+        "intermittently",
+        "at_times"
+      ],
+      "contexts": [
+        "variability",
+        "uncertainty",
+        "frequency"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "often",
+      "definition": "Frequently or many times",
+      "semantic_frame": "temporal",
+      "organism_relevance": 0.8,
+      "associations": [
+        "frequently",
+        "usually",
+        "commonly",
+        "regularly"
+      ],
+      "contexts": [
+        "frequency",
+        "pattern",
+        "habit"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "soon",
+      "definition": "In a short time from now",
+      "semantic_frame": "temporal",
+      "organism_relevance": 0.8,
+      "associations": [
+        "shortly",
+        "quickly",
+        "presently",
+        "momentarily"
+      ],
+      "contexts": [
+        "future",
+        "anticipation",
+        "planning"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "then",
+      "definition": "At that time or next",
+      "semantic_frame": "temporal",
+      "organism_relevance": 0.9,
+      "associations": [
+        "next",
+        "afterward",
+        "subsequently",
+        "therefore"
+      ],
+      "contexts": [
+        "sequence",
+        "consequence",
+        "time"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "when",
+      "definition": "At what time or during which",
+      "semantic_frame": "temporal",
+      "organism_relevance": 0.9,
+      "associations": [
+        "while",
+        "during",
+        "as",
+        "whenever"
+      ],
+      "contexts": [
+        "time",
+        "condition",
+        "question"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "while",
+      "definition": "During the time that",
+      "semantic_frame": "temporal",
+      "organism_relevance": 0.8,
+      "associations": [
+        "during",
+        "as",
+        "meanwhile",
+        "whilst"
+      ],
+      "contexts": [
+        "simultaneous",
+        "duration",
+        "condition"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "during",
+      "definition": "Throughout the course of",
+      "semantic_frame": "temporal",
+      "organism_relevance": 0.8,
+      "associations": [
+        "while",
+        "throughout",
+        "within",
+        "in"
+      ],
+      "contexts": [
+        "duration",
+        "time_span"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "early",
+      "definition": "Near the beginning of time",
+      "semantic_frame": "temporal",
+      "organism_relevance": 0.8,
+      "associations": [
+        "soon",
+        "initial",
+        "beginning",
+        "first"
+      ],
+      "contexts": [
+        "time",
+        "sequence",
+        "genesis_phase"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "late",
+      "definition": "Near the end of time period",
+      "semantic_frame": "temporal",
+      "organism_relevance": 0.8,
+      "associations": [
+        "delayed",
+        "tardy",
+        "behind",
+        "final"
+      ],
+      "contexts": [
+        "time",
+        "sequence",
+        "ending"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "recent",
+      "definition": "Happening not long ago",
+      "semantic_frame": "temporal",
+      "organism_relevance": 0.8,
+      "associations": [
+        "latest",
+        "new",
+        "fresh",
+        "modern"
+      ],
+      "contexts": [
+        "memory",
+        "time",
+        "change"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "still",
+      "definition": "Continuing up to now",
+      "semantic_frame": "temporal",
+      "organism_relevance": 0.8,
+      "associations": [
+        "yet",
+        "continuing",
+        "remaining",
+        "ongoing"
+      ],
+      "contexts": [
+        "persistence",
+        "continuation"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "already",
+      "definition": "Before now or a specified time",
+      "semantic_frame": "temporal",
+      "organism_relevance": 0.8,
+      "associations": [
+        "previously",
+        "before",
+        "yet",
+        "earlier"
+      ],
+      "contexts": [
+        "completion",
+        "time",
+        "sequence"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "first",
+      "definition": "Coming before all others",
+      "semantic_frame": "temporal",
+      "organism_relevance": 0.8,
+      "associations": [
+        "initial",
+        "primary",
+        "beginning",
+        "leading"
+      ],
+      "contexts": [
+        "sequence",
+        "order",
+        "priority"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "last",
+      "definition": "Coming after all others",
+      "semantic_frame": "temporal",
+      "organism_relevance": 0.8,
+      "associations": [
+        "final",
+        "ultimate",
+        "ending",
+        "concluding"
+      ],
+      "contexts": [
+        "sequence",
+        "order",
+        "ending"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "next",
+      "definition": "Coming immediately after",
+      "semantic_frame": "temporal",
+      "organism_relevance": 0.9,
+      "associations": [
+        "following",
+        "subsequent",
+        "upcoming",
+        "succeeding"
+      ],
+      "contexts": [
+        "sequence",
+        "planning",
+        "future"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "here",
+      "definition": "At this location or position",
+      "semantic_frame": "spatial",
+      "organism_relevance": 0.9,
+      "associations": [
+        "present",
+        "location",
+        "place",
+        "spot"
+      ],
+      "contexts": [
+        "awareness",
+        "position",
+        "presence"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "there",
+      "definition": "At that location or position",
+      "semantic_frame": "spatial",
+      "organism_relevance": 0.9,
+      "associations": [
+        "distant",
+        "elsewhere",
+        "away",
+        "yonder"
+      ],
+      "contexts": [
+        "navigation",
+        "target",
+        "distance"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "near",
+      "definition": "Close in distance",
+      "semantic_frame": "spatial",
+      "organism_relevance": 0.9,
+      "associations": [
+        "close",
+        "adjacent",
+        "nearby",
+        "proximate"
+      ],
+      "contexts": [
+        "proximity",
+        "connection",
+        "interaction"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "far",
+      "definition": "Distant in space",
+      "semantic_frame": "spatial",
+      "organism_relevance": 0.9,
+      "associations": [
+        "distant",
+        "remote",
+        "away",
+        "removed"
+      ],
+      "contexts": [
+        "distance",
+        "isolation",
+        "exploration"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "close",
+      "definition": "Near in distance or relationship",
+      "semantic_frame": "spatial",
+      "organism_relevance": 0.9,
+      "associations": [
+        "near",
+        "adjacent",
+        "proximate",
+        "nearby"
+      ],
+      "contexts": [
+        "proximity",
+        "connection",
+        "relationship"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "center",
+      "definition": "At the central position",
+      "semantic_frame": "spatial",
+      "organism_relevance": 0.8,
+      "associations": [
+        "middle",
+        "core",
+        "heart",
+        "hub"
+      ],
+      "contexts": [
+        "position",
+        "stability",
+        "central"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "edge",
+      "definition": "At the boundary or periphery",
+      "semantic_frame": "spatial",
+      "organism_relevance": 0.8,
+      "associations": [
+        "boundary",
+        "border",
+        "margin",
+        "periphery"
+      ],
+      "contexts": [
+        "position",
+        "exploration",
+        "risk"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "inside",
+      "definition": "Within the interior of",
+      "semantic_frame": "spatial",
+      "organism_relevance": 0.8,
+      "associations": [
+        "within",
+        "interior",
+        "inner",
+        "internal"
+      ],
+      "contexts": [
+        "containment",
+        "position",
+        "safety"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "outside",
+      "definition": "Beyond the boundary of",
+      "semantic_frame": "spatial",
+      "organism_relevance": 0.8,
+      "associations": [
+        "exterior",
+        "beyond",
+        "outer",
+        "external"
+      ],
+      "contexts": [
+        "exploration",
+        "position",
+        "risk"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "between",
+      "definition": "In the space separating two things",
+      "semantic_frame": "spatial",
+      "organism_relevance": 0.8,
+      "associations": [
+        "amid",
+        "among",
+        "middle",
+        "intermediate"
+      ],
+      "contexts": [
+        "position",
+        "relationship",
+        "connection"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "around",
+      "definition": "On all sides of",
+      "semantic_frame": "spatial",
+      "organism_relevance": 0.8,
+      "associations": [
+        "surrounding",
+        "encircling",
+        "about",
+        "nearby"
+      ],
+      "contexts": [
+        "environment",
+        "position",
+        "proximity"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "above",
+      "definition": "Higher than in position",
+      "semantic_frame": "spatial",
+      "organism_relevance": 0.7,
+      "associations": [
+        "over",
+        "higher",
+        "up",
+        "atop"
+      ],
+      "contexts": [
+        "position",
+        "comparison"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "below",
+      "definition": "Lower than in position",
+      "semantic_frame": "spatial",
+      "organism_relevance": 0.7,
+      "associations": [
+        "under",
+        "beneath",
+        "lower",
+        "down"
+      ],
+      "contexts": [
+        "position",
+        "comparison"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "toward",
+      "definition": "In the direction of",
+      "semantic_frame": "spatial",
+      "organism_relevance": 0.9,
+      "associations": [
+        "towards",
+        "approaching",
+        "facing",
+        "heading"
+      ],
+      "contexts": [
+        "movement",
+        "direction",
+        "approach"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "away",
+      "definition": "In the opposite direction from",
+      "semantic_frame": "spatial",
+      "organism_relevance": 0.9,
+      "associations": [
+        "distant",
+        "apart",
+        "off",
+        "removed"
+      ],
+      "contexts": [
+        "movement",
+        "direction",
+        "retreat"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "crowded",
+      "definition": "High density of organisms",
+      "semantic_frame": "spatial",
+      "organism_relevance": 0.9,
+      "associations": [
+        "dense",
+        "packed",
+        "populated",
+        "congested"
+      ],
+      "contexts": [
+        "density",
+        "competition",
+        "social"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "dense",
+      "definition": "High concentration or density",
+      "semantic_frame": "spatial",
+      "organism_relevance": 0.8,
+      "associations": [
+        "crowded",
+        "thick",
+        "compact",
+        "concentrated"
+      ],
+      "contexts": [
+        "density",
+        "environment"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "sparse",
+      "definition": "Low density or concentration",
+      "semantic_frame": "spatial",
+      "organism_relevance": 0.8,
+      "associations": [
+        "thin",
+        "scattered",
+        "dispersed",
+        "rare"
+      ],
+      "contexts": [
+        "density",
+        "isolation",
+        "exploration"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "scattered",
+      "definition": "Spread irregularly over area",
+      "semantic_frame": "spatial",
+      "organism_relevance": 0.8,
+      "associations": [
+        "dispersed",
+        "spread",
+        "distributed",
+        "sparse"
+      ],
+      "contexts": [
+        "density",
+        "distribution"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "everywhere",
+      "definition": "In all places",
+      "semantic_frame": "spatial",
+      "organism_relevance": 0.7,
+      "associations": [
+        "throughout",
+        "all_places",
+        "widespread",
+        "pervasive"
+      ],
+      "contexts": [
+        "abundance",
+        "distribution"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "nowhere",
+      "definition": "In no place",
+      "semantic_frame": "spatial",
+      "organism_relevance": 0.7,
+      "associations": [
+        "absent",
+        "missing",
+        "gone",
+        "vanished"
+      ],
+      "contexts": [
+        "absence",
+        "scarcity"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "somewhere",
+      "definition": "In some unspecified place",
+      "semantic_frame": "spatial",
+      "organism_relevance": 0.7,
+      "associations": [
+        "someplace",
+        "location",
+        "place",
+        "spot"
+      ],
+      "contexts": [
+        "uncertainty",
+        "exploration"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "where",
+      "definition": "At or in what place",
+      "semantic_frame": "spatial",
+      "organism_relevance": 0.8,
+      "associations": [
+        "location",
+        "place",
+        "position",
+        "site"
+      ],
+      "contexts": [
+        "question",
+        "location"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "left",
+      "definition": "On or toward the left side",
+      "semantic_frame": "spatial",
+      "organism_relevance": 0.7,
+      "associations": [
+        "port",
+        "leftward",
+        "beside"
+      ],
+      "contexts": [
+        "direction",
+        "position"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "right",
+      "definition": "On or toward the right side",
+      "semantic_frame": "spatial",
+      "organism_relevance": 0.7,
+      "associations": [
+        "starboard",
+        "rightward",
+        "beside"
+      ],
+      "contexts": [
+        "direction",
+        "position"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "forward",
+      "definition": "Toward the front or ahead",
+      "semantic_frame": "spatial",
+      "organism_relevance": 0.8,
+      "associations": [
+        "ahead",
+        "onward",
+        "advancing",
+        "front"
+      ],
+      "contexts": [
+        "movement",
+        "direction",
+        "progress"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "back",
+      "definition": "Toward the rear or behind",
+      "semantic_frame": "spatial",
+      "organism_relevance": 0.8,
+      "associations": [
+        "behind",
+        "rear",
+        "backward",
+        "retreat"
+      ],
+      "contexts": [
+        "movement",
+        "direction",
+        "retreat"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "know",
+      "definition": "To have understanding or awareness",
+      "semantic_frame": "meta",
+      "organism_relevance": 0.9,
+      "associations": [
+        "understand",
+        "recognize",
+        "comprehend",
+        "perceive"
+      ],
+      "contexts": [
+        "learning",
+        "awareness",
+        "comprehension"
+      ],
+      "abstraction_level": 2
+    },
+    {
+      "word": "think",
+      "definition": "To use mental processes and reasoning",
+      "semantic_frame": "meta",
+      "organism_relevance": 0.9,
+      "associations": [
+        "reason",
+        "consider",
+        "contemplate",
+        "reflect"
+      ],
+      "contexts": [
+        "decision_making",
+        "planning",
+        "reasoning"
+      ],
+      "abstraction_level": 2
+    },
+    {
+      "word": "understand",
+      "definition": "To comprehend meaning and significance",
+      "semantic_frame": "meta",
+      "organism_relevance": 1.0,
+      "associations": [
+        "comprehend",
+        "grasp",
+        "realize",
+        "perceive"
+      ],
+      "contexts": [
+        "comprehension",
+        "awareness",
+        "insight"
+      ],
+      "abstraction_level": 2
+    },
+    {
+      "word": "remember",
+      "definition": "To recall information from the past",
+      "semantic_frame": "meta",
+      "organism_relevance": 0.9,
+      "associations": [
+        "recall",
+        "retain",
+        "memorize",
+        "recollect"
+      ],
+      "contexts": [
+        "memory",
+        "experience",
+        "learning"
+      ],
+      "abstraction_level": 2
+    },
+    {
+      "word": "forget",
+      "definition": "To fail to remember",
+      "semantic_frame": "meta",
+      "organism_relevance": 0.8,
+      "associations": [
+        "lose",
+        "neglect",
+        "overlook",
+        "miss"
+      ],
+      "contexts": [
+        "memory",
+        "loss"
+      ],
+      "abstraction_level": 2
+    },
+    {
+      "word": "believe",
+      "definition": "To accept as true or real",
+      "semantic_frame": "meta",
+      "organism_relevance": 0.8,
+      "associations": [
+        "trust",
+        "accept",
+        "suppose",
+        "consider"
+      ],
+      "contexts": [
+        "thought",
+        "assumption",
+        "confidence"
+      ],
+      "abstraction_level": 2
+    },
+    {
+      "word": "want",
+      "definition": "To desire or wish for something",
+      "semantic_frame": "meta",
+      "organism_relevance": 1.0,
+      "associations": [
+        "desire",
+        "wish",
+        "need",
+        "crave"
+      ],
+      "contexts": [
+        "motivation",
+        "goal",
+        "desire"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "need",
+      "definition": "To require something essential",
+      "semantic_frame": "meta",
+      "organism_relevance": 1.0,
+      "associations": [
+        "require",
+        "must",
+        "demand",
+        "necessity"
+      ],
+      "contexts": [
+        "survival",
+        "essential",
+        "requirement"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "try",
+      "definition": "To attempt or make an effort",
+      "semantic_frame": "meta",
+      "organism_relevance": 0.95,
+      "associations": [
+        "attempt",
+        "endeavor",
+        "strive",
+        "seek"
+      ],
+      "contexts": [
+        "effort",
+        "action",
+        "attempt"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "decide",
+      "definition": "To make a choice or determination",
+      "semantic_frame": "meta",
+      "organism_relevance": 0.9,
+      "associations": [
+        "choose",
+        "determine",
+        "resolve",
+        "select"
+      ],
+      "contexts": [
+        "decision_making",
+        "choice",
+        "action"
+      ],
+      "abstraction_level": 2
+    },
+    {
+      "word": "choose",
+      "definition": "To select from alternatives",
+      "semantic_frame": "meta",
+      "organism_relevance": 0.9,
+      "associations": [
+        "select",
+        "pick",
+        "decide",
+        "prefer"
+      ],
+      "contexts": [
+        "decision_making",
+        "choice"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "expect",
+      "definition": "To anticipate or look forward to",
+      "semantic_frame": "meta",
+      "organism_relevance": 0.85,
+      "associations": [
+        "anticipate",
+        "await",
+        "foresee",
+        "predict"
+      ],
+      "contexts": [
+        "planning",
+        "prediction",
+        "anticipation"
+      ],
+      "abstraction_level": 2
+    },
+    {
+      "word": "hope",
+      "definition": "To desire with expectation",
+      "semantic_frame": "meta",
+      "organism_relevance": 0.8,
+      "associations": [
+        "wish",
+        "desire",
+        "expect",
+        "aspire"
+      ],
+      "contexts": [
+        "desire",
+        "future",
+        "positive"
+      ],
+      "abstraction_level": 2
+    },
+    {
+      "word": "fear",
+      "definition": "To be afraid of something",
+      "semantic_frame": "meta",
+      "organism_relevance": 0.9,
+      "associations": [
+        "dread",
+        "worry",
+        "anxiety",
+        "terror"
+      ],
+      "contexts": [
+        "danger",
+        "threat",
+        "negative"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "notice",
+      "definition": "To become aware of something",
+      "semantic_frame": "meta",
+      "organism_relevance": 0.9,
+      "associations": [
+        "observe",
+        "see",
+        "perceive",
+        "detect"
+      ],
+      "contexts": [
+        "awareness",
+        "observation",
+        "attention"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "recognize",
+      "definition": "To identify from previous experience",
+      "semantic_frame": "meta",
+      "organism_relevance": 0.85,
+      "associations": [
+        "identify",
+        "know",
+        "remember",
+        "recall"
+      ],
+      "contexts": [
+        "memory",
+        "recognition",
+        "familiarity"
+      ],
+      "abstraction_level": 2
+    },
+    {
+      "word": "discover",
+      "definition": "To find or learn something new",
+      "semantic_frame": "meta",
+      "organism_relevance": 0.9,
+      "associations": [
+        "find",
+        "uncover",
+        "learn",
+        "reveal"
+      ],
+      "contexts": [
+        "genesis_phase",
+        "exploration",
+        "learning"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "realize",
+      "definition": "To become fully aware of",
+      "semantic_frame": "meta",
+      "organism_relevance": 0.85,
+      "associations": [
+        "understand",
+        "recognize",
+        "grasp",
+        "comprehend"
+      ],
+      "contexts": [
+        "awareness",
+        "insight",
+        "understanding"
+      ],
+      "abstraction_level": 2
+    },
+    {
+      "word": "consider",
+      "definition": "To think carefully about",
+      "semantic_frame": "meta",
+      "organism_relevance": 0.8,
+      "associations": [
+        "think",
+        "ponder",
+        "contemplate",
+        "weigh"
+      ],
+      "contexts": [
+        "decision_making",
+        "thought",
+        "evaluation"
+      ],
+      "abstraction_level": 2
+    },
+    {
+      "word": "wonder",
+      "definition": "To desire to know or be curious",
+      "semantic_frame": "meta",
+      "organism_relevance": 0.8,
+      "associations": [
+        "curious",
+        "question",
+        "ponder",
+        "marvel"
+      ],
+      "contexts": [
+        "curiosity",
+        "question",
+        "exploration"
+      ],
+      "abstraction_level": 2
+    },
+    {
+      "word": "feel",
+      "definition": "To experience an emotion or sensation",
+      "semantic_frame": "meta",
+      "organism_relevance": 1.0,
+      "associations": [
+        "sense",
+        "experience",
+        "perceive",
+        "detect"
+      ],
+      "contexts": [
+        "emotion",
+        "sensation",
+        "awareness"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "like",
+      "definition": "To find pleasant or agreeable",
+      "semantic_frame": "meta",
+      "organism_relevance": 0.9,
+      "associations": [
+        "enjoy",
+        "prefer",
+        "favor",
+        "appreciate"
+      ],
+      "contexts": [
+        "preference",
+        "positive",
+        "choice"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "dislike",
+      "definition": "To find unpleasant or disagreeable",
+      "semantic_frame": "meta",
+      "organism_relevance": 0.85,
+      "associations": [
+        "hate",
+        "avoid",
+        "reject",
+        "oppose"
+      ],
+      "contexts": [
+        "preference",
+        "negative",
+        "avoidance"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "cause",
+      "definition": "To make something happen",
+      "semantic_frame": "meta",
+      "organism_relevance": 0.9,
+      "associations": [
+        "create",
+        "produce",
+        "generate",
+        "trigger"
+      ],
+      "contexts": [
+        "causation",
+        "effect",
+        "action"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "prevent",
+      "definition": "To stop something from happening",
+      "semantic_frame": "meta",
+      "organism_relevance": 0.9,
+      "associations": [
+        "stop",
+        "block",
+        "hinder",
+        "impede"
+      ],
+      "contexts": [
+        "prevention",
+        "protection",
+        "safety"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "happy",
+      "definition": "Feeling pleasure or contentment",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.85,
+      "associations": [
+        "content",
+        "pleased",
+        "joyful",
+        "satisfied"
+      ],
+      "contexts": [
+        "positive",
+        "success",
+        "high_fitness"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "sad",
+      "definition": "Feeling sorrow or unhappiness",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.85,
+      "associations": [
+        "unhappy",
+        "sorrowful",
+        "dejected",
+        "melancholy"
+      ],
+      "contexts": [
+        "negative",
+        "struggle",
+        "loss"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "angry",
+      "definition": "Feeling strong displeasure",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.8,
+      "associations": [
+        "upset",
+        "furious",
+        "irritated",
+        "enraged"
+      ],
+      "contexts": [
+        "negative",
+        "conflict",
+        "competition"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "afraid",
+      "definition": "Feeling fear or anxiety",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.9,
+      "associations": [
+        "scared",
+        "frightened",
+        "fearful",
+        "terrified"
+      ],
+      "contexts": [
+        "danger",
+        "threat",
+        "crisis"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "confident",
+      "definition": "Feeling certain of abilities",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.85,
+      "associations": [
+        "sure",
+        "certain",
+        "assured",
+        "bold"
+      ],
+      "contexts": [
+        "success",
+        "high_fitness",
+        "positive"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "uncertain",
+      "definition": "Not sure or confident",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.8,
+      "associations": [
+        "unsure",
+        "doubtful",
+        "hesitant",
+        "undecided"
+      ],
+      "contexts": [
+        "uncertainty",
+        "decision",
+        "risk"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "anxious",
+      "definition": "Feeling worried or uneasy",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.85,
+      "associations": [
+        "worried",
+        "nervous",
+        "uneasy",
+        "tense"
+      ],
+      "contexts": [
+        "stress",
+        "pressure",
+        "uncertainty"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "curious",
+      "definition": "Eager to know or learn",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.85,
+      "associations": [
+        "inquisitive",
+        "interested",
+        "eager",
+        "wondering"
+      ],
+      "contexts": [
+        "exploration",
+        "learning",
+        "discovery"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "desperate",
+      "definition": "Having urgent need or desire",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.85,
+      "associations": [
+        "hopeless",
+        "urgent",
+        "frantic",
+        "dire"
+      ],
+      "contexts": [
+        "crisis",
+        "low_fitness",
+        "survival"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "grateful",
+      "definition": "Feeling thankful",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.8,
+      "associations": [
+        "thankful",
+        "appreciative",
+        "obliged",
+        "indebted"
+      ],
+      "contexts": [
+        "cooperation",
+        "help",
+        "positive"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "hostile",
+      "definition": "Unfriendly and opposed",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.85,
+      "associations": [
+        "aggressive",
+        "antagonistic",
+        "unfriendly",
+        "enemy"
+      ],
+      "contexts": [
+        "competition",
+        "conflict",
+        "danger"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "friendly",
+      "definition": "Kind and pleasant toward others",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.85,
+      "associations": [
+        "kind",
+        "warm",
+        "welcoming",
+        "amicable"
+      ],
+      "contexts": [
+        "cooperation",
+        "social",
+        "positive"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "important",
+      "definition": "Of great significance",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.85,
+      "associations": [
+        "significant",
+        "vital",
+        "crucial",
+        "essential"
+      ],
+      "contexts": [
+        "priority",
+        "value",
+        "significance"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "urgent",
+      "definition": "Requiring immediate attention",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.85,
+      "associations": [
+        "pressing",
+        "immediate",
+        "critical",
+        "emergency"
+      ],
+      "contexts": [
+        "crisis",
+        "pressure",
+        "priority"
+      ],
+      "abstraction_level": 1
+    },
+    {
+      "word": "ready",
+      "definition": "Prepared for action",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.9,
+      "associations": [
+        "prepared",
+        "set",
+        "willing",
+        "equipped"
+      ],
+      "contexts": [
+        "preparation",
+        "action",
+        "capability"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "tired",
+      "definition": "In need of rest",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.9,
+      "associations": [
+        "exhausted",
+        "weary",
+        "fatigued",
+        "drained"
+      ],
+      "contexts": [
+        "low_energy",
+        "rest",
+        "recovery"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "busy",
+      "definition": "Engaged in activity",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.8,
+      "associations": [
+        "active",
+        "occupied",
+        "engaged",
+        "working"
+      ],
+      "contexts": [
+        "activity",
+        "action",
+        "occupation"
+      ],
+      "abstraction_level": 0
+    },
+    {
+      "word": "free",
+      "definition": "Not constrained or restricted",
+      "semantic_frame": "quality",
+      "organism_relevance": 0.85,
+      "associations": [
+        "liberated",
+        "unrestricted",
+        "open",
+        "available"
+      ],
+      "contexts": [
+        "independence",
+        "freedom",
+        "choice"
+      ],
+      "abstraction_level": 1
+    }
+  ],
+  "function_words": [
+    {
+      "word": "I",
+      "definition": "First person singular pronoun",
+      "semantic_frame": "function",
+      "organism_relevance": 1.0,
+      "associations": [
+        "me",
+        "my",
+        "self",
+        "mine"
+      ],
+      "contexts": [
+        "self_reference",
+        "communication",
+        "identity"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "pronoun",
+      "typical_positions": [
+        "sentence_start",
+        "subject"
+      ],
+      "common_patterns": [
+        [
+          "I",
+          "thrive"
+        ],
+        [
+          "I",
+          "move"
+        ],
+        [
+          "I",
+          "am"
+        ]
+      ]
+    },
+    {
+      "word": "me",
+      "definition": "First person singular object pronoun",
+      "semantic_frame": "function",
+      "organism_relevance": 1.0,
+      "associations": [
+        "I",
+        "my",
+        "self",
+        "mine"
+      ],
+      "contexts": [
+        "self_reference",
+        "object"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "pronoun",
+      "typical_positions": [
+        "after_verb",
+        "after_preposition"
+      ],
+      "common_patterns": [
+        [
+          "near",
+          "me"
+        ],
+        [
+          "help",
+          "me"
+        ]
+      ]
+    },
+    {
+      "word": "my",
+      "definition": "First person singular possessive",
+      "semantic_frame": "function",
+      "organism_relevance": 1.0,
+      "associations": [
+        "I",
+        "me",
+        "mine",
+        "own"
+      ],
+      "contexts": [
+        "possession",
+        "self_reference"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "pronoun",
+      "typical_positions": [
+        "before_noun"
+      ],
+      "common_patterns": [
+        [
+          "my",
+          "neighbor"
+        ],
+        [
+          "my",
+          "resources"
+        ]
+      ]
+    },
+    {
+      "word": "mine",
+      "definition": "First person singular possessive pronoun",
+      "semantic_frame": "function",
+      "organism_relevance": 0.9,
+      "associations": [
+        "my",
+        "I",
+        "own",
+        "me"
+      ],
+      "contexts": [
+        "possession",
+        "ownership"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "pronoun",
+      "typical_positions": [
+        "sentence_end",
+        "after_verb"
+      ],
+      "common_patterns": [
+        [
+          "is",
+          "mine"
+        ]
+      ]
+    },
+    {
+      "word": "you",
+      "definition": "Second person pronoun",
+      "semantic_frame": "function",
+      "organism_relevance": 1.0,
+      "associations": [
+        "your",
+        "yours",
+        "yourself"
+      ],
+      "contexts": [
+        "addressing_other",
+        "communication"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "pronoun",
+      "typical_positions": [
+        "subject",
+        "object"
+      ],
+      "common_patterns": [
+        [
+          "you",
+          "thrive"
+        ],
+        [
+          "help",
+          "you"
+        ]
+      ]
+    },
+    {
+      "word": "your",
+      "definition": "Second person possessive",
+      "semantic_frame": "function",
+      "organism_relevance": 1.0,
+      "associations": [
+        "you",
+        "yours",
+        "yourself"
+      ],
+      "contexts": [
+        "possession",
+        "addressing_other"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "pronoun",
+      "typical_positions": [
+        "before_noun"
+      ],
+      "common_patterns": [
+        [
+          "your",
+          "resources"
+        ],
+        [
+          "your",
+          "neighbor"
+        ]
+      ]
+    },
+    {
+      "word": "we",
+      "definition": "First person plural pronoun",
+      "semantic_frame": "function",
+      "organism_relevance": 1.0,
+      "associations": [
+        "us",
+        "our",
+        "ours",
+        "ourselves"
+      ],
+      "contexts": [
+        "group_reference",
+        "cooperation",
+        "social"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "pronoun",
+      "typical_positions": [
+        "subject",
+        "sentence_start"
+      ],
+      "common_patterns": [
+        [
+          "we",
+          "cooperate"
+        ],
+        [
+          "we",
+          "thrive"
+        ],
+        [
+          "we",
+          "share"
+        ]
+      ]
+    },
+    {
+      "word": "us",
+      "definition": "First person plural object pronoun",
+      "semantic_frame": "function",
+      "organism_relevance": 1.0,
+      "associations": [
+        "we",
+        "our",
+        "ours",
+        "ourselves"
+      ],
+      "contexts": [
+        "group_reference",
+        "object"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "pronoun",
+      "typical_positions": [
+        "after_verb",
+        "after_preposition"
+      ],
+      "common_patterns": [
+        [
+          "help",
+          "us"
+        ],
+        [
+          "near",
+          "us"
+        ]
+      ]
+    },
+    {
+      "word": "our",
+      "definition": "First person plural possessive",
+      "semantic_frame": "function",
+      "organism_relevance": 1.0,
+      "associations": [
+        "we",
+        "us",
+        "ours",
+        "ourselves"
+      ],
+      "contexts": [
+        "group_possession",
+        "shared"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "pronoun",
+      "typical_positions": [
+        "before_noun"
+      ],
+      "common_patterns": [
+        [
+          "our",
+          "resources"
+        ],
+        [
+          "our",
+          "network"
+        ]
+      ]
+    },
+    {
+      "word": "they",
+      "definition": "Third person plural pronoun",
+      "semantic_frame": "function",
+      "organism_relevance": 1.0,
+      "associations": [
+        "them",
+        "their",
+        "theirs",
+        "themselves"
+      ],
+      "contexts": [
+        "others_reference",
+        "third_party"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "pronoun",
+      "typical_positions": [
+        "subject",
+        "sentence_start"
+      ],
+      "common_patterns": [
+        [
+          "they",
+          "move"
+        ],
+        [
+          "they",
+          "compete"
+        ]
+      ]
+    },
+    {
+      "word": "them",
+      "definition": "Third person plural object pronoun",
+      "semantic_frame": "function",
+      "organism_relevance": 1.0,
+      "associations": [
+        "they",
+        "their",
+        "theirs",
+        "themselves"
+      ],
+      "contexts": [
+        "others_reference",
+        "object"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "pronoun",
+      "typical_positions": [
+        "after_verb",
+        "after_preposition"
+      ],
+      "common_patterns": [
+        [
+          "help",
+          "them"
+        ],
+        [
+          "near",
+          "them"
+        ]
+      ]
+    },
+    {
+      "word": "their",
+      "definition": "Third person plural possessive",
+      "semantic_frame": "function",
+      "organism_relevance": 1.0,
+      "associations": [
+        "they",
+        "them",
+        "theirs",
+        "themselves"
+      ],
+      "contexts": [
+        "others_possession"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "pronoun",
+      "typical_positions": [
+        "before_noun"
+      ],
+      "common_patterns": [
+        [
+          "their",
+          "resources"
+        ],
+        [
+          "their",
+          "area"
+        ]
+      ]
+    },
+    {
+      "word": "it",
+      "definition": "Third person singular neutral pronoun",
+      "semantic_frame": "function",
+      "organism_relevance": 1.0,
+      "associations": [
+        "its",
+        "itself",
+        "this",
+        "that"
+      ],
+      "contexts": [
+        "thing_reference",
+        "situation_reference"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "pronoun",
+      "typical_positions": [
+        "subject",
+        "object"
+      ],
+      "common_patterns": [
+        [
+          "it",
+          "is"
+        ],
+        [
+          "do",
+          "it"
+        ]
+      ]
+    },
+    {
+      "word": "its",
+      "definition": "Third person singular possessive",
+      "semantic_frame": "function",
+      "organism_relevance": 0.9,
+      "associations": [
+        "it",
+        "itself"
+      ],
+      "contexts": [
+        "thing_possession"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "pronoun",
+      "typical_positions": [
+        "before_noun"
+      ],
+      "common_patterns": [
+        [
+          "its",
+          "state"
+        ]
+      ]
+    },
+    {
+      "word": "this",
+      "definition": "Demonstrative pronoun for nearby things",
+      "semantic_frame": "function",
+      "organism_relevance": 0.95,
+      "associations": [
+        "here",
+        "now",
+        "that",
+        "these"
+      ],
+      "contexts": [
+        "proximity",
+        "current",
+        "specific"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "pronoun",
+      "typical_positions": [
+        "subject",
+        "determiner"
+      ],
+      "common_patterns": [
+        [
+          "this",
+          "is"
+        ],
+        [
+          "in",
+          "this"
+        ]
+      ]
+    },
+    {
+      "word": "that",
+      "definition": "Demonstrative pronoun for distant things",
+      "semantic_frame": "function",
+      "organism_relevance": 0.95,
+      "associations": [
+        "there",
+        "those",
+        "this",
+        "which"
+      ],
+      "contexts": [
+        "distance",
+        "reference",
+        "specific"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "pronoun",
+      "typical_positions": [
+        "subject",
+        "determiner",
+        "conjunction"
+      ],
+      "common_patterns": [
+        [
+          "that",
+          "is"
+        ],
+        [
+          "know",
+          "that"
+        ]
+      ]
+    },
+    {
+      "word": "these",
+      "definition": "Demonstrative pronoun for nearby plural things",
+      "semantic_frame": "function",
+      "organism_relevance": 0.9,
+      "associations": [
+        "this",
+        "those",
+        "here",
+        "plural"
+      ],
+      "contexts": [
+        "proximity",
+        "plural",
+        "specific"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "pronoun",
+      "typical_positions": [
+        "determiner",
+        "subject"
+      ],
+      "common_patterns": [
+        [
+          "these",
+          "are"
+        ]
+      ]
+    },
+    {
+      "word": "those",
+      "definition": "Demonstrative pronoun for distant plural things",
+      "semantic_frame": "function",
+      "organism_relevance": 0.9,
+      "associations": [
+        "that",
+        "these",
+        "there",
+        "plural"
+      ],
+      "contexts": [
+        "distance",
+        "plural",
+        "specific"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "pronoun",
+      "typical_positions": [
+        "determiner",
+        "subject"
+      ],
+      "common_patterns": [
+        [
+          "those",
+          "are"
+        ]
+      ]
+    },
+    {
+      "word": "all",
+      "definition": "Every one of a group",
+      "semantic_frame": "function",
+      "organism_relevance": 0.95,
+      "associations": [
+        "everyone",
+        "everything",
+        "whole",
+        "entire"
+      ],
+      "contexts": [
+        "totality",
+        "completeness"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "pronoun",
+      "typical_positions": [
+        "determiner",
+        "subject"
+      ],
+      "common_patterns": [
+        [
+          "all",
+          "thrive"
+        ],
+        [
+          "all",
+          "of"
+        ]
+      ]
+    },
+    {
+      "word": "each",
+      "definition": "Every one individually",
+      "semantic_frame": "function",
+      "organism_relevance": 0.9,
+      "associations": [
+        "every",
+        "individual",
+        "one",
+        "single"
+      ],
+      "contexts": [
+        "individual",
+        "distribution"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "pronoun",
+      "typical_positions": [
+        "determiner",
+        "subject"
+      ],
+      "common_patterns": [
+        [
+          "each",
+          "one"
+        ]
+      ]
+    },
+    {
+      "word": "to",
+      "definition": "Indicating direction or destination",
+      "semantic_frame": "function",
+      "organism_relevance": 1.0,
+      "associations": [
+        "toward",
+        "at",
+        "for",
+        "into"
+      ],
+      "contexts": [
+        "direction",
+        "destination",
+        "purpose"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "preposition",
+      "typical_positions": [
+        "before_noun",
+        "before_verb"
+      ],
+      "common_patterns": [
+        [
+          "move",
+          "to"
+        ],
+        [
+          "go",
+          "to"
+        ],
+        [
+          "to",
+          "thrive"
+        ]
+      ]
+    },
+    {
+      "word": "from",
+      "definition": "Indicating origin or source",
+      "semantic_frame": "function",
+      "organism_relevance": 1.0,
+      "associations": [
+        "out",
+        "away",
+        "since",
+        "origin"
+      ],
+      "contexts": [
+        "origin",
+        "source",
+        "separation"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "preposition",
+      "typical_positions": [
+        "before_noun"
+      ],
+      "common_patterns": [
+        [
+          "from",
+          "here"
+        ],
+        [
+          "away",
+          "from"
+        ]
+      ]
+    },
+    {
+      "word": "with",
+      "definition": "Indicating accompaniment or association",
+      "semantic_frame": "function",
+      "organism_relevance": 1.0,
+      "associations": [
+        "together",
+        "alongside",
+        "accompanied"
+      ],
+      "contexts": [
+        "social_interaction",
+        "cooperation",
+        "accompaniment"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "preposition",
+      "typical_positions": [
+        "before_noun"
+      ],
+      "common_patterns": [
+        [
+          "cooperate",
+          "with"
+        ],
+        [
+          "share",
+          "with"
+        ],
+        [
+          "with",
+          "others"
+        ]
+      ]
+    },
+    {
+      "word": "without",
+      "definition": "Lacking or in absence of",
+      "semantic_frame": "function",
+      "organism_relevance": 0.95,
+      "associations": [
+        "lacking",
+        "minus",
+        "absent",
+        "devoid"
+      ],
+      "contexts": [
+        "absence",
+        "lack",
+        "isolation"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "preposition",
+      "typical_positions": [
+        "before_noun"
+      ],
+      "common_patterns": [
+        [
+          "without",
+          "help"
+        ],
+        [
+          "without",
+          "resources"
+        ]
+      ]
+    },
+    {
+      "word": "at",
+      "definition": "Indicating location or position",
+      "semantic_frame": "function",
+      "organism_relevance": 1.0,
+      "associations": [
+        "in",
+        "on",
+        "by",
+        "location"
+      ],
+      "contexts": [
+        "location",
+        "position",
+        "time"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "preposition",
+      "typical_positions": [
+        "before_noun"
+      ],
+      "common_patterns": [
+        [
+          "at",
+          "center"
+        ],
+        [
+          "at",
+          "edge"
+        ]
+      ]
+    },
+    {
+      "word": "in",
+      "definition": "Inside or within",
+      "semantic_frame": "function",
+      "organism_relevance": 1.0,
+      "associations": [
+        "inside",
+        "within",
+        "into",
+        "interior"
+      ],
+      "contexts": [
+        "containment",
+        "location",
+        "state"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "preposition",
+      "typical_positions": [
+        "before_noun"
+      ],
+      "common_patterns": [
+        [
+          "in",
+          "this"
+        ],
+        [
+          "live",
+          "in"
+        ]
+      ]
+    },
+    {
+      "word": "on",
+      "definition": "Supported by or in contact with",
+      "semantic_frame": "function",
+      "organism_relevance": 0.95,
+      "associations": [
+        "upon",
+        "atop",
+        "above",
+        "surface"
+      ],
+      "contexts": [
+        "contact",
+        "support",
+        "location"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "preposition",
+      "typical_positions": [
+        "before_noun"
+      ],
+      "common_patterns": [
+        [
+          "on",
+          "edge"
+        ]
+      ]
+    },
+    {
+      "word": "into",
+      "definition": "Expressing movement to inside",
+      "semantic_frame": "function",
+      "organism_relevance": 0.95,
+      "associations": [
+        "in",
+        "inside",
+        "within",
+        "enter"
+      ],
+      "contexts": [
+        "movement",
+        "entry",
+        "change"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "preposition",
+      "typical_positions": [
+        "before_noun"
+      ],
+      "common_patterns": [
+        [
+          "move",
+          "into"
+        ],
+        [
+          "go",
+          "into"
+        ]
+      ]
+    },
+    {
+      "word": "out",
+      "definition": "Away from inside",
+      "semantic_frame": "function",
+      "organism_relevance": 0.95,
+      "associations": [
+        "outside",
+        "away",
+        "exit",
+        "from"
+      ],
+      "contexts": [
+        "exit",
+        "movement",
+        "separation"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "preposition",
+      "typical_positions": [
+        "before_noun",
+        "after_verb"
+      ],
+      "common_patterns": [
+        [
+          "out",
+          "of"
+        ],
+        [
+          "move",
+          "out"
+        ]
+      ]
+    },
+    {
+      "word": "of",
+      "definition": "Indicating belonging or origin",
+      "semantic_frame": "function",
+      "organism_relevance": 1.0,
+      "associations": [
+        "belonging",
+        "from",
+        "about",
+        "concerning"
+      ],
+      "contexts": [
+        "possession",
+        "relation",
+        "composition"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "preposition",
+      "typical_positions": [
+        "between_nouns"
+      ],
+      "common_patterns": [
+        [
+          "all",
+          "of"
+        ],
+        [
+          "part",
+          "of"
+        ]
+      ]
+    },
+    {
+      "word": "for",
+      "definition": "Indicating purpose or benefit",
+      "semantic_frame": "function",
+      "organism_relevance": 1.0,
+      "associations": [
+        "purpose",
+        "because",
+        "behalf",
+        "benefit"
+      ],
+      "contexts": [
+        "purpose",
+        "benefit",
+        "duration"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "preposition",
+      "typical_positions": [
+        "before_noun"
+      ],
+      "common_patterns": [
+        [
+          "for",
+          "survival"
+        ],
+        [
+          "for",
+          "growth"
+        ]
+      ]
+    },
+    {
+      "word": "by",
+      "definition": "Near to or through the action of",
+      "semantic_frame": "function",
+      "organism_relevance": 0.95,
+      "associations": [
+        "near",
+        "beside",
+        "through",
+        "via"
+      ],
+      "contexts": [
+        "proximity",
+        "agency",
+        "means"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "preposition",
+      "typical_positions": [
+        "before_noun"
+      ],
+      "common_patterns": [
+        [
+          "by",
+          "cooperating"
+        ]
+      ]
+    },
+    {
+      "word": "about",
+      "definition": "Concerning or approximately",
+      "semantic_frame": "function",
+      "organism_relevance": 0.9,
+      "associations": [
+        "concerning",
+        "regarding",
+        "around",
+        "approximately"
+      ],
+      "contexts": [
+        "topic",
+        "approximation"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "preposition",
+      "typical_positions": [
+        "before_noun"
+      ],
+      "common_patterns": [
+        [
+          "about",
+          "resources"
+        ]
+      ]
+    },
+    {
+      "word": "through",
+      "definition": "Moving in one side and out another",
+      "semantic_frame": "function",
+      "organism_relevance": 0.9,
+      "associations": [
+        "via",
+        "across",
+        "by",
+        "throughout"
+      ],
+      "contexts": [
+        "movement",
+        "passage",
+        "means"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "preposition",
+      "typical_positions": [
+        "before_noun"
+      ],
+      "common_patterns": [
+        [
+          "through",
+          "network"
+        ]
+      ]
+    },
+    {
+      "word": "across",
+      "definition": "From one side to another",
+      "semantic_frame": "function",
+      "organism_relevance": 0.85,
+      "associations": [
+        "over",
+        "through",
+        "spanning",
+        "beyond"
+      ],
+      "contexts": [
+        "movement",
+        "extent"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "preposition",
+      "typical_positions": [
+        "before_noun"
+      ],
+      "common_patterns": [
+        [
+          "across",
+          "area"
+        ]
+      ]
+    },
+    {
+      "word": "over",
+      "definition": "Above in position or more than",
+      "semantic_frame": "function",
+      "organism_relevance": 0.85,
+      "associations": [
+        "above",
+        "across",
+        "beyond",
+        "past"
+      ],
+      "contexts": [
+        "position",
+        "excess",
+        "completion"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "preposition",
+      "typical_positions": [
+        "before_noun"
+      ],
+      "common_patterns": [
+        [
+          "over",
+          "time"
+        ]
+      ]
+    },
+    {
+      "word": "under",
+      "definition": "Below in position",
+      "semantic_frame": "function",
+      "organism_relevance": 0.8,
+      "associations": [
+        "below",
+        "beneath",
+        "less_than"
+      ],
+      "contexts": [
+        "position",
+        "subordination"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "preposition",
+      "typical_positions": [
+        "before_noun"
+      ],
+      "common_patterns": [
+        [
+          "under",
+          "pressure"
+        ]
+      ]
+    },
+    {
+      "word": "among",
+      "definition": "In the midst of",
+      "semantic_frame": "function",
+      "organism_relevance": 0.9,
+      "associations": [
+        "between",
+        "amid",
+        "within",
+        "amongst"
+      ],
+      "contexts": [
+        "group",
+        "relationship"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "preposition",
+      "typical_positions": [
+        "before_noun"
+      ],
+      "common_patterns": [
+        [
+          "among",
+          "others"
+        ],
+        [
+          "among",
+          "neighbors"
+        ]
+      ]
+    },
+    {
+      "word": "like",
+      "definition": "Similar to or in the manner of",
+      "semantic_frame": "function",
+      "organism_relevance": 0.9,
+      "associations": [
+        "similar",
+        "as",
+        "such_as",
+        "resembling"
+      ],
+      "contexts": [
+        "comparison",
+        "similarity"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "preposition",
+      "typical_positions": [
+        "before_noun"
+      ],
+      "common_patterns": [
+        [
+          "like",
+          "me"
+        ]
+      ]
+    },
+    {
+      "word": "than",
+      "definition": "Introducing comparison",
+      "semantic_frame": "function",
+      "organism_relevance": 0.9,
+      "associations": [
+        "compared",
+        "versus",
+        "relative"
+      ],
+      "contexts": [
+        "comparison"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "preposition",
+      "typical_positions": [
+        "between_adjective_and_noun"
+      ],
+      "common_patterns": [
+        [
+          "stronger",
+          "than"
+        ],
+        [
+          "more",
+          "than"
+        ]
+      ]
+    },
+    {
+      "word": "as",
+      "definition": "To the same degree or in the role of",
+      "semantic_frame": "function",
+      "organism_relevance": 0.9,
+      "associations": [
+        "like",
+        "when",
+        "while",
+        "because"
+      ],
+      "contexts": [
+        "comparison",
+        "role",
+        "time"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "preposition",
+      "typical_positions": [
+        "before_noun",
+        "before_clause"
+      ],
+      "common_patterns": [
+        [
+          "as",
+          "strong",
+          "as"
+        ]
+      ]
+    },
+    {
+      "word": "and",
+      "definition": "Connecting words or clauses",
+      "semantic_frame": "function",
+      "organism_relevance": 1.0,
+      "associations": [
+        "also",
+        "plus",
+        "with",
+        "together"
+      ],
+      "contexts": [
+        "connection",
+        "addition"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "conjunction",
+      "typical_positions": [
+        "between_items"
+      ],
+      "common_patterns": [
+        [
+          "thrive",
+          "and",
+          "grow"
+        ],
+        [
+          "I",
+          "and",
+          "you"
+        ]
+      ]
+    },
+    {
+      "word": "or",
+      "definition": "Indicating alternatives",
+      "semantic_frame": "function",
+      "organism_relevance": 1.0,
+      "associations": [
+        "either",
+        "alternatively",
+        "otherwise"
+      ],
+      "contexts": [
+        "choice",
+        "alternative"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "conjunction",
+      "typical_positions": [
+        "between_items"
+      ],
+      "common_patterns": [
+        [
+          "fight",
+          "or",
+          "flee"
+        ]
+      ]
+    },
+    {
+      "word": "but",
+      "definition": "Indicating contrast or exception",
+      "semantic_frame": "function",
+      "organism_relevance": 1.0,
+      "associations": [
+        "however",
+        "yet",
+        "although",
+        "except"
+      ],
+      "contexts": [
+        "contrast",
+        "exception"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "conjunction",
+      "typical_positions": [
+        "between_clauses"
+      ],
+      "common_patterns": [
+        [
+          "strong",
+          "but",
+          "tired"
+        ]
+      ]
+    },
+    {
+      "word": "if",
+      "definition": "Introducing conditional clause",
+      "semantic_frame": "function",
+      "organism_relevance": 1.0,
+      "associations": [
+        "when",
+        "unless",
+        "whether",
+        "provided"
+      ],
+      "contexts": [
+        "condition",
+        "possibility"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "conjunction",
+      "typical_positions": [
+        "clause_start"
+      ],
+      "common_patterns": [
+        [
+          "if",
+          "I",
+          "thrive"
+        ],
+        [
+          "if",
+          "we",
+          "cooperate"
+        ]
+      ]
+    },
+    {
+      "word": "then",
+      "definition": "Introducing result or consequence",
+      "semantic_frame": "function",
+      "organism_relevance": 1.0,
+      "associations": [
+        "so",
+        "therefore",
+        "thus",
+        "consequently"
+      ],
+      "contexts": [
+        "consequence",
+        "sequence"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "conjunction",
+      "typical_positions": [
+        "clause_start",
+        "after_condition"
+      ],
+      "common_patterns": [
+        [
+          "if",
+          "...",
+          "then"
+        ]
+      ]
+    },
+    {
+      "word": "because",
+      "definition": "Introducing reason or cause",
+      "semantic_frame": "function",
+      "organism_relevance": 1.0,
+      "associations": [
+        "since",
+        "as",
+        "for",
+        "due_to"
+      ],
+      "contexts": [
+        "causation",
+        "reason"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "conjunction",
+      "typical_positions": [
+        "clause_start",
+        "between_clauses"
+      ],
+      "common_patterns": [
+        [
+          "because",
+          "I",
+          "am"
+        ],
+        [
+          "thrive",
+          "because"
+        ]
+      ]
+    },
+    {
+      "word": "so",
+      "definition": "Introducing result or degree",
+      "semantic_frame": "function",
+      "organism_relevance": 0.95,
+      "associations": [
+        "therefore",
+        "thus",
+        "hence",
+        "consequently"
+      ],
+      "contexts": [
+        "result",
+        "degree",
+        "purpose"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "conjunction",
+      "typical_positions": [
+        "between_clauses",
+        "before_adjective"
+      ],
+      "common_patterns": [
+        [
+          "so",
+          "I",
+          "thrive"
+        ]
+      ]
+    },
+    {
+      "word": "although",
+      "definition": "Despite the fact that",
+      "semantic_frame": "function",
+      "organism_relevance": 0.9,
+      "associations": [
+        "though",
+        "even_if",
+        "despite",
+        "while"
+      ],
+      "contexts": [
+        "concession",
+        "contrast"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "conjunction",
+      "typical_positions": [
+        "clause_start"
+      ],
+      "common_patterns": [
+        [
+          "although",
+          "I",
+          "struggle"
+        ]
+      ]
+    },
+    {
+      "word": "unless",
+      "definition": "Except on the condition that",
+      "semantic_frame": "function",
+      "organism_relevance": 0.9,
+      "associations": [
+        "except",
+        "if_not",
+        "without"
+      ],
+      "contexts": [
+        "condition",
+        "exception"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "conjunction",
+      "typical_positions": [
+        "clause_start"
+      ],
+      "common_patterns": [
+        [
+          "unless",
+          "we",
+          "cooperate"
+        ]
+      ]
+    },
+    {
+      "word": "while",
+      "definition": "During the time that or although",
+      "semantic_frame": "function",
+      "organism_relevance": 0.9,
+      "associations": [
+        "during",
+        "although",
+        "whereas",
+        "as"
+      ],
+      "contexts": [
+        "simultaneous",
+        "contrast"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "conjunction",
+      "typical_positions": [
+        "clause_start"
+      ],
+      "common_patterns": [
+        [
+          "while",
+          "I",
+          "rest"
+        ]
+      ]
+    },
+    {
+      "word": "until",
+      "definition": "Up to the time that",
+      "semantic_frame": "function",
+      "organism_relevance": 0.85,
+      "associations": [
+        "till",
+        "before",
+        "up_to"
+      ],
+      "contexts": [
+        "time_limit",
+        "duration"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "conjunction",
+      "typical_positions": [
+        "clause_start"
+      ],
+      "common_patterns": [
+        [
+          "until",
+          "I",
+          "recover"
+        ]
+      ]
+    },
+    {
+      "word": "since",
+      "definition": "From then until now or because",
+      "semantic_frame": "function",
+      "organism_relevance": 0.85,
+      "associations": [
+        "because",
+        "as",
+        "from"
+      ],
+      "contexts": [
+        "time",
+        "causation"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "conjunction",
+      "typical_positions": [
+        "clause_start"
+      ],
+      "common_patterns": [
+        [
+          "since",
+          "I",
+          "arrived"
+        ]
+      ]
+    },
+    {
+      "word": "whether",
+      "definition": "Expressing doubt or choice",
+      "semantic_frame": "function",
+      "organism_relevance": 0.8,
+      "associations": [
+        "if",
+        "regardless",
+        "either"
+      ],
+      "contexts": [
+        "condition",
+        "choice"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "conjunction",
+      "typical_positions": [
+        "clause_start"
+      ],
+      "common_patterns": [
+        [
+          "whether",
+          "to",
+          "move"
+        ]
+      ]
+    },
+    {
+      "word": "yet",
+      "definition": "But despite that or still",
+      "semantic_frame": "function",
+      "organism_relevance": 0.85,
+      "associations": [
+        "but",
+        "however",
+        "still",
+        "nevertheless"
+      ],
+      "contexts": [
+        "contrast",
+        "continuation"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "conjunction",
+      "typical_positions": [
+        "between_clauses"
+      ],
+      "common_patterns": [
+        [
+          "weak",
+          "yet",
+          "alive"
+        ]
+      ]
+    },
+    {
+      "word": "nor",
+      "definition": "And not or neither",
+      "semantic_frame": "function",
+      "organism_relevance": 0.8,
+      "associations": [
+        "neither",
+        "not",
+        "and_not"
+      ],
+      "contexts": [
+        "negation",
+        "addition"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "conjunction",
+      "typical_positions": [
+        "between_items"
+      ],
+      "common_patterns": [
+        [
+          "neither",
+          "...",
+          "nor"
+        ]
+      ]
+    },
+    {
+      "word": "both",
+      "definition": "The one as well as the other",
+      "semantic_frame": "function",
+      "organism_relevance": 0.85,
+      "associations": [
+        "two",
+        "together",
+        "each",
+        "equally"
+      ],
+      "contexts": [
+        "inclusion",
+        "duality"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "conjunction",
+      "typical_positions": [
+        "before_noun",
+        "before_clause"
+      ],
+      "common_patterns": [
+        [
+          "both",
+          "I",
+          "and",
+          "you"
+        ]
+      ]
+    },
+    {
+      "word": "either",
+      "definition": "One or the other of two",
+      "semantic_frame": "function",
+      "organism_relevance": 0.85,
+      "associations": [
+        "or",
+        "one",
+        "any",
+        "both"
+      ],
+      "contexts": [
+        "choice",
+        "alternative"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "conjunction",
+      "typical_positions": [
+        "before_noun"
+      ],
+      "common_patterns": [
+        [
+          "either",
+          "...",
+          "or"
+        ]
+      ]
+    },
+    {
+      "word": "neither",
+      "definition": "Not one nor the other",
+      "semantic_frame": "function",
+      "organism_relevance": 0.8,
+      "associations": [
+        "nor",
+        "not",
+        "none"
+      ],
+      "contexts": [
+        "negation",
+        "exclusion"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "conjunction",
+      "typical_positions": [
+        "before_noun"
+      ],
+      "common_patterns": [
+        [
+          "neither",
+          "...",
+          "nor"
+        ]
+      ]
+    },
+    {
+      "word": "is",
+      "definition": "Third person singular of be",
+      "semantic_frame": "function",
+      "organism_relevance": 1.0,
+      "associations": [
+        "am",
+        "are",
+        "be",
+        "was"
+      ],
+      "contexts": [
+        "state",
+        "identity",
+        "predication"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "auxiliary",
+      "typical_positions": [
+        "after_subject"
+      ],
+      "common_patterns": [
+        [
+          "it",
+          "is"
+        ],
+        [
+          "this",
+          "is"
+        ]
+      ]
+    },
+    {
+      "word": "am",
+      "definition": "First person singular of be",
+      "semantic_frame": "function",
+      "organism_relevance": 1.0,
+      "associations": [
+        "is",
+        "are",
+        "be",
+        "was"
+      ],
+      "contexts": [
+        "state",
+        "identity",
+        "predication"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "auxiliary",
+      "typical_positions": [
+        "after_I"
+      ],
+      "common_patterns": [
+        [
+          "I",
+          "am",
+          "strong"
+        ]
+      ]
+    },
+    {
+      "word": "are",
+      "definition": "Plural or second person of be",
+      "semantic_frame": "function",
+      "organism_relevance": 1.0,
+      "associations": [
+        "is",
+        "am",
+        "be",
+        "were"
+      ],
+      "contexts": [
+        "state",
+        "identity",
+        "predication"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "auxiliary",
+      "typical_positions": [
+        "after_subject"
+      ],
+      "common_patterns": [
+        [
+          "we",
+          "are"
+        ],
+        [
+          "they",
+          "are"
+        ]
+      ]
+    },
+    {
+      "word": "was",
+      "definition": "Past tense of be (singular)",
+      "semantic_frame": "function",
+      "organism_relevance": 0.95,
+      "associations": [
+        "is",
+        "were",
+        "be",
+        "been"
+      ],
+      "contexts": [
+        "past_state",
+        "past_identity"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "auxiliary",
+      "typical_positions": [
+        "after_subject"
+      ],
+      "common_patterns": [
+        [
+          "I",
+          "was",
+          "weak"
+        ]
+      ]
+    },
+    {
+      "word": "were",
+      "definition": "Past tense of be (plural)",
+      "semantic_frame": "function",
+      "organism_relevance": 0.95,
+      "associations": [
+        "was",
+        "are",
+        "be",
+        "been"
+      ],
+      "contexts": [
+        "past_state",
+        "past_identity"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "auxiliary",
+      "typical_positions": [
+        "after_subject"
+      ],
+      "common_patterns": [
+        [
+          "we",
+          "were"
+        ],
+        [
+          "they",
+          "were"
+        ]
+      ]
+    },
+    {
+      "word": "will",
+      "definition": "Expressing future tense",
+      "semantic_frame": "function",
+      "organism_relevance": 1.0,
+      "associations": [
+        "shall",
+        "going_to",
+        "would",
+        "future"
+      ],
+      "contexts": [
+        "future",
+        "intention",
+        "prediction"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "auxiliary",
+      "typical_positions": [
+        "after_subject",
+        "before_verb"
+      ],
+      "common_patterns": [
+        [
+          "I",
+          "will",
+          "thrive"
+        ],
+        [
+          "we",
+          "will",
+          "cooperate"
+        ]
+      ]
+    },
+    {
+      "word": "would",
+      "definition": "Past tense of will or conditional",
+      "semantic_frame": "function",
+      "organism_relevance": 0.95,
+      "associations": [
+        "will",
+        "could",
+        "should",
+        "might"
+      ],
+      "contexts": [
+        "conditional",
+        "past_future",
+        "polite"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "auxiliary",
+      "typical_positions": [
+        "after_subject",
+        "before_verb"
+      ],
+      "common_patterns": [
+        [
+          "I",
+          "would",
+          "help"
+        ]
+      ]
+    },
+    {
+      "word": "can",
+      "definition": "Expressing ability or possibility",
+      "semantic_frame": "function",
+      "organism_relevance": 1.0,
+      "associations": [
+        "could",
+        "able",
+        "may",
+        "might"
+      ],
+      "contexts": [
+        "ability",
+        "possibility",
+        "permission"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "auxiliary",
+      "typical_positions": [
+        "after_subject",
+        "before_verb"
+      ],
+      "common_patterns": [
+        [
+          "I",
+          "can",
+          "thrive"
+        ],
+        [
+          "we",
+          "can",
+          "cooperate"
+        ]
+      ]
+    },
+    {
+      "word": "could",
+      "definition": "Past or conditional of can",
+      "semantic_frame": "function",
+      "organism_relevance": 0.95,
+      "associations": [
+        "can",
+        "might",
+        "would",
+        "may"
+      ],
+      "contexts": [
+        "ability",
+        "possibility",
+        "conditional"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "auxiliary",
+      "typical_positions": [
+        "after_subject",
+        "before_verb"
+      ],
+      "common_patterns": [
+        [
+          "I",
+          "could",
+          "help"
+        ]
+      ]
+    },
+    {
+      "word": "should",
+      "definition": "Expressing obligation or expectation",
+      "semantic_frame": "function",
+      "organism_relevance": 0.95,
+      "associations": [
+        "ought",
+        "must",
+        "would",
+        "shall"
+      ],
+      "contexts": [
+        "obligation",
+        "advice",
+        "expectation"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "auxiliary",
+      "typical_positions": [
+        "after_subject",
+        "before_verb"
+      ],
+      "common_patterns": [
+        [
+          "I",
+          "should",
+          "rest"
+        ]
+      ]
+    },
+    {
+      "word": "must",
+      "definition": "Expressing necessity or certainty",
+      "semantic_frame": "function",
+      "organism_relevance": 0.95,
+      "associations": [
+        "need",
+        "have_to",
+        "should",
+        "required"
+      ],
+      "contexts": [
+        "necessity",
+        "obligation",
+        "certainty"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "auxiliary",
+      "typical_positions": [
+        "after_subject",
+        "before_verb"
+      ],
+      "common_patterns": [
+        [
+          "I",
+          "must",
+          "survive"
+        ]
+      ]
+    },
+    {
+      "word": "may",
+      "definition": "Expressing possibility or permission",
+      "semantic_frame": "function",
+      "organism_relevance": 0.9,
+      "associations": [
+        "might",
+        "can",
+        "could",
+        "possibly"
+      ],
+      "contexts": [
+        "possibility",
+        "permission"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "auxiliary",
+      "typical_positions": [
+        "after_subject",
+        "before_verb"
+      ],
+      "common_patterns": [
+        [
+          "I",
+          "may",
+          "thrive"
+        ]
+      ]
+    },
+    {
+      "word": "might",
+      "definition": "Expressing lower possibility",
+      "semantic_frame": "function",
+      "organism_relevance": 0.9,
+      "associations": [
+        "may",
+        "could",
+        "possibly",
+        "perhaps"
+      ],
+      "contexts": [
+        "possibility",
+        "uncertainty"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "auxiliary",
+      "typical_positions": [
+        "after_subject",
+        "before_verb"
+      ],
+      "common_patterns": [
+        [
+          "I",
+          "might",
+          "struggle"
+        ]
+      ]
+    },
+    {
+      "word": "do",
+      "definition": "Auxiliary for questions/emphasis",
+      "semantic_frame": "function",
+      "organism_relevance": 1.0,
+      "associations": [
+        "does",
+        "did",
+        "perform",
+        "execute"
+      ],
+      "contexts": [
+        "action",
+        "question",
+        "emphasis"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "auxiliary",
+      "typical_positions": [
+        "question_start",
+        "before_verb"
+      ],
+      "common_patterns": [
+        [
+          "do",
+          "I",
+          "thrive"
+        ]
+      ]
+    },
+    {
+      "word": "does",
+      "definition": "Third person singular of do",
+      "semantic_frame": "function",
+      "organism_relevance": 0.95,
+      "associations": [
+        "do",
+        "did",
+        "performs"
+      ],
+      "contexts": [
+        "action",
+        "question"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "auxiliary",
+      "typical_positions": [
+        "question_start",
+        "before_verb"
+      ],
+      "common_patterns": [
+        [
+          "does",
+          "it",
+          "help"
+        ]
+      ]
+    },
+    {
+      "word": "have",
+      "definition": "Auxiliary for perfect tenses",
+      "semantic_frame": "function",
+      "organism_relevance": 1.0,
+      "associations": [
+        "has",
+        "had",
+        "possess",
+        "own"
+      ],
+      "contexts": [
+        "possession",
+        "perfect_tense"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "auxiliary",
+      "typical_positions": [
+        "after_subject",
+        "before_past_participle"
+      ],
+      "common_patterns": [
+        [
+          "I",
+          "have",
+          "thrived"
+        ]
+      ]
+    },
+    {
+      "word": "has",
+      "definition": "Third person singular of have",
+      "semantic_frame": "function",
+      "organism_relevance": 0.95,
+      "associations": [
+        "have",
+        "had",
+        "possesses"
+      ],
+      "contexts": [
+        "possession",
+        "perfect_tense"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "auxiliary",
+      "typical_positions": [
+        "after_subject"
+      ],
+      "common_patterns": [
+        [
+          "it",
+          "has"
+        ]
+      ]
+    },
+    {
+      "word": "the",
+      "definition": "Definite article for specific things",
+      "semantic_frame": "function",
+      "organism_relevance": 1.0,
+      "associations": [
+        "this",
+        "that",
+        "specific",
+        "particular"
+      ],
+      "contexts": [
+        "specificity",
+        "reference"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "article",
+      "typical_positions": [
+        "before_noun"
+      ],
+      "common_patterns": [
+        [
+          "the",
+          "center"
+        ],
+        [
+          "the",
+          "edge"
+        ]
+      ]
+    },
+    {
+      "word": "a",
+      "definition": "Indefinite article for one thing",
+      "semantic_frame": "function",
+      "organism_relevance": 1.0,
+      "associations": [
+        "an",
+        "one",
+        "any",
+        "some"
+      ],
+      "contexts": [
+        "indefinite",
+        "singular"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "article",
+      "typical_positions": [
+        "before_noun"
+      ],
+      "common_patterns": [
+        [
+          "a",
+          "neighbor"
+        ],
+        [
+          "a",
+          "resource"
+        ]
+      ]
+    },
+    {
+      "word": "an",
+      "definition": "Indefinite article before vowel sounds",
+      "semantic_frame": "function",
+      "organism_relevance": 0.95,
+      "associations": [
+        "a",
+        "one",
+        "any",
+        "some"
+      ],
+      "contexts": [
+        "indefinite",
+        "singular"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "article",
+      "typical_positions": [
+        "before_noun_vowel"
+      ],
+      "common_patterns": [
+        [
+          "an",
+          "organism"
+        ]
+      ]
+    },
+    {
+      "word": "some",
+      "definition": "An unspecified amount",
+      "semantic_frame": "function",
+      "organism_relevance": 1.0,
+      "associations": [
+        "few",
+        "several",
+        "any",
+        "certain"
+      ],
+      "contexts": [
+        "quantity",
+        "indefinite"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "determiner",
+      "typical_positions": [
+        "before_noun"
+      ],
+      "common_patterns": [
+        [
+          "some",
+          "resources"
+        ],
+        [
+          "some",
+          "neighbors"
+        ]
+      ]
+    },
+    {
+      "word": "any",
+      "definition": "One or some, no matter which",
+      "semantic_frame": "function",
+      "organism_relevance": 0.95,
+      "associations": [
+        "some",
+        "every",
+        "all",
+        "whichever"
+      ],
+      "contexts": [
+        "indefinite",
+        "question",
+        "negative"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "determiner",
+      "typical_positions": [
+        "before_noun"
+      ],
+      "common_patterns": [
+        [
+          "any",
+          "one"
+        ]
+      ]
+    },
+    {
+      "word": "no",
+      "definition": "Not any or none",
+      "semantic_frame": "function",
+      "organism_relevance": 1.0,
+      "associations": [
+        "none",
+        "not",
+        "zero",
+        "without"
+      ],
+      "contexts": [
+        "negation",
+        "absence"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "determiner",
+      "typical_positions": [
+        "before_noun"
+      ],
+      "common_patterns": [
+        [
+          "no",
+          "resources"
+        ],
+        [
+          "no",
+          "help"
+        ]
+      ]
+    },
+    {
+      "word": "every",
+      "definition": "Each one without exception",
+      "semantic_frame": "function",
+      "organism_relevance": 0.9,
+      "associations": [
+        "all",
+        "each",
+        "any",
+        "whole"
+      ],
+      "contexts": [
+        "totality",
+        "universal"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "determiner",
+      "typical_positions": [
+        "before_noun"
+      ],
+      "common_patterns": [
+        [
+          "every",
+          "one"
+        ]
+      ]
+    },
+    {
+      "word": "another",
+      "definition": "One more or different",
+      "semantic_frame": "function",
+      "organism_relevance": 0.9,
+      "associations": [
+        "other",
+        "different",
+        "additional",
+        "one_more"
+      ],
+      "contexts": [
+        "addition",
+        "difference"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "determiner",
+      "typical_positions": [
+        "before_noun"
+      ],
+      "common_patterns": [
+        [
+          "another",
+          "neighbor"
+        ]
+      ]
+    },
+    {
+      "word": "which",
+      "definition": "What one or ones of a group",
+      "semantic_frame": "function",
+      "organism_relevance": 0.85,
+      "associations": [
+        "what",
+        "that",
+        "whichever"
+      ],
+      "contexts": [
+        "question",
+        "selection"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "determiner",
+      "typical_positions": [
+        "before_noun",
+        "clause_start"
+      ],
+      "common_patterns": [
+        [
+          "which",
+          "one"
+        ]
+      ]
+    },
+    {
+      "word": "what",
+      "definition": "Asking for information",
+      "semantic_frame": "function",
+      "organism_relevance": 0.9,
+      "associations": [
+        "which",
+        "how",
+        "why",
+        "whatever"
+      ],
+      "contexts": [
+        "question",
+        "inquiry"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "determiner",
+      "typical_positions": [
+        "sentence_start",
+        "before_noun"
+      ],
+      "common_patterns": [
+        [
+          "what",
+          "is"
+        ]
+      ]
+    },
+    {
+      "word": "such",
+      "definition": "Of the type mentioned",
+      "semantic_frame": "function",
+      "organism_relevance": 0.8,
+      "associations": [
+        "like",
+        "similar",
+        "this_kind"
+      ],
+      "contexts": [
+        "reference",
+        "degree"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "determiner",
+      "typical_positions": [
+        "before_noun"
+      ],
+      "common_patterns": [
+        [
+          "such",
+          "as"
+        ]
+      ]
+    },
+    {
+      "word": "not",
+      "definition": "Used to make negative",
+      "semantic_frame": "function",
+      "organism_relevance": 1.0,
+      "associations": [
+        "no",
+        "none",
+        "never",
+        "negative"
+      ],
+      "contexts": [
+        "negation"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "negation",
+      "typical_positions": [
+        "after_auxiliary",
+        "before_adjective"
+      ],
+      "common_patterns": [
+        [
+          "is",
+          "not"
+        ],
+        [
+          "can",
+          "not"
+        ],
+        [
+          "do",
+          "not"
+        ]
+      ]
+    },
+    {
+      "word": "none",
+      "definition": "Not any or no one",
+      "semantic_frame": "function",
+      "organism_relevance": 0.9,
+      "associations": [
+        "no",
+        "nothing",
+        "not_any",
+        "zero"
+      ],
+      "contexts": [
+        "negation",
+        "absence"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "negation",
+      "typical_positions": [
+        "subject",
+        "object"
+      ],
+      "common_patterns": [
+        [
+          "none",
+          "remain"
+        ]
+      ]
+    },
+    {
+      "word": "nothing",
+      "definition": "Not anything",
+      "semantic_frame": "function",
+      "organism_relevance": 0.9,
+      "associations": [
+        "none",
+        "zero",
+        "no_thing",
+        "naught"
+      ],
+      "contexts": [
+        "negation",
+        "absence"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "negation",
+      "typical_positions": [
+        "subject",
+        "object"
+      ],
+      "common_patterns": [
+        [
+          "nothing",
+          "helps"
+        ]
+      ]
+    },
+    {
+      "word": "nobody",
+      "definition": "Not anyone",
+      "semantic_frame": "function",
+      "organism_relevance": 0.85,
+      "associations": [
+        "no_one",
+        "none",
+        "not_anyone"
+      ],
+      "contexts": [
+        "negation",
+        "absence"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "negation",
+      "typical_positions": [
+        "subject",
+        "object"
+      ],
+      "common_patterns": [
+        [
+          "nobody",
+          "helps"
+        ]
+      ]
+    },
+    {
+      "word": "very",
+      "definition": "To a high degree",
+      "semantic_frame": "function",
+      "organism_relevance": 0.9,
+      "associations": [
+        "extremely",
+        "highly",
+        "really",
+        "quite"
+      ],
+      "contexts": [
+        "intensity",
+        "degree"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "adverb",
+      "typical_positions": [
+        "before_adjective"
+      ],
+      "common_patterns": [
+        [
+          "very",
+          "strong"
+        ]
+      ]
+    },
+    {
+      "word": "also",
+      "definition": "In addition",
+      "semantic_frame": "function",
+      "organism_relevance": 0.9,
+      "associations": [
+        "too",
+        "as_well",
+        "additionally",
+        "furthermore"
+      ],
+      "contexts": [
+        "addition"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "adverb",
+      "typical_positions": [
+        "before_verb",
+        "sentence_start"
+      ],
+      "common_patterns": [
+        [
+          "also",
+          "thrive"
+        ]
+      ]
+    },
+    {
+      "word": "only",
+      "definition": "And no one or nothing more",
+      "semantic_frame": "function",
+      "organism_relevance": 0.9,
+      "associations": [
+        "just",
+        "merely",
+        "solely",
+        "exclusively"
+      ],
+      "contexts": [
+        "limitation",
+        "exclusion"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "adverb",
+      "typical_positions": [
+        "before_noun",
+        "before_verb"
+      ],
+      "common_patterns": [
+        [
+          "only",
+          "I"
+        ]
+      ]
+    },
+    {
+      "word": "just",
+      "definition": "Exactly or only",
+      "semantic_frame": "function",
+      "organism_relevance": 0.9,
+      "associations": [
+        "only",
+        "merely",
+        "simply",
+        "exactly"
+      ],
+      "contexts": [
+        "limitation",
+        "timing"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "adverb",
+      "typical_positions": [
+        "before_verb"
+      ],
+      "common_patterns": [
+        [
+          "just",
+          "now"
+        ]
+      ]
+    },
+    {
+      "word": "even",
+      "definition": "Used for emphasis or surprise",
+      "semantic_frame": "function",
+      "organism_relevance": 0.85,
+      "associations": [
+        "also",
+        "too",
+        "including",
+        "surprisingly"
+      ],
+      "contexts": [
+        "emphasis",
+        "inclusion"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "adverb",
+      "typical_positions": [
+        "before_noun",
+        "before_verb"
+      ],
+      "common_patterns": [
+        [
+          "even",
+          "I"
+        ]
+      ]
+    },
+    {
+      "word": "maybe",
+      "definition": "Perhaps or possibly",
+      "semantic_frame": "function",
+      "organism_relevance": 0.85,
+      "associations": [
+        "perhaps",
+        "possibly",
+        "might",
+        "probably"
+      ],
+      "contexts": [
+        "uncertainty",
+        "possibility"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "adverb",
+      "typical_positions": [
+        "sentence_start"
+      ],
+      "common_patterns": [
+        [
+          "maybe",
+          "I",
+          "will"
+        ]
+      ]
+    },
+    {
+      "word": "really",
+      "definition": "In actual fact or very much",
+      "semantic_frame": "function",
+      "organism_relevance": 0.85,
+      "associations": [
+        "truly",
+        "actually",
+        "very",
+        "indeed"
+      ],
+      "contexts": [
+        "emphasis",
+        "truth"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "adverb",
+      "typical_positions": [
+        "before_verb",
+        "before_adjective"
+      ],
+      "common_patterns": [
+        [
+          "really",
+          "strong"
+        ]
+      ]
+    },
+    {
+      "word": "too",
+      "definition": "Also or excessively",
+      "semantic_frame": "function",
+      "organism_relevance": 0.9,
+      "associations": [
+        "also",
+        "as_well",
+        "excessively",
+        "very"
+      ],
+      "contexts": [
+        "addition",
+        "excess"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "adverb",
+      "typical_positions": [
+        "sentence_end",
+        "before_adjective"
+      ],
+      "common_patterns": [
+        [
+          "I",
+          "too"
+        ],
+        [
+          "too",
+          "weak"
+        ]
+      ]
+    },
+    {
+      "word": "how",
+      "definition": "In what way or to what extent",
+      "semantic_frame": "function",
+      "organism_relevance": 0.9,
+      "associations": [
+        "what",
+        "why",
+        "when",
+        "manner"
+      ],
+      "contexts": [
+        "question",
+        "manner"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "adverb",
+      "typical_positions": [
+        "sentence_start"
+      ],
+      "common_patterns": [
+        [
+          "how",
+          "strong"
+        ]
+      ]
+    },
+    {
+      "word": "why",
+      "definition": "For what reason",
+      "semantic_frame": "function",
+      "organism_relevance": 0.85,
+      "associations": [
+        "because",
+        "reason",
+        "how",
+        "what"
+      ],
+      "contexts": [
+        "question",
+        "causation"
+      ],
+      "abstraction_level": 0,
+      "grammatical_role": "adverb",
+      "typical_positions": [
+        "sentence_start"
+      ],
+      "common_patterns": [
+        [
+          "why",
+          "do"
+        ]
+      ]
+    }
+  ]
+}

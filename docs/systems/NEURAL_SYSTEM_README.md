@@ -57,7 +57,8 @@ pip install torch>=2.0.0 --index-url https://download.pytorch.org/whl/cu118
 
 ### Components
 
-- **OrganismBrain** (`brain.py`): PyTorch neural network (Input → Hidden → Output)
+- **OrganismBrain** (`brain.py`): PyTorch neural network (Input → Hidden → Attention → Hopfield → Output)
+- **HopfieldLayer** (`brain.py`): Modern continuous Hopfield network for iterative thought refinement ⭐ NEW
 - **NeuralOrganism** (`neural_organism.py`): Organism with brain for decision-making
 - **NeuralTrainer** (`trainer.py`): DQN training with experience replay
 - **ExperienceBuffer** (`experience.py`): Stores (state, action, reward, next_state) experiences
@@ -65,9 +66,10 @@ pip install torch>=2.0.0 --index-url https://download.pytorch.org/whl/cu118
 ### How It Works
 
 1. **Decision Making**: Organisms use brain to choose actions (move, cooperate, compete, etc.)
-2. **Experience Collection**: Actions and outcomes stored in experience buffer
-3. **Training**: DQN learns optimal policies from experiences (synchronized with breath cycles)
-4. **Inheritance**: Learned neural weights passed to offspring (Lamarckian evolution)
+2. **Thought Refinement**: Optional Hopfield layer iteratively refines hidden states before output ⭐ NEW
+3. **Experience Collection**: Actions and outcomes stored in experience buffer
+4. **Training**: DQN learns optimal policies from experiences (synchronized with breath cycles)
+5. **Inheritance**: Learned neural weights passed to offspring (Lamarckian evolution)
 
 ---
 

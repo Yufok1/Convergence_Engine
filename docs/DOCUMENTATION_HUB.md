@@ -53,6 +53,16 @@ pip install pywin32
 - **[UNIFIED_SYSTEM_GUIDE.md](./UNIFIED_SYSTEM_GUIDE.md)** - Unified system operation guide
 - **[HIGHLANDER_README.md](./HIGHLANDER_README.md)** - AI survival tournament system ⚔️ **UPDATED**
 
+### Self-Governance ⭐ NEW (Dec 17, 2025)
+
+- **[ANTENNAE_SYSTEM.md](./systems/ANTENNAE_SYSTEM.md)** - 🦋 Collective sensing apparatus for self-governing ecosystems
+  - BeliefSystem: Heuristics that learn from evidence
+  - HealthPredictor: sklearn SGDRegressor (Kleene convergence)
+  - Integration with AtomicConfigSystem for automatic tuning
+- **[SYSTEM_REPORT.md](./systems/SYSTEM_REPORT.md)** - 📊 Real-time population analytics
+  - SystemReport: Typed dataclasses for all metrics
+  - LiveReporter: Thread-safe background reporting
+
 ---
 
 ## 🧠 System-Specific Documentation
@@ -74,9 +84,18 @@ pip install pywin32
 - **[NEURAL_SYSTEM_README.md](./NEURAL_SYSTEM_README.md)** - Neural system quick reference
 - **[NEURAL_FRAMEWORK_ALTERNATIVES.md](./NEURAL_FRAMEWORK_ALTERNATIVES.md)** - Alternative deep learning frameworks (JAX, TensorFlow, Flax, etc.)
 - **[SIMPLE_PYTORCH_OPTIMIZATIONS.md](./SIMPLE_PYTORCH_OPTIMIZATIONS.md)** - Get 5-10x speedup with simple code changes
-- **[docs/NEURAL_RELATIONSHIP_LEARNING.md](./docs/NEURAL_RELATIONSHIP_LEARNING.md)** - ⭐ NEW - Neural system learns from generation quality to strengthen/weaken semantic relationships
+- **[docs/NEURAL_RELATIONSHIP_LEARNING.md](./docs/NEURAL_RELATIONSHIP_LEARNING.md)** - Neural system learns from generation quality to strengthen/weaken semantic relationships
 
-#### 💾 Checkpointing (NEW)
+#### 🧠 Hopfield Layer ⭐ NEW (Dec 14, 2025)
+Modern continuous Hopfield network for **iterative thought refinement**:
+- **Learnable Pattern Memory**: 32 patterns stored as learnable weights
+- **Iterative Refinement**: Up to 5 iterations with convergence detection
+- **VP-Aware Temperature**: Higher VP → sharper pattern retrieval
+- **Energy-Based Dynamics**: Settles into coherent attractors rather than instant lookup
+- **Config**: `config.json` → `neural.hopfield.*` (enabled, patterns, iterations, beta)
+- **Monitoring**: `brain.get_thought_info()` returns convergence stats
+
+#### 💾 Checkpointing
 - **Auto-save**: Configurable by generation count or time interval
 - **Rotation**: Keeps last N checkpoints to save disk space
 - **Auto-resume**: Automatically loads latest checkpoint on startup

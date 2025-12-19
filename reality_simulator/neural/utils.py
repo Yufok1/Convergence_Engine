@@ -29,11 +29,49 @@ def get_device(device_preference: str = "cpu"):
         torch.device object, or None if PyTorch not available
     """
     if not PYTORCH_AVAILABLE:
+        print("[DEVICE] PyTorch not available, using None")
         return None
     
     if device_preference == "cuda" and torch.cuda.is_available():
-        return torch.device("cuda")
+        device = torch.device("cuda")
+        print(f"[DEVICE] ✅ CUDA selected: {torch.cuda.get_device_name(0)}")
+        return device
+    elif device_preference == "cuda" and not torch.cuda.is_available():
+        print(f"[DEVICE] ⚠️ CUDA requested but NOT AVAILABLE - falling back to CPU")
+        print(f"[DEVICE]    torch.cuda.is_available() = {torch.cuda.is_available()}")
+    
+    print(f"[DEVICE] Using CPU (preference was: {device_preference})")
     return torch.device("cpu")
+
+
+def get_optimal_amp_dtype(dtype_config: str = "auto"):
+    """
+    Determine optimal AMP dtype based on GPU capability.
+    
+    Args:
+        dtype_config: "auto", "float16", or "bfloat16"
+        
+    Returns:
+        torch.dtype (torch.float16 or torch.bfloat16)
+        
+    Notes:
+        - BF16: Better numeric stability, native on Ampere+ (A100, RTX 30xx, 40xx, L4, L40)
+        - FP16: Faster on older GPUs (V100, T4, RTX 20xx), needs loss scaling
+        - Auto-detect checks torch.cuda.is_bf16_supported() which queries device capability
+    """
+    if not PYTORCH_AVAILABLE or not torch.cuda.is_available():
+        return torch.float16  # Safe default
+    
+    if dtype_config == "bfloat16":
+        return torch.bfloat16
+    elif dtype_config == "float16":
+        return torch.float16
+    else:  # "auto"
+        # Check if GPU supports BF16 natively (compute capability >= 8.0)
+        if torch.cuda.is_bf16_supported():
+            return torch.bfloat16
+        else:
+            return torch.float16
 
 
 def set_seed(seed: Optional[int] = None):
@@ -167,7 +205,17 @@ def create_brain(config: Dict[str, Any], silent: bool = False):
     else:
         concept_config = config.get('concept_system', {})
     use_concept_head = concept_config.get('enabled', False)
-    num_key_compositions = concept_config.get('num_key_compositions', 20)
+    num_key_compositions = concept_config.get('num_key_compositions', 30)
+    
+    # Extract Hopfield layer settings (iterative thought refinement)
+    if 'neural' in config:
+        hopfield_config = config.get('neural', {}).get('hopfield', {})
+    else:
+        hopfield_config = config.get('hopfield', {})
+    use_hopfield = hopfield_config.get('enabled', False)
+    hopfield_patterns = hopfield_config.get('num_patterns', 32)
+    hopfield_iterations = hopfield_config.get('max_iterations', 5)
+    hopfield_beta = hopfield_config.get('beta', 1.0)
     
     # Debug log for language/concept head creation (only once per batch, or if not silent)
     if not silent and not _brain_creation_counter['logged_config']:
@@ -177,10 +225,12 @@ def create_brain(config: Dict[str, Any], silent: bool = False):
             print(f"[CREATE_BRAIN] ⚠️ Language head DISABLED (language_model.enabled={language_config.get('enabled', 'not set')})")
         if use_concept_head:
             print(f"[CREATE_BRAIN] ✅ Concept head ENABLED (RCUS - {num_key_compositions} key compositions)")
+        if use_hopfield:
+            print(f"[CREATE_BRAIN] ✅ Hopfield layer ENABLED (patterns={hopfield_patterns}, iterations={hopfield_iterations}, beta={hopfield_beta})")
         _brain_creation_counter['logged_config'] = True
     
     brain = OrganismBrain(
-        input_dim=brain_config.get('input_dim', 25),
+        input_dim=brain_config.get('input_dim', 27),
         hidden_dim=brain_config.get('hidden_dim', 64),
         output_dim=brain_config.get('output_dim', 6),
         activation=brain_config.get('activation', 'relu'),
@@ -192,7 +242,11 @@ def create_brain(config: Dict[str, Any], silent: bool = False):
         attention_dim=attention_dim,
         max_sequence_length=max_sequence_length,
         use_concept_head=use_concept_head,
-        num_key_compositions=num_key_compositions
+        num_key_compositions=num_key_compositions,
+        use_hopfield=use_hopfield,
+        hopfield_patterns=hopfield_patterns,
+        hopfield_iterations=hopfield_iterations,
+        hopfield_beta=hopfield_beta
     )
     
     # Get device from config (default to cpu for larger vocab support)
@@ -204,7 +258,8 @@ def create_brain(config: Dict[str, Any], silent: bool = False):
     brain = brain.to(device)
     
     # Optimization: Compile brain for faster training/inference (PyTorch 2.0+)
-    optimization_config = config.get('optimization', {})
+    # Check both neural.optimization and root optimization for backwards compat
+    optimization_config = config.get('neural', {}).get('optimization', config.get('optimization', {}))
     optimizations_applied = []
     
     # Only attempt to compile if PyTorch supports it and the platform/compiler is available.
@@ -256,11 +311,11 @@ def create_brain(config: Dict[str, Any], silent: bool = False):
 # These are the canonical defaults that MUST match config.json
 # Changing config.json values for these will break saved model loading!
 ARCHITECTURE_DEFAULTS = {
-    'neural.brain.input_dim': 24,
+    'neural.brain.input_dim': 28,
     'neural.brain.hidden_dim': 64,
     'neural.brain.output_dim': 6,
     'neural.brain.vocab_size': 1000,
-    'neural.concept_system.num_key_compositions': 20,
+    'neural.concept_system.num_key_compositions': 30,
     'neural.concept_system.embed_dim': 64,
     'neural.language_model.teacher.vocab_size': 1000,
 }
@@ -293,12 +348,14 @@ def validate_architecture_config(config: Dict[str, Any], strict: bool = False) -
     
     # Check each architecture parameter
     # NOTE: Expected values should match config.json defaults
+    # Updated 2025-12-12: input_dim now 28 (25 base + 3 self-perception features)
+    # Updated 2025-12-12: num_key_compositions now 30 (increased for richer concepts)
     checks = [
-        ('neural.brain.input_dim', brain_config.get('input_dim'), 25),
+        ('neural.brain.input_dim', brain_config.get('input_dim'), 28),
         ('neural.brain.hidden_dim', brain_config.get('hidden_dim'), 64),
         ('neural.brain.output_dim', brain_config.get('output_dim'), 6),
         ('neural.brain.vocab_size', brain_config.get('vocab_size'), 20000),  # Updated to match config.json
-        ('neural.concept_system.num_key_compositions', concept_config.get('num_key_compositions'), 20),
+        ('neural.concept_system.num_key_compositions', concept_config.get('num_key_compositions'), 30),
         ('neural.concept_system.embed_dim', concept_config.get('embed_dim'), 64),
         ('neural.language_model.teacher.vocab_size', teacher_config.get('vocab_size'), 20000),  # Updated to match config.json
     ]

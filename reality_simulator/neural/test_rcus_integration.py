@@ -47,11 +47,11 @@ def test_concept_system():
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     
     # Create system
-    concept_system = ConceptSystem(state_dim=24, embed_dim=64, device=device)
+    concept_system = ConceptSystem(state_dim=28, embed_dim=64, device=device)
     print(f"✅ Created ConceptSystem with {len(AXIOM_DEFINITIONS)} axioms")
     
     # Test axiom embedding
-    state = torch.randn(24, device=device)
+    state = torch.randn(28, device=device)
     self_embed = concept_system.get_axiom_embedding('SELF', state)
     other_embed = concept_system.get_axiom_embedding('OTHER', state)
     print(f"✅ SELF embedding shape: {self_embed.shape}")
@@ -85,7 +85,7 @@ def test_organism_brain():
     
     # Create brain with concept head
     brain = OrganismBrain(
-        input_dim=24,
+        input_dim=28,
         hidden_dim=64,
         output_dim=6,
         use_language_head=True,
@@ -100,7 +100,7 @@ def test_organism_brain():
     print(f"   use_concept_head: {brain.use_concept_head}")
     
     # Test forward pass with all outputs
-    state = torch.randn(4, 24)  # batch of 4
+    state = torch.randn(4, 28)  # batch of 4
     
     # Standard forward
     action_probs = brain(state)
@@ -143,7 +143,7 @@ def test_neural_trainer():
             'update_frequency': 1,
         },
         'brain': {
-            'input_dim': 24,
+            'input_dim': 28,  # Matches config.json (25 base + 3 self-perception)
             'hidden_dim': 64,
             'output_dim': 6,
         },
@@ -188,7 +188,7 @@ def test_language_bridge():
     )
     
     device = 'cpu'
-    concept_system = ConceptSystem(state_dim=24, embed_dim=64, device=device)
+    concept_system = ConceptSystem(state_dim=28, embed_dim=64, device=device)
     bridge = ConceptLanguageBridge(concept_system)
     
     print(f"✅ Created ConceptLanguageBridge")
@@ -214,7 +214,7 @@ def test_language_bridge():
     print(f"✅ Explanation: '{explanation}'")
     
     # Test grounded words
-    state = torch.randn(24)
+    state = torch.randn(28)
     state[0] = 0.9  # High fitness → SELF, GOOD grounded
     words = bridge.get_grounded_axiom_words(state, threshold=0.3)
     print(f"✅ Grounded words (high fitness state): {words[:10]}...")
@@ -233,10 +233,10 @@ def test_compute_concept_loss():
     )
     
     device = 'cpu'
-    concept_system = ConceptSystem(state_dim=24, embed_dim=64, device=device)
+    concept_system = ConceptSystem(state_dim=28, embed_dim=64, device=device)
     
     # Batch of states and rewards
-    states = torch.randn(8, 24)
+    states = torch.randn(8, 28)
     rewards = torch.randn(8)
     
     # Compute loss
@@ -275,7 +275,7 @@ def test_full_training_loop():
     
     # Create brain with all heads
     brain = OrganismBrain(
-        input_dim=24,
+        input_dim=28,
         hidden_dim=64,
         output_dim=6,
         use_language_head=True,
@@ -285,7 +285,7 @@ def test_full_training_loop():
     ).to(device)
     
     # Create concept system
-    concept_system = ConceptSystem(state_dim=24, embed_dim=64, device=device)
+    concept_system = ConceptSystem(state_dim=28, embed_dim=64, device=device)
     
     # Optimizer
     optimizer = torch.optim.Adam(
@@ -299,10 +299,10 @@ def test_full_training_loop():
     losses = []
     for episode in range(50):
         # Generate batch
-        states = torch.randn(16, 24, device=device)
+        states = torch.randn(16, 28, device=device)
         actions = torch.randint(0, 6, (16,), device=device)
         rewards = torch.randn(16, device=device)
-        next_states = states + torch.randn(16, 24, device=device) * 0.1
+        next_states = states + torch.randn(16, 28, device=device) * 0.1
         
         # Forward pass
         brain.train()

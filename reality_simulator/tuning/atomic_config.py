@@ -820,6 +820,40 @@ class AtomicConfigSystem:
             self.total_updates += 1
         return success
     
+    def adjust_parameter(self, param_name: str, delta: float, reason: str = "antennae_adjustment") -> bool:
+        """
+        Adjust a parameter by a delta value (for Antennae integration).
+        
+        Args:
+            param_name: Name of the parameter to adjust
+            delta: Amount to add to current value (can be negative)
+            reason: Reason for the adjustment (for causation tracking)
+            
+        Returns:
+            True if adjustment succeeded, False otherwise
+        """
+        if param_name not in self.atoms:
+            return False
+        
+        atom = self.atoms[param_name]
+        current = atom.value
+        
+        # Handle different types
+        if atom.config_type == ConfigType.FLOAT:
+            new_value = current + delta
+            # Clamp to bounds if they exist
+            if atom.bounds:
+                new_value = max(atom.bounds[0], min(atom.bounds[1], new_value))
+        elif atom.config_type == ConfigType.INT:
+            new_value = int(current + delta)
+            if atom.bounds:
+                new_value = max(int(atom.bounds[0]), min(int(atom.bounds[1]), new_value))
+        else:
+            # Can't adjust categorical or other types with delta
+            return False
+        
+        return self.set(param_name, new_value, reason)
+    
     def update_from_dict(self, config: Dict[str, Any], reason: str = "bulk_update"):
         """Update multiple parameters from dictionary."""
         for key, value in config.items():

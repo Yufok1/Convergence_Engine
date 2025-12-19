@@ -1,0 +1,315 @@
+{
+  "timestamp": "2025-12-17T19:26:58.474906",
+  "config_name": "config_vast_epyc_2tb_genesis.json",
+  "population": {
+    "total_organisms": 27,
+    "active_organisms": 27,
+    "fallen_organisms": 14,
+    "fitness_mean": 0.7786869481481481,
+    "fitness_std": 0.03594636470689471,
+    "fitness_min": 0.755729,
+    "fitness_max": 0.8389246800000001,
+    "age_mean": 4.407407407407407,
+    "age_max": 7,
+    "generation_mean": 0.0,
+    "generation_max": 0
+  },
+  "highlander": {
+    "phase": "competition",
+    "round_number": 3,
+    "total_battles": 12,
+    "battles_this_round": 0,
+    "eliminations_total": 14,
+    "champions_crowned": 0,
+    "predation_enabled": true,
+    "survival_threshold": 0.25,
+    "competition_intensity": 0.15
+  },
+  "alliances": {
+    "active_alliances": 5,
+    "total_members": 10,
+    "largest_alliance_size": 2,
+    "confederations": 0,
+    "wars_in_progress": 0,
+    "alliance_formations_total": 0,
+    "dissolutions_total": 0,
+    "betrayals_total": 0
+  },
+  "neural": {
+    "organisms_with_brains": 27,
+    "total_training_steps": 0,
+    "avg_loss": 0.0,
+    "avg_epsilon": 0.6550051988442561,
+    "experience_buffer_total": 30022,
+    "gym_episodes_total": 0,
+    "gym_reward_mean": 0.0
+  },
+  "language": {
+    "total_vocabulary_words": 0,
+    "unique_words_across_pop": 0,
+    "avg_vocab_per_organism": 0.0,
+    "word_adoptions_total": 0,
+    "semantic_associations": 0
+  },
+  "network": {
+    "connections": 105,
+    "network_density": 0.12804878048780488,
+    "communities": 9,
+    "clustering_coefficient": 0.24115981240981238,
+    "stability_index": 0.3350253533409727
+  },
+  "events": {
+    "total_events": 7896,
+    "events_by_type": {
+      "tape_cell": 1,
+      "causation_explorer_initialized": 1,
+      "phase_sync_bridge_initialized": 1,
+      "highlander_organism_registered": 5,
+      "highlander_initialized": 1,
+      "attractor_landscape_initialized": 1,
+      "initialization_complete": 1,
+      "health_state_change": 1,
+      "neural_decision": 304,
+      "word_assignment": 6802,
+      "ml_analysis": 14,
+      "state_change": 91,
+      "neural_training": 7,
+      "anomaly_spike": 7,
+      "vocabulary_growth": 1,
+      "config_outcome": 533,
+      "threshold_crossed": 5,
+      "phenotype_emergence": 10,
+      "battle_resolved": 12,
+      "absorption_complete": 12,
+      "highlander_absorption_complete": 14,
+      "highlander_battle_concluded": 12,
+      "highlander_organism_fallen": 14,
+      "highlander_alliance_formed": 10,
+      "highlander_predation_success": 2,
+      "round_complete": 3,
+      "alliance_founded": 4,
+      "alliance_historical_record": 8,
+      "alliance_round": 3,
+      "fixed_point_reached": 1,
+      "config_atom_update": 3,
+      "cluster_collapse": 2,
+      "alliance_alliance_dissolved": 10
+    },
+    "events_last_minute": 33,
+    "events_last_hour": 7896
+  },
+  "resources": {
+    "ray_enabled": false,
+    "ray_cpus": 0,
+    "ray_gpus": 0,
+    "gpu_memory_used_mb": 0.0,
+    "gpu_memory_total_mb": 24134.6875,
+    "breath_cycle": 0,
+    "uptime_seconds": 210.70551896095276
+  },
+  "top_organisms": [
+    {
+      "id": "55a25253a76e4d43",
+      "fitness": 0.8389,
+      "age": 6,
+      "generation": 0,
+      "vocab_size": 0,
+      "experience_count": 2044
+    },
+    {
+      "id": "a6a3ada5f30ef41a",
+      "fitness": 0.8367,
+      "age": 7,
+      "generation": 0,
+      "vocab_size": 0,
+      "experience_count": 7974
+    },
+    {
+      "id": "1c831e6ddf10477d",
+      "fitness": 0.8315,
+      "age": 3,
+      "generation": 0,
+      "vocab_size": 0,
+      "experience_count": 40
+    },
+    {
+      "id": "8583ac1a818e1dcc",
+      "fitness": 0.8315,
+      "age": 1,
+      "generation": 0,
+      "vocab_size": 0,
+      "experience_count": 6013
+    },
+    {
+      "id": "a97e2fbbe1adcdde",
+      "fitness": 0.8314,
+      "age": 5,
+      "generation": 0,
+      "vocab_size": 0,
+      "experience_count": 62
+    },
+    {
+      "id": "16c734807768bcbf",
+      "fitness": 0.8314,
+      "age": 6,
+      "generation": 0,
+      "vocab_size": 0,
+      "experience_count": 2167
+    },
+    {
+      "id": "149079140f842928",
+      "fitness": 0.8313,
+      "age": 6,
+      "generation": 0,
+      "vocab_size": 0,
+      "experience_count": 4335
+    },
+    {
+      "id": "9d1c2e4470fb816f",
+      "fitness": 0.8313,
+      "age": 5,
+      "generation": 0,
+      "vocab_size": 0,
+      "experience_count": 6017
+    },
+    {
+      "id": "6a6b0093efc5a47a",
+      "fitness": 0.7559,
+      "age": 4,
+      "generation": 0,
+      "vocab_size": 0,
+      "experience_count": 8
+    },
+    {
+      "id": "30648724e5af1128",
+      "fitness": 0.7559,
+      "age": 3,
+      "generation": 0,
+      "vocab_size": 0,
+      "experience_count": 6
+    }
+  ],
+  "recent_events": [
+    {
+      "type": "alliance_round",
+      "component": "highlander",
+      "timestamp": 1765999617.9255219,
+      "age_seconds": 0.6
+    },
+    {
+      "type": "alliance_alliance_dissolved",
+      "component": "alliance_warfare",
+      "timestamp": 1765999617.923123,
+      "age_seconds": 0.6
+    },
+    {
+      "type": "alliance_alliance_dissolved",
+      "component": "alliance_warfare",
+      "timestamp": 1765999617.921023,
+      "age_seconds": 0.6
+    },
+    {
+      "type": "alliance_historical_record",
+      "component": "alliance_warfare",
+      "timestamp": 1765999617.9188793,
+      "age_seconds": 0.6
+    },
+    {
+      "type": "alliance_alliance_dissolved",
+      "component": "alliance_warfare",
+      "timestamp": 1765999617.9167857,
+      "age_seconds": 0.6
+    },
+    {
+      "type": "alliance_historical_record",
+      "component": "alliance_warfare",
+      "timestamp": 1765999617.9146483,
+      "age_seconds": 0.6
+    },
+    {
+      "type": "alliance_alliance_dissolved",
+      "component": "alliance_warfare",
+      "timestamp": 1765999617.9125361,
+      "age_seconds": 0.6
+    },
+    {
+      "type": "alliance_alliance_dissolved",
+      "component": "alliance_warfare",
+      "timestamp": 1765999617.9104571,
+      "age_seconds": 0.6
+    },
+    {
+      "type": "alliance_alliance_dissolved",
+      "component": "alliance_warfare",
+      "timestamp": 1765999617.9083674,
+      "age_seconds": 0.6
+    },
+    {
+      "type": "alliance_alliance_dissolved",
+      "component": "alliance_warfare",
+      "timestamp": 1765999617.906267,
+      "age_seconds": 0.6
+    },
+    {
+      "type": "round_complete",
+      "component": "highlander",
+      "timestamp": 1765999617.9040284,
+      "age_seconds": 0.6
+    },
+    {
+      "type": "highlander_alliance_formed",
+      "component": "highlander",
+      "timestamp": 1765999617.901295,
+      "age_seconds": 0.6
+    },
+    {
+      "type": "highlander_alliance_formed",
+      "component": "highlander",
+      "timestamp": 1765999617.8986747,
+      "age_seconds": 0.6
+    },
+    {
+      "type": "highlander_organism_fallen",
+      "component": "highlander",
+      "timestamp": 1765999617.8957396,
+      "age_seconds": 0.6
+    },
+    {
+      "type": "highlander_battle_concluded",
+      "component": "highlander",
+      "timestamp": 1765999617.892825,
+      "age_seconds": 0.6
+    },
+    {
+      "type": "highlander_absorption_complete",
+      "component": "highlander",
+      "timestamp": 1765999617.8898802,
+      "age_seconds": 0.6
+    },
+    {
+      "type": "absorption_complete",
+      "component": "battle_arena",
+      "timestamp": 1765999617.8790107,
+      "age_seconds": 0.6
+    },
+    {
+      "type": "battle_resolved",
+      "component": "battle_arena",
+      "timestamp": 1765999617.8635452,
+      "age_seconds": 0.6
+    },
+    {
+      "type": "highlander_organism_fallen",
+      "component": "highlander",
+      "timestamp": 1765999616.1996052,
+      "age_seconds": 2.3
+    },
+    {
+      "type": "highlander_battle_concluded",
+      "component": "highlander",
+      "timestamp": 1765999616.196752,
+      "age_seconds": 2.3
+    }
+  ],
+  "warnings": []
+}

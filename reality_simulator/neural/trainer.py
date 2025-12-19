@@ -48,13 +48,13 @@ except ImportError:
 try:
     from .experience import ExperienceBuffer
     from .neural_organism import NeuralOrganism
-    from .utils import get_device
+    from .utils import get_device, get_optimal_amp_dtype
 except ImportError:
     # Fallback to absolute imports if relative imports fail
     try:
         from reality_simulator.neural.experience import ExperienceBuffer
         from reality_simulator.neural.neural_organism import NeuralOrganism
-        from reality_simulator.neural.utils import get_device
+        from reality_simulator.neural.utils import get_device, get_optimal_amp_dtype
     except ImportError:
         # Last resort: try direct imports
         import sys
@@ -64,7 +64,7 @@ except ImportError:
             sys.path.insert(0, neural_path)
         from experience import ExperienceBuffer
         from neural_organism import NeuralOrganism
-        from utils import get_device
+        from utils import get_device, get_optimal_amp_dtype
 
 # Import concept system (optional - graceful degradation)
 try:
@@ -269,7 +269,7 @@ class NeuralTrainer:
         if self.concept_system_enabled and CONCEPT_SYSTEM_AVAILABLE:
             try:
                 self.concept_system = ConceptSystem(
-                    state_dim=config.get('brain', {}).get('input_dim', 25),
+                    state_dim=config.get('brain', {}).get('input_dim', 27),
                     embed_dim=concept_config.get('embed_dim', 64),
                     device=str(self.device)
                 )
@@ -301,15 +301,17 @@ class NeuralTrainer:
         
         # ═══════════════════════════════════════════════════════════════════════════
         # MIXED PRECISION TRAINING (AMP)
-        # Uses FP16 for faster computation on supported GPUs (2-3x speedup)
+        # Uses FP16/BF16 for faster computation on supported GPUs (2-3x speedup)
         # Tensor Cores on RTX/Ampere/Ada GPUs get significant benefits
+        # Auto-detect: BF16 for Ampere+ (A100, L4, L40, RTX 30xx+), FP16 for older (T4, V100)
         # ═══════════════════════════════════════════════════════════════════════════
         optimization_config = config.get('optimization', {})
         amp_config = optimization_config.get('amp', {})
         self.amp_enabled = amp_config.get('enabled', True) and torch.cuda.is_available()
-        self.amp_dtype = torch.float16 if amp_config.get('dtype', 'float16') == 'float16' else torch.bfloat16
+        self.amp_dtype = get_optimal_amp_dtype(amp_config.get('dtype', 'auto'))
         
         # GradScaler for stable FP16 training (prevents gradient underflow)
+        # Note: BF16 doesn't need scaling but GradScaler is still safe to use
         if self.amp_enabled:
             self.grad_scaler = torch.amp.GradScaler('cuda')
             logger.info(f"[NEURAL] Mixed precision (AMP) enabled: {self.amp_dtype}")
@@ -367,9 +369,19 @@ class NeuralTrainer:
                     patience=10,
                     min_lr=self.lr_min
                 )
+            elif self.lr_scheduler_type == 'cosine':
+                # CosineAnnealingWarmRestarts - good for boom/bust dynamics
+                # T_0 = steps before first restart, T_mult = multiplier for subsequent periods
+                warmup_steps = lr_scheduler_config.get('warmup_steps', 100) if hasattr(self, '_lr_scheduler_config') else 100
+                self.schedulers[organism_id] = optim.lr_scheduler.CosineAnnealingWarmRestarts(
+                    optimizer,
+                    T_0=max(self.lr_step_size, 50),  # Use step_size as period
+                    T_mult=2,  # Double period after each restart
+                    eta_min=self.lr_min
+                )
             else:
                 # FIXED: Validate lr_scheduler_type and warn about invalid values
-                logger.warning(f"[NEURAL] Invalid lr_scheduler_type '{self.lr_scheduler_type}', valid types: 'step', 'exponential', 'plateau'. Using StepLR as fallback.")
+                logger.warning(f"[NEURAL] Invalid lr_scheduler_type '{self.lr_scheduler_type}', valid types: 'step', 'exponential', 'plateau', 'cosine'. Using StepLR as fallback.")
                 self.schedulers[organism_id] = optim.lr_scheduler.StepLR(
                     optimizer,
                     step_size=self.lr_step_size,
@@ -733,6 +745,57 @@ class NeuralTrainer:
             vp_bonus = 0.05
             reward += vp_bonus
         
+        # 6. Self-perception reward shaping (Features 26-28)
+        # Organisms can now FEEL their oscillation and coherence - make this matter
+        # Config values from self_perception section (with hardcoded fallbacks)
+        sp_config = self.config.get('self_perception', {})
+        sp_enabled = sp_config.get('enabled', True)
+        
+        if sp_enabled:
+            try:
+                state = organism.get_state_features() if hasattr(organism, 'get_state_features') else None
+                if state is not None and len(state) >= 27:
+                    # Feature 26: oscillation_entropy - penalize high chaos
+                    osc_threshold = sp_config.get('oscillation_entropy_threshold', 0.7)
+                    osc_penalty = sp_config.get('oscillation_chaos_penalty', -0.1)
+                    
+                    oscillation_entropy = state[25]
+                    if oscillation_entropy > osc_threshold:
+                        entropy_penalty = osc_penalty * (oscillation_entropy - osc_threshold) / (1.0 - osc_threshold)
+                        reward += entropy_penalty
+                    
+                    # Feature 27: coherence_frequency - penalize feeling "trapped"
+                    coh_threshold = sp_config.get('coherence_frequency_threshold', 0.6)
+                    coh_penalty = sp_config.get('coherence_trap_penalty', -0.15)
+                    
+                    coherence_frequency = state[26]
+                    if coherence_frequency > coh_threshold:
+                        # High coherence = stuck in loop = bad
+                        coherence_penalty = coh_penalty * (coherence_frequency - coh_threshold) / (1.0 - coh_threshold)
+                        reward += coherence_penalty
+                    elif coherence_frequency < 0.2:
+                        # Very low coherence = drifting freely = slight bonus
+                        freedom_bonus = 0.03
+                        reward += freedom_bonus
+                    
+                    # Feature 28: attractor_proximity - reward being near known stable configs
+                    if len(state) >= 28:
+                        prox_near = sp_config.get('proximity_near_threshold', 0.3)
+                        prox_near_bonus = sp_config.get('proximity_near_bonus', 0.05)
+                        prox_med = sp_config.get('proximity_medium_threshold', 0.6)
+                        prox_med_bonus = sp_config.get('proximity_medium_bonus', 0.02)
+                        
+                        attractor_proximity = state[27]
+                        # Low proximity = close to attractor = good (stability)
+                        if prox_near < attractor_proximity < prox_med:
+                            # Near but not at attractor - exploring basin
+                            reward += prox_near_bonus
+                        elif attractor_proximity < prox_near:
+                            # Very close to attractor - stable but might be stuck
+                            reward += prox_med_bonus
+            except Exception:
+                pass  # Don't break reward calculation if self-perception fails
+        
         # Integration 2: Add language reward (if ML analysis available)
         language_reward = self._calculate_language_reward(organism)
         reward += language_reward
@@ -898,6 +961,10 @@ class NeuralTrainer:
         Returns:
             Tuple of (total_loss, num_trained)
         """
+        # Mark CUDA graph step boundary for torch.compile()
+        if hasattr(torch.compiler, 'cudagraph_mark_step_begin'):
+            torch.compiler.cudagraph_mark_step_begin()
+            
         from reality_simulator.distributed import train_organisms_batch
         
         # Prepare training tasks
@@ -988,7 +1055,7 @@ class NeuralTrainer:
             'rl_loss_weight': self.rl_loss_weight,
             'language_loss_weight': self.language_loss_weight,
             'device': str(self.device),
-            'input_dim': self.config.get('brain', {}).get('input_dim', 25),
+            'input_dim': self.config.get('brain', {}).get('input_dim', 27),
             'hidden_dim': self.config.get('brain', {}).get('hidden_dim', 64),
             'output_dim': self.config.get('brain', {}).get('output_dim', 6),  # Default matches config.json
             'vocab_size': self.config.get('language_model', {}).get('vocab_size', 20000),  # Default matches config.json
@@ -1197,6 +1264,11 @@ class NeuralTrainer:
         # ORGANISM TRAINING: Sequential or Parallel based on Ray config and count
         # ═══════════════════════════════════════════════════════════════════════════
         
+        # Mark CUDA graph step boundary to avoid "pending backwards" warning
+        # This is needed when using torch.compile() with CUDA graphs
+        if hasattr(torch.compiler, 'cudagraph_mark_step_begin'):
+            torch.compiler.cudagraph_mark_step_begin()
+        
         # Decide whether to use parallel training
         use_parallel = (
             self.ray_enabled and 
@@ -1223,6 +1295,20 @@ class NeuralTrainer:
                     batch_size_to_use
                 )
                 
+                # SAFETY: Filter out experiences with invalid actions (0-5 only)
+                # This handles legacy data from checkpoints or gym environments with >6 actions
+                valid_mask = (actions >= 0) & (actions <= 5)
+                if not np.all(valid_mask):
+                    invalid_count = np.sum(~valid_mask)
+                    logger.warning(f"[NEURAL] Filtered {invalid_count} experiences with invalid actions (>5)")
+                    states = states[valid_mask]
+                    actions = actions[valid_mask]
+                    rewards = rewards[valid_mask]
+                    next_states = next_states[valid_mask]
+                    dones = dones[valid_mask]
+                    if len(actions) < 4:  # Need minimum batch to train
+                        continue
+                
                 # Convert to tensors
                 states_tensor = torch.FloatTensor(states).to(self.device)
                 actions_tensor = torch.LongTensor(actions).to(self.device)
@@ -1231,7 +1317,7 @@ class NeuralTrainer:
                 dones_tensor = torch.BoolTensor(dones).to(self.device)
                 
                 # ⚡ AMP: Use autocast for forward passes (2-3x faster on Tensor Core GPUs)
-                amp_context = torch.cuda.amp.autocast(dtype=self.amp_dtype) if self.amp_enabled else nullcontext()
+                amp_context = torch.amp.autocast('cuda', dtype=self.amp_dtype) if self.amp_enabled else nullcontext()
                 
                 with amp_context:
                     # Get current Q values
@@ -2025,7 +2111,7 @@ class NeuralTrainer:
             organism.brain.train()
             
             # ⚡ AMP: Use autocast for forward passes
-            amp_context = torch.cuda.amp.autocast(dtype=self.amp_dtype) if self.amp_enabled else nullcontext()
+            amp_context = torch.amp.autocast('cuda', dtype=self.amp_dtype) if self.amp_enabled else nullcontext()
             
             with amp_context:
                 if hasattr(organism.brain, 'fc_language'):
@@ -2152,13 +2238,17 @@ class NeuralTrainer:
             organism.brain.train()
             
             # ⚡ AMP: Use autocast for forward passes
-            amp_context = torch.cuda.amp.autocast(dtype=self.amp_dtype) if self.amp_enabled else nullcontext()
+            amp_context = torch.amp.autocast('cuda', dtype=self.amp_dtype) if self.amp_enabled else nullcontext()
             
             with amp_context:
                 if hasattr(organism.brain, 'fc_language'):
-                    # Get language head output
-                    hidden = torch.relu(organism.brain.fc1(state_tensor))
-                    hidden = torch.relu(organism.brain.fc2(hidden))
+                    # Get language head output - use get_hidden_state for proper Hopfield routing
+                    if hasattr(organism.brain, 'get_hidden_state'):
+                        hidden = organism.brain.get_hidden_state(state_tensor, vp_value=vp_value)
+                    else:
+                        # Fallback for older brains without helper
+                        hidden = torch.relu(organism.brain.fc1(state_tensor))
+                        hidden = torch.relu(organism.brain.fc2(hidden))
                     language_logits = organism.brain.fc_language(hidden)
                     
                     # Expand to sequence length
@@ -2281,12 +2371,17 @@ class NeuralTrainer:
             organism.brain.train()
             
             # ⚡ AMP: Use autocast for forward passes
-            amp_context = torch.cuda.amp.autocast(dtype=self.amp_dtype) if self.amp_enabled else nullcontext()
+            amp_context = torch.amp.autocast('cuda', dtype=self.amp_dtype) if self.amp_enabled else nullcontext()
             
             with amp_context:
                 if hasattr(organism.brain, 'fc_language'):
-                    hidden = torch.relu(organism.brain.fc1(state_tensor))
-                    hidden = torch.relu(organism.brain.fc2(hidden))
+                    # Use get_hidden_state for proper Hopfield routing
+                    if hasattr(organism.brain, 'get_hidden_state'):
+                        hidden = organism.brain.get_hidden_state(state_tensor, vp_value=0.0)
+                    else:
+                        # Fallback for older brains without helper
+                        hidden = torch.relu(organism.brain.fc1(state_tensor))
+                        hidden = torch.relu(organism.brain.fc2(hidden))
                     language_logits = organism.brain.fc_language(hidden)
                     
                     # Expand to target sequence length
@@ -2595,7 +2690,7 @@ class NeuralTrainer:
                     'batch_size': self.batch_size,
                     'learning_rate': self.learning_rate,
                     'gamma': self.gamma,
-                    'input_dim': self.config.get('brain', {}).get('input_dim', 25),
+                    'input_dim': self.config.get('brain', {}).get('input_dim', 27),
                     'hidden_dim': self.config.get('brain', {}).get('hidden_dim', 64),  # Default matches config.json
                     'output_dim': self.config.get('brain', {}).get('output_dim', 6),
                 },
@@ -2685,8 +2780,8 @@ class NeuralTrainer:
                 
                 # Check architecture compatibility
                 saved_config = result['metadata'].get('config', {})
-                current_input_dim = self.config.get('brain', {}).get('input_dim', 25)
-                saved_input_dim = saved_config.get('input_dim', 25)
+                current_input_dim = self.config.get('brain', {}).get('input_dim', 27)
+                saved_input_dim = saved_config.get('input_dim', 27)
                 
                 if current_input_dim != saved_input_dim:
                     msg = f"Architecture mismatch: saved input_dim={saved_input_dim}, current={current_input_dim}"

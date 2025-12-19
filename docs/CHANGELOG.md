@@ -4,7 +4,245 @@
 
 ---
 
+## [Unreleased] - 2025-12-17
+
+### 🦋 Antennae System - Collective Sensing Apparatus (2025-12-17)
+
+**SELF-GOVERNANCE**: The ecosystem can now sense and tune itself through the collective perception of all organisms.
+
+#### What This Enables
+- **Collective Sensing**: Aggregate organism states into unified perception (fitness momentum, diversity, conflict, etc.)
+- **Belief System**: Heuristic rules that learn from evidence (like organism cognition!)
+- **Kleene Convergence**: sklearn SGDRegressor converges to true parameter→health mapping
+- **Self-Governance**: Population pressure, fitness stagnation, diversity loss all trigger automatic tuning
+
+#### Philosophy (Occam's Razor)
+```
+BEFORE: Neural net learns 9→32→32→6 mapping (overkill)
+AFTER:  Beliefs converge via evidence (like organisms!)
+        + Sklearn regression converges to truth (Kleene iteration)
+```
+
+#### Key Components
+- **AntennaReading**: 9-dimensional perception (pop pressure, fitness momentum, diversity, etc.)
+- **GovernanceSignal**: 6-dimensional tuning suggestions (survival, competition, exploration, etc.)
+- **BeliefSystem**: Causal beliefs that track confirmations/refutations
+- **HealthPredictor**: sklearn SGDRegressor with online learning
+
+#### Integration
+```python
+# In unified_entry.py main loop
+antennae.sense(organisms, report)     # Update perception
+antennae.influence(config_tuner)      # Apply governance
+```
+
+#### Files Modified
+- `reality_simulator/antennae.py`: Complete rewrite (962 → 666 lines, 30% reduction)
+- `reality_simulator/tuning/atomic_config.py`: Added `adjust_parameter()` method
+- `unified_entry.py`: Wired Antennae into main loop (~lines 1540, 3060)
+
+---
+
+### 📊 SystemReport & LiveReporter - Real-Time Analytics (2025-12-17)
+
+**OBSERVABILITY**: Comprehensive population analytics with typed dataclasses and thread-safe live reporting.
+
+#### SystemReport Features
+- **PopulationStats**: count, avg/max/min fitness, avg age, generation
+- **ResourceStats**: CPU, GPU memory, RAM usage
+- **NeuralStats**: training loss, avg epsilon, DQN status
+- **AllianceStats**: total alliances, members, confederations, wars
+- **EventStats**: recent events, event rate, causation graph size
+- **LanguageStats**: vocabulary size, avg vocab per organism, communications
+
+#### LiveReporter Features
+- **Thread-Safe**: Background thread with configurable interval
+- **Callbacks**: Register custom handlers for report updates
+- **Multiple Modes**: Console, file, or callback-based reporting
+- **Auto-Cleanup**: Proper shutdown with `close()` method
+
+#### Usage
+```python
+from system_report import SystemReport, LiveReporter
+
+# Generate report
+report = SystemReport.from_network(network, causation_graph)
+print(report.population.avg_fitness)
+
+# Live reporting
+reporter = LiveReporter(interval=5.0)
+reporter.add_callback(lambda r: print(r.population.count))
+reporter.start()
+```
+
+#### Files Created
+- `system_report.py`: SystemReport dataclass + LiveReporter class
+
+---
+
+### 🔧 CUDA Crossover Fix - NaN/Inf Sanitization (2025-12-17)
+
+**BUG FIX**: Fixed H100 error cascade caused by NaN/Inf weights during neural crossover.
+
+#### Problem
+- CUDA device-side assert triggered during crossover operations
+- Caused by NaN/Inf weights propagating through genetic operations
+- Device mismatch between parent tensors
+
+#### Solution
+```python
+# In brain.py crossover() method
+w1_clean = torch.nan_to_num(w1, nan=0.0, posinf=1.0, neginf=-1.0)
+w2_clean = torch.nan_to_num(w2, nan=0.0, posinf=1.0, neginf=-1.0)
+w1_device = w1_clean.to(child_weights.device)
+w2_device = w2_clean.to(child_weights.device)
+```
+
+#### Files Modified
+- `reality_simulator/neural/brain.py`: Added NaN/Inf sanitization in `crossover()` (~line 821)
+
+---
+
+### 🐛 Threading Import Fix (2025-12-17)
+
+**BUG FIX**: Fixed import order issue in system_report.py where threading was used before import.
+
+#### Files Modified
+- `system_report.py`: Moved threading import to top of file
+
+---
+
+## [Unreleased] - 2025-12-14
+
+### 🧠 Modern Hopfield Layer - Iterative Thought Refinement (2025-12-14)
+
+**RESEARCH-GRADE FEATURE**: Organisms can now "think" through multiple refinement iterations before producing outputs, using a modern continuous Hopfield network.
+
+#### What This Enables
+- **Iterative Refinement**: Hidden states settle into coherent attractors rather than instant lookup
+- **Energy-Based Dynamics**: Network minimizes energy function to find stable patterns
+- **VP-Aware Temperature**: Higher VP = sharper pattern retrieval (β scaled by 1 + vp*0.5)
+- **Convergence Monitoring**: Track when and if thoughts converge via `get_thought_info()`
+
+#### Architecture
+```
+Input → fc1 → attention → HOPFIELD → fc2 → output
+                            ↓
+              ξ' = softmax(β Xᵀ ξ) · X
+              (iterative refinement)
+```
+
+**HopfieldLayer Components:**
+- `patterns`: 32 learnable memory patterns (default)
+- `iterations`: Up to 5 refinement steps with early stopping
+- `beta`: Inverse temperature (1.0 default)
+- `convergence_threshold`: 0.001 for early stopping
+
+#### Energy Function
+```
+E(ξ) = -β⁻¹ log Σᵢ exp(β xᵢᵀ ξ)
+```
+
+#### New Helper Method: `get_hidden_state()`
+All training paths now use `brain.get_hidden_state(x, vp_value)` which properly routes through the full pipeline (fc1 → attention → hopfield → fc2), ensuring Hopfield refinement is applied during training.
+
+#### Configuration
+```json
+{
+  "neural": {
+    "hopfield": {
+      "enabled": false,
+      "patterns": 32,
+      "iterations": 5,
+      "beta": 1.0
+    }
+  }
+}
+```
+
+#### Files Modified
+- `reality_simulator/neural/brain.py`: Added `HopfieldLayer` class (~170 lines), `get_hidden_state()`, `get_thought_info()`
+- `reality_simulator/neural/trainer.py`: Updated 3 training paths to use `get_hidden_state()`
+- `reality_simulator/agent_compiler.py`: Updated concept loss path to use `get_hidden_state()`
+- `reality_simulator/neural/utils.py`: Added Hopfield config extraction in `create_brain()`
+- `config.json`: Added `neural.hopfield` section
+- Documentation: Updated NEURAL_SYSTEM_README.md, NEURAL_LEARNING_SYSTEM_EXPLAINED.md, DOCUMENTATION_HUB.md
+
+#### Backward Compatibility
+- `use_hopfield=False` by default (existing brains unchanged)
+- `strict=False` in `load_state_dict` handles old checkpoints
+- Fallback paths in trainer for brains without `get_hidden_state()`
+
+---
+
 ## [Unreleased] - 2025-12-12
+
+### 🧠 28D Self-Perception & Attractor Landscape Integration (2025-12-12)
+
+**MAJOR ARCHITECTURE**: Organisms can now perceive their own dynamics and navigate toward stable configurations (Hopfield-inspired "knots on the web").
+
+#### Feature Vector Extension: 25D → 28D
+
+| Index | Feature | Description |
+|-------|---------|-------------|
+| 0-24 | Base features | Environment, resources, fitness, connections, etc. |
+| 25 | `oscillation_entropy` | "How chaotic am I?" - measures action history entropy |
+| 26 | `coherence_frequency` | "Am I trapped?" - detects repeated behavioral patterns |
+| 27 | `attractor_proximity` | "How close to known stability?" - distance to nearest fixed point |
+
+#### Attractor Landscape System
+- **Observatory**: `AttractorLandscape` watches collective magnetism field across population
+- **Fixed Points**: Kleene fixed points detected when variance < threshold for N snapshots
+- **Bifurcations**: Detected when coherence/entropy jumps exceed thresholds
+- **Basin Sensing**: Organisms sense pull strength toward nearest attractor
+
+#### Event-Driven Response
+New event handlers in unified_entry.py:
+- `on_bifurcation`: Boosts epsilon and mutation_rate (increase exploration)
+- `on_fixed_point_reached`: Decays epsilon (exploit stable config)
+- `on_fixed_point_broken`: Increases mutation (adapt to instability)
+
+#### Reward Shaping (Config-Driven)
+Features 26-28 now influence learning gradient:
+```json
+"self_perception": {
+  "oscillation_chaos_penalty": -0.1,    // Penalize high entropy
+  "coherence_trap_penalty": -0.15,      // Penalize being stuck in loops
+  "proximity_near_bonus": 0.05,         // Reward approaching attractors
+  "proximity_medium_bonus": 0.02        // Small bonus for basin exploration
+}
+```
+
+#### Files Modified
+- `reality_simulator/systems/attractor_landscape.py`: Added `get_proximity_to_nearest_fixed_point()`, `get_basin_strength()`
+- `reality_simulator/neural/neural_organism.py`: Added feature 28, `_landscape_ref`, extended `set_system_references()`
+- `reality_simulator/neural/trainer.py`: Added config-driven self-perception reward shaping
+- `reality_simulator/neural/brain.py`: Updated input_dim 27→28
+- `reality_simulator/neural/perception.py`: Updated state_dim 27→28
+- `reality_simulator/neural/utils.py`: Updated validation expected values
+- `reality_simulator/main.py`: Inject self_perception config to trainer
+- `unified_entry.py`: Added 3 landscape event handlers, wired landscape to organisms
+- `config.json`: Added `attractor_landscape` and `self_perception` sections
+- `case_studies/config_study_5_creative_specialist.json`: Updated for 28D
+
+#### Closed Loop Architecture
+```
+Organism acts → Magnetism field changes
+           ↓
+AttractorLandscape observes snapshots
+           ↓
+Detects fixed points / bifurcations → Events fire
+           ↓
+Feature 28 = proximity to nearest attractor
+           ↓
+Organism perceives distance to stability
+           ↓
+Trainer rewards proximity → Gradient flow → LEARNING
+           ↓
+Organism acts smarter → LOOP CLOSES
+```
+
+---
 
 ### 🔤 A-Words Alphabetical Bias Fix (2025-12-12)
 

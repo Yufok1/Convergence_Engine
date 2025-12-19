@@ -15,16 +15,65 @@ The Neural System implements **Deep Q-Network (DQN) Reinforcement Learning** syn
 ### Neural Network Structure
 
 ```
-Input Layer (12 features)
+Input Layer (28 features)
     ↓
 Hidden Layer 1 (64 neurons) + ReLU + Dropout (10%)
     ↓
+[Optional] Multi-Head Self-Attention (VP-aware temperature scaling)
+    ↓
+[Optional] Hopfield Layer (iterative thought refinement) ⭐ NEW
+    ↓
 Hidden Layer 2 (64 neurons) + ReLU + Dropout (10%)
     ↓
-Output Layer (6 actions) + Softmax
+Dual Output Heads:
+  ├─ Action Head (6 actions) + Softmax → RL decisions
+  └─ Language Head (vocab_size) → next token prediction
 ```
 
-**Input Features (12-dimensional sensory space):**
+### Hopfield Layer: Iterative Thought Refinement ⭐ NEW
+
+The optional Hopfield layer implements a **modern continuous Hopfield network** that allows organisms to "think" through multiple refinement iterations before producing outputs.
+
+**Architecture:**
+- **Learnable Pattern Memory**: 32 patterns (default) stored as learnable weights
+- **Iterative Refinement**: Up to 5 iterations (default) with convergence detection
+- **VP-Aware Temperature**: Higher VP → sharper pattern retrieval (β scaled by 1 + vp*0.5)
+- **Energy-Based Dynamics**: Settles into coherent attractors rather than instant lookup
+
+**Energy Function:**
+```
+E(ξ) = -β⁻¹ log Σᵢ exp(β xᵢᵀ ξ)
+```
+
+**Update Rule:**
+```
+ξ' = softmax(β Xᵀ ξ) · X
+```
+
+**Configuration** (in `config.json`):
+```json
+{
+  "neural": {
+    "hopfield": {
+      "enabled": false,
+      "patterns": 32,
+      "iterations": 5,
+      "beta": 1.0
+    }
+  }
+}
+```
+
+**Monitoring:**
+```python
+# Get thought convergence info
+info = brain.get_thought_info()
+# {'iterations': 3, 'converged': True, 'final_delta': 0.0008, ...}
+```
+
+**Input Features (28-dimensional sensory space):**
+
+The input includes core organism state plus extended features:
 1. **Current Fitness** (0.0-1.0) - Own survival status
 2. **Resource Level** (0.0-1.0) - Available resources
 3. **Number of Connections** (0.0-1.0) - Social connectivity
@@ -37,6 +86,8 @@ Output Layer (6 actions) + Softmax
 10. **Parent Fitness Average** (0.0-1.0) - Genetic heritage
 11. **Breath Depth** (0.0-1.0) - Breath cycle position
 12. **Breath Phase** (0.0-1.0) - Breath cycle phase
+13-25. **Extended Features** - VP value, attractor state, self-perception, etc.
+26-28. **Attractor Coordinates** - Position in attractor landscape
 
 **Output Actions (6 possible behaviors):**
 - **0: Move** - Explore the environment

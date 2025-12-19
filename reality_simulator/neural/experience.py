@@ -132,11 +132,36 @@ class ExperienceBuffer:
         """
         experiences = self.sample(batch_size)
         
-        states = np.array([e.state for e in experiences])
-        actions = np.array([e.action for e in experiences])
-        rewards = np.array([e.reward for e in experiences])
-        next_states = np.array([e.next_state for e in experiences])
-        dones = np.array([e.done for e in experiences])
+        # Normalize states to consistent shape (28-dim) to prevent inhomogeneous array errors
+        def normalize_state(state):
+            """Ensure state is exactly 28-dim float32 array."""
+            if state is None:
+                return np.zeros(28, dtype=np.float32)
+            state_arr = np.asarray(state, dtype=np.float32).flatten()
+            if len(state_arr) < 28:
+                # Pad with zeros
+                padded = np.zeros(28, dtype=np.float32)
+                padded[:len(state_arr)] = state_arr
+                return padded
+            elif len(state_arr) > 28:
+                # Truncate
+                return state_arr[:28]
+            return state_arr
+        
+        def normalize_action(action):
+            """Ensure action is a scalar int for discrete action space."""
+            if isinstance(action, np.ndarray):
+                # Continuous action - take argmax or first element
+                if action.size == 1:
+                    return int(action.item())
+                return int(np.argmax(action))  # Convert continuous to discrete
+            return int(action)
+        
+        states = np.array([normalize_state(e.state) for e in experiences], dtype=np.float32)
+        actions = np.array([normalize_action(e.action) for e in experiences], dtype=np.int64)
+        rewards = np.array([e.reward for e in experiences], dtype=np.float32)
+        next_states = np.array([normalize_state(e.next_state) for e in experiences], dtype=np.float32)
+        dones = np.array([e.done for e in experiences], dtype=bool)
         
         return states, actions, rewards, next_states, dones
 
@@ -155,11 +180,31 @@ class ExperienceBuffer:
         """
         experiences = self.sample(batch_size)
         
-        states = np.array([e.state for e in experiences])
-        actions = np.array([e.action for e in experiences])
-        rewards = np.array([e.reward for e in experiences])
-        next_states = np.array([e.next_state for e in experiences])
-        dones = np.array([e.done for e in experiences])
+        # Reuse normalize_state from sample_batch
+        def normalize_state(state):
+            if state is None:
+                return np.zeros(28, dtype=np.float32)
+            state_arr = np.asarray(state, dtype=np.float32).flatten()
+            if len(state_arr) < 28:
+                padded = np.zeros(28, dtype=np.float32)
+                padded[:len(state_arr)] = state_arr
+                return padded
+            elif len(state_arr) > 28:
+                return state_arr[:28]
+            return state_arr
+        
+        def normalize_action(action):
+            if isinstance(action, np.ndarray):
+                if action.size == 1:
+                    return int(action.item())
+                return int(np.argmax(action))
+            return int(action)
+        
+        states = np.array([normalize_state(e.state) for e in experiences], dtype=np.float32)
+        actions = np.array([normalize_action(e.action) for e in experiences], dtype=np.int64)
+        rewards = np.array([e.reward for e in experiences], dtype=np.float32)
+        next_states = np.array([normalize_state(e.next_state) for e in experiences], dtype=np.float32)
+        dones = np.array([e.done for e in experiences], dtype=bool)
         token_sequences = [e.token_sequence for e in experiences]
         vp_values = [e.vp_value for e in experiences]
         
@@ -192,11 +237,31 @@ class ExperienceBuffer:
         else:
             experiences = random.sample(seq2seq_experiences, min(batch_size, len(seq2seq_experiences)))
         
-        states = np.array([e.state for e in experiences])
-        actions = np.array([e.action for e in experiences])
-        rewards = np.array([e.reward for e in experiences])
-        next_states = np.array([e.next_state for e in experiences])
-        dones = np.array([e.done for e in experiences])
+        # Normalize states to prevent inhomogeneous array errors
+        def normalize_state(state):
+            if state is None:
+                return np.zeros(28, dtype=np.float32)
+            state_arr = np.asarray(state, dtype=np.float32).flatten()
+            if len(state_arr) < 28:
+                padded = np.zeros(28, dtype=np.float32)
+                padded[:len(state_arr)] = state_arr
+                return padded
+            elif len(state_arr) > 28:
+                return state_arr[:28]
+            return state_arr
+        
+        def normalize_action(action):
+            if isinstance(action, np.ndarray):
+                if action.size == 1:
+                    return int(action.item())
+                return int(np.argmax(action))
+            return int(action)
+        
+        states = np.array([normalize_state(e.state) for e in experiences], dtype=np.float32)
+        actions = np.array([normalize_action(e.action) for e in experiences], dtype=np.int64)
+        rewards = np.array([e.reward for e in experiences], dtype=np.float32)
+        next_states = np.array([normalize_state(e.next_state) for e in experiences], dtype=np.float32)
+        dones = np.array([e.done for e in experiences], dtype=bool)
         input_tokens_list = [e.input_tokens for e in experiences]
         target_tokens_list = [e.target_tokens for e in experiences]
         rewards_list = [e.reward for e in experiences]

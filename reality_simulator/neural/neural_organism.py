@@ -114,6 +114,7 @@ class NeuralOrganism(Organism):
         # ═══════════════════════════════════════════════════════════════════════
         self._alliance_warfare_ref = None  # Set via set_system_references()
         self._causation_explorer_ref = None  # Set via set_system_references()
+        self._landscape_ref = None  # AttractorLandscape for proximity sensing
         self._illumination_level = 'none'  # Cached level for quick checks
         self._illumination_capabilities = set()  # Cached capabilities
         
@@ -138,7 +139,7 @@ class NeuralOrganism(Organism):
                     # Single parent: copy weights directly
                     from .brain import OrganismBrain
                     self.brain = OrganismBrain(
-                        input_dim=brain_config.get('input_dim', 25),
+                        input_dim=brain_config.get('input_dim', 27),
                         hidden_dim=brain_config.get('hidden_dim', 64),
                         output_dim=brain_config.get('output_dim', 6),
                         activation=brain_config.get('activation', 'relu'),
@@ -219,9 +220,21 @@ class NeuralOrganism(Organism):
             self.battle_wins = 0
             self.battle_losses = 0
             
+            # 🏆 Competition Stats (Tournament, Dojo, Highlander)
+            self.tournament_wins = 0
+            self.tournament_losses = 0
+            self.dojo_sessions = 0
+            self.skills_mastered = set()  # Games/skills organism has mastered
+            self.win_streak = 0
+            self.best_win_streak = 0
+            self.gym_experiences = 0  # Total Gymnasium experiences recorded
+            self.highlander_kills = 0  # Lethal tournament kills
+            self.war_victories = 0  # Alliance wars won
+            
             # Alliance/social tracking for extended features (Integration: Features 19-24)
             self.alliance_reputation = 0.5  # Neutral start
             self.fitness_history = []  # Track fitness over time for trend analysis
+            self.age = 0  # Track organism age in simulation ticks
             
             # Confederation (Super-Alliance) tracking (Integration: Features 25-27)
             self.alliance_id = None  # Current alliance membership
@@ -248,9 +261,21 @@ class NeuralOrganism(Organism):
             self.battle_wins = 0
             self.battle_losses = 0
             
+            # 🏆 Competition Stats (Tournament, Dojo, Highlander)
+            self.tournament_wins = 0
+            self.tournament_losses = 0
+            self.dojo_sessions = 0
+            self.skills_mastered = set()  # Games/skills organism has mastered
+            self.win_streak = 0
+            self.best_win_streak = 0
+            self.gym_experiences = 0  # Total Gymnasium experiences recorded
+            self.highlander_kills = 0  # Lethal tournament kills
+            self.war_victories = 0  # Alliance wars won
+            
             # Alliance/social tracking for extended features (Integration: Features 19-24)
             self.alliance_reputation = 0.5  # Neutral start
             self.fitness_history = []  # Track fitness over time for trend analysis
+            self.age = 0  # Track organism age in simulation ticks
             
             # Confederation (Super-Alliance) tracking (Integration: Features 25-27)
             self.alliance_id = None  # Current alliance membership
@@ -264,19 +289,29 @@ class NeuralOrganism(Organism):
     
     def set_system_references(self, 
                               alliance_warfare=None, 
-                              causation_explorer=None) -> None:
+                              causation_explorer=None,
+                              attractor_landscape=None) -> None:
         """
         Set references to system-level components for illumination access.
         
         Called when organism joins an alliance or during system initialization.
         These references enable organisms to access collective wisdom.
         
+        Note: Passing None for any argument preserves the existing reference
+        (allows partial updates without wiping other references).
+        
         Args:
-            alliance_warfare: AllianceWarfareSystem instance
-            causation_explorer: CausationExplorer instance
+            alliance_warfare: AllianceWarfareSystem instance (or None to preserve)
+            causation_explorer: CausationExplorer instance (or None to preserve)
+            attractor_landscape: AttractorLandscape instance (or None to preserve)
         """
-        self._alliance_warfare_ref = alliance_warfare
-        self._causation_explorer_ref = causation_explorer
+        # Only update references that are explicitly provided (not None)
+        if alliance_warfare is not None:
+            self._alliance_warfare_ref = alliance_warfare
+        if causation_explorer is not None:
+            self._causation_explorer_ref = causation_explorer
+        if attractor_landscape is not None:
+            self._landscape_ref = attractor_landscape
         
         # Pre-cache illumination level if alliance warfare is available
         if alliance_warfare is not None:
@@ -292,6 +327,7 @@ class NeuralOrganism(Organism):
         """Clear system references (e.g., when organism leaves alliance)."""
         self._alliance_warfare_ref = None
         self._causation_explorer_ref = None
+        self._landscape_ref = None
         self._illumination_level = 'none'
         self._illumination_capabilities = set()
 
@@ -335,7 +371,7 @@ class NeuralOrganism(Organism):
             Feature array of shape (input_dim,)
         """
         if self.brain is None:
-            return np.zeros(12, dtype=np.float32)
+            return np.zeros(28, dtype=np.float32)  # 28D with self-perception
         
         features = []
         
@@ -506,8 +542,46 @@ class NeuralOrganism(Organism):
         illum_val = illum_map.get(self._illumination_level, 0.0)
         features.append(illum_val)
         
+        # === FEATURES 26-27: SELF-PERCEPTION (Magnetism Landscape) ===
+        # "Know thyself first, then reach out" - Voyager frame
+        # Organisms perceive their own attractor state before network awareness
+        
+        # 26. Oscillation Entropy (self-awareness of chaos/stability)
+        # High entropy = chaotic magnetism changes, organism senses instability
+        # Low entropy = stable magnetism trajectory, organism senses order
+        oscillation_entropy = 0.0
+        if hasattr(self, 'atomic_language') and self.atomic_language:
+            try:
+                oscillation_entropy = self.atomic_language._calculate_global_entropy()
+            except Exception:
+                pass
+        features.append(np.clip(oscillation_entropy, 0.0, 1.0))
+        
+        # 27. Coherence Frequency (self-awareness of being trapped)
+        # High coherence = oscillating in feedback loop, organism FEELS the trap
+        # Low coherence = drifting freely, organism senses freedom
+        coherence_frequency = 0.0
+        if hasattr(self, 'atomic_language') and self.atomic_language:
+            try:
+                coherence_frequency = self.atomic_language._calculate_global_coherence()
+            except Exception:
+                pass
+        features.append(np.clip(coherence_frequency, 0.0, 1.0))
+        
+        # 28. Attractor Proximity (swarm's distance to nearest known stable configuration)
+        # High proximity (close to 1.0) = far from known attractors (unexplored territory)
+        # Low proximity (close to 0.0) = near known attractor (stable basin)
+        # This enables goal-directed collective behavior toward known stability
+        attractor_proximity = 0.5  # Default: unknown territory
+        if hasattr(self, '_landscape_ref') and self._landscape_ref is not None:
+            try:
+                attractor_proximity = self._landscape_ref.get_proximity_to_nearest_fixed_point()
+            except Exception:
+                pass
+        features.append(np.clip(attractor_proximity, 0.0, 1.0))
+        
         # Ensure we have exactly input_dim features
-        input_dim = self.config.get('neural', {}).get('brain', {}).get('input_dim', 25)
+        input_dim = self.config.get('neural', {}).get('brain', {}).get('input_dim', 28)
         feature_array = np.array(features[:input_dim], dtype=np.float32)
         
         # Pad or truncate to match input_dim
@@ -1368,10 +1442,8 @@ class NeuralOrganism(Organism):
             done=done
         )
         
-        # DEBUG: Log successful recording (first few per organism)
+        # Track buffer size (no logging - was filling disk on large populations)
         buffer_len = len(self.experience_buffer)
-        if buffer_len <= 3:
-            _logger.warning(f"[EXP] {self.species_id}: RECORDED! buffer_size={buffer_len}")
         
         # ✨ Update atomic language system with experience
         if self.atomic_language is not None:
@@ -1399,6 +1471,104 @@ class NeuralOrganism(Organism):
             # Keep only last 20 fitness values for trend analysis
             if len(self.fitness_history) > 20:
                 self.fitness_history = self.fitness_history[-20:]
+
+    def record_gym_experience(self,
+                              state: np.ndarray,
+                              action: int,
+                              reward: float,
+                              next_state: np.ndarray,
+                              done: bool = False):
+        """
+        Record experience from REAL GYM gameplay for training.
+        
+        This is different from record_experience() which uses internal
+        prev_state/prev_action. This method accepts all components directly
+        for external gym environment integration.
+        
+        Args:
+            state: Observation from gym environment (will be padded/truncated to 28)
+            action: Action taken (MUST be 0-5 for our 6-action brain)
+            reward: Reward received
+            next_state: Next observation
+            done: Whether episode ended
+        """
+        import logging
+        _logger = logging.getLogger(__name__)
+        
+        if self.brain is None:
+            return
+        if self.experience_buffer is None:
+            return
+        
+        # CRITICAL: Validate action is within our brain's action space (0-5)
+        # Gym environments may have different action counts, but our brain
+        # only supports 6 actions. Skip experiences with invalid actions.
+        # For continuous actions (numpy arrays), convert to discrete action index
+        if isinstance(action, np.ndarray):
+            # Continuous action - convert to discrete by taking argmax of first 6 dims
+            # or hashing the action vector to a consistent action index
+            if len(action) > 0:
+                action = int(np.abs(action).sum() * 1000) % 6  # Hash to 0-5
+            else:
+                action = 0
+        elif not (0 <= action <= 5):
+            _logger.debug(f"[GYM-EXP] Skipping experience with invalid action {action} (must be 0-5)")
+            return
+        
+        # Normalize state to 28-dim (our standard input dimension)
+        def normalize_state(obs):
+            state_28 = np.zeros(28, dtype=np.float32)
+            if isinstance(obs, (int, np.integer)):
+                state_28[0] = float(obs) / 100.0
+            elif isinstance(obs, tuple):
+                for i, val in enumerate(obs[:28]):
+                    if isinstance(val, (int, float, bool)):
+                        state_28[i] = float(val)
+            else:
+                obs_flat = np.array(obs).flatten()
+                state_28[:min(len(obs_flat), 28)] = obs_flat[:28]
+            return state_28
+        
+        state_norm = normalize_state(state)
+        next_state_norm = normalize_state(next_state)
+        
+        # ═══════════════════════════════════════════════════════════════════
+        # REWARD NORMALIZATION for Gym environments
+        # Different envs have wildly different reward scales:
+        #   - CartPole: 0-500 per episode
+        #   - MuJoCo Humanoid: -∞ to ~6000
+        #   - LunarLander: -∞ to ~300
+        #   - Blackjack: -1 to 1
+        # 
+        # We normalize to [-1, 1] range for stable DQN training.
+        # ═══════════════════════════════════════════════════════════════════
+        reward_normalized = reward
+        if abs(reward) > 1.0:
+            # Soft clip with tanh for large rewards
+            # Maps (-∞, ∞) → (-1, 1) smoothly
+            reward_normalized = np.tanh(reward / 10.0)  # /10 spreads out common range
+        
+        # Add to experience buffer
+        self.experience_buffer.add(
+            state=state_norm,
+            action=action,
+            reward=reward_normalized,
+            next_state=next_state_norm,
+            done=done
+        )
+        
+        # Increment gym_experiences count
+        self.gym_experiences = getattr(self, 'gym_experiences', 0) + 1
+        
+        # Log first few experiences
+        buffer_len = len(self.experience_buffer)
+        if buffer_len <= 3:
+            _logger.info(f"[GYM-EXP] {self.species_id}: Gym experience recorded! "
+                        f"buffer_size={buffer_len}, reward={reward:.3f}")
+        
+        # Update prev_state/action for consistency
+        self.prev_state = state_norm
+        self.prev_action = action
 
     def record_battle_outcome(self, won: bool, margin: float):
         """
@@ -1686,7 +1856,7 @@ class NeuralOrganism(Organism):
         # Get device from brain model (CPU or CUDA)
         device = next(self.brain.parameters()).device
         # Get correct input dimension from config
-        input_dim = self.config.get('neural', {}).get('brain', {}).get('input_dim', 25)
+        input_dim = self.config.get('neural', {}).get('brain', {}).get('input_dim', 27)
         self.brain.eval()
         
         # Early stopping for UNK sequences
@@ -2094,7 +2264,12 @@ class NeuralOrganism(Organism):
                     self.language_epsilon * self.language_epsilon_decay
                 )
         
-        return generated
+        # DECODE HERE - return text, not tokens. Vocab is local, only we can decode.
+        response_words = vocab.decode(generated, skip_special=True)
+        response_text = ' '.join(response_words) if response_words else ''
+        
+        # Return both for compatibility - text is primary, tokens for analysis
+        return {'text': response_text, 'tokens': generated}
     
     def _evaluate_generation_quality(self, generated: List[int], vocab: Any, knowledge_web: Any) -> Dict[str, Any]:
         """
@@ -2339,7 +2514,7 @@ class NeuralOrganism(Organism):
             neural_config = self.config.get('neural', {})
             brain_config = neural_config.get('brain', {})
             new_brain = OrganismBrain(
-                input_dim=brain_config.get('input_dim', 25),
+                input_dim=brain_config.get('input_dim', 27),
                 hidden_dim=brain_config.get('hidden_dim', 64),
                 output_dim=brain_config.get('output_dim', 6),
                 activation=brain_config.get('activation', 'relu'),
@@ -2437,10 +2612,10 @@ class NeuralOrganism(Organism):
         Get this organism's linguistic signature for dialect analysis.
         
         Returns:
-            Signature vector representing this organism's "dialect"
+            Signature vector representing this organism's "dialect" (32-dim)
         """
         if self.atomic_language is None:
-            return np.zeros(10)
+            return np.zeros(32)  # Matches compute_dialect_signature(fixed_length=32)
         return self.atomic_language.compute_dialect_signature()
     
     def get_concept_graph(self) -> Dict[str, Any]:

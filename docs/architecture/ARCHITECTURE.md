@@ -73,6 +73,14 @@ Breath Cycle (Explorer)
     │       └─> Network metrics update
     │       └─> State logged
     │
+    ├─> Antennae (Collective Sensing) ⭐ NEW
+    │   └─> antennae.sense(organisms, report)
+    │       └─> Aggregate organism states
+    │       └─> Update beliefs from outcomes
+    │   └─> antennae.influence(config_tuner)
+    │       └─> Generate governance signal
+    │       └─> Apply parameter adjustments
+    │
     ├─> Djinn Kernel
     │   └─> vp_monitor.compute_violation_pressure()
     │       └─> VP calculated from traits
@@ -88,6 +96,26 @@ Breath Cycle (Explorer)
 ---
 
 ## 🎯 Component Relationships
+
+### Antennae (Self-Governance) ⭐ NEW
+
+**Responsibilities:**
+- Collective sensing (aggregate organism states)
+- Governance signal generation
+- Belief tracking and updating
+- Health prediction (Kleene convergence)
+- Automatic parameter tuning
+
+**Dependencies:**
+- Reality Simulator (organisms, network)
+- AtomicConfigSystem (parameter adjustment)
+- SystemReport (population analytics)
+
+**Exports:**
+- AntennaReading (9-dimensional perception)
+- GovernanceSignal (6-dimensional tuning)
+- Belief system state
+- Health predictor insights
 
 ### Explorer (Central Body)
 

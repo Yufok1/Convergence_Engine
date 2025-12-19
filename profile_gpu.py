@@ -59,7 +59,7 @@ def profile_brain_forward():
     
     # Create brain with typical config (matches OrganismBrain.__init__ signature)
     brain = OrganismBrain(
-        input_dim=24,
+        input_dim=28,
         hidden_dim=128,
         output_dim=8,
         use_attention=True,
@@ -76,13 +76,13 @@ def profile_brain_forward():
     results = []
     
     # Warmup
-    x = torch.randn(4, 24, device=DEVICE)
+    x = torch.randn(4, 28, device=DEVICE)
     for _ in range(10):
         _ = brain(x)
     torch.cuda.synchronize()
     
     for batch_size in batch_sizes:
-        x = torch.randn(batch_size, 24, device=DEVICE)
+        x = torch.randn(batch_size, 28, device=DEVICE)
         
         # Time forward pass
         torch.cuda.synchronize()

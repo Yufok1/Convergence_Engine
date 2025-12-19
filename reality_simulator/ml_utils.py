@@ -291,6 +291,38 @@ class PopulationClusterer:
             cross_alliance_influence = getattr(org, 'cross_alliance_connections', 0)
             feature_vec.append(min(1.0, cross_alliance_influence / 10.0))
             
+            # === LANGUAGE-GAME BRIDGE FEATURES ===
+            # Integration: Connect vocabulary-game correlations to ML analysis
+            # Note: Bridge is at arena-level, not per-organism. We use organism's 
+            # arena participation metrics or default to neutral values.
+            
+            # Try to get bridge metrics from organism (if attached) or from context
+            bridge_metrics = None
+            if hasattr(org, 'language_game_bridge') and org.language_game_bridge:
+                bridge_metrics = org.language_game_bridge.get_correlation_metrics()
+            elif context_memory and hasattr(context_memory, 'language_game_metrics'):
+                # Use network-level aggregated metrics as fallback
+                bridge_metrics = context_memory.language_game_metrics
+            
+            # Language-game alignment (how well vocabulary correlates with game success)
+            lang_game_alignment = 0.5  # Neutral default
+            if bridge_metrics:
+                alignment = bridge_metrics.get('vocabulary_game_alignment', 0.0)
+                lang_game_alignment = (alignment + 1.0) / 2.0  # Normalize -1,1 to 0,1
+            feature_vec.append(min(1.0, max(0.0, lang_game_alignment)))
+            
+            # Language decision influence (how much vocabulary affects actions)
+            lang_decision_influence = 0.0
+            if bridge_metrics:
+                lang_decision_influence = bridge_metrics.get('language_decision_influence', 0.0)
+            feature_vec.append(min(1.0, lang_decision_influence))
+            
+            # Concept diversity in games (vocabulary breadth during gameplay)
+            game_concept_diversity = 0.0
+            if bridge_metrics:
+                game_concept_diversity = bridge_metrics.get('concept_diversity', 0.0)
+            feature_vec.append(min(1.0, game_concept_diversity))
+            
             features.append(feature_vec)
         
         return np.array(features), organism_ids
