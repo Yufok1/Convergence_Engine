@@ -712,9 +712,11 @@ class ContextMemory:
         Returns:
             Dictionary of stability metrics
         """
-        # Friendly debug: when empty, make it clear it's a normal initial state
+        # Friendly debug: when empty, make it clear it's a normal initial state (only log once)
         if len(self.language_anchors) == 0 and len(self.node_word_associations) == 0:
-            print("[Context Memory] No anchors yet – metrics default to 0 (will populate as the system runs)")
+            if not hasattr(self, '_empty_metrics_logged'):
+                self._empty_metrics_logged = True
+                logging.debug("[Context Memory] No anchors yet – metrics default to 0 (will populate as the system runs)")
         # Removed verbose debug prints - metrics are already logged via StateLogger
         metrics = {}
 
@@ -722,8 +724,9 @@ class ContextMemory:
         total_nodes = len(set().union(*self.node_word_associations.values()))
         anchored_nodes = len(self.node_word_associations)
         metrics['anchor_density'] = anchored_nodes / max(total_nodes, 1)
-        if total_nodes == 0:
-            print("[Context Memory] Anchor density: 0.0 (no nodes yet)")
+        if total_nodes == 0 and not hasattr(self, '_density_logged'):
+            self._density_logged = True
+            logging.debug("[Context Memory] Anchor density: 0.0 (no nodes yet)")
         # Removed verbose debug print - anchor_density is already logged via StateLogger
 
         # Language coherence: average words per anchored node

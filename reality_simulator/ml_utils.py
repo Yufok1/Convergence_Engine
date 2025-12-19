@@ -1290,7 +1290,8 @@ class MLAnalyzer:
                     'ngram_range': self.tfidf_vectorizer.ngram_range
                 }
             except Exception as e:
-                logger.warning(f"[ML] TF-IDF analysis failed: {e}")
+                # Expected in grounded language mode with limited vocab
+                logger.debug(f"[ML] TF-IDF analysis skipped: {e}")
                 tfidf_results = None
         
         # Analyze word co-occurrence (words that appear together) - keep basic version

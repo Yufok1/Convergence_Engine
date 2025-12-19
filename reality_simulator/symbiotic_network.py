@@ -1950,9 +1950,11 @@ class SymbioticNetwork:
                 self.network_graph.remove_edge(org_a, org_b)
             removed_count += 1
 
-        if removed_count > 0:
-            print(f"[NETWORK PRUNING] Removed {removed_count} weak connections "
-                  f"(protected {len(protected_edges)} linguistic edges)")
+        if removed_count > 10:  # Only log significant pruning events
+            logging.info(f"[NETWORK PRUNING] Removed {removed_count} weak connections "
+                         f"(protected {len(protected_edges)} linguistic edges)")
+        elif removed_count > 0:
+            logging.debug(f"[NETWORK PRUNING] Removed {removed_count} weak connections")
 
     def _prune_weak_connections(self):
         """Legacy method - now calls the protected version"""

@@ -947,7 +947,7 @@ class NeuralOrganism(Organism):
             self._decisions_made = 0
         self._decisions_made += 1
         if self._decisions_made <= 2:
-            _decision_logger.warning(f"[DECIDE] {self.species_id}: action={action}, state_shape={state.shape if hasattr(state, 'shape') else 'N/A'}, epsilon={self.epsilon:.3f}")
+            _decision_logger.debug(f"[DECIDE] {self.species_id}: action={action}, state_shape={state.shape if hasattr(state, 'shape') else 'N/A'}, epsilon={self.epsilon:.3f}")
         
         # Update sequence histories for language model training
         self.action_history.append(action)
