@@ -4,7 +4,7 @@
   "_hardware_profile_help": "Set to 'beast', 'workstation', 'standard', 'laptop', 'potato', or 'cpu_only' to override auto-detection. null = auto-detect",
   "language": {
     "_help": "Grounded Language Mode: Organisms learn language through action-outcome associations before semantic understanding",
-    "mode": "hybrid",
+    "mode": "grounded",
     "_mode_options": "grounded | semantic | hybrid",
     "grounded": {
       "enabled": true,
@@ -20,8 +20,8 @@
       "always_allow_tokens": [".", ",", "!", "?", "and", "the", "a", "is", "to", "of", "in"]
     },
     "semantic": {
-      "enabled": true,
-      "knowledge_web_bootstrap": true,
+      "enabled": false,
+      "knowledge_web_bootstrap": false,
       "semantic_reward_at_level_4": true,
       "semantic_reward_weight": 0.25
     },
