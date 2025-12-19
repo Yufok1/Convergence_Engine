@@ -747,17 +747,8 @@ class NeuralTrainer:
         
         # 6. Self-perception reward shaping (Features 26-28)
         # Organisms can now FEEL their oscillation and coherence - make this matter
-        # Config values from self_perception section (with hardcoded fallbacks)
-        sp_config = self.config.get('self_perception', {})
-        sp_enabled = sp_config.get('enabled', False)  # Default disabled - requires input_dim >= 28
-        
-        # Self-perception requires input_dim >= 28 (features 25-27)
-        input_dim = self.config.get('neural', {}).get('brain', {}).get('input_dim', 25)
-        if sp_enabled and input_dim < 28:
-            sp_enabled = False  # Disable if dimensions don't support it
-        
-        if sp_enabled:
-            # NOTE: Self-perception reward shaping removed - 28D system deprecated (now 25D)
+        # NOTE: Self-perception reward shaping removed - 28D system deprecated (now 25D)
+        # Features 25-27 (oscillation_entropy, coherence_frequency, attractor_proximity) no longer exist
         
         # Integration 2: Add language reward (if ML analysis available)
         language_reward = self._calculate_language_reward(organism)

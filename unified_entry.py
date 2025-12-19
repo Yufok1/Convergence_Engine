@@ -3130,9 +3130,9 @@ class UnifiedSystem:
                 
                 self.logger.log_state('state', unified_state)
                 
-                # Write unified shared state file (includes all three systems + phase sync + landscape!)
+                # Write unified shared state file (includes all three systems + phase sync)
                 # This is the primary source of truth for the Causation Explorer
-                self._write_unified_shared_state(reality_sim_state, explorer_state, djinn_kernel_state, phase_sync_state, landscape_state)
+                self._write_unified_shared_state(reality_sim_state, explorer_state, djinn_kernel_state, phase_sync_state)
                 
                 # Phase 2: Feed events to Causation Explorer in real-time
                 if self.causation_explorer:
