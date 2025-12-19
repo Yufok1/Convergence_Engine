@@ -333,8 +333,17 @@ class AllianceTournamentSystem:
         return result
     
     # =========================================================================
-    # CHAMPION SELECTION
+    # CHAMPION SELECTION - MASTERY-AWARE
     # =========================================================================
+    
+    def _get_mastery_level(self, organism_id: str) -> int:
+        """Get mastery level for an organism (0-4)."""
+        if not self.get_organism:
+            return 0
+        org = self.get_organism(organism_id)
+        if org and hasattr(org, 'atomic_language') and org.atomic_language:
+            return getattr(org.atomic_language, '_mastery_level', 0)
+        return 0
     
     def _select_champions(self,
                          member_ids: List[str],
@@ -343,14 +352,28 @@ class AllianceTournamentSystem:
         """
         Select champions from alliance members.
         
-        For now, randomly selects up to max_champions.
-        TODO: Use fitness or past tournament performance to select.
+        MASTERY-AWARE: Prioritizes higher mastery organisms as champions.
+        Better-trained organisms (higher mastery) fight on behalf of alliance.
         """
         # Don't select more champions than we have members
         num_champions = min(len(member_ids), max_champions)
         
-        # Randomly select (future: could use fitness ranking)
-        selected = random.sample(member_ids, num_champions)
+        # Get mastery levels for all members
+        member_mastery = [(mid, self._get_mastery_level(mid)) for mid in member_ids]
+        
+        # Sort by mastery level (highest first), with random tiebreaker
+        random.shuffle(member_mastery)  # Shuffle first for random tiebreaker
+        member_mastery.sort(key=lambda x: x[1], reverse=True)
+        
+        # Select top mastery organisms as champions
+        selected = [mid for mid, level in member_mastery[:num_champions]]
+        
+        # Log mastery distribution
+        mastery_counts = {}
+        for mid, level in member_mastery:
+            mastery_counts[level] = mastery_counts.get(level, 0) + 1
+        self.logger.info(f"   📊 Alliance {alliance_id[:8]} mastery distribution: {mastery_counts}")
+        self.logger.info(f"   🎖️ Champion mastery levels: {[self._get_mastery_level(s) for s in selected]}")
         
         return [
             ChampionRecord(organism_id=org_id, alliance_id=alliance_id)
@@ -409,20 +432,76 @@ class AllianceTournamentSystem:
         else:
             self._execute_kill(champion_b, champion_a, result)
     
+    def _mastery_aware_bracket(self, champions: List[ChampionRecord]) -> List[ChampionRecord]:
+        """
+        Arrange champions for mastery-fair matchups.
+        
+        WEIGHT CLASS MATCHING: Group by mastery tier, then interleave so
+        similar mastery levels fight first. This ensures fair fights:
+        - Level 0 vs Level 0 (both have 6 words)
+        - Level 1 vs Level 1 (both have 26 words)
+        - etc.
+        
+        Returns rearranged list where adjacent pairs have similar mastery.
+        """
+        # Get mastery for each champion
+        with_mastery = [(c, self._get_mastery_level(c.organism_id)) for c in champions]
+        
+        # Group by mastery tier
+        tiers: Dict[int, List[ChampionRecord]] = {}
+        for champ, level in with_mastery:
+            if level not in tiers:
+                tiers[level] = []
+            tiers[level].append(champ)
+        
+        # Shuffle within each tier for randomness
+        for level in tiers:
+            random.shuffle(tiers[level])
+        
+        # Build bracket: pair within same tier first, then cross-tier
+        arranged = []
+        
+        # First, add complete pairs from each tier (same mastery fights)
+        for level in sorted(tiers.keys()):
+            tier_list = tiers[level]
+            # Pair up within tier (take pairs of 2)
+            while len(tier_list) >= 2:
+                arranged.append(tier_list.pop())
+                arranged.append(tier_list.pop())
+        
+        # Handle remaining unpaired (will fight cross-tier)
+        remaining = []
+        for level in tiers:
+            remaining.extend(tiers[level])
+        random.shuffle(remaining)
+        arranged.extend(remaining)
+        
+        # Log mastery distribution
+        mastery_dist = {}
+        for champ, level in with_mastery:
+            mastery_dist[level] = mastery_dist.get(level, 0) + 1
+        self.logger.info(f"   🎯 MASTERY WEIGHT CLASSES: {mastery_dist}")
+        
+        return arranged
+    
     def _run_single_elimination(self,
                                 result: AllianceTournamentResult,
                                 get_organism_brain: Callable) -> None:
         """
-        🏆💀 SINGLE ELIMINATION BRACKET
+        🏆💀 SINGLE ELIMINATION BRACKET - MASTERY-AWARE
         
         All champions from both sides enter bracket.
         One loss = DEATH. Winner absorbs loser. Last alliance standing wins.
+        
+        WEIGHT CLASS MATCHING: Same mastery levels fight first when possible.
         """
         self.logger.info("\n🏆💀 SINGLE ELIMINATION BRACKET (ONE LOSS = DEATH)")
         
-        # Combine all champions and shuffle for bracket
+        # Combine all champions
         all_champions = result.champions_a + result.champions_b
-        random.shuffle(all_champions)
+        
+        # MASTERY-AWARE BRACKET: Arrange so same mastery levels fight first
+        all_champions = self._mastery_aware_bracket(all_champions)
         
         # Run bracket until we have a winner
         active = [c for c in all_champions if c.is_alive]
@@ -437,6 +516,12 @@ class AllianceTournamentSystem:
             for i in range(0, len(active) - 1, 2):
                 fighter_a = active[i]
                 fighter_b = active[i + 1]
+                
+                # Log mastery matchup
+                level_a = self._get_mastery_level(fighter_a.organism_id)
+                level_b = self._get_mastery_level(fighter_b.organism_id)
+                fair_match = "✅" if level_a == level_b else f"⚠️ L{level_a}vL{level_b}"
+                self.logger.debug(f"   Matchup: {fighter_a.organism_id[:8]} vs {fighter_b.organism_id[:8]} {fair_match}")
                 
                 # Skip if either is already dead
                 if not fighter_a.is_alive or not fighter_b.is_alive:

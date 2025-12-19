@@ -207,6 +207,58 @@ class PlanetaryAlliance:
         
         return max(0.1, total_fitness + territory_bonus + experience_bonus - betrayal_penalty)
     
+    def get_behavioral_signature(self, get_organism_fingerprint: Callable) -> List[float]:
+        """
+        Calculate aggregate behavioral fingerprint for this alliance.
+        
+        This is the alliance's IDENTITY - who they ARE as a collective.
+        Like the Atreides way vs the Harkonnen way.
+        
+        Args:
+            get_organism_fingerprint: Function(org_id) -> [move, coop, compete, rest, reproduce, isolate]
+            
+        Returns:
+            6-element behavioral signature (normalized)
+        """
+        if not self.members:
+            return [0.0] * 6
+        
+        # Aggregate all member fingerprints
+        aggregate = [0.0] * 6
+        valid_count = 0
+        
+        for org_id in self.members:
+            try:
+                fingerprint = get_organism_fingerprint(org_id)
+                if fingerprint and len(fingerprint) >= 6:
+                    for i in range(6):
+                        aggregate[i] += fingerprint[i]
+                    valid_count += 1
+            except:
+                pass
+        
+        # Normalize
+        if valid_count > 0:
+            aggregate = [v / valid_count for v in aggregate]
+        
+        return aggregate
+    
+    def get_dominant_behavior(self, get_organism_fingerprint: Callable) -> str:
+        """
+        Get the dominant behavioral tendency of this alliance.
+        
+        Returns:
+            'warriors' (compete), 'diplomats' (cooperate), 'explorers' (move),
+            'hermits' (isolate), 'nurturers' (reproduce), 'conservers' (rest)
+        """
+        signature = self.get_behavioral_signature(get_organism_fingerprint)
+        if not signature or sum(signature) == 0:
+            return 'unknown'
+        
+        behavior_names = ['explorers', 'diplomats', 'warriors', 'conservers', 'nurturers', 'hermits']
+        max_idx = signature.index(max(signature))
+        return behavior_names[max_idx]
+    
     def to_dict(self) -> Dict[str, Any]:
         return {
             'alliance_id': self.alliance_id,
@@ -948,6 +1000,181 @@ class AllianceWarfareSystem:
                 neural_org.record_alliance_event(event_type, success)
             except Exception as e:
                 self.logger.debug(f"Neural feedback failed for {organism_id}: {e}")
+    
+    # ═══════════════════════════════════════════════════════════════════════════
+    # 🎭 BEHAVIORAL DIVERGENCE - THE DUNE PARADIGM
+    # ═══════════════════════════════════════════════════════════════════════════
+    # "The Atreides and Harkonnens didn't fight over spice - they fought because
+    #  they had become incompatible ways of being."
+    #
+    # Alliances evolve behavioral signatures. When two alliances encounter each
+    # other with HIGH DIVERGENCE, curiosity drives them to engage:
+    # "Your existence questions mine. Let us resolve this through contest."
+    # ═══════════════════════════════════════════════════════════════════════════
+    
+    def get_alliance_behavioral_signature(self, alliance_id: str) -> List[float]:
+        """
+        Get the behavioral signature of an alliance.
+        
+        Returns:
+            6-element list [move, cooperate, compete, rest, reproduce, isolate]
+        """
+        alliance = self.alliances.get(alliance_id)
+        if not alliance:
+            return [0.0] * 6
+        
+        def get_fingerprint(org_id: str) -> List[float]:
+            neural_org = self._get_neural_organism(org_id)
+            if neural_org and hasattr(neural_org, 'behavioral_fingerprint'):
+                return neural_org.behavioral_fingerprint
+            return None
+        
+        return alliance.get_behavioral_signature(get_fingerprint)
+    
+    def calculate_behavioral_divergence(self, alliance_a_id: str, alliance_b_id: str) -> float:
+        """
+        Calculate behavioral divergence between two alliances.
+        
+        High divergence = fundamentally different ways of being.
+        Like Atreides honor vs Harkonnen cruelty.
+        
+        Returns:
+            Divergence score 0.0 (identical) to 1.0 (opposite)
+        """
+        sig_a = self.get_alliance_behavioral_signature(alliance_a_id)
+        sig_b = self.get_alliance_behavioral_signature(alliance_b_id)
+        
+        # Handle empty signatures
+        sum_a = sum(sig_a)
+        sum_b = sum(sig_b)
+        if sum_a == 0 or sum_b == 0:
+            return 0.5  # Unknown divergence
+        
+        # Cosine distance: 1 - cosine_similarity
+        # Cosine similarity = (A·B) / (||A|| * ||B||)
+        import math
+        
+        dot_product = sum(a * b for a, b in zip(sig_a, sig_b))
+        magnitude_a = math.sqrt(sum(a * a for a in sig_a))
+        magnitude_b = math.sqrt(sum(b * b for b in sig_b))
+        
+        if magnitude_a == 0 or magnitude_b == 0:
+            return 0.5
+        
+        cosine_similarity = dot_product / (magnitude_a * magnitude_b)
+        divergence = 1.0 - cosine_similarity
+        
+        # Normalize to 0-1 range (cosine distance can be 0-2)
+        return min(1.0, max(0.0, divergence))
+    
+    def get_most_divergent_alliance(self, alliance_id: str) -> Tuple[Optional[str], float]:
+        """
+        Find the alliance most behaviorally different from the given one.
+        
+        This is the alliance that raises the most questions:
+        "How can THEY be? Their way of being challenges ours."
+        
+        Returns:
+            Tuple of (other_alliance_id, divergence_score) or (None, 0.0)
+        """
+        if alliance_id not in self.alliances:
+            return None, 0.0
+        
+        max_divergence = 0.0
+        most_divergent_id = None
+        
+        for other_id in self.alliances:
+            if other_id == alliance_id:
+                continue
+            # Skip alliances we're already at war with
+            if other_id in self.alliances[alliance_id].at_war_with:
+                continue
+            
+            divergence = self.calculate_behavioral_divergence(alliance_id, other_id)
+            if divergence > max_divergence:
+                max_divergence = divergence
+                most_divergent_id = other_id
+        
+        return most_divergent_id, max_divergence
+    
+    def get_alliance_average_curiosity(self, alliance_id: str) -> float:
+        """
+        Get the average curiosity trait of alliance members.
+        
+        Curiosity drives the desire to UNDERSTAND the Other through engagement.
+        """
+        alliance = self.alliances.get(alliance_id)
+        if not alliance:
+            return 0.5
+        
+        curiosities = []
+        for org_id in alliance.members:
+            neural_org = self._get_neural_organism(org_id)
+            if neural_org:
+                # Try to get curiosity from phenotype
+                if hasattr(neural_org, 'phenotype') and hasattr(neural_org.phenotype, 'curiosity'):
+                    curiosities.append(neural_org.phenotype.curiosity)
+                # Or from traits dict
+                elif hasattr(neural_org, 'phenotype') and hasattr(neural_org.phenotype, 'traits'):
+                    curiosities.append(neural_org.phenotype.traits.get('curiosity', 0.5))
+                else:
+                    curiosities.append(0.5)  # Default
+        
+        return sum(curiosities) / len(curiosities) if curiosities else 0.5
+    
+    def should_propose_war_by_divergence(self, alliance_id: str) -> Tuple[bool, Optional[str], str]:
+        """
+        Determine if an alliance should propose war based on behavioral divergence.
+        
+        War emerges not from resource scarcity but from existential questioning:
+        "Your way of being challenges mine. We must engage to understand."
+        
+        Returns:
+            Tuple of (should_propose, target_alliance_id, reasoning)
+        """
+        alliance = self.alliances.get(alliance_id)
+        if not alliance:
+            return False, None, "No alliance"
+        
+        # Need a warchief to propose war
+        if not alliance.warchief_id:
+            return False, None, "No warchief to propose"
+        
+        # Can't propose if already at war
+        if alliance.at_war_with:
+            return False, None, "Already at war"
+        
+        # Find most divergent alliance
+        target_id, divergence = self.get_most_divergent_alliance(alliance_id)
+        if not target_id:
+            return False, None, "No potential targets"
+        
+        # Get alliance curiosity level
+        avg_curiosity = self.get_alliance_average_curiosity(alliance_id)
+        
+        # The formula: high divergence + high curiosity = war proposal
+        # Divergence alone isn't enough - you need to WANT to understand
+        # Curiosity alone isn't enough - you need someone DIFFERENT to be curious about
+        
+        war_drive = divergence * 0.6 + avg_curiosity * 0.4
+        
+        # Threshold: need significant drive to propose war
+        threshold = 0.55
+        
+        if war_drive > threshold:
+            target_alliance = self.alliances.get(target_id)
+            target_name = target_alliance.name if target_alliance else target_id[:8]
+            our_behavior = alliance.get_dominant_behavior(lambda oid: 
+                getattr(self._get_neural_organism(oid), 'behavioral_fingerprint', None))
+            their_behavior = target_alliance.get_dominant_behavior(lambda oid:
+                getattr(self._get_neural_organism(oid), 'behavioral_fingerprint', None)) if target_alliance else 'unknown'
+            
+            reasoning = (f"Behavioral divergence {divergence:.2f} with '{target_name}'. "
+                        f"We are {our_behavior}, they are {their_behavior}. "
+                        f"Curiosity drives us to understand through engagement.")
+            return True, target_id, reasoning
+        
+        return False, None, f"War drive {war_drive:.2f} below threshold {threshold}"
     
     def _get_or_create_reputation(self, organism_id: str) -> OrganismReputation:
         """Get reputation, create if doesn't exist."""
@@ -3112,6 +3339,59 @@ class AllianceWarfareSystem:
                     })
                     self.organism_challenge_leadership(organism.species_id)
                     results['actions_taken'].append("Challenged for leadership!")
+            
+            # ═══════════════════════════════════════════════════════════════════════════
+            # 🏛️ CURIOSITY-DRIVEN WAR PROPOSAL - THE DUNE PARADIGM
+            # ═══════════════════════════════════════════════════════════════════════════
+            # "Your existence questions mine. Let us resolve this through contest."
+            #
+            # War is proposed not from hate or greed, but from CURIOSITY about the Other.
+            # When alliances have evolved into fundamentally different ways of being,
+            # the tension can only be resolved through engagement.
+            # ═══════════════════════════════════════════════════════════════════════════
+            if alliance_info.get('is_warchief') and not alliance_info.get('at_war'):
+                # Only warchief can propose war, and only if not already at war
+                current_alliance_id = self.get_organism_alliance(organism.species_id)
+                
+                if current_alliance_id:
+                    # Find the most behaviorally divergent alliance
+                    target_alliance_id, divergence = self.get_most_divergent_alliance(current_alliance_id)
+                    
+                    if target_alliance_id and divergence > 0.4:  # Need meaningful divergence
+                        # Build war proposal context
+                        war_context = {
+                            'target_id': target_alliance_id,
+                            'behavioral_divergence': divergence,
+                            'trust_history': trust_history,
+                            'threat_level': divergence * 0.6,  # Different = potentially threatening
+                            'war_risk': 0.4  # Base risk
+                        }
+                        
+                        decision, confidence, reasoning = organism.evaluate_alliance_decision(
+                            'propose_war', war_context, network_state
+                        )
+                        
+                        if decision and confidence > 0.5:
+                            # Get target alliance name for logging
+                            target_alliance = self.alliances.get(target_alliance_id)
+                            target_name = target_alliance.name if target_alliance else target_alliance_id[:8]
+                            
+                            results['decisions_made'].append({
+                                'type': 'propose_war',
+                                'decision': True,
+                                'confidence': confidence,
+                                'reasoning': reasoning,
+                                'target': target_name,
+                                'divergence': divergence
+                            })
+                            
+                            # Actually propose the war
+                            proposal_id = self.organism_propose_war(organism.species_id, target_alliance_id)
+                            if proposal_id:
+                                results['actions_taken'].append(
+                                    f"🏛️ PROPOSED WAR against '{target_name}' (divergence: {divergence:.2f}) - "
+                                    f"\"Your way of being challenges ours\""
+                                )
         
         # === ALLIANCE CREATION (if not in alliance) ===
         elif not context.get('in_alliance') and len(context.get('pending_invites', [])) == 0:

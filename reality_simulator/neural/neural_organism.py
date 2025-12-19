@@ -2889,6 +2889,39 @@ class NeuralOrganism(Organism):
                     threat_mod * 0.3 -
                     cooperate_weight * 0.2)
             threshold = 0.5
+        
+        elif decision_type == 'propose_war':
+            # ═══════════════════════════════════════════════════════════════════════
+            # 🏛️ THE DUNE PARADIGM - CURIOSITY-DRIVEN WARFARE
+            # ═══════════════════════════════════════════════════════════════════════
+            # "The Atreides and Harkonnens didn't fight over spice - they fought
+            #  because they had become incompatible ways of being."
+            #
+            # War is proposed not from hate or greed, but from CURIOSITY:
+            # "Your existence questions mine. Let us resolve this through contest."
+            # ═══════════════════════════════════════════════════════════════════════
+            
+            # Get curiosity trait (motivation to understand through engagement)
+            curiosity = 0.5  # Default
+            if hasattr(self, 'phenotype') and hasattr(self.phenotype, 'curiosity'):
+                curiosity = self.phenotype.curiosity
+            elif hasattr(self, 'phenotype') and hasattr(self.phenotype, 'traits'):
+                curiosity = self.phenotype.traits.get('curiosity', 0.5)
+            
+            # Behavioral divergence from context (how different are they?)
+            divergence = context.get('behavioral_divergence', 0.5)
+            
+            # Propose war if: curious about the Other + they're different + competitive nature
+            # CURIOSITY (want to understand) + DIVERGENCE (something to understand) + COMPETE (test through contest)
+            score = (curiosity * 0.35 +            # "I want to know what you are"
+                    divergence * 0.35 +            # "You are fundamentally different"
+                    compete_weight * 0.2 +         # "I will test myself against you"
+                    (1 - cooperate_weight) * 0.1)  # Not satisfied with peaceful coexistence
+            
+            # SKEPTICISM tempers the impulse (skeptics need more evidence)
+            # Use isolation as proxy for skepticism - isolators are more cautious
+            skepticism_factor = isolate_weight * 0.15
+            threshold = 0.45 + skepticism_factor  # Skeptics need higher score
             
         else:
             # Unknown decision type - default to cautious
