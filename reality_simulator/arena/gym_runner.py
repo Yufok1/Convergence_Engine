@@ -595,17 +595,17 @@ class GymRunner:
             return action_space.sample()
     
     def _obs_to_state(self, obs, env_config: Optional[Dict]) -> np.ndarray:
-        """Convert observation to standard 28-dim state vector."""
-        state = np.zeros(28, dtype=np.float32)
+        """Convert observation to standard 25-dim state vector (matches config.json input_dim)."""
+        state = np.zeros(25, dtype=np.float32)
         
         if isinstance(obs, (int, np.integer)):
             state[0] = float(obs) / 100.0
         elif isinstance(obs, tuple):
-            for i, val in enumerate(obs[:28]):
+            for i, val in enumerate(obs[:25]):
                 state[i] = float(val) if isinstance(val, (int, float, bool)) else 0.0
         else:
             obs_array = np.array(obs).flatten()
-            state[:min(len(obs_array), 28)] = obs_array[:28]
+            state[:min(len(obs_array), 25)] = obs_array[:25]
         
         return state
     

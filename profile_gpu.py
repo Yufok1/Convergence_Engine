@@ -59,7 +59,7 @@ def profile_brain_forward():
     
     # Create brain with typical config (matches OrganismBrain.__init__ signature)
     brain = OrganismBrain(
-        input_dim=28,
+        input_dim=25,
         hidden_dim=128,
         output_dim=8,
         use_attention=True,

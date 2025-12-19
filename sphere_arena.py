@@ -100,7 +100,7 @@ ORGANISM_MOVE_SPEED = 0.04  # Radians per frame
 # Observation size for neural network
 # Base: 15 (ball state, position, distances, game state)
 # Command chain: 5 (command target, distance to command, is_commander, has_command)
-OBSERVATION_SIZE = 28  # Matches config.json neural.brain.input_dim (25 base + 3 self-perception)
+OBSERVATION_SIZE = 25  # Matches config.json neural.brain.input_dim
 
 # Colors (RGB floats for OpenGL)
 COLORS = [

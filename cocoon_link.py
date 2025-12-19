@@ -562,8 +562,8 @@ class CocoonLink:
         return winner_id
     
     def _create_battle_state(self, round_num: int) -> List[float]:
-        """Create a 28D state vector for the battle (matches config.json input_dim=28)."""
-        state = [0.0] * 28
+        """Create a 25D state vector for the battle (matches config.json input_dim=25)."""
+        state = [0.0] * 25
         
         if self.current_battle:
             # Encode battle info into state
@@ -578,13 +578,6 @@ class CocoonLink:
             import random
             for i in range(6, 25):
                 state[i] = random.random() * 0.5
-            
-            # Features 25-26: Self-perception (oscillation_entropy, coherence_frequency)
-            state[25] = random.random() * 0.3  # oscillation_entropy (battle chaos)
-            state[26] = random.random() * 0.3  # coherence_frequency (battle coherence)
-            
-            # Feature 27: Attractor proximity (battle context: match stability)
-            state[27] = random.random() * 0.4  # attractor_proximity (battle stability)
         
         return state
     

@@ -71,7 +71,7 @@ PADDLE_THICKNESS = 10
 BALL_RADIUS = 10
 BALL_SPEED = 5
 PADDLE_SPEED = 8
-OBSERVATION_SIZE = 28  # Matches config.json neural.brain.input_dim (25 base + 3 self-perception)
+OBSERVATION_SIZE = 25  # Matches config.json neural.brain.input_dim
 
 # =============================================================================
 # DATA STRUCTURES
