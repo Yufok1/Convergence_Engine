@@ -1209,6 +1209,77 @@ class AtomicLanguageSystem:
         
         logger.debug(f"[ATOMIC_LANG] Organism {self.organism_id}: Initialized {len(self.atoms)} action heads")
     
+    def _expand_vocabulary_for_level(self, new_level: int):
+        """
+        Expand vocabulary when organism advances to a new mastery level.
+        
+        This is called from the mastery_level setter when level increases.
+        Adds the appropriate atoms for the new level without re-initializing
+        existing atoms.
+        
+        Level 1: +20 core state/relationship words (total: 26)
+        Level 2: +50 extended concepts (total: 76)  
+        Level 3: +200 pool words (total: 276)
+        Level 4: Full vocabulary unlocked
+        """
+        current_time = time.time()
+        innate_data = self._load_innate_vocab()
+        
+        if innate_data is None:
+            logger.warning(f"[ATOMIC_LANG] Cannot expand vocab - innate_vocab.json not found")
+            return
+        
+        concepts = innate_data.get('concepts', {})
+        tiers = innate_data.get('tiers', {})
+        
+        added_count = 0
+        
+        if new_level >= 1:
+            # Level 1+: Add core state/relationship words
+            core_words = tiers.get('core', [])
+            target_frames = {'state', 'relationship', 'resource', 'question', 'emotion', 'social'}
+            
+            for word in core_words:
+                if word not in self.atoms and word in concepts:
+                    info = concepts[word]
+                    frame = info.get('frame', 'universal')
+                    # Only add words that fit level 1 vocabulary
+                    if frame in target_frames or len(self.atoms) < 26:
+                        self._add_innate_concept(word, info, current_time, 'innate_core', 0.5)
+                        added_count += 1
+                        if len(self.atoms) >= 26:
+                            break
+        
+        if new_level >= 2:
+            # Level 2+: Add extended concepts
+            extended_words = tiers.get('extended', [])
+            num_to_add = min(50, max(0, 76 - len(self.atoms)))
+            
+            for word in extended_words[:num_to_add * 2]:  # Try more to filter
+                if word not in self.atoms and word in concepts:
+                    self._add_innate_concept(word, concepts[word], current_time, 'innate_extended', 0.4)
+                    added_count += 1
+                    if len(self.atoms) >= 76:
+                        break
+            
+            # Also initialize Golden Record and Orientation at level 2
+            self._initialize_golden_record_concepts(current_time)
+            self._initialize_foundational_orientation(current_time)
+        
+        if new_level >= 3:
+            # Level 3+: Add pool words
+            pool_words = tiers.get('pool', [])
+            num_to_add = min(200, max(0, 276 - len(self.atoms)))
+            
+            for word in pool_words[:num_to_add * 2]:
+                if word not in self.atoms and word in concepts:
+                    self._add_innate_concept(word, concepts[word], current_time, 'innate_rare', 0.25)
+                    added_count += 1
+                    if len(self.atoms) >= 276:
+                        break
+        
+        logger.info(f"[ATOMIC_LANG] Organism {self.organism_id}: Level {new_level} vocabulary expansion - added {added_count} words (total: {len(self.atoms)})")
+    
     def _initialize_golden_record_concepts(self, current_time: float):
         """
         Initialize Voyager Golden Record concepts - humanity's message to the cosmos.
@@ -1278,11 +1349,16 @@ class AtomicLanguageSystem:
     
     @mastery_level.setter
     def mastery_level(self, value: int):
-        """Set mastery level with bounds checking."""
+        """Set mastery level with bounds checking and vocabulary expansion."""
         old_level = self._mastery_level
         self._mastery_level = max(0, min(4, value))
         if self._mastery_level != old_level:
             logger.info(f"[ATOMIC_LANG] Organism {self.organism_id}: Mastery level {old_level} → {self._mastery_level}")
+            
+            # CRITICAL: Initialize vocabulary for new mastery level
+            # When advancing from level 0, we need to add the level 1+ atoms
+            self._expand_vocabulary_for_level(self._mastery_level)
+            
             if self.event_emitter:
                 try:
                     from causation_explorer import Event
@@ -1294,7 +1370,7 @@ class AtomicLanguageSystem:
                             'organism_id': self.organism_id,
                             'old_level': old_level,
                             'new_level': self._mastery_level,
-                            'vocab_size': self._mastery_vocab_sizes[self._mastery_level]
+                            'vocab_size': len(self.get_available_vocabulary())
                         }
                     ))
                 except ImportError:
