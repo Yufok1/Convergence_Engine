@@ -1083,7 +1083,7 @@ class AtomicLanguageSystem:
                 
                 atom = LinguisticAtom(
                     concept_id=concept_id,
-                    strength=0.5 + np.random.uniform(-0.1, 0.1),
+                    strength=0.5,  # Fixed starting point - differentiation comes from experience
                     source='innate',
                     semantic_frame=info['frame'],
                     abstraction_level=info['level'],
@@ -1192,7 +1192,7 @@ class AtomicLanguageSystem:
                 
                 atom = LinguisticAtom(
                     concept_id=action_head,
-                    strength=0.7 + np.random.uniform(-0.1, 0.1),  # Strong initial strength
+                    strength=0.7,  # Fixed starting point - differentiation comes from experience
                     source='innate_action_head',
                     semantic_frame=frame,
                     abstraction_level=level,
@@ -1292,7 +1292,7 @@ class AtomicLanguageSystem:
             if word not in self.atoms:
                 atom = LinguisticAtom(
                     concept_id=word,
-                    strength=0.7 + np.random.uniform(-0.1, 0.1),  # High initial strength
+                    strength=0.7,  # Fixed starting point - differentiation comes from experience
                     source='golden_record',
                     semantic_frame=info['frame'],
                     abstraction_level=info.get('level', 0),
@@ -1594,7 +1594,7 @@ class AtomicLanguageSystem:
                     
                     atom = LinguisticAtom(
                         concept_id=word,
-                        strength=0.35 + np.random.uniform(-0.05, 0.05),
+                        strength=0.35,  # Fixed starting point - differentiation comes from experience
                         source='foundational_orientation',
                         semantic_frame=frame,
                         abstraction_level=level,
@@ -1646,7 +1646,7 @@ class AtomicLanguageSystem:
         
         atom = LinguisticAtom(
             concept_id=word,
-            strength=base_strength + np.random.uniform(-0.1, 0.1),
+            strength=base_strength,  # Fixed starting point - differentiation comes from experience
             source=source,
             semantic_frame=frame,
             abstraction_level=info.get('level', 0),
