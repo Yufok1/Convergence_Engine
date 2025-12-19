@@ -7249,11 +7249,18 @@ def list_organisms():
                 logger.info(f"Found {len(live_organisms)} live organisms from simulation")
                 for org_id, organism in live_organisms.items():
                     if org_id not in organism_ids:
-                        # Get word count for this organism
+                        # Get word count and mastery level for this organism
                         # PRIMARY: Check atomic_language.atoms (the organism's actual learned vocabulary)
                         words_learned = 0
+                        mastery_level = 0
+                        mastery_vocab_limit = 6  # Level 0 default
                         if hasattr(organism, 'atomic_language') and organism.atomic_language:
                             words_learned = len(organism.atomic_language.atoms)
+                            mastery_level = getattr(organism.atomic_language, '_mastery_level', 0)
+                            # Get vocab limit for current level
+                            mastery_sizes = getattr(organism.atomic_language, '_mastery_vocab_sizes', [6, 26, 76, 276, 20000])
+                            if mastery_level < len(mastery_sizes):
+                                mastery_vocab_limit = mastery_sizes[mastery_level]
                         
                         # FALLBACK: Check node_word_associations if atomic_language not available
                         if words_learned == 0:
@@ -7347,8 +7354,10 @@ def list_organisms():
                             'connections_count': connection_count,
                             'confederation_tier': getattr(organism, 'confederation_tier', 0),
                             
-                            # Language
+                            # Language & Mastery
                             'words_learned': words_learned,
+                            'mastery_level': mastery_level,
+                            'mastery_vocab_limit': mastery_vocab_limit,
                             'vocab_capacity': vocab_size,
                             'vocab_utilization': round(words_learned / vocab_size * 100, 1) if vocab_size > 0 else 0,
                             'has_language_head': has_language_head,
@@ -10749,12 +10758,22 @@ Use this context to understand what the graph structure means. Match the visual 
 
 @app.route('/api/butterfly/chat', methods=['POST'])
 def butterfly_chat():
-    """Chat with organism networks using Butterfly Chat router"""
+    """Chat with organism networks using Butterfly Chat router
+    
+    Optional filters:
+        min_mastery_level (int): Only include organisms at or above this mastery level
+            Level 0: 6 words (ACTION_HEADS only)
+            Level 1: 26 words
+            Level 2: 76 words
+            Level 3: 276 words (recommended for semantic teaching)
+            Level 4: Unlimited (semantic graduation - full vocabulary access)
+    """
     try:
         data = request.get_json()
         message = data.get('message', '')
         routing_strategy = data.get('routing_strategy', 'all')
         max_organisms = data.get('max_organisms', 10)
+        min_mastery_level = data.get('min_mastery_level', 0)  # Filter by mastery level
         
         if not message:
             return jsonify({'error': 'Message is required'}), 400
@@ -10875,11 +10894,34 @@ def butterfly_chat():
         
         # Create router and process message
         # Convert organisms list to dict (keyed by organism ID)
+        # Apply mastery level filter if specified
         organisms_dict = {}
+        filtered_count = 0
         for i, org in enumerate(organisms):
             # Try to get organism ID from various attributes
             org_id = getattr(org, 'species_id', None) or getattr(org, 'id', None) or str(i)
+            
+            # Filter by mastery level if specified
+            if min_mastery_level > 0:
+                org_mastery = 0
+                if hasattr(org, 'atomic_language') and org.atomic_language:
+                    org_mastery = getattr(org.atomic_language, '_mastery_level', 0)
+                if org_mastery < min_mastery_level:
+                    filtered_count += 1
+                    continue  # Skip this organism
+            
             organisms_dict[str(org_id)] = org
+        
+        if min_mastery_level > 0:
+            logger.info(f"[BUTTERFLY_CHAT] Mastery filter: min_level={min_mastery_level}, passed={len(organisms_dict)}, filtered={filtered_count}")
+        
+        if not organisms_dict:
+            return jsonify({
+                'error': f'No organisms meet mastery level {min_mastery_level}. Try a lower level or wait for organisms to advance.',
+                'available_organisms': len(organisms),
+                'min_mastery_requested': min_mastery_level,
+                'hint': 'Level 0=6 words, Level 1=26, Level 2=76, Level 3=276, Level 4=unlimited'
+            }), 404
         
         # Use persistent router if available (preserves conversation history)
         # Otherwise create new one and store it
@@ -10964,6 +11006,9 @@ def butterfly_chat_stream():
     """
     Streaming version of butterfly chat - sends debug logs in real-time as organisms respond.
     Uses Server-Sent Events (SSE) to push updates to the frontend.
+    
+    Optional filters:
+        min_mastery_level (int): Only include organisms at or above this mastery level
     """
     import json as json_module
     
@@ -10971,6 +11016,7 @@ def butterfly_chat_stream():
     message = data.get('message', '')
     routing_strategy = data.get('routing_strategy', 'all')
     max_organisms = data.get('max_organisms', 10)
+    min_mastery_level = data.get('min_mastery_level', 0)  # Filter by mastery level
     
     if not message:
         def error_gen():
@@ -10989,8 +11035,24 @@ def butterfly_chat_stream():
                 yield f"data: {json_module.dumps({'type': 'error', 'error': 'No organism networks available'})}\n\n"
                 return
             
+            # Apply mastery level filter if specified
+            original_count = len(organisms)
+            if min_mastery_level > 0:
+                filtered_organisms = []
+                for org in organisms:
+                    org_mastery = 0
+                    if hasattr(org, 'atomic_language') and org.atomic_language:
+                        org_mastery = getattr(org.atomic_language, '_mastery_level', 0)
+                    if org_mastery >= min_mastery_level:
+                        filtered_organisms.append(org)
+                organisms = filtered_organisms
+                
+                if not organisms:
+                    yield f"data: {json_module.dumps({'type': 'error', 'error': f'No organisms meet mastery level {min_mastery_level}. All {original_count} organisms are below this threshold.'})}\n\n"
+                    return
+            
             # Send initial status
-            yield f"data: {json_module.dumps({'type': 'status', 'message': 'Starting organism query...', 'organism_count': len(organisms)})}\n\n"
+            yield f"data: {json_module.dumps({'type': 'status', 'message': 'Starting organism query...', 'organism_count': len(organisms), 'filtered_from': original_count if min_mastery_level > 0 else None})}\n\n"
             
             # Build vocabulary if needed (same as non-streaming version)
             context_memory = None

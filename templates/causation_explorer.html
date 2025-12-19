@@ -4825,6 +4825,17 @@
                                         <input type="number" id="butterflyMaxOrganisms" value="50" min="1" max="10000"
                                             style="width: 100%; background: #111; color: #ff0; border: 1px solid #ff0; padding: 5px; font-family: 'Courier New', monospace; font-size: 0.9em;">
                                     </div>
+                                    <div style="margin-bottom: 8px;">
+                                        <label style="color: #ff0; display: block; margin-bottom: 5px; font-size: 0.9em;">Min Mastery Level:</label>
+                                        <select id="butterflyMinMastery"
+                                            style="width: 100%; background: #111; color: #ff0; border: 1px solid #ff0; padding: 5px; font-family: 'Courier New', monospace; font-size: 0.9em;">
+                                            <option value="0">Level 0+ (All - 6 words)</option>
+                                            <option value="1">Level 1+ (26 words)</option>
+                                            <option value="2">Level 2+ (76 words)</option>
+                                            <option value="3">Level 3+ (276 words)</option>
+                                            <option value="4">Level 4 Only (Full Vocab)</option>
+                                        </select>
+                                    </div>
                                 </div>
                                 <div id="butterflyChatHistory" style="flex: 1; overflow-y: auto; background: #000; border: 1px solid #ff0; padding: 10px; margin-bottom: 10px; font-family: 'Courier New', monospace; font-size: 0.9em; min-height: 0;"></div>
                                 
@@ -15382,6 +15393,10 @@
                                 <span class="stat-label">Vocab</span>
                             </div>
                             <div class="stat-item">
+                                <span class="stat-value ${org.mastery_level >= 4 ? 'positive' : ''}" title="Mastery Level: ${org.mastery_vocab_limit || '6'} word capacity">${org.mastery_level ?? 0}</span>
+                                <span class="stat-label">Tier</span>
+                            </div>
+                            <div class="stat-item">
                                 <span class="stat-value">${org.experience_buffer_size || 0}</span>
                                 <span class="stat-label">Exp</span>
                             </div>
@@ -20265,11 +20280,13 @@
                 // Get routing strategy and max organisms
                 const routingStrategy = document.getElementById('butterflyRoutingSelect').value;
                 const maxOrganisms = parseInt(document.getElementById('butterflyMaxOrganisms').value) || 10;
+                const minMasteryLevel = parseInt(document.getElementById('butterflyMinMastery').value) || 0;
 
                 const requestData = {
                     message: message,
                     routing_strategy: routingStrategy,
-                    max_organisms: maxOrganisms
+                    max_organisms: maxOrganisms,
+                    min_mastery_level: minMasteryLevel
                 };
 
                 // Use streaming endpoint for real-time updates
