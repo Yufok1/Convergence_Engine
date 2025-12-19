@@ -1799,17 +1799,38 @@ class AtomicLanguageSystem:
         This is how organisms build semantic networks - by linking
         concepts through experience.
         
+        GROUNDED LANGUAGE MODE:
+        In mastery-gated mode (levels 0-3), associations can only form between
+        concepts the organism ALREADY has. New concepts are NOT implicitly created.
+        This ensures vocabulary growth is governed by the mastery system, not
+        bypassed by association formation.
+        
         Args:
             source_concept: The primary concept
             target_concept: The concept to associate with
             strength: Association strength (-1.0 to 1.0)
             reason: Why this association formed
         """
-        # Ensure both concepts exist
-        if source_concept not in self.atoms:
-            self.acquire_concept(source_concept, 'implicit', reason=f"needed for association with {target_concept}")
-        if target_concept not in self.atoms:
-            self.acquire_concept(target_concept, 'implicit', reason=f"needed for association with {source_concept}")
+        # GROUNDED MODE CHECK: Don't implicitly acquire concepts in mastery-gated mode
+        # Organisms must EARN vocabulary through mastery advancement
+        max_vocab = self._mastery_vocab_sizes[min(self._mastery_level, len(self._mastery_vocab_sizes) - 1)]
+        is_mastery_gated = max_vocab < 20000  # True for levels 0-3
+        
+        if is_mastery_gated:
+            # In grounded mode, only form associations between EXISTING atoms
+            # Don't create new atoms - that bypasses the mastery system!
+            if source_concept not in self.atoms:
+                return  # Source must already be known
+            if target_concept not in self.atoms:
+                # Can't form association to unknown word - organism hasn't learned it yet
+                # This is intentional: associations are between KNOWN concepts only
+                return
+        else:
+            # Non-grounded mode (level 4+): Allow implicit concept acquisition
+            if source_concept not in self.atoms:
+                self.acquire_concept(source_concept, 'implicit', reason=f"needed for association with {target_concept}")
+            if target_concept not in self.atoms:
+                self.acquire_concept(target_concept, 'implicit', reason=f"needed for association with {source_concept}")
         
         # Form the association
         self.atoms[source_concept].form_association(target_concept, strength, reason)
@@ -2345,40 +2366,51 @@ class AtomicLanguageSystem:
             # Form associations based on context
             vp_state = context.get('vp_state', (0.5, 0.5))
             
-            # If cooperated successfully, strengthen social associations
-            # Form 3+ associations per action head for mastery depth criterion
+            # ═══════════════════════════════════════════════════════════════════════════
+            # GROUNDED LANGUAGE MODE: Build associations between EXISTING vocabulary only
+            # Level 0 organisms know only 6 ACTION_HEADS, so associations form between them
+            # This creates a semantic web from limited vocabulary - organisms learn that:
+            #   cooperate <-> reproduce (social actions)
+            #   compete <-> move (aggressive/active actions)
+            #   rest <-> isolate (defensive actions)
+            # As organisms advance levels, they can form richer associations with new words
+            # ═══════════════════════════════════════════════════════════════════════════
+            
+            # If cooperated successfully, associate with other social/growth actions
             if action == 1 and outcome > 0:  # COOPERATE
-                self.form_association('cooperate', 'friend', outcome * 0.3, 'successful_cooperation')
-                self.form_association('cooperate', 'together', outcome * 0.2, 'successful_cooperation')
-                self.form_association('cooperate', 'ally', outcome * 0.15, 'successful_cooperation')
+                self.form_association('cooperate', 'reproduce', outcome * 0.3, 'social_synergy')
+                self.form_association('cooperate', 'rest', outcome * 0.2, 'cooperation_enables_rest')
+                self.form_association('cooperate', 'move', outcome * 0.15, 'group_movement')
             
-            # If competed and outcome was positive, strengthen competition associations
+            # If competed successfully, associate with active/dominant actions
             if action == 2 and outcome > 0:  # COMPETE
-                self.form_association('compete', 'strong', outcome * 0.2, 'successful_competition')
-                self.form_association('compete', 'win', outcome * 0.15, 'successful_competition')
-                self.form_association('compete', 'fight', outcome * 0.1, 'successful_competition')
+                self.form_association('compete', 'move', outcome * 0.25, 'chase_opponent')
+                self.form_association('compete', 'isolate', outcome * 0.2, 'territorial')
+                self.form_association('compete', 'rest', outcome * 0.1, 'post_battle_rest')
             
-            # If reproduced successfully, strengthen reproduction associations
+            # If reproduced successfully, associate with enabling actions
             if action == 4 and outcome > 0:  # REPRODUCE
-                self.form_association('reproduce', 'grow', outcome * 0.2, 'successful_reproduction')
-                self.form_association('reproduce', 'life', outcome * 0.2, 'successful_reproduction')
-                self.form_association('reproduce', 'child', outcome * 0.15, 'successful_reproduction')
+                self.form_association('reproduce', 'cooperate', outcome * 0.3, 'needs_partner')
+                self.form_association('reproduce', 'rest', outcome * 0.2, 'recovery_after')
+                self.form_association('reproduce', 'move', outcome * 0.15, 'find_partner')
             
-            # Form associations for move, rest, isolate too (SONNET 7 recommendation)
+            # If moved successfully, associate with exploration-related actions
             if action == 0 and outcome > 0:  # MOVE
-                self.form_association('move', 'explore', outcome * 0.2, 'successful_movement')
-                self.form_association('move', 'travel', outcome * 0.15, 'successful_movement')
-                self.form_association('move', 'go', outcome * 0.1, 'successful_movement')
+                self.form_association('move', 'compete', outcome * 0.2, 'approach_rival')
+                self.form_association('move', 'cooperate', outcome * 0.2, 'approach_ally')
+                self.form_association('move', 'isolate', outcome * 0.15, 'retreat')
             
+            # If rested successfully, associate with recovery-related actions
             if action == 3 and outcome > 0:  # REST
-                self.form_association('rest', 'recover', outcome * 0.2, 'successful_rest')
-                self.form_association('rest', 'energy', outcome * 0.15, 'successful_rest')
-                self.form_association('rest', 'sleep', outcome * 0.1, 'successful_rest')
+                self.form_association('rest', 'compete', outcome * 0.2, 'preparing_for_battle')
+                self.form_association('rest', 'reproduce', outcome * 0.2, 'energy_for_life')
+                self.form_association('rest', 'isolate', outcome * 0.15, 'safe_rest')
             
+            # If isolated successfully, associate with defensive actions
             if action == 5 and outcome > 0:  # ISOLATE
-                self.form_association('isolate', 'alone', outcome * 0.2, 'successful_isolation')
-                self.form_association('isolate', 'safe', outcome * 0.15, 'successful_isolation')
-                self.form_association('isolate', 'hide', outcome * 0.1, 'successful_isolation')
+                self.form_association('isolate', 'rest', outcome * 0.25, 'safe_recovery')
+                self.form_association('isolate', 'move', outcome * 0.2, 'escape')
+                self.form_association('isolate', 'compete', outcome * 0.15, 'prepare_ambush')
         
         # 🆕 DECAY SATIATION - prevents getting stuck in loops
         # Small decay each step, so concepts that haven't been used recently 
