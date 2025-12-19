@@ -11,7 +11,7 @@
       "mastery_gating": true,
       "vocabulary_masking": "soft",
       "_vocabulary_masking_options": "soft | hard | none",
-      "initial_mastery_level": 4,
+      "initial_mastery_level": 0,
       "_initial_mastery_level_help": "0=6 words, 1=26 words, 2=76 words, 3=276 words, 4=unlimited (semantic graduation)",
       "mastery_vocab_sizes": [6, 26, 76, 276, 20000],
       "mastery_advancement_ratio": 0.7,
