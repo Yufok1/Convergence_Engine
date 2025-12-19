@@ -1293,22 +1293,25 @@ class HighlanderProtocol:
                 
                 # Get loser's word associations BEFORE they might be cleaned up
                 loser_words = context_memory.node_word_associations.get(loser_id_int, set())
+                winner_words = context_memory.node_word_associations.get(winner_id_int, set())
                 
-                self.logger.debug(f"🔍 VOCAB DEBUG: loser has {len(loser_words)} words in context_memory")
+                # Only transfer NEW words the winner doesn't already have
+                new_words = loser_words - winner_words
                 
-                if loser_words:
-                    # Transfer word associations to winner
+                self.logger.debug(f"🔍 VOCAB DEBUG: loser has {len(loser_words)} words, winner has {len(winner_words)}, new={len(new_words)}")
+                
+                if new_words:
+                    # Transfer only new word associations to winner
                     if winner_id_int not in context_memory.node_word_associations:
                         context_memory.node_word_associations[winner_id_int] = set()
                     
-                    # Inherit loser's words - FULL VOCABULARY TRANSFER!
-                    inherited_words = loser_words.copy()
-                    context_memory.node_word_associations[winner_id_int].update(inherited_words)
+                    # Inherit only NEW words from loser
+                    context_memory.node_word_associations[winner_id_int].update(new_words)
                     
-                    result['patterns_inherited'] = len(inherited_words)
+                    result['patterns_inherited'] = len(new_words)
                     result['traits_inherited'] += 1
                     
-                    self.logger.info(f"📚 VOCABULARY ABSORBED: {len(inherited_words)} words transferred to {winner_id[:8]}")
+                    self.logger.info(f"📚 VOCABULARY ABSORBED: {len(new_words)} NEW words transferred to {winner_id[:8]}")
         except Exception as e:
             self.logger.warning(f"Word association transfer failed: {e}")
         
