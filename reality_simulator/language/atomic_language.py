@@ -2411,6 +2411,41 @@ class AtomicLanguageSystem:
         
         return np.array(signature, dtype=np.float32)
     
+    def _get_action_related_words(self, action: int, outcome: float) -> List[str]:
+        """
+        Get words semantically related to an action for breadth tracking.
+        
+        This maps actions to related concepts that should also be "activated"
+        when an organism takes that action. Without this, only 6 action words
+        ever get activation counts, making Level 1→2 advancement impossible.
+        
+        Returns list of related words from available vocabulary.
+        """
+        # Map actions to semantically related concept categories
+        action_word_map = {
+            0: ['move', 'escape', 'advance', 'withdraw', 'approach', 'retreat', 'explore'],  # MOVE
+            1: ['cooperate', 'support', 'allow', 'follow', 'yield', 'encourage', 'help'],     # COOPERATE  
+            2: ['compete', 'force', 'pressure', 'strike', 'attack', 'fight', 'dominate'],    # COMPETE
+            3: ['rest', 'hold', 'maintain', 'preserve', 'persist', 'continue', 'wait'],      # REST
+            4: ['reproduce', 'expand', 'grow', 'create', 'generate', 'produce', 'spread'],   # REPRODUCE
+            5: ['isolate', 'separate', 'hide', 'avoid', 'prevent', 'deny', 'refuse'],        # ISOLATE
+        }
+        
+        # Get related words for this action
+        related = action_word_map.get(action, [])
+        
+        # Filter to only words in our vocabulary
+        available = self.get_available_vocabulary()
+        activated = [w for w in related if w in available]
+        
+        # Limit activations based on outcome (good outcome = more related words activated)
+        if outcome > 0:
+            num_to_activate = min(3, len(activated))  # Up to 3 related words on success
+        else:
+            num_to_activate = min(1, len(activated))  # 1 word on failure
+        
+        return activated[:num_to_activate]
+    
     def apply_experience(self, action: int, outcome: float, context: Dict[str, Any]):
         """
         Update language atoms based on organism experience.
@@ -2435,6 +2470,16 @@ class AtomicLanguageSystem:
             # ═══════════════════════════════════════════════════════════════════════════
             if action_concept in self.atoms:
                 self.atoms[action_concept].update_satiation()  # Increments recent_activation_count
+            
+            # ═══════════════════════════════════════════════════════════════════════════
+            # FIX: Also activate semantically related words from vocabulary
+            # Without this, only 6 action words ever get activated, making Level 1→2
+            # advancement impossible (breadth stuck at 6/26 = 23% < 50% threshold)
+            # ═══════════════════════════════════════════════════════════════════════════
+            related_words = self._get_action_related_words(action, outcome)
+            for word in related_words:
+                if word in self.atoms and word != action_concept:
+                    self.atoms[word].update_satiation()
             
             # Record this as a learning experience for mastery advancement
             self.record_experience()
