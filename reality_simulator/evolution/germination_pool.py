@@ -1879,17 +1879,9 @@ def integrate_germination_with_highlander(
         current_pop = len(highlander_protocol.active_organisms)
         needs, count = germination_pool.check_population_needs(current_pop)
 
-        # DEBUG: Germination check
-        logger = logging.getLogger(__name__)
-        # Ensure console output for germination logs
-        if not any(isinstance(h, logging.StreamHandler) for h in logger.handlers):
-            console_handler = logging.StreamHandler()
-            console_handler.setLevel(logging.INFO)
-            console_formatter = logging.Formatter('[GERMINATION] %(message)s')
-            console_handler.setFormatter(console_formatter)
-            logger.addHandler(console_handler)
-            logger.setLevel(logging.INFO)
-            logger.propagate = False
+        # DEBUG: Germination check - use proper logger name for application.log
+        logger = logging.getLogger('reality_simulator.evolution.germination_pool')
+        logger.setLevel(logging.INFO)
 
         if needs:
             logger.info(f"🌱 GERMINATION TRIGGERED: Population {current_pop} -> need {count} new organisms")

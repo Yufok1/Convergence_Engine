@@ -906,14 +906,9 @@ class AllianceWarfareSystem:
         # Neural organism registry for feedback loops (injected from UnifiedSystem)
         self._neural_organisms: Optional[Dict[str, Any]] = None
         
-        # Logger
-        self.logger = logging.getLogger(__name__)
+        # Logger - use root logger to ensure logs appear in application.log
+        self.logger = logging.getLogger('reality_simulator.evolution.alliance_warfare')
         self.logger.setLevel(logging.INFO)
-        if not any(isinstance(h, logging.StreamHandler) for h in self.logger.handlers):
-            handler = logging.StreamHandler()
-            handler.setFormatter(logging.Formatter('[ALLIANCE] %(message)s'))
-            self.logger.addHandler(handler)
-            self.logger.propagate = False
         
         # Configuration
         self.min_alliance_size = self.config.get('min_alliance_size', 3)
