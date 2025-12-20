@@ -398,11 +398,48 @@ class BattleArena:
             Complete battle outcome
         """
         # ═══════════════════════════════════════════════════════════════
+        # 🗣️ PRE-BATTLE COMMUNICATION - Communication MATTERS!
+        # Organisms talk before fighting - shared vocabulary = intel advantage
+        # Better communication = better prediction of opponent's moves
+        # ═══════════════════════════════════════════════════════════════
+        comm_bonus_1 = 0.0  # Intel advantage for organism 1
+        comm_bonus_2 = 0.0  # Intel advantage for organism 2
+        
+        if hasattr(organism_1, 'speak_to') and hasattr(organism_2, 'speak_to'):
+            try:
+                # Both organisms get a chance to speak
+                exchange_1 = organism_1.speak_to(organism_2, context='battle')
+                exchange_2 = organism_2.speak_to(organism_1, context='battle')
+                
+                # Communication quality affects battle!
+                # Shared vocab = you understand your enemy better
+                if exchange_1.get('success'):
+                    # How much of THEIR vocab do I understand?
+                    shared = len(exchange_1.get('shared_words', []))
+                    their_vocab = len(exchange_1.get('their_response_words', [])) + 1
+                    comm_bonus_1 = min(0.15, shared * 0.01)  # Up to 15% advantage
+                    
+                if exchange_2.get('success'):
+                    shared = len(exchange_2.get('shared_words', []))
+                    their_vocab = len(exchange_2.get('their_response_words', [])) + 1
+                    comm_bonus_2 = min(0.15, shared * 0.01)
+                
+                # Log communication effects
+                if comm_bonus_1 > 0 or comm_bonus_2 > 0:
+                    self._logger.info(f"[BATTLE_COMM] Intel bonuses: "
+                               f"{organism_1.species_id[:8]}=+{comm_bonus_1:.1%}, "
+                               f"{organism_2.species_id[:8]}=+{comm_bonus_2:.1%}")
+            except Exception as e:
+                self._logger.debug(f"[BATTLE_COMM] Pre-battle communication failed: {e}")
+        
+        # ═══════════════════════════════════════════════════════════════
         # PROTON GAME ARENA (Gym-based battles)
         # ═══════════════════════════════════════════════════════════════
         if battle_type == BattleType.PROTON_GAME:
+            # Pass communication bonuses to gym battles
             return self._resolve_proton_game_battle(
-                organism_1, organism_2, bridge_1, bridge_2
+                organism_1, organism_2, bridge_1, bridge_2,
+                comm_bonus_1=comm_bonus_1, comm_bonus_2=comm_bonus_2
             )
         
         # ═══════════════════════════════════════════════════════════════
@@ -419,9 +456,13 @@ class BattleArena:
         org1_id = getattr(organism_1, 'id', 'organism_1')
         org2_id = getattr(organism_2, 'id', 'organism_2')
         
-        # Calculate combat stats
+        # Calculate combat stats - INCLUDE COMMUNICATION BONUS!
         stats_1 = self.calculate_combat_stats(organism_1)
         stats_2 = self.calculate_combat_stats(organism_2)
+        
+        # Communication gives reaction speed bonus (you predict their moves)
+        stats_1.reaction_speed += comm_bonus_1
+        stats_2.reaction_speed += comm_bonus_2
         
         # Initialize HP
         hp_1 = self.base_hp * (1 + stats_1.vp_reserve * 0.2)
@@ -1001,12 +1042,16 @@ class BattleArena:
                                     organism_1: Any, 
                                     organism_2: Any,
                                     bridge_1: Any = None,
-                                    bridge_2: Any = None) -> BattleOutcome:
+                                    bridge_2: Any = None,
+                                    comm_bonus_1: float = 0.0,
+                                    comm_bonus_2: float = 0.0) -> BattleOutcome:
         """
         Resolve a battle using the Proton Game Arena (Gym-based combat).
         
         This uses the Apprentice Adept style game selection system where
         organisms compete in actual gymnasium environments.
+        
+        Communication bonuses affect tie-breaking and close matches.
         """
         self.battle_count += 1
         battle_id = f"proton_{self.battle_count}_{int(time.time())}"

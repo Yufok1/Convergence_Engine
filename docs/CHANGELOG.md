@@ -4,6 +4,77 @@
 
 ---
 
+## [Unreleased] - 2025-12-20
+
+### 🗣️ Organism Communication System - "Language is the Allspice" (2025-12-20)
+
+**PHILOSOPHY**: "These are agents. They should talk to each other."
+
+Organisms can now **speak to each other** at every confluence point. Communication is no longer passive token exchange - it's active conversation that **affects outcomes**.
+
+#### The `speak_to()` Method
+New method on `NeuralOrganism` enables direct organism-to-organism conversation:
+```python
+result = organism1.speak_to(organism2, context='battle')
+# Returns: exchange_quality, shared_words, understood, success
+# Both organisms LEARN new words from the exchange!
+```
+
+#### Communication Confluence Points
+| Location | Context | Effect |
+|----------|---------|--------|
+| Pre-Battle (Arena) | `battle` | Intel bonus up to 15% reaction speed |
+| Pre-Battle (Highlander) | `battle` | Shared vocab logged before fights |
+| Alliance Invite | `alliance` | Affects acceptance threshold |
+| Confederation Negotiation | `alliance` | Warchiefs negotiate before merge |
+| War Rounds | `battle` | Warchiefs exchange taunts/threats |
+| Territory Claims | `general` | Explorer reports to warchief |
+| Dojo Training | `alliance` | Teammates coordinate before training |
+| Alliance Spawn | `general` | Leader shares wisdom with departing members |
+| Ultimatum | `alliance` | "Join or Die" delivered via communication |
+
+#### Communication MATTERS
+- **Battle Intel Bonus**: Shared vocabulary = understanding enemy = up to 15% reaction speed boost
+- **Ultimatum Success**: Communication quality affects submit chance (up to 40% influence)
+- **Alliance Acceptance**: Better communication = higher similarity adjustment
+- **Vocabulary Growth**: Both organisms learn new words from every exchange
+
+### ☠️ "Join or Die" Ultimatum System (2025-12-20)
+
+**PHILOSOPHY**: "Bend the knee or face annihilation."
+
+Powerful alliances can now demand submission from weaker ones without war.
+
+#### Ultimatum Mechanics
+- **Power Requirement**: Must be stronger (members + wars_won*2 + territories)
+- **Warchief Only**: Only warchiefs can issue ultimatums
+- **Communication Phase**: Warchiefs speak before decision
+- **Submit Chance**: `base(20%) + power_ratio(up to 30%) + communication(up to 40%) + random(10%)`
+- **Outcomes**:
+  - **Submit**: Target alliance disbanded, members absorbed, territories transferred
+  - **Refuse**: WAR DECLARED automatically
+
+#### Config
+```json
+"organism_communication": {
+  "enabled": true,
+  "pre_battle_communication": true,
+  "communication_affects_battles": true,
+  "intel_bonus_max": 0.15,
+  "ultimatum_enabled": true
+}
+```
+
+#### Files Modified
+- `reality_simulator/neural/neural_organism.py`: Added `speak_to()` method (~150 lines)
+- `reality_simulator/evolution/battle_arena.py`: Pre-battle communication, intel bonus
+- `reality_simulator/evolution/highlander_protocol.py`: Pre-battle communication
+- `reality_simulator/evolution/alliance_warfare.py`: `ULTIMATUM` proposal type, `organism_issue_ultimatum()` method
+- `unified_entry.py`: Communication at all confluence points
+- `config.json`, `config_shadow_epyc_genesis.json`, `config_vast_xeon_1.5tb_genesis.json`: Added `organism_communication` config
+
+---
+
 ## [Unreleased] - 2025-12-19
 
 ### ⚔️ The Dune Paradigm - Curiosity-Driven Alliance Wars (2025-12-19)

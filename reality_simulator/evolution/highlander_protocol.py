@@ -188,6 +188,7 @@ class OrganismStats:
     peak_fitness_time: float = 0.0
     lineage: List[str] = field(default_factory=list)
     alliance_id: Optional[str] = None
+    confederation_tier: int = 0  # 0=none, 1=confederation, 2=empire, 3=hegemony
     kills: int = 0
     times_hunted: int = 0
     
@@ -602,13 +603,26 @@ class HighlanderProtocol:
         for org_id, fitness in fitness_values.items():
             # Alliance members get survival bonus
             survival_bonus = 0.0
+            confederation_bonus = 0.0
+            
             if org_id in self.organism_stats:
                 alliance_id = self.organism_stats[org_id].alliance_id
                 if alliance_id and alliance_id in self.alliances:
                     alliance = self.alliances[alliance_id]
                     survival_bonus = self.cooperation_bonus * alliance.strength
+                    
+                    # 🏛️ CONFEDERATION TIER BONUS - Higher tiers = better survival
+                    # Tier 0 (none): +0.00
+                    # Tier 1 (confederation): +0.05
+                    # Tier 2 (empire): +0.10  
+                    # Tier 3 (hegemony): +0.15
+                    confederation_tier = getattr(
+                        self.organism_stats[org_id], 'confederation_tier', 0
+                    )
+                    if confederation_tier > 0:
+                        confederation_bonus = confederation_tier * 0.05
             
-            effective_fitness = fitness + survival_bonus
+            effective_fitness = fitness + survival_bonus + confederation_bonus
             
             if effective_fitness < threshold:
                 # Check survival probability based on how far below threshold
@@ -906,6 +920,20 @@ class HighlanderProtocol:
         Uses the Battle Arena for multi-dimensional combat if available,
         otherwise falls back to fitness-based comparison.
         """
+        
+        # ═══════════════════════════════════════════════════════════════
+        # 🗣️ PRE-BATTLE COMMUNICATION - Organisms talk before fighting!
+        # Language is the medium for coordination, intimidation, strategy
+        # ═══════════════════════════════════════════════════════════════
+        if hasattr(org1, 'speak_to') and hasattr(org2, 'speak_to'):
+            try:
+                exchange = org1.speak_to(org2, context='battle')
+                if exchange.get('success'):
+                    self.logger.info(f"🗣️ Pre-battle exchange: {org1_id[:8]} → {org2_id[:8]} "
+                                   f"(quality: {exchange.get('exchange_quality', 0):.2f}, "
+                                   f"shared vocab: {len(exchange.get('shared_words', []))})")
+            except Exception as e:
+                self.logger.debug(f"Pre-battle communication failed: {e}")
 
         # Get initial fitness scores for logging
         org1_fitness = get_fitness(org1)
@@ -1212,17 +1240,26 @@ class HighlanderProtocol:
         linguistic_traits_inherited = 0
         
         # ═══════════════════════════════════════════════════════════════
-        # MISSION 5: Absorb atomic language concepts
+        # MISSION 5: Absorb atomic language concepts (MASTERY-GATED)
         # ═══════════════════════════════════════════════════════════════
         if hasattr(winner, 'atomic_language') and hasattr(loser, 'atomic_language'):
-            concepts = self._get_transferable_concepts(loser_id, loser)
-            for concept in concepts:
-                if hasattr(loser.atomic_language, 'teach_concept'):
-                    try:
-                        loser.atomic_language.teach_concept(concept, winner.atomic_language)
-                        concepts_absorbed += 1
-                    except Exception as e:
-                        self.logger.debug(f"Concept transfer failed: {e}")
+            winner_lang = winner.atomic_language
+            # MASTERY CHECK: Only transfer if winner can acquire
+            if hasattr(winner_lang, 'can_acquire') and not winner_lang.can_acquire():
+                self.logger.debug(f"[MASTERY_GATE] {winner_id[:8]}: Vocab absorption blocked - at cap")
+            else:
+                concepts = self._get_transferable_concepts(loser_id, loser)
+                for concept in concepts:
+                    # Re-check can_acquire for each concept (cap may be reached mid-loop)
+                    if hasattr(winner_lang, 'can_acquire') and not winner_lang.can_acquire():
+                        self.logger.debug(f"[MASTERY_GATE] {winner_id[:8]}: Stopped absorption at cap")
+                        break
+                    if hasattr(loser.atomic_language, 'teach_concept'):
+                        try:
+                            loser.atomic_language.teach_concept(concept, winner_lang)
+                            concepts_absorbed += 1
+                        except Exception as e:
+                            self.logger.debug(f"Concept transfer failed: {e}")
         
         # ═══════════════════════════════════════════════════════════════
         # MISSION 5: Inherit linguistic traits (NEW)
@@ -1348,13 +1385,26 @@ class HighlanderProtocol:
                         if winner_id_int not in context_memory.node_word_associations:
                             context_memory.node_word_associations[winner_id_int] = set()
                         
-                        # Inherit only NEW words from loser
-                        context_memory.node_word_associations[winner_id_int].update(new_words)
+                        # MASTERY CHECK: Limit word transfer to vocab cap
+                        if hasattr(winner, 'atomic_language') and hasattr(winner.atomic_language, 'can_acquire'):
+                            winner_lang = winner.atomic_language
+                            max_vocab = winner_lang._mastery_vocab_sizes[winner_lang._mastery_level] if winner_lang._mastery_level < len(winner_lang._mastery_vocab_sizes) else 20000
+                            current_vocab = len(winner_lang.atoms)
+                            space_left = max(0, max_vocab - current_vocab)
+                            # Only transfer up to remaining cap
+                            new_words_list = list(new_words)[:space_left]
+                            new_words = set(new_words_list)
+                            if space_left == 0:
+                                self.logger.debug(f"[MASTERY_GATE] {winner_id[:8]}: Context memory vocab blocked - at cap")
                         
-                        result['patterns_inherited'] = len(new_words)
-                        result['traits_inherited'] += 1
-                        
-                        self.logger.info(f"📚 VOCABULARY ABSORBED: {len(new_words)} NEW words transferred to {winner_id[:8]}")
+                        if new_words:
+                            # Inherit only NEW words from loser (capped by mastery)
+                            context_memory.node_word_associations[winner_id_int].update(new_words)
+                            
+                            result['patterns_inherited'] = len(new_words)
+                            result['traits_inherited'] += 1
+                            
+                            self.logger.info(f"📚 VOCABULARY ABSORBED: {len(new_words)} NEW words transferred to {winner_id[:8]}")
             except Exception as e:
                 self.logger.warning(f"Word association transfer failed: {e}")
         

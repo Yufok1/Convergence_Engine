@@ -2858,15 +2858,33 @@ class UnifiedSystem:
         
         aws = self.alliance_warfare
         
-        # Get organisms that recently chose "cooperate"
-        cooperative_orgs = []
+        # Get organisms by action type
+        cooperative_orgs = []  # action 1 = cooperate
+        competitive_orgs = []  # action 2 = compete
+        moving_orgs = []       # action 0 = move
+        resting_orgs = []      # action 3 = rest
+        reproducing_orgs = []  # action 4 = reproduce
+        isolating_orgs = []    # action 5 = isolate
+        
         for org_id, org in organisms.items():
-            # Check if organism has recent decision data
-            if hasattr(org, 'last_action') and org.last_action == 1:  # 1 = cooperate
-                cooperative_orgs.append((org_id, org))
+            action = None
+            if hasattr(org, 'last_action'):
+                action = org.last_action
             elif hasattr(org, 'brain') and hasattr(org.brain, 'last_action'):
-                if org.brain.last_action == 1:
-                    cooperative_orgs.append((org_id, org))
+                action = org.brain.last_action
+            
+            if action == 0:  # move
+                moving_orgs.append((org_id, org))
+            elif action == 1:  # cooperate
+                cooperative_orgs.append((org_id, org))
+            elif action == 2:  # compete
+                competitive_orgs.append((org_id, org))
+            elif action == 3:  # rest
+                resting_orgs.append((org_id, org))
+            elif action == 4:  # reproduce
+                reproducing_orgs.append((org_id, org))
+            elif action == 5:  # isolate
+                isolating_orgs.append((org_id, org))
         
         if not cooperative_orgs:
             return results
@@ -2891,12 +2909,15 @@ class UnifiedSystem:
                 if alliance_id:
                     results['alliances_formed'] += 1
                     print(f"[ALLIANCE] 🪐 {org_id[:8]} founded '{alliance_name}' (fitness: {fitness:.2f})")
+                    # FEEDBACK: Organism learns founding worked
+                    if hasattr(org, 'record_alliance_event'):
+                        org.record_alliance_event('founded', True)
             
             # In alliance + cooperating = invite others
             elif current_alliance:
                 alliance = aws.alliances.get(current_alliance)
-                if alliance and alliance.founder_id == org_id:
-                    # Founder can invite others
+                if alliance and org_id in alliance.members:
+                    # Any member can invite - organic growth (matches alliance_warfare.py)
                     # Find nearby cooperative organisms not in an alliance
                     for other_id, other_org in organisms.items():
                         if other_id == org_id:
@@ -2913,17 +2934,509 @@ class UnifiedSystem:
                                 other_cooperative = True
                         
                         if other_cooperative and len(alliance.members) < 10:
+                            # 🗣️ PRE-INVITE COMMUNICATION - Organisms talk before joining!
+                            # Language is the medium for coordination
+                            exchange_quality = 0.0
+                            if hasattr(org, 'speak_to'):
+                                try:
+                                    exchange = org.speak_to(other_org, context='alliance')
+                                    exchange_quality = exchange.get('exchange_quality', 0)
+                                except Exception:
+                                    pass  # Communication failure doesn't block invite
+                            
                             proposal_id = aws.organism_propose_invite(org_id, other_id)
                             if proposal_id:
                                 results['invites_sent'] += 1
                                 
-                                # Auto-accept if cooperative (organism's "decision")
-                                if aws.organism_respond_to_invite(other_id, proposal_id, accept=True):
+                                # Accept based on communication quality + cooperation
+                                # Better communication = higher acceptance chance
+                                accept_threshold = 0.3 if exchange_quality > 0.5 else 0.7
+                                accept = other_cooperative and (exchange_quality > 0.2 or random.random() > accept_threshold)
+                                
+                                if aws.organism_respond_to_invite(other_id, proposal_id, accept=accept):
                                     results['invites_accepted'] += 1
-                                    print(f"[ALLIANCE] 🤝 {other_id[:8]} joined '{alliance.name}'")
+                                    print(f"[ALLIANCE] 🤝 {other_id[:8]} joined '{alliance.name}' (comm: {exchange_quality:.2f})")
+                                    # FEEDBACK: Both organisms learn cooperation worked
+                                    if hasattr(org, 'record_alliance_event'):
+                                        org.record_alliance_event('recruited', True)
+                                    if hasattr(other_org, 'record_alliance_event'):
+                                        other_org.record_alliance_event('joined', True)
                             
                             # Only invite one per round to prevent spam
                             break
+                
+                # ═══════════════════════════════════════════════════════════════════════
+                # 🏛️ WARCHIEF COOPERATING → CONFEDERATION PROPOSAL
+                # ═══════════════════════════════════════════════════════════════════════
+                # If warchief cooperates, evaluate confederation with similar alliances
+                if alliance.warchief_id == org_id and not alliance.at_war_with:
+                    # Check if already in confederation
+                    if alliance.alliance_id in aws.alliance_to_confederation:
+                        # Invite similar alliances to our confederation
+                        confederation_id = aws.alliance_to_confederation[alliance.alliance_id]
+                        for other_id, other in aws.alliances.items():
+                            if other_id == alliance.alliance_id:
+                                continue
+                            if other_id in aws.alliance_to_confederation:
+                                continue
+                            if other.at_war_with:
+                                continue
+                            
+                            similarity = 1.0 - aws.calculate_behavioral_divergence(alliance.alliance_id, other_id)
+                            if similarity > 0.6:
+                                # 🗣️ CONFEDERATION DIPLOMACY - Warchiefs negotiate!
+                                # Communication affects whether they join
+                                comm_quality = 0.0
+                                if other.warchief_id:
+                                    other_warchief = organisms.get(other.warchief_id)
+                                    if org and other_warchief and hasattr(org, 'speak_to'):
+                                        try:
+                                            exchange = org.speak_to(other_warchief, context='alliance')
+                                            comm_quality = exchange.get('exchange_quality', 0)
+                                        except:
+                                            pass
+                                
+                                # Better communication = more likely to accept
+                                adjusted_similarity = similarity + (comm_quality * 0.2)
+                                if adjusted_similarity > 0.6:
+                                    proposal_id = aws.alliance_propose_confederation_invite(alliance.alliance_id, other_id)
+                                    if proposal_id:
+                                        target_name = other.name
+                                        confederation = aws.confederations.get(confederation_id)
+                                        confed_name = confederation.name if confederation else confederation_id[:8]
+                                        print(f"[ALLIANCE] 🏛️ Warchief {org_id[:8]} invites '{target_name}' to '{confed_name}' (similarity: {similarity:.2f}, comm: {comm_quality:.2f})")
+                                        results['confederation_invites'] = results.get('confederation_invites', 0) + 1
+                                break  # One invite per round
+                    else:
+                        # Consider creating confederation with similar alliance
+                        if alliance.wars_won >= 1:  # Proven themselves
+                            for other_id, other in aws.alliances.items():
+                                if other_id == alliance.alliance_id:
+                                    continue
+                                if other_id in aws.alliance_to_confederation:
+                                    continue
+                                if other.at_war_with:
+                                    continue
+                                
+                                similarity = 1.0 - aws.calculate_behavioral_divergence(alliance.alliance_id, other_id)
+                                if similarity > 0.7:  # Higher bar to CREATE
+                                    # 🗣️ Warchiefs discuss forming confederation
+                                    comm_quality = 0.0
+                                    if other.warchief_id:
+                                        other_warchief = organisms.get(other.warchief_id)
+                                        if org and other_warchief and hasattr(org, 'speak_to'):
+                                            try:
+                                                exchange = org.speak_to(other_warchief, context='alliance')
+                                                comm_quality = exchange.get('exchange_quality', 0)
+                                            except:
+                                                pass
+                                    
+                                    confed_name = f"United_{alliance.name[:10]}"
+                                    confed_id = aws.alliance_create_confederation(alliance.alliance_id, confed_name)
+                                    if confed_id:
+                                        print(f"[ALLIANCE] 🏛️ '{alliance.name}' FOUNDED confederation '{confed_name}' (comm: {comm_quality:.2f})")
+                                        results['confederations_formed'] = results.get('confederations_formed', 0) + 1
+                                        # Invite the similar alliance
+                                        proposal_id = aws.alliance_propose_confederation_invite(alliance.alliance_id, other_id)
+                                        if proposal_id:
+                                            print(f"[ALLIANCE] 🏛️ Inviting '{other.name}' to join")
+                                            results['confederation_invites'] = results.get('confederation_invites', 0) + 1
+                                    break
+        
+        # ═══════════════════════════════════════════════════════════════════════════
+        # ⚔️ COMPETITIVE ORGANISMS → WAR PROPOSALS OR ULTIMATUMS
+        # ═══════════════════════════════════════════════════════════════════════════
+        # When warchief competes, evaluate war against divergent alliances
+        # Powerful alliances can issue "Join or Die" ultimatums first!
+        for org_id, org in competitive_orgs:
+            current_alliance = aws.get_organism_alliance(org_id)
+            if not current_alliance:
+                continue
+            
+            alliance = aws.alliances.get(current_alliance)
+            if not alliance:
+                continue
+            
+            # Only warchief can propose war/ultimatum
+            if alliance.warchief_id != org_id:
+                continue
+            
+            # Can't propose if already at war
+            if alliance.at_war_with:
+                continue
+            
+            # Find most divergent alliance
+            target_id, divergence = aws.get_most_divergent_alliance(alliance.alliance_id)
+            if not target_id or divergence < 0.4:
+                continue
+            
+            target_alliance = aws.alliances.get(target_id)
+            if not target_alliance:
+                continue
+            
+            # Check power differential for ultimatum
+            our_power = len(alliance.members) + alliance.wars_won * 2 + alliance.territory_count
+            their_power = len(target_alliance.members) + target_alliance.wars_won * 2 + target_alliance.territory_count
+            
+            # 🗣️ ULTIMATUM PATH: If we're significantly stronger, try "Join or Die" first!
+            if our_power > their_power * 1.5:
+                ultimatum_result = aws.organism_issue_ultimatum(org_id, target_id, organisms)
+                
+                if ultimatum_result['outcome'] == 'submitted':
+                    target_name = target_alliance.name
+                    print(f"[ALLIANCE] 🏳️ '{target_name}' SUBMITS to ultimatum from '{alliance.name}'!")
+                    print(f"   Communication quality: {ultimatum_result.get('communication_quality', 0):.2f}")
+                    print(f"   Members absorbed: {ultimatum_result.get('members_absorbed', 0)}")
+                    results['ultimatums_accepted'] = results.get('ultimatums_accepted', 0) + 1
+                    continue  # No war needed
+                    
+                elif ultimatum_result['outcome'] == 'refused':
+                    target_name = target_alliance.name
+                    print(f"[ALLIANCE] ☠️ '{target_name}' REFUSES ultimatum - WAR DECLARED!")
+                    print(f"   Communication quality: {ultimatum_result.get('communication_quality', 0):.2f}")
+                    results['ultimatums_refused'] = results.get('ultimatums_refused', 0) + 1
+                    results['wars_declared'] = results.get('wars_declared', 0) + 1
+                    # War already declared by ultimatum function
+                    continue
+            
+            # Standard war proposal path (for equal-power alliances)
+            proposal_id = aws.organism_propose_war(org_id, target_id)
+            if proposal_id:
+                target_name = target_alliance.name
+                print(f"[ALLIANCE] ⚔️ Warchief {org_id[:8]} PROPOSES WAR on '{target_name}' (divergence: {divergence:.2f})")
+                results['wars_proposed'] = results.get('wars_proposed', 0) + 1
+                # FEEDBACK: Organism learns war proposal (outcome feedback comes later when war resolves)
+                if hasattr(org, 'record_alliance_event'):
+                    org.record_alliance_event('war_proposed', True)
+                
+                # Alliance members vote based on their own action
+                # Competitive members vote YES, cooperative vote NO
+                for proposal in alliance.pending_proposals:
+                    if proposal.proposal_id == proposal_id:
+                        for member_id in alliance.members:
+                            if member_id == org_id:
+                                continue  # Warchief already voted
+                            # Check member's action
+                            member_org = organisms.get(member_id)
+                            if member_org:
+                                member_action = None
+                                if hasattr(member_org, 'last_action'):
+                                    member_action = member_org.last_action
+                                elif hasattr(member_org, 'brain') and hasattr(member_org.brain, 'last_action'):
+                                    member_action = member_org.brain.last_action
+                                
+                                if member_action == 2:  # compete = vote YES
+                                    proposal.votes_for.add(member_id)
+                                elif member_action == 1:  # cooperate = vote NO
+                                    proposal.votes_against.add(member_id)
+                                # Other actions = abstain
+                        
+                        # Check if vote resolves
+                        aws._check_proposal_resolution(alliance, proposal)
+                        break
+        
+        # ═══════════════════════════════════════════════════════════════════════════
+        # ⚔️ ACTIVE WAR RESOLUTION - Competitive organisms FIGHT in active wars
+        # ═══════════════════════════════════════════════════════════════════════════
+        # Wars were declared but never fought! Now competitive organisms participate
+        alliances_at_war = [(aid, a) for aid, a in aws.alliances.items() if a.at_war_with]
+        wars_processed = set()  # Track war pairs to avoid double processing
+        
+        for alliance_id, alliance in alliances_at_war:
+            for enemy_id in list(alliance.at_war_with):
+                # Create unique war key to avoid processing twice
+                war_key = tuple(sorted([alliance_id, enemy_id]))
+                if war_key in wars_processed:
+                    continue
+                wars_processed.add(war_key)
+                
+                enemy = aws.alliances.get(enemy_id)
+                if not enemy:
+                    continue
+                
+                # 🗣️ PRE-WAR ROUND COMMUNICATION - Warchiefs exchange words!
+                # Taunts, threats, or last-chance negotiations
+                war_comm_quality = 0.0
+                if alliance.warchief_id and enemy.warchief_id:
+                    our_chief = organisms.get(alliance.warchief_id)
+                    their_chief = organisms.get(enemy.warchief_id)
+                    if our_chief and their_chief and hasattr(our_chief, 'speak_to'):
+                        try:
+                            exchange = our_chief.speak_to(their_chief, context='battle')
+                            war_comm_quality = exchange.get('exchange_quality', 0)
+                            if war_comm_quality > 0:
+                                print(f"[ALLIANCE] 🗣️ War talk: {alliance.name} ↔ {enemy.name} (quality: {war_comm_quality:.2f})")
+                        except:
+                            pass
+                
+                # Build participating organisms dict - competitive organisms FIGHT
+                participating = {}
+                for org_id, org in competitive_orgs:
+                    org_alliance = aws.get_organism_alliance(org_id)
+                    if org_alliance in [alliance_id, enemy_id]:
+                        participating[org_id] = True  # Fighting!
+                
+                # Also check all alliance members - anyone can choose to fight
+                for member_id in alliance.members:
+                    if member_id not in participating:
+                        member_org = organisms.get(member_id)
+                        if member_org:
+                            action = getattr(member_org, 'last_action', None)
+                            if action is None and hasattr(member_org, 'brain'):
+                                action = getattr(member_org.brain, 'last_action', None)
+                            # Competitive = fighting, others = not participating
+                            participating[member_id] = (action == 2)
+                
+                for member_id in enemy.members:
+                    if member_id not in participating:
+                        member_org = organisms.get(member_id)
+                        if member_org:
+                            action = getattr(member_org, 'last_action', None)
+                            if action is None and hasattr(member_org, 'brain'):
+                                action = getattr(member_org.brain, 'last_action', None)
+                            participating[member_id] = (action == 2)
+                
+                # Resolve war round!
+                war_result = aws.resolve_war_round(
+                    alliance_id=alliance_id,
+                    enemy_id=enemy_id,
+                    get_organism_fitness=get_fitness,
+                    participating_organisms=participating
+                )
+                
+                if war_result:
+                    results['war_rounds'] = results.get('war_rounds', 0) + 1
+                    if war_result.get('war_ended'):
+                        results['wars_ended'] = results.get('wars_ended', 0) + 1
+                        print(f"[ALLIANCE] 🏆 WAR ENDED: {war_result['winner']} defeats {war_result['loser']}!")
+                    else:
+                        print(f"[ALLIANCE] ⚔️ War round: {alliance.name} vs {enemy.name} (margin: {war_result.get('margin', 0):.1%})")
+        
+        # ═══════════════════════════════════════════════════════════════════════════
+        # 🌍 MOVING ORGANISMS → TERRITORY CLAIMS
+        # ═══════════════════════════════════════════════════════════════════════════
+        # When organism moves + in alliance, they're exploring FOR the alliance
+        for org_id, org in moving_orgs:
+            current_alliance = aws.get_organism_alliance(org_id)
+            if not current_alliance:
+                continue
+            
+            alliance = aws.alliances.get(current_alliance)
+            if not alliance:
+                continue
+            
+            # Any member can propose territory claims (exploring for the group)
+            if aws.uncontrolled_territories:
+                # Pick a random unclaimed territory
+                import random
+                territory = random.choice(list(aws.uncontrolled_territories))
+                
+                # 🗣️ TERRITORY COMMUNICATION - Explorer announces to alliance!
+                # The explorer tells their alliance about the new territory
+                if alliance.warchief_id and alliance.warchief_id != org_id:
+                    warchief = organisms.get(alliance.warchief_id)
+                    if warchief and hasattr(org, 'speak_to'):
+                        try:
+                            exchange = org.speak_to(warchief, context='general')
+                            if exchange.get('exchange_quality', 0) > 0:
+                                print(f"[ALLIANCE] 🗣️ {org_id[:8]} reports {territory.value} discovery to warchief")
+                        except:
+                            pass
+                
+                proposal_id = aws.organism_claim_territory(org_id, territory)
+                if proposal_id:
+                    print(f"[ALLIANCE] 🌍 {org_id[:8]} proposes claiming {territory.value} for '{alliance.name}'")
+                    results['territory_claims'] = results.get('territory_claims', 0) + 1
+                    # FEEDBACK: Organism learns exploration led to claim
+                    if hasattr(org, 'record_alliance_event'):
+                        org.record_alliance_event('territory_claimed', True)
+                    
+                    # Other moving members vote YES (explorers agree)
+                    for proposal in alliance.pending_proposals:
+                        if proposal.proposal_id == proposal_id:
+                            for member_id in alliance.members:
+                                if member_id == org_id:
+                                    continue
+                                member_org = organisms.get(member_id)
+                                if member_org:
+                                    member_action = getattr(member_org, 'last_action', None)
+                                    if member_action is None and hasattr(member_org, 'brain'):
+                                        member_action = getattr(member_org.brain, 'last_action', None)
+                                    if member_action == 0:  # move = vote YES
+                                        proposal.votes_for.add(member_id)
+                            aws._check_proposal_resolution(alliance, proposal)
+                            break
+        
+        # ═══════════════════════════════════════════════════════════════════════════
+        # 🥋 RESTING ORGANISMS → DOJO TRAINING
+        # ═══════════════════════════════════════════════════════════════════════════
+        # When organism rests + in alliance, they train together at the dojo
+        resting_alliance_members = {}  # alliance_id -> list of (org_id, org) tuples
+        for org_id, org in resting_orgs:
+            current_alliance = aws.get_organism_alliance(org_id)
+            if current_alliance:
+                if current_alliance not in resting_alliance_members:
+                    resting_alliance_members[current_alliance] = []
+                resting_alliance_members[current_alliance].append((org_id, org))
+        
+        # Run dojo sessions for alliances with 2+ resting members
+        for alliance_id, resting_members in resting_alliance_members.items():
+            if len(resting_members) >= 2:
+                alliance = aws.alliances.get(alliance_id)
+                if alliance:
+                    member_ids = [m[0] for m in resting_members]
+                    
+                    # 🗣️ PRE-TRAINING COMMUNICATION - Teammates coordinate!
+                    # Alliance members talk before training to share strategy
+                    training_comm_quality = 0.0
+                    if len(resting_members) >= 2:
+                        org1 = resting_members[0][1]
+                        org2 = resting_members[1][1]
+                        if org1 and org2 and hasattr(org1, 'speak_to'):
+                            try:
+                                exchange = org1.speak_to(org2, context='alliance')
+                                training_comm_quality = exchange.get('exchange_quality', 0)
+                                if training_comm_quality > 0.3:
+                                    print(f"[ALLIANCE] 🗣️ Dojo coordination: {training_comm_quality:.2f} quality")
+                            except:
+                                pass
+                    
+                    print(f"[ALLIANCE] 🥋 {len(member_ids)} members training at '{alliance.name}' dojo")
+                    results['dojo_sessions'] = results.get('dojo_sessions', 0) + 1
+                    
+                    # Try to run actual dojo training if DojoManager available
+                    try:
+                        from reality_simulator.evolution.alliance_dojo import DojoManager
+                        
+                        # Get or create dojo manager (cached on aws for reuse)
+                        if not hasattr(aws, '_dojo_manager'):
+                            aws._dojo_manager = DojoManager()
+                        
+                        # Create brain getter function
+                        def get_brain(org_id):
+                            org = organisms.get(org_id)
+                            if org and hasattr(org, 'brain'):
+                                return org.brain
+                            return org
+                        
+                        # Run actual sparring session!
+                        session = aws._dojo_manager.run_alliance_training(
+                            alliance_id=alliance_id,
+                            members=member_ids,
+                            get_organism_brain=get_brain,
+                            training_type='sparring',
+                            rounds=2  # Keep short per round
+                        )
+                        
+                        if session:
+                            results['dojo_matches'] = results.get('dojo_matches', 0) + session.total_matches
+                            results['dojo_experiences'] = results.get('dojo_experiences', 0) + session.total_experiences
+                            print(f"[ALLIANCE] 🥋 Session complete: {session.total_matches} matches, {session.total_experiences} experiences")
+                    except Exception as e:
+                        # Fallback: just track sessions if dojo unavailable
+                        pass
+                    
+                    # Mark organisms as having trained + FEEDBACK
+                    for org_id, org in resting_members:
+                        if org:
+                            if hasattr(org, 'dojo_sessions'):
+                                org.dojo_sessions = getattr(org, 'dojo_sessions', 0) + 1
+                            # FEEDBACK: Organism learns resting with allies = training
+                            if hasattr(org, 'record_alliance_event'):
+                                org.record_alliance_event('trained', True)
+        
+        # ═══════════════════════════════════════════════════════════════════════════
+        # 👶 REPRODUCING ORGANISMS → ALLIANCE SPAWN (Daughter Alliance)
+        # ═══════════════════════════════════════════════════════════════════════════
+        # When organism reproduces + large alliance, can spawn a daughter alliance
+        for org_id, org in reproducing_orgs:
+            current_alliance = aws.get_organism_alliance(org_id)
+            if not current_alliance:
+                continue
+            
+            alliance = aws.alliances.get(current_alliance)
+            if not alliance:
+                continue
+            
+            # Only spawn if alliance is large enough (6+ members)
+            if len(alliance.members) < 6:
+                continue
+            
+            # Only warchief or founder can spawn daughter
+            if org_id not in [alliance.warchief_id, alliance.founder_id]:
+                continue
+            
+            # Find other reproducing members to form the new alliance
+            reproducing_in_alliance = [
+                m_id for m_id, m_org in reproducing_orgs 
+                if aws.get_organism_alliance(m_id) == current_alliance and m_id != org_id
+            ]
+            
+            if len(reproducing_in_alliance) >= 2:  # Need 2+ others
+                # 🗣️ SPAWN COMMUNICATION - Leader speaks to those about to leave
+                # Share wisdom before they branch off
+                for other_id in reproducing_in_alliance[:2]:
+                    other_org = organisms.get(other_id)
+                    if other_org and hasattr(org, 'speak_to'):
+                        try:
+                            exchange = org.speak_to(other_org, context='general')
+                            if exchange.get('exchange_quality', 0) > 0:
+                                print(f"[ALLIANCE] 🗣️ {org_id[:8]} shares wisdom with spawn member {other_id[:8]}")
+                        except:
+                            pass
+                
+                # Create daughter alliance
+                daughter_name = f"{alliance.name}_Spawn_{int(time.time()) % 10000}"
+                
+                # The reproducing organism leaves and founds new alliance
+                aws.alliances[current_alliance].remove_member(org_id, is_betrayal=False)
+                daughter_id = aws.organism_create_alliance(org_id, daughter_name)
+                
+                if daughter_id:
+                    # Other reproducers join the daughter
+                    for other_id in reproducing_in_alliance[:2]:  # Take 2
+                        aws.alliances[current_alliance].remove_member(other_id, is_betrayal=False)
+                        aws.alliances[daughter_id].add_member(other_id)
+                    
+                    print(f"[ALLIANCE] 👶 '{alliance.name}' spawned daughter '{daughter_name}' (3 members)")
+                    results['alliances_spawned'] = results.get('alliances_spawned', 0) + 1
+                    # FEEDBACK: Organisms learn spawning succeeded
+                    if hasattr(org, 'record_alliance_event'):
+                        org.record_alliance_event('spawned_alliance', True)
+                    for other_id in reproducing_in_alliance[:2]:
+                        other_org = organisms.get(other_id)
+                        if other_org and hasattr(other_org, 'record_alliance_event'):
+                            other_org.record_alliance_event('joined_spawn', True)
+                break  # One spawn per round
+        
+        # ═══════════════════════════════════════════════════════════════════════════
+        # 🚪 ISOLATING ORGANISMS → LEAVE/BETRAY ALLIANCE
+        # ═══════════════════════════════════════════════════════════════════════════
+        # When organism isolates + in alliance, they want out
+        for org_id, org in isolating_orgs:
+            current_alliance = aws.get_organism_alliance(org_id)
+            if not current_alliance:
+                continue
+            
+            alliance = aws.alliances.get(current_alliance)
+            if not alliance:
+                continue
+            
+            # Isolating = leaving (betrayal if at war)
+            is_at_war = len(alliance.at_war_with) > 0
+            if aws.organism_betray_alliance(org_id, sabotage=False):
+                if is_at_war:
+                    print(f"[ALLIANCE] 🗡️ {org_id[:8]} BETRAYED '{alliance.name}' (left during war!)")
+                    results['betrayals'] = results.get('betrayals', 0) + 1
+                    # FEEDBACK: Organism learns betrayal has consequences (negative)
+                    if hasattr(org, 'record_alliance_event'):
+                        org.record_alliance_event('betrayed', True)  # 'betrayed' has -0.8 reward
+                else:
+                    print(f"[ALLIANCE] 🚪 {org_id[:8]} left '{alliance.name}'")
+                    results['departures'] = results.get('departures', 0) + 1
+                    # FEEDBACK: Leaving peacefully is neutral
+                    if hasattr(org, 'record_alliance_event'):
+                        org.record_alliance_event('left', True)
         
         return results
     

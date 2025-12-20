@@ -1386,6 +1386,167 @@ class NeuralOrganism(Organism):
         
         return pattern
     
+    # ═══════════════════════════════════════════════════════════════════════════
+    # 🗣️ ORGANISM-TO-ORGANISM COMMUNICATION
+    # Language is the medium - organisms talk to each other before key interactions
+    # ═══════════════════════════════════════════════════════════════════════════
+    
+    def speak_to(self, 
+                 target: 'NeuralOrganism',
+                 context: str = 'general',
+                 context_memory: Any = None,
+                 vp_value: Optional[float] = None) -> Dict[str, Any]:
+        """
+        🗣️ Generate a message to another organism and get their response.
+        
+        This is the ACTIVE communication channel - organism A generates tokens,
+        sends them to organism B, B responds, and both learn from the exchange.
+        
+        Args:
+            target: The organism to speak to
+            context: Communication context ('alliance', 'battle', 'trade', 'general')
+            context_memory: ContextMemory for token generation (optional)
+            vp_value: Current VP value for adaptive response length
+            
+        Returns:
+            Dict with:
+                - my_message: tokens I generated
+                - their_response: tokens they generated back
+                - understood: whether we share vocabulary
+                - exchange_quality: 0-1 measure of communication success
+        """
+        result = {
+            'sender_id': self.species_id,
+            'receiver_id': target.species_id,
+            'context': context,
+            'my_message': [],
+            'my_message_words': [],
+            'their_response': [],
+            'their_response_words': [],
+            'understood': False,
+            'shared_words': [],
+            'exchange_quality': 0.0,
+            'success': False
+        }
+        
+        # Check if both organisms can communicate
+        if not hasattr(self, 'generate_tokens') or not hasattr(target, 'generate_tokens'):
+            return result
+        
+        if not hasattr(self, 'atomic_language') or self.atomic_language is None:
+            return result
+        if not hasattr(target, 'atomic_language') or target.atomic_language is None:
+            return result
+        
+        try:
+            # Step 1: I generate a message
+            my_tokens = self.generate_tokens(
+                context_memory=context_memory,
+                max_length=16,  # Keep messages short for efficiency
+                vp_value=vp_value,
+                temperature=1.0
+            )
+            result['my_message'] = my_tokens
+            
+            # Convert my tokens to words (for logging/debugging)
+            my_words = []
+            for token_id in my_tokens:
+                for word, atom in self.atomic_language.atoms.items():
+                    # Rough token-to-word mapping (actual mapping is in vocab)
+                    if hash(word) % 20000 == token_id % 20000:
+                        my_words.append(word)
+                        break
+            result['my_message_words'] = my_words[:10]  # Limit for readability
+            
+            # Step 2: Target receives and responds
+            # Pass my tokens as input context for their generation
+            their_tokens = target.generate_tokens(
+                context_memory=context_memory,
+                max_length=16,
+                vp_value=vp_value,
+                temperature=1.0,
+                input_tokens=my_tokens  # They receive my message!
+            )
+            result['their_response'] = their_tokens
+            
+            # Convert their tokens to words
+            their_words = []
+            for token_id in their_tokens:
+                for word, atom in target.atomic_language.atoms.items():
+                    if hash(word) % 20000 == token_id % 20000:
+                        their_words.append(word)
+                        break
+            result['their_response_words'] = their_words[:10]
+            
+            # Step 3: Measure communication quality
+            # Find shared vocabulary
+            my_vocab = set(self.atomic_language.atoms.keys())
+            their_vocab = set(target.atomic_language.atoms.keys())
+            shared_vocab = my_vocab.intersection(their_vocab)
+            result['shared_words'] = list(shared_vocab)[:20]
+            
+            # Communication quality based on vocab overlap and response length
+            vocab_overlap = len(shared_vocab) / max(1, min(len(my_vocab), len(their_vocab)))
+            response_quality = min(1.0, len(their_tokens) / 8.0)  # Did they respond?
+            message_quality = min(1.0, len(my_tokens) / 8.0)  # Did I say something?
+            
+            result['exchange_quality'] = (vocab_overlap * 0.5 + response_quality * 0.3 + message_quality * 0.2)
+            result['understood'] = vocab_overlap > 0.1 and len(their_tokens) > 0
+            result['success'] = True
+            
+            # Step 4: Both organisms learn from the exchange
+            # Record as social experience for both
+            if result['understood']:
+                self.tumble_action_tokens(action=1, reward=result['exchange_quality'], context='social')
+                target.tumble_action_tokens(action=1, reward=result['exchange_quality'], context='social')
+                
+                # Teach each other new words (knowledge transfer!)
+                # Each organism might learn words the other knows
+                if hasattr(self.atomic_language, 'can_acquire') and self.atomic_language.can_acquire():
+                    for word in list(their_vocab - my_vocab)[:3]:  # Learn up to 3 new words
+                        try:
+                            self.atomic_language.acquire_concept(
+                                word,
+                                source='conversation',
+                                reason=f"heard from {target.species_id[:8]}"
+                            )
+                        except:
+                            pass
+                
+                if hasattr(target.atomic_language, 'can_acquire') and target.atomic_language.can_acquire():
+                    for word in list(my_vocab - their_vocab)[:3]:
+                        try:
+                            target.atomic_language.acquire_concept(
+                                word,
+                                source='conversation', 
+                                reason=f"heard from {self.species_id[:8]}"
+                            )
+                        except:
+                            pass
+            
+            # Emit communication event for causation tracking
+            if self.event_emitter:
+                self.event_emitter({
+                    'event_type': 'organism_conversation',
+                    'sender_id': self.species_id,
+                    'receiver_id': target.species_id,
+                    'context': context,
+                    'exchange_quality': result['exchange_quality'],
+                    'understood': result['understood'],
+                    'shared_vocab_size': len(shared_vocab),
+                    'message_length': len(my_tokens),
+                    'response_length': len(their_tokens)
+                })
+            
+            logger.debug(f"[SPEAK] {self.species_id[:8]} → {target.species_id[:8]}: "
+                        f"quality={result['exchange_quality']:.2f}, shared={len(shared_vocab)}")
+            
+        except Exception as e:
+            logger.warning(f"[SPEAK] Communication failed {self.species_id[:8]} → {target.species_id[:8]}: {e}")
+            result['error'] = str(e)
+        
+        return result
+    
     def _calculate_fitness_trend(self) -> str:
         """Calculate fitness trend from state history."""
         if len(self.state_history) < 2:
@@ -1626,27 +1787,68 @@ class NeuralOrganism(Organism):
         Record alliance-related events as training rewards.
 
         Args:
-            event_type: Type of alliance event ("joined", "betrayed", "war_won", "war_lost", "battle_won", "battle_lost")
+            event_type: Type of alliance event
             success: True if the event was successful for this organism
         """
         # Reward mapping for different alliance events
+        # These shape how organisms learn alliance-level consequences of their actions
         rewards = {
-            "joined": 0.3,      # Positive for forming alliances
-            "betrayed": -0.8,   # Negative for betrayal
-            "war_won": 0.5,     # Positive for winning wars
-            "war_lost": -0.3,   # Negative for losing wars
-            "battle_won": 0.2,  # Positive for individual battle wins
-            "battle_lost": -0.1 # Slight negative for individual losses
+            # Cooperation (action 1) consequences
+            "joined": 0.3,           # Joined an alliance
+            "founded": 0.4,          # Founded an alliance
+            "recruited": 0.2,        # Successfully invited someone
+            "confederation_formed": 0.5,  # Created confederation
+            
+            # Competition (action 2) consequences
+            "war_proposed": 0.1,     # Proposed war (neutral - outcome matters)
+            "war_won": 0.5,          # Alliance won war
+            "war_lost": -0.3,        # Alliance lost war
+            "battle_won": 0.2,       # Won individual battle
+            "battle_lost": -0.1,     # Lost individual battle
+            
+            # Exploration (action 0) consequences
+            "territory_claimed": 0.3, # Claimed territory for alliance
+            
+            # Rest (action 3) consequences
+            "trained": 0.15,          # Trained at dojo with allies
+            
+            # Reproduce (action 4) consequences
+            "spawned_alliance": 0.4,  # Led alliance spawn
+            "joined_spawn": 0.25,     # Joined spawned alliance
+            
+            # Isolate (action 5) consequences
+            "left": 0.0,              # Left peacefully (neutral)
+            "betrayed": -0.8,         # Betrayed during war (severe penalty)
         }
         
-        # Reputation adjustments for alliance events (Integration: Feature 20)
+        # Reputation adjustments for alliance events
         reputation_deltas = {
-            "joined": 0.05,     # Joining alliance builds reputation
-            "betrayed": -0.2,   # Betrayal damages reputation significantly
-            "war_won": 0.1,     # Victory improves standing
-            "war_lost": -0.05,  # Loss slightly reduces reputation
-            "battle_won": 0.02, # Individual wins build reputation
-            "battle_lost": -0.01 # Individual losses minor impact
+            # Cooperation builds reputation
+            "joined": 0.05,
+            "founded": 0.08,
+            "recruited": 0.03,
+            "confederation_formed": 0.1,
+            
+            # Competition outcomes affect reputation
+            "war_proposed": 0.02,
+            "war_won": 0.1,
+            "war_lost": -0.05,
+            "battle_won": 0.02,
+            "battle_lost": -0.01,
+            
+            # Territory builds reputation
+            "territory_claimed": 0.05,
+            
+            # Training is neutral for reputation
+            "trained": 0.01,
+            
+            # Spawning builds reputation
+            "spawned_alliance": 0.07,
+            "joined_spawn": 0.03,
+            
+            # Leaving/betraying
+            "left": -0.02,          # Slight reputation hit
+            "betrayed": -0.2,       # Major reputation damage
         }
 
         # Get base reward

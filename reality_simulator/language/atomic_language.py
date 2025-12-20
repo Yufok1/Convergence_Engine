@@ -3345,6 +3345,11 @@ class AtomicLanguageSystem:
             'creation_time': self.creation_time,
             'stats': self.get_stats(),
             # ═══════════════════════════════════════════════════════════
+            # MASTERY SYSTEM STATE - CRITICAL FOR VOCAB CAP ENFORCEMENT
+            # ═══════════════════════════════════════════════════════════
+            'mastery_level': self._mastery_level,
+            'total_experiences': self._total_experiences,
+            # ═══════════════════════════════════════════════════════════
             # HEALING PROTOCOL STATE
             # ═══════════════════════════════════════════════════════════
             'last_echo_cycle': self.last_echo_cycle,
@@ -3360,15 +3365,39 @@ class AtomicLanguageSystem:
             event_emitter=event_emitter
         )
         
+        # ═══════════════════════════════════════════════════════════
+        # RESTORE MASTERY LEVEL FIRST - BEFORE loading atoms
+        # This ensures vocab cap is correct when we validate
+        # ═══════════════════════════════════════════════════════════
+        saved_level = data.get('mastery_level', 0)
+        system._mastery_level = saved_level
+        system._total_experiences = data.get('total_experiences', 0)
+        
+        # Get the vocab cap for this level
+        max_vocab = system._mastery_vocab_sizes[saved_level] if saved_level < len(system._mastery_vocab_sizes) else 20000
+        
         # Clear innate concepts and load from data
         system.atoms.clear()
         system._concept_order = data.get('concept_order', [])
         
-        for concept_id, atom_data in data.get('atoms', {}).items():
+        # Load atoms but ENFORCE vocab cap - don't load bloated data
+        loaded_atoms = data.get('atoms', {})
+        atoms_to_load = list(loaded_atoms.items())[:max_vocab]  # Cap at max vocab for level
+        
+        for concept_id, atom_data in atoms_to_load:
             atom = LinguisticAtom.from_dict(atom_data)
             atom._event_emitter = event_emitter
             atom._organism_id = data['organism_id']
             system.atoms[concept_id] = atom
+        
+        # Update concept order to match loaded atoms
+        system._concept_order = [c for c in system._concept_order if c in system.atoms]
+        
+        if len(loaded_atoms) > max_vocab:
+            logger.warning(
+                f"[MASTERY_LOAD] {data['organism_id'][:8]}: Trimmed vocab from {len(loaded_atoms)} to {max_vocab} "
+                f"(level {saved_level} cap)"
+            )
         
         system.creation_time = data.get('creation_time', time.time())
         

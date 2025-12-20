@@ -53,6 +53,7 @@ class ProposalType(Enum):
     BETRAY_ALLIANCE = "betray_alliance"      # Leave/sabotage current alliance
     LEADERSHIP_CHALLENGE = "leadership_challenge"  # Challenge for warchief
     TERRITORY_CLAIM = "territory_claim"      # Claim unclaimed territory
+    ULTIMATUM = "ultimatum"                  # "Join us or die" - submit or war
     # CONFEDERATION (Super-Alliance) proposal types
     CONFEDERATION_CREATE = "confederation_create"  # Create a super-alliance
     CONFEDERATION_INVITE = "confederation_invite"  # Invite alliance to confederation
@@ -2187,6 +2188,228 @@ class AllianceWarfareSystem:
         return proposal_id
     
     # ═══════════════════════════════════════════════════════════════════════
+    # ⚔️ ULTIMATUM SYSTEM - "JOIN US OR DIE"
+    # Stronger alliance demands weaker alliance submit or face war.
+    # Communication MATTERS - better communication = more likely to submit.
+    # ═══════════════════════════════════════════════════════════════════════
+    
+    def organism_issue_ultimatum(self, proposer_id: str, target_alliance_id: str,
+                                  organisms: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """
+        🗣️ "JOIN US OR DIE" - Issue ultimatum to weaker alliance.
+        
+        Communication-driven diplomacy:
+        - Warchief speaks to target warchief
+        - Communication quality affects submission chance
+        - Better shared vocab = more likely to submit peacefully
+        - Poor communication = war more likely
+        
+        Args:
+            proposer_id: Organism issuing ultimatum (must be warchief)
+            target_alliance_id: Alliance receiving ultimatum
+            organisms: Dict of organisms for communication (optional)
+            
+        Returns:
+            Dict with outcome: 'submitted', 'refused', or 'failed'
+        """
+        result = {
+            'outcome': 'failed',
+            'proposer': proposer_id,
+            'target_alliance': target_alliance_id,
+            'communication_quality': 0.0,
+            'reason': ''
+        }
+        
+        # Validate proposer is a warchief
+        alliance_id = self.get_organism_alliance(proposer_id)
+        if not alliance_id:
+            result['reason'] = 'proposer not in alliance'
+            return result
+        
+        alliance = self.alliances.get(alliance_id)
+        if not alliance or alliance.warchief_id != proposer_id:
+            result['reason'] = 'proposer is not warchief'
+            return result
+        
+        # Validate target alliance exists
+        target = self.alliances.get(target_alliance_id)
+        if not target:
+            result['reason'] = 'target alliance not found'
+            return result
+        
+        # Can't ultimatum yourself
+        if target_alliance_id == alliance_id:
+            result['reason'] = 'cannot ultimatum own alliance'
+            return result
+        
+        # Can't ultimatum if already at war
+        if target_alliance_id in alliance.at_war_with:
+            result['reason'] = 'already at war'
+            return result
+        
+        # Calculate power differential - ultimatums only work when stronger
+        our_power = len(alliance.members) + alliance.wars_won * 2 + len(alliance.controlled_territories)
+        their_power = len(target.members) + target.wars_won * 2 + len(target.controlled_territories)
+        
+        if our_power <= their_power:
+            result['reason'] = 'not powerful enough to issue ultimatum'
+            return result
+        
+        power_ratio = our_power / max(their_power, 1)
+        
+        # 🗣️ COMMUNICATION PHASE - Warchiefs talk!
+        communication_quality = 0.3  # Base chance
+        shared_vocab_size = 0
+        
+        if organisms:
+            # Get the warchiefs
+            proposer_org = organisms.get(proposer_id)
+            target_warchief_id = target.warchief_id
+            target_org = organisms.get(target_warchief_id) if target_warchief_id else None
+            
+            if proposer_org and target_org and hasattr(proposer_org, 'speak_to'):
+                try:
+                    # Warchiefs negotiate!
+                    exchange = proposer_org.speak_to(target_org, context='alliance')
+                    communication_quality = exchange.get('exchange_quality', 0.3)
+                    shared_vocab_size = len(exchange.get('shared_words', []))
+                    
+                    self.logger.info(f"🗣️ ULTIMATUM NEGOTIATION: {proposer_id[:8]} → {target_warchief_id[:8] if target_warchief_id else 'leaderless'}")
+                    self.logger.info(f"   Communication quality: {communication_quality:.2f}")
+                    self.logger.info(f"   Shared vocabulary: {shared_vocab_size} words")
+                except Exception as e:
+                    self.logger.debug(f"Ultimatum communication failed: {e}")
+        
+        result['communication_quality'] = communication_quality
+        result['shared_vocab'] = shared_vocab_size
+        result['power_ratio'] = power_ratio
+        
+        # DECISION: Submit or refuse?
+        # Factors: power differential, communication quality, target's nature
+        # Higher comm quality = more likely to understand and submit
+        # Higher power ratio = more intimidating
+        
+        import random
+        submit_chance = 0.0
+        
+        # Power factor (stronger = more likely to submit)
+        submit_chance += min(0.4, (power_ratio - 1) * 0.2)  # Up to 40% from power
+        
+        # Communication factor (better understanding = more likely to submit)
+        submit_chance += communication_quality * 0.4  # Up to 40% from communication
+        
+        # Shared vocab factor (more shared words = we "speak the same language")
+        submit_chance += min(0.2, shared_vocab_size * 0.02)  # Up to 20% from vocab
+        
+        result['submit_chance'] = submit_chance
+        
+        self.logger.info(f"☠️ ULTIMATUM: '{alliance.name}' → '{target.name}'")
+        self.logger.info(f"   Power ratio: {power_ratio:.2f}x")
+        self.logger.info(f"   Submit chance: {submit_chance:.1%}")
+        
+        if random.random() < submit_chance:
+            # TARGET SUBMITS - merge into our alliance!
+            result['outcome'] = 'submitted'
+            
+            # Transfer all members from target to our alliance
+            members_absorbed = []
+            for member_id in list(target.members.keys()):
+                if member_id != target.warchief_id:  # Warchief has special handling
+                    alliance.members[member_id] = AllianceRole.MEMBER
+                    members_absorbed.append(member_id)
+                    # Update organism's alliance reference
+                    if organisms and member_id in organisms:
+                        org = organisms[member_id]
+                        if hasattr(org, 'alliance_id'):
+                            org.alliance_id = alliance_id
+            
+            # Target warchief becomes a regular member (humbled)
+            if target.warchief_id:
+                alliance.members[target.warchief_id] = AllianceRole.MEMBER
+                members_absorbed.append(target.warchief_id)
+                if organisms and target.warchief_id in organisms:
+                    org = organisms[target.warchief_id]
+                    if hasattr(org, 'alliance_id'):
+                        org.alliance_id = alliance_id
+            
+            # Transfer territory
+            territories_gained = len(target.controlled_territories)
+            alliance.controlled_territories.update(target.controlled_territories)
+            
+            # Disband target alliance
+            self._disband_alliance(target_alliance_id, reason='submitted_to_ultimatum')
+            
+            result['members_absorbed'] = len(members_absorbed)
+            result['territories_gained'] = territories_gained
+            
+            self.logger.info(f"🏳️ '{target.name}' SUBMITS to ultimatum!")
+            self.logger.info(f"   {len(members_absorbed)} members absorbed")
+            self.logger.info(f"   {territories_gained} territories gained")
+            
+            self._emit_event('ultimatum_accepted', {
+                'dominant': alliance.name,
+                'submitted': target.name,
+                'members_absorbed': len(members_absorbed),
+                'communication_quality': communication_quality
+            })
+            
+            # Feedback to organisms - successful ultimatum
+            if organisms:
+                proposer_org = organisms.get(proposer_id)
+                if proposer_org and hasattr(proposer_org, 'record_alliance_event'):
+                    proposer_org.record_alliance_event('ultimatum_success', True)
+        else:
+            # TARGET REFUSES - war is declared!
+            result['outcome'] = 'refused'
+            
+            # Auto-declare war (no voting needed - they refused!)
+            alliance.at_war_with.add(target_alliance_id)
+            target.at_war_with.add(alliance_id)
+            alliance.wars_declared += 1
+            
+            self.logger.info(f"⚔️ '{target.name}' REFUSES ultimatum - WAR DECLARED!")
+            
+            self._emit_event('ultimatum_refused', {
+                'attacker': alliance.name,
+                'defender': target.name,
+                'communication_quality': communication_quality
+            })
+            
+            # Feedback - ultimatum failed, now at war
+            if organisms:
+                proposer_org = organisms.get(proposer_id)
+                if proposer_org and hasattr(proposer_org, 'record_alliance_event'):
+                    proposer_org.record_alliance_event('ultimatum_refused', False)
+        
+        return result
+    
+    def _disband_alliance(self, alliance_id: str, reason: str = 'disbanded'):
+        """Remove an alliance from the system."""
+        if alliance_id not in self.alliances:
+            return
+        
+        alliance = self.alliances[alliance_id]
+        
+        # Clear from confederation if present
+        if alliance_id in self.alliance_to_confederation:
+            conf_id = self.alliance_to_confederation[alliance_id]
+            if conf_id in self.confederations:
+                self.confederations[conf_id].member_alliances.discard(alliance_id)
+            del self.alliance_to_confederation[alliance_id]
+        
+        # Clear from any wars
+        for other_id, other in self.alliances.items():
+            other.at_war_with.discard(alliance_id)
+        
+        self.logger.info(f"💨 Alliance '{alliance.name}' disbanded: {reason}")
+        self._emit_event('alliance_disbanded', {
+            'alliance': alliance.name,
+            'reason': reason
+        })
+        
+        del self.alliances[alliance_id]
+    
+    # ═══════════════════════════════════════════════════════════════════════
     # 🕊️ PEACE & TREATY SYSTEM - Mutual Respect Between Equals
     # NO SURRENDER. NO SUBJUGATION. Only peace between those of equal strength.
     # Treaties are strategic alliances, not submissions.
@@ -3532,15 +3755,24 @@ class AllianceWarfareSystem:
         total_members = len(alliance.members)
         total_votes = len(proposal.votes_for) + len(proposal.votes_against)
         
-        # Need at least half to have voted
-        if total_votes < total_members * 0.5:
+        # Minimum quorum: at least 2 votes OR 30% of members (whichever is lower)
+        # This ensures small alliances can still make decisions
+        min_quorum = min(2, max(1, int(total_members * 0.3)))
+        if total_votes < min_quorum:
             return
         
         vote_ratio = proposal.get_vote_ratio()
         
-        if vote_ratio >= self.vote_threshold:
+        # For territory claims and minor proposals: simple majority of voters
+        # For war declarations: still need higher threshold
+        if proposal.proposal_type == ProposalType.WAR_DECLARATION:
+            threshold = self.vote_threshold  # 50% default
+        else:
+            threshold = 0.5  # Simple majority for territory, leadership, etc.
+        
+        if vote_ratio >= threshold:
             self._execute_proposal(alliance, proposal, accepted=True)
-        elif (1 - vote_ratio) >= self.vote_threshold:
+        elif (1 - vote_ratio) >= threshold:
             self._execute_proposal(alliance, proposal, accepted=False)
     
     def _execute_proposal(self, alliance: PlanetaryAlliance, 
@@ -4168,13 +4400,19 @@ class AllianceWarfareSystem:
         # Time out old proposals
         current_time = time.time()
         for alliance in self.alliances.values():
+            # Clean up resolved proposals AND time out old ones
+            unresolved = []
             for proposal in alliance.pending_proposals:
-                if not proposal.resolved:
-                    age = current_time - proposal.timestamp
-                    if age > self.proposal_timeout * 60:  # timeout in minutes
-                        proposal.resolved = True
-                        proposal.accepted = False
-                        results['proposals_timed_out'] += 1
+                if proposal.resolved:
+                    continue  # Already resolved, skip
+                age = current_time - proposal.timestamp
+                if age > self.proposal_timeout * 60:  # timeout in minutes
+                    proposal.resolved = True
+                    proposal.accepted = False
+                    results['proposals_timed_out'] += 1
+                else:
+                    unresolved.append(proposal)
+            alliance.pending_proposals = unresolved  # Keep only unresolved
         
         # Clean up global proposals
         self.pending_global_proposals = [
@@ -4193,7 +4431,12 @@ class AllianceWarfareSystem:
         
         # Sync confederation state to organisms for ML feature extraction
         # Also wires system references for Illumination Engine
-        self.sync_organism_confederation_state(organisms, causation_explorer=causation_explorer)
+        # Also syncs to highlander_protocol.organism_stats for survival bonuses
+        self.sync_organism_confederation_state(
+            organisms, 
+            causation_explorer=causation_explorer,
+            highlander_protocol=self.highlander_protocol
+        )
         
         results['alliances'] = len(self.alliances)
         results['confederations'] = len(self.confederations)
@@ -4219,7 +4462,8 @@ class AllianceWarfareSystem:
         }
     
     def sync_organism_confederation_state(self, organisms: Dict[str, Any],
-                                          causation_explorer: Optional[Any] = None):
+                                          causation_explorer: Optional[Any] = None,
+                                          highlander_protocol: Optional[Any] = None):
         """
         Sync confederation state to organism attributes for ML feature extraction.
         
@@ -4229,6 +4473,8 @@ class AllianceWarfareSystem:
         - confederation_wars_participated: Count of mega-wars they've been in
         - cross_alliance_connections: Connections to organisms in other alliances
         - system_references: Wire AllianceWarfareSystem and CausationExplorer for Illumination Engine
+        
+        Also syncs to HighlanderProtocol.organism_stats for survival bonuses.
         """
         for org_id, org in organisms.items():
             # Find organism's alliance
@@ -4268,6 +4514,14 @@ class AllianceWarfareSystem:
             
             if hasattr(org, 'confederation_tier'):
                 org.confederation_tier = tier
+            
+            # 🏛️ SYNC TO HIGHLANDER - so survival bonus applies!
+            if highlander_protocol is not None:
+                try:
+                    if org_id in highlander_protocol.organism_stats:
+                        highlander_protocol.organism_stats[org_id].confederation_tier = tier
+                except Exception:
+                    pass  # Graceful degradation
             
             # Count cross-alliance connections (organisms in other alliances this one connects to)
             cross_connections = 0

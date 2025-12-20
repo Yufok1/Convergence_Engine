@@ -80,6 +80,32 @@ pip install pywin32
   - Philosophy: "Your existence questions mine. Let us resolve through contest."
   - See [CHANGELOG.md](./CHANGELOG.md) for implementation details
 
+### 🗣️ Organism Communication System ⭐ NEW (Dec 20, 2025)
+
+- **"Language is the Allspice"** - Organisms actively talk to each other
+  - `speak_to(target, context)` method on NeuralOrganism
+  - Contexts: `'battle'`, `'alliance'`, `'general'`
+  - Communication at **every confluence point**: battles, alliances, wars, territory, training, spawns
+  - **Communication MATTERS**: Affects battle outcomes (intel bonus), ultimatum success, alliance acceptance
+  - Both organisms **learn new words** from exchanges
+  
+- **"Join or Die" Ultimatum System** - ☠️ Warchiefs demand submission
+  - Only warchiefs of powerful alliances can issue
+  - Communication quality affects submit chance
+  - Submit: Alliance absorbed | Refuse: War declared
+  - Config: `highlander.alliance_warfare.organism_communication.ultimatum_enabled`
+
+- **Config Section**: `highlander.alliance_warfare.organism_communication`
+  ```json
+  {
+    "enabled": true,
+    "pre_battle_communication": true,
+    "communication_affects_battles": true,
+    "intel_bonus_max": 0.15,
+    "ultimatum_enabled": true
+  }
+  ```
+
 ---
 
 ## 🧠 System-Specific Documentation

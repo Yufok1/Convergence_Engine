@@ -220,7 +220,17 @@
       "min_alliance_size": 2,
       "war_declaration_threshold": 0.6,
       "war_frequency": 0.5,
-      "illumination_stability_threshold": 5
+      "illumination_stability_threshold": 5,
+      "organism_communication": {
+        "enabled": true,
+        "_help": "Organisms speak to each other at confluence points (battles, alliances, etc.)",
+        "pre_battle_communication": true,
+        "communication_affects_battles": true,
+        "intel_bonus_max": 0.15,
+        "_intel_bonus_help": "Max reaction speed bonus from shared vocabulary in battles",
+        "ultimatum_enabled": true,
+        "_ultimatum_help": "Warchiefs can issue 'Join or Die' demands to weaker alliances"
+      }
     },
     "chaos_factor": 0.0,
     "competition_intensity": 0.4,

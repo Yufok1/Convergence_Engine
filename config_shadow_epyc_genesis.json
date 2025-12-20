@@ -246,7 +246,8 @@
     "eval_interval_seconds": 1200,
     "_eval_interval_seconds_help": "BOOM-BUST WAVES: 20-minute growth periods between Highlander concentration waves. Organisms learn/master vocabulary before culling.",
     "alliance_warfare": {
-      "betrayal_chance": 0.03,
+      "betrayal_chance": 0.0,
+      "_betrayal_chance_note": "Set to 0 - clean predictable systems, no chaos",
       "confederation_war_threshold": 0.50,
       "enabled": true,
       "existential_war_threshold": 0.70,
@@ -257,7 +258,14 @@
       "war_declaration_threshold": 0.50,
       "war_frequency": 0.6,
       "illumination_stability_threshold": 3,
-      "_genesis_note": "Smaller alliance limits - scaled for boom/bust population range and RAM constraints"
+      "_genesis_note": "Smaller alliance limits - scaled for boom/bust population range and RAM constraints",
+      "organism_communication": {
+        "enabled": true,
+        "pre_battle_communication": true,
+        "communication_affects_battles": true,
+        "intel_bonus_max": 0.15,
+        "ultimatum_enabled": true
+      }
     },
     "chaos_factor": 0.08,
     "competition_intensity": 0.55,

@@ -246,7 +246,16 @@
       "war_frequency": 0.3,
       "_war_frequency_help": "Lower war frequency during boom phase, increases as population grows",
       "illumination_stability_threshold": 3,
-      "_illumination_stability_threshold_help": "Faster illumination unlock for genesis"
+      "_illumination_stability_threshold_help": "Faster illumination unlock for genesis",
+      "organism_communication": {
+        "enabled": true,
+        "_help": "Organisms speak at confluence points - language is the allspice that connectifies everything",
+        "pre_battle_communication": true,
+        "communication_affects_battles": true,
+        "intel_bonus_max": 0.15,
+        "ultimatum_enabled": true,
+        "_ultimatum_help": "Join or Die - powerful warchiefs can demand submission"
+      }
     },
     "boom_bust_dynamics": {
       "enabled": true,

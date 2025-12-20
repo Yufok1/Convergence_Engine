@@ -1142,6 +1142,8 @@ class OrganismCapsuleManager:
         """
         Restore atomic language from capsule.
         
+        MASTERY-GATED: Respects vocabulary caps when restoring.
+        
         Args:
             capsule: Capsule containing language state
             target_language_system: AtomicLanguageSystem to restore into
@@ -1160,7 +1162,19 @@ class OrganismCapsuleManager:
             # Restore from snapshot
             from reality_simulator.language.atomic_language import LinguisticAtom
             
-            for concept_id, atom_dict in capsule.language.atoms.items():
+            # MASTERY CHECK: Get vocab cap for organism's level
+            mastery_level = getattr(target_language_system, '_mastery_level', 0)
+            vocab_caps = getattr(target_language_system, '_mastery_vocab_sizes', [6, 26, 76, 276, 20000])
+            max_vocab = vocab_caps[mastery_level] if mastery_level < len(vocab_caps) else 20000
+            
+            # Sort atoms by strength so we keep strongest if we hit cap
+            sorted_atoms = sorted(
+                capsule.language.atoms.items(),
+                key=lambda x: x[1].get('strength', 0.5),
+                reverse=True
+            )[:max_vocab]  # Cap at max vocab for level
+            
+            for concept_id, atom_dict in sorted_atoms:
                 atom = LinguisticAtom(
                     concept_id=concept_id,
                     strength=atom_dict.get('strength', 0.5),
@@ -1170,6 +1184,9 @@ class OrganismCapsuleManager:
                 )
                 target_language_system.atoms[concept_id] = atom
                 target_language_system._concept_order.append(concept_id)
+            
+            if len(capsule.language.atoms) > max_vocab:
+                print(f"⚠️ Trimmed language restore from {len(capsule.language.atoms)} to {max_vocab} (mastery level {mastery_level})")
             
             return True
         except Exception as e:

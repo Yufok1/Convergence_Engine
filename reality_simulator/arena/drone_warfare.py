@@ -176,6 +176,7 @@ class DroneWarfareArena:
         Transfer vocabulary from losers to winners.
         
         Highlander Quickening - absorb the fallen's knowledge.
+        MASTERY-GATED: Respects vocabulary caps.
         """
         if not self.context_memory:
             return
@@ -198,10 +199,29 @@ class DroneWarfareArena:
             for winner in winner_orgs:
                 winner_id = getattr(winner, 'organism_id', str(id(winner)))
                 
+                # MASTERY CHECK: Only transfer if winner can acquire more vocab
+                if hasattr(winner, 'atomic_language'):
+                    winner_lang = winner.atomic_language
+                    if hasattr(winner_lang, 'can_acquire') and not winner_lang.can_acquire():
+                        logger.debug(f"[MASTERY_GATE] {winner_id[:8]}: Drone vocab transfer blocked - at cap")
+                        continue
+                    
+                    # Calculate how many words we can transfer
+                    max_vocab = winner_lang._mastery_vocab_sizes[winner_lang._mastery_level] if winner_lang._mastery_level < len(winner_lang._mastery_vocab_sizes) else 20000
+                    current_vocab = len(winner_lang.atoms)
+                    space_left = max(0, max_vocab - current_vocab)
+                    
+                    if space_left == 0:
+                        continue
+                
                 # Transfer words
                 if hasattr(self.context_memory, 'node_word_associations'):
                     existing = self.context_memory.node_word_associations.get(winner_id, set())
-                    new_words = loser_words - existing
+                    new_words = list(loser_words - existing)
+                    
+                    # Cap at space_left if we have mastery tracking
+                    if hasattr(winner, 'atomic_language') and hasattr(winner.atomic_language, '_mastery_level'):
+                        new_words = new_words[:space_left]
                     
                     for word in new_words:
                         self.context_memory.node_word_associations[winner_id].add(word)
