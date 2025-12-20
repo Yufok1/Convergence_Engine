@@ -796,20 +796,24 @@ class LanguageTeacher:
                 assigned_words = []
                 
                 # Strengthen concepts based on situational words
+                # MASTERY CHECK: Only acquire if organism can accept new vocabulary
+                can_acquire = hasattr(organism.atomic_language, 'can_acquire') and organism.atomic_language.can_acquire()
+                
                 if 'situational_words' in dir() and situational_words:
                     for word in situational_words[:8]:
                         if word in organism.atomic_language.atoms:
                             organism.atomic_language.strengthen_concept(
                                 word, 0.05, f"taught_situational_gen{generation}"
                             )
-                        else:
-                            # Acquire new concept from teaching
+                            assigned_words.append(word)
+                        elif can_acquire:
+                            # Acquire new concept from teaching (only if mastery allows)
                             organism.atomic_language.acquire_concept(
                                 word, 'taught', 
                                 semantic_frame='situational',
                                 reason=f"language_teacher_gen{generation}"
                             )
-                        assigned_words.append(word)
+                            assigned_words.append(word)
                 
                 # Form associations between co-taught concepts
                 if len(assigned_words) >= 2:

@@ -305,9 +305,11 @@ class LinguisticAtom:
         Decay satiation over time - concepts become fresh again.
         
         Called periodically to let organisms "forget" overuse.
+        NOTE: We decay satiation_level but NOT recent_activation_count,
+        because activation count is needed for mastery breadth calculation.
         """
         self.satiation_level = max(0.0, self.satiation_level - amount)
-        self.recent_activation_count = max(0, self.recent_activation_count - 1)
+        # DO NOT decay recent_activation_count - it tracks lifetime usage for mastery
     
     def get_effective_magnetism(self, organism_skepticism: float = 0.5) -> float:
         """
@@ -1627,6 +1629,19 @@ class AtomicLanguageSystem:
         available = self.get_available_vocabulary()
         return word in available
     
+    def can_acquire(self) -> bool:
+        """
+        Check if organism can acquire new vocabulary.
+        
+        CALLERS MUST CHECK THIS BEFORE ATTEMPTING acquire_concept().
+        Returns False if organism is at vocab cap for current mastery level.
+        
+        Returns:
+            True if organism has room for new words, False if at cap
+        """
+        max_vocab = self._mastery_vocab_sizes[min(self._mastery_level, len(self._mastery_vocab_sizes) - 1)]
+        return len(self.atoms) < max_vocab
+    
     def check_mastery_advancement(self) -> bool:
         """
         Check if organism should advance to next mastery level.
@@ -1947,12 +1962,16 @@ class AtomicLanguageSystem:
 
     
     def acquire_concept(self, concept_id: str, source: str, semantic_frame: str = 'unknown',
-                       initial_strength: float = 0.3, reason: str = "acquired") -> LinguisticAtom:
+                       initial_strength: float = 0.3, reason: str = "acquired") -> Optional[LinguisticAtom]:
         """
         Acquire a new concept (learn a new word).
         
         This is a MAJOR EVENT for causation tracking - the organism
         learned something new!
+        
+        MASTERY GATING: In grounded mode (levels 0-3), organisms can only
+        acquire concepts through mastery advancement - external teaching/
+        absorption is blocked. This prevents vocabulary leaking past the cap.
         
         Args:
             concept_id: Unique concept identifier
@@ -1962,12 +1981,28 @@ class AtomicLanguageSystem:
             reason: Why this concept was acquired
             
         Returns:
-            The newly created or existing LinguisticAtom
+            The newly created or existing LinguisticAtom, or None if blocked by mastery
         """
         if concept_id in self.atoms:
             # Already have this concept - strengthen it instead
             self.atoms[concept_id].update_strength(0.1, f"reinforced: {reason}")
             return self.atoms[concept_id]
+        
+        # ═══════════════════════════════════════════════════════════════
+        # MASTERY GATING - Block acquisition if beyond vocab cap
+        # ═══════════════════════════════════════════════════════════════
+        max_vocab = self._mastery_vocab_sizes[min(self._mastery_level, len(self._mastery_vocab_sizes) - 1)]
+        is_mastery_gated = max_vocab < 20000  # True for levels 0-3
+        
+        if is_mastery_gated:
+            # Check if we're at or beyond the vocab cap for current level
+            if len(self.atoms) >= max_vocab:
+                # Block acquisition - organism must advance mastery to get more words
+                logger.debug(
+                    f"[MASTERY_GATE] {self.organism_id[:8]}: Blocked acquisition of '{concept_id}' "
+                    f"(source={source}) - at vocab cap {len(self.atoms)}/{max_vocab} for level {self._mastery_level}"
+                )
+                return None
         
         current_time = time.time()
         
@@ -2568,13 +2603,17 @@ class AtomicLanguageSystem:
         Returns list of related words from available vocabulary.
         """
         # Map actions to semantically related concept categories
+        # FIXED: Use ACTUAL Level 1 vocabulary words from innate_vocab.json:
+        # abandon, avoid, compete, cooperate, create, curiosity, explore, force, hope, 
+        # ignore, isolate, love, miss, move, neglect, overlook, pressure, prevent, 
+        # release, reproduce, rest, separate, share, stop, suppress, together
         action_word_map = {
-            0: ['move', 'escape', 'advance', 'withdraw', 'approach', 'retreat', 'explore'],  # MOVE
-            1: ['cooperate', 'support', 'allow', 'follow', 'yield', 'encourage', 'help'],     # COOPERATE  
-            2: ['compete', 'force', 'pressure', 'strike', 'attack', 'fight', 'dominate'],    # COMPETE
-            3: ['rest', 'hold', 'maintain', 'preserve', 'persist', 'continue', 'wait'],      # REST
-            4: ['reproduce', 'expand', 'grow', 'create', 'generate', 'produce', 'spread'],   # REPRODUCE
-            5: ['isolate', 'separate', 'hide', 'avoid', 'prevent', 'deny', 'refuse'],        # ISOLATE
+            0: ['move', 'explore', 'release', 'curiosity', 'hope'],  # MOVE - exploration/motion
+            1: ['cooperate', 'share', 'together', 'love', 'hope'],   # COOPERATE - social/positive
+            2: ['compete', 'force', 'pressure', 'suppress', 'stop'], # COMPETE - aggressive
+            3: ['rest', 'stop', 'ignore', 'neglect', 'overlook'],    # REST - inaction
+            4: ['reproduce', 'create', 'love', 'hope', 'together'],  # REPRODUCE - creation
+            5: ['isolate', 'separate', 'avoid', 'prevent', 'abandon', 'miss', 'ignore'],  # ISOLATE - avoidance
         }
         
         # Get related words for this action
@@ -2584,13 +2623,10 @@ class AtomicLanguageSystem:
         available = self.get_available_vocabulary()
         activated = [w for w in related if w in available]
         
-        # Limit activations based on outcome (good outcome = more related words activated)
-        if outcome > 0:
-            num_to_activate = min(3, len(activated))  # Up to 3 related words on success
-        else:
-            num_to_activate = min(1, len(activated))  # 1 word on failure
-        
-        return activated[:num_to_activate]
+        # AGGRESSIVE breadth activation - activate ALL matching words, not just a few
+        # Level 1 has 26 words - need 50% breadth (13 words with count > 2)
+        # Each action should activate 4-7 words to spread activation broadly
+        return activated  # Return ALL matching words, not limited subset
     
     def apply_experience(self, action: int, outcome: float, context: Dict[str, Any]):
         """
@@ -2696,6 +2732,26 @@ class AtomicLanguageSystem:
                 self.form_association('isolate', 'rest', outcome * 0.25, 'safe_recovery')
                 self.form_association('isolate', 'move', outcome * 0.2, 'escape')
                 self.form_association('isolate', 'compete', outcome * 0.15, 'prepare_ambush')
+            
+            # ═══════════════════════════════════════════════════════════════════════════
+            # FIX FOR DEPTH: Form associations between action-related words too!
+            # Without this, only action heads get associations and depth is stuck at 6/26
+            # Level 1→2 requires 30% depth (8/26 words with 2+ associations)
+            # ═══════════════════════════════════════════════════════════════════════════
+            if outcome > 0:
+                related_words = self._get_action_related_words(action, outcome)
+                # Form associations between action head and its related words
+                for word in related_words:
+                    if word != action_concept:
+                        self.form_association(action_concept, word, outcome * 0.2, f'{action_concept}_related')
+                        self.form_association(word, action_concept, outcome * 0.2, f'related_to_{action_concept}')
+                
+                # Also form associations between related words (semantic clustering)
+                if len(related_words) >= 2:
+                    for i, word1 in enumerate(related_words[:3]):  # Limit to prevent explosion
+                        for word2 in related_words[i+1:4]:
+                            if word1 != word2:
+                                self.form_association(word1, word2, outcome * 0.15, 'action_cluster')
         
         # 🆕 DECAY SATIATION - prevents getting stuck in loops
         # Small decay each step, so concepts that haven't been used recently 

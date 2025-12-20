@@ -7256,13 +7256,35 @@ def list_organisms():
                         words_learned = 0
                         mastery_level = 0
                         mastery_vocab_limit = 6  # Level 0 default
+                        mastery_breadth = 0.0
+                        mastery_depth = 0.0
+                        mastery_experiences = 0
+                        mastery_breadth_target = 0.5
+                        mastery_depth_target = 0.3
+                        mastery_exp_target = 25
                         if hasattr(organism, 'atomic_language') and organism.atomic_language:
-                            words_learned = len(organism.atomic_language.atoms)
-                            mastery_level = getattr(organism.atomic_language, '_mastery_level', 0)
+                            al = organism.atomic_language
+                            words_learned = len(al.atoms)
+                            mastery_level = getattr(al, '_mastery_level', 0)
+                            mastery_experiences = getattr(al, '_total_experiences', 0)
+                            
                             # Get vocab limit for current level
-                            mastery_sizes = getattr(organism.atomic_language, '_mastery_vocab_sizes', [6, 26, 76, 276, 20000])
+                            mastery_sizes = getattr(al, '_mastery_vocab_sizes', [6, 26, 76, 276, 20000])
                             if mastery_level < len(mastery_sizes):
                                 mastery_vocab_limit = mastery_sizes[mastery_level]
+                            
+                            # Calculate breadth and depth for advancement tracking
+                            vocab = al.get_available_vocabulary() if hasattr(al, 'get_available_vocabulary') else []
+                            if vocab:
+                                used_words = sum(1 for w in vocab if w in al.atoms and getattr(al.atoms[w], 'recent_activation_count', 0) > 2)
+                                mastery_breadth = used_words / len(vocab) if vocab else 0
+                                deep_words = sum(1 for w in vocab if w in al.atoms and len(getattr(al.atoms[w], 'associations', {})) >= 2)
+                                mastery_depth = deep_words / len(vocab) if vocab else 0
+                            
+                            # Get targets for current level
+                            exp_targets = getattr(al, '_mastery_min_experiences', [25, 100, 500, 2000, 10000])
+                            if mastery_level < len(exp_targets):
+                                mastery_exp_target = exp_targets[mastery_level]
                         
                         # FALLBACK: Check node_word_associations if atomic_language not available
                         if words_learned == 0:
@@ -7363,6 +7385,13 @@ def list_organisms():
                             'vocab_capacity': vocab_size,
                             'vocab_utilization': round(words_learned / vocab_size * 100, 1) if vocab_size > 0 else 0,
                             'has_language_head': has_language_head,
+                            # Mastery advancement progress
+                            'mastery_breadth': round(mastery_breadth, 2),
+                            'mastery_depth': round(mastery_depth, 2),
+                            'mastery_experiences': mastery_experiences,
+                            'mastery_breadth_target': mastery_breadth_target,
+                            'mastery_depth_target': mastery_depth_target,
+                            'mastery_exp_target': mastery_exp_target,
                             
                             # Neural
                             'brain_params': brain_params,

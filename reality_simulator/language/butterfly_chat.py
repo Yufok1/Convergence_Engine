@@ -920,25 +920,29 @@ class ButterflyChatRouter:
         
         # BOOTSTRAP: Teach organism user's words BEFORE generation so they have vocab to work with
         # This solves the chicken-and-egg: can't generate without vocab, can't learn without generating
+        # MASTERY CHECK: Only attempt if organism can acquire new vocabulary
         if hasattr(organism, 'atomic_language') and organism.atomic_language is not None:
-            words_taught = 0
-            for word in words:
-                if word not in organism.atomic_language.atoms:
-                    try:
-                        organism.atomic_language.acquire_concept(
-                            word, 
-                            source='chat_heard',
-                            reason=f"heard in user message"
-                        )
-                        words_taught += 1
-                    except Exception as e:
-                        pass  # Non-fatal
-            if words_taught > 0:
-                self._log_debug("DIRECT_CHAT_BOOTSTRAP", f"Taught {words_taught} new words to organism", {
-                    "organism_id": org_id,
-                    "words_taught": words_taught,
-                    "total_vocab": len(organism.atomic_language.atoms)
-                })
+            can_acquire = hasattr(organism.atomic_language, 'can_acquire') and organism.atomic_language.can_acquire()
+            
+            if can_acquire:
+                words_taught = 0
+                for word in words:
+                    if word not in organism.atomic_language.atoms:
+                        try:
+                            organism.atomic_language.acquire_concept(
+                                word, 
+                                source='chat_heard',
+                                reason=f"heard in user message"
+                            )
+                            words_taught += 1
+                        except Exception as e:
+                            pass  # Non-fatal
+                if words_taught > 0:
+                    self._log_debug("DIRECT_CHAT_BOOTSTRAP", f"Taught {words_taught} new words to organism", {
+                        "organism_id": org_id,
+                        "words_taught": words_taught,
+                        "total_vocab": len(organism.atomic_language.atoms)
+                    })
         
         # Get organism's language system
         language_system = getattr(organism, 'language_system', None)
@@ -1512,6 +1516,9 @@ class ButterflyChatRouter:
         if not hasattr(organism, 'atomic_language') or organism.atomic_language is None:
             return 0
         
+        # MASTERY CHECK: Only attempt acquisition if organism can accept new vocabulary
+        can_acquire = hasattr(organism.atomic_language, 'can_acquire') and organism.atomic_language.can_acquire()
+        
         # Get knowledge_web for semantic frame info
         knowledge_web = None
         if network_state:
@@ -1531,6 +1538,10 @@ class ButterflyChatRouter:
                 organism.atomic_language.strengthen_concept(
                     word, 0.03, f"{source}_reinforced"
                 )
+                continue
+            
+            # Skip acquisition if organism can't accept new vocabulary
+            if not can_acquire:
                 continue
             
             # Get semantic frame from knowledge_web if available

@@ -1642,24 +1642,26 @@ class HighlanderProtocol:
             new_concepts_1 = concepts2 - concepts1
             new_concepts_2 = concepts1 - concepts2
             
-            # Teach concepts (simplified - just strengthen)
-            for concept in new_concepts_1:
-                if hasattr(org1, 'atomic_language') and org1.atomic_language:
-                    try:
-                        org1.atomic_language.acquire_concept(
-                            concept, source='alliance', strength=0.3
-                        )
-                    except Exception:
-                        pass
+            # Teach concepts only if organism can acquire (mastery system check)
+            if hasattr(org1, 'atomic_language') and org1.atomic_language:
+                if hasattr(org1.atomic_language, 'can_acquire') and org1.atomic_language.can_acquire():
+                    for concept in new_concepts_1:
+                        try:
+                            org1.atomic_language.acquire_concept(
+                                concept, source='alliance', strength=0.3
+                            )
+                        except Exception:
+                            pass
                         
-            for concept in new_concepts_2:
-                if hasattr(org2, 'atomic_language') and org2.atomic_language:
-                    try:
-                        org2.atomic_language.acquire_concept(
-                            concept, source='alliance', strength=0.3
-                        )
-                    except Exception:
-                        pass
+            if hasattr(org2, 'atomic_language') and org2.atomic_language:
+                if hasattr(org2.atomic_language, 'can_acquire') and org2.atomic_language.can_acquire():
+                    for concept in new_concepts_2:
+                        try:
+                            org2.atomic_language.acquire_concept(
+                                concept, source='alliance', strength=0.3
+                            )
+                        except Exception:
+                            pass
                         
         except Exception:
             pass  # Don't break on concept sharing failure

@@ -15877,18 +15877,45 @@
                                         <div style="font-size: 1.4em; color: ${masteryLevelColors[masteryLevel]}; font-weight: 600; margin-bottom: 4px;">${masteryLevelNames[masteryLevel]}</div>
                                         <div style="font-size: 0.9em; color: var(--text-muted);">Level ${masteryLevel}</div>
                                     </div>
-                                    <div style="background: var(--bg-deep); border-radius: var(--radius-sm); padding: 12px;">
-                                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.85em;">
-                                            <span style="color: var(--text-muted);">Progress to ${masteryLevel < 4 ? masteryLevelNames[masteryLevel + 1] : 'Max'}</span>
-                                            <span style="color: ${masteryLevelColors[masteryLevel]};">${currentWords}/${masteryLevel < 4 ? nextThreshold : '∞'}</span>
+                                    
+                                    <!-- Advancement Progress Bars -->
+                                    <div style="background: var(--bg-deep); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 12px;">
+                                        <div style="font-size: 0.85em; color: var(--accent-gold); margin-bottom: 10px; font-weight: 600;">⬆️ Advancement Progress</div>
+                                        
+                                        <!-- Breadth -->
+                                        <div style="margin-bottom: 8px;">
+                                            <div style="display: flex; justify-content: space-between; font-size: 0.8em; margin-bottom: 3px;">
+                                                <span style="color: var(--text-muted);">Breadth (word usage)</span>
+                                                <span style="color: ${(org.mastery_breadth || 0) >= (org.mastery_breadth_target || 0.5) ? '#4ade80' : '#f59e0b'};">${Math.round((org.mastery_breadth || 0) * 100)}% / ${Math.round((org.mastery_breadth_target || 0.5) * 100)}%</span>
+                                            </div>
+                                            <div style="height: 6px; background: var(--bg-surface); border-radius: 3px; overflow: hidden;">
+                                                <div style="height: 100%; width: ${Math.min(100, ((org.mastery_breadth || 0) / (org.mastery_breadth_target || 0.5)) * 100)}%; background: ${(org.mastery_breadth || 0) >= (org.mastery_breadth_target || 0.5) ? '#4ade80' : '#f59e0b'};"></div>
+                                            </div>
                                         </div>
-                                        <div style="height: 10px; background: var(--bg-surface); border-radius: 5px; overflow: hidden;">
-                                            <div style="height: 100%; width: ${masteryProgress}%; background: linear-gradient(90deg, ${masteryLevelColors[masteryLevel]}, ${masteryLevel < 4 ? masteryLevelColors[masteryLevel + 1] : '#ffd700'}); transition: width 0.3s ease;"></div>
+                                        
+                                        <!-- Depth -->
+                                        <div style="margin-bottom: 8px;">
+                                            <div style="display: flex; justify-content: space-between; font-size: 0.8em; margin-bottom: 3px;">
+                                                <span style="color: var(--text-muted);">Depth (associations)</span>
+                                                <span style="color: ${(org.mastery_depth || 0) >= (org.mastery_depth_target || 0.3) ? '#4ade80' : '#f59e0b'};">${Math.round((org.mastery_depth || 0) * 100)}% / ${Math.round((org.mastery_depth_target || 0.3) * 100)}%</span>
+                                            </div>
+                                            <div style="height: 6px; background: var(--bg-surface); border-radius: 3px; overflow: hidden;">
+                                                <div style="height: 100%; width: ${Math.min(100, ((org.mastery_depth || 0) / (org.mastery_depth_target || 0.3)) * 100)}%; background: ${(org.mastery_depth || 0) >= (org.mastery_depth_target || 0.3) ? '#4ade80' : '#f59e0b'};"></div>
+                                            </div>
                                         </div>
-                                        <div style="text-align: center; margin-top: 8px; font-size: 0.8em; color: var(--text-muted);">
-                                            ${masteryLevel < 4 ? `${nextThreshold - currentWords} words to next level` : '✨ Maximum mastery achieved!'}
+                                        
+                                        <!-- Experiences -->
+                                        <div>
+                                            <div style="display: flex; justify-content: space-between; font-size: 0.8em; margin-bottom: 3px;">
+                                                <span style="color: var(--text-muted);">Experiences</span>
+                                                <span style="color: ${(org.mastery_experiences || 0) >= (org.mastery_exp_target || 25) ? '#4ade80' : '#f59e0b'};">${org.mastery_experiences || 0} / ${org.mastery_exp_target || 25}</span>
+                                            </div>
+                                            <div style="height: 6px; background: var(--bg-surface); border-radius: 3px; overflow: hidden;">
+                                                <div style="height: 100%; width: ${Math.min(100, ((org.mastery_experiences || 0) / (org.mastery_exp_target || 25)) * 100)}%; background: ${(org.mastery_experiences || 0) >= (org.mastery_exp_target || 25) ? '#4ade80' : '#f59e0b'};"></div>
+                                            </div>
                                         </div>
                                     </div>
+                                    
                                     <div style="margin-top: 12px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 0.8em;">
                                         <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
                                             <span>Vocab Limit:</span><span style="color: var(--accent-cyan);">${masteryVocabLimit === Infinity || masteryVocabLimit > 9999 ? '∞' : masteryVocabLimit}</span>

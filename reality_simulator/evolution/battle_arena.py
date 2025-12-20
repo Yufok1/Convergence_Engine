@@ -881,29 +881,32 @@ class BattleArena:
         
         # ═══════════════════════════════════════════════════════════════
         # ABSORB CONCEPTS
+        # Only attempt when winner can acquire (mastery system check)
         # ═══════════════════════════════════════════════════════════════
         if outcome.concepts_transferred:
             if hasattr(winner, 'atomic_language') and hasattr(loser, 'atomic_language'):
                 winner_lang = winner.atomic_language
                 loser_lang = loser.atomic_language
                 
-                for concept_id in outcome.concepts_transferred:
-                    if concept_id in loser_lang.atoms:
-                        # Use teach_concept for proper transfer
-                        if hasattr(loser_lang, 'teach_concept'):
-                            result = loser_lang.teach_concept(concept_id, winner_lang)
-                            if result.get('success', False):
-                                absorption_results['concepts_gained'] += 1
-                        else:
-                            # Fallback: direct acquisition
-                            if hasattr(winner_lang, 'acquire_concept'):
-                                winner_lang.acquire_concept(
-                                    concept_id,
-                                    source='battle_absorption',
-                                    initial_strength=loser_lang.atoms[concept_id].strength * 0.5,
-                                    reason=f"absorbed_from_{outcome.loser_id}"
-                                )
-                                absorption_results['concepts_gained'] += 1
+                # MASTERY CHECK: Only attempt if winner can acquire new vocabulary
+                if winner_lang and hasattr(winner_lang, 'can_acquire') and winner_lang.can_acquire():
+                    for concept_id in outcome.concepts_transferred:
+                        if concept_id in loser_lang.atoms:
+                            # Use teach_concept for proper transfer
+                            if hasattr(loser_lang, 'teach_concept'):
+                                result = loser_lang.teach_concept(concept_id, winner_lang)
+                                if result.get('success', False):
+                                    absorption_results['concepts_gained'] += 1
+                            else:
+                                # Fallback: direct acquisition
+                                if hasattr(winner_lang, 'acquire_concept'):
+                                    winner_lang.acquire_concept(
+                                        concept_id,
+                                        source='battle_absorption',
+                                        initial_strength=loser_lang.atoms[concept_id].strength * 0.5,
+                                        reason=f"absorbed_from_{outcome.loser_id}"
+                                    )
+                                    absorption_results['concepts_gained'] += 1
         
         # ═══════════════════════════════════════════════════════════════
         # ABSORB TRAITS
