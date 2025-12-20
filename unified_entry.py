@@ -1667,7 +1667,7 @@ class UnifiedSystem:
                         # Get max_vocab_size from config
                         max_vocab = self.config.get('neural', {}).get('language_model', {}).get('vocabulary', {}).get('max_size')
                         if not max_vocab:
-                            max_vocab = self.config.get('neural', {}).get('brain', {}).get('vocab_size', 20000)
+                            max_vocab = self.config.get('neural', {}).get('brain', {}).get('vocab_size', 10000)
                         vocabulary = LanguageVocabulary(max_vocab_size=max_vocab)
                         if context_memory.language_anchors:
                             words_added = vocabulary.build_from_language_anchors(
@@ -1681,7 +1681,7 @@ class UnifiedSystem:
                     # Get max_vocab_size from config
                     max_vocab = self.config.get('neural', {}).get('language_model', {}).get('vocabulary', {}).get('max_size')
                     if not max_vocab:
-                        max_vocab = self.config.get('neural', {}).get('brain', {}).get('vocab_size', 20000)
+                        max_vocab = self.config.get('neural', {}).get('brain', {}).get('vocab_size', 10000)
                     vocabulary = LanguageVocabulary(max_vocab_size=max_vocab)
                     seed_words = [
                         'hello', 'hi', 'yes', 'no', 'thrive', 'struggle',

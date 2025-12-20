@@ -21,8 +21,8 @@
       "vocabulary_masking": "soft",
       "_vocabulary_masking_options": "soft | hard | none",
       "initial_mastery_level": 0,
-      "_initial_mastery_level_help": "0=6 words, 1=26 words, 2=76 words, 3=276 words, 4=unlimited",
-      "mastery_vocab_sizes": [6, 26, 76, 276, 20000],
+      "_initial_mastery_level_help": "0=6 words, 1=26 words, 2=76 words, 3=276 words, 4=10000",
+      "mastery_vocab_sizes": [6, 26, 76, 276, 10000],
       "mastery_advancement_ratio": 0.7,
       "mastery_depth_ratio": 0.5,
       "mastery_min_experiences": [50, 200, 500, 1000],
@@ -413,7 +413,7 @@
       "hidden_dim": 64,
       "input_dim": 25,
       "output_dim": 6,
-      "vocab_size": 20000,
+      "vocab_size": 10000,
       "attention_dim": 32
     },
     "hopfield": {
@@ -533,7 +533,7 @@
         "teaching_frequency": 1,
         "use_knowledge_web": true,
         "use_semantic_embeddings": true,
-        "vocab_size": 20000,
+        "vocab_size": 10000,
         "staged_knowledge": {
           "_help": "Delay loading expanded knowledge web to let organisms build foundations with innate vocab first",
           "enabled": true,
@@ -555,7 +555,7 @@
         "language_epsilon_decay": 0.998
       },
       "vocabulary": {
-        "max_size": 20000,
+        "max_size": 10000,
         "special_tokens": [
           "<PAD>",
           "<UNK>",

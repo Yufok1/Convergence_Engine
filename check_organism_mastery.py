@@ -32,7 +32,7 @@ try:
     # Print summary
     for level in sorted(by_level.keys()):
         orgs_at_level = by_level[level]
-        vocab_cap = [6, 26, 76, 276, 20000][min(level, 4)]
+        vocab_cap = [6, 26, 76, 276, 10000][min(level, 4)]
         atom_counts = [a for _, a, _ in orgs_at_level]
         print(f"\nLevel {level} (cap={vocab_cap}): {len(orgs_at_level)} organisms")
         print(f"  Atom counts: min={min(atom_counts)}, max={max(atom_counts)}, avg={sum(atom_counts)/len(atom_counts):.1f}")

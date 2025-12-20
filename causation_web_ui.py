@@ -6935,7 +6935,7 @@ def list_organisms():
             config = app.config.get('config') or {}
             vocab_size = config.get('neural', {}).get('language_model', {}).get('teacher', {}).get('vocab_size')
         if not vocab_size:
-            vocab_size = 20000  # Last resort fallback
+            vocab_size = 10000  # Last resort fallback
         
         # Get node_word_associations map
         node_word_associations = {}
@@ -7269,7 +7269,7 @@ def list_organisms():
                             mastery_experiences = getattr(al, '_total_experiences', 0)
                             
                             # Get vocab limit for current level
-                            mastery_sizes = getattr(al, '_mastery_vocab_sizes', [6, 26, 76, 276, 20000])
+                            mastery_sizes = getattr(al, '_mastery_vocab_sizes', [6, 26, 76, 276, 10000])
                             if mastery_level < len(mastery_sizes):
                                 mastery_vocab_limit = mastery_sizes[mastery_level]
                             

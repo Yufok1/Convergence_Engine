@@ -1023,7 +1023,7 @@ class AtomicLanguageSystem:
         lang_config = self.config.get('language', {})
         grounded_config = lang_config.get('grounded', {})
         self._mastery_level: int = grounded_config.get('initial_mastery_level', 4)  # Default: no gating
-        self._mastery_vocab_sizes: List[int] = grounded_config.get('mastery_vocab_sizes', [6, 26, 76, 276, 20000])
+        self._mastery_vocab_sizes: List[int] = grounded_config.get('mastery_vocab_sizes', [6, 26, 76, 276, 10000])
         self._mastery_advancement_ratio: float = grounded_config.get('mastery_advancement_ratio', 0.5)
         self._mastery_depth_ratio: float = grounded_config.get('mastery_depth_ratio', 0.3)
         self._mastery_min_experiences: List[int] = grounded_config.get('mastery_min_experiences', [25, 100, 300, 600])
@@ -1992,7 +1992,7 @@ class AtomicLanguageSystem:
         # MASTERY GATING - Block acquisition if beyond vocab cap
         # ═══════════════════════════════════════════════════════════════
         max_vocab = self._mastery_vocab_sizes[min(self._mastery_level, len(self._mastery_vocab_sizes) - 1)]
-        is_mastery_gated = max_vocab < 20000  # True for levels 0-3
+        is_mastery_gated = max_vocab < 10000  # True for levels 0-3
         
         if is_mastery_gated:
             # Check if we're at or beyond the vocab cap for current level
@@ -2089,7 +2089,7 @@ class AtomicLanguageSystem:
         # GROUNDED MODE CHECK: Don't implicitly acquire concepts in mastery-gated mode
         # Organisms must EARN vocabulary through mastery advancement
         max_vocab = self._mastery_vocab_sizes[min(self._mastery_level, len(self._mastery_vocab_sizes) - 1)]
-        is_mastery_gated = max_vocab < 20000  # True for levels 0-3
+        is_mastery_gated = max_vocab < 10000  # True for levels 0-3
         
         if is_mastery_gated:
             # In grounded mode, only form associations between EXISTING atoms
@@ -3374,7 +3374,7 @@ class AtomicLanguageSystem:
         system._total_experiences = data.get('total_experiences', 0)
         
         # Get the vocab cap for this level
-        max_vocab = system._mastery_vocab_sizes[saved_level] if saved_level < len(system._mastery_vocab_sizes) else 20000
+        max_vocab = system._mastery_vocab_sizes[saved_level] if saved_level < len(system._mastery_vocab_sizes) else 10000
         
         # Clear innate concepts and load from data
         system.atoms.clear()

@@ -1388,7 +1388,7 @@ class HighlanderProtocol:
                         # MASTERY CHECK: Limit word transfer to vocab cap
                         if hasattr(winner, 'atomic_language') and hasattr(winner.atomic_language, 'can_acquire'):
                             winner_lang = winner.atomic_language
-                            max_vocab = winner_lang._mastery_vocab_sizes[winner_lang._mastery_level] if winner_lang._mastery_level < len(winner_lang._mastery_vocab_sizes) else 20000
+                            max_vocab = winner_lang._mastery_vocab_sizes[winner_lang._mastery_level] if winner_lang._mastery_level < len(winner_lang._mastery_vocab_sizes) else 10000
                             current_vocab = len(winner_lang.atoms)
                             space_left = max(0, max_vocab - current_vocab)
                             # Only transfer up to remaining cap
