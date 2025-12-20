@@ -20,6 +20,19 @@ import random
 import time
 from typing import Dict, Any, Optional, List, Tuple
 from dataclasses import dataclass, field
+from pathlib import Path
+
+# Get config-driven input_dim (replaces hardcoded 25)
+try:
+    import sys
+    _adapter_path = Path(__file__).resolve()
+    _project_root = _adapter_path.parent.parent.parent
+    if str(_project_root) not in sys.path:
+        sys.path.insert(0, str(_project_root))
+    from runtime_config import get_input_dim
+    _INPUT_DIM = get_input_dim()
+except Exception:
+    _INPUT_DIM = 30  # Default matches current config.json
 
 logger = logging.getLogger(__name__)
 
@@ -164,7 +177,7 @@ class LiveOrganismAdapter:
                 try:
                     # Get some output from the brain
                     import torch
-                    state = torch.zeros(25)  # Matches config.json input_dim=25
+                    state = torch.zeros(_INPUT_DIM)  # Config-driven input_dim
                     with torch.no_grad():
                         q_values = brain(state.unsqueeze(0))
                         action = q_values.argmax().item()

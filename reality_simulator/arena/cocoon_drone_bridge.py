@@ -23,6 +23,19 @@ import logging
 import numpy as np
 from typing import Dict, Any, Optional, List, Tuple
 from dataclasses import dataclass
+from pathlib import Path
+
+# Get config-driven input_dim (replaces hardcoded 25)
+try:
+    import sys
+    _bridge_path = Path(__file__).resolve()
+    _project_root = _bridge_path.parent.parent.parent
+    if str(_project_root) not in sys.path:
+        sys.path.insert(0, str(_project_root))
+    from runtime_config import get_input_dim
+    _INPUT_DIM = get_input_dim()
+except Exception:
+    _INPUT_DIM = 30  # Default matches current config.json
 
 logger = logging.getLogger(__name__)
 
@@ -62,8 +75,8 @@ class CocoonDroneState:
     altitude_danger: float  # 0=safe, 1=dangerous
     
     def to_observation(self) -> np.ndarray:
-        """Convert to 25-dim observation for cocoon."""
-        obs = np.zeros(25, dtype=np.float32)
+        """Convert to observation for cocoon (config-driven input_dim)."""
+        obs = np.zeros(_INPUT_DIM, dtype=np.float32)
         
         # Position (0-2)
         obs[0:3] = np.clip(self.position / 10.0, -1, 1)

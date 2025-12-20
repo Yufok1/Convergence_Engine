@@ -64,6 +64,18 @@ from enum import Enum, auto
 from pathlib import Path
 import numpy as np
 
+# Get config-driven input_dim (replaces hardcoded 25)
+try:
+    import sys
+    _proton_path = Path(__file__).resolve()
+    _project_root = _proton_path.parent.parent.parent
+    if str(_project_root) not in sys.path:
+        sys.path.insert(0, str(_project_root))
+    from runtime_config import get_input_dim
+    _INPUT_DIM = get_input_dim()
+except Exception:
+    _INPUT_DIM = 30  # Default matches current config.json
+
 # Try to import Language-Game Bridge
 try:
     from reality_simulator.language.language_game_bridge import LanguageGameBridge
@@ -2121,7 +2133,7 @@ class ProtonGameArena:
     
     def _generate_game_state(self, game_type: str) -> np.ndarray:
         """Generate a game state vector for decision-making."""
-        state = np.random.rand(25).astype(np.float32)  # Matches config.json input_dim=25
+        state = np.random.rand(_INPUT_DIM).astype(np.float32)  # Config-driven input_dim
         
         # Game-specific state adjustments
         if game_type == 'pong':
@@ -2352,7 +2364,7 @@ class ProtonGameArena:
     def _simulate_reaction_duel(self, bridge_a, bridge_b) -> Dict[str, Any]:
         """Reaction time based competition."""
         # Generate random state
-        state = np.random.rand(25).astype(np.float32)  # Matches config.json input_dim=25
+        state = np.random.rand(_INPUT_DIM).astype(np.float32)  # Config-driven input_dim
         
         # See who responds faster/better
         import time as time_module
@@ -2476,7 +2488,7 @@ class ProtonGameArena:
         
         for _ in range(episodes):
             # Get baseline response
-            baseline_state = np.random.rand(25).astype(np.float32)  # Matches config.json input_dim=25
+            baseline_state = np.random.rand(_INPUT_DIM).astype(np.float32)  # Config-driven input_dim
             try:
                 baseline_result = bridge.process(state=baseline_state)
                 baseline_action = baseline_result.action if hasattr(baseline_result, 'action') else 0
@@ -2490,7 +2502,7 @@ class ProtonGameArena:
             consistency_count = 0
             
             for strength in mutation_strengths:
-                mutated_state = baseline_state + np.random.randn(25).astype(np.float32) * strength
+                mutated_state = baseline_state + np.random.randn(_INPUT_DIM).astype(np.float32) * strength
                 try:
                     mutated_result = bridge.process(state=mutated_state)
                     mutated_action = mutated_result.action if hasattr(mutated_result, 'action') else 0
@@ -2541,7 +2553,7 @@ class ProtonGameArena:
             scenario = threat_scenarios[ep % len(threat_scenarios)]
             
             # Encode threat in state
-            state = np.random.rand(25).astype(np.float32)  # Matches config.json input_dim=25
+            state = np.random.rand(_INPUT_DIM).astype(np.float32)  # Config-driven input_dim
             state[0] = scenario['threat_level']  # Threat perception
             state[1] = scenario['distance']       # Distance to threat
             state[2] = 1.0 - scenario['distance'] # Urgency

@@ -1673,12 +1673,19 @@ class StandaloneButterflyChat:
     
     def _build_state_vector(self, message: str) -> np.ndarray:
         """
-        Build a 27D state vector from the message context.
+        Build a state vector from the message context.
         
-        Aligned with the neural system's expected input format (config.json input_dim=25).
-        Features 26-27 are self-perception: oscillation_entropy, coherence_frequency.
+        Aligned with the neural system's expected input format (config.json neural.brain.input_dim).
+        Extra dims are for self-perception: oscillation_entropy, coherence_frequency.
         """
-        state = np.zeros(25, dtype=np.float32)
+        # Get config-driven input_dim
+        try:
+            from runtime_config import get_input_dim
+            input_dim = get_input_dim()
+        except Exception:
+            input_dim = 30  # Default matches current config.json
+        
+        state = np.zeros(input_dim, dtype=np.float32)
         
         # Basic state encoding from message
         words = message.lower().split()

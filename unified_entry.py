@@ -26,10 +26,18 @@ os.environ['RAY_METRICS_AGENT_DISABLED'] = '1'
 os.environ['RAY_ENABLE_WINDOWS_OR_OSX_CLUSTER'] = '1'
 
 # Suppress PyTorch inductor warnings (spammy but harmless)
+# These come from torch.compile's kernel optimization - safe to ignore
 import warnings
 warnings.filterwarnings('ignore', message='.*Online softmax is disabled.*')
 warnings.filterwarnings('ignore', message='.*TensorFloat32 tensor cores.*')
 warnings.filterwarnings('ignore', message='.*Not enough SMs to use max_autotune_gemm.*')
+warnings.filterwarnings('ignore', module='torch._inductor.*')
+warnings.filterwarnings('ignore', category=UserWarning, module='torch')
+
+# Also suppress via logging for inductor
+import logging as _logging
+_logging.getLogger('torch._inductor').setLevel(_logging.ERROR)
+_logging.getLogger('torch._dynamo').setLevel(_logging.ERROR)
 
 # Enable TensorFloat32 for better performance on Ampere+ GPUs
 try:

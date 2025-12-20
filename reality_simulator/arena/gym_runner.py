@@ -27,6 +27,20 @@ import numpy as np
 from typing import Dict, Any, Optional, List, Tuple
 from dataclasses import dataclass, field
 
+# Get config-driven input_dim (replaces hardcoded 25)
+try:
+    import sys
+    from pathlib import Path
+    # Add parent dirs to path for runtime_config import
+    _gym_runner_path = Path(__file__).resolve()
+    _project_root = _gym_runner_path.parent.parent.parent
+    if str(_project_root) not in sys.path:
+        sys.path.insert(0, str(_project_root))
+    from runtime_config import get_input_dim
+    _INPUT_DIM = get_input_dim()
+except Exception:
+    _INPUT_DIM = 30  # Default matches current config.json
+
 logger = logging.getLogger(__name__)
 
 # Try to import gymnasium (preferred) or gym (fallback)
@@ -515,8 +529,8 @@ class GymRunner:
             return action_space.sample()
         
         try:
-            # Convert observation to tensor (25D to match config)
-            input_dim = 25
+            # Convert observation to tensor (config-driven input_dim)
+            input_dim = _INPUT_DIM
             if isinstance(obs, (int, np.integer)):
                 # Discrete observation (like FrozenLake position)
                 obs_tensor = torch.zeros(input_dim)  # Pad to expected input dim
@@ -596,17 +610,18 @@ class GymRunner:
             return action_space.sample()
     
     def _obs_to_state(self, obs, env_config: Optional[Dict]) -> np.ndarray:
-        """Convert observation to standard 25-dim state vector (matches config.json input_dim)."""
-        state = np.zeros(25, dtype=np.float32)
+        """Convert observation to standard state vector (matches config.json neural.brain.input_dim)."""
+        input_dim = _INPUT_DIM
+        state = np.zeros(input_dim, dtype=np.float32)
         
         if isinstance(obs, (int, np.integer)):
             state[0] = float(obs) / 100.0
         elif isinstance(obs, tuple):
-            for i, val in enumerate(obs[:25]):
+            for i, val in enumerate(obs[:input_dim]):
                 state[i] = float(val) if isinstance(val, (int, float, bool)) else 0.0
         else:
             obs_array = np.array(obs).flatten()
-            state[:min(len(obs_array), 25)] = obs_array[:25]
+            state[:min(len(obs_array), input_dim)] = obs_array[:input_dim]
         
         return state
     

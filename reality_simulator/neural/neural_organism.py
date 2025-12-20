@@ -370,8 +370,13 @@ class NeuralOrganism(Organism):
         Returns:
             Feature array of shape (input_dim,)
         """
+        # Get input_dim from brain or use default
+        input_dim = 30  # Default matches current config.json
+        if self.brain is not None and hasattr(self.brain, 'input_dim'):
+            input_dim = self.brain.input_dim
+        
         if self.brain is None:
-            return np.zeros(25, dtype=np.float32)  # 25D base features
+            return np.zeros(input_dim, dtype=np.float32)  # Config-driven base features
         
         features = []
         
@@ -1871,11 +1876,11 @@ class NeuralOrganism(Organism):
             return
         
         # Get input_dim from brain or config (NOT from self.input_dim which doesn't exist)
-        input_dim = 25  # Default
+        input_dim = 30  # Default matches current config.json
         if self.brain is not None and hasattr(self.brain, 'input_dim'):
             input_dim = self.brain.input_dim
         elif hasattr(self, 'config') and self.config:
-            input_dim = self.config.get('neural', {}).get('brain', {}).get('input_dim', 25)
+            input_dim = self.config.get('neural', {}).get('brain', {}).get('input_dim', 30)
         
         # Normalize state to match input_dim
         def normalize_state(obs):

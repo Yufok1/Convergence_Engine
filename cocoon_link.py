@@ -562,8 +562,15 @@ class CocoonLink:
         return winner_id
     
     def _create_battle_state(self, round_num: int) -> List[float]:
-        """Create a 25D state vector for the battle (matches config.json input_dim=25)."""
-        state = [0.0] * 25
+        """Create a state vector for the battle (matches config.json neural.brain.input_dim)."""
+        # Get config-driven input_dim
+        try:
+            from runtime_config import get_input_dim
+            input_dim = get_input_dim()
+        except Exception:
+            input_dim = 30  # Default matches current config.json
+        
+        state = [0.0] * input_dim
         
         if self.current_battle:
             # Encode battle info into state
@@ -574,9 +581,9 @@ class CocoonLink:
             state[4] = self.current_battle.opponent.organism_count / 10.0
             state[5] = 1.0 if self.current_battle.is_user1 else 0.0
             
-            # Some randomness for exploration (features 6-24)
+            # Some randomness for exploration (remaining features)
             import random
-            for i in range(6, 25):
+            for i in range(6, input_dim):
                 state[i] = random.random() * 0.5
         
         return state
