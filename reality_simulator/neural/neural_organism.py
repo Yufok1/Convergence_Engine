@@ -2016,7 +2016,7 @@ class NeuralOrganism(Organism):
         from ..language_system import LanguageVocabulary, SPECIAL_TOKENS
         
         # Create this organism's personal vocabulary from their atomic_language
-        vocab = LanguageVocabulary(max_vocab_size=20000)  # Fresh vocab for THIS organism
+        vocab = LanguageVocabulary(max_vocab_size=10000)  # Organism max vocab (mastery level 4 cap)
         
         if self.atomic_language is not None and hasattr(self.atomic_language, 'atoms'):
             # FIX: Sort words by atom STRENGTH (descending) so most relevant words get lowest IDs

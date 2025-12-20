@@ -1164,8 +1164,8 @@ class OrganismCapsuleManager:
             
             # MASTERY CHECK: Get vocab cap for organism's level
             mastery_level = getattr(target_language_system, '_mastery_level', 0)
-            vocab_caps = getattr(target_language_system, '_mastery_vocab_sizes', [6, 26, 76, 276, 20000])
-            max_vocab = vocab_caps[mastery_level] if mastery_level < len(vocab_caps) else 20000
+            vocab_caps = getattr(target_language_system, '_mastery_vocab_sizes', [6, 26, 76, 276, 10000])
+            max_vocab = vocab_caps[mastery_level] if mastery_level < len(vocab_caps) else 10000
             
             # Sort atoms by strength so we keep strongest if we hit cap
             sorted_atoms = sorted(

@@ -60,14 +60,14 @@ class SemanticEmbeddingTeacher(nn.Module if PYTORCH_AVAILABLE else object):
     based on actual organism experiences (state-action-reward sequences).
     """
     
-    def __init__(self, state_dim: int = 25, embedding_dim: int = 64, vocab_size: int = 20000):
+    def __init__(self, state_dim: int = 25, embedding_dim: int = 64, vocab_size: int = 50000):
         """
         Initialize semantic embedding teacher.
         
         Args:
             state_dim: Dimension of organism state vector (default: 25 base features)
             embedding_dim: Dimension of semantic embedding space (default: 64)
-            vocab_size: Maximum vocabulary size (default: 1000, ensemble for full coverage)
+            vocab_size: Maximum vocabulary size (default: 50000, full distilled knowledge web)
         """
         if not PYTORCH_AVAILABLE:
             raise ImportError("PyTorch is required for SemanticEmbeddingTeacher")
@@ -249,7 +249,7 @@ class LanguageTeacher:
         # Semantic embedding teacher (Phase 2)
         self.use_semantic_embeddings = teacher_config.get('use_semantic_embeddings', True) and PYTORCH_AVAILABLE
         self.semantic_teacher = None
-        self.vocab_size = teacher_config.get('vocab_size', 20000)  # Default matches config.json
+        self.vocab_size = teacher_config.get('vocab_size', 50000)  # Teacher knows full distilled vocab
         self.embedding_dim = teacher_config.get('embedding_dim', 64)
         self.state_dim = self.config.get('neural', {}).get('brain', {}).get('input_dim', 27)
         
