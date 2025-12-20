@@ -217,6 +217,16 @@ def create_brain(config: Dict[str, Any], silent: bool = False):
     hopfield_iterations = hopfield_config.get('max_iterations', 5)
     hopfield_beta = hopfield_config.get('beta', 1.0)
     
+    # Extract World Model settings (predictive structure)
+    # "The best way to predict the future is to create it" - Alan Kay frame
+    if 'world_model' in config:
+        world_model_config = config.get('world_model', {})
+    elif 'neural' in config:
+        world_model_config = config.get('neural', {}).get('world_model', {})
+    else:
+        world_model_config = {}
+    use_world_model = world_model_config.get('enabled', True)
+    
     # Debug log for language/concept head creation (only once per batch, or if not silent)
     if not silent and not _brain_creation_counter['logged_config']:
         if use_language_head:
@@ -243,6 +253,7 @@ def create_brain(config: Dict[str, Any], silent: bool = False):
         max_sequence_length=max_sequence_length,
         use_concept_head=use_concept_head,
         num_key_compositions=num_key_compositions,
+        use_world_model=use_world_model,
         use_hopfield=use_hopfield,
         hopfield_patterns=hopfield_patterns,
         hopfield_iterations=hopfield_iterations,

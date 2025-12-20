@@ -1457,6 +1457,7 @@ class SymbioticNetwork:
             'clustering_coefficient': self.metrics.clustering_coefficient,
             'max_connections_per_organism': self.max_connections_per_organism,
             'resource_pool': getattr(self.resource_engine, 'total_resources', 200.0),
+            'context_memory': self.context_memory  # Inject memory reference for wisdom retrieval
         }
         # Enrich network_state with latest VP metrics if available via Agency Router OR external VP source
         try:
@@ -1622,10 +1623,14 @@ class SymbioticNetwork:
             self.context_memory._ml_analysis_cache = ml_analysis
             
         # Record generation state in context memory for episodic tracking
+        # Enrich with system-wide state for high-fidelity historical recall
         self.context_memory.record_generation_state(self.generation, {
             'organism_count': len(self.organisms),
             'connection_count': len(self.connections),
             'avg_fitness': np.mean([org.fitness for org in self.organisms.values()]) if self.organisms else 0.0,
+            'vp_value': network_state.get('vp_value', 0.5),
+            'system_health': network_state.get('system_health', 0.5),
+            'vp_components': network_state.get('vp_components', {}),
             'memory_adjustments': memory_adjustments
         })
 

@@ -98,9 +98,12 @@ MAX_BALL_SPEED = 0.08
 ORGANISM_MOVE_SPEED = 0.04  # Radians per frame
 
 # Observation size for neural network
-# Base: 15 (ball state, position, distances, game state)
-# Command chain: 5 (command target, distance to command, is_commander, has_command)
-OBSERVATION_SIZE = 25  # Matches config.json neural.brain.input_dim
+# Config-driven to match neural.brain.input_dim
+try:
+    from runtime_config import get_input_dim
+    OBSERVATION_SIZE = get_input_dim()
+except ImportError:
+    OBSERVATION_SIZE = 30  # Fallback if import fails
 
 # Colors (RGB floats for OpenGL)
 COLORS = [

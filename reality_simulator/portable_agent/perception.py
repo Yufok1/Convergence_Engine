@@ -17,10 +17,10 @@ if TYPE_CHECKING:  # Avoid circular imports at runtime
 
 
 class PerceptionPipeline:
-    """Converts arbitrary observations into feature vectors (default 25D)."""
+    """Converts arbitrary observations into feature vectors (matches config input_dim)."""
 
     def __init__(self,
-                 state_dim: int = 25,
+                 state_dim: int = 30,
                  agent_state: Optional["AgentState"] = None,
                  experience_buffer: Optional["ExperienceBuffer"] = None):
         self.state_dim = state_dim

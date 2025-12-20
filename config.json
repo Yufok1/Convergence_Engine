@@ -51,6 +51,14 @@
   "arena": {
     "_prefer_native_games_help": "When true, prioritizes language/concept games that use organism's native abilities (no Gym dependency)",
     "_proton_game_probability_help": "Fraction of battles that use Proton Game Arena (0.0-1.0). Set to 0.5 for 50% Proton Game battles.",
+    "trap_mechanics": {
+      "_help": "Planning pressure via trap logic in battles",
+      "enabled": true,
+      "low_foresight_threshold": 0.35,
+      "high_foresight_threshold": 0.65,
+      "trap_chance_multiplier": 0.4,
+      "trap_damage_multiplier": 0.1
+    },
     "battle_consequences": {
       "fitness_transfer_rate": 1,
       "resource_transfer_enabled": true,
@@ -337,7 +345,7 @@
       "activation": "relu",
       "dropout": 0.1,
       "hidden_dim": 64,
-      "input_dim": 25,
+      "input_dim": 30,
       "output_dim": 6,
       "vocab_size": 10000,
       "attention_dim": 32
@@ -348,6 +356,31 @@
       "patterns": 32,
       "iterations": 5,
       "beta": 1.0
+    },
+    "world_model": {
+      "_help": "Predictive world model for imagination-based planning",
+      "enabled": true,
+      "delta": 0.2,
+      "_delta_help": "Loss weight for world model prediction (alpha+beta+gamma+delta should sum reasonably)",
+      "curiosity_scale": 0.05,
+      "_curiosity_scale_help": "How much prediction error contributes to intrinsic reward",
+      "planning_trust": 0.25,
+      "_planning_trust_help": "Blend factor: (1-trust)*DQN + trust*imagination",
+      "imagination_temperature": 3.0,
+      "_imagination_temperature_help": "Sharpness of imagination softmax (higher = more decisive)",
+      "imagination_enabled": true,
+      "candidate_threshold": 0.10,
+      "_candidate_threshold_help": "Only imagine actions with base probability above this",
+      "language_magnetism_weight": 0.15,
+      "_language_magnetism_weight_help": "How much word magnetism biases imagination scoring",
+      "max_imagination_steps": 5,
+      "_max_imagination_steps_help": "Maximum planning horizon for high-foresight organisms",
+      "foresight_scaling": true,
+      "_foresight_scaling_help": "If true, steps = 1 + int(foresight * max_steps). If false, always use max_steps",
+      "pruning_threshold": 0.15,
+      "_pruning_threshold_help": "Skip imagining branches with cumulative probability below this",
+      "discount_factor": 0.9,
+      "_discount_factor_help": "Gamma for discounting future imagined rewards"
     },
     "concept_system": {
       "concept_loss_weight": 0.15,

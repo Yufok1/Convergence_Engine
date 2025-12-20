@@ -71,6 +71,15 @@
   "arena": {
     "_prefer_native_games_help": "When true, prioritizes language/concept games that use organism's native abilities (no Gym dependency)",
     "_proton_game_probability_help": "Fraction of battles that use Proton Game Arena (0.0-1.0). Set to 0.5 for 50% Proton Game battles.",
+    "trap_mechanics": {
+      "_help": "Planning pressure via trap logic in battles",
+      "enabled": true,
+      "low_foresight_threshold": 0.35,
+      "high_foresight_threshold": 0.65,
+      "trap_chance_multiplier": 0.45,
+      "trap_damage_multiplier": 0.12,
+      "_genesis_note": "Slightly stronger traps - punish reckless behavior harder in small population"
+    },
     "battle_consequences": {
       "fitness_transfer_rate": 1.2,
       "resource_transfer_enabled": true,
@@ -395,7 +404,7 @@
       "activation": "relu",
       "dropout": 0.15,
       "hidden_dim": 96,
-      "input_dim": 25,
+      "input_dim": 30,
       "output_dim": 6,
       "vocab_size": 10000,
       "attention_dim": 32,
@@ -407,6 +416,22 @@
       "patterns": 48,
       "iterations": 5,
       "beta": 1.0
+    },
+    "world_model": {
+      "_help": "Predictive world model for imagination-based planning",
+      "enabled": true,
+      "delta": 0.25,
+      "curiosity_scale": 0.06,
+      "planning_trust": 0.30,
+      "imagination_temperature": 3.0,
+      "imagination_enabled": true,
+      "candidate_threshold": 0.10,
+      "language_magnetism_weight": 0.18,
+      "max_imagination_steps": 5,
+      "foresight_scaling": true,
+      "pruning_threshold": 0.15,
+      "discount_factor": 0.9,
+      "_genesis_note": "Higher trust/curiosity - emphasize imagination with limited training data"
     },
     "concept_system": {
       "concept_loss_weight": 0.18,

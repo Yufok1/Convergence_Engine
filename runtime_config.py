@@ -63,3 +63,53 @@ class ConfigHotReloadWatcher:
             return json.loads(json.dumps(self._config))
 
 
+# =============================================================================
+# GLOBAL CONFIG ACCESSOR - Single source of truth for hardcoded values
+# =============================================================================
+
+_GLOBAL_CONFIG: Dict[str, Any] = {}
+_CONFIG_LOADED = False
+
+
+def get_global_config() -> Dict[str, Any]:
+    """
+    Load and cache config.json once.
+    Call this instead of hardcoding values like input_dim=25.
+    
+    Usage:
+        from runtime_config import get_global_config
+        cfg = get_global_config()
+        input_dim = cfg.get('neural', {}).get('brain', {}).get('input_dim', 30)
+    """
+    global _GLOBAL_CONFIG, _CONFIG_LOADED
+    if not _CONFIG_LOADED:
+        config_path = Path(__file__).parent / 'config.json'
+        if config_path.exists():
+            try:
+                with open(config_path, 'r', encoding='utf-8') as f:
+                    _GLOBAL_CONFIG = json.load(f)
+            except Exception:
+                _GLOBAL_CONFIG = {}
+        _CONFIG_LOADED = True
+    return _GLOBAL_CONFIG
+
+
+def get_input_dim() -> int:
+    """
+    Get neural.brain.input_dim from config.
+    Replaces all hardcoded 25/28/30 values throughout codebase.
+    """
+    cfg = get_global_config()
+    return cfg.get('neural', {}).get('brain', {}).get('input_dim', 30)
+
+
+def get_hidden_dim() -> int:
+    """Get neural.brain.hidden_dim from config."""
+    cfg = get_global_config()
+    return cfg.get('neural', {}).get('brain', {}).get('hidden_dim', 64)
+
+
+def get_output_dim() -> int:
+    """Get neural.brain.output_dim from config."""
+    cfg = get_global_config()
+    return cfg.get('neural', {}).get('brain', {}).get('output_dim', 6)

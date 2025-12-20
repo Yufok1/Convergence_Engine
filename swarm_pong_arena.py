@@ -30,6 +30,13 @@ except ImportError:
     PYGAME_AVAILABLE = False
 
 import numpy as np
+
+# Config-driven dimensions
+try:
+    from runtime_config import get_input_dim
+    _INPUT_DIM = get_input_dim()
+except ImportError:
+    _INPUT_DIM = 30  # Fallback default
 import math
 import time
 import random
@@ -71,7 +78,7 @@ PADDLE_THICKNESS = 10
 BALL_RADIUS = 10
 BALL_SPEED = 5
 PADDLE_SPEED = 8
-OBSERVATION_SIZE = 25  # Matches config.json neural.brain.input_dim
+OBSERVATION_SIZE = _INPUT_DIM  # From config.json neural.brain.input_dim
 
 # =============================================================================
 # DATA STRUCTURES

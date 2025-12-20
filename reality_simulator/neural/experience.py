@@ -62,14 +62,14 @@ class ExperienceBuffer:
     Set capacity=0 or None for UNLIMITED growth (no experience loss).
     """
     
-    def __init__(self, capacity: int = 0, state_dim: int = 25):
+    def __init__(self, capacity: int = 0, state_dim: int = 30):
         """
         Initialize experience buffer.
         
         Args:
             capacity: Maximum number of experiences to store.
                       0 or None = UNLIMITED (recommended for maximum learning)
-            state_dim: Dimension of state vectors (default: 25)
+            state_dim: Dimension of state vectors (default: 30 from config)
         """
         self.capacity = capacity if capacity and capacity > 0 else None
         self.state_dim = state_dim

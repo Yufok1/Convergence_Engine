@@ -365,7 +365,7 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
     """
     
     def __init__(self, 
-                 input_dim: int = 25,  # Default matches config.json neural.brain.input_dim (25 base features)
+                 input_dim: int = 30,  # Default matches config.json neural.brain.input_dim
                  hidden_dim: int = 64,
                  output_dim: int = 6,
                  activation: str = 'relu',
@@ -379,6 +379,7 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
                  use_language_head: bool = False,
                  use_concept_head: bool = False,
                  num_key_compositions: int = 30,  # ARCHITECTURE PARAM - must match config.json!
+                 use_world_model: bool = True,  # ?? NEW: Enable predictive world model
                  # Hopfield layer parameters (iterative thought refinement)
                  use_hopfield: bool = False,
                  hopfield_patterns: int = 32,
@@ -392,7 +393,7 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
         after training will break saved model loading.
         
         Args:
-            input_dim: Number of input features (25 base features, expandable to 28 with self-perception)
+            input_dim: Number of input features
             hidden_dim: Hidden layer dimension
             output_dim: Number of output actions
             activation: Activation function ('relu', 'tanh', 'sigmoid')
@@ -405,6 +406,7 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
             use_language_head: Enable language prediction head
             use_concept_head: Enable concept understanding head (RCUS)
             num_key_compositions: Number of key concept compositions (must match config!)
+            use_world_model: Enable predictive world model (predicts next state)
             use_hopfield: Enable Hopfield layer for iterative thought refinement
             hopfield_patterns: Number of patterns in Hopfield memory
             hopfield_iterations: Max iterations for convergence
@@ -429,6 +431,9 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
         self.current_sequence_length = 8  # Start small for curriculum learning
         self.vocab_size = vocab_size
         self.use_language_head = use_language_head
+        
+        # World model parameters
+        self.use_world_model = use_world_model
         
         # Define layers
         self.fc1 = nn.Linear(input_dim, hidden_dim)
@@ -462,6 +467,11 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
         # Language head (for next-token prediction)
         if self.use_language_head:
             self.fc_language = nn.Linear(hidden_dim, vocab_size)
+            
+        # World model head (predicts next state features based on action)
+        if self.use_world_model:
+            # Input: hidden_dim + output_dim (action one-hot)
+            self.fc_world_model = nn.Linear(hidden_dim + output_dim, input_dim)
         
         # Concept head (for compositional understanding - RCUS)
         self.use_concept_head = use_concept_head and CONCEPT_SYSTEM_AVAILABLE
@@ -494,6 +504,10 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
         if self.use_language_head:
             nn.init.xavier_uniform_(self.fc_language.weight)
             nn.init.zeros_(self.fc_language.bias)
+            
+        if self.use_world_model:
+            nn.init.xavier_uniform_(self.fc_world_model.weight)
+            nn.init.zeros_(self.fc_world_model.bias)
     
     def _get_activation(self, x):
         """Get activation function."""
@@ -509,7 +523,8 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
     def forward(self, x: 'torch.Tensor', 
                 vp_value: Optional[float] = None,
                 return_language_logits: bool = False,
-                return_concept_outputs: bool = False) -> 'torch.Tensor':
+                return_concept_outputs: bool = False,
+                return_world_model_output: bool = False) -> 'torch.Tensor':
         """
         Forward pass through the network.
         
@@ -519,12 +534,11 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
             vp_value: Optional VP value for attention temperature scaling
             return_language_logits: If True, also return language head logits
             return_concept_outputs: If True, also return concept head outputs
+            return_world_model_output: If True, also return world model predictions
             
         Returns:
             If only action output: Action probabilities of shape (batch_size, output_dim)
-            If return_language_logits: Tuple of (action_probs, language_logits)
-            If return_concept_outputs: Tuple includes concept_outputs dict
-            If both: Tuple of (action_probs, language_logits, concept_outputs)
+            Otherwise: Dictionary containing requested outputs
         """
         # Handle both 2D (batch, input) and 3D (batch, seq, input) inputs
         is_sequence = x.dim() == 3  # Use .dim() for TorchScript compatibility
@@ -588,24 +602,48 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
         concept_outputs = None
         if return_concept_outputs and self.use_concept_head:
             concept_outputs = self.concept_head(x_for_action)
+            
+        # World model head (predicts next state features based on action)
+        world_model_output = None
+        if return_world_model_output and self.use_world_model:
+            # We need the selected action to predict the next state
+            # Concatenate hidden state with action probabilities for 'soft' action selection
+            combined = torch.cat([x_for_action, action_probs], dim=-1)
+            world_model_output = self.fc_world_model(combined)
         
         # Build return value based on requested outputs
+        # BACKWARD COMPATIBILITY: Return tuples for legacy callers, dict only when world_model requested
+        if not any([return_language_logits, return_concept_outputs, return_world_model_output]):
+            return action_probs
+        
+        # Calculate language logits if requested
+        language_logits = None
         if return_language_logits and self.use_language_head:
-            # Language head (for next-token prediction)
-            # Apply to all sequence positions
             if is_sequence and x.dim() == 3:  # Use .dim() for TorchScript
                 language_logits = self.fc_language(x)  # (batch, seq, vocab)
             else:
                 language_logits = self.fc_language(x_for_action)  # (batch, vocab)
-            
-            if return_concept_outputs and concept_outputs is not None:
+        
+        # LEGACY TUPLE RETURNS (for existing callers expecting tuple unpacking)
+        # Only use dict when world_model output is requested (new API)
+        if not return_world_model_output:
+            if return_language_logits and return_concept_outputs:
                 return action_probs, language_logits, concept_outputs
-            return action_probs, language_logits
+            elif return_language_logits:
+                return action_probs, language_logits
+            elif return_concept_outputs:
+                return action_probs, concept_outputs
         
-        if return_concept_outputs and concept_outputs is not None:
-            return action_probs, concept_outputs
-        
-        return action_probs
+        # NEW DICT API: Only when world_model is requested
+        results = {'action_probs': action_probs}
+        if language_logits is not None:
+            results['language_logits'] = language_logits
+        if concept_outputs is not None:
+            results['concept_outputs'] = concept_outputs
+        if world_model_output is not None:
+            results['world_model_output'] = world_model_output
+            
+        return results
     
     def get_action(self, state: np.ndarray, epsilon: float = 0.0,
                    vp_value: Optional[float] = None) -> int:

@@ -698,9 +698,33 @@ class BattleArena:
         attack_power *= (1 + np.random.uniform(-self.chaos_factor, self.chaos_factor))
         defense_power *= (1 + np.random.uniform(-self.chaos_factor, self.chaos_factor))
         
+        # Planning Pressure (The Trap) - Config-driven thresholds
+        # "Look before you leap" - Organisms without foresight fall into traps
+        trap_config = self.config.get('trap_mechanics', {})
+        trap_enabled = trap_config.get('enabled', True)
+        low_foresight = trap_config.get('low_foresight_threshold', 0.35)
+        high_foresight = trap_config.get('high_foresight_threshold', 0.65)
+        trap_chance_mult = trap_config.get('trap_chance_multiplier', 0.4)
+        trap_damage_mult = trap_config.get('trap_damage_multiplier', 0.1)
+        
+        is_trap = False
+        if trap_enabled and attacker_stats.reaction_speed < low_foresight and defender_stats.reaction_speed > high_foresight:
+            # Trap chance scaled by the foresight gap
+            trap_chance = (defender_stats.reaction_speed - attacker_stats.reaction_speed) * trap_chance_mult
+            if np.random.random() < trap_chance:
+                is_trap = True
+                attack_power *= trap_damage_mult  # Attack fails miserably
+                # === OBSERVABILITY: Log trap events ===
+                attacker_id = getattr(attacker, 'species_id', 'unknown')[:8]
+                defender_id = getattr(defender, 'species_id', 'unknown')[:8]
+                self._logger.info(
+                    f"🪤 TRAP SPRUNG! [{attacker_id}] (foresight:{attacker_stats.reaction_speed:.2f}) "
+                    f"fell into [{defender_id}]'s trap (foresight:{defender_stats.reaction_speed:.2f})"
+                )
+        
         # Check for critical hit
         critical = np.random.random() < attacker_stats.critical_chance
-        if critical:
+        if critical and not is_trap:
             attack_power *= self.critical_multiplier
         
         # Calculate damage
@@ -737,7 +761,9 @@ class BattleArena:
         }
         
         narrative = random.choice(narratives.get(attack_type, ["attacks"]))
-        if critical:
+        if is_trap:
+            narrative = "TRAPPED! Over-aggressive move countered by superior foresight. " + narrative
+        elif critical:
             narrative = "CRITICAL! " + narrative
         
         return {

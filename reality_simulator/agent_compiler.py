@@ -11280,7 +11280,12 @@ PADDLE_ANGULAR_RADIUS = 0.25  # Radians - size of circular paddle zone
 BALL_SPEED = 0.03     # Initial ball speed
 MAX_BALL_SPEED = 0.08
 PANEL_SPEED = 0.04    # Radians per frame (organism move speed)
-OBSERVATION_SIZE = 25 # Size of observation vector per organism (matches config.json input_dim: 25 base features)
+# Config-driven observation size
+try:
+    from runtime_config import get_input_dim as _get_input_dim
+    OBSERVATION_SIZE = _get_input_dim()
+except ImportError:
+    OBSERVATION_SIZE = 30  # Fallback default
 MIN_SPAWN_DISTANCE = 0.3  # Min distance from sphere center for ball spawn
 
 # Command chain settings

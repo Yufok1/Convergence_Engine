@@ -580,6 +580,16 @@ class NeuralOrganism(Organism):
                 pass
         features.append(np.clip(attractor_proximity, 0.0, 1.0))
         
+        # === FEATURES 29-30: HISTORICAL WISDOM (Episodic Recall) ===
+        # "Those who do not remember the past are condemned to repeat it" - Santayana frame
+        # Organisms retrieve mean outcomes from top-K similar past system states
+        wisdom_vec = np.array([0.5, 0.0], dtype=np.float32)
+        if network_state and 'context_memory' in network_state:
+            cm = network_state['context_memory']
+            if hasattr(cm, 'retrieve_historical_wisdom'):
+                wisdom_vec = cm.retrieve_historical_wisdom(network_state)
+        features.extend(wisdom_vec.tolist())
+        
         # Ensure we have exactly input_dim features
         input_dim = self.config.get('neural', {}).get('brain', {}).get('input_dim', 25)
         feature_array = np.array(features[:input_dim], dtype=np.float32)
@@ -802,6 +812,174 @@ class NeuralOrganism(Organism):
         reason_text = " and ".join(reasons) if reasons else "based on neural network evaluation"
         return f"Chose to {action_name} {confidence_note} because {reason_text}"
 
+    def _perform_imagination_rollout(self, state_tensor: 'torch.Tensor', 
+                                   action_probs: np.ndarray, 
+                                   network_state: Dict[str, Any]) -> np.ndarray:
+        """
+        Use world model to imagine outcomes for each action and adjust probabilities.
+        
+        This is the core of 'planning pressure' - organisms that imagine 
+        consequences survive better in trap-heavy environments.
+        
+        Now supports MULTI-STEP imagination:
+        - Steps = 1 + int(foresight * max_steps) when foresight_scaling=true
+        - High foresight organisms get deeper planning horizons
+        - Pruning keeps compute bounded by skipping low-probability branches
+        - Language magnetism biases imagination scoring toward word-associated actions
+        """
+        import torch
+        
+        # Get config-driven parameters
+        wm_config = self.config.get('neural', {}).get('world_model', {})
+        planning_trust = wm_config.get('planning_trust', 0.25)
+        imagination_temp = wm_config.get('imagination_temperature', 3.0)
+        candidate_threshold = wm_config.get('candidate_threshold', 0.10)
+        language_magnetism_weight = wm_config.get('language_magnetism_weight', 0.15)
+        max_imagination_steps = wm_config.get('max_imagination_steps', 5)
+        foresight_scaling = wm_config.get('foresight_scaling', True)
+        pruning_threshold = wm_config.get('pruning_threshold', 0.15)
+        discount_factor = wm_config.get('discount_factor', 0.9)
+        
+        # === DYNAMIC IMAGINATION DEPTH ===
+        # Organisms EARN their planning horizon through evolved foresight
+        foresight = getattr(self, 'foresight', 0.0)
+        if not isinstance(foresight, (int, float)):
+            foresight = 0.0
+        foresight = max(0.0, min(1.0, float(foresight)))  # Clamp to [0, 1]
+        
+        if foresight_scaling:
+            num_steps = 1 + int(foresight * (max_imagination_steps - 1))
+        else:
+            num_steps = max_imagination_steps
+        
+        self.brain.eval()
+        device = state_tensor.device
+        num_actions = len(action_probs)
+        
+        # Only imagine actions with sufficient base probability
+        candidates = [i for i, p in enumerate(action_probs) if p > candidate_threshold]
+        if not candidates:
+            return action_probs
+            
+        # Get language magnetism bias from atomic_language if available
+        language_bias = np.zeros(num_actions)
+        if hasattr(self, 'atomic_language') and self.atomic_language is not None:
+            try:
+                action_words = ['move', 'cooperate', 'compete', 'rest', 'reproduce', 'isolate']
+                for action_idx, word in enumerate(action_words[:num_actions]):
+                    atom = self.atomic_language.atoms.get(word)
+                    if atom:
+                        language_bias[action_idx] = (atom.curiosity_magnetism - 0.5) * 2.0
+            except Exception as e:
+                logger.debug(f"Language magnetism extraction failed: {e}")
+        
+        imagined_values = np.zeros(num_actions)
+        
+        try:
+            with torch.no_grad():
+                for action_idx in candidates:
+                    # === MULTI-STEP ROLLOUT ===
+                    cumulative_value = 0.0
+                    current_state = state_tensor.clone()
+                    branch_prob = action_probs[action_idx]
+                    
+                    for step in range(num_steps):
+                        # Pruning: skip if branch probability too low
+                        if branch_prob < pruning_threshold:
+                            break
+                            
+                        # Get hidden representation
+                        x = self.brain.fc1(current_state)
+                        x = self.brain._get_activation(x)
+                        x = self.brain.fc2(x)
+                        hidden = self.brain._get_activation(x)
+                        
+                        # Create action vector (first step = candidate, later = greedy from predicted)
+                        if step == 0:
+                            act_idx = action_idx
+                        else:
+                            # Use greedy action from current predicted state
+                            q_values = self.brain.fc3(hidden)
+                            act_idx = int(torch.argmax(q_values).item())
+                        
+                        action_onehot = torch.zeros(1, num_actions, device=device)
+                        action_onehot[0, act_idx] = 1.0
+                        
+                        # Predict next state
+                        combined = torch.cat([hidden, action_onehot], dim=-1)
+                        predicted_next_state = self.brain.fc_world_model(combined)
+                        
+                        # Evaluate goodness of predicted state
+                        pred_metrics = self._tensor_to_metrics(predicted_next_state, network_state)
+                        wisdom = np.array([0.5, 0.0])
+                        if network_state and 'context_memory' in network_state:
+                            cm = network_state['context_memory']
+                            if hasattr(cm, 'retrieve_historical_wisdom'):
+                                wisdom = cm.retrieve_historical_wisdom(pred_metrics)
+                        
+                        # Discounted value: gamma^step * score
+                        step_value = float(wisdom[0] * (1.0 + wisdom[1]))
+                        cumulative_value += (discount_factor ** step) * step_value
+                        
+                        # Update for next step
+                        current_state = predicted_next_state
+                        branch_prob *= discount_factor  # Decay probability estimate
+                    
+                    # Add language magnetism to cumulative value
+                    lang_score = language_bias[action_idx] * language_magnetism_weight
+                    imagined_values[action_idx] = cumulative_value + lang_score
+                    
+        except Exception as e:
+            logger.warning(f"Imagination rollout failed for {self.species_id}: {e}")
+            return action_probs
+
+        # Softmax adjustment with configurable temperature
+        exp_imagined = np.exp(imagined_values * imagination_temp) 
+        imagination_weights = exp_imagined / (np.sum(exp_imagined) + 1e-8)
+        
+        # Blended decision: (1-trust)*DQN_probs + (trust)*imagination_weights
+        adjusted_probs = (1.0 - planning_trust) * action_probs + planning_trust * imagination_weights
+        
+        # Ensure valid probability distribution
+        final_probs = adjusted_probs / (np.sum(adjusted_probs) + 1e-8)
+        
+        # === OBSERVABILITY: Track when imagination changes decisions ===
+        dqn_choice = int(np.argmax(action_probs))
+        imagination_choice = int(np.argmax(final_probs))
+        if dqn_choice != imagination_choice:
+            action_names = ['move', 'cooperate', 'compete', 'rest', 'reproduce', 'isolate']
+            logger.info(
+                f"🧠 IMAGINATION OVERRIDE [{self.species_id[:8]}]: "
+                f"{action_names[dqn_choice]} → {action_names[imagination_choice]} "
+                f"(steps={num_steps}, foresight={foresight:.2f}, "
+                f"scores: {imagined_values[dqn_choice]:.3f} vs {imagined_values[imagination_choice]:.3f})"
+            )
+        
+        return final_probs
+
+    def _tensor_to_metrics(self, tensor: 'torch.Tensor', base_metrics: Dict[str, Any]) -> Dict[str, Any]:
+        """Convert predicted state tensor back to metrics dictionary for wisdom retrieval."""
+        # This must match the normalization in ContextMemory.retrieve_historical_wisdom
+        v = tensor.cpu().numpy()[0]
+        
+        metrics = base_metrics.copy() if base_metrics else {}
+        # Inverse normalization
+        metrics['organism_count'] = float(v[0]) * 3000.0
+        metrics['connection_count'] = float(v[1]) * 16000.0
+        metrics['vp_value'] = float(v[2])
+        metrics['system_health'] = float(v[3])
+        
+        # VP components (Features 4-8 in retrieve_historical_wisdom)
+        if len(v) >= 9:
+            metrics['vp_components'] = {
+                'trait_divergence': float(v[4]),
+                'network_coherence': float(v[5]),
+                'quantum_entropy': float(v[6]),
+                'evolution_pressure': float(v[7]),
+                'phase_mismatch': float(v[8])
+            }
+        return metrics
+
     def decide_action(self, 
                      local_env: Optional[Dict[str, Any]] = None,
                      network_state: Optional[Dict[str, Any]] = None,
@@ -887,6 +1065,18 @@ class NeuralOrganism(Organism):
                     # Graceful degradation - illumination failure shouldn't crash decisions
                     pass
             
+            # 🧠 IMAGINATION ROLLOUT (Internal Planning)
+            # "Imagination is the beginning of creation." - Shaw frame
+            # Roll out top actions using world model and score predicted outcomes
+            imagination_enabled = self.config.get('neural', {}).get('world_model', {}).get('imagination_enabled', True)
+            if imagination_enabled and hasattr(self.brain, 'use_world_model') and self.brain.use_world_model:
+                try:
+                    action_probs = self._perform_imagination_rollout(
+                        state_tensor, action_probs, network_state
+                    )
+                except Exception:
+                    pass
+
             # Select action from (possibly adjusted) probabilities
             action = int(np.argmax(action_probs))
         

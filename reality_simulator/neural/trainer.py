@@ -168,7 +168,14 @@ class NeuralTrainer:
         self.total_language_loss = 0.0
         self.total_rl_loss = 0.0  # Granular: RL/DQN loss only
         self.total_concept_loss = 0.0  # Granular: Concept loss only
+        self.total_world_model_loss = 0.0  # ?? NEW: World model prediction loss
         self.last_training_time = 0.0
+        
+        # World model configuration
+        # "Reality is that which, when you stop believing in it, doesn't go away" - PKD frame
+        world_model_config = config.get('world_model', {})
+        self.world_model_enabled = world_model_config.get('enabled', True)
+        self.world_model_loss_weight = world_model_config.get('delta', 0.2)  # delta loss weight
         
         # EMA (Exponential Moving Average) for smoother loss tracking
         self.ema_alpha = 0.1  # Smoothing factor (lower = smoother)
@@ -176,6 +183,7 @@ class NeuralTrainer:
         self.ema_rl_loss = None  # EMA of RL loss
         self.ema_language_loss = None  # EMA of language loss
         self.ema_concept_loss = None  # EMA of concept loss
+        self.ema_world_model_loss = None  # ?? NEW: EMA of world model loss
         
         # Track organism fitness history for reward calculation
         self.organism_fitness_history: Dict[str, float] = {}
@@ -818,6 +826,34 @@ class NeuralTrainer:
             prev_fitness = self.organism_fitness_history.get(org_id, organism.fitness)
             current_fitness = organism.fitness
             
+            # Get next state
+            next_state = organism.get_state_features(
+                local_env=None,
+                network_state=network_state,
+                breath_state=breath_state
+            )
+            
+            # ?? NEW: Intrinsic Motivation (Curiosity from Prediction Error)
+            # "The important thing is not to stop questioning. Curiosity has its own reason for existing." - Einstein frame
+            curiosity_bonus = 0.0
+            if self.world_model_enabled and hasattr(organism.brain, 'use_world_model') and organism.brain.use_world_model:
+                try:
+                    organism.brain.eval()
+                    device = next(organism.brain.parameters()).device
+                    state_tensor = torch.FloatTensor(organism.prev_state).unsqueeze(0).to(device)
+                    
+                    with torch.no_grad():
+                        brain_results = organism.brain(state_tensor, return_world_model_output=True)
+                        if isinstance(brain_results, dict) and 'world_model_output' in brain_results:
+                            predicted_next_state = brain_results['world_model_output'].cpu().numpy()[0]
+                            # Curiosity = Prediction Error (L2 norm)
+                            prediction_error = np.linalg.norm(predicted_next_state - next_state)
+                            # Normalize error and scale by curiosity factor
+                            # High error = high curiosity = explore more!
+                            curiosity_bonus = float(prediction_error * self.config.get('world_model', {}).get('curiosity_scale', 0.05))
+                except Exception:
+                    pass
+            
             # Calculate reward (GAP 2: VP-aware reward shaping)
             vp_value = network_state.get('vp_value', 0.0) if network_state else 0.0
             reward = self.calculate_reward(
@@ -830,12 +866,8 @@ class NeuralTrainer:
                 vp_value=vp_value  # GAP 2 FIX: Pass VP for curriculum learning
             )
             
-            # Get next state
-            next_state = organism.get_state_features(
-                local_env=None,
-                network_state=network_state,
-                breath_state=breath_state
-            )
+            # Apply intrinsic motivation
+            reward += curiosity_bonus
             
             # Record experience
             organism.record_experience(
@@ -1260,27 +1292,55 @@ class NeuralTrainer:
                 next_states_tensor = torch.FloatTensor(next_states).to(self.device)
                 dones_tensor = torch.BoolTensor(dones).to(self.device)
                 
-                # ⚡ AMP: Use autocast for forward passes (2-3x faster on Tensor Core GPUs)
+                # ⚡ AMP: Use autocast for forward passes AND loss calculations
+                # DTYPE FIX: All computation must be inside autocast to avoid Float/BFloat16 mismatch
                 amp_context = torch.amp.autocast('cuda', dtype=self.amp_dtype) if self.amp_enabled else nullcontext()
                 
                 with amp_context:
-                    # Get current Q values
+                    # Get current outputs
                     organism.brain.train()  # Set to training mode
-                    q_values = organism.brain(states_tensor)
+                    
+                    # ?? NEW: Call forward with world model return enabled
+                    brain_results = organism.brain(
+                        states_tensor, 
+                        return_world_model_output=self.world_model_enabled
+                    )
+                    
+                    if isinstance(brain_results, dict):
+                        q_values = brain_results['action_probs']
+                        world_model_output = brain_results.get('world_model_output')
+                    else:
+                        q_values = brain_results
+                        world_model_output = None
+                        
                     q_value = q_values.gather(1, actions_tensor.unsqueeze(1)).squeeze(1)
                     
                     # Get next Q values (no gradient)
                     organism.brain.eval()  # Set to evaluation mode
                     with torch.no_grad():
-                        next_q_values = organism.brain(next_states_tensor)
+                        next_brain_results = organism.brain(next_states_tensor)
+                        if isinstance(next_brain_results, dict):
+                            next_q_values = next_brain_results['action_probs']
+                        else:
+                            next_q_values = next_brain_results
                         next_q_value = next_q_values.max(1)[0]
+                    
+                    # Calculate target Q values (MUST be inside autocast to match dtypes)
+                    target_q_value = rewards_tensor + (self.gamma * next_q_value * ~dones_tensor)
+                    
+                    # Calculate RL loss (Q-learning) - inside autocast for dtype consistency
+                    rl_loss = F.mse_loss(q_value, target_q_value)
+                    
+                    # ?? NEW: Calculate World Model loss (predictive accuracy)
+                    world_model_loss = None
+                    if self.world_model_enabled and world_model_output is not None:
+                        # Prediction error: how well did we predict the next state?
+                        world_model_loss = F.mse_loss(world_model_output, next_states_tensor)
                 
-                # Calculate target Q values
-                target_q_value = rewards_tensor + (self.gamma * next_q_value * ~dones_tensor)
-                
-                # Calculate RL loss (Q-learning)
-                rl_loss = F.mse_loss(q_value, target_q_value)
-                self.total_rl_loss += rl_loss.item()  # Track granular RL loss
+                # Track losses outside autocast (using .item() extracts Python float)
+                self.total_rl_loss += rl_loss.item()
+                if world_model_loss is not None:
+                    self.total_world_model_loss += world_model_loss.item()
                 
                 # Calculate language loss if enabled and brain has language head
                 language_loss = None
@@ -1347,13 +1407,15 @@ class NeuralTrainer:
                     except Exception as e:
                         logger.debug(f"Concept loss calculation skipped: {e}")
                 
-                # Combine losses with weighting (triple-loss system)
-                # loss = alpha * rl_loss + beta * language_loss + gamma * concept_loss
+                # Combine losses with weighting (quadruple-loss system)
+                # loss = alpha * rl_loss + beta * language_loss + gamma * concept_loss + delta * world_model_loss
                 loss = self.rl_loss_weight * rl_loss
                 if language_loss is not None:
                     loss = loss + self.language_loss_weight * language_loss
                 if concept_loss is not None:
                     loss = loss + self.concept_loss_weight * concept_loss
+                if world_model_loss is not None:
+                    loss = loss + self.world_model_loss_weight * world_model_loss
                 
                 # Backpropagation
                 organism.brain.train()
@@ -1446,6 +1508,7 @@ class NeuralTrainer:
             avg_rl = self.total_rl_loss / max(1, self.training_step_count + 1)
             avg_lang = self.total_language_loss / max(1, self.training_step_count + 1) if self.language_model_enabled else None
             avg_concept = self.total_concept_loss / max(1, self.training_step_count + 1) if self.concept_system_enabled else None
+            avg_wm = self.total_world_model_loss / max(1, self.training_step_count + 1) if self.world_model_enabled else None
             
             # Update EMA (Exponential Moving Average) for smoother tracking
             alpha = self.ema_alpha
@@ -1454,6 +1517,7 @@ class NeuralTrainer:
                 self.ema_rl_loss = avg_rl
                 self.ema_language_loss = avg_lang
                 self.ema_concept_loss = avg_concept
+                self.ema_world_model_loss = avg_wm
             else:
                 self.ema_loss = alpha * avg_loss + (1 - alpha) * self.ema_loss
                 self.ema_rl_loss = alpha * avg_rl + (1 - alpha) * self.ema_rl_loss
@@ -1461,6 +1525,8 @@ class NeuralTrainer:
                     self.ema_language_loss = alpha * avg_lang + (1 - alpha) * (self.ema_language_loss or avg_lang)
                 if avg_concept is not None:
                     self.ema_concept_loss = alpha * avg_concept + (1 - alpha) * (self.ema_concept_loss or avg_concept)
+                if avg_wm is not None:
+                    self.ema_world_model_loss = alpha * avg_wm + (1 - alpha) * (self.ema_world_model_loss or avg_wm)
             
             # Emit neural training event for visualization
             if self.event_emitter:

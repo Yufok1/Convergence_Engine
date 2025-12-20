@@ -506,6 +506,70 @@ class ContextMemory:
         
         self._save_persistence()
 
+    def retrieve_historical_wisdom(self, current_metrics: Dict[str, Any], k: int = 3) -> np.ndarray:
+        """
+        Retrieve 'wisdom' from similar past generations.
+        
+        Compares current system metrics with historical episodic_events.
+        Returns a compressed wisdom vector based on top-K similar episodes.
+        
+        Args:
+            current_metrics: Dictionary of current system metrics
+            k: Number of similar episodes to retrieve
+            
+        Returns:
+            Wisdom vector [mean_past_fitness, similarity_score]
+        """
+        if not self.episodic_events or len(self.episodic_events) < 2:
+            # Return neutral wisdom if history is sparse
+            return np.array([0.5, 0.0], dtype=np.float32)
+            
+        # Convert current metrics to a normalized vector for comparison
+        def metrics_to_vec(m):
+            v = [
+                float(m.get('organism_count', 0)) / 3000.0,
+                float(m.get('connection_count', 0)) / 16000.0,
+                float(m.get('vp_value', 0.5)),
+                float(m.get('system_health', 0.5))
+            ]
+            # Add VP components if available (normalize to 0-1)
+            vp_c = m.get('vp_components', {}) or {}
+            v.extend([
+                float(vp_c.get('trait_divergence', 0.0)),
+                float(vp_c.get('network_coherence', 0.0)),
+                float(vp_c.get('quantum_entropy', 0.0)),
+                float(vp_c.get('evolution_pressure', 0.0)),
+                float(vp_c.get('phase_mismatch', 0.0))
+            ])
+            return np.array(v, dtype=np.float32)
+            
+        try:
+            curr_vec = metrics_to_vec(current_metrics)
+            
+            # Calculate similarity to all past episodes
+            similarities = []
+            for data in self.episodic_events.values():
+                hist_metrics = data.get('metrics', {})
+                hist_vec = metrics_to_vec(hist_metrics)
+                
+                # Euclidean distance inverted for similarity
+                dist = np.linalg.norm(curr_vec - hist_vec)
+                sim = 1.0 / (1.0 + dist)
+                
+                # Outcome we care about: was the average fitness high?
+                similarities.append((sim, hist_metrics.get('avg_fitness', 0.5)))
+                
+            # Sort by similarity and take top K
+            similarities.sort(key=lambda x: x[0], reverse=True)
+            top_k = similarities[:k]
+            
+            mean_sim = float(np.mean([x[0] for x in top_k]))
+            mean_fitness = float(np.mean([x[1] for x in top_k]))
+            
+            return np.array([mean_fitness, mean_sim], dtype=np.float32)
+        except Exception:
+            return np.array([0.5, 0.0], dtype=np.float32)
+
     def link_word_to_node(self, word: str, organism_id: int, generation: int = None,
                           organism_embedding: Optional[np.ndarray] = None,
                           organism: Optional[Any] = None) -> bool:
