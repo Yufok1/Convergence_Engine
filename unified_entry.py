@@ -3250,7 +3250,6 @@ class UnifiedSystem:
             # Any member can propose territory claims (exploring for the group)
             if aws.uncontrolled_territories:
                 # Pick a random unclaimed territory
-                import random
                 territory = random.choice(list(aws.uncontrolled_territories))
                 
                 # 🗣️ TERRITORY COMMUNICATION - Explorer announces to alliance!

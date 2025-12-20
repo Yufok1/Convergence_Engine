@@ -3864,7 +3864,7 @@ class AllianceWarfareSystem:
                     # 📜 Record to Alliance History - Territory Claimed
                     self.record_historical_event(
                         alliance_id=alliance.alliance_id,
-                        event_type=HistoricalEventType.TERRITORY_GAINED,
+                        event_type=HistoricalEventType.TERRITORY_CLAIMED,
                         description=f"Claimed territory: {territory.value}",
                         primary_organism_id=proposal.proposer_id,
                         outcome="success",
