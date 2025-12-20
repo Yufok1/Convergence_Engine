@@ -7374,6 +7374,8 @@ def list_organisms():
                             
                             # Social
                             'alliance_id': getattr(organism, 'alliance_id', None),
+                            'alliance_name': None,  # Will be filled below
+                            'alliance_role': None,  # Will be filled below
                             'alliance_reputation': round(getattr(organism, 'alliance_reputation', 0.5), 3),
                             'connections_count': connection_count,
                             'confederation_tier': getattr(organism, 'confederation_tier', 0),
@@ -7586,6 +7588,24 @@ def list_organisms():
         else:
             logger.warning("Capsule manager not available to load saved capsules.")
 
+        # Fill in alliance names and roles from alliance system
+        alliance_system = getattr(unified_system, 'alliance_warfare', None) if unified_system else None
+        if alliance_system and hasattr(alliance_system, 'alliances'):
+            for org_data in organisms_data:
+                org_alliance_id = org_data.get('alliance_id')
+                if org_alliance_id and org_alliance_id in alliance_system.alliances:
+                    alliance = alliance_system.alliances[org_alliance_id]
+                    org_data['alliance_name'] = getattr(alliance, 'name', None)
+                    # Get role from alliance members dict
+                    members = getattr(alliance, 'members', {})
+                    org_id = org_data.get('id')
+                    if org_id in members:
+                        role = members[org_id]
+                        org_data['alliance_role'] = role.value if hasattr(role, 'value') else str(role)
+                    # Check if warchief
+                    if getattr(alliance, 'warchief_id', None) == org_id:
+                        org_data['alliance_role'] = 'warchief'
+
         organisms_data.sort(key=lambda x: x['fitness'], reverse=True) # Sort by fitness
         
         logger.info(f"Returning {len(organisms_data)} total organisms for export list")
@@ -7791,8 +7811,56 @@ def list_alliances():
                         'behavioral_signature': [],  # Will be filled below
                         'dominant_behavior': 'unknown',
                         'max_divergence': 0.0,
-                        'most_divergent_from': None
+                        'most_divergent_from': None,
+                        
+                        # Alliance History (if available)
+                        'history_summary': {},  # Will be filled below
+                        'legends': [],
+                        'wisdom_rules': [],
+                        'recent_events': []
                     })
+                    
+                    # Get alliance history if available
+                    alliance_histories = getattr(alliance_system, 'alliance_histories', {})
+                    if alliance_id in alliance_histories:
+                        history = alliance_histories[alliance_id]
+                        alliances_data[-1]['history_summary'] = {
+                            'total_wars': getattr(history, 'total_wars', 0),
+                            'wars_won': getattr(history, 'wars_won', 0),
+                            'wars_lost': getattr(history, 'wars_lost', 0),
+                            'total_members_ever': getattr(history, 'total_members_ever', 0),
+                            'total_betrayals': getattr(history, 'total_betrayals', 0),
+                            'total_peace_treaties': getattr(history, 'total_peace_treaties', 0),
+                            'highest_member_count': getattr(history, 'highest_member_count', 0),
+                            'lowest_vp_survived': round(getattr(history, 'lowest_vp_survived', 1.0), 3),
+                            'founding_round': getattr(history, 'founding_round', 0),
+                            'event_count': len(getattr(history, 'events', []))
+                        }
+                        # Get legends
+                        legends = getattr(history, 'legends', {})
+                        alliances_data[-1]['legends'] = [
+                            {
+                                'organism_id': leg.organism_id[:8] if hasattr(leg, 'organism_id') else k[:8],
+                                'role': getattr(leg, 'role', 'unknown'),
+                                'achievements': getattr(leg, 'achievements', [])[:5],
+                                'legacy': getattr(leg, 'legacy', '')
+                            }
+                            for k, leg in list(legends.items())[:10]
+                        ]
+                        # Get wisdom rules
+                        alliances_data[-1]['wisdom_rules'] = getattr(history, 'wisdom_rules', [])[:10]
+                        # Get recent events
+                        events = getattr(history, 'events', [])[-10:]
+                        alliances_data[-1]['recent_events'] = [
+                            {
+                                'type': getattr(e, 'event_type', 'unknown').value if hasattr(getattr(e, 'event_type', None), 'value') else str(getattr(e, 'event_type', 'unknown')),
+                                'description': getattr(e, 'description', ''),
+                                'round': getattr(e, 'round_number', 0),
+                                'outcome': getattr(e, 'outcome', '')
+                            }
+                            for e in events
+                        ]
+                        
                 except Exception as e:
                     logger.warning(f"Error processing alliance {alliance_id}: {e}")
                     continue
