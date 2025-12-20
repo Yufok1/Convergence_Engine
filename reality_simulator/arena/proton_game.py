@@ -280,7 +280,7 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
         # Tool-assisted physical tasks
         GameDefinition(
             name="Lunar Landing",
-            gym_env="LunarLander-v3",
+            gym_env="LunarLander-v2",
             challenge=ChallengeType.PHYSICAL,
             resource=ResourceType.TOOL,
             difficulty=GameDifficulty.JOURNEYMAN,
@@ -324,7 +324,7 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
         ),
         GameDefinition(
             name="Continuous Lander",
-            gym_env="LunarLanderContinuous-v3",
+            gym_env="LunarLanderContinuous-v2",
             challenge=ChallengeType.PHYSICAL,
             resource=ResourceType.MACHINE,
             difficulty=GameDifficulty.EXPERT,
@@ -345,17 +345,7 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
     ],
     
     (ChallengeType.PHYSICAL, ResourceType.ANIMAL): [
-        # Animal-like locomotion - MuJoCo creatures
-        GameDefinition(
-            name="Cheetah Sprint",
-            gym_env="HalfCheetah-v5",
-            challenge=ChallengeType.PHYSICAL,
-            resource=ResourceType.ANIMAL,
-            difficulty=GameDifficulty.JOURNEYMAN,
-            description="Run fast like a cheetah - coordinated gait",
-            tags=["running", "speed", "coordination"],
-            favored_traits={"speed": 0.25, "coordination": 0.2}
-        ),
+        # Animal-like locomotion - Box2D walkers (MuJoCo commented out as often not installed)
         GameDefinition(
             name="Bipedal Walk",
             gym_env="BipedalWalker-v3",
@@ -367,15 +357,28 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
             favored_traits={"balance": 0.2, "adaptability": 0.15}
         ),
         GameDefinition(
-            name="Hopper",
-            gym_env="Hopper-v5",
+            name="Acrobatic Swing",
+            gym_env="Acrobot-v1",
             challenge=ChallengeType.PHYSICAL,
             resource=ResourceType.ANIMAL,
             difficulty=GameDifficulty.APPRENTICE,
-            description="Hop forward on one leg",
-            tags=["hopping", "balance", "momentum"],
-            favored_traits={"balance": 0.2, "energy_efficiency": 0.15}
+            description="Swing like an animal - coordinated limbs",
+            tags=["swinging", "coordination", "momentum"],
+            favored_traits={"coordination": 0.2, "timing": 0.15}
         ),
+        GameDefinition(
+            name="Cart Balance",
+            gym_env="CartPole-v1",
+            challenge=ChallengeType.PHYSICAL,
+            resource=ResourceType.ANIMAL,
+            difficulty=GameDifficulty.NOVICE,
+            description="Balance like a sea creature on waves",
+            tags=["balance", "reaction", "stability"],
+            favored_traits={"balance": 0.2, "reaction_time": 0.15}
+        ),
+        # MuJoCo games (require mujoco package):
+        # GameDefinition(name="Cheetah Sprint", gym_env="HalfCheetah-v5", ...),
+        # GameDefinition(name="Hopper", gym_env="Hopper-v5", ...),
     ],
     
     # =========================================================================
@@ -598,7 +601,7 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
         # Machine + chance
         GameDefinition(
             name="Chaotic Landing",
-            gym_env="LunarLander-v3",
+            gym_env="LunarLander-v2",
             challenge=ChallengeType.CHANCE,
             resource=ResourceType.MACHINE,
             difficulty=GameDifficulty.JOURNEYMAN,
@@ -620,7 +623,7 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
         ),
         GameDefinition(
             name="Continuous Chaos",
-            gym_env="LunarLanderContinuous-v3",
+            gym_env="LunarLanderContinuous-v2",
             challenge=ChallengeType.CHANCE,
             resource=ResourceType.MACHINE,
             difficulty=GameDifficulty.EXPERT,
@@ -645,27 +648,30 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
             favored_traits={"adaptability": 0.3, "luck": 0.2}
         ),
         GameDefinition(
-            name="Hopper Roulette",
-            gym_env="Hopper-v5",
+            name="Lunar Gamble",
+            gym_env="LunarLander-v2",
             challenge=ChallengeType.CHANCE,
             resource=ResourceType.ANIMAL,
             difficulty=GameDifficulty.JOURNEYMAN,
-            description="Random initial conditions - hop or fall",
+            description="Random wind - animal-like reactions needed",
             min_episodes=5,
-            tags=["hopping", "random_start", "balance"],
-            favored_traits={"balance": 0.2, "luck": 0.15}
+            tags=["wind", "random", "reaction"],
+            favored_traits={"reaction_time": 0.2, "luck": 0.15}
         ),
         GameDefinition(
-            name="Cheetah Gamble",
-            gym_env="HalfCheetah-v5",
+            name="Mountain Roulette",
+            gym_env="MountainCar-v0",
             challenge=ChallengeType.CHANCE,
             resource=ResourceType.ANIMAL,
-            difficulty=GameDifficulty.JOURNEYMAN,
-            description="Random perturbations - maintain speed",
+            difficulty=GameDifficulty.APPRENTICE,
+            description="Random start positions - survive the valley",
             min_episodes=5,
-            tags=["running", "chaos", "stability"],
-            favored_traits={"stability": 0.2, "luck": 0.15}
+            tags=["momentum", "random_start", "survival"],
+            favored_traits={"persistence": 0.2, "luck": 0.15}
         ),
+        # MuJoCo games (require mujoco package):
+        # GameDefinition(name="Hopper Roulette", gym_env="Hopper-v5", ...),
+        # GameDefinition(name="Cheetah Gamble", gym_env="HalfCheetah-v5", ...),
     ],
     
     # =========================================================================
@@ -743,7 +749,7 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
         # Machine artistry
         GameDefinition(
             name="Perfect Landing",
-            gym_env="LunarLander-v3",
+            gym_env="LunarLander-v2",
             challenge=ChallengeType.ARTS,
             resource=ResourceType.MACHINE,
             difficulty=GameDifficulty.JOURNEYMAN,
@@ -1322,21 +1328,21 @@ class ProtonGameArena:
     """
     
     # Standard Gymnasium environments that provide REAL training data
-    # All 25 verified working environments
+    # All verified working environments (v2 for LunarLander, MuJoCo needs mujoco package)
     REAL_GYM_ENVS = {
-        # Classic Control
+        # Classic Control (always available)
         'CartPole-v1', 'MountainCar-v0', 'MountainCarContinuous-v0',
         'Acrobot-v1', 'Pendulum-v1',
-        # Box2D
-        'LunarLander-v3', 'LunarLanderContinuous-v3',
+        # Box2D (pip install gymnasium[box2d])
+        'LunarLander-v2', 'LunarLanderContinuous-v2',
         'BipedalWalker-v3', 'BipedalWalkerHardcore-v3', 'CarRacing-v3',
-        # Toy Text
+        # Toy Text (always available)
         'FrozenLake-v1', 'FrozenLake8x8-v1', 'CliffWalking-v1',
         'Blackjack-v1', 'Taxi-v3',
-        # MuJoCo (all v5)
-        'Ant-v5', 'HalfCheetah-v5', 'Hopper-v5', 'Walker2d-v5',
-        'Humanoid-v5', 'Swimmer-v5', 'InvertedPendulum-v5',
-        'InvertedDoublePendulum-v5', 'Reacher-v5', 'Pusher-v5',
+        # MuJoCo (pip install mujoco) - disabled by default as often not installed
+        # 'Ant-v5', 'HalfCheetah-v5', 'Hopper-v5', 'Walker2d-v5',
+        # 'Humanoid-v5', 'Swimmer-v5', 'InvertedPendulum-v5',
+        # 'InvertedDoublePendulum-v5', 'Reacher-v5', 'Pusher-v5',
     }
     
     def __init__(self, 

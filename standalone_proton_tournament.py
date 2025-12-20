@@ -146,7 +146,7 @@ TOURNAMENT_GAMES: Dict[str, GameDefinition] = {
     ),
     "lunarlander": GameDefinition(
         name="Lunar Landing",
-        gym_env="LunarLander-v3",
+        gym_env="LunarLander-v2",
         challenge=ChallengeType.PHYSICAL,
         resource=ResourceType.MACHINE,
         difficulty=GameDifficulty.JOURNEYMAN,
