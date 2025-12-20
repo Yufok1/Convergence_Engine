@@ -971,12 +971,12 @@ class ConfigTuner:
         if not ml_metrics or not ml_metrics.get('enabled'):
             return None
         
-        semantic_analysis = ml_metrics.get('semantic_analysis', {})
+        semantic_analysis = ml_metrics.get('semantic_analysis', {}) or {}
         if not semantic_analysis:
             return None
         
-        quality_metrics = semantic_analysis.get('quality_metrics', {})
-        clustering = ml_metrics.get('clustering', {})
+        quality_metrics = semantic_analysis.get('quality_metrics', {}) or {}
+        clustering = ml_metrics.get('clustering', {}) or {}
         
         # Track embedding quality (silhouette score when embeddings are used)
         use_embeddings = self._get_param_value('scikit.clustering.use_neural_embeddings')

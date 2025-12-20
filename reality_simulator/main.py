@@ -1899,7 +1899,8 @@ class RealitySimulator:
                                        f"{legacy_tuning_action.proposed_value:.4f}) "
                                        f"Reason: {legacy_tuning_action.reason}")
                     except Exception as e:
-                        logger.debug(f"[LEGACY_TUNER] Analysis failed: {e}")
+                        import traceback
+                        logger.debug(f"[LEGACY_TUNER] Analysis failed: {e}\n{traceback.format_exc()}")
 
                 # Analyze and get tuning recommendation from AtomicConfigSystem
                 tuning_action = self.config_tuner.analyze_and_tune(
