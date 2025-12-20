@@ -14263,6 +14263,14 @@
                 unknown: '·'
             };
             
+            // Global number formatter for shorthand display (K, M, B)
+            const fmtNum = (n) => {
+                if (n >= 1000000000) return (n / 1000000000).toFixed(1) + 'B';
+                if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+                if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+                return n.toString();
+            };
+            
             // Populate the organism binder with cards
             async function populateOrganismSelector() {
                 const binder = document.getElementById('organismBinder');
@@ -15397,7 +15405,7 @@
                                 <span class="stat-label">Tier</span>
                             </div>
                             <div class="stat-item">
-                                <span class="stat-value">${org.experience_buffer_size || 0}</span>
+                                <span class="stat-value">${fmtNum(org.experience_buffer_size || 0)}</span>
                                 <span class="stat-label">Exp</span>
                             </div>
                             <div class="stat-item">

@@ -622,7 +622,7 @@
         "type": "cosine",
         "warmup_steps": 80
       },
-      "memory_size": 40000,
+      "memory_size": 0,
       "update_frequency": 1,
       "_genesis_note": "Smaller memory - fewer experiences to draw from during bust, and RAM constrained"
     },

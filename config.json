@@ -563,7 +563,7 @@
         "type": "cosine",
         "warmup_steps": 100
       },
-      "memory_size": 40000,
+      "memory_size": 0,
       "update_frequency": 1
     },
     "vp_aware_planning": {
