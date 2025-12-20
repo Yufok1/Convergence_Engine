@@ -1646,6 +1646,10 @@ class NeuralOrganism(Organism):
             # Convert my tokens to words (for logging/debugging)
             my_words = []
             for token_id in my_tokens:
+                # Ensure token_id is an integer (not string)
+                if isinstance(token_id, str):
+                    continue
+                token_id = int(token_id)
                 for word, atom in self.atomic_language.atoms.items():
                     # Rough token-to-word mapping (actual mapping is in vocab)
                     if hash(word) % 20000 == token_id % 20000:
@@ -1667,6 +1671,10 @@ class NeuralOrganism(Organism):
             # Convert their tokens to words
             their_words = []
             for token_id in their_tokens:
+                # Ensure token_id is an integer (not string)
+                if isinstance(token_id, str):
+                    continue
+                token_id = int(token_id)
                 for word, atom in target.atomic_language.atoms.items():
                     if hash(word) % 20000 == token_id % 20000:
                         their_words.append(word)
@@ -1737,7 +1745,11 @@ class NeuralOrganism(Organism):
                         f"quality={result['exchange_quality']:.2f}, shared={len(shared_vocab)}")
             
         except Exception as e:
-            logger.warning(f"[SPEAK] Communication failed {self.species_id[:8]} → {target.species_id[:8]}: {e}")
+            import traceback
+            # Use str(e) directly to avoid format string issues with % in error messages
+            error_msg = str(e).replace('%', '%%')  # Escape any % in error
+            logger.warning(f"[SPEAK] Communication failed {self.species_id[:8]} → {target.species_id[:8]}: {error_msg}")
+            logger.debug(f"[SPEAK] Full traceback:\n{traceback.format_exc()}")
             result['error'] = str(e)
         
         return result
