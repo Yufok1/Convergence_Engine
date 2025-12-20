@@ -265,7 +265,7 @@ class ConfigTuner:
             return
             
         # Extract Language-Game Bridge metrics for correlation analysis
-        lgb_metrics = report_data.get('language_game_bridge', {})
+        lgb_metrics = report_data.get('language_game_bridge', {}) or {}
         if lgb_metrics and lgb_metrics.get('active'):
             # Track vocabulary-game alignment trend
             alignment = lgb_metrics.get('vocabulary_game_alignment', 0.0)
@@ -284,7 +284,7 @@ class ConfigTuner:
                 self.lang_decision_influence_history.pop(0)
                 
         # Extract evolution metrics for fitness tracking
-        evolution = report_data.get('evolution', {})
+        evolution = report_data.get('evolution', {}) or {}
         if evolution:
             best_fitness = evolution.get('best_fitness', 0.0)
             if best_fitness > 0:
@@ -293,9 +293,9 @@ class ConfigTuner:
                     self.fitness_history.pop(0)
         
         # Extract ML metrics
-        ml = report_data.get('ml_metrics', {})
+        ml = report_data.get('ml_metrics', {}) or {}
         if ml and ml.get('enabled'):
-            clustering = ml.get('clustering', {})
+            clustering = ml.get('clustering', {}) or {}
             n_clusters = clustering.get('n_clusters', 0)
             if n_clusters > 0:
                 self.cluster_count_history.append(n_clusters)
@@ -303,7 +303,7 @@ class ConfigTuner:
                     self.cluster_count_history.pop(0)
         
         # Extract network health
-        network = report_data.get('network', {})
+        network = report_data.get('network', {}) or {}
         if network:
             density = network.get('density', 0.0)
             if density > 0:
@@ -328,13 +328,14 @@ class ConfigTuner:
         report = self._live_report_cache
         
         # Convert live_report structure to analyze_and_tune parameters
-        ml_metrics = report.get('ml_metrics', {})
-        neural_metrics = report.get('neural', {})
-        evolution_metrics = report.get('evolution', {})
-        network_metrics = report.get('network', {})
+        # Use 'or {}' to handle None values from explicit null keys
+        ml_metrics = report.get('ml_metrics', {}) or {}
+        neural_metrics = report.get('neural', {}) or {}
+        evolution_metrics = report.get('evolution', {}) or {}
+        network_metrics = report.get('network', {}) or {}
         
         # Merge language_game_bridge into network_metrics for analyzer access
-        lgb = report.get('language_game_bridge', {})
+        lgb = report.get('language_game_bridge', {}) or {}
         if lgb:
             network_metrics['language_game_bridge'] = lgb
         
