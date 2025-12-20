@@ -166,8 +166,8 @@
       "_initial_help": "High initial mutation - 5 founders need genetic diversity injection"
     },
     "mutation_rate_precision": 0.001,
-    "population_size": 5,
-    "_population_size_help": "GENESIS: Start with 5 progenitors, explode to 40K"
+    "population_size": 100,
+    "_population_size_help": "GENESIS: Start with 100 progenitors for faster accumulation"
   },
   "feedback": {
     "enabled": true,
@@ -302,7 +302,7 @@
       "_min_population_help": "Can drop to just 3 survivors during extinction",
       "mutation_rate": 0.15,
       "_mutation_rate_help": "Maximum mutation during extinction for rapid adaptation",
-      "population_size": 5,
+      "population_size": 100,
       "predation_enabled": true,
       "rounds_per_cycle": 5,
       "survival_threshold": 0.5
@@ -318,8 +318,8 @@
     "min_population": 3,
     "_min_population_help": "Allow near-extinction for dramatic recovery arcs",
     "mutation_rate": 0.05,
-    "population_size": 5,
-    "_population_size_help": "GENESIS: 5 progenitor organisms",
+    "population_size": 100,
+    "_population_size_help": "GENESIS: 100 progenitors for faster vocab/mastery accumulation",
     "predation_enabled": true,
     "rounds_per_cycle": 2,
     "survival_threshold": 0.25,
