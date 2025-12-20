@@ -533,7 +533,7 @@
         "teaching_frequency": 1,
         "use_knowledge_web": true,
         "use_semantic_embeddings": true,
-        "vocab_size": 10000,
+        "vocab_size": 50000,
         "staged_knowledge": {
           "_help": "Delay loading expanded knowledge web to let organisms build foundations with innate vocab first",
           "enabled": true,
