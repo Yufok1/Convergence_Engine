@@ -25,6 +25,19 @@ import os
 os.environ['RAY_METRICS_AGENT_DISABLED'] = '1'
 os.environ['RAY_ENABLE_WINDOWS_OR_OSX_CLUSTER'] = '1'
 
+# Suppress PyTorch inductor warnings (spammy but harmless)
+import warnings
+warnings.filterwarnings('ignore', message='.*Online softmax is disabled.*')
+warnings.filterwarnings('ignore', message='.*TensorFloat32 tensor cores.*')
+warnings.filterwarnings('ignore', message='.*Not enough SMs to use max_autotune_gemm.*')
+
+# Enable TensorFloat32 for better performance on Ampere+ GPUs
+try:
+    import torch
+    torch.set_float32_matmul_precision('high')
+except ImportError:
+    pass
+
 import sys
 import time
 import json
