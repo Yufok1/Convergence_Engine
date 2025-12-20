@@ -37,6 +37,7 @@ warnings.filterwarnings('ignore', category=UserWarning, module='torch')
 # Also suppress via logging for inductor
 import logging as _logging
 _logging.getLogger('torch._inductor').setLevel(_logging.ERROR)
+_logging.getLogger('torch._inductor.utils').setLevel(_logging.CRITICAL)
 _logging.getLogger('torch._dynamo').setLevel(_logging.ERROR)
 
 # Enable TensorFloat32 for better performance on Ampere+ GPUs
