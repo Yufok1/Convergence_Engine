@@ -415,25 +415,25 @@ class ConfigTuner:
 
         # Phase 4.6 - Cross-System Correlation Analysis ⭐ INTEGRATION
         # Quantum-Language correlation
-        quantum_metrics = network_metrics.get('quantum', {}) if network_metrics else {}
+        quantum_metrics = (network_metrics.get('quantum', {}) or {}) if network_metrics else {}
         quantum_lang_action = self._analyze_quantum_language_correlation(quantum_metrics, ml_metrics)
         if quantum_lang_action:
             actions.append(quantum_lang_action)
         
         # Network-Alliance correlation
-        alliance_metrics = network_metrics.get('alliances', {}) if network_metrics else {}
+        alliance_metrics = (network_metrics.get('alliances', {}) or {}) if network_metrics else {}
         network_alliance_action = self._analyze_network_alliance_correlation(network_metrics, alliance_metrics)
         if network_alliance_action:
             actions.append(network_alliance_action)
         
         # Neural-Battle correlation
-        battle_metrics = network_metrics.get('battles', {}) if network_metrics else {}
+        battle_metrics = (network_metrics.get('battles', {}) or {}) if network_metrics else {}
         neural_battle_action = self._analyze_neural_battle_correlation(neural_metrics, battle_metrics)
         if neural_battle_action:
             actions.append(neural_battle_action)
         
         # Vocabulary-Fitness correlation
-        language_metrics = ml_metrics.get('language', {}) if ml_metrics else {}
+        language_metrics = (ml_metrics.get('language', {}) or {}) if ml_metrics else {}
         vocab_fitness_action = self._analyze_vocabulary_fitness_correlation(language_metrics, evolution_metrics)
         if vocab_fitness_action:
             actions.append(vocab_fitness_action)
@@ -442,7 +442,7 @@ class ConfigTuner:
         # Use live report cache since language_game_bridge is at TOP LEVEL, not under network_metrics
         language_game_metrics = {}
         if self._live_report_cache:
-            language_game_metrics = self._live_report_cache.get('language_game_bridge', {})
+            language_game_metrics = self._live_report_cache.get('language_game_bridge', {}) or {}
         lang_game_action = self._analyze_language_game_correlation(language_game_metrics, battle_metrics)
         if lang_game_action:
             actions.append(lang_game_action)
