@@ -78,6 +78,15 @@ class AllianceMetrics:
     alliance_formations_total: int = 0
     dissolutions_total: int = 0
     betrayals_total: int = 0
+    # New expanded metrics
+    territories_claimed: int = 0
+    territories_unclaimed: int = 0
+    wars_won_total: int = 0
+    wars_lost_total: int = 0
+    ultimatums_issued: int = 0
+    peace_treaties_signed: int = 0
+    legends_recorded: int = 0
+    warchief_count: int = 0
 
 
 @dataclass
@@ -393,6 +402,36 @@ class SystemReporter:
             metrics.alliance_formations_total = stats.get('alliances_formed', 0)
             metrics.dissolutions_total = stats.get('alliances_dissolved', 0)
             metrics.betrayals_total = stats.get('betrayals', 0)
+            
+            # Territory metrics
+            territory_control = getattr(alliance_sys, 'territory_control', {})
+            uncontrolled = getattr(alliance_sys, 'uncontrolled_territories', set())
+            metrics.territories_claimed = len(territory_control)
+            metrics.territories_unclaimed = len(uncontrolled)
+            
+            # War history metrics
+            war_history = getattr(alliance_sys, 'war_history', [])
+            metrics.wars_won_total = sum(1 for w in war_history if w.get('outcome') == 'victory')
+            metrics.wars_lost_total = sum(1 for w in war_history if w.get('outcome') == 'defeat')
+            
+            # Stats from alliance warfare
+            metrics.ultimatums_issued = stats.get('ultimatums_issued', 0)
+            metrics.peace_treaties_signed = stats.get('peace_treaties', 0)
+            
+            # Count warchiefs and legends
+            warchief_count = 0
+            legends_count = 0
+            for alliance in alliances.values():
+                if getattr(alliance, 'warchief_id', None):
+                    warchief_count += 1
+            metrics.warchief_count = warchief_count
+            
+            # Count legends from alliance histories
+            alliance_histories = getattr(alliance_sys, 'alliance_histories', {})
+            for history in alliance_histories.values():
+                legends = getattr(history, 'legends', [])
+                legends_count += len(legends)
+            metrics.legends_recorded = legends_count
             
         except Exception as e:
             pass
@@ -1008,7 +1047,9 @@ class SystemReporter:
         print(f"\n🤝 ALLIANCES")
         print(f"   Active: {report.alliances.active_alliances} | Members: {report.alliances.total_members}")
         print(f"   Largest: {report.alliances.largest_alliance_size} | Wars: {report.alliances.wars_in_progress}")
-        print(f"   Confederations: {report.alliances.confederations}")
+        print(f"   Confederations: {report.alliances.confederations} | Warchiefs: {report.alliances.warchief_count}")
+        print(f"   Territories: {report.alliances.territories_claimed} claimed / {report.alliances.territories_unclaimed} unclaimed")
+        print(f"   Wars: {report.alliances.wars_won_total}W / {report.alliances.wars_lost_total}L | Legends: {report.alliances.legends_recorded}")
         
         # Neural
         print(f"\n🧠 NEURAL")
