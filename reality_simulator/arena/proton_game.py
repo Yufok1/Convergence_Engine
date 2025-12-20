@@ -280,7 +280,7 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
         # Tool-assisted physical tasks
         GameDefinition(
             name="Lunar Landing",
-            gym_env="LunarLander-v2",
+            gym_env="LunarLander-v3",
             challenge=ChallengeType.PHYSICAL,
             resource=ResourceType.TOOL,
             difficulty=GameDifficulty.JOURNEYMAN,
@@ -324,7 +324,7 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
         ),
         GameDefinition(
             name="Continuous Lander",
-            gym_env="LunarLanderContinuous-v2",
+            gym_env="LunarLanderContinuous-v3",
             challenge=ChallengeType.PHYSICAL,
             resource=ResourceType.MACHINE,
             difficulty=GameDifficulty.EXPERT,
@@ -487,36 +487,36 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
     ],
     
     (ChallengeType.MENTAL, ResourceType.ANIMAL): [
-        # Animal instincts + mental
+        # Animal instincts + mental (using Box2D - MuJoCo not installed)
         GameDefinition(
-            name="Ant Colony",
-            gym_env="Ant-v5",
-            challenge=ChallengeType.MENTAL,
-            resource=ResourceType.ANIMAL,
-            difficulty=GameDifficulty.EXPERT,
-            description="Coordinate ant-like multi-legged locomotion",
-            tags=["coordination", "complex", "multi-leg"],
-            favored_traits={"coordination": 0.3, "complexity_handling": 0.2}
-        ),
-        GameDefinition(
-            name="Swimmer",
-            gym_env="Swimmer-v5",
-            challenge=ChallengeType.MENTAL,
-            resource=ResourceType.ANIMAL,
-            difficulty=GameDifficulty.APPRENTICE,
-            description="Swim like a snake - wave motion planning",
-            tags=["swimming", "waves", "efficiency"],
-            favored_traits={"rhythm": 0.2, "efficiency": 0.15}
-        ),
-        GameDefinition(
-            name="Walker",
-            gym_env="Walker2d-v5",
+            name="Bipedal Thinking",
+            gym_env="BipedalWalker-v3",
             challenge=ChallengeType.MENTAL,
             resource=ResourceType.ANIMAL,
             difficulty=GameDifficulty.JOURNEYMAN,
-            description="2D walking - balance and gait planning",
-            tags=["walking", "balance", "gait"],
-            favored_traits={"balance": 0.2, "planning": 0.15}
+            description="Plan each step - mental control of bipedal motion",
+            tags=["coordination", "planning", "balance"],
+            favored_traits={"coordination": 0.3, "planning": 0.2}
+        ),
+        GameDefinition(
+            name="Acrobatic Mind",
+            gym_env="Acrobot-v1",
+            challenge=ChallengeType.MENTAL,
+            resource=ResourceType.ANIMAL,
+            difficulty=GameDifficulty.APPRENTICE,
+            description="Swing up like a gymnast - timing and momentum",
+            tags=["swinging", "timing", "momentum"],
+            favored_traits={"rhythm": 0.2, "timing": 0.15}
+        ),
+        GameDefinition(
+            name="Balance Instinct",
+            gym_env="Pendulum-v1",
+            challenge=ChallengeType.MENTAL,
+            resource=ResourceType.ANIMAL,
+            difficulty=GameDifficulty.APPRENTICE,
+            description="Balance like a cat - continuous control instincts",
+            tags=["balance", "continuous", "instinct"],
+            favored_traits={"balance": 0.2, "fine_control": 0.15}
         ),
     ],
     
@@ -601,7 +601,7 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
         # Machine + chance
         GameDefinition(
             name="Chaotic Landing",
-            gym_env="LunarLander-v2",
+            gym_env="LunarLander-v3",
             challenge=ChallengeType.CHANCE,
             resource=ResourceType.MACHINE,
             difficulty=GameDifficulty.JOURNEYMAN,
@@ -623,7 +623,7 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
         ),
         GameDefinition(
             name="Continuous Chaos",
-            gym_env="LunarLanderContinuous-v2",
+            gym_env="LunarLanderContinuous-v3",
             challenge=ChallengeType.CHANCE,
             resource=ResourceType.MACHINE,
             difficulty=GameDifficulty.EXPERT,
@@ -649,7 +649,7 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
         ),
         GameDefinition(
             name="Lunar Gamble",
-            gym_env="LunarLander-v2",
+            gym_env="LunarLander-v3",
             challenge=ChallengeType.CHANCE,
             resource=ResourceType.ANIMAL,
             difficulty=GameDifficulty.JOURNEYMAN,
@@ -749,7 +749,7 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
         # Machine artistry
         GameDefinition(
             name="Perfect Landing",
-            gym_env="LunarLander-v2",
+            gym_env="LunarLander-v3",
             challenge=ChallengeType.ARTS,
             resource=ResourceType.MACHINE,
             difficulty=GameDifficulty.JOURNEYMAN,
@@ -780,7 +780,7 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
     ],
     
     (ChallengeType.ARTS, ResourceType.ANIMAL): [
-        # Animal grace
+        # Animal grace (using Box2D - MuJoCo not installed)
         GameDefinition(
             name="Graceful Walk",
             gym_env="BipedalWalker-v3",
@@ -792,23 +792,23 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
             favored_traits={"grace": 0.25, "naturalness": 0.15}
         ),
         GameDefinition(
-            name="Flowing Swim",
-            gym_env="Swimmer-v5",
+            name="Acrobatic Grace",
+            gym_env="Acrobot-v1",
             challenge=ChallengeType.ARTS,
             resource=ResourceType.ANIMAL,
             difficulty=GameDifficulty.APPRENTICE,
-            description="Swim with fluid motion - water dance",
-            tags=["swimming", "fluid", "rhythm"],
+            description="Swing with fluid motion - gymnastic art",
+            tags=["swinging", "fluid", "rhythm"],
             favored_traits={"rhythm": 0.25, "flow": 0.2}
         ),
         GameDefinition(
-            name="Humanoid Dance",
-            gym_env="Humanoid-v5",
+            name="Hardcore Grace",
+            gym_env="BipedalWalkerHardcore-v3",
             challenge=ChallengeType.ARTS,
             resource=ResourceType.ANIMAL,
             difficulty=GameDifficulty.MASTER,
-            description="Move with human-like grace - the ultimate art",
-            tags=["humanoid", "dance", "mastery"],
+            description="Navigate obstacles with animal grace - the ultimate art",
+            tags=["walking", "obstacles", "mastery"],
             favored_traits={"grace": 0.3, "coordination": 0.25},
             is_continuous=True
         ),
@@ -1328,13 +1328,13 @@ class ProtonGameArena:
     """
     
     # Standard Gymnasium environments that provide REAL training data
-    # All verified working environments (v2 for LunarLander, MuJoCo needs mujoco package)
+    # All verified working environments (v3 for LunarLander, MuJoCo needs mujoco package)
     REAL_GYM_ENVS = {
         # Classic Control (always available)
         'CartPole-v1', 'MountainCar-v0', 'MountainCarContinuous-v0',
         'Acrobot-v1', 'Pendulum-v1',
         # Box2D (pip install gymnasium[box2d])
-        'LunarLander-v2', 'LunarLanderContinuous-v2',
+        'LunarLander-v3', 'LunarLanderContinuous-v3',
         'BipedalWalker-v3', 'BipedalWalkerHardcore-v3', 'CarRacing-v3',
         # Toy Text (always available)
         'FrozenLake-v1', 'FrozenLake8x8-v1', 'CliffWalking-v1',

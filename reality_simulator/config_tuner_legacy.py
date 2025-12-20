@@ -1688,6 +1688,8 @@ class ConfigTuner:
         parts = path.split('.')
         value = self.config
         for part in parts:
+            if value is None or not isinstance(value, dict):
+                return 0.0
             value = value.get(part, {})
         return float(value) if isinstance(value, (int, float)) else 0.0
     
