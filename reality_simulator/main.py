@@ -1887,8 +1887,8 @@ class RealitySimulator:
                         legacy_tuning_action = self.legacy_config_tuner.analyze_and_tune(
                             ml_metrics=ml_metrics or {},
                             neural_metrics=neural_metrics or {},
-                            evolution_metrics=evolution_metrics,
-                            network_metrics=network_metrics,
+                            evolution_metrics=evolution_metrics or {},
+                            network_metrics=network_metrics or {},
                             frame_count=self.frame_count
                         )
                         if legacy_tuning_action:
@@ -1905,8 +1905,8 @@ class RealitySimulator:
                 tuning_action = self.config_tuner.analyze_and_tune(
                     ml_metrics=ml_metrics or {},
                     neural_metrics=neural_metrics or {},
-                    evolution_metrics=evolution_metrics,
-                    network_metrics=network_metrics,
+                    evolution_metrics=evolution_metrics or {},
+                    network_metrics=network_metrics or {},
                     frame_count=self.frame_count
                 )
 
