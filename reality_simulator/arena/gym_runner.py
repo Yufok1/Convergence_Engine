@@ -320,6 +320,16 @@ class GymRunner:
         'card_game': 'Blackjack-v1',
         'blackjack': 'Blackjack-v1',
         
+        # Lowercase aliases (for alliance_dojo)
+        'cartpole': 'CartPole-v1',
+        'lunarlander': 'LunarLander-v3',
+        'mountaincar': 'MountainCar-v0',
+        'acrobot': 'Acrobot-v1',
+        'pendulum': 'Pendulum-v1',
+        'frozenlake': 'FrozenLake-v1',
+        'taxi': 'Taxi-v3',
+        'cliffwalking': 'CliffWalking-v0',
+        
         # Direct mappings - Classic Control
         'CartPole-v1': 'CartPole-v1',
         'MountainCar-v0': 'MountainCar-v0',
