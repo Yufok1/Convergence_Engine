@@ -602,7 +602,8 @@
       "reuse_optimizers": true,
       "use_compile": true,
       "_use_compile_help": "torch.compile enabled for GPU mode",
-      "use_scripted_inference": true
+      "use_scripted_inference": false,
+      "_use_scripted_inference_help": "Disabled - can cause export/cocoon issues; torch.compile provides similar speedup"
     },
     "rewards": {
       "connection_failure": -0.2,
