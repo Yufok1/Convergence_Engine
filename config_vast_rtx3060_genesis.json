@@ -456,7 +456,7 @@
       "utility_update_alpha": 0.15
     },
     "device": "cuda",
-    "_device_help": "RTX 3060 12GB VRAM - GPU-accelerated training!",
+    "_device_help": "RTX 3060 12GB - GPU accelerated training, brains in RAM, batches on GPU",
     "enabled": true,
     "inheritance": {
       "crossover_rate": 0.9,
@@ -593,17 +593,17 @@
     "optimization": {
       "amp": {
         "enabled": true,
-        "_enabled_help": "RTX 3060 has Tensor Cores - AMP gives 2x speedup",
+        "_enabled_help": "RTX 3060 Ampere has Tensor Cores - AMP gives 2x speedup",
         "dtype": "auto",
-        "_dtype_help": "'auto' detects optimal dtype (FP16 for Ampere)",
-        "description": "Mixed precision training - 2x GPU speedup on RTX 3060"
+        "_dtype_help": "'auto' detects FP16 for Ampere",
+        "description": "Mixed precision training - 2x GPU speedup"
       },
       "compile_mode": "default",
       "reuse_optimizers": true,
       "use_compile": true,
-      "_use_compile_help": "torch.compile enabled for GPU mode",
+      "_use_compile_help": "torch.compile for kernel fusion - takes 30-60s on first run",
       "use_scripted_inference": false,
-      "_use_scripted_inference_help": "Disabled - can cause export/cocoon issues; torch.compile provides similar speedup"
+      "_use_scripted_inference_help": "Disabled - can break export/cocoon"
     },
     "rewards": {
       "connection_failure": -0.2,
@@ -616,8 +616,8 @@
       "_survival_help": "Higher survival reward - genesis is dangerous"
     },
     "training": {
-      "batch_size": 64,
-      "_batch_size_help": "RTX 3060 12GB VRAM - conservative batch for stability",
+      "batch_size": 128,
+      "_batch_size_help": "CPU mode with 761GB RAM - larger batches OK",
       "early_stopping": {
         "enabled": true,
         "min_delta": 0.0001,
