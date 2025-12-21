@@ -1403,10 +1403,6 @@ class AtomicLanguageSystem:
                 self._add_innate_concept(word, info, current_time, 'innate_extended', 0.4)
                 added_count += 1
                 added_by_frame[frame] = added_by_frame.get(frame, 0) + 1
-            
-            # Also initialize Golden Record and Orientation at level 2
-            self._initialize_golden_record_concepts(current_time)
-            self._initialize_foundational_orientation(current_time)
         
         if new_level >= 3:
             # Level 3+: Add pool words  
@@ -1424,6 +1420,12 @@ class AtomicLanguageSystem:
                 self._add_innate_concept(word, info, current_time, 'innate_rare', 0.25)
                 added_count += 1
                 added_by_frame[frame] = added_by_frame.get(frame, 0) + 1
+        
+        if new_level >= 4:
+            # Level 4: SEMANTIC GRADUATION - Unlock humanity's message to the cosmos!
+            # Golden Record + Foundational Orientation = reward for reaching mastery
+            self._initialize_golden_record_concepts(current_time)
+            self._initialize_foundational_orientation(current_time)
         
         # Log specialization details
         frame_breakdown = ', '.join(f"{f}:{c}" for f, c in sorted(added_by_frame.items(), key=lambda x: -x[1]))
