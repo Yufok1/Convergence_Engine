@@ -539,27 +539,41 @@ class SystemReporter:
                             # Semantic associations count
                             metrics.semantic_associations = sum(len(v) for v in language_anchors.values()) if language_anchors else 0
             
-            # Fallback: check organism objects directly (legacy)
+            # Fallback: check organism atomic_language.atoms directly
             if metrics.total_vocabulary_words == 0:
                 organisms = self.unified_system.get_current_organisms()
                 all_words = set()
                 total_vocab = 0
+                total_associations = 0
                 
                 for org in organisms.values():
-                    vocab = getattr(org, 'vocabulary', None)
-                    if vocab:
-                        if isinstance(vocab, dict):
-                            words = set(vocab.keys())
-                        elif isinstance(vocab, (list, set)):
-                            words = set(vocab)
-                        else:
-                            words = set()
-                        
+                    # Primary: check atomic_language.atoms (the actual vocabulary)
+                    al = getattr(org, 'atomic_language', None)
+                    if al and hasattr(al, 'atoms') and al.atoms:
+                        words = set(al.atoms.keys())
                         all_words.update(words)
                         total_vocab += len(words)
+                        # Count associations (depth metric)
+                        for atom in al.atoms.values():
+                            assoc = getattr(atom, 'associations', {})
+                            if assoc:
+                                total_associations += len(assoc)
+                    else:
+                        # Legacy fallback: org.vocabulary
+                        vocab = getattr(org, 'vocabulary', None)
+                        if vocab:
+                            if isinstance(vocab, dict):
+                                words = set(vocab.keys())
+                            elif isinstance(vocab, (list, set)):
+                                words = set(vocab)
+                            else:
+                                words = set()
+                            all_words.update(words)
+                            total_vocab += len(words)
                 
                 metrics.unique_words_across_pop = len(all_words)
                 metrics.total_vocabulary_words = total_vocab
+                metrics.semantic_associations = total_associations
                 
                 if organisms:
                     metrics.avg_vocab_per_organism = total_vocab / len(organisms)
