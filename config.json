@@ -215,8 +215,8 @@
     "weight_sustainability": 0.1
   },
   "highlander": {
-    "eval_interval_seconds": 60,
-    "_eval_interval_seconds_help": "BOOM-BUST WAVE SYSTEM: Highlander concentration happens every N seconds (600 = 10 min waves, 1200 = 20 min waves). Organisms grow/learn between waves, then face culling.",
+    "eval_interval_seconds": 300,
+    "_eval_interval_seconds_help": "Battle frequency for mastery 4+ organisms (seconds between Highlander rounds). Organisms below mastery 4 are protected regardless of this setting.",
     "alliance_warfare": {
       "betrayal_chance": 0.0,
       "confederation_war_threshold": 0.6,
