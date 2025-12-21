@@ -3333,12 +3333,10 @@ class UnifiedSystem:
                         if not hasattr(aws, '_dojo_manager'):
                             aws._dojo_manager = DojoManager()
                         
-                        # Create brain getter function
+                        # Create organism getter function (gym_runner needs full organism for experience recording)
                         def get_brain(org_id):
                             org = organisms.get(org_id)
-                            if org and hasattr(org, 'brain'):
-                                return org.brain
-                            return org
+                            return org  # Return full organism, not just brain
                         
                         # Run actual sparring session!
                         session = aws._dojo_manager.run_alliance_training(
