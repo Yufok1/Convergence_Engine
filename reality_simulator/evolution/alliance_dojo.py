@@ -535,6 +535,12 @@ class AllianceDojo:
             duration_seconds=time.time() - start_time
         )
         
+        # Dojo experience contributes to mastery experience count
+        for org, exp_count in [(brain_a, exp_a), (brain_b, exp_b)]:
+            if hasattr(org, 'atomic_language') and org.atomic_language is not None:
+                for _ in range(exp_count):
+                    org.atomic_language.record_experience()
+        
         self.logger.info(f"   Winner: {winner_id[:8] if winner_id else 'DRAW'}")
         self.logger.info(f"   Scores: {score_a:.1f} vs {score_b:.1f}")
         
@@ -592,6 +598,11 @@ class AllianceDojo:
             experiences_gained=exp_gained,
             improvement=improvement
         )
+        
+        # Dojo experience contributes to mastery experience count
+        if hasattr(brain, 'atomic_language') and brain.atomic_language is not None:
+            for _ in range(exp_gained):
+                brain.atomic_language.record_experience()
         
         self.logger.info(f"   Mean: {mean_score:.1f}, Best: {best_score:.1f}")
         if improvement > 0:

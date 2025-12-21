@@ -121,6 +121,10 @@ class LanguageSnapshot:
     strongest_concepts: List[Tuple[str, float]]  # Top 10
     unique_concepts: List[str]  # Concepts not in default set
     
+    # Mastery data
+    mastery_level: int = 0
+    total_experiences: int = 0
+    
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
     
@@ -711,7 +715,9 @@ class OrganismCapsuleManager:
             total_concepts=len(lang_system.atoms),
             concept_order=lang_system._concept_order.copy(),
             strongest_concepts=strongest,
-            unique_concepts=unique
+            unique_concepts=unique,
+            mastery_level=getattr(lang_system, '_mastery_level', 0),
+            total_experiences=getattr(lang_system, '_total_experiences', 0)
         )
     
     def _capture_config(self, config_system: Any) -> ConfigSnapshot:
@@ -1155,6 +1161,10 @@ class OrganismCapsuleManager:
             return False
         
         try:
+            # RESTORE MASTERY FIRST
+            target_language_system._mastery_level = getattr(capsule.language, 'mastery_level', 0)
+            target_language_system._total_experiences = getattr(capsule.language, 'total_experiences', 0)
+            
             # Clear existing atoms
             target_language_system.atoms.clear()
             target_language_system._concept_order.clear()
@@ -1163,7 +1173,7 @@ class OrganismCapsuleManager:
             from reality_simulator.language.atomic_language import LinguisticAtom
             
             # MASTERY CHECK: Get vocab cap for organism's level
-            mastery_level = getattr(target_language_system, '_mastery_level', 0)
+            mastery_level = target_language_system._mastery_level
             vocab_caps = getattr(target_language_system, '_mastery_vocab_sizes', [6, 26, 76, 276, 10000])
             max_vocab = vocab_caps[mastery_level] if mastery_level < len(vocab_caps) else 10000
             
@@ -1172,9 +1182,13 @@ class OrganismCapsuleManager:
                 capsule.language.atoms.items(),
                 key=lambda x: x[1].get('strength', 0.5),
                 reverse=True
-            )[:max_vocab]  # Cap at max vocab for level
+            )
             
-            for concept_id, atom_dict in sorted_atoms:
+            # In restoration, we might want to override the cap if it's a full restore
+            # But here we'll stay consistent with mastery gating
+            to_restore = sorted_atoms[:max_vocab]
+            
+            for concept_id, atom_dict in to_restore:
                 atom = LinguisticAtom(
                     concept_id=concept_id,
                     strength=atom_dict.get('strength', 0.5),
