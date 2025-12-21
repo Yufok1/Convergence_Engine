@@ -1688,13 +1688,14 @@ class AtomicLanguageSystem:
         )
         
         # Debug logging to help diagnose why organisms aren't advancing
+        # TEMPORARILY at INFO level to diagnose mastery advancement issues
         if self._total_experiences > 10 and not should_advance:
-            logger.debug(
+            logger.info(
                 f"[MASTERY_CHECK] {self.organism_id[:8]} Level {self._mastery_level}: "
                 f"breadth={breadth_ratio:.2f}/{self._mastery_advancement_ratio} "
                 f"depth={depth_ratio:.2f}/{self._mastery_depth_ratio} "
                 f"exp={self._total_experiences}/{min_exp} "
-                f"vocab={len(vocab)}"
+                f"vocab={len(vocab)} used={used_words} deep={deep_words}"
             )
         
         if should_advance:
@@ -2598,37 +2599,70 @@ class AtomicLanguageSystem:
         """
         Get words semantically related to an action for breadth tracking.
         
-        This maps actions to related concepts that should also be "activated"
-        when an organism takes that action. Without this, only 6 action words
-        ever get activation counts, making Level 1→2 advancement impossible.
+        DYNAMIC FRAME-BASED ACTIVATION:
+        Uses ACTION_FRAME_AFFINITIES to find words whose frames match the action.
+        This scales to ALL mastery levels - Level 2+ words with matching frames
+        get activated just like Level 1 words.
         
-        Returns list of related words from available vocabulary.
+        Args:
+            action: Action index (0-5)
+            outcome: Reward outcome (not currently used, reserved for future)
+            
+        Returns:
+            List of words from available vocabulary that match action's frames
         """
-        # Map actions to semantically related concept categories
-        # FIXED: Use ACTUAL Level 1 vocabulary words from innate_vocab.json:
-        # abandon, avoid, compete, cooperate, create, curiosity, explore, force, hope, 
-        # ignore, isolate, love, miss, move, neglect, overlook, pressure, prevent, 
-        # release, reproduce, rest, separate, share, stop, suppress, together
-        action_word_map = {
-            0: ['move', 'explore', 'release', 'curiosity', 'hope'],  # MOVE - exploration/motion
-            1: ['cooperate', 'share', 'together', 'love', 'hope'],   # COOPERATE - social/positive
-            2: ['compete', 'force', 'pressure', 'suppress', 'stop'], # COMPETE - aggressive
-            3: ['rest', 'stop', 'ignore', 'neglect', 'overlook'],    # REST - inaction
-            4: ['reproduce', 'create', 'love', 'hope', 'together'],  # REPRODUCE - creation
-            5: ['isolate', 'separate', 'avoid', 'prevent', 'abandon', 'miss', 'ignore'],  # ISOLATE - avoidance
-        }
+        # Get frames affiliated with this action
+        affinities = self.ACTION_FRAME_AFFINITIES.get(action, ([], []))
+        primary_frames = affinities[0] if len(affinities) > 0 else []
+        secondary_frames = affinities[1] if len(affinities) > 1 else []
+        all_frames = set(primary_frames + secondary_frames)
         
-        # Get related words for this action
-        related = action_word_map.get(action, [])
+        if not all_frames:
+            logger.debug(f"[FRAME_ACTIVATION] Action {action} has no affiliated frames")
+            return []
         
-        # Filter to only words in our vocabulary
+        # Get available vocabulary at current mastery level
         available = self.get_available_vocabulary()
-        activated = [w for w in related if w in available]
         
-        # AGGRESSIVE breadth activation - activate ALL matching words, not just a few
-        # Level 1 has 26 words - need 50% breadth (13 words with count > 2)
-        # Each action should activate 4-7 words to spread activation broadly
-        return activated  # Return ALL matching words, not limited subset
+        # Find words whose frames match the action's affiliated frames
+        activated = []
+        frame_counts = {}  # For debug logging
+        for word in available:
+            if word in self.atoms:
+                atom = self.atoms[word]
+                word_frame = getattr(atom, 'semantic_frame', None)
+                frame_counts[word_frame] = frame_counts.get(word_frame, 0) + 1
+                if word_frame and word_frame in all_frames:
+                    activated.append(word)
+        
+        # Log activation stats periodically (every ~100 calls)
+        if hasattr(self, '_activation_log_counter'):
+            self._activation_log_counter += 1
+        else:
+            self._activation_log_counter = 0
+        
+        if self._activation_log_counter % 100 == 0:
+            logger.info(f"[FRAME_ACTIVATION] Org {self.organism_id[:8]}: action={action}, "
+                       f"frames={all_frames}, vocab_size={len(available)}, "
+                       f"matched={len(activated)}, frame_dist={frame_counts}")
+        
+        # Cap activation to prevent overwhelming breadth in one action
+        # Activate up to 15 words per action (enough for 50% of 26 at Level 1,
+        # or decent spread at higher levels)
+        import random
+        if len(activated) > 15:
+            # Prioritize primary frame words, then sample from the rest
+            primary_words = [w for w in activated if self.atoms[w].semantic_frame in primary_frames]
+            secondary_words = [w for w in activated if w not in primary_words]
+            
+            # Take all primary (up to 10), fill rest from secondary
+            result = primary_words[:10]
+            remaining_slots = 15 - len(result)
+            if remaining_slots > 0 and secondary_words:
+                result.extend(random.sample(secondary_words, min(remaining_slots, len(secondary_words))))
+            return result
+        
+        return activated
     
     def apply_experience(self, action: int, outcome: float, context: Dict[str, Any]):
         """
