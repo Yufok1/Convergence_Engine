@@ -236,8 +236,8 @@
     "weight_sustainability": 0.10
   },
   "highlander": {
-    "eval_interval_seconds": 300,
-    "_eval_interval_seconds_help": "BOOM-BUST WAVES: 20-minute growth periods between Highlander concentration waves (aligned with Shadow config). Mega-RAM + 88 CPU threads.",
+    "eval_interval_seconds": 1200,
+    "_eval_interval_seconds_help": "BOOM-BUST WAVES: 20-minute growth periods between Highlander concentration waves. Mastery 4+ organisms only.",
     "alliance_warfare": {
       "betrayal_chance": 0.0,
       "confederation_war_threshold": 0.5,
