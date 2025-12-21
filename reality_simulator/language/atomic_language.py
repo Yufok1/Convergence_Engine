@@ -2646,18 +2646,24 @@ class AtomicLanguageSystem:
                        f"frames={all_frames}, vocab_size={len(available)}, "
                        f"matched={len(activated)}, frame_dist={frame_counts}")
         
-        # Cap activation to prevent overwhelming breadth in one action
-        # Activate up to 15 words per action (enough for 50% of 26 at Level 1,
-        # or decent spread at higher levels)
+        # Cap activation - scales with mastery level to allow breadth growth
+        # Level 0-1: 15 words (enough for 50% of 26)
+        # Level 2: 25 words (33% of 76)
+        # Level 3: 50 words (18% of 276, need multiple actions for 50%)
+        # Level 4+: no cap (graduated)
+        activation_caps = {0: 15, 1: 15, 2: 25, 3: 50, 4: 1000}
+        cap = activation_caps.get(self._mastery_level, 50)
+        
         import random
-        if len(activated) > 15:
+        if len(activated) > cap:
             # Prioritize primary frame words, then sample from the rest
             primary_words = [w for w in activated if self.atoms[w].semantic_frame in primary_frames]
             secondary_words = [w for w in activated if w not in primary_words]
             
-            # Take all primary (up to 10), fill rest from secondary
-            result = primary_words[:10]
-            remaining_slots = 15 - len(result)
+            # Take primary first (up to 2/3 of cap), fill rest from secondary
+            primary_cap = int(cap * 2 / 3)
+            result = primary_words[:primary_cap]
+            remaining_slots = cap - len(result)
             if remaining_slots > 0 and secondary_words:
                 result.extend(random.sample(secondary_words, min(remaining_slots, len(secondary_words))))
             return result
