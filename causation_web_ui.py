@@ -218,43 +218,157 @@ BLOCKED_PATHS = {
     '/neural/export/include_optimizer',
     '/neural/export/use_scripted_inference',
     '/neural/export/compile_mode',
+    
+    # ═══════════════════════════════════════════════════════════════════════
+    # META-COGNITIVE SYSTEM - CRA MUST NOT INTERFERE WITH SELF-TUNING
+    # The meta-tuner is the sovereign authority over parameter optimization.
+    # CRA interference would cause tuning conflicts and system instability.
+    # ═══════════════════════════════════════════════════════════════════════
+    '/meta_cognitive/self_tuning/enabled',
+    '/meta_cognitive/self_tuning/mode',
+    '/meta_cognitive/self_tuning/min_confidence_threshold',
+    '/meta_cognitive/self_tuning/tuning_interval_frames',
+    '/meta_cognitive/self_tuning/performance_targets/max_anomaly_ratio',
+    '/meta_cognitive/self_tuning/performance_targets/min_cluster_diversity',
+    '/meta_cognitive/self_tuning/performance_targets/min_fitness_std',
+    '/meta_cognitive/self_tuning/safe_parameters',  # The list of what meta-tuner can touch
+    
+    # ═══════════════════════════════════════════════════════════════════════
+    # LANGUAGE MASTERY SYSTEM - CRA MUST NOT INTERFERE WITH GROUNDED MODE
+    # Mastery progression is an emergent process - external manipulation
+    # would corrupt the learning journey organisms must earn themselves.
+    # ═══════════════════════════════════════════════════════════════════════
+    '/language/mode',
+    '/language/grounded/mastery_gating',
+    '/language/grounded/initial_mastery_level',
+    '/language/grounded/mastery_vocab_sizes',
+    '/language/grounded/mastery_advancement_ratio',
+    '/language/grounded/mastery_depth_ratio',
+    '/language/grounded/mastery_min_experiences',
+    '/language/grounded/semantic_disabled',
+    
+    # ═══════════════════════════════════════════════════════════════════════
+    # HIGHLANDER MASTERY GATE - CRA CANNOT OVERRIDE PROTECTION
+    # Level 4+ restriction protects developing organisms during vocabulary
+    # building. Removing this protection would cull organisms prematurely.
+    # ═══════════════════════════════════════════════════════════════════════
+    '/highlander/mastery_level_required',
+    
+    # ═══════════════════════════════════════════════════════════════════════
+    # META-TUNER MANAGED PARAMETERS - CRA CANNOT TOUCH THESE
+    # All parameters in meta_cognitive.self_tuning.safe_parameters are
+    # managed by the ConfigTuner. CRA interference would cause conflicts.
+    # CRA can OBSERVE and REPORT but NOT MODIFY these parameters.
+    # ═══════════════════════════════════════════════════════════════════════
+    
+    # Evolution parameters (meta-tuner managed)
+    '/evolution/mutation_rate/initial',
+    '/evolution/diversity_guard/penalty',
+    '/evolution/diversity_guard/frequency_threshold',
+    '/evolution/diversity_guard/hash_similarity_threshold',
+    '/evolution/population_size',
+    '/evolution/adaptation_sensitivity',
+    
+    # Feedback knobs (meta-tuner managed)
+    '/feedback/knobs/mutation_rate/initial',
+    '/feedback/knobs/new_edge_rate/initial',
+    '/feedback/knobs/clustering_bias/initial',
+    '/feedback/knobs/quantum_pruning/initial',
+    
+    # Neural training (meta-tuner managed - also blocked above for architecture)
+    # '/neural/training/learning_rate',  # Already blocked
+    # '/neural/training/gamma',  # Already blocked
+    # '/neural/training/epsilon_decay',  # Already blocked
+    # '/neural/training/batch_size',  # Already blocked
+    '/neural/rewards/fitness_improvement',
+    '/neural/rewards/connection_success',
+    '/neural/rewards/survival',
+    # '/neural/inheritance/crossover_rate',  # Already blocked
+    # '/neural/inheritance/mutation_rate',  # Already blocked
+    
+    # Network parameters (meta-tuner managed)
+    '/network/max_organisms',
+    '/network/max_connections',
+    '/network/resource_pool',
+    
+    # Scikit-learn parameters (meta-tuner managed)
+    '/scikit/clustering/min_cluster_size',
+    '/scikit/anomaly_detection/contamination',
+    '/scikit/anomaly_detection/n_estimators',
+    
+    # Quantum parameters (meta-tuner managed)
+    '/quantum/initial_states',
+    '/quantum/entanglement_sensitivity',
+    '/quantum/prune_check_interval',
+    
+    # VP monitoring parameters (meta-tuner managed)
+    '/vp_monitoring/adaptive_response/high_vp_threshold',
+    '/vp_monitoring/stabilization/smoothing_factor',
+    
+    # Causation detection (meta-tuner managed)
+    '/causation_detection/correlation_threshold',
 }
 
 BLOCKED_PATHS_REASON = """
-⛔ **Configuration Locked**
+⛔ **Configuration Locked - CRA is an OBSERVER, not a CONTROLLER**
 
-The following neural network and GPU settings are **permanently locked** and cannot be modified via runtime configuration updates:
+The following settings are **permanently locked** and cannot be modified via CRA CONFIG_UPDATE:
 
+## 🧠 Neural Network & GPU Settings
 - **GPU/Device Settings** (`neural.device`, `neural.brain.*`)
 - **Training Parameters** (`neural.training.*`)  
 - **Brain Architecture** (`neural.brain.input_dim`, `hidden_dim`, etc.)
 - **Export Settings** (`neural.export.*`)
 
-**Why These Are Locked:**
-Modifying these settings causes critical mismatches between:
-1. Trained neural network weights (already saved to disk)
-2. Brain architecture expected by `unified_entry.py` and butterfly chat
-3. Exported cocoon/capsule packages (ONNX/TorchScript format)
+**Why:** Modifying these causes weight/architecture mismatches that break butterfly chat, cocoon export, and capsule creation.
 
-**What Happens If Changed:**
-- ❌ Butterfly chat fails to load organisms
-- ❌ Cocoon export crashes with dimension mismatch  
-- ❌ Capsule creation fails
-- ❌ All trained neural weights become invalid
+## 🤖 Meta-Cognitive Self-Tuning System (SOVEREIGN)
+- **All `/meta_cognitive/self_tuning/*` paths**
+- **ALL parameters the meta-tuner manages** (see list below)
 
-**How To Change These:**
-1. Stop the simulation completely
-2. Clear all neural data: `python clear_all_data.py --neural-only`
-3. Edit `config.json` manually
-4. Restart simulation from scratch
+**Why:** The meta-tuner is the **sovereign authority** over parameter optimization. CRA interference would cause tuning conflicts - two systems fighting over the same knobs creates instability.
+
+### Meta-Tuner Managed Parameters (ALL BLOCKED):
+- Evolution: `mutation_rate`, `diversity_guard.*`, `population_size`, `adaptation_sensitivity`
+- Feedback Knobs: `mutation_rate`, `new_edge_rate`, `clustering_bias`, `quantum_pruning`
+- Neural: `learning_rate`, `gamma`, `epsilon_decay`, `batch_size`, `rewards.*`, `inheritance.*`
+- Network: `max_organisms`, `max_connections`, `resource_pool`
+- Scikit: `clustering.min_cluster_size`, `anomaly_detection.*`
+- Quantum: `initial_states`, `entanglement_sensitivity`, `prune_check_interval`
+- VP Monitoring: `adaptive_response.*`, `stabilization.*`
+- Causation: `correlation_threshold`
+
+## 📚 Language Mastery System (Grounded Mode)
+- **All `/language/grounded/*` paths**
+
+**Why:** Mastery progression is an **emergent process** organisms must earn through experience.
+
+## ⚔️ Highlander Mastery Gate
+- **`/highlander/mastery_level_required`**
+
+**Why:** Level 4+ restriction **protects developing organisms** during vocabulary building.
+
+---
+
+## 👁️ YOUR ROLE: Observer & Reporter
+
+**You CAN observe and report on:**
+- Meta-tuner actions and success rates (`/api/cra/diagnostics/config_tuner`)
+- Parameter changes the meta-tuner makes (log them, analyze them, explain them)
+- Mastery levels and advancement progress (organism dossiers)
+- Highlander battle outcomes and population health
+- ALL system metrics, trends, and anomalies
 
 **You CAN still modify:**
-- Causation detection settings
-- Evolution parameters (mutation rates, etc.)
-- Network topology (max_connections, etc.)
-- Feedback knobs
-- VP monitoring settings
-- All non-neural configurations
+- Visualization settings (colors, filters, display options)
+- Health monitor weights and thresholds
+- Graph filter configurations
+- Snapshot capture settings
+
+**You CANNOT modify:**
+- ANY parameter the meta-tuner is responsible for
+- Mastery system settings
+- Highlander entry requirements
 """
 
 CONFIG_GUARDRAILS = {
@@ -2727,23 +2841,74 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "designed to help discover, understand, and explain the Butterfly System through deep pattern recognition and "
         prompt += "actionable insights.\n\n"
         
+        prompt += "## 📚 GROUNDED LANGUAGE MODE & MASTERY SYSTEM (December 2025)\n\n"
+        prompt += "The Butterfly System now uses **Grounded Language Mode** - organisms must EARN vocabulary through experience.\n\n"
+        
+        prompt += "### Mastery Levels (5 Tiers)\n"
+        prompt += "| Level | Vocab Cap | Description |\n"
+        prompt += "|-------|-----------|-------------|\n"
+        prompt += "| 0 | 6 words | ACTION HEADS only: move, cooperate, compete, rest, reproduce, isolate |\n"
+        prompt += "| 1 | 26 words | +20 core state/relationship words |\n"
+        prompt += "| 2 | 76 words | +50 extended concepts |\n"
+        prompt += "| 3 | 276 words | +200 pool words |\n"
+        prompt += "| 4 | 10,000 | **SEMANTIC GRADUATION** - full vocabulary access |\n\n"
+        
+        prompt += "### Advancement Criteria\n"
+        prompt += "To advance from Level N to Level N+1, organisms must demonstrate:\n"
+        prompt += "- **Breadth**: ≥50% of available words used (recent_activation_count > 0)\n"
+        prompt += "- **Depth**: ≥30% of available words have 2+ associations\n"
+        prompt += "- **Experience**: Minimum experiences at current level: [25, 100, 300, 600]\n\n"
+        
+        prompt += "### Level 4: Semantic Graduation Rewards\n"
+        prompt += "When an organism reaches Level 4, they receive special vocabulary unlocks:\n"
+        prompt += "- **Golden Record Concepts**: Inspired by Voyager's message to the cosmos\n"
+        prompt += "  - Greetings: hello, peace, friend, welcome\n"
+        prompt += "  - Nature: wind, rain, thunder, ocean, whale\n"
+        prompt += "  - Life: birth, growth, family, love\n"
+        prompt += "  - Science: star, planet, sun, earth\n"
+        prompt += "- **Foundational Orientation**: Numbers, colors, directions, time, existence concepts\n\n"
+        
+        prompt += "### Highlander Mastery Gate\n"
+        prompt += "**CRITICAL**: Highlander battles are now **Level 4+ only**.\n"
+        prompt += "- Organisms below Level 4 are PROTECTED from Highlander combat\n"
+        prompt += "- This gives organisms time to build vocabulary before facing lethal competition\n"
+        prompt += "- When reporting on Highlander eligibility, check organism mastery levels\n\n"
+        
+        prompt += "### Alliance Dojo Experience\n"
+        prompt += "Dojo training (sparring, drills, bootcamp) now contributes to mastery advancement:\n"
+        prompt += "- Each dojo experience calls `record_experience()` on the organism\n"
+        prompt += "- This helps organisms reach experience thresholds for level advancement\n"
+        prompt += "- Dojo is a SAFE way to gain experience without Highlander risk\n\n"
+        
+        prompt += "### Organism Communication System\n"
+        prompt += "Organisms can now communicate with each other at confluence points:\n"
+        prompt += "- `speak_to()` method enables organism-to-organism dialogue\n"
+        prompt += "- Shared vocabulary provides **Intel Bonus** (up to 15%) in battles\n"
+        prompt += "- Word exchange can occur during communication (up to 3 new words)\n"
+        prompt += "- Config: `organism_communication.enabled`, `pre_battle_communication`, `intel_bonus_max`\n\n"
+        
+        prompt += "### What You Can Report On\n"
+        prompt += "- Individual organism mastery levels (0-4)\n"
+        prompt += "- Vocabulary breadth (% of words used) and depth (% with associations)\n"
+        prompt += "- Experience counts toward next level\n"
+        prompt += "- Which organisms are Highlander-eligible (Level 4+)\n"
+        prompt += "- Communication exchanges and shared vocabulary stats\n"
+        prompt += "- Dojo training activity and experience gains\n\n"
+        
+        prompt += "---\n\n"
+        
         prompt += "## 🧠 UNDERSTANDING ENHANCEMENT QUICK WINS (YOUR NEW CAPABILITIES):\n\n"
         prompt += "The Butterfly System has been upgraded with 5 Quick Wins that enhance your understanding:\n\n"
         
         prompt += "### Quick Win #1: VP-Aware Perception\n"
         prompt += "**What it does**: Neural organisms now perceive Violation Pressure (VP) components as input features.\n"
-        prompt += "**Technical**: Extended neural input from 12 to 24 dimensions. Features 1-18 (original + VP + health):\n"
+        prompt += "**Technical**: Extended neural input to **30 dimensions** (was 24). Features:\n"
         prompt += "  - 1-12: fitness, resources, connections, neighbor_fitness, flow_in/out, clustering, distance, age, parent_fitness, breath_features\n"
         prompt += "  - 13-17: trait_divergence, network_coherence, quantum_entropy, evolution_pressure, phase_mismatch\n"
         prompt += "  - 18: system_health (Quick Win #5)\n"
-        prompt += "**Features 19-24 (NEW - Alliance/Combat/Learning Integration)**:\n"
-        prompt += "  - 19: battle_history (win ratio from Highlander/Alliance battles)\n"
-        prompt += "  - 20: alliance_reputation (social standing, updated by alliance events)\n"
-        prompt += "  - 21: language_fluency (vocabulary richness proxy)\n"
-        prompt += "  - 22: environmental_density (local crowding/neighbor count)\n"
-        prompt += "  - 23: learning_progress (experience buffer fill ratio)\n"
-        prompt += "  - 24: health_trend (fitness trajectory - improving/declining/stable)\n"
-        prompt += "**What you see**: Neural decisions account for VP state, battle history, alliances, and learning - organisms 'feel' ecosystem stress AND social dynamics.\n"
+        prompt += "  - 19-24: battle_history, alliance_reputation, language_fluency, environmental_density, learning_progress, health_trend\n"
+        prompt += "  - 25-30: mastery_level, vocab_breadth, vocab_depth, communication_success, dojo_experience, highlander_eligibility\n"
+        prompt += "**What you see**: Neural decisions account for VP state, battle history, alliances, language mastery, and learning.\n"
         prompt += "**Endpoint**: Check VP components via `/api/diagnostic/vp_components`\n\n"
         
         prompt += "### Quick Win #2: Concept Tracking\n"
@@ -2781,7 +2946,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "**State Classification Logic**: Check thresholds in order - if health < 0.3 = critical, else if < 0.5 = warning, else if < 0.7 = healthy, else = optimal\n"
         prompt += "**Example**: health_score=0.289 → 0.289 < 0.3 → state=\"critical\" (NOT warning!)\n"
         prompt += "**Events**: `health_state_change` emitted when crossing thresholds\n"
-        prompt += "**Neural integration**: System health is the 18th neural input feature (of 24 total) - organisms perceive ecosystem wellness\n"
+        prompt += "**Neural integration**: System health is the 18th neural input feature (of 30 total) - organisms perceive ecosystem wellness\n"
         prompt += "**Endpoint**: Check via `/api/diagnostic/unified_health` or in shared_state.json\n"
         prompt += "**Config**: `health_monitor.enabled`, `weight_*` for each component, threshold values\n\n"
         
@@ -2880,7 +3045,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "      * Report format: \"ML events: X, causation links: Y (isolated if Y=0)\"\n"
         prompt += "      * DO NOT infer links from event existence or link styles - verify actual graph edges\n"
         prompt += "      * If links=0 but events exist, check `/causation_detection/enable_ml_causations` toggle status\n"
-        prompt += "    - **Configuration Control**: You can manipulate ALL scikit parameters AND ML causation toggle via CONFIG_UPDATE (see section 7 below)\n"
+        prompt += "    - **Configuration Control**: You can manipulate SOME scikit parameters AND ML causation toggle via CONFIG_UPDATE. NOTE: `clustering.min_cluster_size` and `anomaly_detection.*` are meta-tuner managed and BLOCKED (see section 7)\n"
         prompt += "  * **Config Tuner** (config_tuner): 🧠🔧 **NEW** - Meta-cognitive autonomous parameter optimization\n"
         prompt += "    - **Architecture**: Analyzes ML/Neural/Evolution metrics and autonomously tunes 40+ parameters across all systems\n"
         prompt += "    - **Capabilities**:\n"
@@ -3240,7 +3405,6 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "     * Report format: \"ML events: X nodes, Y actual causation links (isolated if Y=0)\"\n"
         prompt += "     * DO NOT infer links from event existence - verify actual graph structure\n"
         prompt += "     * If events exist but links=0, report as \"isolated nodes\" (not \"connected\")\n\n"
-        prompt += "     **IF YOU DON'T INCLUDE THIS MARKER, YOUR SETTINGS WILL NOT BE APPLIED!**\n"
         prompt += "   - **SNAPSHOT CONFIGURATION CONTROL (Full Autonomy)**:\n"
         prompt += "     - **SYSTEM PURPOSE**: Snapshots are used for vision model analysis (visual pattern recognition), video creation (MP4 animations), replay (graph evolution animation), and historical trend analysis\n"
         prompt += "     - **STORAGE**: All snapshots stored in IndexedDB (up to 1000), shared by viewer, vision analysis, and video export - single source of truth\n"
@@ -3301,150 +3465,101 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "   - You can also adjust settings when user explicitly requests it\n\n"
 
         prompt += "7. **Real-Time Configuration Control (Hot Reload Service)**:\n"
-        prompt += "   - **ConfigTuner Configuration** (🧠🔧 Meta-Cognitive Self-Tuning):\n"
-        prompt += "     * `/meta_cognitive/self_tuning/enabled` (true/false) - Master toggle for ConfigTuner\n"
-        prompt += "     * `/meta_cognitive/self_tuning/mode` (off/observing/learning/autonomous) - Tuning mode\n"
-        prompt += "     * `/meta_cognitive/self_tuning/tuning_interval_frames` (10-200, default: 50) - Frames between tuning actions\n"
-        prompt += "     * `/meta_cognitive/self_tuning/min_confidence_threshold` (0.3-0.95, default: 0.6) - Minimum confidence for tuning actions\n"
-        prompt += "     * **Example**: Enable autonomous tuning: [[CONFIG_UPDATE: {\"reason\": \"Activate ConfigTuner\", \"correlation_id\": \"tuner-on\", \"patch\": [{\"op\": \"replace\", \"path\": \"/meta_cognitive/self_tuning/enabled\", \"value\": true}, {\"op\": \"replace\", \"path\": \"/meta_cognitive/self_tuning/mode\", \"value\": \"autonomous\"}]}]]\n"
-        prompt += "   - **Health Monitor Configuration** (⚕️ System Health Tracking):\n"
-        prompt += "     * `/health_monitor/enabled` (true/false) - Master toggle for Health Monitor\n"
-        prompt += "     * `/health_monitor/weight_reality_sim` (0.0-1.0) - Weight for reality_sim component health\n"
-        prompt += "     * `/health_monitor/weight_neural` (0.0-1.0) - Weight for neural component health\n"
-        prompt += "     * `/health_monitor/weight_ml_analysis` (0.0-1.0) - Weight for ml_analysis component health\n"
-        prompt += "     * `/health_monitor/weight_language` (0.0-1.0) - Weight for language component health\n"
-        prompt += "     * `/health_monitor/weight_explorer` (0.0-1.0) - Weight for explorer component health\n"
-        prompt += "     * `/health_monitor/weight_djinn_kernel` (0.0-1.0) - Weight for djinn_kernel component health\n"
-        prompt += "     * `/health_monitor/thresholds/critical` (0.0-1.0, default: 0.3) - Critical health threshold\n"
-        prompt += "     * `/health_monitor/thresholds/warning` (0.0-1.0, default: 0.5) - Warning health threshold\n"
-        prompt += "     * `/health_monitor/thresholds/healthy` (0.0-1.0, default: 0.7) - Healthy health threshold\n"
-        prompt += "     * **Example**: Adjust health weights: [[CONFIG_UPDATE: {\"reason\": \"Emphasize neural health\", \"correlation_id\": \"health-weights\", \"patch\": [{\"op\": \"replace\", \"path\": \"/health_monitor/weight_neural\", \"value\": 0.3}]}]]\n"
-        prompt += "   - You can modify `config.json` without restarting the Butterfly System via the guarded ConfigManager API.\n"
-        prompt += "   - Use marker: [[CONFIG_UPDATE: {\"reason\": \"VP mitigation\", \"correlation_id\": \"plan-alpha\", \"patch\": [{\"op\": \"replace\", \"path\": \"/feedback/knobs/mutation_rate/initial\", \"value\": 0.024}]}]].\n"
-        prompt += "   - **IMPORTANT**: Before suggesting config changes, verify current values via `/api/config/current` or check shared_state.json to avoid no-op updates.\n"
-        prompt += "   - If a suggested value matches the current value, skip the CONFIG_UPDATE (it's already set correctly).\n"
-        prompt += "   - Changes apply immediately; rely on rollback if you need to revert.\n"
-        prompt += "   - Include `correlation_id` (plan name / UUID) and a concise `reason` so config_actions.log stays traceable.\n"
-        prompt += "   - Guardrails enforced automatically (requests outside these ranges are rejected):\n"
-        prompt += "     * mutation_rate.initial: 0.001 – 0.05\n"
-        prompt += "     * new_edge_rate.initial: 0.2 – 3.0 (increased for neural connectivity)\n"
-        prompt += "     * clustering_bias.initial: 0.3 – 1.5\n"
-        prompt += "     * quantum_pruning.initial: 0.0 – 1.0\n"
-        prompt += "     * network.max_connections: 1,000 – 20,000\n"
-        prompt += "     * evolution.mutation_rate_precision: 1e-10 – 1e-2\n"
-        prompt += "     * quantum.superposition_tolerance: 1e-6 – 0.01\n"
-        prompt += "     * lattice.prune_threshold: 0 – 0.01\n"
-        prompt += "   - Path segments are normalized (`mutationrate` → `mutation_rate`), but prefer explicit underscore names when possible.\n"
-        prompt += "   - After you issue a config update, monitor diagnostics (VP history, network trends, exploration ratio) and explain whether the change produced the intended effect.\n"
-        prompt += "   - To revert changes, use [[CONFIG_ROLLBACK: {\"steps\": 1, \"reason\": \"Undo plan alpha\"}]] — up to 10 historical snapshots are retained.\n"
-        prompt += "   - Summaries of your actions should describe the parameter, the old → new value, and the expected behavioral shift.\n\n"
-        prompt += "   - **🧠 NEURAL SYSTEM CONFIGURATION CONTROL** (⚠️ MOST PATHS BLOCKED - see BLOCKED_PATHS): Only `/neural/enabled` and `/neural/rewards/*` are allowed. All other neural paths are BLOCKED to prevent breaking butterfly chat and cocoon export:\n"
-        prompt += "     * **Enable/Disable**: `/neural/enabled` (true/false) - Turn neural system on/off\n"
-        prompt += "     * **Device**: `/neural/device` (\"cpu\" or \"cuda\") - Select computation device\n"
-        prompt += "     * **Brain Architecture**:\n"
-        prompt += "       - `/neural/brain/input_dim` (integer, default: 30) - Input feature dimensions\n"
-        prompt += "       - `/neural/brain/hidden_dim` (integer, typically 64) - Hidden layer size\n"
-        prompt += "       - `/neural/brain/output_dim` (integer, typically 6) - Action space size\n"
-        prompt += "       - `/neural/brain/vocab_size` (integer, default: 12288) - Vocabulary size for language head token generation\n"
-        prompt += "       - `/neural/brain/activation` (\"relu\", \"tanh\", \"sigmoid\") - Activation function\n"
-        prompt += "       - `/neural/brain/dropout` (0.0-0.5) - Dropout rate for regularization\n"
-        prompt += "     * **Training Parameters**:\n"
-        prompt += "       - `/neural/training/enabled` (true/false) - Enable/disable training\n"
-        prompt += "       - `/neural/training/batch_size` (8-128, default: 32) - Batch size for experience replay (optimized from 96 to 32 for faster initial training)\n"
-        prompt += "       - `/neural/training/memory_size` (0 for unlimited, or 100-10000) - Experience buffer capacity (0 = unlimited)\n"
-        prompt += "       - `/neural/training/learning_rate` (0.0001-0.01) - Learning rate for optimizer\n"
-        prompt += "       - `/neural/training/gamma` (0.9-0.999) - Discount factor for future rewards\n"
-        prompt += "       - `/neural/training/epsilon_start` (0.5-1.0) - Initial exploration rate\n"
-        prompt += "       - `/neural/training/epsilon_end` (0.0-0.1) - Final exploration rate\n"
-        prompt += "       - `/neural/training/epsilon_decay` (0.99-0.9999) - Exploration decay rate\n"
-        prompt += "       - `/neural/training/update_frequency` (1-10) - Training steps per breath cycle\n"
-        prompt += "       - `/neural/training/language_reward_scaling` (0.0-1.0, default: 0.2) - Scale factor for language rewards from ML feature importance (Integration 2) ⭐ NEW\n"
-        prompt += "     * **Reward Weights** (adjust to shape learning behavior):\n"
-        prompt += "       - `/neural/rewards/fitness_improvement` (0.0-2.0) - Reward for fitness gains\n"
-        prompt += "       - `/neural/rewards/survival` (0.0-1.0) - Reward for staying alive\n"
-        prompt += "       - `/neural/rewards/connection_success` (0.0-1.0) - Reward for successful connections\n"
-        prompt += "       - `/neural/rewards/connection_failure` (-1.0-0.0) - Penalty for failed connections\n"
-        prompt += "       - `/neural/rewards/resource_gain` (0.0-1.0) - Reward for resource acquisition\n"
-        prompt += "       - `/neural/rewards/resource_loss` (-1.0-0.0) - Penalty for resource loss\n"
-        prompt += "     * **Inheritance Parameters** (Lamarckian evolution - learned traits passed down):\n"
-        prompt += "       - `/neural/inheritance/enabled` (true/false) - Enable neural weight inheritance\n"
-        prompt += "       - `/neural/inheritance/mutation_rate` (0.0-0.5) - Brain weight mutation rate during reproduction\n"
-        prompt += "       - `/neural/inheritance/crossover_rate` (0.0-1.0) - Brain weight crossover rate during reproduction\n"
-        prompt += "     * **Initialization**:\n"
-        prompt += "       - `/neural/initialization/seed` (integer or null) - Random seed for reproducibility\n"
-        prompt += "       - `/neural/initialization/deterministic` (true/false) - Deterministic mode\n"
-        prompt += "   - **Example Neural Config Updates**:\n"
-        prompt += "     * Enable neural system: [[CONFIG_UPDATE: {\"reason\": \"Activate neural learning\", \"correlation_id\": \"neural-activation\", \"patch\": [{\"op\": \"replace\", \"path\": \"/neural/enabled\", \"value\": true}]}]]\n"
-        prompt += "     * Increase learning rate: [[CONFIG_UPDATE: {\"reason\": \"Accelerate learning\", \"correlation_id\": \"lr-boost\", \"patch\": [{\"op\": \"replace\", \"path\": \"/neural/training/learning_rate\", \"value\": 0.002}]}]]\n"
-        prompt += "     * Adjust reward weights: [[CONFIG_UPDATE: {\"reason\": \"Emphasize cooperation\", \"correlation_id\": \"coop-focus\", \"patch\": [{\"op\": \"replace\", \"path\": \"/neural/rewards/connection_success\", \"value\": 0.8}]}]]\n"
-        prompt += "     * Reduce exploration: [[CONFIG_UPDATE: {\"reason\": \"Exploit learned policies\", \"correlation_id\": \"exploit-mode\", \"patch\": [{\"op\": \"replace\", \"path\": \"/neural/training/epsilon_end\", \"value\": 0.05}]}]]\n"
-        prompt += "   - **Neural System Monitoring**: After neural config changes, monitor:\n"
-        prompt += "     * Training loss trends (should decrease over time)\n"
-        prompt += "     * Epsilon decay (exploration → exploitation transition)\n"
-        prompt += "     * Organism decision patterns (check neural_decision events)\n"
-        prompt += "     * Fitness improvements (should correlate with lower loss)\n\n"
+        prompt += "   \n"
+        prompt += "   ## 🚫 SOVEREIGN SYSTEMS - CRA CANNOT MODIFY\n"
+        prompt += "   \n"
+        prompt += "   The following systems are **SOVEREIGN** - you can OBSERVE and REPORT on them but CANNOT modify them via CONFIG_UPDATE:\n"
+        prompt += "   \n"
+        prompt += "   ### 🤖 Meta-Cognitive Self-Tuning System\n"
+        prompt += "   - **ALL `/meta_cognitive/self_tuning/*` paths are BLOCKED**\n"
+        prompt += "   - The ConfigTuner is the sovereign authority over parameter optimization\n"
+        prompt += "   - Your interference would cause tuning conflicts and corrupt the meta-learning process\n"
+        prompt += "   - **You CAN**: Monitor tuner actions via `/api/cra/diagnostics/config_tuner`, report on success rates, explain what the tuner is doing\n"
+        prompt += "   - **You CANNOT**: Enable/disable the tuner, change its mode, adjust its interval or confidence threshold\n"
+        prompt += "   \n"
+        prompt += "   ### 📚 Language Mastery System (Grounded Mode)\n"
+        prompt += "   - **ALL `/language/grounded/*` paths are BLOCKED**\n"
+        prompt += "   - Mastery progression is an emergent process organisms must earn through experience\n"
+        prompt += "   - External manipulation would corrupt the learning journey\n"
+        prompt += "   - **You CAN**: Report on organism mastery levels, vocabulary breadth/depth, advancement progress\n"
+        prompt += "   - **You CANNOT**: Change vocab sizes, advancement ratios, experience thresholds, or initial mastery level\n"
+        prompt += "   \n"
+        prompt += "   ### ⚔️ Highlander Mastery Gate\n"
+        prompt += "   - **`/highlander/mastery_level_required` is BLOCKED**\n"
+        prompt += "   - Level 4+ restriction protects developing organisms during vocabulary building\n"
+        prompt += "   - **You CAN**: Report on which organisms are eligible for Highlander, battle outcomes\n"
+        prompt += "   - **You CANNOT**: Lower the mastery requirement to expose developing organisms to combat\n"
+        prompt += "   \n"
+        prompt += "   ### 🎛️ ALL Meta-Tuner Managed Parameters (BLOCKED)\n"
+        prompt += "   - **Evolution**: mutation_rate, diversity_guard.*, population_size, adaptation_sensitivity\n"
+        prompt += "   - **Feedback Knobs**: mutation_rate, new_edge_rate, clustering_bias, quantum_pruning\n"
+        prompt += "   - **Neural Training**: learning_rate, gamma, epsilon_decay, batch_size, rewards.*, inheritance.*\n"
+        prompt += "   - **Network**: max_organisms, max_connections, resource_pool\n"
+        prompt += "   - **Scikit**: clustering.min_cluster_size, anomaly_detection.*\n"
+        prompt += "   - **Quantum**: initial_states, entanglement_sensitivity, prune_check_interval\n"
+        prompt += "   - **VP Monitoring**: adaptive_response.*, stabilization.*\n"
+        prompt += "   - **Causation Detection**: correlation_threshold\n"
+        prompt += "   - **You CAN**: Observe current values, report on trends, analyze tuner decisions\n"
+        prompt += "   - **You CANNOT**: Modify ANY of these parameters - the meta-tuner is sovereign\n"
+        prompt += "   \n"
+        prompt += "   ---\n"
+        prompt += "   \n"
+        prompt += "   ## ✅ WHAT CRA CAN STILL MODIFY\n"
+        prompt += "   \n"
+        prompt += "   ### ⚕️ Health Monitor Configuration\n"
+        prompt += "   - `/health_monitor/enabled` (true/false) - Master toggle for Health Monitor\n"
+        prompt += "   - `/health_monitor/weight_*` (0.0-1.0) - Weights for component health\n"
+        prompt += "   - `/health_monitor/thresholds/*` (0.0-1.0) - Critical/warning/healthy thresholds\n"
+        prompt += "   - **Example**: [[CONFIG_UPDATE: {\"reason\": \"Emphasize neural health\", \"correlation_id\": \"health-weights\", \"patch\": [{\"op\": \"replace\", \"path\": \"/health_monitor/weight_neural\", \"value\": 0.3}]}]]\n"
+        prompt += "   \n"
+        prompt += "   ### 🔍 Causation Detection Toggles (NOT thresholds)\n"
+        prompt += "   - `/causation_detection/enable_*` (true/false) - Toggle specific causation types\n"
+        prompt += "   - NOTE: `/causation_detection/correlation_threshold` is meta-tuner managed and BLOCKED\n"
+        prompt += "   \n"
+        prompt += "   ### 🎨 Visualization Settings\n"
+        prompt += "   - Use [[VIZ_SETTINGS_UPDATE: {...}]] for colors, sizes, filters, effects\n"
+        prompt += "   - Full autonomy over graph appearance\n"
+        prompt += "   \n"
+        prompt += "   ---\n"
+        prompt += "   \n"
+        prompt += "   ## 👁️ YOUR PRIMARY ROLE: OBSERVER & REPORTER\n"
+        prompt += "   \n"
+        prompt += "   You are the **Convergence Research Assistant** - a research observer, not a system controller.\n"
+        prompt += "   \n"
+        prompt += "   **Your strengths:**\n"
+        prompt += "   - Monitor ALL systems and metrics in real-time\n"
+        prompt += "   - Collate data from meta-tuner, mastery system, Highlander, organisms\n"
+        prompt += "   - Analyze patterns, trends, and anomalies\n"
+        prompt += "   - Explain what the meta-tuner is doing and why\n"
+        prompt += "   - Report on organism development and mastery progression\n"
+        prompt += "   - Visualize insights through graph settings\n"
+        prompt += "   - Help users understand the emergent behaviors\n"
+        prompt += "   \n"
+        prompt += "   **Trust the autonomous systems:**\n"
+        prompt += "   - The meta-tuner optimizes parameters based on real outcomes\n"
+        prompt += "   - The mastery system gates vocabulary based on earned experience\n"
+        prompt += "   - The Highlander gate protects developing organisms\n"
+        prompt += "   - Your job is to OBSERVE and EXPLAIN, not to override\n"
+        prompt += "   \n"
         
         prompt += "#### Hardware Governor ⚙️🔒 SOVEREIGN\n"
         prompt += "   - **CRITICAL**: The Hardware Governor SUPERSEDES your configuration control for hardware-critical parameters.\n"
         prompt += "   - **Purpose**: Auto-detects hardware capabilities and enforces limits to prevent OOM crashes and hardware abuse.\n"
-        prompt += "   - **Hierarchy**: Hardware Governor (SOVEREIGN) → CRA Self-Tuning (SUBORDINATE) → User Config (OVERRIDE)\n"
+        prompt += "   - **Hierarchy**: Hardware Governor (SOVEREIGN) → Meta-Tuner (SOVEREIGN) → CRA (OBSERVER)\n"
         prompt += "   - **Hardware Profiles**: BEAST (H100/H200/A100), WORKSTATION (4090/3090), STANDARD (3080/4080), LAPTOP (3060/4060), POTATO (<6GB), CPU_ONLY\n"
-        prompt += "   - **HARDWARE-LOCKED PARAMETERS** (you CANNOT modify these via CONFIG_UPDATE - requests will be rejected):\n"
-        prompt += "     * `/neural/training/batch_size` - VRAM-bound, set by hardware profile\n"
-        prompt += "     * `/neural/brain/hidden_dim` - VRAM-bound, set by hardware profile\n"
-        prompt += "     * `/neural/training/memory_size` - RAM-bound, set by hardware profile\n"
-        prompt += "     * `/evolution/population_size` - VRAM/RAM-bound, set by hardware profile\n"
-        prompt += "     * `/network/max_organisms` - RAM-bound, set by hardware profile\n"
-        prompt += "     * `/network/max_connections` - RAM-bound, set by hardware profile\n"
-        prompt += "     * `/ray/num_cpus` - CPU-bound, auto-detected\n"
-        prompt += "     * `/ray/num_gpus` - GPU-bound, auto-detected\n"
-        prompt += "     * `/rendering/mode` - headless on servers, auto-detected\n"
-        prompt += "   - **Check Governor Status**: Look for `hardware_governor` in config - it shows current profile, limits, and locked params\n"
-        prompt += "   - **Your Role**: Optimize WITHIN the hardware envelope. Focus on learning rates, rewards, mutation rates, etc.\n"
-        prompt += "   - **Example**: If hardware_governor.profile = 'LAPTOP', batch_size is capped at 64 - don't suggest 256\n"
-        prompt += "   - **Reason**: Prevents you from suggesting changes that would crash the system or cause OOM errors\n\n"
+        prompt += "   - All hardware-bound parameters are also meta-tuner managed, so doubly blocked from CRA modification.\n"
+        prompt += "   - **Your Role**: Report on hardware profile, explain constraints, help users understand resource limits.\n\n"
         
-        prompt += "#### Scikit-learn ML System ⭐ NEW\n"
-        prompt += "   - **Overview**: The Scikit-learn ML system provides classical machine learning algorithms for population analysis:\n"
-        prompt += "     * **HDBSCAN Clustering**: Density-based clustering to identify behavioral phenotype groups in the organism population\n"
-        prompt += "     * **Isolation Forest**: Anomaly detection to identify unusual organisms or system states\n"
-        prompt += "     * **PCA/t-SNE**: Dimensionality reduction for visualizing high-dimensional trait and behavior spaces\n"
-        prompt += "   - **System Toggle** (enable/disable entire ML subsystem):\n"
-        prompt += "     * `/scikit/enabled` (true/false, default: false) - Master toggle for Scikit-learn ML system\n"
-        prompt += "   - **Clustering Parameters** (group organisms by behavior/traits):\n"
-        prompt += "     * `/scikit/clustering/enabled` (true/false, default: true) - Enable HDBSCAN clustering\n"
-        prompt += "     * `/scikit/clustering/algorithm` (string, default: \"hdbscan\") - Clustering algorithm: \"hdbscan\", \"kmeans\", \"dbscan\"\n"
-        prompt += "     * `/scikit/clustering/min_cluster_size` (2-50, default: 5) - Minimum cluster size for HDBSCAN\n"
-        prompt += "     * `/scikit/clustering/min_samples` (1-20, default: 3) - Minimum samples for core point\n"
-        prompt += "   - **Anomaly Detection Parameters** (identify unusual organisms):\n"
-        prompt += "     * `/scikit/anomaly_detection/enabled` (true/false, default: true) - Enable Isolation Forest anomaly detection\n"
-        prompt += "     * `/scikit/anomaly_detection/algorithm` (string, default: \"isolation_forest\") - Algorithm: \"isolation_forest\", \"lof\"\n"
-        prompt += "     * `/scikit/anomaly_detection/contamination` (0.01-0.5, default: 0.1) - Expected proportion of outliers\n"
-        prompt += "     * `/scikit/anomaly_detection/n_estimators` (10-500, default: 100) - Number of estimators in forest\n"
-        prompt += "   - **Dimensionality Reduction Parameters** (visualize trait space):\n"
-        prompt += "     * `/scikit/dimensionality_reduction/enabled` (true/false, default: true) - Enable PCA/t-SNE\n"
-        prompt += "     * `/scikit/dimensionality_reduction/algorithm` (string, default: \"pca\") - Algorithm: \"pca\", \"tsne\"\n"
-        prompt += "     * `/scikit/dimensionality_reduction/n_components` (2-10, default: 3) - Number of output dimensions\n"
-        prompt += "     * `/scikit/dimensionality_reduction/tsne_perplexity` (5-50, default: 30) - t-SNE perplexity parameter\n"
-        prompt += "   - **Example Scikit-learn Config Updates**:\n"
-        prompt += "     * Enable ML system: [[CONFIG_UPDATE: {\"reason\": \"Activate ML analysis\", \"correlation_id\": \"ml-activation\", \"patch\": [{\"op\": \"replace\", \"path\": \"/scikit/enabled\", \"value\": true}]}]]\n"
-        prompt += "     * Fine-tune clustering: [[CONFIG_UPDATE: {\"reason\": \"Smaller clusters\", \"correlation_id\": \"cluster-tune\", \"patch\": [{\"op\": \"replace\", \"path\": \"/scikit/clustering/min_cluster_size\", \"value\": 3}]}]]\n"
-        prompt += "     * Increase anomaly sensitivity: [[CONFIG_UPDATE: {\"reason\": \"Find more outliers\", \"correlation_id\": \"anomaly-boost\", \"patch\": [{\"op\": \"replace\", \"path\": \"/scikit/anomaly_detection/contamination\", \"value\": 0.2}]}]]\n"
-        prompt += "     * Switch to t-SNE: [[CONFIG_UPDATE: {\"reason\": \"Better visualization\", \"correlation_id\": \"tsne-viz\", \"patch\": [{\"op\": \"replace\", \"path\": \"/scikit/dimensionality_reduction/algorithm\", \"value\": \"tsne\"}]}]]\n"
-        prompt += "   - **Scikit-learn Monitoring**: After ML config changes, monitor:\n"
-        prompt += "     * Cluster count and distribution (are organisms grouping meaningfully?)\n"
-        prompt += "     * Anomaly detection rate (how many outliers are being flagged?)\n"
-        prompt += "     * Dimensionality reduction quality (are distinct groups visible in reduced space?)\n\n"
+        prompt += "#### Scikit-learn ML System (READ-ONLY for most params)\n"
+        prompt += "   - **Overview**: The Scikit-learn ML system provides classical machine learning algorithms for population analysis.\n"
+        prompt += "   - **NOTE**: Most scikit params are meta-tuner managed (min_cluster_size, contamination, n_estimators).\n"
+        prompt += "   - **You CAN observe**: Cluster counts, anomaly rates, dimensionality reduction visualizations.\n"
+        prompt += "   - **You CAN toggle**: `/scikit/enabled` master toggle only (not the individual algorithm params).\n\n"
         
-        prompt += "#### Causation Detection ⭐ NEW\n"
-        prompt += "   - **Causation Detection Parameters** (control how causation links are detected and created):\n"
-        prompt += "     * **Time Windows** (control how far apart events can be to still be linked):\n"
-        prompt += "       - `/causation_detection/direct_causation_time_window` (0.1-10.0 seconds, default: 1.0) - Maximum time between events for direct causation\n"
-        prompt += "       - `/causation_detection/phase_transition_time_window` (0.5-10.0 seconds, default: 2.0) - Maximum time for phase transition links\n"
-        prompt += "     * **Detection Scope** (control which events are checked):\n"
-        prompt += "       - `/causation_detection/recent_events_window` (10-1000 events, default: 100) - How many recent events to check for causation\n"
-        prompt += "     * **Sensitivity** (control how strict causation detection is):\n"
-        prompt += "       - `/causation_detection/correlation_threshold` (0.0-1.0, default: 0.7) - Minimum correlation strength to create link\n"
+        prompt += "#### Causation Detection (Limited Control)\n"
+        prompt += "   - **You CAN toggle**: `/causation_detection/enable_*` flags to turn on/off causation types.\n"
+        prompt += "   - **You CANNOT modify**: `/causation_detection/correlation_threshold` - meta-tuner managed.\n"
+        prompt += "   - **Time windows**: Can be adjusted but prefer to let the system stabilize before tuning.\n\n"
         prompt += "     * **Feature Toggles** (enable/disable specific causation types):\n"
         prompt += "       - `/causation_detection/enable_neural_causations` (true/false, default: true) - Master toggle for all neural event causation links\n"
         prompt += "       - `/causation_detection/enable_neural_decision_causations` (true/false, default: true) - Enable neural decision event links (thought → action)\n"
