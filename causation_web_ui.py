@@ -3342,7 +3342,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "     * **Enable/Disable**: `/neural/enabled` (true/false) - Turn neural system on/off\n"
         prompt += "     * **Device**: `/neural/device` (\"cpu\" or \"cuda\") - Select computation device\n"
         prompt += "     * **Brain Architecture**:\n"
-        prompt += "       - `/neural/brain/input_dim` (integer, default: 28) - Input feature dimensions (25 base + 3 self-perception)\n"
+        prompt += "       - `/neural/brain/input_dim` (integer, default: 30) - Input feature dimensions\n"
         prompt += "       - `/neural/brain/hidden_dim` (integer, typically 64) - Hidden layer size\n"
         prompt += "       - `/neural/brain/output_dim` (integer, typically 6) - Action space size\n"
         prompt += "       - `/neural/brain/vocab_size` (integer, default: 12288) - Vocabulary size for language head token generation\n"

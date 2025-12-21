@@ -704,7 +704,7 @@ class StandaloneButterflyChat:
                 fitness=member_data.get('fitness', 1.0),
                 personality=behavioral.get('personality_label', 'unknown'),
                 behavioral_tendencies=behavioral.get('behavioral_tendencies', {}),
-                input_dim=member_data.get('input_dim', 25),  # Default matches config.json
+                input_dim=member_data.get('input_dim', 30),  # Default matches config.json
                 output_dim=member_data.get('output_dim', 6),
                 has_language_head=member_has_lang,
                 brain_index=idx

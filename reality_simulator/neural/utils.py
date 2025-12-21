@@ -240,7 +240,7 @@ def create_brain(config: Dict[str, Any], silent: bool = False):
         _brain_creation_counter['logged_config'] = True
     
     brain = OrganismBrain(
-        input_dim=brain_config.get('input_dim', 25),
+        input_dim=brain_config.get('input_dim', 30),
         hidden_dim=brain_config.get('hidden_dim', 64),
         output_dim=brain_config.get('output_dim', 6),
         activation=brain_config.get('activation', 'relu'),
@@ -322,7 +322,7 @@ def create_brain(config: Dict[str, Any], silent: bool = False):
 # These are the canonical defaults that MUST match config.json
 # Changing config.json values for these will break saved model loading!
 ARCHITECTURE_DEFAULTS = {
-    'neural.brain.input_dim': 25,
+    'neural.brain.input_dim': 30,
     'neural.brain.hidden_dim': 64,
     'neural.brain.output_dim': 6,
     'neural.brain.vocab_size': 1000,
@@ -359,10 +359,10 @@ def validate_architecture_config(config: Dict[str, Any], strict: bool = False) -
     
     # Check each architecture parameter
     # NOTE: Expected values should match config.json defaults
-    # Updated 2025-12-12: input_dim now 25 (base features, self-perception disabled)
+    # Updated 2025-12-12: input_dim now 30 (base features)
     # Updated 2025-12-12: num_key_compositions now 30 (increased for richer concepts)
     checks = [
-        ('neural.brain.input_dim', brain_config.get('input_dim'), 25),
+        ('neural.brain.input_dim', brain_config.get('input_dim'), 30),
         ('neural.brain.hidden_dim', brain_config.get('hidden_dim'), 64),
         ('neural.brain.output_dim', brain_config.get('output_dim'), 6),
         ('neural.brain.vocab_size', brain_config.get('vocab_size'), 10000),  # Organism max vocab

@@ -137,7 +137,7 @@ class AgentVisualizer:
                 pass
         
         # Default fallback
-        return 25  # Matches config.json neural.brain.input_dim (25 base features)
+        return 30  # Matches config.json neural.brain.input_dim (30 base features)
     
     def predict(self, state: list) -> dict:
         """Run inference and return Q-values and action."""

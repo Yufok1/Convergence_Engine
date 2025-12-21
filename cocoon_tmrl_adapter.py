@@ -528,7 +528,7 @@ class CocoonActorModule:
         
         # Get brain architecture info
         sample_brain = self.cocoon.brains[0]
-        self.organism_input_dim = getattr(sample_brain, 'input_dim', 25)
+        self.organism_input_dim = getattr(sample_brain, 'input_dim', 30)
         self.organism_output_dim = getattr(sample_brain, 'output_dim', 4)
         
         # Move all brains to device

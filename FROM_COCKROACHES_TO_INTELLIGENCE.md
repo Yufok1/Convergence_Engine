@@ -40,7 +40,7 @@ This section names concrete modules and config knobs that implement the behavior
 
 - The core model is `OrganismBrain`.
 - Default constructor parameters include:
-  - `input_dim=25`
+  - `input_dim=30`
   - `hidden_dim=64`
   - `output_dim=6`
   - `vocab_size=10000`

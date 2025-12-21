@@ -74,7 +74,7 @@ _CONFIG_LOADED = False
 def get_global_config() -> Dict[str, Any]:
     """
     Load and cache config.json once.
-    Call this instead of hardcoding values like input_dim=25.
+    Call this instead of hardcoding values like input_dim=30.
     
     Usage:
         from runtime_config import get_global_config

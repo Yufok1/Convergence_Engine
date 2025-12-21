@@ -21,7 +21,7 @@ cocoon_caps = {}
 print("\n[1] NEURAL BRAIN (OrganismBrain)")
 try:
     from reality_simulator.neural.brain import OrganismBrain
-    brain = OrganismBrain(input_dim=25, hidden_dim=64, output_dim=6)
+    brain = OrganismBrain(input_dim=30, hidden_dim=64, output_dim=6)
     butterfly_caps['brain'] = {
         'class': 'OrganismBrain',
         'attributes': [a for a in dir(brain) if not a.startswith('_')],

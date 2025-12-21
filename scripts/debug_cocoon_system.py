@@ -34,7 +34,7 @@ try:
     import torch
     
     brain = OrganismBrain(
-        input_dim=28,  # Matches config.json (25 base + 3 attractor sensing)
+        input_dim=30,  # Matches config.json
         hidden_dim=128, 
         output_dim=6,
         vocab_size=1000,

@@ -31,7 +31,7 @@ The Convergence Engine is an evolutionary AI simulation where neural organisms c
 │  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐                   │
 │  │   ORGANISM   │───▶│    BRAIN     │───▶│   DECISION   │                   │
 │  │  (Genotype/  │    │ (OrganismBrain)   │  (Action 0-5) │                   │
-│  │  Phenotype)  │    │  input_dim=25│    │              │                   │
+│  │  Phenotype)  │    │  input_dim=30│    │              │                   │
 │  └──────────────┘    └──────────────┘    └──────────────┘                   │
 │         │                   │                   │                            │
 │         ▼                   ▼                   ▼                            │
@@ -427,7 +427,7 @@ unified_entry.py
 These have been fixed before but may have regressed:
 ```python
 # CORRECT VALUES (from config.json):
-input_dim = 25          # NOT 24, NOT 28
+input_dim = 30          # NOT 24, NOT 25, NOT 28
 gamma = 0.995           # NOT 0.99
 vocab_size = 20000      # NOT 1000
 memory_size = 20000     # NOT 1000, NOT 10000

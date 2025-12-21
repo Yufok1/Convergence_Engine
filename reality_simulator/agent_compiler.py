@@ -1148,7 +1148,7 @@ class AgentCompiler:
             org_id = self._get_organism_id(capsule)
             
             # Get architecture details
-            input_dim = getattr(brain, 'input_dim', config.get('input_dim', 25))
+            input_dim = getattr(brain, 'input_dim', config.get('input_dim', 30))
             hidden_dim = getattr(brain, 'hidden_dim', config.get('hidden_dim', 64))
             output_dim = getattr(brain, 'output_dim', config.get('output_dim', 6))
             use_language = getattr(brain, 'use_language_head', False)
@@ -2924,7 +2924,7 @@ if __name__ == "__main__":
                 zf.writestr("atomic_config.json", json.dumps(capsule.config.to_dict(), indent=2))
             
             # 5. Bridge Config (JSON) - Critical for AgentBridge to know state dimensions
-            input_dim = metadata.get('neural_network', {}).get('architecture', {}).get('input_size', 25))
+            input_dim = metadata.get('neural_network', {}).get('architecture', {}).get('input_size', 30)
             arch_info = metadata.get('neural_network', {}).get('architecture', {})
             bridge_config = {
                 'state_dim': input_dim,
@@ -4033,7 +4033,7 @@ done
             zf.writestr("metadata.json", json.dumps(metadata, indent=2))
             
             # Bridge Config (JSON) - Critical for AgentBridge to know state dimensions
-            max_input_dim = metadata.get('ensemble', {}).get('max_input_dim', 25)
+            max_input_dim = metadata.get('ensemble', {}).get('max_input_dim', 30)
             # Check if any brain in ensemble has language head from metadata
             members = metadata.get('ensemble', {}).get('members', [])
             any_language_head = any(m.get('has_language_head', False) for m in members)
@@ -5549,7 +5549,7 @@ if __name__ == '__main__':
                     'generated': datetime.datetime.now().isoformat(),
                     'organism_id': self._get_organism_id(capsules[0]),
                     'brain_config': {
-                        'input_dim': getattr(brain, 'input_dim', 25),
+                        'input_dim': getattr(brain, 'input_dim', 30),
                         'hidden_dim': getattr(brain, 'hidden_dim', 64),
                         'output_dim': getattr(brain, 'output_dim', 6),
                         'use_language_head': getattr(brain, 'use_language_head', False),
@@ -5593,7 +5593,7 @@ if __name__ == '__main__':
                 ts_buffer = BytesIO()
                 try:
                     brain.eval()
-                    input_dim = getattr(brain, 'input_dim', 25)
+                    input_dim = getattr(brain, 'input_dim', 30)
                     dummy_input = torch.randn(1, input_dim, device='cpu')
                     traced = torch.jit.trace(brain, (dummy_input,))
                     torch.jit.save(traced, ts_buffer)
@@ -5635,7 +5635,7 @@ if __name__ == '__main__':
                     'organism_id': self._get_organism_id(capsules[0]),
                     'organism_count': len(capsules),
                     'brain_config': {
-                        'input_dim': getattr(brain, 'input_dim', 25),
+                        'input_dim': getattr(brain, 'input_dim', 30),
                         'hidden_dim': getattr(brain, 'hidden_dim', 64),
                         'output_dim': getattr(brain, 'output_dim', 6),
                         'use_language_head': getattr(brain, 'use_language_head', False),
@@ -6682,7 +6682,7 @@ Learn more: [Convergence Engine on GitHub](https://github.com/Yufok1/Convergence
             has_lang = '✅' if cfg.get('use_language_head') else '❌'
             fitness = cfg.get('fitness', 0)
             fitness_str = f"{fitness:.4f}" if isinstance(fitness, float) else str(fitness)
-            org_table += f"| {i+1} | `{org_id}` | {cfg.get('input_dim', 25)} | {cfg.get('hidden_dim', 64)} | {cfg.get('output_dim', 6)} | {has_lang} | {fitness_str} |\n"
+            org_table += f"| {i+1} | `{org_id}` | {cfg.get('input_dim', 30)} | {cfg.get('hidden_dim', 64)} | {cfg.get('output_dim', 6)} | {has_lang} | {fitness_str} |\n"
         
         return f"""# 🦋 Butterfly Cocoon - ONNX Package
 
@@ -6773,7 +6773,7 @@ std::vector<float> input_data(25, 0.0f);
 ## 🔬 Architecture
 
 ```
-Input [{metadata.get('max_input_dim', 25)} dims]
+Input [{metadata.get('max_input_dim', 30)} dims]
      │
      ├── Brain 1 ──→ Q-values [{metadata.get('max_output_dim', 6)} actions]
      ├── Brain 2 ──→ Q-values
@@ -7722,7 +7722,7 @@ def interactive_mode(model, model_type: str, metadata: dict):
     print("=" * 50)
     
     import numpy as np
-    max_dim = metadata.get('max_input_dim', 25)
+    max_dim = metadata.get('max_input_dim', 30)
     
     while True:
         try:
@@ -7761,7 +7761,7 @@ def http_mode(model, model_type: str, metadata: dict, port: int):
     @app.route('/predict', methods=['POST'])
     def predict():
         data = request.get_json()
-        state = data.get('state', [0.0] * metadata.get('max_input_dim', 25))
+        state = data.get('state', [0.0] * metadata.get('max_input_dim', 30))
         outputs = run_inference(model, model_type, state)
         return jsonify({
             'outputs': [out.tolist() for out in outputs],
@@ -7785,7 +7785,7 @@ def gym_mode(model, model_type: str, metadata: dict, env_name: str, episodes: in
     """Run in Gymnasium or PLE environment."""
     import numpy as np
     
-    max_dim = metadata.get('max_input_dim', 25)
+    max_dim = metadata.get('max_input_dim', 30)
     
     # Check if this is a PLE game
     if '-PLE-' in env_name:
@@ -7881,7 +7881,7 @@ def run_ple_game(model, model_type: str, metadata: dict, env_name: str, episodes
     p = PLE(game, fps=30, display_screen=render, force_fps=not render)
     p.init()
     
-    max_dim = metadata.get('max_input_dim', 25)
+    max_dim = metadata.get('max_input_dim', 30)
     action_set = p.getActionSet()
     
     print(f"\\n🕹️  Running {game_name} (PLE) for {episodes} episodes")
@@ -7966,7 +7966,7 @@ if __name__ == '__main__':
             has_lang = '✅' if cfg.get('use_language_head') else '❌'
             fitness = cfg.get('fitness', 0)
             fitness_str = f"{fitness:.4f}" if isinstance(fitness, float) else str(fitness)
-            org_table += f"| {i+1} | `{org_id}` | {cfg.get('input_dim', 25)} | {cfg.get('hidden_dim', 64)} | {cfg.get('output_dim', 6)} | {has_lang} | {fitness_str} |\n"
+            org_table += f"| {i+1} | `{org_id}` | {cfg.get('input_dim', 30)} | {cfg.get('hidden_dim', 64)} | {cfg.get('output_dim', 6)} | {has_lang} | {fitness_str} |\n"
         
         # Export status
         onnx_status = "✅ Included" if export_results.get('onnx', {}).get('success') else "❌ Failed"
@@ -8213,7 +8213,7 @@ The tournament runs round-robin matches between all organisms, tracking wins/los
 ## 🔬 Architecture
 
 ```
-                    Input State Vector ({metadata.get('max_input_dim', 25)} dims)
+                    Input State Vector ({metadata.get('max_input_dim', 30)} dims)
                            │
            ┌───────────────┼───────────────┐
            │               │               │
@@ -8604,7 +8604,7 @@ pygame>=2.5.0        # Visual rendering
 
             # Build ONNX ensemble
             ensemble = EnsembleMeanWrapper(agent.brains).eval().cpu()
-            input_dim = getattr(agent.brains[0], 'input_dim', 25) if agent.brains else 25
+            input_dim = getattr(agent.brains[0], 'input_dim', 30) if agent.brains else 30
             dummy = torch.randn(1, input_dim, device='cpu')
             onnx_path = os.path.join(output_dir, 'ensemble.onnx')
             torch.onnx.export(
@@ -10086,7 +10086,7 @@ class CocoonAgent:
 
     def _pad_state(self, state: np.ndarray) -> np.ndarray:
         """Pad state to match brain input_dim. Handles gym envs with smaller state spaces."""
-        expected_dim = self.brains[0].input_dim if self.brains else 25
+        expected_dim = self.brains[0].input_dim if self.brains else 30
         state = np.asarray(state, dtype=np.float32).flatten()
         if len(state) < expected_dim:
             # Pad with zeros to match brain input dimension
@@ -10912,7 +10912,7 @@ class CocoonAgent:
         
         try:
             # Use trace instead of script - more compatible with complex models
-            input_dim = getattr(brain, 'input_dim', 25)
+            input_dim = getattr(brain, 'input_dim', 30)
             dummy_input = torch.randn(1, input_dim)
             traced = torch.jit.trace(brain, (dummy_input,))
             traced.save(output_path)
@@ -11109,7 +11109,7 @@ class CocoonAgent:
         for i, cfg in enumerate(metadata['architecture'].get('brain_configs', [])):
             name = cfg.get('organism_id', f'org_{i}')
             fitness = metadata['organism_fitness'][i] if i < len(metadata['organism_fitness']) else 1.0
-            organism_table += f"| {name} | {fitness:.3f} | {cfg.get('input_dim', 25)} | {cfg.get('hidden_dim', 64)} | {cfg.get('output_dim', 6)} | {'✅' if cfg.get('use_language_head') else '❌'} |\n"
+            organism_table += f"| {name} | {fitness:.3f} | {cfg.get('input_dim', 30)} | {cfg.get('hidden_dim', 64)} | {cfg.get('output_dim', 6)} | {'✅' if cfg.get('use_language_head') else '❌'} |\n"
         
         readme = f"""# 🦋 Butterfly Cocoon - Neural Network Model Card
 
@@ -13349,7 +13349,7 @@ def run_http_server(agent: CocoonAgent, port: int = 8080):
         learn = data.get('learn', True)
         
         # Get current VP value for reward calculation
-        input_dim = agent.brains[0].input_dim if agent.brains else 25
+        input_dim = agent.brains[0].input_dim if agent.brains else 30
         vp_info = agent.vp_runtime.compute_from_state(
             np.zeros(input_dim, dtype=np.float32),  # Dynamic input_dim from brain config
             agent.reward_history
@@ -13867,7 +13867,7 @@ Examples:
             print("└────────────────────────────────────────────────────────────┘")
             
             # Get VP value for semantic reward calculation (BEFORE generation)
-            input_dim = agent.brains[0].input_dim if agent.brains else 25
+            input_dim = agent.brains[0].input_dim if agent.brains else 30
             vp_info = agent.vp_runtime.compute_from_state(
                 np.zeros(input_dim, dtype=np.float32),  # Dynamic input_dim from brain config
                 agent.reward_history
@@ -14416,7 +14416,7 @@ if __name__ == '__main__':
     
     # Setup dummy brain and organism for testing
     dummy_brain_arch = {
-        'input_dim': 25,
+        'input_dim': 30,
         'hidden_dim': 64,
         'output_dim': 6,
         'activation': 'relu',

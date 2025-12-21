@@ -596,7 +596,7 @@ class NeuralOrganism(Organism):
         features.extend(wisdom_vec.tolist())
         
         # Ensure we have exactly input_dim features
-        input_dim = self.config.get('neural', {}).get('brain', {}).get('input_dim', 25)
+        input_dim = self.config.get('neural', {}).get('brain', {}).get('input_dim', 30)
         feature_array = np.array(features[:input_dim], dtype=np.float32)
         
         # Pad or truncate to match input_dim

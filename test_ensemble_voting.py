@@ -192,7 +192,7 @@ def test_process_with_mock_ensemble():
         voting_strategy="fitness_weighted",
         member_fitness=[1.0, 0.8, 1.2],
         member_ids=["org_1", "org_2", "org_3"],
-        state_dim=25  # Matches config.json neural.brain.input_dim
+        state_dim=30  # Matches config.json neural.brain.input_dim
     )
     bridge = AgentBridge(config=config)
     
