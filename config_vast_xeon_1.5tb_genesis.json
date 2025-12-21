@@ -236,7 +236,7 @@
     "weight_sustainability": 0.10
   },
   "highlander": {
-    "eval_interval_seconds": 1200,
+    "eval_interval_seconds": 300,
     "_eval_interval_seconds_help": "BOOM-BUST WAVES: 20-minute growth periods between Highlander concentration waves (aligned with Shadow config). Mega-RAM + 88 CPU threads.",
     "alliance_warfare": {
       "betrayal_chance": 0.0,
@@ -637,7 +637,7 @@
         "type": "cosine",
         "warmup_steps": 100
       },
-      "memory_size": 1500000,
+      "memory_size": 1000000000,
       "_memory_size_help": "1.5TB RAM = 1.5M replay buffer",
       "update_frequency": 1
     },
