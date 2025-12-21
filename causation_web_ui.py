@@ -8062,6 +8062,178 @@ def list_alliances():
         return jsonify({'error': str(e)}), 500
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# VOCABULARY LIBRARY - Database-style catalog of organism vocabulary
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@app.route('/api/organism/<organism_id>/vocabulary')
+def get_organism_vocabulary(organism_id):
+    """
+    Get paginated, searchable vocabulary library for a specific organism.
+    
+    Query params:
+        page: Page number (default 1)
+        per_page: Items per page (default 50, max 200)
+        search: Search term for word filtering
+        frame: Filter by semantic_frame (action, relationship, state, quality, etc.)
+        source: Filter by source (innate, observed, taught, discovered, mutated)
+        sort: Sort field (magnetism, strength, usage_count, word) 
+        order: Sort order (asc, desc - default desc)
+        oscillating: Filter oscillating words only (true/false)
+    
+    Returns:
+        - items: List of vocabulary entries for current page
+        - total: Total matching items
+        - page: Current page
+        - per_page: Items per page
+        - pages: Total pages
+        - filters: Available filter options with counts
+    """
+    try:
+        # Parse query params
+        page = max(1, int(request.args.get('page', 1)))
+        per_page = min(200, max(1, int(request.args.get('per_page', 50))))
+        search = request.args.get('search', '').strip().lower()
+        frame_filter = request.args.get('frame', '')
+        source_filter = request.args.get('source', '')
+        sort_field = request.args.get('sort', 'magnetism')
+        sort_order = request.args.get('order', 'desc')
+        oscillating_only = request.args.get('oscillating', '').lower() == 'true'
+        
+        # Get organism
+        organism = None
+        if hasattr(app, 'unified_system') and app.unified_system:
+            if hasattr(app.unified_system, 'get_current_organisms'):
+                organisms = app.unified_system.get_current_organisms()
+                organism = organisms.get(organism_id)
+        
+        if not organism:
+            return jsonify({
+                'error': f'Organism {organism_id} not found',
+                'items': [],
+                'total': 0,
+                'page': 1,
+                'per_page': per_page,
+                'pages': 0
+            }), 404
+        
+        # Check for atomic_language
+        if not hasattr(organism, 'atomic_language') or not organism.atomic_language:
+            return jsonify({
+                'items': [],
+                'total': 0,
+                'page': 1,
+                'per_page': per_page,
+                'pages': 0,
+                'filters': {'frames': {}, 'sources': {}},
+                'message': 'Organism has no atomic language system'
+            })
+        
+        al = organism.atomic_language
+        
+        # Build vocabulary list with all data
+        all_vocab = []
+        frame_counts = {}
+        source_counts = {}
+        
+        for word, atom in al.atoms.items():
+            try:
+                # Get associations
+                assoc_list = []
+                for target, assoc in getattr(atom, 'associations', {}).items():
+                    try:
+                        assoc_list.append({
+                            'target': str(target),
+                            'strength': round(float(getattr(assoc, 'strength', 0.0)), 3),
+                            'reason': str(getattr(assoc, 'formation_reason', 'unknown')),
+                            'resonance': round(float(assoc.resonance_frequency()), 3) if hasattr(assoc, 'resonance_frequency') else 0.0,
+                            'is_forbidden': bool(assoc.is_forbidden()) if hasattr(assoc, 'is_forbidden') else False
+                        })
+                    except:
+                        pass
+                assoc_list.sort(key=lambda x: x['strength'], reverse=True)
+                
+                # Calculate outcome sentiment
+                outcome_history = getattr(atom, 'outcome_history', []) or []
+                avg_outcome = sum(outcome_history) / len(outcome_history) if outcome_history else 0.0
+                
+                # Get values
+                semantic_frame = str(getattr(atom, 'semantic_frame', 'unknown'))
+                source = str(getattr(atom, 'source', 'unknown'))
+                is_osc = bool(atom.is_oscillating()) if hasattr(atom, 'is_oscillating') else False
+                
+                # Count for filters
+                frame_counts[semantic_frame] = frame_counts.get(semantic_frame, 0) + 1
+                source_counts[source] = source_counts.get(source, 0) + 1
+                
+                entry = {
+                    'word': str(word),
+                    'strength': round(float(getattr(atom, 'strength', 0.5)), 3),
+                    'magnetism': round(float(getattr(atom, 'curiosity_magnetism', 0.5)), 3),
+                    'base_magnetism': round(float(getattr(atom, 'base_magnetism', 0.5)), 3),
+                    'source': source,
+                    'semantic_frame': semantic_frame,
+                    'usage_count': int(getattr(atom, 'usage_count', 0)),
+                    'satiation': round(float(getattr(atom, 'satiation_level', 0.0)), 3),
+                    'avg_outcome': round(float(avg_outcome), 3),
+                    'is_oscillating': is_osc,
+                    'associations': assoc_list,
+                    'association_count': len(assoc_list)
+                }
+                all_vocab.append(entry)
+            except Exception as e:
+                logger.warning(f"Error processing word {word}: {e}")
+                continue
+        
+        # Apply filters
+        filtered = all_vocab
+        
+        if search:
+            filtered = [v for v in filtered if search in v['word'].lower()]
+        
+        if frame_filter:
+            filtered = [v for v in filtered if v['semantic_frame'] == frame_filter]
+        
+        if source_filter:
+            filtered = [v for v in filtered if v['source'] == source_filter]
+        
+        if oscillating_only:
+            filtered = [v for v in filtered if v['is_oscillating']]
+        
+        # Sort
+        reverse = sort_order == 'desc'
+        if sort_field == 'word':
+            filtered.sort(key=lambda x: x['word'].lower(), reverse=reverse)
+        elif sort_field in ['magnetism', 'strength', 'usage_count', 'avg_outcome', 'satiation', 'association_count']:
+            filtered.sort(key=lambda x: x.get(sort_field, 0), reverse=reverse)
+        else:
+            filtered.sort(key=lambda x: x.get('magnetism', 0), reverse=True)
+        
+        # Paginate
+        total = len(filtered)
+        pages = (total + per_page - 1) // per_page
+        start = (page - 1) * per_page
+        end = start + per_page
+        items = filtered[start:end]
+        
+        return jsonify({
+            'items': items,
+            'total': total,
+            'page': page,
+            'per_page': per_page,
+            'pages': pages,
+            'organism_id': organism_id,
+            'filters': {
+                'frames': frame_counts,
+                'sources': source_counts
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting vocabulary for {organism_id}: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/capsules')
 def list_capsules():
     """List all available capsules (works with or without unified system)."""
