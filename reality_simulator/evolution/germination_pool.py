@@ -68,6 +68,10 @@ class GeneticMaterial:
     # Trait essence
     traits: Dict[str, float] = field(default_factory=dict)
     
+    # Mastery essence
+    mastery_level: int = 0
+    total_experiences: int = 0
+    
     # Battle record (for fitness weighting)
     victories: int = 0
     defeats: int = 1  # They lost at least once to be here
@@ -159,6 +163,10 @@ class GerminationCandidate:
     config_template: Dict[str, Any] = field(default_factory=dict)
     trait_template: Dict[str, float] = field(default_factory=dict)
     vocabulary_words: List[str] = field(default_factory=list)  # RESTORED: Full vocabulary inheritance
+    
+    # Mastery inheritance
+    mastery_level: int = 0
+    total_experiences: int = 0
     
     # ═══════════════════════════════════════════════════════════════════════════
     # MAGNETISM INHERITANCE - Attractor landscape from parents
@@ -324,6 +332,11 @@ class GerminationPool:
                     vocab_words = list(set(vocab_words) | set(org_words))
         
         material.vocabulary_sample = vocab_words  # FULL vocab - they earned it
+        
+        # Extract mastery and experiences
+        if hasattr(organism, 'atomic_language') and organism.atomic_language:
+            material.mastery_level = getattr(organism.atomic_language, '_mastery_level', 0)
+            material.total_experiences = getattr(organism.atomic_language, '_total_experiences', 0)
                 
         # Extract config atoms
         if hasattr(organism, 'config'):
@@ -354,13 +367,14 @@ class GerminationPool:
             lang_system = organism.linguistic_atoms
             if hasattr(lang_system, 'atoms'):
                 for concept_id, atom in lang_system.atoms.items():
-                    # Extract magnetism state
+                    # Extract magnetism state (includes activation count for mastery breadth)
                     material.magnetism_states[concept_id] = {
                         'base_magnetism': getattr(atom, 'base_magnetism', 0.5),
                         'curiosity_magnetism': getattr(atom, 'curiosity_magnetism', 0.5),
                         'outcome_history': getattr(atom, 'outcome_history', [])[-10:],
                         'satiation_level': getattr(atom, 'satiation_level', 0.0),
-                        'strength': getattr(atom, 'strength', 0.5)
+                        'strength': getattr(atom, 'strength', 0.5),
+                        'recent_activation_count': getattr(atom, 'recent_activation_count', 0)
                     }
                     # Extract association strengths
                     if hasattr(atom, 'associations') and atom.associations:
@@ -532,6 +546,8 @@ class GerminationPool:
             'developmental_stage': developmental_stage,
             'age': getattr(organism, 'age', 0),
             'fitness': getattr(organism, 'fitness', 0.5),
+            'mastery_level': 0,
+            'total_experiences': 0,
             'neural_weights': None,
             'concepts': {},
             'traits': {},
@@ -560,6 +576,11 @@ class GerminationPool:
         # Capture config
         if hasattr(organism, 'config'):
             snapshot['config'] = dict(organism.config)
+        
+        # Capture mastery
+        if hasattr(organism, 'atomic_language') and organism.atomic_language:
+            snapshot['mastery_level'] = getattr(organism.atomic_language, '_mastery_level', 0)
+            snapshot['total_experiences'] = getattr(organism.atomic_language, '_total_experiences', 0)
         
         # CAPTURE MAGNETISM - Bonds that persist across death
         if hasattr(organism, 'linguistic_atoms') and organism.linguistic_atoms:
@@ -763,6 +784,8 @@ class GerminationPool:
         candidate.concept_seed = dict(parent.concepts)
         candidate.config_template = dict(parent.config_atoms)
         candidate.trait_template = dict(parent.traits)
+        candidate.mastery_level = parent.mastery_level
+        candidate.total_experiences = parent.total_experiences
         
         # GROUNDED MODE: Skip vocabulary inheritance - organisms must earn vocabulary
         grounded_enabled = self.config.get('language', {}).get('grounded', {}).get('enabled', False)
@@ -808,6 +831,10 @@ class GerminationPool:
         
         # Crossover traits (weighted average)
         candidate.trait_template = self._crossover_traits(parent1, parent2)
+        
+        # Crossover mastery (take max - they share knowledge)
+        candidate.mastery_level = max(parent1.mastery_level, parent2.mastery_level)
+        candidate.total_experiences = max(parent1.total_experiences, parent2.total_experiences)
         
         # GROUNDED MODE: Skip vocabulary inheritance - organisms must earn vocabulary
         grounded_enabled = self.config.get('language', {}).get('grounded', {}).get('enabled', False)
@@ -1080,6 +1107,10 @@ class GerminationPool:
         p2_stage = parent2.developmental_stage
         max_stage = max(p1_stage, p2_stage)
         
+        # 4. Mastery: max(parents)
+        candidate.mastery_level = max(parent1.mastery_level, parent2.mastery_level)
+        candidate.total_experiences = max(parent1.total_experiences, parent2.total_experiences)
+        
         # Blend configs
         blended_config = {}
         for key in set(parent1.config_atoms.keys()) | set(parent2.config_atoms.keys()):
@@ -1225,6 +1256,11 @@ class GerminationPool:
             candidate.config_template = capsule.config_snapshot
         if hasattr(capsule, 'trait_snapshot'):
             candidate.trait_template = capsule.trait_snapshot
+        
+        # RESTORE MASTERY: Phoenix rises with their rank and experience intact
+        candidate.mastery_level = getattr(capsule, 'mastery_level', 0)
+        candidate.total_experiences = getattr(capsule, 'total_experiences', 0)
+        
         # RESTORE VOCABULARY: Phoenix rises with ALL their words
         if hasattr(capsule, 'vocabulary_words'):
             candidate.vocabulary_words = list(capsule.vocabulary_words)
@@ -1315,7 +1351,7 @@ class GerminationPool:
         if snapshot.get('traits'):
             candidate.trait_template = dict(snapshot['traits'])
         else:
-            # Default traits for young organism
+            # ...
             candidate.trait_template = {
                 'aggression': 0.3 + random.random() * 0.2,
                 'cooperation': 0.4 + random.random() * 0.2,
@@ -1323,6 +1359,10 @@ class GerminationPool:
                 'resilience': 0.3 + random.random() * 0.2,
                 'innovation': 0.5 + random.random() * 0.3    # Young = innovative
             }
+        
+        # Restore mastery from snapshot
+        candidate.mastery_level = snapshot.get('mastery_level', 0)
+        candidate.total_experiences = snapshot.get('total_experiences', 0)
         
         # MAGNETISM INHERITANCE from snapshot
         if snapshot.get('magnetism_states'):
@@ -1593,6 +1633,16 @@ class GerminationPool:
             if candidate.concept_seed and hasattr(organism, 'concepts'):
                 organism.concepts.update(candidate.concept_seed)
             
+            # APPLY MASTERY: Restore rank and experience before vocabulary restoration
+            # This ensures get_available_vocabulary() correctly includes inherited words
+            if hasattr(organism, 'atomic_language') and organism.atomic_language:
+                # Use the property setter to trigger vocabulary expansion if needed
+                organism.atomic_language.mastery_level = candidate.mastery_level
+                organism.atomic_language._total_experiences = candidate.total_experiences
+                # Log the restoration
+                reincarnation_logger = logging.getLogger(__name__)
+                reincarnation_logger.info(f"   🎓 Mastery restored: Level {candidate.mastery_level} ({candidate.total_experiences} exp)")
+            
             # RESTORE VOCABULARY: Give them back ALL their words
             if candidate.vocabulary_words:
                 if hasattr(organism, 'vocabulary') and organism.vocabulary:
@@ -1614,11 +1664,12 @@ class GerminationPool:
                     for concept_id, mag_state in candidate.magnetism_template.items():
                         if concept_id in lang_system.atoms:
                             atom = lang_system.atoms[concept_id]
-                            # Apply inherited magnetism
+                            # Apply inherited magnetism (includes activation count for mastery breadth)
                             atom.base_magnetism = mag_state.get('base_magnetism', atom.base_magnetism)
                             atom.curiosity_magnetism = mag_state.get('curiosity_magnetism', atom.curiosity_magnetism)
                             atom.outcome_history = mag_state.get('outcome_history', [])
                             atom.satiation_level = mag_state.get('satiation_level', 0.0)
+                            atom.recent_activation_count = mag_state.get('recent_activation_count', 0)
                             if 'strength' in mag_state:
                                 atom.strength = mag_state['strength']
                         else:
@@ -1633,6 +1684,7 @@ class GerminationPool:
                                     curiosity_magnetism=mag_state.get('curiosity_magnetism', 0.5)
                                 )
                                 new_atom.outcome_history = mag_state.get('outcome_history', [])
+                                new_atom.recent_activation_count = mag_state.get('recent_activation_count', 0)
                                 # Wire event emitter from parent system
                                 new_atom._event_emitter = getattr(lang_system, '_event_emitter', None)
                                 new_atom._organism_id = getattr(lang_system, 'organism_id', None)
