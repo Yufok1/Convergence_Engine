@@ -664,8 +664,12 @@ class HighlanderProtocol:
         
         self.logger.info(f"🎯 MASTERY MATCHMAKING: {{{', '.join(f'{k}:{len(v)}' for k,v in sorted(mastery_pools.items()))}}}")
         
-        # Battle within each mastery tier
+        # Battle within each mastery tier (only mastery 4+ can compete in Highlander)
         for mastery_level, pool in mastery_pools.items():
+            if mastery_level < 4:
+                # Protect developing organisms - no Highlander battles until mastery 4
+                self.logger.debug(f"⏳ Mastery {mastery_level}: {len(pool)} organisms protected (need level 4+ for Highlander)")
+                continue
             if len(pool) < 2:
                 continue
             
@@ -773,11 +777,15 @@ class HighlanderProtocol:
             
             self.logger.info(f"🎯 RAY MASTERY MATCHMAKING: {{{', '.join(f'{k}:{len(v)}' for k,v in sorted(mastery_pools.items()))}}}")
             
-            # Phase 1: Collect all battle pairs within mastery tiers
+            # Phase 1: Collect all battle pairs within mastery tiers (only mastery 4+ can compete)
             battle_pairs = []
             battle_pair_ids = []
             
             for mastery_level, pool in mastery_pools.items():
+                if mastery_level < 4:
+                    # Protect developing organisms - no Highlander battles until mastery 4
+                    self.logger.debug(f"⏳ RAY Mastery {mastery_level}: {len(pool)} organisms protected (need level 4+ for Highlander)")
+                    continue
                 if len(pool) < 2:
                     continue
                 
