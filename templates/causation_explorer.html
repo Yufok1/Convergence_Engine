@@ -2562,6 +2562,1309 @@
             border: 1px solid var(--border-subtle);
         }
         
+        /* ═══════════════════════════════════════════════════════════════════════════
+           🔬 ORGANISM MICROSCOPE - Tabbed Inspector UI
+           ═══════════════════════════════════════════════════════════════════════════ */
+        .microscope-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.92);
+            backdrop-filter: blur(8px);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.2s ease-out;
+        }
+        
+        .microscope-container {
+            width: 98vw;
+            max-width: 1600px;
+            height: 95vh;
+            background: var(--bg-base);
+            border: 2px solid var(--accent-gold);
+            border-radius: var(--radius-lg);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 25px 100px rgba(0, 0, 0, 0.8), 0 0 60px rgba(255, 215, 0, 0.15);
+        }
+        
+        /* Microscope Header */
+        .microscope-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.12), transparent);
+            border-bottom: 1px solid var(--accent-gold-dim);
+        }
+        
+        .microscope-header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .microscope-header h2 {
+            font-size: 1.2em;
+            color: var(--accent-gold);
+            margin: 0;
+            font-family: var(--font-mono);
+            letter-spacing: 0.05em;
+        }
+        
+        .microscope-header .subtitle {
+            color: var(--text-muted);
+            font-size: 0.85em;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        
+        .microscope-header .subtitle .rarity-badge {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        
+        .microscope-header .subtitle .rarity-badge.legendary { background: rgba(255, 215, 0, 0.2); color: var(--rarity-legendary); }
+        .microscope-header .subtitle .rarity-badge.epic { background: rgba(170, 85, 255, 0.2); color: var(--rarity-epic); }
+        .microscope-header .subtitle .rarity-badge.rare { background: rgba(68, 136, 255, 0.2); color: var(--rarity-rare); }
+        .microscope-header .subtitle .rarity-badge.uncommon { background: rgba(0, 204, 102, 0.2); color: var(--rarity-uncommon); }
+        .microscope-header .subtitle .rarity-badge.common { background: rgba(85, 85, 102, 0.2); color: var(--rarity-common); }
+        
+        .microscope-close-btn {
+            background: transparent;
+            border: 1px solid var(--border-default);
+            color: var(--text-muted);
+            padding: 6px 14px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 1.1em;
+            transition: all var(--transition-fast);
+        }
+        
+        .microscope-close-btn:hover {
+            border-color: var(--danger);
+            color: var(--danger);
+            background: rgba(255, 68, 68, 0.1);
+        }
+        
+        /* Microscope Body - Sidebar + Content */
+        .microscope-body {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        /* Sidebar Tabs */
+        .microscope-tabs {
+            width: 140px;
+            background: var(--bg-elevated);
+            border-right: 1px solid var(--border-default);
+            display: flex;
+            flex-direction: column;
+            padding: 8px 0;
+        }
+        
+        .microscope-tab {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 16px;
+            cursor: pointer;
+            color: var(--text-muted);
+            font-size: 0.85em;
+            font-weight: 500;
+            border-left: 3px solid transparent;
+            transition: all var(--transition-fast);
+        }
+        
+        .microscope-tab:hover {
+            background: var(--bg-hover);
+            color: var(--text-secondary);
+        }
+        
+        .microscope-tab.active {
+            background: var(--bg-surface);
+            color: var(--accent-gold);
+            border-left-color: var(--accent-gold);
+        }
+        
+        .microscope-tab .icon { font-size: 1.2em; }
+        .microscope-tab .label { white-space: nowrap; }
+        
+        /* Main Content Area */
+        .microscope-content {
+            flex: 1;
+            overflow: auto;
+            background: var(--bg-base);
+        }
+        
+        /* Tab Pane */
+        .microscope-pane {
+            display: none;
+            height: 100%;
+        }
+        
+        .microscope-pane.active {
+            display: block;
+        }
+        
+        /* Overview Tab - Full content display with scrolling */
+        .microscope-overview {
+            padding: 24px 32px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-auto-rows: min-content;
+            gap: 24px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            height: 100%;
+            box-sizing: border-box;
+        }
+        
+        .microscope-overview .dossier-section {
+            cursor: default;
+            position: relative;
+            min-height: 180px;
+        }
+        
+        .microscope-overview .dossier-section.full-width {
+            grid-column: 1 / -1;
+        }
+        
+        .microscope-overview .dossier-section.two-thirds {
+            grid-column: span 1;
+        }
+        
+        .microscope-overview .dossier-section-body {
+            padding: 16px 20px;
+        }
+        
+        .microscope-overview .dossier-section[data-tab] {
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+        
+        .microscope-overview .dossier-section[data-tab]:hover {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
+        }
+        
+        .microscope-overview .dossier-section[data-tab]::after {
+            content: '→ Click for details';
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            color: var(--accent-cyan);
+            font-size: 0.75em;
+            opacity: 0;
+            transition: opacity var(--transition-fast);
+        }
+        
+        .microscope-overview .dossier-section[data-tab]:hover::after {
+            opacity: 1;
+        }
+        
+        /* Overview section content scaling */
+        .microscope-overview .stats-grid {
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+        
+        .microscope-overview .stat-box {
+            padding: 14px 10px;
+        }
+        
+        .microscope-overview .stat-box .value {
+            font-size: 1.4em;
+        }
+        
+        .microscope-overview .stat-box .label {
+            font-size: 0.7em;
+        }
+        
+        .microscope-overview .neural-grid {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        
+        .microscope-overview .neural-stat {
+            padding: 10px 12px;
+        }
+        
+        .microscope-overview .battle-record {
+            display: flex;
+            justify-content: space-around;
+            gap: 16px;
+        }
+        
+        .microscope-overview .battle-stat {
+            text-align: center;
+            padding: 12px 20px;
+        }
+        
+        .microscope-overview .battle-stat .value {
+            font-size: 1.8em;
+        }
+        
+        .microscope-overview .fingerprint-large {
+            gap: 16px;
+        }
+        
+        .microscope-overview .fingerprint-bar-large .bar-container {
+            height: 80px;
+        }
+        
+        .microscope-overview .fitness-chart-container {
+            height: 100px;
+        }
+        
+        .microscope-overview .action-history-full {
+            max-height: 80px;
+            overflow: hidden;
+        }
+        
+        .microscope-overview .identity-hero {
+            padding: 16px 20px;
+        }
+        
+        .microscope-overview .identity-core .identity-id {
+            font-size: 1em;
+        }
+        
+        .microscope-overview .identity-meta {
+            gap: 16px;
+        }
+        
+        /* Vocabulary Tab - Embedded vocab library */
+        .microscope-vocab {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .microscope-vocab .vocab-header {
+            border-radius: 0;
+        }
+        
+        .microscope-vocab .vocab-main {
+            flex: 1;
+        }
+        
+        /* Neural Tab - Master-Detail Layout like Vocab */
+        .microscope-neural {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        .neural-header {
+            padding: 16px 24px;
+            background: linear-gradient(135deg, rgba(170, 102, 255, 0.1), transparent);
+            border-bottom: 1px solid var(--border-default);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .neural-header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .neural-header h2 {
+            margin: 0;
+            font-size: 1.3em;
+            color: var(--accent-purple);
+        }
+        
+        .neural-header .subtitle {
+            color: var(--text-muted);
+            font-size: 0.85em;
+        }
+        
+        .neural-main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .neural-master {
+            width: 55%;
+            border-right: 1px solid var(--border-default);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .neural-table-wrap {
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .neural-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+        }
+        
+        .neural-table thead {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .neural-table th {
+            background: var(--bg-elevated);
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 2px solid var(--border-default);
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+        
+        .neural-table th:hover {
+            background: var(--bg-hover);
+            color: var(--accent-purple);
+        }
+        
+        .neural-table th.sorted-asc::after { content: ' ▲'; color: var(--accent-purple); }
+        .neural-table th.sorted-desc::after { content: ' ▼'; color: var(--accent-purple); }
+        
+        .neural-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+        }
+        
+        .neural-table tbody tr {
+            cursor: pointer;
+            transition: background var(--transition-fast);
+        }
+        
+        .neural-table tbody tr:hover {
+            background: var(--bg-hover);
+        }
+        
+        .neural-table tbody tr.selected {
+            background: rgba(170, 102, 255, 0.15);
+        }
+        
+        .neural-table .metric-name {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .neural-table .metric-name .icon {
+            font-size: 1.2em;
+        }
+        
+        .neural-table .metric-value {
+            font-family: var(--font-mono);
+            font-weight: 600;
+            color: var(--accent-purple);
+        }
+        
+        .neural-table .metric-value.highlight { color: var(--accent-gold); }
+        .neural-table .metric-value.positive { color: var(--positive); }
+        .neural-table .metric-value.warning { color: var(--accent-orange); }
+        .neural-table .metric-value.danger { color: var(--danger); }
+        
+        .neural-table .category-badge {
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: 500;
+        }
+        
+        .neural-table .category-badge.architecture { background: rgba(170, 102, 255, 0.2); color: var(--accent-purple); }
+        .neural-table .category-badge.memory { background: rgba(0, 200, 255, 0.2); color: var(--accent-cyan); }
+        .neural-table .category-badge.learning { background: rgba(255, 215, 0, 0.2); color: var(--accent-gold); }
+        .neural-table .category-badge.language { background: rgba(76, 175, 80, 0.2); color: var(--positive); }
+        
+        .neural-detail {
+            width: 45%;
+            background: var(--bg-elevated);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .neural-detail-empty {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .neural-detail-empty .icon { font-size: 4em; margin-bottom: 16px; opacity: 0.5; }
+        .neural-detail-empty .text { font-size: 1.1em; margin-bottom: 8px; }
+        .neural-detail-empty .hint { font-size: 0.85em; color: var(--text-tertiary); }
+        
+        .neural-detail-content {
+            padding: 24px;
+        }
+        
+        .neural-detail-content .detail-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .neural-detail-content .detail-header .icon { font-size: 2em; }
+        .neural-detail-content .detail-header h3 { margin: 0; color: var(--accent-purple); font-size: 1.3em; }
+        
+        .neural-detail-content .detail-value-box {
+            background: var(--bg-deep);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        
+        .neural-detail-content .detail-value-box .value {
+            font-family: var(--font-mono);
+            font-size: 3em;
+            font-weight: 700;
+            color: var(--accent-purple);
+        }
+        
+        .neural-detail-content .detail-value-box .unit {
+            font-size: 0.9em;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+        
+        .neural-detail-content .detail-description {
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin-bottom: 24px;
+            font-size: 0.95em;
+        }
+        
+        .neural-detail-content .detail-related {
+            background: var(--bg-deep);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+        }
+        
+        .neural-detail-content .detail-related h4 {
+            margin: 0;
+            padding: 12px 16px;
+            background: var(--bg-surface);
+            color: var(--text-muted);
+            font-size: 0.8em;
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        
+        .neural-detail-content .related-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        
+        .neural-detail-content .related-item:last-child { border-bottom: none; }
+        .neural-detail-content .related-item .label { color: var(--text-muted); }
+        .neural-detail-content .related-item .value { font-family: var(--font-mono); color: var(--text-primary); }
+        
+        /* Behavior Tab - Master-Detail Layout like Vocab */
+        .microscope-behavior {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        .behavior-header {
+            padding: 16px 24px;
+            background: linear-gradient(135deg, rgba(0, 200, 255, 0.1), transparent);
+            border-bottom: 1px solid var(--border-default);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .behavior-header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .behavior-header h2 {
+            margin: 0;
+            font-size: 1.3em;
+            color: var(--accent-cyan);
+        }
+        
+        .behavior-header .subtitle {
+            color: var(--text-muted);
+            font-size: 0.85em;
+        }
+        
+        .behavior-main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .behavior-master {
+            width: 55%;
+            border-right: 1px solid var(--border-default);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .behavior-table-wrap {
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .behavior-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+        }
+        
+        .behavior-table thead {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .behavior-table th {
+            background: var(--bg-elevated);
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 2px solid var(--border-default);
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+        
+        .behavior-table th:hover {
+            background: var(--bg-hover);
+            color: var(--accent-cyan);
+        }
+        
+        .behavior-table th.sorted-asc::after { content: ' ▲'; color: var(--accent-cyan); }
+        .behavior-table th.sorted-desc::after { content: ' ▼'; color: var(--accent-cyan); }
+        
+        .behavior-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+        }
+        
+        .behavior-table tbody tr {
+            cursor: pointer;
+            transition: background var(--transition-fast);
+        }
+        
+        .behavior-table tbody tr:hover {
+            background: var(--bg-hover);
+        }
+        
+        .behavior-table tbody tr.selected {
+            background: rgba(0, 200, 255, 0.15);
+        }
+        
+        .behavior-table .action-name {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .behavior-table .action-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+        
+        .behavior-table .action-value {
+            font-family: var(--font-mono);
+            font-weight: 600;
+        }
+        
+        .behavior-table .action-bar {
+            height: 8px;
+            background: var(--bg-deep);
+            border-radius: 4px;
+            overflow: hidden;
+            min-width: 100px;
+        }
+        
+        .behavior-table .action-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        
+        .behavior-detail {
+            width: 45%;
+            background: var(--bg-elevated);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .behavior-detail-empty {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .behavior-detail-empty .icon { font-size: 4em; margin-bottom: 16px; opacity: 0.5; }
+        .behavior-detail-empty .text { font-size: 1.1em; margin-bottom: 8px; }
+        .behavior-detail-empty .hint { font-size: 0.85em; color: var(--text-tertiary); }
+        
+        .behavior-detail-content {
+            padding: 24px;
+        }
+        
+        .behavior-detail-content .detail-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .behavior-detail-content .detail-header .color-swatch {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+        }
+        
+        .behavior-detail-content .detail-header h3 { margin: 0; color: var(--accent-cyan); font-size: 1.3em; }
+        
+        .behavior-detail-content .detail-value-box {
+            background: var(--bg-deep);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        
+        .behavior-detail-content .detail-value-box .value {
+            font-family: var(--font-mono);
+            font-size: 3em;
+            font-weight: 700;
+            color: var(--accent-cyan);
+        }
+        
+        .behavior-detail-content .detail-value-box .bar {
+            height: 12px;
+            background: var(--bg-surface);
+            border-radius: 6px;
+            overflow: hidden;
+            margin-top: 16px;
+        }
+        
+        .behavior-detail-content .detail-value-box .bar-fill {
+            height: 100%;
+            border-radius: 6px;
+        }
+        
+        .behavior-detail-content .detail-description {
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin-bottom: 24px;
+            font-size: 0.95em;
+        }
+        
+        .behavior-detail-content .detail-stats {
+            background: var(--bg-deep);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+        }
+        
+        .behavior-detail-content .detail-stats h4 {
+            margin: 0;
+            padding: 12px 16px;
+            background: var(--bg-surface);
+            color: var(--text-muted);
+            font-size: 0.8em;
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        
+        .behavior-detail-content .stats-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        
+        .behavior-detail-content .stats-item:last-child { border-bottom: none; }
+        .behavior-detail-content .stats-item .label { color: var(--text-muted); }
+        .behavior-detail-content .stats-item .value { font-family: var(--font-mono); color: var(--text-primary); }
+        
+        /* Action Timeline */
+        .action-timeline {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            padding: 12px;
+            background: var(--bg-deep);
+            border-radius: var(--radius-sm);
+        }
+        
+        .action-timeline-item {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7em;
+            font-weight: 600;
+            color: white;
+            cursor: default;
+            transition: transform 0.1s;
+        }
+        
+        .action-timeline-item:hover {
+            transform: scale(1.3);
+        }
+        
+        .action-timeline-item.action-0 { background: #4ecdc4; }
+        .action-timeline-item.action-1 { background: #45b7d1; }
+        .action-timeline-item.action-2 { background: #f38181; }
+        .action-timeline-item.action-3 { background: #aa96da; }
+        .action-timeline-item.action-4 { background: #fcbad3; }
+        .action-timeline-item.action-5 { background: #95e1d3; }
+        
+        .action-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 12px;
+            font-size: 0.8em;
+        }
+        
+        .action-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .action-legend-item .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+        
+        /* Personality Card */
+        .personality-card {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 16px;
+            background: var(--bg-deep);
+            border-radius: var(--radius-md);
+        }
+        
+        .personality-icon {
+            font-size: 3em;
+        }
+        
+        .personality-info h4 {
+            margin: 0 0 4px 0;
+            font-size: 1.2em;
+            color: var(--accent-gold);
+        }
+        
+        .personality-info .desc {
+            color: var(--text-muted);
+            font-size: 0.85em;
+        }
+        
+        /* Combat Tab - Master-Detail Layout like Vocab */
+        .microscope-combat {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        .combat-header {
+            padding: 16px 24px;
+            background: linear-gradient(135deg, rgba(255, 68, 68, 0.1), transparent);
+            border-bottom: 1px solid var(--border-default);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .combat-header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .combat-header h2 {
+            margin: 0;
+            font-size: 1.3em;
+            color: var(--danger);
+        }
+        
+        .combat-header .subtitle {
+            color: var(--text-muted);
+            font-size: 0.85em;
+        }
+        
+        .combat-main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .combat-master {
+            width: 55%;
+            border-right: 1px solid var(--border-default);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .combat-table-wrap {
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .combat-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+        }
+        
+        .combat-table thead {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .combat-table th {
+            background: var(--bg-elevated);
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 2px solid var(--border-default);
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+        
+        .combat-table th:hover {
+            background: var(--bg-hover);
+            color: var(--danger);
+        }
+        
+        .combat-table th.sorted-asc::after { content: ' ▲'; color: var(--danger); }
+        .combat-table th.sorted-desc::after { content: ' ▼'; color: var(--danger); }
+        
+        .combat-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+        }
+        
+        .combat-table tbody tr {
+            cursor: pointer;
+            transition: background var(--transition-fast);
+        }
+        
+        .combat-table tbody tr:hover {
+            background: var(--bg-hover);
+        }
+        
+        .combat-table tbody tr.selected {
+            background: rgba(255, 68, 68, 0.15);
+        }
+        
+        .combat-table .stat-name {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .combat-table .stat-name .icon {
+            font-size: 1.2em;
+        }
+        
+        .combat-table .stat-value {
+            font-family: var(--font-mono);
+            font-weight: 600;
+        }
+        
+        .combat-table .stat-value.positive { color: var(--positive); }
+        .combat-table .stat-value.danger { color: var(--danger); }
+        .combat-table .stat-value.warning { color: var(--accent-orange); }
+        .combat-table .stat-value.highlight { color: var(--accent-gold); }
+        .combat-table .stat-value.purple { color: var(--accent-purple); }
+        
+        .combat-table .category-badge {
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: 500;
+        }
+        
+        .combat-table .category-badge.battle { background: rgba(255, 68, 68, 0.2); color: var(--danger); }
+        .combat-table .category-badge.tournament { background: rgba(255, 215, 0, 0.2); color: var(--accent-gold); }
+        .combat-table .category-badge.highlander { background: rgba(170, 85, 255, 0.2); color: var(--accent-purple); }
+        .combat-table .category-badge.training { background: rgba(0, 200, 255, 0.2); color: var(--accent-cyan); }
+        .combat-table .category-badge.alliance { background: rgba(76, 175, 80, 0.2); color: var(--positive); }
+        .combat-table .category-badge.streak { background: rgba(255, 165, 0, 0.2); color: var(--accent-orange); }
+        
+        .combat-detail {
+            width: 45%;
+            background: var(--bg-elevated);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .combat-detail-empty {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .combat-detail-empty .icon { font-size: 4em; margin-bottom: 16px; opacity: 0.5; }
+        .combat-detail-empty .text { font-size: 1.1em; margin-bottom: 8px; }
+        .combat-detail-empty .hint { font-size: 0.85em; color: var(--text-tertiary); }
+        
+        .combat-detail-content {
+            padding: 24px;
+        }
+        
+        .combat-detail-content .detail-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .combat-detail-content .detail-header .icon { font-size: 2em; }
+        .combat-detail-content .detail-header h3 { margin: 0; color: var(--danger); font-size: 1.3em; }
+        
+        .combat-detail-content .detail-value-box {
+            background: var(--bg-deep);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        
+        .combat-detail-content .detail-value-box .value {
+            font-family: var(--font-mono);
+            font-size: 3em;
+            font-weight: 700;
+            color: var(--danger);
+        }
+        
+        .combat-detail-content .detail-value-box .unit {
+            font-size: 0.9em;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+        
+        .combat-detail-content .detail-description {
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin-bottom: 24px;
+            font-size: 0.95em;
+        }
+        
+        .combat-detail-content .detail-related {
+            background: var(--bg-deep);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        
+        .combat-detail-content .detail-related h4 {
+            margin: 0;
+            padding: 12px 16px;
+            background: var(--bg-surface);
+            color: var(--text-muted);
+            font-size: 0.8em;
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        
+        .combat-detail-content .related-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        
+        .combat-detail-content .related-item:last-child { border-bottom: none; }
+        .combat-detail-content .related-item .label { color: var(--text-muted); }
+        .combat-detail-content .related-item .value { font-family: var(--font-mono); color: var(--text-primary); }
+        
+        .combat-detail-content .skills-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        
+        .combat-detail-content .skill-badge {
+            padding: 6px 12px;
+            background: linear-gradient(135deg, rgba(170, 0, 255, 0.15), rgba(0, 200, 255, 0.15));
+            border: 1px solid rgba(170, 0, 255, 0.3);
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: var(--accent-purple);
+        }
+        
+        /* Skills Grid */
+        .skills-mastered-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .skill-mastered-badge {
+            padding: 10px 16px;
+            background: linear-gradient(135deg, rgba(170, 0, 255, 0.15), rgba(0, 200, 255, 0.15));
+            border: 1px solid rgba(170, 0, 255, 0.3);
+            border-radius: var(--radius-sm);
+            font-size: 0.9em;
+            color: var(--accent-purple);
+            font-weight: 500;
+        }
+        
+        /* Streak Display */
+        .streak-display {
+            display: flex;
+            gap: 24px;
+            justify-content: center;
+        }
+        
+        .streak-item {
+            text-align: center;
+            padding: 16px 24px;
+            background: var(--bg-deep);
+            border-radius: var(--radius-md);
+        }
+        
+        .streak-item .value {
+            font-family: var(--font-mono);
+            font-size: 2em;
+            font-weight: 700;
+            color: var(--accent-orange);
+        }
+        
+        .streak-item .label {
+            font-size: 0.8em;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+        
+        /* Social Tab */
+        .microscope-social {
+            padding: 24px;
+            overflow: auto;
+            height: 100%;
+            box-sizing: border-box;
+        }
+        
+        .social-hero {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .social-hero-card {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .social-hero-card .value {
+            font-family: var(--font-mono);
+            font-size: 1.8em;
+            font-weight: 700;
+            color: var(--accent-cyan);
+        }
+        
+        .social-hero-card .label {
+            font-size: 0.8em;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-top: 8px;
+        }
+        
+        .social-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+        
+        .social-section {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+        }
+        
+        .social-section.full-width {
+            grid-column: 1 / -1;
+        }
+        
+        .social-section-header {
+            padding: 12px 16px;
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .social-section-header h3 {
+            margin: 0;
+            font-size: 0.9em;
+            color: var(--accent-cyan);
+            text-transform: uppercase;
+        }
+        
+        .social-section-body {
+            padding: 16px;
+        }
+        
+        /* Alliance Card */
+        .alliance-hero-card {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 20px;
+            background: var(--bg-deep);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+        
+        .alliance-hero-card:hover {
+            background: var(--bg-surface);
+            border-color: var(--accent-cyan);
+        }
+        
+        .alliance-hero-card .icon { font-size: 3em; }
+        
+        .alliance-hero-card .info h4 {
+            margin: 0 0 4px 0;
+            font-size: 1.1em;
+            color: var(--accent-gold);
+        }
+        
+        .alliance-hero-card .info .role {
+            color: var(--text-secondary);
+            font-size: 0.9em;
+        }
+        
+        /* Confederation Tier Badge */
+        .confed-tier-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+        }
+        
+        .confed-tier-badge.tier-0 { background: var(--bg-surface); color: var(--text-muted); }
+        .confed-tier-badge.tier-1 { background: rgba(0, 200, 255, 0.15); color: var(--accent-cyan); }
+        .confed-tier-badge.tier-2 { background: rgba(170, 85, 255, 0.15); color: var(--accent-purple); }
+        .confed-tier-badge.tier-3 { background: rgba(255, 215, 0, 0.15); color: var(--accent-gold); }
+        
+        /* Microscope Footer */
+        .microscope-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            background: var(--bg-surface);
+            border-top: 1px solid var(--border-default);
+        }
+        
+        .microscope-footer .timestamp {
+            font-size: 0.75em;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+        }
+        
+        .microscope-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .microscope-action-btn {
+            padding: 8px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 0.85em;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            border: 1px solid var(--border-default);
+            background: var(--bg-elevated);
+            color: var(--text-secondary);
+        }
+        
+        .microscope-action-btn:hover {
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+        
+        .microscope-action-btn.primary {
+            background: var(--accent-gold);
+            color: var(--bg-base);
+            border-color: var(--accent-gold);
+        }
+        
+        .microscope-action-btn.primary:hover {
+            background: var(--accent-orange);
+            border-color: var(--accent-orange);
+        }
+        
         .binder-search {
             flex: 1;
             min-width: 180px;
@@ -15846,7 +17149,7 @@
                             <span class="card-rarity-badge">${org.rarity || 'common'}</span>
                         </div>
                         <div class="card-source-indicator">
-                            <button class="dossier-btn" onclick="event.stopPropagation(); openOrganismDossier('${org.id}')" title="Full Dossier">📋</button>
+                            <button class="dossier-btn" onclick="event.stopPropagation(); openMicroscope('${org.id}')" title="Organism Microscope">🔬</button>
                             <span class="source-dot ${org.source === 'live_simulation' ? 'live' : 'capsule'}" 
                                   title="${org.source === 'live_simulation' ? 'Live Simulation' : 'Time Capsule'}"></span>
                         </div>
@@ -16763,7 +18066,7 @@
                                     <div style="margin-top: 12px;">
                                         <div style="color: var(--text-muted); font-size: 0.8em; margin-bottom: 8px;">Parent IDs:</div>
                                         <div class="connections-mini">
-                                            ${(org.parent_ids || []).map(p => `<span class="connection-node" onclick="openOrganismDossier('${p}')">${p.substring(0, 8)}</span>`).join('')}
+                                            ${(org.parent_ids || []).map(p => `<span class="connection-node" onclick="openMicroscope('${p}')">${p.substring(0, 8)}</span>`).join('')}
                                         </div>
                                     </div>
                                     ` : '<div style="color: var(--text-muted); font-size: 0.85em; margin-top: 8px;">Genesis organism (no parents)</div>'}
@@ -16822,6 +18125,1494 @@
                     overlay.remove();
                     document.body.style.overflow = '';
                 }
+            }
+
+            // ═══════════════════════════════════════════════════════════════════════════
+            // 🔬 ORGANISM MICROSCOPE - World-Class Inspector (Real data, simple UX)
+            // ═══════════════════════════════════════════════════════════════════════════
+
+            let microscopeState = {
+                orgId: null,
+                org: null,
+                activeTab: 'overview',
+                loadedTabs: new Set(),
+                escapeHandler: null
+            };
+
+            function closeMicroscope() {
+                const overlay = document.getElementById('organismMicroscope');
+                if (overlay) overlay.remove();
+                document.body.style.overflow = '';
+
+                if (microscopeState.escapeHandler) {
+                    document.removeEventListener('keydown', microscopeState.escapeHandler);
+                    microscopeState.escapeHandler = null;
+                }
+
+                microscopeState = {
+                    orgId: null,
+                    org: null,
+                    activeTab: 'overview',
+                    loadedTabs: new Set(),
+                    escapeHandler: null
+                };
+            }
+
+            function setMicroscopeTab(tabId) {
+                microscopeState.activeTab = tabId;
+
+                // tabs
+                document.querySelectorAll('#organismMicroscope .microscope-tab').forEach(el => {
+                    el.classList.toggle('active', el.dataset.tab === tabId);
+                });
+
+                // panes
+                document.querySelectorAll('#organismMicroscope .microscope-pane').forEach(el => {
+                    el.classList.toggle('active', el.dataset.tab === tabId);
+                });
+
+                // lazy-load
+                if (!microscopeState.loadedTabs.has(tabId)) {
+                    microscopeState.loadedTabs.add(tabId);
+                    renderMicroscopeTab(tabId);
+                }
+            }
+
+            function getMicroscopeRarityBadge(org) {
+                const rarity = (org?.rarity || 'common').toLowerCase();
+                const safe = ['legendary', 'epic', 'rare', 'uncommon', 'common'].includes(rarity) ? rarity : 'common';
+                return `<span class="rarity-badge ${safe}">${safe}</span>`;
+            }
+
+            function getActionMeta() {
+                const names = ['Move', 'Cooperate', 'Compete', 'Rest', 'Reproduce', 'Isolate'];
+                const colors = ['#4ecdc4', '#45b7d1', '#f38181', '#aa96da', '#fcbad3', '#95e1d3'];
+                const abbrev = ['Mv', 'Co', 'Cm', 'Rs', 'Rp', 'Is'];
+                return { names, colors, abbrev };
+            }
+
+            function formatBigNum(n) {
+                const v = Number(n || 0);
+                if (v >= 1000000) return (v / 1000000).toFixed(1) + 'M';
+                if (v >= 1000) return (v / 1000).toFixed(1) + 'K';
+                return String(Math.round(v));
+            }
+
+            function fmtPct01(v, digits = 1) {
+                const x = Number(v);
+                if (!Number.isFinite(x)) return '0.0%';
+                return (x * 100).toFixed(digits) + '%';
+            }
+
+            async function openMicroscope(orgId) {
+                const org = allOrganisms.find(o => o.id === orgId);
+                if (!org) {
+                    console.error('Organism not found:', orgId);
+                    return;
+                }
+
+                // Close any existing dossier/microscope
+                closeDossier();
+                closeVocabularyLibrary();
+                closeMicroscope();
+
+                microscopeState.orgId = orgId;
+                microscopeState.org = org;
+                microscopeState.activeTab = 'overview';
+                microscopeState.loadedTabs = new Set();
+
+                const overlay = document.createElement('div');
+                overlay.className = 'microscope-overlay';
+                overlay.id = 'organismMicroscope';
+                overlay.onclick = (e) => { if (e.target === overlay) closeMicroscope(); };
+
+                const rarityGems = {
+                    legendary: '💎',
+                    epic: '🔮',
+                    rare: '💠',
+                    uncommon: '🔹',
+                    common: '⚪'
+                };
+
+                const totalBattles = (org.battle_wins || 0) + (org.battle_losses || 0);
+                const winRate = totalBattles > 0 ? ((org.battle_wins || 0) / totalBattles * 100).toFixed(1) : 'N/A';
+
+                overlay.innerHTML = `
+                    <div class="microscope-container">
+                        <div class="microscope-header">
+                            <div class="microscope-header-left">
+                                <h2>🔬 ORGANISM MICROSCOPE</h2>
+                                <div class="subtitle">
+                                    <span style="font-family: var(--font-mono); color: var(--text-secondary);">${org.short_id || org.id.substring(0, 8)}</span>
+                                    ${getMicroscopeRarityBadge(org)}
+                                    <span style="color: var(--text-muted);">Gen ${org.generation || 0}</span>
+                                    <span style="color: var(--text-muted);">Age ${org.age || 0}</span>
+                                    <span style="color: var(--text-muted);">Fit ${(Math.round((org.fitness || 0) * 100))}%</span>
+                                    <span style="color: var(--text-muted);">W/L ${(org.battle_wins || 0)}/${(org.battle_losses || 0)} (${winRate}${winRate !== 'N/A' ? '%' : ''})</span>
+                                    <span style="color: var(--text-muted);">${rarityGems[(org.rarity || 'common').toLowerCase()] || '⚪'}</span>
+                                </div>
+                            </div>
+                            <button class="microscope-close-btn" onclick="closeMicroscope()">✕ Close</button>
+                        </div>
+
+                        <div class="microscope-body">
+                            <div class="microscope-tabs">
+                                <div class="microscope-tab active" data-tab="overview" onclick="setMicroscopeTab('overview')"><span class="icon">📊</span><span class="label">Overview</span></div>
+                                <div class="microscope-tab" data-tab="vocab" onclick="setMicroscopeTab('vocab')"><span class="icon">📚</span><span class="label">Vocab</span></div>
+                                <div class="microscope-tab" data-tab="neural" onclick="setMicroscopeTab('neural')"><span class="icon">🧠</span><span class="label">Neural</span></div>
+                                <div class="microscope-tab" data-tab="behavior" onclick="setMicroscopeTab('behavior')"><span class="icon">🧬</span><span class="label">Behavior</span></div>
+                                <div class="microscope-tab" data-tab="combat" onclick="setMicroscopeTab('combat')"><span class="icon">⚔️</span><span class="label">Combat</span></div>
+                                <div class="microscope-tab" data-tab="social" onclick="setMicroscopeTab('social')"><span class="icon">🤝</span><span class="label">Social</span></div>
+                                <div class="microscope-tab" data-tab="raw" onclick="setMicroscopeTab('raw')"><span class="icon">📄</span><span class="label">Raw</span></div>
+                            </div>
+
+                            <div class="microscope-content">
+                                <div class="microscope-pane active" data-tab="overview"><div id="microscopePaneOverview" class="microscope-overview"></div></div>
+                                <div class="microscope-pane" data-tab="vocab"><div id="microscopePaneVocab" class="microscope-vocab"></div></div>
+                                <div class="microscope-pane" data-tab="neural"><div id="microscopePaneNeural" class="microscope-neural"></div></div>
+                                <div class="microscope-pane" data-tab="behavior"><div id="microscopePaneBehavior" class="microscope-behavior"></div></div>
+                                <div class="microscope-pane" data-tab="combat"><div id="microscopePaneCombat" class="microscope-combat"></div></div>
+                                <div class="microscope-pane" data-tab="social"><div id="microscopePaneSocial" class="microscope-social"></div></div>
+                                <div class="microscope-pane" data-tab="raw"><div id="microscopePaneRaw" style="padding: 20px;"></div></div>
+                            </div>
+                        </div>
+
+                        <div class="microscope-footer">
+                            <span class="timestamp">Generated: ${new Date().toISOString()}</span>
+                            <div class="microscope-actions">
+                                <button class="microscope-action-btn" onclick="copyMicroscopeJSON()">📋 Copy JSON</button>
+                                <button class="microscope-action-btn" onclick="toggleOrganismSelection('${org.id}');" title="Select/Deselect this organism">☑️ Select</button>
+                                <button class="microscope-action-btn primary" onclick="closeMicroscope()">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                document.body.appendChild(overlay);
+                document.body.style.overflow = 'hidden';
+
+                microscopeState.escapeHandler = (e) => {
+                    if (e.key === 'Escape') closeMicroscope();
+                };
+                document.addEventListener('keydown', microscopeState.escapeHandler);
+
+                // Overview loads immediately
+                microscopeState.loadedTabs.add('overview');
+                renderMicroscopeTab('overview');
+            }
+
+            function copyMicroscopeJSON() {
+                const org = microscopeState.org;
+                if (!org) return;
+                navigator.clipboard.writeText(JSON.stringify(org, null, 2));
+                alert('Organism JSON copied to clipboard!');
+            }
+
+            function renderMicroscopeTab(tabId) {
+                switch (tabId) {
+                    case 'overview': return renderMicroscopeOverview();
+                    case 'vocab': return renderMicroscopeVocab();
+                    case 'neural': return renderMicroscopeNeural();
+                    case 'behavior': return renderMicroscopeBehavior();
+                    case 'combat': return renderMicroscopeCombat();
+                    case 'social': return renderMicroscopeSocial();
+                    case 'raw': return renderMicroscopeRaw();
+                }
+            }
+
+            function renderMicroscopeOverview() {
+                const org = microscopeState.org;
+                if (!org) return;
+
+                // Reuse dossier HTML, but make sections clickable to jump tabs.
+                // Minimal UX: just click the section card.
+                const container = document.getElementById('microscopePaneOverview');
+                if (!container) return;
+
+                // We reuse the existing dossier section markup by invoking a tiny subset of the dossier builder.
+                // Instead of rewriting everything, we generate a focused overview with the same components.
+
+                const { names: actionNames, colors: actionColors } = getActionMeta();
+
+                const totalBattles = (org.battle_wins || 0) + (org.battle_losses || 0);
+                const winRate = totalBattles > 0 ? ((org.battle_wins || 0) / totalBattles * 100).toFixed(1) : 'N/A';
+
+                const fingerprint = org.behavioral_fingerprint || [0, 0, 0, 0, 0, 0];
+                const maxFp = Math.max(...fingerprint, 0.01);
+
+                const masteryLevel = org.mastery_level || 0;
+                const masteryVocabLimit = org.mastery_vocab_limit || 6;
+                const masteryLevelNames = ['Novice', 'Adept', 'Scholar', 'Master', 'Grandmaster'];
+                const masteryLevelIcons = ['🌱', '🌿', '🌳', '🎓', '👑'];
+                const masteryLevelColors = ['#9ca3af', '#4ade80', '#22c55e', '#a855f7', '#ffd700'];
+                const masteryThresholds = [6, 26, 76, 276, Infinity];
+                const currentWords = org.words_learned || 0;
+                const nextThreshold = masteryThresholds[masteryLevel] || Infinity;
+                const prevThreshold = masteryLevel > 0 ? masteryThresholds[masteryLevel - 1] : 0;
+                const masteryProgress = masteryLevel < 4
+                    ? Math.min(100, ((currentWords - prevThreshold) / (nextThreshold - prevThreshold)) * 100)
+                    : 100;
+
+                const tournamentWins = org.tournament_wins || 0;
+                const tournamentLosses = org.tournament_losses || 0;
+                const killCount = org.highlander_kills || 0;
+                const skillRating = Math.round(1000 + (tournamentWins * 25) - (tournamentLosses * 15) + (killCount * 50));
+
+                const rarityGems = {
+                    legendary: '💎',
+                    epic: '🔮',
+                    rare: '💠',
+                    uncommon: '🔹',
+                    common: '⚪'
+                };
+
+                const alignScores = org.alignment_scores || {};
+                const chaosScore = (alignScores.chaos_score || 0.5) * 100;
+                const goodEvilScore = ((alignScores.good_evil_score || 0) + 1) / 2 * 100;
+
+                container.innerHTML = `
+                    <div class="dossier-section full-width">
+                        <div class="dossier-section-header">
+                            <span class="section-icon">🔬</span>
+                            <h3>Identity & Classification</h3>
+                        </div>
+                        <div class="dossier-section-body">
+                            <div class="identity-hero">
+                                <div class="identity-badge">
+                                    <span class="rarity-gem">${rarityGems[(org.rarity || 'common').toLowerCase()] || '⚪'}</span>
+                                    <span class="rarity-label">${org.rarity || 'common'}</span>
+                                </div>
+                                <div class="identity-core">
+                                    <div class="identity-id">${org.id}</div>
+                                    <div class="identity-meta">
+                                        <span class="identity-meta-item">🧬 Gen ${org.generation || 0}</span>
+                                        <span class="identity-meta-item">📅 Age ${org.age || 0}</span>
+                                        <span class="identity-meta-item">${org.source === 'live_simulation' ? '🟢 Live' : '📦 Capsule'}</span>
+                                        <span class="identity-meta-item">🎭 ${org.personality_type || 'Unknown'}</span>
+                                        <span class="identity-meta-item">⭐ Skill: ${skillRating}</span>
+                                    </div>
+                                </div>
+                                <div class="identity-alignment" style="cursor: pointer;" onclick="setMicroscopeTab('behavior')" title="View Behavior">
+                                    <span class="alignment-icon">${org.alignment_icon || '◇'}</span>
+                                    <span class="alignment-text">${org.alignment || 'Unknown'}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dossier-section" data-tab="vocab" onclick="setMicroscopeTab('vocab')" title="Open Vocabulary">
+                        <div class="dossier-section-header">
+                            <span class="section-icon">${masteryLevelIcons[masteryLevel]}</span>
+                            <h3>Language Mastery</h3>
+                        </div>
+                        <div class="dossier-section-body">
+                            <div style="text-align: center; margin-bottom: 16px;">
+                                <div style="font-size: 3em; margin-bottom: 8px;">${masteryLevelIcons[masteryLevel]}</div>
+                                <div style="font-size: 1.4em; color: ${masteryLevelColors[masteryLevel]}; font-weight: 600; margin-bottom: 4px;">${masteryLevelNames[masteryLevel]}</div>
+                                <div style="font-size: 0.9em; color: var(--text-muted);">Level ${masteryLevel}</div>
+                            </div>
+                            <div style="background: var(--bg-deep); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 12px;">
+                                <div style="display: flex; justify-content: space-between; font-size: 0.8em; margin-bottom: 6px;">
+                                    <span style="color: var(--text-muted);">Words</span>
+                                    <span style="color: var(--accent-cyan);">${currentWords} / ${nextThreshold === Infinity ? '∞' : nextThreshold}</span>
+                                </div>
+                                <div style="height: 6px; background: var(--bg-surface); border-radius: 3px; overflow: hidden;">
+                                    <div style="height: 100%; width: ${Math.min(100, masteryProgress)}%; background: ${masteryLevelColors[masteryLevel]};"></div>
+                                </div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 0.8em;">
+                                <div style="display:flex;justify-content:space-between;color:var(--text-muted)"><span>Vocab Limit:</span><span style="color:var(--accent-cyan)">${masteryVocabLimit === Infinity || masteryVocabLimit > 9999 ? '∞' : masteryVocabLimit}</span></div>
+                                <div style="display:flex;justify-content:space-between;color:var(--text-muted)"><span>Utilization:</span><span style="color:var(--accent-cyan)">${org.vocab_utilization || 0}%</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dossier-section two-thirds" data-tab="overview">
+                        <div class="dossier-section-header">
+                            <span class="section-icon">📊</span>
+                            <h3>Vital Statistics</h3>
+                        </div>
+                        <div class="dossier-section-body">
+                            <div class="stats-grid">
+                                <div class="stat-box highlight" style="cursor:pointer" onclick="setMicroscopeTab('overview')"><span class="value">${Math.round((org.fitness || 0) * 100)}%</span><span class="label">Fitness</span></div>
+                                <div class="stat-box" style="cursor:pointer" onclick="setMicroscopeTab('vocab')"><span class="value">${org.words_learned || 0}</span><span class="label">Vocabulary</span></div>
+                                <div class="stat-box" style="cursor:pointer" onclick="setMicroscopeTab('behavior')"><span class="value">${formatBigNum(org.experience_buffer_size || 0)}</span><span class="label">Experience</span></div>
+                                <div class="stat-box" style="cursor:pointer" onclick="setMicroscopeTab('social')"><span class="value">${org.connections_count || 0}</span><span class="label">Links</span></div>
+                                <div class="stat-box" style="cursor:pointer" onclick="setMicroscopeTab('vocab')"><span class="value">${org.vocab_utilization || 0}%</span><span class="label">Vocab Util</span></div>
+                                <div class="stat-box" style="cursor:pointer" onclick="setMicroscopeTab('behavior')"><span class="value">${org.action_history_length || 0}</span><span class="label">Actions</span></div>
+                                <div class="stat-box" style="cursor:pointer" onclick="setMicroscopeTab('neural')"><span class="value">${org.epsilon ? org.epsilon.toFixed(3) : '0.000'}</span><span class="label">Epsilon</span></div>
+                                <div class="stat-box" style="cursor:pointer" onclick="setMicroscopeTab('neural')"><span class="value">${formatBigNum(org.brain_params || 0)}</span><span class="label">Brain Params</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dossier-section" data-tab="overview">
+                        <div class="dossier-section-header">
+                            <span class="section-icon">📈</span>
+                            <h3>Fitness Trend</h3>
+                        </div>
+                        <div class="dossier-section-body">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span style="color: var(--text-muted);">Trend: <span style="color: ${org.fitness_trend?.trend === 'rising' ? 'var(--positive)' : org.fitness_trend?.trend === 'falling' ? 'var(--danger)' : 'var(--text-secondary)'}">${org.fitness_trend?.trend || 'stable'}</span></span>
+                                <span style="color: var(--text-muted);">Change: ${(org.fitness_trend?.change || 0).toFixed(3)}</span>
+                            </div>
+                            <div class="fitness-chart-container" id="microscopeFitnessChart" data-history='${JSON.stringify(org.fitness_history || [])}'>
+                                <svg width="100%" height="100%"></svg>
+                            </div>
+                            <div style="text-align: center; margin-top: 8px; color: var(--text-muted); font-size: 0.8em;">Volatility: ${(org.fitness_trend?.volatility || 0).toFixed(4)}</div>
+                        </div>
+                    </div>
+
+                    <div class="dossier-section" data-tab="combat" onclick="setMicroscopeTab('combat')" title="Open Combat">
+                        <div class="dossier-section-header"><span class="section-icon">⚔️</span><h3>Combat Record</h3></div>
+                        <div class="dossier-section-body">
+                            <div class="battle-record">
+                                <div class="battle-stat wins"><div class="icon">🏆</div><div class="value">${org.battle_wins || 0}</div><div class="label">Victories</div></div>
+                                <div class="battle-stat losses"><div class="icon">💀</div><div class="value">${org.battle_losses || 0}</div><div class="label">Defeats</div></div>
+                                <div class="battle-stat rate"><div class="icon">📊</div><div class="value">${winRate}${winRate !== 'N/A' ? '%' : ''}</div><div class="label">Win Rate</div></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dossier-section" data-tab="combat" onclick="setMicroscopeTab('combat')" title="Open Combat">
+                        <div class="dossier-section-header"><span class="section-icon">🏅</span><h3>Tournament & Highlander</h3></div>
+                        <div class="dossier-section-body">
+                            <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr);">
+                                <div class="stat-box"><span class="value">${org.tournament_wins || 0}</span><span class="label">Tournament Wins</span></div>
+                                <div class="stat-box"><span class="value">${org.highlander_kills || 0}</span><span class="label">Highlander Kills</span></div>
+                                <div class="stat-box"><span class="value">${org.war_victories || 0}</span><span class="label">War Victories</span></div>
+                                <div class="stat-box"><span class="value">${org.dojo_sessions || 0}</span><span class="label">Dojo Sessions</span></div>
+                                <div class="stat-box"><span class="value">${org.win_streak || 0}🔥</span><span class="label">Current Streak</span></div>
+                                <div class="stat-box"><span class="value">${org.best_win_streak || 0}🔥</span><span class="label">Best Streak</span></div>
+                            </div>
+                            ${(org.skills_mastered || []).length > 0 ? `
+                                <div style="margin-top: 12px;">
+                                    <div style="color: var(--text-muted); font-size: 0.8em; margin-bottom: 8px;">Skills Mastered:</div>
+                                    <div class="skills-grid">${(org.skills_mastered || []).map(s => `<span class="skill-badge-large">${escapeHtml(s)}</span>`).join('')}</div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+
+                    <div class="dossier-section" data-tab="behavior" onclick="setMicroscopeTab('behavior')" title="Open Behavior">
+                        <div class="dossier-section-header"><span class="section-icon">🧬</span><h3>Behavioral Fingerprint</h3></div>
+                        <div class="dossier-section-body">
+                            <div class="fingerprint-large">
+                                ${fingerprint.map((v, i) => `
+                                    <div class="fingerprint-bar-large">
+                                        <div class="bar-container"><div class="bar" style="height: ${Math.round((v / maxFp) * 100)}%; background: ${actionColors[i]}"></div></div>
+                                        <span class="bar-value">${(v * 100).toFixed(1)}%</span>
+                                        <span class="bar-label">${actionNames[i]}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div style="margin-top: 16px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+                                <div style="text-align: center; padding: 8px; background: var(--bg-deep); border-radius: var(--radius-sm);"><div style="font-size: 1.2em; color: var(--positive);">${fmtPct01(org.cooperation_ratio || 0, 1)}</div><div style="font-size: 0.7em; color: var(--text-muted);">Cooperation</div></div>
+                                <div style="text-align: center; padding: 8px; background: var(--bg-deep); border-radius: var(--radius-sm);"><div style="font-size: 1.2em; color: var(--danger);">${fmtPct01(org.aggression_ratio || 0, 1)}</div><div style="font-size: 0.7em; color: var(--text-muted);">Aggression</div></div>
+                                <div style="text-align: center; padding: 8px; background: var(--bg-deep); border-radius: var(--radius-sm);"><div style="font-size: 1.2em; color: var(--accent-cyan);">${fmtPct01(org.exploration_ratio || 0, 1)}</div><div style="font-size: 0.7em; color: var(--text-muted);">Exploration</div></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dossier-section" data-tab="behavior" onclick="setMicroscopeTab('behavior')" title="Open Behavior">
+                        <div class="dossier-section-header"><span class="section-icon">⚖️</span><h3>Alignment Analysis</h3></div>
+                        <div class="dossier-section-body">
+                            <div style="text-align: center; margin-bottom: 16px;"><span style="font-size: 2em;">${org.alignment_icon || '◇'}</span><div style="font-size: 1.1em; color: var(--accent-gold); margin-top: 4px;">${org.alignment || 'Unknown'}</div></div>
+                            <div class="alignment-breakdown">
+                                <div class="alignment-axis"><div class="axis-label">Law ← → Chaos</div><div class="axis-bar"><div class="axis-marker" style="left: ${chaosScore}%;"></div></div><div class="axis-labels"><span>Lawful</span><span>Chaotic</span></div></div>
+                                <div class="alignment-axis"><div class="axis-label">Evil ← → Good</div><div class="axis-bar"><div class="axis-marker" style="left: ${goodEvilScore}%;"></div></div><div class="axis-labels"><span>Evil</span><span>Good</span></div></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dossier-section" data-tab="neural" onclick="setMicroscopeTab('neural')" title="Open Neural">
+                        <div class="dossier-section-header"><span class="section-icon">🧠</span><h3>Neural Architecture</h3></div>
+                        <div class="dossier-section-body">
+                            <div class="neural-grid">
+                                <div class="neural-stat"><span class="label">Parameters</span><span class="value">${formatBigNum(org.brain_params || 0)}</span></div>
+                                <div class="neural-stat"><span class="label">Hidden Dim</span><span class="value">${org.hidden_dim || 0}</span></div>
+                                <div class="neural-stat"><span class="label">Language Head</span><span class="value">${org.has_language_head ? '✓ Yes' : '✗ No'}</span></div>
+                                <div class="neural-stat"><span class="label">Epsilon</span><span class="value">${org.epsilon ? org.epsilon.toFixed(4) : '0.0000'}</span></div>
+                                <div class="neural-stat"><span class="label">Experience</span><span class="value">${formatBigNum(org.experience_buffer_size || 0)}</span></div>
+                                <div class="neural-stat"><span class="label">Gym Experiences</span><span class="value">${org.gym_experiences || 0}</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dossier-section" data-tab="overview">
+                        <div class="dossier-section-header"><span class="section-icon">✨</span><h3>Traits & Characteristics</h3></div>
+                        <div class="dossier-section-body">
+                            <div style="margin-bottom: 12px;">
+                                <div style="color: var(--positive); font-size: 0.8em; margin-bottom: 8px;">STRENGTHS</div>
+                                <div class="traits-list">${(org.strengths || []).length > 0 ? (org.strengths || []).map(s => `<span class="trait-badge strength">${escapeHtml(String(s).replace(/_/g, ' '))}</span>`).join('') : '<span style="color: var(--text-muted); font-size: 0.85em;">None identified</span>'}</div>
+                            </div>
+                            <div>
+                                <div style="color: var(--danger); font-size: 0.8em; margin-bottom: 8px;">WEAKNESSES</div>
+                                <div class="traits-list">${(org.weaknesses || []).length > 0 ? (org.weaknesses || []).map(w => `<span class="trait-badge weakness">${escapeHtml(String(w).replace(/_/g, ' '))}</span>`).join('') : '<span style="color: var(--text-muted); font-size: 0.85em;">None identified</span>'}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dossier-section two-thirds" data-tab="behavior" onclick="setMicroscopeTab('behavior')" title="Open Behavior">
+                        <div class="dossier-section-header"><span class="section-icon">🎬</span><h3>Action History</h3></div>
+                        <div class="dossier-section-body">
+                            <div style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                                <span style="color: var(--text-muted); font-size: 0.85em;">Recent ${(org.recent_actions || []).length} actions (newest → oldest)</span>
+                                <div style="display: flex; gap: 8px; font-size: 0.7em;">${actionNames.map((name, i) => `<span style="color: ${actionColors[i]};">■ ${name}</span>`).join('')}</div>
+                            </div>
+                            <div class="action-history-full">${(org.recent_actions || []).map(a => `<div class="action-dot action-${a}" title="${actionNames[a] || 'Unknown'}"></div>`).join('')}</div>
+                            <div style="margin-top: 8px; color: var(--text-muted); font-size: 0.8em;">Dominant: <span style="color: var(--accent-cyan);">${org.dominant_action || 'Unknown'}</span></div>
+                        </div>
+                    </div>
+
+                    <div class="dossier-section" data-tab="social" onclick="setMicroscopeTab('social')" title="Open Social">
+                        <div class="dossier-section-header"><span class="section-icon">🤝</span><h3>Social & Alliance</h3></div>
+                        <div class="dossier-section-body">
+                            <div class="neural-grid">
+                                <div class="neural-stat" ${org.alliance_id ? `style="cursor: pointer;" onclick="setMicroscopeTab('social')" title="View Social"` : ''}>
+                                    <span class="label">Alliance</span>
+                                    <span class="value" style="${org.alliance_id ? 'color: var(--accent-cyan);' : ''}">${org.alliance_id ? org.alliance_id.substring(0, 8) + ' →' : 'None'}</span>
+                                </div>
+                                <div class="neural-stat"><span class="label">Reputation</span><span class="value">${(org.alliance_reputation || 0.5).toFixed(2)}</span></div>
+                                <div class="neural-stat"><span class="label">Connections</span><span class="value">${org.connections_count || 0}</span></div>
+                                <div class="neural-stat"><span class="label">Confed Tier</span><span class="value">${org.confederation_tier || 0}</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dossier-section">
+                        <div class="dossier-section-header"><span class="section-icon">🌳</span><h3>Lineage & Origin</h3></div>
+                        <div class="dossier-section-body">
+                            <div class="neural-grid">
+                                <div class="neural-stat"><span class="label">Generation</span><span class="value">${org.generation || 0}</span></div>
+                                <div class="neural-stat"><span class="label">Illumination</span><span class="value">${org.illumination_level || 'none'}</span></div>
+                            </div>
+                            ${(org.parent_ids || []).length > 0 ? `
+                                <div style="margin-top: 12px;">
+                                    <div style="color: var(--text-muted); font-size: 0.8em; margin-bottom: 8px;">Parent IDs:</div>
+                                    <div class="connections-mini">${(org.parent_ids || []).map(p => `<span class="connection-node" onclick="openMicroscope('${p}')">${p.substring(0, 8)}</span>`).join('')}</div>
+                                </div>
+                            ` : '<div style="color: var(--text-muted); font-size: 0.85em; margin-top: 8px;">Genesis organism (no parents)</div>'}
+                        </div>
+                    </div>
+                `;
+
+                // render overview chart
+                setTimeout(() => {
+                    const history = org.fitness_history || [];
+                    if (!history || history.length < 2) return;
+                    const chart = document.getElementById('microscopeFitnessChart');
+                    if (!chart) return;
+                    const svg = chart.querySelector('svg');
+                    if (!svg) return;
+                    const width = chart.clientWidth - 16;
+                    const height = chart.clientHeight - 16;
+                    const min = Math.min(...history);
+                    const max = Math.max(...history);
+                    const range = max - min || 1;
+                    const points = history.map((v, i) => {
+                        const x = (i / (history.length - 1)) * width;
+                        const y = height - ((v - min) / range) * height;
+                        return `${x},${y}`;
+                    }).join(' ');
+                    svg.innerHTML = `
+                        <defs>
+                            <linearGradient id="microscopeFitnessGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" style="stop-color:var(--accent-cyan);stop-opacity:0.4" />
+                                <stop offset="100%" style="stop-color:var(--accent-cyan);stop-opacity:0" />
+                            </linearGradient>
+                        </defs>
+                        <polygon points="0,${height} ${points} ${width},${height}" fill="url(#microscopeFitnessGradient)" />
+                        <polyline points="${points}" fill="none" stroke="var(--accent-cyan)" stroke-width="2" />
+                    `;
+                }, 50);
+            }
+
+            async function renderMicroscopeVocab() {
+                const org = microscopeState.org;
+                const mount = document.getElementById('microscopePaneVocab');
+                if (!org || !mount) return;
+
+                // Build embedded vocab UI with UNIQUE ids to avoid collision
+                const prefix = 'mvocab';
+                mount.innerHTML = `
+                    <div class="vocab-library-container" style="width:100%;height:100%;max-width:none;border-radius:0;border-left:none;border-right:none;border-bottom:none;">
+                        <div class="vocab-header">
+                            <div class="vocab-header-left">
+                                <h2>📚 Vocabulary Library</h2>
+                                <span class="subtitle">Organism ${org.short_id || org.id.substring(0, 8)} • ${org.words_learned || '?'} words</span>
+                            </div>
+                            <div class="vocab-header-controls">
+                                <div class="vocab-search-box">
+                                    <input type="text" class="vocab-search-input" id="${prefix}Search" placeholder="Search words or associations...">
+                                </div>
+                                <select class="vocab-filter-select" id="${prefix}Frame"><option value="all">All Frames</option></select>
+                                <select class="vocab-filter-select" id="${prefix}Source"><option value="all">All Sources</option></select>
+                            </div>
+                        </div>
+
+                        <div class="vocab-main">
+                            <div class="vocab-master">
+                                <div class="vocab-stats-bar" id="${prefix}Stats"><div class="vocab-stat"><span class="label">Loading...</span></div></div>
+                                <div class="vocab-table-wrap" id="${prefix}TableWrap">
+                                    <div style="padding: 60px; text-align: center; color: var(--text-muted);"><div style="font-size: 2em; margin-bottom: 12px;">⏳</div>Loading vocabulary...</div>
+                                </div>
+                                <div class="vocab-pagination" id="${prefix}Pagination"></div>
+                            </div>
+                            <div class="vocab-detail" id="${prefix}Detail">
+                                <div class="vocab-detail-empty"><div class="icon">👈</div><div class="text">Select a word to explore</div><div class="hint">Click any row in the table to see full details, associations, and usage history</div></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                const state = {
+                    orgId: microscopeState.orgId,
+                    orgShortId: org.short_id || org.id.substring(0, 8),
+                    data: null,
+                    allItems: [],
+                    filteredItems: [],
+                    page: 1,
+                    pageSize: 100,
+                    search: '',
+                    frame: 'all',
+                    source: 'all',
+                    sort: 'magnetism',
+                    sortDir: 'desc',
+                    selectedWord: null,
+                    ids: {
+                        search: `${prefix}Search`,
+                        frame: `${prefix}Frame`,
+                        source: `${prefix}Source`,
+                        stats: `${prefix}Stats`,
+                        tableWrap: `${prefix}TableWrap`,
+                        pagination: `${prefix}Pagination`,
+                        detail: `${prefix}Detail`
+                    }
+                };
+
+                // attach to microscopeState for jump links
+                microscopeState._vocabEmbed = state;
+
+                // Wire events
+                const searchEl = document.getElementById(state.ids.search);
+                const frameEl = document.getElementById(state.ids.frame);
+                const sourceEl = document.getElementById(state.ids.source);
+
+                searchEl.addEventListener('input', () => {
+                    state.search = (searchEl.value || '').toLowerCase();
+                    state.page = 1;
+                    applyEmbedVocabFilters(state);
+                });
+                frameEl.addEventListener('change', () => { state.page = 1; applyEmbedVocabFilters(state); });
+                sourceEl.addEventListener('change', () => { state.page = 1; applyEmbedVocabFilters(state); });
+
+                // Load
+                try {
+                    const response = await fetch(`/api/organism/${state.orgId}/vocabulary?per_page=5000`);
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    const data = await response.json();
+                    state.data = data;
+                    state.allItems = data.items || [];
+                    populateEmbedVocabFilters(state);
+                    applyEmbedVocabFilters(state);
+                } catch (err) {
+                    console.error('Failed to load vocabulary:', err);
+                    const wrap = document.getElementById(state.ids.tableWrap);
+                    if (wrap) {
+                        wrap.innerHTML = `
+                            <div style="padding: 60px; text-align: center; color: var(--danger);">
+                                <div style="font-size: 2em; margin-bottom: 12px;">❌</div>
+                                Failed to load vocabulary<br>
+                                <span style="color: var(--text-muted); font-size: 0.85em;">${escapeHtml(err.message)}</span>
+                            </div>
+                        `;
+                    }
+                }
+            }
+
+            function populateEmbedVocabFilters(state) {
+                const data = state.data;
+                if (!data?.filters) return;
+
+                const frameSelect = document.getElementById(state.ids.frame);
+                frameSelect.innerHTML = '<option value="all">All Frames</option>';
+                Object.entries(data.filters.frames || {})
+                    .sort((a, b) => b[1] - a[1])
+                    .forEach(([frame, count]) => {
+                        frameSelect.innerHTML += `<option value="${escapeAttr(frame)}">${escapeHtml(frame)} (${count})</option>`;
+                    });
+
+                const sourceSelect = document.getElementById(state.ids.source);
+                sourceSelect.innerHTML = '<option value="all">All Sources</option>';
+                Object.entries(data.filters.sources || {})
+                    .sort((a, b) => b[1] - a[1])
+                    .forEach(([source, count]) => {
+                        sourceSelect.innerHTML += `<option value="${escapeAttr(source)}">${escapeHtml(source)} (${count})</option>`;
+                    });
+            }
+
+            function applyEmbedVocabFilters(state) {
+                state.frame = document.getElementById(state.ids.frame)?.value || 'all';
+                state.source = document.getElementById(state.ids.source)?.value || 'all';
+
+                let filtered = state.allItems.filter(item => {
+                    if (state.frame !== 'all' && item.semantic_frame !== state.frame) return false;
+                    if (state.source !== 'all' && item.source !== state.source) return false;
+                    if (state.search) {
+                        const searchIn = String(item.word || '').toLowerCase() + ' ' +
+                            (item.associations || []).map(a => a.target).join(' ').toLowerCase();
+                        if (!searchIn.includes(state.search)) return false;
+                    }
+                    return true;
+                });
+
+                const sortKey = state.sort;
+                const sortDir = state.sortDir === 'desc' ? -1 : 1;
+                filtered.sort((a, b) => {
+                    let aVal = a[sortKey], bVal = b[sortKey];
+                    if (typeof aVal === 'string') return sortDir * String(aVal).localeCompare(String(bVal));
+                    return sortDir * ((aVal || 0) - (bVal || 0));
+                });
+
+                state.filteredItems = filtered;
+                renderEmbedVocabTable(state);
+            }
+
+            function setEmbedVocabSort(state, column) {
+                if (state.sort === column) {
+                    state.sortDir = state.sortDir === 'desc' ? 'asc' : 'desc';
+                } else {
+                    state.sort = column;
+                    state.sortDir = 'desc';
+                }
+                state.page = 1;
+                applyEmbedVocabFilters(state);
+            }
+
+            function renderEmbedVocabTable(state) {
+                const filtered = state.filteredItems || [];
+                const total = state.allItems.length;
+                const pageSize = state.pageSize;
+                const page = state.page;
+                const totalPages = Math.ceil(filtered.length / pageSize) || 1;
+                const start = (page - 1) * pageSize;
+                const pageItems = filtered.slice(start, start + pageSize);
+
+                const stats = document.getElementById(state.ids.stats);
+                if (stats) {
+                    stats.innerHTML = `
+                        <div class="vocab-stat"><span class="label">Total:</span><span class="value">${total}</span></div>
+                        <div class="vocab-stat"><span class="label">Filtered:</span><span class="value">${filtered.length}</span></div>
+                        <div class="vocab-stat"><span class="label">Page:</span><span class="value">${page}/${totalPages}</span></div>
+                    `;
+                }
+
+                const sortClass = (col) => state.sort === col ? (state.sortDir === 'asc' ? 'sorted-asc' : 'sorted-desc') : '';
+                const wrap = document.getElementById(state.ids.tableWrap);
+                if (!wrap) return;
+
+                let html = `
+                    <table class="vocab-table">
+                        <thead>
+                            <tr>
+                                <th onclick="setEmbedVocabSort(microscopeState._vocabEmbed, 'word')" class="${sortClass('word')}">Word</th>
+                                <th onclick="setEmbedVocabSort(microscopeState._vocabEmbed, 'semantic_frame')" class="${sortClass('semantic_frame')}">Frame</th>
+                                <th onclick="setEmbedVocabSort(microscopeState._vocabEmbed, 'magnetism')" class="${sortClass('magnetism')}">Magnetism</th>
+                                <th onclick="setEmbedVocabSort(microscopeState._vocabEmbed, 'strength')" class="${sortClass('strength')}">Strength</th>
+                                <th onclick="setEmbedVocabSort(microscopeState._vocabEmbed, 'usage_count')" class="${sortClass('usage_count')}">Usage</th>
+                                <th onclick="setEmbedVocabSort(microscopeState._vocabEmbed, 'association_count')" class="${sortClass('association_count')}">Assoc</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                for (const item of pageItems) {
+                    const isSelected = state.selectedWord === item.word;
+                    const magClass = item.magnetism > 0.7 ? 'high' : item.magnetism > 0.4 ? 'medium' : 'low';
+                    const frameClass = (item.semantic_frame || 'unknown').toLowerCase().replace(/[^a-z]/g, '');
+                    html += `
+                        <tr class="${isSelected ? 'selected' : ''}" onclick="selectEmbedVocabWord(microscopeState._vocabEmbed, '${escapeAttr(item.word)}')">
+                            <td><span class="vocab-word">${escapeHtml(item.word)}</span></td>
+                            <td><span class="vocab-frame ${frameClass}">${escapeHtml(item.semantic_frame || '?')}</span></td>
+                            <td><span class="vocab-metric ${magClass}">${Number(item.magnetism || 0).toFixed(3)}</span></td>
+                            <td><span class="vocab-metric">${Number(item.strength || 0).toFixed(3)}</span></td>
+                            <td>${item.usage_count || 0}</td>
+                            <td>${item.association_count || 0}</td>
+                        </tr>
+                    `;
+                }
+
+                html += '</tbody></table>';
+                wrap.innerHTML = html;
+
+                const pag = document.getElementById(state.ids.pagination);
+                if (pag) {
+                    pag.innerHTML = `
+                        <div class="vocab-page-info">Showing ${filtered.length ? (start + 1) : 0}-${Math.min(start + pageSize, filtered.length)} of ${filtered.length}</div>
+                        <div class="vocab-page-controls">
+                            <button class="vocab-page-btn" onclick="embedVocabGoPage(1)" ${page === 1 ? 'disabled' : ''}>⏮</button>
+                            <button class="vocab-page-btn" onclick="embedVocabGoPage(${page - 1})" ${page === 1 ? 'disabled' : ''}>◀</button>
+                            <button class="vocab-page-btn" onclick="embedVocabGoPage(${page + 1})" ${page >= totalPages ? 'disabled' : ''}>▶</button>
+                            <button class="vocab-page-btn" onclick="embedVocabGoPage(${totalPages})" ${page >= totalPages ? 'disabled' : ''}>⏭</button>
+                        </div>
+                    `;
+                }
+            }
+
+            function embedVocabGoPage(p) {
+                const state = microscopeState._vocabEmbed;
+                if (!state) return;
+                const totalPages = Math.ceil((state.filteredItems || []).length / state.pageSize) || 1;
+                state.page = Math.max(1, Math.min(p, totalPages));
+                renderEmbedVocabTable(state);
+            }
+
+            function selectEmbedVocabWord(state, word) {
+                state.selectedWord = word;
+
+                // update selection class
+                document.querySelectorAll(`#${state.ids.tableWrap} .vocab-table tr`).forEach(tr => tr.classList.remove('selected'));
+                const rows = document.querySelectorAll(`#${state.ids.tableWrap} .vocab-table tbody tr`);
+                rows.forEach(tr => {
+                    if (tr.querySelector('.vocab-word')?.textContent === word) tr.classList.add('selected');
+                });
+
+                const item = state.allItems.find(i => i.word === word);
+                if (!item) return;
+                renderEmbedVocabDetail(state, item);
+            }
+
+            function renderEmbedVocabDetail(state, item) {
+                const panel = document.getElementById(state.ids.detail);
+                if (!panel) return;
+                const assocs = (item.associations || []).sort((a, b) => b.strength - a.strength);
+                panel.innerHTML = `
+                    <div class="vocab-detail-header">
+                        <div class="vocab-detail-word">${escapeHtml(item.word)}</div>
+                        <div class="vocab-detail-meta">
+                            <div class="vocab-detail-tag"><span class="label">Frame:</span><span class="value"><span class="vocab-frame ${(item.semantic_frame || '').toLowerCase()}">${escapeHtml(item.semantic_frame || 'unknown')}</span></span></div>
+                            <div class="vocab-detail-tag"><span class="label">Source:</span><span class="value">${escapeHtml(item.source || 'unknown')}</span></div>
+                            <div class="vocab-detail-tag"><span class="label">Oscillating:</span><span class="value"><span class="vocab-oscillating-badge ${item.is_oscillating ? 'yes' : 'no'}">${item.is_oscillating ? '〰️ YES' : '— NO'}</span></span></div>
+                        </div>
+                    </div>
+                    <div class="vocab-detail-body">
+                        <div class="vocab-section">
+                            <div class="vocab-section-header"><span class="icon">📊</span><h3>Metrics</h3></div>
+                            <div class="vocab-metrics-grid">
+                                <div class="vocab-metric-card highlight"><div class="value">${Number(item.magnetism || 0).toFixed(3)}</div><div class="label">Magnetism</div></div>
+                                <div class="vocab-metric-card"><div class="value">${Number(item.strength || 0).toFixed(3)}</div><div class="label">Strength</div></div>
+                                <div class="vocab-metric-card"><div class="value">${item.base_magnetism?.toFixed(3) || '—'}</div><div class="label">Base Mag</div></div>
+                                <div class="vocab-metric-card"><div class="value">${item.usage_count || 0}</div><div class="label">Usage</div></div>
+                                <div class="vocab-metric-card ${item.avg_outcome > 0 ? 'positive' : item.avg_outcome < 0 ? 'negative' : ''}"><div class="value">${item.avg_outcome >= 0 ? '+' : ''}${item.avg_outcome?.toFixed(2) || '0.00'}</div><div class="label">Avg Outcome</div></div>
+                                <div class="vocab-metric-card ${item.satiation > 0.7 ? 'warning' : ''}"><div class="value">${item.satiation?.toFixed(3) || '0.000'}</div><div class="label">Satiation</div></div>
+                                <div class="vocab-metric-card"><div class="value">${assocs.length}</div><div class="label">Associations</div></div>
+                                <div class="vocab-metric-card"><div class="value">${assocs.filter(a => a.is_forbidden).length}</div><div class="label">Forbidden</div></div>
+                            </div>
+                        </div>
+                        <div class="vocab-section">
+                            <div class="vocab-section-header"><span class="icon">🔗</span><h3>Associations</h3><span class="count">${assocs.length} connections</span></div>
+                            ${assocs.length > 0 ? `
+                                <table class="vocab-assoc-table">
+                                    <thead><tr><th>Target Word</th><th>Strength</th><th>Reason</th><th>Resonance</th></tr></thead>
+                                    <tbody>
+                                        ${assocs.slice(0, 50).map(a => `
+                                            <tr>
+                                                <td><span class="vocab-assoc-word" onclick="jumpToEmbedVocabWord('${escapeAttr(a.target)}')">${escapeHtml(a.target)}</span>${a.is_forbidden ? '<span class="vocab-assoc-forbidden" title="Forbidden association">🚫</span>' : ''}</td>
+                                                <td><span class="vocab-assoc-strength ${a.strength > 0.7 ? 'strong' : a.strength > 0.3 ? 'moderate' : 'weak'}">${Number(a.strength || 0).toFixed(3)}</span></td>
+                                                <td><span class="vocab-assoc-reason">${escapeHtml(a.reason || 'unknown')}</span></td>
+                                                <td>${a.resonance?.toFixed(3) || '—'}</td>
+                                            </tr>
+                                        `).join('')}
+                                        ${assocs.length > 50 ? `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">... and ${assocs.length - 50} more</td></tr>` : ''}
+                                    </tbody>
+                                </table>
+                            ` : '<div style="color: var(--text-muted); padding: 20px; text-align: center;">No associations yet</div>'}
+                        </div>
+                    </div>
+                `;
+            }
+
+            function jumpToEmbedVocabWord(word) {
+                const state = microscopeState._vocabEmbed;
+                if (!state) return;
+                const idx = state.allItems.findIndex(i => i.word === word);
+                if (idx === -1) {
+                    alert(`Word "${word}" not found in vocabulary`);
+                    return;
+                }
+
+                // Clear filters
+                const searchEl = document.getElementById(state.ids.search);
+                const frameEl = document.getElementById(state.ids.frame);
+                const sourceEl = document.getElementById(state.ids.source);
+                if (searchEl) searchEl.value = '';
+                if (frameEl) frameEl.value = 'all';
+                if (sourceEl) sourceEl.value = 'all';
+                state.search = '';
+                state.frame = 'all';
+                state.source = 'all';
+                applyEmbedVocabFilters(state);
+
+                const filteredIdx = state.filteredItems.findIndex(i => i.word === word);
+                if (filteredIdx !== -1) {
+                    state.page = Math.floor(filteredIdx / state.pageSize) + 1;
+                    renderEmbedVocabTable(state);
+                }
+
+                selectEmbedVocabWord(state, word);
+            }
+
+            function renderMicroscopeNeural() {
+                const org = microscopeState.org;
+                const el = document.getElementById('microscopePaneNeural');
+                if (!org || !el) return;
+
+                // Build neural metrics data
+                const metrics = [
+                    { key: 'brain_params', icon: '🧠', name: 'Brain Parameters', value: org.brain_params || 0, display: formatBigNum(org.brain_params || 0), category: 'architecture', desc: 'Total trainable parameters in the neural network. Larger networks can learn more complex behaviors but require more computational resources.' },
+                    { key: 'hidden_dim', icon: '📐', name: 'Hidden Dimension', value: org.hidden_dim || 0, display: org.hidden_dim || 0, category: 'architecture', desc: 'Size of hidden layers in the neural network. Higher dimensions allow more nuanced internal representations.' },
+                    { key: 'epsilon', icon: '🎲', name: 'Exploration Rate (ε)', value: org.epsilon || 0, display: (org.epsilon || 0).toFixed(4), category: 'learning', desc: 'Probability of taking random actions for exploration vs exploitation. Higher values = more exploration, lower = more exploitation of learned strategies.' },
+                    { key: 'language_head', icon: '💬', name: 'Language Head', value: org.has_language_head ? 1 : 0, display: org.has_language_head ? '✓ Active' : '✗ Inactive', category: 'language', desc: 'Whether this organism has developed language processing capabilities. Required for vocabulary learning and communication.' },
+                    { key: 'experience_buffer', icon: '📦', name: 'Experience Buffer', value: org.experience_buffer_size || 0, display: formatBigNum(org.experience_buffer_size || 0), category: 'memory', desc: 'Number of stored experiences for replay learning. Larger buffers enable better long-term learning but use more memory.' },
+                    { key: 'action_history', icon: '📜', name: 'Action History', value: org.action_history_length || 0, display: formatBigNum(org.action_history_length || 0), category: 'memory', desc: 'Length of recorded action sequence. Used to analyze behavioral patterns and fingerprints.' },
+                    { key: 'vocab_util', icon: '📊', name: 'Vocabulary Utilization', value: org.vocab_utilization || 0, display: `${org.vocab_utilization || 0}%`, category: 'language', desc: 'Percentage of known vocabulary actively used in communication. Higher utilization indicates effective language application.' },
+                    { key: 'gym_exp', icon: '🏋️', name: 'Gym Experiences', value: org.gym_experiences || 0, display: org.gym_experiences || 0, category: 'learning', desc: 'Training sessions completed in controlled environments. More gym experience typically correlates with refined combat skills.' },
+                    { key: 'words_learned', icon: '📖', name: 'Words Learned', value: org.words_learned || 0, display: org.words_learned || 0, category: 'language', desc: 'Total vocabulary size. Larger vocabularies enable richer communication and semantic understanding.' },
+                    { key: 'mastery_level', icon: '🎓', name: 'Mastery Level', value: org.mastery_level || 0, display: org.mastery_level || 0, category: 'language', desc: 'Overall language mastery tier. Determines vocabulary capacity limits and learning rates.' }
+                ];
+
+                // Store state for sorting and selection
+                microscopeState._neural = {
+                    metrics: metrics,
+                    sort: 'value',
+                    sortDir: 'desc',
+                    selected: null
+                };
+
+                el.innerHTML = `
+                    <div class="neural-header">
+                        <div class="neural-header-left">
+                            <h2>🧠 Neural Architecture</h2>
+                            <span class="subtitle">Organism ${org.short_id || org.id.substring(0, 8)} • ${formatBigNum(org.brain_params || 0)} parameters</span>
+                        </div>
+                    </div>
+                    <div class="neural-main">
+                        <div class="neural-master">
+                            <div class="neural-table-wrap" id="neuralTableWrap"></div>
+                        </div>
+                        <div class="neural-detail" id="neuralDetail">
+                            <div class="neural-detail-empty">
+                                <div class="icon">👈</div>
+                                <div class="text">Select a metric to explore</div>
+                                <div class="hint">Click any row in the table to see full details and context</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                renderNeuralTable();
+            }
+
+            function renderNeuralTable() {
+                const state = microscopeState._neural;
+                if (!state) return;
+
+                let metrics = [...state.metrics];
+                
+                // Sort
+                const sortDir = state.sortDir === 'desc' ? -1 : 1;
+                metrics.sort((a, b) => {
+                    if (state.sort === 'name') return sortDir * a.name.localeCompare(b.name);
+                    if (state.sort === 'category') return sortDir * a.category.localeCompare(b.category);
+                    return sortDir * ((a.value || 0) - (b.value || 0));
+                });
+
+                const sortClass = (col) => state.sort === col ? (state.sortDir === 'asc' ? 'sorted-asc' : 'sorted-desc') : '';
+
+                const wrap = document.getElementById('neuralTableWrap');
+                if (!wrap) return;
+
+                wrap.innerHTML = `
+                    <table class="neural-table">
+                        <thead>
+                            <tr>
+                                <th onclick="setNeuralSort('name')" class="${sortClass('name')}">Metric</th>
+                                <th onclick="setNeuralSort('category')" class="${sortClass('category')}">Category</th>
+                                <th onclick="setNeuralSort('value')" class="${sortClass('value')}">Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${metrics.map(m => {
+                                const isSelected = state.selected === m.key;
+                                const valueClass = m.key === 'brain_params' ? 'highlight' : 
+                                                   m.key === 'language_head' && m.value ? 'positive' :
+                                                   m.key === 'epsilon' && m.value > 0.3 ? 'warning' : '';
+                                return `
+                                    <tr class="${isSelected ? 'selected' : ''}" onclick="selectNeuralMetric('${m.key}')">
+                                        <td>
+                                            <div class="metric-name">
+                                                <span class="icon">${m.icon}</span>
+                                                <span>${m.name}</span>
+                                            </div>
+                                        </td>
+                                        <td><span class="category-badge ${m.category}">${m.category}</span></td>
+                                        <td><span class="metric-value ${valueClass}">${m.display}</span></td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                `;
+            }
+
+            function setNeuralSort(column) {
+                const state = microscopeState._neural;
+                if (!state) return;
+                if (state.sort === column) {
+                    state.sortDir = state.sortDir === 'desc' ? 'asc' : 'desc';
+                } else {
+                    state.sort = column;
+                    state.sortDir = 'desc';
+                }
+                renderNeuralTable();
+            }
+
+            function selectNeuralMetric(key) {
+                const state = microscopeState._neural;
+                if (!state) return;
+                const org = microscopeState.org;
+                const metric = state.metrics.find(m => m.key === key);
+                if (!metric) return;
+
+                state.selected = key;
+
+                // Update selection in table
+                document.querySelectorAll('.neural-table tbody tr').forEach(tr => tr.classList.remove('selected'));
+                const rows = document.querySelectorAll('.neural-table tbody tr');
+                rows.forEach(tr => {
+                    if (tr.onclick?.toString().includes(`'${key}'`)) tr.classList.add('selected');
+                });
+                // Better selection update
+                renderNeuralTable();
+
+                // Update detail panel
+                const detail = document.getElementById('neuralDetail');
+                if (!detail) return;
+
+                detail.innerHTML = `
+                    <div class="neural-detail-content">
+                        <div class="detail-header">
+                            <span class="icon">${metric.icon}</span>
+                            <h3>${metric.name}</h3>
+                        </div>
+                        <div class="detail-value-box">
+                            <div class="value">${metric.display}</div>
+                            <div class="unit">${metric.category}</div>
+                        </div>
+                        <div class="detail-description">${metric.desc}</div>
+                        <div class="detail-related">
+                            <h4>Related Metrics</h4>
+                            <div class="related-item"><span class="label">Brain Parameters</span><span class="value">${formatBigNum(org.brain_params || 0)}</span></div>
+                            <div class="related-item"><span class="label">Hidden Dimension</span><span class="value">${org.hidden_dim || 0}</span></div>
+                            <div class="related-item"><span class="label">Experience Buffer</span><span class="value">${formatBigNum(org.experience_buffer_size || 0)}</span></div>
+                            <div class="related-item"><span class="label">Vocabulary Size</span><span class="value">${org.words_learned || 0} words</span></div>
+                            <div class="related-item"><span class="label">Mastery Level</span><span class="value">${org.mastery_level || 0}</span></div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            function renderMicroscopeBehavior() {
+                const org = microscopeState.org;
+                const el = document.getElementById('microscopePaneBehavior');
+                if (!org || !el) return;
+
+                const { names: actionNames, colors: actionColors, abbrev } = getActionMeta();
+                const fingerprint = org.behavioral_fingerprint || [0, 0, 0, 0, 0, 0];
+                const recentActions = org.recent_actions || [];
+                const maxFp = Math.max(...fingerprint, 0.01);
+
+                // Count recent actions by type
+                const actionCounts = [0, 0, 0, 0, 0, 0];
+                recentActions.forEach(a => {
+                    const idx = Number(a);
+                    if (idx >= 0 && idx < 6) actionCounts[idx]++;
+                });
+                const totalActions = recentActions.length || 1;
+
+                // Build behavior metrics
+                const metrics = actionNames.map((name, i) => ({
+                    key: `action_${i}`,
+                    index: i,
+                    name: name,
+                    abbrev: abbrev[i],
+                    color: actionColors[i],
+                    fingerprint: fingerprint[i] || 0,
+                    fingerprintPct: ((fingerprint[i] || 0) * 100).toFixed(1),
+                    recentCount: actionCounts[i],
+                    recentPct: ((actionCounts[i] / totalActions) * 100).toFixed(1),
+                    barPct: Math.round(((fingerprint[i] || 0) / maxFp) * 100)
+                }));
+
+                // Add personality and alignment as special rows
+                const personalityIcons = { diplomat: '🤝', warrior: '⚔️', explorer: '🧭', hermit: '🕯️', opportunist: '🎯', balanced: '⚖️' };
+                const pType = (org.personality_type || 'unknown').toLowerCase();
+
+                // Store state
+                microscopeState._behavior = {
+                    metrics: metrics,
+                    sort: 'fingerprint',
+                    sortDir: 'desc',
+                    selected: null,
+                    org: org,
+                    actionNames: actionNames,
+                    actionColors: actionColors,
+                    totalActions: totalActions,
+                    recentActions: recentActions
+                };
+
+                el.innerHTML = `
+                    <div class="behavior-header">
+                        <div class="behavior-header-left">
+                            <h2>🧬 Behavioral Analysis</h2>
+                            <span class="subtitle">${personalityIcons[pType] || '◆'} ${org.personality_type || 'Unknown'} • ${org.alignment || 'Unknown'} • ${recentActions.length} recent actions</span>
+                        </div>
+                    </div>
+                    <div class="behavior-main">
+                        <div class="behavior-master">
+                            <div class="behavior-table-wrap" id="behaviorTableWrap"></div>
+                        </div>
+                        <div class="behavior-detail" id="behaviorDetail">
+                            <div class="behavior-detail-empty">
+                                <div class="icon">👈</div>
+                                <div class="text">Select an action type to explore</div>
+                                <div class="hint">Click any row to see detailed behavior analysis</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                renderBehaviorTable();
+            }
+
+            function renderBehaviorTable() {
+                const state = microscopeState._behavior;
+                if (!state) return;
+
+                let metrics = [...state.metrics];
+                
+                // Sort
+                const sortDir = state.sortDir === 'desc' ? -1 : 1;
+                metrics.sort((a, b) => {
+                    if (state.sort === 'name') return sortDir * a.name.localeCompare(b.name);
+                    if (state.sort === 'recentCount') return sortDir * (a.recentCount - b.recentCount);
+                    return sortDir * (a.fingerprint - b.fingerprint);
+                });
+
+                const sortClass = (col) => state.sort === col ? (state.sortDir === 'asc' ? 'sorted-asc' : 'sorted-desc') : '';
+
+                const wrap = document.getElementById('behaviorTableWrap');
+                if (!wrap) return;
+
+                wrap.innerHTML = `
+                    <table class="behavior-table">
+                        <thead>
+                            <tr>
+                                <th onclick="setBehaviorSort('name')" class="${sortClass('name')}">Action Type</th>
+                                <th onclick="setBehaviorSort('fingerprint')" class="${sortClass('fingerprint')}">Fingerprint %</th>
+                                <th>Distribution</th>
+                                <th onclick="setBehaviorSort('recentCount')" class="${sortClass('recentCount')}">Recent Count</th>
+                                <th>Recent %</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${metrics.map(m => {
+                                const isSelected = state.selected === m.key;
+                                return `
+                                    <tr class="${isSelected ? 'selected' : ''}" onclick="selectBehaviorAction('${m.key}')">
+                                        <td>
+                                            <div class="action-name">
+                                                <span class="action-color" style="background: ${m.color}"></span>
+                                                <span>${m.name}</span>
+                                            </div>
+                                        </td>
+                                        <td><span class="action-value" style="color: ${m.color}">${m.fingerprintPct}%</span></td>
+                                        <td>
+                                            <div class="action-bar">
+                                                <div class="action-bar-fill" style="width: ${m.barPct}%; background: ${m.color}"></div>
+                                            </div>
+                                        </td>
+                                        <td><span class="action-value">${m.recentCount}</span></td>
+                                        <td><span class="action-value">${m.recentPct}%</span></td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                `;
+            }
+
+            function setBehaviorSort(column) {
+                const state = microscopeState._behavior;
+                if (!state) return;
+                if (state.sort === column) {
+                    state.sortDir = state.sortDir === 'desc' ? 'asc' : 'desc';
+                } else {
+                    state.sort = column;
+                    state.sortDir = 'desc';
+                }
+                renderBehaviorTable();
+            }
+
+            function selectBehaviorAction(key) {
+                const state = microscopeState._behavior;
+                if (!state) return;
+                const metric = state.metrics.find(m => m.key === key);
+                if (!metric) return;
+                const org = state.org;
+
+                state.selected = key;
+                renderBehaviorTable();
+
+                const detail = document.getElementById('behaviorDetail');
+                if (!detail) return;
+
+                // Action descriptions
+                const descriptions = {
+                    0: 'Movement actions allow the organism to navigate the environment, explore new areas, and position itself strategically for resources or interactions.',
+                    1: 'Cooperation actions enable mutual benefit with other organisms. High cooperation ratios indicate a diplomatic or social strategy.',
+                    2: 'Competition actions involve direct conflict with other organisms. High competition indicates an aggressive or territorial strategy.',
+                    3: 'Rest actions allow the organism to conserve energy and recover. Essential for long-term survival.',
+                    4: 'Reproduction actions attempt to create offspring. Success depends on fitness level and resource availability.',
+                    5: 'Isolation actions involve withdrawal from social interactions. May indicate defensive behavior or resource hoarding.'
+                };
+
+                detail.innerHTML = `
+                    <div class="behavior-detail-content">
+                        <div class="detail-header">
+                            <span class="color-swatch" style="background: ${metric.color}"></span>
+                            <h3>${metric.name}</h3>
+                        </div>
+                        <div class="detail-value-box">
+                            <div class="value" style="color: ${metric.color}">${metric.fingerprintPct}%</div>
+                            <div class="bar">
+                                <div class="bar-fill" style="width: ${metric.barPct}%; background: ${metric.color}"></div>
+                            </div>
+                        </div>
+                        <div class="detail-description">${descriptions[metric.index] || 'No description available.'}</div>
+                        <div class="detail-stats">
+                            <h4>Action Statistics</h4>
+                            <div class="stats-item"><span class="label">Fingerprint Value</span><span class="value">${metric.fingerprint.toFixed(4)}</span></div>
+                            <div class="stats-item"><span class="label">Recent Count</span><span class="value">${metric.recentCount} / ${state.totalActions}</span></div>
+                            <div class="stats-item"><span class="label">Recent Percentage</span><span class="value">${metric.recentPct}%</span></div>
+                            <div class="stats-item"><span class="label">Personality Type</span><span class="value">${org.personality_type || 'Unknown'}</span></div>
+                            <div class="stats-item"><span class="label">Alignment</span><span class="value">${org.alignment || 'Unknown'}</span></div>
+                            <div class="stats-item"><span class="label">Dominant Action</span><span class="value">${org.dominant_action || 'Unknown'}</span></div>
+                            <div class="stats-item"><span class="label">Cooperation Ratio</span><span class="value">${((org.cooperation_ratio || 0) * 100).toFixed(1)}%</span></div>
+                            <div class="stats-item"><span class="label">Aggression Ratio</span><span class="value">${((org.aggression_ratio || 0) * 100).toFixed(1)}%</span></div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            function renderMicroscopeCombat() {
+                const org = microscopeState.org;
+                const el = document.getElementById('microscopePaneCombat');
+                if (!org || !el) return;
+
+                // Calculate derived stats
+                const totalBattles = (org.battle_wins || 0) + (org.battle_losses || 0);
+                const battleWinRate = totalBattles > 0 ? ((org.battle_wins || 0) / totalBattles * 100) : 0;
+                const totalTournament = (org.tournament_wins || 0) + (org.tournament_losses || 0);
+                const tournamentWinRate = totalTournament > 0 ? ((org.tournament_wins || 0) / totalTournament * 100) : 0;
+                const battleAggression = org.alignment_scores?.battle_aggression || 0;
+                const isBattleHardened = (org.strengths || []).includes('battle_hardened');
+                const isPoorFighter = (org.weaknesses || []).includes('poor_fighter');
+
+                // Build comprehensive combat metrics
+                const metrics = [
+                    // Battle Stats
+                    { key: 'battle_wins', icon: '🏆', name: 'Battle Victories', value: org.battle_wins || 0, display: org.battle_wins || 0, category: 'battle', valueClass: 'positive', desc: 'Total victories in head-to-head battles. Each win indicates successful application of learned combat strategies.' },
+                    { key: 'battle_losses', icon: '💀', name: 'Battle Defeats', value: org.battle_losses || 0, display: org.battle_losses || 0, category: 'battle', valueClass: 'danger', desc: 'Total defeats in battles. Losses provide learning opportunities through experience replay.' },
+                    { key: 'battle_win_rate', icon: '📊', name: 'Battle Win Rate', value: battleWinRate, display: `${battleWinRate.toFixed(1)}%`, category: 'battle', valueClass: battleWinRate >= 50 ? 'positive' : 'warning', desc: 'Percentage of battles won. A key indicator of combat effectiveness.' },
+                    { key: 'total_battles', icon: '⚔️', name: 'Total Battles', value: totalBattles, display: totalBattles, category: 'battle', desc: 'Combined count of all battle engagements. More experience generally leads to better combat skills.' },
+                    
+                    // Tournament Stats
+                    { key: 'tournament_wins', icon: '🥇', name: 'Tournament Wins', value: org.tournament_wins || 0, display: org.tournament_wins || 0, category: 'tournament', valueClass: 'highlight', desc: 'Victories in structured tournament competitions. Tournament wins carry more prestige than regular battles.' },
+                    { key: 'tournament_losses', icon: '🥈', name: 'Tournament Losses', value: org.tournament_losses || 0, display: org.tournament_losses || 0, category: 'tournament', desc: 'Defeats in tournament competitions. Used to calculate tournament ranking.' },
+                    { key: 'tournament_win_rate', icon: '📈', name: 'Tournament Win Rate', value: tournamentWinRate, display: `${tournamentWinRate.toFixed(1)}%`, category: 'tournament', valueClass: tournamentWinRate >= 50 ? 'highlight' : 'warning', desc: 'Success rate in tournament battles. Elite organisms maintain >60% tournament win rates.' },
+                    
+                    // Highlander Stats
+                    { key: 'highlander_kills', icon: '☠️', name: 'Highlander Kills', value: org.highlander_kills || 0, display: org.highlander_kills || 0, category: 'highlander', valueClass: 'purple', desc: 'Permanent eliminations in Highlander mode. "There can be only one" - kills absorb the defeated organism\'s knowledge.' },
+                    
+                    // Alliance Warfare
+                    { key: 'war_victories', icon: '🏰', name: 'War Victories', value: org.war_victories || 0, display: org.war_victories || 0, category: 'alliance', valueClass: 'positive', desc: 'Victories in alliance vs alliance warfare. Contributes to alliance strength and confederation status.' },
+                    
+                    // Training Stats
+                    { key: 'dojo_sessions', icon: '🥋', name: 'Dojo Sessions', value: org.dojo_sessions || 0, display: org.dojo_sessions || 0, category: 'training', desc: 'Structured training sessions completed. Dojo training provides focused skill development.' },
+                    { key: 'gym_experiences', icon: '🏋️', name: 'Gym Experiences', value: org.gym_experiences || 0, display: org.gym_experiences || 0, category: 'training', desc: 'Training episodes in controlled gym environments. Builds foundational combat skills.' },
+                    { key: 'skills_count', icon: '🎯', name: 'Skills Mastered', value: (org.skills_mastered || []).length, display: (org.skills_mastered || []).length, category: 'training', valueClass: (org.skills_mastered || []).length > 0 ? 'positive' : '', desc: 'Number of combat skills mastered. Each skill provides specific tactical advantages.' },
+                    
+                    // Streak Stats
+                    { key: 'win_streak', icon: '🔥', name: 'Current Win Streak', value: org.win_streak || 0, display: org.win_streak || 0, category: 'streak', valueClass: (org.win_streak || 0) >= 3 ? 'warning' : '', desc: 'Consecutive victories without defeat. Hot streaks indicate peak performance.' },
+                    { key: 'best_win_streak', icon: '⭐', name: 'Best Win Streak', value: org.best_win_streak || 0, display: org.best_win_streak || 0, category: 'streak', valueClass: 'highlight', desc: 'Longest ever win streak. A record of peak combat dominance.' },
+                    
+                    // Derived Stats
+                    { key: 'battle_aggression', icon: '😤', name: 'Battle Aggression', value: battleAggression, display: `${(battleAggression * 100).toFixed(1)}%`, category: 'battle', valueClass: battleAggression > 0.5 ? 'danger' : '', desc: 'Tendency toward aggressive combat behavior. High aggression may win battles but cost social standing.' }
+                ];
+
+                // Store state
+                microscopeState._combat = {
+                    metrics: metrics,
+                    sort: 'value',
+                    sortDir: 'desc',
+                    selected: null,
+                    org: org,
+                    totalBattles: totalBattles,
+                    isBattleHardened: isBattleHardened,
+                    isPoorFighter: isPoorFighter
+                };
+
+                // Summary stats for header
+                const skillRating = Math.round(1000 + ((org.tournament_wins || 0) * 25) - ((org.tournament_losses || 0) * 15) + ((org.highlander_kills || 0) * 50));
+
+                el.innerHTML = `
+                    <div class="combat-header">
+                        <div class="combat-header-left">
+                            <h2>⚔️ Combat Record</h2>
+                            <span class="subtitle">${battleWinRate.toFixed(1)}% Win Rate • ${totalBattles} Battles • Skill Rating: ${skillRating}</span>
+                        </div>
+                    </div>
+                    <div class="combat-main">
+                        <div class="combat-master">
+                            <div class="combat-table-wrap" id="combatTableWrap"></div>
+                        </div>
+                        <div class="combat-detail" id="combatDetail">
+                            <div class="combat-detail-empty">
+                                <div class="icon">👈</div>
+                                <div class="text">Select a combat stat to explore</div>
+                                <div class="hint">Click any row for detailed breakdown and context</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                renderCombatTable();
+            }
+
+            function renderCombatTable() {
+                const state = microscopeState._combat;
+                if (!state) return;
+
+                let metrics = [...state.metrics];
+                
+                // Sort
+                const sortDir = state.sortDir === 'desc' ? -1 : 1;
+                metrics.sort((a, b) => {
+                    if (state.sort === 'name') return sortDir * a.name.localeCompare(b.name);
+                    if (state.sort === 'category') return sortDir * a.category.localeCompare(b.category);
+                    return sortDir * ((a.value || 0) - (b.value || 0));
+                });
+
+                const sortClass = (col) => state.sort === col ? (state.sortDir === 'asc' ? 'sorted-asc' : 'sorted-desc') : '';
+
+                const wrap = document.getElementById('combatTableWrap');
+                if (!wrap) return;
+
+                wrap.innerHTML = `
+                    <table class="combat-table">
+                        <thead>
+                            <tr>
+                                <th onclick="setCombatSort('name')" class="${sortClass('name')}">Stat</th>
+                                <th onclick="setCombatSort('category')" class="${sortClass('category')}">Category</th>
+                                <th onclick="setCombatSort('value')" class="${sortClass('value')}">Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${metrics.map(m => {
+                                const isSelected = state.selected === m.key;
+                                return `
+                                    <tr class="${isSelected ? 'selected' : ''}" onclick="selectCombatStat('${m.key}')">
+                                        <td>
+                                            <div class="stat-name">
+                                                <span class="icon">${m.icon}</span>
+                                                <span>${m.name}</span>
+                                            </div>
+                                        </td>
+                                        <td><span class="category-badge ${m.category}">${m.category}</span></td>
+                                        <td><span class="stat-value ${m.valueClass || ''}">${m.display}</span></td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                `;
+            }
+
+            function setCombatSort(column) {
+                const state = microscopeState._combat;
+                if (!state) return;
+                if (state.sort === column) {
+                    state.sortDir = state.sortDir === 'desc' ? 'asc' : 'desc';
+                } else {
+                    state.sort = column;
+                    state.sortDir = 'desc';
+                }
+                renderCombatTable();
+            }
+
+            function selectCombatStat(key) {
+                const state = microscopeState._combat;
+                if (!state) return;
+                const metric = state.metrics.find(m => m.key === key);
+                if (!metric) return;
+                const org = state.org;
+
+                state.selected = key;
+                renderCombatTable();
+
+                const detail = document.getElementById('combatDetail');
+                if (!detail) return;
+
+                // Build related stats based on category
+                let relatedHTML = '';
+                if (metric.category === 'battle') {
+                    relatedHTML = `
+                        <div class="related-item"><span class="label">Battle Wins</span><span class="value">${org.battle_wins || 0}</span></div>
+                        <div class="related-item"><span class="label">Battle Losses</span><span class="value">${org.battle_losses || 0}</span></div>
+                        <div class="related-item"><span class="label">Total Battles</span><span class="value">${state.totalBattles}</span></div>
+                        <div class="related-item"><span class="label">Battle Hardened</span><span class="value">${state.isBattleHardened ? '✓ Yes' : '✗ No'}</span></div>
+                    `;
+                } else if (metric.category === 'tournament') {
+                    relatedHTML = `
+                        <div class="related-item"><span class="label">Tournament Wins</span><span class="value">${org.tournament_wins || 0}</span></div>
+                        <div class="related-item"><span class="label">Tournament Losses</span><span class="value">${org.tournament_losses || 0}</span></div>
+                        <div class="related-item"><span class="label">Total Tournaments</span><span class="value">${(org.tournament_wins || 0) + (org.tournament_losses || 0)}</span></div>
+                    `;
+                } else if (metric.category === 'highlander') {
+                    relatedHTML = `
+                        <div class="related-item"><span class="label">Highlander Kills</span><span class="value">${org.highlander_kills || 0}</span></div>
+                        <div class="related-item"><span class="label">Tournament Wins</span><span class="value">${org.tournament_wins || 0}</span></div>
+                        <div class="related-item"><span class="label">Battle Win Rate</span><span class="value">${state.totalBattles > 0 ? ((org.battle_wins / state.totalBattles) * 100).toFixed(1) : 0}%</span></div>
+                    `;
+                } else if (metric.category === 'alliance') {
+                    relatedHTML = `
+                        <div class="related-item"><span class="label">War Victories</span><span class="value">${org.war_victories || 0}</span></div>
+                        <div class="related-item"><span class="label">Alliance</span><span class="value">${org.alliance_id ? org.alliance_id.substring(0, 8) : 'None'}</span></div>
+                        <div class="related-item"><span class="label">Alliance Reputation</span><span class="value">${(org.alliance_reputation || 0.5).toFixed(2)}</span></div>
+                        <div class="related-item"><span class="label">Confederation Tier</span><span class="value">${org.confederation_tier || 0}</span></div>
+                    `;
+                } else if (metric.category === 'training') {
+                    relatedHTML = `
+                        <div class="related-item"><span class="label">Dojo Sessions</span><span class="value">${org.dojo_sessions || 0}</span></div>
+                        <div class="related-item"><span class="label">Gym Experiences</span><span class="value">${org.gym_experiences || 0}</span></div>
+                        <div class="related-item"><span class="label">Skills Mastered</span><span class="value">${(org.skills_mastered || []).length}</span></div>
+                        <div class="related-item"><span class="label">Experience Buffer</span><span class="value">${formatBigNum(org.experience_buffer_size || 0)}</span></div>
+                    `;
+                } else if (metric.category === 'streak') {
+                    relatedHTML = `
+                        <div class="related-item"><span class="label">Current Streak</span><span class="value">${org.win_streak || 0}</span></div>
+                        <div class="related-item"><span class="label">Best Streak</span><span class="value">${org.best_win_streak || 0}</span></div>
+                        <div class="related-item"><span class="label">Total Battles</span><span class="value">${state.totalBattles}</span></div>
+                    `;
+                }
+
+                // Skills list if relevant
+                let skillsHTML = '';
+                if (metric.category === 'training' && (org.skills_mastered || []).length > 0) {
+                    skillsHTML = `
+                        <div class="detail-related" style="margin-top: 16px;">
+                            <h4>Mastered Skills</h4>
+                            <div style="padding: 16px;">
+                                <div class="skills-grid">
+                                    ${(org.skills_mastered || []).map(s => `<span class="skill-badge">${escapeHtml(s)}</span>`).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                detail.innerHTML = `
+                    <div class="combat-detail-content">
+                        <div class="detail-header">
+                            <span class="icon">${metric.icon}</span>
+                            <h3>${metric.name}</h3>
+                        </div>
+                        <div class="detail-value-box">
+                            <div class="value" style="color: var(--${metric.valueClass === 'positive' ? 'positive' : metric.valueClass === 'danger' ? 'danger' : metric.valueClass === 'highlight' ? 'accent-gold' : metric.valueClass === 'purple' ? 'accent-purple' : 'danger'})">${metric.display}</div>
+                            <div class="unit">${metric.category}</div>
+                        </div>
+                        <div class="detail-description">${metric.desc}</div>
+                        <div class="detail-related">
+                            <h4>Related Stats</h4>
+                            ${relatedHTML}
+                        </div>
+                        ${skillsHTML}
+                    </div>
+                `;
+            }
+
+            function renderMicroscopeSocial() {
+                const org = microscopeState.org;
+                const el = document.getElementById('microscopePaneSocial');
+                if (!org || !el) return;
+
+                const tier = Number(org.confederation_tier || 0);
+                const tierSafe = Math.max(0, Math.min(3, tier));
+                const tierNames = ['None', 'Confederation', 'Empire', 'Hegemony'];
+
+                el.innerHTML = `
+                    <div class="social-hero">
+                        <div class="social-hero-card"><div class="value">${org.connections_count || 0}</div><div class="label">Connections</div></div>
+                        <div class="social-hero-card"><div class="value">${(org.alliance_reputation || 0.5).toFixed(2)}</div><div class="label">Reputation</div></div>
+                        <div class="social-hero-card"><div class="value">${tierSafe}</div><div class="label">Confed Tier</div></div>
+                        <div class="social-hero-card"><div class="value">${org.alliance_id ? org.alliance_id.substring(0, 8) : '—'}</div><div class="label">Alliance</div></div>
+                    </div>
+
+                    <div class="social-details">
+                        <div class="social-section">
+                            <div class="social-section-header"><span>🏛️</span><h3>Confederation Status</h3></div>
+                            <div class="social-section-body">
+                                <div class="confed-tier-badge tier-${tierSafe}">
+                                    <span>Tier ${tierSafe}</span>
+                                    <span style="color: var(--text-muted);">${tierNames[tierSafe]}</span>
+                                </div>
+                                <div style="margin-top: 12px; color: var(--text-muted); font-size: 0.9em;">
+                                    Connections: <span style="color: var(--accent-cyan); font-family: var(--font-mono);">${org.connections_count || 0}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="social-section">
+                            <div class="social-section-header"><span>🤝</span><h3>Alliance</h3></div>
+                            <div class="social-section-body">
+                                ${org.alliance_id ? `
+                                    <div class="alliance-hero-card" onclick="closeMicroscope(); openAllianceDossier('${org.alliance_id}')" title="Open Alliance Dossier">
+                                        <div class="icon">🤝</div>
+                                        <div class="info">
+                                            <h4>${escapeHtml(org.alliance_name || org.alliance_id.substring(0, 8))}</h4>
+                                            <div class="role">${escapeHtml(org.alliance_role || 'member')} • Rep ${(org.alliance_reputation || 0.5).toFixed(2)}</div>
+                                        </div>
+                                    </div>
+                                ` : `<div style="color: var(--text-muted);">No alliance</div>`}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            function renderMicroscopeRaw() {
+                const org = microscopeState.org;
+                const el = document.getElementById('microscopePaneRaw');
+                if (!org || !el) return;
+                el.innerHTML = `
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                        <div style="color: var(--text-secondary); font-family: var(--font-mono);">Raw organism JSON</div>
+                        <button class="microscope-action-btn" onclick="copyMicroscopeJSON()">📋 Copy JSON</button>
+                    </div>
+                    <pre style="background: var(--bg-deep); padding: 12px; border-radius: var(--radius-sm); overflow: auto; font-size: 0.78em; max-height: calc(95vh - 180px);">${escapeHtml(JSON.stringify(org, null, 2))}</pre>
+                `;
             }
             
             // Render fitness chart in dossier
@@ -18066,7 +20857,7 @@
                                 <div class="dossier-section-body">
                                     <div class="members-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; max-height: 300px; overflow-y: auto;">
                                         ${(alliance.members || []).map(m => `
-                                            <div class="member-card" onclick="${m.alive ? `closeAllianceDossier(); openOrganismDossier('${m.organism_id}')` : ''}" style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--bg-deep); border-radius: var(--radius-sm); border: 1px solid ${m.alive ? 'var(--border-default)' : 'var(--danger)'}; cursor: ${m.alive ? 'pointer' : 'default'}; opacity: ${m.alive ? 1 : 0.5};">
+                                            <div class="member-card" onclick="${m.alive ? `closeAllianceDossier(); openMicroscope('${m.organism_id}')` : ''}" style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--bg-deep); border-radius: var(--radius-sm); border: 1px solid ${m.alive ? 'var(--border-default)' : 'var(--danger)'}; cursor: ${m.alive ? 'pointer' : 'default'}; opacity: ${m.alive ? 1 : 0.5};">
                                                 <span style="font-size: 1.3em;">${m.role === 'FOUNDER' || m.role === 'founder' ? '👑' : m.role === 'WARCHIEF' || m.role === 'warchief' ? '⚔️' : '🧬'}</span>
                                                 <div style="flex: 1; min-width: 0;">
                                                     <div style="font-family: var(--font-mono); font-size: 0.9em; color: var(--text-primary);">${m.short_id}</div>
@@ -18354,7 +21145,7 @@
                                     <tr style="background: var(--bg-surface);">
                                         <th style="padding: 12px 16px; text-align: left; font-size: 0.9em; color: var(--text-muted); border-bottom: 2px solid var(--border-default);">METRIC</th>
                                         ${organisms.map(o => `
-                                            <th style="padding: 12px 16px; text-align: center; border-bottom: 2px solid ${rarityColors[o.rarity] || '#666'}; cursor: pointer;" onclick="closeComparativeAnalysis(); openOrganismDossier('${o.id}')">
+                                            <th style="padding: 12px 16px; text-align: center; border-bottom: 2px solid ${rarityColors[o.rarity] || '#666'}; cursor: pointer;" onclick="closeComparativeAnalysis(); openMicroscope('${o.id}')">
                                                 <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
                                                     <span style="font-size: 1.3em;">${o.alignment_icon || '◇'}</span>
                                                     <span style="font-family: var(--font-mono); color: ${rarityColors[o.rarity] || '#fff'}; font-size: 0.9em;">${o.short_id || o.id.substring(0, 8)}</span>
