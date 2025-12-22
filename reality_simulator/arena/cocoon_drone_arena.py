@@ -1942,11 +1942,24 @@ class CocoonDroneArena:
                 self.game_state.winner = "red"
             
         elif self.mode in [DroneGameMode.TAG_BATTLE, DroneGameMode.SURVIVAL]:
-            # Elimination
-            if self.game_state.blue_alive == 0:
+            # Elimination - check total alive for free-for-all survival
+            total_alive = sum(1 for d in self.drones.values() if d.alive)
+            
+            if self.mode == DroneGameMode.SURVIVAL and self.game_state.red_alive == 0:
+                # Free-for-all survival (all blue team) - last drone standing wins
+                if total_alive <= 1:
+                    self.game_state.finished = True
+                    # Find the survivor
+                    for name, drone in self.drones.items():
+                        if drone.alive:
+                            self.game_state.winner = name
+                            break
+                    else:
+                        self.game_state.winner = "draw"
+            elif self.game_state.blue_alive == 0:
                 self.game_state.finished = True
                 self.game_state.winner = "red"
-            elif self.game_state.red_alive == 0:
+            elif self.game_state.red_alive == 0 and self.mode == DroneGameMode.TAG_BATTLE:
                 self.game_state.finished = True
                 self.game_state.winner = "blue"
                 

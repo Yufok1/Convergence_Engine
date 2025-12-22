@@ -8340,6 +8340,18 @@ import base64
 import random
 import sys
 import os
+
+# Windows Unicode fix - wrap print to handle emoji gracefully
+import builtins
+_original_print = builtins.print
+def _safe_print(*args, **kwargs):
+    try:
+        _original_print(*args, **kwargs)
+    except UnicodeEncodeError:
+        # Fallback: replace unencodable chars with ?
+        safe_args = [str(a).encode('ascii', 'replace').decode('ascii') for a in args]
+        _original_print(*safe_args, **kwargs)
+builtins.print = _safe_print
 from io import BytesIO
 from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass
@@ -8382,6 +8394,15 @@ def _decode_data(b64_str: str, is_json: bool = True) -> Any:
         return None
 
 
+def _safe_print(text: str):
+    """Print text safely on Windows (handle emoji/unicode errors)."""
+    try:
+        print(text)
+    except UnicodeEncodeError:
+        # Fallback: strip non-ASCII characters
+        print(text.encode('ascii', 'replace').decode('ascii'))
+
+
 def _decode_brain(b64_str: str) -> bytes:
     raw = base64.b64decode(b64_str)
     if _DATA_COMPRESSED:
@@ -8399,7 +8420,7 @@ def _print_embedded_readme():
     except Exception as exc:
         print(f"[!] Failed to decode embedded README: {exc}")
         return
-    print(text)
+    _safe_print(text)
 
 
 def _unpack_ultimate(output_dir: str, voting: str = 'confidence', max_organisms: Optional[int] = None) -> bool:
@@ -8690,9 +8711,14 @@ class ExperienceBuffer:
             input_tokens: Optional[List[int]] = None,
             target_tokens: Optional[List[int]] = None,
             vp_value: Optional[float] = None):
+        # Handle array actions (continuous action spaces)
+        if hasattr(action, '__len__') and not isinstance(action, (int, float)):
+            action_val = int(action[0]) if len(action) == 1 else 0
+        else:
+            action_val = int(action)
         exp = Experience(
             np.asarray(state, dtype=np.float32),
-            int(action),
+            action_val,
             float(reward),
             np.asarray(next_state, dtype=np.float32),
             bool(done),
@@ -9933,7 +9959,12 @@ class CocoonAgent:
             # When a model is compiled with torch.compile(), state_dict keys get prefixed
             if any(k.startswith('_orig_mod.') for k in state_dict.keys()):
                 state_dict = {k.replace('_orig_mod.', ''): v for k, v in state_dict.items()}
-            brain.load_state_dict(state_dict)
+            # Fix for torch.jit.script models: strip '_forward_scripted.' prefix from keys
+            if any(k.startswith('_forward_scripted.') for k in state_dict.keys()):
+                state_dict = {k.replace('_forward_scripted.', ''): v for k, v in state_dict.items()}
+            # Load with strict=False to handle mismatched architectures (e.g., fc_world_model)
+            # This allows loading weights even when some layers don't exist in the current model
+            brain.load_state_dict(state_dict, strict=False)
             brain.to(self.device)
             brain.eval()
             self.brains.append(brain)
@@ -14300,7 +14331,7 @@ Examples:
 
     elif args.mode == 'sphere':
         # Sphere Arena - 3D Swarm Defense Training
-        print("\n🌐 SPHERE ARENA - 3D Swarm Defense")
+        _safe_print("\n🌐 SPHERE ARENA - 3D Swarm Defense")
         print("=" * 60)
         
         if args.demo:
@@ -14332,7 +14363,7 @@ Examples:
         
         if results:
             print("\n" + "=" * 60)
-            print("📊 SPHERE ARENA RESULTS")
+            _safe_print("📊 SPHERE ARENA RESULTS")
             print("=" * 60)
             print(f"   Total Catches: {results.get('collective_catches', 0)}")
             print(f"   Total Misses:  {results.get('collective_misses', 0)}")

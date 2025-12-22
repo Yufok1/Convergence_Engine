@@ -318,6 +318,11 @@ class DroneArenaRunner:
         self.num_drones = num_drones
         self.visualize = visualize and PYFLYT_AVAILABLE
         
+        # Boost exploration for drone mode - cocoon needs to learn new domain
+        if hasattr(cocoon_agent, 'epsilon'):
+            cocoon_agent.epsilon = 0.5  # 50% random exploration to try different actions
+            print(f"   🎲 Epsilon boosted to 0.5 for drone exploration")
+        
         # Ensure cocoon has enough organisms
         if hasattr(cocoon_agent, 'brains'):
             available = len(cocoon_agent.brains)
@@ -325,11 +330,12 @@ class DroneArenaRunner:
                 print(f"⚠️ Cocoon has {available} organisms, requested {num_drones}. Using {available}.")
                 self.num_drones = available
         
-        # Default config
+        # Default config - using 10 FPS for faster simulation
+        # (ensemble voting takes ~20ms per drone, so 60 FPS is too slow)
         self.config = DroneArenaConfig(
             arena_size=100.0,
-            max_episode_steps=3000,  # ~50 seconds at 60 FPS
-            target_fps=60,
+            max_episode_steps=500,  # ~50 seconds at 10 FPS
+            target_fps=10,  # Reduced from 60 - ensemble inference is slow
         ) if ARENA_AVAILABLE else None
         
         print(f"🛸 DroneArenaRunner initialized")
@@ -377,7 +383,10 @@ class DroneArenaRunner:
             mode=mode_enum,
             config=self.config,
             team_split="half" if mode_info['team_game'] else "all_blue",
-            visualize=self.visualize
+            visualize=self.visualize,
+            verbose=False,  # Less verbose for cleaner output
+            enable_training=True,  # Let cocoon learn from drone experience!
+            train_interval=10  # Train every 10 steps
         )
         
         # Run simulation
