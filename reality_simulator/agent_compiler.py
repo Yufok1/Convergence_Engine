@@ -8406,6 +8406,16 @@ def _safe_print(text: str):
         print(text.encode('ascii', 'replace').decode('ascii'))
 
 
+def _safe_input(prompt: str) -> str:
+    """Input with safe prompt on Windows (handle emoji/unicode errors)."""
+    try:
+        return input(prompt)
+    except UnicodeEncodeError:
+        # Fallback: strip non-ASCII characters from prompt
+        safe_prompt = prompt.encode('ascii', 'replace').decode('ascii')
+        return input(safe_prompt)
+
+
 def _decode_brain(b64_str: str) -> bytes:
     raw = base64.b64decode(b64_str)
     if _DATA_COMPRESSED:
@@ -13873,7 +13883,7 @@ Examples:
         
         while True:
             try:
-                user_input = input("\n💬 You: ").strip()
+                user_input = _safe_input("\n💬 You: ").strip()
             except (EOFError, KeyboardInterrupt):
                 break
             if not user_input:
