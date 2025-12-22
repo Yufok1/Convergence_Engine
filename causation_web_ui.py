@@ -8092,7 +8092,7 @@ def get_organism_vocabulary(organism_id):
     try:
         # Parse query params
         page = max(1, int(request.args.get('page', 1)))
-        per_page = min(200, max(1, int(request.args.get('per_page', 50))))
+        per_page = min(10000, max(1, int(request.args.get('per_page', 50))))
         search = request.args.get('search', '').strip().lower()
         frame_filter = request.args.get('frame', '')
         source_filter = request.args.get('source', '')
