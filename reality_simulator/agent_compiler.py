@@ -8351,6 +8351,9 @@ def _safe_print(*args, **kwargs):
         # Fallback: replace unencodable chars with ?
         safe_args = [str(a).encode('ascii', 'replace').decode('ascii') for a in args]
         _original_print(*safe_args, **kwargs)
+_safe_print.__module__ = 'builtins'  # Keep numba/PyFlyt happy
+_safe_print.__name__ = 'print'
+_safe_print.__qualname__ = 'print'
 builtins.print = _safe_print
 from io import BytesIO
 from typing import Dict, List, Any, Optional, Tuple
