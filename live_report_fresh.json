@@ -1,0 +1,362 @@
+{
+  "timestamp": "2025-12-22T08:39:00.523090",
+  "config_name": "config_vast_xeon_1.5tb_genesis.json",
+  "population": {
+    "total_organisms": 2015,
+    "active_organisms": 2015,
+    "fallen_organisms": 163,
+    "fitness_mean": 0.7557757210918113,
+    "fitness_std": 8.109071891369664e-05,
+    "fitness_min": 0.755628,
+    "fitness_max": 0.75589,
+    "age_mean": 18.240198511166252,
+    "age_max": 19,
+    "generation_mean": 0.0,
+    "generation_max": 0
+  },
+  "highlander": {
+    "phase": "competition",
+    "round_number": 4,
+    "total_battles": 0,
+    "battles_this_round": 0,
+    "eliminations_total": 163,
+    "champions_crowned": 0,
+    "predation_enabled": true,
+    "survival_threshold": 0.25,
+    "competition_intensity": 0.15
+  },
+  "alliances": {
+    "active_alliances": 591,
+    "total_members": 1224,
+    "largest_alliance_size": 5,
+    "confederations": 0,
+    "wars_in_progress": 0,
+    "alliance_formations_total": 0,
+    "dissolutions_total": 0,
+    "betrayals_total": 0,
+    "territories_claimed": 6,
+    "territories_unclaimed": 0,
+    "wars_won_total": 0,
+    "wars_lost_total": 0,
+    "ultimatums_issued": 0,
+    "peace_treaties_signed": 0,
+    "legends_recorded": 5,
+    "warchief_count": 0
+  },
+  "neural": {
+    "organisms_with_brains": 2015,
+    "total_training_steps": 0,
+    "avg_loss": 0.0,
+    "avg_epsilon": 0.09265045662032968,
+    "experience_buffer_total": 172570,
+    "gym_episodes_total": 0,
+    "gym_reward_mean": 0.0
+  },
+  "language": {
+    "total_vocabulary_words": 58590,
+    "unique_words_across_pop": 830,
+    "avg_vocab_per_organism": 29.076923076923077,
+    "word_adoptions_total": 0,
+    "semantic_associations": 156149,
+    "mastery_level_0": 145,
+    "mastery_level_1": 1800,
+    "mastery_level_2": 42,
+    "mastery_level_3": 28,
+    "mastery_level_4": 0,
+    "highest_mastery_achieved": 3,
+    "avg_mastery_level": 0.9766749379652605,
+    "avg_breadth_ratio": 0.0,
+    "avg_depth_ratio": 0.0,
+    "avg_experience_progress": 0.0,
+    "dominant_behaviors": {
+      "hermit": 681,
+      "warrior": 437,
+      "explorer": 30,
+      "conserver": 754,
+      "nurturer": 36,
+      "diplomat": 77
+    }
+  },
+  "language_game_bridge": {
+    "active": false,
+    "source_count": 0,
+    "episodes_tracked": 0,
+    "win_rate": 0.0,
+    "avg_reward": 0.0,
+    "vocabulary_game_alignment": 0.0,
+    "language_decision_influence": 0.0,
+    "concept_diversity": 0.0,
+    "unique_concepts_total": 0,
+    "bias_strength": 0.3,
+    "learning_rate": 0.1
+  },
+  "network": {
+    "connections": 10168,
+    "network_density": 0.004249809201622685,
+    "communities": 145,
+    "clustering_coefficient": 0.018290182285140216,
+    "stability_index": 0.38352902043620574
+  },
+  "events": {
+    "total_events": 28452,
+    "events_by_type": {
+      "tape_cell": 1,
+      "causation_explorer_initialized": 1,
+      "phase_sync_bridge_initialized": 1,
+      "highlander_organism_registered": 2000,
+      "highlander_initialized": 1,
+      "initialization_complete": 1,
+      "health_state_change": 1,
+      "neural_decision": 18572,
+      "phenotype_emergence": 54,
+      "anomaly_spike": 23,
+      "ml_analysis": 37,
+      "state_change": 247,
+      "neural_training": 19,
+      "vocabulary_growth": 1,
+      "cluster_collapse": 26,
+      "threshold_crossed": 6,
+      "highlander_alliance_formed": 940,
+      "highlander_absorption_complete": 163,
+      "highlander_organism_fallen": 163,
+      "highlander_predation_success": 163,
+      "round_complete": 4,
+      "alliance_alliance_dissolved": 949,
+      "alliance_founded": 5,
+      "alliance_historical_record": 522,
+      "alliance_event_recorded": 1887,
+      "organism_conversation": 522,
+      "alliance_invite_proposed": 439,
+      "alliance_member_joined": 439,
+      "alliance_territory_claim_proposed": 8,
+      "alliance_territory_claimed": 8,
+      "alliance_member_left": 830,
+      "alliance_round": 4,
+      "config_atom_update": 20,
+      "alliance_illumination_unlocked": 395
+    },
+    "events_last_minute": 1,
+    "events_last_hour": 14261
+  },
+  "resources": {
+    "ray_enabled": false,
+    "ray_cpus": 0,
+    "ray_gpus": 0,
+    "gpu_memory_used_mb": 20.015625,
+    "gpu_memory_total_mb": 11936.0,
+    "cpu_percent": 5.1,
+    "memory_used_gb": 38.57265090942383,
+    "memory_total_gb": 1511.7310180664062,
+    "memory_percent": 4.2,
+    "breath_cycle": 37,
+    "breath_depth": 0.6637185597631101,
+    "breath_phase": 2.8080027651808734,
+    "uptime_seconds": 6172.441976308823,
+    "thread_count": 182
+  },
+  "top_organisms": [
+    {
+      "id": "cba005a92cdfdb5e",
+      "fitness": 0.7559,
+      "age": 19,
+      "generation": 0,
+      "vocab_size": 0,
+      "experience_count": 39
+    },
+    {
+      "id": "48a168fe68629059",
+      "fitness": 0.7559,
+      "age": 19,
+      "generation": 0,
+      "vocab_size": 0,
+      "experience_count": 38
+    },
+    {
+      "id": "54ab25c979dc6b35",
+      "fitness": 0.7559,
+      "age": 19,
+      "generation": 0,
+      "vocab_size": 0,
+      "experience_count": 38
+    },
+    {
+      "id": "8cbba2ff4a09f81d",
+      "fitness": 0.7559,
+      "age": 19,
+      "generation": 0,
+      "vocab_size": 0,
+      "experience_count": 38
+    },
+    {
+      "id": "93693c71a39a3e47",
+      "fitness": 0.7559,
+      "age": 19,
+      "generation": 0,
+      "vocab_size": 0,
+      "experience_count": 116
+    },
+    {
+      "id": "7f56f8ddf7ae9592",
+      "fitness": 0.7559,
+      "age": 19,
+      "generation": 0,
+      "vocab_size": 0,
+      "experience_count": 38
+    },
+    {
+      "id": "c2ce8e96228296f1",
+      "fitness": 0.7559,
+      "age": 19,
+      "generation": 0,
+      "vocab_size": 0,
+      "experience_count": 94
+    },
+    {
+      "id": "14dae0c1a9bb8792",
+      "fitness": 0.7559,
+      "age": 19,
+      "generation": 0,
+      "vocab_size": 0,
+      "experience_count": 88
+    },
+    {
+      "id": "c4ea5120da86b25b",
+      "fitness": 0.7559,
+      "age": 19,
+      "generation": 0,
+      "vocab_size": 0,
+      "experience_count": 39
+    },
+    {
+      "id": "610b5cc85ebf5943",
+      "fitness": 0.7559,
+      "age": 19,
+      "generation": 0,
+      "vocab_size": 0,
+      "experience_count": 54
+    }
+  ],
+  "recent_events": [
+    {
+      "type": "phenotype_emergence",
+      "component": "ml_analysis",
+      "timestamp": 1766392739.1281872,
+      "age_seconds": 6.7
+    },
+    {
+      "type": "neural_decision",
+      "component": "neural",
+      "timestamp": 1766392651.5974844,
+      "age_seconds": 94.2
+    },
+    {
+      "type": "neural_decision",
+      "component": "neural",
+      "timestamp": 1766392651.5869374,
+      "age_seconds": 94.2
+    },
+    {
+      "type": "neural_decision",
+      "component": "neural",
+      "timestamp": 1766392651.5765367,
+      "age_seconds": 94.2
+    },
+    {
+      "type": "neural_decision",
+      "component": "neural",
+      "timestamp": 1766392651.5657938,
+      "age_seconds": 94.2
+    },
+    {
+      "type": "neural_decision",
+      "component": "neural",
+      "timestamp": 1766392651.555307,
+      "age_seconds": 94.3
+    },
+    {
+      "type": "neural_decision",
+      "component": "neural",
+      "timestamp": 1766392651.54396,
+      "age_seconds": 94.3
+    },
+    {
+      "type": "neural_decision",
+      "component": "neural",
+      "timestamp": 1766392651.5337868,
+      "age_seconds": 94.3
+    },
+    {
+      "type": "neural_decision",
+      "component": "neural",
+      "timestamp": 1766392651.5234635,
+      "age_seconds": 94.3
+    },
+    {
+      "type": "neural_decision",
+      "component": "neural",
+      "timestamp": 1766392651.513144,
+      "age_seconds": 94.3
+    },
+    {
+      "type": "neural_decision",
+      "component": "neural",
+      "timestamp": 1766392651.5020666,
+      "age_seconds": 94.3
+    },
+    {
+      "type": "neural_decision",
+      "component": "neural",
+      "timestamp": 1766392651.490491,
+      "age_seconds": 94.3
+    },
+    {
+      "type": "neural_decision",
+      "component": "neural",
+      "timestamp": 1766392651.4795203,
+      "age_seconds": 94.3
+    },
+    {
+      "type": "neural_decision",
+      "component": "neural",
+      "timestamp": 1766392651.468921,
+      "age_seconds": 94.3
+    },
+    {
+      "type": "neural_decision",
+      "component": "neural",
+      "timestamp": 1766392651.458769,
+      "age_seconds": 94.4
+    },
+    {
+      "type": "neural_decision",
+      "component": "neural",
+      "timestamp": 1766392651.4473512,
+      "age_seconds": 94.4
+    },
+    {
+      "type": "neural_decision",
+      "component": "neural",
+      "timestamp": 1766392651.4361937,
+      "age_seconds": 94.4
+    },
+    {
+      "type": "neural_decision",
+      "component": "neural",
+      "timestamp": 1766392651.4254022,
+      "age_seconds": 94.4
+    },
+    {
+      "type": "neural_decision",
+      "component": "neural",
+      "timestamp": 1766392651.4151945,
+      "age_seconds": 94.4
+    },
+    {
+      "type": "neural_decision",
+      "component": "neural",
+      "timestamp": 1766392651.4048502,
+      "age_seconds": 94.4
+    }
+  ],
+  "warnings": []
+}

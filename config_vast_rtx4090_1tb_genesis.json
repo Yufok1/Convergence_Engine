@@ -1,18 +1,18 @@
 {
-  "_case_study": "VAST.AI A40 1TB GENESIS - Professional GPU Accelerated Massive Population Evolution",
-  "_hypothesis": "1TB RAM for massive populations + A40 48GB (8x faster than 3060) = accelerated parallel Mastery 4 emergence",
-  "_hardware_profile_help": "Vast.ai offer 28995055: A40 48GB + 1002GB RAM + 256 cores",
+  "_case_study": "VAST.AI RTX 4090 1TB GENESIS - Gaming GPU Accelerated Massive Population Evolution",
+  "_hypothesis": "1TB RAM for massive populations + RTX 4090 24GB (7x faster than 3060) = accelerated parallel Mastery 4 emergence",
+  "_hardware_profile_help": "Vast.ai offer 20266704: RTX 4090 24GB + 1008GB RAM + 80 cores",
   "_vast_notes": {
-    "offer_id": 28995055,
-    "ram_gb": 1002,
-    "cpu": "256 cores",
-    "gpu": "NVIDIA A40 48GB (Professional Ampere)",
-    "vram_gb": 48,
-    "dlperf": 94,
-    "cost_per_hour": 0.668,
-    "cost_per_week": 112,
-    "strategy": "A40 48GB VRAM enables 4x larger batches + 8x training speed vs RTX 3060. 1TB RAM holds 3000+ organisms.",
-    "value_proposition": "Professional datacenter GPU: 8x faster training, 4x VRAM, 1TB for massive populations"
+    "offer_id": 20266704,
+    "ram_gb": 1008,
+    "cpu": "80 cores",
+    "gpu": "NVIDIA RTX 4090 24GB (Ada Lovelace)",
+    "vram_gb": 24,
+    "dlperf": 87,
+    "cost_per_hour": 0.67,
+    "cost_per_week": 113,
+    "strategy": "RTX 4090 24GB VRAM enables 2x larger batches + 7x training speed vs RTX 3060. 1TB RAM holds 3000+ organisms.",
+    "value_proposition": "Top gaming GPU: 7x faster training, 2x VRAM, 1TB for massive populations"
   },
   "language": {
     "_help": "Grounded Language Mode: Organisms learn language through action-outcome associations before semantic understanding",
@@ -105,8 +105,8 @@
     "gym_settings": {
       "default_episodes": 10,
       "max_episode_steps": 1000,
-      "parallel_envs": 4,
-      "_parallel_envs_help": "A40 + 256 cores = more parallel environments"
+      "parallel_envs": 2,
+      "_parallel_envs_help": "RTX 4090 + 80 cores = parallel environments"
     },
     "prefer_native_games": false,
     "proton_game_probability": 1.0,
@@ -214,7 +214,7 @@
     },
     "rate_limit_frames": 120
   },
-  "hardware_profile": "vast_a40_1tb_cuda_accelerated_genesis",
+  "hardware_profile": "vast_rtx4090_1tb_cuda_accelerated_genesis",
   "hardware_governor": {
     "_auto_scale_help": "Set to false to disable auto-scaling of config values. Governor will only clamp to max, not scale up.",
     "auto_scale": false
@@ -299,7 +299,7 @@
     "chaos_factor": 0.0,
     "competition_intensity": 0.15,
     "_competition_intensity_help": "Low initial intensity - let population boom first",
-    "description": "A40 ACCELERATED GENESIS - 15-min wave cycles: 1500 progenitors → GPU-accelerated mega-boom to 30K → learn 8x faster → Highlander culling → regenerate",
+    "description": "RTX 4090 ACCELERATED GENESIS - 15-min wave cycles: 1500 progenitors → GPU-accelerated mega-boom to 30K → learn 7x faster → Highlander culling → regenerate",
     "enabled": true,
     "extreme_mode": {
       "chaos_factor": 0.0,
@@ -457,7 +457,7 @@
       "utility_update_alpha": 0.15
     },
     "device": "cuda",
-    "_device_help": "CUDA mode - A40 48GB for massively accelerated training. Experience buffers stay in 1TB CPU RAM.",
+    "_device_help": "CUDA mode - RTX 4090 24GB for accelerated training. Experience buffers stay in 1TB CPU RAM.",
     "enabled": true,
     "inheritance": {
       "crossover_rate": 0.9,
@@ -594,13 +594,13 @@
     "optimization": {
       "amp": {
         "enabled": true,
-        "_enabled_help": "AMP enabled - A40 professional Ampere architecture, optimized tensor cores",
-        "dtype": "bfloat16",
-        "_dtype_help": "BFloat16 for A40 - better numerical stability than FP16, same speed",
-        "description": "Mixed precision training - A40 tensor cores enable 2-4x GPU speedup with BF16"
+        "_enabled_help": "AMP enabled - RTX 4090 Ada Lovelace architecture, optimized tensor cores",
+        "dtype": "float16",
+        "_dtype_help": "FP16 for RTX 4090 - fast and well-supported on consumer GPUs",
+        "description": "Mixed precision training - RTX 4090 tensor cores enable 2-3x GPU speedup with FP16"
       },
-      "compile_mode": "max-autotune",
-      "_compile_mode_help": "max-autotune for A40 - let torch find optimal kernels for this GPU",
+      "compile_mode": "reduce-overhead",
+      "_compile_mode_help": "reduce-overhead for RTX 4090 - good balance of compile time and performance",
       "reuse_optimizers": true,
       "use_compile": true,
       "_use_compile_help": "torch.compile enabled for CUDA - A40 benefits massively from kernel fusion",
@@ -618,8 +618,8 @@
       "_survival_help": "Higher survival reward - genesis is dangerous"
     },
     "training": {
-      "batch_size": 1024,
-      "_batch_size_help": "A40 48GB VRAM + BF16 AMP = MASSIVE batches (4x vs 3060). More organisms per training step!",
+      "batch_size": 512,
+      "_batch_size_help": "RTX 4090 24GB VRAM + FP16 AMP = large batches (2x vs 3060). More organisms per training step!",
       "early_stopping": {
         "enabled": true,
         "min_delta": 0.0001,
@@ -688,10 +688,10 @@
   },
   "ray": {
     "enabled": false,
-    "actor_pool_size": 128,
-    "_actor_pool_size_help": "256 cores: Half for actors",
-    "batch_inference_size": 1024,
-    "_batch_inference_size_help": "Larger batch inference with A40 GPU acceleration",
+    "actor_pool_size": 40,
+    "_actor_pool_size_help": "80 cores: Half for actors",
+    "batch_inference_size": 512,
+    "_batch_inference_size_help": "Larger batch inference with RTX 4090 GPU acceleration",
     "description": "Ray DISABLED - can enable if metrics agent spam fixed",
     "fallback_on_error": true,
     "logging_level": "warning",
@@ -700,7 +700,7 @@
       "cleanup_on_organism_death": true,
       "max_object_refs": 10000
     },
-    "num_cpus": 256,
+    "num_cpus": 80,
     "num_gpus": 1,
     "object_store_memory": null,
     "parallelization_threshold": 800,
@@ -710,8 +710,8 @@
       "max_state_age_ms": 100,
       "snapshot_strategy": "breath_cycle"
     },
-    "training_threshold": 128,
-    "_training_threshold_help": "Higher training threshold for A40 batching efficiency"
+    "training_threshold": 64,
+    "_training_threshold_help": "Training threshold for RTX 4090 batching efficiency"
   },
   "rendering": {
     "enable_visualizations": true,

@@ -21,6 +21,9 @@ gunicorn>=21.0.0,<24.0    # For production WSGI server (Render deployment)
 requests>=2.31.0,<3.0    # For Ollama API communication (cloud and local)
 Pillow>=10.0.0,<13.0      # For image compression in vision model analysis
 
+# CLI Dashboard (RECOMMENDED)
+rich>=13.0.0,<14.0       # For live_dashboard.py interactive terminal UI
+
 # Explorer (Windows only)
 pywin32>=306; sys_platform == 'win32'  # For Explorer process isolation (Windows only)
 
