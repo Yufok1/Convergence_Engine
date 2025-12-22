@@ -1,0 +1,55 @@
+{
+  "monitor": {
+    "name": "Convergence Engine Monitor",
+    "version": "1.0.0",
+    "description": "Comprehensive monitoring utility for neuroevolutionary systems"
+  },
+  "connection": {
+    "vast_host": "95.253.220.115",
+    "vast_user": "root",
+    "vast_port": "54151",
+    "ssh_key_path": "~/.ssh/id_vast",
+    "auto_detect_host": true
+  },
+  "data_sources": {
+    "live_report": {
+      "remote_path": "data/live_report.json",
+      "local_cache": "live_report_fresh.json",
+      "refresh_interval": 30
+    },
+    "application_logs": {
+      "remote_path": "data/logs/application.log",
+      "local_cache": "recent_logs.txt",
+      "lines_to_fetch": 1000
+    },
+    "graph_api": {
+      "endpoint": "http://95.253.220.115:8080/api/graph",
+      "timeout": 10,
+      "fallback_to_cache": true
+    }
+  },
+  "display": {
+    "show_emojis": true,
+    "color_output": true,
+    "compact_mode": false,
+    "max_items_per_section": 10
+  },
+  "alerts": {
+    "cpu_threshold": 90,
+    "memory_threshold": 90,
+    "event_rate_threshold": 0,
+    "enable_warnings": true
+  },
+  "analysis": {
+    "enable_trends": true,
+    "historical_window": 3600,
+    "correlation_analysis": true,
+    "anomaly_detection": true
+  },
+  "export": {
+    "enable_json_export": true,
+    "enable_csv_export": false,
+    "export_directory": "exports",
+    "timestamp_format": "%Y%m%d_%H%M%S"
+  }
+}
