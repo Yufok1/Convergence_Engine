@@ -556,7 +556,11 @@ class GymRunner:
                 obs_tensor = torch.zeros(input_dim)
                 obs_tensor[:min(len(obs_array), input_dim)] = torch.FloatTensor(obs_array[:input_dim])
             
-            obs_tensor = obs_tensor.unsqueeze(0).to(self.device)
+            obs_tensor = obs_tensor.unsqueeze(0)
+            
+            # Send tensor to brain's device (brains are on CPU, moved to GPU only during training)
+            brain_device = next(brain.parameters()).device
+            obs_tensor = obs_tensor.to(brain_device)
             
             # Forward pass through brain
             brain.eval()
