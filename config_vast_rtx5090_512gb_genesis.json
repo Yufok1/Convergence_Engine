@@ -409,7 +409,7 @@
     "connection_strength_resolution": 5e-06,
     "emergence_sensitivity": 1e-06,
     "max_connections": 750000,
-    "_max_connections_help": "750K connections for political networks (scaled for 512GB)\",
+    "_max_connections_help": "750K connections for political networks (scaled for 512GB)",
     "max_organisms": 15000,
     "_max_organisms_help": "512GB RAM = 15K organisms",
     "resource_flow_precision": 0.0001,
@@ -619,7 +619,7 @@
     },
     "training": {
       "batch_size": 768,
-      "_batch_size_help\": \"RTX 5090 32GB VRAM + FP16 AMP = largest batches possible. 1.5x larger than 4090!\",
+      "_batch_size_help": "RTX 5090 32GB VRAM + FP16 AMP = largest batches possible. 1.5x larger than 4090!",
       "early_stopping": {
         "enabled": true,
         "min_delta": 0.0001,
