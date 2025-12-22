@@ -1265,6 +1265,14 @@ class NeuralTrainer:
             num_trained = 0
             
             for organism in trainable_organisms:
+                # ⚡ JIT GPU TRANSFER: Move brain to training device temporarily
+                # This prevents VRAM exhaustion with large populations (e.g., 2000 organisms)
+                # Brains are stored on CPU, moved to GPU only during training batch
+                _orig_brain_device = next(organism.brain.parameters()).device
+                _training_on_gpu = str(self.device) != 'cpu' and str(_orig_brain_device) == 'cpu'
+                if _training_on_gpu:
+                    organism.brain = organism.brain.to(self.device)
+                
                 # Sample batch (use effective batch size for early training)
                 batch_size_to_use = getattr(self, '_effective_batch_size', self.batch_size)
                 states, actions, rewards, next_states, dones = organism.experience_buffer.sample_batch(
@@ -1425,7 +1433,9 @@ class NeuralTrainer:
                 org_id_str = getattr(organism, 'species_id', str(id(organism)))
                 adjusted_lr = self.get_ml_adjusted_learning_rate(org_id_str, self.learning_rate)
                 
-                if self.reuse_optimizers:
+                # NOTE: When JIT GPU transfer is active, optimizer must be recreated each time
+                # because parameter references change when brain moves between devices
+                if self.reuse_optimizers and not _training_on_gpu:
                     organism_id = id(organism.brain)
                     if organism_id not in self.optimizers:
                         self.optimizers[organism_id] = optim.Adam(
@@ -1490,6 +1500,13 @@ class NeuralTrainer:
                 
                 total_loss += loss.item()
                 num_trained += 1
+                
+                # ⚡ JIT GPU TRANSFER: Move brain back to CPU to free VRAM
+                if _training_on_gpu:
+                    organism.brain = organism.brain.to('cpu')
+                    # Clear CUDA cache periodically to prevent fragmentation
+                    if num_trained % 50 == 0 and torch.cuda.is_available():
+                        torch.cuda.empty_cache()
         
         # Track training duration
         training_duration = time.time() - training_start_time

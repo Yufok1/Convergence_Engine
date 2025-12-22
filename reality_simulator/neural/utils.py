@@ -260,13 +260,10 @@ def create_brain(config: Dict[str, Any], silent: bool = False):
         hopfield_beta=hopfield_beta
     )
     
-    # Get device from config (default to cpu for larger vocab support)
-    if 'neural' in config:
-        device_preference = config.get('neural', {}).get('device', 'cpu')
-    else:
-        device_preference = config.get('device', 'cpu')
-    device = get_device(device_preference)
-    brain = brain.to(device)
+    # ALWAYS keep brains on CPU for storage - GPU is used JIT during training only
+    # This prevents VRAM exhaustion with large populations (e.g., 2000 organisms)
+    # The trainer moves brains to GPU temporarily during training batches
+    brain = brain.to('cpu')
     
     # Optimization: Compile brain for faster training/inference (PyTorch 2.0+)
     # Check both neural.optimization and root optimization for backwards compat

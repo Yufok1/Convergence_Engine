@@ -854,11 +854,15 @@ class OrganismBrain(nn.Module if PYTORCH_AVAILABLE else object):
             hopfield_beta=self.hopfield.beta if self.use_hopfield else 1.0
         )
         
-        # Move child to same device as parent
-        device = next(self.parameters()).device
-        child = child.to(device)
+        # ALWAYS keep brains on CPU for storage - prevents VRAM exhaustion with large populations
+        # The trainer will move brains to GPU temporarily during training batches
+        child = child.to('cpu')
         
-        # Ensure both parents are on the same device before crossover
+        # For crossover, temporarily work on CPU to avoid VRAM issues
+        # Get parent device but do crossover on CPU
+        device = 'cpu'
+        
+        # Ensure both parents can be accessed (move copies to CPU if needed)
         other_device = next(other_brain.parameters()).device
         if other_device != device:
             other_brain = other_brain.to(device)
