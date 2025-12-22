@@ -1,0 +1,798 @@
+{
+  "_case_study": "VAST.AI A40 1TB GENESIS - Professional GPU Accelerated Massive Population Evolution",
+  "_hypothesis": "1TB RAM for massive populations + A40 48GB (8x faster than 3060) = accelerated parallel Mastery 4 emergence",
+  "_hardware_profile_help": "Vast.ai offer 28995055: A40 48GB + 1002GB RAM + 256 cores",
+  "_vast_notes": {
+    "offer_id": 28995055,
+    "ram_gb": 1002,
+    "cpu": "256 cores",
+    "gpu": "NVIDIA A40 48GB (Professional Ampere)",
+    "vram_gb": 48,
+    "dlperf": 94,
+    "cost_per_hour": 0.668,
+    "cost_per_week": 112,
+    "strategy": "A40 48GB VRAM enables 4x larger batches + 8x training speed vs RTX 3060. 1TB RAM holds 3000+ organisms.",
+    "value_proposition": "Professional datacenter GPU: 8x faster training, 4x VRAM, 1TB for massive populations"
+  },
+  "language": {
+    "_help": "Grounded Language Mode: Organisms learn language through action-outcome associations before semantic understanding",
+    "_genesis_note": "Start at level 0 - progenitors must earn vocabulary through behavioral mastery",
+    "mode": "grounded",
+    "_mode_options": "grounded | semantic | hybrid",
+    "grounded": {
+      "enabled": true,
+      "mastery_gating": true,
+      "vocabulary_masking": "soft",
+      "_vocabulary_masking_options": "soft | hard | none",
+      "initial_mastery_level": 0,
+      "_initial_mastery_level_help": "0=6 words, 1=26 words, 2=76 words, 3=276 words, 4=10000",
+      "mastery_vocab_sizes": [6, 26, 76, 276, 10000],
+      "mastery_advancement_ratio": 0.5,
+      "mastery_depth_ratio": 0.3,
+      "mastery_min_experiences": [25, 100, 300, 600],
+      "always_allow_tokens": [".", ",", "!", "?", "and", "the", "a", "is", "to", "of", "in"]
+    },
+    "semantic": {
+      "enabled": false,
+      "knowledge_web_bootstrap": false,
+      "semantic_reward_at_level_4": true,
+      "semantic_reward_weight": 0.25
+    },
+    "action_hints": {
+      "enabled": true,
+      "bias_strength": 0.3,
+      "expectation_window_seconds": 10.0
+    }
+  },
+  "agency": {
+    "confidence_threshold": 0.0001,
+    "decision_precision": 1e-05,
+    "initial_mode": "manual_only",
+    "learning_rate_resolution": 1e-06,
+    "performance_tracking_precision": 0.0001
+  },
+  "semantic_convergence": {
+    "_help": "Unifies 6 semantic systems for word embedding differentiation",
+    "enabled": true,
+    "use_learned_embeddings": true,
+    "embedding_dim": 64,
+    "organism_embedding_alpha": 0.15,
+    "concept_system_alpha": 0.1,
+    "knowledge_web_influence_interval": 10,
+    "phenotype_to_vocabulary": true
+  },
+  "arena": {
+    "_prefer_native_games_help": "When true, prioritizes language/concept games that use organism's native abilities (no Gym dependency)",
+    "_proton_game_probability_help": "Fraction of battles that use Proton Game Arena (0.0-1.0). Set to 0.5 for 50% Proton Game battles.",
+    "trap_mechanics": {
+      "_help": "Planning pressure via trap logic in battles",
+      "enabled": true,
+      "low_foresight_threshold": 0.35,
+      "high_foresight_threshold": 0.65,
+      "trap_chance_multiplier": 0.4,
+      "trap_damage_multiplier": 0.1
+    },
+    "battle_consequences": {
+      "fitness_transfer_rate": 1,
+      "resource_transfer_enabled": true,
+      "resource_transfer_rate": 1,
+      "trait_bonus_cap": 0.3,
+      "trait_evolution_enabled": true
+    },
+    "default_battle_type": "PROTON_GAME",
+    "description": "Proton Game Arena - Apprentice Adept style gym battles (Piers Anthony + Highlander inspired)",
+    "enabled": true,
+    "game_selection": {
+      "allow_negotiation": true,
+      "fallback_on_deadlock": "random",
+      "mode": "ai_driven",
+      "negotiation_rounds": 3
+    },
+    "grid_weights": {
+      "challenge_types": {
+        "ARTS": 2.0,
+        "CHANCE": 1.0,
+        "MENTAL": 1.5,
+        "PHYSICAL": 0.5
+      },
+      "resource_types": {
+        "ANIMAL": 1.0,
+        "MACHINE": 1.0,
+        "NAKED": 1.5,
+        "TOOL": 1.0
+      }
+    },
+    "gym_settings": {
+      "default_episodes": 10,
+      "max_episode_steps": 1000,
+      "parallel_envs": 4,
+      "_parallel_envs_help": "A40 + 256 cores = more parallel environments"
+    },
+    "prefer_native_games": false,
+    "proton_game_probability": 1.0,
+    "gym_only": true,
+    "_gym_only_help": "When true, ONLY real Gymnasium environments (CartPole, Acrobot, etc). No native/custom games.",
+    "tournament": {
+      "default_format": "single_elimination",
+      "round_robin_battles_per_pair": 3,
+      "seeding_method": "fitness_based"
+    }
+  },
+  "causation_detection": {
+    "correlation_threshold": 0.5,
+    "direct_causation_time_window": 2,
+    "enable_bidirectional_causations": true,
+    "enable_language_causations": true,
+    "enable_ml_causations": true,
+    "enable_neural_causations": true,
+    "enable_neural_decision_causations": true,
+    "enable_neural_training_causations": true,
+    "enable_phase_transition_causations": true,
+    "enabled": true,
+    "phase_transition_time_window": 2.5,
+    "recent_events_window": 150,
+    "thresholds": {
+      "clustering_coefficient": {
+        "collapse": 0.5,
+        "direction": "above"
+      },
+      "modularity": {
+        "collapse": 0.3,
+        "direction": "below"
+      },
+      "organism_count": {
+        "collapse": 300,
+        "_collapse_help": "Scaled for 1TB config (75% of 1.5TB)",
+        "direction": "above"
+      },
+      "violation_pressure": {
+        "vp0": 0.25,
+        "vp1": 0.5,
+        "vp2": 0.75,
+        "vp3": 0.99
+      },
+      "vp_calculations": {
+        "direction": "above",
+        "transition": 50
+      }
+    }
+  },
+  "evolution": {
+    "adaptation_sensitivity": 0.005,
+    "_adaptation_sensitivity_help": "Lower sensitivity - large population absorbs fluctuations better",
+    "diversity_guard": {
+      "enabled": true,
+      "frequency_threshold": 0.15,
+      "_frequency_threshold_help": "Lower threshold - large population has natural diversity",
+      "hash_similarity_threshold": 0.80,
+      "_hash_similarity_threshold_help": "Relaxed - 1500 founders provide genetic diversity",
+      "penalty": 0.08,
+      "_penalty_help": "Lighter penalty - diversity emerges from large population naturally"
+    },
+    "fitness_precision": 1e-07,
+    "genotype_length": 48,
+    "max_generations": 50000,
+    "_max_generations_help": "Long runs for parallel mastery evolution - A40 speeds this up 8x",
+    "mutation_rate": {
+      "initial": 0.05,
+      "_initial_help": "Moderate mutation - 1500 founders already have diversity"
+    },
+    "mutation_rate_precision": 0.001,
+    "population_size": 1500,
+    "_population_size_help": "PARALLEL MASTERY: 1500 starting organisms = many parallel paths to Mastery 4 (scaled for 1TB)"
+  },
+  "feedback": {
+    "enabled": true,
+    "hysteresis_checks": 5,
+    "interval_frames": 10,
+    "knobs": {
+      "clustering_bias": {
+        "initial": 1.5,
+        "max": 1.6,
+        "min": 0.3,
+        "step": 0.05
+      },
+      "mutation_rate": {
+        "initial": 0.08,
+        "max": 0.15,
+        "_max_help": "Wide range for boom/bust - can spike during bottlenecks",
+        "min": 0.01,
+        "step": 0.002
+      },
+      "new_edge_rate": {
+        "initial": 4.8,
+        "max": 6,
+        "min": 0.2,
+        "step": 0.1
+      },
+      "quantum_pruning": {
+        "initial": 0.35,
+        "max": 1,
+        "min": 0,
+        "step": 0.05
+      }
+    },
+    "rate_limit_frames": 120
+  },
+  "hardware_profile": "vast_a40_1tb_cuda_accelerated_genesis",
+  "hardware_governor": {
+    "_auto_scale_help": "Set to false to disable auto-scaling of config values. Governor will only clamp to max, not scale up.",
+    "auto_scale": false
+  },
+  "health_monitor": {
+    "critical_threshold": 0.20,
+    "_critical_threshold_help": "Lower threshold - genesis populations are volatile",
+    "enabled": true,
+    "healthy_threshold": 0.60,
+    "history_size": 100,
+    "thresholds": {
+      "critical": 0.20,
+      "healthy": 0.60,
+      "warning": 0.40
+    },
+    "warning_threshold": 0.40,
+    "weight_adaptability": 0.25,
+    "_weight_adaptability_help": "Higher weight on adaptability for genesis - need to adapt fast",
+    "weight_coherence": 0.25,
+    "weight_diversity": 0.30,
+    "_weight_diversity_help": "Highest weight - diversity critical with founders",
+    "weight_lawfulness": 0.10,
+    "weight_sustainability": 0.10
+  },
+  "highlander": {
+    "eval_interval_seconds": 900,
+    "_eval_interval_seconds_help": "FASTER WAVES: 15-minute cycles (vs 20-min on 3060) - A40 processes faster. Mastery 4+ organisms only.",
+    "alliance_warfare": {
+      "betrayal_chance": 0.0,
+      "confederation_war_threshold": 0.5,
+      "enabled": true,
+      "existential_war_threshold": 0.7,
+      "max_alliance_size": 3000,
+      "_max_alliance_size_help": "Large alliances for political mega-structures (scaled for 1TB)",
+      "max_alliances": 30000,
+      "_max_alliances_help": "MASSIVE political capacity - 30K alliances possible",
+      "max_confederations": 6000,
+      "_max_confederations_help": "6K confederations = mega empires",
+      "min_alliance_size": 2,
+      "war_declaration_threshold": 0.5,
+      "war_frequency": 0.3,
+      "_war_frequency_help": "Lower war frequency during boom phase, increases as population grows",
+      "illumination_stability_threshold": 3,
+      "_illumination_stability_threshold_help": "Faster illumination unlock for genesis",
+      "organism_communication": {
+        "enabled": true,
+        "_help": "Organisms speak at confluence points - language is the allspice that connectifies everything",
+        "pre_battle_communication": true,
+        "communication_affects_battles": true,
+        "intel_bonus_max": 0.15,
+        "ultimatum_enabled": true,
+        "_ultimatum_help": "Join or Die - powerful warchiefs can demand submission"
+      }
+    },
+    "boom_bust_dynamics": {
+      "enabled": true,
+      "boom_detection_threshold": 0.7,
+      "bust_detection_threshold": 0.25,
+      "resource_scarcity_multiplier": 1.5,
+      "abundance_germination_boost": 3.0,
+      "_abundance_germination_boost_help": "HIGH boost - explode population",
+      "scarcity_competition_boost": 2.0,
+      "_scarcity_competition_boost_help": "Intense competition during bust phase",
+      "cycle_memory_generations": 30,
+      "seasonal_amplitude": 0.5,
+      "_seasonal_amplitude_help": "Strong seasonal swings for dramatic boom/bust",
+      "seasonal_period_generations": 150
+    },
+    "lineage_tracking": {
+      "enabled": true,
+      "track_ancestry": true,
+      "founder_bonus": 0.10,
+      "_founder_bonus_help": "Bonus for founding lineages",
+      "genetic_diversity_pressure": 0.15,
+      "_genetic_diversity_pressure_help": "Strong pressure to avoid inbreeding",
+      "inbreeding_penalty": 0.25,
+      "_inbreeding_penalty_help": "Severe penalty for inbred offspring",
+      "dynasty_bonus": 0.08,
+      "max_lineage_depth": 500,
+      "_max_lineage_depth_help": "Deep lineage tracking for epic family trees"
+    },
+    "chaos_factor": 0.0,
+    "competition_intensity": 0.15,
+    "_competition_intensity_help": "Low initial intensity - let population boom first",
+    "description": "A40 ACCELERATED GENESIS - 15-min wave cycles: 1500 progenitors → GPU-accelerated mega-boom to 30K → learn 8x faster → Highlander culling → regenerate",
+    "enabled": true,
+    "extreme_mode": {
+      "chaos_factor": 0.0,
+      "competition_intensity": 0.5,
+      "_competition_intensity_help": "Extreme mode kicks in during bust - 50% battle",
+      "description": "GENESIS EXTREME - Extinction event mode",
+      "germination_rate": 0.3,
+      "max_battle_rounds": 20,
+      "max_population": 30000,
+      "min_population": 3,
+      "_min_population_help": "Can drop to just 3 survivors during extinction",
+      "mutation_rate": 0.15,
+      "_mutation_rate_help": "Maximum mutation during extinction for rapid adaptation",
+      "population_size": 100,
+      "predation_enabled": true,
+      "rounds_per_cycle": 5,
+      "survival_threshold": 0.5
+    },
+    "germination_rate": 1.5,
+    "_germination_rate_help": "Moderate germination - 1500 start provides density for parallel mastery paths",
+    "max_battle_rounds": 100,
+    "max_capsules": 3000,
+    "_max_capsules_help": "Capsule storage scaled for 1TB",
+    "max_genetic_samples": 3000,
+    "max_population": 30000,
+    "_max_population_help": "1TB RAM = 30K organisms capacity",
+    "min_population": 400,
+    "_min_population_help": "Keep minimum high to maintain parallel mastery paths",
+    "mutation_rate": 0.05,
+    "population_size": 1500,
+    "_population_size_help": "PARALLEL MASTERY: 1500 starting organisms = many simultaneous paths to Mastery 4",
+    "predation_enabled": true,
+    "rounds_per_cycle": 2,
+    "survival_threshold": 0.25,
+    "_survival_threshold_help": "Low threshold during boom - let population grow"
+  },
+  "lattice": {
+    "entropy_sensitivity": 5e-05,
+    "interaction_precision": 0.0001,
+    "particles": 30000,
+    "_particles_help": "30K particles for rich quantum substrate (scaled for 1TB)",
+    "prune_threshold": 0,
+    "stability_tolerance": 0.0005
+  },
+  "logging": {
+    "shared_state_dump_interval": 60,
+    "_shared_state_dump_interval_help": "Less frequent dumps - long running genesis",
+    "sample_rate": 10,
+    "_sample_rate_help": "Log 1 in 10 - save disk space on long runs",
+    "track_lineage": true
+  },
+  "meta_cognitive": {
+    "description": "Meta-cognitive systems: self-awareness, self-tuning, autonomous optimization",
+    "self_tuning": {
+      "enabled": true,
+      "min_confidence_threshold": 0.5,
+      "_min_confidence_threshold_help": "Lower confidence threshold for genesis volatility",
+      "mode": "autonomous",
+      "performance_targets": {
+        "max_anomaly_ratio": 0.25,
+        "_max_anomaly_ratio_help": "Higher tolerance for anomalies during boom/bust",
+        "min_cluster_diversity": 3,
+        "min_fitness_std": 0.08
+      },
+      "safe_parameters": [
+        "evolution.mutation_rate.initial",
+        "evolution.diversity_guard.penalty",
+        "evolution.diversity_guard.frequency_threshold",
+        "evolution.diversity_guard.hash_similarity_threshold",
+        "evolution.population_size",
+        "evolution.adaptation_sensitivity",
+        "feedback.knobs.mutation_rate.initial",
+        "feedback.knobs.new_edge_rate.initial",
+        "feedback.knobs.clustering_bias.initial",
+        "feedback.knobs.quantum_pruning.initial",
+        "neural.training.learning_rate",
+        "neural.training.gamma",
+        "neural.training.epsilon_decay",
+        "neural.training.batch_size",
+        "neural.rewards.fitness_improvement",
+        "neural.rewards.connection_success",
+        "neural.rewards.survival",
+        "neural.inheritance.crossover_rate",
+        "neural.inheritance.mutation_rate",
+        "network.max_organisms",
+        "network.max_connections",
+        "network.resource_pool",
+        "scikit.clustering.min_cluster_size",
+        "scikit.anomaly_detection.contamination",
+        "scikit.anomaly_detection.n_estimators",
+        "quantum.initial_states",
+        "quantum.entanglement_sensitivity",
+        "quantum.prune_check_interval",
+        "vp_monitoring.adaptive_response.high_vp_threshold",
+        "vp_monitoring.stabilization.smoothing_factor",
+        "causation_detection.correlation_threshold",
+        "meta_cognitive.self_tuning.tuning_interval_frames",
+        "meta_cognitive.self_tuning.min_confidence_threshold",
+        "highlander.competition_intensity",
+        "highlander.survival_threshold",
+        "highlander.germination_rate"
+      ],
+      "tuning_interval_frames": 5
+    }
+  },
+  "network": {
+    "connection_strength_resolution": 5e-06,
+    "emergence_sensitivity": 1e-06,
+    "max_connections": 1500000,
+    "_max_connections_help": "1.5M connections for massive political networks (scaled for 1TB)",
+    "max_organisms": 30000,
+    "_max_organisms_help": "1TB RAM = 30K organisms",
+    "resource_flow_precision": 0.0001,
+    "resource_pool": 30000,
+    "_resource_pool_help": "Resource pool scaled for 30K max population",
+    "stability_precision": 1e-07
+  },
+  "neural": {
+    "brain": {
+      "activation": "relu",
+      "dropout": 0.1,
+      "hidden_dim": 64,
+      "input_dim": 30,
+      "output_dim": 6,
+      "vocab_size": 10000,
+      "attention_dim": 32
+    },
+    "hopfield": {
+      "_help": "Modern continuous Hopfield network for iterative thought refinement",
+      "enabled": true,
+      "patterns": 32,
+      "iterations": 5,
+      "beta": 1.0
+    },
+    "world_model": {
+      "_help": "Predictive world model for imagination-based planning",
+      "enabled": true,
+      "delta": 0.2,
+      "curiosity_scale": 0.05,
+      "planning_trust": 0.25,
+      "imagination_temperature": 3.0,
+      "imagination_enabled": true,
+      "candidate_threshold": 0.10,
+      "language_magnetism_weight": 0.15,
+      "max_imagination_steps": 5,
+      "foresight_scaling": true,
+      "pruning_threshold": 0.15,
+      "discount_factor": 0.9
+    },
+    "concept_system": {
+      "concept_loss_weight": 0.15,
+      "embed_dim": 64,
+      "enabled": true,
+      "num_key_compositions": 30,
+      "utility_update_alpha": 0.15
+    },
+    "device": "cuda",
+    "_device_help": "CUDA mode - A40 48GB for massively accelerated training. Experience buffers stay in 1TB CPU RAM.",
+    "enabled": true,
+    "inheritance": {
+      "crossover_rate": 0.9,
+      "enabled": true,
+      "mutation_rate": 0.25,
+      "_mutation_rate_help": "Higher neural mutation for genesis diversity"
+    },
+    "initialization": {
+      "deterministic": false,
+      "seed": null
+    },
+    "language_model": {
+      "attention": {
+        "attention_dim": 32,
+        "enabled": true,
+        "num_heads": 4
+      },
+      "curriculum": {
+        "enabled": true,
+        "ml_quality": {
+          "enabled": true,
+          "high_quality_threshold": 0.55,
+          "low_quality_threshold": 0.3,
+          "max_sequence_length": 64,
+          "min_sequence_length": 8,
+          "sequence_length_step": 2
+        },
+        "sequence_lengths": {
+          "stage_0": 8,
+          "stage_1": 16,
+          "stage_2": 32,
+          "stage_3": 128
+        },
+        "vp_thresholds": {
+          "stage_1": 0.5,
+          "stage_2": 0.4,
+          "stage_3": 0.3
+        }
+      },
+      "enabled": true,
+      "generation": {
+        "max_length": 128,
+        "temperature": 1.5,
+        "vp_gate_threshold": 0.5
+      },
+      "knowledge_web": {
+        "embedding_dim": 64,
+        "enabled": true,
+        "max_concepts": 3000,
+        "_max_concepts_help": "Large concept space for emergent language (scaled for 1TB)",
+        "quality_control": {
+          "confidence_growth_rate": 0.001,
+          "enabled": true,
+          "exploration_decay_generations": 2000,
+          "exploration_end": 0.08,
+          "exploration_start": 0.4,
+          "_exploration_start_help": "High initial exploration for genesis founders",
+          "max_discoveries_per_generation": 15,
+          "_max_discoveries_per_generation_help": "Scaled for 1TB",
+          "min_confidence_threshold": 0.20,
+          "min_discovery_count": 3,
+          "pruning_confidence_threshold": 0.15,
+          "pruning_failure_rate": 0.7,
+          "pruning_unused_generations": 150,
+          "review_frequency": 100,
+          "validation_required": true,
+          "vp_boost_exploration": true,
+          "vp_boost_threshold": 0.7
+        }
+      },
+      "relationship_learning": {
+        "enabled": true,
+        "quality_evaluation": {
+          "coherent_threshold": 0.45,
+          "garbled_threshold": 0.25,
+          "max_word_count": 25,
+          "min_word_count": 2,
+          "min_word_count_for_evaluation": 3,
+          "relationship_strength_threshold": 0.4,
+          "unk_ratio_threshold": 0.35
+        },
+        "semantic_guidance": {
+          "enabled": true,
+          "high_strength_boost": 0.2,
+          "max_similar_words": 8,
+          "min_strength_threshold": 0.25,
+          "semantic_boost": 0.4
+        }
+      },
+      "sequence": {
+        "context_window": 32,
+        "max_length": 128
+      },
+      "teacher": {
+        "embedding_dim": 64,
+        "enabled": true,
+        "min_action_history": 3,
+        "min_confidence": 0.25,
+        "teaching_frequency": 1,
+        "use_knowledge_web": true,
+        "use_semantic_embeddings": true,
+        "vocab_size": 50000,
+        "staged_knowledge": {
+          "_help": "Delay loading expanded knowledge web to let organisms build foundations with innate vocab first",
+          "enabled": true,
+          "delay_seconds": 0,
+          "start_with_innate_only": true
+        }
+      },
+      "training": {
+        "alpha": 0.5,
+        "beta": 0.4,
+        "gamma": 0.1,
+        "vp_temperature_scale": true,
+        "entropy_bonus": 0.02,
+        "_entropy_bonus_help": "Higher entropy for creative genesis exploration",
+        "label_smoothing": 0.12,
+        "language_epsilon_start": 0.5,
+        "_language_epsilon_start_help": "Higher epsilon for genesis exploration",
+        "language_epsilon_end": 0.08,
+        "language_epsilon_decay": 0.998
+      },
+      "vocabulary": {
+        "max_size": 10000,
+        "special_tokens": [
+          "<PAD>",
+          "<UNK>",
+          "<START>",
+          "<END>",
+          "<VP_GATE>"
+        ]
+      }
+    },
+    "optimization": {
+      "amp": {
+        "enabled": true,
+        "_enabled_help": "AMP enabled - A40 professional Ampere architecture, optimized tensor cores",
+        "dtype": "bfloat16",
+        "_dtype_help": "BFloat16 for A40 - better numerical stability than FP16, same speed",
+        "description": "Mixed precision training - A40 tensor cores enable 2-4x GPU speedup with BF16"
+      },
+      "compile_mode": "max-autotune",
+      "_compile_mode_help": "max-autotune for A40 - let torch find optimal kernels for this GPU",
+      "reuse_optimizers": true,
+      "use_compile": true,
+      "_use_compile_help": "torch.compile enabled for CUDA - A40 benefits massively from kernel fusion",
+      "use_scripted_inference": true,
+      "_use_scripted_inference_help": "TorchScript for faster inference on GPU"
+    },
+    "rewards": {
+      "connection_failure": -0.2,
+      "connection_success": 2.5,
+      "fitness_improvement": 5.0,
+      "_fitness_improvement_help": "Higher reward for fitness - drive evolution",
+      "resource_gain": 1.5,
+      "resource_loss": -0.3,
+      "survival": 3.0,
+      "_survival_help": "Higher survival reward - genesis is dangerous"
+    },
+    "training": {
+      "batch_size": 1024,
+      "_batch_size_help": "A40 48GB VRAM + BF16 AMP = MASSIVE batches (4x vs 3060). More organisms per training step!",
+      "early_stopping": {
+        "enabled": true,
+        "min_delta": 0.0001,
+        "patience": 15
+      },
+      "enabled": true,
+      "epsilon": 0.95,
+      "epsilon_decay": 0.995,
+      "epsilon_end": 0.01,
+      "epsilon_start": 0.9,
+      "_epsilon_start_help": "High exploration for genesis",
+      "gamma": 0.995,
+      "language_reward_scaling": 0.4,
+      "learning_rate": 0.005,
+      "lr_scheduler": {
+        "enabled": true,
+        "gamma": 0.95,
+        "min_lr": 0.0001,
+        "step_size": 100,
+        "type": "cosine",
+        "warmup_steps": 100
+      },
+      "memory_size": 800000000,
+      "_memory_size_help": "1TB RAM = 800M replay buffer (leave headroom for organisms)",
+      "update_frequency": 1
+    },
+    "vp_aware_planning": {
+      "base_boost": 0.18,
+      "enabled": true,
+      "high_threshold": 0.45,
+      "low_threshold": 0.25,
+      "strong_boost": 0.3
+    },
+    "checkpointing": {
+      "_help": "Auto-save training state to prevent data loss. Checkpoint every N generations or minutes.",
+      "enabled": true,
+      "auto_save_interval_generations": 100,
+      "auto_save_interval_minutes": 30,
+      "max_checkpoints": 10,
+      "checkpoint_dir": "data/neural_checkpoints",
+      "include_experience_buffer": true,
+      "include_optimizer_states": true,
+      "compression": false,
+      "auto_resume": true
+    }
+  },
+  "quantum": {
+    "entanglement_sensitivity": 2.5e-06,
+    "fitness_weights": {
+      "entanglement": 0.3,
+      "entropy": 0.2,
+      "measurements": 0.25,
+      "superposition": 0.25
+    },
+    "initial_states": 1200,
+    "_initial_states_help": "1TB: Scaled quantum states",
+    "performance_thresholds": {
+      "fitness_std_threshold": 0.3,
+      "iteration_time_ms": 10,
+      "memory_percentage": 5.0,
+      "min_fitness_to_keep": 0.1
+    },
+    "probability_precision": 1e-06,
+    "prune_check_interval": 40,
+    "superposition_tolerance": 0.0005
+  },
+  "ray": {
+    "enabled": false,
+    "actor_pool_size": 128,
+    "_actor_pool_size_help": "256 cores: Half for actors",
+    "batch_inference_size": 1024,
+    "_batch_inference_size_help": "Larger batch inference with A40 GPU acceleration",
+    "description": "Ray DISABLED - can enable if metrics agent spam fixed",
+    "fallback_on_error": true,
+    "logging_level": "warning",
+    "memory_management": {
+      "actor_pool_lru_eviction": true,
+      "cleanup_on_organism_death": true,
+      "max_object_refs": 10000
+    },
+    "num_cpus": 256,
+    "num_gpus": 1,
+    "object_store_memory": null,
+    "parallelization_threshold": 800,
+    "_parallelization_threshold_help": "Higher threshold for genesis massive populations",
+    "state_synchronization": {
+      "consistency_model": "sequential",
+      "max_state_age_ms": 100,
+      "snapshot_strategy": "breath_cycle"
+    },
+    "training_threshold": 128,
+    "_training_threshold_help": "Higher training threshold for A40 batching efficiency"
+  },
+  "rendering": {
+    "enable_visualizations": true,
+    "frame_rate": 15,
+    "metric_display_precision": 6,
+    "mode": "god",
+    "performance_monitoring": false,
+    "render_quality": "low",
+    "resolution": [
+      1280,
+      720
+    ],
+    "text_interface": true,
+    "visualization_update_precision": 0.001
+  },
+  "scikit": {
+    "anomaly_detection": {
+      "algorithm": "isolation_forest",
+      "contamination": 0.20,
+      "_contamination_help": "Higher contamination - genesis has more outliers",
+      "enabled": true,
+      "n_estimators": 300
+    },
+    "clustering": {
+      "algorithm": "hdbscan",
+      "enabled": true,
+      "min_cluster_size": 3,
+      "_min_cluster_size_help": "Small clusters during genesis phase",
+      "min_samples": 1,
+      "use_neural_embeddings": true
+    },
+    "concept_tracking": {
+      "enabled": true,
+      "persistence_threshold": 3,
+      "stale_threshold": 10
+    },
+    "dimensionality_reduction": {
+      "algorithm": "pca",
+      "enabled": true,
+      "n_components": 3
+    },
+    "enabled": true
+  },
+  "simulation": {
+    "log_level": "INFO",
+    "max_runtime": 259200.0,
+    "_max_runtime_help": "72 hours max - A40 can process faster, longer runs viable",
+    "measurement_precision": 4,
+    "performance_sampling_rate": 200,
+    "save_interval": 120.0,
+    "_save_interval_help": "Less frequent saves for long runs",
+    "target_fps": 0,
+    "_target_fps_help": "0 = unlimited speed, >0 = rate limit to N cycles/sec",
+    "time_resolution_ms": 1.0
+  },
+  "vp_monitoring": {
+    "adaptive_response": {
+      "high_vp_threshold": 0.80,
+      "_high_vp_threshold_help": "Lower threshold - genesis is volatile",
+      "streak_threshold": 3
+    },
+    "adaptive_thresholds": {
+      "enabled": true
+    },
+    "adaptive_thresholds_enabled": true,
+    "component_decomposition_enabled": true,
+    "component_weights": {
+      "evolution_pressure": 0.15,
+      "network_coherence": 0.15,
+      "phase_mismatch": 0.1,
+      "quantum_entropy": 0.15,
+      "trait_divergence": 0.15
+    },
+    "diagnostics_enabled": true,
+    "stabilization": {
+      "enabled": true,
+      "history_size": 20,
+      "max_jump": 0.15,
+      "_max_jump_help": "Higher max jump tolerance for genesis volatility",
+      "smoothing_factor": 0.3
+    },
+    "stabilization_enabled": true
+  }
+}
