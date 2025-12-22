@@ -4965,6 +4965,24 @@ if __name__ == '__main__':
         if not brains:
             raise ValueError("No capsules provided for ensemble export.")
 
+        # CRITICAL: Reset dynamo before tracing - torch.jit.trace can't handle dynamo-compiled models
+        try:
+            torch._dynamo.reset()
+        except Exception:
+            pass
+        
+        # Unwrap dynamo-compiled brains to get original uncompiled modules
+        # torch.compile() wraps the original module and stores it in _orig_mod
+        unwrapped_brains = []
+        for brain in brains:
+            if hasattr(brain, '_orig_mod'):
+                # This is a torch.compile() wrapped module - get the original
+                unwrapped_brains.append(brain._orig_mod.cpu())
+                logger.debug(f"Unwrapped dynamo-compiled brain for export")
+            else:
+                unwrapped_brains.append(brain.cpu())
+        brains = unwrapped_brains
+
         wrapper = self.MultiOrganismWrapper(brains, names)
         wrapper.eval()  # Disable dropout for deterministic tracing
         wrapper = wrapper.cpu()  # Ensure wrapper is on CPU
@@ -5013,13 +5031,17 @@ if __name__ == '__main__':
                 logger.warning(f"✗ ONNX export failed: {type(e).__name__}: {e}")
                 logger.warning("Falling back to TorchScript export.")
                 model_buffer = BytesIO()
-                traced = torch.jit.trace(wrapper, (dummy_input,))
+                # Ensure dynamo is disabled for tracing
+                with torch._dynamo.disable():
+                    traced = torch.jit.trace(wrapper, (dummy_input,))
                 torch.jit.save(traced, model_buffer)
                 model_buffer.seek(0)
                 chosen_format = 'torchscript'
         else:
             # Use trace instead of script - script fails on OrganismBrain's complex control flow
-            traced = torch.jit.trace(wrapper, (dummy_input,))
+            # Ensure dynamo is disabled for tracing
+            with torch._dynamo.disable():
+                traced = torch.jit.trace(wrapper, (dummy_input,))
             torch.jit.save(traced, model_buffer)
             model_buffer.seek(0)
 
