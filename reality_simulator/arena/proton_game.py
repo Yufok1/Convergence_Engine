@@ -278,16 +278,17 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
     
     (ChallengeType.PHYSICAL, ResourceType.TOOL): [
         # Tool-assisted physical tasks
-        GameDefinition(
-            name="Lunar Landing",
-            gym_env="LunarLander-v3",
-            challenge=ChallengeType.PHYSICAL,
-            resource=ResourceType.TOOL,
-            difficulty=GameDifficulty.JOURNEYMAN,
-            description="Land spacecraft using thrusters - tool-assisted precision",
-            tags=["precision", "fuel_management", "spatial"],
-            favored_traits={"precision": 0.2, "resource_management": 0.15}
-        ),
+        # DISABLED: LunarLander requires Box2D (pip install gymnasium[box2d])
+        # GameDefinition(
+        #     name="Lunar Landing",
+        #     gym_env="LunarLander-v3",
+        #     challenge=ChallengeType.PHYSICAL,
+        #     resource=ResourceType.TOOL,
+        #     difficulty=GameDifficulty.JOURNEYMAN,
+        #     description="Land spacecraft using thrusters - tool-assisted precision",
+        #     tags=["precision", "fuel_management", "spatial"],
+        #     favored_traits={"precision": 0.2, "resource_management": 0.15}
+        # ),
         GameDefinition(
             name="Pendulum Control",
             gym_env="Pendulum-v1",
@@ -322,16 +323,17 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
             tags=["driving", "speed", "control"],
             favored_traits={"reaction_time": 0.2, "spatial_awareness": 0.15}
         ),
-        GameDefinition(
-            name="Continuous Lander",
-            gym_env="LunarLanderContinuous-v3",
-            challenge=ChallengeType.PHYSICAL,
-            resource=ResourceType.MACHINE,
-            difficulty=GameDifficulty.EXPERT,
-            description="Precision landing with continuous thrust control",
-            tags=["precision", "continuous", "landing"],
-            favored_traits={"fine_control": 0.25, "fuel_efficiency": 0.15}
-        ),
+        # DISABLED: LunarLander requires Box2D
+        # GameDefinition(
+        #     name="Continuous Lander",
+        #     gym_env="LunarLanderContinuous-v3",
+        #     challenge=ChallengeType.PHYSICAL,
+        #     resource=ResourceType.MACHINE,
+        #     difficulty=GameDifficulty.EXPERT,
+        #     description="Precision landing with continuous thrust control",
+        #     tags=["precision", "continuous", "landing"],
+        #     favored_traits={"fine_control": 0.25, "fuel_efficiency": 0.15}
+        # ),
         GameDefinition(
             name="Mountain Racer",
             gym_env="MountainCarContinuous-v0",
@@ -599,17 +601,18 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
     
     (ChallengeType.CHANCE, ResourceType.MACHINE): [
         # Machine + chance
-        GameDefinition(
-            name="Chaotic Landing",
-            gym_env="LunarLander-v3",
-            challenge=ChallengeType.CHANCE,
-            resource=ResourceType.MACHINE,
-            difficulty=GameDifficulty.JOURNEYMAN,
-            description="Random wind - land despite chaos",
-            min_episodes=5,
-            tags=["wind", "chaos", "landing"],
-            favored_traits={"adaptability": 0.25, "luck": 0.15}
-        ),
+        # DISABLED: LunarLander requires Box2D
+        # GameDefinition(
+        #     name="Chaotic Landing",
+        #     gym_env="LunarLander-v3",
+        #     challenge=ChallengeType.CHANCE,
+        #     resource=ResourceType.MACHINE,
+        #     difficulty=GameDifficulty.JOURNEYMAN,
+        #     description="Random wind - land despite chaos",
+        #     min_episodes=5,
+        #     tags=["wind", "chaos", "landing"],
+        #     favored_traits={"adaptability": 0.25, "luck": 0.15}
+        # ),
         GameDefinition(
             name="Random Tracks",
             gym_env="CarRacing-v3",
@@ -621,17 +624,18 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
             tags=["procedural", "adaptation", "racing"],
             favored_traits={"adaptability": 0.2, "quick_learning": 0.15}
         ),
-        GameDefinition(
-            name="Continuous Chaos",
-            gym_env="LunarLanderContinuous-v3",
-            challenge=ChallengeType.CHANCE,
-            resource=ResourceType.MACHINE,
-            difficulty=GameDifficulty.EXPERT,
-            description="Continuous control in chaotic wind",
-            min_episodes=5,
-            tags=["continuous", "wind", "precision"],
-            favored_traits={"precision": 0.2, "luck": 0.15}
-        ),
+        # DISABLED: LunarLander requires Box2D
+        # GameDefinition(
+        #     name="Continuous Chaos",
+        #     gym_env="LunarLanderContinuous-v3",
+        #     challenge=ChallengeType.CHANCE,
+        #     resource=ResourceType.MACHINE,
+        #     difficulty=GameDifficulty.EXPERT,
+        #     description="Continuous control in chaotic wind",
+        #     min_episodes=5,
+        #     tags=["continuous", "wind", "precision"],
+        #     favored_traits={"precision": 0.2, "luck": 0.15}
+        # ),
     ],
     
     (ChallengeType.CHANCE, ResourceType.ANIMAL): [
@@ -647,17 +651,18 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
             tags=["terrain", "chaos", "survival"],
             favored_traits={"adaptability": 0.3, "luck": 0.2}
         ),
-        GameDefinition(
-            name="Lunar Gamble",
-            gym_env="LunarLander-v3",
-            challenge=ChallengeType.CHANCE,
-            resource=ResourceType.ANIMAL,
-            difficulty=GameDifficulty.JOURNEYMAN,
-            description="Random wind - animal-like reactions needed",
-            min_episodes=5,
-            tags=["wind", "random", "reaction"],
-            favored_traits={"reaction_time": 0.2, "luck": 0.15}
-        ),
+        # DISABLED: LunarLander requires Box2D
+        # GameDefinition(
+        #     name="Lunar Gamble",
+        #     gym_env="LunarLander-v3",
+        #     challenge=ChallengeType.CHANCE,
+        #     resource=ResourceType.ANIMAL,
+        #     difficulty=GameDifficulty.JOURNEYMAN,
+        #     description="Random wind - animal-like reactions needed",
+        #     min_episodes=5,
+        #     tags=["wind", "random", "reaction"],
+        #     favored_traits={"reaction_time": 0.2, "luck": 0.15}
+        # ),
         GameDefinition(
             name="Mountain Roulette",
             gym_env="MountainCar-v0",
@@ -747,16 +752,17 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
     
     (ChallengeType.ARTS, ResourceType.MACHINE): [
         # Machine artistry
-        GameDefinition(
-            name="Perfect Landing",
-            gym_env="LunarLander-v3",
-            challenge=ChallengeType.ARTS,
-            resource=ResourceType.MACHINE,
-            difficulty=GameDifficulty.JOURNEYMAN,
-            description="Land perfectly centered - precision art",
-            tags=["precision", "landing", "perfection"],
-            favored_traits={"precision": 0.3, "elegance": 0.15}
-        ),
+        # DISABLED: LunarLander requires Box2D
+        # GameDefinition(
+        #     name="Perfect Landing",
+        #     gym_env="LunarLander-v3",
+        #     challenge=ChallengeType.ARTS,
+        #     resource=ResourceType.MACHINE,
+        #     difficulty=GameDifficulty.JOURNEYMAN,
+        #     description="Land perfectly centered - precision art",
+        #     tags=["precision", "landing", "perfection"],
+        #     favored_traits={"precision": 0.3, "elegance": 0.15}
+        # ),
         GameDefinition(
             name="Racing Line",
             gym_env="CarRacing-v3",
@@ -767,16 +773,17 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
             tags=["racing", "line", "flow"],
             favored_traits={"flow": 0.2, "precision": 0.15}
         ),
-        GameDefinition(
-            name="Smooth Control",
-            gym_env="LunarLanderContinuous-v3",
-            challenge=ChallengeType.ARTS,
-            resource=ResourceType.MACHINE,
-            difficulty=GameDifficulty.EXPERT,
-            description="Smoothest possible control - no jerking",
-            tags=["smooth", "continuous", "elegance"],
-            favored_traits={"smoothness": 0.25, "precision": 0.2}
-        ),
+        # DISABLED: LunarLander requires Box2D
+        # GameDefinition(
+        #     name="Smooth Control",
+        #     gym_env="LunarLanderContinuous-v3",
+        #     challenge=ChallengeType.ARTS,
+        #     resource=ResourceType.MACHINE,
+        #     difficulty=GameDifficulty.EXPERT,
+        #     description="Smoothest possible control - no jerking",
+        #     tags=["smooth", "continuous", "elegance"],
+        #     favored_traits={"smoothness": 0.25, "precision": 0.2}
+        # ),
     ],
     
     (ChallengeType.ARTS, ResourceType.ANIMAL): [
@@ -1333,8 +1340,8 @@ class ProtonGameArena:
         # Classic Control (always available)
         'CartPole-v1', 'MountainCar-v0', 'MountainCarContinuous-v0',
         'Acrobot-v1', 'Pendulum-v1',
-        # Box2D (pip install gymnasium[box2d])
-        'LunarLander-v3', 'LunarLanderContinuous-v3',
+        # Box2D (pip install gymnasium[box2d]) - LunarLander disabled, requires Box2D
+        # 'LunarLander-v3', 'LunarLanderContinuous-v3',
         'BipedalWalker-v3', 'BipedalWalkerHardcore-v3', 'CarRacing-v3',
         # Toy Text (always available)
         'FrozenLake-v1', 'FrozenLake8x8-v1', 'CliffWalking-v1',
