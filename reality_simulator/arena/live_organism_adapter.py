@@ -225,8 +225,9 @@ class LiveOrganismAdapter:
                 'mountain_climb': 'MountainCar-v0',
                 'robot_swing': 'Acrobot-v1',
                 'pendulum_control': 'Pendulum-v1',
-                'lunar_landing': 'LunarLander-v3',
-                'space_landing': 'LunarLander-v3',
+                # DISABLED: LunarLander requires Box2D
+                # 'lunar_landing': 'LunarLander-v3',
+                # 'space_landing': 'LunarLander-v3',
                 'ice_navigation': 'FrozenLake-v1',
                 'taxi_service': 'Taxi-v3',
                 'cliff_walk': 'CliffWalking-v0',

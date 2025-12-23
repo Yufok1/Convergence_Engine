@@ -178,14 +178,14 @@ class AllianceDojo:
         # Game pools by skill focus
         self.skill_games = {
             SkillFocus.REFLEXES: ['cartpole', 'acrobot'],
-            SkillFocus.PRECISION: ['lunarlander', 'pendulum'],
+            SkillFocus.PRECISION: ['pendulum'],  # LunarLander removed - requires Box2D
             SkillFocus.STRATEGY: ['frozenlake', 'taxi', 'cliffwalking'],
             SkillFocus.PERSISTENCE: ['mountaincar'],
             SkillFocus.RISK_ASSESSMENT: ['blackjack']
         }
         
         self.all_games = [
-            'cartpole', 'lunarlander', 'mountaincar', 'acrobot',
+            'cartpole', 'mountaincar', 'acrobot',  # LunarLander removed
             'frozenlake', 'taxi', 'blackjack'
         ]
         

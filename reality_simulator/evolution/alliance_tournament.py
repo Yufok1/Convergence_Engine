@@ -217,9 +217,9 @@ class AllianceTournamentSystem:
         # 💀 Kill tracking
         self.kill_counts: Dict[str, int] = defaultdict(int)
         
-        # Available games for tournaments
+        # Available games for tournaments (LunarLander removed - requires Box2D)
         self.available_games = [
-            "cartpole", "lunarlander", "mountaincar", "acrobot",
+            "cartpole", "mountaincar", "acrobot",
             "frozenlake", "taxi", "cliffwalking", "blackjack"
         ]
         

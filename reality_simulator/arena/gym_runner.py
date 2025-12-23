@@ -131,13 +131,14 @@ class GymRunner:
             'max_steps': 200,
             'description': 'Swing up and balance a pendulum'
         },
-        'LunarLander-v3': {
-            'action_space': 4,
-            'obs_space': 8,
-            'reward_threshold': 200,
-            'max_steps': 1000,
-            'description': 'Land a spacecraft safely'
-        },
+        # DISABLED: LunarLander requires Box2D
+        # 'LunarLander-v3': {
+        #     'action_space': 4,
+        #     'obs_space': 8,
+        #     'reward_threshold': 200,
+        #     'max_steps': 1000,
+        #     'description': 'Land a spacecraft safely'
+        # },
         
         # Toy Text - discrete reasoning
         'FrozenLake-v1': {
@@ -176,21 +177,21 @@ class GymRunner:
             'description': 'Beat the dealer at blackjack'
         },
         
-        # Box2D environments
-        'LunarLander-v3': {
-            'action_space': 4,
-            'obs_space': 8,
-            'reward_threshold': 200,
-            'max_steps': 1000,
-            'description': 'Land a spacecraft safely'
-        },
-        'LunarLanderContinuous-v3': {
-            'action_space': 'continuous',
-            'obs_space': 8,
-            'reward_threshold': 200,
-            'max_steps': 1000,
-            'description': 'Land spacecraft with continuous control'
-        },
+        # Box2D environments (LunarLander disabled - requires Box2D install)
+        # 'LunarLander-v3': {
+        #     'action_space': 4,
+        #     'obs_space': 8,
+        #     'reward_threshold': 200,
+        #     'max_steps': 1000,
+        #     'description': 'Land a spacecraft safely'
+        # },
+        # 'LunarLanderContinuous-v3': {
+        #     'action_space': 'continuous',
+        #     'obs_space': 8,
+        #     'reward_threshold': 200,
+        #     'max_steps': 1000,
+        #     'description': 'Land spacecraft with continuous control'
+        # },
         'BipedalWalker-v3': {
             'action_space': 'continuous',
             'obs_space': 24,
@@ -308,8 +309,9 @@ class GymRunner:
         'mountain_climb': 'MountainCar-v0',
         'robot_swing': 'Acrobot-v1',
         'pendulum_control': 'Pendulum-v1',
-        'lunar_landing': 'LunarLander-v3',
-        'space_landing': 'LunarLander-v3',
+        # DISABLED: LunarLander requires Box2D
+        # 'lunar_landing': 'LunarLander-v3',
+        # 'space_landing': 'LunarLander-v3',
         
         # Mental challenges
         'ice_navigation': 'FrozenLake-v1',
@@ -322,7 +324,7 @@ class GymRunner:
         
         # Lowercase aliases (for alliance_dojo)
         'cartpole': 'CartPole-v1',
-        'lunarlander': 'LunarLander-v3',
+        # 'lunarlander': 'LunarLander-v3',  # DISABLED: requires Box2D
         'mountaincar': 'MountainCar-v0',
         'acrobot': 'Acrobot-v1',
         'pendulum': 'Pendulum-v1',
@@ -337,9 +339,9 @@ class GymRunner:
         'Acrobot-v1': 'Acrobot-v1',
         'Pendulum-v1': 'Pendulum-v1',
         
-        # Direct mappings - Box2D
-        'LunarLander-v3': 'LunarLander-v3',
-        'LunarLanderContinuous-v3': 'LunarLanderContinuous-v3',
+        # Direct mappings - Box2D (LunarLander disabled - requires Box2D)
+        # 'LunarLander-v3': 'LunarLander-v3',
+        # 'LunarLanderContinuous-v3': 'LunarLanderContinuous-v3',
         'BipedalWalker-v3': 'BipedalWalker-v3',
         'BipedalWalkerHardcore-v3': 'BipedalWalkerHardcore-v3',
         'CarRacing-v3': 'CarRacing-v3',
