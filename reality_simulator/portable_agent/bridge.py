@@ -2883,11 +2883,9 @@ class AgentBridge:
         
         categories = {
             'classic_control': sorted([e for e in envs if any(x in e for x in 
-                ['CartPole', 'MountainCar', 'Pendulum', 'Acrobot']) and 'ALE' not in e]),  # LunarLander removed
+                ['CartPole', 'MountainCar', 'Pendulum', 'Acrobot']) and 'ALE' not in e]),
             'tabular': sorted([e for e in envs if any(x in e for x in 
                 ['FrozenLake', 'Taxi', 'Blackjack', 'Cliff']) and 'ALE' not in e]),
-            'box2d': sorted([e for e in envs if any(x in e for x in 
-                ['Bipedal', 'CarRacing']) and 'ALE' not in e]),  # LunarLander removed - requires Box2D
             'mujoco': sorted([e for e in envs if any(x in e for x in 
                 ['Ant-', 'Cheetah', 'Hopper-', 'Humanoid', 'Walker2d', 'Swimmer', 'Pusher', 'Reacher', 'Inverted'])]),
             'atari': sorted([e for e in envs if 'ALE/' in e]),
@@ -3313,11 +3311,9 @@ class AgentBridge:
                 ('Gymnast Swing', 'Acrobot-v1', 'JOURNEYMAN', 'Swing up using body momentum'),
             ],
             ('physical', 'tool'): [
-                # ('Lunar Landing', 'LunarLander-v3', 'JOURNEYMAN', 'Land spacecraft with thrusters'),  # Requires Box2D
                 ('Pendulum Control', 'Pendulum-v1', 'APPRENTICE', 'Control pendulum with force'),
             ],
             ('physical', 'machine'): [
-                ('Road Racing', 'CarRacing-v3', 'EXPERT', 'Race car around track'),
                 ('Endurance Rally', 'ALE/Enduro-v5', 'EXPERT', 'Endless racing endurance'),
                 ('Pong Duel', 'pong_versus', 'APPRENTICE', '🆚 HEAD-TO-HEAD paddle battle'),
                 ('Tank Combat', 'combat_versus', 'JOURNEYMAN', '🆚 HEAD-TO-HEAD tank warfare'),
@@ -3325,7 +3321,6 @@ class AgentBridge:
             ('physical', 'animal'): [
                 ('Ant Colony', 'Ant-v4', 'MASTER', 'Control multi-legged creature'),
                 ('Cheetah Sprint', 'HalfCheetah-v4', 'MASTER', 'Run as fast as possible'),
-                ('Bipedal Walk', 'BipedalWalker-v3', 'EXPERT', 'Walk on two legs across terrain'),
                 ('Boxing Match', 'boxing_versus', 'EXPERT', '🆚 HEAD-TO-HEAD punch & dodge'),
             ],
             # ═══════════════════════════════════════════════════════════════
@@ -3488,8 +3483,7 @@ class AgentBridge:
             # Check if gym env exists - expanded list
             STANDARD_GYM_ENVS = [
                 'CartPole-v1', 'MountainCar-v0', 'Acrobot-v1',
-                'Pendulum-v1', 'CarRacing-v3',  # LunarLander-v3 removed - requires Box2D
-                'BipedalWalker-v3', 'FrozenLake-v1', 'CliffWalking-v0',
+                'Pendulum-v1', 'FrozenLake-v1', 'CliffWalking-v0',
                 'Blackjack-v1', 'Taxi-v3', 'Ant-v4', 'HalfCheetah-v4',
                 'Hopper-v4', 'Walker2d-v4', 'Humanoid-v4', 'Swimmer-v4',
             ]
@@ -3626,8 +3620,6 @@ class AgentBridge:
                     'control': 'classic_control',
                     'tabular': 'tabular',
                     'grid': 'tabular',
-                    'box2d': 'box2d',
-                    'physics': 'box2d',
                     'mujoco': 'mujoco',
                     'robot': 'mujoco',
                     'atari': 'atari',
@@ -3646,7 +3638,7 @@ class AgentBridge:
                 else:
                     print(f"\n  Total Environments: {categories.get('total_count', '?')}")
                     print()
-                    for cat_name in ['classic_control', 'tabular', 'box2d', 'mujoco', 'atari']:
+                    for cat_name in ['classic_control', 'tabular', 'mujoco', 'atari']:
                         envs = categories.get(cat_name, [])
                         sample = envs[:3] if envs else []
                         print(f"  📁 {cat_name.upper()} ({len(envs)})")
@@ -3656,7 +3648,7 @@ class AgentBridge:
                             print(f"      ...")
                         print()
                     print("  Use /envs <category> for full list")
-                    print("  Categories: classic, tabular, box2d, mujoco, atari")
+                    print("  Categories: classic, tabular, mujoco, atari")
                 
                 print("="*60 + "\n")
                 continue

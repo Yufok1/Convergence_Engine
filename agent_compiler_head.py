@@ -1077,9 +1077,6 @@ if __name__ == "__main__":
             requirements += "# Atari Arcade Games (100+ classic games!)\n"
             requirements += "# Pac-Man, Breakout, Space Invaders, Pong, etc.\n"
             requirements += "ale-py>=0.8.0\n\n"
-            requirements += "# Box2D Physics (LunarLander, BipedalWalker, CarRacing)\n"
-            requirements += "# gymnasium[box2d]\n"
-            requirements += "box2d-py>=2.3.5\n\n"
             requirements += "# MuJoCo Robotics (Humanoid, Ant, HalfCheetah, etc)\n"
             requirements += "# pip install gymnasium[mujoco]\n"
             requirements += "# mujoco>=2.3.0\n\n"
@@ -1087,9 +1084,7 @@ if __name__ == "__main__":
             requirements += "# USAGE EXAMPLES:\n"
             requirements += "# ========================================\n"
             requirements += "# python bridge.py . --mode gym --gym-env CartPole-v1 --render\n"
-            requirements += "# python bridge.py . --mode gym --gym-env LunarLander-v3 --episodes 50\n"
             requirements += "# python bridge.py . --mode gym --gym-env ALE/Breakout-v5 --online-learn\n"
-            requirements += "# python bridge.py . --mode gym --gym-env BipedalWalker-v3 --render --online-learn\n\n"
             requirements += "# ========================================\n"
             requirements += "# OPTIONAL GPU ACCELERATION\n"
             requirements += "# ========================================\n"
@@ -1399,7 +1394,6 @@ python bridge.py . --mode gym --gym-env CartPole-v1 --render        # Balance a 
 python bridge.py . --mode gym --gym-env MountainCar-v0 --render     # Drive up a hill
 python bridge.py . --mode gym --gym-env Pendulum-v1 --render        # Swing a pendulum
 python bridge.py . --mode gym --gym-env Acrobot-v1 --render         # Double pendulum
-python bridge.py . --mode gym --gym-env LunarLander-v3 --render     # Land on the moon!
 ```
 
 ### 👾 Atari Arcade (100+ Classic Games!)
@@ -1412,14 +1406,6 @@ python bridge.py . --mode gym --gym-env ALE/Pacman-v5 --render      # Pac-Man!
 python bridge.py . --mode gym --gym-env ALE/Asteroids-v5            # Space shooter
 python bridge.py . --mode gym --gym-env ALE/Frogger-v5 --render     # Cross the road
 python bridge.py . --mode gym --gym-env ALE/DonkeyKong-v5           # Rescue the princess
-```
-
-### 🚀 Box2D Physics
-Install: `pip install gymnasium[box2d]` or `pip install box2d-py`
-```bash
-python bridge.py . --mode gym --gym-env BipedalWalker-v3 --render   # Walk on 2 legs!
-python bridge.py . --mode gym --gym-env CarRacing-v3 --render       # Race a car
-python bridge.py . --mode gym --gym-env LunarLanderContinuous-v3    # Smooth landing
 ```
 
 ### 🤖 MuJoCo Robotics (Advanced)
@@ -1440,7 +1426,7 @@ Enable real-time weight updates with `--online-learn`:
 python bridge.py . --mode gym --gym-env CartPole-v1 --episodes 100 --online-learn
 
 # With custom learning rate
-python bridge.py . --mode gym --gym-env LunarLander-v3 --online-learn --learning-rate 0.0005
+python bridge.py . --mode gym --gym-env Pendulum-v1 --online-learn --learning-rate 0.0005
 
 # Watch it learn!
 python bridge.py . --mode gym --gym-env CartPole-v1 --render --online-learn --episodes 50
@@ -1488,8 +1474,8 @@ selection grid from the novels:
 ```
            NAKED        TOOL         MACHINE      ANIMAL
          ─────────────────────────────────────────────────
-PHYSICAL   Balance      Lunar        Racing       Bipedal
-           CartPole     LunarLander  CarRacing    Walker
+PHYSICAL   Balance      Mountain     Pendulum     Acrobot
+           CartPole     Car          Swing        Double
            
 MENTAL     Frozen       Blackjack    Breakout     Custom
            Lake         Cards        SpaceInvaders Games
@@ -1815,9 +1801,8 @@ echo   🎮 GYM MODE - 400+ Learning Environments!
 echo  ════════════════════════════════════════════════════════════
 echo.
 echo   ENVIRONMENT CATEGORIES:
-echo     Classic: CartPole-v1, MountainCar-v0, LunarLander-v3, Pendulum-v1
+echo     Classic: CartPole-v1, MountainCar-v0, Pendulum-v1, Acrobot-v1
 echo     Atari:   ALE/Breakout-v5, ALE/Pong-v5, ALE/SpaceInvaders-v5
-echo     Box2D:   BipedalWalker-v3, CarRacing-v3
 echo     MuJoCo:  Humanoid-v4, Ant-v4, HalfCheetah-v4
 echo.
 set /p gymenv="Enter Gym environment (default: CartPole-v1): "
@@ -2001,9 +1986,8 @@ while true; do
             echo "  🎮 GYM MODE - 400+ Learning Environments!"
             echo ""
             echo "  ENVIRONMENT CATEGORIES:"
-            echo "    Classic: CartPole-v1, MountainCar-v0, LunarLander-v3"
+            echo "    Classic: CartPole-v1, MountainCar-v0, Pendulum-v1, Acrobot-v1"
             echo "    Atari:   ALE/Breakout-v5, ALE/Pong-v5, ALE/SpaceInvaders-v5"
-            echo "    Box2D:   BipedalWalker-v3, CarRacing-v3"
             echo "    MuJoCo:  Humanoid-v4, Ant-v4, HalfCheetah-v4"
             echo ""
             read -p "Gym environment (default: CartPole-v1): " gymenv
@@ -2189,9 +2173,6 @@ done
             requirements += "# Atari Arcade Games (100+ classic games!)\n"
             requirements += "# Pac-Man, Breakout, Space Invaders, Pong, etc.\n"
             requirements += "ale-py>=0.8.0\n\n"
-            requirements += "# Box2D Physics (LunarLander, BipedalWalker, CarRacing)\n"
-            requirements += "# gymnasium[box2d]\n"
-            requirements += "box2d-py>=2.3.5\n\n"
             requirements += "# MuJoCo Robotics (Humanoid, Ant, HalfCheetah, etc)\n"
             requirements += "# pip install gymnasium[mujoco]\n"
             requirements += "# mujoco>=2.3.0\n\n"
@@ -2199,9 +2180,7 @@ done
             requirements += "# ENSEMBLE USAGE EXAMPLES:\n"
             requirements += "# ========================================\n"
             requirements += "# python bridge.py . --mode gym --gym-env CartPole-v1 --render\n"
-            requirements += "# python bridge.py . --mode gym --gym-env LunarLander-v3 --episodes 100 --online-learn\n"
             requirements += "# python bridge.py . --mode gym --gym-env ALE/Breakout-v5 --online-learn --learning-rate 0.0001\n"
-            requirements += "# python bridge.py . --mode gym --gym-env BipedalWalker-v3 --render --online-learn\n\n"
             requirements += "# ========================================\n"
             requirements += "# OPTIONAL GPU ACCELERATION\n"
             requirements += "# ========================================\n"
@@ -2391,7 +2370,6 @@ python bridge.py . --mode gym --gym-env CartPole-v1 --render        # Balance a 
 python bridge.py . --mode gym --gym-env MountainCar-v0 --render     # Drive up a hill
 python bridge.py . --mode gym --gym-env Pendulum-v1 --render        # Swing a pendulum
 python bridge.py . --mode gym --gym-env Acrobot-v1 --render         # Double pendulum
-python bridge.py . --mode gym --gym-env LunarLander-v3 --render     # Land on the moon!
 ```
 
 ### 👾 Atari Arcade (100+ Classic Games!)
@@ -2404,14 +2382,6 @@ python bridge.py . --mode gym --gym-env ALE/Pacman-v5 --render      # Pac-Man!
 python bridge.py . --mode gym --gym-env ALE/Asteroids-v5            # Space shooter
 python bridge.py . --mode gym --gym-env ALE/Frogger-v5 --render     # Cross the road
 python bridge.py . --mode gym --gym-env ALE/DonkeyKong-v5           # Rescue the princess
-```
-
-### 🚀 Box2D Physics
-Install: `pip install gymnasium[box2d]` or `pip install box2d-py`
-```bash
-python bridge.py . --mode gym --gym-env BipedalWalker-v3 --render   # Walk on 2 legs!
-python bridge.py . --mode gym --gym-env CarRacing-v3 --render       # Race a car
-python bridge.py . --mode gym --gym-env LunarLanderContinuous-v3    # Smooth landing
 ```
 
 ### 🤖 MuJoCo Robotics (Advanced)
@@ -2432,7 +2402,7 @@ Enable real-time weight updates with `--online-learn`:
 python bridge.py . --mode gym --gym-env CartPole-v1 --episodes 100 --online-learn
 
 # With custom learning rate
-python bridge.py . --mode gym --gym-env LunarLander-v3 --online-learn --learning-rate 0.0005
+python bridge.py . --mode gym --gym-env Pendulum-v1 --online-learn --learning-rate 0.0005
 
 # Watch the ensemble learn together!
 python bridge.py . --mode gym --gym-env CartPole-v1 --render --online-learn --episodes 50
@@ -2722,9 +2692,8 @@ echo.
 echo  🎮 GYM MODE - 400+ Learning Environments!
 echo.
 echo  ENVIRONMENT CATEGORIES:
-echo    Classic: CartPole-v1, MountainCar-v0, LunarLander-v3
+echo    Classic: CartPole-v1, MountainCar-v0, Pendulum-v1, Acrobot-v1
 echo    Atari:   ALE/Breakout-v5, ALE/Pong-v5, ALE/SpaceInvaders-v5
-echo    Box2D:   BipedalWalker-v3, CarRacing-v3
 echo    MuJoCo:  Humanoid-v4, Ant-v4, HalfCheetah-v4
 echo.
 set /p gymenv="Gym environment (default: CartPole-v1): "
@@ -2800,7 +2769,7 @@ while true; do
         3) 
             setup || continue
             echo ""
-            echo "  ENVIRONMENTS: CartPole-v1, LunarLander-v3, ALE/Breakout-v5, BipedalWalker-v3..."
+            echo "  ENVIRONMENTS: CartPole-v1, Pendulum-v1, ALE/Breakout-v5, Humanoid-v4..."
             read -p "Env (CartPole-v1): " e
             read -p "Episodes (10): " ep
             read -p "Render? (y/n): " r

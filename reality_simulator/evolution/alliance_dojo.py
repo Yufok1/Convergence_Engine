@@ -68,7 +68,7 @@ class TrainingType(Enum):
 class SkillFocus(Enum):
     """What skill to focus on during training."""
     REFLEXES = "reflexes"          # CartPole, Acrobot
-    PRECISION = "precision"        # LunarLander, Pendulum
+    PRECISION = "precision"        # Pendulum
     STRATEGY = "strategy"          # FrozenLake, Taxi
     PERSISTENCE = "persistence"    # MountainCar
     RISK_ASSESSMENT = "risk"       # Blackjack
@@ -178,14 +178,14 @@ class AllianceDojo:
         # Game pools by skill focus
         self.skill_games = {
             SkillFocus.REFLEXES: ['cartpole', 'acrobot'],
-            SkillFocus.PRECISION: ['pendulum'],  # LunarLander removed - requires Box2D
+            SkillFocus.PRECISION: ['pendulum'],
             SkillFocus.STRATEGY: ['frozenlake', 'taxi', 'cliffwalking'],
             SkillFocus.PERSISTENCE: ['mountaincar'],
             SkillFocus.RISK_ASSESSMENT: ['blackjack']
         }
         
         self.all_games = [
-            'cartpole', 'mountaincar', 'acrobot',  # LunarLander removed
+            'cartpole', 'mountaincar', 'acrobot',
             'frozenlake', 'taxi', 'blackjack'
         ]
         

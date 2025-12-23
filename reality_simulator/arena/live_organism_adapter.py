@@ -7,7 +7,7 @@ native abilities (language, neural processing) for REAL GAME BATTLES.
 
 Key Features:
 1. Adapts organisms to Proton Game's expected interface
-2. ACTUALLY RUNS real Gymnasium environments (CartPole, LunarLander, etc.)
+2. ACTUALLY RUNS real Gymnasium environments (CartPole, Acrobot, etc.)
 3. Organisms LEARN from gameplay - experiences recorded to replay buffer
 4. Falls back to native language games when Gym unavailable
 5. Provides causation tracking for all battles
@@ -225,9 +225,6 @@ class LiveOrganismAdapter:
                 'mountain_climb': 'MountainCar-v0',
                 'robot_swing': 'Acrobot-v1',
                 'pendulum_control': 'Pendulum-v1',
-                # DISABLED: LunarLander requires Box2D
-                # 'lunar_landing': 'LunarLander-v3',
-                # 'space_landing': 'LunarLander-v3',
                 'ice_navigation': 'FrozenLake-v1',
                 'taxi_service': 'Taxi-v3',
                 'cliff_walk': 'CliffWalking-v0',
@@ -239,14 +236,12 @@ class LiveOrganismAdapter:
             actual_env = gym_mappable.get(env_spec, env_spec)
             
             # Accept any environment that looks like a Gym env (has version suffix like -v0, -v1, etc.)
-            # This allows MuJoCo envs, Box2D envs, and all standard Gymnasium envs
+            # This allows MuJoCo envs and all standard Gymnasium envs
             is_gym_env = (
                 actual_env in runner.ENV_CONFIGS or 
-                env_spec.startswith(('CartPole', 'Mountain', 'Lunar', 'Acrobot', 'Frozen', 'Taxi', 'Cliff', 'Black', 'Pendulum')) or
+                env_spec.startswith(('CartPole', 'Mountain', 'Acrobot', 'Frozen', 'Taxi', 'Cliff', 'Black', 'Pendulum')) or
                 # MuJoCo environments
                 env_spec.startswith(('Walker', 'Ant', 'Swimmer', 'Hopper', 'HalfCheetah', 'Humanoid', 'Inverted', 'Reacher', 'Pusher')) or
-                # Box2D environments
-                env_spec.startswith(('Bipedal', 'CarRacing')) or
                 # Generic version pattern (any env with -v suffix)
                 any(f'-v{i}' in env_spec for i in range(10))
             )

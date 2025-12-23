@@ -278,17 +278,6 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
     
     (ChallengeType.PHYSICAL, ResourceType.TOOL): [
         # Tool-assisted physical tasks
-        # DISABLED: LunarLander requires Box2D (pip install gymnasium[box2d])
-        # GameDefinition(
-        #     name="Lunar Landing",
-        #     gym_env="LunarLander-v3",
-        #     challenge=ChallengeType.PHYSICAL,
-        #     resource=ResourceType.TOOL,
-        #     difficulty=GameDifficulty.JOURNEYMAN,
-        #     description="Land spacecraft using thrusters - tool-assisted precision",
-        #     tags=["precision", "fuel_management", "spatial"],
-        #     favored_traits={"precision": 0.2, "resource_management": 0.15}
-        # ),
         GameDefinition(
             name="Pendulum Control",
             gym_env="Pendulum-v1",
@@ -314,27 +303,6 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
     (ChallengeType.PHYSICAL, ResourceType.MACHINE): [
         # Machine-assisted physical challenges
         GameDefinition(
-            name="Race Car",
-            gym_env="CarRacing-v3",
-            challenge=ChallengeType.PHYSICAL,
-            resource=ResourceType.MACHINE,
-            difficulty=GameDifficulty.JOURNEYMAN,
-            description="Race around track - machine control at speed",
-            tags=["driving", "speed", "control"],
-            favored_traits={"reaction_time": 0.2, "spatial_awareness": 0.15}
-        ),
-        # DISABLED: LunarLander requires Box2D
-        # GameDefinition(
-        #     name="Continuous Lander",
-        #     gym_env="LunarLanderContinuous-v3",
-        #     challenge=ChallengeType.PHYSICAL,
-        #     resource=ResourceType.MACHINE,
-        #     difficulty=GameDifficulty.EXPERT,
-        #     description="Precision landing with continuous thrust control",
-        #     tags=["precision", "continuous", "landing"],
-        #     favored_traits={"fine_control": 0.25, "fuel_efficiency": 0.15}
-        # ),
-        GameDefinition(
             name="Mountain Racer",
             gym_env="MountainCarContinuous-v0",
             challenge=ChallengeType.PHYSICAL,
@@ -347,17 +315,7 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
     ],
     
     (ChallengeType.PHYSICAL, ResourceType.ANIMAL): [
-        # Animal-like locomotion - Box2D walkers (MuJoCo commented out as often not installed)
-        GameDefinition(
-            name="Bipedal Walk",
-            gym_env="BipedalWalker-v3",
-            challenge=ChallengeType.PHYSICAL,
-            resource=ResourceType.ANIMAL,
-            difficulty=GameDifficulty.JOURNEYMAN,
-            description="Walk on two legs over terrain",
-            tags=["walking", "balance", "terrain"],
-            favored_traits={"balance": 0.2, "adaptability": 0.15}
-        ),
+        # Animal-like locomotion
         GameDefinition(
             name="Acrobatic Swing",
             gym_env="Acrobot-v1",
@@ -476,30 +434,10 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
             tags=["pushing", "planning", "manipulation"],
             favored_traits={"planning": 0.25, "precision": 0.2}
         ),
-        GameDefinition(
-            name="Track Racing",
-            gym_env="CarRacing-v3",
-            challenge=ChallengeType.MENTAL,
-            resource=ResourceType.MACHINE,
-            difficulty=GameDifficulty.JOURNEYMAN,
-            description="Strategic racing - plan the optimal line",
-            tags=["racing", "strategy", "planning"],
-            favored_traits={"strategy": 0.2, "prediction": 0.15}
-        ),
     ],
     
     (ChallengeType.MENTAL, ResourceType.ANIMAL): [
-        # Animal instincts + mental (using Box2D - MuJoCo not installed)
-        GameDefinition(
-            name="Bipedal Thinking",
-            gym_env="BipedalWalker-v3",
-            challenge=ChallengeType.MENTAL,
-            resource=ResourceType.ANIMAL,
-            difficulty=GameDifficulty.JOURNEYMAN,
-            description="Plan each step - mental control of bipedal motion",
-            tags=["coordination", "planning", "balance"],
-            favored_traits={"coordination": 0.3, "planning": 0.2}
-        ),
+        # Animal instincts + mental
         GameDefinition(
             name="Acrobatic Mind",
             gym_env="Acrobot-v1",
@@ -600,69 +538,33 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
     ],
     
     (ChallengeType.CHANCE, ResourceType.MACHINE): [
-        # Machine + chance
-        # DISABLED: LunarLander requires Box2D
-        # GameDefinition(
-        #     name="Chaotic Landing",
-        #     gym_env="LunarLander-v3",
-        #     challenge=ChallengeType.CHANCE,
-        #     resource=ResourceType.MACHINE,
-        #     difficulty=GameDifficulty.JOURNEYMAN,
-        #     description="Random wind - land despite chaos",
-        #     min_episodes=5,
-        #     tags=["wind", "chaos", "landing"],
-        #     favored_traits={"adaptability": 0.25, "luck": 0.15}
-        # ),
+        # Machine-assisted chance - random starting conditions
         GameDefinition(
-            name="Random Tracks",
-            gym_env="CarRacing-v3",
+            name="Mountain Gamble",
+            gym_env="MountainCarContinuous-v0",
+            challenge=ChallengeType.CHANCE,
+            resource=ResourceType.MACHINE,
+            difficulty=GameDifficulty.APPRENTICE,
+            description="Random valley positions - machine helps climb",
+            min_episodes=5,
+            tags=["momentum", "random_start", "machine"],
+            favored_traits={"luck": 0.2, "persistence": 0.15}
+        ),
+        GameDefinition(
+            name="Reacher Roulette",
+            gym_env="Reacher-v5",
             challenge=ChallengeType.CHANCE,
             resource=ResourceType.MACHINE,
             difficulty=GameDifficulty.JOURNEYMAN,
-            description="Procedural track - never the same twice",
-            min_episodes=3,
-            tags=["procedural", "adaptation", "racing"],
-            favored_traits={"adaptability": 0.2, "quick_learning": 0.15}
+            description="Random target spawns - robotic luck",
+            min_episodes=5,
+            tags=["reaching", "random_target", "precision"],
+            favored_traits={"adaptability": 0.2, "luck": 0.15}
         ),
-        # DISABLED: LunarLander requires Box2D
-        # GameDefinition(
-        #     name="Continuous Chaos",
-        #     gym_env="LunarLanderContinuous-v3",
-        #     challenge=ChallengeType.CHANCE,
-        #     resource=ResourceType.MACHINE,
-        #     difficulty=GameDifficulty.EXPERT,
-        #     description="Continuous control in chaotic wind",
-        #     min_episodes=5,
-        #     tags=["continuous", "wind", "precision"],
-        #     favored_traits={"precision": 0.2, "luck": 0.15}
-        # ),
     ],
     
     (ChallengeType.CHANCE, ResourceType.ANIMAL): [
         # Animal + chance (chaotic biological systems)
-        GameDefinition(
-            name="Bipedal Chaos",
-            gym_env="BipedalWalkerHardcore-v3",
-            challenge=ChallengeType.CHANCE,
-            resource=ResourceType.ANIMAL,
-            difficulty=GameDifficulty.MASTER,
-            description="Random terrain - stumps, pits, ladders",
-            min_episodes=3,
-            tags=["terrain", "chaos", "survival"],
-            favored_traits={"adaptability": 0.3, "luck": 0.2}
-        ),
-        # DISABLED: LunarLander requires Box2D
-        # GameDefinition(
-        #     name="Lunar Gamble",
-        #     gym_env="LunarLander-v3",
-        #     challenge=ChallengeType.CHANCE,
-        #     resource=ResourceType.ANIMAL,
-        #     difficulty=GameDifficulty.JOURNEYMAN,
-        #     description="Random wind - animal-like reactions needed",
-        #     min_episodes=5,
-        #     tags=["wind", "random", "reaction"],
-        #     favored_traits={"reaction_time": 0.2, "luck": 0.15}
-        # ),
         GameDefinition(
             name="Mountain Roulette",
             gym_env="MountainCar-v0",
@@ -751,53 +653,31 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
     ],
     
     (ChallengeType.ARTS, ResourceType.MACHINE): [
-        # Machine artistry
-        # DISABLED: LunarLander requires Box2D
-        # GameDefinition(
-        #     name="Perfect Landing",
-        #     gym_env="LunarLander-v3",
-        #     challenge=ChallengeType.ARTS,
-        #     resource=ResourceType.MACHINE,
-        #     difficulty=GameDifficulty.JOURNEYMAN,
-        #     description="Land perfectly centered - precision art",
-        #     tags=["precision", "landing", "perfection"],
-        #     favored_traits={"precision": 0.3, "elegance": 0.15}
-        # ),
+        # Machine artistry - precise robotic control as art form
         GameDefinition(
-            name="Racing Line",
-            gym_env="CarRacing-v3",
+            name="Precise Reach",
+            gym_env="Reacher-v5",
             challenge=ChallengeType.ARTS,
             resource=ResourceType.MACHINE,
             difficulty=GameDifficulty.JOURNEYMAN,
-            description="Perfect racing line - speed as art",
-            tags=["racing", "line", "flow"],
-            favored_traits={"flow": 0.2, "precision": 0.15}
+            description="Reach target with elegant minimal movement",
+            tags=["reaching", "precision", "elegance"],
+            favored_traits={"precision": 0.25, "efficiency": 0.2}
         ),
-        # DISABLED: LunarLander requires Box2D
-        # GameDefinition(
-        #     name="Smooth Control",
-        #     gym_env="LunarLanderContinuous-v3",
-        #     challenge=ChallengeType.ARTS,
-        #     resource=ResourceType.MACHINE,
-        #     difficulty=GameDifficulty.EXPERT,
-        #     description="Smoothest possible control - no jerking",
-        #     tags=["smooth", "continuous", "elegance"],
-        #     favored_traits={"smoothness": 0.25, "precision": 0.2}
-        # ),
+        GameDefinition(
+            name="Pusher Artistry",
+            gym_env="Pusher-v5",
+            challenge=ChallengeType.ARTS,
+            resource=ResourceType.MACHINE,
+            difficulty=GameDifficulty.EXPERT,
+            description="Push object with graceful robot arm control",
+            tags=["pushing", "grace", "manipulation"],
+            favored_traits={"grace": 0.2, "precision": 0.2}
+        ),
     ],
     
     (ChallengeType.ARTS, ResourceType.ANIMAL): [
-        # Animal grace (using Box2D - MuJoCo not installed)
-        GameDefinition(
-            name="Graceful Walk",
-            gym_env="BipedalWalker-v3",
-            challenge=ChallengeType.ARTS,
-            resource=ResourceType.ANIMAL,
-            difficulty=GameDifficulty.JOURNEYMAN,
-            description="Walk with natural grace - smooth gait",
-            tags=["walking", "grace", "natural"],
-            favored_traits={"grace": 0.25, "naturalness": 0.15}
-        ),
+        # Animal grace
         GameDefinition(
             name="Acrobatic Grace",
             gym_env="Acrobot-v1",
@@ -807,17 +687,6 @@ GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[GameDefinition]] = {
             description="Swing with fluid motion - gymnastic art",
             tags=["swinging", "fluid", "rhythm"],
             favored_traits={"rhythm": 0.25, "flow": 0.2}
-        ),
-        GameDefinition(
-            name="Hardcore Grace",
-            gym_env="BipedalWalkerHardcore-v3",
-            challenge=ChallengeType.ARTS,
-            resource=ResourceType.ANIMAL,
-            difficulty=GameDifficulty.MASTER,
-            description="Navigate obstacles with animal grace - the ultimate art",
-            tags=["walking", "obstacles", "mastery"],
-            favored_traits={"grace": 0.3, "coordination": 0.25},
-            is_continuous=True
         ),
     ],
 }
@@ -1180,7 +1049,6 @@ for drone_game in DRONE_WARFARE_GAMES:
 CONTINUOUS_ACTION_ENVS = {
     # MuJoCo continuous control
     "HalfCheetah-v5",
-    "BipedalWalker-v3",
     "Hopper-v5",
     "Ant-v5",
     "Swimmer-v5",
@@ -1192,11 +1060,7 @@ CONTINUOUS_ACTION_ENVS = {
     "Pusher-v5",
     # Continuous variants
     "Pendulum-v1",
-    # "LunarLanderContinuous-v3",  # Requires Box2D
     "MountainCarContinuous-v0",
-    "CarRacing-v3",  # Technically has discrete mode too but default is continuous
-    # BipedalWalker hardcore variant
-    "BipedalWalkerHardcore-v3",
 }
 
 
@@ -1236,7 +1100,7 @@ def get_discrete_games() -> Dict[Tuple, List[GameDefinition]]:
     Get filtered GAME_GRID with only discrete action games.
     
     This is for organisms with the 6-action discrete brain architecture.
-    Continuous games (MuJoCo, BipedalWalker, etc.) provide no real learning signal.
+    Continuous games (MuJoCo, etc.) provide no real learning signal.
     """
     filtered = {}
     for key, games in GAME_GRID.items():
@@ -1335,14 +1199,11 @@ class ProtonGameArena:
     """
     
     # Standard Gymnasium environments that provide REAL training data
-    # All verified working environments (v3 for LunarLander, MuJoCo needs mujoco package)
+    # All verified working environments (MuJoCo needs mujoco package)
     REAL_GYM_ENVS = {
         # Classic Control (always available)
         'CartPole-v1', 'MountainCar-v0', 'MountainCarContinuous-v0',
         'Acrobot-v1', 'Pendulum-v1',
-        # Box2D (pip install gymnasium[box2d]) - LunarLander disabled, requires Box2D
-        # 'LunarLander-v3', 'LunarLanderContinuous-v3',
-        'BipedalWalker-v3', 'BipedalWalkerHardcore-v3', 'CarRacing-v3',
         # Toy Text (always available)
         'FrozenLake-v1', 'FrozenLake8x8-v1', 'CliffWalking-v1',
         'Blackjack-v1', 'Taxi-v3',
@@ -1836,7 +1697,6 @@ class ProtonGameArena:
         if env_spec.startswith('drone://'):
             return False
         standard_prefixes = ['CartPole', 'MountainCar', 'Acrobot', 'Pendulum',
-                            'BipedalWalker', 'CarRacing',  # LunarLander removed - requires Box2D
                             'FrozenLake', 'CliffWalking', 'Blackjack', 'Taxi',
                             'ALE/', 'Ant-', 'HalfCheetah', 'Hopper-', 'Humanoid',
                             'Walker2d', 'Swimmer', 'Pusher', 'Reacher', 'Inverted']

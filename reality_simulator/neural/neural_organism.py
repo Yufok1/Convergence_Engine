@@ -1916,7 +1916,6 @@ class NeuralOrganism(Organism):
         # Different envs have wildly different reward scales:
         #   - CartPole: 0-500 per episode
         #   - MuJoCo Humanoid: -∞ to ~6000
-        #   - LunarLander: -∞ to ~300
         #   - Blackjack: -1 to 1
         # 
         # We normalize to [-1, 1] range for stable DQN training.

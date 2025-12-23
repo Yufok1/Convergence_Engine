@@ -3174,7 +3174,7 @@ Use annotations to highlight: clusters, isolated nodes, key connections, pattern
         prompt += "    - **Attribution**: Absorption system inspired by 'Highlander' (1986) film\n"
         prompt += "    - **Philosophy**: Strategic game selection teaches self-awareness and opponent modeling\n"
         prompt += "    - **4x4 Grid**: PHYSICAL/MENTAL/CHANCE/ARTS × NAKED/TOOL/MACHINE/ANIMAL\n"
-        prompt += "    - **26 Gym Environments**: Mapped to grid intersections (CartPole, LunarLander, Breakout, etc.)\n"
+        prompt += "    - **26 Gym Environments**: Mapped to grid intersections (CartPole, Breakout, etc.)\n"
         prompt += "    - **Event Types**:\n"
         prompt += "      * `proton_selection_begun`: Game selection started (row/column choosers assigned)\n"
         prompt += "      * `proton_challenge_chosen`: Challenge type selected (PHYSICAL/MENTAL/CHANCE/ARTS)\n"
@@ -6213,7 +6213,7 @@ The Lawfold Field Architecture provides advanced mathematical governance capabil
   - **Rows (Challenge Types)**: PHYSICAL, MENTAL, CHANCE, ARTS
   - **Columns (Resource Types)**: NAKED, TOOL, MACHINE, ANIMAL
 - Strategic Selection: Row chooser picks challenge, column chooser picks resources
-- 26 Gym Environments mapped to grid intersections (CartPole, LunarLander, Breakout, etc.)
+- 26 Gym Environments mapped to grid intersections (CartPole, Breakout, etc.)
 - Consequences: Fitness transfer, resource transfer, trait evolution
 - Tournament modes: single_elimination, round_robin
 - Integration: BattleType.PROTON_GAME in battle_arena.py

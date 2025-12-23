@@ -6,7 +6,6 @@ Organisms play games HEADLESSLY and LEARN from the experience.
 
 NO MORE FAKE SIMULATIONS - This is the real deal:
 - CartPole: Balance a pole on a cart
-- LunarLander: Land a spacecraft  
 - Acrobot: Swing up a two-link robot
 - MountainCar: Drive up a hill
 - Blackjack: Beat the dealer
@@ -131,14 +130,6 @@ class GymRunner:
             'max_steps': 200,
             'description': 'Swing up and balance a pendulum'
         },
-        # DISABLED: LunarLander requires Box2D
-        # 'LunarLander-v3': {
-        #     'action_space': 4,
-        #     'obs_space': 8,
-        #     'reward_threshold': 200,
-        #     'max_steps': 1000,
-        #     'description': 'Land a spacecraft safely'
-        # },
         
         # Toy Text - discrete reasoning
         'FrozenLake-v1': {
@@ -175,43 +166,6 @@ class GymRunner:
             'reward_threshold': 0,
             'max_steps': 100,
             'description': 'Beat the dealer at blackjack'
-        },
-        
-        # Box2D environments (LunarLander disabled - requires Box2D install)
-        # 'LunarLander-v3': {
-        #     'action_space': 4,
-        #     'obs_space': 8,
-        #     'reward_threshold': 200,
-        #     'max_steps': 1000,
-        #     'description': 'Land a spacecraft safely'
-        # },
-        # 'LunarLanderContinuous-v3': {
-        #     'action_space': 'continuous',
-        #     'obs_space': 8,
-        #     'reward_threshold': 200,
-        #     'max_steps': 1000,
-        #     'description': 'Land spacecraft with continuous control'
-        # },
-        'BipedalWalker-v3': {
-            'action_space': 'continuous',
-            'obs_space': 24,
-            'reward_threshold': 300,
-            'max_steps': 1600,
-            'description': 'Walk with a bipedal robot'
-        },
-        'BipedalWalkerHardcore-v3': {
-            'action_space': 'continuous',
-            'obs_space': 24,
-            'reward_threshold': 300,
-            'max_steps': 2000,
-            'description': 'Walk bipedal robot on rough terrain'
-        },
-        'CarRacing-v3': {
-            'action_space': 'continuous',
-            'obs_space': (96, 96, 3),  # Image observation
-            'reward_threshold': 900,
-            'max_steps': 1000,
-            'description': 'Race around a track'
         },
         'MountainCarContinuous-v0': {
             'action_space': 'continuous',
@@ -309,9 +263,6 @@ class GymRunner:
         'mountain_climb': 'MountainCar-v0',
         'robot_swing': 'Acrobot-v1',
         'pendulum_control': 'Pendulum-v1',
-        # DISABLED: LunarLander requires Box2D
-        # 'lunar_landing': 'LunarLander-v3',
-        # 'space_landing': 'LunarLander-v3',
         
         # Mental challenges
         'ice_navigation': 'FrozenLake-v1',
@@ -324,7 +275,6 @@ class GymRunner:
         
         # Lowercase aliases (for alliance_dojo)
         'cartpole': 'CartPole-v1',
-        # 'lunarlander': 'LunarLander-v3',  # DISABLED: requires Box2D
         'mountaincar': 'MountainCar-v0',
         'acrobot': 'Acrobot-v1',
         'pendulum': 'Pendulum-v1',
@@ -338,13 +288,6 @@ class GymRunner:
         'MountainCarContinuous-v0': 'MountainCarContinuous-v0',
         'Acrobot-v1': 'Acrobot-v1',
         'Pendulum-v1': 'Pendulum-v1',
-        
-        # Direct mappings - Box2D (LunarLander disabled - requires Box2D)
-        # 'LunarLander-v3': 'LunarLander-v3',
-        # 'LunarLanderContinuous-v3': 'LunarLanderContinuous-v3',
-        'BipedalWalker-v3': 'BipedalWalker-v3',
-        'BipedalWalkerHardcore-v3': 'BipedalWalkerHardcore-v3',
-        'CarRacing-v3': 'CarRacing-v3',
         
         # Direct mappings - Toy Text
         'FrozenLake-v1': 'FrozenLake-v1',
@@ -571,7 +514,7 @@ class GymRunner:
                 
                 if is_continuous:
                     # ═══════════════════════════════════════════════════════════════
-                    # CONTINUOUS ACTION HANDLING (MuJoCo, Box2D, etc.)
+                    # CONTINUOUS ACTION HANDLING (MuJoCo, Pendulum, etc.)
                     # 
                     # NOTE: The brain is designed for DQN (discrete Q-values), not
                     # continuous control (SAC/PPO/DDPG). We adapt by:

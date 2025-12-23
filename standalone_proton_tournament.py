@@ -144,17 +144,6 @@ TOURNAMENT_GAMES: Dict[str, GameDefinition] = {
         tags=["control", "continuous"],
         favored_traits={"precision": 0.2}
     ),
-    # DISABLED: LunarLander requires Box2D
-    # "lunarlander": GameDefinition(
-    #     name="Lunar Landing",
-    #     gym_env="LunarLander-v2",
-    #     challenge=ChallengeType.PHYSICAL,
-    #     resource=ResourceType.MACHINE,
-    #     difficulty=GameDifficulty.JOURNEYMAN,
-    #     description="Land the spacecraft safely",
-    #     tags=["piloting", "precision"],
-    #     favored_traits={"precision": 0.25, "patience": 0.15}
-    # ),
     
     # =========================================================================
     # MENTAL CHALLENGES
@@ -254,23 +243,23 @@ TOURNAMENT_GAMES: Dict[str, GameDefinition] = {
 GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[str]] = {
     (ChallengeType.PHYSICAL, ResourceType.NAKED): ["cartpole", "mountaincar", "acrobot"],
     (ChallengeType.PHYSICAL, ResourceType.TOOL): ["pendulum", "breakout"],
-    (ChallengeType.PHYSICAL, ResourceType.MACHINE): ["pong", "spaceinvaders"],  # lunarlander removed - requires Box2D
+    (ChallengeType.PHYSICAL, ResourceType.MACHINE): ["pong", "spaceinvaders"],
     (ChallengeType.PHYSICAL, ResourceType.ANIMAL): ["swarm_pong"],  # Multi-agent arena
     
     (ChallengeType.MENTAL, ResourceType.NAKED): ["frozenlake", "cliffwalking"],
-    (ChallengeType.MENTAL, ResourceType.TOOL): [],
+    (ChallengeType.MENTAL, ResourceType.TOOL): ["taxi", "blackjack"],  # Route planning, probability
     (ChallengeType.MENTAL, ResourceType.MACHINE): ["taxi"],
-    (ChallengeType.MENTAL, ResourceType.ANIMAL): [],
+    (ChallengeType.MENTAL, ResourceType.ANIMAL): ["acrobot"],  # Animal-like timing instincts
     
-    (ChallengeType.CHANCE, ResourceType.NAKED): ["blackjack"],
-    (ChallengeType.CHANCE, ResourceType.TOOL): [],
-    (ChallengeType.CHANCE, ResourceType.MACHINE): [],
-    (ChallengeType.CHANCE, ResourceType.ANIMAL): [],
+    (ChallengeType.CHANCE, ResourceType.NAKED): ["blackjack", "frozenlake"],  # Cards + slippery ice
+    (ChallengeType.CHANCE, ResourceType.TOOL): ["blackjack"],  # Cards as tools
+    (ChallengeType.CHANCE, ResourceType.MACHINE): ["mountaincar"],  # Random start positions
+    (ChallengeType.CHANCE, ResourceType.ANIMAL): ["acrobot"],  # Chaotic swinging
     
-    (ChallengeType.ARTS, ResourceType.NAKED): [],  # Word battles - custom
-    (ChallengeType.ARTS, ResourceType.TOOL): [],
-    (ChallengeType.ARTS, ResourceType.MACHINE): [],
-    (ChallengeType.ARTS, ResourceType.ANIMAL): [],
+    (ChallengeType.ARTS, ResourceType.NAKED): ["cartpole"],  # Elegant balance
+    (ChallengeType.ARTS, ResourceType.TOOL): ["taxi", "mountaincar"],  # Optimal routes
+    (ChallengeType.ARTS, ResourceType.MACHINE): ["pong"],  # Artistic volleys
+    (ChallengeType.ARTS, ResourceType.ANIMAL): ["acrobot"],  # Graceful swinging
 }
 
 
