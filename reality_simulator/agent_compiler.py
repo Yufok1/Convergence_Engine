@@ -5005,6 +5005,13 @@ if __name__ == '__main__':
         # Export
         model_buffer = BytesIO()
         chosen_format = export_format
+        
+        # CRITICAL: Reset dynamo before ANY export - torch.onnx.export internally uses dynamo
+        try:
+            torch._dynamo.reset()
+        except Exception:
+            pass
+        
         if export_format == 'onnx':
             try:
                 # Build output names based on whether language heads exist
@@ -5024,7 +5031,8 @@ if __name__ == '__main__':
                     input_names=['input'],
                     output_names=output_names,
                     dynamic_axes={'input': {0: 'batch_size'}},
-                    opset_version=11
+                    opset_version=18,
+                    dynamo=False
                 )
                 logger.info(f"✓ Successfully exported ensemble to ONNX format ({model_buffer.tell()} bytes)")
             except Exception as e:
