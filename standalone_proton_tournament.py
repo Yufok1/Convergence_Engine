@@ -144,16 +144,17 @@ TOURNAMENT_GAMES: Dict[str, GameDefinition] = {
         tags=["control", "continuous"],
         favored_traits={"precision": 0.2}
     ),
-    "lunarlander": GameDefinition(
-        name="Lunar Landing",
-        gym_env="LunarLander-v2",
-        challenge=ChallengeType.PHYSICAL,
-        resource=ResourceType.MACHINE,
-        difficulty=GameDifficulty.JOURNEYMAN,
-        description="Land the spacecraft safely",
-        tags=["piloting", "precision"],
-        favored_traits={"precision": 0.25, "patience": 0.15}
-    ),
+    # DISABLED: LunarLander requires Box2D
+    # "lunarlander": GameDefinition(
+    #     name="Lunar Landing",
+    #     gym_env="LunarLander-v2",
+    #     challenge=ChallengeType.PHYSICAL,
+    #     resource=ResourceType.MACHINE,
+    #     difficulty=GameDifficulty.JOURNEYMAN,
+    #     description="Land the spacecraft safely",
+    #     tags=["piloting", "precision"],
+    #     favored_traits={"precision": 0.25, "patience": 0.15}
+    # ),
     
     # =========================================================================
     # MENTAL CHALLENGES
@@ -253,7 +254,7 @@ TOURNAMENT_GAMES: Dict[str, GameDefinition] = {
 GAME_GRID: Dict[Tuple[ChallengeType, ResourceType], List[str]] = {
     (ChallengeType.PHYSICAL, ResourceType.NAKED): ["cartpole", "mountaincar", "acrobot"],
     (ChallengeType.PHYSICAL, ResourceType.TOOL): ["pendulum", "breakout"],
-    (ChallengeType.PHYSICAL, ResourceType.MACHINE): ["lunarlander", "pong", "spaceinvaders"],
+    (ChallengeType.PHYSICAL, ResourceType.MACHINE): ["pong", "spaceinvaders"],  # lunarlander removed - requires Box2D
     (ChallengeType.PHYSICAL, ResourceType.ANIMAL): ["swarm_pong"],  # Multi-agent arena
     
     (ChallengeType.MENTAL, ResourceType.NAKED): ["frozenlake", "cliffwalking"],
