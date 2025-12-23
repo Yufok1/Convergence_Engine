@@ -9016,7 +9016,7 @@ def compile_cocoon():
             # Set these for consistency (not used for ensemble binary)
             readme_text = None
             graph_bytes = None
-            model_bytes = None
+            # model_bytes already set from ensemble_archive.read() above
         else:
             result = compiler.compile_cocoon(
                 capsules=organisms,
