@@ -1192,7 +1192,7 @@ CONTINUOUS_ACTION_ENVS = {
     "Pusher-v5",
     # Continuous variants
     "Pendulum-v1",
-    "LunarLanderContinuous-v3",
+    # "LunarLanderContinuous-v3",  # Requires Box2D
     "MountainCarContinuous-v0",
     "CarRacing-v3",  # Technically has discrete mode too but default is continuous
     # BipedalWalker hardcore variant
@@ -1836,7 +1836,7 @@ class ProtonGameArena:
         if env_spec.startswith('drone://'):
             return False
         standard_prefixes = ['CartPole', 'MountainCar', 'Acrobot', 'Pendulum',
-                            'LunarLander', 'BipedalWalker', 'CarRacing',
+                            'BipedalWalker', 'CarRacing',  # LunarLander removed - requires Box2D
                             'FrozenLake', 'CliffWalking', 'Blackjack', 'Taxi',
                             'ALE/', 'Ant-', 'HalfCheetah', 'Hopper-', 'Humanoid',
                             'Walker2d', 'Swimmer', 'Pusher', 'Reacher', 'Inverted']

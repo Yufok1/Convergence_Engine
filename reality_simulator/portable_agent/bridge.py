@@ -2883,11 +2883,11 @@ class AgentBridge:
         
         categories = {
             'classic_control': sorted([e for e in envs if any(x in e for x in 
-                ['CartPole', 'MountainCar', 'Pendulum', 'Acrobot', 'LunarLander']) and 'ALE' not in e]),
+                ['CartPole', 'MountainCar', 'Pendulum', 'Acrobot']) and 'ALE' not in e]),  # LunarLander removed
             'tabular': sorted([e for e in envs if any(x in e for x in 
                 ['FrozenLake', 'Taxi', 'Blackjack', 'Cliff']) and 'ALE' not in e]),
             'box2d': sorted([e for e in envs if any(x in e for x in 
-                ['Bipedal', 'CarRacing', 'LunarLander']) and 'ALE' not in e]),
+                ['Bipedal', 'CarRacing']) and 'ALE' not in e]),  # LunarLander removed - requires Box2D
             'mujoco': sorted([e for e in envs if any(x in e for x in 
                 ['Ant-', 'Cheetah', 'Hopper-', 'Humanoid', 'Walker2d', 'Swimmer', 'Pusher', 'Reacher', 'Inverted'])]),
             'atari': sorted([e for e in envs if 'ALE/' in e]),
@@ -3313,7 +3313,7 @@ class AgentBridge:
                 ('Gymnast Swing', 'Acrobot-v1', 'JOURNEYMAN', 'Swing up using body momentum'),
             ],
             ('physical', 'tool'): [
-                ('Lunar Landing', 'LunarLander-v3', 'JOURNEYMAN', 'Land spacecraft with thrusters'),
+                # ('Lunar Landing', 'LunarLander-v3', 'JOURNEYMAN', 'Land spacecraft with thrusters'),  # Requires Box2D
                 ('Pendulum Control', 'Pendulum-v1', 'APPRENTICE', 'Control pendulum with force'),
             ],
             ('physical', 'machine'): [
@@ -3488,7 +3488,7 @@ class AgentBridge:
             # Check if gym env exists - expanded list
             STANDARD_GYM_ENVS = [
                 'CartPole-v1', 'MountainCar-v0', 'Acrobot-v1',
-                'LunarLander-v3', 'Pendulum-v1', 'CarRacing-v3',
+                'Pendulum-v1', 'CarRacing-v3',  # LunarLander-v3 removed - requires Box2D
                 'BipedalWalker-v3', 'FrozenLake-v1', 'CliffWalking-v0',
                 'Blackjack-v1', 'Taxi-v3', 'Ant-v4', 'HalfCheetah-v4',
                 'Hopper-v4', 'Walker2d-v4', 'Humanoid-v4', 'Swimmer-v4',

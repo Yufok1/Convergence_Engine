@@ -13318,7 +13318,7 @@ class GymRunner:
                 print("\n💡 Atari games require additional setup:")
                 print("   pip install gymnasium[atari] ale-py")
                 print("   ale-import-roms --yes")
-            elif env_name in ['LunarLander-v3', 'BipedalWalker-v3', 'CarRacing-v2']:
+            elif env_name in ['BipedalWalker-v3', 'CarRacing-v2']:  # LunarLander removed - requires Box2D
                 print("\n💡 Box2D games require additional setup:")
                 print("   pip install gymnasium[box2d]")
                 print("   (May also need: conda install swig)")
@@ -14145,7 +14145,7 @@ Examples:
                 ("MountainCar-v0", "🏔️ Mountain Climb - Build momentum (persistence)", "classic", "PHYSICAL/NAKED"),
                 ("Acrobot-v1", "🤸 Gymnast Swing - Double pendulum (coordination)", "classic", "PHYSICAL/NAKED"),
                 ("Pendulum-v1", "🔄 Pendulum Control - Torque control (precision)", "classic", "PHYSICAL/TOOL"),
-                ("LunarLander-v3", "🌙 Lunar Landing - Spacecraft landing (piloting)", "box2d", "PHYSICAL/MACHINE"),
+                # ("LunarLander-v3", "🌙 Lunar Landing - Spacecraft landing (piloting)", "box2d", "PHYSICAL/MACHINE"),  # Requires Box2D
                 ("BipedalWalker-v3", "🚶 Biped Walk - Two-legged locomotion", "box2d", "PHYSICAL/MACHINE"),
                 ("CarRacing-v3", "🏎️ Car Racing - Drive the track", "box2d", "PHYSICAL/MACHINE"),
             ]
