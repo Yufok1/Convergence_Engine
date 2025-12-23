@@ -5032,16 +5032,22 @@ if __name__ == '__main__':
                 logger.warning("Falling back to TorchScript export.")
                 model_buffer = BytesIO()
                 # Ensure dynamo is disabled for tracing
-                with torch._dynamo.disable():
-                    traced = torch.jit.trace(wrapper, (dummy_input,))
+                try:
+                    torch._dynamo.reset()
+                except Exception:
+                    pass
+                traced = torch.jit.trace(wrapper, (dummy_input,))
                 torch.jit.save(traced, model_buffer)
                 model_buffer.seek(0)
                 chosen_format = 'torchscript'
         else:
             # Use trace instead of script - script fails on OrganismBrain's complex control flow
             # Ensure dynamo is disabled for tracing
-            with torch._dynamo.disable():
-                traced = torch.jit.trace(wrapper, (dummy_input,))
+            try:
+                torch._dynamo.reset()
+            except Exception:
+                pass
+            traced = torch.jit.trace(wrapper, (dummy_input,))
             torch.jit.save(traced, model_buffer)
             model_buffer.seek(0)
 
