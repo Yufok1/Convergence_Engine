@@ -1,20 +1,3 @@
----
-title: Amoeba
-emoji: 🦠
-colorFrom: green
-colorTo: blue
-sdk: gradio
-sdk_version: 5.9.1
-app_file: app.py
-pinned: false
-license: mit
-short_description: Live organism metrics from Convergence Engine
-datasets:
-  - tostido/Amoeba
-tags:
-  - zerogpu
----
-
 # 🦋 The Butterfly System
 
 **Unified Reality Simulator + Explorer + Djinn Kernel**

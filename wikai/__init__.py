@@ -47,35 +47,16 @@ Usage:
 The Commons grows with every captured butterfly.
 """
 
-# Use API-based client by default (connects to HuggingFace Space)
-try:
-    from .api_client import WIKAILibrarian, WIKAIPattern, WIKAIClient, get_wikai_client
-    WIKAI_API_MODE = True
-except ImportError:
-    # Fallback to local librarian
-    from .librarian import WIKAILibrarian, WIKAIPattern, capture_butterfly
-    WIKAIClient = None
-    get_wikai_client = None
-    WIKAI_API_MODE = False
-
+from .librarian import WIKAILibrarian, WIKAIPattern, capture_butterfly
 from .observer import WIKAIObserver, create_observer_for_convergence
 
-# Compatibility wrapper for capture_butterfly
-def capture_butterfly(*args, **kwargs):
-    """Quick pattern capture - submits to WIKAI API."""
-    librarian = WIKAILibrarian()
-    return librarian.capture(*args, **kwargs)
-
-__version__ = "0.3.0"  # API-based version
+__version__ = "0.2.0"
 __author__ = "Convergence Engine"
 
 __all__ = [
     "WIKAILibrarian",
     "WIKAIPattern", 
     "WIKAIObserver",
-    "WIKAIClient",
-    "get_wikai_client",
     "capture_butterfly",
-    "create_observer_for_convergence",
-    "WIKAI_API_MODE"
+    "create_observer_for_convergence"
 ]

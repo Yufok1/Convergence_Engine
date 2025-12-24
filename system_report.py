@@ -1207,115 +1207,11 @@ class LiveReporter:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# GRADIO INTERFACE FOR HUGGINGFACE SPACES
-# ═══════════════════════════════════════════════════════════════════════════════
-
-def create_gradio_interface():
-    """Create Gradio interface for HuggingFace Spaces"""
-    import gradio as gr
-    
-    def get_report_text():
-        """Generate the report as formatted text"""
-        reporter = SystemReporter()
-        report = reporter.generate()
-        
-        lines = []
-        lines.append("=" * 70)
-        lines.append(f"📊 SYSTEM REPORT - {report.timestamp}")
-        lines.append("=" * 70)
-        lines.append("")
-        
-        pop = report.population
-        lines.append("👥 POPULATION")
-        lines.append(f"   Active: {pop.active_organisms} | Fallen: {pop.fallen_organisms}")
-        lines.append(f"   Fitness: {pop.fitness_mean:.3f} ± {pop.fitness_std:.3f} [{pop.fitness_min:.3f} - {pop.fitness_max:.3f}]")
-        lines.append(f"   Age: {pop.age_mean:.1f} avg, {pop.age_max} max")
-        lines.append("")
-        
-        hl = report.highlander
-        lines.append(f"⚔️ HIGHLANDER ({hl.phase})")
-        lines.append(f"   Round: {hl.round_number} | Battles: {hl.total_battles}")
-        lines.append(f"   Eliminations: {hl.eliminations_total} | Champions: {hl.champions_crowned}")
-        lines.append("")
-        
-        al = report.alliances
-        lines.append("🤝 ALLIANCES")
-        lines.append(f"   Active: {al.active_alliances} | Members: {al.total_members}")
-        lines.append(f"   Largest: {al.largest_alliance_size} | Wars: {al.wars_in_progress}")
-        lines.append(f"   Confederations: {al.confederations} | Warchiefs: {al.warchief_count}")
-        lines.append(f"   Territories: {al.territories_claimed} claimed / {al.territories_unclaimed} unclaimed")
-        lines.append(f"   Wars: {al.wars_won_total}W / {al.wars_lost_total}L | Legends: {al.legends_recorded}")
-        lines.append("")
-        
-        nn = report.neural
-        lines.append("🧠 NEURAL")
-        lines.append(f"   Brains: {nn.organisms_with_brains} | Steps: {nn.total_training_steps}")
-        lines.append(f"   Loss: {nn.avg_loss:.4f} | ε: {nn.avg_epsilon:.3f}")
-        lines.append(f"   Experience: {nn.experience_buffer_total} total")
-        lines.append("")
-        
-        lang = report.language
-        lines.append("📚 LANGUAGE")
-        lines.append(f"   Unique Words: {lang.unique_words_total}")
-        lines.append(f"   Avg Vocab: {lang.avg_vocabulary_size:.1f} words/organism")
-        lines.append("")
-        
-        net = report.network
-        lines.append("🕸️ NETWORK")
-        lines.append(f"   Connections: {net.total_connections} | Density: {net.connection_density:.3f}")
-        lines.append(f"   Communities: {net.community_count} | Stability: {net.stability_index:.3f}")
-        lines.append("")
-        
-        ev = report.events
-        lines.append("📡 EVENTS")
-        lines.append(f"   Total: {ev.total_events} | Last min: {ev.events_last_minute} | Last hr: {ev.events_last_hour}")
-        lines.append("")
-        
-        res = report.resources
-        lines.append("💻 RESOURCES")
-        lines.append(f"   Breath: {res.breath_count} | Uptime: {res.uptime_seconds / 60:.1f}m")
-        ray_status = "✅" if res.ray_enabled else "❌"
-        lines.append(f"   Ray: {ray_status} | CPUs: {res.cpu_count} | GPUs: {res.gpu_count}")
-        lines.append("")
-        
-        if report.warnings:
-            lines.append("⚠️ WARNINGS")
-            for w in report.warnings:
-                lines.append(f"   ⚠️ {w}")
-            lines.append("")
-        
-        lines.append("=" * 70)
-        return "\n".join(lines)
-    
-    with gr.Blocks(title="🦠 Amoeba - Live Organism Metrics", theme=gr.themes.Base()) as demo:
-        gr.Markdown("# 🦠 Amoeba - Convergence Engine Live Metrics")
-        gr.Markdown("Real-time organism metrics from the Butterfly System. Refresh to see latest data.")
-        
-        report_output = gr.Textbox(
-            label="System Report",
-            value=get_report_text,
-            lines=35,
-            max_lines=50,
-            interactive=False,
-            show_copy_button=True
-        )
-        
-        refresh_btn = gr.Button("🔄 Refresh Report", variant="primary")
-        refresh_btn.click(fn=get_report_text, outputs=report_output)
-        
-        gr.Markdown("---")
-        gr.Markdown("*Note: For live metrics, connect a running UnifiedSystem instance.*")
-    
-    return demo
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
 # CLI INTERFACE
 # ═══════════════════════════════════════════════════════════════════════════════
 
 if __name__ == '__main__':
     import argparse
-    import os
     
     parser = argparse.ArgumentParser(description='System Report Generator')
     parser.add_argument('--live', action='store_true', help='Start live reporting')
@@ -1324,19 +1220,15 @@ if __name__ == '__main__':
     
     args = parser.parse_args()
     
-    # Check if running on HuggingFace Spaces
-    if os.environ.get('SPACE_ID') or os.environ.get('GRADIO_SERVER_NAME'):
-        demo = create_gradio_interface()
-        demo.launch()
-    else:
-        print("📊 System Reporter")
-        print("   Note: For full metrics, use with UnifiedSystem instance")
-        print("   Example: reporter = SystemReporter(unified_system)")
-        
-        reporter = SystemReporter()
-        report = reporter.generate()
-        reporter.print_summary()
-        
-        if args.output:
-            path = reporter.save(args.output)
-            print(f"\n💾 Saved to: {path}")
+    # For standalone use, try to connect to running system
+    print("📊 System Reporter")
+    print("   Note: For full metrics, use with UnifiedSystem instance")
+    print("   Example: reporter = SystemReporter(unified_system)")
+    
+    reporter = SystemReporter()
+    report = reporter.generate()
+    reporter.print_summary()
+    
+    if args.output:
+        path = reporter.save(args.output)
+        print(f"\n💾 Saved to: {path}")
