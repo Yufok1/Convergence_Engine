@@ -936,12 +936,21 @@ class SystemReporter:
             )[:n]
             
             for org_id, org in sorted_orgs:
+                # Get vocab size from atomic_language.atoms (the actual vocabulary)
+                vocab_size = 0
+                al = getattr(org, 'atomic_language', None)
+                if al and hasattr(al, 'atoms') and al.atoms:
+                    vocab_size = len(al.atoms)
+                else:
+                    # Legacy fallback
+                    vocab_size = len(getattr(org, 'vocabulary', {}))
+                
                 top.append({
                     'id': org_id[:16] if len(org_id) > 16 else org_id,
                     'fitness': round(getattr(org, 'fitness', 0), 4),
                     'age': getattr(org, 'age', 0),
                     'generation': getattr(org, 'generation', 0),
-                    'vocab_size': len(getattr(org, 'vocabulary', {})),
+                    'vocab_size': vocab_size,
                     'experience_count': len(getattr(org, 'experience_buffer', [])),
                 })
                 
