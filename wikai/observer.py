@@ -30,11 +30,15 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-# Import the Librarian (will be available when installed as package)
+# Import the API-based Librarian (connects to HuggingFace Space)
 try:
-    from .librarian import WIKAILibrarian, WIKAIPattern
+    from .api_client import WIKAILibrarian, WIKAIPattern
 except ImportError:
-    from wikai.librarian import WIKAILibrarian, WIKAIPattern
+    try:
+        from wikai.api_client import WIKAILibrarian, WIKAIPattern
+    except ImportError:
+        # Fallback to local librarian if API client not available
+        from .librarian import WIKAILibrarian, WIKAIPattern
 
 
 class PatternCandidate:
