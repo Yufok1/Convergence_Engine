@@ -475,8 +475,9 @@ class SystemReporter:
                     # FIX: Use training_step_count (the actual attribute name in NeuralTrainer)
                     metrics.total_training_steps = getattr(trainer, 'training_step_count', 0)
                     
-                    # Get recent loss
-                    loss_history = getattr(trainer, 'loss_history', [])
+                    # Get recent loss from autotune_metrics_buffer (where it's actually stored)
+                    autotune_buffer = getattr(trainer, 'autotune_metrics_buffer', {})
+                    loss_history = autotune_buffer.get('loss_history', [])
                     if loss_history:
                         recent_losses = loss_history[-10:]
                         metrics.avg_loss = statistics.mean(recent_losses)
