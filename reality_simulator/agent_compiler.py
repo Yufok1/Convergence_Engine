@@ -44,6 +44,27 @@ except ImportError:
 import logging
 logger = logging.getLogger(__name__)
 
+
+def _numpy_to_python(obj):
+    """
+    Recursively convert NumPy types to native Python types for JSON serialization.
+    Handles numpy.bool_, numpy.int64, numpy.float64, ndarrays, etc.
+    """
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    elif isinstance(obj, (np.bool_, np.bool)):
+        return bool(obj)
+    elif isinstance(obj, (np.integer, np.int64, np.int32, np.int16, np.int8)):
+        return int(obj)
+    elif isinstance(obj, (np.floating, np.float64, np.float32, np.float16)):
+        return float(obj)
+    elif isinstance(obj, dict):
+        return {k: _numpy_to_python(v) for k, v in obj.items()}
+    elif isinstance(obj, (list, tuple)):
+        return [_numpy_to_python(item) for item in obj]
+    return obj
+
+
 # Constants for action mapping
 ACTION_MAP = {
     0: 'move',
@@ -4049,6 +4070,8 @@ done
             if capsules:
                 merged_language = self._merge_capsule_language_data(capsules)
                 if merged_language:
+                    # Convert any NumPy types to native Python types for JSON serialization
+                    merged_language = _numpy_to_python(merged_language)
                     zf.writestr("atomic_language.json", json.dumps(merged_language, indent=2))
                 else:
                     # Write empty language file - bridge.py will use default vocabulary
