@@ -472,7 +472,8 @@ class SystemReporter:
             if reality_sim:
                 trainer = getattr(reality_sim, 'neural_trainer', None)
                 if trainer:
-                    metrics.total_training_steps = getattr(trainer, 'total_training_steps', 0)
+                    # FIX: Use training_step_count (the actual attribute name in NeuralTrainer)
+                    metrics.total_training_steps = getattr(trainer, 'training_step_count', 0)
                     
                     # Get recent loss
                     loss_history = getattr(trainer, 'loss_history', [])
