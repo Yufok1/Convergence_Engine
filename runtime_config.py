@@ -8,6 +8,7 @@ detect changes to ``config.json`` without restarting the Butterfly System.
 from __future__ import annotations
 
 import json
+import os
 import threading
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -69,11 +70,37 @@ class ConfigHotReloadWatcher:
 
 _GLOBAL_CONFIG: Dict[str, Any] = {}
 _CONFIG_LOADED = False
+_GLOBAL_CONFIG_PATH: Optional[Path] = None
+_GLOBAL_CONFIG_ENV_VAR = 'BUTTERFLY_CONFIG_PATH'
+
+
+def _resolve_global_config_path() -> Path:
+    """Resolve the active runtime config path."""
+    env_path = os.environ.get(_GLOBAL_CONFIG_ENV_VAR)
+    if env_path:
+        return Path(env_path).expanduser()
+    return Path(__file__).parent / 'config.json'
+
+
+def set_global_config_path(config_path: Optional[Path | str]) -> None:
+    """Override the global config path used by runtime helpers."""
+    global _GLOBAL_CONFIG, _CONFIG_LOADED, _GLOBAL_CONFIG_PATH
+
+    if config_path is None:
+        os.environ.pop(_GLOBAL_CONFIG_ENV_VAR, None)
+        _GLOBAL_CONFIG_PATH = None
+    else:
+        resolved_path = Path(config_path).expanduser()
+        os.environ[_GLOBAL_CONFIG_ENV_VAR] = str(resolved_path)
+        _GLOBAL_CONFIG_PATH = resolved_path
+
+    _GLOBAL_CONFIG = {}
+    _CONFIG_LOADED = False
 
 
 def get_global_config() -> Dict[str, Any]:
     """
-    Load and cache config.json once.
+    Load and cache the active config once.
     Call this instead of hardcoding values like input_dim=30.
     
     Usage:
@@ -81,15 +108,18 @@ def get_global_config() -> Dict[str, Any]:
         cfg = get_global_config()
         input_dim = cfg.get('neural', {}).get('brain', {}).get('input_dim', 30)
     """
-    global _GLOBAL_CONFIG, _CONFIG_LOADED
-    if not _CONFIG_LOADED:
-        config_path = Path(__file__).parent / 'config.json'
+    global _GLOBAL_CONFIG, _CONFIG_LOADED, _GLOBAL_CONFIG_PATH
+    config_path = _resolve_global_config_path()
+    if (not _CONFIG_LOADED) or (_GLOBAL_CONFIG_PATH != config_path):
+        _GLOBAL_CONFIG_PATH = config_path
         if config_path.exists():
             try:
                 with open(config_path, 'r', encoding='utf-8') as f:
                     _GLOBAL_CONFIG = json.load(f)
             except Exception:
                 _GLOBAL_CONFIG = {}
+        else:
+            _GLOBAL_CONFIG = {}
         _CONFIG_LOADED = True
     return _GLOBAL_CONFIG
 

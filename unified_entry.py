@@ -65,7 +65,7 @@ import subprocess
 import shutil
 import re
 
-from runtime_config import ConfigHotReloadWatcher
+from runtime_config import ConfigHotReloadWatcher, set_global_config_path
 
 
 def _is_colab_runtime() -> bool:
@@ -4422,6 +4422,7 @@ def main():
         print(f"❌ Config file not found: {config_file}")
         print(f"   Available configs: {list(Path('.').glob('config*.json'))}")
         return
+    set_global_config_path(config_file.resolve())
     print(f"📋 Using config: {config_file}")
     
     if args.check_only:

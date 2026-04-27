@@ -11,8 +11,23 @@ Source: Princeton WordNet via NLTK (141k+ curated English words)
 Result: Clean vocabulary with ZERO proper nouns, brand names, or personal names
 """
 
-import os
 import sys
+import subprocess
+from pathlib import Path
+
+
+PROJECT_ROOT = Path(__file__).resolve().parent
+
+
+def run_step(script_path: str) -> int:
+    """Run each pipeline step with the current interpreter."""
+    result = subprocess.run(
+        [sys.executable, str(PROJECT_ROOT / script_path)],
+        check=False,
+        cwd=PROJECT_ROOT,
+    )
+    return result.returncode
+
 
 def run_pipeline():
     print("="*70)
@@ -22,7 +37,7 @@ def run_pipeline():
     # Step 1: Build raw vocabulary from WordNet
     print("\n[1/3] Building raw vocabulary from WordNet...")
     print("-"*70)
-    ret = os.system("python reality_simulator/build_vocabulary.py")
+    ret = run_step("reality_simulator/build_vocabulary.py")
     if ret != 0:
         print("❌ Failed to build raw vocabulary")
         return 1
@@ -30,7 +45,7 @@ def run_pipeline():
     # Step 2: Refine to 250k curated vocabulary
     print("\n[2/3] Refining to 250k curated vocabulary...")
     print("-"*70)
-    ret = os.system("python reality_simulator/refine_vocabulary.py")
+    ret = run_step("reality_simulator/refine_vocabulary.py")
     if ret != 0:
         print("❌ Failed to refine vocabulary")
         return 1
@@ -38,7 +53,7 @@ def run_pipeline():
     # Step 3: Seed knowledge web
     print("\n[3/3] Seeding knowledge web with 250k words...")
     print("-"*70)
-    ret = os.system("python reality_simulator/seed_knowledge_web_from_vocab.py")
+    ret = run_step("reality_simulator/seed_knowledge_web_from_vocab.py")
     if ret != 0:
         print("❌ Failed to seed knowledge web")
         return 1

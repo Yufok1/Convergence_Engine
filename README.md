@@ -15,13 +15,20 @@ Three systems unified as one cohesive unit. One process. One breath. Three syste
 git clone https://github.com/Yufok1/Convergence_Engine.git
 cd Convergence_Engine
 
-# 2. Install dependencies
+# 2. Create and activate a virtual environment
+python -m venv .venv
+# Linux/macOS:
+source .venv/bin/activate
+# Windows PowerShell:
+# .\.venv\Scripts\Activate.ps1
+
+# 3. Install dependencies
 pip install -r requirements.txt
 
-# 3. Verify installation
+# 4. Verify installation
 python check_setup.py
 
-# 4. Build vocabulary & semantic systems (REQUIRED)
+# 5. Build vocabulary & semantic systems (REQUIRED)
 python build_curated_dataset.py
 ```
 
@@ -94,6 +101,7 @@ python causation_web_ui.py
 ### Documentation
 
 **📚 [DOCUMENTATION_HUB.md](./docs/DOCUMENTATION_HUB.md)** - Central documentation hub with links to all guides
+**⚡ [quick-reference.txt](./quick-reference.txt)** - Fast rented-box startup cheat sheet
 
 Recent updates:
 - ⚔️ **The Dune Paradigm** (Dec 19, 2025): ⭐ NEW - Curiosity-driven alliance wars. Behavioral divergence triggers conflict - "Your existence questions mine."

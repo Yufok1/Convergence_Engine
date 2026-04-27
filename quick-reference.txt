@@ -1,0 +1,60 @@
+Butterfly System Quick Reference
+================================
+
+Tools
+-----
+Netron:
+https://netron.app/
+
+Optional public tunnel for the web UI:
+ssh -R 80:localhost:5000 nokey@localhost.run
+
+Clone and setup
+---------------
+git clone https://gitlab.com/Toasteedo/Convergence_Engine.git
+cd Convergence_Engine
+
+python -m venv .venv
+source .venv/bin/activate
+
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python check_setup.py
+
+Vocabulary and language bootstrap
+---------------------------------
+python build_curated_dataset.py
+python merge_nuclear_vocab.py
+python generate_innate_vocab.py
+
+Optional smaller vocabulary:
+python distill_vocabulary.py --input data/seeded_knowledge_web_250k.json --output data/knowledge_web_distilled.json --target 50000
+
+Optional expanded knowledge web:
+python reality_simulator/language/expand_knowledge_web.py --input data/seeded_knowledge_web_250k.json --output data/seeded_knowledge_web_expanded.json --concepts 50000 --min-weight 1.5
+
+Recovery boot order
+-------------------
+python unified_entry.py --config config.json --check-only --no-viz
+python unified_entry.py --config config.json --no-viz --debug
+
+Hardware profiles
+-----------------
+Use the base config first, then switch to a matching rented-box profile:
+
+- config_vast_rtx3060_genesis.json
+- config_vast_rtx4090_1tb_genesis.json
+- config_vast_rtx5090_512gb_genesis.json
+- config_vast_xeon_1.5tb_genesis.json
+- config_shadow_epyc_genesis.json
+
+Only use config_vast_xeon_1.5tb_genesis.json on a genuinely huge machine.
+
+Direct large-box launch
+-----------------------
+python unified_entry.py --config config_vast_xeon_1.5tb_genesis.json --no-viz --debug
+
+Useful extras
+-------------
+python live_dashboard.py
+python causation_web_ui.py

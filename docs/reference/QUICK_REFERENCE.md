@@ -30,16 +30,23 @@ cd explorer && python test_integration.py
 **First time setup after cloning the repo:**
 
 ```bash
-# 1. Install dependencies
+# 1. Create and activate a virtual environment
+python -m venv .venv
+# Linux/macOS:
+source .venv/bin/activate
+# Windows PowerShell:
+# .\.venv\Scripts\Activate.ps1
+
+# 2. Install dependencies
 pip install -r requirements.txt
 
-# 2. Verify setup
+# 3. Verify setup
 python check_setup.py
 
-# 3. Build vocabulary & knowledge web (REQUIRED for language systems)
+# 4. Build vocabulary & knowledge web (REQUIRED for language systems)
 python build_curated_dataset.py
 
-# 4. Generate innate vocabulary for organisms (REQUIRED)
+# 5. Generate innate vocabulary for organisms (REQUIRED)
 python merge_nuclear_vocab.py       # Merges CSVs → data/nuclear_vocab.json
 python generate_innate_vocab.py     # Creates data/innate_vocab.json
 ```
@@ -71,8 +78,15 @@ This transforms the knowledge web from ~300 relations to **500,000+ relations** 
 
 **Then run the system:**
 ```bash
-python unified_entry.py
+# Safe recovery boot first
+python unified_entry.py --config config.json --check-only --no-viz
+python unified_entry.py --config config.json --no-viz --debug
+
+# Then switch to a hardware-specific profile if needed
+python unified_entry.py --config config_vast_xeon_1.5tb_genesis.json --no-viz --debug
 ```
+
+Use `config_vast_xeon_1.5tb_genesis.json` only on a genuinely huge rented box. For smaller Vast.ai machines, pick the closer profile from the repo root instead.
 
 ---
 
