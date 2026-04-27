@@ -6543,10 +6543,10 @@
                                     Model:</label>
                                 <select id="visionModelSelect"
                                     style="width: 100%; background: #111; color: #0f0; border: 1px solid #0ff; padding: 5px; font-family: 'Courier New', monospace; font-size: 0.9em;">
-                                    <option value="">Loading models...</option>
+                                    <option value="__none__">No vision analysis</option>
                                 </select>
                                 <div style="font-size: 0.75em; color: #888; margin-top: 3px;" id="visionModelHint">
-                                    Vision model (like llava) for analyzing graph screenshots
+                                    Optional. Select a vision model only when you want graph screenshot analysis.
                                 </div>
                             </div>
                         </div>
@@ -14687,6 +14687,11 @@
                             researchSelect.appendChild(option);
                         }
 
+                        const noVisionOption = document.createElement('option');
+                        noVisionOption.value = '__none__';
+                        noVisionOption.textContent = 'No vision analysis';
+                        visionSelect.appendChild(noVisionOption);
+
                         // Add vision models
                         if (availableModels.vision && availableModels.vision.length > 0) {
                             availableModels.vision.forEach(model => {
@@ -14700,10 +14705,6 @@
                                     visionSelect.appendChild(option);
                                 }
                             });
-                            // Set first model as default if available
-                            if (visionSelect.options.length > 0) {
-                                visionSelect.selectedIndex = 0;
-                            }
                         } else {
                             // No vision models found - add all models as fallback
                             if (data.models && data.models.length > 0) {
@@ -14718,16 +14719,15 @@
                                         visionSelect.appendChild(option);
                                     }
                                 });
-                                if (visionSelect.options.length > 0) {
-                                    visionSelect.selectedIndex = 0;
-                                }
                             } else {
                                 const option = document.createElement('option');
-                                option.value = '';
+                                option.value = '__none__';
                                 option.textContent = 'No vision models available';
                                 visionSelect.appendChild(option);
                             }
                         }
+
+                        visionSelect.value = '__none__';
 
                         // Update status and show cloud vision hint
                         const totalModels = (availableModels.text?.length || 0) + (availableModels.vision?.length || 0);
@@ -14751,9 +14751,19 @@
                         const researchSelect = document.getElementById('researchModelSelect');
                         const visionSelect = document.getElementById('visionModelSelect');
                         researchSelect.innerHTML = '<option value="">Error loading models</option>';
-                        visionSelect.innerHTML = '<option value="">Error loading models</option>';
+                        visionSelect.innerHTML = '<option value="__none__">No vision analysis</option>';
                         updateChatStatus('Error loading models. Make sure Ollama is running.');
                     });
+            }
+
+            function getSelectedVisionModel() {
+                const visionSelect = document.getElementById('visionModelSelect');
+                if (!visionSelect) return '';
+                const selectedValue = (visionSelect.value || '').trim();
+                if (!selectedValue || selectedValue === '__none__') {
+                    return '';
+                }
+                return selectedValue;
             }
 
             // Helper utilities for CRA command parsing (JSON markers, config API access)
@@ -23285,7 +23295,7 @@
 
                 // Get selected model
                 const researchModel = document.getElementById('researchModelSelect').value;
-                const visionModel = document.getElementById('visionModelSelect').value;
+                const visionModel = getSelectedVisionModel();
 
                 // Get selected event if any
                 const selectedEvent = selectedNode ? selectedNode.id : null;
@@ -23395,7 +23405,7 @@
                 const requestData = {
                     message: message,
                     model: researchModel,
-                    vision_model: visionModel,
+                    vision_model: visionModel || null,
                     view_state: viewState,
                     selected_event: selectedEvent,
                     graph_image: graphImage,  // CURRENT state (just captured)
@@ -26733,7 +26743,8 @@
                 }
 
                 const visionSelect = document.getElementById('visionModelSelect');
-                if (!visionSelect || !visionSelect.value) {
+                const visionModel = getSelectedVisionModel();
+                if (!visionSelect || !visionModel) {
                     showNotification('Please select a vision model first', 'error');
                     return;
                 }
@@ -26756,7 +26767,7 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        model: visionSelect.value,
+                        model: visionModel,
                         image: imageData,
                         images: [imageData],
                         prompt,

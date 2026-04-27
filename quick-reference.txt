@@ -58,3 +58,12 @@ Useful extras
 -------------
 python live_dashboard.py
 python causation_web_ui.py
+python cra_cli.py status
+python cra_cli.py sitrep
+python cra_cli.py repl --model llama3.2
+python cra_cli.py training-status
+python cra_cli.py exporter-status
+python cra_cli.py organisms --limit 10
+python cra_cli.py config-set /simulation/max_frames 5000
+python cra_cli.py compile-cocoon --top-n 5 --format cocoon
+python cra_cli.py compile-learning --organism-id <id>

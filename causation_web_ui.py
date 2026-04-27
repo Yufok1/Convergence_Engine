@@ -7029,6 +7029,7 @@ def list_organisms():
     try:
         organisms_data = []
         organism_ids = set()
+        unified_system = getattr(app, 'unified_system', None)
         
         # Action names for behavioral analysis
         ACTION_NAMES = ['move', 'cooperate', 'compete', 'rest', 'reproduce', 'isolate']
@@ -7359,10 +7360,9 @@ def list_organisms():
             return {'strengths': strengths, 'weaknesses': weaknesses}
 
         # 1. Get organisms from current live simulation if available
-        if hasattr(app, 'unified_system') and app.unified_system:
-            unified_system = app.unified_system
+        if unified_system:
             if hasattr(unified_system, 'get_current_organisms'):
-                live_organisms = unified_system.get_current_organisms()
+                live_organisms = unified_system.get_current_organisms() or {}
                 logger.info(f"Found {len(live_organisms)} live organisms from simulation")
                 for org_id, organism in live_organisms.items():
                     if org_id not in organism_ids:
@@ -10644,6 +10644,16 @@ def ollama_chat():
         selected_event = data.get('selected_event')
         graph_image = data.get('graph_image')  # base64 image if provided
         evolutionary_snapshots = data.get('evolutionary_snapshots', [])  # List of historical snapshots
+        vision_model = data.get('vision_model')
+        if isinstance(vision_model, str) and vision_model.strip().lower() in {
+            '',
+            '__none__',
+            'none',
+            'off',
+            'disabled',
+            'no-vision',
+        }:
+            vision_model = None
         logger.info(f"[CRA] [Vision] Received {len(evolutionary_snapshots)} evolutionary snapshots from frontend")
         if evolutionary_snapshots:
             logger.debug(f"[CRA] [Vision] First snapshot keys: {list(evolutionary_snapshots[0].keys()) if isinstance(evolutionary_snapshots[0], dict) else type(evolutionary_snapshots[0])}")
@@ -10739,8 +10749,7 @@ def ollama_chat():
         visual_description = None
         vision_error = None
         images_trimmed_warning = None  # Initialize for trimming feedback
-        if graph_image and data.get('vision_model'):
-            vision_model = data.get('vision_model')
+        if graph_image and vision_model:
             step_start = time.time()
             logger.info(f"[CRA] [Step 4/6] ===== Starting Vision Analysis ===== ({time.time() - request_start_time:.2f}s elapsed)")
             logger.info(f"[CRA] [Vision] Using vision model: {vision_model}")
@@ -11076,7 +11085,7 @@ Use this context to understand what the graph structure means. Match the visual 
                         logger.info(f"[CRA] [Step 4/6] ✓ Vision analysis completed in {vision_phase_time:.2f}s ({len(visual_description)} chars)")
                     else:
                         logger.warning(f"[CRA] [Step 4/6] ✗ Vision analysis failed after {vision_phase_time:.2f}s: {vision_error}")
-        elif data.get('vision_model') and not graph_image:
+        elif vision_model and not graph_image:
             vision_error = "Vision model selected but no graph image captured. Try adjusting graph view or filters."
             logger.warning(f"[CRA] [Step 4/6] ✗ Vision model selected but no graph image provided")
         else:
