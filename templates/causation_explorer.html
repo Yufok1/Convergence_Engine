@@ -8805,6 +8805,8 @@
                 enableTransitions: true,
                 transitionDuration: 300,           // ms
                 animationSpeed: 1.0,               // Multiplier (0.5-2.0)
+                // Layout mode
+                layoutMode: 'timeline'             // 'timeline' = deterministic lanes, 'force' = old physics blob
             };
 
             // ==================== VIZ SETTINGS PERSISTENCE ====================
@@ -8963,7 +8965,8 @@
                 enableShadows: { type: 'boolean' },
                 enableGlow: { type: 'boolean' },
                 enableTransitions: { type: 'boolean' },
-                renderQuality: { enum: ['low', 'medium', 'high'] }
+                renderQuality: { enum: ['low', 'medium', 'high'] },
+                layoutMode: { enum: ['timeline', 'force'] }
             };
 
             // Validate a single setting value
@@ -9012,6 +9015,414 @@
                 }
 
                 return { valid: true, value: value };
+            }
+
+            const layoutLaneOrder = [
+                'system',
+                'health_monitor',
+                'config_tuner',
+                'explorer',
+                'reality_sim',
+                'djinn_kernel',
+                'breath',
+                'neural',
+                'ml_analysis',
+                'language',
+                'semantic_convergence',
+                'butterfly_chat',
+                'alliance',
+                'combat',
+                'highlander',
+                'germination',
+                'unknown'
+            ];
+
+            const layoutLaneAliases = {
+                'reality_simulator': 'reality_sim',
+                'utm_kernel': 'djinn_kernel',
+                'battle_arena': 'combat',
+                'alliance_warfare': 'alliance',
+                'confederation': 'alliance',
+                'germination_pool': 'germination'
+            };
+
+            const layoutLaneLabels = {
+                'system': 'System',
+                'health_monitor': 'Health',
+                'config_tuner': 'Config',
+                'explorer': 'Explorer',
+                'reality_sim': 'Reality',
+                'djinn_kernel': 'Djinn',
+                'breath': 'Breath',
+                'neural': 'Neural',
+                'ml_analysis': 'ML',
+                'language': 'Language',
+                'semantic_convergence': 'Semantic',
+                'butterfly_chat': 'Chat',
+                'alliance': 'Alliance',
+                'combat': 'Combat',
+                'highlander': 'Highlander',
+                'germination': 'Germination',
+                'unknown': 'Other'
+            };
+
+            function isForceLayoutMode() {
+                return !!vizSettings && vizSettings.layoutMode === 'force';
+            }
+
+            function normalizeLayoutLane(component) {
+                const normalized = String(component || 'unknown').toLowerCase().trim();
+                return layoutLaneAliases[normalized] || normalized || 'unknown';
+            }
+
+            function getLayoutLaneLabel(laneKey) {
+                return layoutLaneLabels[laneKey] || laneKey.replace(/_/g, ' ');
+            }
+
+            function stableLayoutHash(value) {
+                const text = String(value || '');
+                let hash = 0;
+                for (let i = 0; i < text.length; i++) {
+                    hash = ((hash << 5) - hash) + text.charCodeAt(i);
+                    hash |= 0;
+                }
+                return Math.abs(hash);
+            }
+
+            function getDeterministicTimestamp(node, fallbackIndex) {
+                const raw = node && node.timestamp;
+                if (typeof raw === 'number' && Number.isFinite(raw)) {
+                    return raw;
+                }
+                if (typeof raw === 'string') {
+                    const parsed = Number(raw);
+                    if (Number.isFinite(parsed)) {
+                        return parsed;
+                    }
+                }
+                return fallbackIndex;
+            }
+
+            function formatLayoutTimeOffset(seconds) {
+                if (!Number.isFinite(seconds)) {
+                    return 'T+0s';
+                }
+                if (Math.abs(seconds) >= 3600) {
+                    return `T+${(seconds / 3600).toFixed(1)}h`;
+                }
+                if (Math.abs(seconds) >= 60) {
+                    return `T+${(seconds / 60).toFixed(1)}m`;
+                }
+                return `T+${seconds.toFixed(1)}s`;
+            }
+
+            function buildDeterministicLayout(nodes, width, height) {
+                const margins = { left: 170, right: 70, top: 60, bottom: 75 };
+                const usableWidth = Math.max(1, width - margins.left - margins.right);
+                const usableHeight = Math.max(1, height - margins.top - margins.bottom);
+                const layoutNodes = Array.isArray(nodes) ? nodes : [];
+
+                const laneKeys = Array.from(new Set(layoutNodes.map(node => normalizeLayoutLane(node.component))));
+                laneKeys.sort((a, b) => {
+                    const orderA = layoutLaneOrder.indexOf(a);
+                    const orderB = layoutLaneOrder.indexOf(b);
+                    const safeOrderA = orderA === -1 ? layoutLaneOrder.length + 1 : orderA;
+                    const safeOrderB = orderB === -1 ? layoutLaneOrder.length + 1 : orderB;
+                    if (safeOrderA !== safeOrderB) {
+                        return safeOrderA - safeOrderB;
+                    }
+                    return a.localeCompare(b);
+                });
+
+                if (laneKeys.length === 0) {
+                    laneKeys.push('unknown');
+                }
+
+                const laneCount = laneKeys.length;
+                const lanePitch = laneCount > 1 ? usableHeight / (laneCount - 1) : 0;
+                const lanes = laneKeys.map((laneKey, index) => ({
+                    key: laneKey,
+                    label: getLayoutLaneLabel(laneKey),
+                    color: getComponentColor(laneKey),
+                    y: laneCount > 1 ? margins.top + (index * lanePitch) : (margins.top + usableHeight / 2)
+                }));
+                const laneByKey = new Map(lanes.map(lane => [lane.key, lane]));
+
+                let minTimestamp = Infinity;
+                let maxTimestamp = -Infinity;
+                layoutNodes.forEach((node, index) => {
+                    const timestamp = getDeterministicTimestamp(node, index);
+                    if (timestamp < minTimestamp) minTimestamp = timestamp;
+                    if (timestamp > maxTimestamp) maxTimestamp = timestamp;
+                });
+                if (!Number.isFinite(minTimestamp)) minTimestamp = 0;
+                if (!Number.isFinite(maxTimestamp)) maxTimestamp = minTimestamp;
+
+                const hasTimeSpread = Math.abs(maxTimestamp - minTimestamp) > 0.000001;
+                const stackPattern = [0, -1, 1, -2, 2, -3, 3, -4, 4];
+                const stackSpacing = Math.max(6, Math.min(18, laneCount > 1 ? lanePitch * 0.14 : 12));
+                const columnWidth = Math.max(28, Math.min(90, usableWidth / Math.max(8, Math.min(layoutNodes.length || 1, 48))));
+                const laneColumnOccupancy = new Map();
+
+                const orderedNodes = layoutNodes
+                    .map((node, index) => ({ node, index, timestamp: getDeterministicTimestamp(node, index) }))
+                    .sort((a, b) => {
+                        if (a.timestamp !== b.timestamp) {
+                            return a.timestamp - b.timestamp;
+                        }
+                        const laneA = normalizeLayoutLane(a.node.component);
+                        const laneB = normalizeLayoutLane(b.node.component);
+                        if (laneA !== laneB) {
+                            return laneA.localeCompare(laneB);
+                        }
+                        return String(a.node.id || '').localeCompare(String(b.node.id || ''));
+                    });
+
+                orderedNodes.forEach((entry, ordinal) => {
+                    const node = entry.node;
+                    const laneKey = normalizeLayoutLane(node.component);
+                    const lane = laneByKey.get(laneKey) || lanes[lanes.length - 1];
+                    const baseX = hasTimeSpread
+                        ? margins.left + (((entry.timestamp - minTimestamp) / (maxTimestamp - minTimestamp)) * usableWidth)
+                        : margins.left + (((ordinal + 1) / (orderedNodes.length + 1)) * usableWidth);
+                    const columnIndex = Math.round((baseX - margins.left) / columnWidth);
+                    const occupancyKey = `${lane.key}:${columnIndex}`;
+                    const occupancy = laneColumnOccupancy.get(occupancyKey) || 0;
+                    const stackIndex = occupancy % stackPattern.length;
+                    const bandIndex = Math.floor(occupancy / stackPattern.length);
+                    const deterministicNudge = (stableLayoutHash(node.id) % 7) - 3;
+                    const finalX = baseX + (bandIndex * 8) + deterministicNudge;
+                    const finalY = lane.y + (stackPattern[stackIndex] * stackSpacing);
+
+                    node.x = finalX;
+                    node.y = finalY;
+                    node.fx = finalX;
+                    node.fy = finalY;
+                    node._laneKey = lane.key;
+                    node._layoutTimestamp = entry.timestamp;
+
+                    laneColumnOccupancy.set(occupancyKey, occupancy + 1);
+                });
+
+                const positionMap = new Map(layoutNodes.map(node => [node.id, {
+                    x: node.x,
+                    y: node.y,
+                    fx: node.fx,
+                    fy: node.fy,
+                    _laneKey: node._laneKey,
+                    _layoutTimestamp: node._layoutTimestamp
+                }]));
+
+                [allNodes, filteredNodes].forEach(collection => {
+                    if (!Array.isArray(collection)) return;
+                    collection.forEach(node => {
+                        const pos = positionMap.get(node.id);
+                        if (pos) {
+                            Object.assign(node, pos);
+                        }
+                    });
+                });
+
+                return {
+                    margins,
+                    usableWidth,
+                    usableHeight,
+                    lanes,
+                    lanePitch,
+                    minTimestamp,
+                    maxTimestamp,
+                    hasTimeSpread
+                };
+            }
+
+            function drawDeterministicLayoutGuides(layout, width, height) {
+                if (!graphGroup || !layout) return;
+
+                graphGroup.selectAll('.timeline-guides').remove();
+                const guideLayer = graphGroup.insert('g', ':first-child')
+                    .attr('class', 'timeline-guides');
+
+                const left = layout.margins.left;
+                const right = width - layout.margins.right;
+                const top = layout.margins.top;
+                const bottom = height - layout.margins.bottom;
+
+                guideLayer.append('rect')
+                    .attr('x', left)
+                    .attr('y', top - 24)
+                    .attr('width', Math.max(1, right - left))
+                    .attr('height', Math.max(1, bottom - top + 36))
+                    .attr('fill', 'rgba(0, 16, 24, 0.18)')
+                    .attr('stroke', 'rgba(0, 255, 255, 0.15)')
+                    .attr('stroke-width', 1)
+                    .attr('rx', 8);
+
+                layout.lanes.forEach((lane, index) => {
+                    const bandHeight = layout.lanePitch > 0 ? Math.max(28, layout.lanePitch * 0.85) : 64;
+                    guideLayer.append('rect')
+                        .attr('x', left)
+                        .attr('y', lane.y - (bandHeight / 2))
+                        .attr('width', Math.max(1, right - left))
+                        .attr('height', bandHeight)
+                        .attr('fill', index % 2 === 0 ? 'rgba(0, 255, 255, 0.03)' : 'rgba(255, 255, 255, 0.015)');
+
+                    guideLayer.append('line')
+                        .attr('x1', left)
+                        .attr('x2', right)
+                        .attr('y1', lane.y)
+                        .attr('y2', lane.y)
+                        .attr('stroke', 'rgba(0, 255, 255, 0.18)')
+                        .attr('stroke-width', 1)
+                        .attr('stroke-dasharray', '4,8');
+
+                    guideLayer.append('text')
+                        .attr('x', left - 12)
+                        .attr('y', lane.y + 4)
+                        .attr('fill', lane.color || '#0ff')
+                        .attr('font-size', '11px')
+                        .attr('font-weight', 'bold')
+                        .attr('text-anchor', 'end')
+                        .text(lane.label);
+                });
+
+                const tickCount = 6;
+                for (let i = 0; i < tickCount; i++) {
+                    const ratio = tickCount === 1 ? 0 : (i / (tickCount - 1));
+                    const x = left + (layout.usableWidth * ratio);
+                    guideLayer.append('line')
+                        .attr('x1', x)
+                        .attr('x2', x)
+                        .attr('y1', top - 10)
+                        .attr('y2', bottom)
+                        .attr('stroke', 'rgba(255, 255, 255, 0.08)')
+                        .attr('stroke-width', 1);
+
+                    const tickLabel = layout.hasTimeSpread
+                        ? formatLayoutTimeOffset((layout.maxTimestamp - layout.minTimestamp) * ratio)
+                        : `S${i + 1}`;
+
+                    guideLayer.append('text')
+                        .attr('x', x)
+                        .attr('y', bottom + 24)
+                        .attr('fill', '#7fdde6')
+                        .attr('font-size', '10px')
+                        .attr('text-anchor', 'middle')
+                        .text(tickLabel);
+                }
+
+                guideLayer.append('text')
+                    .attr('x', left)
+                    .attr('y', top - 34)
+                    .attr('fill', '#7fdde6')
+                    .attr('font-size', '12px')
+                    .attr('font-weight', 'bold')
+                    .text('Timeline layout: time flows left → right, systems stay in fixed lanes');
+            }
+
+            function applyDeterministicLayout(width, height, nodes, links, linkSelection, nodeSelection) {
+                if (!Array.isArray(nodes) || nodes.length === 0) {
+                    return null;
+                }
+
+                const layout = buildDeterministicLayout(nodes, width, height);
+                drawDeterministicLayoutGuides(layout, width, height);
+
+                const nodeMap = new Map(nodes.map(node => [node.id, node]));
+                if (linkSelection) {
+                    linkSelection
+                        .attr('x1', d => {
+                            const sourceId = typeof d.source === 'object' ? d.source.id : d.source;
+                            return nodeMap.get(sourceId)?.x || 0;
+                        })
+                        .attr('y1', d => {
+                            const sourceId = typeof d.source === 'object' ? d.source.id : d.source;
+                            return nodeMap.get(sourceId)?.y || 0;
+                        })
+                        .attr('x2', d => {
+                            const targetId = typeof d.target === 'object' ? d.target.id : d.target;
+                            return nodeMap.get(targetId)?.x || 0;
+                        })
+                        .attr('y2', d => {
+                            const targetId = typeof d.target === 'object' ? d.target.id : d.target;
+                            return nodeMap.get(targetId)?.y || 0;
+                        });
+                }
+
+                if (nodeSelection) {
+                    nodeSelection.attr('transform', d => `translate(${d.x || 0},${d.y || 0})`);
+                }
+
+                if (graphGroup) {
+                    graphGroup.selectAll('.temporal-path').remove();
+                    if (filters.showTemporalPaths) {
+                        addTemporalPaths(nodes, links);
+                    }
+                }
+
+                if (viewportCullingEnabled) {
+                    recalculateViewportVisibility();
+                }
+
+                if (typeof updateMinimap === 'function') {
+                    updateMinimap();
+                }
+
+                return layout;
+            }
+
+            function createStaticSimulation(nodes, links) {
+                let currentNodes = Array.isArray(nodes) ? nodes : [];
+                let currentLinks = Array.isArray(links) ? links : [];
+                let tickHandler = null;
+                let endHandler = null;
+
+                const linkForce = {
+                    links(newLinks) {
+                        if (arguments.length) {
+                            currentLinks = Array.isArray(newLinks) ? newLinks : [];
+                            return linkForce;
+                        }
+                        return currentLinks;
+                    }
+                };
+
+                return {
+                    stopped: true,
+                    nodes(newNodes) {
+                        if (arguments.length) {
+                            currentNodes = Array.isArray(newNodes) ? newNodes : [];
+                            return this;
+                        }
+                        return currentNodes;
+                    },
+                    force(name) {
+                        return name === 'link' ? linkForce : null;
+                    },
+                    alpha(value) {
+                        if (arguments.length) {
+                            return this;
+                        }
+                        return 0;
+                    },
+                    restart() {
+                        if (typeof tickHandler === 'function') tickHandler();
+                        if (typeof endHandler === 'function') endHandler();
+                        return this;
+                    },
+                    stop() {
+                        return this;
+                    },
+                    on(eventName, handler) {
+                        if (handler === undefined) {
+                            if (eventName === 'tick') return tickHandler;
+                            if (eventName === 'end') return endHandler;
+                            return null;
+                        }
+                        if (eventName === 'tick') tickHandler = handler;
+                        if (eventName === 'end') endHandler = handler;
+                        return this;
+                    }
+                };
             }
 
             // Batch update mode functions
@@ -9908,6 +10319,7 @@
                     enableTransitions: true,
                     transitionDuration: 300,
                     animationSpeed: 1.0,
+                    layoutMode: 'timeline',
                 };
 
                 // Reset component colors to defaults
@@ -11736,6 +12148,20 @@
                         setupDragZoom();
                     }
                 }, 100);
+
+                if (!isForceLayoutMode()) {
+                    simulation = createStaticSimulation(renderNodes, renderLinks);
+                    applyDeterministicLayout(width, height, renderNodes, renderLinks, link, node);
+
+                    if (savedTransform && graphGroup) {
+                        graphGroup.attr('transform', savedTransform);
+                        console.log('[RenderGraph] Restored transform state');
+                    }
+
+                    console.log('[RenderGraph] Deterministic timeline layout applied');
+                    console.log('[RenderGraph] Render complete successfully');
+                    return;
+                }
 
                 // Simulation - D3 force simulation will convert IDs to node references
                 // Initialize nodes with random positions (not predetermined template)
@@ -13784,6 +14210,20 @@
                             .attr('stroke-width', 3)
                             .merge(nodeSelection);
                         nodeSelection.exit().remove();
+
+                        if (!isForceLayoutMode()) {
+                            const layoutGraphElement = document.getElementById('graph');
+                            const layoutWidth = layoutGraphElement ? (layoutGraphElement.clientWidth || window.innerWidth) : window.innerWidth;
+                            const layoutHeight = layoutGraphElement ? (layoutGraphElement.clientHeight || window.innerHeight || 792) : (window.innerHeight || 792);
+                            applyDeterministicLayout(
+                                layoutWidth,
+                                layoutHeight,
+                                updatedNodes,
+                                updatedLinks,
+                                svg.selectAll('.link'),
+                                svg.selectAll('.node')
+                            );
+                        }
                     }
 
                     // Wait briefly for graph to render, then capture
@@ -14321,6 +14761,12 @@
                 
                 // Update filtered nodes/links (apply filters)
                 applyFilters(); // This will update filteredNodes and filteredLinks with new data
+
+                if (!isForceLayoutMode()) {
+                    renderGraph();
+                    console.log(`[Incremental Update] Re-rendered deterministic layout with ${nodesToAdd.length} nodes, ${linksToAdd.length} links`);
+                    return;
+                }
                 
                 // Update simulation with new nodes (preserve existing positions)
                 const currentSimNodes = simulation.nodes();
