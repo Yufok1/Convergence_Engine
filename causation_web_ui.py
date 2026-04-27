@@ -7411,7 +7411,7 @@ def list_organisms():
                         has_language_head = False
                         brain_params = 0
                         hidden_dim = 0
-                        if brain:
+                        if brain is not None:
                             has_language_head = getattr(brain, 'use_language_head', False)
                             hidden_dim = getattr(brain, 'hidden_dim', 0)
                             try:
