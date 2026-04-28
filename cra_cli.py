@@ -211,6 +211,41 @@ def parse_args() -> argparse.Namespace:
         help="Path to JSON file containing the frontend-style view_state object.",
     )
 
+    butterfly_chat_parser = subparsers.add_parser(
+        "butterfly-chat",
+        help="Chat directly with the organism swarm through Butterfly Chat.",
+    )
+    butterfly_chat_parser.add_argument("message", nargs="*", help="Message text. Reads stdin if omitted.")
+    butterfly_chat_parser.add_argument(
+        "--routing-strategy",
+        default="all",
+        help="Router strategy passed to /api/butterfly/chat (default: all).",
+    )
+    butterfly_chat_parser.add_argument(
+        "--max-organisms",
+        type=int,
+        default=10,
+        help="Maximum organisms to query (default: 10).",
+    )
+    butterfly_chat_parser.add_argument(
+        "--min-mastery-level",
+        type=int,
+        default=0,
+        help="Only include organisms at or above this mastery level (default: 0).",
+    )
+
+    organism_chat_parser = subparsers.add_parser(
+        "organism-chat",
+        help="Chat directly with one organism by id.",
+    )
+    organism_chat_parser.add_argument("organism_id", help="Target organism id.")
+    organism_chat_parser.add_argument("message", nargs="*", help="Message text. Reads stdin if omitted.")
+
+    subparsers.add_parser(
+        "swarm-stats",
+        help="Show Butterfly Chat language-learning and training stats.",
+    )
+
     repl_parser = subparsers.add_parser(
         "repl",
         help="Interactive CRA shell over SSH. Type /help for local commands.",
@@ -749,6 +784,125 @@ def summarize_chat(data: Dict[str, Any]) -> None:
         print(data["vision_analysis"])
 
 
+def summarize_butterfly_chat(data: Dict[str, Any]) -> None:
+    response = data.get("response") or ""
+    if response:
+        print(response.strip())
+    else:
+        print_json(data)
+        return
+
+    print_heading("Swarm")
+    print(f"Organisms: {data.get('organism_count', 0)}")
+    print(f"Confidence: {data.get('confidence', 0):.3f}")
+    print(f"Strategy: {data.get('routing_strategy', '-')}")
+    routing = data.get("routing_info") or {}
+    if routing:
+        selected = routing.get("selected_organisms") or routing.get("organisms") or []
+        if selected:
+            print(f"Selected: {len(selected)}")
+
+    responses = data.get("organism_responses") or []
+    if responses:
+        print_heading("Organism Responses")
+        for idx, item in enumerate(responses[:8], start=1):
+            oid = str(item.get("organism_id") or item.get("id") or item.get("species_id") or "-")
+            confidence = item.get("confidence", 0)
+            text = item.get("response") or item.get("message") or ""
+            print(f"{idx}. {oid[:12]} confidence={confidence:.3f}")
+            if text:
+                print(f"   {text[:220]}")
+
+    errors = data.get("errors") or []
+    if errors:
+        print_heading("Errors")
+        for item in errors[:5]:
+            print(f"  - {item}")
+
+
+def summarize_organism_chat(data: Dict[str, Any]) -> None:
+    if not data.get("success", False) and "response" not in data:
+        print_json(data)
+        return
+
+    print(f"Organism: {data.get('organism_id', '-')}")
+    info = data.get("organism_info") or {}
+    if info:
+        print(
+            f"Generation: {info.get('generation', 0)} "
+            f"Fitness: {info.get('fitness', 0)} "
+            f"Words: {info.get('vocabulary_size', 0)} "
+            f"Personality: {info.get('personality', '-')}"
+        )
+
+    response = data.get("response") or ""
+    if response:
+        print_heading("Response")
+        print(response.strip())
+    print(f"Confidence: {data.get('confidence', 0):.3f}")
+
+    debug = data.get("debug") or {}
+    if debug:
+        print_heading("Learning")
+        print(f"Experience buffer: {debug.get('organism_experience_count', '-')}")
+        print(f"Personal vocab: {debug.get('organism_personal_vocab_size', '-')}")
+        print(f"Mastery atoms used: {debug.get('atoms_found_for_response', '-')}")
+        atom_details = debug.get("atom_formation_details") or []
+        for atom in atom_details[:8]:
+            print(
+                f"  - {atom.get('word', '-')} "
+                f"strength={atom.get('strength', '-')} "
+                f"uses={atom.get('usage_count', '-')} "
+                f"source={atom.get('source', '-')}"
+            )
+
+    trail = data.get("causation_trail") or []
+    if trail:
+        print_heading("Causation Trail")
+        for item in trail[:8]:
+            print(f"  - {item}")
+
+
+def summarize_swarm_stats(data: Dict[str, Any]) -> None:
+    payload = data.get("agent_swarm") or data
+    stats = payload.get("stats") or payload
+    if not isinstance(stats, dict):
+        print_json(data)
+        return
+
+    population = stats.get("population_stats") or {}
+    semantic = stats.get("semantic_reward_stats") or {}
+    transfer = stats.get("knowledge_transfer_stats") or {}
+    vocab = stats.get("creative_vocab_stats") or {}
+    derived = payload.get("derived_metrics") or data.get("derived_metrics") or {}
+
+    print_heading("Population")
+    print(f"Organisms: {population.get('total_organisms', 0)}")
+    print(f"With language: {population.get('organisms_with_language', 0)}")
+    print(f"Chat experiences: {population.get('total_chat_experiences', 0)}")
+    print(f"Chat training triggered: {population.get('chat_training_triggered', 0)}")
+    if derived:
+        print(f"Training ratio: {derived.get('training_ratio', 0):.3f}")
+        print(f"Learning health: {derived.get('learning_health_score', 0):.3f}")
+
+    print_heading("Semantic Reward")
+    print(f"Calculations: {semantic.get('total_calculations', 0)}")
+    print(f"Average reward: {semantic.get('avg_total_reward', 0):.3f}")
+    print(f"Average coherence: {semantic.get('avg_coherence', 0):.3f}")
+
+    print_heading("Knowledge Transfer")
+    print(f"Broadcasts: {transfer.get('total_broadcasts', 0)}")
+    print(f"Recipients: {transfer.get('total_recipients', 0)}")
+    print(f"Reward transferred: {transfer.get('total_reward_transferred', 0):.3f}")
+
+    if vocab:
+        print_heading("Vocabulary")
+        print(f"Expansions: {vocab.get('total_expansions', 0)}")
+        print(f"Phrases: {vocab.get('phrases_generated', 0)}")
+        print(f"Compounds: {vocab.get('compounds_created', 0)}")
+        print(f"Neologisms: {vocab.get('neologisms_minted', 0)}")
+
+
 def parse_query_pairs(items: List[str]) -> Dict[str, str]:
     query: Dict[str, str] = {}
     for item in items:
@@ -782,6 +936,9 @@ def run_repl(client: CRAClient, args: argparse.Namespace) -> int:
                 "  /events\n"
                 "  /logs [name]\n"
                 "  /sim status|start|stop\n"
+                "  /butterfly <message>\n"
+                "  /organism <organism_id> <message>\n"
+                "  /swarm\n"
                 "  /exit\n"
                 "Anything else is sent to the CRA chat model."
             )
@@ -813,6 +970,28 @@ def run_repl(client: CRAClient, args: argparse.Namespace) -> int:
                     summarize_sim_status(client.request_json("POST", "/api/simulation/stop", payload={}))
                 else:
                     print("Unknown /sim action. Use status, start, or stop.")
+            elif line.startswith("/butterfly "):
+                message = line.split(maxsplit=1)[1].strip()
+                data = client.request_json("POST", "/api/butterfly/chat", payload={
+                    "message": message,
+                    "routing_strategy": "all",
+                    "max_organisms": 10,
+                    "min_mastery_level": 0,
+                })
+                summarize_butterfly_chat(data)
+            elif line.startswith("/organism "):
+                parts = line.split(maxsplit=2)
+                if len(parts) < 3:
+                    print("Usage: /organism <organism_id> <message>")
+                    continue
+                data = client.request_json(
+                    "POST",
+                    f"/api/organism/{parse.quote(parts[1])}/chat",
+                    payload={"message": parts[2]},
+                )
+                summarize_organism_chat(data)
+            elif line == "/swarm":
+                summarize_swarm_stats(client.request_json("GET", "/api/cra/diagnostics/agent_swarm"))
             else:
                 reply = do_chat(
                     client,
@@ -1091,6 +1270,41 @@ def main() -> int:
                 print_json(data)
             else:
                 summarize_chat(data)
+            return 0
+
+        if args.command == "butterfly-chat":
+            message = read_message(args)
+            data = client.request_json("POST", "/api/butterfly/chat", payload={
+                "message": message,
+                "routing_strategy": args.routing_strategy,
+                "max_organisms": args.max_organisms,
+                "min_mastery_level": args.min_mastery_level,
+            })
+            if args.json:
+                print_json(data)
+            else:
+                summarize_butterfly_chat(data)
+            return 0
+
+        if args.command == "organism-chat":
+            message = read_message(args)
+            data = client.request_json(
+                "POST",
+                f"/api/organism/{parse.quote(args.organism_id)}/chat",
+                payload={"message": message},
+            )
+            if args.json:
+                print_json(data)
+            else:
+                summarize_organism_chat(data)
+            return 0
+
+        if args.command == "swarm-stats":
+            data = client.request_json("GET", "/api/cra/diagnostics/agent_swarm")
+            if args.json:
+                print_json(data)
+            else:
+                summarize_swarm_stats(data)
             return 0
 
         if args.command == "repl":
