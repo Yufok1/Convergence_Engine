@@ -27,6 +27,16 @@ import threading
 import copy
 import uuid
 from contextlib import contextmanager
+from security_receipts import (
+    action_confirmation_required,
+    facility_access_policy,
+    hash_payload,
+    list_action_contracts,
+    read_action_receipts,
+    receipt_response_metadata,
+    safe_record_action_receipt,
+    validate_action_submission,
+)
 
 # Setup logging first
 logging.basicConfig(level=logging.INFO)
@@ -6999,6 +7009,65 @@ persistent_context = PersistentContext(storage_dir)
 predictive_analyzer = PredictiveAnalyzer(time_series_tracker)
 
 
+def _request_security_meta() -> Dict[str, Any]:
+    """Capture transport context without treating transport as authority."""
+    try:
+        return {
+            'method': request.method,
+            'path': request.path,
+            'remote_addr': request.headers.get('X-Forwarded-For', request.remote_addr),
+            'host': request.host,
+            'user_agent': request.headers.get('User-Agent', ''),
+        }
+    except RuntimeError:
+        return {}
+
+
+def _record_security_receipt(
+    action: str,
+    *,
+    actor: str = 'backend',
+    surface: str = 'web_api',
+    payload: Any = None,
+    result: Any = None,
+    status: str = 'ok',
+    reason: Optional[str] = None,
+    artifact_paths: Optional[List[Path]] = None,
+) -> Dict[str, Any]:
+    receipt = safe_record_action_receipt(
+        action,
+        actor=actor,
+        surface=surface,
+        payload=payload,
+        result=result,
+        status=status,
+        reason=reason,
+        request_meta=_request_security_meta(),
+        artifact_paths=artifact_paths or [],
+        project_root=project_root,
+    )
+    return receipt_response_metadata(receipt)
+
+
+def _guard_action_submission(action: str, payload: Dict[str, Any]) -> Optional[Any]:
+    ok, error = validate_action_submission(action, payload)
+    if ok:
+        return None
+    security = _record_security_receipt(
+        action,
+        actor=str(payload.get('actor', 'backend')),
+        payload=payload,
+        result={'error': error},
+        status='rejected',
+        reason=str(payload.get('reason', 'confirmation_required')),
+    )
+    return jsonify({
+        'success': False,
+        'error': error,
+        'security': security,
+    }), 403
+
+
 @app.route('/health')
 def health():
     """Health check endpoint"""
@@ -7007,6 +7076,52 @@ def health():
         'explorer_initialized': explorer is not None,
         'template_path': str(Path(__file__).parent / 'templates' / 'causation_explorer.html'),
         'template_exists': (Path(__file__).parent / 'templates' / 'causation_explorer.html').exists()
+    })
+
+
+@app.route('/api/security/contracts', methods=['GET'])
+def security_contracts():
+    """List action contracts used by the Convergence control surfaces."""
+    return jsonify({
+        'success': True,
+        'confirmation_required': action_confirmation_required(),
+        'facility_policy': facility_access_policy(),
+        'contracts': list_action_contracts(),
+    })
+
+
+@app.route('/api/security/receipts', methods=['GET'])
+def security_receipts():
+    """Return recent append-only security/provenance receipts."""
+    try:
+        limit = int(request.args.get('limit', 50))
+    except (TypeError, ValueError):
+        limit = 50
+    action = request.args.get('action') or None
+    receipts = read_action_receipts(project_root=project_root, limit=limit, action=action)
+    return jsonify({
+        'success': True,
+        'count': len(receipts),
+        'receipts': receipts,
+    })
+
+
+@app.route('/api/security/receipt', methods=['POST'])
+def security_manual_receipt():
+    """Write a manual receipt for external provenance lanes."""
+    payload = request.get_json(silent=True) or {}
+    actor = str(payload.get('actor') or 'operator')
+    reason = str(payload.get('reason') or payload.get('message') or 'manual_receipt')
+    receipt = _record_security_receipt(
+        'manual_receipt',
+        actor=actor,
+        payload=payload,
+        result={'recorded': True},
+        reason=reason,
+    )
+    return jsonify({
+        'success': True,
+        'security': receipt,
     })
 
 
@@ -8952,6 +9067,9 @@ def compile_cocoon():
         from reality_simulator.agent_compiler import AgentCompiler
         
         data = request.get_json() or {}
+        guarded = _guard_action_submission('cocoon_compile', data)
+        if guarded:
+            return guarded
         organism_ids = data.get('organism_ids', [])
         top_n = data.get('top_n', 1)
         include_gym = data.get('include_gym', True)
@@ -9274,6 +9392,7 @@ def compile_cocoon():
         downloads_dir = Path(__file__).parent / 'agent_downloads'
         downloads_dir.mkdir(exist_ok=True)
         download_path = downloads_dir / filename
+        artifact_paths = [download_path]
         
         # Handle case where binary export failed (model_bytes is None for non-cocoon format)
         # Don't save Python source with binary extension - that creates corrupt files
@@ -9303,6 +9422,7 @@ def compile_cocoon():
                     'size': readme_path.stat().st_size,
                     'download_url': f'/api/download/{readme_path.name}'
                 })
+                artifact_paths.append(readme_path)
                 logger.info(f"[COCOON] Saved README: {readme_path.name} ({readme_path.stat().st_size:,} bytes)")
             
             # Save interactive topology HTML visualization
@@ -9315,6 +9435,7 @@ def compile_cocoon():
                     'size': topology_path.stat().st_size,
                     'download_url': f'/api/download/{topology_path.name}'
                 })
+                artifact_paths.append(topology_path)
                 logger.info(f"[COCOON] Saved topology visualization: {topology_path.name} ({topology_path.stat().st_size:,} bytes)")
                 
         elif export_format in ('package', 'ensemble_onnx', 'ensemble_torchscript', 'onnx', 'torchscript'):
@@ -9384,6 +9505,32 @@ def compile_cocoon():
         if additional_files:
             response_data['additional_files'] = additional_files
             response_data['readme_url'] = additional_files[0]['download_url'] if additional_files else None
+
+        response_data['security'] = _record_security_receipt(
+            'cocoon_compile',
+            actor=str(data.get('actor') or 'agent_exporter'),
+            payload={
+                'organism_ids': organism_ids,
+                'top_n': top_n,
+                'selected_alliances': selected_alliances,
+                'include_unallied': include_unallied,
+                'include_gym': include_gym,
+                'include_http': include_http,
+                'compress': compress,
+                'format': base_format,
+                'has_graph_image': bool(graph_image_base64),
+            },
+            result={
+                'filename': filename,
+                'mode': mode,
+                'organism_count': len(organisms),
+                'organism_names': organism_names,
+                'size': file_size,
+                'alliance_composition': alliance_selection_metadata,
+            },
+            reason=str(data.get('reason') or 'cocoon_compile'),
+            artifact_paths=artifact_paths,
+        )
         
         return jsonify(response_data)
     
@@ -11487,10 +11634,24 @@ def research_notepad_add():
                     _save_research_notepad(data)
                     break
 
+        security = _record_security_receipt(
+            'research_notepad_add',
+            actor=str(payload.get('actor') or payload.get('source') or 'research_notepad'),
+            payload={
+                'entry_id': entry.get('id'),
+                'type': entry.get('type'),
+                'content_hash': hash_payload(entry.get('content', '')),
+                'linked_events': entry.get('linkedEvents', []),
+                'tags': entry.get('tags', []),
+            },
+            result={'total_entries': len(data.get('entries', []))},
+            reason='research_notepad_append',
+        )
         return jsonify({
             'success': True,
             'entry': entry,
-            'summary': _notepad_summary(data.get('entries', []))
+            'summary': _notepad_summary(data.get('entries', [])),
+            'security': security,
         })
     except ValueError as e:
         return jsonify({'success': False, 'error': str(e)}), 400
@@ -11524,13 +11685,25 @@ def research_notepad_sync():
 
         entries.sort(key=lambda item: item.get('timestamp', ''), reverse=True)
         _save_research_notepad(data)
+        security = _record_security_receipt(
+            'research_notepad_sync',
+            actor=str(payload.get('actor') or 'research_notepad'),
+            payload={
+                'incoming_count': len(incoming),
+                'merged': merged,
+                'entry_hashes': [hash_payload(item.get('content', '')) for item in entries[:25]],
+            },
+            result={'total_entries': len(entries), 'merged': merged},
+            reason='research_notepad_sync',
+        )
         return jsonify({
             'success': True,
             'merged': merged,
             'entries': entries,
             'summary': _notepad_summary(entries),
             'lastSaved': data.get('lastSaved'),
-            'sessionId': data.get('sessionId')
+            'sessionId': data.get('sessionId'),
+            'security': security,
         })
     except Exception as e:
         logger.error(f"Error syncing research notepad: {e}", exc_info=True)
@@ -11559,9 +11732,21 @@ def research_notepad_clear():
     try:
         if request.args.get('confirm') != 'true':
             return jsonify({'success': False, 'error': 'confirm=true is required'}), 400
+        payload = request.get_json(silent=True) or {}
+        payload.setdefault('confirm', request.args.get('confirm'))
+        guarded = _guard_action_submission('research_notepad_clear', payload)
+        if guarded:
+            return guarded
         data = _empty_notepad()
         _save_research_notepad(data)
-        return jsonify({'success': True, 'summary': _notepad_summary([])})
+        security = _record_security_receipt(
+            'research_notepad_clear',
+            actor=str(payload.get('actor') or 'research_notepad'),
+            payload={'confirm': request.args.get('confirm')},
+            result={'total_entries': 0},
+            reason=str(payload.get('reason') or 'research_notepad_clear'),
+        )
+        return jsonify({'success': True, 'summary': _notepad_summary([]), 'security': security})
     except Exception as e:
         logger.error(f"Error clearing research notepad: {e}", exc_info=True)
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -11792,7 +11977,7 @@ def butterfly_chat():
             confidences = [r.get('confidence', 0.0) for r in organism_responses]
             confidence = sum(confidences) / len(confidences) if confidences else 0.0
         
-        return jsonify({
+        response_body = {
             'response': response.get('response', '<no response>'),
             'organism_responses': organism_responses,
             'routing_info': response.get('routing_info', {}),
@@ -11805,7 +11990,25 @@ def butterfly_chat():
             'causation_trail': response.get('causation_trail', []),
             'errors': response.get('errors', []),
             'performance': response.get('performance', {})
-        })
+        }
+        response_body['security'] = _record_security_receipt(
+            'butterfly_chat',
+            actor=str(data.get('actor') or 'butterfly_chat'),
+            payload={
+                'message_hash': hash_payload(message),
+                'routing_strategy': routing_strategy,
+                'max_organisms': max_organisms,
+                'min_mastery_level': min_mastery_level,
+            },
+            result={
+                'response_hash': hash_payload(response.get('response', '')),
+                'organism_count': len(organism_responses),
+                'confidence': confidence,
+                'error_count': len(response.get('errors', [])),
+            },
+            reason='butterfly_chat_interaction',
+        )
+        return jsonify(response_body)
         
     except Exception as e:
         logger.error(f"Error in butterfly chat: {e}", exc_info=True)
@@ -12179,7 +12382,7 @@ def chat_with_organism(organism_id):
         debug_info['router_debug_logs'] = response_data.get('debug_logs', [])
         debug_info['router_errors'] = response_data.get('errors', [])
         
-        return jsonify({
+        response_body = {
             'success': True,
             'organism_id': organism_id,
             'organism_info': organism_info,
@@ -12190,7 +12393,22 @@ def chat_with_organism(organism_id):
             'causation_trail': response_data.get('causation_trail', []),
             'confidence': response_data.get('confidence', 0),
             'debug': debug_info
-        })
+        }
+        response_body['security'] = _record_security_receipt(
+            'organism_chat',
+            actor=str(data.get('actor') or 'organism_chat'),
+            payload={
+                'organism_id': organism_id,
+                'message_hash': hash_payload(user_message),
+            },
+            result={
+                'response_hash': hash_payload(organism_response),
+                'confidence': response_data.get('confidence', 0),
+                'vocabulary_size': organism_info.get('vocabulary_size', 0),
+            },
+            reason='organism_chat_interaction',
+        )
+        return jsonify(response_body)
         
     except Exception as e:
         logger.error(f"Error in organism chat {organism_id}: {e}", exc_info=True)
@@ -12491,6 +12709,10 @@ def get_simulation_status():
 def start_simulation():
     """Start the simulation"""
     try:
+        payload = request.get_json(silent=True) or {}
+        guarded = _guard_action_submission('simulation_start', payload)
+        if guarded:
+            return guarded
         control_file = project_root / 'data' / '.simulation_control.json'
         control_file.parent.mkdir(parents=True, exist_ok=True)
         control = {
@@ -12512,7 +12734,16 @@ def start_simulation():
         })
 
         logger.info("Simulation start signal sent - CRA event streaming activated")
-        return jsonify({'success': True, 'message': 'Simulation start signal sent - CRA event streaming activated'})
+        response = {'success': True, 'message': 'Simulation start signal sent - CRA event streaming activated'}
+        response['security'] = _record_security_receipt(
+            'simulation_start',
+            actor=str(payload.get('actor') or 'web_api'),
+            payload=payload,
+            result=control,
+            reason=str(payload.get('reason') or 'simulation_start'),
+            artifact_paths=[control_file],
+        )
+        return jsonify(response)
     except Exception as e:
         logger.error(f"Error starting simulation: {e}", exc_info=True)
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -12522,6 +12753,10 @@ def start_simulation():
 def stop_simulation():
     """Stop/pause the simulation"""
     try:
+        payload = request.get_json(silent=True) or {}
+        guarded = _guard_action_submission('simulation_stop', payload)
+        if guarded:
+            return guarded
         control_file = project_root / 'data' / '.simulation_control.json'
         control_file.parent.mkdir(parents=True, exist_ok=True)
         control = {
@@ -12532,7 +12767,16 @@ def stop_simulation():
         with open(control_file, 'w') as f:
             json.dump(control, f, indent=2)
         logger.info("Simulation stop signal sent")
-        return jsonify({'success': True, 'message': 'Simulation stop signal sent'})
+        response = {'success': True, 'message': 'Simulation stop signal sent'}
+        response['security'] = _record_security_receipt(
+            'simulation_stop',
+            actor=str(payload.get('actor') or 'web_api'),
+            payload=payload,
+            result=control,
+            reason=str(payload.get('reason') or 'simulation_stop'),
+            artifact_paths=[control_file],
+        )
+        return jsonify(response)
     except Exception as e:
         logger.error(f"Error stopping simulation: {e}", exc_info=True)
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -13302,6 +13546,9 @@ def config_update():
     """Apply guarded JSON Patch updates to config.json at runtime."""
     try:
         data = request.get_json() or {}
+        guarded = _guard_action_submission('config_update', data)
+        if guarded:
+            return guarded
         patch_ops = data.get('patch')
         actor = data.get('actor', 'CRA')
         reason = data.get('reason', '')
@@ -13319,6 +13566,21 @@ def config_update():
             'result': result,
             'message': 'Configuration updated successfully'
         }
+        response['security'] = _record_security_receipt(
+            'config_update',
+            actor=str(actor),
+            payload={
+                'patch': patch_ops,
+                'correlation_id': correlation_id,
+            },
+            result={
+                'version': result.get('version'),
+                'changes': result.get('changes', []),
+                'correlation_id': result.get('correlation_id'),
+            },
+            reason=reason or 'config_update',
+            artifact_paths=[project_root / 'config.json'],
+        )
 
         publish_cra_event('config_update', {
             'actor': actor,
@@ -13344,6 +13606,9 @@ def config_rollback():
     """Rollback configuration to a previous snapshot."""
     try:
         data = request.get_json() or {}
+        guarded = _guard_action_submission('config_rollback', data)
+        if guarded:
+            return guarded
         steps = int(data.get('steps', 1))
         actor = data.get('actor', 'CRA')
         reason = data.get('reason', '')
@@ -13364,11 +13629,26 @@ def config_rollback():
             'timestamp': result.get('timestamp')
         })
 
-        return jsonify({
+        response = {
             'success': True,
             'result': result,
             'message': f'Rolled back {steps} step(s)'
-        })
+        }
+        response['security'] = _record_security_receipt(
+            'config_rollback',
+            actor=str(actor),
+            payload={
+                'steps': steps,
+                'correlation_id': correlation_id,
+            },
+            result={
+                'version': result.get('version'),
+                'timestamp': result.get('timestamp'),
+            },
+            reason=reason or 'config_rollback',
+            artifact_paths=[project_root / 'config.json'],
+        )
+        return jsonify(response)
 
     except ValueError as ve:
         logger.warning(f"Config rollback validation error: {ve}")
@@ -15002,6 +15282,9 @@ def manual_checkpoint_save():
     """
     try:
         payload = request.get_json(silent=True) or {}
+        guarded = _guard_action_submission('checkpoint_save', payload)
+        if guarded:
+            return guarded
 
         # Signal the simulation to save a checkpoint
         signal_file = project_root / 'data' / '.checkpoint_signal.json'
@@ -15032,14 +15315,23 @@ def manual_checkpoint_save():
             except Exception:
                 pass
         
-        return jsonify({
+        response = {
             'success': True,
             'message': 'Neural checkpoint save signal sent',
             'signal_file': str(signal_file),
             'checkpoint_triggered': checkpoint_triggered,
             'reason': signal_data['reason'],
             'scope': 'neural_training_state_only'
-        })
+        }
+        response['security'] = _record_security_receipt(
+            'checkpoint_save',
+            actor=str(payload.get('actor') or 'web_api'),
+            payload=payload,
+            result=signal_data,
+            reason=signal_data['reason'],
+            artifact_paths=[signal_file],
+        )
+        return jsonify(response)
     except Exception as e:
         logger.error(f"Error sending checkpoint save signal: {e}", exc_info=True)
         return jsonify({
@@ -15064,6 +15356,9 @@ def manual_checkpoint_restore():
     try:
         checkpoint_dir = Path(project_root / 'data' / 'neural_checkpoints')
         payload = request.get_json(silent=True) or {}
+        guarded = _guard_action_submission('checkpoint_restore', payload)
+        if guarded:
+            return guarded
         
         # Get checkpoint name from request
         checkpoint_name = payload.get('checkpoint_name')
@@ -15154,7 +15449,7 @@ def manual_checkpoint_restore():
         
         logger.info(f"[CHECKPOINT] Restore signal sent for: {checkpoint_name}")
         
-        return jsonify({
+        response = {
             'success': True,
             'message': f'Neural checkpoint restore signal sent for {checkpoint_name}',
             'checkpoint_name': checkpoint_name,
@@ -15162,7 +15457,19 @@ def manual_checkpoint_restore():
             'metadata': signal_data['checkpoint_metadata'],
             'scope': 'neural_training_state_only',
             'note': 'Restore applies to neural training state, not full evolution/population state'
-        })
+        }
+        response['security'] = _record_security_receipt(
+            'checkpoint_restore',
+            actor=str(payload.get('actor') or 'web_api'),
+            payload={
+                'checkpoint_name': checkpoint_name,
+                'checkpoint_path': str(target_checkpoint),
+            },
+            result=signal_data,
+            reason=str(payload.get('reason') or 'checkpoint_restore'),
+            artifact_paths=[signal_file, target_checkpoint / 'metadata.json'],
+        )
+        return jsonify(response)
     except Exception as e:
         logger.error(f"Error sending checkpoint restore signal: {e}", exc_info=True)
         return jsonify({

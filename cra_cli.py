@@ -136,6 +136,13 @@ def parse_args() -> argparse.Namespace:
     subparsers.add_parser("checkpoint-list", help="List available neural checkpoints.")
     subparsers.add_parser("training-status", help="Show training/checkpoint/log summary.")
     subparsers.add_parser("exporter-status", help="Show exporter pipeline readiness summary.")
+    subparsers.add_parser("security-contracts", help="List action contracts and markings.")
+    security_receipts_parser = subparsers.add_parser(
+        "security-receipts",
+        help="Show recent action/security receipts.",
+    )
+    security_receipts_parser.add_argument("--limit", type=int, default=20, help="Max receipts to show.")
+    security_receipts_parser.add_argument("--action", help="Filter by action name.")
 
     events_parser = subparsers.add_parser("events", help="Show recent CRA events.")
     events_parser.add_argument("--limit", type=int, default=10, help="Max events to print.")
@@ -448,6 +455,11 @@ def parse_args() -> argparse.Namespace:
         default="agent_downloads",
         help="Directory to save downloaded artifacts.",
     )
+    compile_cocoon_parser.add_argument(
+        "--reason",
+        default="cra_cli_compile_cocoon",
+        help="Reason recorded with the cocoon compile receipt.",
+    )
 
     checkpoint_save_parser = subparsers.add_parser(
         "checkpoint-save",
@@ -466,6 +478,11 @@ def parse_args() -> argparse.Namespace:
     checkpoint_restore_parser.add_argument(
         "--name",
         help="Checkpoint directory name. Defaults to latest if omitted.",
+    )
+    checkpoint_restore_parser.add_argument(
+        "--reason",
+        default="cra_cli_checkpoint_restore",
+        help="Reason recorded with the restore receipt.",
     )
 
     api_parser = subparsers.add_parser(
@@ -1521,6 +1538,20 @@ def main() -> int:
                 summarize_exporter_status(organisms_data, capsules_data, checkpoint_data)
             return 0
 
+        if args.command == "security-contracts":
+            data = client.request_json("GET", "/api/security/contracts")
+            print_json(data)
+            return 0
+
+        if args.command == "security-receipts":
+            data = client.request_json(
+                "GET",
+                "/api/security/receipts",
+                query={"limit": args.limit, "action": args.action},
+            )
+            print_json(data)
+            return 0
+
         if args.command == "config":
             if args.history:
                 data = client.request_json(
@@ -1617,13 +1648,16 @@ def main() -> int:
             data = client.request_json(
                 "POST",
                 "/api/checkpoint/save",
-                payload={"reason": args.reason},
+                payload={"reason": args.reason, "actor": "CRA_CLI"},
             )
             print_json(data if args.json else data)
             return 0
 
         if args.command == "checkpoint-restore":
-            payload: Dict[str, Any] = {}
+            payload: Dict[str, Any] = {
+                "actor": "CRA_CLI",
+                "reason": args.reason,
+            }
             if args.name:
                 payload["checkpoint_name"] = args.name
             data = client.request_json("POST", "/api/checkpoint/restore", payload=payload)
@@ -1654,6 +1688,7 @@ def main() -> int:
                 "routing_strategy": args.routing_strategy,
                 "max_organisms": args.max_organisms,
                 "min_mastery_level": args.min_mastery_level,
+                "actor": "CRA_CLI",
             })
             if args.json:
                 print_json(data)
@@ -1666,7 +1701,7 @@ def main() -> int:
             data = client.request_json(
                 "POST",
                 f"/api/organism/{parse.quote(args.organism_id)}/chat",
-                payload={"message": message},
+                payload={"message": message, "actor": "CRA_CLI"},
             )
             if args.json:
                 print_json(data)
@@ -1720,6 +1755,7 @@ def main() -> int:
                 "content": content,
                 "metadata": metadata,
                 "linkedEvents": args.event,
+                "actor": "CRA_CLI",
             }
             data = client.request_json("POST", "/api/research-notepad", payload=payload)
             if args.json:
@@ -1806,6 +1842,8 @@ def main() -> int:
                 "include_http": not args.no_http,
                 "compress": not args.no_compress,
                 "format": args.format,
+                "actor": "CRA_CLI",
+                "reason": args.reason,
             }
             if selected_alliances:
                 payload["selected_alliances"] = selected_alliances
