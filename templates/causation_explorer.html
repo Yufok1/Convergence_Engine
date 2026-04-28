@@ -6523,6 +6523,55 @@
                             📦 Agent Exporter
                         </button>
                     </div>
+                    <script>
+                        window.switchCRATab = window.switchCRATab || function (tab) {
+                            const tabs = {
+                                chat: document.getElementById('tabChat'),
+                                butterfly: document.getElementById('tabButterfly'),
+                                notepad: document.getElementById('tabNotepad'),
+                                agent_exporter: document.getElementById('tabAgentExporter')
+                            };
+
+                            const content = {
+                                chat: document.getElementById('chatTabContent'),
+                                butterfly: document.getElementById('butterflyTabContent'),
+                                notepad: document.getElementById('notepadTabContent'),
+                                agent_exporter: document.getElementById('agentExporterTabContent')
+                            };
+
+                            const styles = {
+                                chat: { bg: '#0aa', fg: '#000', inactive: '#0ff' },
+                                butterfly: { bg: '#ff0', fg: '#000', inactive: '#ff0' },
+                                notepad: { bg: '#f90', fg: '#000', inactive: '#f90' },
+                                agent_exporter: { bg: '#f0f', fg: '#000', inactive: '#f0f' }
+                            };
+
+                            Object.keys(tabs).forEach(key => {
+                                if (tabs[key]) {
+                                    tabs[key].style.background = '#111';
+                                    tabs[key].style.color = styles[key].inactive;
+                                }
+                                if (content[key]) {
+                                    content[key].style.display = 'none';
+                                }
+                            });
+
+                            if (tabs[tab]) {
+                                tabs[tab].style.background = styles[tab].bg;
+                                tabs[tab].style.color = styles[tab].fg;
+                            }
+                            if (content[tab]) {
+                                content[tab].style.display = 'block';
+                            }
+
+                            if (tab === 'notepad' && typeof window.updateNotepadDisplay === 'function') {
+                                window.updateNotepadDisplay();
+                            }
+                            if (tab === 'agent_exporter' && typeof window.populateOrganismSelector === 'function') {
+                                window.populateOrganismSelector();
+                            }
+                        };
+                    </script>
                     
                     <!-- Chat Tab Content -->
                     <div id="chatTabContent" style="display: block;">
