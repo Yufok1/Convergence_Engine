@@ -9386,6 +9386,104 @@
                 return layout;
             }
 
+            function animateStructuralLayout(width, height, nodes, links, linkSelection, nodeSelection, duration = 700) {
+                if (!Array.isArray(nodes) || nodes.length === 0) {
+                    return null;
+                }
+
+                const fallbackX = width / 2;
+                const fallbackY = height / 2;
+                const previousPositions = new Map(nodes.map(node => [node.id, {
+                    x: Number.isFinite(node.x) ? node.x : fallbackX,
+                    y: Number.isFinite(node.y) ? node.y : fallbackY
+                }]));
+
+                const layout = buildStructuralLayout(nodes, links, width, height);
+                const resolvedDuration = Math.max(160, Math.min(1400, duration || 0));
+                const structuralTransition = d3.transition('structural-layout')
+                    .duration(resolvedDuration)
+                    .ease(d3.easeCubicInOut);
+
+                const nodeMap = new Map(nodes.map(node => [node.id, node]));
+
+                if (linkSelection) {
+                    linkSelection.interrupt('structural-layout');
+                    linkSelection
+                        .attr('x1', d => {
+                            const sourceId = typeof d.source === 'object' ? d.source.id : d.source;
+                            return previousPositions.get(sourceId)?.x ?? nodeMap.get(sourceId)?.x ?? 0;
+                        })
+                        .attr('y1', d => {
+                            const sourceId = typeof d.source === 'object' ? d.source.id : d.source;
+                            return previousPositions.get(sourceId)?.y ?? nodeMap.get(sourceId)?.y ?? 0;
+                        })
+                        .attr('x2', d => {
+                            const targetId = typeof d.target === 'object' ? d.target.id : d.target;
+                            return previousPositions.get(targetId)?.x ?? nodeMap.get(targetId)?.x ?? 0;
+                        })
+                        .attr('y2', d => {
+                            const targetId = typeof d.target === 'object' ? d.target.id : d.target;
+                            return previousPositions.get(targetId)?.y ?? nodeMap.get(targetId)?.y ?? 0;
+                        })
+                        .transition(structuralTransition)
+                        .attr('x1', d => {
+                            const sourceId = typeof d.source === 'object' ? d.source.id : d.source;
+                            return nodeMap.get(sourceId)?.x || 0;
+                        })
+                        .attr('y1', d => {
+                            const sourceId = typeof d.source === 'object' ? d.source.id : d.source;
+                            return nodeMap.get(sourceId)?.y || 0;
+                        })
+                        .attr('x2', d => {
+                            const targetId = typeof d.target === 'object' ? d.target.id : d.target;
+                            return nodeMap.get(targetId)?.x || 0;
+                        })
+                        .attr('y2', d => {
+                            const targetId = typeof d.target === 'object' ? d.target.id : d.target;
+                            return nodeMap.get(targetId)?.y || 0;
+                        });
+                }
+
+                if (nodeSelection) {
+                    nodeSelection.interrupt('structural-layout');
+                    nodeSelection
+                        .attr('transform', d => {
+                            const prev = previousPositions.get(d.id);
+                            const startX = prev?.x ?? d.x ?? fallbackX;
+                            const startY = prev?.y ?? d.y ?? fallbackY;
+                            return `translate(${startX},${startY})`;
+                        })
+                        .transition(structuralTransition)
+                        .attr('transform', d => `translate(${d.x || 0},${d.y || 0})`);
+                }
+
+                if (graphGroup) {
+                    graphGroup.selectAll('.timeline-guides').remove();
+                }
+
+                if (window._structuralLayoutFinalizeTimer) {
+                    clearTimeout(window._structuralLayoutFinalizeTimer);
+                }
+                window._structuralLayoutFinalizeTimer = setTimeout(() => {
+                    if (graphGroup) {
+                        graphGroup.selectAll('.temporal-path').remove();
+                        if (filters.showTemporalPaths) {
+                            addTemporalPaths(nodes, links);
+                        }
+                    }
+
+                    if (viewportCullingEnabled) {
+                        recalculateViewportVisibility();
+                    }
+
+                    if (typeof updateMinimap === 'function') {
+                        updateMinimap();
+                    }
+                }, resolvedDuration + 30);
+
+                return layout;
+            }
+
             function createStaticSimulation(nodes, links) {
                 let currentNodes = Array.isArray(nodes) ? nodes : [];
                 let currentLinks = Array.isArray(links) ? links : [];
@@ -12167,7 +12265,15 @@
 
                 if (!isForceLayoutMode()) {
                     simulation = createStaticSimulation(renderNodes, renderLinks);
-                    applyDeterministicLayout(width, height, renderNodes, renderLinks, link, node);
+                    const structuralDuration = Number(window._structuralRelayoutDuration) || 0;
+                    window._structuralRelayoutDuration = 0;
+
+                    if (structuralDuration > 0) {
+                        animateStructuralLayout(width, height, renderNodes, renderLinks, link, node, structuralDuration);
+                        console.log('[RenderGraph] Animated structural layout applied');
+                    } else {
+                        applyDeterministicLayout(width, height, renderNodes, renderLinks, link, node);
+                    }
 
                     if (savedTransform && graphGroup) {
                         graphGroup.attr('transform', savedTransform);
@@ -14779,8 +14885,9 @@
                 applyFilters(); // This will update filteredNodes and filteredLinks with new data
 
                 if (!isForceLayoutMode()) {
+                    window._structuralRelayoutDuration = 850;
                     renderGraph();
-                    console.log(`[Incremental Update] Re-rendered deterministic layout with ${nodesToAdd.length} nodes, ${linksToAdd.length} links`);
+                    console.log(`[Incremental Update] Re-rendered structural layout with animated transition for ${nodesToAdd.length} nodes, ${linksToAdd.length} links`);
                     return;
                 }
                 
